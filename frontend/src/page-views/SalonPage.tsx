@@ -8,7 +8,8 @@ import { ArrowLeft, MapPin, Clock, Phone, Globe, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { apiFetch, API_BASE, getAccessToken } from "@/lib/api";
+import { apiFetch, getAccessToken } from "@/lib/api";
+import { mediaSrc } from "@/lib/media";
 
 type SalonDetail = {
   id: number;
@@ -36,11 +37,8 @@ type ReviewApi = {
   created_at: string;
 };
 
-function mediaUrl(path: string | null): string {
-  if (!path) return "https://images.unsplash.com/photo-1585747860019-8b15d7e2b3e0?w=800";
-  if (path.startsWith("http")) return path;
-  return `${API_BASE}${path}`;
-}
+const COVER_FALLBACK =
+  "https://images.unsplash.com/photo-1585747860019-8b15d7e2b3e0?w=800";
 
 export default function SalonPage() {
   const params = useParams();
@@ -92,7 +90,7 @@ export default function SalonPage() {
     <div className="min-h-screen pb-24">
       <div className="relative">
         <img
-          src={mediaUrl(salon.cover_image)}
+          src={mediaSrc(salon.cover_image, COVER_FALLBACK)}
           alt={salon.name}
           className="w-full h-56 object-cover"
         />
@@ -144,7 +142,7 @@ export default function SalonPage() {
               {salon.images.map((img) => (
                 <img
                   key={img.id}
-                  src={mediaUrl(img.image)}
+                  src={mediaSrc(img.image, COVER_FALLBACK)}
                   alt=""
                   className="w-32 h-24 object-cover rounded-lg shrink-0"
                 />

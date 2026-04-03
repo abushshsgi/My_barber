@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { apiFetch, API_BASE } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
+import { mediaSrc } from "@/lib/media";
 import {
   ChevronLeft,
   ImagePlus,
@@ -34,9 +35,7 @@ type SalonDetail = {
 type MeUser = { id: number };
 
 function imageUrl(path: string | null | undefined): string {
-  if (!path) return "";
-  if (path.startsWith("http")) return path;
-  return `${API_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
+  return mediaSrc(path ?? null, "");
 }
 
 async function fetchSalon(id: number): Promise<SalonDetail> {

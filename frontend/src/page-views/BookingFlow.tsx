@@ -8,7 +8,8 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiFetch, API_BASE, getAccessToken } from "@/lib/api";
+import { apiFetch, getAccessToken } from "@/lib/api";
+import { mediaSrc } from "@/lib/media";
 import { format } from "date-fns";
 
 type Step = 1 | 2 | 3 | 4;
@@ -25,11 +26,8 @@ type StaffMember = {
   avatar: string | null;
 };
 
-function mediaUrl(path: string | null): string {
-  if (!path) return "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150";
-  if (path.startsWith("http")) return path;
-  return `${API_BASE}${path}`;
-}
+const AVATAR_FALLBACK =
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150";
 
 export default function BookingFlow() {
   const params = useParams();
@@ -198,7 +196,7 @@ export default function BookingFlow() {
                   onClick={() => setSelectedBarber(barber.id)}
                 >
                   <img
-                    src={mediaUrl(barber.avatar)}
+                    src={mediaSrc(barber.avatar, AVATAR_FALLBACK)}
                     alt=""
                     className="w-14 h-14 rounded-full object-cover"
                   />

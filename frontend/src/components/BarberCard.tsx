@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { API_BASE } from "@/lib/api";
+import { mediaSrc } from "@/lib/media";
 import { MapPin, Scissors } from "lucide-react";
 import type { BarberListApi } from "@/lib/barber-queries";
 
-function mediaUrl(path: string | null): string {
-  if (!path) return "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150";
-  if (path.startsWith("http")) return path;
-  return `${API_BASE}${path}`;
+function avatarSrc(path: string | null): string {
+  return mediaSrc(
+    path,
+    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
+  );
 }
 
 export function BarberCard({ barber }: { barber: BarberListApi }) {
@@ -18,7 +19,7 @@ export function BarberCard({ barber }: { barber: BarberListApi }) {
     <Card className="p-4 rounded-2xl border border-border/50">
       <div className="flex items-start gap-3">
         <img
-          src={mediaUrl(barber.avatar)}
+          src={avatarSrc(barber.avatar)}
           alt={barber.name}
           className="w-12 h-12 rounded-2xl object-cover border border-border/50"
         />

@@ -7,7 +7,8 @@ import { StarRating } from "@/components/StarRating";
 import { MapPin, ArrowRight, Loader2, Crosshair, Radar } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { apiFetch, API_BASE } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
+import { mediaSrc } from "@/lib/media";
 import { mapSalonListApi, type SalonListApi } from "@/lib/mapSalon";
 import type { Salon } from "@/types";
 import type { BarberOnMap } from "./MapInner";
@@ -57,12 +58,11 @@ async function fetchNearbySalons(
   });
 }
 
+const MAP_AVATAR_FALLBACK =
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200";
+
 function mapBarberNearby(r: BarberNearbyApi): BarberOnMap {
-  const avatar = r.avatar
-    ? r.avatar.startsWith("http")
-      ? r.avatar
-      : `${API_BASE}${r.avatar.startsWith("/") ? "" : "/"}${r.avatar}`
-    : "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200";
+  const avatar = mediaSrc(r.avatar, MAP_AVATAR_FALLBACK);
   return {
     profileId: r.id,
     userId: r.user_id,

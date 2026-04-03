@@ -1,5 +1,5 @@
 import type { Salon } from "@/types";
-import { API_BASE } from "./api";
+import { mediaSrc } from "./media";
 
 export type SalonListApi = {
   id: number;
@@ -16,11 +16,10 @@ export type SalonListApi = {
 };
 
 export function mapSalonListApi(r: SalonListApi): Salon {
-  const cover = r.cover_image
-    ? r.cover_image.startsWith("http")
-      ? r.cover_image
-      : `${API_BASE}${r.cover_image}`
-    : "https://images.unsplash.com/photo-1585747860019-8b15d7e2b3e0?w=800";
+  const cover = mediaSrc(
+    r.cover_image,
+    "https://images.unsplash.com/photo-1585747860019-8b15d7e2b3e0?w=800"
+  );
 
   return {
     id: String(r.id),

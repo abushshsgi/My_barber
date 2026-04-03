@@ -1,10 +1,24 @@
 /** @type {import('next').NextConfig} */
+const backendBase = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000").replace(
+  /\/$/,
+  ""
+);
+
 const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: true,
+  },
+  /** /media → backend: same-origin <img>, CORP/cross-origin muammolarini oldini oladi */
+  async rewrites() {
+    return [
+      {
+        source: "/media/:path*",
+        destination: `${backendBase}/media/:path*`,
+      },
+    ];
   },
   images: {
     remotePatterns: [

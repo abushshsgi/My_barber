@@ -6,7 +6,7 @@ import { MapPin, Crown, Clock, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import type { Salon } from "@/types";
-import { API_BASE } from "@/lib/api";
+import { mediaSrc } from "@/lib/media";
 
 export type SalonCardProps = {
   salon: Salon;
@@ -15,9 +15,7 @@ export type SalonCardProps = {
 
 function coverSrc(salon: Salon): string {
   const img = salon.coverImage as string | undefined;
-  if (!img) return "/placeholder.svg";
-  if (img.startsWith("http")) return img;
-  return `${API_BASE}${img}`;
+  return mediaSrc(img, "/placeholder.svg");
 }
 
 export const SalonCard = forwardRef<HTMLDivElement, SalonCardProps>(function SalonCard(

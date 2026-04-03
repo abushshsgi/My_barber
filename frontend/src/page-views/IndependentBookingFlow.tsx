@@ -8,7 +8,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { apiFetch, API_BASE, getAccessToken } from "@/lib/api";
+import { apiFetch, getAccessToken } from "@/lib/api";
+import { mediaSrc } from "@/lib/media";
 import { format } from "date-fns";
 import type { BarberListApi } from "@/lib/barber-queries";
 
@@ -24,11 +25,8 @@ type BarberDetail = {
   services: { id: number; name: string; price: string; duration_minutes: number; is_active: boolean }[];
 };
 
-function mediaUrl(path: string | null): string {
-  if (!path) return "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150";
-  if (path.startsWith("http")) return path;
-  return `${API_BASE}${path}`;
-}
+const AVATAR_FALLBACK =
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150";
 
 export default function IndependentBookingFlow() {
   const params = useParams();
@@ -186,7 +184,7 @@ export default function IndependentBookingFlow() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex items-center gap-3">
-          <img src={mediaUrl(barber.avatar)} alt={barber.name} className="w-10 h-10 rounded-2xl object-cover" />
+          <img src={mediaSrc(barber.avatar, AVATAR_FALLBACK)} alt={barber.name} className="w-10 h-10 rounded-2xl object-cover" />
           <div>
             <p className="font-bold text-sm">{barber.name}</p>
             <p className="text-xs text-muted-foreground">{barber.location_text || "—"}</p>
