@@ -1,0 +1,124 @@
+from django.db.models import Q
+from django.utils import timezone
+from rest_framework import generics
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from accounts.models import BarberApplication, User
+from accounts.permissions import IsAdmin
+from bookings.models import Booking
+from bookings.serializers import BookingSerializer
+from salons.models import Salon
+
+from .serializers import (
+    AdminSalonSerializer,
+    AdminSalonUpdateSerializer,
+    AdminUserSerializer,
+    AdminUserUpdateSerializer,
+)
+
+
+class AdminStatsView(APIView):
+    """Aggregated numbers for Next.js admin dashboard."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        today = timezone.localdate()
+
+        users_mijoz = User.objects.filter(role=User.Role.USER).count()
+        barbers = User.objects.filter(
+            role__in=(User.Role.BARBER_OWNER, User.Role.BARBER_STAFF)
+        ).count()
+        salons_pub = Salon.objects.filter(is_published=True).count()
+        salons_pending = Salon.objects.filter(is_published=False).count()
+        apps_pending = BarberApplication.objects.filter(
+            status=BarberApplication.Status.PENDING
+        ).count()
+        bookings_today = Booking.objects.filter(start_at__date=today).count()
+        bookings_total = Booking.objects.count()
+
+        return Response(
+            {
+                "users_total": User.objects.count(),
+                "users_clients": users_mijoz,
+                "barbers_total": barbers,
+                "salons_published": salons_pub,
+                "salons_pending_review": salons_pending,
+                "barber_applications_pending": apps_pending,
+                "bookings_today": bookings_today,
+                "bookings_total": bookings_total,
+            }
+        )
+
+
+class AdminUserListView(generics.ListAPIView):
+    permission_classes = [IsAdmin]
+    serializer_class = AdminUserSerializer
+
+    def get_queryset(self):
+        qs = User.objects.all().order_by("-date_joined")
+        role = self.request.query_params.get("role")
+        if role:
+            qs = qs.filter(role=role)
+        q = self.request.query_params.get("q", "").strip()
+        if q:
+            qs = qs.filter(
+                Q(email__icontains=q)
+                | Q(full_name__icontains=q)
+                | Q(phone__icontains=q)
+            )
+        return qs
+
+
+class AdminUserDetailView(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsAdmin]
+    queryset = User.objects.all()
+    serializer_class = AdminUserSerializer
+
+    def get_serializer_class(self):
+        if self.request.method in ("PATCH", "PUT"):
+            return AdminUserUpdateSerializer
+        return AdminUserSerializer
+
+
+class AdminSalonListView(generics.ListAPIView):
+    permission_classes = [IsAdmin]
+    serializer_class = AdminSalonSerializer
+
+    def get_queryset(self):
+        qs = Salon.objects.select_related("owner").order_by("-created_at")
+        pub = self.request.query_params.get("published")
+        if pub == "0":
+            qs = qs.filter(is_published=False)
+        elif pub == "1":
+            qs = qs.filter(is_published=True)
+        q = self.request.query_params.get("q", "").strip()
+        if q:
+            qs = qs.filter(Q(name__icontains=q) | Q(owner__email__icontains=q))
+        return qs
+
+
+class AdminSalonDetailView(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsAdmin]
+    queryset = Salon.objects.select_related("owner").all()
+    serializer_class = AdminSalonSerializer
+
+    def get_serializer_class(self):
+        if self.request.method in ("PATCH", "PUT"):
+            return AdminSalonUpdateSerializer
+        return AdminSalonSerializer
+
+
+class AdminBookingListView(generics.ListAPIView):
+    """Recent bookings for admin overview (read-only list)."""
+
+    permission_classes = [IsAdmin]
+    serializer_class = BookingSerializer
+
+    def get_queryset(self):
+        return (
+            Booking.objects.select_related("customer", "salon", "barber")
+            .prefetch_related("lines")
+            .order_by("-created_at")
+        )

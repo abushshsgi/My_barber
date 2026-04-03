@@ -1,0 +1,87 @@
+from rest_framework import serializers
+
+from accounts.models import User
+
+from .models import BarberProfile, BarberService, BarberWorkPhoto, BarberWorkingHours
+
+
+class BarberWorkPhotoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BarberWorkPhoto
+        fields = ("id", "image", "sort_order", "created_at")
+
+
+class BarberServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BarberService
+        fields = ("id", "name", "price", "duration_minutes", "is_active")
+
+
+class BarberWorkingHoursSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BarberWorkingHours
+        fields = ("id", "weekday", "open_time", "close_time", "is_day_off")
+
+
+class BarberPublicListSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source="user.full_name", read_only=True)
+    phone = serializers.CharField(source="user.phone", read_only=True)
+    avatar = serializers.ImageField(source="user.avatar", read_only=True)
+    user_id = serializers.IntegerField(source="user.id", read_only=True)
+    active_services = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BarberProfile
+        fields = (
+            "id",
+            "user_id",
+            "name",
+            "phone",
+            "location_text",
+            "latitude",
+            "longitude",
+            "avatar",
+            "active_services",
+        )
+
+    def get_active_services(self, obj):
+        qs = obj.services.filter(is_active=True).order_by("name")[:6]
+        return BarberServiceSerializer(qs, many=True).data
+
+
+class BarberPublicDetailSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source="user.full_name", read_only=True)
+    phone = serializers.CharField(source="user.phone", read_only=True)
+    avatar = serializers.ImageField(source="user.avatar", read_only=True)
+    user_id = serializers.IntegerField(source="user.id", read_only=True)
+    services = BarberServiceSerializer(many=True, read_only=True)
+    work_photos = BarberWorkPhotoSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = BarberProfile
+        fields = (
+            "id",
+            "user_id",
+            "name",
+            "phone",
+            "location_text",
+            "latitude",
+            "longitude",
+            "avatar",
+            "services",
+            "work_photos",
+        )
+
+
+class BarberProfileUpsertSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BarberProfile
+        fields = ("location_text", "latitude", "longitude")
+
+
+class BarberWorkPhotoCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BarberWorkPhoto
+        fields = ("id", "image", "sort_order", "created_at")
+        read_only_fields = ("id", "created_at")
+
