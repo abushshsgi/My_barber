@@ -23,6 +23,7 @@ from accounts.views import (
     MyBarberApplicationStatusView,
     RegisterView,
     UserSearchView,
+    UzRegionsView,
 )
 from bookings.views import (
     AnalyticsView,
@@ -74,6 +75,7 @@ api_routes = [
     path("admin/salons/", AdminSalonListView.as_view()),
     path("admin/salons/<int:pk>/", AdminSalonDetailView.as_view()),
     path("admin/bookings/", AdminBookingListView.as_view()),
+    path("regions/", UzRegionsView.as_view()),
     path("auth/register/", RegisterView.as_view()),
     path("auth/barber-register/", BarberRegisterView.as_view()),
     path("auth/token/", EmailTokenObtainPairView.as_view()),

@@ -18,6 +18,8 @@ export type AdminUserRow = {
   full_name: string;
   phone: string | null;
   role: string;
+  region: string;
+  region_label: string;
   is_active: boolean;
   is_staff: boolean;
   date_joined: string;
@@ -42,18 +44,30 @@ export async function fetchAdminStats(): Promise<AdminStats> {
   return apiJson<AdminStats>("/api/v1/admin/stats/");
 }
 
-export async function fetchAdminUsers(params?: { role?: string; q?: string }): Promise<{
+export async function fetchAdminUsers(params?: {
+  role?: string;
+  roles?: string;
+  region?: string;
+  q?: string;
+  page?: number;
+}): Promise<{
   results: AdminUserRow[];
   count?: number;
+  next?: string | null;
 }> {
   const sp = new URLSearchParams();
   if (params?.role) sp.set("role", params.role);
+  if (params?.roles) sp.set("roles", params.roles);
+  if (params?.region) sp.set("region", params.region);
   if (params?.q) sp.set("q", params.q);
+  if (params?.page) sp.set("page", String(params.page));
   const q = sp.toString();
   const res = await apiFetch(q ? `/api/v1/admin/users/?${q}` : "/api/v1/admin/users/");
   const j = await res.json();
   if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
-  return Array.isArray(j) ? { results: j } : { results: j.results || [], count: j.count };
+  return Array.isArray(j)
+    ? { results: j }
+    : { results: j.results || [], count: j.count, next: j.next };
 }
 
 export async function fetchAdminSalons(params?: { published?: "0" | "1"; q?: string }) {
@@ -74,7 +88,10 @@ export async function patchAdminSalon(id: number, body: Partial<{ is_published: 
   });
 }
 
-export async function patchAdminUser(id: number, body: Partial<{ role: string; is_active: boolean; full_name: string; phone: string }>) {
+export async function patchAdminUser(
+  id: number,
+  body: Partial<{ role: string; is_active: boolean; full_name: string; phone: string; region: string }>,
+) {
   return apiJson(`/api/v1/admin/users/${id}/`, {
     method: "PATCH",
     body: JSON.stringify(body),

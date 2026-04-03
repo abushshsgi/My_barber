@@ -6,6 +6,7 @@ from barbers.models import BarberProfile
 from salons.models import SalonMembership
 
 from .models import BarberApplication, User
+from .uz_regions import UzRegion
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -19,6 +20,7 @@ class UserSerializer(serializers.ModelSerializer):
             "phone",
             "full_name",
             "role",
+            "region",
             "avatar",
             "date_joined",
         )
@@ -33,10 +35,11 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
+    region = serializers.ChoiceField(choices=UzRegion.choices, required=True)
 
     class Meta:
         model = User
-        fields = ("email", "phone", "full_name", "password")
+        fields = ("email", "phone", "full_name", "password", "region")
 
     def create(self, validated_data):
         pwd = validated_data.pop("password")
@@ -51,6 +54,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 class BarberApplicationSerializer(serializers.ModelSerializer):
     applicant_email = serializers.EmailField(source="user.email", read_only=True)
     applicant_name = serializers.CharField(source="user.full_name", read_only=True)
+    region_label = serializers.SerializerMethodField()
 
     class Meta:
         model = BarberApplication
@@ -61,6 +65,7 @@ class BarberApplicationSerializer(serializers.ModelSerializer):
             "shop_name",
             "age",
             "region",
+            "region_label",
             "address",
             "latitude",
             "longitude",
@@ -68,7 +73,19 @@ class BarberApplicationSerializer(serializers.ModelSerializer):
             "status",
             "created_at",
         )
-        read_only_fields = ("id", "status", "created_at", "applicant_email", "applicant_name")
+        read_only_fields = (
+            "id",
+            "status",
+            "created_at",
+            "applicant_email",
+            "applicant_name",
+            "region_label",
+        )
+
+    def get_region_label(self, obj: BarberApplication) -> str:
+        if not obj.region:
+            return ""
+        return dict(UzRegion.choices).get(obj.region, obj.region)
 
 
 class BarberSignupSerializer(serializers.Serializer):
@@ -86,7 +103,7 @@ class BarberSignupSerializer(serializers.Serializer):
     longitude = serializers.DecimalField(max_digits=9, decimal_places=6)
     shop_name = serializers.CharField(required=False, allow_blank=True, default="")
     age = serializers.IntegerField(required=False, min_value=14, max_value=120, default=25)
-    region = serializers.CharField(required=False, allow_blank=True, default="")
+    region = serializers.ChoiceField(choices=UzRegion.choices, required=True)
     address = serializers.CharField(required=False, allow_blank=True)
     staff_count_at_signup = serializers.IntegerField(min_value=1, default=1)
 
@@ -122,7 +139,7 @@ class BarberSignupSerializer(serializers.Serializer):
         longitude = validated_data.pop("longitude")
         shop_name = (validated_data.pop("shop_name", "") or "").strip()
         age = validated_data.pop("age", 25)
-        region = (validated_data.pop("region", "") or "").strip()
+        region = validated_data.pop("region")
         address = validated_data.pop("address", "") or ""
         staff_count = validated_data.pop("staff_count_at_signup", 1)
 
@@ -132,8 +149,6 @@ class BarberSignupSerializer(serializers.Serializer):
                 if has_salon
                 else "Salon yaratilishi kutilmoqda"
             )
-        if not region:
-            region = "—"
 
         app_status = BarberApplication.Status.APPROVED
         if not getattr(django_settings, "AUTO_APPROVE_BARBERS", True):
@@ -145,6 +160,7 @@ class BarberSignupSerializer(serializers.Serializer):
             phone=phone,
             full_name=full_name,
             role=User.Role.BARBER_OWNER,
+            region=region,
         )
         user.set_password(pwd)
         user.save()

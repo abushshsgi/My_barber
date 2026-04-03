@@ -58,9 +58,18 @@ class AdminUserListView(generics.ListAPIView):
 
     def get_queryset(self):
         qs = User.objects.all().order_by("-date_joined")
-        role = self.request.query_params.get("role")
-        if role:
-            qs = qs.filter(role=role)
+        roles_param = self.request.query_params.get("roles")
+        if roles_param:
+            parts = [r.strip() for r in roles_param.split(",") if r.strip()]
+            if parts:
+                qs = qs.filter(role__in=parts)
+        else:
+            role = self.request.query_params.get("role")
+            if role:
+                qs = qs.filter(role=role)
+        region = self.request.query_params.get("region")
+        if region:
+            qs = qs.filter(region=region)
         q = self.request.query_params.get("q", "").strip()
         if q:
             qs = qs.filter(

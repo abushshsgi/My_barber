@@ -10,6 +10,7 @@ from notifications.utils import notify_user
 
 from .models import BarberApplication, User
 from .permissions import IsAdmin
+from .uz_regions import UzRegion
 from .serializers import (
     BarberApplicationSerializer,
     BarberSignupSerializer,
@@ -19,6 +20,17 @@ from .serializers import (
     UserSerializer,
 )
 from .throttles import AuthIPThrottle
+
+
+class UzRegionsView(APIView):
+    """Ro'yxatdan o'tish / admin uchun 12 ta viloyat ro'yxati."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response(
+            [{"value": c[0], "label": c[1]} for c in UzRegion.choices]
+        )
 
 
 class RegisterView(generics.CreateAPIView):
