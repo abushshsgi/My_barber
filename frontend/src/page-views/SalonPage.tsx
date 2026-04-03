@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch, getAccessToken } from "@/lib/api";
-import { mediaSrc } from "@/lib/media";
+import { mediaSrc, PLACEHOLDER_SALON } from "@/lib/media";
 
 type SalonDetail = {
   id: number;
@@ -36,9 +36,6 @@ type ReviewApi = {
   author_name: string;
   created_at: string;
 };
-
-const COVER_FALLBACK =
-  "https://images.unsplash.com/photo-1585747860019-8b15d7e2b3e0?w=800";
 
 export default function SalonPage() {
   const params = useParams();
@@ -90,7 +87,7 @@ export default function SalonPage() {
     <div className="min-h-screen pb-24">
       <div className="relative">
         <img
-          src={mediaSrc(salon.cover_image, COVER_FALLBACK)}
+          src={mediaSrc(salon.cover_image, PLACEHOLDER_SALON)}
           alt={salon.name}
           className="w-full h-56 object-cover"
         />
@@ -142,7 +139,7 @@ export default function SalonPage() {
               {salon.images.map((img) => (
                 <img
                   key={img.id}
-                  src={mediaSrc(img.image, COVER_FALLBACK)}
+                  src={mediaSrc(img.image, PLACEHOLDER_SALON)}
                   alt=""
                   className="w-32 h-24 object-cover rounded-lg shrink-0"
                 />

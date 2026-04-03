@@ -3,15 +3,12 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { mediaSrc } from "@/lib/media";
+import { mediaSrc, PLACEHOLDER_AVATAR } from "@/lib/media";
 import { MapPin, Scissors } from "lucide-react";
 import type { BarberListApi } from "@/lib/barber-queries";
 
 function avatarSrc(path: string | null): string {
-  return mediaSrc(
-    path,
-    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
-  );
+  return mediaSrc(path, PLACEHOLDER_AVATAR);
 }
 
 export function BarberCard({ barber }: { barber: BarberListApi }) {

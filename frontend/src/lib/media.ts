@@ -1,6 +1,12 @@
-import { API_BASE } from "./api";
+/** Lokal SVG — tashqi CDN / ORB muammosi bo‘lmaydi */
+export const PLACEHOLDER_SALON = "/placeholder-salon.svg";
+export const PLACEHOLDER_AVATAR = "/avatar-placeholder.svg";
 
-/** Vercel `next.config` rewrites orqali same-origin; brauzer to‘g‘ri Railway ga emas, shu domen orqali yuklaydi. */
+/**
+ * API dan kelgan rasm yo‘lini <img src> uchun moslaydi.
+ * Har qanday domen + /media/... → faqat /media/... (Vercel rewrite → backend).
+ * NEXT_PUBLIC_API_URL buildda xato bo‘lsa ham to‘g‘ri ishlaydi.
+ */
 export function mediaSrc(
   path: string | null | undefined,
   fallback: string
@@ -10,8 +16,7 @@ export function mediaSrc(
   if (s.startsWith("http://") || s.startsWith("https://")) {
     try {
       const u = new URL(s);
-      const base = new URL(API_BASE.replace(/\/$/, ""));
-      if (u.origin === base.origin && u.pathname.startsWith("/media/")) {
+      if (u.pathname.startsWith("/media/")) {
         return u.pathname + u.search;
       }
     } catch {

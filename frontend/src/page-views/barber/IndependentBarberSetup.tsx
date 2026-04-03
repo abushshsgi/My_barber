@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { apiFetch, getAccessToken } from "@/lib/api";
-import { mediaSrc } from "@/lib/media";
+import { mediaSrc, PLACEHOLDER_SALON } from "@/lib/media";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -52,9 +52,6 @@ const WEEKDAYS: { id: number; label: string }[] = [
   { id: 5, label: "Sha" },
   { id: 6, label: "Ya" },
 ];
-
-const WORK_PHOTO_FALLBACK =
-  "https://images.unsplash.com/photo-1522337660859-02fbefca4702?w=600";
 
 async function fetchMyProfile(): Promise<MyProfile> {
   const res = await apiFetch("/api/v1/barber/profile/");
@@ -414,7 +411,7 @@ export default function IndependentBarberSetup() {
           <div className="grid grid-cols-3 gap-2 mt-3">
             {photos.map((p) => (
               <div key={p.id} className="relative rounded-xl overflow-hidden border border-border/50">
-                <img src={mediaSrc(p.image, WORK_PHOTO_FALLBACK)} alt="work" className="w-full h-24 object-cover" />
+                <img src={mediaSrc(p.image, PLACEHOLDER_SALON)} alt="work" className="w-full h-24 object-cover" />
                 <button
                   type="button"
                   className="absolute top-1 right-1 bg-foreground/80 text-background rounded-lg px-2 py-1 text-[10px]"

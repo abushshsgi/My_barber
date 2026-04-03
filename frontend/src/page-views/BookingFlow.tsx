@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiFetch, getAccessToken } from "@/lib/api";
-import { mediaSrc } from "@/lib/media";
+import { mediaSrc, PLACEHOLDER_AVATAR } from "@/lib/media";
 import { format } from "date-fns";
 
 type Step = 1 | 2 | 3 | 4;
@@ -25,9 +25,6 @@ type StaffMember = {
   full_name: string;
   avatar: string | null;
 };
-
-const AVATAR_FALLBACK =
-  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150";
 
 export default function BookingFlow() {
   const params = useParams();
@@ -196,7 +193,7 @@ export default function BookingFlow() {
                   onClick={() => setSelectedBarber(barber.id)}
                 >
                   <img
-                    src={mediaSrc(barber.avatar, AVATAR_FALLBACK)}
+                    src={mediaSrc(barber.avatar, PLACEHOLDER_AVATAR)}
                     alt=""
                     className="w-14 h-14 rounded-full object-cover"
                   />
