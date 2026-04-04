@@ -20,7 +20,7 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
         if (!cancelled) setState("auth");
         return;
       }
-      const res = await apiFetch("/api/v1/users/me/");
+      const res = await apiFetch("/api/v1/admin/auth/me/");
       const data = (await res.json().catch(() => ({}))) as Me & { detail?: string };
       if (!res.ok) {
         router.replace("/auth?next=/admin");

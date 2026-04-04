@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils import timezone
 
-from .models import BarberApplication, User
+from .models import AdminAccount, BarberApplication, User
 
 
 @admin.register(User)
@@ -41,6 +41,15 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
     )
+
+
+@admin.register(AdminAccount)
+class AdminAccountAdmin(admin.ModelAdmin):
+    list_display = ("email", "is_active", "last_login", "created_at")
+    list_filter = ("is_active",)
+    search_fields = ("email",)
+    ordering = ("-created_at",)
+    readonly_fields = ("created_at", "last_login")
 
 
 @admin.register(BarberApplication)

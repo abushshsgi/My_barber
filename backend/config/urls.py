@@ -25,6 +25,7 @@ from accounts.views import (
     UserSearchView,
     UzRegionsView,
 )
+from accounts.views_admin_auth import AdminMeView, AdminTokenRefreshView, AdminTokenView
 from bookings.views import (
     AnalyticsView,
     BookingAvailabilityView,
@@ -37,12 +38,14 @@ from bookings.views import (
 )
 from barbers.views import (
     BarberPublicViewSet,
+    BarberSearchView,
     IndependentAvailabilityView,
     MyBarberProfileView,
     MyBarberServiceViewSet,
     MyBarberWorkPhotoViewSet,
     MyBarberWorkingHoursViewSet,
 )
+from barbers.views_barber_auth import BarberMeView, BarberTokenRefreshView, BarberTokenView
 from salons.views import (
     BarberScheduleViewSet,
     SalonMembershipViewSet,
@@ -80,9 +83,16 @@ api_routes = [
     path("auth/barber-register/", BarberRegisterView.as_view()),
     path("auth/token/", EmailTokenObtainPairView.as_view()),
     path("auth/token/refresh/", TokenRefreshView.as_view()),
+    path("admin/auth/token/", AdminTokenView.as_view()),
+    path("admin/auth/token/refresh/", AdminTokenRefreshView.as_view()),
+    path("admin/auth/me/", AdminMeView.as_view()),
     path("users/me/", MeView.as_view()),
     path("users/search/", UserSearchView.as_view()),
     path("users/barber-status/", MyBarberApplicationStatusView.as_view()),
+    path("barbers/search/", BarberSearchView.as_view()),
+    path("barber/auth/token/", BarberTokenView.as_view()),
+    path("barber/auth/token/refresh/", BarberTokenRefreshView.as_view()),
+    path("barber/auth/me/", BarberMeView.as_view()),
     path("barber/profile/", MyBarberProfileView.as_view()),
     path("notifications/", NotificationListView.as_view()),
     path("notifications/<int:pk>/read/", NotificationMarkReadView.as_view()),

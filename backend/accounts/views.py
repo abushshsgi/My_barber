@@ -6,7 +6,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from notifications.utils import notify_user
+from notifications.utils import notify_barber, notify_user
+
+from barbers.permissions import IsBarber
 
 from .models import BarberApplication, User
 from .permissions import IsAdmin
@@ -79,7 +81,7 @@ class BarberApplicationViewSet(viewsets.ReadOnlyModelViewSet):
     """Admin: list/detail barber applications."""
 
     permission_classes = [IsAdmin]
-    queryset = BarberApplication.objects.select_related("user").all()
+    queryset = BarberApplication.objects.select_related("barber").all()
     serializer_class = BarberApplicationSerializer
 
     @action(detail=True, methods=["post"])
@@ -88,8 +90,8 @@ class BarberApplicationViewSet(viewsets.ReadOnlyModelViewSet):
         app.status = BarberApplication.Status.APPROVED
         app.reviewed_at = timezone.now()
         app.save()
-        notify_user(
-            app.user,
+        notify_barber(
+            app.barber,
             "barber_approved",
             "MyBarber: ro'yxatdan o'tish tasdiqlandi",
             f"Salom! {app.shop_name} uchun arizangiz tasdiqlandi. Endi tizimga kirishingiz mumkin.",
@@ -103,8 +105,8 @@ class BarberApplicationViewSet(viewsets.ReadOnlyModelViewSet):
         app.status = BarberApplication.Status.REJECTED
         app.reviewed_at = timezone.now()
         app.save()
-        notify_user(
-            app.user,
+        notify_barber(
+            app.barber,
             "barber_rejected",
             "MyBarber: ariza",
             "Arizangiz rad etildi.",
@@ -114,13 +116,12 @@ class BarberApplicationViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class MyBarberApplicationStatusView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsBarber]
 
     def get(self, request):
-        if request.user.role != User.Role.BARBER_OWNER:
-            return Response({"detail": "Not a barber owner."}, status=400)
+        b = request.user.barber
         try:
-            app = request.user.barber_application
+            app = b.barber_application
         except BarberApplication.DoesNotExist:
             return Response({"status": None})
         from .serializers import BarberApplicationSerializer

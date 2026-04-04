@@ -10,6 +10,15 @@ class Salon(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="owned_salons",
+        null=True,
+        blank=True,
+    )
+    owner_barber = models.ForeignKey(
+        "barbers.Barber",
+        on_delete=models.CASCADE,
+        related_name="owned_salons",
+        null=True,
+        blank=True,
     )
     name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=280, unique=True, blank=True)
@@ -72,11 +81,11 @@ class SalonHours(models.Model):
 class Service(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name="services")
     barber = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        "barbers.Barber",
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-        related_name="barber_services",
+        related_name="salon_services",
     )
     name = models.CharField(max_length=255)
     price = models.DecimalField(max_digits=12, decimal_places=2)
@@ -103,6 +112,15 @@ class SalonMembership(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="salon_memberships",
+        null=True,
+        blank=True,
+    )
+    barber = models.ForeignKey(
+        "barbers.Barber",
+        on_delete=models.CASCADE,
+        related_name="salon_memberships",
+        null=True,
+        blank=True,
     )
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name="memberships")
     role = models.CharField(max_length=16, choices=Role.choices)
@@ -117,7 +135,7 @@ class SalonMembership(models.Model):
     activated_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        unique_together = [["user", "salon"]]
+        pass
 
 
 class BarberWorkingHours(models.Model):

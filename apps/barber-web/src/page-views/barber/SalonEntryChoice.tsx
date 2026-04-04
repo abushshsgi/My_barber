@@ -58,7 +58,7 @@ function SalonOnboarding() {
               </p>
               <div className="mt-3">
                 <Button asChild className="rounded-xl gold-gradient text-gold-foreground border-0 h-10">
-                  <Link href="/barber/salon/join">
+                  <Link href="/salon/join">
                     Salonga qo‘shilish <ChevronRight className="h-4 w-4 ml-1" />
                   </Link>
                 </Button>
@@ -79,7 +79,7 @@ function SalonOnboarding() {
               </p>
               <div className="mt-3">
                 <Button asChild className="rounded-xl gold-gradient text-gold-foreground border-0 h-10">
-                  <Link href="/barber/salon/create">
+                  <Link href="/salon/create">
                     Salon yaratish <ChevronRight className="h-4 w-4 ml-1" />
                   </Link>
                 </Button>
@@ -100,7 +100,7 @@ function SalonOnboarding() {
               </p>
               <div className="mt-3">
                 <Button asChild variant="secondary" className="rounded-xl h-10">
-                  <Link href="/barber/independent/setup">
+                  <Link href="/independent/setup">
                     Profilni sozlash <ChevronRight className="h-4 w-4 ml-1" />
                   </Link>
                 </Button>
@@ -149,19 +149,19 @@ function MySalonsHub({ salons }: { salons: SalonListApi[] }) {
             </div>
             <div className="flex flex-wrap gap-2 mt-4">
               <Button asChild size="sm" className="rounded-xl gold-gradient text-gold-foreground border-0 h-9">
-                <Link href={`/barber/salon/${s.id}`}>
+                <Link href={`/salon/${s.id}`}>
                   <Settings2 className="h-4 w-4 mr-1.5" />
                   Salon ichiga kirish
                 </Link>
               </Button>
               <Button asChild size="sm" variant="secondary" className="rounded-xl h-9">
-                <Link href="/barber">
+                <Link href="/">
                   <LayoutDashboard className="h-4 w-4 mr-1.5" />
                   Dashboard
                 </Link>
               </Button>
               <Button asChild size="sm" variant="secondary" className="rounded-xl h-9">
-                <Link href="/barber/team">
+                <Link href="/team">
                   <Users className="h-4 w-4 mr-1.5" />
                   Jamoa
                 </Link>
@@ -176,7 +176,7 @@ function MySalonsHub({ salons }: { salons: SalonListApi[] }) {
             Yana bitta salon ochmoqchi bo‘lsangiz, yangi salon yarating.
           </p>
           <Button asChild variant="outline" size="sm" className="rounded-xl h-9">
-            <Link href="/barber/salon/create">
+            <Link href="/salon/create">
               <Store className="h-4 w-4 mr-1.5" />
               Yangi salon yaratish
             </Link>
@@ -206,7 +206,7 @@ export default function SalonEntryChoice() {
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 p-6 text-center bg-background">
         <p className="text-sm text-destructive">Salonlar yuklanmadi. Qayta urinib ko‘ring.</p>
         <Button asChild variant="outline" className="rounded-xl">
-          <Link href="/barber">Dashboard</Link>
+          <Link href="/">Dashboard</Link>
         </Button>
       </div>
     );

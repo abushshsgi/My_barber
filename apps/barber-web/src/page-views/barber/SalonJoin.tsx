@@ -79,7 +79,7 @@ export default function SalonJoin() {
         latitude: lat,
         longitude: lng,
       });
-      router.push("/barber");
+      router.push("/");
     } catch (e: unknown) {
       const geo = e as { code?: number };
       if (geo?.code === 1) {
@@ -107,7 +107,7 @@ export default function SalonJoin() {
     <div className="min-h-screen bg-background px-5 pt-4 pb-28">
       <div className="flex items-center gap-2 mb-6">
         <Button variant="ghost" size="icon" className="rounded-xl shrink-0" asChild>
-          <Link href="/barber">
+          <Link href="/">
             <ChevronLeft className="h-5 w-5" />
           </Link>
         </Button>

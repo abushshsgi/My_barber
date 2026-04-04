@@ -1,5 +1,5 @@
-import UserAuth from "@/page-views/UserAuth";
+import AdminLogin from "@/page-views/AdminLogin";
 
 export default function AdminAuthPage() {
-  return <UserAuth />;
+  return <AdminLogin />;
 }

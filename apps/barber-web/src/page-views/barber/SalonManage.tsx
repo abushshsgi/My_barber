@@ -46,7 +46,7 @@ async function fetchSalon(id: number): Promise<SalonDetail> {
 }
 
 async function fetchMe(): Promise<MeUser> {
-  const res = await apiFetch("/api/v1/users/me/");
+  const res = await apiFetch("/api/v1/barber/auth/me/");
   if (!res.ok) throw new Error("Profil yuklanmadi");
   return res.json() as Promise<MeUser>;
 }
@@ -241,7 +241,7 @@ export default function SalonManage() {
       <div className="min-h-screen p-6 text-center text-sm text-muted-foreground">
         Noto‘g‘ri salon manzili.
         <Button asChild variant="link" className="block mx-auto mt-2">
-          <Link href="/barber/salon">Orqaga</Link>
+          <Link href="/salon">Orqaga</Link>
         </Button>
       </div>
     );
@@ -260,7 +260,7 @@ export default function SalonManage() {
       <div className="min-h-screen p-6 text-center space-y-3">
         <p className="text-sm text-destructive">{error instanceof Error ? error.message : "Xato"}</p>
         <Button asChild variant="outline" className="rounded-xl">
-          <Link href="/barber/salon">Salonlar ro‘yxati</Link>
+          <Link href="/salon">Salonlar ro‘yxati</Link>
         </Button>
       </div>
     );
@@ -273,7 +273,7 @@ export default function SalonManage() {
     <div className="min-h-screen bg-background pb-28">
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b px-4 py-3 flex items-center gap-2">
         <Button variant="ghost" size="icon" className="rounded-xl shrink-0" asChild>
-          <Link href="/barber/salon" aria-label="Orqaga">
+          <Link href="/salon" aria-label="Orqaga">
             <ChevronLeft className="h-5 w-5" />
           </Link>
         </Button>
@@ -498,7 +498,7 @@ export default function SalonManage() {
           variant="outline"
           className="w-full rounded-xl"
           type="button"
-          onClick={() => router.push("/barber/salon")}
+          onClick={() => router.push("/salon")}
         >
           Barcha salonlar
         </Button>

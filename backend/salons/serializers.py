@@ -2,6 +2,7 @@ from django.db import transaction
 
 from rest_framework import serializers
 
+from accounts.auth_utils import is_platform_admin
 from accounts.models import User
 from .models import BarberWorkingHours, Salon, SalonHours, SalonImage, SalonMembership, Service
 
@@ -78,7 +79,7 @@ class SalonDetailSerializer(serializers.ModelSerializer):
     hours = SalonHoursSerializer(many=True, read_only=True)
     images = SalonImageSerializer(many=True, read_only=True)
     services = serializers.SerializerMethodField()
-    owner_id = serializers.IntegerField(read_only=True)
+    owner_id = serializers.SerializerMethodField()
     rating_avg = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
 
@@ -106,6 +107,9 @@ class SalonDetailSerializer(serializers.ModelSerializer):
             "review_count",
             "created_at",
         )
+
+    def get_owner_id(self, obj):
+        return obj.owner_barber_id or obj.owner_id
 
     def get_rating_avg(self, obj):
         from django.db.models import Avg
@@ -183,17 +187,18 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
 
         request = self.context.get("request")
         if request and request.user.is_authenticated:
+            admin = is_platform_admin(request)
             if self.instance is None:
                 # Barber yaratgan salon darhol chop etiladi (admin tasdig'i talab qilinmaydi).
-                if getattr(request.user, "role", None) != User.Role.ADMIN:
+                if not admin:
                     attrs["is_published"] = True
-            elif getattr(request.user, "role", None) != User.Role.ADMIN:
+            elif not admin:
                 attrs.pop("is_published", None)
 
         if self.instance is None:
             services = attrs.get("services")
             if not services:
-                if request and getattr(request.user, "role", None) == User.Role.ADMIN:
+                if request and is_platform_admin(request):
                     attrs["services"] = []
                 else:
                     raise serializers.ValidationError(
@@ -207,7 +212,11 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         # save(owner=...) merged owner into validated_data — duplicate kwarg bo‘lmasin
         if "owner" not in validated_data and request is not None:
-            validated_data["owner"] = request.user
+            from accounts.auth_utils import request_barber
+
+            bp = request_barber(request)
+            if bp is not None:
+                validated_data["owner_barber"] = bp
         with transaction.atomic():
             salon = Salon.objects.create(**validated_data)
             for h in hours_data:
@@ -236,15 +245,15 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
 
 
 class SalonMembershipSerializer(serializers.ModelSerializer):
-    user_detail = serializers.SerializerMethodField()
+    barber_detail = serializers.SerializerMethodField()
     salon_name = serializers.CharField(source="salon.name", read_only=True)
 
     class Meta:
         model = SalonMembership
         fields = (
             "id",
-            "user",
-            "user_detail",
+            "barber",
+            "barber_detail",
             "salon",
             "salon_name",
             "role",
@@ -256,9 +265,9 @@ class SalonMembershipSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "invited_at", "activated_at")
 
-    def get_user_detail(self, obj):
-        u = obj.user
-        return {"id": u.id, "email": u.email, "full_name": u.full_name, "phone": u.phone}
+    def get_barber_detail(self, obj):
+        b = obj.barber
+        return {"id": b.id, "email": b.email, "full_name": b.full_name, "phone": b.phone}
 
 
 class BarberWorkingHoursSerializer(serializers.ModelSerializer):

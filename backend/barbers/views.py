@@ -1,6 +1,7 @@
 import math
 from datetime import datetime, timedelta
 
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status, viewsets
@@ -9,12 +10,12 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.models import User
 from accounts.throttles import SalonSearchThrottle
 from bookings.models import Booking, BookingLine
 from notifications.utils import notify_user
 
-from .models import BarberProfile, BarberService, BarberWorkPhoto, BarberWorkingHours
+from .models import Barber, BarberProfile, BarberService, BarberWorkPhoto, BarberWorkingHours
+from .permissions import IsBarber
 from .serializers import (
     BarberProfileUpsertSerializer,
     BarberPublicDetailSerializer,
@@ -38,7 +39,7 @@ def _haversine_km(lat1, lon1, lat2, lon2):
 
 class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [AllowAny]
-    queryset = BarberProfile.objects.select_related("user").prefetch_related("services", "work_photos")
+    queryset = BarberProfile.objects.select_related("barber").prefetch_related("services", "work_photos")
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -62,7 +63,7 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
                 {"detail": "lat, lng required; radius_km optional."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        qs = BarberProfile.objects.select_related("user").filter(
+        qs = BarberProfile.objects.select_related("barber").filter(
             latitude__isnull=False,
             longitude__isnull=False,
         )
@@ -79,10 +80,11 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class MyBarberProfileView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsBarber]
 
     def get(self, request):
-        prof = BarberProfile.objects.filter(user=request.user).first()
+        b = request.user.barber
+        prof = BarberProfile.objects.filter(barber=b).first()
         if not prof:
             return Response({"exists": False})
         return Response(
@@ -96,7 +98,8 @@ class MyBarberProfileView(APIView):
         )
 
     def patch(self, request):
-        prof, _ = BarberProfile.objects.get_or_create(user=request.user)
+        b = request.user.barber
+        prof, _ = BarberProfile.objects.get_or_create(barber=b)
         ser = BarberProfileUpsertSerializer(instance=prof, data=request.data, partial=True)
         ser.is_valid(raise_exception=True)
         ser.save()
@@ -104,43 +107,75 @@ class MyBarberProfileView(APIView):
 
 
 class MyBarberServiceViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsBarber]
     serializer_class = BarberServiceSerializer
 
     def get_queryset(self):
-        prof, _ = BarberProfile.objects.get_or_create(user=self.request.user)
+        b = self.request.user.barber
+        prof, _ = BarberProfile.objects.get_or_create(barber=b)
         return BarberService.objects.filter(profile=prof).order_by("name")
 
     def perform_create(self, serializer):
-        prof, _ = BarberProfile.objects.get_or_create(user=self.request.user)
+        b = self.request.user.barber
+        prof, _ = BarberProfile.objects.get_or_create(barber=b)
         serializer.save(profile=prof)
 
 
 class MyBarberWorkPhotoViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsBarber]
     serializer_class = BarberWorkPhotoCreateSerializer
     http_method_names = ["get", "post", "delete", "head", "options"]
 
     def get_queryset(self):
-        prof, _ = BarberProfile.objects.get_or_create(user=self.request.user)
+        b = self.request.user.barber
+        prof, _ = BarberProfile.objects.get_or_create(barber=b)
         return BarberWorkPhoto.objects.filter(profile=prof).order_by("sort_order", "id")
 
     def perform_create(self, serializer):
-        prof, _ = BarberProfile.objects.get_or_create(user=self.request.user)
+        b = self.request.user.barber
+        prof, _ = BarberProfile.objects.get_or_create(barber=b)
         serializer.save(profile=prof)
 
 
 class MyBarberWorkingHoursViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsBarber]
     serializer_class = BarberWorkingHoursSerializer
 
     def get_queryset(self):
-        prof, _ = BarberProfile.objects.get_or_create(user=self.request.user)
+        b = self.request.user.barber
+        prof, _ = BarberProfile.objects.get_or_create(barber=b)
         return BarberWorkingHours.objects.filter(profile=prof).order_by("weekday")
 
     def perform_create(self, serializer):
-        prof, _ = BarberProfile.objects.get_or_create(user=self.request.user)
+        b = self.request.user.barber
+        prof, _ = BarberProfile.objects.get_or_create(barber=b)
         serializer.save(profile=prof)
+
+
+class BarberSearchView(APIView):
+    """Salon egasi boshqa sartaroshni qidirish (taklif uchun)."""
+
+    permission_classes = [IsBarber]
+
+    def get(self, request):
+        q = request.query_params.get("q", "").strip()
+        if len(q) < 2:
+            return Response([])
+        qs = (
+            Barber.objects.filter(Q(email__icontains=q) | Q(full_name__icontains=q))
+            .order_by("email")[:20]
+        )
+        return Response(
+            [
+                {
+                    "id": b.id,
+                    "email": b.email,
+                    "full_name": b.full_name,
+                    "phone": b.phone,
+                }
+                for b in qs
+            ]
+        )
 
 
 class IndependentAvailabilityView(APIView):
@@ -160,8 +195,8 @@ class IndependentAvailabilityView(APIView):
         except ValueError:
             return Response({"detail": "Invalid date."}, status=400)
 
-        barber = get_object_or_404(User, pk=barber_id)
-        prof = get_object_or_404(BarberProfile, user=barber)
+        barber = get_object_or_404(Barber, pk=barber_id)
+        prof = get_object_or_404(BarberProfile, barber=barber)
 
         id_list = [int(x) for x in service_ids.split(",") if x.strip().isdigit()]
         if not id_list:
@@ -210,4 +245,3 @@ class IndependentAvailabilityView(APIView):
             t += timedelta(minutes=slot_step)
 
         return Response({"slots": slots, "total_minutes": total_minutes})
-

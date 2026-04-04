@@ -17,7 +17,7 @@ type Step = 1 | 2 | 3 | 4;
 
 type BarberDetail = {
   id: number; // profile id
-  user_id: number;
+  barber_id: number;
   name: string;
   phone: string | null;
   avatar: string | null;
@@ -28,7 +28,7 @@ type BarberDetail = {
 export default function IndependentBookingFlow() {
   const params = useParams();
   const router = useRouter();
-  const barberId = params?.barberId as string; // this is user_id
+  const barberId = params?.barberId as string; // barber PK
 
   useEffect(() => {
     if (!barberId) return;
@@ -52,12 +52,12 @@ export default function IndependentBookingFlow() {
       setLoadingBarber(true);
       setErr(null);
       try {
-        // list doesn't have full services; we fetch by profile via /barbers/ then match by user_id
+        // list doesn't have full services; we fetch by profile via /barbers/ then match by barber_id
         const resList = await apiFetch("/api/v1/barbers/");
         if (!resList.ok) throw new Error("Barber topilmadi");
         const j = (await resList.json()) as { results?: BarberListApi[] } | BarberListApi[];
         const list = Array.isArray(j) ? j : j.results || [];
-        const row = list.find((x) => String(x.user_id) === String(barberId));
+        const row = list.find((x) => String(x.barber_id) === String(barberId));
         if (!row) throw new Error("Barber topilmadi");
         const res = await apiFetch(`/api/v1/barbers/${row.id}/`);
         if (!res.ok) throw new Error("Barber topilmadi");

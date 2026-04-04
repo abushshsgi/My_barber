@@ -28,7 +28,7 @@ export type SalonOnMap = Salon & { distance: number };
 
 export type BarberOnMap = {
   profileId: number;
-  userId: number;
+  barberId: number;
   name: string;
   lat: number;
   lng: number;
@@ -109,7 +109,7 @@ export default function MapInner({
   salons: SalonOnMap[];
   barbers: BarberOnMap[];
   onSelectSalon: (id: string | null) => void;
-  onSelectBarber: (userId: number | null) => void;
+  onSelectBarber: (barberId: number | null) => void;
   flyToMeTrigger: number;
   mapZoom: number;
 }) {
@@ -124,7 +124,7 @@ export default function MapInner({
   const barberIcons = useMemo(() => {
     const m = new Map<number, L.DivIcon>();
     barbers.forEach((b) => {
-      m.set(b.userId, barberDivIcon(b.avatarUrl));
+      m.set(b.barberId, barberDivIcon(b.avatarUrl));
     });
     return m;
   }, [barbers]);
@@ -217,21 +217,21 @@ export default function MapInner({
         })}
 
         {barbers.map((b) => {
-          const icon = barberIcons.get(b.userId) ?? barberDivIcon(b.avatarUrl);
+          const icon = barberIcons.get(b.barberId) ?? barberDivIcon(b.avatarUrl);
           return (
             <Marker
-              key={`barber-${b.userId}`}
+              key={`barber-${b.barberId}`}
               position={[b.lat, b.lng]}
               icon={icon}
               eventHandlers={{
                 click: () => {
                   onSelectSalon(null);
-                  onSelectBarber(b.userId);
+                  onSelectBarber(b.barberId);
                 },
               }}
             >
               <Popup className="map-popup-card" minWidth={220} maxWidth={280}>
-                <Link href={`/booking/barber/${b.userId}`} className="block">
+                <Link href={`/booking/barber/${b.barberId}`} className="block">
                   <div className="rounded-xl overflow-hidden border-2 border-amber-500/40 shadow-sm mb-2">
                     <img
                       src={b.avatarUrl}

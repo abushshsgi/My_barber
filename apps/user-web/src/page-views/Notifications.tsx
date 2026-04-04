@@ -266,7 +266,7 @@ const Notifications = () => {
                 {isWorkerAccepted && (
                   <div className="pl-[52px]">
                     <Button asChild size="sm" variant="secondary" className="rounded-xl h-9">
-                      <Link href={barberWebUrl("/barber/team")}>Jamoada tasdiqlash</Link>
+                      <Link href={barberWebUrl("/team")}>Jamoada tasdiqlash</Link>
                     </Button>
                   </div>
                 )}
@@ -274,7 +274,7 @@ const Notifications = () => {
                 {notif.type === "membership_active" && (
                   <div className="pl-[52px]">
                     <Button asChild size="sm" variant="secondary" className="rounded-xl h-9">
-                      <Link href={barberWebUrl("/barber")}>Sartarosh paneli</Link>
+                      <Link href={barberWebUrl("/")}>Sartarosh paneli</Link>
                     </Button>
                   </div>
                 )}

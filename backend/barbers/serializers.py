@@ -5,8 +5,8 @@ from .models import BarberProfile, BarberService, BarberWorkPhoto, BarberWorking
 
 def _public_avatar_url(obj, request):
     """Railway’da fayl yo‘qolgan bo‘lsa ImageField.url 500 bermasin."""
-    u = obj.user
-    f = getattr(u, "avatar", None)
+    b = obj.barber
+    f = getattr(b, "avatar", None)
     if not f or not getattr(f, "name", None):
         return None
     try:
@@ -37,19 +37,19 @@ class BarberWorkingHoursSerializer(serializers.ModelSerializer):
 
 
 class BarberPublicListSerializer(serializers.ModelSerializer):
-    name = serializers.CharField(source="user.full_name", read_only=True)
+    name = serializers.CharField(source="barber.full_name", read_only=True)
     phone = serializers.CharField(
-        source="user.phone", read_only=True, allow_null=True, allow_blank=True
+        source="barber.phone", read_only=True, allow_null=True, allow_blank=True
     )
     avatar = serializers.SerializerMethodField()
-    user_id = serializers.IntegerField(source="user.id", read_only=True)
+    barber_id = serializers.IntegerField(source="barber.id", read_only=True)
     active_services = serializers.SerializerMethodField()
 
     class Meta:
         model = BarberProfile
         fields = (
             "id",
-            "user_id",
+            "barber_id",
             "name",
             "phone",
             "location_text",
@@ -68,12 +68,12 @@ class BarberPublicListSerializer(serializers.ModelSerializer):
 
 
 class BarberPublicDetailSerializer(serializers.ModelSerializer):
-    name = serializers.CharField(source="user.full_name", read_only=True)
+    name = serializers.CharField(source="barber.full_name", read_only=True)
     phone = serializers.CharField(
-        source="user.phone", read_only=True, allow_null=True, allow_blank=True
+        source="barber.phone", read_only=True, allow_null=True, allow_blank=True
     )
     avatar = serializers.SerializerMethodField()
-    user_id = serializers.IntegerField(source="user.id", read_only=True)
+    barber_id = serializers.IntegerField(source="barber.id", read_only=True)
     services = BarberServiceSerializer(many=True, read_only=True)
     work_photos = BarberWorkPhotoSerializer(many=True, read_only=True)
 
@@ -81,7 +81,7 @@ class BarberPublicDetailSerializer(serializers.ModelSerializer):
         model = BarberProfile
         fields = (
             "id",
-            "user_id",
+            "barber_id",
             "name",
             "phone",
             "location_text",

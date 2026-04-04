@@ -21,10 +21,32 @@ export function clearTokens() {
   localStorage.removeItem(REFRESH_KEY);
 }
 
+function jwtPayloadType(token: string | null): "admin" | "barber" | "user" | null {
+  if (!token) return null;
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const json = atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"));
+    const payload = JSON.parse(json) as { type?: string };
+    if (payload.type === "admin_access" || payload.type === "admin_refresh") return "admin";
+    if (payload.type === "barber_access" || payload.type === "barber_refresh") return "barber";
+    return "user";
+  } catch {
+    return null;
+  }
+}
+
 async function refreshAccess(): Promise<string | null> {
   const refresh = localStorage.getItem(REFRESH_KEY);
   if (!refresh) return null;
-  const res = await fetch(`${API_BASE}/api/v1/auth/token/refresh/`, {
+  const kind = jwtPayloadType(refresh);
+  const url =
+    kind === "admin"
+      ? `${API_BASE}/api/v1/admin/auth/token/refresh/`
+      : kind === "barber"
+        ? `${API_BASE}/api/v1/barber/auth/token/refresh/`
+        : `${API_BASE}/api/v1/auth/token/refresh/`;
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refresh }),

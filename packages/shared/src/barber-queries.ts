@@ -10,7 +10,7 @@ export type BarberServiceApi = {
 
 export type BarberListApi = {
   id: number; // BarberProfile id
-  user_id: number;
+  barber_id: number;
   name: string;
   phone: string | null;
   location_text: string;

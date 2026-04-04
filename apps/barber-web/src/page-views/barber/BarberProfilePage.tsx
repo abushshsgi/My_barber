@@ -34,7 +34,7 @@ type BarberProfileApi = {
 };
 
 async function fetchMe(): Promise<Me> {
-  const res = await apiFetch("/api/v1/users/me/");
+  const res = await apiFetch("/api/v1/barber/auth/me/");
   if (!res.ok) throw new Error("Ma'lumot yuklanmadi");
   return res.json() as Promise<Me>;
 }
@@ -60,7 +60,7 @@ export default function BarberProfilePage() {
 
   const handleLogout = () => {
     clearTokens();
-    router.replace("/barber/auth");
+    router.replace("/auth");
   };
 
   if (loading) {
@@ -109,7 +109,7 @@ export default function BarberProfilePage() {
             </p>
           )}
           <Button variant="outline" className="w-full rounded-xl" asChild>
-            <Link href="/barber/independent/setup">
+            <Link href="/independent/setup">
               <Scissors className="h-4 w-4 mr-2" />
               Joylashuv va xizmatlar
             </Link>
@@ -118,7 +118,7 @@ export default function BarberProfilePage() {
 
         <Card className="p-0 overflow-hidden divide-y divide-border">
           <Link
-            href="/barber/notifications"
+            href="/notifications"
             className="flex items-center gap-3 p-4 text-sm hover:bg-muted/50 transition-colors"
           >
             <Bell className="h-5 w-5 text-muted-foreground" />

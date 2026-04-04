@@ -7,7 +7,7 @@ import { getAccessToken } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Loader2, LogIn } from "lucide-react";
 
-const PUBLIC_PREFIX = "/barber/auth";
+const PUBLIC_PREFIX = "/auth";
 
 function isPublicBarberPath(pathname: string): boolean {
   return pathname === PUBLIC_PREFIX || pathname.startsWith(`${PUBLIC_PREFIX}/`);
@@ -23,14 +23,14 @@ function BarberAuthGuardProtected({ children }: { children: React.ReactNode }) {
     typeof window !== "undefined"
       ? `${pathname}${window.location.search}`
       : pathname;
-  const loginHref = `/barber/auth?next=${encodeURIComponent(nextUrl)}`;
+  const loginHref = `/auth?next=${encodeURIComponent(nextUrl)}`;
 
   useEffect(() => {
     const next =
       typeof window !== "undefined"
         ? `${pathname}${window.location.search}`
         : pathname;
-    const href = `/barber/auth?next=${encodeURIComponent(next)}`;
+    const href = `/auth?next=${encodeURIComponent(next)}`;
     if (getAccessToken()) {
       setAllowed(true);
     } else {
@@ -68,7 +68,7 @@ function BarberAuthGuardProtected({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** Barcha `/barber/*` uchun: `/barber/auth` dan tashqari yo‘llar token talab qiladi. */
+/** `/auth` va `/pending` dan tashqari yo‘llar token talab qiladi. */
 export function BarberAuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   if (isPublicBarberPath(pathname)) {

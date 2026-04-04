@@ -42,10 +42,10 @@ class ServiceAdmin(admin.ModelAdmin):
 
 @admin.register(SalonMembership)
 class SalonMembershipAdmin(admin.ModelAdmin):
-    list_display = ("user", "salon", "role", "invite_state")
+    list_display = ("barber", "salon", "role", "invite_state")
     list_filter = ("role", "invite_state", "owner_approved")
-    search_fields = ("user__email", "user__full_name", "salon__name")
-    autocomplete_fields = ("user", "salon")
+    search_fields = ("barber__email", "barber__full_name", "salon__name")
+    autocomplete_fields = ("barber", "salon")
     list_per_page = 50
 
 

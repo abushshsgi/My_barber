@@ -7,6 +7,15 @@ class Notification(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="notifications",
+        null=True,
+        blank=True,
+    )
+    barber = models.ForeignKey(
+        "barbers.Barber",
+        on_delete=models.CASCADE,
+        related_name="notifications",
+        null=True,
+        blank=True,
     )
     type = models.CharField(max_length=64, db_index=True)
     title = models.CharField(max_length=255)

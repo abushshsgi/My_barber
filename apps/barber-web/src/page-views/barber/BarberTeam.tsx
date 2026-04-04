@@ -11,12 +11,12 @@ import type { SalonListApi } from "@/lib/mapSalon";
 
 type Membership = {
   id: number;
-  user: number;
+  barber: number;
   salon: number;
   salon_name: string;
   role: string;
   invite_state: string;
-  user_detail: { id: number; email: string; full_name: string; phone: string | null };
+  barber_detail: { id: number; email: string; full_name: string; phone: string | null };
 };
 
 function inviteStateLabel(state: string): string {
@@ -45,11 +45,11 @@ async function fetchMemberships(): Promise<Membership[]> {
   return Array.isArray(j) ? j : j.results || [];
 }
 
-async function searchUsers(q: string): Promise<UserHit[]> {
+async function searchBarbers(q: string): Promise<UserHit[]> {
   if (!q.trim()) return [];
-  const res = await apiFetch(`/api/v1/users/search/?q=${encodeURIComponent(q)}`);
+  const res = await apiFetch(`/api/v1/barbers/search/?q=${encodeURIComponent(q)}`);
   if (!res.ok) return [];
-  const j = (await res.json()) as { results?: UserHit[] } | UserHit[];
+  const j = (await res.json()) as UserHit[] | { results?: UserHit[] };
   return Array.isArray(j) ? j : j.results || [];
 }
 
@@ -71,18 +71,18 @@ const BarberTeam = () => {
   });
 
   const { data: hits = [] } = useQuery({
-    queryKey: ["user-search", search],
-    queryFn: () => searchUsers(search),
+    queryKey: ["barber-search", search],
+    queryFn: () => searchBarbers(search),
     enabled: search.trim().length >= 2,
   });
 
   const salonMembers = memberships.filter((m) => m.salon === activeSalon);
 
   const invite = useMutation({
-    mutationFn: async (userId: number) => {
+    mutationFn: async (barberId: number) => {
       const res = await apiFetch("/api/v1/memberships/invite/", {
         method: "POST",
-        body: JSON.stringify({ salon: activeSalon, user_id: userId }),
+        body: JSON.stringify({ salon: activeSalon, barber_id: barberId }),
       });
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
@@ -182,10 +182,10 @@ const BarberTeam = () => {
             salonMembers.map((m) => (
               <Card key={m.id} className="p-3 flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold">
-                  {(m.user_detail.full_name || m.user_detail.email).slice(0, 1).toUpperCase()}
+                  {(m.barber_detail.full_name || m.barber_detail.email).slice(0, 1).toUpperCase()}
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-sm">{m.user_detail.full_name || m.user_detail.email}</p>
+                  <p className="font-medium text-sm">{m.barber_detail.full_name || m.barber_detail.email}</p>
                   <p className="text-xs text-muted-foreground">{inviteStateLabel(m.invite_state)}</p>
                 </div>
                 <div className="flex flex-col gap-1 items-end">

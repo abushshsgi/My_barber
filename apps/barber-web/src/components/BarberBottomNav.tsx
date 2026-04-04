@@ -6,12 +6,12 @@ import { LayoutDashboard, Store, Users, Star, UserPlus, CircleUser } from "lucid
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/barber" },
-  { icon: Store, label: "Salon", path: "/barber/salon" },
-  { icon: Users, label: "Mijozlar", path: "/barber/clients" },
-  { icon: Star, label: "Sharhlar", path: "/barber/reviews" },
-  { icon: UserPlus, label: "Jamoa", path: "/barber/team" },
-  { icon: CircleUser, label: "Profil", path: "/barber/profile" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+  { icon: Store, label: "Salon", path: "/salon" },
+  { icon: Users, label: "Mijozlar", path: "/clients" },
+  { icon: Star, label: "Sharhlar", path: "/reviews" },
+  { icon: UserPlus, label: "Jamoa", path: "/team" },
+  { icon: CircleUser, label: "Profil", path: "/profile" },
 ];
 
 export function BarberBottomNav() {
@@ -21,7 +21,10 @@ export function BarberBottomNav() {
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card/95 backdrop-blur-lg">
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
         {navItems.map(({ icon: Icon, label, path }) => {
-          const active = pathname === path;
+          const active =
+            path === "/"
+              ? pathname === "/"
+              : pathname === path || pathname.startsWith(`${path}/`);
           return (
             <Link
               key={path}

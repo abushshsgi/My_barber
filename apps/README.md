@@ -6,7 +6,7 @@ Backend bitta serverda qoladi; uchta **mustaqil** Next.js loyihasi — kod va pa
 |--------|--------|---------------------|
 | `user-web` | Mijozlar: xarita, salon, bron | `http://localhost:3000` |
 | `admin-web` | Admin panel | `http://localhost:3001` (`/admin/...`) |
-| `barber-web` | Sartarosh kabineti | `http://localhost:3002` (`/barber/...`) |
+| `barber-web` | Sartarosh kabineti | `http://localhost:3002` — asosiy `/`, kirish `/auth` (`/barber` prefiksi yo‘q) |
 
 Umumiy API va utilitarlar: `../packages/shared` (`@/lib/*` orqali har bir ilovada ulanadi).
 

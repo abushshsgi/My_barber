@@ -11,7 +11,7 @@ const BarberPending = () => {
       <p className="text-muted-foreground max-w-xs mb-8">
         Sizning arizangiz ko&apos;rib chiqilmoqda. Admin tasdiqlashini kutmoqdasiz.
       </p>
-      <Link href="/barber/auth">
+      <Link href="/auth">
         <Button variant="outline" className="rounded-xl">Orqaga</Button>
       </Link>
     </div>

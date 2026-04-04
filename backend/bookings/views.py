@@ -11,10 +11,13 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.auth_utils import is_platform_admin, request_barber
 from accounts.models import User
+from barbers.barber_auth import BarberPrincipal
+from barbers.models import Barber
 from bookings.models import Booking, BookingCompletion, BookingLine, Review
 from notifications.serializers import NotificationSerializer
-from notifications.utils import notify_user
+from notifications.utils import notify_barber, notify_user
 from salons.models import BarberWorkingHours, Salon, SalonHours, SalonMembership, Service
 
 from .serializers import (
@@ -28,15 +31,15 @@ class BookingViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        q = self.request.user
         base = Booking.objects.select_related("customer", "salon", "barber").prefetch_related(
             "lines"
         )
-        if q.role == User.Role.ADMIN:
+        if is_platform_admin(self.request):
             return base
-        if q.role in (User.Role.BARBER_OWNER, User.Role.BARBER_STAFF):
-            return base.filter(Q(barber=q) | Q(salon__owner=q))
-        return base.filter(customer=q)
+        bp = request_barber(self.request)
+        if bp is not None:
+            return base.filter(Q(barber=bp) | Q(salon__owner_barber=bp))
+        return base.filter(customer=self.request.user)
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -44,10 +47,15 @@ class BookingViewSet(viewsets.ModelViewSet):
         return BookingSerializer
 
     def create(self, request, *args, **kwargs):
+        if isinstance(request.user, BarberPrincipal):
+            return Response(
+                {"detail": "Bron qilish uchun mijoz ilovasidan (User akkaunt) kiring."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         ser = BookingCreateSerializer(data=request.data, context={"request": request})
         ser.is_valid(raise_exception=True)
         booking = ser.save()
-        notify_user(
+        notify_barber(
             booking.barber,
             "new_booking",
             "Yangi bron",
@@ -59,7 +67,10 @@ class BookingViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def accept(self, request, pk=None):
         booking = self.get_object()
-        if booking.barber_id != request.user.id and booking.salon_id and booking.salon.owner_id != request.user.id:
+        bp = request_barber(request)
+        if bp is None:
+            return Response(status=403)
+        if booking.barber_id != bp.id and booking.salon_id and booking.salon.owner_barber_id != bp.id:
             return Response(status=403)
         if booking.status != Booking.Status.PENDING:
             return Response({"detail": "Invalid status."}, status=400)
@@ -77,7 +88,10 @@ class BookingViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def reject(self, request, pk=None):
         booking = self.get_object()
-        if booking.barber_id != request.user.id and booking.salon_id and booking.salon.owner_id != request.user.id:
+        bp = request_barber(request)
+        if bp is None:
+            return Response(status=403)
+        if booking.barber_id != bp.id and booking.salon_id and booking.salon.owner_barber_id != bp.id:
             return Response(status=403)
         booking.status = Booking.Status.REJECTED
         booking.save(update_fields=["status", "updated_at"])
@@ -87,7 +101,8 @@ class BookingViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def start(self, request, pk=None):
         booking = self.get_object()
-        if booking.barber_id != request.user.id:
+        bp = request_barber(request)
+        if bp is None or booking.barber_id != bp.id:
             return Response(status=403)
         if booking.status != Booking.Status.ACCEPTED:
             return Response({"detail": "Must be accepted."}, status=400)
@@ -98,7 +113,8 @@ class BookingViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def complete(self, request, pk=None):
         booking = self.get_object()
-        if booking.barber_id != request.user.id:
+        bp = request_barber(request)
+        if bp is None or booking.barber_id != bp.id:
             return Response(status=403)
         if booking.status not in (
             Booking.Status.ACCEPTED,
@@ -183,13 +199,13 @@ class SalonClientsView(APIView):
         if not salon_id:
             return Response({"detail": "salon query parameter required."}, status=400)
         salon = get_object_or_404(Salon, pk=salon_id)
-        user = request.user
-        if user.role == User.Role.ADMIN:
+        bp = request_barber(request)
+        if is_platform_admin(request):
             pass
-        elif salon.owner_id == user.id:
+        elif bp is not None and bp.id == salon.owner_barber_id:
             pass
-        elif SalonMembership.objects.filter(
-            user=user,
+        elif bp is not None and SalonMembership.objects.filter(
+            barber=bp,
             salon=salon,
             invite_state=SalonMembership.InviteState.ACTIVE,
         ).exists():
@@ -250,10 +266,10 @@ class BookingAvailabilityView(APIView):
             return Response({"detail": "Invalid date."}, status=400)
 
         salon = get_object_or_404(Salon, pk=salon_id, is_published=True)
-        barber = get_object_or_404(User, pk=barber_id)
+        barber = get_object_or_404(Barber, pk=barber_id)
 
         if not SalonMembership.objects.filter(
-            user=barber,
+            barber=barber,
             salon=salon,
             invite_state=SalonMembership.InviteState.ACTIVE,
         ).exists():
@@ -282,7 +298,7 @@ class BookingAvailabilityView(APIView):
             return Response({"slots": []})
 
         mem = SalonMembership.objects.filter(
-            user=barber,
+            barber=barber,
             salon=salon,
             invite_state=SalonMembership.InviteState.ACTIVE,
         ).first()
@@ -334,7 +350,6 @@ class AnalyticsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        user = request.user
         salon_id = request.query_params.get("salon")
         start = request.query_params.get("start")
         end = request.query_params.get("end")
@@ -356,12 +371,13 @@ class AnalyticsView(APIView):
         salon = Salon.objects.filter(pk=salon_id).first()
         if not salon:
             return Response(status=404)
-        if user.role == User.Role.ADMIN:
+        bp = request_barber(request)
+        if is_platform_admin(request):
             allowed = True
-        elif salon.owner_id == user.id:
+        elif bp is not None and bp.id == salon.owner_barber_id:
             allowed = True
-        elif SalonMembership.objects.filter(
-            user=user,
+        elif bp is not None and SalonMembership.objects.filter(
+            barber=bp,
             salon=salon,
             invite_state=SalonMembership.InviteState.ACTIVE,
         ).exists():
@@ -434,7 +450,10 @@ class NotificationListView(generics.ListAPIView):
     def get_queryset(self):
         from notifications.models import Notification
 
-        return Notification.objects.filter(user=self.request.user).order_by("-created_at")[:100]
+        u = self.request.user
+        if isinstance(u, BarberPrincipal):
+            return Notification.objects.filter(barber=u.barber).order_by("-created_at")[:100]
+        return Notification.objects.filter(user=u).order_by("-created_at")[:100]
 
 
 class NotificationMarkReadView(APIView):
@@ -443,7 +462,11 @@ class NotificationMarkReadView(APIView):
     def post(self, request, pk):
         from notifications.models import Notification
 
-        n = get_object_or_404(Notification, pk=pk, user=request.user)
+        u = request.user
+        if isinstance(u, BarberPrincipal):
+            n = get_object_or_404(Notification, pk=pk, barber=u.barber)
+        else:
+            n = get_object_or_404(Notification, pk=pk, user=u)
         n.read_at = timezone.now()
         n.save(update_fields=["read_at"])
         return Response({"status": "ok"})

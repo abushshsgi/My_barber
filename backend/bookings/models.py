@@ -24,7 +24,7 @@ class Booking(models.Model):
         related_name="bookings",
     )
     barber = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        "barbers.Barber",
         on_delete=models.CASCADE,
         related_name="barber_bookings",
     )
@@ -106,7 +106,7 @@ class Review(models.Model):
         related_name="reviews",
     )
     barber = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        "barbers.Barber",
         on_delete=models.CASCADE,
         related_name="reviews_about",
     )

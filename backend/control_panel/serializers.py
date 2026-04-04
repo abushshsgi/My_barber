@@ -37,9 +37,9 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
         fields = ("role", "is_active", "full_name", "phone", "region")
 
     def validate_role(self, value):
-        allowed = {c[0] for c in User.Role.choices}
+        allowed = {User.Role.USER}
         if value not in allowed:
-            raise serializers.ValidationError("Invalid role.")
+            raise serializers.ValidationError("Faqat mijoz roliga ruxsat.")
         return value
 
     def validate_region(self, value):
@@ -52,8 +52,8 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
 
 
 class AdminSalonSerializer(serializers.ModelSerializer):
-    owner_email = serializers.EmailField(source="owner.email", read_only=True)
-    owner_name = serializers.CharField(source="owner.full_name", read_only=True)
+    owner_email = serializers.EmailField(source="owner_barber.email", read_only=True)
+    owner_name = serializers.CharField(source="owner_barber.full_name", read_only=True)
 
     class Meta:
         model = Salon
@@ -61,7 +61,7 @@ class AdminSalonSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "slug",
-            "owner",
+            "owner_barber",
             "owner_email",
             "owner_name",
             "address",
@@ -72,7 +72,7 @@ class AdminSalonSerializer(serializers.ModelSerializer):
             "longitude",
             "created_at",
         )
-        read_only_fields = ("id", "slug", "owner", "created_at")
+        read_only_fields = ("id", "slug", "owner_barber", "created_at")
 
 
 class AdminSalonUpdateSerializer(serializers.ModelSerializer):

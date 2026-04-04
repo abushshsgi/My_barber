@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,32 +14,20 @@ import {
 } from "@/components/ui/select";
 import { Scissors, Eye, EyeOff, MapPin, Loader2 } from "lucide-react";
 import { UZ_REGIONS } from "@/lib/uz-regions";
-import { apiFetch, setTokens } from "@/lib/api";
+import { apiFetch, formatApiError, setTokens } from "@/lib/api";
+import { barberAuthMessages } from "@/lib/i18n/barber-auth";
+import { userWebUrl } from "@/lib/public-urls";
+import { useLocale } from "@/providers/locale-provider";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import Link from "next/link";
 
 const STEPS = 4;
 
-function parseRegisterError(data: unknown): string {
-  if (data && typeof data === "object") {
-    const d = data as Record<string, unknown>;
-    if (typeof d.detail === "string") return d.detail;
-    if (typeof d.email === "object" && d.email !== null) {
-      const e = (d.email as string[])[0];
-      if (e) return String(e);
-    }
-    if (typeof d.non_field_errors === "object" && Array.isArray(d.non_field_errors)) {
-      return String(d.non_field_errors[0] ?? "Xato");
-    }
-    const parts = Object.entries(d)
-      .filter(([k]) => k !== "detail")
-      .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : String(v)}`)
-      .join("; ");
-    if (parts) return parts;
-  }
-  return "Ro'yxatdan o'tishda xato";
-}
-
 export default function BarberAuth() {
   const router = useRouter();
+  const { locale } = useLocale();
+  const t = useMemo(() => barberAuthMessages[locale], [locale]);
+
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [signupStep, setSignupStep] = useState(1);
   const [showPass, setShowPass] = useState(false);
@@ -60,7 +48,7 @@ export default function BarberAuth() {
     setErr(null);
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setGeoStatus("error");
-      setErr("Brauzer joylashuvni qo‘llab-quvvatlamaydi. Quyida lat/lng qo‘lda kiriting.");
+      setErr(t.errGeoNoBrowser);
       return;
     }
     setGeoStatus("loading");
@@ -72,9 +60,7 @@ export default function BarberAuth() {
       },
       () => {
         setGeoStatus("error");
-        setErr(
-          "Joylashuv olinmadi. Ruxsat bering yoki quyidagi maydonlarga lat/lng kiriting."
-        );
+        setErr(t.errGeoFailed);
       },
       { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
     );
@@ -84,18 +70,17 @@ export default function BarberAuth() {
     setErr(null);
     setLoading(true);
     try {
-      const res = await apiFetch("/api/v1/auth/token/", {
+      const res = await apiFetch("/api/v1/barber/auth/token/", {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
       if (!res.ok) {
-        const detail = (data as { detail?: string }).detail;
-        setErr(typeof detail === "string" ? detail : "Xato");
+        setErr(formatApiError(data, t.errLoginFail));
         return;
       }
       setTokens(data.access, data.refresh);
-      let dest = "/barber";
+      let dest = "/";
       if (typeof window !== "undefined") {
         const n = new URLSearchParams(window.location.search).get("next");
         if (n && n.startsWith("/") && !n.startsWith("//")) {
@@ -112,11 +97,11 @@ export default function BarberAuth() {
     setErr(null);
     if (signupStep === 1) {
       if (!fullName.trim() || !email.trim() || password.length < 8) {
-        setErr("Ism, email va kamida 8 belgili parol kiriting.");
+        setErr(t.errStep1);
         return;
       }
       if (!region) {
-        setErr("O'zbekiston viloyatini tanlang.");
+        setErr(t.errRegion);
         return;
       }
     }
@@ -124,17 +109,17 @@ export default function BarberAuth() {
       const la = parseFloat(lat);
       const ln = parseFloat(lng);
       if (Number.isNaN(la) || Number.isNaN(ln)) {
-        setErr("Joylashuvni oling yoki lat/lng kiriting.");
+        setErr(t.errStep2);
         return;
       }
       if (!(-90 <= la && la <= 90) || !(-180 <= ln && ln <= 180)) {
-        setErr("latitude / longitude noto‘g‘ri.");
+        setErr(t.errLatLng);
         return;
       }
     }
     if (signupStep === 3) {
       if (hasSalon === null) {
-        setErr("«Saloningiz bormi?» savoliga javob bering.");
+        setErr(t.errSalonChoice);
         return;
       }
     }
@@ -146,17 +131,17 @@ export default function BarberAuth() {
   const submitSignup = async () => {
     setErr(null);
     if (!region) {
-      setErr("Viloyatni tanlang.");
+      setErr(t.errSubmitRegion);
       return;
     }
     if (hasSalon === null) {
-      setErr("Salon tanlovi yo‘q.");
+      setErr(t.errSubmitSalon);
       return;
     }
     const la = parseFloat(lat);
     const ln = parseFloat(lng);
     if (Number.isNaN(la) || Number.isNaN(ln)) {
-      setErr("Joylashuv kerak.");
+      setErr(t.errSubmitLoc);
       return;
     }
     setLoading(true);
@@ -177,20 +162,20 @@ export default function BarberAuth() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setErr(parseRegisterError(data));
+        setErr(formatApiError(data, t.errSignupFail));
         return;
       }
-      const tr = await apiFetch("/api/v1/auth/token/", {
+      const tr = await apiFetch("/api/v1/barber/auth/token/", {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
       const tok = await tr.json();
       if (!tr.ok) {
-        setErr((tok as { detail?: string }).detail || "Kirish muvaffaqiyatsiz");
+        setErr(formatApiError(tok, t.errLoginFail));
         return;
       }
       setTokens(tok.access, tok.refresh);
-      router.push(hasSalon ? "/barber/salon" : "/barber/salon/create");
+      router.push(hasSalon ? "/salon" : "/salon/create");
     } finally {
       setLoading(false);
     }
@@ -199,28 +184,33 @@ export default function BarberAuth() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
       <div className="w-full max-w-sm">
+        <div className="flex items-center justify-end gap-2 mb-4">
+          <span className="text-xs text-muted-foreground">{t.langHint}</span>
+          <LanguageSwitcher />
+        </div>
+
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl gold-gradient flex items-center justify-center mx-auto mb-3">
             <Scissors className="h-8 w-8 text-gold-foreground" />
           </div>
-          <h1 className="text-2xl font-bold">MyBarber</h1>
-          <p className="text-sm text-muted-foreground mt-1">Sartaroshlar uchun</p>
+          <h1 className="text-2xl font-bold">{t.title}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{t.subtitle}</p>
         </div>
 
         {err && <p className="text-sm text-destructive mb-2 text-center">{err}</p>}
 
         {mode === "login" ? (
           <Card className="p-5 space-y-4">
-            <h2 className="text-lg font-semibold text-center">Kirish</h2>
+            <h2 className="text-lg font-semibold text-center">{t.loginTitle}</h2>
             <Input
-              placeholder="Email"
+              placeholder={t.emailPh}
               className="rounded-xl"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
             <div className="relative">
               <Input
-                placeholder="Parol"
+                placeholder={t.passwordPh}
                 type={showPass ? "text" : "password"}
                 className="rounded-xl pr-10"
                 value={password}
@@ -243,27 +233,35 @@ export default function BarberAuth() {
               disabled={loading}
               className="w-full rounded-xl gold-gradient text-gold-foreground border-0"
             >
-              Kirish
+              {t.signIn}
             </Button>
+            <p className="text-center text-xs">
+              <Link href={userWebUrl("/auth")} className="text-muted-foreground underline">
+                {t.userLoginLink}
+              </Link>
+            </p>
             <p className="text-center text-sm text-muted-foreground">
-              Akkaunt yo&apos;qmi?{" "}
+              {t.noAccount}{" "}
               <button
                 type="button"
                 onClick={() => setMode("signup")}
                 className="text-accent font-medium"
               >
-                Ro&apos;yxatdan o&apos;tish
+                {t.signUp}
               </button>
             </p>
           </Card>
         ) : (
           <Card className="p-5 space-y-4">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-semibold">Ro&apos;yxatdan o&apos;tish</h2>
-              <span className="text-xs text-muted-foreground">
-                {signupStep}/{STEPS}
+            <div className="flex items-center justify-between mb-2 gap-2">
+              <h2 className="text-lg font-semibold">{t.signupTitle}</h2>
+              <span className="text-xs text-muted-foreground shrink-0">
+                {t.step} {signupStep}/{STEPS}
               </span>
             </div>
+            <p className="text-xs text-muted-foreground -mt-1 mb-1">
+              {t.langHint}: {locale.toUpperCase()}
+            </p>
             <div className="flex gap-1.5">
               {Array.from({ length: STEPS }, (_, i) => i + 1).map((s) => (
                 <div
@@ -276,36 +274,36 @@ export default function BarberAuth() {
             {signupStep === 1 && (
               <div className="space-y-3">
                 <Input
-                  placeholder="To‘liq ism"
+                  placeholder={t.namePh}
                   className="rounded-xl"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                 />
                 <Input
-                  placeholder="Telefon (ixtiyoriy)"
+                  placeholder={t.phonePh}
                   className="rounded-xl"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                 />
                 <Input
-                  placeholder="Email"
+                  placeholder={t.emailPh}
                   className="rounded-xl"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
                 <Input
-                  placeholder="Parol (kamida 8 belgi)"
+                  placeholder={t.passwordMinPh}
                   type="password"
                   className="rounded-xl"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <div className="space-y-1.5">
-                  <label className="text-xs text-muted-foreground">Viloyat</label>
+                  <label className="text-xs text-muted-foreground">{t.regionLabel}</label>
                   <Select value={region || undefined} onValueChange={setRegion}>
                     <SelectTrigger className="rounded-xl w-full">
-                      <SelectValue placeholder="Viloyatni tanlang" />
+                      <SelectValue placeholder={t.regionPlaceholder} />
                     </SelectTrigger>
                     <SelectContent>
                       {UZ_REGIONS.map((r) => (
@@ -321,9 +319,7 @@ export default function BarberAuth() {
 
             {signupStep === 2 && (
               <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Tasdiqlash va keyingi qadamlar uchun joylashuv majburiy.
-                </p>
+                <p className="text-sm text-muted-foreground">{t.geoIntro}</p>
                 <Button
                   type="button"
                   variant="secondary"
@@ -334,45 +330,40 @@ export default function BarberAuth() {
                   {geoStatus === "loading" ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Olinmoqda...
+                      {t.geoLoading}
                     </>
                   ) : (
                     <>
                       <MapPin className="h-4 w-4 mr-2" />
-                      Joylashuvni olish (GPS)
+                      {t.geoBtn}
                     </>
                   )}
                 </Button>
                 {geoStatus === "ok" && (
-                  <p className="text-xs text-success font-medium">Joylashuv saqlandi.</p>
+                  <p className="text-xs text-success font-medium">{t.geoSaved}</p>
                 )}
                 <div className="grid grid-cols-2 gap-2">
                   <Input
-                    placeholder="latitude"
+                    placeholder={t.geoLatPh}
                     className="rounded-xl"
                     value={lat}
                     onChange={(e) => setLat(e.target.value)}
                   />
                   <Input
-                    placeholder="longitude"
+                    placeholder={t.geoLngPh}
                     className="rounded-xl"
                     value={lng}
                     onChange={(e) => setLng(e.target.value)}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  GPS ishlamasa, xaritadan nuqtani qo‘lda kiriting.
-                </p>
+                <p className="text-xs text-muted-foreground">{t.geoManualHint}</p>
               </div>
             )}
 
             {signupStep === 3 && (
               <div className="space-y-4">
-                <p className="text-sm font-medium text-center">Saloningiz bormi?</p>
-                <p className="text-xs text-muted-foreground text-center">
-                  Ha — mavjud salonga qo‘shilasiz (joylashuv tekshiriladi). Yo‘q — o‘zingiz salon
-                  yaratasiz.
-                </p>
+                <p className="text-sm font-medium text-center">{t.salonQuestion}</p>
+                <p className="text-xs text-muted-foreground text-center">{t.salonExplain}</p>
                 <div className="grid grid-cols-2 gap-3">
                   <Button
                     type="button"
@@ -380,7 +371,7 @@ export default function BarberAuth() {
                     className={`rounded-xl h-12 ${hasSalon === true ? "gold-gradient text-gold-foreground border-0" : ""}`}
                     onClick={() => setHasSalon(true)}
                   >
-                    Ha
+                    {t.yes}
                   </Button>
                   <Button
                     type="button"
@@ -388,7 +379,7 @@ export default function BarberAuth() {
                     className={`rounded-xl h-12 ${hasSalon === false ? "gold-gradient text-gold-foreground border-0" : ""}`}
                     onClick={() => setHasSalon(false)}
                   >
-                    Yo‘q
+                    {t.no}
                   </Button>
                 </div>
               </div>
@@ -396,21 +387,22 @@ export default function BarberAuth() {
 
             {signupStep === 4 && (
               <div className="text-center py-2 space-y-2 text-sm">
-                <p className="font-semibold">Ma&apos;lumotlarni tekshiring</p>
+                <p className="font-semibold">{t.reviewTitle}</p>
                 <ul className="text-left text-muted-foreground text-xs space-y-1 rounded-xl bg-muted/40 p-3">
-                  <li>Ism: {fullName}</li>
-                  <li>Email: {email}</li>
                   <li>
-                    Viloyat: {UZ_REGIONS.find((r) => r.value === region)?.label ?? region}
+                    {t.reviewName}: {fullName}
                   </li>
                   <li>
-                    Joylashuv: {lat}, {lng}
+                    {t.reviewEmail}: {email}
                   </li>
                   <li>
-                    Salon:{" "}
-                    {hasSalon
-                      ? "Keyin salon yo‘li sahifasi (mavjud salonga qo‘shilish va boshqalar)"
-                      : "Yangi salon yaratish sahifasi"}
+                    {t.reviewRegion}: {UZ_REGIONS.find((r) => r.value === region)?.label ?? region}
+                  </li>
+                  <li>
+                    {t.reviewLoc}: {lat}, {lng}
+                  </li>
+                  <li>
+                    {t.reviewSalon}: {hasSalon ? t.reviewSalonYes : t.reviewSalonNo}
                   </li>
                 </ul>
               </div>
@@ -422,7 +414,7 @@ export default function BarberAuth() {
                 disabled={loading}
                 className="w-full rounded-xl gold-gradient text-gold-foreground border-0"
               >
-                Davom etish
+                {t.continue}
               </Button>
             ) : (
               <Button
@@ -430,19 +422,19 @@ export default function BarberAuth() {
                 disabled={loading}
                 className="w-full rounded-xl gold-gradient text-gold-foreground border-0"
               >
-                {loading ? "Jo‘natilmoqda..." : "Ro‘yxatdan o‘tish"}
+                {loading ? t.submitting : t.signUp}
               </Button>
             )}
 
             {signupStep === 1 && (
               <p className="text-center text-sm text-muted-foreground">
-                Akkaunt bormi?{" "}
+                {t.haveAccount}{" "}
                 <button
                   type="button"
                   onClick={() => setMode("login")}
                   className="text-accent font-medium"
                 >
-                  Kirish
+                  {t.signIn}
                 </button>
               </p>
             )}

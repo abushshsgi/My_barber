@@ -86,7 +86,7 @@ export default function IndependentBarberSetup() {
 
   useEffect(() => {
     if (!getAccessToken()) {
-      router.replace(`/barber/auth?next=${encodeURIComponent("/barber/independent/setup")}`);
+      router.replace(`/auth?next=${encodeURIComponent("/independent/setup")}`);
     }
   }, [router]);
 

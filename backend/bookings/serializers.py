@@ -6,7 +6,7 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from bookings.models import Booking, BookingCompletion, BookingLine, Review
-from barbers.models import BarberProfile, BarberService
+from barbers.models import Barber, BarberProfile, BarberService
 from salons.models import Salon, SalonMembership, Service
 
 User = get_user_model()
@@ -53,7 +53,7 @@ class BookingCreateSerializer(serializers.Serializer):
         required=False,
         allow_null=True,
     )
-    barber = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    barber = serializers.PrimaryKeyRelatedField(queryset=Barber.objects.all())
     start_at = serializers.DateTimeField()
     service_ids = serializers.ListField(child=serializers.IntegerField(), min_length=1, required=False)
     barber_service_ids = serializers.ListField(
@@ -77,7 +77,7 @@ class BookingCreateSerializer(serializers.Serializer):
 
         if is_salon_flow:
             if not SalonMembership.objects.filter(
-                user=barber,
+                barber=barber,
                 salon=salon,
                 invite_state=SalonMembership.InviteState.ACTIVE,
             ).exists():
@@ -93,11 +93,11 @@ class BookingCreateSerializer(serializers.Serializer):
             if len(services) != len(set(service_ids)):
                 raise serializers.ValidationError("Invalid or duplicate services.")
         else:
-            if not BarberProfile.objects.filter(user=barber).exists():
+            if not BarberProfile.objects.filter(barber=barber).exists():
                 raise serializers.ValidationError({"barber": "Barber profile not found."})
             services = list(
                 BarberService.objects.filter(
-                    profile__user=barber,
+                    profile__barber=barber,
                     id__in=barber_service_ids,
                     is_active=True,
                 )

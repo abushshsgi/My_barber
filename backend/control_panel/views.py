@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import BarberApplication, User
+from barbers.models import Barber
 from accounts.permissions import IsAdmin
 from bookings.models import Booking
 from bookings.serializers import BookingSerializer
@@ -27,9 +28,7 @@ class AdminStatsView(APIView):
         today = timezone.localdate()
 
         users_mijoz = User.objects.filter(role=User.Role.USER).count()
-        barbers = User.objects.filter(
-            role__in=(User.Role.BARBER_OWNER, User.Role.BARBER_STAFF)
-        ).count()
+        barbers = Barber.objects.count()
         salons_pub = Salon.objects.filter(is_published=True).count()
         salons_pending = Salon.objects.filter(is_published=False).count()
         apps_pending = BarberApplication.objects.filter(

@@ -124,6 +124,8 @@ AUTH_USER_MODEL = "accounts.User"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
+        "accounts.admin_auth.AdminJWTAuthentication",
+        "barbers.barber_auth.BarberJWTAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
@@ -143,14 +145,57 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
 }
 
-CORS_ALLOWED_ORIGINS = [
-    o.strip()
-    for o in os.environ.get(
-        "CORS_ALLOWED_ORIGINS",
-        "http://localhost:3000,http://127.0.0.1:3000",
-    ).split(",")
-    if o.strip()
-]
+def _normalize_cors_origin(part: str) -> str:
+    """Vercel/Railway .env da qo'shtirnoq yoki oxiridagi / tufayli CORS mos kelmasligi oldini olish."""
+    part = part.strip().strip('"').strip("'")
+    return part.rstrip("/")
+
+
+def _cors_allowed_origins():
+    """
+    Har bir frontend uchun alohida o'zgaruvchi (tavsiya):
+      FRONTEND_USER_ORIGIN, FRONTEND_ADMIN_ORIGIN, FRONTEND_BARBER_ORIGIN
+    Har biri bitta URL yoki vergul bilan bir nechta URL bo'lishi mumkin.
+    Qo'shimcha yoki eski deploylar uchun: CORS_ALLOWED_ORIGINS (vergul bilan ro'yxat).
+    Hech biri bo'lmasa — lokal uchta port (3000/3001/3002) uchun defaultlar.
+    """
+    chunks: list[str] = []
+    for key in (
+        "FRONTEND_USER_ORIGIN",
+        "FRONTEND_ADMIN_ORIGIN",
+        "FRONTEND_BARBER_ORIGIN",
+    ):
+        raw = os.environ.get(key, "").strip()
+        if raw:
+            for part in raw.split(","):
+                part = _normalize_cors_origin(part)
+                if part:
+                    chunks.append(part)
+    legacy = os.environ.get("CORS_ALLOWED_ORIGINS", "").strip()
+    if legacy:
+        for part in legacy.split(","):
+            part = _normalize_cors_origin(part)
+            if part:
+                chunks.append(part)
+    if not chunks:
+        chunks = [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:3001",
+            "http://127.0.0.1:3001",
+            "http://localhost:3002",
+            "http://127.0.0.1:3002",
+        ]
+    seen: set[str] = set()
+    out: list[str] = []
+    for o in chunks:
+        if o not in seen:
+            seen.add(o)
+            out.append(o)
+    return out
+
+
+CORS_ALLOWED_ORIGINS = _cors_allowed_origins()
 CORS_ALLOW_CREDENTIALS = True
 
 EMAIL_BACKEND = os.environ.get(

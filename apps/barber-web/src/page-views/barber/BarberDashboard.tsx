@@ -118,7 +118,7 @@ const BarberDashboard = () => {
             <p className="text-sm text-muted-foreground">Haftalik ko&apos;rinish</p>
           </div>
           <Link
-            href="/barber/notifications"
+            href="/notifications"
             className="w-10 h-10 rounded-xl border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
             aria-label="Xabarnomalar"
           >

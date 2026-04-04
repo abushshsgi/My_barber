@@ -31,7 +31,7 @@ export type SalonOnMap = Salon & { distance: number };
 
 type BarberNearbyApi = {
   id: number;
-  user_id: number;
+  barber_id: number;
   name: string;
   latitude: string | null;
   longitude: string | null;
@@ -62,7 +62,7 @@ function mapBarberNearby(r: BarberNearbyApi): BarberOnMap {
   const avatar = mediaSrc(r.avatar, PLACEHOLDER_AVATAR);
   return {
     profileId: r.id,
-    userId: r.user_id,
+    barberId: r.barber_id,
     name: r.name?.trim() || "Barber",
     lat: parseFloat(r.latitude ?? "0") || 0,
     lng: parseFloat(r.longitude ?? "0") || 0,
@@ -90,7 +90,7 @@ async function fetchNearbyBarbers(
 export default function MapView() {
   const [radius, setRadius] = useState<number>(2);
   const [selectedSalon, setSelectedSalon] = useState<string | null>(null);
-  const [selectedBarberUserId, setSelectedBarberUserId] = useState<number | null>(null);
+  const [selectedBarberId, setSelectedBarberId] = useState<number | null>(null);
   const [coords, setCoords] = useState<{ lat: number; lng: number }>(DEFAULT_CENTER);
   const [geoHint, setGeoHint] = useState<"pending" | "ok" | "fallback">("pending");
   const [flyMe, setFlyMe] = useState(0);
@@ -134,7 +134,7 @@ export default function MapView() {
   const loading = loadingSalons || loadingBarbers;
 
   const selectedSalonObj = salons.find((s) => s.id === selectedSalon);
-  const selectedBarberObj = barbers.find((b) => b.userId === selectedBarberUserId);
+  const selectedBarberObj = barbers.find((b) => b.barberId === selectedBarberId);
 
   /** Salon/barber faqat ro‘yxatga kiritilgan haqiqiy koordinatalarda — radius sizdan masofaga qarab */
   const salonsOnMap = useMemo(
@@ -250,11 +250,11 @@ export default function MapView() {
             barbers={barbersOnMap}
             onSelectSalon={(id) => {
               setSelectedSalon(id);
-              if (id) setSelectedBarberUserId(null);
+              if (id) setSelectedBarberId(null);
             }}
-            onSelectBarber={(uid) => {
-              setSelectedBarberUserId(uid);
-              if (uid != null) setSelectedSalon(null);
+            onSelectBarber={(bid) => {
+              setSelectedBarberId(bid);
+              if (bid != null) setSelectedSalon(null);
             }}
             flyToMeTrigger={flyMe}
             mapZoom={MAP_ZOOM}
@@ -335,7 +335,7 @@ export default function MapView() {
                 </div>
               </div>
               <Link
-                href={`/booking/barber/${selectedBarberObj.userId}`}
+                href={`/booking/barber/${selectedBarberObj.barberId}`}
                 className="mt-2 sm:mt-2.5 flex items-center justify-center gap-1.5 w-full py-2 rounded-lg sm:rounded-xl bg-amber-600 text-white text-xs sm:text-sm font-semibold"
               >
                 Bron qilish <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />

@@ -33,7 +33,7 @@ export function BarberCard({ barber }: { barber: BarberListApi }) {
           </p>
         </div>
         <Button asChild size="sm" className="rounded-xl gold-gradient text-gold-foreground border-0">
-          <Link href={`/booking/barber/${barber.user_id}`}>
+          <Link href={`/booking/barber/${barber.barber_id}`}>
             <Scissors className="h-4 w-4 mr-1" /> Book
           </Link>
         </Button>

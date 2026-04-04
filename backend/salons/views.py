@@ -11,10 +11,11 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from accounts.models import BarberApplication, User
+from accounts.auth_utils import is_platform_admin, request_barber
+from accounts.models import BarberApplication
 from accounts.throttles import SalonJoinThrottle, SalonSearchThrottle
-from barbers.models import BarberProfile
-from notifications.utils import notify_user
+from barbers.models import Barber, BarberProfile
+from notifications.utils import notify_barber, notify_user
 
 from .models import BarberWorkingHours, Salon, SalonImage, SalonMembership, Service
 from .serializers import (
@@ -82,16 +83,18 @@ class SalonViewSet(viewsets.ModelViewSet):
             return self._salon_public_list_qs()
 
         if self.action == "retrieve":
-            user = self.request.user
-            if user.is_authenticated:
+            bp = request_barber(self.request)
+            if bp is not None:
                 return qs.filter(
                     Q(is_published=True)
-                    | Q(owner=user)
+                    | Q(owner_barber=bp)
                     | Q(
-                        memberships__user=user,
+                        memberships__barber=bp,
                         memberships__invite_state=SalonMembership.InviteState.ACTIVE,
                     )
                 ).distinct()
+            if self.request.user.is_authenticated:
+                return qs.filter(is_published=True)
             return qs.filter(is_published=True)
 
         return qs
@@ -106,20 +109,20 @@ class SalonViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         from rest_framework.exceptions import PermissionDenied
 
-        if self.request.user.role != User.Role.BARBER_OWNER:
-            raise PermissionDenied("Faqat barber (salon egasi) rolida salon yaratish mumkin.")
+        bp = request_barber(self.request)
+        if bp is None:
+            raise PermissionDenied("Faqat sartarosh akkaunti bilan salon yaratish mumkin.")
         try:
-            app = self.request.user.barber_application
+            app = bp.barber_application
         except BarberApplication.DoesNotExist:
             app = None
-        # Ariza bo‘lsa va AUTO_APPROVE o‘chiq bo‘lsa — tasdiqlangan bo‘lishi kerak. Ariza yo‘q bo‘lsa ham salon ochish mumkin (admin alohida tasdiq talab qilinmaydi).
         if app is not None:
             auto = getattr(django_settings, "AUTO_APPROVE_BARBERS", True)
             if not auto and app.status != BarberApplication.Status.APPROVED:
                 raise PermissionDenied("Barber arizasi admin tomonidan tasdiqlanmagan.")
-        salon = serializer.save(owner=self.request.user)
+        salon = serializer.save(owner_barber=bp)
         SalonMembership.objects.get_or_create(
-            user=self.request.user,
+            barber=bp,
             salon=salon,
             defaults={
                 "role": SalonMembership.Role.OWNER,
@@ -129,7 +132,11 @@ class SalonViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         salon = self.get_object()
-        if salon.owner_id != self.request.user.id and self.request.user.role != User.Role.ADMIN:
+        bp = request_barber(self.request)
+        allowed = is_platform_admin(self.request) or (
+            bp is not None and salon.owner_barber_id == bp.id
+        )
+        if not allowed:
             from rest_framework.exceptions import PermissionDenied
 
             raise PermissionDenied()
@@ -137,13 +144,15 @@ class SalonViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
     def mine(self, request):
-        """Salons the user owns or works at (active membership)."""
-        u = request.user
+        """Salon egasi yoki faol a’zo bo‘lgan sartaroshlar."""
+        bp = request_barber(request)
+        if bp is None:
+            return Response([])
         qs = (
             Salon.objects.filter(
-                Q(owner=u)
+                Q(owner_barber=bp)
                 | Q(
-                    memberships__user=u,
+                    memberships__barber=bp,
                     memberships__invite_state=SalonMembership.InviteState.ACTIVE,
                 )
             )
@@ -222,27 +231,25 @@ class SalonViewSet(viewsets.ModelViewSet):
         if dist_km > JOIN_MAX_DISTANCE_KM:
             return Response({"detail": LOCATION_MISMATCH_MSG}, status=400)
 
-        if Salon.objects.filter(owner=request.user).exists():
+        bp = request_barber(request)
+        if bp is None:
+            raise PermissionDenied("Faqat sartarosh akkaunti bilan qo‘shilish mumkin.")
+
+        if Salon.objects.filter(owner_barber=bp).exists():
             raise PermissionDenied(
                 "Salon egasi boshqa salonoga ishchi sifatida qo'shila olmaydi."
             )
 
-        if request.user.role not in (
-            User.Role.BARBER_OWNER,
-            User.Role.BARBER_STAFF,
-        ):
-            raise PermissionDenied("Faqat barber hisob qo'shilishi mumkin.")
-
         with transaction.atomic():
             SalonMembership.objects.filter(
-                user=request.user,
+                barber=bp,
                 invite_state=SalonMembership.InviteState.ACTIVE,
             ).exclude(salon=salon).update(
                 invite_state=SalonMembership.InviteState.DECLINED
             )
 
             mem, created = SalonMembership.objects.get_or_create(
-                user=request.user,
+                barber=bp,
                 salon=salon,
                 defaults={
                     "role": SalonMembership.Role.WORKER,
@@ -254,11 +261,8 @@ class SalonViewSet(viewsets.ModelViewSet):
                 mem.invite_state = SalonMembership.InviteState.ACTIVE
                 mem.save(update_fields=["role", "invite_state"])
 
-            request.user.role = User.Role.BARBER_STAFF
-            request.user.save(update_fields=["role"])
-
             BarberProfile.objects.update_or_create(
-                user=request.user,
+                barber=bp,
                 defaults={
                     "latitude": lat,
                     "longitude": lng,
@@ -299,17 +303,17 @@ class SalonViewSet(viewsets.ModelViewSet):
         mems = SalonMembership.objects.filter(
             salon=salon,
             invite_state=SalonMembership.InviteState.ACTIVE,
-        ).select_related("user")
+        ).select_related("barber")
         out = []
         for m in mems:
-            u = m.user
+            b = m.barber
             avatar = None
-            if u.avatar:
-                avatar = request.build_absolute_uri(u.avatar.url)
+            if b.avatar:
+                avatar = request.build_absolute_uri(b.avatar.url)
             out.append(
                 {
-                    "id": u.id,
-                    "full_name": u.full_name or u.email,
+                    "id": b.id,
+                    "full_name": b.full_name or b.email,
                     "avatar": avatar,
                     "role": m.role,
                     "experience_years": m.experience_years,
@@ -320,7 +324,8 @@ class SalonViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
     def add_images(self, request, pk=None):
         salon = self.get_object()
-        if salon.owner_id != request.user.id:
+        bp = request_barber(request)
+        if bp is None or salon.owner_barber_id != bp.id:
             return Response(status=status.HTTP_403_FORBIDDEN)
         images = request.FILES.getlist("images")
         order = salon.images.count()
@@ -332,7 +337,8 @@ class SalonViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
     def upload_cover(self, request, pk=None):
         salon = self.get_object()
-        if salon.owner_id != request.user.id:
+        bp = request_barber(request)
+        if bp is None or salon.owner_barber_id != bp.id:
             return Response(status=status.HTTP_403_FORBIDDEN)
         f = request.FILES.get("cover")
         if not f:
@@ -345,7 +351,8 @@ class SalonViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
     def set_cover_from_gallery(self, request, pk=None):
         salon = self.get_object()
-        if salon.owner_id != request.user.id:
+        bp = request_barber(request)
+        if bp is None or salon.owner_barber_id != bp.id:
             return Response(status=status.HTTP_403_FORBIDDEN)
         try:
             si_id = int(request.data["salon_image_id"])
@@ -365,7 +372,8 @@ class SalonViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
     def reorder_images(self, request, pk=None):
         salon = self.get_object()
-        if salon.owner_id != request.user.id:
+        bp = request_barber(request)
+        if bp is None or salon.owner_barber_id != bp.id:
             return Response(status=status.HTTP_403_FORBIDDEN)
         ids = request.data.get("image_ids")
         if not isinstance(ids, list) or len(ids) == 0:
@@ -398,7 +406,8 @@ class SalonViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
     def remove_image(self, request, pk=None):
         salon = self.get_object()
-        if salon.owner_id != request.user.id:
+        bp = request_barber(request)
+        if bp is None or salon.owner_barber_id != bp.id:
             return Response(status=status.HTTP_403_FORBIDDEN)
         try:
             image_id = int(request.data["image_id"])
@@ -438,7 +447,8 @@ class ServiceViewSet(viewsets.ModelViewSet):
 
             raise ValidationError({"salon": "This field is required."})
         salon = get_object_or_404(Salon, pk=salon_id)
-        if salon.owner_id != self.request.user.id:
+        bp = request_barber(self.request)
+        if bp is None or salon.owner_barber_id != bp.id:
             from rest_framework.exceptions import PermissionDenied
 
             raise PermissionDenied()
@@ -451,22 +461,28 @@ class SalonMembershipViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "head", "options"]
 
     def get_queryset(self):
+        bp = request_barber(self.request)
+        if bp is None:
+            return SalonMembership.objects.none()
         return SalonMembership.objects.filter(
-            Q(user=self.request.user)
-            | Q(salon__owner=self.request.user)
-        ).select_related("user", "salon")
+            Q(barber=bp)
+            | Q(salon__owner_barber=bp)
+        ).select_related("barber", "salon")
 
     @action(detail=False, methods=["post"])
     def invite(self, request):
-        """Salon owner invites a user (by user id) to become worker."""
+        """Salon egasi boshqa sartaroshni (barber id) ishchiga taklif qiladi."""
         salon_id = request.data.get("salon")
-        user_id = request.data.get("user_id")
-        salon = get_object_or_404(Salon, pk=salon_id, owner=request.user)
-        invitee = get_object_or_404(User, pk=user_id, role=User.Role.USER)
-        if invitee.id == request.user.id:
+        barber_id = request.data.get("barber_id")
+        bp = request_barber(request)
+        if bp is None:
+            return Response({"detail": "Faqat sartarosh."}, status=403)
+        salon = get_object_or_404(Salon, pk=salon_id, owner_barber=bp)
+        invitee = get_object_or_404(Barber, pk=barber_id)
+        if invitee.id == bp.id:
             return Response({"detail": "Cannot invite yourself."}, status=400)
         mem, created = SalonMembership.objects.get_or_create(
-            user=invitee,
+            barber=invitee,
             salon=salon,
             defaults={
                 "role": SalonMembership.Role.WORKER,
@@ -481,7 +497,7 @@ class SalonMembershipViewSet(viewsets.ModelViewSet):
         mem.invite_state = SalonMembership.InviteState.INVITED
         mem.invited_at = timezone.now()
         mem.save()
-        notify_user(
+        notify_barber(
             invitee,
             "salon_invite",
             f"Taklif: {salon.name}",
@@ -493,7 +509,8 @@ class SalonMembershipViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def accept_worker(self, request, pk=None):
         mem = self.get_object()
-        if mem.user_id != request.user.id:
+        bp = request_barber(request)
+        if bp is None or mem.barber_id != bp.id:
             return Response(status=403)
         if mem.invite_state != SalonMembership.InviteState.INVITED:
             return Response({"detail": "Invalid state."}, status=400)
@@ -515,7 +532,7 @@ class SalonMembershipViewSet(viewsets.ModelViewSet):
         if dist_km > JOIN_MAX_DISTANCE_KM:
             return Response({"detail": LOCATION_MISMATCH_MSG}, status=400)
         BarberProfile.objects.update_or_create(
-            user=request.user,
+            barber=bp,
             defaults={
                 "latitude": lat,
                 "longitude": lng,
@@ -524,12 +541,10 @@ class SalonMembershipViewSet(viewsets.ModelViewSet):
         mem.invite_state = SalonMembership.InviteState.WORKER_ACCEPTED
         mem.experience_years = request.data.get("experience_years", mem.experience_years)
         mem.save()
-        request.user.role = User.Role.BARBER_STAFF
-        request.user.save(update_fields=["role"])
-        notify_user(
-            mem.salon.owner,
+        notify_barber(
+            mem.salon.owner_barber,
             "worker_accepted",
-            f"Barber: {request.user.full_name or request.user.email}",
+            f"Barber: {bp.full_name or bp.email}",
             "Ishchi arizani qabul qildi. Tasdiqlang.",
             {"membership_id": mem.id},
         )
@@ -538,17 +553,18 @@ class SalonMembershipViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def decline_worker(self, request, pk=None):
         mem = self.get_object()
-        if mem.user_id != request.user.id:
+        bp = request_barber(request)
+        if bp is None or mem.barber_id != bp.id:
             return Response(status=403)
         if mem.invite_state != SalonMembership.InviteState.INVITED:
             return Response({"detail": "Invalid state."}, status=400)
         mem.invite_state = SalonMembership.InviteState.DECLINED
         mem.save(update_fields=["invite_state"])
-        notify_user(
-            mem.salon.owner,
+        notify_barber(
+            mem.salon.owner_barber,
             "invite_declined",
             "Taklif rad etildi",
-            f"{request.user.full_name or request.user.email} «{mem.salon.name}» taklifini rad etdi.",
+            f"{bp.full_name or bp.email} «{mem.salon.name}» taklifini rad etdi.",
             {"membership_id": mem.id, "salon_id": mem.salon.id},
         )
         return Response(SalonMembershipSerializer(mem).data)
@@ -556,12 +572,13 @@ class SalonMembershipViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def owner_confirm(self, request, pk=None):
         mem = self.get_object()
-        if mem.salon.owner_id != request.user.id:
+        bp = request_barber(request)
+        if bp is None or mem.salon.owner_barber_id != bp.id:
             return Response(status=403)
         if mem.invite_state != SalonMembership.InviteState.WORKER_ACCEPTED:
             return Response({"detail": "Worker must accept first."}, status=400)
         try:
-            bp = mem.user.barber_profile
+            prof = mem.barber.profile
         except BarberProfile.DoesNotExist:
             return Response(
                 {
@@ -569,7 +586,7 @@ class SalonMembershipViewSet(viewsets.ModelViewSet):
                 },
                 status=400,
             )
-        if bp.latitude is None or bp.longitude is None:
+        if prof.latitude is None or prof.longitude is None:
             return Response(
                 {
                     "detail": "Ishchining joylashuvi kiritilmagan. Ishchi avval profilida joylashuvni sozlasin.",
@@ -577,8 +594,8 @@ class SalonMembershipViewSet(viewsets.ModelViewSet):
                 status=400,
             )
         dist_km = _haversine_km(
-            float(bp.latitude),
-            float(bp.longitude),
+            float(prof.latitude),
+            float(prof.longitude),
             float(mem.salon.latitude),
             float(mem.salon.longitude),
         )
@@ -590,8 +607,8 @@ class SalonMembershipViewSet(viewsets.ModelViewSet):
 
         mem.activated_at = timezone.now()
         mem.save()
-        notify_user(
-            mem.user,
+        notify_barber(
+            mem.barber,
             "membership_active",
             f"{mem.salon.name} — tabrik",
             f"Siz {mem.salon.name} salonida barbersiz.",
@@ -607,13 +624,15 @@ class BarberScheduleViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         mid = self.request.query_params.get("membership")
         qs = BarberWorkingHours.objects.select_related("membership")
-        if mid:
-            qs = qs.filter(membership_id=mid, membership__user=self.request.user)
+        bp = request_barber(self.request)
+        if mid and bp is not None:
+            qs = qs.filter(membership_id=mid, membership__barber=bp)
         return qs
 
     def perform_create(self, serializer):
         mem = serializer.validated_data["membership"]
-        if mem.user_id != self.request.user.id:
+        bp = request_barber(self.request)
+        if bp is None or mem.barber_id != bp.id:
             from rest_framework.exceptions import PermissionDenied
 
             raise PermissionDenied()

@@ -1,10 +1,10 @@
 from django.conf import settings as django_settings
 from django.db import transaction
 from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from barbers.models import BarberProfile
-from salons.models import SalonMembership
+from barbers.models import Barber, BarberProfile
 
 from .models import BarberApplication, User
 from .uz_regions import UzRegion
@@ -28,22 +28,63 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "role", "date_joined")
 
     def get_role(self, obj: User) -> str:
-        # Allow Django staff/superuser to access admin panel even if DB role wasn't set.
         if getattr(obj, "is_superuser", False) or getattr(obj, "is_staff", False):
-            return User.Role.ADMIN
+            return "ADMIN"
         return obj.role
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=8)
-    region = serializers.ChoiceField(choices=UzRegion.choices, required=True)
+    """Model unique validator inglizcha xabar bermasligi uchun email/phone qo‘lda tekshiriladi."""
+
+    email = serializers.EmailField()
+    phone = serializers.CharField(required=False, allow_blank=True, max_length=32)
+    password = serializers.CharField(
+        write_only=True,
+        min_length=8,
+        error_messages={
+            "min_length": "Parol kamida 8 belgidan iborat bo‘lishi kerak.",
+        },
+    )
+    region = serializers.ChoiceField(
+        choices=UzRegion.choices,
+        required=True,
+        error_messages={"invalid_choice": "Viloyat noto‘g‘ri tanlangan."},
+    )
 
     class Meta:
         model = User
         fields = ("email", "phone", "full_name", "password", "region")
 
+    def validate_email(self, value):
+        v = (value or "").strip().lower()
+        if User.objects.filter(email__iexact=v).exists():
+            raise serializers.ValidationError(
+                "Bu email allaqachon mijoz sifatida ro'yxatdan o'tgan."
+            )
+        if Barber.objects.filter(email__iexact=v).exists():
+            raise serializers.ValidationError(
+                "Bu email sartarosh akkauntida band. Mijoz va sartarosh bir xil email bilan ro'yxatdan o'ta olmaydi."
+            )
+        return v
+
+    def validate_phone(self, value):
+        value = (value or "").strip()
+        if not value:
+            return ""
+        if User.objects.filter(phone=value).exists():
+            raise serializers.ValidationError(
+                "Bu telefon allaqachon mijozda ro'yxatdan o'tgan."
+            )
+        if Barber.objects.filter(phone=value).exists():
+            raise serializers.ValidationError(
+                "Bu telefon sartarosh akkauntida band."
+            )
+        return value
+
     def create(self, validated_data):
         pwd = validated_data.pop("password")
+        if not validated_data.get("phone"):
+            validated_data["phone"] = None
         user = User(**validated_data)
         user.username = validated_data["email"]
         user.role = User.Role.USER
@@ -53,8 +94,8 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
 
 class BarberApplicationSerializer(serializers.ModelSerializer):
-    applicant_email = serializers.EmailField(source="user.email", read_only=True)
-    applicant_name = serializers.CharField(source="user.full_name", read_only=True)
+    applicant_email = serializers.EmailField(source="barber.email", read_only=True)
+    applicant_name = serializers.CharField(source="barber.full_name", read_only=True)
     region_label = serializers.SerializerMethodField()
 
     class Meta:
@@ -97,28 +138,47 @@ class BarberSignupSerializer(serializers.Serializer):
 
     email = serializers.EmailField()
     phone = serializers.CharField(required=False, allow_blank=True)
-    password = serializers.CharField(write_only=True, min_length=8)
+    password = serializers.CharField(
+        write_only=True,
+        min_length=8,
+        error_messages={
+            "min_length": "Parol kamida 8 belgidan iborat bo‘lishi kerak.",
+        },
+    )
     full_name = serializers.CharField()
     has_salon = serializers.BooleanField(required=True)
     latitude = serializers.DecimalField(max_digits=9, decimal_places=6)
     longitude = serializers.DecimalField(max_digits=9, decimal_places=6)
     shop_name = serializers.CharField(required=False, allow_blank=True, default="")
     age = serializers.IntegerField(required=False, min_value=14, max_value=120, default=25)
-    region = serializers.ChoiceField(choices=UzRegion.choices, required=True)
+    region = serializers.ChoiceField(
+        choices=UzRegion.choices,
+        required=True,
+        error_messages={"invalid_choice": "Viloyat noto‘g‘ri tanlangan."},
+    )
     address = serializers.CharField(required=False, allow_blank=True)
     staff_count_at_signup = serializers.IntegerField(min_value=1, default=1)
 
     def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Email already registered.")
-        return value
+        v = (value or "").strip().lower()
+        if User.objects.filter(email__iexact=v).exists():
+            raise serializers.ValidationError(
+                "Bu email allaqachon mijoz sifatida ro'yxatdan o'tgan."
+            )
+        if Barber.objects.filter(email__iexact=v).exists():
+            raise serializers.ValidationError(
+                "Bu email allaqachon sartarosh sifatida ro'yxatdan o'tgan."
+            )
+        return v
 
     def validate_phone(self, value):
         value = (value or "").strip()
         if not value:
             return ""
         if User.objects.filter(phone=value).exists():
-            raise serializers.ValidationError("Bu telefon raqam allaqachon ro'yxatdan o'tgan.")
+            raise serializers.ValidationError("Bu telefon raqam allaqachon mijozda ro'yxatdan o'tgan.")
+        if Barber.objects.filter(phone=value).exists():
+            raise serializers.ValidationError("Bu telefon raqam allaqachon sartaroshda ro'yxatdan o'tgan.")
         return value
 
     def validate(self, attrs):
@@ -156,18 +216,17 @@ class BarberSignupSerializer(serializers.Serializer):
             app_status = BarberApplication.Status.PENDING
 
         with transaction.atomic():
-            user = User(
+            barber = Barber(
                 email=email,
                 username=email,
                 phone=phone,
                 full_name=full_name,
-                role=User.Role.BARBER_OWNER,
                 region=region,
             )
-            user.set_password(pwd)
-            user.save()
+            barber.set_password(pwd)
+            barber.save()
             BarberApplication.objects.create(
-                user=user,
+                barber=barber,
                 shop_name=shop_name,
                 age=age,
                 region=region,
@@ -177,19 +236,25 @@ class BarberSignupSerializer(serializers.Serializer):
                 staff_count_at_signup=staff_count,
                 status=app_status,
             )
-            # Har bir yangi sartarosh uchun BarberProfile bir vaqtning o‘zida yaratiladi.
             BarberProfile.objects.update_or_create(
-                user=user,
+                barber=barber,
                 defaults={
                     "latitude": latitude,
                     "longitude": longitude,
                     "location_text": address,
                 },
             )
-        return user
+        return barber
 
     def to_representation(self, instance):
-        """CreateAPIView success response: instance is User, not input payload fields."""
+        if isinstance(instance, Barber):
+            return {
+                "id": instance.id,
+                "email": instance.email,
+                "full_name": instance.full_name,
+                "phone": instance.phone,
+                "role": "BARBER",
+            }
         if isinstance(instance, User):
             return UserSerializer(instance, context=self.context).data
         return super().to_representation(instance)
@@ -199,36 +264,23 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
     username_field = User.USERNAME_FIELD
 
     def validate(self, attrs):
+        email = (attrs.get(self.username_field) or "").strip().lower()
+        if email:
+            has_user = User.objects.filter(email__iexact=email).exists()
+            has_barber = Barber.objects.filter(email__iexact=email).exists()
+            if has_barber and not has_user:
+                raise AuthenticationFailed(
+                    "Bu email sartarosh akkauntiga tegishli. Mijoz ilovasidan kirish mumkin emas — sartarosh ilovasidan kiring.",
+                    code="barber_account",
+                )
         data = super().validate(attrs)
         user = self.user
-        if user.role == User.Role.BARBER_OWNER:
-            try:
-                app = user.barber_application
-            except BarberApplication.DoesNotExist:
-                raise serializers.ValidationError(
-                    {"detail": "Barber application missing."}
-                )
-            auto = getattr(django_settings, "AUTO_APPROVE_BARBERS", True)
-            if (
-                not auto
-                and app.status != BarberApplication.Status.APPROVED
-            ):
-                raise serializers.ValidationError(
-                    {"detail": "Barber account is not approved by admin."}
-                )
-        if user.role == User.Role.BARBER_STAFF:
-            # ACTIVE: ishlaydi; WORKER_ACCEPTED: salon egasi tasdiqlashini kutmoqda (kirish mumkin)
-            staff_ok = SalonMembership.objects.filter(
-                user=user,
-                invite_state__in=[
-                    SalonMembership.InviteState.ACTIVE,
-                    SalonMembership.InviteState.WORKER_ACCEPTED,
-                ],
-            ).exists()
-            if not staff_ok:
-                raise serializers.ValidationError(
-                    {"detail": "Salon a'zolig'i topilmadi."}
-                )
+        if getattr(user, "role", "") == "ADMIN":
+            raise serializers.ValidationError(
+                {
+                    "detail": "Admin akkauntlari uchun maxsus kirish (admin/auth/token) ishlatiladi.",
+                }
+            )
         data["user"] = UserSerializer(user).data
         return data
 

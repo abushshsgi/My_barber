@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,12 +14,18 @@ import {
 } from "@/components/ui/select";
 import { Scissors, Eye, EyeOff } from "lucide-react";
 import { UZ_REGIONS } from "@/lib/uz-regions";
-import { apiFetch, setTokens } from "@/lib/api";
+import { apiFetch, formatApiError, setTokens } from "@/lib/api";
+import { userAuthMessages } from "@/lib/i18n/user-auth";
 import { barberWebUrl } from "@/lib/public-urls";
+import { useLocale } from "@/providers/locale-provider";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import Link from "next/link";
 
 export default function UserAuth() {
   const router = useRouter();
+  const { locale } = useLocale();
+  const t = useMemo(() => userAuthMessages[locale], [locale]);
+
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -47,7 +53,7 @@ export default function UserAuth() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setErr((data as { detail?: string }).detail || "Xato");
+        setErr(formatApiError(data, t.errLoginFail));
         return;
       }
       setTokens(data.access, data.refresh);
@@ -61,7 +67,7 @@ export default function UserAuth() {
   const handleSignup = async () => {
     setErr(null);
     if (!region) {
-      setErr("Viloyatni tanlang.");
+      setErr(t.errRegion);
       return;
     }
     setLoading(true);
@@ -78,7 +84,7 @@ export default function UserAuth() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setErr(typeof data.detail === "string" ? data.detail : JSON.stringify(data));
+        setErr(formatApiError(data, t.errSignupFail));
         return;
       }
       const loginRes = await apiFetch("/api/v1/auth/token/", {
@@ -87,7 +93,7 @@ export default function UserAuth() {
       });
       const tok = await loginRes.json();
       if (!loginRes.ok) {
-        setErr("Ro'yxatdan o'tildi. Kirishda xato.");
+        setErr(t.errSignupLoginFail);
         return;
       }
       setTokens(tok.access, tok.refresh);
@@ -101,28 +107,33 @@ export default function UserAuth() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
       <div className="w-full max-w-sm">
+        <div className="flex items-center justify-end gap-2 mb-4">
+          <span className="text-xs text-muted-foreground">{t.langHint}</span>
+          <LanguageSwitcher />
+        </div>
+
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl gold-gradient flex items-center justify-center mx-auto mb-3">
             <Scissors className="h-8 w-8 text-gold-foreground" />
           </div>
-          <h1 className="text-2xl font-bold">MyBarber</h1>
-          <p className="text-sm text-muted-foreground mt-1">Mijozlar uchun</p>
+          <h1 className="text-2xl font-bold">{t.title}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{t.subtitle}</p>
         </div>
 
         {err && <p className="text-sm text-destructive mb-2 text-center">{err}</p>}
 
         {mode === "login" ? (
           <Card className="p-5 space-y-4">
-            <h2 className="text-lg font-semibold text-center">Kirish</h2>
+            <h2 className="text-lg font-semibold text-center">{t.loginTitle}</h2>
             <Input
-              placeholder="Email"
+              placeholder={t.emailPh}
               className="rounded-xl"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
             <div className="relative">
               <Input
-                placeholder="Parol"
+                placeholder={t.passwordPh}
                 type={showPass ? "text" : "password"}
                 className="rounded-xl pr-10"
                 value={password}
@@ -145,57 +156,62 @@ export default function UserAuth() {
               disabled={loading}
               className="w-full rounded-xl gold-gradient text-gold-foreground border-0"
             >
-              Kirish
+              {t.signIn}
             </Button>
             <p className="text-center text-sm text-muted-foreground">
-              Akkaunt yo&apos;qmi?{" "}
+              {t.noAccount}{" "}
               <button
                 type="button"
                 onClick={() => setMode("signup")}
                 className="text-accent font-medium"
               >
-                Ro&apos;yxatdan o&apos;tish
+                {t.signUp}
               </button>
             </p>
             <p className="text-center text-xs">
-              <Link href={barberWebUrl("/barber/auth")} className="text-muted-foreground underline">
-                Sartarosh sifatida kirish
+              <Link href={barberWebUrl("/auth")} className="text-muted-foreground underline">
+                {t.barberLoginLink}
               </Link>
             </p>
           </Card>
         ) : (
           <Card className="p-5 space-y-4">
-            <h2 className="text-lg font-semibold text-center">Ro&apos;yxatdan o&apos;tish</h2>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <h2 className="text-lg font-semibold text-center flex-1">{t.signupTitle}</h2>
+            </div>
+            <p className="text-xs text-muted-foreground text-center -mt-1">
+              {t.langHint}: {locale.toUpperCase()}
+            </p>
             <Input
-              placeholder="Ism"
+              placeholder={t.namePh}
               className="rounded-xl"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
             />
             <Input
-              placeholder="Telefon (ixtiyoriy)"
+              placeholder={t.phonePh}
               className="rounded-xl"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
             />
             <Input
-              placeholder="Email"
+              placeholder={t.emailPh}
               className="rounded-xl"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
             <Input
-              placeholder="Parol (min 8)"
+              placeholder={t.passwordMinPh}
               type="password"
               className="rounded-xl"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
             <div className="space-y-1.5">
-              <label className="text-xs text-muted-foreground">Viloyat</label>
+              <label className="text-xs text-muted-foreground">{t.regionLabel}</label>
               <Select value={region || undefined} onValueChange={setRegion}>
                 <SelectTrigger className="rounded-xl w-full">
-                  <SelectValue placeholder="Viloyatni tanlang" />
+                  <SelectValue placeholder={t.regionPlaceholder} />
                 </SelectTrigger>
                 <SelectContent>
                   {UZ_REGIONS.map((r) => (
@@ -211,16 +227,16 @@ export default function UserAuth() {
               disabled={loading}
               className="w-full rounded-xl gold-gradient text-gold-foreground border-0"
             >
-              Yaratish
+              {t.create}
             </Button>
             <p className="text-center text-sm text-muted-foreground">
-              Akkaunt bormi?{" "}
+              {t.haveAccount}{" "}
               <button
                 type="button"
                 onClick={() => setMode("login")}
                 className="text-accent font-medium"
               >
-                Kirish
+                {t.signIn}
               </button>
             </p>
           </Card>

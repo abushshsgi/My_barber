@@ -196,13 +196,13 @@ export default function CreateSalon() {
         <div className="flex flex-col gap-2 w-full max-w-xs">
           {createdSalonId != null && (
             <Button
-              onClick={() => router.push(`/barber/salon/${createdSalonId}`)}
+              onClick={() => router.push(`/salon/${createdSalonId}`)}
               className="rounded-xl gold-gradient text-gold-foreground border-0 w-full"
             >
               Salonni ochish (rasmlar)
             </Button>
           )}
-          <Button variant="outline" onClick={() => router.push("/barber")} className="rounded-xl w-full">
+          <Button variant="outline" onClick={() => router.push("/")} className="rounded-xl w-full">
             Dashboardga o‘tish
           </Button>
         </div>

@@ -1,7 +1,7 @@
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
-from notifications.utils import notify_user
+from notifications.utils import notify_barber
 
 from .models import Salon
 
@@ -24,10 +24,12 @@ def salon_notify_when_published(sender, instance, created, **kwargs):
         return
     was = getattr(instance, "_was_published", None)
     if was is False and instance.is_published:
-        notify_user(
-            instance.owner,
-            "salon_approved",
-            "MyBarber: salon tasdiqlandi",
-            f'"{instance.name}" admin tomonidan tasdiqlandi va endi mijozlarga ko‘rinadi.',
-            send_email=True,
-        )
+        ob = getattr(instance, "owner_barber", None)
+        if ob is not None:
+            notify_barber(
+                ob,
+                "salon_approved",
+                "MyBarber: salon tasdiqlandi",
+                f'"{instance.name}" admin tomonidan tasdiqlandi va endi mijozlarga ko‘rinadi.',
+                send_email=True,
+            )

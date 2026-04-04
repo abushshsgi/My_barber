@@ -23,8 +23,6 @@ import { apiFetch, clearTokens } from "@/lib/api";
 import { fetchMySalons } from "@/lib/salon-queries";
 import { mapSalonListApi } from "@/lib/mapSalon";
 import { useRouter } from "next/navigation";
-import { useSalonInviteResponse } from "@/hooks/useSalonInviteResponse";
-import { useState } from "react";
 import { uzRegionLabel } from "@/lib/uz-regions";
 import { barberWebUrl } from "@/lib/public-urls";
 
@@ -61,21 +59,6 @@ async function fetchMyReviewCount(): Promise<number> {
   return j.results?.length ?? 0;
 }
 
-type MembershipRow = {
-  id: number;
-  user: number;
-  salon: number;
-  salon_name: string;
-  invite_state: string;
-};
-
-async function fetchMemberships(): Promise<MembershipRow[]> {
-  const res = await apiFetch("/api/v1/memberships/");
-  if (!res.ok) return [];
-  const j = (await res.json()) as { results?: MembershipRow[] } | MembershipRow[];
-  return Array.isArray(j) ? j : j.results || [];
-}
-
 const menuItems = [
   { label: "Band tarixi", icon: CalendarDays, color: "text-accent", href: "/bookings" },
   { label: "Yozilgan sharhlar", icon: Star, color: "text-accent", href: "/bookings" },
@@ -87,8 +70,6 @@ const menuItems = [
 
 const Profile = () => {
   const router = useRouter();
-  const respondInvite = useSalonInviteResponse();
-  const [inviteErr, setInviteErr] = useState<string | null>(null);
   const { data: user, isLoading, error } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
   const { data: bookingCount = 0 } = useQuery({
     queryKey: ["bookings", "count"],
@@ -98,11 +79,6 @@ const Profile = () => {
   const { data: reviewCount = 0 } = useQuery({
     queryKey: ["reviews", "mine", "count"],
     queryFn: fetchMyReviewCount,
-    enabled: !!user,
-  });
-  const { data: memberships = [] } = useQuery({
-    queryKey: ["memberships"],
-    queryFn: fetchMemberships,
     enabled: !!user,
   });
   const { data: mySalonRows = [] } = useQuery({
@@ -115,9 +91,6 @@ const Profile = () => {
   });
   const mySalons = mySalonRows.map(mapSalonListApi);
 
-  const pendingSalonInvites = memberships.filter(
-    (m) => m.invite_state === "invited" && m.user === user?.id
-  );
   const isBarberRole =
     user?.role === "BARBER_OWNER" || user?.role === "BARBER_STAFF";
   const isEndUser = user?.role === "USER";
@@ -229,68 +202,6 @@ const Profile = () => {
         </motion.div>
       )}
 
-      {pendingSalonInvites.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="px-5 mt-5"
-        >
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-            Salon takliflari
-          </p>
-          <div className="space-y-2">
-            {inviteErr && (
-              <p className="text-sm text-destructive bg-destructive/10 rounded-xl px-3 py-2">{inviteErr}</p>
-            )}
-            {pendingSalonInvites.map((m) => (
-              <div
-                key={m.id}
-                className="bg-card rounded-2xl border border-accent/20 p-4 space-y-3"
-              >
-                <div>
-                  <p className="font-semibold text-sm">{m.salon_name}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Sizni sartarosh sifatida taklif qilishmoqda. Qabul qilasizmi?
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    className="rounded-xl gold-gradient text-gold-foreground border-0 h-9"
-                    disabled={respondInvite.isPending}
-                    onClick={() => {
-                      setInviteErr(null);
-                      respondInvite.mutate(
-                        { membershipId: m.id, action: "accept" },
-                        { onError: (e) => setInviteErr((e as Error).message) }
-                      );
-                    }}
-                  >
-                    Roziman
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="rounded-xl h-9"
-                    disabled={respondInvite.isPending}
-                    onClick={() => {
-                      setInviteErr(null);
-                      respondInvite.mutate(
-                        { membershipId: m.id, action: "decline" },
-                        { onError: (e) => setInviteErr((e as Error).message) }
-                      );
-                    }}
-                  >
-                    Rad etish
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      )}
-
       {isBarberRole && mySalons.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -327,7 +238,7 @@ const Profile = () => {
           transition={{ delay: 0.22 }}
           className="px-5 mt-5"
         >
-          <Link href={barberWebUrl("/barber")}>
+          <Link href={barberWebUrl("/")}>
             <div className="bg-card rounded-2xl border border-border/50 p-4 flex items-center gap-3 hover:bg-muted/40 transition-colors">
               <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center">
                 <Scissors className="h-5 w-5 text-accent" />
