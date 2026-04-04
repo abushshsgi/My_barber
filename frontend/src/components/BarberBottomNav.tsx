@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Store, Users, Star, UserPlus } from "lucide-react";
+import { LayoutDashboard, Store, Users, Star, UserPlus, CircleUser } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
   { icon: Users, label: "Mijozlar", path: "/barber/clients" },
   { icon: Star, label: "Sharhlar", path: "/barber/reviews" },
   { icon: UserPlus, label: "Jamoa", path: "/barber/team" },
+  { icon: CircleUser, label: "Profil", path: "/barber/profile" },
 ];
 
 export function BarberBottomNav() {
