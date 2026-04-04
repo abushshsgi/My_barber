@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { getAccessToken } from "@/lib/api";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, LogIn } from "lucide-react";
 
 const PUBLIC_PREFIX = "/barber/auth";
 
@@ -17,29 +19,50 @@ function BarberAuthGuardProtected({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [allowed, setAllowed] = useState(false);
 
+  const nextUrl =
+    typeof window !== "undefined"
+      ? `${pathname}${window.location.search}`
+      : pathname;
+  const loginHref = `/barber/auth?next=${encodeURIComponent(nextUrl)}`;
+
   useEffect(() => {
+    const next =
+      typeof window !== "undefined"
+        ? `${pathname}${window.location.search}`
+        : pathname;
+    const href = `/barber/auth?next=${encodeURIComponent(next)}`;
     if (getAccessToken()) {
       setAllowed(true);
     } else {
-      const next =
-        typeof window !== "undefined"
-          ? `${pathname}${window.location.search}`
-          : pathname;
-      router.replace(`/barber/auth?next=${encodeURIComponent(next)}`);
+      router.replace(href);
     }
     setReady(true);
   }, [pathname, router]);
 
   if (!ready) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background px-6">
         <Loader2 className="h-8 w-8 animate-spin text-accent" />
+        <p className="text-sm text-muted-foreground text-center">Tekshirilmoqda…</p>
       </div>
     );
   }
 
   if (!allowed) {
-    return null;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-6 text-center">
+        <div className="w-16 h-16 rounded-2xl gold-gradient flex items-center justify-center">
+          <LogIn className="h-8 w-8 text-gold-foreground" />
+        </div>
+        <h1 className="text-xl font-semibold">Kirish talab qilinadi</h1>
+        <p className="text-sm text-muted-foreground max-w-sm">
+          Sartarosh kabineti ochiq emas. Davom etish uchun avval tizimga kiring.
+        </p>
+        <Button asChild className="rounded-xl">
+          <Link href={loginHref}>Kirish</Link>
+        </Button>
+      </div>
+    );
   }
 
   return <>{children}</>;

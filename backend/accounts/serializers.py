@@ -1,4 +1,5 @@
 from django.conf import settings as django_settings
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -154,35 +155,37 @@ class BarberSignupSerializer(serializers.Serializer):
         if not getattr(django_settings, "AUTO_APPROVE_BARBERS", True):
             app_status = BarberApplication.Status.PENDING
 
-        user = User(
-            email=email,
-            username=email,
-            phone=phone,
-            full_name=full_name,
-            role=User.Role.BARBER_OWNER,
-            region=region,
-        )
-        user.set_password(pwd)
-        user.save()
-        BarberApplication.objects.create(
-            user=user,
-            shop_name=shop_name,
-            age=age,
-            region=region,
-            address=address,
-            latitude=latitude,
-            longitude=longitude,
-            staff_count_at_signup=staff_count,
-            status=app_status,
-        )
-        BarberProfile.objects.update_or_create(
-            user=user,
-            defaults={
-                "latitude": latitude,
-                "longitude": longitude,
-                "location_text": address,
-            },
-        )
+        with transaction.atomic():
+            user = User(
+                email=email,
+                username=email,
+                phone=phone,
+                full_name=full_name,
+                role=User.Role.BARBER_OWNER,
+                region=region,
+            )
+            user.set_password(pwd)
+            user.save()
+            BarberApplication.objects.create(
+                user=user,
+                shop_name=shop_name,
+                age=age,
+                region=region,
+                address=address,
+                latitude=latitude,
+                longitude=longitude,
+                staff_count_at_signup=staff_count,
+                status=app_status,
+            )
+            # Har bir yangi sartarosh uchun BarberProfile bir vaqtning o‘zida yaratiladi.
+            BarberProfile.objects.update_or_create(
+                user=user,
+                defaults={
+                    "latitude": latitude,
+                    "longitude": longitude,
+                    "location_text": address,
+                },
+            )
         return user
 
     def to_representation(self, instance):
