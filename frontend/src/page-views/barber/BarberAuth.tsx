@@ -95,7 +95,14 @@ export default function BarberAuth() {
         return;
       }
       setTokens(data.access, data.refresh);
-      router.push("/barber");
+      let dest = "/barber";
+      if (typeof window !== "undefined") {
+        const n = new URLSearchParams(window.location.search).get("next");
+        if (n && n.startsWith("/") && !n.startsWith("//")) {
+          dest = n;
+        }
+      }
+      router.push(dest);
     } finally {
       setLoading(false);
     }

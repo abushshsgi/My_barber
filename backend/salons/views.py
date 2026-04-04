@@ -11,7 +11,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from accounts.models import User
+from accounts.models import BarberApplication, User
 from accounts.throttles import SalonJoinThrottle, SalonSearchThrottle
 from barbers.models import BarberProfile
 from notifications.utils import notify_user
@@ -104,21 +104,19 @@ class SalonViewSet(viewsets.ModelViewSet):
         return SalonDetailSerializer
 
     def perform_create(self, serializer):
-        if self.request.user.role != User.Role.BARBER_OWNER:
-            from rest_framework.exceptions import PermissionDenied
+        from rest_framework.exceptions import PermissionDenied
 
-            raise PermissionDenied("Only barber owners can create salons.")
+        if self.request.user.role != User.Role.BARBER_OWNER:
+            raise PermissionDenied("Faqat barber (salon egasi) rolida salon yaratish mumkin.")
         try:
             app = self.request.user.barber_application
-        except Exception:
-            from rest_framework.exceptions import PermissionDenied
-
-            raise PermissionDenied("No barber application.")
-        auto = getattr(django_settings, "AUTO_APPROVE_BARBERS", True)
-        if not auto and app.status != "approved":
-            from rest_framework.exceptions import PermissionDenied
-
-            raise PermissionDenied("Barber application not approved.")
+        except BarberApplication.DoesNotExist:
+            app = None
+        # Ariza bo‘lsa va AUTO_APPROVE o‘chiq bo‘lsa — tasdiqlangan bo‘lishi kerak. Ariza yo‘q bo‘lsa ham salon ochish mumkin (admin alohida tasdiq talab qilinmaydi).
+        if app is not None:
+            auto = getattr(django_settings, "AUTO_APPROVE_BARBERS", True)
+            if not auto and app.status != BarberApplication.Status.APPROVED:
+                raise PermissionDenied("Barber arizasi admin tomonidan tasdiqlanmagan.")
         salon = serializer.save(owner=self.request.user)
         SalonMembership.objects.get_or_create(
             user=self.request.user,

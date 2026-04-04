@@ -1,3 +1,5 @@
+from django.db import transaction
+
 from rest_framework import serializers
 
 from accounts.models import User
@@ -119,8 +121,27 @@ class SalonDetailSerializer(serializers.ModelSerializer):
         return PublicServiceSerializer(qs, many=True, context=self.context).data
 
 
+class ServiceCreateNestedSerializer(serializers.Serializer):
+    """Salon yaratishda bir so‘rovda xizmatlar (atomik saqlash)."""
+
+    name = serializers.CharField(max_length=255)
+    price = serializers.DecimalField(max_digits=12, decimal_places=2)
+    duration_minutes = serializers.IntegerField(min_value=1, max_value=1440)
+
+    def validate_name(self, value):
+        v = (value or "").strip()
+        if not v:
+            raise serializers.ValidationError("Xizmat nomi bo‘sh bo‘lmasin.")
+        return v
+
+
 class SalonCreateUpdateSerializer(serializers.ModelSerializer):
     hours = SalonHoursSerializer(many=True, required=False)
+    services = ServiceCreateNestedSerializer(
+        many=True,
+        required=False,
+        write_only=True,
+    )
 
     class Meta:
         model = Salon
@@ -138,6 +159,7 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
             "closed_weekdays",
             "is_published",
             "hours",
+            "services",
         )
 
     def validate(self, attrs):
@@ -167,20 +189,41 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
                     attrs["is_published"] = True
             elif getattr(request.user, "role", None) != User.Role.ADMIN:
                 attrs.pop("is_published", None)
+
+        if self.instance is None:
+            services = attrs.get("services")
+            if not services:
+                if request and getattr(request.user, "role", None) == User.Role.ADMIN:
+                    attrs["services"] = []
+                else:
+                    raise serializers.ValidationError(
+                        {"services": "Kamida bitta xizmat kiriting."}
+                    )
         return attrs
 
     def create(self, validated_data):
         hours_data = validated_data.pop("hours", [])
+        services_data = validated_data.pop("services", [])
         request = self.context.get("request")
         # save(owner=...) merged owner into validated_data — duplicate kwarg bo‘lmasin
         if "owner" not in validated_data and request is not None:
             validated_data["owner"] = request.user
-        salon = Salon.objects.create(**validated_data)
-        for h in hours_data:
-            SalonHours.objects.create(salon=salon, **h)
+        with transaction.atomic():
+            salon = Salon.objects.create(**validated_data)
+            for h in hours_data:
+                SalonHours.objects.create(salon=salon, **h)
+            for s in services_data:
+                Service.objects.create(
+                    salon=salon,
+                    name=s["name"],
+                    price=s["price"],
+                    duration_minutes=s["duration_minutes"],
+                    is_active=True,
+                )
         return salon
 
     def update(self, instance, validated_data):
+        validated_data.pop("services", None)
         hours_data = validated_data.pop("hours", None)
         for attr, val in validated_data.items():
             setattr(instance, attr, val)

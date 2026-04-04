@@ -6,10 +6,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus, Trash2, PartyPopper, Loader2 } from "lucide-react";
+import { Plus, Trash2, PartyPopper, Loader2, MapPin } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, formatApiError } from "@/lib/api";
 
 const DAYS = ["Du", "Se", "Cho", "Pa", "Ju", "Sha", "Ya"] as const;
 const DAY_TO_W: Record<string, number> = {
@@ -38,6 +38,7 @@ export default function CreateSalon() {
   const [createdSalonId, setCreatedSalonId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [geoStatus, setGeoStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -69,6 +70,28 @@ export default function CreateSalon() {
   const toggleLang = (lang: string) => {
     setLangs((prev) =>
       prev.includes(lang) ? prev.filter((x) => x !== lang) : [...prev, lang]
+    );
+  };
+
+  const requestLocation = () => {
+    setErr(null);
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setGeoStatus("error");
+      setErr("Brauzer geolokatsiyani qo‘llab-quvvatlamaydi.");
+      return;
+    }
+    setGeoStatus("loading");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLat(pos.coords.latitude.toFixed(6));
+        setLng(pos.coords.longitude.toFixed(6));
+        setGeoStatus("ok");
+      },
+      () => {
+        setGeoStatus("error");
+        setErr("Joylashuv olinmadi. Ruxsat bering yoki lat/lng ni qo‘lda kiriting.");
+      },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
     );
   };
 
@@ -107,6 +130,15 @@ export default function CreateSalon() {
       close_time: padTime(closeTime),
     }));
 
+    const servicesPayload = filled.map((s) => {
+      const raw = String(s.price).replace(/\s/g, "").replace(",", ".");
+      return {
+        name: s.name.trim(),
+        price: raw,
+        duration_minutes: parseInt(s.duration, 10) || 30,
+      };
+    });
+
     setLoading(true);
     try {
       const body = {
@@ -119,6 +151,7 @@ export default function CreateSalon() {
         languages: langs.length ? langs : ["O'zbek"],
         closed_weekdays,
         hours,
+        services: servicesPayload,
       };
 
       const res = await apiFetch("/api/v1/salons/", {
@@ -127,33 +160,9 @@ export default function CreateSalon() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const d = data as { detail?: string; name?: string[] };
-        const msg =
-          typeof d.detail === "string"
-            ? d.detail
-            : Array.isArray(d.name) && d.name[0]
-              ? d.name[0]
-              : "Salon yaratilmadi";
-        throw new Error(msg);
+        throw new Error(formatApiError(data, "Salon yaratilmadi"));
       }
       const salonId = (data as { id: number }).id;
-
-      for (const s of filled) {
-        const pr = await apiFetch("/api/v1/services/", {
-          method: "POST",
-          body: JSON.stringify({
-            salon: salonId,
-            name: s.name.trim(),
-            price: s.price.trim(),
-            duration_minutes: parseInt(s.duration, 10) || 30,
-            is_active: true,
-          }),
-        });
-        if (!pr.ok) {
-          const e = await pr.json().catch(() => ({}));
-          throw new Error((e as { detail?: string }).detail || "Xizmat qo‘shilmadi");
-        }
-      }
 
       confetti({ particleCount: 120, spread: 70, origin: { y: 0.65 } });
       await qc.invalidateQueries({ queryKey: ["salons", "mine"] });
@@ -244,6 +253,23 @@ export default function CreateSalon() {
             <Input placeholder="Latitude" value={lat} onChange={(e) => setLat(e.target.value)} className="rounded-xl text-sm" />
             <Input placeholder="Longitude" value={lng} onChange={(e) => setLng(e.target.value)} className="rounded-xl text-sm" />
           </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full rounded-xl gap-2"
+            disabled={geoStatus === "loading"}
+            onClick={requestLocation}
+          >
+            {geoStatus === "loading" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <MapPin className="h-4 w-4" />
+            )}
+            Joylashuvni olish
+          </Button>
+          {geoStatus === "ok" && (
+            <p className="text-xs text-success">Joylashuv yangilandi.</p>
+          )}
         </Card>
 
         <Card className="p-4 space-y-3">
