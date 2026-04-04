@@ -1,11 +1,14 @@
+import { getPublicApiBase } from "./api";
+
 /** Lokal SVG — tashqi CDN / ORB muammosi bo‘lmaydi */
 export const PLACEHOLDER_SALON = "/placeholder-salon.svg";
 export const PLACEHOLDER_AVATAR = "/avatar-placeholder.svg";
 
 /**
  * API dan kelgan rasm yo‘lini <img src> uchun moslaydi.
- * Har qanday domen + /media/... → faqat /media/... (Vercel rewrite → backend).
- * NEXT_PUBLIC_API_URL buildda xato bo‘lsa ham to‘g‘ri ishlaydi.
+ * Rasmlar Railway (backend) da — Vercel domenida /media bo‘yicha 404 bo‘lmasligi uchun:
+ * - To‘liq http(s) URL ni o‘zgartirmaymiz (oldingi kod pathname ga qisqartirgan, xato).
+ * - Nisbiy `/media/...` ni NEXT_PUBLIC_API_URL bilan birlashtiramiz.
  */
 export function mediaSrc(
   path: string | null | undefined,
@@ -14,15 +17,9 @@ export function mediaSrc(
   if (!path) return fallback;
   const s = path.trim();
   if (s.startsWith("http://") || s.startsWith("https://")) {
-    try {
-      const u = new URL(s);
-      if (u.pathname.startsWith("/media/")) {
-        return u.pathname + u.search;
-      }
-    } catch {
-      /* ignore */
-    }
     return s;
   }
-  return s.startsWith("/") ? s : `/${s}`;
+  const base = getPublicApiBase().replace(/\/$/, "");
+  const pathPart = s.startsWith("/") ? s : `/${s}`;
+  return `${base}${pathPart}`;
 }
