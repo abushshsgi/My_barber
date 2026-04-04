@@ -2,7 +2,16 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
-import { Users, Scissors, Store, TrendingUp, Clock, Loader2, AlertCircle } from "lucide-react";
+import {
+  Users,
+  Scissors,
+  Store,
+  TrendingUp,
+  Clock,
+  Loader2,
+  AlertCircle,
+  Sparkles,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { fetchAdminStats } from "@/lib/admin-api";
 
@@ -71,9 +80,24 @@ const AdminDashboard = () => {
     <div className="min-h-screen">
       <div className="px-4 pt-6 pb-4">
         <h1 className="text-xl font-bold mb-1">Admin panel</h1>
-        <p className="text-sm text-muted-foreground mb-6">
-          Ma&apos;lumotlar to&apos;liq API orqali (Django admin emas)
+        <p className="text-sm text-muted-foreground mb-4">
+          Barcha statistikalar va ro&apos;yxatlar REST API orqali (Next.js admin, Django admin emas).
         </p>
+
+        <Card className="p-4 mb-6 border-dashed bg-muted/30">
+          <div className="flex gap-3 items-start">
+            <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+              <Sparkles className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">AI integratsiyasi</p>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                Hozircha loyihada chatbot, LLM yoki boshqa AI xizmatlari ulangan emas. Bandlar,
+                foydalanuvchilar va bildirishnomalar oddiy API va biznes-mantiq orqali ishlaydi.
+              </p>
+            </div>
+          </div>
+        </Card>
 
         <div className="grid grid-cols-2 gap-3">
           {stats.map((stat, i) => (

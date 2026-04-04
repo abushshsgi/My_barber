@@ -155,6 +155,12 @@ class ReviewViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        if self.request.query_params.get("mine") == "1":
+            if not self.request.user.is_authenticated:
+                return Review.objects.none()
+            return Review.objects.filter(author=self.request.user).select_related(
+                "author"
+            )
         qs = Review.objects.filter(salon__is_published=True).select_related("author")
         salon = self.request.query_params.get("salon")
         if salon:

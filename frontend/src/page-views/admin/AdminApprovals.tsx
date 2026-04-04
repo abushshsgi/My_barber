@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Check, X, MapPin, Mail } from "lucide-react";
 import { motion } from "framer-motion";
 import { apiFetch } from "@/lib/api";
+import { uzRegionLabel } from "@/lib/uz-regions";
 
 type AppRow = {
   id: number;
@@ -14,6 +15,7 @@ type AppRow = {
   shop_name: string;
   age: number;
   region: string;
+  region_label?: string;
   address: string;
   status: string;
   created_at: string;
@@ -83,7 +85,8 @@ export default function AdminApprovals() {
               </div>
               <div className="space-y-1 text-sm text-muted-foreground">
                 <p className="flex items-center gap-2">
-                  <MapPin className="h-3.5 w-3.5" /> {app.region}
+                  <MapPin className="h-3.5 w-3.5" />{" "}
+                  {app.region_label || uzRegionLabel(app.region)}
                 </p>
                 <p className="flex items-center gap-2">
                   <Mail className="h-3.5 w-3.5" /> {app.applicant_email}

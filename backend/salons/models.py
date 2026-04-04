@@ -18,6 +18,7 @@ class Salon(models.Model):
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
     address = models.TextField(blank=True)
+    phone = models.CharField(max_length=32, blank=True)
     premium = models.BooleanField(default=False)
     languages = models.JSONField(default=list, blank=True)
     closed_weekdays = models.JSONField(default=list, blank=True)

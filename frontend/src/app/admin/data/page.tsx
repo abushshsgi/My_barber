@@ -1,5 +1,6 @@
-import AdminData from "@/page-views/admin/AdminData";
+import { redirect } from "next/navigation";
 
-export default function Page() {
-  return <AdminData />;
+/** Eski /admin/data — mijozlar sahifasiga yo'naltiriladi. */
+export default function AdminDataRedirectPage() {
+  redirect("/admin/users");
 }

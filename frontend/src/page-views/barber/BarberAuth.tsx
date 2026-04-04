@@ -5,7 +5,15 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Scissors, Eye, EyeOff, MapPin, Loader2 } from "lucide-react";
+import { UZ_REGIONS } from "@/lib/uz-regions";
 import { apiFetch, setTokens } from "@/lib/api";
 
 const STEPS = 4;
@@ -46,6 +54,7 @@ export default function BarberAuth() {
   const [lng, setLng] = useState("");
   const [geoStatus, setGeoStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [hasSalon, setHasSalon] = useState<boolean | null>(null);
+  const [region, setRegion] = useState("");
 
   const requestLocation = () => {
     setErr(null);
@@ -99,6 +108,10 @@ export default function BarberAuth() {
         setErr("Ism, email va kamida 8 belgili parol kiriting.");
         return;
       }
+      if (!region) {
+        setErr("O'zbekiston viloyatini tanlang.");
+        return;
+      }
     }
     if (signupStep === 2) {
       const la = parseFloat(lat);
@@ -125,6 +138,10 @@ export default function BarberAuth() {
 
   const submitSignup = async () => {
     setErr(null);
+    if (!region) {
+      setErr("Viloyatni tanlang.");
+      return;
+    }
     if (hasSalon === null) {
       setErr("Salon tanlovi yo‘q.");
       return;
@@ -147,6 +164,7 @@ export default function BarberAuth() {
           has_salon: hasSalon,
           latitude: la,
           longitude: ln,
+          region,
           staff_count_at_signup: 1,
         }),
       });
@@ -276,6 +294,21 @@ export default function BarberAuth() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
+                <div className="space-y-1.5">
+                  <label className="text-xs text-muted-foreground">Viloyat</label>
+                  <Select value={region || undefined} onValueChange={setRegion}>
+                    <SelectTrigger className="rounded-xl w-full">
+                      <SelectValue placeholder="Viloyatni tanlang" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {UZ_REGIONS.map((r) => (
+                        <SelectItem key={r.value} value={r.value}>
+                          {r.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             )}
 
@@ -360,6 +393,9 @@ export default function BarberAuth() {
                 <ul className="text-left text-muted-foreground text-xs space-y-1 rounded-xl bg-muted/40 p-3">
                   <li>Ism: {fullName}</li>
                   <li>Email: {email}</li>
+                  <li>
+                    Viloyat: {UZ_REGIONS.find((r) => r.value === region)?.label ?? region}
+                  </li>
                   <li>
                     Joylashuv: {lat}, {lng}
                   </li>

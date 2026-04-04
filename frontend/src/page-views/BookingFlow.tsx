@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiFetch, getAccessToken } from "@/lib/api";
+import { apiFetch, formatApiError, getAccessToken } from "@/lib/api";
 import { mediaSrc, PLACEHOLDER_AVATAR } from "@/lib/media";
 import { format } from "date-fns";
 
@@ -44,7 +44,7 @@ export default function BookingFlow() {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
 
-  const { data: salon, isLoading } = useQuery({
+  const { data: salon, isLoading, isError, error } = useQuery({
     queryKey: ["salon", salonId],
     queryFn: async () => {
       const res = await apiFetch(`/api/v1/salons/${salonId}/`);
@@ -78,7 +78,7 @@ export default function BookingFlow() {
       const res = await apiFetch(`/api/v1/bookings/availability/?${params}`);
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
-        throw new Error((e as { detail?: string }).detail || "Vaqt slotlari yuklanmadi");
+        throw new Error(formatApiError(e, "Vaqt slotlari yuklanmadi"));
       }
       return res.json() as Promise<{ slots: string[] }>;
     },
@@ -109,16 +109,29 @@ export default function BookingFlow() {
       });
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
-        throw new Error((e as { detail?: string }).detail || "Bron yuborilmadi");
+        throw new Error(formatApiError(e, "Bron yuborilmadi"));
       }
       return res.json();
     },
   });
 
-  if (isLoading || !salon) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-accent" />
+      </div>
+    );
+  }
+
+  if (isError || !salon) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 gap-4">
+        <p className="text-muted-foreground text-center">
+          {error instanceof Error ? error.message : "Salon topilmadi."}
+        </p>
+        <Button variant="outline" className="rounded-xl" onClick={() => router.back()}>
+          Orqaga
+        </Button>
       </div>
     );
   }
@@ -380,8 +393,8 @@ export default function BookingFlow() {
                 </div>
               )}
               {bookingMutation.isError && (
-                <p className="text-sm text-destructive text-center">
-                  {(bookingMutation.error as Error).message}. Tizimga kiring.
+                <p className="text-sm text-destructive text-center px-2">
+                  {(bookingMutation.error as Error).message}
                 </p>
               )}
             </motion.div>

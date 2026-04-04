@@ -31,6 +31,14 @@ class ServiceSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "salon")
 
 
+class PublicServiceSerializer(serializers.ModelSerializer):
+    """Mijozlar uchun salon sahifasida — faqat band qilish uchun kerakli maydonlar."""
+
+    class Meta:
+        model = Service
+        fields = ("id", "name", "price", "duration_minutes")
+
+
 class SalonListSerializer(serializers.ModelSerializer):
     cover_image = serializers.ImageField(read_only=True)
     rating_avg = serializers.SerializerMethodField()
@@ -65,8 +73,10 @@ class SalonListSerializer(serializers.ModelSerializer):
 class SalonDetailSerializer(serializers.ModelSerializer):
     hours = SalonHoursSerializer(many=True, read_only=True)
     images = SalonImageSerializer(many=True, read_only=True)
-    services = ServiceSerializer(many=True, read_only=True)
+    services = serializers.SerializerMethodField()
     owner_id = serializers.IntegerField(read_only=True)
+    rating_avg = serializers.SerializerMethodField()
+    review_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Salon
@@ -80,6 +90,7 @@ class SalonDetailSerializer(serializers.ModelSerializer):
             "latitude",
             "longitude",
             "address",
+            "phone",
             "premium",
             "languages",
             "closed_weekdays",
@@ -87,8 +98,23 @@ class SalonDetailSerializer(serializers.ModelSerializer):
             "hours",
             "images",
             "services",
+            "rating_avg",
+            "review_count",
             "created_at",
         )
+
+    def get_rating_avg(self, obj):
+        from django.db.models import Avg
+
+        agg = obj.reviews.aggregate(a=Avg("rating"))
+        return round(agg["a"] or 0, 2)
+
+    def get_review_count(self, obj):
+        return obj.reviews.count()
+
+    def get_services(self, obj):
+        qs = obj.services.filter(is_active=True).order_by("name")
+        return PublicServiceSerializer(qs, many=True, context=self.context).data
 
 
 class SalonCreateUpdateSerializer(serializers.ModelSerializer):
@@ -104,6 +130,7 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
             "latitude",
             "longitude",
             "address",
+            "phone",
             "premium",
             "languages",
             "closed_weekdays",

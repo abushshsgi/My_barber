@@ -42,6 +42,7 @@ export default function CreateSalon() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [address, setAddress] = useState("");
+  const [phone, setPhone] = useState("");
   const [lat, setLat] = useState("41.3111");
   const [lng, setLng] = useState("69.2797");
   const [openTime, setOpenTime] = useState("09:00");
@@ -114,6 +115,7 @@ export default function CreateSalon() {
         latitude: lat,
         longitude: lng,
         address: address.trim(),
+        phone: phone.trim(),
         languages: langs.length ? langs : ["O'zbek"],
         closed_weekdays,
         hours,
@@ -230,6 +232,13 @@ export default function CreateSalon() {
             className="rounded-xl"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
+          />
+          <Input
+            placeholder="Salon telefoni (ixtiyoriy)"
+            className="rounded-xl"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            inputMode="tel"
           />
           <div className="grid grid-cols-2 gap-2">
             <Input placeholder="Latitude" value={lat} onChange={(e) => setLat(e.target.value)} className="rounded-xl text-sm" />

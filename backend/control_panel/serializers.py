@@ -65,6 +65,7 @@ class AdminSalonSerializer(serializers.ModelSerializer):
             "owner_email",
             "owner_name",
             "address",
+            "phone",
             "is_published",
             "premium",
             "latitude",
@@ -77,4 +78,4 @@ class AdminSalonSerializer(serializers.ModelSerializer):
 class AdminSalonUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Salon
-        fields = ("is_published", "premium", "name", "address")
+        fields = ("is_published", "premium", "name", "address", "phone")

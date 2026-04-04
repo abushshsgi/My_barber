@@ -17,8 +17,11 @@ type SalonDetail = {
   description: string;
   cover_image: string | null;
   address: string;
+  phone?: string;
   premium: boolean;
   languages: string[];
+  rating_avg?: number;
+  review_count?: number;
   services: {
     id: number;
     name: string;
@@ -28,6 +31,8 @@ type SalonDetail = {
   images: { id: number; image: string }[];
   hours: { weekday: number; open_time: string; close_time: string }[];
 };
+
+const WEEKDAY_UZ = ["Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba", "Yakshanba"];
 
 type ReviewApi = {
   id: number;
@@ -46,7 +51,7 @@ export default function SalonPage() {
     setLoggedIn(!!getAccessToken());
   }, []);
 
-  const { data: salon, isLoading, error } = useQuery({
+  const { data: salon, isLoading, isError, error } = useQuery({
     queryKey: ["salon", id],
     queryFn: async () => {
       const res = await apiFetch(`/api/v1/salons/${id}/`);
@@ -67,7 +72,7 @@ export default function SalonPage() {
     enabled: !!id,
   });
 
-  if (isLoading || !salon) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-muted-foreground">Yuklanmoqda...</p>
@@ -75,13 +80,28 @@ export default function SalonPage() {
     );
   }
 
-  if (error) {
+  if (isError || !salon) {
     return (
-      <div className="p-8 text-center text-muted-foreground">Salon topilmadi</div>
+      <div className="min-h-screen flex flex-col items-center justify-center p-8 gap-3">
+        <p className="text-muted-foreground text-center">
+          {error instanceof Error ? error.message : "Salon topilmadi yoki yuklanmadi."}
+        </p>
+        <Link href="/" className="text-sm text-accent font-medium">
+          Asosiy sahifaga
+        </Link>
+      </div>
     );
   }
 
-  const openHour = salon.hours?.[0];
+  const sortedHours = [...(salon.hours || [])].sort((a, b) => a.weekday - b.weekday);
+  const reviewAvgFromList =
+    reviews.length > 0
+      ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
+      : 0;
+  const starsRating =
+    typeof salon.rating_avg === "number" && salon.rating_avg > 0
+      ? salon.rating_avg
+      : reviewAvgFromList;
 
   return (
     <div className="min-h-screen pb-24">
@@ -112,24 +132,42 @@ export default function SalonPage() {
       <div className="px-4 -mt-2 space-y-4">
         <Card className="p-4 space-y-2.5">
           <div className="flex items-center justify-between">
-            <StarRating rating={4.8} size="md" />
-            <span className="text-sm text-muted-foreground">{reviews.length} sharh</span>
+            <StarRating rating={starsRating} size="md" showValue={starsRating > 0} />
+            <span className="text-sm text-muted-foreground">
+              {typeof salon.review_count === "number" ? salon.review_count : reviews.length}{" "}
+              sharh
+            </span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4 shrink-0" /> {salon.address}
+            <MapPin className="h-4 w-4 shrink-0" /> {salon.address || "Manzil ko‘rsatilmagan"}
           </div>
-          {openHour && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4 shrink-0" /> {openHour.open_time} —{" "}
-              {openHour.close_time}
+          {sortedHours.length > 0 && (
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <Clock className="h-4 w-4 shrink-0" /> Ish vaqti
+              </div>
+              <ul className="text-xs text-muted-foreground space-y-0.5 pl-6">
+                {sortedHours.map((h) => (
+                  <li key={h.weekday}>
+                    {WEEKDAY_UZ[h.weekday] ?? `Kun ${h.weekday}`}: {h.open_time} — {h.close_time}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Phone className="h-4 w-4 shrink-0" /> —
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Globe className="h-4 w-4 shrink-0" /> {(salon.languages || []).join(", ")}
-          </div>
+          {salon.phone ? (
+            <a
+              href={`tel:${salon.phone.replace(/\s/g, "")}`}
+              className="flex items-center gap-2 text-sm text-accent font-medium"
+            >
+              <Phone className="h-4 w-4 shrink-0" /> {salon.phone}
+            </a>
+          ) : null}
+          {(salon.languages || []).length > 0 && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Globe className="h-4 w-4 shrink-0" /> {(salon.languages || []).join(", ")}
+            </div>
+          )}
         </Card>
 
         {salon.images?.length > 0 && (

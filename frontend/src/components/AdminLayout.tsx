@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, UserCheck, Database, CalendarDays, LogOut } from "lucide-react";
+import {
+  LayoutDashboard,
+  UserCheck,
+  CalendarDays,
+  LogOut,
+  Users,
+  Scissors,
+  Store,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminAuthGuard } from "@/components/AdminAuthGuard";
 import { clearTokens } from "@/lib/api";
@@ -10,9 +18,11 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
+  { icon: Users, label: "Mijozlar", path: "/admin/users" },
+  { icon: Scissors, label: "Sartaroshlar", path: "/admin/barbers" },
+  { icon: Store, label: "Salonlar", path: "/admin/salons" },
   { icon: CalendarDays, label: "Bandlar", path: "/admin/bookings" },
   { icon: UserCheck, label: "Arizalar", path: "/admin/approvals" },
-  { icon: Database, label: "Ma'lumotlar", path: "/admin/data" },
 ];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {

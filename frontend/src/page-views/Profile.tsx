@@ -15,6 +15,7 @@ import {
   Loader2,
   Scissors,
   Bell,
+  MapPin,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -24,6 +25,7 @@ import { mapSalonListApi } from "@/lib/mapSalon";
 import { useRouter } from "next/navigation";
 import { useSalonInviteResponse } from "@/hooks/useSalonInviteResponse";
 import { useState } from "react";
+import { uzRegionLabel } from "@/lib/uz-regions";
 
 type Me = {
   id: number;
@@ -31,6 +33,7 @@ type Me = {
   phone: string | null;
   full_name: string;
   role: string;
+  region?: string;
 };
 
 async function fetchMe(): Promise<Me> {
@@ -41,6 +44,15 @@ async function fetchMe(): Promise<Me> {
 
 async function fetchBookingCount(): Promise<number> {
   const res = await apiFetch("/api/v1/bookings/");
+  if (!res.ok) return 0;
+  const j = (await res.json()) as { count?: number; results?: unknown[] } | unknown[];
+  if (Array.isArray(j)) return j.length;
+  if (typeof j.count === "number") return j.count;
+  return j.results?.length ?? 0;
+}
+
+async function fetchMyReviewCount(): Promise<number> {
+  const res = await apiFetch("/api/v1/reviews/?mine=1");
   if (!res.ok) return 0;
   const j = (await res.json()) as { count?: number; results?: unknown[] } | unknown[];
   if (Array.isArray(j)) return j.length;
@@ -65,7 +77,7 @@ async function fetchMemberships(): Promise<MembershipRow[]> {
 
 const menuItems = [
   { label: "Band tarixi", icon: CalendarDays, color: "text-accent", href: "/bookings" },
-  { label: "Yozilgan sharhlar", icon: Star, color: "text-accent", href: "/" },
+  { label: "Yozilgan sharhlar", icon: Star, color: "text-accent", href: "/bookings" },
   { label: "Sevimlilar", icon: Heart, color: "text-destructive", href: "/" },
   { label: "Maxfiylik", icon: Shield, color: "text-success", href: "/" },
   { label: "Yordam", icon: HelpCircle, color: "text-muted-foreground", href: "/" },
@@ -80,6 +92,11 @@ const Profile = () => {
   const { data: bookingCount = 0 } = useQuery({
     queryKey: ["bookings", "count"],
     queryFn: fetchBookingCount,
+    enabled: !!user,
+  });
+  const { data: reviewCount = 0 } = useQuery({
+    queryKey: ["reviews", "mine", "count"],
+    queryFn: fetchMyReviewCount,
     enabled: !!user,
   });
   const { data: memberships = [] } = useQuery({
@@ -102,6 +119,7 @@ const Profile = () => {
   );
   const isBarberRole =
     user?.role === "BARBER_OWNER" || user?.role === "BARBER_STAFF";
+  const isEndUser = user?.role === "USER";
 
   if (isLoading) {
     return (
@@ -153,6 +171,9 @@ const Profile = () => {
               <h1 className="text-xl font-extrabold text-background">{displayName}</h1>
               <p className="text-sm text-background/50 mt-0.5">{user.phone || "—"}</p>
               <p className="text-xs text-background/40">{user.email}</p>
+              {user.region ? (
+                <p className="text-xs text-background/35 mt-1">{uzRegionLabel(user.region)}</p>
+              ) : null}
             </div>
           </motion.div>
         </div>
@@ -167,7 +188,7 @@ const Profile = () => {
         <div className="grid grid-cols-3 gap-3">
           {[
             { value: bookingCount, label: "Bandlar", icon: CalendarDays },
-            { value: "—", label: "Sharhlar", icon: Star },
+            { value: reviewCount, label: "Sharhlar", icon: Star },
             { value: "—", label: "Sevimli", icon: Heart },
           ].map((stat, i) => (
             <motion.div
@@ -184,6 +205,28 @@ const Profile = () => {
           ))}
         </div>
       </motion.div>
+
+      {isEndUser && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.18 }}
+          className="px-5 mt-5"
+        >
+          <Link href="/map">
+            <div className="bg-card rounded-2xl border border-border/50 p-4 flex items-center gap-3 hover:bg-muted/40 transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center shrink-0">
+                <MapPin className="h-5 w-5 text-accent" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm">Yaqin salonlar</p>
+                <p className="text-xs text-muted-foreground">Xarita orqali toping va band qiling</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+            </div>
+          </Link>
+        </motion.div>
+      )}
 
       {pendingSalonInvites.length > 0 && (
         <motion.div

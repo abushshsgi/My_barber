@@ -73,15 +73,34 @@ export async function apiFetch(
   return res;
 }
 
-function formatApiError(body: unknown, fallback: string): string {
+export function formatApiError(body: unknown, fallback: string): string {
   if (body && typeof body === "object") {
-    const d = body as { detail?: unknown; non_field_errors?: string[] };
+    const d = body as {
+      detail?: unknown;
+      non_field_errors?: string[];
+      [key: string]: unknown;
+    };
     if (typeof d.detail === "string") return d.detail;
+    if (Array.isArray(d.detail) && d.detail.length) return String(d.detail[0]);
     if (Array.isArray(d.non_field_errors) && d.non_field_errors[0])
       return String(d.non_field_errors[0]);
-    if (typeof d.detail === "object" && d.detail !== null) {
+    if (typeof d.detail === "object" && d.detail !== null && !Array.isArray(d.detail)) {
       const parts = Object.entries(d.detail as Record<string, unknown>)
         .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : String(v)}`)
+        .join("; ");
+      if (parts) return parts;
+    }
+    const fieldKeys = Object.keys(d).filter(
+      (k) => k !== "detail" && k !== "non_field_errors"
+    );
+    if (fieldKeys.length) {
+      const parts = fieldKeys
+        .map((k) => {
+          const v = d[k];
+          if (Array.isArray(v)) return `${k}: ${v.join(", ")}`;
+          if (v && typeof v === "object") return `${k}: ${JSON.stringify(v)}`;
+          return `${k}: ${String(v)}`;
+        })
         .join("; ");
       if (parts) return parts;
     }

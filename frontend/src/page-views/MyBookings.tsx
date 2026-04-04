@@ -62,6 +62,10 @@ const MyBookings = () => {
         d.push(b);
       }
     }
+    const byStart = (a: BookingRow, b: BookingRow) =>
+      new Date(a.start_at).getTime() - new Date(b.start_at).getTime();
+    u.sort(byStart);
+    d.sort((a, b) => -byStart(a, b));
     return { upcoming: u, done: d };
   }, [bookings]);
 

@@ -5,7 +5,15 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Scissors, Eye, EyeOff } from "lucide-react";
+import { UZ_REGIONS } from "@/lib/uz-regions";
 import { apiFetch, setTokens } from "@/lib/api";
 import Link from "next/link";
 
@@ -20,6 +28,7 @@ export default function UserAuth() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [region, setRegion] = useState("");
 
   const nextPath = () => {
     if (typeof window === "undefined") return "/";
@@ -50,6 +59,10 @@ export default function UserAuth() {
 
   const handleSignup = async () => {
     setErr(null);
+    if (!region) {
+      setErr("Viloyatni tanlang.");
+      return;
+    }
     setLoading(true);
     try {
       const res = await apiFetch("/api/v1/auth/register/", {
@@ -59,6 +72,7 @@ export default function UserAuth() {
           password,
           full_name: fullName,
           phone: phone || undefined,
+          region,
         }),
       });
       const data = await res.json();
@@ -176,8 +190,23 @@ export default function UserAuth() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground">Viloyat</label>
+              <Select value={region || undefined} onValueChange={setRegion}>
+                <SelectTrigger className="rounded-xl w-full">
+                  <SelectValue placeholder="Viloyatni tanlang" />
+                </SelectTrigger>
+                <SelectContent>
+                  {UZ_REGIONS.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>
+                      {r.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Button
-              onClick={handleSignup}
+              onClick={() => void handleSignup()}
               disabled={loading}
               className="w-full rounded-xl gold-gradient text-gold-foreground border-0"
             >
