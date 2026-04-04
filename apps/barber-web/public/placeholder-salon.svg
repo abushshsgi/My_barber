@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400" viewBox="0 0 800 400" fill="none">
+  <rect width="800" height="400" fill="#1a1a1e"/>
+  <rect x="0" y="0" width="800" height="400" fill="url(#g)" opacity="0.4"/>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="800" y2="400" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2dd4bf" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#1a1a1e" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <path d="M400 140c-22 0-40 18-40 40v20h-24v48h128v-48h-24v-20c0-22-18-40-40-40zm0 24c8.8 0 16 7.2 16 16v20h-32v-20c0-8.8 7.2-16 16-16z" fill="#5eead4" fill-opacity="0.5"/>
+  <text x="400" y="280" text-anchor="middle" fill="#71717a" font-family="system-ui,sans-serif" font-size="18">Salon</text>
+</svg>

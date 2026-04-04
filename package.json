@@ -1,0 +1,17 @@
+{
+  "name": "mybarber",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:user": "npm run dev -w user-web -- -p 3000",
+    "dev:admin": "npm run dev -w admin-web -- -p 3001",
+    "dev:barber": "npm run dev -w barber-web -- -p 3002",
+    "build:user": "npm run build -w user-web",
+    "build:admin": "npm run build -w admin-web",
+    "build:barber": "npm run build -w barber-web",
+    "build:frontends": "npm run build:user && npm run build:admin && npm run build:barber"
+  }
+}
