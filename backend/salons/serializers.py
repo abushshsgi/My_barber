@@ -41,8 +41,9 @@ class PublicServiceSerializer(serializers.ModelSerializer):
 
 class SalonListSerializer(serializers.ModelSerializer):
     cover_image = serializers.ImageField(read_only=True)
-    rating_avg = serializers.SerializerMethodField()
-    review_count = serializers.SerializerMethodField()
+    # get_queryset annotate bilan beriladi (N+1 oldini olish)
+    rating_avg = serializers.FloatField(read_only=True)
+    review_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Salon
@@ -60,14 +61,15 @@ class SalonListSerializer(serializers.ModelSerializer):
             "review_count",
         )
 
-    def get_rating_avg(self, obj):
-        from django.db.models import Avg
-
-        agg = obj.reviews.aggregate(a=Avg("rating"))
-        return round(agg["a"] or 0, 2)
-
-    def get_review_count(self, obj):
-        return obj.reviews.count()
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        ra = data.get("rating_avg")
+        if ra is not None:
+            try:
+                data["rating_avg"] = round(float(ra), 2)
+            except (TypeError, ValueError):
+                data["rating_avg"] = 0.0
+        return data
 
 
 class SalonDetailSerializer(serializers.ModelSerializer):

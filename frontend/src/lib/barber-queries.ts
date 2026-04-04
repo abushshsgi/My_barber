@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, formatApiError } from "./api";
 
 export type BarberServiceApi = {
   id: number;
@@ -22,7 +22,17 @@ export type BarberListApi = {
 
 export async function fetchBarbers(): Promise<BarberListApi[]> {
   const res = await apiFetch("/api/v1/barbers/");
-  if (!res.ok) throw new Error("Barberlar yuklanmadi");
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const detail = formatApiError(body, "");
+    const hint =
+      res.status === 500
+        ? " Backend-da migrate (Release Command) tekshiring."
+        : "";
+    throw new Error(
+      (detail ? `${detail} ` : "") + `(HTTP ${res.status}). Barberlar yuklanmadi.${hint}`
+    );
+  }
   const j = (await res.json()) as { results?: BarberListApi[] } | BarberListApi[];
   return Array.isArray(j) ? j : j.results || [];
 }

@@ -19,6 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchSalons } from "@/lib/salon-queries";
 import { fetchBarbers } from "@/lib/barber-queries";
 import { HomeLoginBanner } from "@/components/HomeLoginBanner";
+import { getPublicApiBase } from "@/lib/api";
 import { BarberCard } from "@/components/BarberCard";
 
 const categories = [
@@ -38,6 +39,7 @@ const Index = () => {
   const { data: salons = [], isLoading, error } = useQuery({
     queryKey: ["salons"],
     queryFn: fetchSalons,
+    retry: false,
   });
 
   const filtered = salons.filter((s) =>
@@ -47,6 +49,7 @@ const Index = () => {
   const { data: barbers = [], isLoading: loadingBarbers, error: barberError } = useQuery({
     queryKey: ["barbers"],
     queryFn: fetchBarbers,
+    retry: false,
   });
 
   const filteredBarbers = barbers.filter((b) => {
@@ -71,9 +74,13 @@ const Index = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
-        <p className="text-destructive text-center">
-          {(error as Error).message}. API manzili: env NEXT_PUBLIC_API_URL
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 gap-3">
+        <p className="text-destructive text-center text-sm max-w-md">
+          {(error as Error).message}
+        </p>
+        <p className="text-muted-foreground text-center text-xs max-w-md">
+          API: {getPublicApiBase()}
+          {process.env.NEXT_PUBLIC_API_URL ? "" : " — Vercelda NEXT_PUBLIC_API_URL o‘rnating."}
         </p>
       </div>
     );

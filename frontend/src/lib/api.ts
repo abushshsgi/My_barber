@@ -131,4 +131,9 @@ export async function apiJson<T>(path: string, options: RequestInit = {}): Promi
   return body as T;
 }
 
+/** Brauzerda ishlatiladigan API bazaviy URL (Vercel: NEXT_PUBLIC_API_URL). */
+export function getPublicApiBase(): string {
+  return API_BASE;
+}
+
 export { API_BASE };

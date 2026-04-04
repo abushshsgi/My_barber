@@ -3,7 +3,8 @@ import math
 from django.conf import settings as django_settings
 from django.core.files.base import File
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Avg, Count, FloatField, Q, Value
+from django.db.models.functions import Cast, Coalesce
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -53,13 +54,32 @@ class SalonViewSet(viewsets.ModelViewSet):
             return [AllowAny()]
         return [IsAuthenticated()]
 
+    def _salon_public_list_qs(self):
+        """Ro‘yxat va nearby uchun: reyting/sharhlar soni bitta so‘rovda."""
+        # PostgreSQL: Coalesce(Avg(..), Value(0)) integer/numeric aralashmasi 500 beradi — FloatField bilan bir xil.
+        return (
+            Salon.objects.filter(is_published=True)
+            .select_related("owner")
+            .annotate(
+                review_count=Count("reviews", distinct=True),
+                rating_avg=Coalesce(
+                    Cast(Avg("reviews__rating"), FloatField()),
+                    Value(0.0),
+                    output_field=FloatField(),
+                ),
+            )
+        )
+
     def get_queryset(self):
         qs = Salon.objects.select_related("owner")
         if self.action == "retrieve":
             qs = qs.prefetch_related("images", "hours", "services")
 
-        if self.action in ("list", "nearby"):
-            return qs.filter(is_published=True)
+        if self.action == "list":
+            return self._salon_public_list_qs()
+
+        if self.action == "nearby":
+            return self._salon_public_list_qs()
 
         if self.action == "retrieve":
             user = self.request.user
@@ -129,8 +149,16 @@ class SalonViewSet(viewsets.ModelViewSet):
                     memberships__invite_state=SalonMembership.InviteState.ACTIVE,
                 )
             )
-            .distinct()
             .select_related("owner")
+            .annotate(
+                review_count=Count("reviews", distinct=True),
+                rating_avg=Coalesce(
+                    Cast(Avg("reviews__rating"), FloatField()),
+                    Value(0.0),
+                    output_field=FloatField(),
+                ),
+            )
+            .distinct()
         )
         return Response(
             SalonListSerializer(qs, many=True, context={"request": request}).data
@@ -258,7 +286,7 @@ class SalonViewSet(viewsets.ModelViewSet):
                 {"detail": "lat, lng required; radius_km optional."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        salons = Salon.objects.filter(is_published=True)
+        salons = self._salon_public_list_qs()
         result = []
         for s in salons:
             d = _haversine_km(lat, lng, float(s.latitude), float(s.longitude))

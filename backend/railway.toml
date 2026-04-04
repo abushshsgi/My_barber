@@ -1,0 +1,6 @@
+# Railway: Root Directory = backend bo‘lsa, bu fayl avtomatik o‘qiladi.
+# Dashboardda Release Command bo‘sh bo‘lsa ham — migratsiya va collectstatic ishlaydi.
+# 500 xatolik: odatda DBda migratsiya qilinmagan (masalan, salon.phone ustuni).
+
+[deploy]
+releaseCommand = "python manage.py migrate --noinput && python manage.py collectstatic --noinput"

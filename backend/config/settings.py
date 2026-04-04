@@ -102,6 +102,12 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+# Railway/Docker: collectstatic dan oldin papka bo‘lmasa Django ogohlantiradi
+if not DEBUG:
+    try:
+        STATIC_ROOT.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
 # DEBUG=false bo'lsa ham admin CSS ishlashi: collectstatic bo'lmasa, app staticlari topiladi
 WHITENOISE_USE_FINDERS = True
 if DEBUG:
