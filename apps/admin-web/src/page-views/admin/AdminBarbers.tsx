@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,9 +44,15 @@ import { format } from "date-fns";
 
 export default function AdminBarbers() {
   const qc = useQueryClient();
+  const searchParams = useSearchParams();
   const [userQ, setUserQ] = useState("");
   const [regionFilter, setRegionFilter] = useState<string>("");
   const [deleteTarget, setDeleteTarget] = useState<AdminBarberRow | null>(null);
+
+  useEffect(() => {
+    const r = searchParams.get("region");
+    if (r) setRegionFilter(r);
+  }, [searchParams]);
 
   const { data: res, isLoading } = useQuery({
     queryKey: ["admin", "barbers", userQ, regionFilter],
@@ -89,7 +96,9 @@ export default function AdminBarbers() {
           />
           <Select
             value={regionFilter || "__all"}
-            onValueChange={(v) => setRegionFilter(v === "__all" ? "" : v)}
+            onValueChange={(v) =>
+              setRegionFilter(v === "__all" ? "" : v === "__UNSET__" ? "__UNSET__" : v)
+            }
           >
             <SelectTrigger className="w-[220px] rounded-xl">
               <SelectValue placeholder="Viloyat" />
@@ -101,6 +110,7 @@ export default function AdminBarbers() {
                   {r.label}
                 </SelectItem>
               ))}
+              <SelectItem value="__UNSET__">Viloyat ko‘rsatilmagan</SelectItem>
             </SelectContent>
           </Select>
         </div>

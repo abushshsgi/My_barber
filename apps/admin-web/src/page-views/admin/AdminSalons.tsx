@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,10 +42,16 @@ import { Loader2, Check, Trash2 } from "lucide-react";
 
 export default function AdminSalons() {
   const qc = useQueryClient();
+  const searchParams = useSearchParams();
   const [salonQ, setSalonQ] = useState("");
   const [regionFilter, setRegionFilter] = useState("");
   const [salonFilter, setSalonFilter] = useState<"all" | "pending" | "pub">("all");
   const [deleteTarget, setDeleteTarget] = useState<AdminSalonRow | null>(null);
+
+  useEffect(() => {
+    const r = searchParams.get("region");
+    if (r) setRegionFilter(r);
+  }, [searchParams]);
 
   const pubParam =
     salonFilter === "pending" ? ("0" as const) : salonFilter === "pub" ? ("1" as const) : undefined;
@@ -96,7 +103,12 @@ export default function AdminSalons() {
             onChange={(e) => setSalonQ(e.target.value)}
             className="max-w-md rounded-xl"
           />
-          <Select value={regionFilter || "__all"} onValueChange={(v) => setRegionFilter(v === "__all" ? "" : v)}>
+          <Select
+            value={regionFilter || "__all"}
+            onValueChange={(v) =>
+              setRegionFilter(v === "__all" ? "" : v === "__UNSET__" ? "__UNSET__" : v)
+            }
+          >
             <SelectTrigger className="w-full max-w-[260px] rounded-xl">
               <SelectValue placeholder="Viloyat" />
             </SelectTrigger>
@@ -107,6 +119,7 @@ export default function AdminSalons() {
                   {r.label}
                 </SelectItem>
               ))}
+              <SelectItem value="__UNSET__">Viloyat ko‘rsatilmagan</SelectItem>
             </SelectContent>
           </Select>
           <div className="flex gap-1">

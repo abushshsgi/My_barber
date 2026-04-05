@@ -1,5 +1,26 @@
 import { apiFetch, apiJson } from "./api";
 
+/** Viloyat bo‘yicha dashboard (stats API ichida). */
+export type AdminRegionStatRow = {
+  region: string;
+  label: string;
+  barbers_count: number;
+  salons_count: number;
+  barbers: {
+    id: number;
+    email: string;
+    full_name: string;
+    is_active: boolean;
+  }[];
+  salons: {
+    id: number;
+    name: string;
+    slug: string;
+    owner_email: string;
+    is_published: boolean;
+  }[];
+};
+
 export type AdminStats = {
   users_total: number;
   users_clients: number;
@@ -9,6 +30,7 @@ export type AdminStats = {
   barber_applications_pending: number;
   bookings_today: number;
   bookings_total: number;
+  regions?: AdminRegionStatRow[];
 };
 
 export type AdminUserRow = {

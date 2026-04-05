@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import BarberApplication, User
+from accounts.uz_regions import UzRegion
 from barbers.models import Barber
 from accounts.permissions import IsAdmin
 from bookings.models import Booking
@@ -19,6 +20,67 @@ from .serializers import (
     AdminUserSerializer,
     AdminUserUpdateSerializer,
 )
+
+
+def _admin_region_breakdown():
+    """Har bir viloyat uchun sartarosh/salon soni va qisqa akkaunt ro‘yxati."""
+
+    def barber_rows(qs):
+        return [
+            {
+                "id": b.id,
+                "email": b.email,
+                "full_name": b.full_name or "",
+                "is_active": b.is_active,
+            }
+            for b in qs.only("id", "email", "full_name", "is_active").order_by("email")
+        ]
+
+    def salon_rows(qs):
+        out = []
+        for s in qs.select_related("owner_barber").order_by("name"):
+            ob = s.owner_barber
+            out.append(
+                {
+                    "id": s.id,
+                    "name": s.name,
+                    "slug": s.slug,
+                    "owner_email": ob.email if ob else "",
+                    "is_published": s.is_published,
+                }
+            )
+        return out
+
+    regions_payload = []
+    for code, label in UzRegion.choices:
+        bqs = Barber.objects.filter(region=code)
+        sqs = Salon.objects.filter(owner_barber__region=code)
+        regions_payload.append(
+            {
+                "region": code,
+                "label": label,
+                "barbers_count": bqs.count(),
+                "salons_count": sqs.count(),
+                "barbers": barber_rows(bqs),
+                "salons": salon_rows(sqs),
+            }
+        )
+
+    b_unset = Barber.objects.filter(region="")
+    s_unset = Salon.objects.filter(
+        Q(owner_barber__isnull=True) | Q(owner_barber__region="")
+    )
+    regions_payload.append(
+        {
+            "region": "__UNSET__",
+            "label": "Viloyat ko‘rsatilmagan",
+            "barbers_count": b_unset.count(),
+            "salons_count": s_unset.count(),
+            "barbers": barber_rows(b_unset),
+            "salons": salon_rows(s_unset),
+        }
+    )
+    return regions_payload
 
 
 class AdminStatsView(APIView):
@@ -49,6 +111,7 @@ class AdminStatsView(APIView):
                 "barber_applications_pending": apps_pending,
                 "bookings_today": bookings_today,
                 "bookings_total": bookings_total,
+                "regions": _admin_region_breakdown(),
             }
         )
 
@@ -109,7 +172,9 @@ class AdminSalonListView(generics.ListAPIView):
                 Q(name__icontains=q) | Q(owner_barber__email__icontains=q)
             )
         region = self.request.query_params.get("region", "").strip()
-        if region:
+        if region == "__UNSET__":
+            qs = qs.filter(Q(owner_barber__isnull=True) | Q(owner_barber__region=""))
+        elif region:
             qs = qs.filter(owner_barber__region=region)
         return qs
 
@@ -132,7 +197,9 @@ class AdminBarberListView(generics.ListAPIView):
     def get_queryset(self):
         qs = Barber.objects.select_related("profile").order_by("-date_joined")
         region = self.request.query_params.get("region")
-        if region:
+        if region == "__UNSET__":
+            qs = qs.filter(region="")
+        elif region:
             qs = qs.filter(region=region)
         q = self.request.query_params.get("q", "").strip()
         if q:
