@@ -180,7 +180,7 @@ export default function UserAuth() {
                 <p className="text-xs text-muted-foreground">{t.subtitle}</p>
               </div>
             </div>
-            <div className={cn("flex items-center gap-2", "ml-auto lg:ml-auto")}>
+            <div className="ml-auto flex items-center gap-2">
               <span className="hidden text-xs text-muted-foreground sm:inline">{t.langHint}</span>
               <LanguageSwitcher />
             </div>
@@ -274,7 +274,14 @@ export default function UserAuth() {
                         disabled={loading}
                         className="h-12 w-full rounded-xl border-0 text-base font-semibold shadow-lg gold-gradient text-gold-foreground"
                       >
-                        {loading ? "…" : t.signIn}
+                        {loading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            {t.signIn}
+                          </>
+                        ) : (
+                          t.signIn
+                        )}
                       </Button>
                     </form>
                   </TabsContent>
