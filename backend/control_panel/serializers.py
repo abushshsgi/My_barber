@@ -55,6 +55,8 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
 class AdminSalonSerializer(serializers.ModelSerializer):
     owner_email = serializers.EmailField(source="owner_barber.email", read_only=True)
     owner_name = serializers.CharField(source="owner_barber.full_name", read_only=True)
+    region = serializers.SerializerMethodField()
+    region_label = serializers.SerializerMethodField()
 
     class Meta:
         model = Salon
@@ -65,6 +67,8 @@ class AdminSalonSerializer(serializers.ModelSerializer):
             "owner_barber",
             "owner_email",
             "owner_name",
+            "region",
+            "region_label",
             "address",
             "phone",
             "is_published",
@@ -74,6 +78,16 @@ class AdminSalonSerializer(serializers.ModelSerializer):
             "created_at",
         )
         read_only_fields = ("id", "slug", "owner_barber", "created_at")
+
+    def get_region(self, obj: Salon) -> str:
+        ob = getattr(obj, "owner_barber", None)
+        return ob.region if ob and ob.region else ""
+
+    def get_region_label(self, obj: Salon) -> str:
+        ob = getattr(obj, "owner_barber", None)
+        if not ob or not ob.region:
+            return ""
+        return dict(UzRegion.choices).get(ob.region, ob.region)
 
 
 class AdminSalonUpdateSerializer(serializers.ModelSerializer):
@@ -85,6 +99,8 @@ class AdminSalonUpdateSerializer(serializers.ModelSerializer):
 class AdminBarberSerializer(serializers.ModelSerializer):
     region_label = serializers.SerializerMethodField()
     owned_salons_count = serializers.SerializerMethodField()
+    latitude = serializers.SerializerMethodField()
+    longitude = serializers.SerializerMethodField()
 
     class Meta:
         model = Barber
@@ -96,6 +112,8 @@ class AdminBarberSerializer(serializers.ModelSerializer):
             "phone",
             "region",
             "region_label",
+            "latitude",
+            "longitude",
             "is_active",
             "date_joined",
             "owned_salons_count",
@@ -106,6 +124,8 @@ class AdminBarberSerializer(serializers.ModelSerializer):
             "username",
             "date_joined",
             "region_label",
+            "latitude",
+            "longitude",
             "owned_salons_count",
         )
 
@@ -113,6 +133,18 @@ class AdminBarberSerializer(serializers.ModelSerializer):
         if not obj.region:
             return ""
         return dict(UzRegion.choices).get(obj.region, obj.region)
+
+    def get_latitude(self, obj: Barber) -> str:
+        p = getattr(obj, "profile", None)
+        if p is None or p.latitude is None:
+            return ""
+        return str(p.latitude)
+
+    def get_longitude(self, obj: Barber) -> str:
+        p = getattr(obj, "profile", None)
+        if p is None or p.longitude is None:
+            return ""
+        return str(p.longitude)
 
     def get_owned_salons_count(self, obj: Barber) -> int:
         return obj.owned_salons.count()

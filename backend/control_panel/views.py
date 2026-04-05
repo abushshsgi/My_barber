@@ -108,6 +108,9 @@ class AdminSalonListView(generics.ListAPIView):
             qs = qs.filter(
                 Q(name__icontains=q) | Q(owner_barber__email__icontains=q)
             )
+        region = self.request.query_params.get("region", "").strip()
+        if region:
+            qs = qs.filter(owner_barber__region=region)
         return qs
 
 
@@ -127,7 +130,7 @@ class AdminBarberListView(generics.ListAPIView):
     serializer_class = AdminBarberSerializer
 
     def get_queryset(self):
-        qs = Barber.objects.order_by("-date_joined")
+        qs = Barber.objects.select_related("profile").order_by("-date_joined")
         region = self.request.query_params.get("region")
         if region:
             qs = qs.filter(region=region)

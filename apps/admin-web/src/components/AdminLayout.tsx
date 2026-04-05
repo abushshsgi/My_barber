@@ -13,6 +13,7 @@ import {
   Store,
   Menu,
   Shield,
+  MapPinned,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminAuthGuard } from "@/components/AdminAuthGuard";
@@ -22,6 +23,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
+  { icon: MapPinned, label: "Xarita", path: "/admin/map" },
   { icon: Users, label: "Mijozlar", path: "/admin/users" },
   { icon: Scissors, label: "Sartaroshlar", path: "/admin/barbers" },
   { icon: Store, label: "Salonlar", path: "/admin/salons" },

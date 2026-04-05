@@ -69,6 +69,7 @@ class SalonViewSet(viewsets.ModelViewSet):
                     output_field=FloatField(),
                 ),
             )
+            .order_by("-created_at", "-id")
         )
 
     def get_queryset(self):
@@ -166,6 +167,7 @@ class SalonViewSet(viewsets.ModelViewSet):
                 ),
             )
             .distinct()
+            .order_by("-created_at", "-id")
         )
         return Response(
             SalonListSerializer(qs, many=True, context={"request": request}).data

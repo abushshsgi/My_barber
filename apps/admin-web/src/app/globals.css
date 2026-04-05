@@ -155,3 +155,13 @@
     display: none;
   }
 }
+
+.leaflet-container {
+  font-family: inherit;
+  z-index: 0;
+}
+
+.leaflet-div-icon-transparent {
+  background: transparent !important;
+  border: none !important;
+}

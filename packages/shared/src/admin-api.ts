@@ -32,6 +32,8 @@ export type AdminSalonRow = {
   owner_barber: number | null;
   owner_email: string;
   owner_name: string;
+  region?: string;
+  region_label?: string;
   address: string;
   is_published: boolean;
   premium: boolean;
@@ -48,6 +50,9 @@ export type AdminBarberRow = {
   phone: string | null;
   region: string;
   region_label: string;
+  /** BarberProfile — ro‘yxatdan o‘tishda saqlangan GPS */
+  latitude?: string;
+  longitude?: string;
   is_active: boolean;
   date_joined: string;
   owned_salons_count: number;
@@ -83,10 +88,15 @@ export async function fetchAdminUsers(params?: {
     : { results: j.results || [], count: j.count, next: j.next };
 }
 
-export async function fetchAdminSalons(params?: { published?: "0" | "1"; q?: string }) {
+export async function fetchAdminSalons(params?: {
+  published?: "0" | "1";
+  q?: string;
+  region?: string;
+}) {
   const sp = new URLSearchParams();
   if (params?.published) sp.set("published", params.published);
   if (params?.q) sp.set("q", params.q);
+  if (params?.region) sp.set("region", params.region);
   const q = sp.toString();
   const res = await apiFetch(q ? `/api/v1/admin/salons/?${q}` : "/api/v1/admin/salons/");
   const j = await res.json();

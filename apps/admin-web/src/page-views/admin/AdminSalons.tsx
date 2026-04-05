@@ -14,6 +14,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { UZ_REGIONS } from "@/lib/uz-regions";
+import {
   fetchAdminSalons,
   patchAdminSalon,
   deleteAdminSalon,
@@ -34,6 +42,7 @@ import { Loader2, Check, Trash2 } from "lucide-react";
 export default function AdminSalons() {
   const qc = useQueryClient();
   const [salonQ, setSalonQ] = useState("");
+  const [regionFilter, setRegionFilter] = useState("");
   const [salonFilter, setSalonFilter] = useState<"all" | "pending" | "pub">("all");
   const [deleteTarget, setDeleteTarget] = useState<AdminSalonRow | null>(null);
 
@@ -41,11 +50,12 @@ export default function AdminSalons() {
     salonFilter === "pending" ? ("0" as const) : salonFilter === "pub" ? ("1" as const) : undefined;
 
   const { data: salonsRes, isLoading: ls } = useQuery({
-    queryKey: ["admin", "salons", salonQ, pubParam],
+    queryKey: ["admin", "salons", salonQ, pubParam, regionFilter],
     queryFn: () =>
       fetchAdminSalons({
         q: salonQ || undefined,
         published: pubParam,
+        region: regionFilter || undefined,
       }),
   });
 
@@ -79,13 +89,26 @@ export default function AdminSalons() {
       </div>
 
       <div className="p-4 space-y-4">
-        <div className="flex flex-wrap gap-2 items-center">
+        <div className="flex flex-wrap items-center gap-2">
           <Input
             placeholder="Salon yoki email bo'yicha..."
             value={salonQ}
             onChange={(e) => setSalonQ(e.target.value)}
-            className="rounded-xl max-w-md"
+            className="max-w-md rounded-xl"
           />
+          <Select value={regionFilter || "__all"} onValueChange={(v) => setRegionFilter(v === "__all" ? "" : v)}>
+            <SelectTrigger className="w-full max-w-[260px] rounded-xl">
+              <SelectValue placeholder="Viloyat" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all">Barcha viloyatlar</SelectItem>
+              {UZ_REGIONS.map((r) => (
+                <SelectItem key={r.value} value={r.value}>
+                  {r.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <div className="flex gap-1">
             {(
               [
@@ -116,6 +139,7 @@ export default function AdminSalons() {
                 <TableRow>
                   <TableHead>Salon</TableHead>
                   <TableHead>Ega</TableHead>
+                  <TableHead>Viloyat</TableHead>
                   <TableHead>Holat</TableHead>
                   <TableHead className="text-right">Amallar</TableHead>
                 </TableRow>
@@ -125,6 +149,9 @@ export default function AdminSalons() {
                   <TableRow key={s.id}>
                     <TableCell className="font-medium text-sm">{s.name}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{s.owner_email}</TableCell>
+                    <TableCell className="max-w-[140px] truncate text-xs text-muted-foreground">
+                      {s.region_label || "—"}
+                    </TableCell>
                     <TableCell className="text-xs">
                       {s.is_published ? (
                         <span className="text-emerald-500">Chop etilgan</span>
