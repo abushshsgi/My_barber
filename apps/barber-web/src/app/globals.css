@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -127,6 +128,55 @@
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Barber dash: issiq amber / “barbershop” — layout faqat (dash) ichida */
+.barber-studio {
+  --background: 24 12% 7%;
+  --foreground: 40 25% 96%;
+  --card: 22 14% 10%;
+  --card-foreground: 40 25% 96%;
+  --popover: 22 14% 10%;
+  --popover-foreground: 40 25% 96%;
+  --primary: 32 92% 54%;
+  --primary-foreground: 24 18% 8%;
+  --secondary: 22 12% 14%;
+  --secondary-foreground: 40 20% 92%;
+  --muted: 22 10% 16%;
+  --muted-foreground: 35 12% 58%;
+  --accent: 32 92% 54%;
+  --accent-foreground: 24 18% 8%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 40 25% 98%;
+  --border: 22 10% 18%;
+  --input: 22 10% 18%;
+  --ring: 32 92% 54%;
+  --gold: 32 92% 54%;
+  --gold-foreground: 24 18% 8%;
+  --gold-light: 36 88% 62%;
+  --gold-dark: 28 85% 42%;
+  --sidebar-background: 22 14% 9%;
+  --sidebar-foreground: 40 22% 90%;
+  --sidebar-primary: 32 92% 54%;
+  --sidebar-primary-foreground: 24 18% 8%;
+  --sidebar-accent: 22 12% 15%;
+  --sidebar-accent-foreground: 40 20% 92%;
+  --sidebar-border: 22 10% 16%;
+  --sidebar-ring: 32 92% 54%;
+  background-image:
+    radial-gradient(ellipse 90% 70% at 15% -10%, hsl(32 70% 35% / 0.28), transparent 52%),
+    radial-gradient(ellipse 70% 50% at 100% 30%, hsl(15 45% 28% / 0.18), transparent 45%),
+    radial-gradient(ellipse 60% 40% at 50% 100%, hsl(28 40% 22% / 0.15), transparent 50%);
+  background-attachment: fixed;
+  background-color: hsl(var(--background));
+  font-family: "Outfit", "Plus Jakarta Sans", system-ui, sans-serif;
+}
+
+.barber-studio .gold-gradient {
+  background: linear-gradient(135deg, hsl(32 88% 52%), hsl(24 75% 46%));
 }
 
 .leaflet-container {

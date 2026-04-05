@@ -17,7 +17,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Plus Jakarta Sans", "system-ui", "-apple-system", "sans-serif"],
+        sans: ["DM Sans", "system-ui", "-apple-system", "sans-serif"],
+        mono: ["JetBrains Mono", "ui-monospace", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -93,8 +94,8 @@ export default {
           to: { height: "0" },
         },
         "pulse-gold": {
-          "0%, 100%": { boxShadow: "0 0 0 0 hsla(43, 56%, 56%, 0.4)" },
-          "50%": { boxShadow: "0 0 0 12px hsla(43, 56%, 56%, 0)" },
+          "0%, 100%": { boxShadow: "0 0 0 0 hsla(262, 83%, 58%, 0.35)" },
+          "50%": { boxShadow: "0 0 0 14px hsla(262, 83%, 58%, 0)" },
         },
         "slide-up": {
           from: { transform: "translateY(100%)", opacity: "0" },

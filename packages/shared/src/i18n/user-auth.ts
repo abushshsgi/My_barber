@@ -3,6 +3,10 @@ import type { Locale } from "./locale";
 export type UserAuthStrings = {
   title: string;
   subtitle: string;
+  authPanelLead: string;
+  authFeature1: string;
+  authFeature2: string;
+  authFeature3: string;
   langHint: string;
   loginTitle: string;
   signupTitle: string;
@@ -28,6 +32,10 @@ export type UserAuthStrings = {
 const uz: UserAuthStrings = {
   title: "MyBarber",
   subtitle: "Mijozlar uchun",
+  authPanelLead: "Bandlar, salonlar va bildirishnomalar — bitta akkauntda.",
+  authFeature1: "Salon va sartaroshlarni xaritadan toping",
+  authFeature2: "Bandlarni bir necha bosishda qiling",
+  authFeature3: "Profil va tarix har doim yoningizda",
   langHint: "Til",
   loginTitle: "Kirish",
   signupTitle: "Ro'yxatdan o'tish",
@@ -53,6 +61,10 @@ const uz: UserAuthStrings = {
 const ru: UserAuthStrings = {
   title: "MyBarber",
   subtitle: "Для клиентов",
+  authPanelLead: "Записи, салоны и уведомления — в одном аккаунте.",
+  authFeature1: "Салоны и мастера на карте",
+  authFeature2: "Запись в несколько кликов",
+  authFeature3: "Профиль и история всегда под рукой",
   langHint: "Язык",
   loginTitle: "Вход",
   signupTitle: "Регистрация",
@@ -78,6 +90,10 @@ const ru: UserAuthStrings = {
 const en: UserAuthStrings = {
   title: "MyBarber",
   subtitle: "For customers",
+  authPanelLead: "Bookings, salons, and notifications — one account.",
+  authFeature1: "Find salons and barbers on the map",
+  authFeature2: "Book in just a few taps",
+  authFeature3: "Your profile and history, always with you",
   langHint: "Language",
   loginTitle: "Sign in",
   signupTitle: "Sign up",

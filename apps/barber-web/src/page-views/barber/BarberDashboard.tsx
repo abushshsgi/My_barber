@@ -3,9 +3,15 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
-import { Users, DollarSign, Scissors, Loader2, Bell } from "lucide-react";
-import Link from "next/link";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { Users, DollarSign, Scissors, Loader2, TrendingUp } from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  Tooltip,
+} from "recharts";
 import { motion } from "framer-motion";
 import { apiFetch } from "@/lib/api";
 import type { SalonListApi } from "@/lib/mapSalon";
@@ -42,6 +48,7 @@ const BarberDashboard = () => {
 
   const firstSalonId = mineSalons[0]?.id ?? null;
   const activeSalon = salonId ?? firstSalonId;
+  const activeSalonName = mineSalons.find((s) => s.id === activeSalon)?.name;
 
   const range = useMemo(() => weekStartEnd(), []);
 
@@ -72,17 +79,21 @@ const BarberDashboard = () => {
 
   if (loadingSalons) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-9 w-9 animate-spin text-primary" />
       </div>
     );
   }
 
   if (!mineSalons.length) {
     return (
-      <div className="min-h-screen px-4 pt-8">
-        <p className="text-muted-foreground text-center">
-          Hozircha salon yo&apos;q. Saloningizni yarating.
+      <div className="flex min-h-[50vh] flex-col items-center justify-center px-6 text-center">
+        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-muted/80 text-muted-foreground">
+          <Scissors className="h-8 w-8" />
+        </div>
+        <p className="max-w-sm text-muted-foreground">
+          Hozircha salon yo&apos;q. Saloningizni yarating va statistika shu yerda
+          ko&apos;rinadi.
         </p>
       </div>
     );
@@ -90,45 +101,22 @@ const BarberDashboard = () => {
 
   const revenueNum = parseFloat(analytics?.revenue ?? "0") || 0;
 
-  const stats = [
-    {
-      label: "Daromad (7 kun)",
-      value: revenueNum.toLocaleString(),
-      suffix: "so'm",
-      icon: DollarSign,
-    },
-    {
-      label: "Jami mijozlar",
-      value: String(analytics?.unique_clients ?? "—"),
-      icon: Users,
-    },
-    {
-      label: "Mashhur xizmatlar (soni)",
-      value: String(topServices[0]?.cnt ?? "—"),
-      icon: Scissors,
-    },
-  ];
-
   return (
-    <div className="min-h-screen">
-      <div className="px-4 pt-6 pb-4">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-xl font-bold">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Haftalik ko&apos;rinish</p>
-          </div>
-          <Link
-            href="/notifications"
-            className="w-10 h-10 rounded-xl border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-            aria-label="Xabarnomalar"
-          >
-            <Bell className="h-5 w-5" />
-          </Link>
-        </div>
+    <div className="mx-auto max-w-5xl px-4 pb-10 pt-5 md:pt-10">
+      <div className="mb-6 hidden md:block">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+          Statistika
+        </p>
+        <h2 className="mt-1 text-2xl font-semibold tracking-tight">Haftalik ko&apos;rinish</h2>
+      </div>
 
-        {mineSalons.length > 1 && (
+      {mineSalons.length > 1 && (
+        <label className="mb-5 block">
+          <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+            Salon
+          </span>
           <select
-            className="w-full mb-4 h-10 px-3 rounded-xl border bg-background text-sm"
+            className="h-11 w-full max-w-md rounded-2xl border border-border/60 bg-card/50 px-4 text-sm backdrop-blur-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40"
             value={activeSalon ?? ""}
             onChange={(e) => setSalonId(Number(e.target.value))}
           >
@@ -139,69 +127,159 @@ const BarberDashboard = () => {
               </option>
             ))}
           </select>
-        )}
+        </label>
+      )}
 
-        {loadingAnalytics && (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-accent" />
-          </div>
-        )}
+      {loadingAnalytics && (
+        <div className="flex justify-center py-16">
+          <Loader2 className="h-9 w-9 animate-spin text-primary" />
+        </div>
+      )}
 
-        {!loadingAnalytics && analytics && (
-          <>
-            <div className="space-y-3 mb-6">
-              {stats.map((stat, i) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.08 }}
-                >
-                  <Card className="p-4 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center">
-                      <stat.icon className="h-5 w-5 text-accent" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs text-muted-foreground">{stat.label}</p>
-                      <p className="text-lg font-bold">
-                        {stat.value} {stat.suffix || ""}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        Yangi: {analytics.new_clients} · Qaytgan: {analytics.returning_clients}
-                      </p>
-                    </div>
-                  </Card>
-                </motion.div>
-              ))}
+      {!loadingAnalytics && analytics && (
+        <>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="relative overflow-hidden rounded-3xl border border-primary/25 bg-gradient-to-br from-primary/20 via-card/90 to-card p-6 shadow-[0_24px_64px_-24px_hsl(var(--primary)/0.35)] md:p-8"
+          >
+            <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/15 blur-3xl" />
+            <div className="relative">
+              <p className="text-sm font-medium text-muted-foreground">
+                {activeSalonName ? `«${activeSalonName}»` : "Salon"} — daromad (7 kun)
+              </p>
+              <p className="mt-2 font-mono text-4xl font-bold tracking-tight text-foreground md:text-5xl">
+                {revenueNum.toLocaleString()}{" "}
+                <span className="text-lg font-semibold text-muted-foreground md:text-xl">
+                  so&apos;m
+                </span>
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3 text-sm">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-background/50 px-3 py-1 text-muted-foreground">
+                  <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                  Yangi: {analytics.new_clients}
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-background/50 px-3 py-1 text-muted-foreground">
+                  <Users className="h-3.5 w-3.5 text-primary" />
+                  Qaytgan: {analytics.returning_clients}
+                </span>
+              </div>
             </div>
+          </motion.div>
 
-            <Card className="p-4">
-              <h3 className="font-semibold text-sm mb-3">Kunlik daromad</h3>
-              <div className="h-48">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+            >
+              <Card className="h-full border-border/50 bg-card/60 p-5 backdrop-blur-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Jami mijozlar
+                    </p>
+                    <p className="mt-2 text-3xl font-semibold tabular-nums">
+                      {analytics.unique_clients}
+                    </p>
+                  </div>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+                    <Users className="h-6 w-6" />
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <Card className="h-full border-border/50 bg-card/60 p-5 backdrop-blur-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Top xizmat
+                    </p>
+                    <p className="mt-2 truncate text-lg font-semibold">
+                      {topServices[0]?.service_name ?? "—"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {topServices[0]?.cnt != null ? `${topServices[0].cnt} marta` : "Ma'lumot yo'q"}
+                    </p>
+                  </div>
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+                    <Scissors className="h-6 w-6" />
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="mt-5"
+          >
+            <Card className="border-border/50 bg-card/40 p-5 backdrop-blur-sm md:p-6">
+              <div className="mb-4 flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">Kunlik oqim</h3>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div className="h-52 w-full md:h-60">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData.length ? chartData : [{ name: "—", revenue: 0 }]}>
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
-                    <YAxis hide />
+                  <AreaChart
+                    data={chartData.length ? chartData : [{ name: "—", revenue: 0 }]}
+                    margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.45} />
+                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis
+                      dataKey="name"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    />
+                    <YAxis hide domain={["auto", "auto"]} />
                     <Tooltip
                       formatter={(value) => [
                         `${Math.round(Number(value) || 0).toLocaleString()} so'm`,
                         "Daromad",
                       ]}
                       contentStyle={{
-                        borderRadius: 12,
-                        border: "none",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                        borderRadius: 14,
+                        border: "1px solid hsl(var(--border))",
+                        background: "hsl(var(--card))",
+                        fontSize: 13,
                       }}
                     />
-                    <Bar dataKey="revenue" fill="hsl(172, 60%, 50%)" radius={[6, 6, 0, 0]} />
-                  </BarChart>
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      fill="url(#revFill)"
+                    />
+                  </AreaChart>
                 </ResponsiveContainer>
               </div>
             </Card>
+          </motion.div>
 
-            <Card className="p-4 mt-3">
-              <h3 className="font-semibold text-sm mb-3">Mashhur xizmatlar</h3>
-              <div className="space-y-2">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mt-5"
+          >
+            <Card className="border-border/50 bg-card/40 p-5 backdrop-blur-sm md:p-6">
+              <h3 className="mb-4 text-sm font-semibold">Mashhur xizmatlar</h3>
+              <div className="space-y-4">
                 {topServices.length === 0 && (
                   <p className="text-sm text-muted-foreground">Ma&apos;lumot yo&apos;q</p>
                 )}
@@ -209,14 +287,14 @@ const BarberDashboard = () => {
                   const max = topServices[0]?.cnt || 1;
                   const pct = Math.round((s.cnt / max) * 100);
                   return (
-                    <div key={s.service_name} className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground truncate pr-2">{s.service_name}</span>
-                        <span className="font-medium">{s.cnt}</span>
+                    <div key={s.service_name}>
+                      <div className="mb-1.5 flex justify-between gap-2 text-sm">
+                        <span className="truncate text-muted-foreground">{s.service_name}</span>
+                        <span className="shrink-0 font-medium tabular-nums">{s.cnt}</span>
                       </div>
-                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div className="h-2 overflow-hidden rounded-full bg-muted/80">
                         <div
-                          className="h-full gold-gradient rounded-full"
+                          className="gold-gradient h-full rounded-full transition-all"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -225,13 +303,13 @@ const BarberDashboard = () => {
                 })}
               </div>
             </Card>
-          </>
-        )}
+          </motion.div>
+        </>
+      )}
 
-        {!loadingAnalytics && !analytics && activeSalon && (
-          <p className="text-sm text-destructive text-center">Analitika yuklanmadi</p>
-        )}
-      </div>
+      {!loadingAnalytics && !analytics && activeSalon && (
+        <p className="py-8 text-center text-sm text-destructive">Analitika yuklanmadi</p>
+      )}
     </div>
   );
 };
