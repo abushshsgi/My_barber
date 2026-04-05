@@ -121,6 +121,17 @@ export default function SalonJoin() {
         <p className="text-sm text-destructive bg-destructive/10 rounded-xl px-3 py-2 mb-3">{err}</p>
       )}
 
+      <Card className="mb-4 rounded-2xl border border-border/60 bg-muted/25 p-4">
+        <p className="text-xs font-medium text-foreground">Qanday ishlaydi?</p>
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+          Salon yaratilganda xarita nuqtasi (latitude/longitude) saqlanadi. Siz salonga qo‘shilmoqchi
+          bo‘lganda brauzer yana bir marta joylashuv so‘raydi. Ikkala nuqta orasidagi masofa{" "}
+          <span className="font-medium text-foreground">taxminan 100 metrdan oshmasa</span>, qo‘shilish
+          tasdiqlanadi; aks holda xavfsizlik uchun rad etiladi — salon bilan bir joyda ekaningizni
+          isbotlash kerak.
+        </p>
+      </Card>
+
       <Card className="relative p-4 rounded-2xl border border-border/60">
         <label className="text-xs font-medium text-muted-foreground">Salon nomi</label>
         <Input
@@ -186,8 +197,9 @@ export default function SalonJoin() {
             "Salonga qo‘shilish"
           )}
         </Button>
-        <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
-          Qo‘shilish paytida joylashuvingiz salon bilan 100 metr ichida bo‘lishi tekshiriladi.
+        <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+          «Qo‘shilish» bosilganda joriy GPS nuqtangiz salonning ro‘yxatdan o‘tgan nuqtasi bilan solishtiriladi
+          (backend: ~100 m).
         </p>
       </div>
     </div>

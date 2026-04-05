@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,8 @@ type ServiceItem = { id: string; name: string; price: string; duration: string }
 
 export default function CreateSalon() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const mybarberPreset = searchParams.get("preset") === "mybarber";
   const qc = useQueryClient();
   const [submitted, setSubmitted] = useState(false);
   const [createdSalonId, setCreatedSalonId] = useState<number | null>(null);
@@ -54,6 +56,29 @@ export default function CreateSalon() {
   const [services, setServices] = useState<ServiceItem[]>([
     { id: "1", name: "", price: "", duration: "30" },
   ]);
+
+  useEffect(() => {
+    if (!mybarberPreset) return;
+    let cancelled = false;
+    (async () => {
+      const res = await apiFetch("/api/v1/barber/auth/me/");
+      if (!res.ok || cancelled) return;
+      const me = (await res.json()) as { full_name?: string };
+      const fn = (me.full_name || "Barber").trim();
+      setName((prev) => (prev.trim() ? prev : `MyBarber · ${fn}`));
+      setDescription((prev) =>
+        prev.trim() ? prev : "MyBarber tarmog‘i orqali ochilgan salon.",
+      );
+      setServices((prev) => {
+        const first = prev[0];
+        if (!first || first.name.trim() || first.price.trim()) return prev;
+        return [{ ...first, name: "Soch olish", price: "50000" }, ...prev.slice(1)];
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [mybarberPreset]);
 
   const addService = () => {
     setServices([...services, { id: Date.now().toString(), name: "", price: "", duration: "30" }]);
@@ -212,10 +237,14 @@ export default function CreateSalon() {
 
   return (
     <div className="min-h-screen pb-8">
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b px-4 py-3">
-        <h1 className="text-lg font-bold">Salon yaratish</h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Ma&apos;lumotlarni to&apos;ldirib, saloningizni oching
+      <div className="sticky top-0 z-40 border-b bg-background/95 px-4 py-3 backdrop-blur-lg">
+        <h1 className="text-lg font-bold">
+          {mybarberPreset ? "MyBarber salonini yaratish" : "Salon yaratish"}
+        </h1>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {mybarberPreset
+            ? "Nom va xizmatlar taklif qilindi — o‘zgartirishingiz mumkin."
+            : "Ma'lumotlarni to'ldirib, saloningizni oching"}
         </p>
       </div>
 

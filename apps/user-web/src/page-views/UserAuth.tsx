@@ -170,7 +170,7 @@ export default function UserAuth() {
 
         {/* Form column */}
         <div className="flex flex-1 flex-col">
-          <header className="flex items-center justify-between gap-3 px-5 py-4 sm:px-8 lg:px-10 lg:pt-10">
+          <header className="flex items-center justify-between gap-3 px-5 py-4 sm:px-8 lg:justify-end lg:px-10 lg:pt-10">
             <div className="flex items-center gap-3 lg:hidden">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl gold-gradient shadow-md ring-1 ring-white/10">
                 <Scissors className="h-5 w-5 text-gold-foreground" />
@@ -389,9 +389,16 @@ export default function UserAuth() {
                       <Button
                         type="submit"
                         disabled={loading}
-                        className="mt-2 h-12 w-full rounded-xl border-0 text-base font-semibold shadow-lg gold-gradient text-gold-foreground"
+                        className="mt-2 flex h-12 w-full items-center justify-center rounded-xl border-0 text-base font-semibold shadow-lg gold-gradient text-gold-foreground"
                       >
-                        {loading ? "…" : t.create}
+                        {loading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            {t.create}
+                          </>
+                        ) : (
+                          t.create
+                        )}
                       </Button>
                     </form>
                   </TabsContent>

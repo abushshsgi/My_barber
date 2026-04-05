@@ -133,7 +133,8 @@ class BarberApplicationSerializer(serializers.ModelSerializer):
 class BarberSignupSerializer(serializers.Serializer):
     """
     Barber MVP: majburiy joylashuv va has_salon.
-    has_salon=True: keyin salon qidiruv + join; has_salon=False: keyin salon yaratish.
+    has_salon=True: ishchi — keyin mavjud salonga qo‘shilish (join + GPS tekshiruvi).
+    has_salon=False: salon egasi yoki MyBarber — keyin yangi salon yaratish.
     """
 
     email = serializers.EmailField()

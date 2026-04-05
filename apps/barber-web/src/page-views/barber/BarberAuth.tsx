@@ -12,10 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Scissors, Eye, EyeOff, MapPin, Loader2 } from "lucide-react";
+import { Scissors, Eye, EyeOff, MapPin, Loader2, Store, UserPlus, Sparkles } from "lucide-react";
 import { UZ_REGIONS } from "@/lib/uz-regions";
 import { apiFetch, formatApiError, setTokens } from "@/lib/api";
-import { barberAuthMessages } from "@/lib/i18n/barber-auth";
+import { barberAuthMessages, type BarberSignupPath } from "@/lib/i18n/barber-auth";
+import { cn } from "@/lib/utils";
 import { userWebUrl } from "@/lib/public-urls";
 import { useLocale } from "@/providers/locale-provider";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -41,7 +42,7 @@ export default function BarberAuth() {
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
   const [geoStatus, setGeoStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
-  const [hasSalon, setHasSalon] = useState<boolean | null>(null);
+  const [signupPath, setSignupPath] = useState<BarberSignupPath | null>(null);
   const [region, setRegion] = useState("");
 
   const requestLocation = () => {
@@ -118,7 +119,7 @@ export default function BarberAuth() {
       }
     }
     if (signupStep === 3) {
-      if (hasSalon === null) {
+      if (signupPath === null) {
         setErr(t.errSalonChoice);
         return;
       }
@@ -134,7 +135,7 @@ export default function BarberAuth() {
       setErr(t.errSubmitRegion);
       return;
     }
-    if (hasSalon === null) {
+    if (signupPath === null) {
       setErr(t.errSubmitSalon);
       return;
     }
@@ -146,6 +147,11 @@ export default function BarberAuth() {
     }
     setLoading(true);
     try {
+      const hasSalon = signupPath === "employee";
+      const shopName =
+        signupPath === "mybarber" && fullName.trim()
+          ? `MyBarber · ${fullName.trim()}`
+          : undefined;
       const res = await apiFetch("/api/v1/auth/barber-register/", {
         method: "POST",
         body: JSON.stringify({
@@ -154,6 +160,7 @@ export default function BarberAuth() {
           full_name: fullName,
           phone: phone || undefined,
           has_salon: hasSalon,
+          ...(shopName ? { shop_name: shopName } : {}),
           latitude: la,
           longitude: ln,
           region,
@@ -175,7 +182,13 @@ export default function BarberAuth() {
         return;
       }
       setTokens(tok.access, tok.refresh);
-      router.push(hasSalon ? "/salon" : "/salon/create");
+      if (signupPath === "employee") {
+        router.push("/salon/join");
+      } else if (signupPath === "mybarber") {
+        router.push("/salon/create?preset=mybarber");
+      } else {
+        router.push("/salon/create");
+      }
     } finally {
       setLoading(false);
     }
@@ -361,26 +374,64 @@ export default function BarberAuth() {
             )}
 
             {signupStep === 3 && (
-              <div className="space-y-4">
-                <p className="text-sm font-medium text-center">{t.salonQuestion}</p>
-                <p className="text-xs text-muted-foreground text-center">{t.salonExplain}</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <Button
+              <div className="space-y-3">
+                <p className="text-center text-sm font-medium leading-snug">{t.salonStepTitle}</p>
+                <p className="text-center text-xs text-muted-foreground">{t.salonStepIntro}</p>
+                <div className="space-y-2">
+                  <button
                     type="button"
-                    variant={hasSalon === true ? "default" : "outline"}
-                    className={`rounded-xl h-12 ${hasSalon === true ? "gold-gradient text-gold-foreground border-0" : ""}`}
-                    onClick={() => setHasSalon(true)}
+                    onClick={() => setSignupPath("owner")}
+                    className={cn(
+                      "flex w-full gap-3 rounded-2xl border p-3 text-left transition-colors",
+                      signupPath === "owner"
+                        ? "border-primary bg-primary/10 shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.2)]"
+                        : "border-border/80 hover:bg-muted/40",
+                    )}
                   >
-                    {t.yes}
-                  </Button>
-                  <Button
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/15">
+                      <Store className="h-5 w-5 text-accent" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold">{t.pathOwnerTitle}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{t.pathOwnerDesc}</p>
+                    </div>
+                  </button>
+                  <button
                     type="button"
-                    variant={hasSalon === false ? "default" : "outline"}
-                    className={`rounded-xl h-12 ${hasSalon === false ? "gold-gradient text-gold-foreground border-0" : ""}`}
-                    onClick={() => setHasSalon(false)}
+                    onClick={() => setSignupPath("employee")}
+                    className={cn(
+                      "flex w-full gap-3 rounded-2xl border p-3 text-left transition-colors",
+                      signupPath === "employee"
+                        ? "border-primary bg-primary/10 shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.2)]"
+                        : "border-border/80 hover:bg-muted/40",
+                    )}
                   >
-                    {t.no}
-                  </Button>
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/15">
+                      <UserPlus className="h-5 w-5 text-accent" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold">{t.pathEmployeeTitle}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{t.pathEmployeeDesc}</p>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSignupPath("mybarber")}
+                    className={cn(
+                      "flex w-full gap-3 rounded-2xl border p-3 text-left transition-colors",
+                      signupPath === "mybarber"
+                        ? "border-primary bg-primary/10 shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.2)]"
+                        : "border-border/80 hover:bg-muted/40",
+                    )}
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/15">
+                      <Sparkles className="h-5 w-5 text-accent" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold">{t.pathMybarberTitle}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{t.pathMybarberDesc}</p>
+                    </div>
+                  </button>
                 </div>
               </div>
             )}
@@ -402,7 +453,12 @@ export default function BarberAuth() {
                     {t.reviewLoc}: {lat}, {lng}
                   </li>
                   <li>
-                    {t.reviewSalon}: {hasSalon ? t.reviewSalonYes : t.reviewSalonNo}
+                    {t.reviewRole}:{" "}
+                    {signupPath === "owner"
+                      ? t.reviewPathOwner
+                      : signupPath === "employee"
+                        ? t.reviewPathEmployee
+                        : t.reviewPathMybarber}
                   </li>
                 </ul>
               </div>
