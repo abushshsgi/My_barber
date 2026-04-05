@@ -15,6 +15,7 @@ import {
 import { motion } from "framer-motion";
 import { apiFetch } from "@/lib/api";
 import type { SalonListApi } from "@/lib/mapSalon";
+import { SalonOnboarding } from "@/page-views/barber/SalonEntryChoice";
 import { subDays, startOfDay, endOfDay } from "date-fns";
 
 type AnalyticsResponse = {
@@ -87,14 +88,11 @@ const BarberDashboard = () => {
 
   if (!mineSalons.length) {
     return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center px-6 text-center">
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-muted/80 text-muted-foreground">
-          <Scissors className="h-8 w-8" />
-        </div>
-        <p className="max-w-sm text-muted-foreground">
-          Hozircha salon yo&apos;q. Saloningizni yarating va statistika shu yerda
-          ko&apos;rinadi.
-        </p>
+      <div className="mx-auto max-w-lg pb-24 pt-2 md:max-w-xl md:pt-6">
+        <SalonOnboarding
+          className="min-h-0"
+          intro="Statistika salon ulangandan keyin shu yerda ko‘rinadi. Quyidagi yo‘llardan birini tanlang."
+        />
       </div>
     );
   }

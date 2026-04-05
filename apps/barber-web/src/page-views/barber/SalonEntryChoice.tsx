@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Scissors,
   Store,
@@ -25,10 +26,24 @@ async function fetchMineSalons(): Promise<SalonListApi[]> {
   return res.json() as Promise<SalonListApi[]>;
 }
 
-function SalonOnboarding() {
+export type SalonOnboardingProps = {
+  /** Masalan dashboardda min-h-screen bo‘lmasin */
+  className?: string;
+  /** Sarlavha ostidagi qisqa matn */
+  intro?: string;
+};
+
+export function SalonOnboarding({ className, intro }: SalonOnboardingProps) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className={cn("bg-background", className ?? "min-h-screen")}>
       <div className="px-5 pb-4 pt-8">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mb-2 inline-block rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-primary"
+        >
+          Salon hali yo‘q
+        </motion.p>
         <motion.h1
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -42,8 +57,8 @@ function SalonOnboarding() {
           transition={{ delay: 0.05 }}
           className="mt-1 text-sm text-muted-foreground"
         >
-          Salon egasi o‘z saloningizni yaratasiz; ishchi mavjud salonga GPS orqali qo‘shiladi; MyBarber
-          esa brend ostida tez ochish uchun.
+          {intro ??
+            "Salon yarating, mavjud salonga ishchi sifatida qo‘shiling, MyBarber brendi ostida oching yoki mustaqil barber sifatida ishlang."}
         </motion.p>
       </div>
 
