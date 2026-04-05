@@ -62,8 +62,8 @@ export default function AdminMap() {
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary/90">Xarita</p>
         <h1 className="mt-2 text-2xl font-bold tracking-tight">Salonlar va sartaroshlar</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          Ro&apos;yxatdan o&apos;tishda saqlangan joylashuvlar: salonlar (yashil nuqta), sartaroshlar profili
-          (siyoh rang). GPS kiritilmaganlar xaritada chiqmaydi.
+          Viloyat chegaralari (OSM asosidagi GeoJSON). Salonlar (yashil), sartaroshlar (siyoh) — GPS
+          bo&apos;lmasa nuqta chiqmaydi. Viloyat tanlansa shu hudud kattalashtiriladi.
         </p>
       </div>
 
@@ -109,7 +109,7 @@ export default function AdminMap() {
           </div>
         ) : (
           <div className="h-[min(70vh,560px)] min-h-[420px] w-full">
-            <AdminMapLeaflet salons={salons} barbers={barbers} />
+            <AdminMapLeaflet salons={salons} barbers={barbers} regionFilter={region} />
           </div>
         )}
       </Card>
