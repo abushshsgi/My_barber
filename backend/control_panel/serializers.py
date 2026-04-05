@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from accounts.models import User
 from accounts.uz_regions import UzRegion
+from barbers.models import Barber
 from salons.models import Salon
 
 
@@ -79,3 +80,53 @@ class AdminSalonUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Salon
         fields = ("is_published", "premium", "name", "address", "phone")
+
+
+class AdminBarberSerializer(serializers.ModelSerializer):
+    region_label = serializers.SerializerMethodField()
+    owned_salons_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Barber
+        fields = (
+            "id",
+            "email",
+            "username",
+            "full_name",
+            "phone",
+            "region",
+            "region_label",
+            "is_active",
+            "date_joined",
+            "owned_salons_count",
+        )
+        read_only_fields = (
+            "id",
+            "email",
+            "username",
+            "date_joined",
+            "region_label",
+            "owned_salons_count",
+        )
+
+    def get_region_label(self, obj: Barber) -> str:
+        if not obj.region:
+            return ""
+        return dict(UzRegion.choices).get(obj.region, obj.region)
+
+    def get_owned_salons_count(self, obj: Barber) -> int:
+        return obj.owned_salons.count()
+
+
+class AdminBarberUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Barber
+        fields = ("full_name", "phone", "region", "is_active")
+
+    def validate_region(self, value):
+        if value in (None, ""):
+            return ""
+        allowed = {c[0] for c in UzRegion.choices}
+        if value not in allowed:
+            raise serializers.ValidationError("Noto'g'ri viloyat.")
+        return value

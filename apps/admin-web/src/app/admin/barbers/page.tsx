@@ -1,11 +1,5 @@
-import { AdminUserManagement } from "@/page-views/admin/AdminUserManagement";
+import AdminBarbers from "@/page-views/admin/AdminBarbers";
 
 export default function AdminBarbersPage() {
-  return (
-    <AdminUserManagement
-      variant="barbers"
-      title="Sartaroshlar"
-      description="Salon egalari va xodimlar (BARBER_OWNER, BARBER_STAFF). Barcha maydonlar admin API orqali."
-    />
-  );
+  return <AdminBarbers />;
 }

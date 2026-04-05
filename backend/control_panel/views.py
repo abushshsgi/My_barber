@@ -12,6 +12,8 @@ from bookings.serializers import BookingSerializer
 from salons.models import Salon
 
 from .serializers import (
+    AdminBarberSerializer,
+    AdminBarberUpdateSerializer,
     AdminSalonSerializer,
     AdminSalonUpdateSerializer,
     AdminUserSerializer,
@@ -95,7 +97,7 @@ class AdminSalonListView(generics.ListAPIView):
     serializer_class = AdminSalonSerializer
 
     def get_queryset(self):
-        qs = Salon.objects.select_related("owner").order_by("-created_at")
+        qs = Salon.objects.select_related("owner_barber").order_by("-created_at")
         pub = self.request.query_params.get("published")
         if pub == "0":
             qs = qs.filter(is_published=False)
@@ -103,19 +105,51 @@ class AdminSalonListView(generics.ListAPIView):
             qs = qs.filter(is_published=True)
         q = self.request.query_params.get("q", "").strip()
         if q:
-            qs = qs.filter(Q(name__icontains=q) | Q(owner__email__icontains=q))
+            qs = qs.filter(
+                Q(name__icontains=q) | Q(owner_barber__email__icontains=q)
+            )
         return qs
 
 
-class AdminSalonDetailView(generics.RetrieveUpdateAPIView):
+class AdminSalonDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdmin]
-    queryset = Salon.objects.select_related("owner").all()
+    queryset = Salon.objects.select_related("owner_barber").all()
     serializer_class = AdminSalonSerializer
 
     def get_serializer_class(self):
         if self.request.method in ("PATCH", "PUT"):
             return AdminSalonUpdateSerializer
         return AdminSalonSerializer
+
+
+class AdminBarberListView(generics.ListAPIView):
+    permission_classes = [IsAdmin]
+    serializer_class = AdminBarberSerializer
+
+    def get_queryset(self):
+        qs = Barber.objects.order_by("-date_joined")
+        region = self.request.query_params.get("region")
+        if region:
+            qs = qs.filter(region=region)
+        q = self.request.query_params.get("q", "").strip()
+        if q:
+            qs = qs.filter(
+                Q(email__icontains=q)
+                | Q(full_name__icontains=q)
+                | Q(phone__icontains=q)
+            )
+        return qs
+
+
+class AdminBarberDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAdmin]
+    queryset = Barber.objects.all()
+    serializer_class = AdminBarberSerializer
+
+    def get_serializer_class(self):
+        if self.request.method in ("PATCH", "PUT"):
+            return AdminBarberUpdateSerializer
+        return AdminBarberSerializer
 
 
 class AdminBookingListView(generics.ListAPIView):

@@ -25,20 +25,14 @@ import {
   patchAdminUser,
   type AdminUserRow,
 } from "@/lib/admin-api";
-import { UZ_REGIONS, uzRegionLabel } from "@/lib/uz-regions";
+import { UZ_REGIONS } from "@/lib/uz-regions";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
-const ROLES = ["USER", "BARBER_OWNER", "BARBER_STAFF", "ADMIN"] as const;
-
-type Variant = "clients" | "barbers";
-
 export function AdminUserManagement({
-  variant,
   title,
   description,
 }: {
-  variant: Variant;
   title: string;
   description: string;
 }) {
@@ -46,16 +40,11 @@ export function AdminUserManagement({
   const [userQ, setUserQ] = useState("");
   const [regionFilter, setRegionFilter] = useState<string>("");
 
-  const fetchParams =
-    variant === "clients"
-      ? { role: "USER" as const }
-      : { roles: "BARBER_OWNER,BARBER_STAFF" };
-
   const { data: usersRes, isLoading } = useQuery({
-    queryKey: ["admin", "users", variant, userQ, regionFilter],
+    queryKey: ["admin", "users", "clients", userQ, regionFilter],
     queryFn: () =>
       fetchAdminUsers({
-        ...fetchParams,
+        role: "USER",
         q: userQ || undefined,
         region: regionFilter || undefined,
       }),
@@ -66,7 +55,10 @@ export function AdminUserManagement({
   const patchUser = useMutation({
     mutationFn: (args: { id: number; body: Parameters<typeof patchAdminUser>[1] }) =>
       patchAdminUser(args.id, args.body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "users"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "users"] });
+      qc.invalidateQueries({ queryKey: ["admin", "stats"] });
+    },
   });
 
   return (
@@ -144,22 +136,7 @@ export function AdminUserManagement({
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell>
-                      <select
-                        className="bg-muted border rounded-lg px-2 py-1 text-xs max-w-[140px]"
-                        value={u.role}
-                        onChange={(e) =>
-                          patchUser.mutate({ id: u.id, body: { role: e.target.value } })
-                        }
-                        disabled={patchUser.isPending}
-                      >
-                        {ROLES.map((r) => (
-                          <option key={r} value={r}>
-                            {r}
-                          </option>
-                        ))}
-                      </select>
-                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">USER</TableCell>
                     <TableCell>
                       <Switch
                         checked={u.is_active}

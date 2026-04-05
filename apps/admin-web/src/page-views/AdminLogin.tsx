@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Shield, Eye, EyeOff, Lock, Sparkles } from "lucide-react";
-import { apiFetch, setTokens } from "@/lib/api";
+import { apiFetch, clearTokens, setTokens } from "@/lib/api";
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -25,6 +25,7 @@ export default function AdminLogin() {
     setErr(null);
     setLoading(true);
     try {
+      clearTokens();
       const res = await apiFetch("/api/v1/admin/auth/token/", {
         method: "POST",
         body: JSON.stringify({ email, password }),

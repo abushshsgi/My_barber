@@ -29,7 +29,7 @@ export type AdminSalonRow = {
   id: number;
   name: string;
   slug: string;
-  owner: number;
+  owner_barber: number | null;
   owner_email: string;
   owner_name: string;
   address: string;
@@ -38,6 +38,19 @@ export type AdminSalonRow = {
   latitude: string;
   longitude: string;
   created_at: string;
+};
+
+export type AdminBarberRow = {
+  id: number;
+  email: string;
+  username: string;
+  full_name: string;
+  phone: string | null;
+  region: string;
+  region_label: string;
+  is_active: boolean;
+  date_joined: string;
+  owned_salons_count: number;
 };
 
 export async function fetchAdminStats(): Promise<AdminStats> {
@@ -81,11 +94,54 @@ export async function fetchAdminSalons(params?: { published?: "0" | "1"; q?: str
   return Array.isArray(j) ? { results: j as AdminSalonRow[] } : { results: (j.results || []) as AdminSalonRow[], count: j.count };
 }
 
-export async function patchAdminSalon(id: number, body: Partial<{ is_published: boolean; premium: boolean; name: string }>) {
+export async function patchAdminSalon(
+  id: number,
+  body: Partial<{ is_published: boolean; premium: boolean; name: string; address: string; phone: string }>,
+) {
   return apiJson<AdminSalonRow>(`/api/v1/admin/salons/${id}/`, {
     method: "PATCH",
     body: JSON.stringify(body),
   });
+}
+
+export async function deleteAdminSalon(id: number): Promise<void> {
+  const res = await apiFetch(`/api/v1/admin/salons/${id}/`, { method: "DELETE" });
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}));
+    throw new Error((j as { detail?: string }).detail || "Salon o‘chirilmadi");
+  }
+}
+
+export async function fetchAdminBarbers(params?: {
+  region?: string;
+  q?: string;
+}): Promise<{ results: AdminBarberRow[]; count?: number }> {
+  const sp = new URLSearchParams();
+  if (params?.region) sp.set("region", params.region);
+  if (params?.q) sp.set("q", params.q);
+  const q = sp.toString();
+  const res = await apiFetch(q ? `/api/v1/admin/barbers/?${q}` : "/api/v1/admin/barbers/");
+  const j = await res.json();
+  if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
+  return Array.isArray(j) ? { results: j } : { results: j.results || [], count: j.count };
+}
+
+export async function patchAdminBarber(
+  id: number,
+  body: Partial<{ full_name: string; phone: string; region: string; is_active: boolean }>,
+) {
+  return apiJson<AdminBarberRow>(`/api/v1/admin/barbers/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteAdminBarber(id: number): Promise<void> {
+  const res = await apiFetch(`/api/v1/admin/barbers/${id}/`, { method: "DELETE" });
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}));
+    throw new Error((j as { detail?: string }).detail || "Sartarosh o‘chirilmadi");
+  }
 }
 
 export async function patchAdminUser(

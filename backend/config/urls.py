@@ -7,6 +7,8 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from control_panel.views import (
+    AdminBarberDetailView,
+    AdminBarberListView,
     AdminBookingListView,
     AdminSalonDetailView,
     AdminSalonListView,
@@ -77,6 +79,8 @@ api_routes = [
     path("admin/users/<int:pk>/", AdminUserDetailView.as_view()),
     path("admin/salons/", AdminSalonListView.as_view()),
     path("admin/salons/<int:pk>/", AdminSalonDetailView.as_view()),
+    path("admin/barbers/", AdminBarberListView.as_view()),
+    path("admin/barbers/<int:pk>/", AdminBarberDetailView.as_view()),
     path("admin/bookings/", AdminBookingListView.as_view()),
     path("regions/", UzRegionsView.as_view()),
     path("auth/register/", RegisterView.as_view()),

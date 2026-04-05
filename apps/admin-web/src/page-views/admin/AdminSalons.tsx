@@ -13,13 +13,29 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { fetchAdminSalons, patchAdminSalon, type AdminSalonRow } from "@/lib/admin-api";
-import { Loader2, Check } from "lucide-react";
+import {
+  fetchAdminSalons,
+  patchAdminSalon,
+  deleteAdminSalon,
+  type AdminSalonRow,
+} from "@/lib/admin-api";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Loader2, Check, Trash2 } from "lucide-react";
 
 export default function AdminSalons() {
   const qc = useQueryClient();
   const [salonQ, setSalonQ] = useState("");
   const [salonFilter, setSalonFilter] = useState<"all" | "pending" | "pub">("all");
+  const [deleteTarget, setDeleteTarget] = useState<AdminSalonRow | null>(null);
 
   const pubParam =
     salonFilter === "pending" ? ("0" as const) : salonFilter === "pub" ? ("1" as const) : undefined;
@@ -38,15 +54,27 @@ export default function AdminSalons() {
   const patchSalon = useMutation({
     mutationFn: ({ id, is_published }: { id: number; is_published: boolean }) =>
       patchAdminSalon(id, { is_published }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "salons"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "salons"] });
+      qc.invalidateQueries({ queryKey: ["admin", "stats"] });
+    },
+  });
+
+  const removeSalon = useMutation({
+    mutationFn: (id: number) => deleteAdminSalon(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "salons"] });
+      qc.invalidateQueries({ queryKey: ["admin", "stats"] });
+      setDeleteTarget(null);
+    },
   });
 
   return (
     <div className="min-h-screen pb-8">
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b px-4 py-4">
         <h1 className="text-xl font-bold">Salonlar</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Barcha salonlar — ega, chop etish holati va tasdiqlash (API orqali).
+        <p className="mt-1 text-sm text-muted-foreground">
+          Tasdiqlash, chop etish va salonni butunlay o‘chirish (admin huquqi).
         </p>
       </div>
 
@@ -89,7 +117,7 @@ export default function AdminSalons() {
                   <TableHead>Salon</TableHead>
                   <TableHead>Ega</TableHead>
                   <TableHead>Holat</TableHead>
-                  <TableHead className="text-right">Tasdiqlash</TableHead>
+                  <TableHead className="text-right">Amallar</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -105,17 +133,29 @@ export default function AdminSalons() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      {!s.is_published && (
+                      <div className="flex justify-end gap-1">
+                        {!s.is_published && (
+                          <Button
+                            size="sm"
+                            className="h-8 border-0 gold-gradient text-gold-foreground"
+                            disabled={patchSalon.isPending}
+                            onClick={() => patchSalon.mutate({ id: s.id, is_published: true })}
+                          >
+                            <Check className="mr-1 h-3 w-3" />
+                            Tasdiqlash
+                          </Button>
+                        )}
                         <Button
-                          size="sm"
-                          className="h-8 gold-gradient text-gold-foreground border-0"
-                          disabled={patchSalon.isPending}
-                          onClick={() => patchSalon.mutate({ id: s.id, is_published: true })}
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => setDeleteTarget(s)}
+                          aria-label="Salonni o‘chirish"
                         >
-                          <Check className="h-3 w-3 mr-1" />
-                          Tasdiqlash
+                          <Trash2 className="h-4 w-4" />
                         </Button>
-                      )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -127,6 +167,28 @@ export default function AdminSalons() {
           </Card>
         )}
       </div>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Salonni o‘chirish?</AlertDialogTitle>
+            <AlertDialogDescription>
+              «{deleteTarget?.name}» — xizmatlar, rasmlar va bandlar bilan bog‘liq yozuvlar o‘chiriladi
+              (CASCADE). Qaytarib bo‘lmaydi.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Bekor qilish</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteTarget && removeSalon.mutate(deleteTarget.id)}
+              disabled={removeSalon.isPending}
+            >
+              {removeSalon.isPending ? "O‘chirilmoqda..." : "O‘chirish"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

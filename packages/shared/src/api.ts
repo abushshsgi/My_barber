@@ -36,6 +36,20 @@ function jwtPayloadType(token: string | null): "admin" | "barber" | "user" | nul
   }
 }
 
+/** Token olish / refresh — Authorization yubormaslik kerak (eski Bearer SimpleJWT xatosini beradi). */
+function shouldOmitBearerForPath(path: string): boolean {
+  const p = path.split("?")[0].replace(/\/+$/, "");
+  const noBearer = [
+    "/api/v1/admin/auth/token",
+    "/api/v1/admin/auth/token/refresh",
+    "/api/v1/barber/auth/token",
+    "/api/v1/barber/auth/token/refresh",
+    "/api/v1/auth/token",
+    "/api/v1/auth/token/refresh",
+  ];
+  return noBearer.some((suffix) => p === suffix || p.endsWith(suffix));
+}
+
 async function refreshAccess(): Promise<string | null> {
   const refresh = localStorage.getItem(REFRESH_KEY);
   if (!refresh) return null;
@@ -78,7 +92,7 @@ export async function apiFetch(
 ): Promise<Response> {
   const headers = new Headers(options.headers);
   const token = getAccessToken();
-  if (token) {
+  if (token && !shouldOmitBearerForPath(path)) {
     headers.set("Authorization", `Bearer ${token}`);
   }
   if (!headers.has("Content-Type") && options.body && !(options.body instanceof FormData)) {
