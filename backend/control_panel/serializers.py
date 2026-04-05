@@ -4,6 +4,52 @@ from accounts.models import User
 from accounts.uz_regions import UzRegion
 from barbers.models import Barber
 from salons.models import Salon
+from salons.serializers import SalonHoursSerializer
+
+_WEEKDAY_ABBREV = ("Du", "Se", "Cho", "Pa", "Ju", "Sha", "Ya")
+
+
+def _weekday_ranges_abbrev(weekdays: list[int]) -> str:
+    wds = sorted(set(int(w) for w in weekdays))
+    if not wds:
+        return ""
+    parts: list[str] = []
+    i = 0
+    while i < len(wds):
+        j = i
+        while j + 1 < len(wds) and wds[j + 1] == wds[j] + 1:
+            j += 1
+        if wds[i] == wds[j]:
+            parts.append(_WEEKDAY_ABBREV[wds[i]])
+        else:
+            parts.append(f"{_WEEKDAY_ABBREV[wds[i]]}–{_WEEKDAY_ABBREV[wds[j]]}")
+        i = j + 1
+    return ", ".join(parts)
+
+
+def salon_schedule_summary(obj: Salon) -> str:
+    hours = list(obj.hours.order_by("weekday"))
+    closed = list(obj.closed_weekdays or [])
+    if not hours and not closed:
+        return ""
+    parts: list[str] = []
+    if hours:
+        o0, c0 = hours[0].open_time, hours[0].close_time
+        same_times = all(h.open_time == o0 and h.close_time == c0 for h in hours)
+        t = f"{o0.strftime('%H:%M')}–{c0.strftime('%H:%M')}"
+        wnums = [h.weekday for h in hours]
+        if same_times:
+            parts.append(f"{t} ({_weekday_ranges_abbrev(wnums)})")
+        else:
+            bits = [
+                f"{_WEEKDAY_ABBREV[h.weekday]} {h.open_time.strftime('%H:%M')}–{h.close_time.strftime('%H:%M')}"
+                for h in hours
+            ]
+            parts.append("; ".join(bits))
+    if closed:
+        cnames = ", ".join(_WEEKDAY_ABBREV[c] for c in sorted(closed))
+        parts.append(f"dam: {cnames}")
+    return " · ".join(parts)
 
 
 class AdminUserSerializer(serializers.ModelSerializer):
@@ -57,6 +103,8 @@ class AdminSalonSerializer(serializers.ModelSerializer):
     owner_name = serializers.CharField(source="owner_barber.full_name", read_only=True)
     region = serializers.SerializerMethodField()
     region_label = serializers.SerializerMethodField()
+    hours = SalonHoursSerializer(many=True, read_only=True)
+    schedule_summary = serializers.SerializerMethodField()
 
     class Meta:
         model = Salon
@@ -76,6 +124,9 @@ class AdminSalonSerializer(serializers.ModelSerializer):
             "latitude",
             "longitude",
             "created_at",
+            "closed_weekdays",
+            "hours",
+            "schedule_summary",
         )
         read_only_fields = ("id", "slug", "owner_barber", "created_at")
 
@@ -88,6 +139,9 @@ class AdminSalonSerializer(serializers.ModelSerializer):
         if not ob or not ob.region:
             return ""
         return dict(UzRegion.choices).get(ob.region, ob.region)
+
+    def get_schedule_summary(self, obj: Salon) -> str:
+        return salon_schedule_summary(obj)
 
 
 class AdminSalonUpdateSerializer(serializers.ModelSerializer):

@@ -256,6 +256,7 @@ const AdminDashboard = () => {
                             <TableHeader>
                               <TableRow className="hover:bg-transparent">
                                 <TableHead className="h-9 text-xs">Salon</TableHead>
+                                <TableHead className="h-9 text-xs">Ish vaqti / dam</TableHead>
                                 <TableHead className="h-9 text-xs">Ega (email)</TableHead>
                                 <TableHead className="h-9 w-24 text-center text-xs">Chop etilgan</TableHead>
                               </TableRow>
@@ -263,14 +264,14 @@ const AdminDashboard = () => {
                             <TableBody>
                               {row.salons.length === 0 ? (
                                 <TableRow>
-                                  <TableCell colSpan={3} className="text-center text-xs text-muted-foreground">
+                                  <TableCell colSpan={4} className="text-center text-xs text-muted-foreground">
                                     Yo‘q
                                   </TableCell>
                                 </TableRow>
                               ) : (
                                 row.salons.map((s) => (
                                   <TableRow key={s.id}>
-                                    <TableCell className="max-w-[160px] truncate p-2 text-xs font-medium">
+                                    <TableCell className="max-w-[140px] truncate p-2 text-xs font-medium">
                                       <Link
                                         href={`/admin/salons?q=${encodeURIComponent(s.name)}`}
                                         className="text-primary hover:underline"
@@ -278,7 +279,17 @@ const AdminDashboard = () => {
                                         {s.name}
                                       </Link>
                                     </TableCell>
-                                    <TableCell className="max-w-[180px] truncate p-2 text-xs text-muted-foreground">
+                                    <TableCell
+                                      className="max-w-[140px] p-2 text-[10px] leading-snug text-muted-foreground"
+                                      title={s.schedule_summary}
+                                    >
+                                      {s.schedule_summary?.trim() ? (
+                                        <span className="line-clamp-2">{s.schedule_summary}</span>
+                                      ) : (
+                                        "—"
+                                      )}
+                                    </TableCell>
+                                    <TableCell className="max-w-[140px] truncate p-2 text-xs text-muted-foreground">
                                       {s.owner_email || "—"}
                                     </TableCell>
                                     <TableCell className="p-2 text-center text-xs">

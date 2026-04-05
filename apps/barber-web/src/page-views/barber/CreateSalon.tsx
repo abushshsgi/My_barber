@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus, Trash2, PartyPopper, Loader2, MapPin } from "lucide-react";
+import { Plus, Trash2, PartyPopper, Loader2, MapPin, Clock } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { apiFetch, formatApiError } from "@/lib/api";
@@ -21,12 +23,27 @@ const DAY_TO_W: Record<string, number> = {
   Sha: 5,
   Ya: 6,
 };
+const DAY_LABELS: Record<(typeof DAYS)[number], string> = {
+  Du: "Dushanba",
+  Se: "Seshanba",
+  Cho: "Chorshanba",
+  Pa: "Payshanba",
+  Ju: "Juma",
+  Sha: "Shanba",
+  Ya: "Yakshanba",
+};
 
 const LANGS = ["O'zbek", "Rus", "Ingliz"] as const;
 
 function padTime(t: string): string {
   if (t.length === 5 && t.includes(":")) return `${t}:00`;
   return t;
+}
+
+function timeToMinutes(t: string): number {
+  const [h, m] = t.split(":").map((x) => parseInt(x, 10));
+  if (Number.isNaN(h)) return 0;
+  return h * 60 + (Number.isNaN(m) ? 0 : m);
 }
 
 type ServiceItem = { id: string; name: string; price: string; duration: string };
@@ -52,6 +69,12 @@ export default function CreateSalon() {
   const [closeTime, setCloseTime] = useState("21:00");
   const [workDays, setWorkDays] = useState<string[]>(["Du", "Se", "Cho", "Pa", "Ju", "Sha"]);
   const [langs, setLangs] = useState<string[]>(["O'zbek"]);
+  const [advancedSchedule, setAdvancedSchedule] = useState(false);
+  const [dayTimes, setDayTimes] = useState<Record<string, { open: string; close: string }>>(() => {
+    const init: Record<string, { open: string; close: string }> = {};
+    for (const d of DAYS) init[d] = { open: "09:00", close: "21:00" };
+    return init;
+  });
 
   const [services, setServices] = useState<ServiceItem[]>([
     { id: "1", name: "", price: "", duration: "30" },
@@ -96,6 +119,17 @@ export default function CreateSalon() {
     setLangs((prev) =>
       prev.includes(lang) ? prev.filter((x) => x !== lang) : [...prev, lang]
     );
+  };
+
+  const restDayFullNames = useMemo(() => {
+    const sel = new Set(workDays.map((d) => DAY_TO_W[d]));
+    return DAYS.filter((d) => !sel.has(DAY_TO_W[d])).map((d) => DAY_LABELS[d]);
+  }, [workDays]);
+
+  const applyPreset = (preset: "weekdays" | "shop" | "all") => {
+    if (preset === "weekdays") setWorkDays(["Du", "Se", "Cho", "Pa", "Ju"]);
+    else if (preset === "shop") setWorkDays(["Du", "Se", "Cho", "Pa", "Ju", "Sha"]);
+    else setWorkDays([...DAYS]);
   };
 
   const requestLocation = () => {
@@ -146,13 +180,31 @@ export default function CreateSalon() {
       return;
     }
 
+    if (!advancedSchedule) {
+      if (timeToMinutes(openTime) >= timeToMinutes(closeTime)) {
+        setErr("Ochilish vaqti yopilishdan oldin bo‘lishi kerak.");
+        return;
+      }
+    } else {
+      for (const d of workDays) {
+        const dt = dayTimes[d];
+        if (!dt) continue;
+        if (timeToMinutes(dt.open) >= timeToMinutes(dt.close)) {
+          setErr(
+            `${DAY_LABELS[d as (typeof DAYS)[number]]}: ochilish vaqti yopilishdan oldin bo‘lishi kerak.`,
+          );
+          return;
+        }
+      }
+    }
+
     const selectedWeekdayInts = new Set(workDays.map((d) => DAY_TO_W[d]));
     const closed_weekdays = [0, 1, 2, 3, 4, 5, 6].filter((w) => !selectedWeekdayInts.has(w));
 
     const hours = workDays.map((d) => ({
       weekday: DAY_TO_W[d],
-      open_time: padTime(openTime),
-      close_time: padTime(closeTime),
+      open_time: padTime(advancedSchedule ? dayTimes[d]?.open ?? openTime : openTime),
+      close_time: padTime(advancedSchedule ? dayTimes[d]?.close ?? closeTime : closeTime),
     }));
 
     const servicesPayload = filled.map((s) => {
@@ -301,6 +353,152 @@ export default function CreateSalon() {
           )}
         </Card>
 
+        <Card className="p-4 space-y-4 border-primary/20 bg-primary/[0.03]">
+          <div className="flex items-start gap-2">
+            <Clock className="h-5 w-5 shrink-0 text-primary mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-sm">Salon ishlashi va dam olish</h3>
+              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                Yashil — ish kuni. Kulrang — dam olish. Tanlangan har bir ish kuniga ochilish/yopilish
+                vaqti yuboriladi (mijozlar va admin ko‘radi).
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="rounded-lg text-xs h-8"
+              onClick={() => applyPreset("weekdays")}
+            >
+              Dush–Juma
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="rounded-lg text-xs h-8"
+              onClick={() => applyPreset("shop")}
+            >
+              Dush–Shanba
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="rounded-lg text-xs h-8"
+              onClick={() => applyPreset("all")}
+            >
+              Haftaning barcha kuni
+            </Button>
+          </div>
+
+          <div>
+            <p className="text-xs font-medium text-foreground mb-2">Ish kunlari *</p>
+            <div className="flex gap-2 flex-wrap">
+              {DAYS.map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  title={DAY_LABELS[d]}
+                  onClick={() => toggleDay(d)}
+                  className={`h-11 w-11 rounded-xl text-sm font-semibold transition-all ring-1 ${
+                    workDays.includes(d)
+                      ? "gold-gradient text-gold-foreground ring-primary/30"
+                      : "bg-muted text-muted-foreground ring-border"
+                  }`}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">Dam olish:</span>{" "}
+              {restDayFullNames.length ? restDayFullNames.join(", ") : "—"}
+            </p>
+          </div>
+
+          {!advancedSchedule ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Ochilish</Label>
+                <Input
+                  type="time"
+                  value={openTime}
+                  onChange={(e) => setOpenTime(e.target.value)}
+                  className="rounded-xl"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Yopilish</Label>
+                <Input
+                  type="time"
+                  value={closeTime}
+                  onChange={(e) => setCloseTime(e.target.value)}
+                  className="rounded-xl"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3 rounded-xl border border-border/80 bg-background/50 p-3">
+              <p className="text-xs font-medium text-foreground">Har ish kuniga alohida vaqt</p>
+              {workDays.map((d) => (
+                <div key={d} className="flex flex-wrap items-center gap-2">
+                  <span className="w-28 shrink-0 text-xs text-muted-foreground">{DAY_LABELS[d]}</span>
+                  <Input
+                    type="time"
+                    className="h-9 w-[130px] rounded-lg text-sm"
+                    value={dayTimes[d]?.open ?? "09:00"}
+                    onChange={(e) =>
+                      setDayTimes((prev) => ({
+                        ...prev,
+                        [d]: { ...prev[d], open: e.target.value, close: prev[d]?.close ?? closeTime },
+                      }))
+                    }
+                  />
+                  <span className="text-xs text-muted-foreground">—</span>
+                  <Input
+                    type="time"
+                    className="h-9 w-[130px] rounded-lg text-sm"
+                    value={dayTimes[d]?.close ?? "21:00"}
+                    onChange={(e) =>
+                      setDayTimes((prev) => ({
+                        ...prev,
+                        [d]: { ...prev[d], close: e.target.value, open: prev[d]?.open ?? openTime },
+                      }))
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="adv-sched"
+              checked={advancedSchedule}
+              onCheckedChange={(c) => {
+                const on = c === true;
+                setAdvancedSchedule(on);
+                if (on) {
+                  setDayTimes((prev) => {
+                    const n = { ...prev };
+                    for (const x of DAYS) {
+                      n[x] = { open: openTime, close: closeTime };
+                    }
+                    return n;
+                  });
+                }
+              }}
+            />
+            <Label htmlFor="adv-sched" className="text-xs font-normal cursor-pointer leading-snug">
+              Har kun uchun alohida ochilish va yopilish vaqtini kiritish
+            </Label>
+          </div>
+        </Card>
+
         <Card className="p-4 space-y-3">
           <h3 className="font-semibold text-sm">Xizmatlar *</h3>
           <AnimatePresence>
@@ -361,28 +559,6 @@ export default function CreateSalon() {
           <Button variant="outline" type="button" onClick={addService} className="w-full rounded-xl border-dashed">
             <Plus className="h-4 w-4 mr-1" /> Xizmat qo‘shish
           </Button>
-        </Card>
-
-        <Card className="p-4 space-y-3">
-          <h3 className="font-semibold text-sm">Ish kunlari</h3>
-          <div className="flex gap-2 flex-wrap">
-            {DAYS.map((d) => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => toggleDay(d)}
-                className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${
-                  workDays.includes(d) ? "gold-gradient text-gold-foreground" : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {d}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <Input type="time" value={openTime} onChange={(e) => setOpenTime(e.target.value)} className="rounded-xl" />
-            <Input type="time" value={closeTime} onChange={(e) => setCloseTime(e.target.value)} className="rounded-xl" />
-          </div>
         </Card>
 
         <Card className="p-4 space-y-3">

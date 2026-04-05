@@ -19,6 +19,7 @@ from .serializers import (
     AdminSalonUpdateSerializer,
     AdminUserSerializer,
     AdminUserUpdateSerializer,
+    salon_schedule_summary,
 )
 
 
@@ -38,7 +39,7 @@ def _admin_region_breakdown():
 
     def salon_rows(qs):
         out = []
-        for s in qs.select_related("owner_barber").order_by("name"):
+        for s in qs.select_related("owner_barber").prefetch_related("hours").order_by("name"):
             ob = s.owner_barber
             out.append(
                 {
@@ -47,6 +48,7 @@ def _admin_region_breakdown():
                     "slug": s.slug,
                     "owner_email": ob.email if ob else "",
                     "is_published": s.is_published,
+                    "schedule_summary": salon_schedule_summary(s),
                 }
             )
         return out
@@ -160,7 +162,11 @@ class AdminSalonListView(generics.ListAPIView):
     serializer_class = AdminSalonSerializer
 
     def get_queryset(self):
-        qs = Salon.objects.select_related("owner_barber").order_by("-created_at")
+        qs = (
+            Salon.objects.select_related("owner_barber")
+            .prefetch_related("hours")
+            .order_by("-created_at")
+        )
         pub = self.request.query_params.get("published")
         if pub == "0":
             qs = qs.filter(is_published=False)
@@ -181,7 +187,7 @@ class AdminSalonListView(generics.ListAPIView):
 
 class AdminSalonDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdmin]
-    queryset = Salon.objects.select_related("owner_barber").all()
+    queryset = Salon.objects.select_related("owner_barber").prefetch_related("hours").all()
     serializer_class = AdminSalonSerializer
 
     def get_serializer_class(self):

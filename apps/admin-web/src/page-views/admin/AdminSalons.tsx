@@ -151,6 +151,7 @@ export default function AdminSalons() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Salon</TableHead>
+                  <TableHead>Ish vaqti / dam</TableHead>
                   <TableHead>Ega</TableHead>
                   <TableHead>Viloyat</TableHead>
                   <TableHead>Holat</TableHead>
@@ -161,6 +162,16 @@ export default function AdminSalons() {
                 {salons.map((s: AdminSalonRow) => (
                   <TableRow key={s.id}>
                     <TableCell className="font-medium text-sm">{s.name}</TableCell>
+                    <TableCell
+                      className="max-w-[220px] text-xs text-muted-foreground align-top"
+                      title={s.schedule_summary || undefined}
+                    >
+                      {s.schedule_summary?.trim() ? (
+                        <span className="line-clamp-2">{s.schedule_summary}</span>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{s.owner_email}</TableCell>
                     <TableCell className="max-w-[140px] truncate text-xs text-muted-foreground">
                       {s.region_label || "—"}

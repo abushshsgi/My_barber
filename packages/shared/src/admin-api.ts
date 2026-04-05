@@ -18,6 +18,7 @@ export type AdminRegionStatRow = {
     slug: string;
     owner_email: string;
     is_published: boolean;
+    schedule_summary?: string;
   }[];
 };
 
@@ -47,6 +48,12 @@ export type AdminUserRow = {
   date_joined: string;
 };
 
+export type AdminSalonHourRow = {
+  weekday: number;
+  open_time: string;
+  close_time: string;
+};
+
 export type AdminSalonRow = {
   id: number;
   name: string;
@@ -62,6 +69,11 @@ export type AdminSalonRow = {
   latitude: string;
   longitude: string;
   created_at: string;
+  /** 0=Du … 6=Ya — dam olish kunlari */
+  closed_weekdays?: number[];
+  hours?: AdminSalonHourRow[];
+  /** Qisqa matn: vaqt, ish kunlari, dam */
+  schedule_summary?: string;
 };
 
 export type AdminBarberRow = {
