@@ -2,6 +2,7 @@
 Django settings — MyBarber API.
 """
 
+import hashlib
 import os
 from datetime import timedelta
 from pathlib import Path
@@ -19,6 +20,9 @@ except ImportError:
     pass
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", get_random_secret_key())
+
+# HS256 uchun barqaror uzun kalit (qisqa DJANGO_SECRET_KEY ham RFC 7518 / PyJWT talabiga mos).
+JWT_HS256_SIGNING_KEY = hashlib.sha256(SECRET_KEY.encode("utf-8")).hexdigest()
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() in ("1", "true", "yes")
 
@@ -143,6 +147,7 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": True,
+    "SIGNING_KEY": JWT_HS256_SIGNING_KEY,
 }
 
 def _normalize_cors_origin(part: str) -> str:

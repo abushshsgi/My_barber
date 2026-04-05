@@ -44,7 +44,7 @@ class AdminTokenRefreshView(APIView):
         try:
             payload = jwt.decode(
                 raw,
-                settings.SECRET_KEY,
+                settings.JWT_HS256_SIGNING_KEY,
                 algorithms=["HS256"],
             )
         except jwt.PyJWTError:

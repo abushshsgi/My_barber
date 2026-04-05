@@ -39,7 +39,7 @@ class BarberJWTAuthentication(BaseAuthentication):
         try:
             payload = jwt.decode(
                 raw,
-                settings.SECRET_KEY,
+                settings.JWT_HS256_SIGNING_KEY,
                 algorithms=["HS256"],
             )
         except jwt.PyJWTError:
@@ -71,7 +71,7 @@ def encode_barber_tokens(barber_id: int) -> tuple[str, str]:
             "exp": now + access_delta,
             "iat": now,
         },
-        settings.SECRET_KEY,
+        settings.JWT_HS256_SIGNING_KEY,
         algorithm="HS256",
     )
     refresh = jwt.encode(
@@ -81,7 +81,7 @@ def encode_barber_tokens(barber_id: int) -> tuple[str, str]:
             "exp": now + refresh_delta,
             "iat": now,
         },
-        settings.SECRET_KEY,
+        settings.JWT_HS256_SIGNING_KEY,
         algorithm="HS256",
     )
     if isinstance(access, bytes):

@@ -46,7 +46,9 @@ class BarberTokenRefreshView(APIView):
         if not raw:
             return Response({"detail": "Refresh token required."}, status=400)
         try:
-            payload = jwt.decode(raw, settings.SECRET_KEY, algorithms=["HS256"])
+            payload = jwt.decode(
+                raw, settings.JWT_HS256_SIGNING_KEY, algorithms=["HS256"]
+            )
         except jwt.PyJWTError:
             return Response({"detail": "Token invalid."}, status=401)
         if payload.get("type") != "barber_refresh":
