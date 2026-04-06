@@ -3,11 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { Bell, Menu, Scissors } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { BARBER_NAV, barberPageTitle } from "./barber-nav-config";
+import { fetchBarberMe } from "@/data/barber-me";
+import { barberNavFor, barberPageTitle } from "./barber-nav-config";
 
 function navActive(path: string, pathname: string) {
   return path === "/"
@@ -18,11 +20,17 @@ function navActive(path: string, pathname: string) {
 export function BarberLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const title = barberPageTitle(pathname);
+  const { data: me } = useQuery({
+    queryKey: ["barber", "auth", "me"],
+    queryFn: fetchBarberMe,
+    staleTime: 60_000,
+  });
+  const nav = barberNavFor(me?.work_mode);
+  const title = barberPageTitle(pathname, me?.work_mode);
 
   const NavLinks = ({ onNavigate }: { onNavigate?: () => void }) => (
     <nav className="flex flex-col gap-0.5">
-      {BARBER_NAV.map(({ icon: Icon, label, path }) => {
+      {nav.map(({ icon: Icon, label, path }) => {
         const active = navActive(path, pathname);
         return (
           <Link

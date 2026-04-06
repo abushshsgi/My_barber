@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Users, DollarSign, Scissors, Loader2, TrendingUp } from "lucide-react";
+import { fetchBarberMe } from "@/data/barber-me";
 import {
   AreaChart,
   Area,
@@ -42,9 +43,17 @@ function weekStartEnd() {
 const BarberDashboard = () => {
   const [salonId, setSalonId] = useState<number | null>(null);
 
+  const { data: me, isLoading: loadingMe } = useQuery({
+    queryKey: ["barber", "auth", "me"],
+    queryFn: fetchBarberMe,
+    staleTime: 60_000,
+  });
+  const isIndependent = me?.work_mode === "independent";
+
   const { data: mineSalons = [], isLoading: loadingSalons } = useQuery({
     queryKey: ["salons", "mine"],
     queryFn: fetchMineSalons,
+    enabled: me != null && !isIndependent,
   });
 
   const firstSalonId = mineSalons[0]?.id ?? null;
@@ -54,18 +63,27 @@ const BarberDashboard = () => {
   const range = useMemo(() => weekStartEnd(), []);
 
   const { data: analytics, isLoading: loadingAnalytics } = useQuery({
-    queryKey: ["analytics", activeSalon, range.start.toISOString(), range.end.toISOString()],
+    queryKey: [
+      "analytics",
+      isIndependent ? "independent" : activeSalon,
+      range.start.toISOString(),
+      range.end.toISOString(),
+    ],
     queryFn: async () => {
       const params = new URLSearchParams({
-        salon: String(activeSalon),
         start: range.start.toISOString(),
         end: range.end.toISOString(),
       });
+      if (isIndependent) {
+        params.set("independent", "1");
+      } else {
+        params.set("salon", String(activeSalon));
+      }
       const res = await apiFetch(`/api/v1/analytics/?${params}`);
       if (!res.ok) throw new Error("Analitika yuklanmadi");
       return res.json() as Promise<AnalyticsResponse>;
     },
-    enabled: !!activeSalon,
+    enabled: isIndependent || !!activeSalon,
   });
 
   const chartData = useMemo(() => {
@@ -78,7 +96,7 @@ const BarberDashboard = () => {
 
   const topServices = analytics?.top_services ?? [];
 
-  if (loadingSalons) {
+  if (loadingMe) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loader2 className="h-9 w-9 animate-spin text-primary" />
@@ -86,7 +104,13 @@ const BarberDashboard = () => {
     );
   }
 
-  if (!mineSalons.length) {
+  if (!isIndependent && loadingSalons) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-9 w-9 animate-spin text-primary" />
+      </div>
+    );
+  } else if (!mineSalons.length) {
     return (
       <div className="mx-auto max-w-lg pb-24 pt-2 md:max-w-xl md:pt-6">
         <SalonOnboarding
@@ -99,16 +123,23 @@ const BarberDashboard = () => {
 
   const revenueNum = parseFloat(analytics?.revenue ?? "0") || 0;
 
+  const dashboardTitle = isIndependent ? "Mustaqil barber" : "Haftalik ko'rinish";
+  const revenueLabel = isIndependent
+    ? "Mustaqil bronlar — daromad (7 kun)"
+    : activeSalonName
+      ? `«${activeSalonName}» — daromad (7 kun)`
+      : "Salon — daromad (7 kun)";
+
   return (
     <div className="mx-auto max-w-5xl px-4 pb-10 pt-5 md:pt-10">
       <div className="mb-6 hidden md:block">
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
           Statistika
         </p>
-        <h2 className="mt-1 text-2xl font-semibold tracking-tight">Haftalik ko&apos;rinish</h2>
+        <h2 className="mt-1 text-2xl font-semibold tracking-tight">{dashboardTitle}</h2>
       </div>
 
-      {mineSalons.length > 1 && (
+      {!isIndependent && mineSalons.length > 1 && (
         <label className="mb-5 block">
           <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
             Salon
@@ -144,9 +175,7 @@ const BarberDashboard = () => {
           >
             <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/15 blur-3xl" />
             <div className="relative">
-              <p className="text-sm font-medium text-muted-foreground">
-                {activeSalonName ? `«${activeSalonName}»` : "Salon"} — daromad (7 kun)
-              </p>
+              <p className="text-sm font-medium text-muted-foreground">{revenueLabel}</p>
               <p className="mt-2 font-mono text-4xl font-bold tracking-tight text-foreground md:text-5xl">
                 {revenueNum.toLocaleString()}{" "}
                 <span className="text-lg font-semibold text-muted-foreground md:text-xl">

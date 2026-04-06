@@ -10,6 +10,12 @@ class Barber(models.Model):
     Login / parol faqat shu jadvalda; API orqali mijoz bilan bog‘lanadi (booking va hokazo).
     """
 
+    class WorkMode(models.TextChoices):
+        """Salon asosidagi yoki salonsiz (mustaqil) ish rejimi — UI va analitika uchun."""
+
+        SALON = "salon", "Salon"
+        INDEPENDENT = "independent", "Independent"
+
     email = models.EmailField(unique=True, db_index=True)
     username = models.CharField(max_length=150, unique=True)
     password = models.CharField(max_length=128)
@@ -21,6 +27,12 @@ class Barber(models.Model):
         choices=UzRegion.choices,
         blank=True,
         default="",
+        db_index=True,
+    )
+    work_mode = models.CharField(
+        max_length=16,
+        choices=WorkMode.choices,
+        default=WorkMode.SALON,
         db_index=True,
     )
     is_active = models.BooleanField(default=True)

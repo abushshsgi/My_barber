@@ -73,5 +73,6 @@ class BarberMeView(APIView):
                 "full_name": b.full_name,
                 "phone": b.phone,
                 "role": "BARBER",
+                "work_mode": b.work_mode,
             }
         )

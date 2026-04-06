@@ -134,7 +134,7 @@ class BarberSignupSerializer(serializers.Serializer):
     """
     Barber MVP: majburiy joylashuv va has_salon.
     has_salon=True: ishchi — keyin mavjud salonga qo‘shilish (join + GPS tekshiruvi).
-    has_salon=False: salon egasi yoki MyBarber — keyin yangi salon yaratish.
+    has_salon=False: salon egasi, MyBarber yoki mustaqil barber — keyingi qadamlar UI bo‘yicha.
     """
 
     email = serializers.EmailField()
@@ -159,6 +159,11 @@ class BarberSignupSerializer(serializers.Serializer):
     )
     address = serializers.CharField(required=False, allow_blank=True)
     staff_count_at_signup = serializers.IntegerField(min_value=1, default=1)
+    work_mode = serializers.ChoiceField(
+        choices=Barber.WorkMode.choices,
+        default=Barber.WorkMode.SALON,
+        required=False,
+    )
 
     def validate_email(self, value):
         v = (value or "").strip().lower()
@@ -189,6 +194,13 @@ class BarberSignupSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 {"detail": "latitude / longitude noto'g'ri diapazonda."}
             )
+        wm = attrs.get("work_mode", Barber.WorkMode.SALON)
+        if wm == Barber.WorkMode.INDEPENDENT and attrs.get("has_salon"):
+            raise serializers.ValidationError(
+                {
+                    "detail": "Mustaqil barber uchun has_salon=false bo‘lishi kerak (salonga ishchi sifatida emas).",
+                }
+            )
         return attrs
 
     def create(self, validated_data):
@@ -204,13 +216,15 @@ class BarberSignupSerializer(serializers.Serializer):
         region = validated_data.pop("region")
         address = validated_data.pop("address", "") or ""
         staff_count = validated_data.pop("staff_count_at_signup", 1)
+        work_mode = validated_data.pop("work_mode", Barber.WorkMode.SALON)
 
         if not shop_name:
-            shop_name = (
-                "Salon tanlash kutilmoqda"
-                if has_salon
-                else "Salon yaratilishi kutilmoqda"
-            )
+            if has_salon:
+                shop_name = "Salon tanlash kutilmoqda"
+            elif work_mode == Barber.WorkMode.INDEPENDENT:
+                shop_name = "Mustaqil barber"
+            else:
+                shop_name = "Salon yaratilishi kutilmoqda"
 
         app_status = BarberApplication.Status.APPROVED
         if not getattr(django_settings, "AUTO_APPROVE_BARBERS", True):
@@ -223,6 +237,7 @@ class BarberSignupSerializer(serializers.Serializer):
                 phone=phone,
                 full_name=full_name,
                 region=region,
+                work_mode=work_mode,
             )
             barber.set_password(pwd)
             barber.save()
@@ -255,6 +270,7 @@ class BarberSignupSerializer(serializers.Serializer):
                 "full_name": instance.full_name,
                 "phone": instance.phone,
                 "role": "BARBER",
+                "work_mode": instance.work_mode,
             }
         if isinstance(instance, User):
             return UserSerializer(instance, context=self.context).data

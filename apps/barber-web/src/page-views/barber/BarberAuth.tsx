@@ -12,7 +12,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Scissors, Eye, EyeOff, MapPin, Loader2, Store, UserPlus, Sparkles } from "lucide-react";
+import {
+  Scissors,
+  Eye,
+  EyeOff,
+  MapPin,
+  Loader2,
+  Store,
+  UserPlus,
+  Sparkles,
+  Briefcase,
+} from "lucide-react";
 import { UZ_REGIONS } from "@/lib/uz-regions";
 import { apiFetch, formatApiError, setTokens } from "@/lib/api";
 import { barberAuthMessages, type BarberSignupPath } from "@/lib/i18n/barber-auth";
@@ -148,6 +158,7 @@ export default function BarberAuth() {
     setLoading(true);
     try {
       const hasSalon = signupPath === "employee";
+      const work_mode = signupPath === "independent" ? "independent" : "salon";
       const shopName =
         signupPath === "mybarber" && fullName.trim()
           ? `MyBarber · ${fullName.trim()}`
@@ -160,6 +171,7 @@ export default function BarberAuth() {
           full_name: fullName,
           phone: phone || undefined,
           has_salon: hasSalon,
+          work_mode,
           ...(shopName ? { shop_name: shopName } : {}),
           latitude: la,
           longitude: ln,
@@ -186,6 +198,8 @@ export default function BarberAuth() {
         router.push("/salon/join");
       } else if (signupPath === "mybarber") {
         router.push("/salon/create?preset=mybarber");
+      } else if (signupPath === "independent") {
+        router.push("/independent/setup");
       } else {
         router.push("/salon/create");
       }
@@ -432,6 +446,24 @@ export default function BarberAuth() {
                       <p className="mt-0.5 text-xs text-muted-foreground">{t.pathMybarberDesc}</p>
                     </div>
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setSignupPath("independent")}
+                    className={cn(
+                      "flex w-full gap-3 rounded-2xl border p-3 text-left transition-colors",
+                      signupPath === "independent"
+                        ? "border-primary bg-primary/10 shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.2)]"
+                        : "border-border/80 hover:bg-muted/40",
+                    )}
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/15">
+                      <Briefcase className="h-5 w-5 text-accent" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold">{t.pathIndependentTitle}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{t.pathIndependentDesc}</p>
+                    </div>
+                  </button>
                 </div>
               </div>
             )}
@@ -458,7 +490,9 @@ export default function BarberAuth() {
                       ? t.reviewPathOwner
                       : signupPath === "employee"
                         ? t.reviewPathEmployee
-                        : t.reviewPathMybarber}
+                        : signupPath === "mybarber"
+                          ? t.reviewPathMybarber
+                          : t.reviewPathIndependent}
                   </li>
                 </ul>
               </div>

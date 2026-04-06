@@ -350,12 +350,11 @@ class AnalyticsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        salon_id = request.query_params.get("salon")
         start = request.query_params.get("start")
         end = request.query_params.get("end")
-        if not all([salon_id, start, end]):
+        if not all([start, end]):
             return Response(
-                {"detail": "salon, start, end (ISO dates) required."},
+                {"detail": "start, end (ISO dates) required."},
                 status=400,
             )
         try:
@@ -368,10 +367,86 @@ class AnalyticsView(APIView):
         except ValueError:
             return Response({"detail": "Invalid dates."}, status=400)
 
+        independent = (request.query_params.get("independent") or "").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+        bp = request_barber(request)
+
+        if independent:
+            if not bp:
+                return Response(
+                    {"detail": "Mustaqil analitika faqat sartarosh JWT bilan."},
+                    status=403,
+                )
+            bookings = Booking.objects.filter(
+                barber=bp,
+                salon__isnull=True,
+                status=Booking.Status.COMPLETED,
+                start_at__gte=start_dt,
+                start_at__lte=end_dt,
+            )
+            revenue = bookings.aggregate(t=Sum("total_price"))["t"] or 0
+            clients = bookings.values("customer").distinct().count()
+
+            new_customers = 0
+            returning = 0
+            for cid in set(bookings.values_list("customer_id", flat=True)):
+                prior_count = Booking.objects.filter(
+                    barber=bp,
+                    salon__isnull=True,
+                    customer_id=cid,
+                    status=Booking.Status.COMPLETED,
+                    start_at__lt=start_dt,
+                ).count()
+                if prior_count == 0:
+                    new_customers += 1
+                else:
+                    returning += 1
+
+            top_services = list(
+                BookingLine.objects.filter(booking__in=bookings)
+                .values("service_name")
+                .annotate(cnt=Count("id"))
+                .order_by("-cnt")[:5]
+            )
+
+            daily_rows = (
+                bookings.annotate(day=TruncDate("start_at"))
+                .values("day")
+                .annotate(rev=Sum("total_price"))
+                .order_by("day")
+            )
+            daily = [
+                {
+                    "date": row["day"].isoformat() if row["day"] else "",
+                    "revenue": str(row["rev"] or 0),
+                }
+                for row in daily_rows
+            ]
+
+            return Response(
+                {
+                    "revenue": str(revenue),
+                    "unique_clients": clients,
+                    "new_clients": new_customers,
+                    "returning_clients": returning,
+                    "top_services": top_services,
+                    "daily": daily,
+                }
+            )
+
+        salon_id = request.query_params.get("salon")
+        if not salon_id:
+            return Response(
+                {"detail": "salon, start, end (ISO dates) required."},
+                status=400,
+            )
+
         salon = Salon.objects.filter(pk=salon_id).first()
         if not salon:
             return Response(status=404)
-        bp = request_barber(request)
         if is_platform_admin(request):
             allowed = True
         elif bp is not None and bp.id == salon.owner_barber_id:

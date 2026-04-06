@@ -36,6 +36,8 @@ export type BarberAuthStrings = {
   pathEmployeeDesc: string;
   pathMybarberTitle: string;
   pathMybarberDesc: string;
+  pathIndependentTitle: string;
+  pathIndependentDesc: string;
   reviewTitle: string;
   reviewName: string;
   reviewEmail: string;
@@ -45,6 +47,7 @@ export type BarberAuthStrings = {
   reviewPathOwner: string;
   reviewPathEmployee: string;
   reviewPathMybarber: string;
+  reviewPathIndependent: string;
   errGeoNoBrowser: string;
   errGeoFailed: string;
   errStep1: string;
@@ -87,9 +90,9 @@ const uz: BarberAuthStrings = {
   geoLatPh: "latitude",
   geoLngPh: "longitude",
   geoManualHint: "GPS ishlamasa, xaritadan nuqtani qo‘lda kiriting.",
-  salonStepTitle: "Salon egasimisiz yoki salonda ishlaysizmi?",
+  salonStepTitle: "Qanday ishlamoqchisiz?",
   salonStepIntro:
-    "Keyingi qadam siz tanlagan yo‘lga bog‘liq: salon yaratish, mavjud salonga qo‘shilish yoki MyBarber orqali yangi salon.",
+    "Keyingi qadam tanlovingizga bog‘liq: salon yaratish, mavjud salonga qo‘shilish, MyBarber orqali salon yoki salonsiz mustaqil barber.",
   pathOwnerTitle: "Men salon egasiman",
   pathOwnerDesc: "O‘z saloningizni yaratasiz: nom, manzil, joylashuv va xizmatlar.",
   pathEmployeeTitle: "Men salonda ishlayman",
@@ -98,6 +101,9 @@ const uz: BarberAuthStrings = {
   pathMybarberTitle: "MyBarber bilan yangi salon",
   pathMybarberDesc:
     "Haqiqiy salon bo‘lmasa ham, MyBarber brendi ostida onlayn salon ochishingiz mumkin (nom avtomatik taklif qilinadi).",
+  pathIndependentTitle: "Mustaqil barber",
+  pathIndependentDesc:
+    "Salon ochmasdan o‘z xizmatlaringiz, narxlaringiz va bronlaringiz — keyin xohlasangiz salonga qo‘shilishingiz mumkin.",
   reviewTitle: "Ma'lumotlarni tekshiring",
   reviewName: "Ism",
   reviewEmail: "Email",
@@ -107,13 +113,14 @@ const uz: BarberAuthStrings = {
   reviewPathOwner: "Salon egasi — keyin o‘z saloningizni yaratish",
   reviewPathEmployee: "Salonda ishchi — keyin salonga qo‘shilish (joylashuv tekshiruvi)",
   reviewPathMybarber: "MyBarber salon — keyin tez yaratish sahifasi",
+  reviewPathIndependent: "Mustaqil barber — keyin profil va xizmatlarni sozlash",
   errGeoNoBrowser: "Brauzer joylashuvni qo‘llab-quvvatlamaydi. Quyida lat/lng qo‘lda kiriting.",
   errGeoFailed: "Joylashuv olinmadi. Ruxsat bering yoki quyidagi maydonlarga lat/lng kiriting.",
   errStep1: "Ism, email va kamida 8 belgili parol kiriting.",
   errRegion: "O'zbekiston viloyatini tanlang.",
   errStep2: "Joylashuvni oling yoki lat/lng kiriting.",
   errLatLng: "latitude / longitude noto‘g‘ri.",
-  errSalonChoice: "Salon egasi / ishchi / MyBarber yo‘lidan birini tanlang.",
+  errSalonChoice: "To‘g‘ri variantni tanlang (jumladan mustaqil barber).",
   errSubmitRegion: "Viloyatni tanlang.",
   errSubmitSalon: "Salon bo‘yicha variant tanlanmagan.",
   errSubmitLoc: "Joylashuv kerak.",
@@ -149,9 +156,9 @@ const ru: BarberAuthStrings = {
   geoLatPh: "широта",
   geoLngPh: "долгота",
   geoManualHint: "Если GPS не работает, введите координаты вручную.",
-  salonStepTitle: "Вы владелец салона или работаете в салоне?",
+  salonStepTitle: "Как вы хотите работать?",
   salonStepIntro:
-    "Дальнейшие шаги зависят от выбора: создать салон, присоединиться к существующему или открыть салон через MyBarber.",
+    "Дальше зависит от выбора: свой салон, присоединиться к салону, салон MyBarber или работать независимо без салона.",
   pathOwnerTitle: "Я владелец салона",
   pathOwnerDesc: "Вы создаёте свой салон: название, адрес, геолокация и услуги.",
   pathEmployeeTitle: "Я работаю в салоне",
@@ -160,6 +167,9 @@ const ru: BarberAuthStrings = {
   pathMybarberTitle: "Новый салон с MyBarber",
   pathMybarberDesc:
     "Даже без своего помещения можно открыть онлайн-салон под брендом MyBarber (название подставится автоматически).",
+  pathIndependentTitle: "Независимый барбер",
+  pathIndependentDesc:
+    "Без открытия салона — свои услуги, цены и брони; позже при желании можно присоединиться к салону.",
   reviewTitle: "Проверьте данные",
   reviewName: "Имя",
   reviewEmail: "Email",
@@ -169,13 +179,14 @@ const ru: BarberAuthStrings = {
   reviewPathOwner: "Владелец — далее создание своего салона",
   reviewPathEmployee: "Сотрудник — далее присоединение (проверка геолокации)",
   reviewPathMybarber: "Салон MyBarber — далее быстрое создание",
+  reviewPathIndependent: "Независимый барбер — далее настройка профиля и услуг",
   errGeoNoBrowser: "Браузер не поддерживает геолокацию. Введите lat/lng ниже.",
   errGeoFailed: "Не удалось получить местоположение. Разрешите доступ или введите lat/lng.",
   errStep1: "Введите имя, email и пароль не короче 8 символов.",
   errRegion: "Выберите область Узбекистана.",
   errStep2: "Получите геолокацию или введите lat/lng.",
   errLatLng: "Некорректные широта / долгота.",
-  errSalonChoice: "Выберите один из вариантов: владелец, сотрудник или MyBarber.",
+  errSalonChoice: "Выберите вариант (включая независимого барбера).",
   errSubmitRegion: "Выберите область.",
   errSubmitSalon: "Не выбран вариант по салону.",
   errSubmitLoc: "Нужно местоположение.",
@@ -211,9 +222,9 @@ const en: BarberAuthStrings = {
   geoLatPh: "latitude",
   geoLngPh: "longitude",
   geoManualHint: "If GPS fails, enter coordinates manually.",
-  salonStepTitle: "Are you a salon owner or do you work at a salon?",
+  salonStepTitle: "How do you want to work?",
   salonStepIntro:
-    "Next steps depend on your choice: create a salon, join an existing one, or open a MyBarber-branded salon.",
+    "Next steps depend on your choice: create a salon, join one, open a MyBarber salon, or work independently without a salon.",
   pathOwnerTitle: "I’m a salon owner",
   pathOwnerDesc: "You’ll create your salon: name, address, location on the map, and services.",
   pathEmployeeTitle: "I work at a salon",
@@ -222,6 +233,9 @@ const en: BarberAuthStrings = {
   pathMybarberTitle: "New salon with MyBarber",
   pathMybarberDesc:
     "Even without a physical shop you can open an online salon under the MyBarber brand (name suggested automatically).",
+  pathIndependentTitle: "Independent barber",
+  pathIndependentDesc:
+    "Work without opening a salon: your services, prices, and bookings — you can join a salon later if you want.",
   reviewTitle: "Review your details",
   reviewName: "Name",
   reviewEmail: "Email",
@@ -231,13 +245,14 @@ const en: BarberAuthStrings = {
   reviewPathOwner: "Owner — next: create your salon",
   reviewPathEmployee: "Employee — next: join a salon (location check)",
   reviewPathMybarber: "MyBarber salon — next: quick setup",
+  reviewPathIndependent: "Independent barber — next: profile & services setup",
   errGeoNoBrowser: "Browser has no geolocation. Enter lat/lng below.",
   errGeoFailed: "Could not get location. Allow access or enter lat/lng.",
   errStep1: "Enter name, email and password (min 8 characters).",
   errRegion: "Select a region of Uzbekistan.",
   errStep2: "Get location or enter lat/lng.",
   errLatLng: "Invalid latitude / longitude.",
-  errSalonChoice: "Pick owner, employee, or MyBarber path.",
+  errSalonChoice: "Pick one option (including independent barber).",
   errSubmitRegion: "Select a region.",
   errSubmitSalon: "Salon path not selected.",
   errSubmitLoc: "Location is required.",
@@ -251,4 +266,4 @@ export const barberAuthMessages: Record<Locale, BarberAuthStrings> = {
   en,
 };
 
-export type BarberSignupPath = "owner" | "employee" | "mybarber";
+export type BarberSignupPath = "owner" | "employee" | "mybarber" | "independent";
