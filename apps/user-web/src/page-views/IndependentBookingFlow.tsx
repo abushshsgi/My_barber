@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { ArrowLeft, Check, Clock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiFetch, getAccessToken } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
 import { mediaSrc, PLACEHOLDER_AVATAR } from "@/lib/media";
 import { format } from "date-fns";
 import type { BarberListApi } from "@/lib/barber-queries";
@@ -142,6 +144,17 @@ export default function IndependentBookingFlow() {
     if (!res.ok) throw new Error((data as { detail?: string }).detail || "Bron yaratilmadi");
   };
 
+  const { data: me } = useQuery({
+    queryKey: ["me", "indep-booking"],
+    queryFn: async () => {
+      const res = await apiFetch("/api/v1/users/me/");
+      if (!res.ok) throw new Error("Profil");
+      return res.json() as Promise<{ phone?: string | null }>;
+    },
+    enabled: !!getAccessToken(),
+  });
+  const phoneOk = !!(me?.phone && String(me.phone).trim());
+
   const [submitting, setSubmitting] = useState(false);
   const submit = async () => {
     setErr(null);
@@ -176,6 +189,15 @@ export default function IndependentBookingFlow() {
 
   return (
     <div className="min-h-screen bg-background">
+      {me && !phoneOk && (
+        <div className="border-b border-destructive/30 bg-destructive/5 px-4 py-3 text-sm">
+          <span className="font-medium text-destructive">Telefon kerak. </span>
+          Bron uchun profilda telefon kiriting.{" "}
+          <Link href="/profile" className="font-semibold text-accent underline">
+            Profil
+          </Link>
+        </div>
+      )}
       <div className="px-4 pt-6 pb-4 flex items-center gap-3">
         <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => router.back()}>
           <ArrowLeft className="h-5 w-5" />
@@ -360,7 +382,7 @@ export default function IndependentBookingFlow() {
               </Card>
               <Button
                 className="w-full rounded-2xl gold-gradient text-gold-foreground border-0 h-12"
-                disabled={submitting}
+                disabled={submitting || !phoneOk}
                 onClick={submit}
               >
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Bron qilish"}

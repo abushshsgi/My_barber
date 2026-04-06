@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Search,
   SlidersHorizontal,
@@ -12,15 +12,25 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { SalonCard } from "@/components/SalonCard";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSalons } from "@/lib/salon-queries";
-import { fetchBarbers } from "@/lib/barber-queries";
+import { fetchBarbers, type BarberExploreFilters } from "@/lib/barber-queries";
 import { HomeLoginBanner } from "@/components/HomeLoginBanner";
 import { getPublicApiBase } from "@/lib/api";
 import { BarberCard } from "@/components/BarberCard";
+import { UZ_REGIONS } from "@/lib/uz-regions";
 
 const categories = [
   { icon: "✂️", label: "Soch turmak" },
@@ -35,6 +45,19 @@ const Index = () => {
   const [isFocused, setIsFocused] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [feedTab, setFeedTab] = useState<"salons" | "barbers">("salons");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftMin, setDraftMin] = useState("");
+  const [draftMax, setDraftMax] = useState("");
+  const [draftRating, setDraftRating] = useState("");
+  const [draftRegion, setDraftRegion] = useState("");
+  const [draftDate, setDraftDate] = useState("");
+  const [applied, setApplied] = useState({
+    min: "",
+    max: "",
+    rating: "",
+    region: "",
+    date: "",
+  });
 
   const { data: salons = [], isLoading, error } = useQuery({
     queryKey: ["salons"],
@@ -46,10 +69,22 @@ const Index = () => {
     s.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  const barberFilters = useMemo((): BarberExploreFilters => {
+    const f: BarberExploreFilters = { work_mode: "independent" };
+    if (applied.min) f.min_price = applied.min;
+    if (applied.max) f.max_price = applied.max;
+    if (applied.rating) f.min_rating = applied.rating;
+    if (applied.region) f.region = applied.region;
+    if (applied.date) f.available_date = applied.date;
+    if (selectedCategory) f.service_q = selectedCategory;
+    return f;
+  }, [applied, selectedCategory]);
+
   const { data: barbers = [], isLoading: loadingBarbers, error: barberError } = useQuery({
-    queryKey: ["barbers"],
-    queryFn: fetchBarbers,
+    queryKey: ["barbers", barberFilters],
+    queryFn: () => fetchBarbers(barberFilters),
     retry: false,
+    enabled: feedTab === "barbers",
   });
 
   const filteredBarbers = barbers.filter((b) => {
@@ -60,6 +95,26 @@ const Index = () => {
       (b.phone || "").toLowerCase().includes(q)
     );
   });
+
+  const applyFilters = () => {
+    setApplied({
+      min: draftMin.trim(),
+      max: draftMax.trim(),
+      rating: draftRating.trim(),
+      region: draftRegion,
+      date: draftDate,
+    });
+    setFilterOpen(false);
+  };
+
+  const clearFilters = () => {
+    setDraftMin("");
+    setDraftMax("");
+    setDraftRating("");
+    setDraftRegion("");
+    setDraftDate("");
+    setApplied({ min: "", max: "", rating: "", region: "", date: "" });
+  };
 
   const topRated = [...salons].sort((a, b) => b.rating - a.rating).slice(0, 3);
   const premiumSalons = salons.filter((s) => s.isPremium);
@@ -137,12 +192,91 @@ const Index = () => {
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
             />
-            <button
-              type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-background/10 hover:bg-background/20 transition-colors"
-            >
-              <SlidersHorizontal className="h-4 w-4 text-background/60" />
-            </button>
+            <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
+              <SheetTrigger asChild>
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-background/10 hover:bg-background/20 transition-colors"
+                  aria-label="Filtrlar"
+                >
+                  <SlidersHorizontal className="h-4 w-4 text-background/60" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle>Barber filtrlari</SheetTitle>
+                  <p className="text-sm text-muted-foreground text-left font-normal">
+                    API orq mustaqil barberlar ro‘yxati yangilanadi.
+                  </p>
+                </SheetHeader>
+                <div className="mt-4 space-y-4 pb-6">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Min narx (so&apos;m)</Label>
+                      <Input
+                        inputMode="numeric"
+                        className="mt-1 rounded-xl"
+                        value={draftMin}
+                        onChange={(e) => setDraftMin(e.target.value)}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Max narx</Label>
+                      <Input
+                        inputMode="numeric"
+                        className="mt-1 rounded-xl"
+                        value={draftMax}
+                        onChange={(e) => setDraftMax(e.target.value)}
+                        placeholder="∞"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Minimal reyting</Label>
+                    <Input
+                      inputMode="decimal"
+                      className="mt-1 rounded-xl"
+                      value={draftRating}
+                      onChange={(e) => setDraftRating(e.target.value)}
+                      placeholder="masalan 4"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Hudud</Label>
+                    <select
+                      className="mt-1 flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"
+                      value={draftRegion}
+                      onChange={(e) => setDraftRegion(e.target.value)}
+                    >
+                      <option value="">Barcha</option>
+                      {UZ_REGIONS.map((r) => (
+                        <option key={r.value} value={r.value}>
+                          {r.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Bo‘sh kun (YYYY-MM-DD)</Label>
+                    <Input
+                      type="date"
+                      className="mt-1 rounded-xl"
+                      value={draftDate}
+                      onChange={(e) => setDraftDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button className="flex-1 rounded-xl gold-gradient text-gold-foreground border-0" onClick={applyFilters}>
+                      Qo‘llash
+                    </Button>
+                    <Button variant="outline" className="rounded-xl" type="button" onClick={clearFilters}>
+                      Tozalash
+                    </Button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
           </motion.div>
         </div>
       </div>

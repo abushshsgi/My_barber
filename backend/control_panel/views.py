@@ -1,20 +1,21 @@
-from django.db.models import Q
+from django.db.models import Avg, Q
 from django.utils import timezone
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.models import BarberApplication, User
+from accounts.models import User
 from accounts.uz_regions import UzRegion
 from barbers.models import Barber
 from accounts.permissions import IsAdmin
-from bookings.models import Booking
+from bookings.models import Booking, Review
 from bookings.serializers import BookingSerializer
 from salons.models import Salon
 
 from .serializers import (
     AdminBarberSerializer,
     AdminBarberUpdateSerializer,
+    AdminReviewListSerializer,
     AdminSalonSerializer,
     AdminSalonUpdateSerializer,
     AdminUserSerializer,
@@ -97,11 +98,10 @@ class AdminStatsView(APIView):
         barbers = Barber.objects.count()
         salons_pub = Salon.objects.filter(is_published=True).count()
         salons_pending = Salon.objects.filter(is_published=False).count()
-        apps_pending = BarberApplication.objects.filter(
-            status=BarberApplication.Status.PENDING
-        ).count()
         bookings_today = Booking.objects.filter(start_at__date=today).count()
         bookings_total = Booking.objects.count()
+        reviews_total = Review.objects.count()
+        reviews_avg = Review.objects.aggregate(a=Avg("rating"))["a"]
 
         return Response(
             {
@@ -110,9 +110,10 @@ class AdminStatsView(APIView):
                 "barbers_total": barbers,
                 "salons_published": salons_pub,
                 "salons_pending_review": salons_pending,
-                "barber_applications_pending": apps_pending,
                 "bookings_today": bookings_today,
                 "bookings_total": bookings_total,
+                "reviews_total": reviews_total,
+                "reviews_avg": str(reviews_avg) if reviews_avg is not None else "0",
                 "regions": _admin_region_breakdown(),
             }
         )
@@ -240,3 +241,38 @@ class AdminBookingListView(generics.ListAPIView):
             .prefetch_related("lines")
             .order_by("-created_at")
         )
+
+
+class AdminReviewListView(generics.ListAPIView):
+    """Barcha sharhlar (mijoz → sartarosh / salon bronlari)."""
+
+    permission_classes = [IsAdmin]
+    serializer_class = AdminReviewListSerializer
+
+    def get_queryset(self):
+        qs = Review.objects.select_related("author", "barber")
+        barber = self.request.query_params.get("barber")
+        if barber and str(barber).isdigit():
+            qs = qs.filter(barber_id=int(barber))
+        min_r = self.request.query_params.get("min_rating")
+        if min_r and str(min_r).isdigit():
+            qs = qs.filter(rating__gte=int(min_r))
+        df = self.request.query_params.get("date_from")
+        dt = self.request.query_params.get("date_to")
+        if df:
+            try:
+                from datetime import datetime
+
+                d0 = datetime.fromisoformat(df).date()
+                qs = qs.filter(created_at__date__gte=d0)
+            except ValueError:
+                pass
+        if dt:
+            try:
+                from datetime import datetime
+
+                d1 = datetime.fromisoformat(dt).date()
+                qs = qs.filter(created_at__date__lte=d1)
+            except ValueError:
+                pass
+        return qs.order_by("-created_at")

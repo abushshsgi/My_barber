@@ -1,7 +1,8 @@
 import math
 from datetime import datetime, timedelta
 
-from django.db.models import Q
+from django.db.models import Avg, Count, Q
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status, viewsets
@@ -37,9 +38,82 @@ def _haversine_km(lat1, lon1, lat2, lon2):
     return 2 * r * math.asin(math.sqrt(a))
 
 
+def _slot_overlaps_breaks(t_aware, end_aware, breaks_list, tz):
+    """breaks_list: [{"start": "12:00", "end": "13:00"}, ...]"""
+    for br in breaks_list or []:
+        if not isinstance(br, dict):
+            continue
+        try:
+            st = datetime.strptime(str(br.get("start", "")), "%H:%M").time()
+            et = datetime.strptime(str(br.get("end", "")), "%H:%M").time()
+        except (ValueError, TypeError):
+            continue
+        if st >= et:
+            continue
+        bs = timezone.make_aware(datetime.combine(t_aware.date(), st), tz)
+        be = timezone.make_aware(datetime.combine(t_aware.date(), et), tz)
+        if bs < end_aware and be > t_aware:
+            return True
+    return False
+
+
 class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [AllowAny]
     queryset = BarberProfile.objects.select_related("barber").prefetch_related("services", "work_photos")
+
+    def get_queryset(self):
+        qs = (
+            BarberProfile.objects.select_related("barber")
+            .prefetch_related("services", "work_photos", "working_hours")
+            .annotate(
+                avg_rating=Coalesce(Avg("barber__reviews_about__rating"), 0.0),
+                review_count=Count("barber__reviews_about", distinct=True),
+            )
+        )
+        r = self.request.query_params
+        min_price = r.get("min_price")
+        max_price = r.get("max_price")
+        min_rating = r.get("min_rating")
+        region = (r.get("region") or "").strip()
+        service_q = (r.get("service_q") or r.get("q") or "").strip()
+        available_date = (r.get("available_date") or "").strip()
+        work_mode = (r.get("work_mode") or "").strip().lower()
+
+        if work_mode == "independent":
+            qs = qs.filter(barber__work_mode=Barber.WorkMode.INDEPENDENT)
+
+        try:
+            min_p = float(min_price) if min_price not in (None, "") else None
+        except (ValueError, TypeError):
+            min_p = None
+        try:
+            max_p = float(max_price) if max_price not in (None, "") else None
+        except (ValueError, TypeError):
+            max_p = None
+        if min_p is not None or max_p is not None:
+            pq = Q(services__is_active=True)
+            if min_p is not None:
+                pq &= Q(services__price__gte=min_p)
+            if max_p is not None:
+                pq &= Q(services__price__lte=max_p)
+            qs = qs.filter(pq).distinct()
+        if min_rating not in (None, ""):
+            try:
+                qs = qs.filter(avg_rating__gte=float(min_rating))
+            except ValueError:
+                pass
+        if region:
+            qs = qs.filter(barber__region=region)
+        if service_q:
+            qs = qs.filter(services__is_active=True, services__name__icontains=service_q).distinct()
+        if available_date:
+            try:
+                wd = datetime.fromisoformat(available_date).date().weekday()
+                qs = qs.filter(working_hours__weekday=wd, working_hours__is_day_off=False).distinct()
+            except ValueError:
+                pass
+
+        return qs
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -218,6 +292,7 @@ class IndependentAvailabilityView(APIView):
         # Default hours if not configured
         open_t = wh.open_time if wh else datetime.strptime("09:00", "%H:%M").time()
         close_t = wh.close_time if wh else datetime.strptime("18:00", "%H:%M").time()
+        breaks_list = list(wh.breaks) if wh else []
         if open_t >= close_t:
             return Response({"slots": [], "total_minutes": total_minutes})
 
@@ -240,7 +315,7 @@ class IndependentAvailabilityView(APIView):
                 start_at__lt=end_slot,
                 end_at__gt=t,
             ).exists()
-            if not overlap:
+            if not overlap and not _slot_overlaps_breaks(t, end_slot, breaks_list, tz):
                 slots.append(t.strftime("%H:%M"))
             t += timedelta(minutes=slot_step)
 

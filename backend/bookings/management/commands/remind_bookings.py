@@ -4,11 +4,11 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from bookings.models import Booking
-from notifications.utils import notify_user
+from notifications.utils import notify_barber, notify_user
 
 
 class Command(BaseCommand):
-    help = "Notify customers about bookings starting in ~1 hour"
+    help = "Notify customers and barbers about bookings starting in ~1 hour"
 
     def handle(self, *args, **options):
         now = timezone.now()
@@ -22,15 +22,25 @@ class Command(BaseCommand):
         )
         count = 0
         for b in qs:
+            place = b.salon.name if b.salon_id else (b.barber.full_name or b.barber.email)
+            body_user = f"{place}: {b.start_at.strftime('%H:%M')} da uchrashuv."
             notify_user(
                 b.customer,
                 "reminder_1h",
                 "Bron eslatmasi",
-                f"{b.salon.name}: {b.start_at.strftime('%H:%M')} da uchrashuv.",
+                body_user,
+                {"booking_id": b.id},
+                send_email=True,
+            )
+            notify_barber(
+                b.barber,
+                "reminder_1h",
+                "Bron eslatmasi",
+                f"Mijoz: {b.customer.full_name or b.customer.email} — {b.start_at.strftime('%H:%M')}.",
                 {"booking_id": b.id},
                 send_email=True,
             )
             b.reminder_1h_sent = True
             b.save(update_fields=["reminder_1h_sent"])
             count += 1
-        self.stdout.write(self.style.SUCCESS(f"Sent {count} reminders"))
+        self.stdout.write(self.style.SUCCESS(f"Sent {count} reminder pairs"))

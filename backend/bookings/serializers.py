@@ -21,6 +21,7 @@ class BookingLineSerializer(serializers.ModelSerializer):
 class BookingSerializer(serializers.ModelSerializer):
     lines = BookingLineSerializer(many=True)
     customer_name = serializers.CharField(source="customer.full_name", read_only=True)
+    customer_phone = serializers.CharField(read_only=True)
     salon_name = serializers.SerializerMethodField()
     barber_name = serializers.CharField(source="barber.full_name", read_only=True)
 
@@ -30,6 +31,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "id",
             "customer",
             "customer_name",
+            "customer_phone",
             "salon",
             "salon_name",
             "barber",
@@ -41,7 +43,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "lines",
             "created_at",
         )
-        read_only_fields = ("id", "customer", "end_at", "total_price", "created_at")
+        read_only_fields = ("id", "customer", "customer_phone", "end_at", "total_price", "created_at")
 
     def get_salon_name(self, obj):
         return obj.salon.name if obj.salon_id else None
@@ -61,6 +63,14 @@ class BookingCreateSerializer(serializers.Serializer):
     )
 
     def validate(self, attrs):
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            phone = (getattr(request.user, "phone", None) or "").strip()
+            if not phone:
+                raise serializers.ValidationError(
+                    {"detail": "Bron qilish uchun profilda telefon raqamini kiriting."}
+                )
+
         barber = attrs["barber"]
         salon = attrs.get("salon", None)
         start_at = attrs["start_at"]
@@ -131,6 +141,8 @@ class BookingCreateSerializer(serializers.Serializer):
 
     @transaction.atomic
     def create(self, validated_data):
+        from bookings.slot_lock import booking_slot_lock
+
         request = self.context["request"]
         customer = request.user
         validated_data.pop("service_ids", None)
@@ -143,32 +155,57 @@ class BookingCreateSerializer(serializers.Serializer):
         end_at = validated_data.pop("_end_at")
         total_price = validated_data.pop("_total_price")
 
-        booking = Booking.objects.create(
-            customer=customer,
-            salon=salon,
-            barber=barber,
-            start_at=start_at,
-            end_at=end_at,
-            status=Booking.Status.PENDING,
-            total_price=total_price,
-        )
-        for s in services:
-            if is_salon_flow:
-                BookingLine.objects.create(
-                    booking=booking,
-                    service=s,
-                    service_name=s.name,
-                    price=s.price,
-                    duration_minutes=s.duration_minutes,
+        phone_snap = (getattr(customer, "phone", None) or "").strip()
+
+        with booking_slot_lock(barber.id, start_at, end_at) as acquired:
+            if not acquired:
+                raise serializers.ValidationError(
+                    {
+                        "detail": "Bu vaqt oralig‘i hozir band qilinmoqda. Boshqa slot tanlang yoki qayta urinib ko‘ring."
+                    }
                 )
-            else:
-                BookingLine.objects.create(
-                    booking=booking,
-                    barber_service=s,
-                    service_name=s.name,
-                    price=s.price,
-                    duration_minutes=s.duration_minutes,
+            blocking = Booking.objects.filter(
+                barber=barber,
+                status__in=[
+                    Booking.Status.PENDING,
+                    Booking.Status.ACCEPTED,
+                    Booking.Status.IN_PROGRESS,
+                ],
+                start_at__lt=end_at,
+                end_at__gt=start_at,
+            ).exists()
+            if blocking:
+                raise serializers.ValidationError(
+                    {"detail": "Tanlangan vaqt boshqa bron bilan ustma-ust tushdi."}
                 )
+
+            booking = Booking.objects.create(
+                customer=customer,
+                salon=salon,
+                barber=barber,
+                start_at=start_at,
+                end_at=end_at,
+                status=Booking.Status.PENDING,
+                total_price=total_price,
+                customer_phone=phone_snap,
+            )
+            for s in services:
+                if is_salon_flow:
+                    BookingLine.objects.create(
+                        booking=booking,
+                        service=s,
+                        service_name=s.name,
+                        price=s.price,
+                        duration_minutes=s.duration_minutes,
+                    )
+                else:
+                    BookingLine.objects.create(
+                        booking=booking,
+                        barber_service=s,
+                        service_name=s.name,
+                        price=s.price,
+                        duration_minutes=s.duration_minutes,
+                    )
         return booking
 
 

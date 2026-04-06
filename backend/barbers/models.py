@@ -130,6 +130,8 @@ class BarberWorkingHours(models.Model):
     open_time = models.TimeField()
     close_time = models.TimeField()
     is_day_off = models.BooleanField(default=False)
+    # [{"start": "12:00", "end": "13:00"}, ...] — tushlik / tanaffus oralig‘lari
+    breaks = models.JSONField(default=list, blank=True)
 
     class Meta:
         unique_together = [["profile", "weekday"]]

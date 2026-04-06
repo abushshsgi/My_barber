@@ -3,6 +3,7 @@ from rest_framework import serializers
 from accounts.models import User
 from accounts.uz_regions import UzRegion
 from barbers.models import Barber
+from bookings.models import Review
 from salons.models import Salon
 from salons.serializers import SalonHoursSerializer
 
@@ -216,3 +217,21 @@ class AdminBarberUpdateSerializer(serializers.ModelSerializer):
         if value not in allowed:
             raise serializers.ValidationError("Noto'g'ri viloyat.")
         return value
+
+
+class AdminReviewListSerializer(serializers.ModelSerializer):
+    author_email = serializers.EmailField(source="author.email", read_only=True)
+    barber_email = serializers.EmailField(source="barber.email", read_only=True)
+
+    class Meta:
+        model = Review
+        fields = (
+            "id",
+            "booking",
+            "rating",
+            "text",
+            "photo",
+            "created_at",
+            "author_email",
+            "barber_email",
+        )

@@ -17,6 +17,7 @@ import { motion } from "framer-motion";
 import { apiFetch } from "@/lib/api";
 import type { SalonListApi } from "@/lib/mapSalon";
 import { SalonOnboarding } from "@/page-views/barber/SalonEntryChoice";
+import { BarberLiveSession } from "@/page-views/barber/BarberLiveSession";
 import { subDays, startOfDay, endOfDay } from "date-fns";
 
 type AnalyticsResponse = {
@@ -110,7 +111,8 @@ const BarberDashboard = () => {
         <Loader2 className="h-9 w-9 animate-spin text-primary" />
       </div>
     );
-  } else if (!mineSalons.length) {
+  }
+  if (!isIndependent && !mineSalons.length) {
     return (
       <div className="mx-auto max-w-lg pb-24 pt-2 md:max-w-xl md:pt-6">
         <SalonOnboarding
@@ -138,6 +140,8 @@ const BarberDashboard = () => {
         </p>
         <h2 className="mt-1 text-2xl font-semibold tracking-tight">{dashboardTitle}</h2>
       </div>
+
+      {isIndependent && <BarberLiveSession />}
 
       {!isIndependent && mineSalons.length > 1 && (
         <label className="mb-5 block">

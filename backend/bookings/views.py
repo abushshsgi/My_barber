@@ -34,6 +34,9 @@ class BookingViewSet(viewsets.ModelViewSet):
         base = Booking.objects.select_related("customer", "salon", "barber").prefetch_related(
             "lines"
         )
+        st = self.request.query_params.get("status")
+        if st:
+            base = base.filter(status=st)
         if is_platform_admin(self.request):
             return base
         bp = request_barber(self.request)
@@ -55,12 +58,13 @@ class BookingViewSet(viewsets.ModelViewSet):
         ser = BookingCreateSerializer(data=request.data, context={"request": request})
         ser.is_valid(raise_exception=True)
         booking = ser.save()
+        phone = booking.customer_phone or getattr(booking.customer, "phone", None) or ""
         notify_barber(
             booking.barber,
             "new_booking",
             "Yangi bron",
-            f"{booking.customer.full_name or booking.customer.email} bron qildi.",
-            {"booking_id": booking.id},
+            f"{booking.customer.full_name or booking.customer.email} bron qildi. Tel: {phone or '—'}",
+            {"booking_id": booking.id, "customer_phone": phone},
         )
         return Response(BookingSerializer(booking).data, status=status.HTTP_201_CREATED)
 
@@ -177,10 +181,15 @@ class ReviewViewSet(viewsets.ModelViewSet):
             return Review.objects.filter(author=self.request.user).select_related(
                 "author"
             )
-        qs = Review.objects.filter(salon__is_published=True).select_related("author")
+        qs = Review.objects.filter(
+            Q(salon__isnull=True) | Q(salon__is_published=True)
+        ).select_related("author", "barber")
         salon = self.request.query_params.get("salon")
         if salon:
             qs = qs.filter(salon_id=salon)
+        barber = self.request.query_params.get("barber")
+        if barber:
+            qs = qs.filter(barber_id=barber)
         return qs
 
     def get_permissions(self):

@@ -41,6 +41,7 @@ type HoursRow = {
   open_time: string;
   close_time: string;
   is_day_off: boolean;
+  breaks?: { start: string; end: string }[];
 };
 
 const WEEKDAYS: { id: number; label: string }[] = [
@@ -207,15 +208,23 @@ export default function IndependentBarberSetup() {
     return map;
   }, [hours]);
 
-  const [hoursDraft, setHoursDraft] = useState<Record<number, { open: string; close: string; off: boolean }>>({});
+  const [hoursDraft, setHoursDraft] = useState<
+    Record<number, { open: string; close: string; off: boolean; breakStart: string; breakEnd: string }>
+  >({});
   useEffect(() => {
-    const next: Record<number, { open: string; close: string; off: boolean }> = {};
+    const next: Record<
+      number,
+      { open: string; close: string; off: boolean; breakStart: string; breakEnd: string }
+    > = {};
     for (const d of WEEKDAYS) {
       const h = hoursByDay.get(d.id);
+      const br = h?.breaks?.[0];
       next[d.id] = {
         open: h?.open_time?.slice(0, 5) || "09:00",
         close: h?.close_time?.slice(0, 5) || "18:00",
         off: h?.is_day_off || false,
+        breakStart: br?.start?.slice(0, 5) || "",
+        breakEnd: br?.end?.slice(0, 5) || "",
       };
     }
     setHoursDraft(next);
@@ -226,11 +235,16 @@ export default function IndependentBarberSetup() {
       for (const d of WEEKDAYS) {
         const draft = hoursDraft[d.id];
         const existing = hoursByDay.get(d.id);
+        const breaks =
+          draft.breakStart && draft.breakEnd
+            ? [{ start: draft.breakStart, end: draft.breakEnd }]
+            : [];
         const payload = {
           weekday: d.id,
           open_time: `${draft.open}:00`,
           close_time: `${draft.close}:00`,
           is_day_off: draft.off,
+          breaks,
         };
         if (existing) {
           await apiFetch(`/api/v1/barber/working-hours/${existing.id}/`, {
@@ -430,7 +444,13 @@ export default function IndependentBarberSetup() {
           </p>
           <div className="space-y-2">
             {WEEKDAYS.map((d) => {
-              const dr = hoursDraft[d.id] || { open: "09:00", close: "18:00", off: false };
+              const dr = hoursDraft[d.id] || {
+                open: "09:00",
+                close: "18:00",
+                off: false,
+                breakStart: "",
+                breakEnd: "",
+              };
               return (
                 <div key={d.id} className="border border-border/60 rounded-2xl p-3">
                   <div className="flex items-center justify-between mb-2">
@@ -463,6 +483,33 @@ export default function IndependentBarberSetup() {
                       value={dr.close}
                       onChange={(e) =>
                         setHoursDraft((prev) => ({ ...prev, [d.id]: { ...dr, close: e.target.value } }))
+                      }
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2 mb-1">Tanaffus (ixtiyoriy)</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      className="rounded-xl"
+                      type="time"
+                      disabled={dr.off}
+                      value={dr.breakStart}
+                      onChange={(e) =>
+                        setHoursDraft((prev) => ({
+                          ...prev,
+                          [d.id]: { ...dr, breakStart: e.target.value },
+                        }))
+                      }
+                    />
+                    <Input
+                      className="rounded-xl"
+                      type="time"
+                      disabled={dr.off}
+                      value={dr.breakEnd}
+                      onChange={(e) =>
+                        setHoursDraft((prev) => ({
+                          ...prev,
+                          [d.id]: { ...dr, breakEnd: e.target.value },
+                        }))
                       }
                     />
                   </div>

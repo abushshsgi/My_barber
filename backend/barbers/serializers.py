@@ -33,7 +33,17 @@ class BarberServiceSerializer(serializers.ModelSerializer):
 class BarberWorkingHoursSerializer(serializers.ModelSerializer):
     class Meta:
         model = BarberWorkingHours
-        fields = ("id", "weekday", "open_time", "close_time", "is_day_off")
+        fields = ("id", "weekday", "open_time", "close_time", "is_day_off", "breaks")
+
+    def validate_breaks(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError("breaks must be a list.")
+        for item in value:
+            if not isinstance(item, dict):
+                raise serializers.ValidationError("Each break must be an object with start/end.")
+            if "start" not in item or "end" not in item:
+                raise serializers.ValidationError("Each break needs start and end (HH:MM).")
+        return value
 
 
 class BarberPublicListSerializer(serializers.ModelSerializer):
@@ -43,6 +53,9 @@ class BarberPublicListSerializer(serializers.ModelSerializer):
     )
     avatar = serializers.SerializerMethodField()
     barber_id = serializers.IntegerField(source="barber.id", read_only=True)
+    region = serializers.CharField(source="barber.region", read_only=True)
+    avg_rating = serializers.FloatField(read_only=True, allow_null=True)
+    review_count = serializers.IntegerField(read_only=True, allow_null=True)
     active_services = serializers.SerializerMethodField()
 
     class Meta:
@@ -52,10 +65,13 @@ class BarberPublicListSerializer(serializers.ModelSerializer):
             "barber_id",
             "name",
             "phone",
+            "region",
             "location_text",
             "latitude",
             "longitude",
             "avatar",
+            "avg_rating",
+            "review_count",
             "active_services",
         )
 
@@ -74,7 +90,10 @@ class BarberPublicDetailSerializer(serializers.ModelSerializer):
     )
     avatar = serializers.SerializerMethodField()
     barber_id = serializers.IntegerField(source="barber.id", read_only=True)
-    services = BarberServiceSerializer(many=True, read_only=True)
+    region = serializers.CharField(source="barber.region", read_only=True)
+    avg_rating = serializers.FloatField(read_only=True, allow_null=True)
+    review_count = serializers.IntegerField(read_only=True, allow_null=True)
+    services = serializers.SerializerMethodField()
     work_photos = BarberWorkPhotoSerializer(many=True, read_only=True)
 
     class Meta:
@@ -84,13 +103,20 @@ class BarberPublicDetailSerializer(serializers.ModelSerializer):
             "barber_id",
             "name",
             "phone",
+            "region",
             "location_text",
             "latitude",
             "longitude",
             "avatar",
+            "avg_rating",
+            "review_count",
             "services",
             "work_photos",
         )
+
+    def get_services(self, obj):
+        qs = obj.services.filter(is_active=True).order_by("name")
+        return BarberServiceSerializer(qs, many=True).data
 
     def get_avatar(self, obj):
         return _public_avatar_url(obj, self.context.get("request"))

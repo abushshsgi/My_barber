@@ -52,6 +52,7 @@ const AdminBookings = () => {
               <TableRow>
                 <TableHead>Salon</TableHead>
                 <TableHead>Mijoz</TableHead>
+                <TableHead>Telefon</TableHead>
                 <TableHead>Vaqt</TableHead>
                 <TableHead>Holat</TableHead>
                 <TableHead className="text-right">Summa</TableHead>
@@ -64,6 +65,7 @@ const AdminBookings = () => {
                     {b.salon_name ?? "—"}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{b.customer_name ?? "—"}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{b.customer_phone ?? "—"}</TableCell>
                   <TableCell className="text-xs whitespace-nowrap">
                     {b.start_at ? format(new Date(b.start_at), "d MMM yyyy HH:mm") : "—"}
                   </TableCell>

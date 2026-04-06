@@ -28,9 +28,10 @@ export type AdminStats = {
   barbers_total: number;
   salons_published: number;
   salons_pending_review: number;
-  barber_applications_pending: number;
   bookings_today: number;
   bookings_total: number;
+  reviews_total: number;
+  reviews_avg: string;
   regions?: AdminRegionStatRow[];
 };
 
@@ -202,6 +203,7 @@ export type AdminBookingRow = {
   id: number;
   salon_name?: string;
   customer_name?: string;
+  customer_phone?: string;
   start_at: string;
   status: string;
   total_price: string;
@@ -209,6 +211,35 @@ export type AdminBookingRow = {
 
 export async function fetchAdminBookings(): Promise<AdminBookingRow[]> {
   const res = await apiFetch("/api/v1/admin/bookings/");
+  const j = await res.json();
+  if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
+  return Array.isArray(j) ? j : j.results || [];
+}
+
+export type AdminReviewRow = {
+  id: number;
+  booking: number;
+  rating: number;
+  text: string;
+  photo: string | null;
+  created_at: string;
+  author_email: string;
+  barber_email: string;
+};
+
+export async function fetchAdminReviews(params?: {
+  barber?: string;
+  min_rating?: string;
+  date_from?: string;
+  date_to?: string;
+}): Promise<AdminReviewRow[]> {
+  const sp = new URLSearchParams();
+  if (params?.barber) sp.set("barber", params.barber);
+  if (params?.min_rating) sp.set("min_rating", params.min_rating);
+  if (params?.date_from) sp.set("date_from", params.date_from);
+  if (params?.date_to) sp.set("date_to", params.date_to);
+  const q = sp.toString();
+  const res = await apiFetch(q ? `/api/v1/admin/reviews/?${q}` : "/api/v1/admin/reviews/");
   const j = await res.json();
   if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
   return Array.isArray(j) ? j : j.results || [];

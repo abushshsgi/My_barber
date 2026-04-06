@@ -68,7 +68,7 @@ function BarberAuthGuardProtected({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** `/auth` va `/pending` dan tashqari yo‘llar token talab qiladi. */
+/** `/auth` dan tashqari yo‘llar token talab qiladi. */
 export function BarberAuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   if (isPublicBarberPath(pathname)) {

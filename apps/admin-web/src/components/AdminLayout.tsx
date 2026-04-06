@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   LayoutDashboard,
-  UserCheck,
   CalendarDays,
   LogOut,
   Users,
@@ -14,6 +13,7 @@ import {
   Menu,
   Shield,
   MapPinned,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminAuthGuard } from "@/components/AdminAuthGuard";
@@ -28,7 +28,7 @@ const navItems = [
   { icon: Scissors, label: "Sartaroshlar", path: "/admin/barbers" },
   { icon: Store, label: "Salonlar", path: "/admin/salons" },
   { icon: CalendarDays, label: "Bandlar", path: "/admin/bookings" },
-  { icon: UserCheck, label: "Arizalar", path: "/admin/approvals" },
+  { icon: Star, label: "Sharhlar", path: "/admin/reviews" },
 ];
 
 function NavList({

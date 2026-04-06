@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { fetchBarberMe } from "@/data/barber-me";
 import { barberNavFor, barberPageTitle } from "./barber-nav-config";
+import { useBarberNotificationWs } from "@/hooks/useBarberNotificationWs";
 
 function navActive(path: string, pathname: string) {
   return path === "/"
@@ -20,6 +21,7 @@ function navActive(path: string, pathname: string) {
 export function BarberLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  useBarberNotificationWs();
   const { data: me } = useQuery({
     queryKey: ["barber", "auth", "me"],
     queryFn: fetchBarberMe,

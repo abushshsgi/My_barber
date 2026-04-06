@@ -10,6 +10,7 @@ from control_panel.views import (
     AdminBarberDetailView,
     AdminBarberListView,
     AdminBookingListView,
+    AdminReviewListView,
     AdminSalonDetailView,
     AdminSalonListView,
     AdminStatsView,
@@ -18,11 +19,9 @@ from control_panel.views import (
 )
 
 from accounts.views import (
-    BarberApplicationViewSet,
     BarberRegisterView,
     EmailTokenObtainPairView,
     MeView,
-    MyBarberApplicationStatusView,
     RegisterView,
     UserSearchView,
     UzRegionsView,
@@ -66,12 +65,6 @@ router.register(r"barbers", BarberPublicViewSet, basename="barber")
 router.register(r"barber/services", MyBarberServiceViewSet, basename="barber-service")
 router.register(r"barber/work-photos", MyBarberWorkPhotoViewSet, basename="barber-work-photos")
 router.register(r"barber/working-hours", MyBarberWorkingHoursViewSet, basename="barber-working-hours")
-router.register(
-    r"admin/barber-applications",
-    BarberApplicationViewSet,
-    basename="barber-application",
-)
-
 # Shared API routes (mounted at both /api/v1/ and /api/ for compatibility).
 api_routes = [
     path("admin/stats/", AdminStatsView.as_view()),
@@ -82,6 +75,7 @@ api_routes = [
     path("admin/barbers/", AdminBarberListView.as_view()),
     path("admin/barbers/<int:pk>/", AdminBarberDetailView.as_view()),
     path("admin/bookings/", AdminBookingListView.as_view()),
+    path("admin/reviews/", AdminReviewListView.as_view()),
     path("regions/", UzRegionsView.as_view()),
     path("auth/register/", RegisterView.as_view()),
     path("auth/barber-register/", BarberRegisterView.as_view()),
@@ -92,7 +86,6 @@ api_routes = [
     path("admin/auth/me/", AdminMeView.as_view()),
     path("users/me/", MeView.as_view()),
     path("users/search/", UserSearchView.as_view()),
-    path("users/barber-status/", MyBarberApplicationStatusView.as_view()),
     path("barbers/search/", BarberSearchView.as_view()),
     path("barber/auth/token/", BarberTokenView.as_view()),
     path("barber/auth/token/refresh/", BarberTokenRefreshView.as_view()),

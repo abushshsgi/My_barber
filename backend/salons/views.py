@@ -1,6 +1,5 @@
 import math
 
-from django.conf import settings as django_settings
 from django.core.files.base import File
 from django.db import transaction
 from django.db.models import Avg, Count, FloatField, Q, Value
@@ -12,7 +11,6 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from accounts.auth_utils import is_platform_admin, request_barber
-from accounts.models import BarberApplication
 from accounts.throttles import SalonJoinThrottle, SalonSearchThrottle
 from barbers.models import Barber, BarberProfile
 from notifications.utils import notify_barber, notify_user
@@ -113,14 +111,6 @@ class SalonViewSet(viewsets.ModelViewSet):
         bp = request_barber(self.request)
         if bp is None:
             raise PermissionDenied("Faqat sartarosh akkaunti bilan salon yaratish mumkin.")
-        try:
-            app = bp.barber_application
-        except BarberApplication.DoesNotExist:
-            app = None
-        if app is not None:
-            auto = getattr(django_settings, "AUTO_APPROVE_BARBERS", True)
-            if not auto and app.status != BarberApplication.Status.APPROVED:
-                raise PermissionDenied("Barber arizasi admin tomonidan tasdiqlanmagan.")
         salon = serializer.save(owner_barber=bp)
         SalonMembership.objects.get_or_create(
             barber=bp,

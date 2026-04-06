@@ -33,6 +33,8 @@ ALLOWED_HOSTS = [
 ]
 
 INSTALLED_APPS = [
+    "daphne",
+    "channels",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -81,6 +83,24 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
+
+# WebSocket guruhlari: productionda Railway Redis plugin → REDIS_URL
+if os.environ.get("REDIS_URL"):
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [os.environ["REDIS_URL"]],
+            },
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
+        },
+    }
 
 if os.environ.get("DATABASE_URL"):
     DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
@@ -213,9 +233,3 @@ EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@mybarber.local")
 
-# MVP: barber ro'yxatdan o'tganda admin tasdig'ini avtomatik berish (login darhol ishlashi uchun).
-AUTO_APPROVE_BARBERS = os.environ.get("AUTO_APPROVE_BARBERS", "true").lower() in (
-    "1",
-    "true",
-    "yes",
-)

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { ArrowLeft, Check, Clock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -43,6 +44,17 @@ export default function BookingFlow() {
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
+
+  const { data: me } = useQuery({
+    queryKey: ["me", "booking"],
+    queryFn: async () => {
+      const res = await apiFetch("/api/v1/users/me/");
+      if (!res.ok) throw new Error("Profil");
+      return res.json() as Promise<{ phone?: string | null }>;
+    },
+    enabled: !!getAccessToken(),
+  });
+  const phoneOk = !!(me?.phone && String(me.phone).trim());
 
   const { data: salon, isLoading, isError, error } = useQuery({
     queryKey: ["salon", salonId],
@@ -159,6 +171,15 @@ export default function BookingFlow() {
 
   return (
     <div className="min-h-screen bg-background">
+      {me && !phoneOk && (
+        <div className="border-b border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-foreground">
+          <span className="text-destructive font-medium">Telefon kerak. </span>
+          Bron uchun profilda telefon raqamingizni kiriting.{" "}
+          <Link href="/profile" className="font-semibold text-accent underline">
+            Profilga o‘tish
+          </Link>
+        </div>
+      )}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b px-4 py-3">
         <div className="flex items-center gap-3 mb-3">
           <button
@@ -373,6 +394,7 @@ export default function BookingFlow() {
               {!bookingMutation.isPending && !bookingMutation.isSuccess && (
                 <Button
                   onClick={handleConfirm}
+                  disabled={!phoneOk}
                   className="w-full h-12 rounded-xl gold-gradient text-gold-foreground border-0"
                 >
                   Bronni yuborish

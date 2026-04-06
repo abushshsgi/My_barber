@@ -1,4 +1,3 @@
-from django.conf import settings as django_settings
 from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
@@ -6,7 +5,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from barbers.models import Barber, BarberProfile
 
-from .models import BarberApplication, User
+from .models import User
 from .uz_regions import UzRegion
 
 
@@ -91,43 +90,6 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         user.set_password(pwd)
         user.save()
         return user
-
-
-class BarberApplicationSerializer(serializers.ModelSerializer):
-    applicant_email = serializers.EmailField(source="barber.email", read_only=True)
-    applicant_name = serializers.CharField(source="barber.full_name", read_only=True)
-    region_label = serializers.SerializerMethodField()
-
-    class Meta:
-        model = BarberApplication
-        fields = (
-            "id",
-            "applicant_email",
-            "applicant_name",
-            "shop_name",
-            "age",
-            "region",
-            "region_label",
-            "address",
-            "latitude",
-            "longitude",
-            "staff_count_at_signup",
-            "status",
-            "created_at",
-        )
-        read_only_fields = (
-            "id",
-            "status",
-            "created_at",
-            "applicant_email",
-            "applicant_name",
-            "region_label",
-        )
-
-    def get_region_label(self, obj: BarberApplication) -> str:
-        if not obj.region:
-            return ""
-        return dict(UzRegion.choices).get(obj.region, obj.region)
 
 
 class BarberSignupSerializer(serializers.Serializer):
@@ -226,10 +188,6 @@ class BarberSignupSerializer(serializers.Serializer):
             else:
                 shop_name = "Salon yaratilishi kutilmoqda"
 
-        app_status = BarberApplication.Status.APPROVED
-        if not getattr(django_settings, "AUTO_APPROVE_BARBERS", True):
-            app_status = BarberApplication.Status.PENDING
-
         with transaction.atomic():
             barber = Barber(
                 email=email,
@@ -241,17 +199,6 @@ class BarberSignupSerializer(serializers.Serializer):
             )
             barber.set_password(pwd)
             barber.save()
-            BarberApplication.objects.create(
-                barber=barber,
-                shop_name=shop_name,
-                age=age,
-                region=region,
-                address=address,
-                latitude=latitude,
-                longitude=longitude,
-                staff_count_at_signup=staff_count,
-                status=app_status,
-            )
             BarberProfile.objects.update_or_create(
                 barber=barber,
                 defaults={

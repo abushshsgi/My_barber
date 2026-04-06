@@ -37,6 +37,7 @@ class Booking(models.Model):
         db_index=True,
     )
     total_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    customer_phone = models.CharField(max_length=32, blank=True, default="")
     reminder_1h_sent = models.BooleanField(default=False)
     appointment_reminder_sent = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -1,6 +1,8 @@
 # Railway: Root Directory = backend bo‘lsa, bu fayl avtomatik o‘qiladi.
-# Dashboardda Release Command bo‘sh bo‘lsa ham — migratsiya va collectstatic ishlaydi.
-# 500 xatolik: odatda DBda migratsiya qilinmagan (masalan, salon.phone ustuni).
+# Start: backend/Procfile → daphne (ASGI) — WebSocket uchun WSGI emas.
+# Redis: “New” → Redis → REDIS_URL env avtomatik; WebSocket bir nechta replikada ishlaydi.
+# Cron: “Cron Jobs” yoki alohida servis — remind_bookings (qarang .env.example).
+# Frontend: CORS uchun FRONTEND_*_ORIGIN larni production URL ga qo‘ying.
 
 [deploy]
 releaseCommand = "python manage.py migrate --noinput && python manage.py collectstatic --noinput"

@@ -22,12 +22,12 @@ import {
   Scissors,
   Store,
   TrendingUp,
-  Clock,
   Loader2,
   AlertCircle,
   Sparkles,
   MapPin,
   ExternalLink,
+  Star,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { fetchAdminStats, type AdminRegionStatRow } from "@/lib/admin-api";
@@ -90,12 +90,12 @@ const AdminDashboard = () => {
       iconBg: "bg-sky-500/15 text-sky-300",
     },
     {
-      label: "Kutilayotgan arizalar",
-      value: String(data.barber_applications_pending),
-      sub: "sartarosh ro'yxati",
-      icon: Clock,
-      accent: "border-l-amber-500/70",
-      iconBg: "bg-amber-500/15 text-amber-300",
+      label: "Sharhlar",
+      value: String(data.reviews_total ?? 0),
+      sub: `o‘rtacha ${data.reviews_avg ?? "0"}`,
+      icon: Star,
+      accent: "border-l-rose-500/70",
+      iconBg: "bg-rose-500/15 text-rose-300",
     },
   ];
 

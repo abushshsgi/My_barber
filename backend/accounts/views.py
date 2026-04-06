@@ -1,20 +1,12 @@
-from django.utils import timezone
-from rest_framework import generics, status, viewsets
-from rest_framework.decorators import action
+from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from notifications.utils import notify_barber, notify_user
-
-from barbers.permissions import IsBarber
-
-from .models import BarberApplication, User
-from .permissions import IsAdmin
+from .models import User
 from .uz_regions import UzRegion
 from .serializers import (
-    BarberApplicationSerializer,
     BarberSignupSerializer,
     EmailTokenObtainPairSerializer,
     UserRegisterSerializer,
@@ -75,55 +67,3 @@ class UserSearchView(generics.ListAPIView):
             | Q(phone__icontains=q)
             | Q(full_name__icontains=q)
         )[:20]
-
-
-class BarberApplicationViewSet(viewsets.ReadOnlyModelViewSet):
-    """Admin: list/detail barber applications."""
-
-    permission_classes = [IsAdmin]
-    queryset = BarberApplication.objects.select_related("barber").all()
-    serializer_class = BarberApplicationSerializer
-
-    @action(detail=True, methods=["post"])
-    def approve(self, request, pk=None):
-        app = self.get_object()
-        app.status = BarberApplication.Status.APPROVED
-        app.reviewed_at = timezone.now()
-        app.save()
-        notify_barber(
-            app.barber,
-            "barber_approved",
-            "MyBarber: ro'yxatdan o'tish tasdiqlandi",
-            f"Salom! {app.shop_name} uchun arizangiz tasdiqlandi. Endi tizimga kirishingiz mumkin.",
-            send_email=True,
-        )
-        return Response({"status": "approved"})
-
-    @action(detail=True, methods=["post"])
-    def reject(self, request, pk=None):
-        app = self.get_object()
-        app.status = BarberApplication.Status.REJECTED
-        app.reviewed_at = timezone.now()
-        app.save()
-        notify_barber(
-            app.barber,
-            "barber_rejected",
-            "MyBarber: ariza",
-            "Arizangiz rad etildi.",
-            send_email=True,
-        )
-        return Response({"status": "rejected"})
-
-
-class MyBarberApplicationStatusView(APIView):
-    permission_classes = [IsBarber]
-
-    def get(self, request):
-        b = request.user.barber
-        try:
-            app = b.barber_application
-        except BarberApplication.DoesNotExist:
-            return Response({"status": None})
-        from .serializers import BarberApplicationSerializer
-
-        return Response(BarberApplicationSerializer(app).data)
