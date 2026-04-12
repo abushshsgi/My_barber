@@ -104,9 +104,12 @@ class BookingCriticalTests(TestCase):
             format="json",
         )
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-        bid = res.json()["id"]
+        data = res.json()
+        self.assertEqual(data["status"], "accepted")
+        bid = data["id"]
         b = Booking.objects.get(pk=bid)
         self.assertEqual(b.customer_phone, self.user.phone)
+        self.assertEqual(b.status, Booking.Status.ACCEPTED)
 
     def test_one_review_per_booking(self):
         self.client.force_authenticate(user=self.user)

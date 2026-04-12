@@ -59,6 +59,19 @@ class BookingViewSet(viewsets.ModelViewSet):
         ser.is_valid(raise_exception=True)
         booking = ser.save()
         phone = booking.customer_phone or getattr(booking.customer, "phone", None) or ""
+        place = (
+            booking.salon.name
+            if booking.salon_id
+            else (booking.barber.full_name or booking.barber.email)
+        )
+        notify_user(
+            booking.customer,
+            "booking_accepted",
+            "Bron tasdiqlandi",
+            f"{place}: broningiz darhol tasdiqlandi.",
+            {"booking_id": booking.id},
+            send_email=False,
+        )
         notify_barber(
             booking.barber,
             "new_booking",

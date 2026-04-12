@@ -185,7 +185,7 @@ class BookingCreateSerializer(serializers.Serializer):
                 barber=barber,
                 start_at=start_at,
                 end_at=end_at,
-                status=Booking.Status.PENDING,
+                status=Booking.Status.ACCEPTED,
                 total_price=total_price,
                 customer_phone=phone_snap,
             )
