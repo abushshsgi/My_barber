@@ -123,8 +123,10 @@ class BookingViewSet(viewsets.ModelViewSet):
             return Response(status=403)
         if booking.status != Booking.Status.ACCEPTED:
             return Response({"detail": "Must be accepted."}, status=400)
+        now = timezone.now()
         booking.status = Booking.Status.IN_PROGRESS
-        booking.save(update_fields=["status", "updated_at"])
+        booking.started_at = now
+        booking.save(update_fields=["status", "started_at", "updated_at"])
         return Response(BookingSerializer(booking).data)
 
     @action(detail=True, methods=["post"])

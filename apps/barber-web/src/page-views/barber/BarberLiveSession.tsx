@@ -6,16 +6,12 @@ import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2, Play, Square } from "lucide-react";
+import {
+  fetchBarberBookings,
+  type BarberBookingRow,
+} from "@/data/barber-bookings";
 
-type BookingRow = {
-  id: number;
-  status: string;
-  start_at: string;
-  end_at: string;
-  customer_name: string;
-};
-
-function pickLiveBooking(rows: BookingRow[]): BookingRow | null {
+function pickLiveBooking(rows: BarberBookingRow[]): BarberBookingRow | null {
   const now = Date.now();
   for (const b of rows) {
     if (b.status !== "accepted" && b.status !== "in_progress") continue;
@@ -26,13 +22,6 @@ function pickLiveBooking(rows: BookingRow[]): BookingRow | null {
     if (b.status === "in_progress" && now < end + 4 * 60 * 60 * 1000) return b;
   }
   return null;
-}
-
-async function fetchBarberBookings(): Promise<BookingRow[]> {
-  const res = await apiFetch("/api/v1/bookings/");
-  if (!res.ok) throw new Error("Bronlar yuklanmadi");
-  const j = (await res.json()) as { results?: BookingRow[] } | BookingRow[];
-  return Array.isArray(j) ? j : j.results || [];
 }
 
 export function BarberLiveSession() {
@@ -77,8 +66,10 @@ export function BarberLiveSession() {
 
   const elapsedLabel = useMemo(() => {
     if (!live || live.status !== "in_progress") return "";
-    const start = new Date(live.start_at).getTime();
-    const sec = Math.max(0, Math.floor((Date.now() - start) / 1000));
+    const t0 = live.started_at
+      ? new Date(live.started_at).getTime()
+      : new Date(live.start_at).getTime();
+    const sec = Math.max(0, Math.floor((Date.now() - t0) / 1000));
     const m = Math.floor(sec / 60);
     const s = sec % 60;
     return `${m}:${s.toString().padStart(2, "0")}`;

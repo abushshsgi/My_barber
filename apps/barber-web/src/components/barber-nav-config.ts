@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  CalendarClock,
   CircleUser,
   LayoutDashboard,
   Star,
@@ -24,6 +25,7 @@ export const BARBER_NAV: BarberNavItem[] = [
 /** Mustaqil barber: salon va jamoa bo‘limlari o‘rniga xizmatlar sozlamasi */
 export const BARBER_NAV_INDEPENDENT: BarberNavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+  { icon: CalendarClock, label: "Bronlar", path: "/bookings" },
   { icon: Scissors, label: "Xizmatlar", path: "/independent/setup" },
   { icon: Users, label: "Mijozlar", path: "/clients" },
   { icon: Star, label: "Sharhlar", path: "/reviews" },

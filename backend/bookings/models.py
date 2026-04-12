@@ -42,6 +42,11 @@ class Booking(models.Model):
     appointment_reminder_sent = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Barber xizmatni boshlagan vaqt (taymer uchun).",
+    )
 
     class Meta:
         ordering = ["-start_at"]

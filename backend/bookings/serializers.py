@@ -38,12 +38,21 @@ class BookingSerializer(serializers.ModelSerializer):
             "barber_name",
             "start_at",
             "end_at",
+            "started_at",
             "status",
             "total_price",
             "lines",
             "created_at",
         )
-        read_only_fields = ("id", "customer", "customer_phone", "end_at", "total_price", "created_at")
+        read_only_fields = (
+            "id",
+            "customer",
+            "customer_phone",
+            "end_at",
+            "started_at",
+            "total_price",
+            "created_at",
+        )
 
     def get_salon_name(self, obj):
         return obj.salon.name if obj.salon_id else None
