@@ -15,6 +15,15 @@ const REFRESH_KEY_ADMIN = "mybarber_admin_refresh";
 
 type TokenKind = "admin" | "barber" | "user";
 
+function envDefaultKind(): TokenKind | null {
+  const raw =
+    (typeof window !== "undefined" ? process.env.NEXT_PUBLIC_AUTH_KIND : process.env.NEXT_PUBLIC_AUTH_KIND) ||
+    "";
+  const v = raw.trim().toLowerCase();
+  if (v === "admin" || v === "barber" || v === "user") return v;
+  return null;
+}
+
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
   return (
@@ -110,6 +119,8 @@ function desiredKindForPath(path: string): TokenKind {
     if (hasBarber) return "barber";
     return "user";
   }
+  const hinted = envDefaultKind();
+  if (hinted) return hinted;
   return "user";
 }
 
