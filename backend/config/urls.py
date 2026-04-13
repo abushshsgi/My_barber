@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.http import JsonResponse
 from django.urls import include, path, re_path
 from django.views.static import serve
 from rest_framework.routers import DefaultRouter
@@ -54,6 +55,11 @@ from salons.views import (
     ServiceViewSet,
 )
 from chat.views import ConversationListCreateView, ConversationMessagesView
+
+
+def health(_request):
+    return JsonResponse({"ok": True})
+
 
 router = DefaultRouter()
 router.register(r"salons", SalonViewSet, basename="salon")
@@ -109,6 +115,7 @@ api_routes = [
 ]
 
 urlpatterns = [
+    path("health/", health),
     path("api/v1/", include(api_routes)),
     path("api/", include(api_routes)),
 ]
