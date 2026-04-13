@@ -3,6 +3,7 @@ import {
   CalendarClock,
   CircleUser,
   LayoutDashboard,
+  MessageSquareText,
   Star,
   Store,
   UserPlus,
@@ -17,6 +18,7 @@ export const BARBER_NAV: BarberNavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Store, label: "Salon", path: "/salon" },
   { icon: Users, label: "Mijozlar", path: "/clients" },
+  { icon: MessageSquareText, label: "Chat", path: "/chat" },
   { icon: Star, label: "Sharhlar", path: "/reviews" },
   { icon: UserPlus, label: "Jamoa", path: "/team" },
   { icon: CircleUser, label: "Profil", path: "/profile" },
@@ -28,6 +30,7 @@ export const BARBER_NAV_INDEPENDENT: BarberNavItem[] = [
   { icon: CalendarClock, label: "Bronlar", path: "/bookings" },
   { icon: Scissors, label: "Xizmatlar", path: "/independent/setup" },
   { icon: Users, label: "Mijozlar", path: "/clients" },
+  { icon: MessageSquareText, label: "Chat", path: "/chat" },
   { icon: Star, label: "Sharhlar", path: "/reviews" },
   { icon: CircleUser, label: "Profil", path: "/profile" },
 ];

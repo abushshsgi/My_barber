@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "salons.apps.SalonsConfig",
     "bookings",
     "notifications",
+    "chat",
 ]
 
 MIDDLEWARE = [

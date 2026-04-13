@@ -53,6 +53,7 @@ from salons.views import (
     SalonViewSet,
     ServiceViewSet,
 )
+from chat.views import ConversationListCreateView, ConversationMessagesView
 
 router = DefaultRouter()
 router.register(r"salons", SalonViewSet, basename="salon")
@@ -98,6 +99,12 @@ api_routes = [
     path("bookings/availability/", BookingAvailabilityView.as_view()),
     path("barbers/availability/", IndependentAvailabilityView.as_view()),
     path("salons/<int:salon_id>/portfolio/", SalonPortfolioView.as_view()),
+    # Chat (text-only): barber ↔ user
+    path("chat/conversations/", ConversationListCreateView.as_view()),
+    path(
+        "chat/conversations/<uuid:conversation_id>/messages/",
+        ConversationMessagesView.as_view(),
+    ),
     path("", include(router.urls)),
 ]
 

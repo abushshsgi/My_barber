@@ -1,3 +1,1 @@
-# migrate: production DBda yangi ustunlar (masalan started_at) bo‘lmasa 500 bermasligi uchun.
-# Release Command ham migrate qilsa, ikkinchi marta no-op (tez).
-web: sh -c 'python manage.py migrate --noinput && exec daphne -b 0.0.0.0 -p $PORT config.asgi:application'
+web: daphne -b 0.0.0.0 -p $PORT config.asgi:application

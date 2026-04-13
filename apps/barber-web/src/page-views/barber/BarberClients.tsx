@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
-import { Phone, Loader2 } from "lucide-react";
+import { Phone, Loader2, MessageSquareText } from "lucide-react";
 import { motion } from "framer-motion";
 import { apiFetch } from "@/lib/api";
+import { Button } from "@/components/ui/button";
 import type { SalonListApi } from "@/lib/mapSalon";
 
 type ClientRow = {
@@ -33,6 +35,7 @@ async function fetchClients(salonId: number): Promise<ClientRow[]> {
 const BarberClients = () => {
   const [tab, setTab] = useState<"all" | "new" | "returning">("all");
   const [salonId, setSalonId] = useState<number | null>(null);
+  const router = useRouter();
 
   const { data: mine = [], isLoading: loadingSalons } = useQuery({
     queryKey: ["salons", "mine"],
@@ -146,6 +149,24 @@ const BarberClients = () => {
                     {client.classification === "new" ? "yangi" : "qaytgan"}
                   </p>
                 </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="ml-2 rounded-xl"
+                  aria-label="Chat"
+                  onClick={async () => {
+                    const res = await apiFetch("/api/v1/chat/conversations/", {
+                      method: "POST",
+                      body: JSON.stringify({ user_id: client.id }),
+                    });
+                    if (!res.ok) return;
+                    const convo = (await res.json()) as { id: string };
+                    router.push(`/chat/${convo.id}`);
+                  }}
+                >
+                  <MessageSquareText className="h-4 w-4" />
+                </Button>
               </Card>
             </motion.div>
           ))}

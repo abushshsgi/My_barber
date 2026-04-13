@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import { StarRating } from "@/components/StarRating";
-import { MapPin, ArrowRight, Loader2, Crosshair, Radar } from "lucide-react";
+import { MapPin, ArrowRight, Loader2, Crosshair, Radar, MessageCircle } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiFetch } from "@/lib/api";
 import { mediaSrc, PLACEHOLDER_AVATAR } from "@/lib/media";
@@ -88,6 +89,7 @@ async function fetchNearbyBarbers(
 }
 
 export default function MapView() {
+  const router = useRouter();
   const [radius, setRadius] = useState<number>(2);
   const [selectedSalon, setSelectedSalon] = useState<string | null>(null);
   const [selectedBarberId, setSelectedBarberId] = useState<number | null>(null);
@@ -340,6 +342,21 @@ export default function MapView() {
               >
                 Bron qilish <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Link>
+              <button
+                type="button"
+                onClick={async () => {
+                  const res = await apiFetch("/api/v1/chat/conversations/", {
+                    method: "POST",
+                    body: JSON.stringify({ barber_id: selectedBarberObj.barberId }),
+                  });
+                  if (!res.ok) return;
+                  const convo = (await res.json()) as { id: string };
+                  router.push(`/chat/${convo.id}`);
+                }}
+                className="mt-2 flex items-center justify-center gap-1.5 w-full py-2 rounded-lg sm:rounded-xl bg-primary text-primary-foreground text-xs sm:text-sm font-semibold"
+              >
+                Chat <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </button>
             </div>
           </motion.div>
         )}

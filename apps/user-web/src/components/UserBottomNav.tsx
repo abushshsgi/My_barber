@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Map, CalendarDays, Bell, User } from "lucide-react";
+import { Home, Map, CalendarDays, Bell, User, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -10,6 +10,7 @@ const navItems = [
   { icon: Home, label: "Asosiy", path: "/" },
   { icon: Map, label: "Xarita", path: "/map" },
   { icon: CalendarDays, label: "Bandlar", path: "/bookings" },
+  { icon: MessageCircle, label: "Chat", path: "/chat" },
   { icon: Bell, label: "Xabar", path: "/notifications" },
   { icon: User, label: "Profil", path: "/profile" },
 ];
