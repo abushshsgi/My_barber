@@ -6,19 +6,62 @@ const API_BASE =
 const TOKEN_KEY = "mybarber_access";
 const REFRESH_KEY = "mybarber_refresh";
 
+const TOKEN_KEY_USER = "mybarber_user_access";
+const REFRESH_KEY_USER = "mybarber_user_refresh";
+const TOKEN_KEY_BARBER = "mybarber_barber_access";
+const REFRESH_KEY_BARBER = "mybarber_barber_refresh";
+const TOKEN_KEY_ADMIN = "mybarber_admin_access";
+const REFRESH_KEY_ADMIN = "mybarber_admin_refresh";
+
+type TokenKind = "admin" | "barber" | "user";
+
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
+  return (
+    localStorage.getItem(TOKEN_KEY_USER) ||
+    localStorage.getItem(TOKEN_KEY) ||
+    null
+  );
+}
+
+function keyFor(kind: TokenKind): { access: string; refresh: string } {
+  if (kind === "admin") return { access: TOKEN_KEY_ADMIN, refresh: REFRESH_KEY_ADMIN };
+  if (kind === "barber") return { access: TOKEN_KEY_BARBER, refresh: REFRESH_KEY_BARBER };
+  return { access: TOKEN_KEY_USER, refresh: REFRESH_KEY_USER };
+}
+
+function getStored(kind: TokenKind): { access: string | null; refresh: string | null } {
+  if (typeof window === "undefined") return { access: null, refresh: null };
+  const keys = keyFor(kind);
+  const legacyAccess = localStorage.getItem(TOKEN_KEY);
+  const legacyRefresh = localStorage.getItem(REFRESH_KEY);
+  const access = localStorage.getItem(keys.access) || (kind === "user" ? legacyAccess : null);
+  const refresh = localStorage.getItem(keys.refresh) || (kind === "user" ? legacyRefresh : null);
+  return { access: access || null, refresh: refresh || null };
 }
 
 export function setTokens(access: string, refresh: string) {
-  localStorage.setItem(TOKEN_KEY, access);
-  localStorage.setItem(REFRESH_KEY, refresh);
+  const kind = jwtPayloadType(access) || jwtPayloadType(refresh) || "user";
+  const keys = keyFor(kind);
+  localStorage.setItem(keys.access, access);
+  localStorage.setItem(keys.refresh, refresh);
+
+  // Back-compat: keep legacy keys for user flow only.
+  if (kind === "user") {
+    localStorage.setItem(TOKEN_KEY, access);
+    localStorage.setItem(REFRESH_KEY, refresh);
+  }
 }
 
 export function clearTokens() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(REFRESH_KEY);
+  localStorage.removeItem(TOKEN_KEY_USER);
+  localStorage.removeItem(REFRESH_KEY_USER);
+  localStorage.removeItem(TOKEN_KEY_BARBER);
+  localStorage.removeItem(REFRESH_KEY_BARBER);
+  localStorage.removeItem(TOKEN_KEY_ADMIN);
+  localStorage.removeItem(REFRESH_KEY_ADMIN);
 }
 
 function jwtPayloadType(token: string | null): "admin" | "barber" | "user" | null {
@@ -50,10 +93,31 @@ function shouldOmitBearerForPath(path: string): boolean {
   return noBearer.some((suffix) => p === suffix || p.endsWith(suffix));
 }
 
-async function refreshAccess(): Promise<string | null> {
-  const refresh = localStorage.getItem(REFRESH_KEY);
+function desiredKindForPath(path: string): TokenKind {
+  const p = path.split("?")[0];
+  if (p.includes("/api/v1/admin/")) return "admin";
+  if (p.includes("/api/v1/barber/")) return "barber";
+  // For shared endpoints (e.g. /api/v1/bookings/, /api/v1/notifications/),
+  // choose a token kind only when it's unambiguous in this browser session.
+  // This avoids barber-web accidentally sending no token just because the path
+  // isn't under /api/v1/barber/.
+  const hasAdmin = typeof window !== "undefined" && !!getStored("admin").access;
+  const hasBarber = typeof window !== "undefined" && !!getStored("barber").access;
+  const hasUser = typeof window !== "undefined" && !!getStored("user").access;
+  const count = Number(hasAdmin) + Number(hasBarber) + Number(hasUser);
+  if (count === 1) {
+    if (hasAdmin) return "admin";
+    if (hasBarber) return "barber";
+    return "user";
+  }
+  return "user";
+}
+
+async function refreshAccess(kindHint: TokenKind, pathForRefresh: string): Promise<string | null> {
+  const stored = getStored(kindHint);
+  const refresh = stored.refresh;
   if (!refresh) return null;
-  const kind = jwtPayloadType(refresh);
+  const kind = jwtPayloadType(refresh) || kindHint;
   const url =
     kind === "admin"
       ? `${API_BASE}/api/v1/admin/auth/token/refresh/`
@@ -66,7 +130,14 @@ async function refreshAccess(): Promise<string | null> {
     body: JSON.stringify({ refresh }),
   });
   if (!res.ok) {
-    clearTokens();
+    // Only clear tokens of this kind (to avoid logging out other panels)
+    const keys = keyFor(kind);
+    localStorage.removeItem(keys.access);
+    localStorage.removeItem(keys.refresh);
+    if (kind === "user") {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(REFRESH_KEY);
+    }
     return null;
   }
   const text = await res.text();
@@ -74,14 +145,30 @@ async function refreshAccess(): Promise<string | null> {
   try {
     data = JSON.parse(text) as { access?: string };
   } catch {
-    clearTokens();
+    const keys = keyFor(kind);
+    localStorage.removeItem(keys.access);
+    localStorage.removeItem(keys.refresh);
+    if (kind === "user") {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(REFRESH_KEY);
+    }
     return null;
   }
   if (!data.access) {
-    clearTokens();
+    const keys = keyFor(kind);
+    localStorage.removeItem(keys.access);
+    localStorage.removeItem(keys.refresh);
+    if (kind === "user") {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(REFRESH_KEY);
+    }
     return null;
   }
-  localStorage.setItem(TOKEN_KEY, data.access);
+  const keys = keyFor(kind);
+  localStorage.setItem(keys.access, data.access);
+  if (kind === "user") {
+    localStorage.setItem(TOKEN_KEY, data.access);
+  }
   return data.access;
 }
 
@@ -91,7 +178,9 @@ export async function apiFetch(
   retry = true
 ): Promise<Response> {
   const headers = new Headers(options.headers);
-  const token = getAccessToken();
+  const kind = desiredKindForPath(path);
+  const stored = getStored(kind);
+  const token = stored.access;
   if (token && !shouldOmitBearerForPath(path)) {
     headers.set("Authorization", `Bearer ${token}`);
   }
@@ -100,7 +189,7 @@ export async function apiFetch(
   }
   let res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   if (res.status === 401 && retry && token) {
-    const newAccess = await refreshAccess();
+    const newAccess = await refreshAccess(kind, path);
     if (newAccess) {
       headers.set("Authorization", `Bearer ${newAccess}`);
       res = await fetch(`${API_BASE}${path}`, { ...options, headers });
