@@ -194,15 +194,14 @@ export default function BarberAuth() {
         return;
       }
       setTokens(tok.access, tok.refresh);
-      if (signupPath === "employee") {
-        router.push("/salon/join");
-      } else if (signupPath === "mybarber") {
-        router.push("/salon/create?preset=mybarber");
-      } else if (signupPath === "independent") {
-        router.push("/independent/setup");
-      } else {
-        router.push("/salon/create");
+      // After successful signup+login, always land on dashboard.
+      // If the user was originally sent to auth with `?next=...`, respect it.
+      let dest = "/";
+      if (typeof window !== "undefined") {
+        const n = new URLSearchParams(window.location.search).get("next");
+        if (n && n.startsWith("/") && !n.startsWith("//")) dest = n;
       }
+      router.replace(dest);
     } finally {
       setLoading(false);
     }
