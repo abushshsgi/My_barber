@@ -16,6 +16,11 @@ const REFRESH_KEY_ADMIN = "mybarber_admin_refresh";
 type TokenKind = "admin" | "barber" | "user";
 
 function envDefaultKind(): TokenKind | null {
+  if (typeof window !== "undefined") {
+    const active = localStorage.getItem("mybarber_active_kind") || "";
+    const a = active.trim().toLowerCase();
+    if (a === "admin" || a === "barber" || a === "user") return a;
+  }
   const raw =
     (typeof window !== "undefined" ? process.env.NEXT_PUBLIC_AUTH_KIND : process.env.NEXT_PUBLIC_AUTH_KIND) ||
     "";
