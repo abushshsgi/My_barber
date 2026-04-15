@@ -36,7 +36,6 @@ import { userAuthMessages } from "@/lib/i18n/user-auth";
 import { barberWebUrl } from "@/lib/public-urls";
 import { useLocale } from "@/providers/locale-provider";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { cn } from "@/lib/utils";
 
 export default function UserAuth() {
   const router = useRouter();

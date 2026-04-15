@@ -26,11 +26,12 @@ function envDefaultKind(): TokenKind | null {
 
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
-  return (
-    localStorage.getItem(TOKEN_KEY_USER) ||
-    localStorage.getItem(TOKEN_KEY) ||
-    null
-  );
+  const userToken = localStorage.getItem(TOKEN_KEY_USER);
+  if (userToken) return userToken;
+  const legacy = localStorage.getItem(TOKEN_KEY);
+  // Legacy key might contain a barber/admin token from older builds or shared domains.
+  // Only accept it for user flows.
+  return jwtPayloadType(legacy) === "user" ? legacy : null;
 }
 
 function keyFor(kind: TokenKind): { access: string; refresh: string } {
@@ -44,8 +45,10 @@ function getStored(kind: TokenKind): { access: string | null; refresh: string | 
   const keys = keyFor(kind);
   const legacyAccess = localStorage.getItem(TOKEN_KEY);
   const legacyRefresh = localStorage.getItem(REFRESH_KEY);
-  const access = localStorage.getItem(keys.access) || (kind === "user" ? legacyAccess : null);
-  const refresh = localStorage.getItem(keys.refresh) || (kind === "user" ? legacyRefresh : null);
+  const legacyAccessUser = jwtPayloadType(legacyAccess) === "user" ? legacyAccess : null;
+  const legacyRefreshUser = jwtPayloadType(legacyRefresh) === "user" ? legacyRefresh : null;
+  const access = localStorage.getItem(keys.access) || (kind === "user" ? legacyAccessUser : null);
+  const refresh = localStorage.getItem(keys.refresh) || (kind === "user" ? legacyRefreshUser : null);
   return { access: access || null, refresh: refresh || null };
 }
 
