@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncDate
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, status, viewsets
@@ -11,7 +12,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.auth_utils import is_platform_admin, request_barber
+from accounts.auth_utils import customer_catalog_region, is_platform_admin, request_barber
 from accounts.models import User
 from barbers.barber_auth import BarberPrincipal
 from barbers.models import Barber
@@ -170,7 +171,16 @@ class SalonPortfolioView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, salon_id):
-        salon = get_object_or_404(Salon, pk=salon_id, is_published=True)
+        salon = get_object_or_404(
+            Salon.objects.select_related("owner_barber"),
+            pk=salon_id,
+            is_published=True,
+        )
+        reg = customer_catalog_region(request)
+        if reg:
+            ob = salon.owner_barber
+            if ob is not None and (ob.region or "").strip() != reg:
+                raise Http404()
         comps = BookingCompletion.objects.filter(
             booking__salon=salon,
             portfolio_allowed=True,
@@ -196,10 +206,29 @@ class ReviewViewSet(viewsets.ModelViewSet):
             return Review.objects.filter(author=self.request.user).select_related(
                 "author"
             )
+        salon = self.request.query_params.get("salon")
+        bp = request_barber(self.request)
+        if salon and bp is not None:
+            # Barber panel: unpublished salon reviews ham ko‘rinsin, lekin faqat
+            # owner yoki ACTIVE membership bo‘lsa.
+            allowed = (
+                Salon.objects.filter(pk=salon, owner_barber=bp).exists()
+                or SalonMembership.objects.filter(
+                    salon_id=salon,
+                    barber=bp,
+                    invite_state=SalonMembership.InviteState.ACTIVE,
+                ).exists()
+            )
+            if allowed:
+                return (
+                    Review.objects.filter(salon_id=salon)
+                    .select_related("author", "barber")
+                    .order_by("-created_at")
+                )
+
         qs = Review.objects.filter(
             Q(salon__isnull=True) | Q(salon__is_published=True)
         ).select_related("author", "barber")
-        salon = self.request.query_params.get("salon")
         if salon:
             qs = qs.filter(salon_id=salon)
         barber = self.request.query_params.get("barber")
@@ -239,6 +268,49 @@ class SalonClientsView(APIView):
 
         rows = (
             Booking.objects.filter(salon=salon, status=Booking.Status.COMPLETED)
+            .values("customer_id")
+            .annotate(cnt=Count("id"), spent=Sum("total_price"))
+            .order_by("-spent")
+        )
+        ids = [r["customer_id"] for r in rows]
+        users = {u.id: u for u in User.objects.filter(id__in=ids)}
+        out = []
+        for r in rows:
+            cid = r["customer_id"]
+            u = users.get(cid)
+            if not u:
+                continue
+            cnt = r["cnt"]
+            out.append(
+                {
+                    "id": cid,
+                    "full_name": u.full_name or u.email,
+                    "email": u.email,
+                    "phone": u.phone or "",
+                    "completed_bookings": cnt,
+                    "total_spent": str(r["spent"] or Decimal("0")),
+                    "classification": "new" if cnt == 1 else "returning",
+                }
+            )
+        return Response(out)
+
+
+class IndependentClientsView(APIView):
+    """Aggregated clients for an independent barber (completed bookings where salon is null)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        bp = request_barber(request)
+        if bp is None:
+            return Response(status=403)
+
+        rows = (
+            Booking.objects.filter(
+                salon__isnull=True,
+                barber=bp,
+                status=Booking.Status.COMPLETED,
+            )
             .values("customer_id")
             .annotate(cnt=Count("id"), spent=Sum("total_price"))
             .order_by("-spent")

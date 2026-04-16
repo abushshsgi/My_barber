@@ -6,9 +6,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Phone, Loader2, MessageSquareText } from "lucide-react";
 import { motion } from "framer-motion";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, formatApiError } from "@/lib/api";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { SalonListApi } from "@/lib/mapSalon";
+import { fetchBarberMe } from "@/data/barber-me";
 
 type ClientRow = {
   id: number;
@@ -32,22 +34,36 @@ async function fetchClients(salonId: number): Promise<ClientRow[]> {
   return res.json() as Promise<ClientRow[]>;
 }
 
+async function fetchIndependentClients(): Promise<ClientRow[]> {
+  const res = await apiFetch("/api/v1/analytics/clients/independent/");
+  if (!res.ok) throw new Error("Mijozlar yuklanmadi");
+  return res.json() as Promise<ClientRow[]>;
+}
+
 const BarberClients = () => {
   const [tab, setTab] = useState<"all" | "new" | "returning">("all");
   const [salonId, setSalonId] = useState<number | null>(null);
   const router = useRouter();
 
+  const { data: me, isLoading: loadingMe } = useQuery({
+    queryKey: ["barber", "auth", "me"],
+    queryFn: fetchBarberMe,
+    staleTime: 60_000,
+  });
+  const isIndependent = me?.work_mode === "independent";
+
   const { data: mine = [], isLoading: loadingSalons } = useQuery({
     queryKey: ["salons", "mine"],
     queryFn: fetchMineSalons,
+    enabled: !isIndependent,
   });
 
   const activeSalon = salonId ?? mine[0]?.id ?? null;
 
   const { data: clients = [], isLoading } = useQuery({
-    queryKey: ["clients", activeSalon],
-    queryFn: () => fetchClients(activeSalon!),
-    enabled: !!activeSalon,
+    queryKey: isIndependent ? ["clients", "independent"] : ["clients", activeSalon],
+    queryFn: () => (isIndependent ? fetchIndependentClients() : fetchClients(activeSalon!)),
+    enabled: isIndependent || !!activeSalon,
   });
 
   const filtered =
@@ -57,7 +73,7 @@ const BarberClients = () => {
         ? clients.filter((c) => c.classification === "returning")
         : clients;
 
-  if (loadingSalons) {
+  if (loadingMe || (!isIndependent && loadingSalons)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-accent" />
@@ -65,7 +81,7 @@ const BarberClients = () => {
     );
   }
 
-  if (!mine.length) {
+  if (!isIndependent && !mine.length) {
     return (
       <div className="p-6 text-center text-muted-foreground">
         Avval salon yarating.
@@ -77,7 +93,7 @@ const BarberClients = () => {
     <div className="min-h-screen">
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b px-4 py-3">
         <h1 className="text-xl font-bold mb-3">Mijozlar</h1>
-        {mine.length > 1 && (
+        {!isIndependent && mine.length > 1 && (
           <select
             className="w-full mb-3 h-10 px-3 rounded-xl border bg-background text-sm"
             value={activeSalon ?? ""}
@@ -160,8 +176,12 @@ const BarberClients = () => {
                       method: "POST",
                       body: JSON.stringify({ user_id: client.id }),
                     });
-                    if (!res.ok) return;
-                    const convo = (await res.json()) as { id: string };
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                      toast.error(formatApiError(data, "Chat ochilmadi"));
+                      return;
+                    }
+                    const convo = data as { id: string };
                     router.push(`/chat/${convo.id}`);
                   }}
                 >

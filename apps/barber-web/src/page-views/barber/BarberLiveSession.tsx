@@ -34,7 +34,11 @@ export function BarberLiveSession() {
     refetchInterval: 15_000,
   });
 
-  const live = useMemo(() => pickLiveBooking(bookings), [bookings, tick]);
+  const live = useMemo(() => {
+    // Recompute on tick to re-evaluate time window.
+    void tick;
+    return pickLiveBooking(bookings);
+  }, [bookings, tick]);
 
   useEffect(() => {
     if (!live || live.status !== "in_progress") return;
@@ -65,6 +69,8 @@ export function BarberLiveSession() {
   });
 
   const elapsedLabel = useMemo(() => {
+    // Recompute on tick while timer is running.
+    void tick;
     if (!live || live.status !== "in_progress") return "";
     const t0 = live.started_at
       ? new Date(live.started_at).getTime()

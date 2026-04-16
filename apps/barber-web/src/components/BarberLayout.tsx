@@ -11,6 +11,15 @@ import { cn } from "@/lib/utils";
 import { fetchBarberMe } from "@/data/barber-me";
 import { barberNavFor, barberPageTitle } from "./barber-nav-config";
 import { useBarberNotificationWs } from "@/hooks/useBarberNotificationWs";
+import { apiFetch } from "@/lib/api";
+
+type SalonMineRow = { id: number; name: string };
+
+async function fetchMineSalons(): Promise<SalonMineRow[]> {
+  const res = await apiFetch("/api/v1/salons/mine/");
+  if (!res.ok) return [];
+  return res.json() as Promise<SalonMineRow[]>;
+}
 
 function navActive(path: string, pathname: string) {
   return path === "/"
@@ -27,6 +36,15 @@ export function BarberLayout({ children }: { children: React.ReactNode }) {
     queryFn: fetchBarberMe,
     staleTime: 60_000,
   });
+
+  const { data: mineSalons = [] } = useQuery({
+    queryKey: ["salons", "mine", "barber-layout"],
+    queryFn: fetchMineSalons,
+    enabled: me != null,
+    staleTime: 60_000,
+  });
+  const hasSalonView = mineSalons.length > 0;
+
   const nav = barberNavFor(me?.work_mode);
   const title = barberPageTitle(pathname, me?.work_mode);
 
@@ -71,6 +89,13 @@ export function BarberLayout({ children }: { children: React.ReactNode }) {
             <p className="text-xs text-muted-foreground">Studio panel</p>
           </div>
         </div>
+        {hasSalonView && (
+          <div className="mb-2 px-2">
+            <Button asChild variant="secondary" className="h-10 w-full rounded-2xl">
+              <Link href="/salon-view">Salon View</Link>
+            </Button>
+          </div>
+        )}
         <NavLinks />
         <div className="mt-auto pt-6">
           <Link
@@ -108,6 +133,18 @@ export function BarberLayout({ children }: { children: React.ReactNode }) {
                     <p className="text-xs text-muted-foreground">Studio panel</p>
                   </div>
                 </div>
+                {hasSalonView && (
+                  <div className="mb-4">
+                    <Button
+                      asChild
+                      variant="secondary"
+                      className="h-10 w-full rounded-2xl"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      <Link href="/salon-view">Salon View</Link>
+                    </Button>
+                  </div>
+                )}
                 <NavLinks onNavigate={() => setMobileOpen(false)} />
                 <div className="mt-auto border-t border-border/40 pt-4">
                   <Link

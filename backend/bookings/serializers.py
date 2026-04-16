@@ -82,6 +82,32 @@ class BookingCreateSerializer(serializers.Serializer):
 
         barber = attrs["barber"]
         salon = attrs.get("salon", None)
+        if salon is not None:
+            raise serializers.ValidationError(
+                {
+                    "detail": "Salon orqali bron qilish yo‘q. Faqat mustaqil barber (independent) uchun bron qilish mumkin."
+                }
+            )
+        if request and request.user.is_authenticated:
+            cust = request.user
+            if isinstance(cust, User):
+                cust_region = (getattr(cust, "region", None) or "").strip()
+                if cust_region:
+                    if (barber.region or "").strip() != cust_region:
+                        raise serializers.ValidationError(
+                            {
+                                "detail": "Bu sartarosh siz tanlagan hudud uchun emas — bron qilish mumkin emas."
+                            }
+                        )
+                    if salon is not None:
+                        ob = getattr(salon, "owner_barber", None)
+                        if ob is not None and (ob.region or "").strip() != cust_region:
+                            raise serializers.ValidationError(
+                                {
+                                    "detail": "Bu salon sizning hududingiz uchun ro‘yxatdan o‘tmagan."
+                                }
+                            )
+
         start_at = attrs["start_at"]
         service_ids = attrs.get("service_ids") or []
         barber_service_ids = attrs.get("barber_service_ids") or []

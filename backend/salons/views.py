@@ -10,7 +10,8 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from accounts.auth_utils import is_platform_admin, request_barber
+from accounts.auth_utils import customer_catalog_region, is_platform_admin, request_barber
+from accounts.uz_regions import UzRegion
 from accounts.throttles import SalonJoinThrottle, SalonSearchThrottle
 from barbers.models import Barber, BarberProfile
 from notifications.utils import notify_barber, notify_user
@@ -18,6 +19,7 @@ from notifications.utils import notify_barber, notify_user
 from .models import BarberWorkingHours, Salon, SalonImage, SalonMembership, Service
 from .serializers import (
     BarberWorkingHoursSerializer,
+    BarberSalonViewSerializer,
     SalonCreateUpdateSerializer,
     SalonDetailSerializer,
     SalonListSerializer,
@@ -58,7 +60,7 @@ class SalonViewSet(viewsets.ModelViewSet):
         # PostgreSQL: Coalesce(Avg(..), Value(0)) integer/numeric aralashmasi 500 beradi — FloatField bilan bir xil.
         return (
             Salon.objects.filter(is_published=True)
-            .select_related("owner")
+            .select_related("owner", "owner_barber")
             .annotate(
                 review_count=Count("reviews", distinct=True),
                 rating_avg=Coalesce(
@@ -70,16 +72,27 @@ class SalonViewSet(viewsets.ModelViewSet):
             .order_by("-created_at", "-id")
         )
 
+    def _apply_public_salon_region(self, qs):
+        """Mijoz JWT: viloyat serverdan; anonim / barber: ixtiyoriy ?region=."""
+        forced = customer_catalog_region(self.request)
+        if forced:
+            return qs.filter(owner_barber__region=forced)
+        region = (self.request.query_params.get("region") or "").strip()
+        valid_regions = {c[0] for c in UzRegion.choices}
+        if region and region in valid_regions:
+            return qs.filter(owner_barber__region=region)
+        return qs
+
     def get_queryset(self):
-        qs = Salon.objects.select_related("owner")
+        qs = Salon.objects.select_related("owner", "owner_barber")
         if self.action == "retrieve":
             qs = qs.prefetch_related("images", "hours", "services")
 
         if self.action == "list":
-            return self._salon_public_list_qs()
+            return self._apply_public_salon_region(self._salon_public_list_qs())
 
         if self.action == "nearby":
-            return self._salon_public_list_qs()
+            return self._apply_public_salon_region(self._salon_public_list_qs())
 
         if self.action == "retrieve":
             bp = request_barber(self.request)
@@ -92,9 +105,11 @@ class SalonViewSet(viewsets.ModelViewSet):
                         memberships__invite_state=SalonMembership.InviteState.ACTIVE,
                     )
                 ).distinct()
-            if self.request.user.is_authenticated:
-                return qs.filter(is_published=True)
-            return qs.filter(is_published=True)
+            qs = qs.filter(is_published=True)
+            reg = customer_catalog_region(self.request)
+            if reg:
+                qs = qs.filter(owner_barber__region=reg)
+            return qs
 
         return qs
 
@@ -163,6 +178,31 @@ class SalonViewSet(viewsets.ModelViewSet):
             SalonListSerializer(qs, many=True, context={"request": request}).data
         )
 
+    @action(detail=True, methods=["get"], permission_classes=[IsAuthenticated])
+    def barber_view(self, request, pk=None):
+        """
+        Barber panel uchun read-only salon ko‘rinishi (services yo‘q).
+        Ruxsat: owner yoki ACTIVE membership.
+        """
+        bp = request_barber(request)
+        if bp is None:
+            return Response(status=403)
+        salon = get_object_or_404(
+            Salon.objects.select_related("owner", "owner_barber").prefetch_related("images", "hours"),
+            pk=pk,
+        )
+        allowed = (
+            salon.owner_barber_id == bp.id
+            or SalonMembership.objects.filter(
+                salon=salon,
+                barber=bp,
+                invite_state=SalonMembership.InviteState.ACTIVE,
+            ).exists()
+        )
+        if not allowed and not is_platform_admin(request):
+            return Response(status=403)
+        return Response(BarberSalonViewSerializer(salon, context={"request": request}).data)
+
     @action(
         detail=False,
         methods=["get"],
@@ -174,10 +214,13 @@ class SalonViewSet(viewsets.ModelViewSet):
         q = request.query_params.get("q", "").strip()
         if len(q) < 1:
             return Response([])
-        qs = (
-            Salon.objects.filter(is_published=True, name__icontains=q)
-            .order_by("name")[:20]
-        )
+        qs = Salon.objects.filter(is_published=True, name__icontains=q)
+        bp = request_barber(request)
+        if bp is not None:
+            br = (bp.region or "").strip()
+            if br:
+                qs = qs.filter(owner_barber__region=br)
+        qs = qs.order_by("name")[:20]
         out = []
         for s in qs:
             out.append(
@@ -280,7 +323,7 @@ class SalonViewSet(viewsets.ModelViewSet):
                 {"detail": "lat, lng required; radius_km optional."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        salons = self._salon_public_list_qs()
+        salons = self._apply_public_salon_region(self._salon_public_list_qs())
         result = []
         for s in salons:
             d = _haversine_km(lat, lng, float(s.latitude), float(s.longitude))

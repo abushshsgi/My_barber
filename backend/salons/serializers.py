@@ -125,6 +125,55 @@ class SalonDetailSerializer(serializers.ModelSerializer):
         return PublicServiceSerializer(qs, many=True, context=self.context).data
 
 
+class BarberSalonViewSerializer(serializers.ModelSerializer):
+    """
+    Barber panel uchun read-only salon ko‘rinishi.
+    Ataylab services/booking/analytics kabi operatsion bloklar yo‘q.
+    """
+
+    hours = SalonHoursSerializer(many=True, read_only=True)
+    images = SalonImageSerializer(many=True, read_only=True)
+    owner_id = serializers.SerializerMethodField()
+    rating_avg = serializers.SerializerMethodField()
+    review_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Salon
+        fields = (
+            "id",
+            "owner_id",
+            "name",
+            "slug",
+            "description",
+            "cover_image",
+            "latitude",
+            "longitude",
+            "address",
+            "phone",
+            "premium",
+            "languages",
+            "closed_weekdays",
+            "is_published",
+            "hours",
+            "images",
+            "rating_avg",
+            "review_count",
+            "created_at",
+        )
+
+    def get_owner_id(self, obj):
+        return obj.owner_barber_id or obj.owner_id
+
+    def get_rating_avg(self, obj):
+        from django.db.models import Avg
+
+        agg = obj.reviews.aggregate(a=Avg("rating"))
+        return round(agg["a"] or 0, 2)
+
+    def get_review_count(self, obj):
+        return obj.reviews.count()
+
+
 class ServiceCreateNestedSerializer(serializers.Serializer):
     """Salon yaratishda bir so‘rovda xizmatlar (atomik saqlash)."""
 

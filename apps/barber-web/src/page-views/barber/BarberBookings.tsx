@@ -47,6 +47,8 @@ function useElapsed(
   tick: number,
 ): string {
   return useMemo(() => {
+    // Recompute on tick while in_progress (UI timer)
+    void tick;
     if (!booking || booking.status !== "in_progress") return "";
     const raw = booking.started_at || booking.start_at;
     const t0 = new Date(raw).getTime();

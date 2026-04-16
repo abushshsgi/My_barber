@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Plus, Trash2, Save, Image as ImageIcon, Clock } from "lucide-react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 type MyProfile = {
   exists: boolean;
@@ -425,7 +426,15 @@ export default function IndependentBarberSetup() {
           <div className="grid grid-cols-3 gap-2 mt-3">
             {photos.map((p) => (
               <div key={p.id} className="relative rounded-xl overflow-hidden border border-border/50">
-                <img src={mediaSrc(p.image, PLACEHOLDER_SALON)} alt="work" className="w-full h-24 object-cover" />
+                <div className="relative h-24 w-full bg-muted">
+                  <Image
+                    src={mediaSrc(p.image, PLACEHOLDER_SALON)}
+                    alt="work"
+                    fill
+                    sizes="240px"
+                    className="object-cover"
+                  />
+                </div>
                 <button
                   type="button"
                   className="absolute top-1 right-1 bg-foreground/80 text-background rounded-lg px-2 py-1 text-[10px]"
