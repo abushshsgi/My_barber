@@ -13,3 +13,4 @@ packages/**/node_modules/
 .env
 .env.local
 .cursor/
+.git.broken-*/
