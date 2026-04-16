@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
-import { apiFetch, getAccessToken } from "@/lib/api";
+import { apiFetch, getAdminAccessToken } from "@/lib/api";
 
 type Me = { role: string; email: string };
 
@@ -15,7 +15,7 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      if (!getAccessToken()) {
+      if (!getAdminAccessToken()) {
         router.replace("/auth?next=/admin");
         if (!cancelled) setState("auth");
         return;

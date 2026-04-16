@@ -46,7 +46,9 @@ class UserRegisterSerializer(serializers.ModelSerializer):
     )
     region = serializers.ChoiceField(
         choices=UzRegion.choices,
-        required=True,
+        required=False,
+        allow_blank=True,
+        default="",
         error_messages={"invalid_choice": "Viloyat noto‘g‘ri tanlangan."},
     )
 
@@ -116,7 +118,9 @@ class BarberSignupSerializer(serializers.Serializer):
     age = serializers.IntegerField(required=False, min_value=14, max_value=120, default=25)
     region = serializers.ChoiceField(
         choices=UzRegion.choices,
-        required=True,
+        required=False,
+        allow_blank=True,
+        default="",
         error_messages={"invalid_choice": "Viloyat noto‘g‘ri tanlangan."},
     )
     address = serializers.CharField(required=False, allow_blank=True)

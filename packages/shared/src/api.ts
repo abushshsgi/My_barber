@@ -16,11 +16,6 @@ const REFRESH_KEY_ADMIN = "mybarber_admin_refresh";
 type TokenKind = "admin" | "barber" | "user";
 
 function envDefaultKind(): TokenKind | null {
-  if (typeof window !== "undefined") {
-    const active = localStorage.getItem("mybarber_active_kind") || "";
-    const a = active.trim().toLowerCase();
-    if (a === "admin" || a === "barber" || a === "user") return a;
-  }
   const raw =
     (typeof window !== "undefined" ? process.env.NEXT_PUBLIC_AUTH_KIND : process.env.NEXT_PUBLIC_AUTH_KIND) ||
     "";
@@ -30,6 +25,20 @@ function envDefaultKind(): TokenKind | null {
 }
 
 export function getAccessToken(): string | null {
+  return getUserAccessToken();
+}
+
+function keyFor(kind: TokenKind): { access: string; refresh: string } {
+  if (kind === "admin") return { access: TOKEN_KEY_ADMIN, refresh: REFRESH_KEY_ADMIN };
+  if (kind === "barber") return { access: TOKEN_KEY_BARBER, refresh: REFRESH_KEY_BARBER };
+  return { access: TOKEN_KEY_USER, refresh: REFRESH_KEY_USER };
+}
+
+export function getToken(kind: TokenKind): { access: string | null; refresh: string | null } {
+  return getStored(kind);
+}
+
+export function getUserAccessToken(): string | null {
   if (typeof window === "undefined") return null;
   const userToken = localStorage.getItem(TOKEN_KEY_USER);
   if (userToken) return userToken;
@@ -39,10 +48,16 @@ export function getAccessToken(): string | null {
   return jwtPayloadType(legacy) === "user" ? legacy : null;
 }
 
-function keyFor(kind: TokenKind): { access: string; refresh: string } {
-  if (kind === "admin") return { access: TOKEN_KEY_ADMIN, refresh: REFRESH_KEY_ADMIN };
-  if (kind === "barber") return { access: TOKEN_KEY_BARBER, refresh: REFRESH_KEY_BARBER };
-  return { access: TOKEN_KEY_USER, refresh: REFRESH_KEY_USER };
+export function getBarberAccessToken(): string | null {
+  if (typeof window === "undefined") return null;
+  const tok = localStorage.getItem(TOKEN_KEY_BARBER);
+  return tok || null;
+}
+
+export function getAdminAccessToken(): string | null {
+  if (typeof window === "undefined") return null;
+  const tok = localStorage.getItem(TOKEN_KEY_ADMIN);
+  return tok || null;
 }
 
 function getStored(kind: TokenKind): { access: string | null; refresh: string | null } {
@@ -106,8 +121,6 @@ function shouldOmitBearerForPath(path: string): boolean {
     "/api/v1/barber/auth/token/refresh",
     "/api/v1/auth/token",
     "/api/v1/auth/token/refresh",
-    "/api/v1/auth/register",
-    "/api/v1/auth/barber-register",
   ];
   return noBearer.some((suffix) => p === suffix || p.endsWith(suffix));
 }

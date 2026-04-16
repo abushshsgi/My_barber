@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { getAccessToken } from "@/lib/api";
+import { getBarberAccessToken } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Loader2, LogIn } from "lucide-react";
 
@@ -31,7 +31,7 @@ function BarberAuthGuardProtected({ children }: { children: React.ReactNode }) {
         ? `${pathname}${window.location.search}`
         : pathname;
     const href = `/auth?next=${encodeURIComponent(next)}`;
-    if (getAccessToken()) {
+    if (getBarberAccessToken()) {
       setAllowed(true);
     } else {
       router.replace(href);

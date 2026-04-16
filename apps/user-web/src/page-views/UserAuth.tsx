@@ -7,13 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -24,13 +17,11 @@ import {
   Lock,
   User,
   Phone,
-  MapPin,
   Sparkles,
   Check,
   AlertCircle,
   Loader2,
 } from "lucide-react";
-import { UZ_REGIONS } from "@/lib/uz-regions";
 import { apiFetch, formatApiError, setTokens } from "@/lib/api";
 import { userAuthMessages } from "@/lib/i18n/user-auth";
 import { barberWebUrl } from "@/lib/public-urls";
@@ -52,7 +43,6 @@ export default function UserAuth() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [region, setRegion] = useState("");
 
   const nextPath = () => {
     if (typeof window === "undefined") return "/";
@@ -83,8 +73,8 @@ export default function UserAuth() {
 
   const handleSignup = async () => {
     setErr(null);
-    if (!region) {
-      setErr(t.errRegion);
+    if (!fullName.trim() || !email.trim() || password.length < 8) {
+      setErr(t.errSignupFields);
       return;
     }
     setLoading(true);
@@ -92,11 +82,10 @@ export default function UserAuth() {
       const res = await apiFetch("/api/v1/auth/register/", {
         method: "POST",
         body: JSON.stringify({
-          email,
+          email: email.trim(),
           password,
-          full_name: fullName,
+          full_name: fullName.trim(),
           phone: phone || undefined,
-          region,
         }),
       });
       const data = await res.json();
@@ -106,7 +95,7 @@ export default function UserAuth() {
       }
       const loginRes = await apiFetch("/api/v1/auth/token/", {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
       const tok = await loginRes.json();
       if (!loginRes.ok) {
@@ -365,24 +354,6 @@ export default function UserAuth() {
                           >
                             {showPassSignup ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-medium text-muted-foreground">{t.regionLabel}</Label>
-                        <div className="relative">
-                          <MapPin className="pointer-events-none absolute left-3 top-[0.85rem] z-10 h-4 w-4 text-muted-foreground" />
-                          <Select value={region || undefined} onValueChange={setRegion}>
-                            <SelectTrigger className="h-11 w-full rounded-xl border-border/80 bg-background/60 pl-10">
-                              <SelectValue placeholder={t.regionPlaceholder} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {UZ_REGIONS.map((r) => (
-                                <SelectItem key={r.value} value={r.value}>
-                                  {r.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
                         </div>
                       </div>
                       <Button

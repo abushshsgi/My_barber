@@ -12,3 +12,4 @@ apps/**/.next/
 packages/**/node_modules/
 .env
 .env.local
+.cursor/

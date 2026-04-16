@@ -6,13 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Scissors,
   Eye,
   EyeOff,
@@ -23,7 +16,6 @@ import {
   Sparkles,
   Briefcase,
 } from "lucide-react";
-import { UZ_REGIONS } from "@/lib/uz-regions";
 import { apiFetch, formatApiError, setTokens } from "@/lib/api";
 import { barberAuthMessages, type BarberSignupPath } from "@/lib/i18n/barber-auth";
 import { cn } from "@/lib/utils";
@@ -53,7 +45,6 @@ export default function BarberAuth() {
   const [lng, setLng] = useState("");
   const [geoStatus, setGeoStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [signupPath, setSignupPath] = useState<BarberSignupPath | null>(null);
-  const [region, setRegion] = useState("");
 
   const requestLocation = () => {
     setErr(null);
@@ -99,6 +90,7 @@ export default function BarberAuth() {
         }
       }
       router.push(dest);
+      router.refresh();
     } finally {
       setLoading(false);
     }
@@ -109,10 +101,6 @@ export default function BarberAuth() {
     if (signupStep === 1) {
       if (!fullName.trim() || !email.trim() || password.length < 8) {
         setErr(t.errStep1);
-        return;
-      }
-      if (!region) {
-        setErr(t.errRegion);
         return;
       }
     }
@@ -141,10 +129,6 @@ export default function BarberAuth() {
 
   const submitSignup = async () => {
     setErr(null);
-    if (!region) {
-      setErr(t.errSubmitRegion);
-      return;
-    }
     if (signupPath === null) {
       setErr(t.errSubmitSalon);
       return;
@@ -175,7 +159,6 @@ export default function BarberAuth() {
           ...(shopName ? { shop_name: shopName } : {}),
           latitude: la,
           longitude: ln,
-          region,
           staff_count_at_signup: 1,
         }),
       });
@@ -194,14 +177,16 @@ export default function BarberAuth() {
         return;
       }
       setTokens(tok.access, tok.refresh);
-      // After successful signup+login, always land on dashboard.
-      // If the user was originally sent to auth with `?next=...`, respect it.
-      let dest = "/";
-      if (typeof window !== "undefined") {
-        const n = new URLSearchParams(window.location.search).get("next");
-        if (n && n.startsWith("/") && !n.startsWith("//")) dest = n;
+      if (signupPath === "employee") {
+        router.push("/salon/join");
+      } else if (signupPath === "mybarber") {
+        router.push("/salon/create?preset=mybarber");
+      } else if (signupPath === "independent") {
+        router.push("/independent/setup");
+      } else {
+        router.push("/salon/create");
       }
-      router.replace(dest);
+      router.refresh();
     } finally {
       setLoading(false);
     }
@@ -325,21 +310,6 @@ export default function BarberAuth() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
-                <div className="space-y-1.5">
-                  <label className="text-xs text-muted-foreground">{t.regionLabel}</label>
-                  <Select value={region || undefined} onValueChange={setRegion}>
-                    <SelectTrigger className="rounded-xl w-full">
-                      <SelectValue placeholder={t.regionPlaceholder} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {UZ_REGIONS.map((r) => (
-                        <SelectItem key={r.value} value={r.value}>
-                          {r.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
             )}
 
@@ -476,9 +446,6 @@ export default function BarberAuth() {
                   </li>
                   <li>
                     {t.reviewEmail}: {email}
-                  </li>
-                  <li>
-                    {t.reviewRegion}: {UZ_REGIONS.find((r) => r.value === region)?.label ?? region}
                   </li>
                   <li>
                     {t.reviewLoc}: {lat}, {lng}

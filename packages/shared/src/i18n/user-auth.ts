@@ -15,15 +15,13 @@ export type UserAuthStrings = {
   namePh: string;
   phonePh: string;
   passwordMinPh: string;
-  regionLabel: string;
-  regionPlaceholder: string;
   signIn: string;
   signUp: string;
   noAccount: string;
   haveAccount: string;
   create: string;
   barberLoginLink: string;
-  errRegion: string;
+  errSignupFields: string;
   errLoginFail: string;
   errSignupFail: string;
   errSignupLoginFail: string;
@@ -44,15 +42,13 @@ const uz: UserAuthStrings = {
   namePh: "Ism",
   phonePh: "Telefon (ixtiyoriy)",
   passwordMinPh: "Parol (min 8)",
-  regionLabel: "Viloyat",
-  regionPlaceholder: "Viloyatni tanlang",
   signIn: "Kirish",
   signUp: "Ro'yxatdan o'tish",
   noAccount: "Akkaunt yo'qmi?",
   haveAccount: "Akkaunt bormi?",
   create: "Yaratish",
   barberLoginLink: "Sartarosh sifatida kirish",
-  errRegion: "Viloyatni tanlang.",
+  errSignupFields: "Ism, email va kamida 8 belgili parol kiriting.",
   errLoginFail: "Kirish muvaffaqiyatsiz",
   errSignupFail: "Ro'yxatdan o'tishda xato",
   errSignupLoginFail: "Ro'yxatdan o'tildi. Kirishda xato.",
@@ -73,15 +69,13 @@ const ru: UserAuthStrings = {
   namePh: "Имя",
   phonePh: "Телефон (необязательно)",
   passwordMinPh: "Пароль (мин. 8)",
-  regionLabel: "Область",
-  regionPlaceholder: "Выберите область",
   signIn: "Войти",
   signUp: "Регистрация",
   noAccount: "Нет аккаунта?",
   haveAccount: "Уже есть аккаунт?",
   create: "Создать",
   barberLoginLink: "Вход как барбер",
-  errRegion: "Выберите область.",
+  errSignupFields: "Укажите имя, email и пароль не короче 8 символов.",
   errLoginFail: "Не удалось войти",
   errSignupFail: "Ошибка регистрации",
   errSignupLoginFail: "Регистрация прошла, но вход не удался.",
@@ -102,15 +96,13 @@ const en: UserAuthStrings = {
   namePh: "Full name",
   phonePh: "Phone (optional)",
   passwordMinPh: "Password (min 8)",
-  regionLabel: "Region",
-  regionPlaceholder: "Select region",
   signIn: "Sign in",
   signUp: "Sign up",
   noAccount: "No account?",
   haveAccount: "Already have an account?",
   create: "Create",
   barberLoginLink: "Sign in as barber",
-  errRegion: "Please select a region.",
+  errSignupFields: "Enter your name, email, and a password of at least 8 characters.",
   errLoginFail: "Sign in failed",
   errSignupFail: "Sign up failed",
   errSignupLoginFail: "Signed up but sign-in failed.",
