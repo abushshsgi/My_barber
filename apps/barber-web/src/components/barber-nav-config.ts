@@ -16,6 +16,7 @@ export type BarberNavItem = { icon: LucideIcon; label: string; path: string };
 /** Salon / jamoa asosidagi sartaroshlar */
 export const BARBER_NAV: BarberNavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+  { icon: CalendarClock, label: "Bronlar", path: "/bookings" },
   { icon: Store, label: "Salon", path: "/salon" },
   { icon: Users, label: "Mijozlar", path: "/clients" },
   { icon: MessageSquareText, label: "Chat", path: "/chat" },
