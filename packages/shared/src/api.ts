@@ -96,6 +96,19 @@ export function clearTokens() {
   localStorage.removeItem(REFRESH_KEY_ADMIN);
 }
 
+/** Faqat admin JWT — mijoz/sartarosh sessiyasini saqlab qolish uchun. */
+export function clearAdminTokens() {
+  localStorage.removeItem(TOKEN_KEY_ADMIN);
+  localStorage.removeItem(REFRESH_KEY_ADMIN);
+}
+
+/** Oddiy email tekshiruvi (UI validatsiyasi). */
+export function looksLikeEmail(s: string): boolean {
+  const t = s.trim();
+  if (t.length < 5 || t.length > 254) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t);
+}
+
 function jwtPayloadType(token: string | null): "admin" | "barber" | "user" | null {
   if (!token) return null;
   try {
@@ -121,6 +134,9 @@ function shouldOmitBearerForPath(path: string): boolean {
     "/api/v1/barber/auth/token/refresh",
     "/api/v1/auth/token",
     "/api/v1/auth/token/refresh",
+    // Public signup — eski/noto‘g‘ri JWT yuborilsa SimpleJWT 403 + "Given token not valid for any token type"
+    "/api/v1/auth/register",
+    "/api/v1/auth/barber-register",
   ];
   return noBearer.some((suffix) => p === suffix || p.endsWith(suffix));
 }
