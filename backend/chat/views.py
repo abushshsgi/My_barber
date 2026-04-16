@@ -15,6 +15,7 @@ from rest_framework.views import APIView
 from accounts.models import User
 from barbers.models import Barber
 
+from .booking_gate import conversation_queryset_for_actor, pair_has_booking_for_chat
 from .models import Conversation, Message
 from .serializers import (
     ConversationListSerializer,
@@ -47,10 +48,7 @@ class ConversationListCreateView(APIView):
 
     def get(self, request):
         actor = get_actor_from_request(request)
-        if actor["kind"] == "USER":
-            qs = Conversation.objects.filter(user=actor["user"]).select_related("barber", "user")
-        else:
-            qs = Conversation.objects.filter(barber=actor["barber"]).select_related("barber", "user")
+        qs = conversation_queryset_for_actor(actor)
         data = ConversationListSerializer(qs, many=True, context={"actor": actor}).data
         return Response(data)
 
@@ -76,6 +74,13 @@ class ConversationListCreateView(APIView):
                 raise ValidationError({"user_id": "User not found."})
             barber = actor["barber"]
 
+        if not pair_has_booking_for_chat(user.id, barber.id):
+            raise ValidationError(
+                {
+                    "detail": "Chat faqat bron qilingandan keyin ochiladi (mijoz va sartarosh o‘rtasida bron bo‘lishi kerak)."
+                }
+            )
+
         convo, _created = Conversation.objects.get_or_create(user=user, barber=barber)
         payload = ConversationListSerializer(convo, context={"actor": actor}).data
         return Response(payload, status=201)
@@ -95,6 +100,10 @@ class ConversationMessagesView(APIView, PageNumberPagination):
             raise PermissionDenied("Not your conversation.")
         if actor["kind"] == "BARBER" and convo.barber_id != actor["barber"].id:
             raise PermissionDenied("Not your conversation.")
+        if not pair_has_booking_for_chat(convo.user_id, convo.barber_id):
+            raise PermissionDenied(
+                "Chat faqat bron mavjud bo‘lganda ochiladi. Bron yo‘q yoki bekor qilingan."
+            )
         return convo
 
     def get(self, request, conversation_id: str):

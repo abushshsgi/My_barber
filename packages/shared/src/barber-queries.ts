@@ -64,3 +64,33 @@ export async function fetchBarbers(filters?: BarberExploreFilters): Promise<Barb
   return Array.isArray(j) ? j : j.results || [];
 }
 
+/** GET /api/v1/barbers/by-barber-id/?id= — to‘liq ochiq profil (xizmatlar va hokazo). */
+export type BarberPublicDetailApi = {
+  id: number;
+  barber_id: number;
+  name: string;
+  phone: string | null;
+  region?: string;
+  location_text: string;
+  latitude: string | null;
+  longitude: string | null;
+  avatar: string | null;
+  avg_rating?: number | null;
+  review_count?: number | null;
+  services: BarberServiceApi[];
+  work_photos: { id: number; image: string; sort_order: number }[];
+};
+
+export async function fetchBarberPublicDetailByBarberId(
+  barberId: number | string
+): Promise<BarberPublicDetailApi> {
+  const res = await apiFetch(
+    `/api/v1/barbers/by-barber-id/?id=${encodeURIComponent(String(barberId))}`
+  );
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(formatApiError(body, "Sartarosh topilmadi") + ` (HTTP ${res.status}).`);
+  }
+  return res.json() as Promise<BarberPublicDetailApi>;
+}
+

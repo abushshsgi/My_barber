@@ -12,6 +12,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiFetch, formatApiError, getAccessToken } from "@/lib/api";
 import { mediaSrc, PLACEHOLDER_AVATAR } from "@/lib/media";
 import { format } from "date-fns";
+import { toast } from "@/hooks/use-toast";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -123,7 +124,28 @@ export default function BookingFlow() {
         const e = await res.json().catch(() => ({}));
         throw new Error(formatApiError(e, "Bron yuborilmadi"));
       }
-      return res.json();
+      await res.json();
+      return { barberId: selectedBarber };
+    },
+    onSuccess: async ({ barberId }) => {
+      toast({
+        title: "Bron tasdiqlandi",
+        description: "Sartaroshga bildirishnoma ketdi.",
+      });
+      try {
+        const cr = await apiFetch("/api/v1/chat/conversations/", {
+          method: "POST",
+          body: JSON.stringify({ barber_id: barberId }),
+        });
+        if (cr.ok) {
+          const convo = (await cr.json()) as { id: string };
+          router.push(`/chat/${convo.id}`);
+          return;
+        }
+      } catch {
+        /* chat ixtiyoriy */
+      }
+      router.push("/bookings");
     },
   });
 
@@ -392,13 +414,15 @@ export default function BookingFlow() {
                 </p>
               </Card>
               {!bookingMutation.isPending && !bookingMutation.isSuccess && (
-                <Button
-                  onClick={handleConfirm}
-                  disabled={!phoneOk}
-                  className="w-full h-12 rounded-xl gold-gradient text-gold-foreground border-0"
-                >
-                  Bronni yuborish
-                </Button>
+                <motion.div whileTap={{ scale: 0.98 }}>
+                  <Button
+                    onClick={handleConfirm}
+                    disabled={!phoneOk}
+                    className="w-full h-12 rounded-xl gold-gradient text-gold-foreground border-0"
+                  >
+                    Bronni yuborish
+                  </Button>
+                </motion.div>
               )}
               {bookingMutation.isPending && (
                 <div className="flex flex-col items-center gap-2 py-8">
@@ -408,10 +432,14 @@ export default function BookingFlow() {
               )}
               {bookingMutation.isSuccess && (
                 <div className="text-center py-8 space-y-4">
-                  <p className="text-lg font-semibold text-accent">Bron yuborildi!</p>
-                  <Button variant="outline" onClick={() => router.push("/bookings")}>
-                    Mening bronlarim
-                  </Button>
+                  <motion.p
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="text-lg font-semibold text-accent"
+                  >
+                    Bron yuborildi!
+                  </motion.p>
+                  <p className="text-sm text-muted-foreground">Yo‘naltirilmoqda…</p>
                 </div>
               )}
               {bookingMutation.isError && (

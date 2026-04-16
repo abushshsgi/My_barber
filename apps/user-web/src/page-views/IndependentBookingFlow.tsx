@@ -10,22 +10,18 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiFetch, getAccessToken } from "@/lib/api";
+import {
+  fetchBarberPublicDetailByBarberId,
+  type BarberPublicDetailApi,
+} from "@/lib/barber-queries";
 import { useQuery } from "@tanstack/react-query";
 import { mediaSrc, PLACEHOLDER_AVATAR } from "@/lib/media";
 import { format } from "date-fns";
-import type { BarberListApi } from "@/lib/barber-queries";
+import { toast } from "@/hooks/use-toast";
 
 type Step = 1 | 2 | 3 | 4;
 
-type BarberDetail = {
-  id: number; // profile id
-  barber_id: number;
-  name: string;
-  phone: string | null;
-  avatar: string | null;
-  location_text: string;
-  services: { id: number; name: string; price: string; duration_minutes: number; is_active: boolean }[];
-};
+type BarberDetail = BarberPublicDetailApi;
 
 export default function IndependentBookingFlow() {
   const params = useParams();
@@ -54,16 +50,7 @@ export default function IndependentBookingFlow() {
       setLoadingBarber(true);
       setErr(null);
       try {
-        // list doesn't have full services; we fetch by profile via /barbers/ then match by barber_id
-        const resList = await apiFetch("/api/v1/barbers/");
-        if (!resList.ok) throw new Error("Barber topilmadi");
-        const j = (await resList.json()) as { results?: BarberListApi[] } | BarberListApi[];
-        const list = Array.isArray(j) ? j : j.results || [];
-        const row = list.find((x) => String(x.barber_id) === String(barberId));
-        if (!row) throw new Error("Barber topilmadi");
-        const res = await apiFetch(`/api/v1/barbers/${row.id}/`);
-        if (!res.ok) throw new Error("Barber topilmadi");
-        const detail = (await res.json()) as BarberDetail;
+        const detail = await fetchBarberPublicDetailByBarberId(barberId);
         if (!alive) return;
         setBarber(detail);
       } catch (e) {
@@ -161,6 +148,23 @@ export default function IndependentBookingFlow() {
     setSubmitting(true);
     try {
       await createBooking();
+      toast({
+        title: "Bron tasdiqlandi",
+        description: "Sartaroshga xabar ketdi. Chatdan yozishingiz mumkin.",
+      });
+      try {
+        const cr = await apiFetch("/api/v1/chat/conversations/", {
+          method: "POST",
+          body: JSON.stringify({ barber_id: Number(barberId) }),
+        });
+        if (cr.ok) {
+          const convo = (await cr.json()) as { id: string };
+          router.push(`/chat/${convo.id}`);
+          return;
+        }
+      } catch {
+        /* chat ixtiyoriy */
+      }
       router.push("/bookings");
     } catch (e) {
       setErr((e as Error).message);
@@ -330,9 +334,12 @@ export default function IndependentBookingFlow() {
                   )}
                   <div className="grid grid-cols-3 gap-2">
                     {slots.map((t) => (
-                      <button
+                      <motion.button
                         key={t}
                         type="button"
+                        layout
+                        whileTap={{ scale: 0.96 }}
+                        whileHover={{ scale: 1.02 }}
                         onClick={() => setSelectedTime(t)}
                         className={cn(
                           "h-10 rounded-xl border text-sm font-semibold transition-colors",
@@ -342,7 +349,7 @@ export default function IndependentBookingFlow() {
                         )}
                       >
                         {t}
-                      </button>
+                      </motion.button>
                     ))}
                   </div>
                 </>
@@ -380,13 +387,15 @@ export default function IndependentBookingFlow() {
                   </p>
                 </div>
               </Card>
-              <Button
-                className="w-full rounded-2xl gold-gradient text-gold-foreground border-0 h-12"
-                disabled={submitting || !phoneOk}
-                onClick={submit}
-              >
-                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Bron qilish"}
-              </Button>
+              <motion.div whileTap={{ scale: submitting ? 1 : 0.98 }}>
+                <Button
+                  className="w-full rounded-2xl gold-gradient text-gold-foreground border-0 h-12"
+                  disabled={submitting || !phoneOk}
+                  onClick={submit}
+                >
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Bron qilish"}
+                </Button>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>

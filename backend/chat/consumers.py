@@ -12,12 +12,18 @@ from django.utils import timezone
 from accounts.models import User
 from barbers.models import Barber
 
+from .booking_gate import pair_has_booking_for_chat
 from .models import Conversation, Message
 
 
 @database_sync_to_async
 def _get_conversation(public_id):
     return Conversation.objects.select_related("user", "barber").filter(public_id=public_id).first()
+
+
+@database_sync_to_async
+def _booking_allows_chat(user_id: int, barber_id: int) -> bool:
+    return pair_has_booking_for_chat(user_id, barber_id)
 
 
 @database_sync_to_async
@@ -92,6 +98,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return
         if self.actor_kind == "BARBER" and convo.barber_id != self.actor_barber_id:
             await self.close(code=4406)
+            return
+
+        if not await _booking_allows_chat(convo.user_id, convo.barber_id):
+            await self.close(code=4407)
             return
 
         self.convo = convo

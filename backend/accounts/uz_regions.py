@@ -1,4 +1,4 @@
-"""O'zbekistonning 12 ta viloyati (bir xil ro'yxat — mijoz, barber, admin)."""
+"""O'zbekiston viloyatlari + Toshkent shahri (bir xil ro'yxat — mijoz, barber, admin)."""
 
 from django.db import models
 
@@ -14,5 +14,6 @@ class UzRegion(models.TextChoices):
     SAMARQAND = "SAMARQAND", "Samarqand viloyati"
     SURXONDARYO = "SURXONDARYO", "Surxondaryo viloyati"
     SIRDARYO = "SIRDARYO", "Sirdaryo viloyati"
+    TOSHKENT_SH = "TOSHKENT_SH", "Toshkent shahri"
     TOSHKENT_V = "TOSHKENT_V", "Toshkent viloyati"
     XORAZM = "XORAZM", "Xorazm viloyati"

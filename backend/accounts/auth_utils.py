@@ -27,3 +27,17 @@ def request_barber(request: HttpRequest):
     if isinstance(u, BarberPrincipal):
         return u.barber
     return None
+
+
+def customer_catalog_region(request: HttpRequest) -> str | None:
+    """
+    Mijoz (User) JWT bilan kirganda — profildagi viloyat (server tomonidan ishonchli).
+    Barber / admin JWT yoki anonim — None (so‘rovda `region` ishlatiladi).
+    """
+    from accounts.models import User
+
+    u = getattr(request, "user", None)
+    if isinstance(u, User) and u.is_authenticated:
+        r = (u.region or "").strip()
+        return r or None
+    return None

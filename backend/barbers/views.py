@@ -11,7 +11,9 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.auth_utils import customer_catalog_region
 from accounts.throttles import SalonSearchThrottle
+from accounts.uz_regions import UzRegion
 from bookings.models import Booking, BookingLine
 from notifications.utils import notify_user
 
@@ -74,6 +76,7 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
         min_price = r.get("min_price")
         max_price = r.get("max_price")
         min_rating = r.get("min_rating")
+        forced_region = customer_catalog_region(self.request)
         region = (r.get("region") or "").strip()
         service_q = (r.get("service_q") or r.get("q") or "").strip()
         available_date = (r.get("available_date") or "").strip()
@@ -102,7 +105,10 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
                 qs = qs.filter(avg_rating__gte=float(min_rating))
             except ValueError:
                 pass
-        if region:
+        valid_regions = {c[0] for c in UzRegion.choices}
+        if forced_region:
+            qs = qs.filter(barber__region=forced_region)
+        elif region and region in valid_regions:
             qs = qs.filter(barber__region=region)
         if service_q:
             qs = qs.filter(services__is_active=True, services__name__icontains=service_q).distinct()
@@ -119,6 +125,31 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
         if self.action == "list":
             return BarberPublicListSerializer
         return BarberPublicDetailSerializer
+
+    @action(
+        detail=False,
+        methods=["get"],
+        permission_classes=[AllowAny],
+        url_path="by-barber-id",
+    )
+    def by_barber_id(self, request):
+        """Bitta sartarosh (Barber PK) bo‘yicha ochiq profil — ro‘yxatni to‘liq yuklamasdan."""
+        raw = request.query_params.get("id")
+        try:
+            bid = int(raw) if raw is not None else 0
+        except (TypeError, ValueError):
+            bid = 0
+        if bid < 1:
+            return Response(
+                {"detail": "Query parametri id (sartarosh ID) majburiy."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        qs = self.get_queryset().filter(barber_id=bid)
+        prof = qs.first()
+        if not prof:
+            return Response({"detail": "Topilmadi."}, status=status.HTTP_404_NOT_FOUND)
+        ser = BarberPublicDetailSerializer(prof, context={"request": request})
+        return Response(ser.data)
 
     @action(
         detail=False,
@@ -141,6 +172,14 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
             latitude__isnull=False,
             longitude__isnull=False,
         )
+        forced_region = customer_catalog_region(request)
+        if forced_region:
+            qs = qs.filter(barber__region=forced_region)
+        else:
+            region = (request.query_params.get("region") or "").strip()
+            valid_regions = {c[0] for c in UzRegion.choices}
+            if region and region in valid_regions:
+                qs = qs.filter(barber__region=region)
         out = []
         for p in qs:
             d = _haversine_km(lat, lng, float(p.latitude), float(p.longitude))
@@ -270,6 +309,12 @@ class IndependentAvailabilityView(APIView):
             return Response({"detail": "Invalid date."}, status=400)
 
         barber = get_object_or_404(Barber, pk=barber_id)
+        forced_region = customer_catalog_region(request)
+        if forced_region and (barber.region or "").strip() != forced_region:
+            return Response(
+                {"detail": "Bu sartarosh boshqa hudud uchun."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         prof = get_object_or_404(BarberProfile, barber=barber)
 
         id_list = [int(x) for x in service_ids.split(",") if x.strip().isdigit()]

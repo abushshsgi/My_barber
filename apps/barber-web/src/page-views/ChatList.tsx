@@ -30,7 +30,7 @@ export default function ChatList() {
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b px-4 py-3">
         <h1 className="text-xl font-bold">Chat</h1>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Mijozlar bilan faqat yozishmalar (voice/image yo&apos;q).
+          Faqat bron qilgan mijozlar bilan chat (voice/image yo&apos;q).
         </p>
       </div>
 
@@ -66,8 +66,8 @@ export default function ChatList() {
           ))}
 
         {!isLoading && !error && data.length === 0 && (
-          <p className="text-center text-muted-foreground py-12">
-            Hozircha chat yo&apos;q
+          <p className="text-center text-muted-foreground py-12 px-4 leading-relaxed">
+            Hozircha chat yo&apos;q. Mijoz bron qilgach, suhbat shu yerda ko&apos;rinadi.
           </p>
         )}
       </div>
