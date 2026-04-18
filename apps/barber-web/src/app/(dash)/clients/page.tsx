@@ -1,5 +1,5 @@
-import BarberClients from "@/page-views/barber/BarberClients";
+import PanelClients from "@/panel/pages/Clients";
 
 export default function Page() {
-  return <BarberClients />;
+  return <PanelClients />;
 }

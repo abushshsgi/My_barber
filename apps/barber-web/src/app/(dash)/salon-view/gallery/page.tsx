@@ -1,6 +1,5 @@
-import SalonViewGallery from "@/page-views/barber/SalonViewGallery";
+import PanelSalonGallery from "@/panel/pages/SalonGallery";
 
 export default function Page() {
-  return <SalonViewGallery />;
+  return <PanelSalonGallery />;
 }
-

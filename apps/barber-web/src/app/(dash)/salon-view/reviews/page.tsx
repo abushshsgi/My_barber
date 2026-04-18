@@ -1,6 +1,5 @@
-import SalonViewReviews from "@/page-views/barber/SalonViewReviews";
+import PanelSalonReviews from "@/panel/pages/SalonReviews";
 
 export default function Page() {
-  return <SalonViewReviews />;
+  return <PanelSalonReviews />;
 }
-

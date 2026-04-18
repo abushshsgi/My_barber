@@ -1,6 +1,5 @@
-import ChatList from "@/page-views/ChatList";
+import PanelChat from "@/panel/pages/Chat";
 
 export default function Page() {
-  return <ChatList />;
+  return <PanelChat />;
 }
-

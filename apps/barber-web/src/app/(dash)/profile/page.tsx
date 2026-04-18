@@ -1,5 +1,5 @@
-import BarberProfilePage from "@/page-views/barber/BarberProfilePage";
+import PanelProfile from "@/panel/pages/Profile";
 
 export default function Page() {
-  return <BarberProfilePage />;
+  return <PanelProfile />;
 }

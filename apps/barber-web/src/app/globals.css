@@ -1,87 +1,93 @@
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Yangi ko‘rinish: qorong‘i “studio”, teal aksent, oltin o‘rniga zamonaviy accent */
+/* mybarber-panel (Vite) theme — light neutral + sidebar tokens */
 @layer base {
   :root {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 96%;
-    --card: 222 40% 9%;
-    --card-foreground: 210 40% 96%;
-    --popover: 222 40% 9%;
-    --popover-foreground: 210 40% 96%;
-    --primary: 172 55% 48%;
-    --primary-foreground: 222 47% 6%;
-    --secondary: 217 33% 14%;
-    --secondary-foreground: 210 35% 92%;
-    --muted: 217 28% 14%;
-    --muted-foreground: 215 20% 58%;
-    --accent: 172 60% 50%;
-    --accent-foreground: 222 47% 6%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 28% 18%;
-    --input: 217 28% 18%;
-    --ring: 172 60% 50%;
-    --radius: 0.85rem;
-    --gold: 172 60% 50%;
-    --gold-foreground: 222 47% 6%;
-    --gold-light: 172 45% 60%;
-    --gold-dark: 172 55% 38%;
-    --success: 152 65% 45%;
-    --success-foreground: 210 40% 98%;
-    --warning: 38 92% 55%;
-    --warning-foreground: 222 47% 6%;
-    --sidebar-background: 222 42% 8%;
-    --sidebar-foreground: 210 30% 88%;
-    --sidebar-primary: 172 60% 50%;
-    --sidebar-primary-foreground: 222 47% 6%;
-    --sidebar-accent: 217 30% 14%;
-    --sidebar-accent-foreground: 210 35% 92%;
-    --sidebar-border: 217 28% 16%;
-    --sidebar-ring: 172 60% 50%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 4%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 4%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 4%;
+
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
+
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 9%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 9%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 25%;
+    --sidebar-primary: 0 0% 9%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 93%;
+    --sidebar-accent-foreground: 0 0% 9%;
+    --sidebar-border: 0 0% 92%;
+    --sidebar-ring: 0 0% 9%;
+
+    --gold: 0 0% 9%;
+    --gold-foreground: 0 0% 98%;
+    --gold-light: 0 0% 20%;
+    --gold-dark: 0 0% 4%;
+    --success: 0 0% 20%;
+    --success-foreground: 0 0% 98%;
+    --warning: 0 0% 40%;
+    --warning-foreground: 0 0% 98%;
   }
 
   .dark {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 96%;
-    --card: 222 40% 9%;
-    --card-foreground: 210 40% 96%;
-    --popover: 222 40% 9%;
-    --popover-foreground: 210 40% 96%;
-    --primary: 172 55% 48%;
-    --primary-foreground: 222 47% 6%;
-    --secondary: 217 33% 14%;
-    --secondary-foreground: 210 35% 92%;
-    --muted: 217 28% 14%;
-    --muted-foreground: 215 20% 58%;
-    --accent: 172 60% 50%;
-    --accent-foreground: 222 47% 6%;
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 62% 45%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 28% 18%;
-    --input: 217 28% 18%;
-    --ring: 172 60% 50%;
-    --gold: 172 60% 50%;
-    --gold-foreground: 222 47% 6%;
-    --gold-light: 172 45% 60%;
-    --gold-dark: 172 55% 38%;
-    --success: 152 65% 45%;
-    --success-foreground: 210 40% 98%;
-    --warning: 38 92% 55%;
-    --warning-foreground: 222 47% 6%;
-    --sidebar-background: 222 42% 8%;
-    --sidebar-foreground: 210 30% 88%;
-    --sidebar-primary: 172 60% 50%;
-    --sidebar-primary-foreground: 222 47% 6%;
-    --sidebar-accent: 217 30% 14%;
-    --sidebar-accent-foreground: 210 35% 92%;
-    --sidebar-border: 217 28% 16%;
-    --sidebar-ring: 172 60% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 0 0% 83%;
+    --sidebar-background: 0 0% 6%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 0 0% 98%;
+    --sidebar-primary-foreground: 0 0% 9%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 12%;
+    --sidebar-ring: 0 0% 83%;
+    --gold: 0 0% 98%;
+    --gold-foreground: 0 0% 9%;
+    --gold-light: 0 0% 85%;
+    --gold-dark: 0 0% 70%;
   }
 }
 
@@ -90,33 +96,61 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased;
-    font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
-    background-image:
-      radial-gradient(ellipse 120% 80% at 50% -20%, hsl(172 40% 18% / 0.35), transparent 50%),
-      radial-gradient(ellipse 80% 50% at 100% 50%, hsl(217 40% 16% / 0.2), transparent);
-    background-attachment: fixed;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-semibold tracking-tight;
   }
 }
 
 @layer utilities {
+  .glass-card {
+    @apply bg-card border border-border rounded-xl shadow-sm;
+  }
+  .status-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  .status-accepted {
+    @apply status-badge bg-secondary text-secondary-foreground;
+  }
+  .status-in-progress {
+    @apply status-badge bg-primary text-primary-foreground;
+  }
+  .status-completed {
+    @apply status-badge bg-muted text-muted-foreground;
+  }
+  .page-container {
+    @apply p-4 md:p-6 lg:p-8 max-w-7xl mx-auto;
+  }
+  .section-title {
+    @apply text-lg font-semibold text-foreground;
+  }
+  .section-subtitle {
+    @apply text-sm text-muted-foreground;
+  }
+
   .gold-gradient {
-    background: linear-gradient(135deg, hsl(172 58% 46%), hsl(190 55% 42%));
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.95), hsl(var(--primary) / 0.75));
   }
   .text-gold-gradient {
-    background: linear-gradient(135deg, hsl(172 65% 55%), hsl(190 60% 50%));
+    background: linear-gradient(135deg, hsl(var(--foreground)), hsl(var(--muted-foreground)));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
   .card-shadow {
     box-shadow:
-      0 1px 2px hsl(222 47% 4% / 0.5),
-      0 0 0 1px hsl(217 28% 18% / 0.6);
+      0 1px 2px hsl(0 0% 0% / 0.06),
+      0 0 0 1px hsl(var(--border) / 0.8);
   }
   .card-shadow-lg {
     box-shadow:
-      0 12px 40px -12px hsl(222 47% 4% / 0.65),
-      0 0 0 1px hsl(217 28% 18% / 0.5);
+      0 12px 40px -12px hsl(0 0% 0% / 0.12),
+      0 0 0 1px hsl(var(--border) / 0.6);
   }
   .scrollbar-hide {
     -ms-overflow-style: none;
@@ -133,54 +167,8 @@
   }
 }
 
-/* Barber dash: issiq amber / “barbershop” — layout faqat (dash) ichida */
-.barber-studio {
-  --background: 24 12% 7%;
-  --foreground: 40 25% 96%;
-  --card: 22 14% 10%;
-  --card-foreground: 40 25% 96%;
-  --popover: 22 14% 10%;
-  --popover-foreground: 40 25% 96%;
-  --primary: 32 92% 54%;
-  --primary-foreground: 24 18% 8%;
-  --secondary: 22 12% 14%;
-  --secondary-foreground: 40 20% 92%;
-  --muted: 22 10% 16%;
-  --muted-foreground: 35 12% 58%;
-  --accent: 32 92% 54%;
-  --accent-foreground: 24 18% 8%;
-  --destructive: 0 72% 51%;
-  --destructive-foreground: 40 25% 98%;
-  --border: 22 10% 18%;
-  --input: 22 10% 18%;
-  --ring: 32 92% 54%;
-  --gold: 32 92% 54%;
-  --gold-foreground: 24 18% 8%;
-  --gold-light: 36 88% 62%;
-  --gold-dark: 28 85% 42%;
-  --sidebar-background: 22 14% 9%;
-  --sidebar-foreground: 40 22% 90%;
-  --sidebar-primary: 32 92% 54%;
-  --sidebar-primary-foreground: 24 18% 8%;
-  --sidebar-accent: 22 12% 15%;
-  --sidebar-accent-foreground: 40 20% 92%;
-  --sidebar-border: 22 10% 16%;
-  --sidebar-ring: 32 92% 54%;
-  background-image:
-    radial-gradient(ellipse 90% 70% at 15% -10%, hsl(32 70% 35% / 0.28), transparent 52%),
-    radial-gradient(ellipse 70% 50% at 100% 30%, hsl(15 45% 28% / 0.18), transparent 45%),
-    radial-gradient(ellipse 60% 40% at 50% 100%, hsl(28 40% 22% / 0.15), transparent 50%);
-  background-attachment: fixed;
-  background-color: hsl(var(--background));
-  font-family: "Outfit", "Plus Jakarta Sans", system-ui, sans-serif;
-}
-
-.barber-studio .gold-gradient {
-  background: linear-gradient(135deg, hsl(32 88% 52%), hsl(24 75% 46%));
-}
-
 .leaflet-container {
-  font-family: "Plus Jakarta Sans", sans-serif !important;
+  font-family: "Inter", system-ui, sans-serif !important;
   z-index: 0;
 }
 

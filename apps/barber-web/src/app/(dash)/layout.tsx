@@ -1,9 +1,16 @@
-import { BarberLayout } from "@/components/BarberLayout";
+"use client";
+
+import { AppProvider } from "@/panel/contexts/AppContext";
+import { AppLayout } from "@/panel/components/AppLayout";
 
 export default function BarberDashLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <BarberLayout>{children}</BarberLayout>;
+  return (
+    <AppProvider>
+      <AppLayout>{children}</AppLayout>
+    </AppProvider>
+  );
 }

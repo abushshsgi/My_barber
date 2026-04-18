@@ -1,4 +1,6 @@
 ui-vite/
+_vendor/
+.tmp/
 .venv/
 __pycache__/
 *.pyc

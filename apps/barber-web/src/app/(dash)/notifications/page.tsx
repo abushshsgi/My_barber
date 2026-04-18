@@ -1,5 +1,5 @@
-import Notifications from "@/page-views/Notifications";
+import PanelNotifications from "@/panel/pages/Notifications";
 
 export default function Page() {
-  return <Notifications />;
+  return <PanelNotifications />;
 }

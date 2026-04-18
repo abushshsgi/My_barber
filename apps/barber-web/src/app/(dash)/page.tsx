@@ -1,5 +1,5 @@
-import BarberDashboard from "@/page-views/barber/BarberDashboard";
+import PanelDashboard from "@/panel/pages/Dashboard";
 
 export default function Page() {
-  return <BarberDashboard />;
+  return <PanelDashboard />;
 }

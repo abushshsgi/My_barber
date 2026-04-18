@@ -1,5 +1,5 @@
-import BarberBookings from "@/page-views/barber/BarberBookings";
+import PanelBookings from "@/panel/pages/Bookings";
 
 export default function Page() {
-  return <BarberBookings />;
+  return <PanelBookings />;
 }

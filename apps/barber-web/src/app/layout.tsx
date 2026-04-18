@@ -14,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="uz" className="dark" suppressHydrationWarning>
+    <html lang="uz" suppressHydrationWarning>
       <body className="min-h-screen antialiased font-sans selection:bg-accent/30 selection:text-accent-foreground">
         <AppProviders>
           <BarberAuthGuard>{children}</BarberAuthGuard>
