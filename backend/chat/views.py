@@ -5,6 +5,7 @@ from typing import Literal, TypedDict
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.db import transaction
+from django.db.utils import OperationalError, ProgrammingError
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import PageNumberPagination
@@ -48,9 +49,13 @@ class ConversationListCreateView(APIView):
 
     def get(self, request):
         actor = get_actor_from_request(request)
-        qs = conversation_queryset_for_actor(actor)
-        data = ConversationListSerializer(qs, many=True, context={"actor": actor}).data
-        return Response(data)
+        try:
+            qs = conversation_queryset_for_actor(actor)
+            data = ConversationListSerializer(qs, many=True, context={"actor": actor}).data
+            return Response(data)
+        except (OperationalError, ProgrammingError):
+            # Production deploylarda migrate o'tkazilmagan bo'lsa 500 chiqmasin.
+            return Response([])
 
     def post(self, request):
         actor = get_actor_from_request(request)
@@ -92,8 +97,11 @@ class ConversationMessagesView(APIView, PageNumberPagination):
     max_page_size = 200
 
     def get_conversation(self, actor: Actor, public_id):
-        qs = Conversation.objects.select_related("barber", "user")
-        convo = qs.filter(public_id=public_id).first()
+        try:
+            qs = Conversation.objects.select_related("barber", "user")
+            convo = qs.filter(public_id=public_id).first()
+        except (OperationalError, ProgrammingError):
+            raise ValidationError({"detail": "Chat storage is not ready (migrations missing)."})
         if not convo:
             raise ValidationError({"detail": "Conversation not found."})
         if actor["kind"] == "USER" and convo.user_id != actor["user"].id:
@@ -109,7 +117,10 @@ class ConversationMessagesView(APIView, PageNumberPagination):
     def get(self, request, conversation_id: str):
         actor = get_actor_from_request(request)
         convo = self.get_conversation(actor, conversation_id)
-        qs = Message.objects.filter(conversation=convo).order_by("-created_at", "-id")
+        try:
+            qs = Message.objects.filter(conversation=convo).order_by("-created_at", "-id")
+        except (OperationalError, ProgrammingError):
+            return self.get_paginated_response([])
         page = self.paginate_queryset(qs, request, view=self)
         ser = MessageSerializer(page, many=True)
         return self.get_paginated_response(list(reversed(ser.data)))
@@ -123,7 +134,12 @@ class ConversationMessagesView(APIView, PageNumberPagination):
         if not text:
             raise ValidationError({"text": "Text required."})
 
-        with transaction.atomic():
+        try:
+            tx = transaction.atomic()
+        except (OperationalError, ProgrammingError):
+            raise ValidationError({"detail": "Chat storage is not ready (migrations missing)."})
+
+        with tx:
             msg = Message.objects.create(
                 conversation=convo,
                 sender_kind=Message.SenderKind.USER if actor["kind"] == "USER" else Message.SenderKind.BARBER,

@@ -414,10 +414,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loadClients = useCallback(async (mode: "independent" | "salon", salonId: string | null) => {
+    if (mode === "salon" && !salonId) {
+      setClients([]);
+      return;
+    }
     const path =
       mode === "independent"
         ? "/api/v1/analytics/clients/independent/?"
-        : `/api/v1/analytics/clients/?salon=${encodeURIComponent(salonId || "")}`;
+        : `/api/v1/analytics/clients/?salon=${encodeURIComponent(salonId)}`;
     const res = await apiFetch(path);
     if (!res.ok) return;
     const j = (await res.json()) as AnalyticsClientRowApi[];
