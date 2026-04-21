@@ -1,6 +1,8 @@
 "use client";
 import { useApp } from "@/panel/contexts/AppContext";
 import { Star } from "lucide-react";
+import { EmptyState } from "@/panel/components/EmptyState";
+import { MessageSquare } from "lucide-react";
 
 function Stars({ count }: { count: number }) {
   return (
@@ -13,7 +15,7 @@ function Stars({ count }: { count: number }) {
 }
 
 export default function SalonReviews() {
-  const { salonReviews } = useApp();
+  const { salonReviews, salons, salonView } = useApp();
   const avg = salonReviews.length
     ? salonReviews.reduce((s, r) => s + r.rating, 0) / salonReviews.length
     : 0;
@@ -33,6 +35,23 @@ export default function SalonReviews() {
         <p className="text-muted-foreground text-sm mt-1">Salon reviews</p>
       </div>
 
+      {salons.length === 0 ? (
+        <EmptyState
+          icon={MessageSquare}
+          title="No salon connected"
+          description="Salon View ishlashi uchun avval salonga ulangan bo‘lishingiz kerak."
+        />
+      ) : !salonView ? (
+        <div className="glass-card p-8 text-center">
+          <p className="text-muted-foreground">Loading salon…</p>
+        </div>
+      ) : salonReviews.length === 0 ? (
+        <EmptyState
+          icon={MessageSquare}
+          title="No reviews yet"
+          description="Hali salon uchun sharhlar yo‘q."
+        />
+      ) : (
       <div className="glass-card p-6 flex flex-col sm:flex-row gap-6">
         <div className="text-center sm:text-left">
           <p className="text-5xl font-bold">{avg.toFixed(1)}</p>
@@ -51,24 +70,27 @@ export default function SalonReviews() {
           ))}
         </div>
       </div>
+      )}
 
-      <div className="space-y-3">
-        {salonReviews.map((review) => (
-          <div key={review.id} className="glass-card p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                  <span className="text-xs font-semibold">{review.author.charAt(0)}</span>
+      {salonReviews.length > 0 && (
+        <div className="space-y-3">
+          {salonReviews.map((review) => (
+            <div key={review.id} className="glass-card p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                    <span className="text-xs font-semibold">{review.author.charAt(0)}</span>
+                  </div>
+                  <span className="text-sm font-medium">{review.author}</span>
                 </div>
-                <span className="text-sm font-medium">{review.author}</span>
+                <span className="text-xs text-muted-foreground">{review.date}</span>
               </div>
-              <span className="text-xs text-muted-foreground">{review.date}</span>
+              <Stars count={review.rating} />
+              <p className="text-sm text-muted-foreground mt-2">{review.comment}</p>
             </div>
-            <Stars count={review.rating} />
-            <p className="text-sm text-muted-foreground mt-2">{review.comment}</p>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
