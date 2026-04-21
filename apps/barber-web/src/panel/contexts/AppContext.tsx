@@ -53,11 +53,47 @@ export interface Notification {
   read: boolean;
 }
 
+export interface BarberMe {
+  id: number;
+  email: string;
+  full_name: string;
+  phone: string | null;
+  work_mode: "salon" | "independent";
+}
+
+export interface BarberProfileState {
+  exists: boolean;
+  location_text?: string;
+  latitude?: string | null;
+  longitude?: string | null;
+}
+
+export interface BarberServiceState {
+  id: number;
+  name: string;
+  price: string;
+  duration_minutes: number;
+  is_active: boolean;
+}
+
+export interface BarberWorkingHourState {
+  id: number;
+  weekday: number;
+  open_time: string;
+  close_time: string;
+  is_day_off: boolean;
+  breaks?: { start: string; end: string }[];
+}
+
 interface AppContextType {
   viewMode: "independent" | "salon";
   setViewMode: (mode: "independent" | "salon") => void;
   selectedSalonId: string | null;
   setSelectedSalonId: (id: string | null) => void;
+  me: BarberMe | null;
+  profile: BarberProfileState | null;
+  services: BarberServiceState[];
+  workingHours: BarberWorkingHourState[];
   bookings: Booking[];
   startBooking: (id: string) => Promise<void>;
   completeBooking: (id: string) => Promise<void>;
@@ -101,6 +137,31 @@ type BarberMeApi = {
   phone: string | null;
   role: string;
   work_mode: "salon" | "independent";
+};
+
+type BarberProfileApi = {
+  exists: boolean;
+  id?: number;
+  location_text?: string;
+  latitude?: string | null;
+  longitude?: string | null;
+};
+
+type BarberServiceApi = {
+  id: number;
+  name: string;
+  price: string;
+  duration_minutes: number;
+  is_active: boolean;
+};
+
+type BarberWorkingHourApi = {
+  id: number;
+  weekday: number;
+  open_time: string;
+  close_time: string;
+  is_day_off: boolean;
+  breaks?: { start: string; end: string }[];
 };
 
 function hhmmFromIso(s: string): string {
@@ -150,12 +211,53 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [selectedSalonId, setSelectedSalonId] = useState<string | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [me, setMe] = useState<BarberMe | null>(null);
+  const [profile, setProfile] = useState<BarberProfileState | null>(null);
+  const [services, setServices] = useState<BarberServiceState[]>([]);
+  const [workingHours, setWorkingHours] = useState<BarberWorkingHourState[]>([]);
 
   const loadMe = useCallback(async () => {
     const res = await apiFetch("/api/v1/barber/auth/me/");
     if (!res.ok) return;
     const me = (await res.json()) as BarberMeApi;
     setViewMode(me.work_mode === "salon" ? "salon" : "independent");
+    setMe({
+      id: me.id,
+      email: me.email,
+      full_name: me.full_name,
+      phone: me.phone,
+      work_mode: me.work_mode,
+    });
+  }, []);
+
+  const loadProfile = useCallback(async () => {
+    const res = await apiFetch("/api/v1/barber/profile/");
+    if (!res.ok) return;
+    const p = (await res.json()) as BarberProfileApi;
+    setProfile({
+      exists: Boolean(p.exists),
+      location_text: p.location_text,
+      latitude: p.latitude ?? null,
+      longitude: p.longitude ?? null,
+    });
+  }, []);
+
+  const loadServices = useCallback(async () => {
+    const res = await apiFetch("/api/v1/barber/services/");
+    if (!res.ok) return;
+    const j = (await res.json()) as { results?: BarberServiceApi[] } | BarberServiceApi[];
+    const rows = Array.isArray(j) ? j : j.results || [];
+    setServices(rows);
+  }, []);
+
+  const loadWorkingHours = useCallback(async () => {
+    const res = await apiFetch("/api/v1/barber/working-hours/");
+    if (!res.ok) return;
+    const j = (await res.json()) as
+      | { results?: BarberWorkingHourApi[] }
+      | BarberWorkingHourApi[];
+    const rows = Array.isArray(j) ? j : j.results || [];
+    setWorkingHours(rows);
   }, []);
 
   const loadBookings = useCallback(async () => {
@@ -177,9 +279,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     void loadMe();
+    void loadProfile();
+    void loadServices();
+    void loadWorkingHours();
     void loadBookings();
     void loadNotifications();
-  }, [loadMe, loadBookings, loadNotifications]);
+  }, [loadMe, loadProfile, loadServices, loadWorkingHours, loadBookings, loadNotifications]);
 
   const startBooking = useCallback(async (id: string) => {
     // Optimistic UI
@@ -236,6 +341,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setViewMode,
         selectedSalonId,
         setSelectedSalonId,
+        me,
+        profile,
+        services,
+        workingHours,
         bookings,
         startBooking,
         completeBooking,
