@@ -143,6 +143,7 @@ export default function BarberAuth() {
     try {
       const hasSalon = signupPath === "employee";
       const work_mode = signupPath === "independent" ? "independent" : "salon";
+      const onboarding_flow = signupPath;
       const shopName =
         signupPath === "mybarber" && fullName.trim()
           ? `MyBarber · ${fullName.trim()}`
@@ -156,6 +157,7 @@ export default function BarberAuth() {
           phone: phone || undefined,
           has_salon: hasSalon,
           work_mode,
+          onboarding_flow,
           ...(shopName ? { shop_name: shopName } : {}),
           latitude: la,
           longitude: ln,

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { getBarberAccessToken } from "@/lib/api";
+import { apiFetch, getBarberAccessToken } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Loader2, LogIn } from "lucide-react";
 
@@ -18,6 +18,7 @@ function BarberAuthGuardProtected({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [allowed, setAllowed] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   const nextUrl =
     typeof window !== "undefined"
@@ -26,17 +27,54 @@ function BarberAuthGuardProtected({ children }: { children: React.ReactNode }) {
   const loginHref = `/auth?next=${encodeURIComponent(nextUrl)}`;
 
   useEffect(() => {
-    const next =
-      typeof window !== "undefined"
-        ? `${pathname}${window.location.search}`
-        : pathname;
-    const href = `/auth?next=${encodeURIComponent(next)}`;
-    if (getBarberAccessToken()) {
+    const run = async () => {
+      setErr(null);
+      const next =
+        typeof window !== "undefined"
+          ? `${pathname}${window.location.search}`
+          : pathname;
+      const href = `/auth?next=${encodeURIComponent(next)}`;
+      const tok = getBarberAccessToken();
+      if (!tok) {
+        router.replace(href);
+        setAllowed(false);
+        setReady(true);
+        return;
+      }
+      // Onboarding gate (backend source of truth)
+      const res = await apiFetch("/api/v1/barber/onboarding/status/");
+      if (!res.ok) {
+        // Fallback: allow page, but show errors on pages themselves.
+        setAllowed(true);
+        setReady(true);
+        return;
+      }
+      const data = (await res.json()) as {
+        is_complete?: boolean;
+        required_next_path?: string;
+      };
+      const isComplete = Boolean(data.is_complete);
+      const required = String(data.required_next_path || "").trim();
+      if (!isComplete && required) {
+        const requiredPathOnly = required.split("?")[0];
+        const current = pathname || "/";
+        const onRequired =
+          current === requiredPathOnly || current.startsWith(`${requiredPathOnly}/`);
+        if (!onRequired) {
+          router.replace(required);
+          setAllowed(false);
+          setReady(true);
+          return;
+        }
+      }
       setAllowed(true);
-    } else {
-      router.replace(href);
-    }
-    setReady(true);
+      setReady(true);
+    };
+    void run().catch((e: unknown) => {
+      setErr(e instanceof Error ? e.message : "Guard error");
+      setAllowed(true);
+      setReady(true);
+    });
   }, [pathname, router]);
 
   if (!ready) {
@@ -44,6 +82,17 @@ function BarberAuthGuardProtected({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background px-6">
         <Loader2 className="h-8 w-8 animate-spin text-accent" />
         <p className="text-sm text-muted-foreground text-center">Tekshirilmoqda…</p>
+      </div>
+    );
+  }
+
+  if (err) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background px-6 text-center">
+        <p className="text-sm text-destructive max-w-sm">{err}</p>
+        <Button onClick={() => router.refresh()} className="rounded-xl">
+          Reload
+        </Button>
       </div>
     );
   }

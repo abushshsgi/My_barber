@@ -130,6 +130,12 @@ class BarberSignupSerializer(serializers.Serializer):
         default=Barber.WorkMode.SALON,
         required=False,
     )
+    onboarding_flow = serializers.ChoiceField(
+        choices=Barber.OnboardingFlow.choices,
+        required=False,
+        allow_blank=True,
+        default="",
+    )
 
     def validate_email(self, value):
         v = (value or "").strip().lower()
@@ -161,6 +167,18 @@ class BarberSignupSerializer(serializers.Serializer):
                 {"detail": "latitude / longitude noto'g'ri diapazonda."}
             )
         wm = attrs.get("work_mode", Barber.WorkMode.SALON)
+        flow = (attrs.get("onboarding_flow") or "").strip()
+        if flow:
+            # Derive work_mode / has_salon from onboarding_flow to keep it consistent.
+            if flow == Barber.OnboardingFlow.INDEPENDENT:
+                attrs["work_mode"] = Barber.WorkMode.INDEPENDENT
+                attrs["has_salon"] = False
+            else:
+                attrs["work_mode"] = Barber.WorkMode.SALON
+                if flow == Barber.OnboardingFlow.EMPLOYEE:
+                    attrs["has_salon"] = True
+                else:
+                    attrs["has_salon"] = False
         if wm == Barber.WorkMode.INDEPENDENT and attrs.get("has_salon"):
             raise serializers.ValidationError(
                 {
@@ -183,6 +201,7 @@ class BarberSignupSerializer(serializers.Serializer):
         address = validated_data.pop("address", "") or ""
         staff_count = validated_data.pop("staff_count_at_signup", 1)
         work_mode = validated_data.pop("work_mode", Barber.WorkMode.SALON)
+        onboarding_flow = (validated_data.pop("onboarding_flow", "") or "").strip()
 
         if not shop_name:
             if has_salon:
@@ -200,6 +219,7 @@ class BarberSignupSerializer(serializers.Serializer):
                 full_name=full_name,
                 region=region,
                 work_mode=work_mode,
+                onboarding_flow=onboarding_flow,
             )
             barber.set_password(pwd)
             barber.save()

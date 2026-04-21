@@ -48,7 +48,12 @@ from barbers.views import (
     MyBarberWorkPhotoViewSet,
     MyBarberWorkingHoursViewSet,
 )
-from barbers.views_barber_auth import BarberMeView, BarberTokenRefreshView, BarberTokenView
+from barbers.views_barber_auth import (
+    BarberMeView,
+    BarberOnboardingStatusView,
+    BarberTokenRefreshView,
+    BarberTokenView,
+)
 from salons.views import (
     BarberScheduleViewSet,
     SalonMembershipViewSet,
@@ -98,6 +103,7 @@ api_routes = [
     path("barber/auth/token/", BarberTokenView.as_view()),
     path("barber/auth/token/refresh/", BarberTokenRefreshView.as_view()),
     path("barber/auth/me/", BarberMeView.as_view()),
+    path("barber/onboarding/status/", BarberOnboardingStatusView.as_view()),
     path("barber/profile/", MyBarberProfileView.as_view()),
     path("notifications/", NotificationListView.as_view()),
     path("notifications/<int:pk>/read/", NotificationMarkReadView.as_view()),

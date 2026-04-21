@@ -16,6 +16,12 @@ class Barber(models.Model):
         SALON = "salon", "Salon"
         INDEPENDENT = "independent", "Independent"
 
+    class OnboardingFlow(models.TextChoices):
+        OWNER = "owner", "Owner"
+        EMPLOYEE = "employee", "Employee"
+        MYBARBER = "mybarber", "MyBarber"
+        INDEPENDENT = "independent", "Independent"
+
     email = models.EmailField(unique=True, db_index=True)
     username = models.CharField(max_length=150, unique=True)
     password = models.CharField(max_length=128)
@@ -35,6 +41,14 @@ class Barber(models.Model):
         default=WorkMode.SALON,
         db_index=True,
     )
+    onboarding_flow = models.CharField(
+        max_length=16,
+        choices=OnboardingFlow.choices,
+        blank=True,
+        default="",
+        db_index=True,
+    )
+    onboarding_completed_at = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(null=True, blank=True)
