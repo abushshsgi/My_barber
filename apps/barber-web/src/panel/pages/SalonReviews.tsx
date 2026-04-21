@@ -13,13 +13,17 @@ function Stars({ count }: { count: number }) {
 }
 
 export default function SalonReviews() {
-  const { reviews } = useApp();
-  const avg = reviews.reduce((s, r) => s + r.rating, 0) / reviews.length;
+  const { salonReviews } = useApp();
+  const avg = salonReviews.length
+    ? salonReviews.reduce((s, r) => s + r.rating, 0) / salonReviews.length
+    : 0;
 
   const distribution = [5, 4, 3, 2, 1].map((rating) => ({
     rating,
-    count: reviews.filter((r) => r.rating === rating).length,
-    pct: (reviews.filter((r) => r.rating === rating).length / reviews.length) * 100,
+    count: salonReviews.filter((r) => r.rating === rating).length,
+    pct: salonReviews.length
+      ? (salonReviews.filter((r) => r.rating === rating).length / salonReviews.length) * 100
+      : 0,
   }));
 
   return (
@@ -33,7 +37,7 @@ export default function SalonReviews() {
         <div className="text-center sm:text-left">
           <p className="text-5xl font-bold">{avg.toFixed(1)}</p>
           <Stars count={Math.round(avg)} />
-          <p className="text-sm text-muted-foreground mt-1">{reviews.length} reviews</p>
+          <p className="text-sm text-muted-foreground mt-1">{salonReviews.length} reviews</p>
         </div>
         <div className="flex-1 space-y-2">
           {distribution.map((d) => (
@@ -49,7 +53,7 @@ export default function SalonReviews() {
       </div>
 
       <div className="space-y-3">
-        {reviews.map((review) => (
+        {salonReviews.map((review) => (
           <div key={review.id} className="glass-card p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">

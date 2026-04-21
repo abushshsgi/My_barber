@@ -3,21 +3,21 @@ import { useApp } from "@/panel/contexts/AppContext";
 import { useState } from "react";
 
 export default function SalonGallery() {
-  const { salons, selectedSalonId } = useApp();
-  const salon = salons.find((s) => s.id === selectedSalonId) || salons[0];
+  const { salons, salonView } = useApp();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  if (!salon) return null;
+  if (salons.length === 0) return null;
+  if (!salonView) return null;
 
   return (
     <div className="page-container space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Gallery</h1>
-        <p className="text-muted-foreground text-sm mt-1">{salon.name}</p>
+        <p className="text-muted-foreground text-sm mt-1">{salonView.name}</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        {salon.images.map((img, i) => (
+        {salonView.images.map((img, i) => (
           <button
             key={i}
             onClick={() => setSelectedImage(img)}

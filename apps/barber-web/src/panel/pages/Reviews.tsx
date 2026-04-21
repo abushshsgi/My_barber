@@ -14,7 +14,7 @@ function Stars({ count }: { count: number }) {
 
 export default function Reviews() {
   const { reviews } = useApp();
-  const avg = reviews.reduce((s, r) => s + r.rating, 0) / reviews.length;
+  const avg = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
 
   return (
     <div className="page-container space-y-6">
