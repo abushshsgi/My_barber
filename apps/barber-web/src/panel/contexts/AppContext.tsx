@@ -170,8 +170,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const loadNotifications = useCallback(async () => {
     const res = await apiFetch("/api/v1/notifications/");
     if (!res.ok) return;
-    const j = (await res.json()) as NotificationApi[];
-    setNotifications(j.map(toNotificationRow));
+    const j = (await res.json()) as { results?: NotificationApi[] } | NotificationApi[];
+    const rows = Array.isArray(j) ? j : j.results || [];
+    setNotifications(rows.map(toNotificationRow));
   }, []);
 
   useEffect(() => {
