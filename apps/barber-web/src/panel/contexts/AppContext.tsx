@@ -1,6 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { apiFetch } from "@/lib/api";
+import { formatDistanceToNow, isToday, parseISO } from "date-fns";
 
 export type BookingStatus = "accepted" | "in_progress" | "completed";
 
@@ -57,79 +59,174 @@ interface AppContextType {
   selectedSalonId: string | null;
   setSelectedSalonId: (id: string | null) => void;
   bookings: Booking[];
-  startBooking: (id: string) => void;
-  completeBooking: (id: string) => void;
+  startBooking: (id: string) => Promise<void>;
+  completeBooking: (id: string) => Promise<void>;
   salons: Salon[];
   reviews: Review[];
   notifications: Notification[];
+  markNotificationRead: (id: string) => Promise<void>;
   messages: Message[];
 }
 
 const AppContext = createContext<AppContextType | null>(null);
 
-const MOCK_BOOKINGS: Booking[] = [
-  { id: "1", clientName: "Alex Johnson", service: "Classic Haircut", time: "09:00", date: "Today", status: "accepted", price: 35 },
-  { id: "2", clientName: "Mike Smith", service: "Beard Trim", time: "10:30", date: "Today", status: "accepted", price: 20 },
-  { id: "3", clientName: "David Lee", service: "Full Service", time: "12:00", date: "Today", status: "in_progress", startedAt: Date.now() - 600000, price: 55 },
-  { id: "4", clientName: "Chris Wang", service: "Fade Haircut", time: "14:00", date: "Today", status: "completed", price: 40, completedAt: Date.now() - 3600000 },
-  { id: "5", clientName: "Ryan Davis", service: "Classic Haircut", time: "15:30", date: "Today", status: "completed", price: 35, completedAt: Date.now() - 7200000 },
-];
+type BookingApi = {
+  id: number;
+  status: BookingStatus | string;
+  start_at: string;
+  end_at: string;
+  started_at?: string | null;
+  customer_name: string;
+  customer_phone?: string;
+  salon_name?: string | null;
+  total_price: string;
+  lines: { id: number; service_name: string; price: string; duration_minutes: number }[];
+  created_at: string;
+};
 
-const MOCK_SALONS: Salon[] = [
-  {
-    id: "s1",
-    name: "Elite Cuts Studio",
-    address: "123 Main St, Downtown",
-    phone: "+1 (555) 123-4567",
-    rating: 4.8,
-    reviewCount: 124,
-    coverImage: "https://images.unsplash.com/photo-1585747860019-8e8ef2e1f46a?w=1200&h=400&fit=crop",
-    images: [
-      "https://images.unsplash.com/photo-1503951914875-452f3a3e1a00?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1493256338651-d82f7acb2b38?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=400&h=400&fit=crop",
-    ],
-  },
-];
+type NotificationApi = {
+  id: number;
+  type: string;
+  title: string;
+  body: string;
+  payload: unknown;
+  read_at: string | null;
+  created_at: string;
+};
 
-const MOCK_REVIEWS: Review[] = [
-  { id: "r1", author: "James K.", rating: 5, comment: "Best haircut I've ever had. Very professional.", date: "2 days ago" },
-  { id: "r2", author: "Tom B.", rating: 4, comment: "Great atmosphere and solid work.", date: "1 week ago" },
-  { id: "r3", author: "Mark P.", rating: 5, comment: "Always consistent quality. Highly recommend.", date: "2 weeks ago" },
-  { id: "r4", author: "Steve R.", rating: 3, comment: "Good but had to wait a bit.", date: "3 weeks ago" },
-];
+type BarberMeApi = {
+  id: number;
+  email: string;
+  full_name: string;
+  phone: string | null;
+  role: string;
+  work_mode: "salon" | "independent";
+};
 
-const MOCK_NOTIFICATIONS: Notification[] = [
-  { id: "n1", title: "New booking", description: "Alex Johnson booked Classic Haircut for 09:00", time: "5 min ago", read: false },
-  { id: "n2", title: "Review received", description: "James K. left a 5-star review", time: "1 hour ago", read: false },
-  { id: "n3", title: "Booking completed", description: "Chris Wang's session completed", time: "3 hours ago", read: true },
-];
+function hhmmFromIso(s: string): string {
+  const d = parseISO(s);
+  const h = String(d.getHours()).padStart(2, "0");
+  const m = String(d.getMinutes()).padStart(2, "0");
+  return `${h}:${m}`;
+}
 
-const MOCK_MESSAGES: Message[] = [
-  { id: "m1", sender: "Alex Johnson", text: "Hey, can I reschedule to 10am?", time: "09:15", isMe: false },
-  { id: "m2", sender: "Me", text: "Sure, 10am works. See you then!", time: "09:17", isMe: true },
-  { id: "m3", sender: "Alex Johnson", text: "Thanks!", time: "09:18", isMe: false },
-];
+function bookingDateLabel(startAtIso: string): string {
+  const d = parseISO(startAtIso);
+  if (isToday(d)) return "Today";
+  return d.toISOString().slice(0, 10);
+}
+
+function toBookingRow(b: BookingApi): Booking | null {
+  const st = String(b.status);
+  if (st !== "accepted" && st !== "in_progress" && st !== "completed") return null;
+  const service =
+    b.lines?.length ? b.lines.map((l) => l.service_name).join(", ") : "Service";
+  return {
+    id: String(b.id),
+    clientName: b.customer_name || "Client",
+    service,
+    time: hhmmFromIso(b.start_at),
+    date: bookingDateLabel(b.start_at),
+    status: st as BookingStatus,
+    startedAt: b.started_at ? parseISO(b.started_at).getTime() : undefined,
+    price: Math.round(Number(b.total_price) || 0),
+  };
+}
+
+function toNotificationRow(n: NotificationApi): Notification {
+  const created = parseISO(n.created_at);
+  const time = formatDistanceToNow(created, { addSuffix: true });
+  return {
+    id: String(n.id),
+    title: n.title || "Notification",
+    description: n.body || "",
+    time,
+    read: Boolean(n.read_at),
+  };
+}
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [viewMode, setViewMode] = useState<"independent" | "salon">("independent");
-  const [selectedSalonId, setSelectedSalonId] = useState<string | null>(MOCK_SALONS[0]?.id || null);
-  const [bookings, setBookings] = useState<Booking[]>(MOCK_BOOKINGS);
+  const [selectedSalonId, setSelectedSalonId] = useState<string | null>(null);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  const startBooking = useCallback((id: string) => {
-    setBookings((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, status: "in_progress" as BookingStatus, startedAt: Date.now() } : b))
-    );
+  const loadMe = useCallback(async () => {
+    const res = await apiFetch("/api/v1/barber/auth/me/");
+    if (!res.ok) return;
+    const me = (await res.json()) as BarberMeApi;
+    setViewMode(me.work_mode === "salon" ? "salon" : "independent");
   }, []);
 
-  const completeBooking = useCallback((id: string) => {
-    setBookings((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, status: "completed" as BookingStatus, completedAt: Date.now() } : b))
-    );
+  const loadBookings = useCallback(async () => {
+    const res = await apiFetch("/api/v1/bookings/");
+    if (!res.ok) return;
+    const j = (await res.json()) as { results?: BookingApi[] } | BookingApi[];
+    const rows = Array.isArray(j) ? j : j.results || [];
+    const mapped = rows.map(toBookingRow).filter(Boolean) as Booking[];
+    setBookings(mapped);
   }, []);
+
+  const loadNotifications = useCallback(async () => {
+    const res = await apiFetch("/api/v1/notifications/");
+    if (!res.ok) return;
+    const j = (await res.json()) as NotificationApi[];
+    setNotifications(j.map(toNotificationRow));
+  }, []);
+
+  useEffect(() => {
+    void loadMe();
+    void loadBookings();
+    void loadNotifications();
+  }, [loadMe, loadBookings, loadNotifications]);
+
+  const startBooking = useCallback(async (id: string) => {
+    // Optimistic UI
+    setBookings((prev) =>
+      prev.map((b) =>
+        b.id === id ? { ...b, status: "in_progress", startedAt: Date.now() } : b
+      )
+    );
+    const res = await apiFetch(`/api/v1/bookings/${encodeURIComponent(id)}/start/`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      // rollback by refetch
+      await loadBookings();
+      return;
+    }
+    await loadBookings();
+  }, [loadBookings]);
+
+  const completeBooking = useCallback(async (id: string) => {
+    setBookings((prev) =>
+      prev.map((b) =>
+        b.id === id ? { ...b, status: "completed", completedAt: Date.now() } : b
+      )
+    );
+    const res = await apiFetch(`/api/v1/bookings/${encodeURIComponent(id)}/complete/`, {
+      method: "POST",
+      body: JSON.stringify({ early_finish: true }),
+    });
+    if (!res.ok) {
+      await loadBookings();
+      return;
+    }
+    await loadBookings();
+  }, [loadBookings]);
+
+  const markNotificationRead = useCallback(async (id: string) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    const res = await apiFetch(
+      `/api/v1/notifications/${encodeURIComponent(id)}/read/`,
+      { method: "POST" }
+    );
+    if (!res.ok) {
+      await loadNotifications();
+      return;
+    }
+    await loadNotifications();
+  }, [loadNotifications]);
 
   return (
     <AppContext.Provider
@@ -141,10 +238,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         bookings,
         startBooking,
         completeBooking,
-        salons: MOCK_SALONS,
-        reviews: MOCK_REVIEWS,
-        notifications: MOCK_NOTIFICATIONS,
-        messages: MOCK_MESSAGES,
+        salons: [],
+        reviews: [],
+        notifications,
+        markNotificationRead,
+        messages: [],
       }}
     >
       {children}

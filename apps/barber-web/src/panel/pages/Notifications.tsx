@@ -4,7 +4,7 @@ import { Bell } from "lucide-react";
 import { EmptyState } from "@/panel/components/EmptyState";
 
 export default function Notifications() {
-  const { notifications } = useApp();
+  const { notifications, markNotificationRead } = useApp();
 
   if (notifications.length === 0) {
     return (
@@ -23,14 +23,19 @@ export default function Notifications() {
       </div>
       <div className="space-y-1">
         {notifications.map((n) => (
-          <div key={n.id} className={`glass-card p-4 flex items-start gap-3 ${!n.read ? "border-foreground/10" : ""}`}>
+          <button
+            key={n.id}
+            type="button"
+            onClick={() => (!n.read ? void markNotificationRead(n.id) : undefined)}
+            className={`w-full text-left glass-card p-4 flex items-start gap-3 ${!n.read ? "border-foreground/10" : ""}`}
+          >
             <div className={`h-2 w-2 rounded-full mt-1.5 flex-shrink-0 ${!n.read ? "bg-foreground" : "bg-transparent"}`} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium">{n.title}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{n.description}</p>
             </div>
             <span className="text-xs text-muted-foreground flex-shrink-0">{n.time}</span>
-          </div>
+          </button>
         ))}
       </div>
     </div>
