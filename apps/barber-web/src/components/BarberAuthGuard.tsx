@@ -13,6 +13,30 @@ function isPublicBarberPath(pathname: string): boolean {
   return pathname === PUBLIC_PREFIX || pathname.startsWith(`${PUBLIC_PREFIX}/`);
 }
 
+function parseJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const json = atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"));
+    return JSON.parse(json) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function isValidBarberAccessToken(token: string): boolean {
+  const payload = parseJwtPayload(token);
+  if (!payload) return false;
+  const type = typeof payload.type === "string" ? payload.type : "";
+  // Must be a barber access token; anything else should not unlock barber-web.
+  if (type !== "barber_access") return false;
+  const exp = typeof payload.exp === "number" ? payload.exp : null;
+  if (!exp) return false;
+  // Small clock skew to avoid flapping on boundary.
+  const now = Math.floor(Date.now() / 1000);
+  return exp > now + 10;
+}
+
 function BarberAuthGuardProtected({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -35,7 +59,8 @@ function BarberAuthGuardProtected({ children }: { children: React.ReactNode }) {
           : pathname;
       const href = `/auth?next=${encodeURIComponent(next)}`;
       const tok = getBarberAccessToken();
-      if (!tok) {
+      if (!tok || !isValidBarberAccessToken(tok)) {
+        clearTokens();
         router.replace(href);
         setAllowed(false);
         setReady(true);
@@ -52,7 +77,7 @@ function BarberAuthGuardProtected({ children }: { children: React.ReactNode }) {
           setReady(true);
           return;
         }
-        // Fallback (network/backend issues): allow page, show errors on pages themselves.
+        // Fallback: if backend is down, keep the user in-app (token is still valid locally).
         setAllowed(true);
         setReady(true);
         return;
