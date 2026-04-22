@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { apiFetch, getBarberAccessToken } from "@/lib/api";
+import { apiFetch, clearTokens, getBarberAccessToken } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Loader2, LogIn } from "lucide-react";
 
@@ -44,7 +44,15 @@ function BarberAuthGuardProtected({ children }: { children: React.ReactNode }) {
       // Onboarding gate (backend source of truth)
       const res = await apiFetch("/api/v1/barber/onboarding/status/");
       if (!res.ok) {
-        // Fallback: allow page, but show errors on pages themselves.
+        // If token is invalid/expired, force re-login.
+        if (res.status === 401 || res.status === 403) {
+          clearTokens();
+          router.replace(href);
+          setAllowed(false);
+          setReady(true);
+          return;
+        }
+        // Fallback (network/backend issues): allow page, show errors on pages themselves.
         setAllowed(true);
         setReady(true);
         return;
