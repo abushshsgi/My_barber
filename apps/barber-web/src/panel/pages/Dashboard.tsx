@@ -2,15 +2,83 @@
 import { useApp } from "@/panel/contexts/AppContext";
 import { LiveTimer } from "@/panel/components/LiveTimer";
 import { Play, CheckCircle, Clock, DollarSign, Calendar } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { useBarberOnboardingStatus } from "@/hooks/useBarberOnboardingStatus";
 
 export default function Dashboard() {
   const { bookings, startBooking, completeBooking } = useApp();
+  const { data: onboarding, isLoading } = useBarberOnboardingStatus(true);
+  const isComplete = Boolean(onboarding?.is_complete);
+  const required = (onboarding?.required_next_path || "").trim();
+  const flow = (onboarding?.flow || "").toString();
+  const workMode = (onboarding?.work_mode || "").toString();
 
   const todayBookings = bookings.filter((b) => b.date === "Today");
   const activeSession = todayBookings.find((b) => b.status === "in_progress");
   const completedCount = todayBookings.filter((b) => b.status === "completed").length;
   const earnings = todayBookings.filter((b) => b.status === "completed").reduce((s, b) => s + b.price, 0);
   const upcomingCount = todayBookings.filter((b) => b.status === "accepted").length;
+
+  if (!isLoading && !isComplete) {
+    const ctaHref = required || "/profile/setup";
+    const ctaLabel =
+      ctaHref.startsWith("/salon/create")
+        ? "Salon yaratish"
+        : ctaHref.startsWith("/salon/join")
+          ? "Salonga qo‘shilish"
+          : ctaHref.startsWith("/independent/setup")
+            ? "Mustaqil setup"
+            : "Setupni tugatish";
+
+    const title =
+      flow === "owner" || flow === "mybarber"
+        ? "Salon hali yaratilmagan"
+        : flow === "employee"
+          ? "Salonga hali qo‘shilmagansiz"
+          : workMode === "independent"
+            ? "Mustaqil barber setup tugamagan"
+            : "Profil setup tugamagan";
+
+    const desc =
+      flow === "owner" || flow === "mybarber"
+        ? "Davom etish uchun salon yaratish bosqichini yakunlang."
+        : flow === "employee"
+          ? "Davom etish uchun salonga qo‘shiling yoki taklifni qabul qiling."
+          : workMode === "independent"
+            ? "Xizmatlar va ish vaqtlarini kiriting."
+            : "Profil ma’lumotlarini yakunlang.";
+
+    return (
+      <div className="page-container">
+        <div className="glass-card p-6 md:p-8 flex flex-col md:flex-row items-center gap-6">
+          <div className="w-full md:w-[320px] shrink-0">
+            <Image
+              src="/onboarding-empty.svg"
+              alt="Setup required"
+              width={640}
+              height={480}
+              className="w-full h-auto"
+              priority
+            />
+          </div>
+          <div className="min-w-0 flex-1 text-center md:text-left">
+            <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+            <p className="text-sm text-muted-foreground mt-2 max-w-xl">{desc}</p>
+            <div className="mt-6 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-center md:justify-start">
+              <Button asChild className="rounded-xl">
+                <Link href={ctaHref}>{ctaLabel}</Link>
+              </Button>
+              <Link href="/notifications" className="text-sm text-muted-foreground underline underline-offset-4">
+                Xabarnomalarni ko‘rish
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-container space-y-6">

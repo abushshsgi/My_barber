@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { NavLink } from "@/panel/components/NavLink";
 import { useApp } from "@/panel/contexts/AppContext";
+import { useBarberOnboardingStatus } from "@/hooks/useBarberOnboardingStatus";
 import {
   Sidebar,
   SidebarContent,
@@ -42,11 +43,24 @@ const salonItems = [
   { title: "Reviews", url: "/salon-view/reviews", icon: Star },
 ];
 
+const onboardingItems = [
+  { title: "Home", url: "/", icon: LayoutDashboard },
+  { title: "Notifications", url: "/notifications", icon: Bell },
+  { title: "Profile", url: "/profile", icon: User },
+];
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { viewMode, setViewMode, salons } = useApp();
-  const items = viewMode === "independent" ? independentItems : salonItems;
+  const { data: onboarding, isLoading } = useBarberOnboardingStatus(true);
+  const isComplete = Boolean(onboarding?.is_complete);
+  const items =
+    !isLoading && !isComplete
+      ? onboardingItems
+      : viewMode === "independent"
+        ? independentItems
+        : salonItems;
   const hasSalons = salons.length > 0;
 
   return (
@@ -89,7 +103,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      {hasSalons && (
+      {hasSalons && isComplete && (
         <SidebarFooter className="p-3">
           {!collapsed && <Separator className="mb-3" />}
           <button

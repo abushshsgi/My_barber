@@ -13,6 +13,21 @@ function isPublicBarberPath(pathname: string): boolean {
   return pathname === PUBLIC_PREFIX || pathname.startsWith(`${PUBLIC_PREFIX}/`);
 }
 
+function isSetupAllowedPath(pathname: string | null): boolean {
+  if (!pathname) return false;
+  const p = pathname.split("?")[0];
+  return (
+    p === "/" ||
+    p === "/notifications" ||
+    p === "/profile" ||
+    p.startsWith("/auth") ||
+    p.startsWith("/salon/create") ||
+    p.startsWith("/salon/join") ||
+    p.startsWith("/profile/setup") ||
+    p.startsWith("/independent/setup")
+  );
+}
+
 function parseJwtPayload(token: string): Record<string, unknown> | null {
   try {
     const parts = token.split(".");
@@ -88,16 +103,20 @@ function BarberAuthGuardProtected({ children }: { children: React.ReactNode }) {
       };
       const isComplete = Boolean(data.is_complete);
       const required = String(data.required_next_path || "").trim();
-      if (!isComplete && required) {
-        const requiredPathOnly = required.split("?")[0];
+      if (!isComplete) {
         const current = pathname || "/";
-        const onRequired =
-          current === requiredPathOnly || current.startsWith(`${requiredPathOnly}/`);
-        if (!onRequired) {
-          router.replace(required);
+        // During onboarding, keep users within Home/Notifications/Profile/Auth + setup pages.
+        // Setup pages are still reachable via the Home CTA.
+        if (!isSetupAllowedPath(current)) {
+          router.replace("/");
           setAllowed(false);
           setReady(true);
           return;
+        }
+        // If backend requests a specific setup path and user is on a non-setup page, keep them on Home.
+        // Home will render a CTA to that required path.
+        if (required && current === "/") {
+          // allow Home
         }
       }
       setAllowed(true);
