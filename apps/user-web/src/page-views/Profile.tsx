@@ -194,9 +194,9 @@ const Profile = () => {
               Salon bilan ishlash uchun salon yarating yoki admin orqali salonga ulanib oling.
             </p>
             <div className="mt-3">
-              <Link href={barberWebUrl("/")}>
+              <Link href={barberWebUrl("/salon/join")}>
                 <Button className="rounded-2xl gold-gradient text-gold-foreground border-0 h-10">
-                  Sartarosh paneliga o‘tish
+                  Salonga qo‘shilish / yaratish
                 </Button>
               </Link>
             </div>

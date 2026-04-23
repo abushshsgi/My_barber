@@ -42,12 +42,20 @@ export default function Profile() {
                   Salon yaratish yoki mavjud salonga ulanish uchun admin bilan bog‘laning.
                 </p>
               </div>
-              <Link
-                href="/salon-view"
-                className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity shrink-0"
-              >
-                Salon view
-              </Link>
+              <div className="flex gap-2 shrink-0">
+                <Link
+                  href="/salon/join"
+                  className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium bg-muted hover:bg-muted/80 transition-colors"
+                >
+                  Salonga qo‘shilish
+                </Link>
+                <Link
+                  href="/salon/create"
+                  className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                >
+                  Salon yaratish
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -58,12 +66,20 @@ export default function Profile() {
                   shundan keyin “Salon view” orqali ko‘rishingiz mumkin bo‘ladi.
                 </p>
               </div>
-              <Link
-                href="/salon-view"
-                className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium bg-muted hover:bg-muted/80 transition-colors shrink-0"
-              >
-                Salon view
-              </Link>
+              <div className="flex gap-2 shrink-0">
+                <Link
+                  href="/salon/join"
+                  className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium bg-muted hover:bg-muted/80 transition-colors"
+                >
+                  Salonga qo‘shilish
+                </Link>
+                <Link
+                  href="/salon/create"
+                  className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium bg-muted hover:bg-muted/80 transition-colors"
+                >
+                  Salon yaratish
+                </Link>
+              </div>
             </div>
           )}
         </div>
