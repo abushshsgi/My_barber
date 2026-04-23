@@ -23,6 +23,8 @@ export default function Profile() {
   const { me, services, workingHours, salons } = useApp();
   const needsSalonConnection = me?.work_mode === "salon" && salons.length === 0;
   const isIndependent = me?.work_mode === "independent";
+  const isOwner = me?.role === "BARBER_OWNER";
+  const isStaff = me?.role === "BARBER_STAFF";
 
   return (
     <div className="page-container space-y-6">
@@ -36,26 +38,51 @@ export default function Profile() {
           {needsSalonConnection ? (
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="min-w-0">
-                <p className="font-semibold">Salon ulanmagan</p>
+                <p className="font-semibold">
+                  {isOwner ? "Salon hali yaratilmagan" : "Salon ulanmagan"}
+                </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Siz “Salon barber” rejimidasiz, lekin hali hech qanday salon yaratilmadi yoki siz salonga qo‘shilmagansiz.
-                  Salon yaratish yoki mavjud salonga ulanish uchun admin bilan bog‘laning.
+                  {isOwner
+                    ? "Siz salon owner sifatida ro‘yxatdan o‘tgansiz. Profilni yakunlash uchun salon yarating."
+                    : isStaff
+                      ? "Siz salon xodimi sifatida ro‘yxatdan o‘tgansiz. Davom etish uchun mavjud salonga qo‘shiling (admin taklifi yoki qidiruv orqali)."
+                      : "Siz “Salon barber” rejimidasiz, lekin hali salon yaratilmadi yoki siz salonga qo‘shilmagansiz."}
                 </p>
               </div>
-              <div className="flex gap-2 shrink-0">
-                <Link
-                  href="/salon/join"
-                  className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium bg-muted hover:bg-muted/80 transition-colors"
-                >
-                  Salonga qo‘shilish
-                </Link>
-                <Link
-                  href="/salon/create"
-                  className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-                >
-                  Salon yaratish
-                </Link>
-              </div>
+              {isOwner ? (
+                <div className="flex gap-2 shrink-0">
+                  <Link
+                    href="/salon/create"
+                    className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                  >
+                    Salon yaratish
+                  </Link>
+                </div>
+              ) : isStaff ? (
+                <div className="flex gap-2 shrink-0">
+                  <Link
+                    href="/salon/join"
+                    className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                  >
+                    Salonga qo‘shilish
+                  </Link>
+                </div>
+              ) : (
+                <div className="flex gap-2 shrink-0">
+                  <Link
+                    href="/salon/join"
+                    className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium bg-muted hover:bg-muted/80 transition-colors"
+                  >
+                    Salonga qo‘shilish
+                  </Link>
+                  <Link
+                    href="/salon/create"
+                    className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                  >
+                    Salon yaratish
+                  </Link>
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

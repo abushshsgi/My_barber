@@ -83,6 +83,7 @@ export interface BarberMe {
   email: string;
   full_name: string;
   phone: string | null;
+  role: string;
   work_mode: "salon" | "independent";
 }
 
@@ -385,6 +386,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       email: me.email,
       full_name: me.full_name,
       phone: me.phone,
+      role: me.role,
       work_mode: me.work_mode,
     });
   }, []);
