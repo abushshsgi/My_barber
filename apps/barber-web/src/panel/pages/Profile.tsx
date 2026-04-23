@@ -1,6 +1,7 @@
 "use client";
 import { useApp } from "@/panel/contexts/AppContext";
 import { Clock, Scissors, User } from "lucide-react";
+import Link from "next/link";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
@@ -19,7 +20,9 @@ function fmtDuration(mins: number): string {
 }
 
 export default function Profile() {
-  const { me, services, workingHours } = useApp();
+  const { me, services, workingHours, salons } = useApp();
+  const needsSalonConnection = me?.work_mode === "salon" && salons.length === 0;
+  const isIndependent = me?.work_mode === "independent";
 
   return (
     <div className="page-container space-y-6">
@@ -27,6 +30,44 @@ export default function Profile() {
         <h1 className="text-2xl font-bold tracking-tight">Profile</h1>
         <p className="text-muted-foreground text-sm mt-1">Your barber profile</p>
       </div>
+
+      {(needsSalonConnection || isIndependent) && (
+        <div className="glass-card p-5 border border-border">
+          {needsSalonConnection ? (
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-semibold">Salon ulanmagan</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Siz “Salon barber” rejimidasiz, lekin hali hech qanday salon yaratilmadi yoki siz salonga qo‘shilmagansiz.
+                  Salon yaratish yoki mavjud salonga ulanish uchun admin bilan bog‘laning.
+                </p>
+              </div>
+              <Link
+                href="/salon-view"
+                className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity shrink-0"
+              >
+                Salon view
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-semibold">Siz mustaqil ishlayapsiz</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Hozir “Independent barber” rejimisiz. Agar salon bilan ishlamoqchi bo‘lsangiz, salonga qo‘shiling yoki salon yarating,
+                  shundan keyin “Salon view” orqali ko‘rishingiz mumkin bo‘ladi.
+                </p>
+              </div>
+              <Link
+                href="/salon-view"
+                className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium bg-muted hover:bg-muted/80 transition-colors shrink-0"
+              >
+                Salon view
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="glass-card p-6">
         <div className="flex items-center gap-4 mb-6">

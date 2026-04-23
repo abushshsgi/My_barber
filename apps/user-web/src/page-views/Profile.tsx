@@ -180,6 +180,30 @@ const Profile = () => {
         </div>
       </motion.div>
 
+      {isBarberRole && mySalons.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.16 }}
+          className="px-5 mt-5"
+        >
+          <div className="bg-card rounded-2xl border border-border/50 p-4">
+            <p className="font-semibold text-sm">Salon ulanmagan</p>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              Siz sartarosh akkauntidasiz, lekin hali salon yaratmagan yoki mavjud salonga qo‘shilmagansiz.
+              Salon bilan ishlash uchun salon yarating yoki admin orqali salonga ulanib oling.
+            </p>
+            <div className="mt-3">
+              <Link href={barberWebUrl("/")}>
+                <Button className="rounded-2xl gold-gradient text-gold-foreground border-0 h-10">
+                  Sartarosh paneliga o‘tish
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {isEndUser && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
