@@ -65,7 +65,8 @@ export default function Page() {
         // Membership: owner or active employee.
         const memRes = await apiFetch("/api/v1/memberships/");
         if (memRes.ok) {
-          const mems = (await memRes.json()) as MembershipApi[];
+          const j = (await memRes.json()) as { results?: MembershipApi[] } | MembershipApi[];
+          const mems = Array.isArray(j) ? j : j.results || [];
           const owner = mems.find((m) => m.role === "owner");
           const active = mems.find((m) => m.invite_state === "active");
           setMembership(owner || active || null);
