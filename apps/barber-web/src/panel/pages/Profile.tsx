@@ -2,6 +2,7 @@
 import { useApp } from "@/panel/contexts/AppContext";
 import { Clock, Scissors, User } from "lucide-react";
 import Link from "next/link";
+import { useBarberOnboardingStatus } from "@/hooks/useBarberOnboardingStatus";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
@@ -21,10 +22,15 @@ function fmtDuration(mins: number): string {
 
 export default function Profile() {
   const { me, services, workingHours, salons } = useApp();
+  const { data: onboarding, isLoading: onboardingLoading } = useBarberOnboardingStatus(Boolean(me));
   const needsSalonConnection = me?.work_mode === "salon" && salons.length === 0;
   const isIndependent = me?.work_mode === "independent";
-  const isOwner = me?.role === "BARBER_OWNER";
-  const isStaff = me?.role === "BARBER_STAFF";
+  const flow = (onboarding?.flow || "").toLowerCase();
+  const nextPath = (onboarding?.required_next_path || "").toLowerCase();
+  const isOwnerFlow =
+    flow === "owner" || flow === "mybarber" || nextPath.startsWith("/salon/create");
+  const isEmployeeFlow =
+    flow === "employee" || nextPath.startsWith("/salon/join");
 
   return (
     <div className="page-container space-y-6">
@@ -39,17 +45,19 @@ export default function Profile() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="min-w-0">
                 <p className="font-semibold">
-                  {isOwner ? "Salon hali yaratilmagan" : "Salon ulanmagan"}
+                  {isOwnerFlow ? "Salon hali yaratilmagan" : "Salon ulanmagan"}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {isOwner
+                  {isOwnerFlow
                     ? "Siz salon owner sifatida ro‘yxatdan o‘tgansiz. Profilni yakunlash uchun salon yarating."
-                    : isStaff
+                    : isEmployeeFlow
                       ? "Siz salon xodimi sifatida ro‘yxatdan o‘tgansiz. Davom etish uchun mavjud salonga qo‘shiling (admin taklifi yoki qidiruv orqali)."
                       : "Siz “Salon barber” rejimidasiz, lekin hali salon yaratilmadi yoki siz salonga qo‘shilmagansiz."}
                 </p>
               </div>
-              {isOwner ? (
+              {onboardingLoading ? (
+                <p className="text-sm text-muted-foreground shrink-0">Tekshirilmoqda…</p>
+              ) : isOwnerFlow ? (
                 <div className="flex gap-2 shrink-0">
                   <Link
                     href="/salon/create"
@@ -58,7 +66,7 @@ export default function Profile() {
                     Salon yaratish
                   </Link>
                 </div>
-              ) : isStaff ? (
+              ) : isEmployeeFlow ? (
                 <div className="flex gap-2 shrink-0">
                   <Link
                     href="/salon/join"
