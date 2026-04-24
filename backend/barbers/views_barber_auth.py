@@ -77,6 +77,36 @@ class BarberMeView(APIView):
             }
         )
 
+    def patch(self, request):
+        """
+        Barber panel: allow updating basic profile fields.
+        Supports both JSON and multipart (avatar upload).
+        """
+        b = request.user.barber
+        full_name = request.data.get("full_name")
+        phone = request.data.get("phone")
+        if full_name is not None:
+            b.full_name = str(full_name).strip()
+        if phone is not None:
+            b.phone = str(phone).strip()
+        avatar = request.FILES.get("avatar")
+        if avatar is not None:
+            b.avatar = avatar
+        try:
+            b.save()
+        except Exception as e:
+            return Response({"detail": str(e)}, status=400)
+        return Response(
+            {
+                "id": b.id,
+                "email": b.email,
+                "full_name": b.full_name,
+                "phone": b.phone,
+                "role": "BARBER",
+                "work_mode": b.work_mode,
+            }
+        )
+
 
 class BarberOnboardingStatusView(APIView):
     """
@@ -154,7 +184,7 @@ class BarberOnboardingStatusView(APIView):
             has_mem_hours = bool(mem and SalonWorkingHours.objects.filter(membership=mem).exists())
             payload["has_membership_hours"] = has_mem_hours
             if not has_location or not has_mem_hours:
-                return incomplete("/profile/setup", payload)
+                return incomplete("/salon/create", payload)
             return complete(payload)
 
         # Employee flow
@@ -164,7 +194,7 @@ class BarberOnboardingStatusView(APIView):
             has_mem_hours = SalonWorkingHours.objects.filter(membership=active_mem).exists()
             payload["has_membership_hours"] = has_mem_hours
             if not has_location or not has_mem_hours:
-                return incomplete("/profile/setup", payload)
+                return incomplete("/salon/create", payload)
             return complete(payload)
 
         # Unknown: force auth

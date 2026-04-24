@@ -23,7 +23,6 @@ function isSetupAllowedPath(pathname: string | null): boolean {
     p.startsWith("/auth") ||
     p.startsWith("/salon/create") ||
     p.startsWith("/salon/join") ||
-    p.startsWith("/profile/setup") ||
     p.startsWith("/independent/setup")
   );
 }

@@ -22,7 +22,7 @@ export default function Dashboard() {
   const upcomingCount = todayBookings.filter((b) => b.status === "accepted").length;
 
   if (!isLoading && !isComplete) {
-    const ctaHref = required || "/profile/setup";
+    const ctaHref = required || "/salon/create";
     const ctaLabel =
       ctaHref.startsWith("/salon/create")
         ? "Salon yaratish"

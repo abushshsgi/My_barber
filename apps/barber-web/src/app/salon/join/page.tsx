@@ -72,7 +72,7 @@ export default function Page() {
         setErr(formatApiError(data, "Salonga qo‘shilib bo‘lmadi"));
         return;
       }
-      router.replace("/profile/setup");
+      router.replace("/");
       router.refresh();
     } finally {
       setJoining(null);
