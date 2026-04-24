@@ -181,13 +181,17 @@ function fallbackLatLng() {
   return { lat: 41.311081, lng: 69.240562 };
 }
 
+function round6(n: number): number {
+  return Number(n.toFixed(6));
+}
+
 async function geocodeAddress(q: string): Promise<{ lat: number; lng: number } | null> {
   const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`, { cache: "no-store" });
   if (!res.ok) return null;
   const j = (await res.json().catch(() => null)) as { ok?: boolean; lat?: number; lng?: number } | null;
   if (!j?.ok) return null;
   if (!Number.isFinite(j.lat) || !Number.isFinite(j.lng)) return null;
-  return { lat: Number(j.lat), lng: Number(j.lng) };
+  return { lat: round6(Number(j.lat)), lng: round6(Number(j.lng)) };
 }
 
 /* ============================================================
@@ -225,7 +229,7 @@ export function CreateSalonPage(props: CreateSalonPageProps) {
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        geoRef.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        geoRef.current = { lat: round6(pos.coords.latitude), lng: round6(pos.coords.longitude) };
       },
       () => {
         geoRef.current = fallbackLatLng();
@@ -405,8 +409,8 @@ export function CreateSalonPage(props: CreateSalonPageProps) {
           method: "PATCH",
           body: JSON.stringify({
             location_text: locText,
-            latitude: geo.lat,
-            longitude: geo.lng,
+            latitude: round6(geo.lat),
+            longitude: round6(geo.lng),
           }),
         });
         if (!res.ok) {
