@@ -185,15 +185,6 @@ function round6(n: number): number {
   return Number(n.toFixed(6));
 }
 
-async function geocodeAddress(q: string): Promise<{ lat: number; lng: number } | null> {
-  const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`, { cache: "no-store" });
-  if (!res.ok) return null;
-  const j = (await res.json().catch(() => null)) as { ok?: boolean; lat?: number; lng?: number } | null;
-  if (!j?.ok) return null;
-  if (!Number.isFinite(j.lat) || !Number.isFinite(j.lng)) return null;
-  return { lat: round6(Number(j.lat)), lng: round6(Number(j.lng)) };
-}
-
 /* ============================================================
    Page (UI is 1:1 with upstream; only submit is wired)
    ============================================================ */
@@ -219,8 +210,6 @@ export function CreateSalonPage(props: CreateSalonPageProps) {
 
   // Geo used for BarberProfile lat/lng (needed for backend onboarding completeness)
   const geoRef = useRef<{ lat: number; lng: number } | null>(null);
-  const lastGeocodeQueryRef = useRef<string>("");
-  const geocodeTimerRef = useRef<number | null>(null);
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!navigator.geolocation) {
@@ -237,31 +226,6 @@ export function CreateSalonPage(props: CreateSalonPageProps) {
       { enableHighAccuracy: false, maximumAge: 5 * 60 * 1000, timeout: 8000 },
     );
   }, []);
-
-  // Address → lat/lng (geocode). Keeps UI 1:1 (no new fields).
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const q = locationTextFromParts(salonCity, salonAddress, salonLandmark);
-    const normalized = q.trim();
-    if (normalized.length < 6) return;
-    if (normalized === lastGeocodeQueryRef.current) return;
-
-    if (geocodeTimerRef.current) {
-      window.clearTimeout(geocodeTimerRef.current);
-    }
-    geocodeTimerRef.current = window.setTimeout(() => {
-      lastGeocodeQueryRef.current = normalized;
-      void (async () => {
-        const hit = await geocodeAddress(normalized);
-        if (hit) geoRef.current = hit;
-      })();
-    }, 650);
-
-    return () => {
-      if (geocodeTimerRef.current) window.clearTimeout(geocodeTimerRef.current);
-      geocodeTimerRef.current = null;
-    };
-  }, [salonCity, salonAddress, salonLandmark]);
 
   // --- Barber (owner) profile state ---
   const [barberFirstName, setBarberFirstName] = useState("");
@@ -422,11 +386,14 @@ export function CreateSalonPage(props: CreateSalonPageProps) {
       // 3) Create salon (owner)
       let salonId: number | null = null;
       {
+        const geoForSalon = geoRef.current ?? fallbackLatLng();
         const payload = {
           name: salonName.trim(),
           description: salonDescription.trim(),
           address: locText,
           phone: fullPhoneFromDigits(salonPhoneDigits),
+          latitude: round6(geoForSalon.lat),
+          longitude: round6(geoForSalon.lng),
           languages,
           services: services.map((s) => ({
             name: (s.name || "").trim(),
