@@ -505,7 +505,7 @@ export function CreateSalonPage(props: CreateSalonPageProps) {
   const currentMeta = STEP_META[step];
 
   return (
-    <div className="min-h-screen bg-background pb-28 sm:pb-32">
+    <div className="min-h-screen bg-background pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-32">
       {/* Success overlay */}
       <AnimatePresence>
         {success && (
@@ -523,14 +523,14 @@ export function CreateSalonPage(props: CreateSalonPageProps) {
 
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[920px] items-center justify-between px-5 py-4 sm:px-6">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground">
-              <Scissors className="h-4 w-4 text-background" />
+        <div className="mx-auto flex max-w-[920px] items-center justify-between px-3.5 py-3 sm:px-6 sm:py-4">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-foreground sm:h-8 sm:w-8">
+              <Scissors className="h-3.5 w-3.5 text-background sm:h-4 sm:w-4" />
             </div>
-            <span className="text-sm font-semibold tracking-tight">Barber Studio</span>
+            <span className="text-[13px] font-semibold tracking-tight sm:text-sm">Barber Studio</span>
           </div>
-          <span className="text-xs font-medium tabular-nums text-muted-foreground">
+          <span className="text-[11px] font-medium tabular-nums text-muted-foreground sm:text-xs">
             <span className="text-foreground">{step + 1}</span>
             <span className="opacity-50"> / {TOTAL_STEPS}</span>
           </span>
@@ -554,9 +554,9 @@ export function CreateSalonPage(props: CreateSalonPageProps) {
         />
       </header>
 
-      <main className="mx-auto max-w-[920px] px-4 pt-8 sm:px-6 sm:pt-14">
+      <main className="mx-auto max-w-[920px] px-3.5 pt-5 sm:px-6 sm:pt-14">
         {/* Animated hero — changes per step */}
-        <div className="mb-7 overflow-hidden text-center sm:mb-10">
+        <div className="mb-5 overflow-hidden text-center sm:mb-10">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={`hero-${step}`}
@@ -566,16 +566,16 @@ export function CreateSalonPage(props: CreateSalonPageProps) {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
             >
-              <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-background">
-                  <currentMeta.icon className="h-2.5 w-2.5" />
+              <div className="mb-2.5 inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground sm:mb-3 sm:px-2.5 sm:py-1 sm:text-[10px]">
+                <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-foreground text-background sm:h-4 sm:w-4">
+                  <currentMeta.icon className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
                 </span>
                 {currentMeta.group} · Qadam {step + 1}
               </div>
-              <h1 className="text-[26px] font-semibold leading-[1.1] tracking-tight text-foreground sm:text-5xl">
+              <h1 className="text-[22px] font-semibold leading-[1.15] tracking-tight text-foreground sm:text-5xl">
                 {currentMeta.title}
               </h1>
-              <p className="mx-auto mt-2.5 max-w-[520px] px-2 text-[13px] leading-snug text-muted-foreground sm:mt-3 sm:px-0 sm:text-base">
+              <p className="mx-auto mt-2 max-w-[520px] px-1 text-[12.5px] leading-snug text-muted-foreground sm:mt-3 sm:px-0 sm:text-base">
                 {currentMeta.subtitle}
               </p>
             </motion.div>
@@ -590,7 +590,7 @@ export function CreateSalonPage(props: CreateSalonPageProps) {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: direction > 0 ? -60 : 60 }}
             transition={{ duration: 0.36, ease: [0.4, 0, 0.2, 1] }}
-            className="space-y-5 sm:space-y-6"
+            className="space-y-4 sm:space-y-6"
           >
             {step === 0 && (
               <SalonInfoStep
@@ -652,15 +652,16 @@ export function CreateSalonPage(props: CreateSalonPageProps) {
       </main>
 
       {/* Sticky bottom action bar */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[920px] items-center justify-between gap-2 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:gap-3 sm:px-6 sm:py-4">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-[920px] items-center justify-between gap-2 px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] sm:gap-3 sm:px-6 sm:py-4">
           <button
             onClick={goBack}
             disabled={step === 0 || submitting}
             className={cn(
-              "inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl border border-border bg-background px-3.5 text-sm font-medium text-foreground transition-[var(--transition-smooth)] sm:h-11 sm:px-4",
+              "inline-flex h-11 w-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-border bg-background text-sm font-medium text-foreground transition-[var(--transition-smooth)] sm:h-11 sm:w-auto sm:px-4",
               step === 0 ? "cursor-not-allowed opacity-40" : "hover:bg-muted active:scale-[0.98]",
             )}
+            aria-label="Orqaga"
           >
             <ArrowLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Orqaga</span>
@@ -688,7 +689,7 @@ export function CreateSalonPage(props: CreateSalonPageProps) {
               onClick={goNext}
               disabled={!canNext}
               className={cn(
-                "group inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-[var(--transition-smooth)] sm:h-11 sm:flex-none sm:min-w-[170px]",
+                "group inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl px-4 text-[13px] font-semibold transition-[var(--transition-smooth)] sm:h-11 sm:flex-none sm:min-w-[170px] sm:text-sm",
                 canNext
                   ? "bg-foreground text-background hover:scale-[1.02] active:scale-[0.98]"
                   : "cursor-not-allowed bg-muted text-muted-foreground",
@@ -702,7 +703,7 @@ export function CreateSalonPage(props: CreateSalonPageProps) {
               disabled={!allValid || submitting}
               onClick={handleSubmit}
               className={cn(
-                "inline-flex h-12 flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl px-5 text-sm font-semibold transition-[var(--transition-smooth)] sm:h-11 sm:flex-none sm:min-w-[170px]",
+                "inline-flex h-11 flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl px-4 text-[13px] font-semibold transition-[var(--transition-smooth)] sm:h-11 sm:flex-none sm:min-w-[170px] sm:text-sm",
                 allValid && !submitting
                   ? "bg-foreground text-background hover:scale-[1.02] active:scale-[0.98]"
                   : "cursor-not-allowed bg-muted text-muted-foreground",
@@ -789,7 +790,7 @@ function SalonLocationStep(props: {
       description="Mijozlar sizni topa olishi uchun aniq manzil."
     >
       {/* Map preview on top — large, visual, premium */}
-      <div className="relative h-52 overflow-hidden rounded-2xl border border-border bg-muted/30 sm:h-60">
+      <div className="relative h-40 overflow-hidden rounded-2xl border border-border bg-muted/30 sm:h-60">
         {/* grid */}
         <div
           className="absolute inset-0 opacity-60"
@@ -915,7 +916,7 @@ function SalonCoverStep(props: {
         }}
       />
       {props.cover ? (
-        <div className="group relative h-56 w-full overflow-hidden rounded-2xl border border-border bg-muted sm:h-72">
+        <div className="group relative h-44 w-full overflow-hidden rounded-2xl border border-border bg-muted sm:h-72">
           <img src={props.cover} alt="Salon cover" className="h-full w-full object-cover" />
           <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/70 to-transparent p-3">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-background/90 px-2.5 py-1 text-[11px] font-semibold text-foreground backdrop-blur">
@@ -955,17 +956,17 @@ function SalonCoverStep(props: {
             props.handleCoverFile(e.dataTransfer.files);
           }}
           className={cn(
-            "group flex h-56 w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed bg-muted/30 transition-[var(--transition-smooth)] sm:h-72",
+            "group flex h-44 w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed bg-muted/30 transition-[var(--transition-smooth)] sm:h-72",
             props.coverDrag
               ? "border-foreground bg-muted"
               : "border-border hover:border-foreground/40 hover:bg-muted/50",
           )}
         >
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background shadow-[var(--shadow-soft)] transition-transform group-hover:scale-110">
-            <UploadCloud className="h-5 w-5 text-foreground" />
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-background shadow-[var(--shadow-soft)] transition-transform group-hover:scale-110 sm:h-12 sm:w-12">
+            <UploadCloud className="h-4 w-4 text-foreground sm:h-5 sm:w-5" />
           </div>
-          <span className="text-sm font-semibold text-foreground">Cover rasm yuklash</span>
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-[13px] font-semibold text-foreground sm:text-sm">Cover rasm yuklash</span>
+          <span className="px-3 text-center text-[10.5px] text-muted-foreground sm:text-[11px]">
             Surib qo'ying yoki bosing · PNG, JPG · 10MB gacha
           </span>
         </button>
@@ -998,7 +999,7 @@ function BarberProfileStep(props: {
       title="Barber haqida"
       description="Mijozlar sizni shu ism va rasm bilan ko'radi."
     >
-      <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
+      <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-5">
         <div className="relative">
           <input
             ref={fileRef}
@@ -1013,7 +1014,7 @@ function BarberProfileStep(props: {
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="group relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-2xl border border-border bg-muted text-2xl font-semibold uppercase text-muted-foreground transition-[var(--transition-smooth)] hover:border-foreground"
+            className="group relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-border bg-muted text-2xl font-semibold uppercase text-muted-foreground transition-[var(--transition-smooth)] hover:border-foreground sm:h-28 sm:w-28"
           >
             {props.avatar ? (
               <img src={props.avatar} alt="avatar" className="h-full w-full object-cover" />
@@ -1283,9 +1284,9 @@ function StepIndicator({
   const barberActive = currentGroup === "Barber";
 
   return (
-    <div className="mx-auto max-w-[920px] px-5 pb-5 sm:px-6">
+    <div className="mx-auto max-w-[920px] px-3.5 pb-3.5 sm:px-6 sm:pb-5">
       {/* TWO BIG GROUP ICONS — Salon · line · Barber */}
-      <div className="mb-4 flex items-center justify-center gap-2 sm:gap-4">
+      <div className="mb-3 flex items-center justify-center gap-2 sm:mb-4 sm:gap-4">
         <GroupChip
           icon={Store}
           label="Salon"
@@ -1306,8 +1307,8 @@ function StepIndicator({
       </div>
 
       {/* Progress track with percent */}
-      <div className="mb-3 flex items-center gap-3">
-        <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+      <div className="mb-2.5 flex items-center gap-2.5 sm:mb-3 sm:gap-3">
+        <div className="relative h-1 flex-1 overflow-hidden rounded-full bg-muted sm:h-1.5">
           <motion.div
             className="absolute inset-y-0 left-0 rounded-full bg-foreground"
             initial={false}
@@ -1315,13 +1316,13 @@ function StepIndicator({
             transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
           />
         </div>
-        <span className="text-[10px] font-semibold uppercase tracking-wider tabular-nums text-muted-foreground">
+        <span className="text-[9px] font-semibold uppercase tracking-wider tabular-nums text-muted-foreground sm:text-[10px]">
           {Math.round(progress)}%
         </span>
       </div>
 
       {/* Sub-step dots */}
-      <div className="-mx-1 flex items-center gap-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="-mx-1 flex items-center justify-center gap-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {STEP_META.map((meta, i) => {
           const Icon = meta.icon;
           const done = i < step;
@@ -1336,7 +1337,7 @@ function StepIndicator({
                 onClick={() => reachable && onJump(i)}
                 disabled={!reachable}
                 className={cn(
-                  "group relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold transition-[var(--transition-smooth)]",
+                  "group relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold transition-[var(--transition-smooth)] sm:h-8 sm:w-8",
                   done
                     ? "border-foreground bg-foreground text-background"
                     : active
@@ -1347,7 +1348,7 @@ function StepIndicator({
                 )}
                 aria-label={`${meta.short} qadami`}
               >
-                {done ? <Check className="h-3.5 w-3.5" /> : <Icon className="h-3.5 w-3.5" />}
+                {done ? <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> : <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
                 {active && (
                   <motion.span
                     layoutId="active-ring"
@@ -1445,21 +1446,21 @@ function Section({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.4 }}
-      className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-7"
+      className="rounded-2xl border border-border bg-card p-3.5 shadow-[var(--shadow-card)] sm:p-7"
     >
-      <div className="mb-5 flex items-start gap-3.5">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-foreground text-background">
+      <div className="mb-4 flex items-start gap-3 sm:mb-5 sm:gap-3.5">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-foreground text-background sm:h-10 sm:w-10">
           {icon}
         </div>
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <div className="min-w-0 flex-1">
+          <div className="text-[9px] font-semibold uppercase tracking-[0.16em] text-muted-foreground sm:text-[10px] sm:tracking-[0.18em]">
             {label}
           </div>
-          <h2 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">{title}</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">{description}</p>
+          <h2 className="text-[15px] font-semibold leading-tight tracking-tight text-foreground sm:text-lg">{title}</h2>
+          <p className="mt-0.5 text-[11.5px] leading-snug text-muted-foreground sm:text-sm">{description}</p>
         </div>
       </div>
-      <div className="space-y-4">{children}</div>
+      <div className="space-y-3.5 sm:space-y-4">{children}</div>
     </motion.section>
   );
 }
