@@ -150,3 +150,34 @@ class BarberWorkingHours(models.Model):
     class Meta:
         unique_together = [["profile", "weekday"]]
         ordering = ["weekday"]
+
+
+class BarberSignupSnapshot(models.Model):
+    """
+    Barber ro‘yxatdan o‘tish paytidagi (signup) ma’lumotlarining snapshot’i.
+    Admin panelda tekshirish va support uchun ishlatiladi.
+    """
+
+    barber = models.OneToOneField(
+        Barber,
+        on_delete=models.CASCADE,
+        related_name="signup_snapshot",
+    )
+
+    has_salon = models.BooleanField(default=False)
+    shop_name = models.CharField(max_length=255, blank=True, default="")
+    age = models.PositiveSmallIntegerField(null=True, blank=True)
+    address = models.CharField(max_length=255, blank=True, default="")
+    staff_count_at_signup = models.PositiveSmallIntegerField(null=True, blank=True)
+
+    # Keep whatever frontend/backend sent at signup time (future-proof).
+    raw_payload = models.JSONField(default=dict, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"BarberSignupSnapshot({self.barber_id})"

@@ -156,6 +156,7 @@ class AdminBarberSerializer(serializers.ModelSerializer):
     owned_salons_count = serializers.SerializerMethodField()
     latitude = serializers.SerializerMethodField()
     longitude = serializers.SerializerMethodField()
+    signup_snapshot = serializers.SerializerMethodField()
 
     class Meta:
         model = Barber
@@ -172,6 +173,10 @@ class AdminBarberSerializer(serializers.ModelSerializer):
             "is_active",
             "date_joined",
             "owned_salons_count",
+            "work_mode",
+            "onboarding_flow",
+            "onboarding_completed_at",
+            "signup_snapshot",
         )
         read_only_fields = (
             "id",
@@ -182,6 +187,10 @@ class AdminBarberSerializer(serializers.ModelSerializer):
             "latitude",
             "longitude",
             "owned_salons_count",
+            "work_mode",
+            "onboarding_flow",
+            "onboarding_completed_at",
+            "signup_snapshot",
         )
 
     def get_region_label(self, obj: Barber) -> str:
@@ -203,6 +212,22 @@ class AdminBarberSerializer(serializers.ModelSerializer):
 
     def get_owned_salons_count(self, obj: Barber) -> int:
         return obj.owned_salons.count()
+
+    def get_signup_snapshot(self, obj: Barber):
+        snap = getattr(obj, "signup_snapshot", None)
+        if not snap:
+            return None
+        # Keep it simple and explicit; raw_payload is still available.
+        return {
+            "has_salon": bool(getattr(snap, "has_salon", False)),
+            "shop_name": getattr(snap, "shop_name", "") or "",
+            "age": getattr(snap, "age", None),
+            "address": getattr(snap, "address", "") or "",
+            "staff_count_at_signup": getattr(snap, "staff_count_at_signup", None),
+            "raw_payload": getattr(snap, "raw_payload", {}) or {},
+            "created_at": getattr(snap, "created_at", None),
+            "updated_at": getattr(snap, "updated_at", None),
+        }
 
 
 class AdminBarberUpdateSerializer(serializers.ModelSerializer):

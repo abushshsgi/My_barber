@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
   fetchAdminUsers,
   patchAdminUser,
   type AdminUserRow,
@@ -39,18 +47,33 @@ export function AdminUserManagement({
   const qc = useQueryClient();
   const [userQ, setUserQ] = useState("");
   const [regionFilter, setRegionFilter] = useState<string>("");
+  const [page, setPage] = useState(1);
 
   const { data: usersRes, isLoading } = useQuery({
-    queryKey: ["admin", "users", "clients", userQ, regionFilter],
+    queryKey: ["admin", "users", "clients", userQ, regionFilter, page],
     queryFn: () =>
       fetchAdminUsers({
         role: "USER",
         q: userQ || undefined,
         region: regionFilter || undefined,
+        page,
       }),
   });
 
   const users = usersRes?.results ?? [];
+  const count = usersRes?.count ?? users.length;
+  const pageSize = useMemo(() => {
+    if (!count) return users.length || 0;
+    if (users.length && count > users.length) return users.length;
+    return users.length;
+  }, [count, users.length]);
+  const totalPages = pageSize ? Math.max(1, Math.ceil(count / pageSize)) : 1;
+  const canPrev = page > 1;
+  const canNext = page < totalPages && Boolean(usersRes?.next);
+
+  useEffect(() => {
+    setPage(1);
+  }, [userQ, regionFilter]);
 
   const patchUser = useMutation({
     mutationFn: (args: { id: number; body: Parameters<typeof patchAdminUser>[1] }) =>
@@ -159,6 +182,48 @@ export function AdminUserManagement({
           </Card>
         )}
       </div>
+
+      {!isLoading && totalPages > 1 && (
+        <div className="px-4 pb-10">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (canPrev) setPage((p) => Math.max(1, p - 1));
+                  }}
+                  aria-disabled={!canPrev}
+                  className={!canPrev ? "pointer-events-none opacity-40" : ""}
+                />
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink
+                  href="#"
+                  onClick={(e) => e.preventDefault()}
+                  isActive
+                  size="default"
+                  className="tabular-nums"
+                >
+                  {page} / {totalPages}
+                </PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (canNext) setPage((p) => Math.min(totalPages, p + 1));
+                  }}
+                  aria-disabled={!canNext}
+                  className={!canNext ? "pointer-events-none opacity-40" : ""}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </div>
   );
 }

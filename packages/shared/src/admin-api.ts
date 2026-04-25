@@ -91,6 +91,19 @@ export type AdminBarberRow = {
   is_active: boolean;
   date_joined: string;
   owned_salons_count: number;
+  work_mode?: string;
+  onboarding_flow?: string;
+  onboarding_completed_at?: string | null;
+  signup_snapshot?: {
+    has_salon: boolean;
+    shop_name: string;
+    age: number | null;
+    address: string;
+    staff_count_at_signup: number | null;
+    raw_payload: Record<string, unknown>;
+    created_at: string | null;
+    updated_at: string | null;
+  } | null;
 };
 
 export async function fetchAdminStats(): Promise<AdminStats> {
@@ -160,15 +173,19 @@ export async function deleteAdminSalon(id: number): Promise<void> {
 export async function fetchAdminBarbers(params?: {
   region?: string;
   q?: string;
-}): Promise<{ results: AdminBarberRow[]; count?: number }> {
+  page?: number;
+}): Promise<{ results: AdminBarberRow[]; count?: number; next?: string | null }> {
   const sp = new URLSearchParams();
   if (params?.region) sp.set("region", params.region);
   if (params?.q) sp.set("q", params.q);
+  if (params?.page) sp.set("page", String(params.page));
   const q = sp.toString();
   const res = await apiFetch(q ? `/api/v1/admin/barbers/?${q}` : "/api/v1/admin/barbers/");
   const j = await res.json();
   if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
-  return Array.isArray(j) ? { results: j } : { results: j.results || [], count: j.count };
+  return Array.isArray(j)
+    ? { results: j }
+    : { results: j.results || [], count: j.count, next: j.next };
 }
 
 export async function patchAdminBarber(

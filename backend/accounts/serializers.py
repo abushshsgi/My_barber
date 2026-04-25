@@ -3,7 +3,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from barbers.models import Barber, BarberProfile
+from barbers.models import Barber, BarberProfile, BarberSignupSnapshot
 
 from .models import User
 from .uz_regions import UzRegion
@@ -188,6 +188,8 @@ class BarberSignupSerializer(serializers.Serializer):
         return attrs
 
     def create(self, validated_data):
+        # Save the original payload for admin/support (before we pop fields).
+        raw_payload = dict(validated_data)
         pwd = validated_data.pop("password")
         email = validated_data.pop("email")
         phone = validated_data.pop("phone", "") or None
@@ -229,6 +231,17 @@ class BarberSignupSerializer(serializers.Serializer):
                     "latitude": latitude,
                     "longitude": longitude,
                     "location_text": address,
+                },
+            )
+            BarberSignupSnapshot.objects.update_or_create(
+                barber=barber,
+                defaults={
+                    "has_salon": bool(has_salon),
+                    "shop_name": shop_name,
+                    "age": age,
+                    "address": address,
+                    "staff_count_at_signup": staff_count,
+                    "raw_payload": raw_payload,
                 },
             )
         return barber

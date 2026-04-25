@@ -202,7 +202,9 @@ class AdminBarberListView(generics.ListAPIView):
     serializer_class = AdminBarberSerializer
 
     def get_queryset(self):
-        qs = Barber.objects.select_related("profile").order_by("-date_joined")
+        qs = Barber.objects.select_related("profile", "signup_snapshot").order_by(
+            "-date_joined"
+        )
         region = self.request.query_params.get("region")
         if region == "__UNSET__":
             qs = qs.filter(region="")
