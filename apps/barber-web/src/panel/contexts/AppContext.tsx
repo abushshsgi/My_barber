@@ -559,6 +559,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     void loadBookings();
     void loadNotifications();
     void loadChatConversations();
+    // Keep salon list warm so mode switching is always possible.
+    void loadMySalons();
   }, [
     loadMe,
     loadProfile,
@@ -567,6 +569,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     loadBookings,
     loadNotifications,
     loadChatConversations,
+    loadMySalons,
   ]);
 
   // Dependent loads (need me / selectedSalonId / viewMode)
@@ -575,15 +578,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [me?.id, loadBarberReviews]);
 
   useEffect(() => {
-    if (viewMode === "salon") {
-      void loadMySalons();
-    } else {
-      setSalons([]);
-      setSelectedSalonId(null);
+    // In independent mode we still keep salons in state so user can switch back quickly.
+    if (viewMode !== "salon") {
       setSalonView(null);
       setSalonReviews([]);
     }
-  }, [viewMode, loadMySalons]);
+  }, [viewMode]);
 
   useEffect(() => {
     if (viewMode === "salon") {

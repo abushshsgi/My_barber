@@ -14,6 +14,7 @@ import {
 import { NavLink } from "@/panel/components/NavLink";
 import { useApp } from "@/panel/contexts/AppContext";
 import { useBarberOnboardingStatus } from "@/hooks/useBarberOnboardingStatus";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -52,6 +53,8 @@ const onboardingItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const router = useRouter();
+  const pathname = usePathname() ?? "/";
   const { viewMode, setViewMode, salons } = useApp();
   const { data: onboarding, isLoading } = useBarberOnboardingStatus(true);
   const isComplete = Boolean(onboarding?.is_complete);
@@ -108,7 +111,12 @@ export function AppSidebar() {
           {!collapsed && <Separator className="mb-3" />}
           <button
             type="button"
-            onClick={() => setViewMode(viewMode === "independent" ? "salon" : "independent")}
+            onClick={() => {
+              const nextMode = viewMode === "independent" ? "salon" : "independent";
+              setViewMode(nextMode);
+              const nextPath = nextMode === "salon" ? "/salon-view" : "/";
+              if (pathname !== nextPath) router.push(nextPath);
+            }}
             className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity justify-center"
           >
             <ArrowLeftRight className="h-4 w-4" />

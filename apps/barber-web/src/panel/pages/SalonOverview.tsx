@@ -1,6 +1,8 @@
 "use client";
 import { useApp } from "@/panel/contexts/AppContext";
 import { Star, MapPin, Phone } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 function Stars({ count }: { count: number }) {
   return (
@@ -21,6 +23,14 @@ export default function SalonOverview() {
         <h1 className="text-2xl font-bold tracking-tight mb-4">Salon View</h1>
         <div className="glass-card p-8 text-center">
           <p className="text-muted-foreground">No salon connected yet.</p>
+          <div className="mt-5 flex flex-col sm:flex-row gap-2 justify-center">
+            <Button asChild className="rounded-xl">
+              <Link href="/salon/join">Join a salon</Link>
+            </Button>
+            <Button asChild variant="outline" className="rounded-xl">
+              <Link href="/salon/create">Create a salon</Link>
+            </Button>
+          </div>
         </div>
       </div>
     );

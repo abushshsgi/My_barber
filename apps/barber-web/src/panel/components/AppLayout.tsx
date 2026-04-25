@@ -5,10 +5,29 @@ import { AppSidebar } from "@/panel/components/AppSidebar";
 import { Bell } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/panel/contexts/AppContext";
+import { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { notifications } = useApp();
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const router = useRouter();
+  const pathname = usePathname() ?? "/";
+  const { viewMode } = useApp();
+
+  useEffect(() => {
+    // Keep URL consistent with selected view mode.
+    if (viewMode === "independent" && pathname.startsWith("/salon-view")) {
+      router.replace("/");
+      return;
+    }
+    if (viewMode === "salon") {
+      const independentOnlyPrefixes = ["/bookings", "/clients", "/chat", "/reviews"];
+      if (independentOnlyPrefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+        router.replace("/salon-view");
+      }
+    }
+  }, [viewMode, pathname, router]);
 
   return (
     <SidebarProvider>
