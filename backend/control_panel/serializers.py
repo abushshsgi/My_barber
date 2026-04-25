@@ -48,8 +48,11 @@ def salon_schedule_summary(obj: Salon) -> str:
             ]
             parts.append("; ".join(bits))
     if closed:
-        cnames = ", ".join(_WEEKDAY_ABBREV[c] for c in sorted(closed))
-        parts.append(f"dam: {cnames}")
+        # Guard against bad data (e.g. 7/-1) so admin stats never 500s.
+        valid_closed = [c for c in sorted(closed) if isinstance(c, int) and 0 <= c < len(_WEEKDAY_ABBREV)]
+        if valid_closed:
+            cnames = ", ".join(_WEEKDAY_ABBREV[c] for c in valid_closed)
+            parts.append(f"dam: {cnames}")
     return " · ".join(parts)
 
 
