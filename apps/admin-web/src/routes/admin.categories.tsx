@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { fetchCategories } from "@/lib/mock-api-extra";
+import { fetchCategories } from "@/lib/admin-api";
 
 export const Route = createFileRoute("/admin/categories")({ component: CategoriesPage });
 

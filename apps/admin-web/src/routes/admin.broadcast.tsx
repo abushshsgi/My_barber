@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Plus, Megaphone } from "lucide-react";
 import { toast } from "sonner";
-import { fetchBroadcasts, createBroadcast } from "@/lib/mock-api-extra";
+import { fetchBroadcasts, createBroadcast } from "@/lib/admin-api";
 import { TableSkeleton } from "@/components/admin/Skeletons";
 import { EmptyState } from "@/components/admin/EmptyState";
 import { Button } from "@/components/ui/button";

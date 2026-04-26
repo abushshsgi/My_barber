@@ -91,9 +91,32 @@ class Service(models.Model):
     price = models.DecimalField(max_digits=12, decimal_places=2)
     duration_minutes = models.PositiveIntegerField()
     is_active = models.BooleanField(default=True)
+    # Admin panel categories (M2M)
+    categories = models.ManyToManyField(
+        "salons.Category",
+        blank=True,
+        related_name="services",
+    )
 
     class Meta:
         ordering = ["name"]
+
+
+class Category(models.Model):
+    """Admin-managed service categories (shared across salons + independent barbers)."""
+
+    name = models.CharField(max_length=120, unique=True)
+    icon = models.CharField(max_length=16, blank=True, default="")
+    order = models.PositiveIntegerField(default=0, db_index=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["order", "name"]
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class SalonMembership(models.Model):

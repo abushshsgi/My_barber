@@ -1,26 +1,48 @@
-from django.db.models import Avg, Q
+from django.db.models import Avg, Q, Sum
 from django.utils import timezone
 from rest_framework import generics
+from rest_framework import status as http_status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import NotFound
 
-from accounts.models import User
+from accounts.models import AdminAccount, User
 from accounts.uz_regions import UzRegion
-from barbers.models import Barber
+from barbers.models import Barber, BarberService
 from accounts.permissions import IsAdmin
-from bookings.models import Booking, Review
+from bookings.models import Booking, BookingLine, Review
 from bookings.serializers import BookingSerializer
-from salons.models import Salon
+from salons.models import Category, Salon, Service
 
 from .serializers import (
+    AdminAccountSerializer,
+    AdminAccountWriteSerializer,
     AdminBarberSerializer,
     AdminBarberUpdateSerializer,
+    AdminBroadcastCampaignSerializer,
+    AdminCategorySerializer,
+    AdminCategoryWriteSerializer,
+    AdminFinanceTransactionSerializer,
+    AdminPayoutSerializer,
     AdminReviewListSerializer,
     AdminSalonSerializer,
     AdminSalonUpdateSerializer,
+    AdminSupportReplySerializer,
+    AdminSupportTicketDetailSerializer,
+    AdminSupportTicketSerializer,
     AdminUserSerializer,
     AdminUserUpdateSerializer,
+    AdminAuditLogSerializer,
     salon_schedule_summary,
+)
+
+from .models import (
+    AuditLog,
+    BroadcastCampaign,
+    FinanceTransaction,
+    Payout,
+    SupportReply,
+    SupportTicket,
 )
 
 
@@ -157,6 +179,23 @@ class AdminUserDetailView(generics.RetrieveUpdateAPIView):
             return AdminUserUpdateSerializer
         return AdminUserSerializer
 
+    def perform_update(self, serializer):
+        obj = self.get_object()
+        before = {
+            "full_name": obj.full_name,
+            "phone": obj.phone,
+            "region": obj.region,
+            "is_active": obj.is_active,
+        }
+        updated = serializer.save()
+        after = {
+            "full_name": updated.full_name,
+            "phone": updated.phone,
+            "region": updated.region,
+            "is_active": updated.is_active,
+        }
+        _audit(self.request, "update", "user", updated.id, updated.email, before=before, after=after)
+
 
 class AdminSalonListView(generics.ListAPIView):
     permission_classes = [IsAdmin]
@@ -196,6 +235,18 @@ class AdminSalonDetailView(generics.RetrieveUpdateDestroyAPIView):
             return AdminSalonUpdateSerializer
         return AdminSalonSerializer
 
+    def perform_update(self, serializer):
+        obj = self.get_object()
+        before = {"name": obj.name, "address": obj.address, "phone": obj.phone, "is_published": obj.is_published, "premium": obj.premium}
+        updated = serializer.save()
+        after = {"name": updated.name, "address": updated.address, "phone": updated.phone, "is_published": updated.is_published, "premium": updated.premium}
+        _audit(self.request, "update", "salon", updated.id, updated.name, before=before, after=after)
+
+    def perform_destroy(self, instance):
+        before = {"name": instance.name}
+        _audit(self.request, "delete", "salon", instance.id, instance.name, before=before, after={})
+        instance.delete()
+
 
 class AdminBarberListView(generics.ListAPIView):
     permission_classes = [IsAdmin]
@@ -229,6 +280,18 @@ class AdminBarberDetailView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method in ("PATCH", "PUT"):
             return AdminBarberUpdateSerializer
         return AdminBarberSerializer
+
+    def perform_update(self, serializer):
+        obj = self.get_object()
+        before = {"full_name": obj.full_name, "phone": obj.phone, "region": obj.region, "is_active": obj.is_active}
+        updated = serializer.save()
+        after = {"full_name": updated.full_name, "phone": updated.phone, "region": updated.region, "is_active": updated.is_active}
+        _audit(self.request, "update", "barber", updated.id, updated.email, before=before, after=after)
+
+    def perform_destroy(self, instance):
+        before = {"email": instance.email, "full_name": instance.full_name}
+        _audit(self.request, "delete", "barber", instance.id, instance.email, before=before, after={})
+        instance.delete()
 
 
 class AdminBookingListView(generics.ListAPIView):
@@ -278,3 +341,397 @@ class AdminReviewListView(generics.ListAPIView):
             except ValueError:
                 pass
         return qs.order_by("-created_at")
+
+
+def _audit(request, action: str, target_type: str, target_id: str = "", target_name: str = "", before=None, after=None):
+    try:
+        admin = getattr(request, "user", None)
+        admin_id = getattr(admin, "admin_id", None) or getattr(admin, "id", None)
+        if not admin_id:
+            return
+        AuditLog.objects.create(
+            admin_id=admin_id,
+            action=action,
+            target_type=target_type,
+            target_id=str(target_id or ""),
+            target_name=target_name or "",
+            before_json=before or {},
+            after_json=after or {},
+            ip=request.META.get("REMOTE_ADDR", "")[:64],
+            user_agent=(request.META.get("HTTP_USER_AGENT", "") or "")[:255],
+        )
+    except Exception:
+        return
+
+
+class AdminCategoryListCreateView(generics.ListCreateAPIView):
+    permission_classes = [IsAdmin]
+    queryset = Category.objects.all().order_by("order", "name")
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return AdminCategoryWriteSerializer
+        return AdminCategorySerializer
+
+    def perform_create(self, serializer):
+        obj = serializer.save()
+        _audit(self.request, "create", "category", obj.id, obj.name, before={}, after={"name": obj.name})
+
+
+class AdminCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAdmin]
+    queryset = Category.objects.all()
+
+    def get_serializer_class(self):
+        if self.request.method in ("PATCH", "PUT"):
+            return AdminCategoryWriteSerializer
+        return AdminCategorySerializer
+
+    def perform_update(self, serializer):
+        obj = self.get_object()
+        before = {"name": obj.name, "icon": obj.icon, "order": obj.order, "is_active": obj.is_active}
+        updated = serializer.save()
+        after = {"name": updated.name, "icon": updated.icon, "order": updated.order, "is_active": updated.is_active}
+        _audit(self.request, "update", "category", updated.id, updated.name, before=before, after=after)
+
+    def perform_destroy(self, instance):
+        before = {"name": instance.name}
+        _audit(self.request, "delete", "category", instance.id, instance.name, before=before, after={})
+        instance.delete()
+
+
+class AdminServicesView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        kind = request.query_params.get("type", "").strip().lower()
+        q = request.query_params.get("q", "").strip()
+        cat = request.query_params.get("category")
+
+        out = []
+
+        def cat_names(obj) -> str:
+            names = list(obj.categories.order_by("order", "name").values_list("name", flat=True))
+            return ", ".join(names)
+
+        if kind in ("", "salon", "both"):
+            qs = Service.objects.select_related("salon").prefetch_related("categories").all()
+            if q:
+                qs = qs.filter(Q(name__icontains=q) | Q(salon__name__icontains=q))
+            if cat and str(cat).isdigit():
+                qs = qs.filter(categories__id=int(cat))
+            for s in qs.order_by("name")[:2000]:
+                out.append(
+                    {
+                        "id": str(s.id),
+                        "type": "salon",
+                        "name": s.name,
+                        "category_ids": list(s.categories.values_list("id", flat=True)),
+                        "category_names": cat_names(s),
+                        "price": s.price,
+                        "duration_min": s.duration_minutes,
+                        "bookings_count": BookingLine.objects.filter(salon_service_id=s.id).count(),
+                        "is_active": s.is_active,
+                    }
+                )
+
+        if kind in ("", "independent", "both"):
+            qs = BarberService.objects.select_related("profile", "profile__barber").prefetch_related("categories").all()
+            if q:
+                qs = qs.filter(Q(name__icontains=q) | Q(profile__barber__email__icontains=q) | Q(profile__barber__full_name__icontains=q))
+            if cat and str(cat).isdigit():
+                qs = qs.filter(categories__id=int(cat))
+            for s in qs.order_by("name")[:2000]:
+                out.append(
+                    {
+                        "id": str(s.id),
+                        "type": "independent",
+                        "name": s.name,
+                        "category_ids": list(s.categories.values_list("id", flat=True)),
+                        "category_names": cat_names(s),
+                        "price": s.price,
+                        "duration_min": s.duration_minutes,
+                        "bookings_count": BookingLine.objects.filter(barber_service_id=s.id).count(),
+                        "is_active": s.is_active,
+                    }
+                )
+
+        return Response(out)
+
+    def post(self, request):
+        data = request.data or {}
+        kind = str(data.get("type", "salon")).strip().lower()
+        name = str(data.get("name", "")).strip()
+        if not name:
+            return Response({"detail": "name kerak"}, status=http_status.HTTP_400_BAD_REQUEST)
+        price = data.get("price", 0)
+        duration = int(data.get("duration_min") or 30)
+        is_active = bool(data.get("is_active", True))
+        category_ids = data.get("category_ids") or []
+
+        if kind == "salon":
+            salon_id = data.get("salon_id")
+            if not salon_id:
+                return Response({"detail": "salon_id kerak"}, status=http_status.HTTP_400_BAD_REQUEST)
+            salon = Salon.objects.filter(id=salon_id).first()
+            if not salon:
+                return Response({"detail": "Salon topilmadi"}, status=http_status.HTTP_404_NOT_FOUND)
+            obj = Service.objects.create(salon=salon, name=name, price=price, duration_minutes=duration, is_active=is_active)
+        else:
+            barber_id = data.get("barber_id")
+            if not barber_id:
+                return Response({"detail": "barber_id kerak"}, status=http_status.HTTP_400_BAD_REQUEST)
+            barber = Barber.objects.filter(id=barber_id).first()
+            if not barber or not getattr(barber, "profile", None):
+                return Response({"detail": "Barber/profile topilmadi"}, status=http_status.HTTP_404_NOT_FOUND)
+            obj = BarberService.objects.create(profile=barber.profile, name=name, price=price, duration_minutes=duration, is_active=is_active)
+
+        if category_ids:
+            obj.categories.set(Category.objects.filter(id__in=category_ids))
+
+        _audit(request, "create", "service", obj.id, name, before={}, after={"name": name, "type": kind})
+        return Response({"ok": True, "id": str(obj.id)})
+
+
+class AdminServiceDetailView(APIView):
+    permission_classes = [IsAdmin]
+
+    def patch(self, request, pk: str):
+        kind = request.query_params.get("type", "").strip().lower()
+        data = request.data or {}
+        category_ids = data.get("category_ids")
+
+        if kind == "independent":
+            obj = BarberService.objects.filter(id=pk).first()
+        else:
+            obj = Service.objects.filter(id=pk).first()
+
+        if not obj:
+            raise NotFound()
+
+        before = {
+            "name": obj.name,
+            "price": str(obj.price),
+            "duration_minutes": getattr(obj, "duration_minutes", getattr(obj, "duration_minutes", None)),
+            "is_active": obj.is_active,
+            "category_ids": list(obj.categories.values_list("id", flat=True)),
+        }
+
+        if "name" in data:
+            obj.name = str(data.get("name") or "").strip() or obj.name
+        if "price" in data:
+            obj.price = data.get("price") or obj.price
+        if "duration_min" in data:
+            obj.duration_minutes = int(data.get("duration_min") or obj.duration_minutes)
+        if "is_active" in data:
+            obj.is_active = bool(data.get("is_active"))
+        obj.save()
+
+        if category_ids is not None:
+            obj.categories.set(Category.objects.filter(id__in=category_ids))
+
+        after = {
+            "name": obj.name,
+            "price": str(obj.price),
+            "duration_minutes": obj.duration_minutes,
+            "is_active": obj.is_active,
+            "category_ids": list(obj.categories.values_list("id", flat=True)),
+        }
+        _audit(request, "update", "service", obj.id, obj.name, before=before, after=after)
+        return Response({"ok": True})
+
+    def delete(self, request, pk: str):
+        kind = request.query_params.get("type", "").strip().lower()
+        if kind == "independent":
+            obj = BarberService.objects.filter(id=pk).first()
+        else:
+            obj = Service.objects.filter(id=pk).first()
+        if not obj:
+            raise NotFound()
+        before = {"name": obj.name}
+        _audit(request, "delete", "service", obj.id, obj.name, before=before, after={})
+        obj.delete()
+        return Response(status=http_status.HTTP_204_NO_CONTENT)
+
+
+class AdminFinanceOverviewView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        # MVP: derive from bookings + transactions table
+        completed = Booking.objects.filter(status="completed")
+        revenue_total = completed.aggregate(s=Sum("total_price"))["s"] or 0
+        # Last 7 days buckets
+        today = timezone.localdate()
+        weekly = []
+        for i in range(6, -1, -1):
+            d = today - timezone.timedelta(days=i)
+            s = completed.filter(start_at__date=d).aggregate(s=Sum("total_price"))["s"] or 0
+            weekly.append({"day": d.strftime("%a"), "revenue": float(s)})
+        # Top barbers by completed bookings revenue
+        top_barbers = (
+            completed.values("barber_id", "barber__full_name", "barber__email", "barber__avatar")
+            .annotate(rev=Sum("total_price"))
+            .order_by("-rev")[:5]
+        )
+        trows = []
+        for r in top_barbers:
+            trows.append(
+                {
+                    "id": str(r["barber_id"] or ""),
+                    "name": r["barber__full_name"] or r["barber__email"] or "—",
+                    "avatar": "",
+                    "revenue": float(r["rev"] or 0),
+                }
+            )
+        return Response(
+            {
+                "revenue_total": float(revenue_total),
+                "revenue_week": float(sum(w["revenue"] for w in weekly)),
+                "commission_total": 0,
+                "pending_payouts": float(Payout.objects.filter(status=Payout.Status.PENDING).aggregate(s=Sum("amount"))["s"] or 0),
+                "weekly": weekly,
+                "top_barbers": trows,
+            }
+        )
+
+
+class AdminFinanceTransactionsView(generics.ListAPIView):
+    permission_classes = [IsAdmin]
+    serializer_class = AdminFinanceTransactionSerializer
+    queryset = FinanceTransaction.objects.all()
+
+
+class AdminPayoutsView(generics.ListAPIView):
+    permission_classes = [IsAdmin]
+    serializer_class = AdminPayoutSerializer
+    queryset = Payout.objects.select_related("barber").all()
+
+
+class AdminPayoutMarkPaidView(APIView):
+    permission_classes = [IsAdmin]
+
+    def post(self, request, pk: int):
+        p = Payout.objects.filter(id=pk).first()
+        if not p:
+            raise NotFound()
+        before = {"status": p.status, "amount": str(p.amount)}
+        p.status = Payout.Status.PAID
+        p.paid_at = timezone.now()
+        p.save(update_fields=["status", "paid_at"])
+        _audit(request, "update", "payout", p.id, p.period, before=before, after={"status": p.status})
+        return Response({"ok": True})
+
+
+class AdminAuditLogListView(generics.ListAPIView):
+    permission_classes = [IsAdmin]
+    serializer_class = AdminAuditLogSerializer
+    queryset = AuditLog.objects.select_related("admin").all()
+
+
+class AdminSupportTicketListView(generics.ListAPIView):
+    permission_classes = [IsAdmin]
+    serializer_class = AdminSupportTicketSerializer
+
+    def get_queryset(self):
+        qs = SupportTicket.objects.select_related("assignee", "created_by_user", "created_by_barber").all()
+        st = self.request.query_params.get("status")
+        if st and st != "all":
+            qs = qs.filter(status=st)
+        return qs
+
+
+class AdminSupportTicketDetailView(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsAdmin]
+    queryset = SupportTicket.objects.select_related("assignee", "created_by_user", "created_by_barber").all()
+    serializer_class = AdminSupportTicketDetailSerializer
+
+    def perform_update(self, serializer):
+        obj = self.get_object()
+        before = {"status": obj.status, "priority": obj.priority, "assignee": obj.assignee_id}
+        updated = serializer.save()
+        after = {"status": updated.status, "priority": updated.priority, "assignee": updated.assignee_id}
+        _audit(self.request, "update", "ticket", updated.id, updated.subject, before=before, after=after)
+
+
+class AdminSupportTicketRepliesView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request, pk: int):
+        t = SupportTicket.objects.filter(id=pk).first()
+        if not t:
+            raise NotFound()
+        qs = t.replies.all()
+        ser = AdminSupportReplySerializer(qs, many=True)
+        return Response(ser.data)
+
+    def post(self, request, pk: int):
+        t = SupportTicket.objects.filter(id=pk).first()
+        if not t:
+            raise NotFound()
+        body = str((request.data or {}).get("body", "")).strip()
+        if not body:
+            return Response({"detail": "body kerak"}, status=http_status.HTTP_400_BAD_REQUEST)
+        admin = getattr(request, "user", None)
+        name = getattr(admin, "email", "admin")
+        r = SupportReply.objects.create(ticket=t, author_role=SupportReply.AuthorRole.ADMIN, author_name=name, body=body)
+        t.unread = 0
+        t.save(update_fields=["unread", "updated_at"])
+        _audit(request, "create", "ticket_reply", r.id, t.subject, before={}, after={"ticket": t.id})
+        return Response({"ok": True})
+
+
+class AdminBroadcastListCreateView(generics.ListCreateAPIView):
+    permission_classes = [IsAdmin]
+    serializer_class = AdminBroadcastCampaignSerializer
+    queryset = BroadcastCampaign.objects.select_related("created_by").all()
+
+    def create(self, request, *args, **kwargs):
+        data = request.data or {}
+        title = str(data.get("title", "")).strip()
+        body = str(data.get("body", "")).strip()
+        if not title or not body:
+            return Response({"detail": "title/body kerak"}, status=http_status.HTTP_400_BAD_REQUEST)
+        audience = str(data.get("audience", "all"))
+        channel = str(data.get("channel", "push"))
+        region = str(data.get("region", "") or "")
+        admin = getattr(request, "user", None)
+        admin_id = getattr(admin, "admin_id", None) or getattr(admin, "id", None)
+        camp = BroadcastCampaign.objects.create(
+            created_by_id=admin_id,
+            audience=audience,
+            channel=channel,
+            region=region,
+            title=title,
+            body=body,
+            payload=data.get("payload") or {},
+        )
+        # Dispatch minimal: create Notification rows if needed (future). For now mark counts 0.
+        _audit(request, "create", "broadcast", camp.id, camp.title, before={}, after={"audience": audience})
+        ser = self.get_serializer(camp)
+        return Response(ser.data, status=http_status.HTTP_201_CREATED)
+
+
+class AdminAdminAccountListCreateView(generics.ListCreateAPIView):
+    permission_classes = [IsAdmin]
+    queryset = AdminAccount.objects.all()
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return AdminAccountWriteSerializer
+        return AdminAccountSerializer
+
+
+class AdminAdminAccountDetailView(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsAdmin]
+    queryset = AdminAccount.objects.all()
+    serializer_class = AdminAccountSerializer
+
+    def patch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        before = {"is_active": obj.is_active}
+        if "is_active" in request.data:
+            obj.is_active = bool(request.data.get("is_active"))
+        obj.save(update_fields=["is_active"])
+        _audit(request, "update", "admin_account", obj.id, obj.email, before=before, after={"is_active": obj.is_active})
+        return Response(AdminAccountSerializer(obj).data)

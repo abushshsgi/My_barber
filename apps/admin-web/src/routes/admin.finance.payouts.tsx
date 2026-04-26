@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { fetchPayouts, markPayoutPaid } from "@/lib/mock-api-extra";
+import { fetchPayouts, markPayoutPaid } from "@/lib/admin-api";
 import { TableSkeleton } from "@/components/admin/Skeletons";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/admin/StatusBadge";

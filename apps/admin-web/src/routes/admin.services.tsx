@@ -10,7 +10,7 @@ import {
   updateService,
   deleteService,
   type AdminService,
-} from "@/lib/mock-api-extra";
+} from "@/lib/admin-api";
 import { TableSkeleton } from "@/components/admin/Skeletons";
 import { EmptyState } from "@/components/admin/EmptyState";
 import { StatusBadge } from "@/components/admin/StatusBadge";
@@ -107,7 +107,7 @@ function ServicesPage() {
                 {data.map((s) => (
                   <tr key={s.id} className="hover:bg-background/50">
                     <td className="px-6 py-4 font-medium text-foreground">{s.name}</td>
-                    <td className="px-6 py-4 text-muted-foreground">{s.category_name}</td>
+                    <td className="px-6 py-4 text-muted-foreground">{s.category_names}</td>
                     <td className="px-6 py-4 text-right tabular-nums text-foreground font-medium">
                       {s.price.toLocaleString()} so'm
                     </td>

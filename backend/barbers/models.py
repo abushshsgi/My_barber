@@ -122,6 +122,11 @@ class BarberService(models.Model):
     price = models.DecimalField(max_digits=12, decimal_places=2)
     duration_minutes = models.PositiveIntegerField()
     is_active = models.BooleanField(default=True)
+    categories = models.ManyToManyField(
+        "salons.Category",
+        blank=True,
+        related_name="barber_services",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { fetchTransactions } from "@/lib/mock-api-extra";
+import { fetchTransactions } from "@/lib/admin-api";
 import { TableSkeleton } from "@/components/admin/Skeletons";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { cn } from "@/lib/utils";

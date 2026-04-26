@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { fetchAuditLog } from "@/lib/mock-api-extra";
+import { fetchAuditLog } from "@/lib/admin-api";
 import { TableSkeleton } from "@/components/admin/Skeletons";
 
 export const Route = createFileRoute("/admin/audit")({ component: AuditPage });

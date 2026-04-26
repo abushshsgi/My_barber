@@ -1,10 +1,19 @@
 from rest_framework import serializers
 
-from accounts.models import User
+from accounts.models import AdminAccount, User
 from accounts.uz_regions import UzRegion
 from barbers.models import Barber
 from bookings.models import Review
-from salons.models import Salon
+from salons.models import Category, Salon, Service
+
+from .models import (
+    AuditLog,
+    BroadcastCampaign,
+    FinanceTransaction,
+    Payout,
+    SupportReply,
+    SupportTicket,
+)
 from salons.serializers import SalonHoursSerializer
 
 _WEEKDAY_ABBREV = ("Du", "Se", "Cho", "Pa", "Ju", "Sha", "Ya")
@@ -263,3 +272,199 @@ class AdminReviewListSerializer(serializers.ModelSerializer):
             "author_email",
             "barber_email",
         )
+
+
+class AdminCategorySerializer(serializers.ModelSerializer):
+    services_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Category
+        fields = ("id", "name", "icon", "order", "is_active", "services_count")
+
+    def get_services_count(self, obj: Category) -> int:
+        return obj.services.count() + obj.barber_services.count()
+
+
+class AdminCategoryWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ("name", "icon", "order", "is_active")
+
+
+class AdminServiceListSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    type = serializers.CharField()
+    name = serializers.CharField()
+    category_ids = serializers.ListField(child=serializers.IntegerField(), required=False)
+    category_names = serializers.CharField()
+    price = serializers.DecimalField(max_digits=12, decimal_places=2)
+    duration_min = serializers.IntegerField()
+    bookings_count = serializers.IntegerField()
+    is_active = serializers.BooleanField()
+
+
+class AdminAuditLogSerializer(serializers.ModelSerializer):
+    admin = serializers.CharField(source="admin.email", read_only=True)
+
+    class Meta:
+        model = AuditLog
+        fields = (
+            "id",
+            "admin",
+            "action",
+            "target_type",
+            "target_id",
+            "target_name",
+            "ip",
+            "created_at",
+        )
+
+
+class AdminFinanceTransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FinanceTransaction
+        fields = ("id", "type", "status", "amount", "related_name", "created_at")
+
+
+class AdminPayoutSerializer(serializers.ModelSerializer):
+    barber_name = serializers.CharField(source="barber.full_name", read_only=True)
+    barber_avatar = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Payout
+        fields = ("id", "barber_name", "barber_avatar", "period", "amount", "status", "created_at")
+
+    def get_barber_avatar(self, obj: Payout) -> str:
+        b = obj.barber
+        if not b.avatar:
+            return ""
+        try:
+            return b.avatar.url
+        except Exception:
+            return ""
+
+
+class AdminSupportTicketSerializer(serializers.ModelSerializer):
+    user_name = serializers.SerializerMethodField()
+    user_avatar = serializers.SerializerMethodField()
+    assignee = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SupportTicket
+        fields = (
+            "id",
+            "subject",
+            "status",
+            "priority",
+            "unread",
+            "user_name",
+            "user_avatar",
+            "assignee",
+            "updated_at",
+        )
+
+    def get_user_name(self, obj: SupportTicket) -> str:
+        if obj.created_by_user:
+            return obj.created_by_user.full_name or obj.created_by_user.email
+        if obj.created_by_barber:
+            return obj.created_by_barber.full_name or obj.created_by_barber.email
+        return "—"
+
+    def get_user_avatar(self, obj: SupportTicket) -> str:
+        who = obj.created_by_user or obj.created_by_barber
+        if not who or not getattr(who, "avatar", None):
+            return ""
+        try:
+            return who.avatar.url
+        except Exception:
+            return ""
+
+    def get_assignee(self, obj: SupportTicket) -> str:
+        return obj.assignee.email if obj.assignee else ""
+
+
+class AdminSupportTicketDetailSerializer(serializers.ModelSerializer):
+    user_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SupportTicket
+        fields = (
+            "id",
+            "subject",
+            "body",
+            "category",
+            "status",
+            "priority",
+            "assignee",
+            "user_name",
+            "created_at",
+            "updated_at",
+        )
+
+    def get_user_name(self, obj: SupportTicket) -> str:
+        if obj.created_by_user:
+            return obj.created_by_user.full_name or obj.created_by_user.email
+        if obj.created_by_barber:
+            return obj.created_by_barber.full_name or obj.created_by_barber.email
+        return "—"
+
+
+class AdminSupportReplySerializer(serializers.ModelSerializer):
+    author = serializers.CharField(source="author_name", read_only=True)
+    avatar = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SupportReply
+        fields = ("id", "author_role", "author", "avatar", "body", "created_at")
+
+    def get_avatar(self, obj: SupportReply) -> str:
+        return ""
+
+
+class AdminBroadcastCampaignSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BroadcastCampaign
+        fields = (
+            "id",
+            "audience",
+            "channel",
+            "title",
+            "body",
+            "sent_count",
+            "read_count",
+            "created_at",
+        )
+
+
+class AdminAccountSerializer(serializers.ModelSerializer):
+    avatar = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AdminAccount
+        fields = ("id", "name", "email", "role", "is_active", "created_at", "last_login", "avatar")
+
+    def get_avatar(self, obj: AdminAccount) -> str:
+        return ""
+
+    def get_name(self, obj: AdminAccount) -> str:
+        return obj.email.split("@")[0]
+
+    def get_role(self, obj: AdminAccount) -> str:
+        return "superadmin"
+
+
+class AdminAccountWriteSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=True)
+
+    class Meta:
+        model = AdminAccount
+        fields = ("email", "password", "is_active")
+
+    def create(self, validated_data):
+        pw = validated_data.pop("password")
+        obj = AdminAccount(**validated_data)
+        obj.set_password(pw)
+        obj.save()
+        return obj

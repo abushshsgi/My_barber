@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { TrendingUp, Wallet, Receipt, Users } from "lucide-react";
-import { fetchFinanceSummary } from "@/lib/mock-api-extra";
+import { fetchFinanceSummary } from "@/lib/admin-api";
 import { KPICard } from "@/components/admin/KPICard";
 
 export const Route = createFileRoute("/admin/finance")({ component: FinancePage });

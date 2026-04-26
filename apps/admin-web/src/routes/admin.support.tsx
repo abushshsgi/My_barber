@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { fetchTickets } from "@/lib/mock-api-extra";
+import { fetchTickets } from "@/lib/admin-api";
 import { TableSkeleton } from "@/components/admin/Skeletons";
 import { EmptyState } from "@/components/admin/EmptyState";
 import { cn } from "@/lib/utils";

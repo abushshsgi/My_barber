@@ -9,7 +9,7 @@ import {
   getTicketReplies,
   postTicketReply,
   updateTicket,
-} from "@/lib/mock-api-extra";
+} from "@/lib/admin-api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/admin/StatusBadge";

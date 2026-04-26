@@ -470,3 +470,306 @@ export async function fetchAllBarbersForMap(region?: RegionCode | ""): Promise<A
   const rows = Array.isArray(j) ? j : (j.results ?? []);
   return rows.map(mapBarber);
 }
+
+// -------------------------
+// Extra admin sections (replace mock-api-extra)
+// -------------------------
+
+export type ServiceCategory = { id: string; name: string; icon: string; order: number; services_count: number };
+
+export type AdminService = {
+  id: string;
+  type: "salon" | "independent";
+  name: string;
+  category_ids: string[];
+  category_names: string;
+  price: number;
+  duration_min: number;
+  bookings_count: number;
+  is_active: boolean;
+};
+
+export async function fetchCategories(): Promise<ServiceCategory[]> {
+  const res = await apiFetch("/api/v1/admin/categories/");
+  const j = (await res.json().catch(() => ({}))) as unknown;
+  if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
+  const rows = Array.isArray(j) ? j : (j as { results?: unknown[] }).results || [];
+  return (rows as any[]).map((c) => ({
+    id: String(c.id),
+    name: String(c.name || ""),
+    icon: String(c.icon || ""),
+    order: Number(c.order || 0),
+    services_count: Number(c.services_count || 0),
+  }));
+}
+
+export async function fetchServices(params?: { q?: string; category?: string; type?: string }): Promise<AdminService[]> {
+  const sp = new URLSearchParams();
+  if (params?.q) sp.set("q", params.q);
+  if (params?.category && params.category !== "all") sp.set("category", params.category);
+  if (params?.type) sp.set("type", params.type);
+  const res = await apiFetch(`/api/v1/admin/services/?${sp.toString()}`);
+  const j = (await res.json().catch(() => ({}))) as unknown;
+  if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
+  return (j as any[]).map((s) => ({
+    id: String(s.id),
+    type: (s.type === "independent" ? "independent" : "salon") as "salon" | "independent",
+    name: String(s.name || ""),
+    category_ids: Array.isArray(s.category_ids) ? s.category_ids.map((x: any) => String(x)) : [],
+    category_names: String(s.category_names || ""),
+    price: Number(s.price || 0),
+    duration_min: Number(s.duration_min || 0),
+    bookings_count: Number(s.bookings_count || 0),
+    is_active: !!s.is_active,
+  }));
+}
+
+export async function createService(body: {
+  type: "salon" | "independent";
+  name: string;
+  price: number;
+  duration_min: number;
+  is_active: boolean;
+  category_ids: string[];
+  salon_id?: string;
+  barber_id?: string;
+}): Promise<{ ok: true; id: string }> {
+  const res = await apiFetch("/api/v1/admin/services/", {
+    method: "POST",
+    body: JSON.stringify({
+      ...body,
+      category_ids: body.category_ids.map((x) => Number(x)),
+      salon_id: body.salon_id ? Number(body.salon_id) : undefined,
+      barber_id: body.barber_id ? Number(body.barber_id) : undefined,
+    }),
+  });
+  const j = (await res.json().catch(() => ({}))) as { id?: string; ok?: boolean; detail?: string };
+  if (!res.ok) throw new Error(j.detail || "Xato");
+  return { ok: true as const, id: String(j.id || "") };
+}
+
+export async function updateService(
+  id: string,
+  body: Partial<Pick<AdminService, "name" | "price" | "duration_min" | "is_active" | "category_ids">> & {
+    type?: "salon" | "independent";
+  },
+): Promise<{ ok: true }> {
+  const sp = new URLSearchParams();
+  if (body.type) sp.set("type", body.type);
+  const res = await apiFetch(`/api/v1/admin/services/${id}/?${sp.toString()}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      ...body,
+      category_ids: body.category_ids ? body.category_ids.map((x) => Number(x)) : undefined,
+    }),
+  });
+  const j = (await res.json().catch(() => ({}))) as { detail?: string };
+  if (!res.ok) throw new Error(j.detail || "Xato");
+  return { ok: true as const };
+}
+
+export async function deleteService(id: string, type: "salon" | "independent"): Promise<void> {
+  const sp = new URLSearchParams();
+  sp.set("type", type);
+  const res = await apiFetch(`/api/v1/admin/services/${id}/?${sp.toString()}`, { method: "DELETE" });
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}));
+    throw new Error((j as { detail?: string }).detail || "Xizmat o‘chirilmadi");
+  }
+}
+
+export type AdminFinanceSummary = {
+  revenue_total: number;
+  revenue_week: number;
+  commission_total: number;
+  pending_payouts: number;
+  weekly: Array<{ day: string; revenue: number }>;
+  top_barbers: Array<{ id: string; name: string; avatar: string; revenue: number }>;
+};
+
+export async function fetchFinanceSummary(): Promise<AdminFinanceSummary> {
+  return apiJson<AdminFinanceSummary>("/api/v1/admin/finance/overview/");
+}
+
+export type AdminTransaction = {
+  id: string;
+  type: string;
+  related_name: string;
+  amount: number;
+  status: string;
+  created_at: string;
+};
+
+export async function fetchTransactions(): Promise<AdminTransaction[]> {
+  const res = await apiFetch("/api/v1/admin/finance/transactions/");
+  const j = (await res.json().catch(() => ({}))) as any;
+  if (!res.ok) throw new Error(j.detail || "Xato");
+  const rows = Array.isArray(j) ? j : j.results || [];
+  return rows.map((t: any) => ({
+    id: String(t.id),
+    type: String(t.type || ""),
+    related_name: String(t.related_name || ""),
+    amount: Number(t.amount || 0),
+    status: String(t.status || ""),
+    created_at: String(t.created_at || ""),
+  }));
+}
+
+export type AdminPayout = {
+  id: string;
+  barber_name: string;
+  barber_avatar: string;
+  period: string;
+  amount: number;
+  status: string;
+};
+
+export async function fetchPayouts(): Promise<AdminPayout[]> {
+  const res = await apiFetch("/api/v1/admin/finance/payouts/");
+  const j = (await res.json().catch(() => ({}))) as any;
+  if (!res.ok) throw new Error(j.detail || "Xato");
+  const rows = Array.isArray(j) ? j : j.results || [];
+  return rows.map((p: any) => ({
+    id: String(p.id),
+    barber_name: String(p.barber_name || ""),
+    barber_avatar: String(p.barber_avatar || ""),
+    period: String(p.period || ""),
+    amount: Number(p.amount || 0),
+    status: String(p.status || ""),
+  }));
+}
+
+export async function markPayoutPaid(id: string): Promise<{ ok: true }> {
+  const res = await apiFetch(`/api/v1/admin/finance/payouts/${id}/paid/`, { method: "POST" });
+  const j = (await res.json().catch(() => ({}))) as any;
+  if (!res.ok) throw new Error(j.detail || "Xato");
+  return { ok: true as const };
+}
+
+export type AdminAuditRow = {
+  id: string;
+  admin: string;
+  action: string;
+  target_type: string;
+  target_name: string;
+  ip: string;
+  created_at: string;
+};
+
+export async function fetchAuditLog(): Promise<AdminAuditRow[]> {
+  const res = await apiFetch("/api/v1/admin/audit/");
+  const j = (await res.json().catch(() => ({}))) as any;
+  if (!res.ok) throw new Error(j.detail || "Xato");
+  const rows = Array.isArray(j) ? j : j.results || [];
+  return rows.map((a: any) => ({
+    id: String(a.id),
+    admin: String(a.admin || ""),
+    action: String(a.action || ""),
+    target_type: String(a.target_type || ""),
+    target_name: String(a.target_name || ""),
+    ip: String(a.ip || ""),
+    created_at: String(a.created_at || ""),
+  }));
+}
+
+export type AdminTicket = {
+  id: string;
+  subject: string;
+  status: string;
+  priority: string;
+  unread: number;
+  user_name: string;
+  user_avatar: string;
+  assignee: string;
+  updated_at: string;
+};
+
+export async function fetchTickets(params?: { status?: string }): Promise<AdminTicket[]> {
+  const sp = new URLSearchParams();
+  if (params?.status) sp.set("status", params.status);
+  const res = await apiFetch(`/api/v1/admin/support/tickets/?${sp.toString()}`);
+  const j = (await res.json().catch(() => ({}))) as any;
+  if (!res.ok) throw new Error(j.detail || "Xato");
+  const rows = Array.isArray(j) ? j : j.results || [];
+  return rows.map((t: any) => ({
+    id: String(t.id),
+    subject: String(t.subject || ""),
+    status: String(t.status || ""),
+    priority: String(t.priority || ""),
+    unread: Number(t.unread || 0),
+    user_name: String(t.user_name || ""),
+    user_avatar: String(t.user_avatar || ""),
+    assignee: String(t.assignee || ""),
+    updated_at: String(t.updated_at || ""),
+  }));
+}
+
+export async function getTicketById(id: string): Promise<any> {
+  return apiJson(`/api/v1/admin/support/tickets/${id}/`);
+}
+
+export async function getTicketReplies(id: string): Promise<any[]> {
+  return apiJson(`/api/v1/admin/support/tickets/${id}/replies/`);
+}
+
+export async function updateTicket(id: string, body: any): Promise<any> {
+  return apiJson(`/api/v1/admin/support/tickets/${id}/`, { method: "PATCH", body: JSON.stringify(body) });
+}
+
+export async function postTicketReply(id: string, body: string): Promise<any> {
+  return apiJson(`/api/v1/admin/support/tickets/${id}/replies/`, { method: "POST", body: JSON.stringify({ body }) });
+}
+
+export type AdminBroadcast = {
+  id: string;
+  audience: string;
+  channel: string;
+  title: string;
+  body: string;
+  sent_count: number;
+  read_count: number;
+  created_at: string;
+};
+
+export async function fetchBroadcasts(): Promise<AdminBroadcast[]> {
+  const res = await apiFetch("/api/v1/admin/broadcast/");
+  const j = (await res.json().catch(() => ({}))) as any;
+  if (!res.ok) throw new Error(j.detail || "Xato");
+  const rows = Array.isArray(j) ? j : j.results || [];
+  return rows.map((b: any) => ({
+    id: String(b.id),
+    audience: String(b.audience || ""),
+    channel: String(b.channel || ""),
+    title: String(b.title || ""),
+    body: String(b.body || ""),
+    sent_count: Number(b.sent_count || 0),
+    read_count: Number(b.read_count || 0),
+    created_at: String(b.created_at || ""),
+  }));
+}
+
+export async function createBroadcast(body: Omit<AdminBroadcast, "id" | "sent_count" | "read_count" | "created_at">): Promise<AdminBroadcast> {
+  return apiJson<AdminBroadcast>("/api/v1/admin/broadcast/", { method: "POST", body: JSON.stringify(body) });
+}
+
+export type PlatformAdmin = { id: string; name: string; email: string; role: string; is_active: boolean; last_login: string; avatar: string };
+
+export async function fetchAdmins(): Promise<PlatformAdmin[]> {
+  const res = await apiFetch("/api/v1/admin/admins/");
+  const j = (await res.json().catch(() => ({}))) as any;
+  if (!res.ok) throw new Error(j.detail || "Xato");
+  const rows = Array.isArray(j) ? j : j.results || [];
+  return rows.map((a: any) => ({
+    id: String(a.id),
+    name: String(a.name || ""),
+    email: String(a.email || ""),
+    role: String(a.role || "superadmin"),
+    is_active: !!a.is_active,
+    last_login: String(a.last_login || ""),
+    avatar: String(a.avatar || ""),
+  }));
+}
+
+export async function updateAdmin(id: string, body: Partial<PlatformAdmin>): Promise<PlatformAdmin> {
+  return apiJson<PlatformAdmin>(`/api/v1/admin/admins/${id}/`, { method: "PATCH", body: JSON.stringify(body) });
+}
