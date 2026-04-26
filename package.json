@@ -11,7 +11,7 @@
   ],
   "scripts": {
     "dev:user": "npm run dev -w user-web -- -p 3000",
-    "dev:admin": "npm run dev -w admin-web -- --port 3001",
+    "dev:admin": "npm run dev -w admin-web",
     "dev:barber": "npm run dev -w barber-web -- -p 3002",
     "build:user": "npm run build -w user-web",
     "build:admin": "npm run build -w admin-web",
