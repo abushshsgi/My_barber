@@ -1,4 +1,7 @@
 from django.db import transaction
+import json
+
+from django.core.serializers.json import DjangoJSONEncoder
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -189,7 +192,9 @@ class BarberSignupSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         # Save the original payload for admin/support (before we pop fields).
-        raw_payload = dict(validated_data)
+        # `validated_data` can contain Decimal values (lat/lng) which are not JSON-serializable
+        # by default and can crash JSONField writes in production.
+        raw_payload = json.loads(json.dumps(dict(validated_data), cls=DjangoJSONEncoder))
         pwd = validated_data.pop("password")
         email = validated_data.pop("email")
         phone = validated_data.pop("phone", "") or None
