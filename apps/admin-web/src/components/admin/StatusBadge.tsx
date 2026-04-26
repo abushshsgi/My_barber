@@ -55,11 +55,14 @@ export function StatusBadge({
   className,
   label,
 }: {
-  status: StatusVariant;
+  status: StatusVariant | string;
   className?: string;
   label?: string;
 }) {
-  const v = VARIANTS[status];
+  const v = (VARIANTS as Record<string, { label: string; className: string }>)[status] ?? {
+    label: status || "—",
+    className: "bg-muted text-muted-foreground border-border",
+  };
   return (
     <span
       className={cn(
