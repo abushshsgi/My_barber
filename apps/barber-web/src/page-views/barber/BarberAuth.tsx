@@ -26,6 +26,18 @@ import Link from "next/link";
 
 const STEPS = 4;
 
+async function readJsonSafe(res: Response): Promise<unknown> {
+  const text = await res.text();
+  const trimmed = text.trim();
+  if (!trimmed) return {};
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // Backend sometimes returns HTML error pages (e.g., 500). Keep UI stable.
+    return { detail: `Server JSON emas qaytardi (${res.status}).` };
+  }
+}
+
 export default function BarberAuth() {
   const router = useRouter();
   const { locale } = useLocale();
@@ -76,12 +88,17 @@ export default function BarberAuth() {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
+      const data = await readJsonSafe(res);
       if (!res.ok) {
         setErr(formatApiError(data, t.errLoginFail));
         return;
       }
-      setTokens(data.access, data.refresh);
+      const d = data as { access?: string; refresh?: string };
+      if (!d.access || !d.refresh) {
+        setErr(t.errLoginFail);
+        return;
+      }
+      setTokens(d.access, d.refresh);
       let dest = "/";
       if (typeof window !== "undefined") {
         const n = new URLSearchParams(window.location.search).get("next");
@@ -164,7 +181,7 @@ export default function BarberAuth() {
           staff_count_at_signup: 1,
         }),
       });
-      const data = await res.json();
+      const data = await readJsonSafe(res);
       if (!res.ok) {
         setErr(formatApiError(data, t.errSignupFail));
         return;
@@ -173,12 +190,17 @@ export default function BarberAuth() {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      const tok = await tr.json();
+      const tok = await readJsonSafe(tr);
       if (!tr.ok) {
         setErr(formatApiError(tok, t.errLoginFail));
         return;
       }
-      setTokens(tok.access, tok.refresh);
+      const tdata = tok as { access?: string; refresh?: string };
+      if (!tdata.access || !tdata.refresh) {
+        setErr(t.errLoginFail);
+        return;
+      }
+      setTokens(tdata.access, tdata.refresh);
       if (signupPath === "employee") {
         router.push("/salon/join");
       } else if (signupPath === "mybarber") {
