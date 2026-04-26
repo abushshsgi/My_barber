@@ -1,10 +1,11 @@
 "use client";
 import { useApp } from "@/panel/contexts/AppContext";
-import { Clock, Scissors, User } from "lucide-react";
+import { Mail, Phone, Clock, Sparkles, Building2 } from "lucide-react";
 import Link from "next/link";
 import { useBarberOnboardingStatus } from "@/hooks/useBarberOnboardingStatus";
+import { cn } from "@/lib/utils";
 
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+const WEEKDAYS = ["Yakshanba", "Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba"];
 
 function fmtMoney(price: string): string {
   const n = Number(price);
@@ -21,7 +22,7 @@ function fmtDuration(mins: number): string {
 }
 
 export default function Profile() {
-  const { me, services, workingHours, salons } = useApp();
+  const { me, services, workingHours, salons, viewMode, salonView } = useApp();
   const { data: onboarding, isLoading: onboardingLoading } = useBarberOnboardingStatus(Boolean(me));
   const needsSalonConnection = me?.work_mode === "salon" && salons.length === 0;
   const isIndependent = me?.work_mode === "independent";
@@ -35,8 +36,10 @@ export default function Profile() {
   return (
     <div className="page-container space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Profile</h1>
-        <p className="text-muted-foreground text-sm mt-1">Your barber profile</p>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Profil</h1>
+        <p className="text-muted-foreground text-sm mt-1">
+          Shaxsiy ma’lumotlar, xizmatlar va ish vaqti.
+        </p>
       </div>
 
       {(needsSalonConnection || isIndependent) && (
@@ -120,90 +123,136 @@ export default function Profile() {
         </div>
       )}
 
-      <div className="glass-card p-6">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
-            <User className="h-7 w-7 text-muted-foreground" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold">{me?.full_name || "—"}</h2>
-            <p className="text-sm text-muted-foreground">{me?.work_mode === "salon" ? "Salon barber" : "Independent barber"}</p>
-          </div>
+      <div className="rounded-xl border border-border bg-card p-6 shadow-sm flex flex-col sm:flex-row gap-6">
+        <div className="size-24 rounded-2xl bg-muted flex items-center justify-center text-2xl font-bold text-foreground">
+          {(me?.full_name || "—").trim().charAt(0) || "—"}
         </div>
+        <div className="flex-1 space-y-4">
+          <div>
+            <h2 className="text-2xl font-bold">{me?.full_name || "—"}</h2>
+            <div className="text-sm text-muted-foreground">
+              {me?.work_mode === "salon" ? "Salon barber" : "Independent barber"}
+            </div>
+          </div>
 
-        <div className="grid gap-4">
-          <div>
-            <label className="text-xs text-muted-foreground uppercase tracking-wide">Full Name</label>
-            <input
-              value={me?.full_name || ""}
-              readOnly
-              className="w-full mt-1 px-3 py-2 rounded-lg bg-muted text-sm outline-none focus:ring-1 focus:ring-ring"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground uppercase tracking-wide">Phone</label>
-            <input
-              value={me?.phone || ""}
-              readOnly
-              className="w-full mt-1 px-3 py-2 rounded-lg bg-muted text-sm outline-none focus:ring-1 focus:ring-ring"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground uppercase tracking-wide">Email</label>
-            <input
-              value={me?.email || ""}
-              readOnly
-              className="w-full mt-1 px-3 py-2 rounded-lg bg-muted text-sm outline-none focus:ring-1 focus:ring-ring"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={me?.email || "—"} />
+            <Field icon={<Phone className="h-3.5 w-3.5" />} label="Telefon" value={me?.phone || "—"} />
           </div>
         </div>
       </div>
 
-      <div className="glass-card p-6">
-        <h3 className="section-title mb-4 flex items-center gap-2"><Scissors className="h-4 w-4" /> Services</h3>
+      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold">Xizmatlar</h2>
+            <div className="text-sm text-muted-foreground">
+              {services.filter((s) => s.is_active).length} ta faol xizmat
+            </div>
+          </div>
+          <Link
+            href="/independent/setup"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Tahrirlash
+          </Link>
+        </div>
         {services.length === 0 ? (
           <p className="text-sm text-muted-foreground">No services yet.</p>
         ) : (
-          <div className="space-y-2">
-            {services
-              .filter((s) => s.is_active)
-              .map((s) => (
-                <div key={s.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50 transition-colors">
-                  <span className="text-sm font-medium">{s.name}</span>
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                    <span>{fmtDuration(s.duration_minutes)}</span>
-                    <span className="font-medium text-foreground">{fmtMoney(s.price)}</span>
+          <div className="divide-y divide-border">
+            {services.map((s) => (
+              <div key={s.id} className="py-3 flex items-center gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm">{s.name}</div>
+                  <div className="text-xs text-muted-foreground inline-flex items-center gap-2 mt-0.5">
+                    <Clock className="h-3 w-3" />
+                    {fmtDuration(s.duration_minutes)} · {fmtMoney(s.price)}
                   </div>
                 </div>
-              ))}
+                <span
+                  className={cn(
+                    "text-xs font-medium px-2 py-1 rounded-md border",
+                    s.is_active ? "bg-foreground text-background border-foreground" : "bg-muted text-muted-foreground border-border"
+                  )}
+                >
+                  {s.is_active ? "Faol" : "Faol emas"}
+                </span>
+              </div>
+            ))}
           </div>
         )}
       </div>
 
-      <div className="glass-card p-6">
-        <h3 className="section-title mb-4 flex items-center gap-2"><Clock className="h-4 w-4" /> Working Hours</h3>
+      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <h2 className="text-lg font-semibold mb-4">Ish vaqti</h2>
         {workingHours.length === 0 ? (
           <p className="text-sm text-muted-foreground">Working hours not configured yet.</p>
         ) : (
-          <div className="space-y-2">
-            {DAYS.map((label, idx) => {
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {WEEKDAYS.map((label, idx) => {
               const wh = workingHours.find((w) => w.weekday === idx);
               const closed = !wh || wh.is_day_off;
               const hours = wh ? `${wh.open_time} – ${wh.close_time}` : "";
               return (
-                <div key={label} className="flex items-center justify-between py-2 px-3 text-sm">
-                  <span className="text-muted-foreground w-12">{label}</span>
-                  {closed ? (
-                    <span className="text-muted-foreground">Closed</span>
-                  ) : (
-                    <span className="font-medium">{hours}</span>
-                  )}
+                <div
+                  key={label}
+                  className="flex items-center justify-between px-4 py-3 rounded-lg bg-muted/40"
+                >
+                  <span className="text-sm font-medium">{label}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {closed ? "Dam olish" : hours}
+                  </span>
                 </div>
               );
             })}
           </div>
         )}
       </div>
+
+      {viewMode === "salon" && salonView && (
+        <div className="rounded-xl border border-border bg-card p-6 shadow-sm flex items-center gap-4">
+          <div className="size-16 rounded-lg bg-muted flex items-center justify-center shrink-0">
+            <Building2 className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-xs text-muted-foreground uppercase tracking-wider">Ulangan salon</div>
+            <div className="font-medium">{salonView.name}</div>
+            <div className="text-xs text-muted-foreground truncate">{salonView.address}</div>
+          </div>
+          <Link
+            href="/salon-view"
+            className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium bg-muted hover:bg-muted/80 transition-colors"
+          >
+            Ko‘rish
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Field({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div>
+      <div className="text-xs text-muted-foreground uppercase tracking-wider inline-flex items-center gap-1.5">
+        {icon}
+        {label}
+      </div>
+      <input
+        readOnly
+        value={value}
+        className="mt-1 w-full h-10 px-3 rounded-lg bg-muted text-sm focus:ring-2 focus:ring-ring outline-none"
+      />
     </div>
   );
 }

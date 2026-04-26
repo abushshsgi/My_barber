@@ -1,43 +1,83 @@
 "use client";
 import { useApp } from "@/panel/contexts/AppContext";
-import { Bell } from "lucide-react";
-import { EmptyState } from "@/panel/components/EmptyState";
+import { Bell, CalendarClock, Star, MessageSquare, Settings as SettingsIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function Notifications() {
   const { notifications, markNotificationRead } = useApp();
+  const unread = notifications.filter((n) => !n.read).length;
 
-  if (notifications.length === 0) {
-    return (
-      <div className="page-container">
-        <h1 className="text-2xl font-bold tracking-tight mb-1">Notifications</h1>
-        <EmptyState icon={Bell} title="No notifications" description="You're all caught up." />
-      </div>
-    );
-  }
+  // Backend notification object doesn't contain "kind".
+  // We'll infer a kind for icon purposes.
+  const inferKind = (title: string, body: string): keyof typeof ICONS => {
+    const t = `${title} ${body}`.toLowerCase();
+    if (t.includes("bron") || t.includes("booking")) return "booking";
+    if (t.includes("sharh") || t.includes("review") || t.includes("yulduz")) return "review";
+    if (t.includes("chat") || t.includes("xabar") || t.includes("message")) return "chat";
+    return "system";
+  };
 
   return (
-    <div className="page-container space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
-        <p className="text-muted-foreground text-sm mt-1">{notifications.filter((n) => !n.read).length} unread</p>
+    <div className="page-container space-y-6 max-w-3xl mx-auto">
+      <div className="flex items-end justify-between">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            Bildirishnomalar
+          </h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {unread > 0 ? `${unread} ta o‘qilmagan` : "Barchasi o‘qildi"}
+          </p>
+        </div>
+        <Bell className="h-5 w-5 text-muted-foreground" />
       </div>
-      <div className="space-y-1">
-        {notifications.map((n) => (
-          <button
-            key={n.id}
-            type="button"
-            onClick={() => (!n.read ? void markNotificationRead(n.id) : undefined)}
-            className={`w-full text-left glass-card p-4 flex items-start gap-3 ${!n.read ? "border-foreground/10" : ""}`}
-          >
-            <div className={`h-2 w-2 rounded-full mt-1.5 flex-shrink-0 ${!n.read ? "bg-foreground" : "bg-transparent"}`} />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium">{n.title}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{n.description}</p>
-            </div>
-            <span className="text-xs text-muted-foreground flex-shrink-0">{n.time}</span>
-          </button>
-        ))}
+
+      <div className="space-y-2">
+        {notifications.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card p-12 text-center text-sm text-muted-foreground">
+            Bildirishnomalar yo‘q.
+          </div>
+        ) : (
+          notifications.map((n) => {
+            const kind = inferKind(n.title, n.description);
+            const Icon = ICONS[kind] ?? Bell;
+            return (
+              <button
+                key={n.id}
+                type="button"
+                onClick={() => (!n.read ? void markNotificationRead(n.id) : undefined)}
+                className={cn(
+                  "w-full text-left rounded-xl border bg-card p-4 flex gap-3 transition-colors hover:bg-muted/40",
+                  n.read ? "border-border" : "border-foreground/30 bg-card"
+                )}
+              >
+                <div
+                  className={cn(
+                    "size-10 rounded-full flex items-center justify-center shrink-0",
+                    n.read ? "bg-muted text-muted-foreground" : "bg-foreground text-background"
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <div className="font-medium text-sm">{n.title}</div>
+                    {!n.read && <span className="size-2 rounded-full bg-foreground" />}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-0.5">{n.description}</div>
+                  <div className="text-xs text-muted-foreground/70 mt-1.5">{n.time}</div>
+                </div>
+              </button>
+            );
+          })
+        )}
       </div>
     </div>
   );
 }
+
+const ICONS = {
+  booking: CalendarClock,
+  review: Star,
+  chat: MessageSquare,
+  system: SettingsIcon,
+} as const;

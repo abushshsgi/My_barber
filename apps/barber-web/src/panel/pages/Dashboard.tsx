@@ -1,14 +1,25 @@
 "use client";
 import { useApp } from "@/panel/contexts/AppContext";
 import { LiveTimer } from "@/panel/components/LiveTimer";
-import { Play, CheckCircle, Clock, DollarSign, Calendar } from "lucide-react";
+import {
+  CalendarClock,
+  TrendingUp,
+  Users,
+  Star,
+  Play,
+  CheckCircle2,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useBarberOnboardingStatus } from "@/hooks/useBarberOnboardingStatus";
+import { StatCard, StatusPill } from "@/adminhub-ui/barber/primitives";
+import { formatUZS } from "@/adminhub-ui/barber/format";
 
 export default function Dashboard() {
-  const { bookings, startBooking, completeBooking } = useApp();
+  const { bookings, startBooking, completeBooking, clients, reviews } = useApp();
   const { data: onboarding, isLoading } = useBarberOnboardingStatus(true);
   const isComplete = Boolean(onboarding?.is_complete);
   const required = (onboarding?.required_next_path || "").trim();
@@ -18,8 +29,12 @@ export default function Dashboard() {
   const todayBookings = bookings.filter((b) => b.date === "Today");
   const activeSession = todayBookings.find((b) => b.status === "in_progress");
   const completedCount = todayBookings.filter((b) => b.status === "completed").length;
-  const earnings = todayBookings.filter((b) => b.status === "completed").reduce((s, b) => s + b.price, 0);
+  const earnings = todayBookings
+    .filter((b) => b.status === "completed")
+    .reduce((s, b) => s + b.price, 0);
   const upcomingCount = todayBookings.filter((b) => b.status === "accepted").length;
+  const avgRating =
+    reviews.reduce((s, r) => s + (Number(r.rating) || 0), 0) / Math.max(1, reviews.length);
 
   if (!isLoading && !isComplete) {
     const ctaHref = required || "/salon/create";
@@ -82,107 +97,128 @@ export default function Dashboard() {
 
   return (
     <div className="page-container space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-1">Overview of your day</p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="glass-card p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Upcoming</span>
-          </div>
-          <p className="text-2xl font-bold">{upcomingCount}</p>
-        </div>
-        <div className="glass-card p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Completed</span>
-          </div>
-          <p className="text-2xl font-bold">{completedCount}</p>
-        </div>
-        <div className="glass-card p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Earnings</span>
-          </div>
-          <p className="text-2xl font-bold">${earnings}</p>
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Bugun sizda {todayBookings.length} ta bron, {activeSession ? "1 ta faol seans" : "faol seans yo‘q"}.
+          </p>
         </div>
       </div>
 
-      {/* Active Session */}
+      {!isLoading && !isComplete && (
+        <div className="rounded-xl border border-border bg-card p-6 flex flex-col sm:flex-row sm:items-center gap-4 shadow-sm">
+          <div className="size-12 rounded-full bg-foreground text-background flex items-center justify-center shrink-0">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-medium text-foreground">Profilni to‘liq ro‘yxatdan o‘tkazing</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Mijozlar sizni topishi uchun salon yoki mustaqil profil yarating.
+            </p>
+          </div>
+          <Link
+            href="/profile"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            Davom etish
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard
+          icon={<CalendarClock className="h-4 w-4" />}
+          label="Bugungi bronlar"
+          value={todayBookings.length}
+          hint={`${upcomingCount} kutilmoqda`}
+        />
+        <StatCard
+          icon={<TrendingUp className="h-4 w-4" />}
+          label="Daromad"
+          value={formatUZS(earnings)}
+          hint="Bugun"
+        />
+        <StatCard icon={<Users className="h-4 w-4" />} label="Mijozlar" value={clients.length} />
+        <StatCard
+          icon={<Star className="h-4 w-4" />}
+          label="O‘rtacha reyting"
+          value={avgRating.toFixed(1)}
+          hint={`${reviews.length} sharh`}
+        />
+      </div>
+
       {activeSession && (
-        <div className="glass-card p-5 border-foreground/20">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Active Session</p>
-              <p className="font-semibold text-lg">{activeSession.clientName}</p>
-              <p className="text-sm text-muted-foreground">{activeSession.service}</p>
+        <div className="rounded-xl border border-foreground bg-foreground text-background p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="size-12 rounded-full bg-background/10 ring-2 ring-background/30 flex items-center justify-center font-semibold">
+              {activeSession.clientName.charAt(0)}
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground mb-1">Elapsed</p>
-                <LiveTimer startedAt={activeSession.startedAt!} className="text-2xl font-bold" />
-              </div>
-              <button
-                onClick={() => completeBooking(activeSession.id)}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
-              >
-                <CheckCircle className="h-4 w-4" />
-                Complete
-              </button>
+            <div className="min-w-0">
+              <div className="text-xs uppercase tracking-wider opacity-70">Faol seans</div>
+              <div className="font-medium truncate">{activeSession.clientName}</div>
+              <div className="text-sm opacity-80 truncate">{activeSession.service}</div>
             </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <div className="text-xs opacity-70 mb-1">Elapsed</div>
+              <LiveTimer startedAt={activeSession.startedAt!} className="text-2xl font-bold" />
+            </div>
+            <button
+              type="button"
+              onClick={() => completeBooking(activeSession.id)}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-background text-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              Tugatish
+            </button>
           </div>
         </div>
       )}
 
-      {/* Today's Bookings */}
-      <div>
-        <h2 className="section-title mb-3">Today's Bookings</h2>
-        <div className="space-y-2">
-          {todayBookings.map((booking) => (
-            <div key={booking.id} className="glass-card p-4 flex items-center justify-between flex-wrap gap-3">
-              <div className="flex items-center gap-4">
-                <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center">
-                  <span className="text-sm font-medium">{booking.clientName.charAt(0)}</span>
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Bugungi jadval</h2>
+          <Link href="/bookings" className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+            Hammasi <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+        <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+          {todayBookings.length === 0 ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">Bugun bronlar yo‘q.</div>
+          ) : (
+            todayBookings.map((b) => (
+              <div key={b.id} className="p-4 flex items-center gap-3 hover:bg-muted/30 transition-colors">
+                <div className="text-center w-14 shrink-0">
+                  <div className="font-semibold text-foreground">{b.time}</div>
+                  <div className="text-[11px] text-muted-foreground">{b.status}</div>
                 </div>
-                <div>
-                  <p className="font-medium text-sm">{booking.clientName}</p>
-                  <p className="text-xs text-muted-foreground">{booking.service} · {booking.time}</p>
+                <div className="size-10 rounded-full bg-muted flex items-center justify-center shrink-0 text-sm font-semibold">
+                  {b.clientName.charAt(0)}
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                {booking.status === "in_progress" && booking.startedAt && (
-                  <LiveTimer startedAt={booking.startedAt} className="text-sm text-muted-foreground" />
-                )}
-                <span className={`status-${booking.status === "in_progress" ? "in-progress" : booking.status}`}>
-                  {booking.status === "in_progress" ? "In Progress" : booking.status === "accepted" ? "Accepted" : "Completed"}
-                </span>
-                {booking.status === "accepted" && (
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm truncate">{b.clientName}</div>
+                  <div className="text-xs text-muted-foreground truncate">{b.service}</div>
+                </div>
+                <div className="hidden sm:block text-sm font-medium">{formatUZS(b.price)}</div>
+                <StatusPill status={b.status} />
+                {b.status === "accepted" && (
                   <button
-                    onClick={() => startBooking(booking.id)}
-                    className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:opacity-90 transition-opacity flex items-center gap-1.5"
+                    type="button"
+                    onClick={() => startBooking(b.id)}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-medium hover:opacity-90"
                   >
                     <Play className="h-3 w-3" />
-                    Start
-                  </button>
-                )}
-                {booking.status === "in_progress" && (
-                  <button
-                    onClick={() => completeBooking(booking.id)}
-                    className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:opacity-90 transition-opacity flex items-center gap-1.5"
-                  >
-                    <CheckCircle className="h-3 w-3" />
-                    Complete
+                    Boshlash
                   </button>
                 )}
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
-      </div>
+      </section>
     </div>
   );
 }
