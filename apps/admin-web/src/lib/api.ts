@@ -1,9 +1,13 @@
-const API_BASE =
+const ENV_API_BASE =
+  // Next.js (client) injects NEXT_PUBLIC_* at build time.
+  (typeof process !== "undefined" ? process.env.NEXT_PUBLIC_API_URL : undefined) ||
+  // Vite injects import.meta.env.* (kept for local/dev flexibility).
   (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_API_URL ||
-  (import.meta as unknown as { env?: Record<string, string | undefined> }).env
-    ?.NEXT_PUBLIC_API_URL ||
-  // Fallback for local backend
-  "http://127.0.0.1:8000";
+  (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.NEXT_PUBLIC_API_URL ||
+  "";
+
+// If NEXT_PUBLIC_API_URL isn't set in prod, rely on Next rewrites (same-origin).
+const API_BASE = ENV_API_BASE.trim() ? ENV_API_BASE.replace(/\/+$/, "") : "";
 
 const TOKEN_KEY_ADMIN = "mybarber_admin_access";
 const REFRESH_KEY_ADMIN = "mybarber_admin_refresh";
