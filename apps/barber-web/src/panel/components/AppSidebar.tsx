@@ -8,6 +8,11 @@ import {
   Star,
   User,
   Bell,
+  Wallet,
+  BarChart3,
+  Megaphone,
+  Settings,
+  HelpCircle,
   Building2,
   ArrowLeftRight,
 } from "lucide-react";
@@ -30,12 +35,18 @@ import { Separator } from "@/components/ui/separator";
 
 const independentItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Calendar", url: "/calendar", icon: Calendar },
   { title: "Bookings", url: "/bookings", icon: Calendar },
   { title: "Clients", url: "/clients", icon: Users },
   { title: "Chat", url: "/chat", icon: MessageSquare },
   { title: "Reviews", url: "/reviews", icon: Star },
   { title: "Profile", url: "/profile", icon: User },
   { title: "Notifications", url: "/notifications", icon: Bell },
+  { title: "Earnings", url: "/earnings", icon: Wallet },
+  { title: "Stats", url: "/stats", icon: BarChart3 },
+  { title: "Marketing", url: "/marketing", icon: Megaphone },
+  { title: "Settings", url: "/settings", icon: Settings },
+  { title: "Help", url: "/help", icon: HelpCircle },
 ];
 
 const salonItems = [
