@@ -18,7 +18,7 @@ export default function Notifications() {
   };
 
   return (
-    <div className="page-container space-y-6 max-w-3xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
       <div className="flex items-end justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">

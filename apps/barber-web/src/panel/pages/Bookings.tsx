@@ -6,6 +6,7 @@ import { Play, CheckCircle2, CalendarClock, Phone } from "lucide-react";
 import { useState } from "react";
 import type { BookingStatus } from "@/panel/contexts/AppContext";
 import { cn } from "@/lib/utils";
+import { formatUZS } from "@/adminhub-ui/barber/format";
 
 const TABS = [
   { id: "all", label: "Hammasi" },
@@ -83,7 +84,7 @@ export default function Bookings() {
                 </div>
                 <div className="text-sm">
                   <div className="text-xs text-muted-foreground">Narx</div>
-                  <div className="font-medium">${booking.price}</div>
+                  <div className="font-medium">{formatUZS(booking.price)}</div>
                 </div>
 
                 <div className="flex items-center gap-2">

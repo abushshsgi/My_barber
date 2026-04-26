@@ -18,8 +18,33 @@ import { useBarberOnboardingStatus } from "@/hooks/useBarberOnboardingStatus";
 import { StatCard, StatusPill } from "@/adminhub-ui/barber/primitives";
 import { formatUZS } from "@/adminhub-ui/barber/format";
 
+function KPI({
+  icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+  hint?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+      <div className="flex items-center justify-between text-muted-foreground">
+        <span className="text-xs uppercase tracking-wider">{label}</span>
+        <span>{icon}</span>
+      </div>
+      <div className="mt-2 font-heading text-2xl font-semibold text-foreground">
+        {value}
+      </div>
+      {hint && <div className="text-xs text-muted-foreground mt-1">{hint}</div>}
+    </div>
+  );
+}
+
 export default function Dashboard() {
-  const { bookings, startBooking, completeBooking, clients, reviews } = useApp();
+  const { bookings, startBooking, completeBooking, clients, reviews, me } = useApp();
   const { data: onboarding, isLoading } = useBarberOnboardingStatus(true);
   const isComplete = Boolean(onboarding?.is_complete);
   const required = (onboarding?.required_next_path || "").trim();
@@ -95,53 +120,46 @@ export default function Dashboard() {
     );
   }
 
+  const firstName =
+    (me?.full_name || me?.email || "Barber")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)[0] || "Barber";
+
   return (
     <div className="page-container space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
+          <h1 className="font-heading text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
+            Salom, {firstName}
+          </h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Bugun sizda {todayBookings.length} ta bron, {activeSession ? "1 ta faol seans" : "faol seans yo‘q"}.
+            Bugun sizda {todayBookings.length} ta bron,{" "}
+            {activeSession ? "1 ta faol seans" : "faol seans yo‘q"}.
           </p>
         </div>
       </div>
 
-      {!isLoading && !isComplete && (
-        <div className="rounded-xl border border-border bg-card p-6 flex flex-col sm:flex-row sm:items-center gap-4 shadow-sm">
-          <div className="size-12 rounded-full bg-foreground text-background flex items-center justify-center shrink-0">
-            <Sparkles className="h-5 w-5" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-medium text-foreground">Profilni to‘liq ro‘yxatdan o‘tkazing</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Mijozlar sizni topishi uchun salon yoki mustaqil profil yarating.
-            </p>
-          </div>
-          <Link
-            href="/profile"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
-          >
-            Davom etish
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      )}
-
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard
+        <KPI
           icon={<CalendarClock className="h-4 w-4" />}
           label="Bugungi bronlar"
           value={todayBookings.length}
           hint={`${upcomingCount} kutilmoqda`}
         />
-        <StatCard
+        <KPI
           icon={<TrendingUp className="h-4 w-4" />}
           label="Daromad"
           value={formatUZS(earnings)}
           hint="Bugun"
         />
-        <StatCard icon={<Users className="h-4 w-4" />} label="Mijozlar" value={clients.length} />
-        <StatCard
+        <KPI
+          icon={<Users className="h-4 w-4" />}
+          label="Mijozlar"
+          value={clients.length}
+          hint={`${completedCount} yakunlangan`}
+        />
+        <KPI
           icon={<Star className="h-4 w-4" />}
           label="O‘rtacha reyting"
           value={avgRating.toFixed(1)}
