@@ -1,8 +1,9 @@
 "use client";
 import { useApp } from "@/panel/contexts/AppContext";
-import { Star, MapPin, Phone } from "lucide-react";
+import { MapPin, Star, Users, Images, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { StatCard, SectionCard } from "@/adminhub-ui/barber/primitives";
 
 function Stars({ count }: { count: number }) {
   return (
@@ -63,9 +64,9 @@ export default function SalonOverview() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="page-container space-y-6">
       {salons.length > 1 && (
-        <div className="px-4 md:px-6 lg:px-8 pt-4">
+        <div>
           <select
             value={selectedSalonId || ""}
             onChange={(e) => setSelectedSalonId(e.target.value)}
@@ -78,35 +79,70 @@ export default function SalonOverview() {
         </div>
       )}
 
-      {/* Cover */}
-      <div className="relative h-48 md:h-64 bg-muted overflow-hidden">
+      <div className="relative rounded-2xl overflow-hidden h-56 sm:h-72 bg-muted">
         {salonView.cover_image ? (
-          <img src={salonView.cover_image} alt={salonView.name} className="w-full h-full object-cover" />
+          <img src={salonView.cover_image} alt="" className="size-full object-cover" />
         ) : (
-          <div className="w-full h-full bg-muted" />
+          <div className="size-full bg-muted" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 p-6 text-background">
+          <h1 className="text-3xl sm:text-4xl font-semibold">{salonView.name}</h1>
+          <div className="mt-2 inline-flex items-center gap-1.5 text-sm opacity-90">
+            <MapPin className="h-3.5 w-3.5" />
+            {salonView.address}
+          </div>
+        </div>
       </div>
 
-      <div className="page-container -mt-16 relative z-10 space-y-6">
-        <div className="glass-card p-6">
-          <h1 className="text-2xl font-bold">{salonView.name}</h1>
-          <div className="flex flex-wrap gap-4 mt-3 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />{salonView.address}</span>
-            <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" />{salonView.phone}</span>
-          </div>
-          <div className="flex items-center gap-3 mt-4">
-            <span className="text-3xl font-bold">{salonView.rating_avg.toFixed(1)}</span>
-            <div>
-              <Stars count={Math.round(salonView.rating_avg)} />
-              <p className="text-xs text-muted-foreground mt-0.5">{salonView.review_count} reviews</p>
-            </div>
-          </div>
-        </div>
+      <div className="grid grid-cols-3 gap-3">
+        <StatCard
+          icon={<Star className="h-4 w-4" />}
+          label="Reyting"
+          value={salonView.rating_avg.toFixed(1)}
+          hint={`${salonView.review_count} sharh`}
+        />
+        <StatCard icon={<Users className="h-4 w-4" />} label="A'zolar" value={"—"} hint="Faol sartaroshlar" />
+        <StatCard icon={<Images className="h-4 w-4" />} label="Galereya" value={salonView.images.length} hint="Rasmlar" />
+      </div>
 
-        <div className="p-4 rounded-xl bg-muted/50 border border-border text-center">
-          <p className="text-xs text-muted-foreground">This is a read-only view. Bookings and settings are managed in Independent View.</p>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Link
+          href="/salon-view/gallery"
+          className="rounded-xl border border-border bg-card p-5 hover:border-foreground/30 transition-colors flex items-center gap-4"
+        >
+          <div className="size-12 rounded-lg bg-muted flex items-center justify-center">
+            <Images className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <div className="font-medium">Galereyani ko‘rish</div>
+            <div className="text-sm text-muted-foreground">Salon rasmlari</div>
+          </div>
+          <ArrowRight className="h-4 w-4 text-muted-foreground" />
+        </Link>
+        <Link
+          href="/salon-view/reviews"
+          className="rounded-xl border border-border bg-card p-5 hover:border-foreground/30 transition-colors flex items-center gap-4"
+        >
+          <div className="size-12 rounded-lg bg-muted flex items-center justify-center">
+            <Star className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <div className="font-medium">Salon sharhlari</div>
+            <div className="text-sm text-muted-foreground">Mijozlar fikrlari</div>
+          </div>
+          <ArrowRight className="h-4 w-4 text-muted-foreground" />
+        </Link>
+      </div>
+
+      <SectionCard title="Manzil va aloqa">
+        <p className="text-sm text-muted-foreground">{salonView.address}</p>
+      </SectionCard>
+
+      <div className="p-4 rounded-xl bg-muted/50 border border-border text-center">
+        <p className="text-xs text-muted-foreground">
+          This is a read-only view. Bookings and settings are managed in Independent View.
+        </p>
       </div>
     </div>
   );
