@@ -18,11 +18,11 @@ import {
   MapPin,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import Link from "next/link";
+import { Link } from "@/navigation";
 import { apiFetch, clearTokens } from "@/lib/api";
 import { fetchMySalons } from "@/lib/salon-queries";
 import { mapSalonListApi } from "@/lib/mapSalon";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/navigation";
 import { uzRegionLabel } from "@/lib/uz-regions";
 import { barberWebUrl } from "@/lib/public-urls";
 

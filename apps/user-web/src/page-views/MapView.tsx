@@ -1,12 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import dynamic from "next/dynamic";
+import { Suspense, lazy, useState, useEffect, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { StarRating } from "@/components/StarRating";
 import { MapPin, ArrowRight, Loader2, Crosshair, Radar, MessageCircle } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link, useRouter } from "@/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiFetch } from "@/lib/api";
 import { mediaSrc, PLACEHOLDER_AVATAR } from "@/lib/media";
@@ -14,12 +12,7 @@ import { mapSalonListApi, type SalonListApi } from "@/lib/mapSalon";
 import type { Salon } from "@/types";
 import type { BarberOnMap } from "./MapInner";
 
-const MapInner = dynamic(() => import("./MapInner"), {
-  ssr: false,
-  loading: () => (
-    <div className="h-full min-h-[200px] bg-muted animate-pulse rounded-xl" />
-  ),
-});
+const MapInner = lazy(() => import("./MapInner"));
 
 const DEFAULT_CENTER = { lat: 41.3111, lng: 69.2797 };
 const MAP_ZOOM = 14;
@@ -96,6 +89,7 @@ export default function MapView() {
   const [coords, setCoords] = useState<{ lat: number; lng: number }>(DEFAULT_CENTER);
   const [geoHint, setGeoHint] = useState<"pending" | "ok" | "fallback">("pending");
   const [flyMe, setFlyMe] = useState(0);
+  const canRenderMap = typeof window !== "undefined";
 
   const refreshLocation = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -244,23 +238,31 @@ export default function MapView() {
               <Loader2 className="h-6 w-6 sm:h-7 sm:w-7 animate-spin text-accent" />
             </div>
           )}
-          <MapInner
-            center={centerTuple}
-            userPosition={centerTuple}
-            radiusKm={radius}
-            salons={salonsOnMap}
-            barbers={barbersOnMap}
-            onSelectSalon={(id) => {
-              setSelectedSalon(id);
-              if (id) setSelectedBarberId(null);
-            }}
-            onSelectBarber={(bid) => {
-              setSelectedBarberId(bid);
-              if (bid != null) setSelectedSalon(null);
-            }}
-            flyToMeTrigger={flyMe}
-            mapZoom={MAP_ZOOM}
-          />
+          {canRenderMap ? (
+            <Suspense
+              fallback={<div className="h-full min-h-[200px] bg-muted animate-pulse rounded-xl" />}
+            >
+              <MapInner
+                center={centerTuple}
+                userPosition={centerTuple}
+                radiusKm={radius}
+                salons={salonsOnMap}
+                barbers={barbersOnMap}
+                onSelectSalon={(id) => {
+                  setSelectedSalon(id);
+                  if (id) setSelectedBarberId(null);
+                }}
+                onSelectBarber={(bid) => {
+                  setSelectedBarberId(bid);
+                  if (bid != null) setSelectedSalon(null);
+                }}
+                flyToMeTrigger={flyMe}
+                mapZoom={MAP_ZOOM}
+              />
+            </Suspense>
+          ) : (
+            <div className="h-full min-h-[200px] bg-muted rounded-xl" />
+          )}
         </div>
       </div>
 

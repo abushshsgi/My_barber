@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/sheet";
 import { SalonCard } from "@/components/SalonCard";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
+import { Link } from "@/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSalons } from "@/lib/salon-queries";
 import { fetchBarbers, type BarberExploreFilters } from "@/lib/barber-queries";

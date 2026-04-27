@@ -3,7 +3,7 @@
 import { forwardRef } from "react";
 import { StarRating } from "./StarRating";
 import { MapPin, Crown, Clock, ArrowRight } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/navigation";
 import { motion } from "framer-motion";
 import type { Salon } from "@/types";
 import { mediaSrc } from "@/lib/media";

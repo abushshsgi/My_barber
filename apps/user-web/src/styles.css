@@ -1,10 +1,8 @@
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap");
+@import "tailwindcss" source(none);
+@source "../src";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Existing user-web theme (ported from Next globals.css) */
 
-/* Yangi ko‘rinish: qorong‘i “studio”, teal aksent, oltin o‘rniga zamonaviy accent */
 @layer base {
   :root {
     --background: 222 47% 6%;
@@ -82,15 +80,16 @@
     --sidebar-border: 217 28% 16%;
     --sidebar-ring: 172 60% 50%;
   }
-}
 
-@layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
+
   body {
-    @apply bg-background text-foreground antialiased;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
     background-image:
       radial-gradient(ellipse 120% 80% at 50% -20%, hsl(172 40% 18% / 0.35), transparent 50%),
       radial-gradient(ellipse 80% 50% at 100% 50%, hsl(217 40% 16% / 0.2), transparent);
@@ -149,3 +148,4 @@
   margin: 10px 12px !important;
   line-height: 1.35;
 }
+

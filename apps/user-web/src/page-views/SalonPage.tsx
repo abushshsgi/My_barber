@@ -1,8 +1,8 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams } from "@/navigation";
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/navigation";
 import { StarRating } from "@/components/StarRating";
 import { ArrowLeft, MapPin, Clock, Phone, Globe, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";

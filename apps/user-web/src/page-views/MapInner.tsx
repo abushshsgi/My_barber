@@ -11,7 +11,7 @@ import {
   useMap,
 } from "react-leaflet";
 import L from "leaflet";
-import Link from "next/link";
+import { Link } from "@/navigation";
 import { StarRating } from "@/components/StarRating";
 import "leaflet/dist/leaflet.css";
 import type { Salon } from "@/types";

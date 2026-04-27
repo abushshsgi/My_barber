@@ -17,7 +17,7 @@ import { apiFetch } from "@/lib/api";
 import { barberWebUrl } from "@/lib/public-urls";
 import { useSalonInviteResponse } from "@/hooks/useSalonInviteResponse";
 import { format } from "date-fns";
-import Link from "next/link";
+import { Link } from "@/navigation";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 

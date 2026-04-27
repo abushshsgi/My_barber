@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { MessageCircle, Loader2 } from "lucide-react";
 import { apiJson } from "@/lib/api";
