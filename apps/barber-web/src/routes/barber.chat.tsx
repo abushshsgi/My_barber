@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Send } from "lucide-react";
 import { useBarberContext } from "@/components/barber/BarberContext";
 import { cn } from "@/lib/utils";
@@ -9,11 +9,19 @@ export const Route = createFileRoute("/barber/chat")({
 });
 
 function ChatPage() {
-  const { conversations, sendChatMessage } = useBarberContext();
+  const { conversations, sendChatMessage, loadConversationMessages } = useBarberContext();
   const [activeId, setActiveId] = useState(conversations[0]?.id ?? "");
   const [input, setInput] = useState("");
 
   const active = conversations.find((c) => c.id === activeId);
+
+  useEffect(() => {
+    if (!activeId) return;
+    const conv = conversations.find((c) => c.id === activeId);
+    if (!conv) return;
+    if (conv.messages && conv.messages.length) return;
+    void loadConversationMessages(activeId);
+  }, [activeId, conversations, loadConversationMessages]);
 
   const handleSend = () => {
     if (!input.trim() || !active) return;

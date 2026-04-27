@@ -1,8 +1,14 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { BarberShell } from "@/components/barber/BarberShell";
 import { BarberProvider } from "@/components/barber/BarberContext";
+import { getBarberAccessToken } from "@/lib/api";
 
 export const Route = createFileRoute("/barber")({
+  beforeLoad: () => {
+    if (typeof window !== "undefined" && !getBarberAccessToken()) {
+      throw redirect({ to: "/auth" });
+    }
+  },
   component: BarberRoot,
   errorComponent: ({ error, reset }) => {
     const router = useRouter();

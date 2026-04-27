@@ -1,4 +1,5 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { apiFetch, apiJson, clearBarberTokens } from "@/lib/api";
 
 export type ViewMode = "independent" | "salon";
 
@@ -192,6 +193,7 @@ type Ctx = {
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
   sendChatMessage: (conversationId: string, text: string) => void;
+  loadConversationMessages: (conversationId: string) => Promise<void>;
   toggleService: (id: string) => void;
   togglePromo: (id: string) => void;
   updateSettings: (patch: Partial<Settings>) => void;
@@ -530,8 +532,10 @@ const PROMOS_INIT: Promo[] = [
 
 export function BarberProvider({ children }: { children: ReactNode }) {
   const [viewMode, setViewMode] = useState<ViewMode>("independent");
+  const [profile, setProfile] = useState<BarberProfile>(PROFILE);
   const [services, setServices] = useState<Service[]>(SERVICES_INIT);
   const [bookings, setBookings] = useState<Booking[]>(BOOKINGS_INIT);
+  const [clients, setClients] = useState<Client[]>(CLIENTS);
   const [notifications, setNotifications] = useState<Notification[]>(NOTIFICATIONS_INIT);
   const [conversations, setConversations] = useState<Conversation[]>(CONVERSATIONS_INIT);
   const [promos, setPromos] = useState<Promo[]>(PROMOS_INIT);
@@ -547,17 +551,176 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     theme: "light",
   });
 
+  useEffect(() => {
+    let alive = true;
+    const run = async () => {
+      try {
+        const me = await apiJson<{
+          id: number;
+          email: string;
+          full_name: string;
+          phone: string;
+          work_mode: "independent" | "salon_owner" | "salon_employee";
+        }>("/api/v1/barber/auth/me/");
+        if (!alive) return;
+        setProfile((prev) => ({
+          ...prev,
+          id: String(me.id),
+          name: me.full_name || prev.name,
+          title: "Barber",
+          email: me.email,
+          phone: me.phone || prev.phone,
+        }));
+        setViewMode(me.work_mode === "independent" ? "independent" : "salon");
+      } catch (e) {
+        // Token invalid → force login
+        clearBarberTokens();
+        return;
+      }
+
+      try {
+        const apiBookings = await apiJson<
+          Array<{
+            id: number;
+            customer_name: string;
+            customer_phone: string;
+            start_at: string;
+            end_at: string;
+            status: string;
+            total_price: string | number;
+            lines: Array<{ service_name: string; duration_minutes: number; price: string | number }>;
+          }>
+        >("/api/v1/bookings/");
+        if (!alive) return;
+        setBookings(apiBookings.map(mapApiBooking));
+      } catch {
+        // keep fallback
+      }
+
+      try {
+        const apiNotifs = await apiJson<
+          Array<{
+            id: number;
+            type: string;
+            title: string;
+            body: string;
+            read_at: string | null;
+            created_at: string;
+          }>
+        >("/api/v1/notifications/");
+        if (!alive) return;
+        setNotifications(apiNotifs.map(mapApiNotification));
+      } catch {
+        // keep fallback
+      }
+
+      try {
+        const apiConvos = await apiJson<
+          Array<{
+            id: string;
+            last_message_text: string;
+            last_message_at: string | null;
+            other: { id: number; full_name: string };
+          }>
+        >("/api/v1/chat/conversations/");
+        if (!alive) return;
+        setConversations(apiConvos.map(mapApiConversation));
+      } catch {
+        // keep fallback
+      }
+
+      // Clients (independent only for now)
+      try {
+        const apiClients = await apiJson<
+          Array<{
+            id: number;
+            full_name: string;
+            phone: string;
+            completed_bookings: number;
+            total_spent: string;
+          }>
+        >("/api/v1/analytics/clients/independent/");
+        if (!alive) return;
+        setClients(apiClients.map(mapApiClient));
+      } catch {
+        // keep fallback
+      }
+    };
+    void run();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const refreshBookings = useCallback(async () => {
+    const apiBookings = await apiJson<
+      Array<{
+        id: number;
+        customer_name: string;
+        customer_phone: string;
+        start_at: string;
+        end_at: string;
+        status: string;
+        total_price: string | number;
+        lines: Array<{ service_name: string; duration_minutes: number; price: string | number }>;
+      }>
+    >("/api/v1/bookings/");
+    setBookings(apiBookings.map(mapApiBooking));
+  }, []);
+
+  const mutateBooking = useCallback(async (id: string, action: "accept" | "reject" | "start" | "complete") => {
+    const res = await apiFetch(`/api/v1/bookings/${id}/${action}/`, { method: "POST" });
+    if (!res.ok) return;
+    await refreshBookings();
+  }, [refreshBookings]);
+
+  const markNotifRead = useCallback(async (id: string) => {
+    await apiFetch(`/api/v1/notifications/${id}/read/`, { method: "POST" });
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  }, []);
+
+  const markAllNotifsRead = useCallback(async () => {
+    const rows = await apiJson<Array<{ id: number }>>("/api/v1/notifications/");
+    await Promise.all(rows.map((n) => apiFetch(`/api/v1/notifications/${n.id}/read/`, { method: "POST" })));
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  }, []);
+
+  const sendMessage = useCallback(async (conversationId: string, text: string) => {
+    const res = await apiFetch(`/api/v1/chat/conversations/${conversationId}/messages/`, {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) return;
+    const msg = (await res.json().catch(() => null)) as
+      | { id: number; sender_kind: "USER" | "BARBER"; text: string; created_at: string }
+      | null;
+    if (!msg) return;
+    const mapped = mapApiMessage(msg);
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === conversationId
+          ? {
+              ...c,
+              preview: mapped.text,
+              time: mapped.time,
+              messages: [...(c.messages || []), mapped],
+            }
+          : c,
+      ),
+    );
+  }, []);
+
   const value = useMemo<Ctx>(
     () => ({
       viewMode,
       setViewMode,
       hasSalon: true,
       onboardingComplete: true,
-      profile: PROFILE,
+      profile,
       services,
       workingHours: WORKING_HOURS,
       bookings,
-      clients: CLIENTS,
+      clients,
       notifications,
       conversations,
       reviews: REVIEWS,
@@ -565,49 +728,26 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       transactions: TRANSACTIONS_INIT,
       promos,
       settings,
-      startBooking: (id) =>
-        setBookings((prev) =>
-          prev.map((b) => (b.id === id ? { ...b, status: "in_progress" } : b)),
-        ),
-      completeBooking: (id) =>
-        setBookings((prev) =>
-          prev.map((b) => (b.id === id ? { ...b, status: "completed" } : b)),
-        ),
-      cancelBooking: (id) =>
-        setBookings((prev) =>
-          prev.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)),
-        ),
-      acceptBooking: (id) =>
-        setBookings((prev) =>
-          prev.map((b) => (b.id === id ? { ...b, status: "accepted" } : b)),
-        ),
+      startBooking: (id) => void mutateBooking(id, "start"),
+      completeBooking: (id) => void mutateBooking(id, "complete"),
+      cancelBooking: (id) => void mutateBooking(id, "reject"),
+      acceptBooking: (id) => void mutateBooking(id, "accept"),
       markNotificationRead: (id) =>
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-        ),
-      markAllNotificationsRead: () =>
-        setNotifications((prev) => prev.map((n) => ({ ...n, read: true }))),
-      sendChatMessage: (conversationId, text) =>
+        void markNotifRead(id),
+      markAllNotificationsRead: () => void markAllNotifsRead(),
+      sendChatMessage: (conversationId, text) => void sendMessage(conversationId, text),
+      loadConversationMessages: async (conversationId) => {
+        const data = await apiJson<{ results: Array<{ id: number; sender_kind: "USER" | "BARBER"; text: string; created_at: string }> }>(
+          `/api/v1/chat/conversations/${conversationId}/messages/`,
+        );
         setConversations((prev) =>
           prev.map((c) =>
             c.id === conversationId
-              ? {
-                  ...c,
-                  preview: text,
-                  time: "hozir",
-                  messages: [
-                    ...c.messages,
-                    {
-                      id: `m-${Date.now()}`,
-                      sender_kind: "BARBER",
-                      text,
-                      time: "hozir",
-                    },
-                  ],
-                }
+              ? { ...c, messages: data.results.map(mapApiMessage) }
               : c,
           ),
-        ),
+        );
+      },
       toggleService: (id) =>
         setServices((prev) =>
           prev.map((s) => (s.id === id ? { ...s, is_active: !s.is_active } : s)),
@@ -634,10 +774,124 @@ export function BarberProvider({ children }: { children: ReactNode }) {
           prev.map((g) => (g.id === id ? { ...g, done: !g.done } : g)),
         ),
     }),
-    [viewMode, services, bookings, notifications, conversations, promos, settings, inventory, expenses, goals],
+    [
+      viewMode,
+      profile,
+      services,
+      bookings,
+      clients,
+      notifications,
+      conversations,
+      promos,
+      settings,
+      inventory,
+      expenses,
+      goals,
+      mutateBooking,
+      markNotifRead,
+      markAllNotifsRead,
+      sendMessage,
+    ],
   );
 
   return <BarberCtx.Provider value={value}>{children}</BarberCtx.Provider>;
+}
+
+function mapApiBooking(b: {
+  id: number;
+  customer_name: string;
+  start_at: string;
+  status: string;
+  total_price: string | number;
+  lines: Array<{ service_name: string; duration_minutes: number; price: string | number }>;
+}): Booking {
+  const dt = new Date(b.start_at);
+  const hh = String(dt.getHours()).padStart(2, "0");
+  const mm = String(dt.getMinutes()).padStart(2, "0");
+  const status = mapBookingStatus(b.status);
+  const line0 = b.lines?.[0];
+  const service = line0?.service_name || "Xizmat";
+  const duration_min = line0?.duration_minutes || 30;
+  const priceN = typeof b.total_price === "string" ? Number(b.total_price) : b.total_price;
+  return {
+    id: String(b.id),
+    client: b.customer_name || "Mijoz",
+    client_avatar: `https://i.pravatar.cc/150?u=client-${b.id}`,
+    service,
+    date: dt.toLocaleDateString("uz-UZ", { day: "2-digit", month: "short" }),
+    time: `${hh}:${mm}`,
+    duration_min,
+    price: Number.isFinite(priceN) ? Number(priceN) : 0,
+    status,
+  };
+}
+
+function mapBookingStatus(st: string): Booking["status"] {
+  const s = (st || "").toLowerCase();
+  if (s === "pending") return "pending";
+  if (s === "accepted") return "accepted";
+  if (s === "in_progress") return "in_progress";
+  if (s === "completed") return "completed";
+  if (s === "rejected" || s === "cancelled") return "cancelled";
+  return "pending";
+}
+
+function mapApiNotification(n: {
+  id: number;
+  type: string;
+  title: string;
+  body: string;
+  read_at: string | null;
+  created_at: string;
+}): Notification {
+  const dt = new Date(n.created_at);
+  const time = dt.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
+  const kind = ((): Notification["kind"] => {
+    const t = (n.type || "").toLowerCase();
+    if (t.includes("chat")) return "chat";
+    if (t.includes("review")) return "review";
+    if (t.includes("booking")) return "booking";
+    return "system";
+  })();
+  return { id: String(n.id), title: n.title, body: n.body, time, read: !!n.read_at, kind };
+}
+
+function mapApiConversation(c: {
+  id: string;
+  last_message_text: string;
+  last_message_at: string | null;
+  other: { id: number; full_name: string };
+}): Conversation {
+  const dt = c.last_message_at ? new Date(c.last_message_at) : null;
+  const time = dt ? dt.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }) : "";
+  return {
+    id: c.id,
+    client: c.other.full_name,
+    avatar: `https://i.pravatar.cc/150?u=user-${c.other.id}`,
+    preview: c.last_message_text || "",
+    time,
+    unread: 0,
+    messages: [],
+  };
+}
+
+function mapApiMessage(m: { id: number; sender_kind: "USER" | "BARBER"; text: string; created_at: string }): ChatMessage {
+  const dt = new Date(m.created_at);
+  const time = dt.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
+  return { id: String(m.id), sender_kind: m.sender_kind, text: m.text, time };
+}
+
+function mapApiClient(c: { id: number; full_name: string; phone: string; completed_bookings: number; total_spent: string }): Client {
+  const spent = Number(c.total_spent);
+  return {
+    id: String(c.id),
+    name: c.full_name,
+    avatar: `https://i.pravatar.cc/150?u=user-${c.id}`,
+    phone: c.phone,
+    visits: c.completed_bookings,
+    last_visit: "",
+    spent: Number.isFinite(spent) ? spent : 0,
+  };
 }
 
 export function useBarberContext() {
