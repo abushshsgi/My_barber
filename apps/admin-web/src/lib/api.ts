@@ -13,21 +13,25 @@ const TOKEN_KEY_ADMIN = "mybarber_admin_access";
 const REFRESH_KEY_ADMIN = "mybarber_admin_refresh";
 
 export function getAdminAccessToken(): string | null {
+  if (typeof window === "undefined") return null;
   const tok = localStorage.getItem(TOKEN_KEY_ADMIN);
   return tok || null;
 }
 
 function getAdminRefreshToken(): string | null {
+  if (typeof window === "undefined") return null;
   const tok = localStorage.getItem(REFRESH_KEY_ADMIN);
   return tok || null;
 }
 
 export function setAdminTokens(access: string, refresh: string) {
+  if (typeof window === "undefined") return;
   localStorage.setItem(TOKEN_KEY_ADMIN, access);
   localStorage.setItem(REFRESH_KEY_ADMIN, refresh);
 }
 
 export function clearAdminTokens() {
+  if (typeof window === "undefined") return;
   localStorage.removeItem(TOKEN_KEY_ADMIN);
   localStorage.removeItem(REFRESH_KEY_ADMIN);
 }
@@ -59,7 +63,7 @@ async function refreshAdminAccess(): Promise<string | null> {
     clearAdminTokens();
     return null;
   }
-  localStorage.setItem(TOKEN_KEY_ADMIN, body.access);
+  if (typeof window !== "undefined") localStorage.setItem(TOKEN_KEY_ADMIN, body.access);
   return body.access;
 }
 
