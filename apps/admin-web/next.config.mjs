@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  trailingSlash: true,
   experimental: {
     externalDir: true,
   },
@@ -14,7 +15,7 @@ const nextConfig = {
     const api = raw.replace(/\/+$/, "");
     return [
       // Proxy backend API to avoid CORS in browser
-      { source: "/api/v1/:path*", destination: `${api}/api/v1/:path*` },
+      { source: "/api/v1/:path*", destination: `${api}/api/v1/:path*/` },
       // Proxy media (optional)
       { source: "/media/:path*", destination: `${api}/media/:path*` },
     ];
