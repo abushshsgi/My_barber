@@ -1,5 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="400" height="240" viewBox="0 0 400 240" fill="none">
-  <rect width="400" height="240" rx="16" fill="#27272a"/>
-  <path d="M200 80c-16 0-28 12-28 28v12h-16v36h88v-36h-16v-12c0-16-12-28-28-28zm0 16c6.6 0 12 5.4 12 12v12h-24v-12c0-6.6 5.4-12 12-12z" fill="#3f3f46"/>
-  <text x="200" y="190" text-anchor="middle" fill="#71717a" font-family="system-ui,sans-serif" font-size="12">Rasm yoq</text>
-</svg>

@@ -12,10 +12,10 @@
   "scripts": {
     "dev:user": "npm run dev -w user-web -- -p 3000",
     "dev:admin": "npm run dev -w admin-web",
-    "dev:barber": "npm run dev -w barber-web -- -p 3002",
+    "dev:barber": "npm run dev -w tanstack_start_ts -- --port 3002",
     "build:user": "npm run build -w user-web",
     "build:admin": "npm run build -w admin-web",
-    "build:barber": "npm run build -w barber-web",
+    "build:barber": "npm run build -w tanstack_start_ts",
     "build:frontends": "npm run build:user && npm run build:admin && npm run build:barber"
   },
   "overrides": {
