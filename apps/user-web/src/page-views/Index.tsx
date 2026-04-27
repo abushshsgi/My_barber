@@ -173,7 +173,9 @@ const Index = () => {
           </p>
           <p className="text-muted-foreground text-xs mt-3 leading-relaxed">
             API: {getPublicApiBase()}
-            {process.env.NEXT_PUBLIC_API_URL ? "" : " — Vercelda NEXT_PUBLIC_API_URL o‘rnating."}
+            {import.meta.env.VITE_API_URL || import.meta.env.NEXT_PUBLIC_API_URL
+              ? ""
+              : " — Deploy env’da API URL’ni o‘rnating."}
           </p>
           <Button
             type="button"
