@@ -294,7 +294,7 @@ class BarberSupportTicket(models.Model):
     barber = models.ForeignKey(
         Barber,
         on_delete=models.CASCADE,
-        related_name="support_tickets",
+        related_name="barber_support_tickets",
     )
     subject = models.CharField(max_length=255)
     message = models.TextField()
