@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
+import { LocaleProvider } from "@/providers/locale-provider";
 
 interface RouterContext {
   queryClient: QueryClient;
@@ -41,8 +42,10 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
-      <Toaster position="top-right" richColors closeButton />
+      <LocaleProvider>
+        <Outlet />
+        <Toaster position="top-right" richColors closeButton />
+      </LocaleProvider>
     </QueryClientProvider>
   );
 }
