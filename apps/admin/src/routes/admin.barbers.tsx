@@ -141,11 +141,11 @@ function BarbersPage() {
                       </td>
                       <td className="px-6 py-4">
                         <Select
-                          value={b.region}
+                          value={b.region || "__UNSET__"}
                           onValueChange={(v) =>
                             patchBarber.mutate({
                               id: b.id,
-                              body: { region: v },
+                              body: { region: v === "__UNSET__" ? "" : v },
                             })
                           }
                         >
@@ -153,6 +153,7 @@ function BarbersPage() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="__UNSET__">Ko'rsatilmagan</SelectItem>
                             {UZ_REGIONS.map((r) => (
                               <SelectItem key={r.value} value={r.value}>
                                 {r.label}

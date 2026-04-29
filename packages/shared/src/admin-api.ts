@@ -47,6 +47,7 @@ export type AdminUserRow = {
   is_active: boolean;
   is_staff: boolean;
   date_joined: string;
+  bookings_count?: number;
 };
 
 export type AdminSalonHourRow = {
@@ -91,6 +92,11 @@ export type AdminBarberRow = {
   is_active: boolean;
   date_joined: string;
   owned_salons_count: number;
+  salon_id?: number | null;
+  salon_name?: string | null;
+  reviews_count?: number;
+  rating?: number;
+  avatar?: string | null;
   work_mode?: string;
   onboarding_flow?: string;
   onboarding_completed_at?: string | null;
@@ -221,13 +227,18 @@ export type AdminBookingRow = {
   salon_name?: string;
   customer_name?: string;
   customer_phone?: string;
+  barber_name?: string;
   start_at: string;
   status: string;
   total_price: string;
+  lines?: Array<{ service_name?: string }>;
 };
 
-export async function fetchAdminBookings(): Promise<AdminBookingRow[]> {
-  const res = await apiFetch("/api/v1/admin/bookings/");
+export async function fetchAdminBookings(params?: { status?: string }): Promise<AdminBookingRow[]> {
+  const sp = new URLSearchParams();
+  if (params?.status && params.status !== "all") sp.set("status", params.status);
+  const q = sp.toString();
+  const res = await apiFetch(q ? `/api/v1/admin/bookings/?${q}` : "/api/v1/admin/bookings/");
   const j = await res.json();
   if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
   return Array.isArray(j) ? j : j.results || [];
@@ -242,17 +253,18 @@ export type AdminReviewRow = {
   created_at: string;
   author_email: string;
   barber_email: string;
+  barber_id?: number;
 };
 
 export async function fetchAdminReviews(params?: {
   barber?: string;
-  min_rating?: string;
+  min_rating?: string | number;
   date_from?: string;
   date_to?: string;
 }): Promise<AdminReviewRow[]> {
   const sp = new URLSearchParams();
   if (params?.barber) sp.set("barber", params.barber);
-  if (params?.min_rating) sp.set("min_rating", params.min_rating);
+  if ((Number(params?.min_rating || 0) || 0) > 0) sp.set("min_rating", String(params?.min_rating));
   if (params?.date_from) sp.set("date_from", params.date_from);
   if (params?.date_to) sp.set("date_to", params.date_to);
   const q = sp.toString();

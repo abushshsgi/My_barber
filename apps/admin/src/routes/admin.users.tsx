@@ -104,11 +104,11 @@ function UsersPage() {
                       <td className="px-6 py-4 text-foreground tabular-nums">{u.phone}</td>
                       <td className="px-6 py-4">
                         <Select
-                          value={u.region}
+                          value={u.region || "__UNSET__"}
                           onValueChange={(v) =>
                             patchUser.mutate({
                               id: u.id,
-                              body: { region: v },
+                              body: { region: v === "__UNSET__" ? "" : v },
                             })
                           }
                         >
@@ -116,6 +116,7 @@ function UsersPage() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="__UNSET__">Ko'rsatilmagan</SelectItem>
                             {UZ_REGIONS.map((r) => (
                               <SelectItem key={r.value} value={r.value}>
                                 {r.label}
