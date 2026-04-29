@@ -15,6 +15,29 @@ if (!fileExists(assetsDir)) {
   process.exit(0);
 }
 
+const distRootIndex = path.resolve(process.cwd(), "dist", "index.html");
+const distRootAssets = path.resolve(process.cwd(), "dist", "assets");
+const outDir = path.resolve(process.cwd(), "dist", "client");
+const outIndex = path.join(outDir, "index.html");
+
+// Prefer Vite's root HTML output when present (admin app emits this).
+// It contains the correct single-page client entry wiring.
+if (fileExists(distRootIndex)) {
+  fs.mkdirSync(outDir, { recursive: true });
+  fs.copyFileSync(distRootIndex, outIndex);
+
+  if (fileExists(distRootAssets)) {
+    const outAssetsDir = path.join(outDir, "assets");
+    fs.mkdirSync(outAssetsDir, { recursive: true });
+    for (const f of fs.readdirSync(distRootAssets)) {
+      fs.copyFileSync(path.join(distRootAssets, f), path.join(outAssetsDir, f));
+    }
+  }
+
+  console.log(`[create-vercel-index] Copied ${distRootIndex} -> ${outIndex}`);
+  process.exit(0);
+}
+
 const indexJsFiles = fs
   .readdirSync(assetsDir)
   .filter((f) => /^index-.*\.js$/.test(f))
@@ -37,9 +60,6 @@ const stylesCss =
   fs
     .readdirSync(assetsDir)
     .find((f) => /^styles-.*\.css$/.test(f)) || null;
-
-const outDir = path.resolve(process.cwd(), "dist", "client");
-const outIndex = path.join(outDir, "index.html");
 
 const title = process.env.VITE_APP_TITLE || "Mybarber";
 
