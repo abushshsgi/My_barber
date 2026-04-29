@@ -15,7 +15,7 @@ class UserAdmin(BaseUserAdmin):
     autocomplete_fields = ("groups",)
     fieldsets = (
         (None, {"fields": ("email", "username", "password")}),
-        ("Personal", {"fields": ("full_name", "phone", "avatar", "role")}),
+        ("Personal", {"fields": ("full_name", "phone", "avatar", "role", "region")}),
         (
             "Permissions",
             {

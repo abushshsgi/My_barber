@@ -1,7 +1,6 @@
 from rest_framework.permissions import BasePermission
 
 from accounts.admin_auth import AdminPrincipal
-from accounts.models import User
 from barbers.barber_auth import BarberPrincipal
 
 

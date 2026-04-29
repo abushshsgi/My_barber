@@ -82,12 +82,6 @@ class BookingCreateSerializer(serializers.Serializer):
 
         barber = attrs["barber"]
         salon = attrs.get("salon", None)
-        if salon is not None:
-            raise serializers.ValidationError(
-                {
-                    "detail": "Salon orqali bron qilish yo‘q. Faqat mustaqil barber (independent) uchun bron qilish mumkin."
-                }
-            )
         if request and request.user.is_authenticated:
             cust = request.user
             if isinstance(cust, User):

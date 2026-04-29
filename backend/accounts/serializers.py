@@ -281,7 +281,7 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
                 )
         data = super().validate(attrs)
         user = self.user
-        if getattr(user, "role", "") == "ADMIN":
+        if getattr(user, "is_staff", False) or getattr(user, "is_superuser", False):
             raise serializers.ValidationError(
                 {
                     "detail": "Admin akkauntlari uchun maxsus kirish (admin/auth/token) ishlatiladi.",

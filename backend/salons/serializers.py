@@ -259,8 +259,9 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
         hours_data = validated_data.pop("hours", [])
         services_data = validated_data.pop("services", [])
         request = self.context.get("request")
-        # save(owner=...) merged owner into validated_data — duplicate kwarg bo‘lmasin
-        if "owner" not in validated_data and request is not None:
+        # perform_create already passes owner_barber via serializer.save(owner_barber=bp).
+        # Only set it here if not already provided (e.g. admin creates on behalf of a barber).
+        if "owner_barber" not in validated_data and request is not None:
             from accounts.auth_utils import request_barber
 
             bp = request_barber(request)
