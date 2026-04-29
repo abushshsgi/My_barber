@@ -458,24 +458,36 @@ class AdminServicesView(APIView):
 
         out = []
 
-        def cat_names(obj) -> str:
-            names = list(obj.categories.order_by("order", "name").values_list("name", flat=True))
-            return ", ".join(names)
+        def category_payload(obj):
+            """
+            Productionda legacy DB sxemasi (m2m jadval hali yo'q) bo'lsa ham endpoint 500 bermasin.
+            """
+            try:
+                ids = list(obj.categories.values_list("id", flat=True))
+                names = list(obj.categories.order_by("order", "name").values_list("name", flat=True))
+                return ids, ", ".join(names)
+            except Exception:
+                return [], ""
 
         if kind in ("", "salon", "both"):
-            qs = Service.objects.select_related("salon").prefetch_related("categories").all()
+            qs = Service.objects.select_related("salon").all()
             if q:
                 qs = qs.filter(Q(name__icontains=q) | Q(salon__name__icontains=q))
             if cat and str(cat).isdigit():
-                qs = qs.filter(categories__id=int(cat))
+                try:
+                    qs = qs.filter(categories__id=int(cat))
+                except Exception:
+                    # Legacy schema: categories m2m not ready yet, skip category filter.
+                    pass
             for s in qs.order_by("name")[:2000]:
+                cat_ids, cat_names = category_payload(s)
                 out.append(
                     {
                         "id": str(s.id),
                         "type": "salon",
                         "name": s.name,
-                        "category_ids": list(s.categories.values_list("id", flat=True)),
-                        "category_names": cat_names(s),
+                        "category_ids": cat_ids,
+                        "category_names": cat_names,
                         "price": s.price,
                         "duration_min": s.duration_minutes,
                         "bookings_count": BookingLine.objects.filter(salon_service_id=s.id).count(),
@@ -484,19 +496,24 @@ class AdminServicesView(APIView):
                 )
 
         if kind in ("", "independent", "both"):
-            qs = BarberService.objects.select_related("profile", "profile__barber").prefetch_related("categories").all()
+            qs = BarberService.objects.select_related("profile", "profile__barber").all()
             if q:
                 qs = qs.filter(Q(name__icontains=q) | Q(profile__barber__email__icontains=q) | Q(profile__barber__full_name__icontains=q))
             if cat and str(cat).isdigit():
-                qs = qs.filter(categories__id=int(cat))
+                try:
+                    qs = qs.filter(categories__id=int(cat))
+                except Exception:
+                    # Legacy schema: categories m2m not ready yet, skip category filter.
+                    pass
             for s in qs.order_by("name")[:2000]:
+                cat_ids, cat_names = category_payload(s)
                 out.append(
                     {
                         "id": str(s.id),
                         "type": "independent",
                         "name": s.name,
-                        "category_ids": list(s.categories.values_list("id", flat=True)),
-                        "category_names": cat_names(s),
+                        "category_ids": cat_ids,
+                        "category_names": cat_names,
                         "price": s.price,
                         "duration_min": s.duration_minutes,
                         "bookings_count": BookingLine.objects.filter(barber_service_id=s.id).count(),
