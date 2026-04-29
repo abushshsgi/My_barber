@@ -14,9 +14,9 @@
     "incremental": true,
     "paths": {
       "@/*": ["./src/*"],
-      "@/lib/*": ["../../packages/shared/src/*"],
-      "@/types": ["../../packages/shared/src/types/index.ts"],
-      "@/types/*": ["../../packages/shared/src/types/*"]
+      "@/lib/*": ["../../node_modules/@mybarber/shared/src/*"],
+      "@/types": ["../../node_modules/@mybarber/shared/src/types/index.ts"],
+      "@/types/*": ["../../node_modules/@mybarber/shared/src/types/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],

@@ -4,6 +4,15 @@ import tailwindcss from "@tailwindcss/vite";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import path from "node:path";
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const require = createRequire(path.join(__dirname, "package.json"));
+const sharedRoot = path.join(
+  path.dirname(require.resolve("@mybarber/shared/package.json")),
+  "src",
+);
 
 export default defineConfig({
   plugins: [TanStackRouterVite(), react(), tailwindcss(), tsconfigPaths()],
@@ -11,11 +20,11 @@ export default defineConfig({
     alias: [
       {
         find: /^@\/lib\/(.*)$/,
-        replacement: `${path.resolve(__dirname, "../../packages/shared/src")}/$1`,
+        replacement: `${sharedRoot}/$1`,
       },
       {
         find: /^@\/types\/?(.*)$/,
-        replacement: `${path.resolve(__dirname, "../../packages/shared/src/types")}/$1`,
+        replacement: `${path.join(sharedRoot, "types")}/$1`,
       },
     ],
   },
