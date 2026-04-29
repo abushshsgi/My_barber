@@ -1,15 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { Target, CheckCircle2, Circle, Trophy, Flag } from "lucide-react";
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
 import { PageHeader, StatCard, SectionCard } from "@/components/barber/primitives";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/barber/goals")({
   component: GoalsPage,
 });
 
 function GoalsPage() {
-  const { goals, toggleGoal } = useBarberContext();
+  const { goals, toggleGoal, addGoal } = useBarberContext();
+  const [openCreate, setOpenCreate] = useState(false);
+  const [form, setForm] = useState({ title: "", target: "", unit: "ta", deadline: "" });
   const done = goals.filter((g) => g.done).length;
   const avg = Math.round(
     (goals.reduce((s, g) => s + Math.min(1, g.current / g.target), 0) / Math.max(1, goals.length)) * 100,
@@ -21,12 +25,49 @@ function GoalsPage() {
         title="Maqsadlar"
         description="O'zingizga maqsad qo'ying va rivojlanishni kuzating."
         actions={
-          <button className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90">
+          <button
+            onClick={() => setOpenCreate((v) => !v)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
+          >
             <Flag className="size-4" />
             Maqsad qo'shish
           </button>
         }
       />
+      {openCreate && (
+        <SectionCard title="Yangi maqsad">
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+            <input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} placeholder="Sarlavha" className="sm:col-span-2 h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm" />
+            <input type="number" value={form.target} onChange={(e) => setForm((p) => ({ ...p, target: e.target.value }))} placeholder="Maqsad" className="h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm" />
+            <input value={form.unit} onChange={(e) => setForm((p) => ({ ...p, unit: e.target.value }))} placeholder="Birlik" className="h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm" />
+            <input type="date" value={form.deadline} onChange={(e) => setForm((p) => ({ ...p, deadline: e.target.value }))} className="h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm" />
+            <button
+              onClick={async () => {
+                if (!form.title.trim() || !form.target || !form.deadline) {
+                  toast.error("Maydonlarni to'ldiring.");
+                  return;
+                }
+                const ok = await addGoal({
+                  title: form.title.trim(),
+                  target: Number(form.target),
+                  unit: form.unit.trim() || "ta",
+                  deadline: form.deadline,
+                });
+                if (ok) {
+                  toast.success("Maqsad qo'shildi.");
+                  setOpenCreate(false);
+                  setForm({ title: "", target: "", unit: "ta", deadline: "" });
+                } else {
+                  toast.error("Maqsad qo'shib bo'lmadi.");
+                }
+              }}
+              className="h-10 px-3 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
+            >
+              Saqlash
+            </button>
+          </div>
+        </SectionCard>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard icon={<Target className="size-4" />} label="Jami maqsadlar" value={goals.length} />

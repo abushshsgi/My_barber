@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { ChevronDown, MessageSquare, Mail, Phone, BookOpen, Send } from "lucide-react";
 import { PageHeader, SectionCard } from "@/components/barber/primitives";
+import { useBarberContext } from "@/components/barber/BarberContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -33,6 +34,7 @@ const FAQ = [
 ];
 
 function HelpPage() {
+  const { sendSupportTicket } = useBarberContext();
   const [open, setOpen] = useState<number | null>(0);
   const [message, setMessage] = useState("");
 
@@ -96,10 +98,18 @@ function HelpPage() {
             />
             <div className="flex items-center justify-end">
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (!message.trim()) return;
-                  toast.success("Murojaatingiz yuborildi");
-                  setMessage("");
+                  const ok = await sendSupportTicket({
+                    subject: "Barber panel support",
+                    message: message.trim(),
+                  });
+                  if (ok) {
+                    toast.success("Murojaatingiz yuborildi");
+                    setMessage("");
+                  } else {
+                    toast.error("Murojaat yuborilmadi");
+                  }
                 }}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
               >

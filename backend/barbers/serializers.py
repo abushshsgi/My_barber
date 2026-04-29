@@ -1,6 +1,18 @@
 from rest_framework import serializers
 
-from .models import BarberProfile, BarberService, BarberWorkPhoto, BarberWorkingHours
+from .models import (
+    BarberExpense,
+    BarberGoal,
+    BarberInventoryItem,
+    BarberInventoryMovement,
+    BarberProfile,
+    BarberPromo,
+    BarberService,
+    BarberSetting,
+    BarberSupportTicket,
+    BarberWorkPhoto,
+    BarberWorkingHours,
+)
 
 
 def _public_avatar_url(obj, request):
@@ -21,7 +33,7 @@ def _public_avatar_url(obj, request):
 class BarberWorkPhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model = BarberWorkPhoto
-        fields = ("id", "image", "sort_order", "created_at")
+        fields = ("id", "image", "title", "service_name", "likes", "sort_order", "created_at")
 
 
 class BarberServiceSerializer(serializers.ModelSerializer):
@@ -131,6 +143,84 @@ class BarberProfileUpsertSerializer(serializers.ModelSerializer):
 class BarberWorkPhotoCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = BarberWorkPhoto
-        fields = ("id", "image", "sort_order", "created_at")
+        fields = ("id", "image", "title", "service_name", "likes", "sort_order", "created_at")
         read_only_fields = ("id", "created_at")
+
+
+class BarberInventoryItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BarberInventoryItem
+        fields = (
+            "id",
+            "name",
+            "category",
+            "stock",
+            "min_stock",
+            "unit",
+            "price",
+            "supplier",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("id", "created_at", "updated_at")
+
+
+class BarberInventoryMovementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BarberInventoryMovement
+        fields = ("id", "item", "delta", "note", "created_at")
+        read_only_fields = ("id", "created_at")
+
+
+class BarberExpenseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BarberExpense
+        fields = ("id", "category", "description", "amount", "spent_on", "created_at")
+        read_only_fields = ("id", "created_at")
+
+
+class BarberGoalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BarberGoal
+        fields = ("id", "title", "target", "current", "unit", "deadline", "done", "created_at")
+        read_only_fields = ("id", "created_at")
+
+
+class BarberPromoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BarberPromo
+        fields = (
+            "id",
+            "code",
+            "description",
+            "discount_pct",
+            "uses",
+            "max_uses",
+            "is_active",
+            "expires",
+            "created_at",
+        )
+        read_only_fields = ("id", "created_at")
+
+
+class BarberSettingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BarberSetting
+        fields = (
+            "notifications_email",
+            "notifications_push",
+            "notifications_sms",
+            "auto_accept",
+            "language",
+            "theme",
+            "updated_at",
+        )
+        read_only_fields = ("updated_at",)
+
+
+class BarberSupportTicketSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BarberSupportTicket
+        fields = ("id", "subject", "message", "status", "created_at", "updated_at")
+        read_only_fields = ("id", "status", "created_at", "updated_at")
 

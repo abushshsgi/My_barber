@@ -1,6 +1,7 @@
 import math
 from datetime import datetime, timedelta
 
+from django.db import transaction
 from django.db.models import Avg, Count, Q
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
@@ -14,16 +15,36 @@ from rest_framework.views import APIView
 from accounts.auth_utils import customer_catalog_region
 from accounts.throttles import SalonSearchThrottle
 from accounts.uz_regions import UzRegion
-from bookings.models import Booking, BookingLine
+from bookings.models import Booking, BookingLine, Review
 from notifications.utils import notify_user
 
-from .models import Barber, BarberProfile, BarberService, BarberWorkPhoto, BarberWorkingHours
+from .models import (
+    Barber,
+    BarberExpense,
+    BarberGoal,
+    BarberInventoryItem,
+    BarberInventoryMovement,
+    BarberProfile,
+    BarberPromo,
+    BarberService,
+    BarberSetting,
+    BarberSupportTicket,
+    BarberWorkPhoto,
+    BarberWorkingHours,
+)
 from .permissions import IsBarber
 from .serializers import (
+    BarberExpenseSerializer,
+    BarberGoalSerializer,
+    BarberInventoryItemSerializer,
+    BarberInventoryMovementSerializer,
     BarberProfileUpsertSerializer,
+    BarberPromoSerializer,
     BarberPublicDetailSerializer,
     BarberPublicListSerializer,
+    BarberSettingSerializer,
     BarberServiceSerializer,
+    BarberSupportTicketSerializer,
     BarberWorkPhotoCreateSerializer,
     BarberWorkingHoursSerializer,
 )
@@ -248,6 +269,203 @@ class MyBarberWorkPhotoViewSet(viewsets.ModelViewSet):
         b = self.request.user.barber
         prof, _ = BarberProfile.objects.get_or_create(barber=b)
         serializer.save(profile=prof)
+
+
+class MyBarberInventoryViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsBarber]
+    serializer_class = BarberInventoryItemSerializer
+
+    def get_queryset(self):
+        return BarberInventoryItem.objects.filter(barber=self.request.user.barber).order_by("name", "id")
+
+    def perform_create(self, serializer):
+        serializer.save(barber=self.request.user.barber)
+
+    @action(detail=True, methods=["post"])
+    def adjust(self, request, pk=None):
+        item = self.get_object()
+        try:
+            delta = int(request.data.get("delta", 0))
+        except (TypeError, ValueError):
+            return Response({"detail": "delta butun son bo'lishi kerak."}, status=400)
+        note = str(request.data.get("note", "") or "").strip()
+        if delta == 0:
+            return Response({"detail": "delta nol bo'lmasligi kerak."}, status=400)
+        with transaction.atomic():
+            item.stock = max(0, item.stock + delta)
+            item.save(update_fields=["stock", "updated_at"])
+            BarberInventoryMovement.objects.create(item=item, delta=delta, note=note)
+        return Response(BarberInventoryItemSerializer(item).data)
+
+
+class MyBarberInventoryMovementViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [IsBarber]
+    serializer_class = BarberInventoryMovementSerializer
+
+    def get_queryset(self):
+        return BarberInventoryMovement.objects.filter(item__barber=self.request.user.barber).select_related("item")
+
+
+class MyBarberExpenseViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsBarber]
+    serializer_class = BarberExpenseSerializer
+
+    def get_queryset(self):
+        return BarberExpense.objects.filter(barber=self.request.user.barber).order_by("-spent_on", "-id")
+
+    def perform_create(self, serializer):
+        serializer.save(barber=self.request.user.barber)
+
+
+class MyBarberGoalViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsBarber]
+    serializer_class = BarberGoalSerializer
+
+    def get_queryset(self):
+        return BarberGoal.objects.filter(barber=self.request.user.barber).order_by("done", "deadline", "-id")
+
+    def perform_create(self, serializer):
+        serializer.save(barber=self.request.user.barber)
+
+
+class MyBarberPromoViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsBarber]
+    serializer_class = BarberPromoSerializer
+
+    def get_queryset(self):
+        return BarberPromo.objects.filter(barber=self.request.user.barber).order_by("-created_at")
+
+    def perform_create(self, serializer):
+        serializer.save(barber=self.request.user.barber)
+
+    @action(detail=False, methods=["post"])
+    def broadcast(self, request):
+        message = str(request.data.get("message", "") or "").strip()
+        if not message:
+            return Response({"detail": "message required."}, status=400)
+        title = str(request.data.get("title", "Barber xabari") or "Barber xabari").strip()
+        barber = request.user.barber
+        booking_users = (
+            Booking.objects.filter(barber=barber)
+            .select_related("customer")
+            .values_list("customer_id", flat=True)
+            .distinct()
+        )
+        count = 0
+        from accounts.models import User
+
+        for uid in booking_users:
+            user = User.objects.filter(pk=uid).first()
+            if user is None:
+                continue
+            notify_user(
+                user,
+                "barber_announcement",
+                title,
+                message,
+                {"barber_id": barber.id},
+            )
+            count += 1
+        return Response({"status": "ok", "sent_count": count})
+
+
+class MyBarberSettingsView(APIView):
+    permission_classes = [IsBarber]
+
+    def get(self, request):
+        obj, _ = BarberSetting.objects.get_or_create(barber=request.user.barber)
+        return Response(BarberSettingSerializer(obj).data)
+
+    def patch(self, request):
+        obj, _ = BarberSetting.objects.get_or_create(barber=request.user.barber)
+        ser = BarberSettingSerializer(instance=obj, data=request.data, partial=True)
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        return Response(ser.data)
+
+
+class MyBarberSupportTicketViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsBarber]
+    serializer_class = BarberSupportTicketSerializer
+    http_method_names = ["get", "post", "head", "options"]
+
+    def get_queryset(self):
+        return BarberSupportTicket.objects.filter(barber=self.request.user.barber).order_by("-created_at")
+
+    def perform_create(self, serializer):
+        serializer.save(barber=self.request.user.barber)
+
+
+class MyBarberFinanceSummaryView(APIView):
+    permission_classes = [IsBarber]
+
+    def get(self, request):
+        barber = request.user.barber
+        expenses_total = sum(BarberExpense.objects.filter(barber=barber).values_list("amount", flat=True))
+        completed = Booking.objects.filter(barber=barber, status=Booking.Status.COMPLETED)
+        income_total = sum(completed.values_list("total_price", flat=True))
+        transactions = []
+        for b in completed.order_by("-start_at")[:100]:
+            transactions.append(
+                {
+                    "id": f"booking-{b.id}",
+                    "date": b.start_at.isoformat(),
+                    "client": b.customer.full_name or b.customer.email,
+                    "service": (b.lines.first().service_name if b.lines.exists() else "Xizmat"),
+                    "amount": str(b.total_price),
+                    "kind": "booking",
+                    "status": "completed",
+                }
+            )
+        for e in BarberExpense.objects.filter(barber=barber).order_by("-spent_on")[:100]:
+            transactions.append(
+                {
+                    "id": f"expense-{e.id}",
+                    "date": f"{e.spent_on}T00:00:00",
+                    "client": "—",
+                    "service": e.description,
+                    "amount": str(-e.amount),
+                    "kind": "expense",
+                    "status": "completed",
+                }
+            )
+        transactions.sort(key=lambda r: r["date"], reverse=True)
+        return Response(
+            {
+                "income_total": str(income_total),
+                "expense_total": str(expenses_total),
+                "net_total": str(income_total - expenses_total),
+                "transactions": transactions[:100],
+            }
+        )
+
+
+class MyBarberReviewsView(APIView):
+    permission_classes = [IsBarber]
+
+    def get(self, request):
+        barber = request.user.barber
+        rows = (
+            Review.objects.filter(barber=barber)
+            .select_related("author")
+            .order_by("-created_at")
+        )
+        out = []
+        for r in rows:
+            out.append(
+                {
+                    "id": r.id,
+                    "client": r.author.full_name or r.author.email,
+                    "avatar": (request.build_absolute_uri(r.author.avatar.url) if getattr(r.author, "avatar", None) else ""),
+                    "rating": r.rating,
+                    "text": r.text,
+                    "date": r.created_at.isoformat(),
+                    "service": (r.booking.lines.first().service_name if r.booking.lines.exists() else "Xizmat"),
+                    "barber_reply": r.barber_reply,
+                    "barber_replied_at": r.barber_replied_at.isoformat() if r.barber_replied_at else None,
+                }
+            )
+        return Response(out)
 
 
 class MyBarberWorkingHoursViewSet(viewsets.ModelViewSet):

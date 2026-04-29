@@ -49,6 +49,7 @@ from bookings.views import (
     BookingViewSet,
     IndependentClientsView,
     NotificationListView,
+    NotificationMarkAllReadView,
     NotificationMarkReadView,
     ReviewViewSet,
     SalonClientsView,
@@ -56,10 +57,19 @@ from bookings.views import (
 )
 from barbers.views import (
     BarberPublicViewSet,
+    MyBarberExpenseViewSet,
+    MyBarberFinanceSummaryView,
+    MyBarberGoalViewSet,
+    MyBarberInventoryMovementViewSet,
+    MyBarberInventoryViewSet,
     BarberSearchView,
     IndependentAvailabilityView,
     MyBarberProfileView,
+    MyBarberPromoViewSet,
+    MyBarberReviewsView,
+    MyBarberSettingsView,
     MyBarberServiceViewSet,
+    MyBarberSupportTicketViewSet,
     MyBarberWorkPhotoViewSet,
     MyBarberWorkingHoursViewSet,
 )
@@ -93,6 +103,16 @@ router.register(r"barbers", BarberPublicViewSet, basename="barber")
 router.register(r"barber/services", MyBarberServiceViewSet, basename="barber-service")
 router.register(r"barber/work-photos", MyBarberWorkPhotoViewSet, basename="barber-work-photos")
 router.register(r"barber/working-hours", MyBarberWorkingHoursViewSet, basename="barber-working-hours")
+router.register(r"barber/inventory", MyBarberInventoryViewSet, basename="barber-inventory")
+router.register(
+    r"barber/inventory-movements",
+    MyBarberInventoryMovementViewSet,
+    basename="barber-inventory-movements",
+)
+router.register(r"barber/expenses", MyBarberExpenseViewSet, basename="barber-expenses")
+router.register(r"barber/goals", MyBarberGoalViewSet, basename="barber-goals")
+router.register(r"barber/promos", MyBarberPromoViewSet, basename="barber-promos")
+router.register(r"barber/support", MyBarberSupportTicketViewSet, basename="barber-support")
 # Shared API routes (mounted at both /api/v1/ and /api/ for compatibility).
 api_routes = [
     path("admin/stats/", AdminStatsView.as_view()),
@@ -135,8 +155,12 @@ api_routes = [
     path("barber/auth/me/", BarberMeView.as_view()),
     path("barber/onboarding/status/", BarberOnboardingStatusView.as_view()),
     path("barber/profile/", MyBarberProfileView.as_view()),
+    path("barber/settings/", MyBarberSettingsView.as_view()),
+    path("barber/reviews/", MyBarberReviewsView.as_view()),
+    path("barber/finance/summary/", MyBarberFinanceSummaryView.as_view()),
     path("notifications/", NotificationListView.as_view()),
     path("notifications/<int:pk>/read/", NotificationMarkReadView.as_view()),
+    path("notifications/mark-all-read/", NotificationMarkAllReadView.as_view()),
     path("analytics/", AnalyticsView.as_view()),
     path("analytics/clients/", SalonClientsView.as_view()),
     path("analytics/clients/independent/", IndependentClientsView.as_view()),

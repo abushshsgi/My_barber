@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { Star } from "lucide-react";
 import { useBarberContext } from "@/components/barber/BarberContext";
 import { cn } from "@/lib/utils";
+import { apiFetch } from "@/lib/api";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/barber/reviews")({
   component: ReviewsPage,
@@ -25,6 +28,7 @@ function Stars({ value, size = 4 }: { value: number; size?: number }) {
 
 function ReviewsPage() {
   const { reviews } = useBarberContext();
+  const [replyByReview, setReplyByReview] = useState<Record<string, string>>({});
   const avg = reviews.reduce((s, r) => s + r.rating, 0) / Math.max(1, reviews.length);
   const dist = [5, 4, 3, 2, 1].map((star) => ({
     star,
@@ -85,6 +89,33 @@ function ReviewsPage() {
                   <span className="text-xs text-muted-foreground">· {r.service}</span>
                 </div>
                 <p className="mt-2 text-sm text-foreground/90">{r.text}</p>
+                <div className="mt-3 flex gap-2">
+                  <input
+                    value={replyByReview[r.id] || ""}
+                    onChange={(e) => setReplyByReview((p) => ({ ...p, [r.id]: e.target.value }))}
+                    placeholder="Sharhga javob yozing..."
+                    className="flex-1 h-9 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm"
+                  />
+                  <button
+                    onClick={async () => {
+                      const reply = (replyByReview[r.id] || "").trim();
+                      if (!reply) return;
+                      const res = await apiFetch(`/api/v1/reviews/${r.id}/reply/`, {
+                        method: "POST",
+                        body: JSON.stringify({ reply }),
+                      });
+                      if (res.ok) {
+                        toast.success("Javob yuborildi.");
+                        setReplyByReview((p) => ({ ...p, [r.id]: "" }));
+                      } else {
+                        toast.error("Javob yuborilmadi.");
+                      }
+                    }}
+                    className="h-9 px-3 rounded-lg bg-foreground text-background text-xs font-medium hover:opacity-90"
+                  >
+                    Yuborish
+                  </button>
+                </div>
               </div>
             </div>
           </div>

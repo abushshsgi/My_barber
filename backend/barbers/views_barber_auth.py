@@ -74,6 +74,7 @@ class BarberMeView(APIView):
                 "phone": b.phone,
                 "role": "BARBER",
                 "work_mode": b.work_mode,
+                "onboarding_completed": bool(b.onboarding_completed_at),
             }
         )
 
@@ -104,6 +105,7 @@ class BarberMeView(APIView):
                 "phone": b.phone,
                 "role": "BARBER",
                 "work_mode": b.work_mode,
+                "onboarding_completed": bool(b.onboarding_completed_at),
             }
         )
 

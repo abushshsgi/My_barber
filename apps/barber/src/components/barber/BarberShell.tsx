@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { clearBarberTokens } from "@/lib/api";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
   CommandDialog,
@@ -296,7 +297,11 @@ function Topbar({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive"
-              onClick={() => toast.info("Tizimdan chiqildi (demo)")}
+              onClick={() => {
+                clearBarberTokens();
+                navigate({ to: "/auth" });
+                toast.info("Tizimdan chiqildi");
+              }}
             >
               <LogOut className="size-4 mr-2" />
               Chiqish

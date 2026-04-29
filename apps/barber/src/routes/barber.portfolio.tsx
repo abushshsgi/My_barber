@@ -4,15 +4,22 @@ import { Plus, Heart, Image as ImageIcon, Share2, X } from "lucide-react";
 import { useBarberContext } from "@/components/barber/BarberContext";
 import { PageHeader, StatCard } from "@/components/barber/primitives";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/barber/portfolio")({
   component: PortfolioPage,
 });
 
 function PortfolioPage() {
-  const { portfolio } = useBarberContext();
+  const { portfolio, uploadPortfolio } = useBarberContext();
   const [active, setActive] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>("all");
+  const [showUpload, setShowUpload] = useState(false);
+  const [form, setForm] = useState<{ title: string; service: string; file: File | null }>({
+    title: "",
+    service: "",
+    file: null,
+  });
 
   const services = Array.from(new Set(portfolio.map((p) => p.service)));
   const items = portfolio.filter((p) => filter === "all" || p.service === filter);
@@ -25,12 +32,45 @@ function PortfolioPage() {
         title="Portfolio"
         description="Eng yaxshi ishlaringizni mijozlarga ko'rsating."
         actions={
-          <button className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90">
+          <button
+            onClick={() => setShowUpload((v) => !v)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
+          >
             <Plus className="size-4" />
             Rasm yuklash
           </button>
         }
       />
+      {showUpload && (
+        <div className="rounded-xl border border-border bg-card p-4 grid grid-cols-1 sm:grid-cols-4 gap-2">
+          <input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} placeholder="Sarlavha" className="h-10 px-3 rounded-lg bg-muted/40 border border-border focus:bg-background focus:ring-2 focus:ring-ring outline-none text-sm" />
+          <input value={form.service} onChange={(e) => setForm((p) => ({ ...p, service: e.target.value }))} placeholder="Xizmat nomi" className="h-10 px-3 rounded-lg bg-muted/40 border border-border focus:bg-background focus:ring-2 focus:ring-ring outline-none text-sm" />
+          <input type="file" accept="image/*" onChange={(e) => setForm((p) => ({ ...p, file: e.target.files?.[0] || null }))} className="h-10 px-2 py-2 rounded-lg bg-muted/40 border border-border text-sm" />
+          <button
+            onClick={async () => {
+              if (!form.file) {
+                toast.error("Rasm tanlang.");
+                return;
+              }
+              const ok = await uploadPortfolio({
+                file: form.file,
+                title: form.title.trim() || "Portfolio",
+                service: form.service.trim() || "Xizmat",
+              });
+              if (ok) {
+                toast.success("Rasm yuklandi.");
+                setShowUpload(false);
+                setForm({ title: "", service: "", file: null });
+              } else {
+                toast.error("Yuklashda xato.");
+              }
+            }}
+            className="h-10 px-3 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
+          >
+            Saqlash
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard icon={<ImageIcon className="size-4" />} label="Ishlar" value={portfolio.length} />

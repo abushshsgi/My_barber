@@ -1,6 +1,18 @@
 from django.contrib import admin
 
-from .models import Barber, BarberProfile, BarberService, BarberWorkPhoto
+from .models import (
+    Barber,
+    BarberExpense,
+    BarberGoal,
+    BarberInventoryItem,
+    BarberInventoryMovement,
+    BarberProfile,
+    BarberPromo,
+    BarberService,
+    BarberSetting,
+    BarberSupportTicket,
+    BarberWorkPhoto,
+)
 
 
 class BarberWorkPhotoInline(admin.TabularInline):
@@ -41,4 +53,57 @@ class BarberServiceAdmin(admin.ModelAdmin):
 class BarberWorkPhotoAdmin(admin.ModelAdmin):
     list_display = ("id", "profile", "sort_order", "created_at")
     autocomplete_fields = ("profile",)
+
+
+@admin.register(BarberInventoryItem)
+class BarberInventoryItemAdmin(admin.ModelAdmin):
+    list_display = ("id", "barber", "name", "category", "stock", "min_stock", "price")
+    list_filter = ("category",)
+    search_fields = ("name", "barber__email", "barber__full_name")
+    autocomplete_fields = ("barber",)
+
+
+@admin.register(BarberInventoryMovement)
+class BarberInventoryMovementAdmin(admin.ModelAdmin):
+    list_display = ("id", "item", "delta", "note", "created_at")
+    search_fields = ("item__name", "item__barber__email")
+    autocomplete_fields = ("item",)
+
+
+@admin.register(BarberExpense)
+class BarberExpenseAdmin(admin.ModelAdmin):
+    list_display = ("id", "barber", "category", "description", "amount", "spent_on")
+    list_filter = ("category", "spent_on")
+    search_fields = ("description", "barber__email")
+    autocomplete_fields = ("barber",)
+
+
+@admin.register(BarberGoal)
+class BarberGoalAdmin(admin.ModelAdmin):
+    list_display = ("id", "barber", "title", "target", "current", "done", "deadline")
+    list_filter = ("done",)
+    search_fields = ("title", "barber__email")
+    autocomplete_fields = ("barber",)
+
+
+@admin.register(BarberPromo)
+class BarberPromoAdmin(admin.ModelAdmin):
+    list_display = ("id", "barber", "code", "discount_pct", "uses", "max_uses", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("code", "barber__email")
+    autocomplete_fields = ("barber",)
+
+
+@admin.register(BarberSetting)
+class BarberSettingAdmin(admin.ModelAdmin):
+    list_display = ("barber", "notifications_email", "notifications_push", "notifications_sms", "auto_accept")
+    autocomplete_fields = ("barber",)
+
+
+@admin.register(BarberSupportTicket)
+class BarberSupportTicketAdmin(admin.ModelAdmin):
+    list_display = ("id", "barber", "subject", "status", "created_at")
+    list_filter = ("status", "created_at")
+    search_fields = ("subject", "message", "barber__email")
+    autocomplete_fields = ("barber",)
 

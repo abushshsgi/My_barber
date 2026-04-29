@@ -256,6 +256,8 @@ class ReviewSerializer(serializers.ModelSerializer):
             "rating",
             "text",
             "photo",
+            "barber_reply",
+            "barber_replied_at",
             "created_at",
         )
         read_only_fields = ("id", "created_at", "author_name")

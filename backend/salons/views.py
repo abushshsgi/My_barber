@@ -651,6 +651,23 @@ class SalonMembershipViewSet(viewsets.ModelViewSet):
         )
         return Response(SalonMembershipSerializer(mem).data)
 
+    @action(detail=True, methods=["post"])
+    def remove_worker(self, request, pk=None):
+        mem = self.get_object()
+        bp = request_barber(request)
+        if bp is None:
+            return Response(status=403)
+        is_owner = mem.salon.owner_barber_id == bp.id
+        is_self = mem.barber_id == bp.id
+        if not is_owner and not is_self:
+            return Response(status=403)
+        if mem.role == SalonMembership.Role.OWNER:
+            return Response({"detail": "Owner membership ni bu endpoint orqali o'chirib bo'lmaydi."}, status=400)
+        mem.invite_state = SalonMembership.InviteState.DECLINED
+        mem.owner_approved = False
+        mem.save(update_fields=["invite_state", "owner_approved"])
+        return Response({"status": "removed", "membership_id": mem.id})
+
 
 class BarberScheduleViewSet(viewsets.ModelViewSet):
     serializer_class = BarberWorkingHoursSerializer

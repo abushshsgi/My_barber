@@ -241,6 +241,33 @@ class ReviewViewSet(viewsets.ModelViewSet):
             return [AllowAny()]
         return super().get_permissions()
 
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
+    def reply(self, request, pk=None):
+        review = self.get_object()
+        bp = request_barber(request)
+        if bp is None:
+            return Response({"detail": "Faqat sartarosh javob bera oladi."}, status=403)
+        allowed = review.barber_id == bp.id or (
+            review.salon_id
+            and (
+                review.salon.owner_barber_id == bp.id
+                or SalonMembership.objects.filter(
+                    salon_id=review.salon_id,
+                    barber=bp,
+                    invite_state=SalonMembership.InviteState.ACTIVE,
+                ).exists()
+            )
+        )
+        if not allowed:
+            return Response(status=403)
+        text = str(request.data.get("reply", "") or "").strip()
+        if not text:
+            return Response({"detail": "reply majburiy."}, status=400)
+        review.barber_reply = text
+        review.barber_replied_at = timezone.now()
+        review.save(update_fields=["barber_reply", "barber_replied_at"])
+        return Response(ReviewSerializer(review, context={"request": request}).data)
+
 
 class SalonClientsView(APIView):
     """Aggregated clients for a salon (completed bookings) with NEW / RETURNING tags."""
@@ -640,4 +667,19 @@ class NotificationMarkReadView(APIView):
             n = get_object_or_404(Notification, pk=pk, user=u)
         n.read_at = timezone.now()
         n.save(update_fields=["read_at"])
+        return Response({"status": "ok"})
+
+
+class NotificationMarkAllReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from notifications.models import Notification
+
+        u = request.user
+        now = timezone.now()
+        if isinstance(u, BarberPrincipal):
+            Notification.objects.filter(barber=u.barber, read_at__isnull=True).update(read_at=now)
+        else:
+            Notification.objects.filter(user=u, read_at__isnull=True).update(read_at=now)
         return Response({"status": "ok"})

@@ -78,7 +78,14 @@ export type BarberPublicDetailApi = {
   avg_rating?: number | null;
   review_count?: number | null;
   services: BarberServiceApi[];
-  work_photos: { id: number; image: string; sort_order: number }[];
+  work_photos: {
+    id: number;
+    image: string;
+    sort_order: number;
+    title?: string;
+    service_name?: string;
+    likes?: number;
+  }[];
 };
 
 export async function fetchBarberPublicDetailByBarberId(

@@ -119,6 +119,8 @@ class Review(models.Model):
     rating = models.PositiveSmallIntegerField()
     text = models.TextField(blank=True)
     photo = models.ImageField(upload_to="reviews/", blank=True, null=True)
+    barber_reply = models.TextField(blank=True, default="")
+    barber_replied_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

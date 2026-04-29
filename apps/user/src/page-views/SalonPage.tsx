@@ -40,6 +40,8 @@ type ReviewApi = {
   text: string;
   author_name: string;
   created_at: string;
+  barber_reply?: string;
+  barber_replied_at?: string | null;
 };
 
 export default function SalonPage() {
@@ -216,6 +218,12 @@ export default function SalonPage() {
                   <StarRating rating={review.rating} size="sm" showValue={false} />
                 </div>
                 <p className="text-sm text-muted-foreground">{review.text}</p>
+                {review.barber_reply ? (
+                  <div className="mt-2 rounded-md bg-muted/40 p-2.5">
+                    <p className="text-xs font-medium text-foreground">Barber javobi</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{review.barber_reply}</p>
+                  </div>
+                ) : null}
               </Card>
             ))}
           </div>

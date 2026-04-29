@@ -103,7 +103,7 @@ export type Transaction = {
   client: string;
   service: string;
   amount: number;
-  kind: "booking" | "tip" | "payout" | "refund";
+  kind: "booking" | "tip" | "payout" | "refund" | "expense";
   status: "completed" | "pending" | "failed";
 };
 
@@ -195,11 +195,19 @@ type Ctx = {
   sendChatMessage: (conversationId: string, text: string) => void;
   loadConversationMessages: (conversationId: string) => Promise<void>;
   toggleService: (id: string) => void;
+  addService: (payload: { name: string; duration_min: number; price: number }) => Promise<boolean>;
   togglePromo: (id: string) => void;
+  addPromo: (payload: { code: string; description: string; discount_pct: number; max_uses: number; expires?: string }) => Promise<boolean>;
+  sendAnnouncement: (payload: { title: string; message: string }) => Promise<boolean>;
   updateSettings: (patch: Partial<Settings>) => void;
   adjustInventory: (id: string, delta: number) => void;
+  addInventoryItem: (payload: Omit<InventoryItem, "id" | "stock"> & { stock?: number }) => Promise<boolean>;
   addExpense: (e: Omit<Expense, "id">) => void;
   toggleGoal: (id: string) => void;
+  addGoal: (payload: Omit<Goal, "id" | "current" | "done"> & { current?: number; done?: boolean }) => Promise<boolean>;
+  uploadPortfolio: (payload: { file: File; title: string; service: string }) => Promise<boolean>;
+  addSalonImage: (payload: { file: File }) => Promise<boolean>;
+  sendSupportTicket: (payload: { subject: string; message: string }) => Promise<boolean>;
 };
 
 const BarberCtx = createContext<Ctx | null>(null);
@@ -533,15 +541,22 @@ const PROMOS_INIT: Promo[] = [
 export function BarberProvider({ children }: { children: ReactNode }) {
   const [viewMode, setViewMode] = useState<ViewMode>("independent");
   const [profile, setProfile] = useState<BarberProfile>(PROFILE);
-  const [services, setServices] = useState<Service[]>(SERVICES_INIT);
-  const [bookings, setBookings] = useState<Booking[]>(BOOKINGS_INIT);
-  const [clients, setClients] = useState<Client[]>(CLIENTS);
-  const [notifications, setNotifications] = useState<Notification[]>(NOTIFICATIONS_INIT);
-  const [conversations, setConversations] = useState<Conversation[]>(CONVERSATIONS_INIT);
-  const [promos, setPromos] = useState<Promo[]>(PROMOS_INIT);
-  const [inventory, setInventory] = useState<InventoryItem[]>(INVENTORY_INIT);
-  const [expenses, setExpenses] = useState<Expense[]>(EXPENSES_INIT);
-  const [goals, setGoals] = useState<Goal[]>(GOALS_INIT);
+  const [services, setServices] = useState<Service[]>([]);
+  const [workingHours, setWorkingHours] = useState<WorkingHour[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [salon, setSalon] = useState<Salon>(SALON);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [promos, setPromos] = useState<Promo[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [hasSalon, setHasSalon] = useState(false);
+  const [onboardingComplete, setOnboardingComplete] = useState(true);
   const [settings, setSettings] = useState<Settings>({
     notifications_email: true,
     notifications_push: true,
@@ -551,105 +566,33 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     theme: "light",
   });
 
-  useEffect(() => {
-    let alive = true;
-    const run = async () => {
-      try {
-        const me = await apiJson<{
-          id: number;
-          email: string;
-          full_name: string;
-          phone: string;
-          work_mode: "independent" | "salon_owner" | "salon_employee";
-        }>("/api/v1/barber/auth/me/");
-        if (!alive) return;
-        setProfile((prev) => ({
-          ...prev,
-          id: String(me.id),
-          name: me.full_name || prev.name,
-          title: "Barber",
-          email: me.email,
-          phone: me.phone || prev.phone,
-        }));
-        setViewMode(me.work_mode === "independent" ? "independent" : "salon");
-      } catch (e) {
-        // Token invalid → force login
-        clearBarberTokens();
-        return;
-      }
+  const refreshServices = useCallback(async () => {
+    const rows = await apiJson<Array<{ id: number; name: string; duration_minutes: number; price: string | number; is_active: boolean }>>(
+      "/api/v1/barber/services/",
+    );
+    setServices(
+      rows.map((s) => ({
+        id: String(s.id),
+        name: s.name,
+        duration_min: s.duration_minutes,
+        price: Number(s.price),
+        is_active: !!s.is_active,
+      })),
+    );
+  }, []);
 
-      try {
-        const apiBookings = await apiJson<
-          Array<{
-            id: number;
-            customer_name: string;
-            customer_phone: string;
-            start_at: string;
-            end_at: string;
-            status: string;
-            total_price: string | number;
-            lines: Array<{ service_name: string; duration_minutes: number; price: string | number }>;
-          }>
-        >("/api/v1/bookings/");
-        if (!alive) return;
-        setBookings(apiBookings.map(mapApiBooking));
-      } catch {
-        // keep fallback
-      }
-
-      try {
-        const apiNotifs = await apiJson<
-          Array<{
-            id: number;
-            type: string;
-            title: string;
-            body: string;
-            read_at: string | null;
-            created_at: string;
-          }>
-        >("/api/v1/notifications/");
-        if (!alive) return;
-        setNotifications(apiNotifs.map(mapApiNotification));
-      } catch {
-        // keep fallback
-      }
-
-      try {
-        const apiConvos = await apiJson<
-          Array<{
-            id: string;
-            last_message_text: string;
-            last_message_at: string | null;
-            other: { id: number; full_name: string };
-          }>
-        >("/api/v1/chat/conversations/");
-        if (!alive) return;
-        setConversations(apiConvos.map(mapApiConversation));
-      } catch {
-        // keep fallback
-      }
-
-      // Clients (independent only for now)
-      try {
-        const apiClients = await apiJson<
-          Array<{
-            id: number;
-            full_name: string;
-            phone: string;
-            completed_bookings: number;
-            total_spent: string;
-          }>
-        >("/api/v1/analytics/clients/independent/");
-        if (!alive) return;
-        setClients(apiClients.map(mapApiClient));
-      } catch {
-        // keep fallback
-      }
-    };
-    void run();
-    return () => {
-      alive = false;
-    };
+  const refreshWorkingHours = useCallback(async () => {
+    const rows = await apiJson<Array<{ weekday: number; open_time: string; close_time: string; is_day_off: boolean }>>(
+      "/api/v1/barber/working-hours/",
+    );
+    setWorkingHours(
+      rows.map((w) => ({
+        weekday: w.weekday,
+        open: String(w.open_time).slice(0, 5),
+        close: String(w.close_time).slice(0, 5),
+        closed: !!w.is_day_off,
+      })),
+    );
   }, []);
 
   const refreshBookings = useCallback(async () => {
@@ -668,6 +611,181 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     setBookings(apiBookings.map(mapApiBooking));
   }, []);
 
+  const refreshNotifications = useCallback(async () => {
+    const apiNotifs = await apiJson<
+      Array<{ id: number; type: string; title: string; body: string; read_at: string | null; created_at: string }>
+    >("/api/v1/notifications/");
+    setNotifications(apiNotifs.map(mapApiNotification));
+  }, []);
+
+  const refreshConversations = useCallback(async () => {
+    const apiConvos = await apiJson<
+      Array<{ id: string; last_message_text: string; last_message_at: string | null; other: { id: number; full_name: string } }>
+    >("/api/v1/chat/conversations/");
+    setConversations(apiConvos.map(mapApiConversation));
+  }, []);
+
+  const refreshClients = useCallback(async () => {
+    const apiClients = await apiJson<
+      Array<{ id: number; full_name: string; phone: string; completed_bookings: number; total_spent: string }>
+    >("/api/v1/analytics/clients/independent/");
+    setClients(apiClients.map(mapApiClient));
+  }, []);
+
+  const refreshInventory = useCallback(async () => {
+    const rows = await apiJson<
+      Array<{
+        id: number;
+        name: string;
+        category: "tool" | "product" | "consumable";
+        stock: number;
+        min_stock: number;
+        unit: string;
+        price: string | number;
+        supplier: string;
+      }>
+    >("/api/v1/barber/inventory/");
+    setInventory(
+      rows.map((it) => ({
+        id: String(it.id),
+        name: it.name,
+        category: it.category,
+        stock: it.stock,
+        min_stock: it.min_stock,
+        unit: it.unit,
+        price: Number(it.price),
+        supplier: it.supplier || "",
+      })),
+    );
+  }, []);
+
+  const refreshExpenses = useCallback(async () => {
+    const rows = await apiJson<
+      Array<{ id: number; category: Expense["category"]; description: string; amount: string | number; spent_on: string }>
+    >("/api/v1/barber/expenses/");
+    setExpenses(
+      rows.map((e) => ({
+        id: String(e.id),
+        category: e.category,
+        description: e.description,
+        amount: Number(e.amount),
+        date: e.spent_on,
+      })),
+    );
+  }, []);
+
+  const refreshGoals = useCallback(async () => {
+    const rows = await apiJson<
+      Array<{ id: number; title: string; target: string | number; current: string | number; unit: string; deadline: string; done: boolean }>
+    >("/api/v1/barber/goals/");
+    setGoals(
+      rows.map((g) => ({
+        id: String(g.id),
+        title: g.title,
+        target: Number(g.target),
+        current: Number(g.current),
+        unit: g.unit,
+        deadline: g.deadline,
+        done: g.done,
+      })),
+    );
+  }, []);
+
+  const refreshPromos = useCallback(async () => {
+    const rows = await apiJson<
+      Array<{ id: number; code: string; description: string; discount_pct: number; uses: number; max_uses: number; is_active: boolean; expires: string | null }>
+    >("/api/v1/barber/promos/");
+    setPromos(
+      rows.map((p) => ({
+        id: String(p.id),
+        code: p.code,
+        description: p.description,
+        discount_pct: p.discount_pct,
+        uses: p.uses,
+        max_uses: p.max_uses,
+        is_active: p.is_active,
+        expires: p.expires || "",
+      })),
+    );
+  }, []);
+
+  const refreshSettings = useCallback(async () => {
+    const s = await apiJson<Settings>("/api/v1/barber/settings/");
+    setSettings((prev) => ({ ...prev, ...s }));
+  }, []);
+
+  const refreshPortfolio = useCallback(async () => {
+    const rows = await apiJson<
+      Array<{ id: number; image: string; title: string; service_name: string; created_at: string; likes: number }>
+    >("/api/v1/barber/work-photos/");
+    setPortfolio(
+      rows.map((p) => ({
+        id: String(p.id),
+        image: p.image,
+        title: p.title || "Ish rasmi",
+        service: p.service_name || "Xizmat",
+        date: p.created_at?.slice(0, 10) || "",
+        likes: p.likes || 0,
+      })),
+    );
+  }, []);
+
+  const refreshFinanceSummary = useCallback(async () => {
+    const r = await apiJson<{
+      transactions: Array<{ id: string; date: string; client: string; service: string; amount: string | number; kind: string; status: string }>;
+    }>("/api/v1/barber/finance/summary/");
+    setTransactions(
+      r.transactions.map((t) => ({
+        id: t.id,
+        date: t.date,
+        client: t.client,
+        service: t.service,
+        amount: Number(t.amount),
+        kind: (t.kind as Transaction["kind"]) || "booking",
+        status: (t.status as Transaction["status"]) || "completed",
+      })),
+    );
+  }, []);
+
+  const refreshReviews = useCallback(async () => {
+    const rows = await apiJson<Array<{ id: number; client: string; avatar: string; rating: number; text: string; date: string; service: string; barber_reply?: string }>>(
+      "/api/v1/barber/reviews/",
+    );
+    setReviews(
+      rows.map((r) => ({
+        id: String(r.id),
+        client: r.client,
+        avatar: r.avatar || `https://i.pravatar.cc/150?u=review-${r.id}`,
+        rating: r.rating,
+        text: r.text,
+        date: r.date,
+        service: r.service,
+      })),
+    );
+  }, []);
+
+  const refreshSalonView = useCallback(async () => {
+    try {
+      const rows = await apiJson<Array<{ id: number; name: string; address: string; cover_image: string | null; rating_avg: number; review_count: number; images?: Array<{ image: string }> }>>(
+        "/api/v1/salons/mine/",
+      );
+      const one = rows[0];
+      if (!one) return;
+      setSalon({
+        id: String(one.id),
+        name: one.name,
+        address: one.address || "",
+        cover: one.cover_image || SALON.cover,
+        rating: Number(one.rating_avg || 0),
+        reviews_count: Number(one.review_count || 0),
+        members: 0,
+        gallery: (one.images || []).map((i) => i.image),
+      });
+    } catch {
+      // salon view optional for independent mode
+    }
+  }, []);
+
   const mutateBooking = useCallback(async (id: string, action: "accept" | "reject" | "start" | "complete") => {
     const res = await apiFetch(`/api/v1/bookings/${id}/${action}/`, { method: "POST" });
     if (!res.ok) return;
@@ -680,8 +798,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const markAllNotifsRead = useCallback(async () => {
-    const rows = await apiJson<Array<{ id: number }>>("/api/v1/notifications/");
-    await Promise.all(rows.map((n) => apiFetch(`/api/v1/notifications/${n.id}/read/`, { method: "POST" })));
+    await apiFetch("/api/v1/notifications/mark-all-read/", { method: "POST" });
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   }, []);
 
@@ -710,22 +827,288 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const toggleServiceApi = useCallback(
+    async (id: string) => {
+      const current = services.find((s) => s.id === id);
+      if (!current) return;
+      await apiFetch(`/api/v1/barber/services/${id}/`, {
+        method: "PATCH",
+        body: JSON.stringify({ is_active: !current.is_active }),
+      });
+      await refreshServices();
+    },
+    [refreshServices, services],
+  );
+
+  const togglePromoApi = useCallback(
+    async (id: string) => {
+      const current = promos.find((p) => p.id === id);
+      if (!current) return;
+      await apiFetch(`/api/v1/barber/promos/${id}/`, {
+        method: "PATCH",
+        body: JSON.stringify({ is_active: !current.is_active }),
+      });
+      await refreshPromos();
+    },
+    [promos, refreshPromos],
+  );
+
+  const updateSettingsApi = useCallback(async (patch: Partial<Settings>) => {
+    const res = await apiFetch("/api/v1/barber/settings/", {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
+    if (!res.ok) return;
+    setSettings((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  const adjustInventoryApi = useCallback(
+    async (id: string, delta: number) => {
+      await apiFetch(`/api/v1/barber/inventory/${id}/adjust/`, {
+        method: "POST",
+        body: JSON.stringify({ delta }),
+      });
+      await refreshInventory();
+    },
+    [refreshInventory],
+  );
+
+  const addExpenseApi = useCallback(
+    async (e: Omit<Expense, "id">) => {
+      await apiFetch("/api/v1/barber/expenses/", {
+        method: "POST",
+        body: JSON.stringify({
+          category: e.category,
+          description: e.description,
+          amount: e.amount,
+          spent_on: new Date().toISOString().slice(0, 10),
+        }),
+      });
+      await refreshExpenses();
+      await refreshFinanceSummary();
+    },
+    [refreshExpenses, refreshFinanceSummary],
+  );
+
+  const toggleGoalApi = useCallback(
+    async (id: string) => {
+      const g = goals.find((x) => x.id === id);
+      if (!g) return;
+      await apiFetch(`/api/v1/barber/goals/${id}/`, {
+        method: "PATCH",
+        body: JSON.stringify({ done: !g.done }),
+      });
+      await refreshGoals();
+    },
+    [goals, refreshGoals],
+  );
+
+  const addServiceApi = useCallback(
+    async (payload: { name: string; duration_min: number; price: number }) => {
+      const res = await apiFetch("/api/v1/barber/services/", {
+        method: "POST",
+        body: JSON.stringify({
+          name: payload.name,
+          duration_minutes: payload.duration_min,
+          price: payload.price,
+          is_active: true,
+        }),
+      });
+      if (!res.ok) return false;
+      await refreshServices();
+      return true;
+    },
+    [refreshServices],
+  );
+
+  const addPromoApi = useCallback(
+    async (payload: { code: string; description: string; discount_pct: number; max_uses: number; expires?: string }) => {
+      const res = await apiFetch("/api/v1/barber/promos/", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) return false;
+      await refreshPromos();
+      return true;
+    },
+    [refreshPromos],
+  );
+
+  const sendAnnouncementApi = useCallback(async (payload: { title: string; message: string }) => {
+    const res = await apiFetch("/api/v1/barber/promos/broadcast/", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return res.ok;
+  }, []);
+
+  const addInventoryItemApi = useCallback(
+    async (payload: Omit<InventoryItem, "id" | "stock"> & { stock?: number }) => {
+      const res = await apiFetch("/api/v1/barber/inventory/", {
+        method: "POST",
+        body: JSON.stringify({
+          ...payload,
+          stock: payload.stock ?? 0,
+        }),
+      });
+      if (!res.ok) return false;
+      await refreshInventory();
+      return true;
+    },
+    [refreshInventory],
+  );
+
+  const addGoalApi = useCallback(
+    async (payload: Omit<Goal, "id" | "current" | "done"> & { current?: number; done?: boolean }) => {
+      const res = await apiFetch("/api/v1/barber/goals/", {
+        method: "POST",
+        body: JSON.stringify({
+          ...payload,
+          current: payload.current ?? 0,
+          done: payload.done ?? false,
+        }),
+      });
+      if (!res.ok) return false;
+      await refreshGoals();
+      return true;
+    },
+    [refreshGoals],
+  );
+
+  const uploadPortfolioApi = useCallback(
+    async (payload: { file: File; title: string; service: string }) => {
+      const body = new FormData();
+      body.append("image", payload.file);
+      body.append("title", payload.title);
+      body.append("service_name", payload.service);
+      body.append("sort_order", "0");
+      const res = await apiFetch("/api/v1/barber/work-photos/", {
+        method: "POST",
+        body,
+        headers: {},
+      });
+      if (!res.ok) return false;
+      await refreshPortfolio();
+      return true;
+    },
+    [refreshPortfolio],
+  );
+
+  const addSalonImageApi = useCallback(
+    async (payload: { file: File }) => {
+      if (!salon.id) return false;
+      const body = new FormData();
+      body.append("images", payload.file);
+      const res = await apiFetch(`/api/v1/salons/${salon.id}/add_images/`, {
+        method: "POST",
+        body,
+        headers: {},
+      });
+      if (!res.ok) return false;
+      await refreshSalonView();
+      return true;
+    },
+    [refreshSalonView, salon.id],
+  );
+
+  const sendSupportTicketApi = useCallback(async (payload: { subject: string; message: string }) => {
+    const res = await apiFetch("/api/v1/barber/support/", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return res.ok;
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    const run = async () => {
+      try {
+        const me = await apiJson<{
+          id: number;
+          email: string;
+          full_name: string;
+          phone: string;
+          work_mode: "independent" | "salon_owner" | "salon_employee";
+          onboarding_completed: boolean;
+        }>("/api/v1/barber/auth/me/");
+        if (!alive) return;
+        setProfile((prev) => ({
+          ...prev,
+          id: String(me.id),
+          name: me.full_name || prev.name,
+          title: "Barber",
+          email: me.email,
+          phone: me.phone || prev.phone,
+        }));
+        setViewMode(me.work_mode === "independent" ? "independent" : "salon");
+        setHasSalon(me.work_mode !== "independent");
+        setOnboardingComplete(Boolean(me.onboarding_completed ?? true));
+      } catch {
+        clearBarberTokens();
+        return;
+      }
+
+      try {
+        await Promise.all([
+          refreshServices(),
+          refreshWorkingHours(),
+          refreshBookings(),
+          refreshNotifications(),
+          refreshConversations(),
+          refreshClients(),
+          refreshInventory(),
+          refreshExpenses(),
+          refreshGoals(),
+          refreshPromos(),
+          refreshSettings(),
+          refreshPortfolio(),
+          refreshFinanceSummary(),
+          refreshReviews(),
+          refreshSalonView(),
+        ]);
+      } catch {
+        if (!alive) return;
+        setBookings([]);
+      }
+    };
+    void run();
+    return () => {
+      alive = false;
+    };
+  }, [
+    refreshBookings,
+    refreshClients,
+    refreshConversations,
+    refreshExpenses,
+    refreshFinanceSummary,
+    refreshGoals,
+    refreshInventory,
+    refreshNotifications,
+    refreshPortfolio,
+    refreshPromos,
+    refreshReviews,
+    refreshSalonView,
+    refreshServices,
+    refreshSettings,
+    refreshWorkingHours,
+  ]);
+
   const value = useMemo<Ctx>(
     () => ({
       viewMode,
       setViewMode,
-      hasSalon: true,
-      onboardingComplete: true,
+      hasSalon,
+      onboardingComplete,
       profile,
       services,
-      workingHours: WORKING_HOURS,
+      workingHours,
       bookings,
       clients,
       notifications,
       conversations,
-      reviews: REVIEWS,
-      salon: SALON,
-      transactions: TRANSACTIONS_INIT,
+      reviews,
+      salon,
+      transactions,
       promos,
       settings,
       startBooking: (id) => void mutateBooking(id, "start"),
@@ -748,45 +1131,59 @@ export function BarberProvider({ children }: { children: ReactNode }) {
           ),
         );
       },
-      toggleService: (id) =>
-        setServices((prev) =>
-          prev.map((s) => (s.id === id ? { ...s, is_active: !s.is_active } : s)),
-        ),
-      togglePromo: (id) =>
-        setPromos((prev) =>
-          prev.map((p) => (p.id === id ? { ...p, is_active: !p.is_active } : p)),
-        ),
-      updateSettings: (patch) => setSettings((prev) => ({ ...prev, ...patch })),
+      toggleService: (id) => void toggleServiceApi(id),
+      addService: (payload) => addServiceApi(payload),
+      togglePromo: (id) => void togglePromoApi(id),
+      addPromo: (payload) => addPromoApi(payload),
+      sendAnnouncement: (payload) => sendAnnouncementApi(payload),
+      updateSettings: (patch) => void updateSettingsApi(patch),
       inventory,
       expenses,
-      portfolio: PORTFOLIO_INIT,
+      portfolio,
       goals,
-      adjustInventory: (id, delta) =>
-        setInventory((prev) =>
-          prev.map((it) =>
-            it.id === id ? { ...it, stock: Math.max(0, it.stock + delta) } : it,
-          ),
-        ),
-      addExpense: (e) =>
-        setExpenses((prev) => [{ ...e, id: `e-${Date.now()}` }, ...prev]),
-      toggleGoal: (id) =>
-        setGoals((prev) =>
-          prev.map((g) => (g.id === id ? { ...g, done: !g.done } : g)),
-        ),
+      adjustInventory: (id, delta) => void adjustInventoryApi(id, delta),
+      addInventoryItem: (payload) => addInventoryItemApi(payload),
+      addExpense: (e) => void addExpenseApi(e),
+      toggleGoal: (id) => void toggleGoalApi(id),
+      addGoal: (payload) => addGoalApi(payload),
+      uploadPortfolio: (payload) => uploadPortfolioApi(payload),
+      addSalonImage: (payload) => addSalonImageApi(payload),
+      sendSupportTicket: (payload) => sendSupportTicketApi(payload),
     }),
     [
       viewMode,
+      hasSalon,
+      onboardingComplete,
       profile,
       services,
+      workingHours,
       bookings,
       clients,
       notifications,
       conversations,
+      reviews,
+      salon,
+      transactions,
       promos,
       settings,
       inventory,
       expenses,
+      portfolio,
       goals,
+      toggleServiceApi,
+      addServiceApi,
+      togglePromoApi,
+      addPromoApi,
+      sendAnnouncementApi,
+      updateSettingsApi,
+      adjustInventoryApi,
+      addInventoryItemApi,
+      addExpenseApi,
+      toggleGoalApi,
+      addGoalApi,
+      uploadPortfolioApi,
+      addSalonImageApi,
+      sendSupportTicketApi,
       mutateBooking,
       markNotifRead,
       markAllNotifsRead,
@@ -806,6 +1203,10 @@ function mapApiBooking(b: {
   lines: Array<{ service_name: string; duration_minutes: number; price: string | number }>;
 }): Booking {
   const dt = new Date(b.start_at);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const bookingDay = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+  const diffDays = Math.round((bookingDay.getTime() - today.getTime()) / 86400000);
   const hh = String(dt.getHours()).padStart(2, "0");
   const mm = String(dt.getMinutes()).padStart(2, "0");
   const status = mapBookingStatus(b.status);
@@ -818,7 +1219,12 @@ function mapApiBooking(b: {
     client: b.customer_name || "Mijoz",
     client_avatar: `https://i.pravatar.cc/150?u=client-${b.id}`,
     service,
-    date: dt.toLocaleDateString("uz-UZ", { day: "2-digit", month: "short" }),
+    date:
+      diffDays === 0
+        ? "Today"
+        : diffDays === 1
+          ? "Tomorrow"
+          : dt.toLocaleDateString("uz-UZ", { day: "2-digit", month: "short" }),
     time: `${hh}:${mm}`,
     duration_min,
     price: Number.isFinite(priceN) ? Number(priceN) : 0,
@@ -878,7 +1284,12 @@ function mapApiConversation(c: {
 function mapApiMessage(m: { id: number; sender_kind: "USER" | "BARBER"; text: string; created_at: string }): ChatMessage {
   const dt = new Date(m.created_at);
   const time = dt.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
-  return { id: String(m.id), sender_kind: m.sender_kind, text: m.text, time };
+  return {
+    id: String(m.id),
+    sender_kind: m.sender_kind === "USER" ? "CLIENT" : "BARBER",
+    text: m.text,
+    time,
+  };
 }
 
 function mapApiClient(c: { id: number; full_name: string; phone: string; completed_bookings: number; total_spent: string }): Client {

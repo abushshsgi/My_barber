@@ -105,6 +105,9 @@ class BarberWorkPhoto(models.Model):
         related_name="work_photos",
     )
     image = models.ImageField(upload_to="barbers/work_photos/")
+    title = models.CharField(max_length=255, blank=True, default="")
+    service_name = models.CharField(max_length=255, blank=True, default="")
+    likes = models.PositiveIntegerField(default=0)
     sort_order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -155,6 +158,152 @@ class BarberWorkingHours(models.Model):
     class Meta:
         unique_together = [["profile", "weekday"]]
         ordering = ["weekday"]
+
+
+class BarberInventoryItem(models.Model):
+    class Category(models.TextChoices):
+        TOOL = "tool", "Tool"
+        PRODUCT = "product", "Product"
+        CONSUMABLE = "consumable", "Consumable"
+
+    barber = models.ForeignKey(
+        Barber,
+        on_delete=models.CASCADE,
+        related_name="inventory_items",
+    )
+    name = models.CharField(max_length=255)
+    category = models.CharField(max_length=16, choices=Category.choices)
+    stock = models.IntegerField(default=0)
+    min_stock = models.PositiveIntegerField(default=0)
+    unit = models.CharField(max_length=32, default="dona")
+    price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    supplier = models.CharField(max_length=255, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name", "id"]
+
+
+class BarberInventoryMovement(models.Model):
+    item = models.ForeignKey(
+        BarberInventoryItem,
+        on_delete=models.CASCADE,
+        related_name="movements",
+    )
+    delta = models.IntegerField()
+    note = models.CharField(max_length=255, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
+class BarberExpense(models.Model):
+    class Category(models.TextChoices):
+        RENT = "rent", "Rent"
+        SUPPLIES = "supplies", "Supplies"
+        MARKETING = "marketing", "Marketing"
+        UTILITY = "utility", "Utility"
+        SALARY = "salary", "Salary"
+        OTHER = "other", "Other"
+
+    barber = models.ForeignKey(
+        Barber,
+        on_delete=models.CASCADE,
+        related_name="expenses",
+    )
+    category = models.CharField(max_length=16, choices=Category.choices)
+    description = models.CharField(max_length=255)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    spent_on = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-spent_on", "-id"]
+
+
+class BarberGoal(models.Model):
+    barber = models.ForeignKey(
+        Barber,
+        on_delete=models.CASCADE,
+        related_name="goals",
+    )
+    title = models.CharField(max_length=255)
+    target = models.DecimalField(max_digits=12, decimal_places=2)
+    current = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    unit = models.CharField(max_length=32, default="ta")
+    deadline = models.DateField()
+    done = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["done", "deadline", "-id"]
+
+
+class BarberPromo(models.Model):
+    barber = models.ForeignKey(
+        Barber,
+        on_delete=models.CASCADE,
+        related_name="promos",
+    )
+    code = models.CharField(max_length=64)
+    description = models.CharField(max_length=255, blank=True, default="")
+    discount_pct = models.PositiveSmallIntegerField(default=0)
+    uses = models.PositiveIntegerField(default=0)
+    max_uses = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    expires = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        unique_together = [["barber", "code"]]
+
+
+class BarberSetting(models.Model):
+    class Language(models.TextChoices):
+        UZ = "uz", "Uzbek"
+        RU = "ru", "Russian"
+        EN = "en", "English"
+
+    class Theme(models.TextChoices):
+        LIGHT = "light", "Light"
+        DARK = "dark", "Dark"
+
+    barber = models.OneToOneField(
+        Barber,
+        on_delete=models.CASCADE,
+        related_name="settings",
+    )
+    notifications_email = models.BooleanField(default=True)
+    notifications_push = models.BooleanField(default=True)
+    notifications_sms = models.BooleanField(default=False)
+    auto_accept = models.BooleanField(default=False)
+    language = models.CharField(max_length=8, choices=Language.choices, default=Language.UZ)
+    theme = models.CharField(max_length=8, choices=Theme.choices, default=Theme.LIGHT)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class BarberSupportTicket(models.Model):
+    class Status(models.TextChoices):
+        OPEN = "open", "Open"
+        IN_PROGRESS = "in_progress", "In progress"
+        CLOSED = "closed", "Closed"
+
+    barber = models.ForeignKey(
+        Barber,
+        on_delete=models.CASCADE,
+        related_name="support_tickets",
+    )
+    subject = models.CharField(max_length=255)
+    message = models.TextField()
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.OPEN)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
 
 
 class BarberSignupSnapshot(models.Model):

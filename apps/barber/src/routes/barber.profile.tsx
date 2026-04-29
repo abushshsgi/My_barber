@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { Mail, Phone, Clock, Sparkles } from "lucide-react";
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/barber/profile")({
   component: ProfilePage,
@@ -10,8 +12,10 @@ export const Route = createFileRoute("/barber/profile")({
 const WEEKDAYS = ["Yakshanba", "Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba"];
 
 function ProfilePage() {
-  const { profile, services, workingHours, salon, viewMode, toggleService } = useBarberContext();
+  const { profile, services, workingHours, salon, viewMode, toggleService, addService } = useBarberContext();
   const activeServices = services.filter((s) => s.is_active);
+  const [creating, setCreating] = useState(false);
+  const [serviceForm, setServiceForm] = useState({ name: "", duration: "", price: "" });
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1100px] mx-auto space-y-6">
@@ -47,11 +51,60 @@ function ProfilePage() {
               {activeServices.length} ta faol xizmat
             </div>
           </div>
-          <button className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90">
+          <button
+            onClick={() => setCreating((s) => !s)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
+          >
             <Sparkles className="size-3.5" />
             Yangi qo'shish
           </button>
         </div>
+        {creating && (
+          <div className="mb-4 grid grid-cols-1 sm:grid-cols-4 gap-2">
+            <input
+              value={serviceForm.name}
+              onChange={(e) => setServiceForm((p) => ({ ...p, name: e.target.value }))}
+              placeholder="Xizmat nomi"
+              className="sm:col-span-2 h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm"
+            />
+            <input
+              type="number"
+              value={serviceForm.duration}
+              onChange={(e) => setServiceForm((p) => ({ ...p, duration: e.target.value }))}
+              placeholder="Daqiqa"
+              className="h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm"
+            />
+            <input
+              type="number"
+              value={serviceForm.price}
+              onChange={(e) => setServiceForm((p) => ({ ...p, price: e.target.value }))}
+              placeholder="Narx"
+              className="h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm"
+            />
+            <button
+              onClick={async () => {
+                const name = serviceForm.name.trim();
+                const duration = Number(serviceForm.duration);
+                const price = Number(serviceForm.price);
+                if (!name || !duration || !price) {
+                  toast.error("Barcha maydonlarni to'ldiring.");
+                  return;
+                }
+                const ok = await addService({ name, duration_min: duration, price });
+                if (ok) {
+                  toast.success("Xizmat qo'shildi.");
+                  setServiceForm({ name: "", duration: "", price: "" });
+                  setCreating(false);
+                } else {
+                  toast.error("Xizmat qo'shib bo'lmadi.");
+                }
+              }}
+              className="h-10 px-3 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
+            >
+              Saqlash
+            </button>
+          </div>
+        )}
         <div className="divide-y divide-border">
           {services.map((s) => (
             <div key={s.id} className="py-3 flex items-center gap-4">
