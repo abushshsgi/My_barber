@@ -24,7 +24,14 @@ export const Route = createFileRoute("/admin/reviews")({
 function ReviewsPage() {
   const [barber, setBarber] = useState("");
   const [minRating, setMinRating] = useState("0");
-  const [applied, setApplied] = useState({ barber: "", min_rating: 0 });
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [applied, setApplied] = useState({
+    barber: "",
+    min_rating: 0,
+    date_from: "",
+    date_to: "",
+  });
 
   const reviewsQ = useQuery({
     queryKey: ["admin", "reviews", applied],
@@ -71,8 +78,29 @@ function ReviewsPage() {
             </SelectContent>
           </Select>
         </div>
+        <div className="w-full sm:w-44">
+          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+            Dan
+          </label>
+          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+        </div>
+        <div className="w-full sm:w-44">
+          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+            Gacha
+          </label>
+          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+        </div>
         <div className="flex gap-2">
-          <Button onClick={() => setApplied({ barber, min_rating: Number(minRating) })}>
+          <Button
+            onClick={() =>
+              setApplied({
+                barber,
+                min_rating: Number(minRating),
+                date_from: dateFrom,
+                date_to: dateTo,
+              })
+            }
+          >
             Qo'llash
           </Button>
           <Button
@@ -80,7 +108,9 @@ function ReviewsPage() {
             onClick={() => {
               setBarber("");
               setMinRating("0");
-              setApplied({ barber: "", min_rating: 0 });
+              setDateFrom("");
+              setDateTo("");
+              setApplied({ barber: "", min_rating: 0, date_from: "", date_to: "" });
             }}
           >
             Tozalash

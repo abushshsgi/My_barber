@@ -1,7 +1,12 @@
+function readEnv(name: string): string | undefined {
+  const viteEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
+  return viteEnv?.[name] || process.env[name];
+}
+
 const API_BASE =
-  typeof window !== "undefined"
-    ? process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
-    : process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+  readEnv("VITE_API_URL") ||
+  readEnv("NEXT_PUBLIC_API_URL") ||
+  "http://127.0.0.1:8000";
 
 const TOKEN_KEY = "mybarber_access";
 const REFRESH_KEY = "mybarber_refresh";
@@ -16,9 +21,7 @@ const REFRESH_KEY_ADMIN = "mybarber_admin_refresh";
 type TokenKind = "admin" | "barber" | "user";
 
 function envDefaultKind(): TokenKind | null {
-  const raw =
-    (typeof window !== "undefined" ? process.env.NEXT_PUBLIC_AUTH_KIND : process.env.NEXT_PUBLIC_AUTH_KIND) ||
-    "";
+  const raw = readEnv("VITE_AUTH_KIND") || readEnv("NEXT_PUBLIC_AUTH_KIND") || "";
   const v = raw.trim().toLowerCase();
   if (v === "admin" || v === "barber" || v === "user") return v;
   return null;

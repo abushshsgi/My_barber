@@ -1,14 +1,15 @@
-from django.db.models import Avg, Q, Sum
+from django.db.models import Avg, Count, Q, Sum
 from django.utils import timezone
 from rest_framework import generics
 from rest_framework import status as http_status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.exceptions import NotFound
 
 from accounts.models import AdminAccount, User
 from accounts.uz_regions import UzRegion
-from barbers.models import Barber, BarberService
+from barbers.models import Barber, BarberService, BarberSupportTicket
 from accounts.permissions import IsAdmin
 from bookings.models import Booking, BookingLine, Review
 from bookings.serializers import BookingSerializer
@@ -44,6 +45,32 @@ from .models import (
     SupportReply,
     SupportTicket,
 )
+
+
+def _map_barber_ticket_status(status_value: str) -> str:
+    if status_value == BarberSupportTicket.Status.CLOSED:
+        return SupportTicket.Status.CLOSED
+    if status_value == BarberSupportTicket.Status.IN_PROGRESS:
+        return SupportTicket.Status.PENDING
+    return SupportTicket.Status.OPEN
+
+
+def _sync_barber_support_tickets():
+    """
+    Make barber tickets visible in admin's canonical SupportTicket stream.
+    """
+    for bt in BarberSupportTicket.objects.select_related("barber").all():
+        category = f"barber_support:{bt.id}"
+        SupportTicket.objects.update_or_create(
+            category=category,
+            defaults={
+                "subject": bt.subject,
+                "body": bt.message,
+                "status": _map_barber_ticket_status(bt.status),
+                "priority": SupportTicket.Priority.NORMAL,
+                "created_by_barber": bt.barber,
+            },
+        )
 
 
 def _admin_region_breakdown():
@@ -141,12 +168,19 @@ class AdminStatsView(APIView):
         )
 
 
+class AdminPageNumberPagination(PageNumberPagination):
+    page_size = 50
+    page_size_query_param = "page_size"
+    max_page_size = 5000
+
+
 class AdminUserListView(generics.ListAPIView):
     permission_classes = [IsAdmin]
     serializer_class = AdminUserSerializer
+    pagination_class = AdminPageNumberPagination
 
     def get_queryset(self):
-        qs = User.objects.all().order_by("-date_joined")
+        qs = User.objects.annotate(bookings_count=Count("customer_bookings")).all().order_by("-date_joined")
         roles_param = self.request.query_params.get("roles")
         if roles_param:
             parts = [r.strip() for r in roles_param.split(",") if r.strip()]
@@ -200,6 +234,7 @@ class AdminUserDetailView(generics.RetrieveUpdateAPIView):
 class AdminSalonListView(generics.ListAPIView):
     permission_classes = [IsAdmin]
     serializer_class = AdminSalonSerializer
+    pagination_class = AdminPageNumberPagination
 
     def get_queryset(self):
         qs = (
@@ -251,9 +286,13 @@ class AdminSalonDetailView(generics.RetrieveUpdateDestroyAPIView):
 class AdminBarberListView(generics.ListAPIView):
     permission_classes = [IsAdmin]
     serializer_class = AdminBarberSerializer
+    pagination_class = AdminPageNumberPagination
 
     def get_queryset(self):
-        qs = Barber.objects.select_related("profile", "signup_snapshot").order_by(
+        qs = Barber.objects.select_related("profile", "signup_snapshot").annotate(
+            reviews_count=Count("reviews_about", distinct=True),
+            rating=Avg("reviews_about__rating"),
+        ).order_by(
             "-date_joined"
         )
         region = self.request.query_params.get("region")
@@ -299,13 +338,18 @@ class AdminBookingListView(generics.ListAPIView):
 
     permission_classes = [IsAdmin]
     serializer_class = BookingSerializer
+    pagination_class = AdminPageNumberPagination
 
     def get_queryset(self):
-        return (
+        qs = (
             Booking.objects.select_related("customer", "salon", "barber")
             .prefetch_related("lines")
             .order_by("-created_at")
         )
+        status_value = self.request.query_params.get("status", "").strip()
+        if status_value:
+            qs = qs.filter(status=status_value)
+        return qs
 
 
 class AdminReviewListView(generics.ListAPIView):
@@ -313,12 +357,16 @@ class AdminReviewListView(generics.ListAPIView):
 
     permission_classes = [IsAdmin]
     serializer_class = AdminReviewListSerializer
+    pagination_class = AdminPageNumberPagination
 
     def get_queryset(self):
         qs = Review.objects.select_related("author", "barber")
         barber = self.request.query_params.get("barber")
-        if barber and str(barber).isdigit():
-            qs = qs.filter(barber_id=int(barber))
+        if barber:
+            if str(barber).isdigit():
+                qs = qs.filter(barber_id=int(barber))
+            else:
+                qs = qs.filter(Q(barber__email__icontains=barber) | Q(barber__full_name__icontains=barber))
         min_r = self.request.query_params.get("min_rating")
         if min_r and str(min_r).isdigit():
             qs = qs.filter(rating__gte=int(min_r))
@@ -596,6 +644,33 @@ class AdminFinanceOverviewView(APIView):
         )
 
 
+class AdminReportExportView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request, report_type: str):
+        if report_type == "stats":
+            payload = {
+                "users_total": User.objects.count(),
+                "barbers_total": Barber.objects.count(),
+                "salons_total": Salon.objects.count(),
+                "bookings_total": Booking.objects.count(),
+                "generated_at": timezone.now(),
+            }
+            return Response(payload)
+        if report_type == "finance":
+            completed = Booking.objects.filter(status="completed")
+            payload = {
+                "revenue_total": float(completed.aggregate(s=Sum("total_price"))["s"] or 0),
+                "bookings_completed": completed.count(),
+                "pending_payouts": float(
+                    Payout.objects.filter(status=Payout.Status.PENDING).aggregate(s=Sum("amount"))["s"] or 0
+                ),
+                "generated_at": timezone.now(),
+            }
+            return Response(payload)
+        return Response({"detail": "Unknown report type"}, status=http_status.HTTP_404_NOT_FOUND)
+
+
 class AdminFinanceTransactionsView(generics.ListAPIView):
     permission_classes = [IsAdmin]
     serializer_class = AdminFinanceTransactionSerializer
@@ -634,6 +709,7 @@ class AdminSupportTicketListView(generics.ListAPIView):
     serializer_class = AdminSupportTicketSerializer
 
     def get_queryset(self):
+        _sync_barber_support_tickets()
         qs = SupportTicket.objects.select_related("assignee", "created_by_user", "created_by_barber").all()
         st = self.request.query_params.get("status")
         if st and st != "all":
@@ -646,10 +722,25 @@ class AdminSupportTicketDetailView(generics.RetrieveUpdateAPIView):
     queryset = SupportTicket.objects.select_related("assignee", "created_by_user", "created_by_barber").all()
     serializer_class = AdminSupportTicketDetailSerializer
 
+    def get_object(self):
+        _sync_barber_support_tickets()
+        return super().get_object()
+
     def perform_update(self, serializer):
         obj = self.get_object()
         before = {"status": obj.status, "priority": obj.priority, "assignee": obj.assignee_id}
         updated = serializer.save()
+        if updated.category.startswith("barber_support:"):
+            source_id = updated.category.split(":", 1)[1]
+            bt = BarberSupportTicket.objects.filter(id=source_id).first()
+            if bt:
+                if updated.status == SupportTicket.Status.CLOSED:
+                    bt.status = BarberSupportTicket.Status.CLOSED
+                elif updated.status == SupportTicket.Status.PENDING:
+                    bt.status = BarberSupportTicket.Status.IN_PROGRESS
+                else:
+                    bt.status = BarberSupportTicket.Status.OPEN
+                bt.save(update_fields=["status", "updated_at"])
         after = {"status": updated.status, "priority": updated.priority, "assignee": updated.assignee_id}
         _audit(self.request, "update", "ticket", updated.id, updated.subject, before=before, after=after)
 
@@ -658,6 +749,7 @@ class AdminSupportTicketRepliesView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request, pk: int):
+        _sync_barber_support_tickets()
         t = SupportTicket.objects.filter(id=pk).first()
         if not t:
             raise NotFound()
@@ -666,6 +758,7 @@ class AdminSupportTicketRepliesView(APIView):
         return Response(ser.data)
 
     def post(self, request, pk: int):
+        _sync_barber_support_tickets()
         t = SupportTicket.objects.filter(id=pk).first()
         if not t:
             raise NotFound()
@@ -673,10 +766,16 @@ class AdminSupportTicketRepliesView(APIView):
         if not body:
             return Response({"detail": "body kerak"}, status=http_status.HTTP_400_BAD_REQUEST)
         admin = getattr(request, "user", None)
-        name = getattr(admin, "email", "admin")
+        account = getattr(admin, "admin_account", None)
+        name = getattr(account, "email", "") or getattr(admin, "email", "admin")
         r = SupportReply.objects.create(ticket=t, author_role=SupportReply.AuthorRole.ADMIN, author_name=name, body=body)
         t.unread = 0
         t.save(update_fields=["unread", "updated_at"])
+        if t.category.startswith("barber_support:"):
+            source_id = t.category.split(":", 1)[1]
+            BarberSupportTicket.objects.filter(id=source_id).update(
+                status=BarberSupportTicket.Status.IN_PROGRESS
+            )
         _audit(request, "create", "ticket_reply", r.id, t.subject, before={}, after={"ticket": t.id})
         return Response({"ok": True})
 

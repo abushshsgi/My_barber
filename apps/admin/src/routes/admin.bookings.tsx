@@ -15,7 +15,7 @@ export const Route = createFileRoute("/admin/bookings")({
 const STATUS_TABS = [
   { key: "all", label: "Hammasi" },
   { key: "pending", label: "Kutilmoqda" },
-  { key: "in_chair", label: "Kresloda" },
+  { key: "in_progress", label: "Kresloda" },
   { key: "completed", label: "Yakunlangan" },
   { key: "cancelled", label: "Bekor qilingan" },
 ] as const;

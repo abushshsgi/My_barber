@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { fetchAdminStats, fetchAdminBookings } from "@/lib/admin-api";
+import { fetchAdminStats, fetchAdminBookings, downloadAdminReport } from "@/lib/admin-api";
 import { KPICard } from "@/components/admin/KPICard";
 import { CardSkeleton } from "@/components/admin/Skeletons";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/")({
   component: DashboardPage,
@@ -19,6 +20,13 @@ function formatUZS(n: number): string {
 }
 
 function DashboardPage() {
+  const reportMut = useMutation({
+    mutationFn: () => downloadAdminReport("stats"),
+    onSuccess: () => toast.success("Hisobot tayyorlandi"),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Hisobotni olishda xatolik"),
+  });
+
   const statsQ = useQuery({
     queryKey: ["admin", "stats"],
     queryFn: fetchAdminStats,
@@ -44,7 +52,7 @@ function DashboardPage() {
             Tarmoq bo'yicha umumiy ko'rinish va so'nggi faollik.
           </p>
         </div>
-        <Button>
+        <Button onClick={() => reportMut.mutate()} disabled={reportMut.isPending}>
           <Download className="size-4 mr-2" />
           Hisobot olish
         </Button>

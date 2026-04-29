@@ -57,7 +57,8 @@ function ServicesPage() {
     },
   });
   const deleteMut = useMutation({
-    mutationFn: deleteService,
+    mutationFn: ({ id, type }: { id: string; type: "salon" | "independent" }) =>
+      deleteService(id, type),
     onSuccess: () => {
       invalidate();
       setDeleteTarget(null);
@@ -170,7 +171,7 @@ function ServicesPage() {
         title="Xizmatni o'chirish"
         description={deleteTarget ? `"${deleteTarget.name}" xizmati o'chiriladi.` : ""}
         loading={deleteMut.isPending}
-        onConfirm={() => deleteTarget && deleteMut.mutate(deleteTarget.id)}
+        onConfirm={() => deleteTarget && deleteMut.mutate({ id: deleteTarget.id, type: deleteTarget.type })}
       />
     </div>
   );

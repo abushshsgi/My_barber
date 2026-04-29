@@ -1,6 +1,6 @@
 import { apiFetch, apiJson } from "./api";
 
-export const PAGE_SIZE = 10;
+export const PAGE_SIZE = 50;
 
 export type Paginated<T> = {
   results: T[];
@@ -118,6 +118,7 @@ type BackendUserRow = {
   region_label?: string;
   is_active: boolean;
   date_joined: string;
+  bookings_count?: number;
 };
 
 type BackendBarberRow = {
@@ -132,6 +133,11 @@ type BackendBarberRow = {
   is_active: boolean;
   date_joined: string;
   owned_salons_count: number;
+  salon_id?: number | null;
+  salon_name?: string | null;
+  reviews_count?: number;
+  rating?: number;
+  avatar?: string | null;
 };
 
 type BackendSalonRow = {
@@ -150,9 +156,11 @@ type BackendBookingRow = {
   id: number;
   salon_name?: string;
   customer_name?: string;
+  barber_name?: string;
   start_at: string;
   status: string;
   total_price: string;
+  lines?: Array<{ service_name?: string }>;
 };
 
 type BackendReviewRow = {
@@ -163,6 +171,7 @@ type BackendReviewRow = {
   created_at: string;
   author_email: string;
   barber_email: string;
+  barber_id?: number;
 };
 
 type BackendStats = {
@@ -189,7 +198,7 @@ function mapUser(u: BackendUserRow): AdminUser {
     region: u.region,
     is_active: !!u.is_active,
     created_at: u.date_joined,
-    bookings_count: 0,
+    bookings_count: toInt(u.bookings_count, 0),
   };
 }
 
@@ -208,13 +217,13 @@ function mapBarber(b: BackendBarberRow): AdminBarber {
   return {
     id: String(b.id),
     name: b.full_name || b.email,
-    avatar: avatarFor(String(b.id)),
+    avatar: b.avatar || avatarFor(String(b.id)),
     phone: b.phone ?? "—",
     region: b.region,
-    salon_id: null,
-    salon_name: null,
-    rating: 0,
-    reviews_count: 0,
+    salon_id: b.salon_id ? String(b.salon_id) : null,
+    salon_name: b.salon_name ?? null,
+    rating: Number(b.rating || 0),
+    reviews_count: Number(b.reviews_count || 0),
     is_active: !!b.is_active,
     lat: coord?.lat ?? Number.NaN,
     lng: coord?.lng ?? Number.NaN,
@@ -281,12 +290,15 @@ export async function fetchAdminUsers(params?: {
   if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
   const results = Array.isArray(j) ? j : (j.results ?? []);
   const count = Array.isArray(j) ? results.length : toInt(j.count, results.length);
+  const pageSize = Array.isArray(j)
+    ? PAGE_SIZE
+    : toInt((j as { page_size?: unknown }).page_size, PAGE_SIZE);
   return {
     results: results.map(mapUser),
     count,
     page,
-    page_size: PAGE_SIZE,
-    total_pages: totalPages(count, PAGE_SIZE),
+    page_size: pageSize,
+    total_pages: totalPages(count, pageSize),
   };
 }
 
@@ -322,12 +334,15 @@ export async function fetchAdminBarbers(params?: {
   if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
   const results = Array.isArray(j) ? j : (j.results ?? []);
   const count = Array.isArray(j) ? results.length : toInt(j.count, results.length);
+  const pageSize = Array.isArray(j)
+    ? PAGE_SIZE
+    : toInt((j as { page_size?: unknown }).page_size, PAGE_SIZE);
   return {
     results: results.map(mapBarber),
     count,
     page,
-    page_size: PAGE_SIZE,
-    total_pages: totalPages(count, PAGE_SIZE),
+    page_size: pageSize,
+    total_pages: totalPages(count, pageSize),
   };
 }
 
@@ -376,12 +391,15 @@ export async function fetchAdminSalons(params?: {
   if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
   const results = Array.isArray(j) ? j : (j.results ?? []);
   const count = Array.isArray(j) ? results.length : toInt(j.count, results.length);
+  const pageSize = Array.isArray(j)
+    ? PAGE_SIZE
+    : toInt((j as { page_size?: unknown }).page_size, PAGE_SIZE);
   return {
     results: results.map(mapSalon),
     count,
     page,
-    page_size: PAGE_SIZE,
-    total_pages: totalPages(count, PAGE_SIZE),
+    page_size: pageSize,
+    total_pages: totalPages(count, pageSize),
   };
 }
 
@@ -405,8 +423,11 @@ export async function deleteAdminSalon(id: string): Promise<{ ok: true }> {
   return { ok: true as const };
 }
 
-export async function fetchAdminBookings(): Promise<AdminBooking[]> {
-  const res = await apiFetch("/api/v1/admin/bookings/");
+export async function fetchAdminBookings(params?: { status?: string }): Promise<AdminBooking[]> {
+  const sp = new URLSearchParams();
+  if (params?.status && params.status !== "all") sp.set("status", params.status);
+  const q = sp.toString();
+  const res = await apiFetch(q ? `/api/v1/admin/bookings/?${q}` : "/api/v1/admin/bookings/");
   const j = (await res.json().catch(() => ({}))) as
     | { results?: BackendBookingRow[] }
     | BackendBookingRow[];
@@ -416,9 +437,9 @@ export async function fetchAdminBookings(): Promise<AdminBooking[]> {
     id: String(b.id),
     client_name: b.customer_name ?? "—",
     client_avatar: avatarFor(`c${b.id}`),
-    barber_name: "—",
+    barber_name: b.barber_name ?? "—",
     salon_name: b.salon_name ?? "—",
-    service: "—",
+    service: b.lines?.[0]?.service_name ?? "—",
     price: Math.max(0, toInt(b.total_price, 0)),
     start_at: b.start_at,
     status: b.status,
@@ -426,8 +447,19 @@ export async function fetchAdminBookings(): Promise<AdminBooking[]> {
   }));
 }
 
-export async function fetchAdminReviews(): Promise<AdminReview[]> {
-  const res = await apiFetch("/api/v1/admin/reviews/");
+export async function fetchAdminReviews(params?: {
+  barber?: string;
+  min_rating?: number;
+  date_from?: string;
+  date_to?: string;
+}): Promise<AdminReview[]> {
+  const sp = new URLSearchParams();
+  if (params?.barber?.trim()) sp.set("barber", params.barber.trim());
+  if ((params?.min_rating ?? 0) > 0) sp.set("min_rating", String(params?.min_rating));
+  if (params?.date_from) sp.set("date_from", params.date_from);
+  if (params?.date_to) sp.set("date_to", params.date_to);
+  const q = sp.toString();
+  const res = await apiFetch(q ? `/api/v1/admin/reviews/?${q}` : "/api/v1/admin/reviews/");
   const j = (await res.json().catch(() => ({}))) as
     | { results?: BackendReviewRow[] }
     | BackendReviewRow[];
@@ -436,7 +468,7 @@ export async function fetchAdminReviews(): Promise<AdminReview[]> {
   return rows.map((r) => ({
     id: String(r.id),
     client_name: r.author_email,
-    barber_id: r.barber_email,
+    barber_id: String(r.barber_id ?? ""),
     barber_name: r.barber_email,
     rating: r.rating,
     comment: r.text,
@@ -445,30 +477,27 @@ export async function fetchAdminReviews(): Promise<AdminReview[]> {
 }
 
 export async function fetchAllSalonsForMap(region?: RegionCode | ""): Promise<AdminSalon[]> {
-  const sp = new URLSearchParams();
-  if (region) sp.set("region", region);
-  // Try to fetch everything for map in one request (DRF usually supports page_size).
-  sp.set("page_size", "5000");
-  const res = await apiFetch(`/api/v1/admin/salons/?${sp.toString()}`);
-  const j = (await res.json().catch(() => ({}))) as
-    | { results?: BackendSalonRow[] }
-    | BackendSalonRow[];
-  if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
-  const rows = Array.isArray(j) ? j : (j.results ?? []);
-  return rows.map(mapSalon);
+  const all: AdminSalon[] = [];
+  let page = 1;
+  while (true) {
+    const chunk = await fetchAdminSalons({ region, page });
+    all.push(...chunk.results);
+    if (page >= chunk.total_pages) break;
+    page += 1;
+  }
+  return all;
 }
 
 export async function fetchAllBarbersForMap(region?: RegionCode | ""): Promise<AdminBarber[]> {
-  const sp = new URLSearchParams();
-  if (region) sp.set("region", region);
-  sp.set("page_size", "5000");
-  const res = await apiFetch(`/api/v1/admin/barbers/?${sp.toString()}`);
-  const j = (await res.json().catch(() => ({}))) as
-    | { results?: BackendBarberRow[] }
-    | BackendBarberRow[];
-  if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
-  const rows = Array.isArray(j) ? j : (j.results ?? []);
-  return rows.map(mapBarber);
+  const all: AdminBarber[] = [];
+  let page = 1;
+  while (true) {
+    const chunk = await fetchAdminBarbers({ region, page });
+    all.push(...chunk.results);
+    if (page >= chunk.total_pages) break;
+    page += 1;
+  }
+  return all;
 }
 
 // -------------------------
@@ -511,7 +540,8 @@ export async function fetchServices(params?: { q?: string; category?: string; ty
   const res = await apiFetch(`/api/v1/admin/services/?${sp.toString()}`);
   const j = (await res.json().catch(() => ({}))) as unknown;
   if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
-  return (j as any[]).map((s) => ({
+  const rows = Array.isArray(j) ? j : (j as { results?: unknown[] }).results || [];
+  return (rows as any[]).map((s) => ({
     id: String(s.id),
     type: (s.type === "independent" ? "independent" : "salon") as "salon" | "independent",
     name: String(s.name || ""),
@@ -649,6 +679,7 @@ export async function markPayoutPaid(id: string): Promise<{ ok: true }> {
 export type AdminAuditRow = {
   id: string;
   admin: string;
+  admin_avatar: string;
   action: string;
   target_type: string;
   target_name: string;
@@ -664,6 +695,7 @@ export async function fetchAuditLog(): Promise<AdminAuditRow[]> {
   return rows.map((a: any) => ({
     id: String(a.id),
     admin: String(a.admin || ""),
+    admin_avatar: avatarFor(String(a.admin || a.id || "admin")),
     action: String(a.action || ""),
     target_type: String(a.target_type || ""),
     target_name: String(a.target_name || ""),
@@ -686,7 +718,7 @@ export type AdminTicket = {
 
 export async function fetchTickets(params?: { status?: string }): Promise<AdminTicket[]> {
   const sp = new URLSearchParams();
-  if (params?.status) sp.set("status", params.status);
+  if (params?.status && params.status !== "all") sp.set("status", params.status);
   const res = await apiFetch(`/api/v1/admin/support/tickets/?${sp.toString()}`);
   const j = (await res.json().catch(() => ({}))) as any;
   if (!res.ok) throw new Error(j.detail || "Xato");
@@ -772,4 +804,19 @@ export async function fetchAdmins(): Promise<PlatformAdmin[]> {
 
 export async function updateAdmin(id: string, body: Partial<PlatformAdmin>): Promise<PlatformAdmin> {
   return apiJson<PlatformAdmin>(`/api/v1/admin/admins/${id}/`, { method: "PATCH", body: JSON.stringify(body) });
+}
+
+export type AdminProfile = { id: string; email: string; role: string };
+
+export async function fetchAdminProfile(): Promise<AdminProfile> {
+  return apiJson<AdminProfile>("/api/v1/admin/auth/me/");
+}
+
+export async function downloadAdminReport(type: "stats" | "finance"): Promise<{ ok: true }> {
+  const res = await apiFetch(`/api/v1/admin/reports/${type}/`);
+  if (!res.ok) {
+    const j = (await res.json().catch(() => ({}))) as { detail?: string };
+    throw new Error(j.detail || "Hisobot olinmadi");
+  }
+  return { ok: true };
 }

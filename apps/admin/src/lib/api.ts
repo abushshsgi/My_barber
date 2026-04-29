@@ -106,7 +106,17 @@ function formatApiError(body: unknown, fallback: string): string {
 export async function apiJson<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await apiFetch(path, options);
   const text = await res.text();
-  const body = text.trim() ? (JSON.parse(text) as unknown) : {};
+  let body: unknown = {};
+  if (text.trim()) {
+    try {
+      body = JSON.parse(text) as unknown;
+    } catch {
+      if (!res.ok) {
+        throw new Error(`Noto'g'ri JSON javobi (HTTP ${res.status})`);
+      }
+      throw new Error("Server JSON formatida javob bermadi");
+    }
+  }
   if (!res.ok) throw new Error(formatApiError(body, res.statusText));
   return body as T;
 }

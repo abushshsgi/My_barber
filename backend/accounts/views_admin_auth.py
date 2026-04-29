@@ -64,4 +64,12 @@ class AdminMeView(APIView):
 
     def get(self, request):
         a = request.user.admin_account
-        return Response({"email": a.email, "role": "ADMIN"})
+        return Response({"id": a.id, "email": a.email, "role": "ADMIN"})
+
+    def patch(self, request):
+        a = request.user.admin_account
+        email = str((request.data or {}).get("email", "")).strip().lower()
+        if email:
+            a.email = email
+            a.save(update_fields=["email"])
+        return Response({"id": a.id, "email": a.email, "role": "ADMIN"})

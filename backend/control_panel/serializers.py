@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db.models import Avg
 
 from accounts.models import AdminAccount, User
 from accounts.uz_regions import UzRegion
@@ -67,6 +68,7 @@ def salon_schedule_summary(obj: Salon) -> str:
 
 class AdminUserSerializer(serializers.ModelSerializer):
     region_label = serializers.SerializerMethodField()
+    bookings_count = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -82,6 +84,7 @@ class AdminUserSerializer(serializers.ModelSerializer):
             "is_active",
             "is_staff",
             "date_joined",
+            "bookings_count",
         )
         read_only_fields = ("id", "date_joined", "username", "region_label")
 
@@ -89,6 +92,9 @@ class AdminUserSerializer(serializers.ModelSerializer):
         if not obj.region:
             return ""
         return dict(UzRegion.choices).get(obj.region, obj.region)
+
+    def get_bookings_count(self, obj: User) -> int:
+        return int(getattr(obj, "bookings_count", obj.customer_bookings.count()))
 
 
 class AdminUserUpdateSerializer(serializers.ModelSerializer):
@@ -169,6 +175,11 @@ class AdminBarberSerializer(serializers.ModelSerializer):
     latitude = serializers.SerializerMethodField()
     longitude = serializers.SerializerMethodField()
     signup_snapshot = serializers.SerializerMethodField()
+    salon_id = serializers.SerializerMethodField()
+    salon_name = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
+    reviews_count = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = Barber
@@ -185,6 +196,11 @@ class AdminBarberSerializer(serializers.ModelSerializer):
             "is_active",
             "date_joined",
             "owned_salons_count",
+            "salon_id",
+            "salon_name",
+            "rating",
+            "reviews_count",
+            "avatar",
             "work_mode",
             "onboarding_flow",
             "onboarding_completed_at",
@@ -199,6 +215,11 @@ class AdminBarberSerializer(serializers.ModelSerializer):
             "latitude",
             "longitude",
             "owned_salons_count",
+            "salon_id",
+            "salon_name",
+            "rating",
+            "reviews_count",
+            "avatar",
             "work_mode",
             "onboarding_flow",
             "onboarding_completed_at",
@@ -224,6 +245,41 @@ class AdminBarberSerializer(serializers.ModelSerializer):
 
     def get_owned_salons_count(self, obj: Barber) -> int:
         return obj.owned_salons.count()
+
+    def get_salon_id(self, obj: Barber):
+        sid = getattr(obj, "salon_id", None)
+        if sid is not None:
+            return sid
+        first = obj.owned_salons.only("id").first()
+        return first.id if first else None
+
+    def get_salon_name(self, obj: Barber):
+        sname = getattr(obj, "salon_name", None)
+        if sname is not None:
+            return sname
+        first = obj.owned_salons.only("name").first()
+        return first.name if first else None
+
+    def get_rating(self, obj: Barber) -> float:
+        r = getattr(obj, "rating", None)
+        if r is not None:
+            return float(r)
+        val = Review.objects.filter(barber=obj).aggregate(v=Avg("rating")).get("v")
+        return float(val or 0.0)
+
+    def get_reviews_count(self, obj: Barber) -> int:
+        c = getattr(obj, "reviews_count", None)
+        if c is not None:
+            return int(c)
+        return Review.objects.filter(barber=obj).count()
+
+    def get_avatar(self, obj: Barber) -> str:
+        if not obj.avatar:
+            return ""
+        try:
+            return obj.avatar.url
+        except Exception:
+            return ""
 
     def get_signup_snapshot(self, obj: Barber):
         snap = getattr(obj, "signup_snapshot", None)
@@ -259,6 +315,7 @@ class AdminBarberUpdateSerializer(serializers.ModelSerializer):
 class AdminReviewListSerializer(serializers.ModelSerializer):
     author_email = serializers.EmailField(source="author.email", read_only=True)
     barber_email = serializers.EmailField(source="barber.email", read_only=True)
+    barber_id = serializers.IntegerField(source="barber.id", read_only=True)
 
     class Meta:
         model = Review
@@ -271,6 +328,7 @@ class AdminReviewListSerializer(serializers.ModelSerializer):
             "created_at",
             "author_email",
             "barber_email",
+            "barber_id",
         )
 
 
@@ -305,6 +363,7 @@ class AdminServiceListSerializer(serializers.Serializer):
 
 class AdminAuditLogSerializer(serializers.ModelSerializer):
     admin = serializers.CharField(source="admin.email", read_only=True)
+    admin_avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = AuditLog
@@ -317,7 +376,11 @@ class AdminAuditLogSerializer(serializers.ModelSerializer):
             "target_name",
             "ip",
             "created_at",
+            "admin_avatar",
         )
+
+    def get_admin_avatar(self, obj: AuditLog) -> str:
+        return ""
 
 
 class AdminFinanceTransactionSerializer(serializers.ModelSerializer):
