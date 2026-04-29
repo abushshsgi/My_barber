@@ -4,6 +4,16 @@ import { getPublicApiBase } from "./api";
 export const PLACEHOLDER_SALON = "/placeholder-salon.svg";
 export const PLACEHOLDER_AVATAR = "/avatar-placeholder.svg";
 
+function isKnownPlaceholderAsset(urlOrPath: string): boolean {
+  const lower = urlOrPath.toLowerCase();
+  return (
+    lower.includes("placeholder-salon.svg") ||
+    lower.includes("avatar-placeholder.svg") ||
+    lower.endsWith("/placeholder.svg") ||
+    lower.includes("/placeholder.svg?")
+  );
+}
+
 /**
  * API dan kelgan rasm yo‘lini <img src> uchun moslaydi.
  * Rasmlar Railway (backend) da — Vercel domenida /media bo‘yicha 404 bo‘lmasligi uchun:
@@ -16,6 +26,9 @@ export function mediaSrc(
 ): string {
   if (!path) return fallback;
   const s = path.trim();
+  if (isKnownPlaceholderAsset(s)) {
+    return fallback;
+  }
   if (s.startsWith("http://") || s.startsWith("https://")) {
     return s;
   }

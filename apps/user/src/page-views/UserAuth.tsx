@@ -64,7 +64,6 @@ export default function UserAuth() {
       }
       setTokens(data.access, data.refresh);
       router.push(nextPath());
-      router.refresh();
     } finally {
       setLoading(false);
     }
@@ -103,7 +102,6 @@ export default function UserAuth() {
       }
       setTokens(tok.access, tok.refresh);
       router.push(nextPath());
-      router.refresh();
     } finally {
       setLoading(false);
     }
