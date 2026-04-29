@@ -171,7 +171,7 @@ class Migration(migrations.Migration):
                     "barber",
                     models.ForeignKey(
                         on_delete=models.deletion.CASCADE,
-                        related_name="support_tickets",
+                        related_name="barber_support_tickets",
                         to="barbers.barber",
                     ),
                 ),
