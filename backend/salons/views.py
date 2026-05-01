@@ -1,5 +1,3 @@
-import math
-
 from django.core.files.base import File
 from django.db import transaction
 from django.db.models import Avg, Count, FloatField, Q, Value
@@ -16,6 +14,8 @@ from accounts.throttles import SalonJoinThrottle, SalonSearchThrottle
 from barbers.models import Barber, BarberProfile
 from notifications.utils import notify_barber, notify_user
 
+from .geo_join import assert_join_distance_ok, haversine_km
+from .join_service import attach_worker_membership
 from .models import BarberWorkingHours, Salon, SalonImage, SalonMembership, Service
 from .serializers import (
     BarberWorkingHoursSerializer,
@@ -28,30 +28,11 @@ from .serializers import (
 )
 
 
-def _haversine_km(lat1, lon1, lat2, lon2):
-    r = 6371.0
-    p = math.pi / 180
-    a = (
-        0.5
-        - math.cos((lat2 - lat1) * p) / 2
-        + math.cos(lat1 * p) * math.cos(lat2 * p) * (1 - math.cos((lon2 - lon1) * p)) / 2
-    )
-    return 2 * r * math.asin(math.sqrt(a))
-
-
-# Qo‘shilish: salon va barber nuqtalari orasidagi maksimal masofa (100 m).
-JOIN_MAX_DISTANCE_KM = 0.1
-
-LOCATION_MISMATCH_MSG = (
-    "Joylashuv salon joylashuvi bilan mos kelmaydi (taxminan 100 m ichida bo‘lishi kerak)."
-)
-
-
 class SalonViewSet(viewsets.ModelViewSet):
     lookup_field = "pk"
 
     def get_permissions(self):
-        if self.action in ("list", "retrieve", "nearby"):
+        if self.action in ("list", "retrieve", "nearby", "search"):
             return [AllowAny()]
         return [IsAuthenticated()]
 
@@ -206,7 +187,6 @@ class SalonViewSet(viewsets.ModelViewSet):
     @action(
         detail=False,
         methods=["get"],
-        permission_classes=[IsAuthenticated],
         throttle_classes=[SalonSearchThrottle],
     )
     def search(self, request):
@@ -220,6 +200,12 @@ class SalonViewSet(viewsets.ModelViewSet):
             br = (bp.region or "").strip()
             if br:
                 qs = qs.filter(owner_barber__region=br)
+        else:
+            # Anonim (employee join): ixtiyoriy ?region=
+            region = (request.query_params.get("region") or "").strip()
+            valid_regions = {c[0] for c in UzRegion.choices}
+            if region and region in valid_regions:
+                qs = qs.filter(owner_barber__region=region)
         qs = qs.order_by("name")[:20]
         out = []
         for s in qs:
@@ -260,49 +246,16 @@ class SalonViewSet(viewsets.ModelViewSet):
             raise ValidationError({"detail": "latitude / longitude noto'g'ri."})
 
         salon = get_object_or_404(Salon, pk=salon_id)
-        dist_km = _haversine_km(
-            lat, lng, float(salon.latitude), float(salon.longitude)
-        )
-        if dist_km > JOIN_MAX_DISTANCE_KM:
-            return Response({"detail": LOCATION_MISMATCH_MSG}, status=400)
+        try:
+            assert_join_distance_ok(salon, lat, lng)
+        except ValidationError as exc:
+            return Response(exc.detail, status=400)
 
         bp = request_barber(request)
         if bp is None:
             raise PermissionDenied("Faqat sartarosh akkaunti bilan qo‘shilish mumkin.")
 
-        if Salon.objects.filter(owner_barber=bp).exists():
-            raise PermissionDenied(
-                "Salon egasi boshqa salonoga ishchi sifatida qo'shila olmaydi."
-            )
-
-        with transaction.atomic():
-            SalonMembership.objects.filter(
-                barber=bp,
-                invite_state=SalonMembership.InviteState.ACTIVE,
-            ).exclude(salon=salon).update(
-                invite_state=SalonMembership.InviteState.DECLINED
-            )
-
-            mem, created = SalonMembership.objects.get_or_create(
-                barber=bp,
-                salon=salon,
-                defaults={
-                    "role": SalonMembership.Role.WORKER,
-                    "invite_state": SalonMembership.InviteState.ACTIVE,
-                },
-            )
-            if not created:
-                mem.role = SalonMembership.Role.WORKER
-                mem.invite_state = SalonMembership.InviteState.ACTIVE
-                mem.save(update_fields=["role", "invite_state"])
-
-            BarberProfile.objects.update_or_create(
-                barber=bp,
-                defaults={
-                    "latitude": lat,
-                    "longitude": lng,
-                },
-            )
+        mem = attach_worker_membership(bp, salon, lat, lng)
 
         return Response(
             {
@@ -326,7 +279,7 @@ class SalonViewSet(viewsets.ModelViewSet):
         salons = self._apply_public_salon_region(self._salon_public_list_qs())
         result = []
         for s in salons:
-            d = _haversine_km(lat, lng, float(s.latitude), float(s.longitude))
+            d = haversine_km(lat, lng, float(s.latitude), float(s.longitude))
             if d <= radius:
                 result.append({"salon": SalonListSerializer(s, context={"request": request}).data, "distance_km": round(d, 3)})
         result.sort(key=lambda x: x["distance_km"])

@@ -1,12 +1,17 @@
-from rest_framework import generics
+from django.utils import timezone
+from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from barbers.barber_auth import encode_barber_tokens
+from barbers.models import Barber
+
 from .models import User
 from .uz_regions import UzRegion
 from .serializers import (
+    BarberRegisterJoinSalonSerializer,
     BarberSignupSerializer,
     EmailTokenObtainPairSerializer,
     UserRegisterSerializer,
@@ -37,6 +42,25 @@ class BarberRegisterView(generics.CreateAPIView):
     permission_classes = [AllowAny]
     serializer_class = BarberSignupSerializer
     throttle_classes = [AuthIPThrottle]
+
+
+class BarberRegisterJoinSalonView(APIView):
+    """Employee: register + salon join (100 m) bitta tranzaksiya; JWT qaytaradi."""
+
+    permission_classes = [AllowAny]
+    throttle_classes = [AuthIPThrottle]
+
+    def post(self, request):
+        serializer = BarberRegisterJoinSalonSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        barber = serializer.save()
+        access, refresh = encode_barber_tokens(barber.id)
+        Barber.objects.filter(pk=barber.pk).update(last_login=timezone.now())
+        rep = BarberSignupSerializer().to_representation(barber)
+        return Response(
+            {"access": access, "refresh": refresh, "barber": rep},
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class EmailTokenObtainPairView(TokenObtainPairView):

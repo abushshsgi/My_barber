@@ -73,3 +73,38 @@ export async function submitFlowSignup(flow: SignupFlow, payload: FlowPayload): 
   setBarberTokens(tokens.access, tokens.refresh);
   clearSignupDraft();
 }
+
+/** Employee: draft + salon tanlash + GPS — backendda register va join bitta tranzaksiya. */
+export async function submitEmployeeRegisterAndJoin(payload: {
+  salon_id: number;
+  latitude: number;
+  longitude: number;
+}): Promise<void> {
+  const draft = readSignupDraft();
+  if (!draft || draft.flow !== "employee") {
+    throw new Error("Signup ma'lumoti topilmadi yoki bu oqim employee uchun emas.");
+  }
+  const email = normalizeEmail(draft.email);
+  const res = await apiFetch("/api/v1/auth/barber-register-join-salon/", {
+    method: "POST",
+    body: JSON.stringify({
+      email,
+      password: draft.password,
+      full_name: draft.full_name,
+      phone: draft.phone || "",
+      salon_id: payload.salon_id,
+      latitude: roundCoord6(payload.latitude),
+      longitude: roundCoord6(payload.longitude),
+    }),
+  });
+  const body = await parseJsonSafe(res);
+  if (!res.ok) {
+    throw new Error(
+      extractApiError(body, "Ro'yxatdan o'tish va salonga qo'shilish amalga oshmadi."),
+    );
+  }
+  const tokens = body as { access?: string; refresh?: string };
+  if (!tokens.access || !tokens.refresh) throw new Error("Token qaytmadi.");
+  setBarberTokens(tokens.access, tokens.refresh);
+  clearSignupDraft();
+}

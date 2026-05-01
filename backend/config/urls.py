@@ -36,6 +36,7 @@ from control_panel.views import (
 )
 
 from accounts.views import (
+    BarberRegisterJoinSalonView,
     BarberRegisterView,
     EmailTokenObtainPairView,
     MeView,
@@ -144,6 +145,7 @@ api_routes = [
     path("regions/", UzRegionsView.as_view()),
     path("auth/register/", RegisterView.as_view()),
     path("auth/barber-register/", BarberRegisterView.as_view()),
+    path("auth/barber-register-join-salon/", BarberRegisterJoinSalonView.as_view()),
     path("auth/token/", EmailTokenObtainPairView.as_view()),
     path("auth/token/refresh/", TokenRefreshView.as_view()),
     path("admin/auth/token/", AdminTokenView.as_view()),
