@@ -44,6 +44,14 @@ type ReviewApi = {
   barber_replied_at?: string | null;
 };
 
+type StaffApi = {
+  id: number;
+  full_name: string;
+  avatar: string | null;
+  role: string;
+  experience_years: number | null;
+};
+
 export default function SalonPage() {
   const params = useParams();
   const id = params?.id as string;
@@ -70,6 +78,17 @@ export default function SalonPage() {
       if (!res.ok) return [];
       const j = (await res.json()) as { results?: ReviewApi[] } | ReviewApi[];
       return Array.isArray(j) ? j : j.results || [];
+    },
+    enabled: !!id,
+  });
+
+  const { data: staff = [] } = useQuery({
+    queryKey: ["salon-staff", id],
+    queryFn: async () => {
+      const res = await apiFetch(`/api/v1/salons/${id}/staff/`);
+      if (!res.ok) return [];
+      const j = (await res.json()) as StaffApi[];
+      return Array.isArray(j) ? j : [];
     },
     enabled: !!id,
   });
@@ -204,6 +223,30 @@ export default function SalonPage() {
             ))}
           </div>
         </div>
+
+        {staff.length > 0 && (
+          <div>
+            <h2 className="text-lg font-semibold mb-2">Salon barberlari</h2>
+            <div className="space-y-2">
+              {staff.map((member) => (
+                <Card key={member.id} className="p-3 flex items-center gap-3">
+                  <img
+                    src={mediaSrc(member.avatar, "/placeholder.svg")}
+                    alt={member.full_name}
+                    className="h-11 w-11 rounded-full object-cover bg-muted"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{member.full_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {member.role === "owner" ? "Owner barber" : "Barber"}
+                      {member.experience_years ? ` · ${member.experience_years} yil tajriba` : ""}
+                    </p>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div>
           <h2 className="text-lg font-semibold mb-2">Sharhlar</h2>

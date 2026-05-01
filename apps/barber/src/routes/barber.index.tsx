@@ -27,6 +27,7 @@ function BarberDashboard() {
     bookings,
     profile,
     onboardingComplete,
+    requiredNextPath,
     reviews,
     clients,
     inventory,
@@ -77,7 +78,7 @@ function BarberDashboard() {
             </p>
           </div>
           <Link
-            to="/barber/profile"
+            to={requiredNextPath || "/barber/profile"}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
           >
             Davom etish

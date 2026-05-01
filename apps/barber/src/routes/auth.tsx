@@ -1,8 +1,23 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { apiFetch, formatApiError, setBarberTokens } from "@/lib/api";
+import { apiFetch, setBarberTokens } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
+import { Scissors } from "lucide-react";
+import { AuthErrorAlert } from "@/components/auth/AuthErrorAlert";
+import { PasswordInput } from "@/components/auth/PasswordInput";
+import { FlowOptionCard } from "@/components/auth/FlowOptionCard";
+import {
+  extractApiError,
+  normalizeEmail,
+  parseJsonSafe,
+  validateLogin,
+  validateSignupIdentity,
+  type SignupFlow,
+} from "@/lib/auth-ui";
+import { saveSignupDraft } from "@/lib/signup-draft";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -10,76 +25,219 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [tab, setTab] = useState<"login" | "signup">("login");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [signupName, setSignupName] = useState("");
+  const [signupPhone, setSignupPhone] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [flow, setFlow] = useState<SignupFlow>("owner");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loadingLogin, setLoadingLogin] = useState(false);
+  const [loadingSignup, setLoadingSignup] = useState(false);
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const onLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setLoading(true);
+    const validation = validateLogin({ email: loginEmail, password: loginPassword });
+    if (validation) {
+      setError(validation);
+      return;
+    }
+    const email = normalizeEmail(loginEmail);
+    setLoadingLogin(true);
     try {
       const res = await apiFetch("/api/v1/barber/auth/token/", {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password: loginPassword }),
       });
-      const text = await res.text();
-      const body = text.trim() ? (JSON.parse(text) as unknown) : {};
-      if (!res.ok) throw new Error(formatApiError(body, res.statusText));
-      const b = body as { access?: string; refresh?: string };
-      if (!b.access || !b.refresh) throw new Error("Token qaytmadi.");
-      setBarberTokens(b.access, b.refresh);
+      const body = await parseJsonSafe(res);
+      if (!res.ok) throw new Error(extractApiError(body, "Kirish amalga oshmadi."));
+      const data = body as { access?: string; refresh?: string };
+      if (!data.access || !data.refresh) throw new Error("Token qaytmadi.");
+      setBarberTokens(data.access, data.refresh);
       await navigate({ to: "/barber" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
     } finally {
-      setLoading(false);
+      setLoadingLogin(false);
+    }
+  };
+
+  const flowPathMap: Record<SignupFlow, string> = {
+    owner: "/onboarding/owner",
+    employee: "/onboarding/employee",
+    mybarber: "/onboarding/mybarber",
+    independent: "/onboarding/independent",
+  };
+
+  const onSignupSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    const validation = validateSignupIdentity({
+      fullName: signupName,
+      phone: signupPhone,
+      email: signupEmail,
+      password: signupPassword,
+      flow,
+    });
+    if (validation) {
+      setError(validation);
+      return;
+    }
+    setLoadingSignup(true);
+    try {
+      saveSignupDraft({
+        full_name: signupName.trim(),
+        phone: signupPhone.trim() || undefined,
+        email: normalizeEmail(signupEmail),
+        password: signupPassword,
+        flow,
+      });
+      await navigate({ to: flowPathMap[flow] });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
+    } finally {
+      setLoadingSignup(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-card">
-        <div className="mb-5">
-          <h1 className="font-heading text-2xl font-semibold text-foreground">Barber panel</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Email va parolingiz bilan kiring.</p>
+    <div className="min-h-screen bg-background text-foreground px-4 py-10">
+      <div className="mx-auto w-full max-w-[960px] rounded-3xl border border-border bg-card shadow-xl overflow-hidden grid md:grid-cols-[1.05fr_0.95fr]">
+        <div className="hidden md:flex flex-col justify-between bg-zinc-900 text-zinc-100 p-8">
+          <div>
+            <div className="size-10 rounded-xl bg-amber-100 text-zinc-900 flex items-center justify-center">
+              <Scissors className="size-5" />
+            </div>
+            <h1 className="mt-6 text-3xl font-semibold leading-tight">Barber kabineti</h1>
+            <p className="mt-3 text-sm text-zinc-300 max-w-sm">
+              Beige va black uslubida yaratilgan xavfsiz autentifikatsiya oqimi. Kirish yoki ro'yxatdan o'tishni tanlang.
+            </p>
+          </div>
+          <div className="text-xs text-zinc-400">MyBarber · Auth Gateway</div>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-3">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Email</label>
-            <Input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Parol</label>
-            <Input
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              type="password"
-              autoComplete="current-password"
-              placeholder="••••••••"
-              required
-            />
-          </div>
+        <div className="p-5 sm:p-8">
+          <Tabs value={tab} onValueChange={(v) => setTab(v as "login" | "signup")} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 h-11 rounded-xl">
+              <TabsTrigger value="login" className="rounded-lg font-medium">
+                Login
+              </TabsTrigger>
+              <TabsTrigger value="signup" className="rounded-lg font-medium">
+                Sign up
+              </TabsTrigger>
+            </TabsList>
 
-          {error && (
-            <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {error}
-            </div>
-          )}
+            <TabsContent value="login" className="mt-5">
+              <form onSubmit={onLoginSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="login-email">Email</Label>
+                  <Input
+                    id="login-email"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    className="h-11"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="login-password">Parol</Label>
+                  <PasswordInput
+                    id="login-password"
+                    value={loginPassword}
+                    onChange={setLoginPassword}
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                  />
+                </div>
+                <AuthErrorAlert error={error} />
+                <Button
+                  type="submit"
+                  className="w-full h-11 bg-zinc-900 text-amber-100 hover:bg-zinc-800"
+                  disabled={loadingLogin}
+                >
+                  {loadingLogin ? "Kutilmoqda..." : "Kirish"}
+                </Button>
+              </form>
+            </TabsContent>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Kutilmoqda..." : "Kirish"}
-          </Button>
-        </form>
+            <TabsContent value="signup" className="mt-5">
+              <form onSubmit={onSignupSubmit} className="space-y-4">
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-name">Ism-familiya</Label>
+                    <Input
+                      id="signup-name"
+                      value={signupName}
+                      onChange={(e) => setSignupName(e.target.value)}
+                      placeholder="Ism Familya"
+                      className="h-11"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-phone">Telefon (ixtiyoriy)</Label>
+                    <Input
+                      id="signup-phone"
+                      value={signupPhone}
+                      onChange={(e) => setSignupPhone(e.target.value)}
+                      placeholder="+998..."
+                      className="h-11"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">Email</Label>
+                  <Input
+                    id="signup-email"
+                    value={signupEmail}
+                    onChange={(e) => setSignupEmail(e.target.value)}
+                    type="email"
+                    autoComplete="email"
+                    placeholder="barber@example.com"
+                    className="h-11"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password">Parol</Label>
+                  <PasswordInput
+                    id="signup-password"
+                    value={signupPassword}
+                    onChange={setSignupPassword}
+                    autoComplete="new-password"
+                    placeholder="Kamida 8 belgi"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Signup yo'li</Label>
+                  <div className="grid grid-cols-1 gap-2">
+                    <FlowOptionCard flow="owner" selected={flow === "owner"} onSelect={setFlow} />
+                    <FlowOptionCard flow="employee" selected={flow === "employee"} onSelect={setFlow} />
+                    <FlowOptionCard flow="mybarber" selected={flow === "mybarber"} onSelect={setFlow} />
+                    <FlowOptionCard flow="independent" selected={flow === "independent"} onSelect={setFlow} />
+                  </div>
+                </div>
+
+                <AuthErrorAlert error={error} />
+                <Button
+                  type="submit"
+                  className="w-full h-11 bg-zinc-900 text-amber-100 hover:bg-zinc-800"
+                  disabled={loadingSignup}
+                >
+                  {loadingSignup ? "Kutilmoqda..." : "Davom etish"}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </div>
   );

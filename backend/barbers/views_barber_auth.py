@@ -196,7 +196,7 @@ class BarberOnboardingStatusView(APIView):
             has_mem_hours = SalonWorkingHours.objects.filter(membership=active_mem).exists()
             payload["has_membership_hours"] = has_mem_hours
             if not has_location or not has_mem_hours:
-                return incomplete("/salon/create", payload)
+                return incomplete("/salon/join", payload)
             return complete(payload)
 
         # Unknown: force auth

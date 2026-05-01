@@ -1,12 +1,9 @@
-from django.db import transaction
-import json
-
-from django.core.serializers.json import DjangoJSONEncoder
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from barbers.models import Barber, BarberProfile, BarberSignupSnapshot
+from barbers.models import Barber
+from accounts.barber_signup_service import create_barber_with_flow
 
 from .models import User
 from .uz_regions import UzRegion
@@ -191,65 +188,8 @@ class BarberSignupSerializer(serializers.Serializer):
         return attrs
 
     def create(self, validated_data):
-        # Save the original payload for admin/support (before we pop fields).
-        # `validated_data` can contain Decimal values (lat/lng) which are not JSON-serializable
-        # by default and can crash JSONField writes in production.
-        raw_payload = json.loads(json.dumps(dict(validated_data), cls=DjangoJSONEncoder))
-        pwd = validated_data.pop("password")
-        email = validated_data.pop("email")
-        phone = validated_data.pop("phone", "") or None
-        full_name = validated_data.pop("full_name")
-        has_salon = validated_data.pop("has_salon")
-        latitude = validated_data.pop("latitude")
-        longitude = validated_data.pop("longitude")
-        shop_name = (validated_data.pop("shop_name", "") or "").strip()
-        age = validated_data.pop("age", 25)
-        region = validated_data.pop("region")
-        address = validated_data.pop("address", "") or ""
-        staff_count = validated_data.pop("staff_count_at_signup", 1)
-        work_mode = validated_data.pop("work_mode", Barber.WorkMode.SALON)
-        onboarding_flow = (validated_data.pop("onboarding_flow", "") or "").strip()
-
-        if not shop_name:
-            if has_salon:
-                shop_name = "Salon tanlash kutilmoqda"
-            elif work_mode == Barber.WorkMode.INDEPENDENT:
-                shop_name = "Mustaqil barber"
-            else:
-                shop_name = "Salon yaratilishi kutilmoqda"
-
-        with transaction.atomic():
-            barber = Barber(
-                email=email,
-                username=email,
-                phone=phone,
-                full_name=full_name,
-                region=region,
-                work_mode=work_mode,
-                onboarding_flow=onboarding_flow,
-            )
-            barber.set_password(pwd)
-            barber.save()
-            BarberProfile.objects.update_or_create(
-                barber=barber,
-                defaults={
-                    "latitude": latitude,
-                    "longitude": longitude,
-                    "location_text": address,
-                },
-            )
-            BarberSignupSnapshot.objects.update_or_create(
-                barber=barber,
-                defaults={
-                    "has_salon": bool(has_salon),
-                    "shop_name": shop_name,
-                    "age": age,
-                    "address": address,
-                    "staff_count_at_signup": staff_count,
-                    "raw_payload": raw_payload,
-                },
-            )
-        return barber
+        # Keep serializer in charge of validation and delegate flow-specific creation.
+        return create_barber_with_flow(validated_data)
 
     def to_representation(self, instance):
         if isinstance(instance, Barber):

@@ -170,6 +170,7 @@ type Ctx = {
   setViewMode: (v: ViewMode) => void;
   hasSalon: boolean;
   onboardingComplete: boolean;
+  requiredNextPath: string | null;
   profile: BarberProfile;
   services: Service[];
   workingHours: WorkingHour[];
@@ -557,6 +558,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [hasSalon, setHasSalon] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState(true);
+  const [requiredNextPath, setRequiredNextPath] = useState<string | null>(null);
   const [settings, setSettings] = useState<Settings>({
     notifications_email: true,
     notifications_push: true,
@@ -1043,6 +1045,17 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         setViewMode(me.work_mode === "independent" ? "independent" : "salon");
         setHasSalon(me.work_mode !== "independent");
         setOnboardingComplete(Boolean(me.onboarding_completed ?? true));
+        setRequiredNextPath(null);
+        try {
+          const st = await apiJson<{ is_complete?: boolean; required_next_path?: string }>(
+            "/api/v1/barber/onboarding/status/",
+          );
+          if (!alive) return;
+          setOnboardingComplete(Boolean(st.is_complete));
+          setRequiredNextPath(st.required_next_path ? String(st.required_next_path) : null);
+        } catch {
+          // keep fallback from /auth/me when status endpoint is unavailable
+        }
       } catch {
         clearBarberTokens();
         return;
@@ -1099,6 +1112,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       setViewMode,
       hasSalon,
       onboardingComplete,
+      requiredNextPath,
       profile,
       services,
       workingHours,
@@ -1154,6 +1168,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       viewMode,
       hasSalon,
       onboardingComplete,
+      requiredNextPath,
       profile,
       services,
       workingHours,
