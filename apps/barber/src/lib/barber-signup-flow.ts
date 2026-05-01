@@ -11,6 +11,11 @@ export type FlowPayload = {
   staff_count_at_signup?: number;
 };
 
+/** Backend `DecimalField(max_digits=9, decimal_places=6)` — float JSON ba'zan 6 dan ortiq xona beradi. */
+function roundCoord6(n: number): number {
+  return Math.round(n * 1e6) / 1e6;
+}
+
 function deriveFlowFields(flow: SignupFlow) {
   if (flow === "independent") {
     return { has_salon: false, work_mode: "independent" as const };
@@ -38,6 +43,7 @@ export async function submitFlowSignup(flow: SignupFlow, payload: FlowPayload): 
   const flowFields = deriveFlowFields(flow);
   const email = normalizeEmail(draft.email);
 
+  const { latitude, longitude, ...payloadRest } = payload;
   const registerRes = await apiFetch("/api/v1/auth/barber-register/", {
     method: "POST",
     body: JSON.stringify({
@@ -47,7 +53,9 @@ export async function submitFlowSignup(flow: SignupFlow, payload: FlowPayload): 
       phone: draft.phone || undefined,
       onboarding_flow: flow,
       ...flowFields,
-      ...payload,
+      ...payloadRest,
+      latitude: roundCoord6(latitude),
+      longitude: roundCoord6(longitude),
     }),
   });
   const registerBody = await parseJsonSafe(registerRes);
