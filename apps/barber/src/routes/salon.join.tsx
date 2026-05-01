@@ -614,6 +614,7 @@ function SalonJoinPage() {
   );
 }
 
+
 function ChecklistItem({ done, label }: { done: boolean; label: string }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-3">
@@ -669,3 +670,4 @@ function Section({
     </section>
   );
 }
+
