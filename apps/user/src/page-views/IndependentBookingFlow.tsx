@@ -56,8 +56,9 @@ export default function IndependentBookingFlow() {
         if (!alive) return;
         setErr((e as Error).message);
       } finally {
-        if (!alive) return;
-        setLoadingBarber(false);
+        if (alive) {
+          setLoadingBarber(false);
+        }
       }
     })();
     return () => {
@@ -106,8 +107,9 @@ export default function IndependentBookingFlow() {
         }
         setSlots(j.slots || []);
       } finally {
-        if (!alive) return;
-        setLoadingSlots(false);
+        if (alive) {
+          setLoadingSlots(false);
+        }
       }
     })();
     return () => {
