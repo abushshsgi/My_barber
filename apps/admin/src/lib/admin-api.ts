@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { apiFetch, apiJson } from "./api";
 
 export const PAGE_SIZE = 50;
@@ -504,7 +505,13 @@ export async function fetchAllBarbersForMap(region?: RegionCode | ""): Promise<A
 // Extra admin sections
 // -------------------------
 
-export type ServiceCategory = { id: string; name: string; icon: string; order: number; services_count: number };
+export type ServiceCategory = {
+  id: string;
+  name: string;
+  icon: string;
+  order: number;
+  services_count: number;
+};
 
 export type AdminService = {
   id: string;
@@ -532,7 +539,11 @@ export async function fetchCategories(): Promise<ServiceCategory[]> {
   }));
 }
 
-export async function fetchServices(params?: { q?: string; category?: string; type?: string }): Promise<AdminService[]> {
+export async function fetchServices(params?: {
+  q?: string;
+  category?: string;
+  type?: string;
+}): Promise<AdminService[]> {
   const sp = new URLSearchParams();
   if (params?.q) sp.set("q", params.q);
   if (params?.category && params.category !== "all") sp.set("category", params.category);
@@ -580,7 +591,9 @@ export async function createService(body: {
 
 export async function updateService(
   id: string,
-  body: Partial<Pick<AdminService, "name" | "price" | "duration_min" | "is_active" | "category_ids">> & {
+  body: Partial<
+    Pick<AdminService, "name" | "price" | "duration_min" | "is_active" | "category_ids">
+  > & {
     type?: "salon" | "independent";
   },
 ): Promise<{ ok: true }> {
@@ -601,7 +614,9 @@ export async function updateService(
 export async function deleteService(id: string, type: "salon" | "independent"): Promise<void> {
   const sp = new URLSearchParams();
   sp.set("type", type);
-  const res = await apiFetch(`/api/v1/admin/services/${id}/?${sp.toString()}`, { method: "DELETE" });
+  const res = await apiFetch(`/api/v1/admin/services/${id}/?${sp.toString()}`, {
+    method: "DELETE",
+  });
   if (!res.ok) {
     const j = await res.json().catch(() => ({}));
     throw new Error((j as { detail?: string }).detail || "Xizmat o‘chirilmadi");
@@ -745,11 +760,17 @@ export async function getTicketReplies(id: string): Promise<any[]> {
 }
 
 export async function updateTicket(id: string, body: any): Promise<any> {
-  return apiJson(`/api/v1/admin/support/tickets/${id}/`, { method: "PATCH", body: JSON.stringify(body) });
+  return apiJson(`/api/v1/admin/support/tickets/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
 }
 
 export async function postTicketReply(id: string, body: string): Promise<any> {
-  return apiJson(`/api/v1/admin/support/tickets/${id}/replies/`, { method: "POST", body: JSON.stringify({ body }) });
+  return apiJson(`/api/v1/admin/support/tickets/${id}/replies/`, {
+    method: "POST",
+    body: JSON.stringify({ body }),
+  });
 }
 
 export type AdminBroadcast = {
@@ -782,11 +803,24 @@ export async function fetchBroadcasts(): Promise<AdminBroadcast[]> {
   }));
 }
 
-export async function createBroadcast(body: Omit<AdminBroadcast, "id" | "sent_count" | "read_count" | "created_at">): Promise<AdminBroadcast> {
-  return apiJson<AdminBroadcast>("/api/v1/admin/broadcast/", { method: "POST", body: JSON.stringify(body) });
+export async function createBroadcast(
+  body: Omit<AdminBroadcast, "id" | "sent_count" | "read_count" | "created_at">,
+): Promise<AdminBroadcast> {
+  return apiJson<AdminBroadcast>("/api/v1/admin/broadcast/", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }
 
-export type PlatformAdmin = { id: string; name: string; email: string; role: string; is_active: boolean; last_login: string; avatar: string };
+export type PlatformAdmin = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  is_active: boolean;
+  last_login: string;
+  avatar: string;
+};
 
 export async function fetchAdmins(): Promise<PlatformAdmin[]> {
   const res = await apiFetch("/api/v1/admin/admins/");
@@ -804,8 +838,14 @@ export async function fetchAdmins(): Promise<PlatformAdmin[]> {
   }));
 }
 
-export async function updateAdmin(id: string, body: Partial<PlatformAdmin>): Promise<PlatformAdmin> {
-  return apiJson<PlatformAdmin>(`/api/v1/admin/admins/${id}/`, { method: "PATCH", body: JSON.stringify(body) });
+export async function updateAdmin(
+  id: string,
+  body: Partial<PlatformAdmin>,
+): Promise<PlatformAdmin> {
+  return apiJson<PlatformAdmin>(`/api/v1/admin/admins/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
 }
 
 export type AdminProfile = { id: string; email: string; role: string };

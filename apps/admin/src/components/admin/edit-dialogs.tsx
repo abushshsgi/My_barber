@@ -181,7 +181,10 @@ export function EditUserDialog({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Hudud</FormLabel>
-                <Select value={field.value} onValueChange={(v) => field.onChange(v as UzRegionCode)}>
+                <Select
+                  value={field.value}
+                  onValueChange={(v) => field.onChange(v as UzRegionCode)}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue />
@@ -445,7 +448,13 @@ export function EditSalonDialog({
   });
   useEffect(() => {
     if (open)
-      form.reset({ name: "", address: "", region: DEFAULT_REGION, published: false, ...defaultValues });
+      form.reset({
+        name: "",
+        address: "",
+        region: DEFAULT_REGION,
+        published: false,
+        ...defaultValues,
+      });
   }, [open, defaultValues, form]);
 
   return (
@@ -490,7 +499,10 @@ export function EditSalonDialog({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Hudud</FormLabel>
-                <Select value={field.value} onValueChange={(v) => field.onChange(v as UzRegionCode)}>
+                <Select
+                  value={field.value}
+                  onValueChange={(v) => field.onChange(v as UzRegionCode)}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue />

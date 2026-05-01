@@ -40,10 +40,7 @@ export function FilterToolbar({
       </div>
 
       {onRegionChange && (
-        <Select
-          value={region || "all"}
-          onValueChange={(v) => onRegionChange(v === "all" ? "" : v)}
-        >
+        <Select value={region || "all"} onValueChange={(v) => onRegionChange(v === "all" ? "" : v)}>
           <SelectTrigger className="w-44 bg-card">
             <SelectValue placeholder="Hudud" />
           </SelectTrigger>

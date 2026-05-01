@@ -171,7 +171,9 @@ function ServicesPage() {
         title="Xizmatni o'chirish"
         description={deleteTarget ? `"${deleteTarget.name}" xizmati o'chiriladi.` : ""}
         loading={deleteMut.isPending}
-        onConfirm={() => deleteTarget && deleteMut.mutate({ id: deleteTarget.id, type: deleteTarget.type })}
+        onConfirm={() =>
+          deleteTarget && deleteMut.mutate({ id: deleteTarget.id, type: deleteTarget.type })
+        }
       />
     </div>
   );
