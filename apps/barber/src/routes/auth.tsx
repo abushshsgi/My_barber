@@ -67,7 +67,7 @@ function AuthPage() {
 
   const flowPathMap: Record<SignupFlow, string> = {
     owner: "/onboarding/owner",
-    employee: "/onboarding/employee",
+    employee: "/salon/join",
     mybarber: "/onboarding/mybarber",
     independent: "/onboarding/independent",
   };

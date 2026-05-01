@@ -12,7 +12,7 @@ export type FlowPayload = {
 };
 
 /** Backend `DecimalField(max_digits=9, decimal_places=6)` — float JSON ba'zan 6 dan ortiq xona beradi. */
-function roundCoord6(n: number): number {
+export function roundCoord6(n: number): number {
   return Math.round(n * 1e6) / 1e6;
 }
 

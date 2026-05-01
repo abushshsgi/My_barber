@@ -17,6 +17,8 @@ import {
 import { toast } from "sonner";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { submitFlowSignup, roundCoord6 } from "@/lib/barber-signup-flow";
+import { readSignupDraft } from "@/lib/signup-draft";
 import { apiFetch, apiJson, formatApiError, getBarberAccessToken } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -217,6 +219,11 @@ function SalonJoinPage() {
   const [joinStatus, setJoinStatus] = useState<JoinStatus>("idle");
   const [joinError, setJoinError] = useState<string | null>(null);
   const [hasBearer, setHasBearer] = useState(false);
+  const [registeringAccount, setRegisteringAccount] = useState(false);
+  const [registerError, setRegisterError] = useState<string | null>(null);
+
+  const signupDraft = readSignupDraft();
+  const pendingEmployeeSignup = Boolean(!hasBearer && signupDraft?.flow === "employee");
 
   useEffect(() => {
     function syncBearer() {
@@ -257,6 +264,30 @@ function SalonJoinPage() {
     setJoinError(null);
   };
 
+  const handleCompleteEmployeeSignup = async () => {
+    if (!currentLocation.location) {
+      toast.error("Avval «Mening lokatsiyam» tugmasi bilan joylashuvni oling.");
+      return;
+    }
+    if (!signupDraft || signupDraft.flow !== "employee") return;
+    setRegisteringAccount(true);
+    setRegisterError(null);
+    try {
+      await submitFlowSignup("employee", {
+        latitude: roundCoord6(currentLocation.location.latitude),
+        longitude: roundCoord6(currentLocation.location.longitude),
+      });
+      setHasBearer(true);
+      toast.success("Akkaunt yaratildi. Endi salon qidiring.");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Ro'yxatdan o'tishda xato.";
+      setRegisterError(msg);
+      toast.error(msg);
+    } finally {
+      setRegisteringAccount(false);
+    }
+  };
+
   const handleJoin = async () => {
     if (!selectedSalon || !currentLocation.location || !hasBearer) {
       if (!hasBearer) {
@@ -272,8 +303,8 @@ function SalonJoinPage() {
     try {
       await joinSalon({
         salon_id: selectedSalon.id,
-        latitude: currentLocation.location.latitude,
-        longitude: currentLocation.location.longitude,
+        latitude: roundCoord6(currentLocation.location.latitude),
+        longitude: roundCoord6(currentLocation.location.longitude),
       });
       setJoinStatus("success");
       toast.success(`${selectedSalon.name} saloniga muvaffaqiyatli qo'shildingiz.`);
@@ -314,18 +345,128 @@ function SalonJoinPage() {
             Salonga ishchi sifatida qo'shiling
           </h1>
           <p className="mx-auto mt-2 max-w-[520px] px-1 text-[12.5px] leading-snug text-muted-foreground sm:mt-3 sm:px-0 sm:text-base">
-            Barber akkaunt bilan kirgach salonni serverdan qidirib tanlang, joylashuvni yuboring va salonga ulanishni tasdiqlang (taxminan 100 m ichida turishingiz kerak).
+            {pendingEmployeeSignup
+              ? "Avval GPS bilan joylashuving va akkauntingizni yarating, so‘ng salonni qidiring, lokatsiyani tasdiqlang va salonga qoʻshiling (taxminan 100 m ichida bo‘lishingiz kerak)."
+              : "Barber akkaunt bilan kirgach salonni serverdan qidirib tanlang, joylashuvni yuboring va salonga ulanishni tasdiqlang (taxminan 100 m ichida turishingiz kerak)."}
           </p>
         </div>
 
         <div className="space-y-4 sm:space-y-6">
+          {pendingEmployeeSignup && (
+            <Section
+              icon={<Crosshair className="h-4 w-4" />}
+              label="Qadam 1"
+              title="Joylashuv va akkaunt"
+              description="GPS orqali manzilingizni oling va ro‘yxatdan oʻtgan ma’lumotlaringiz bilan akkaunt yarating."
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={currentLocation.requestLocation}
+                  disabled={currentLocation.status === "locating" || registeringAccount}
+                  className={cn(
+                    "inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-medium text-foreground transition-[var(--transition-smooth)]",
+                    currentLocation.status === "locating" || registeringAccount
+                      ? "cursor-not-allowed opacity-70"
+                      : "cursor-pointer hover:bg-muted active:scale-[0.98]",
+                  )}
+                >
+                  {currentLocation.status === "locating" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Navigation className="h-4 w-4" />
+                  )}
+                  {currentLocation.location ? "Lokatsiyani yangilash" : "Mening lokatsiyam"}
+                </button>
+                <span className="text-[11px] text-muted-foreground">
+                  Eng yaxshi aniqlik uchun salonda turgan holda oling.
+                </span>
+              </div>
+
+              {currentLocation.error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Lokatsiya olinmadi</AlertTitle>
+                  <AlertDescription>{currentLocation.error}</AlertDescription>
+                </Alert>
+              )}
+
+              {registerError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Ro‘yxatdan o‘tish</AlertTitle>
+                  <AlertDescription>{registerError}</AlertDescription>
+                </Alert>
+              )}
+
+              {currentLocation.location && (
+                <div className="grid gap-3 rounded-2xl border border-border bg-background p-4 text-sm sm:grid-cols-3">
+                  <div>
+                    <p className="text-muted-foreground">Latitude</p>
+                    <p className="mt-1 font-semibold text-foreground">
+                      {formatCoordinate(currentLocation.location.latitude)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Longitude</p>
+                    <p className="mt-1 font-semibold text-foreground">
+                      {formatCoordinate(currentLocation.location.longitude)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Aniqlik</p>
+                    <p className="mt-1 font-semibold text-foreground">
+                      {currentLocation.location.accuracy
+                        ? `${Math.round(currentLocation.location.accuracy)} m`
+                        : "Noma'lum"}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleCompleteEmployeeSignup}
+                disabled={registeringAccount || !currentLocation.location}
+                className={cn(
+                  "inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-[var(--transition-smooth)] sm:w-auto sm:min-w-[220px]",
+                  registeringAccount || !currentLocation.location
+                    ? "cursor-not-allowed bg-muted text-muted-foreground"
+                    : "cursor-pointer bg-foreground text-background hover:scale-[1.01] active:scale-[0.98]",
+                )}
+              >
+                {registeringAccount ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Yaratilmoqda...
+                  </>
+                ) : (
+                  <>
+                    <UserRoundCheck className="h-4 w-4" />
+                    Akkaunt yaratish va davom etish
+                  </>
+                )}
+              </button>
+            </Section>
+          )}
+
           <Section
             icon={<Search className="h-4 w-4" />}
-            label="Qadam 1"
+            label={pendingEmployeeSignup ? "Qadam 2" : "Qadam 1"}
             title="Salon qidirish"
             description="Salon nomini kiriting va ro'yxatdan birini tanlang."
           >
-            {!hasBearer && (
+            {!hasBearer && pendingEmployeeSignup && (
+              <Alert className="border-border bg-muted/30">
+                <UserRoundCheck className="h-4 w-4 text-foreground" />
+                <AlertTitle>Kuting</AlertTitle>
+                <AlertDescription>
+                  Salon qidiruvi akkauntingiz yaratilib, JWT chiqgach aktiv bo‘ladi — avval yuqoridagi qadamni
+                  yakunlang.
+                </AlertDescription>
+              </Alert>
+            )}
+            {!hasBearer && !pendingEmployeeSignup && (
               <Alert className="border-border bg-muted/30">
                 <UserRoundCheck className="h-4 w-4 text-foreground" />
                 <AlertTitle>Kirish zarur</AlertTitle>
@@ -356,7 +497,11 @@ function SalonJoinPage() {
                   setJoinError(null);
                 }}
                 placeholder="Masalan: Premium Barber"
-                className="h-11 w-full rounded-xl border border-border bg-background pl-9 pr-3 text-sm text-foreground outline-none transition-[var(--transition-smooth)] placeholder:text-muted-foreground focus:border-foreground"
+                disabled={!hasBearer}
+                className={cn(
+                  "h-11 w-full rounded-xl border border-border bg-background pl-9 pr-3 text-sm text-foreground outline-none transition-[var(--transition-smooth)] placeholder:text-muted-foreground focus:border-foreground",
+                  !hasBearer && "cursor-not-allowed opacity-60",
+                )}
                 aria-label="Salon nomi bo'yicha qidirish"
               />
             </div>
@@ -380,12 +525,18 @@ function SalonJoinPage() {
               <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-8 text-center">
                 <Store className="mx-auto h-8 w-8 text-muted-foreground" />
                 <p className="mt-3 text-sm font-medium">
-                  {!hasBearer ? "Salonlar ro‘yxati uchun kirish kerak" : "Salon topilmadi"}
+                  {!hasBearer
+                    ? pendingEmployeeSignup
+                      ? "Akkauntingiz tayyor bo‘lmaguncha qidiruv yopiq"
+                      : "Salonlar ro‘yxati uchun kirish kerak"
+                    : "Salon topilmadi"}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {!hasBearer
-                    ? "/auth sahifasidan kirgach qidiruv avtomatik serverdan yuklanadi."
-                    : "Nomni boshqacha yozib qidirib ko‘ring yoki boshqa salon nomidan urinib ko‘ring."}
+                  {!hasBearer && pendingEmployeeSignup
+                    ? "Avval akkauntingiz yaratilishi kerak."
+                    : !hasBearer
+                      ? "/auth sahifasidan kirgach qidiruv avtomatik serverdan yuklanadi."
+                      : "Nomni boshqacha yozib qidirib ko‘ring yoki boshqa salon nomidan urinib ko‘ring."}
                 </p>
               </div>
             )}
@@ -428,6 +579,7 @@ function SalonJoinPage() {
             )}
           </Section>
 
+          {!pendingEmployeeSignup && (
           <Section
             icon={<Crosshair className="h-4 w-4" />}
             label="Qadam 2"
@@ -492,6 +644,7 @@ function SalonJoinPage() {
               </div>
             )}
           </Section>
+          )}
 
           <Section
             icon={<ShieldCheck className="h-4 w-4" />}
@@ -556,7 +709,7 @@ function SalonJoinPage() {
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[920px] items-center justify-between gap-2 px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] sm:gap-3 sm:px-6 sm:py-4">
           <button
-            onClick={() => navigate({ to: "/onboarding/employee" })}
+            onClick={() => navigate({ to: hasBearer ? "/barber" : "/auth" })}
             className="inline-flex h-11 w-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-border bg-background text-sm font-medium text-foreground transition-[var(--transition-smooth)] hover:bg-muted active:scale-[0.98] sm:h-11 sm:w-auto sm:px-4"
             aria-label="Orqaga"
           >
