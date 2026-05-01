@@ -17,7 +17,7 @@ import {
 import { toast } from "sonner";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { submitFlowSignup, roundCoord6 } from "@/lib/barber-signup-flow";
+import { submitEmployeeRegisterAndJoin, roundCoord6 } from "@/lib/barber-signup-flow";
 import { readSignupDraft } from "@/lib/signup-draft";
 import { apiFetch, apiJson, formatApiError, getBarberAccessToken } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -123,7 +123,7 @@ function formatCoordinate(value: number) {
   return value.toFixed(6);
 }
 
-function useSalonSearch(query: string, hasBearer: boolean) {
+function useSalonSearch(query: string, allowSearch: boolean) {
   const [status, setStatus] = useState<SearchStatus>("idle");
   const [results, setResults] = useState<SalonSearchHit[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -141,7 +141,7 @@ function useSalonSearch(query: string, hasBearer: boolean) {
     const timer = window.setTimeout(() => {
       setError(null);
 
-      if (!hasBearer) {
+      if (!allowSearch) {
         setResults([]);
         setStatus(trimmed.length >= MIN_QUERY_LENGTH ? "empty" : "idle");
         return;
@@ -165,7 +165,7 @@ function useSalonSearch(query: string, hasBearer: boolean) {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [query, hasBearer]);
+  }, [query, allowSearch]);
 
   return { status, results, error };
 }
@@ -222,8 +222,6 @@ function SalonJoinPage() {
   const [joinStatus, setJoinStatus] = useState<JoinStatus>("idle");
   const [joinError, setJoinError] = useState<string | null>(null);
   const [hasBearer, setHasBearer] = useState(false);
-  const [registeringAccount, setRegisteringAccount] = useState(false);
-  const [registerError, setRegisterError] = useState<string | null>(null);
 
   const signupDraft = readSignupDraft();
   const pendingEmployeeSignup = Boolean(!hasBearer && signupDraft?.flow === "employee");
@@ -241,15 +239,23 @@ function SalonJoinPage() {
     };
   }, []);
 
-  const search = useSalonSearch(query, hasBearer);
+  const search = useSalonSearch(query, hasBearer || pendingEmployeeSignup);
   const currentLocation = useCurrentLocation();
 
   const canJoin = Boolean(
+
     hasBearer &&
     selectedSalon &&
     currentLocation.location &&
     joinStatus !== "joining" &&
     joinStatus !== "success",
+
+    selectedSalon &&
+      currentLocation.location &&
+      joinStatus !== "joining" &&
+      joinStatus !== "success" &&
+      (hasBearer || pendingEmployeeSignup),
+
   );
   const canSearch = query.trim().length >= MIN_QUERY_LENGTH;
   const selectedAddress = selectedSalon?.address || "Manzil kiritilmagan";
@@ -267,36 +273,9 @@ function SalonJoinPage() {
     setJoinError(null);
   };
 
-  const handleCompleteEmployeeSignup = async () => {
-    if (!currentLocation.location) {
-      toast.error("Avval «Mening lokatsiyam» tugmasi bilan joylashuvni oling.");
-      return;
-    }
-    if (!signupDraft || signupDraft.flow !== "employee") return;
-    setRegisteringAccount(true);
-    setRegisterError(null);
-    try {
-      await submitFlowSignup("employee", {
-        latitude: roundCoord6(currentLocation.location.latitude),
-        longitude: roundCoord6(currentLocation.location.longitude),
-      });
-      setHasBearer(true);
-      toast.success("Akkaunt yaratildi. Endi salon qidiring.");
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Ro'yxatdan o'tishda xato.";
-      setRegisterError(msg);
-      toast.error(msg);
-    } finally {
-      setRegisteringAccount(false);
-    }
-  };
-
   const handleJoin = async () => {
-    if (!selectedSalon || !currentLocation.location || !hasBearer) {
-      if (!hasBearer) {
-        toast.error("Avval barber akkaunt bilan kirish kerak.");
-        navigate({ to: "/auth" });
-      }
+    if (!selectedSalon || !currentLocation.location) {
+      toast.error("Salon va lokatsiyani tanlang.");
       return;
     }
 
@@ -304,11 +283,25 @@ function SalonJoinPage() {
     setJoinError(null);
 
     try {
-      await joinSalon({
-        salon_id: selectedSalon.id,
-        latitude: roundCoord6(currentLocation.location.latitude),
-        longitude: roundCoord6(currentLocation.location.longitude),
-      });
+      if (hasBearer) {
+        await joinSalon({
+          salon_id: selectedSalon.id,
+          latitude: roundCoord6(currentLocation.location.latitude),
+          longitude: roundCoord6(currentLocation.location.longitude),
+        });
+      } else if (pendingEmployeeSignup && signupDraft?.flow === "employee") {
+        await submitEmployeeRegisterAndJoin({
+          salon_id: selectedSalon.id,
+          latitude: currentLocation.location.latitude,
+          longitude: currentLocation.location.longitude,
+        });
+        setHasBearer(true);
+      } else {
+        toast.error("Avval barber akkaunt bilan kirish kerak.");
+        navigate({ to: "/auth" });
+        setJoinStatus("idle");
+        return;
+      }
       setJoinStatus("success");
       toast.success(`${selectedSalon.name} saloniga muvaffaqiyatli qo'shildingiz.`);
     } catch (err) {
@@ -349,7 +342,7 @@ function SalonJoinPage() {
           </h1>
           <p className="mx-auto mt-2 max-w-[520px] px-1 text-[12.5px] leading-snug text-muted-foreground sm:mt-3 sm:px-0 sm:text-base">
             {pendingEmployeeSignup
-              ? "Avval GPS bilan joylashuving va akkauntingizni yarating, so‘ng salonni qidiring, lokatsiyani tasdiqlang va salonga qoʻshiling (taxminan 100 m ichida bo‘lishingiz kerak)."
+              ? "GPS bilan joylashuving, salonni qidiring va tanlang. Pastki tugma akkauntingizni yaratadi hamda tanlangan salonga qoʻshadi — salon bilan ~100 m ichida turishingiz kerak."
               : "Barber akkaunt bilan kirgach salonni serverdan qidirib tanlang, joylashuvni yuboring va salonga ulanishni tasdiqlang (taxminan 100 m ichida turishingiz kerak)."}
           </p>
         </div>
@@ -359,17 +352,17 @@ function SalonJoinPage() {
             <Section
               icon={<Crosshair className="h-4 w-4" />}
               label="Qadam 1"
-              title="Joylashuv va akkaunt"
-              description="GPS orqali manzilingizni oling va ro‘yxatdan oʻtgan ma’lumotlaringiz bilan akkaunt yarating."
+              title="Joylashuv"
+              description="GPS bilan joriy nuqtani oling. Akkaunt va membership pastki tugma bilan — salon tanlangandan keyin va masofa mos kelganda — bir vaqtning o‘zida yaratiladi."
             >
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={currentLocation.requestLocation}
-                  disabled={currentLocation.status === "locating" || registeringAccount}
+                  disabled={currentLocation.status === "locating"}
                   className={cn(
                     "inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-medium text-foreground transition-[var(--transition-smooth)]",
-                    currentLocation.status === "locating" || registeringAccount
+                    currentLocation.status === "locating"
                       ? "cursor-not-allowed opacity-70"
                       : "cursor-pointer hover:bg-muted active:scale-[0.98]",
                   )}
@@ -391,14 +384,6 @@ function SalonJoinPage() {
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Lokatsiya olinmadi</AlertTitle>
                   <AlertDescription>{currentLocation.error}</AlertDescription>
-                </Alert>
-              )}
-
-              {registerError && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Ro‘yxatdan o‘tish</AlertTitle>
-                  <AlertDescription>{registerError}</AlertDescription>
                 </Alert>
               )}
 
@@ -426,30 +411,6 @@ function SalonJoinPage() {
                   </div>
                 </div>
               )}
-
-              <button
-                type="button"
-                onClick={handleCompleteEmployeeSignup}
-                disabled={registeringAccount || !currentLocation.location}
-                className={cn(
-                  "inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-[var(--transition-smooth)] sm:w-auto sm:min-w-[220px]",
-                  registeringAccount || !currentLocation.location
-                    ? "cursor-not-allowed bg-muted text-muted-foreground"
-                    : "cursor-pointer bg-foreground text-background hover:scale-[1.01] active:scale-[0.98]",
-                )}
-              >
-                {registeringAccount ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Yaratilmoqda...
-                  </>
-                ) : (
-                  <>
-                    <UserRoundCheck className="h-4 w-4" />
-                    Akkaunt yaratish va davom etish
-                  </>
-                )}
-              </button>
             </Section>
           )}
 
@@ -462,10 +423,12 @@ function SalonJoinPage() {
             {!hasBearer && pendingEmployeeSignup && (
               <Alert className="border-border bg-muted/30">
                 <UserRoundCheck className="h-4 w-4 text-foreground" />
-                <AlertTitle>Kuting</AlertTitle>
+                <AlertTitle>Employee ro‘yxatdan o‘tish</AlertTitle>
                 <AlertDescription>
                   Salon qidiruvi akkauntingiz yaratilib, JWT chiqgach aktiv bo‘ladi — avval
                   yuqoridagi qadamni yakunlang.
+                  Salonni qidiring va tanlang. Pastki tugma akkauntingizni yaratadi va tanlangan salonga qoʻshadi
+                  (GPS salon bilan taxminan 100 m ichida bo‘lishi kerak).
                 </AlertDescription>
               </Alert>
             )}
@@ -501,10 +464,10 @@ function SalonJoinPage() {
                   setJoinError(null);
                 }}
                 placeholder="Masalan: Premium Barber"
-                disabled={!hasBearer}
+                disabled={!hasBearer && !pendingEmployeeSignup}
                 className={cn(
                   "h-11 w-full rounded-xl border border-border bg-background pl-9 pr-3 text-sm text-foreground outline-none transition-[var(--transition-smooth)] placeholder:text-muted-foreground focus:border-foreground",
-                  !hasBearer && "cursor-not-allowed opacity-60",
+                  !hasBearer && !pendingEmployeeSignup && "cursor-not-allowed opacity-60",
                 )}
                 aria-label="Salon nomi bo'yicha qidirish"
               />
@@ -529,18 +492,14 @@ function SalonJoinPage() {
               <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-8 text-center">
                 <Store className="mx-auto h-8 w-8 text-muted-foreground" />
                 <p className="mt-3 text-sm font-medium">
-                  {!hasBearer
-                    ? pendingEmployeeSignup
-                      ? "Akkauntingiz tayyor bo‘lmaguncha qidiruv yopiq"
-                      : "Salonlar ro‘yxati uchun kirish kerak"
+                  {!hasBearer && !pendingEmployeeSignup
+                    ? "Salonlar ro‘yxati uchun kirish kerak"
                     : "Salon topilmadi"}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {!hasBearer && pendingEmployeeSignup
-                    ? "Avval akkauntingiz yaratilishi kerak."
-                    : !hasBearer
-                      ? "/auth sahifasidan kirgach qidiruv avtomatik serverdan yuklanadi."
-                      : "Nomni boshqacha yozib qidirib ko‘ring yoki boshqa salon nomidan urinib ko‘ring."}
+                  {!hasBearer && !pendingEmployeeSignup
+                    ? "/auth sahifasidan kirgach qidiruv avtomatik serverdan yuklanadi."
+                    : "Nomni boshqacha yozib qidirib ko‘ring yoki boshqa salon nomidan urinib ko‘ring."}
                 </p>
               </div>
             )}
@@ -760,7 +719,8 @@ function SalonJoinPage() {
                 </>
               ) : (
                 <>
-                  <ShieldCheck className="h-4 w-4" /> Salonga qo'shilish
+                  <ShieldCheck className="h-4 w-4" />{" "}
+                  {pendingEmployeeSignup ? "Akkaunt yaratish va salonga qo'shilish" : "Salonga qo'shilish"}
                 </>
               )}
             </button>
