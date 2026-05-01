@@ -1,18 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 
+/** Ishchi yo‘li — mavjud salonga ulanish salon join sahifasida bajariladi. */
 export const Route = createFileRoute("/onboarding/employee")({
   component: EmployeeOnboardingPage,
 });
 
 function EmployeeOnboardingPage() {
-  return (
-    <div className="min-h-screen bg-background text-foreground px-4 py-10">
-      <div className="mx-auto w-full max-w-xl rounded-2xl border border-border bg-card p-6 sm:p-8">
-        <h1 className="text-2xl font-semibold">Employee onboarding keyin qilinadi</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Hozircha faqat owner flow yoqilgan. Bu sahifa vaqtincha kutish holatida.
-        </p>
-      </div>
-    </div>
-  );
+  return <Navigate to="/salon/join" replace />;
 }
