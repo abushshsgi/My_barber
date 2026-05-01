@@ -19,7 +19,7 @@ function totalPages(count: number, pageSize: number): number {
   return Math.max(1, Math.ceil(count / pageSize));
 }
 
-// --- Types used by UI (kept compatible with admin-hub mock-data.ts) ---
+// --- Types used by UI ---
 export type RegionCode = string;
 
 export type AdminUser = {
@@ -247,7 +247,7 @@ function mapSalon(s: BackendSalonRow): AdminSalon {
   };
 }
 
-// --- API functions (compatible with previous mock-api.ts exports) ---
+// --- API functions ---
 export async function fetchAdminStats(): Promise<AdminStats> {
   const stats = await apiJson<BackendStats>("/api/v1/admin/stats/");
   return {
@@ -501,7 +501,7 @@ export async function fetchAllBarbersForMap(region?: RegionCode | ""): Promise<A
 }
 
 // -------------------------
-// Extra admin sections (replace mock-api-extra)
+// Extra admin sections
 // -------------------------
 
 export type ServiceCategory = { id: string; name: string; icon: string; order: number; services_count: number };
@@ -755,6 +755,7 @@ export async function postTicketReply(id: string, body: string): Promise<any> {
 export type AdminBroadcast = {
   id: string;
   audience: string;
+  region?: string;
   channel: string;
   title: string;
   body: string;
@@ -771,6 +772,7 @@ export async function fetchBroadcasts(): Promise<AdminBroadcast[]> {
   return rows.map((b: any) => ({
     id: String(b.id),
     audience: String(b.audience || ""),
+    region: b.region ? String(b.region) : undefined,
     channel: String(b.channel || ""),
     title: String(b.title || ""),
     body: String(b.body || ""),

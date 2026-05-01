@@ -1,13 +1,11 @@
-const ENV_API_BASE =
-  // Next.js (client) injects NEXT_PUBLIC_* at build time.
-  (typeof process !== "undefined" ? process.env.NEXT_PUBLIC_API_URL : undefined) ||
-  // Vite injects import.meta.env.* (kept for local/dev flexibility).
-  (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_API_URL ||
-  (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.NEXT_PUBLIC_API_URL ||
-  "";
+function readEnv(name: string): string | undefined {
+  const viteEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
+  return viteEnv?.[name] || (typeof process !== "undefined" ? process.env?.[name] : undefined);
+}
 
-// If NEXT_PUBLIC_API_URL isn't set in prod, rely on Next rewrites (same-origin).
-const API_BASE = ENV_API_BASE.trim() ? ENV_API_BASE.replace(/\/+$/, "") : "";
+const ENV_API_BASE = readEnv("VITE_API_URL") || readEnv("NEXT_PUBLIC_API_URL") || "";
+const FALLBACK_DEV_BASE = import.meta.env.DEV ? "http://localhost:8000" : "";
+const API_BASE = (ENV_API_BASE.trim() ? ENV_API_BASE : FALLBACK_DEV_BASE).replace(/\/+$/, "");
 
 const TOKEN_KEY_ADMIN = "mybarber_admin_access";
 const REFRESH_KEY_ADMIN = "mybarber_admin_refresh";
@@ -58,12 +56,15 @@ async function refreshAdminAccess(): Promise<string | null> {
     clearAdminTokens();
     return null;
   }
-  const body = (await res.json().catch(() => ({}))) as { access?: string };
+  const body = (await res.json().catch(() => ({}))) as { access?: string; refresh?: string };
   if (!body.access) {
     clearAdminTokens();
     return null;
   }
-  if (typeof window !== "undefined") localStorage.setItem(TOKEN_KEY_ADMIN, body.access);
+  if (typeof window !== "undefined") {
+    localStorage.setItem(TOKEN_KEY_ADMIN, body.access);
+    if (body.refresh) localStorage.setItem(REFRESH_KEY_ADMIN, body.refresh);
+  }
   return body.access;
 }
 
@@ -99,24 +100,39 @@ function formatApiError(body: unknown, fallback: string): string {
     if (Array.isArray(d.detail) && d.detail.length) return String(d.detail[0]);
     if (Array.isArray(d.non_field_errors) && d.non_field_errors.length)
       return String(d.non_field_errors[0]);
+    const fieldKeys = Object.keys(d).filter((k) => k !== "detail" && k !== "non_field_errors");
+    if (fieldKeys.length) {
+      const parts = fieldKeys
+        .map((k) => {
+          const v = d[k];
+          if (Array.isArray(v)) return `${k}: ${v.join(", ")}`;
+          if (v && typeof v === "object") return `${k}: ${JSON.stringify(v)}`;
+          return `${k}: ${String(v)}`;
+        })
+        .join("; ");
+      if (parts) return parts;
+    }
   }
   return fallback;
 }
 
+async function parseJsonSafe(res: Response): Promise<unknown> {
+  const text = await res.text();
+  const trimmed = text.trim();
+  if (!trimmed) return {};
+  try {
+    return JSON.parse(trimmed) as unknown;
+  } catch {
+    const preview = trimmed.slice(0, 120);
+    throw new Error(
+      `Server javobi JSON emas (${res.status}). API manzili va backend ishlayotganini tekshiring. ${preview}`,
+    );
+  }
+}
+
 export async function apiJson<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await apiFetch(path, options);
-  const text = await res.text();
-  let body: unknown = {};
-  if (text.trim()) {
-    try {
-      body = JSON.parse(text) as unknown;
-    } catch {
-      if (!res.ok) {
-        throw new Error(`Noto'g'ri JSON javobi (HTTP ${res.status})`);
-      }
-      throw new Error("Server JSON formatida javob bermadi");
-    }
-  }
+  const body = await parseJsonSafe(res);
   if (!res.ok) throw new Error(formatApiError(body, res.statusText));
   return body as T;
 }
