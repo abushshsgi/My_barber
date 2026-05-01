@@ -32,7 +32,7 @@ function AuthPage() {
   const [signupPhone, setSignupPhone] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
-  const [flow, setFlow] = useState<SignupFlow>("owner");
+  const [flow, setFlow] = useState<SignupFlow | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loadingLogin, setLoadingLogin] = useState(false);
   const [loadingSignup, setLoadingSignup] = useState(false);
@@ -75,6 +75,10 @@ function AuthPage() {
   const onSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (!flow) {
+      setError("Signup yo'lini tanlang: owner, employee, mybarber yoki independent.");
+      return;
+    }
     const validation = validateSignupIdentity({
       fullName: signupName,
       phone: signupPhone,

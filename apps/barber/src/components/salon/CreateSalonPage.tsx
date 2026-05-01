@@ -23,8 +23,9 @@ import {
   Sparkles,
   Store,
 } from "lucide-react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, getBarberAccessToken, setBarberTokens } from "@/lib/api";
 import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
+import { clearSignupDraft, readSignupDraft } from "@/lib/signup-draft";
 import { cn } from "@/lib/utils";
 
 /* ============================================================
@@ -292,6 +293,63 @@ export function CreateSalonPage() {
     setSubmitError(null);
     setSubmitting(true);
     try {
+      // Signup onboarding path: if barber token is missing, complete register -> login first.
+      if (!getBarberAccessToken()) {
+        const draft = readSignupDraft();
+        if (!draft) {
+          setSubmitError("Signup ma'lumotlari topilmadi. Iltimos, avval ro'yxatdan o'ting.");
+          return;
+        }
+        const registerPayload = {
+          email: draft.email,
+          password: draft.password,
+          full_name: draft.full_name,
+          phone: draft.phone || "",
+          has_salon: draft.flow === "employee",
+          latitude: Number(salonLatitude),
+          longitude: Number(salonLongitude),
+          onboarding_flow: draft.flow,
+          work_mode: draft.flow === "independent" ? "independent" : "salon",
+          shop_name:
+            draft.flow === "mybarber"
+              ? `MyBarber · ${draft.full_name}`
+              : draft.flow === "owner"
+                ? salonName.trim()
+                : "",
+          address: [salonCity.trim(), salonAddress.trim(), salonLandmark.trim()].filter(Boolean).join(", "),
+          staff_count_at_signup: 1,
+        };
+
+        const registerRes = await apiFetch("/api/v1/auth/barber-register/", {
+          method: "POST",
+          body: JSON.stringify(registerPayload),
+        });
+        const registerBody = await parseJsonSafe(registerRes);
+        if (!registerRes.ok) {
+          setSubmitError(extractApiError(registerBody, "Signup amalga oshmadi."));
+          return;
+        }
+
+        const loginRes = await apiFetch("/api/v1/barber/auth/token/", {
+          method: "POST",
+          body: JSON.stringify({
+            email: draft.email,
+            password: draft.password,
+          }),
+        });
+        const loginBody = await parseJsonSafe(loginRes);
+        if (!loginRes.ok) {
+          setSubmitError(extractApiError(loginBody, "Signupdan keyin login amalga oshmadi."));
+          return;
+        }
+        const tokens = loginBody as { access?: string; refresh?: string };
+        if (!tokens.access || !tokens.refresh) {
+          setSubmitError("Login tokenlari qaytmadi.");
+          return;
+        }
+        setBarberTokens(tokens.access, tokens.refresh);
+      }
+
       const fullName = `${barberFirstName} ${barberLastName}`.trim();
       const barberPhone = barberPhoneDigits ? `+998${barberPhoneDigits}` : "";
       const locationText = [salonCity.trim(), salonAddress.trim(), salonLandmark.trim()]
@@ -449,6 +507,7 @@ export function CreateSalonPage() {
       }
 
       setSuccess(true);
+      clearSignupDraft();
       window.setTimeout(() => {
         void navigate({ to: "/barber" });
       }, 8000);
