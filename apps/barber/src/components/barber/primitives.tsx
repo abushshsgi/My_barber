@@ -13,10 +13,19 @@ export type BarberStatus =
 
 const STATUS_MAP: Record<BarberStatus, { label: string; className: string }> = {
   pending: { label: "Kutilmoqda", className: "bg-muted text-foreground/70 border-border" },
-  accepted: { label: "Tasdiqlangan", className: "bg-foreground/10 text-foreground border-foreground/20" },
+  accepted: {
+    label: "Tasdiqlangan",
+    className: "bg-foreground/10 text-foreground border-foreground/20",
+  },
   in_progress: { label: "Kresloda", className: "bg-foreground text-background border-foreground" },
-  completed: { label: "Yakunlandi", className: "bg-background text-muted-foreground border-border" },
-  cancelled: { label: "Bekor qilindi", className: "bg-destructive/10 text-destructive border-destructive/20" },
+  completed: {
+    label: "Yakunlandi",
+    className: "bg-background text-muted-foreground border-border",
+  },
+  cancelled: {
+    label: "Bekor qilindi",
+    className: "bg-destructive/10 text-destructive border-destructive/20",
+  },
   active: { label: "Faol", className: "bg-foreground text-background border-foreground" },
   inactive: { label: "Faol emas", className: "bg-muted text-muted-foreground border-border" },
 };
@@ -65,9 +74,7 @@ export function EmptyBlock({
       )}
       <div className="font-heading font-medium text-foreground">{title}</div>
       {description && (
-        <div className="mt-1 text-sm text-muted-foreground max-w-sm mx-auto">
-          {description}
-        </div>
+        <div className="mt-1 text-sm text-muted-foreground max-w-sm mx-auto">{description}</div>
       )}
       {action && <div className="mt-4">{action}</div>}
     </div>
@@ -90,9 +97,7 @@ export function PageHeader({
         <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">
           {title}
         </h1>
-        {description && (
-          <p className="text-muted-foreground mt-1 text-sm">{description}</p>
-        )}
+        {description && <p className="text-muted-foreground mt-1 text-sm">{description}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
@@ -119,9 +124,7 @@ export function StatCard({
         <span className="text-xs uppercase tracking-wider">{label}</span>
         {icon && <span>{icon}</span>}
       </div>
-      <div className="mt-2 font-heading text-2xl font-semibold text-foreground">
-        {value}
-      </div>
+      <div className="mt-2 font-heading text-2xl font-semibold text-foreground">{value}</div>
       <div className="flex items-center gap-2 mt-1">
         {trend && (
           <span
@@ -159,9 +162,7 @@ export function SectionCard({
         <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-3">
           <div>
             {title && <h2 className="font-heading text-lg font-semibold">{title}</h2>}
-            {description && (
-              <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
-            )}
+            {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
           </div>
           {actions && <div className="flex items-center gap-2">{actions}</div>}
         </div>

@@ -39,11 +39,38 @@ function MarketingPage() {
       {showPromoForm && (
         <SectionCard title="Promokod yaratish">
           <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
-            <input value={promoForm.code} onChange={(e) => setPromoForm((p) => ({ ...p, code: e.target.value.toUpperCase() }))} placeholder="CODE" className="h-10 px-3 rounded-lg bg-muted/40 border border-border focus:bg-background focus:ring-2 focus:ring-ring outline-none text-sm" />
-            <input value={promoForm.description} onChange={(e) => setPromoForm((p) => ({ ...p, description: e.target.value }))} placeholder="Tavsif" className="sm:col-span-2 h-10 px-3 rounded-lg bg-muted/40 border border-border focus:bg-background focus:ring-2 focus:ring-ring outline-none text-sm" />
-            <input type="number" value={promoForm.discount_pct} onChange={(e) => setPromoForm((p) => ({ ...p, discount_pct: e.target.value }))} placeholder="% chegirma" className="h-10 px-3 rounded-lg bg-muted/40 border border-border focus:bg-background focus:ring-2 focus:ring-ring outline-none text-sm" />
-            <input type="number" value={promoForm.max_uses} onChange={(e) => setPromoForm((p) => ({ ...p, max_uses: e.target.value }))} placeholder="Max uses" className="h-10 px-3 rounded-lg bg-muted/40 border border-border focus:bg-background focus:ring-2 focus:ring-ring outline-none text-sm" />
-            <input type="date" value={promoForm.expires} onChange={(e) => setPromoForm((p) => ({ ...p, expires: e.target.value }))} className="h-10 px-3 rounded-lg bg-muted/40 border border-border focus:bg-background focus:ring-2 focus:ring-ring outline-none text-sm" />
+            <input
+              value={promoForm.code}
+              onChange={(e) => setPromoForm((p) => ({ ...p, code: e.target.value.toUpperCase() }))}
+              placeholder="CODE"
+              className="h-10 px-3 rounded-lg bg-muted/40 border border-border focus:bg-background focus:ring-2 focus:ring-ring outline-none text-sm"
+            />
+            <input
+              value={promoForm.description}
+              onChange={(e) => setPromoForm((p) => ({ ...p, description: e.target.value }))}
+              placeholder="Tavsif"
+              className="sm:col-span-2 h-10 px-3 rounded-lg bg-muted/40 border border-border focus:bg-background focus:ring-2 focus:ring-ring outline-none text-sm"
+            />
+            <input
+              type="number"
+              value={promoForm.discount_pct}
+              onChange={(e) => setPromoForm((p) => ({ ...p, discount_pct: e.target.value }))}
+              placeholder="% chegirma"
+              className="h-10 px-3 rounded-lg bg-muted/40 border border-border focus:bg-background focus:ring-2 focus:ring-ring outline-none text-sm"
+            />
+            <input
+              type="number"
+              value={promoForm.max_uses}
+              onChange={(e) => setPromoForm((p) => ({ ...p, max_uses: e.target.value }))}
+              placeholder="Max uses"
+              className="h-10 px-3 rounded-lg bg-muted/40 border border-border focus:bg-background focus:ring-2 focus:ring-ring outline-none text-sm"
+            />
+            <input
+              type="date"
+              value={promoForm.expires}
+              onChange={(e) => setPromoForm((p) => ({ ...p, expires: e.target.value }))}
+              className="h-10 px-3 rounded-lg bg-muted/40 border border-border focus:bg-background focus:ring-2 focus:ring-ring outline-none text-sm"
+            />
             <button
               onClick={async () => {
                 if (!promoForm.code.trim()) {
@@ -60,7 +87,13 @@ function MarketingPage() {
                 if (ok) {
                   toast.success("Promokod qo'shildi.");
                   setShowPromoForm(false);
-                  setPromoForm({ code: "", description: "", discount_pct: "", max_uses: "", expires: "" });
+                  setPromoForm({
+                    code: "",
+                    description: "",
+                    discount_pct: "",
+                    max_uses: "",
+                    expires: "",
+                  });
                 } else {
                   toast.error("Promokod qo'shib bo'lmadi.");
                 }
@@ -94,7 +127,10 @@ function MarketingPage() {
         />
       </div>
 
-      <SectionCard title="Promokodlar" description={`${promos.filter(p => p.is_active).length} ta faol`}>
+      <SectionCard
+        title="Promokodlar"
+        description={`${promos.filter((p) => p.is_active).length} ta faol`}
+      >
         <div className="space-y-3">
           {promos.map((p) => (
             <div
@@ -182,7 +218,17 @@ function MarketingPage() {
   );
 }
 
-function Hero({ icon, title, desc, cta }: { icon: React.ReactNode; title: string; desc: string; cta: string }) {
+function Hero({
+  icon,
+  title,
+  desc,
+  cta,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  cta: string;
+}) {
   return (
     <div className="rounded-xl border border-border bg-card p-5 hover:border-foreground/30 transition-colors">
       <div className="size-10 rounded-lg bg-foreground text-background flex items-center justify-center mb-3">
@@ -190,7 +236,9 @@ function Hero({ icon, title, desc, cta }: { icon: React.ReactNode; title: string
       </div>
       <div className="font-heading font-medium">{title}</div>
       <div className="text-sm text-muted-foreground mt-1">{desc}</div>
-      <button className="mt-4 text-sm font-medium underline-offset-4 hover:underline">{cta} →</button>
+      <button className="mt-4 text-sm font-medium underline-offset-4 hover:underline">
+        {cta} →
+      </button>
     </div>
   );
 }

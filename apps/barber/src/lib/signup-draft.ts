@@ -29,4 +29,3 @@ export function readSignupDraft(): SignupDraft | null {
 export function clearSignupDraft(): void {
   sessionStorage.removeItem(DRAFT_KEY);
 }
-

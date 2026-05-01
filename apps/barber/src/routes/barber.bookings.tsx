@@ -18,7 +18,8 @@ const TABS = [
 ] as const;
 
 function BookingsPage() {
-  const { bookings, startBooking, completeBooking, acceptBooking, cancelBooking } = useBarberContext();
+  const { bookings, startBooking, completeBooking, acceptBooking, cancelBooking } =
+    useBarberContext();
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("all");
 
   const filtered = tab === "all" ? bookings : bookings.filter((b) => b.status === tab);

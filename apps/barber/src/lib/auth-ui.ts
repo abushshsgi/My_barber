@@ -64,4 +64,3 @@ export function validateSignupIdentity(values: SignupIdentity): string | null {
   if (values.password.length < 8) return "Parol kamida 8 ta belgi bo'lishi kerak.";
   return null;
 }
-

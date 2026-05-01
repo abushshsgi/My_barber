@@ -51,7 +51,11 @@ function CalendarPage() {
           <ChevronLeft className="size-4" />
         </button>
         <div className="font-heading font-medium">
-          {weekOffset === 0 ? "Bu hafta" : weekOffset > 0 ? `+${weekOffset} hafta` : `${weekOffset} hafta`}
+          {weekOffset === 0
+            ? "Bu hafta"
+            : weekOffset > 0
+              ? `+${weekOffset} hafta`
+              : `${weekOffset} hafta`}
         </div>
         <button
           onClick={() => setWeekOffset((w) => w + 1)}
@@ -83,7 +87,7 @@ function CalendarPage() {
               {h}:00
             </div>
             {DAYS.map((_, i) => {
-              const items = i === 0 && weekOffset === 0 ? slots.get(h) ?? [] : [];
+              const items = i === 0 && weekOffset === 0 ? (slots.get(h) ?? []) : [];
               return (
                 <div
                   key={i}
@@ -110,7 +114,10 @@ function CalendarPage() {
         <h2 className="font-heading text-lg font-semibold mb-3">Bugungi bronlar</h2>
         <div className="space-y-2">
           {today.map((b) => (
-            <div key={b.id} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/40">
+            <div
+              key={b.id}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/40"
+            >
               <div className="text-sm font-medium w-14">{b.time}</div>
               <img src={b.client_avatar} alt="" className="size-8 rounded-full" />
               <div className="flex-1 min-w-0">

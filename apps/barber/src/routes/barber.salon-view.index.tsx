@@ -26,9 +26,24 @@ function SalonViewPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <Stat icon={<Star className="size-4" />} label="Reyting" value={salon.rating.toFixed(1)} hint={`${salon.reviews_count} sharh`} />
-        <Stat icon={<Users className="size-4" />} label="A'zolar" value={salon.members.toString()} hint="Faol sartaroshlar" />
-        <Stat icon={<Images className="size-4" />} label="Galereya" value={salon.gallery.length.toString()} hint="Rasmlar" />
+        <Stat
+          icon={<Star className="size-4" />}
+          label="Reyting"
+          value={salon.rating.toFixed(1)}
+          hint={`${salon.reviews_count} sharh`}
+        />
+        <Stat
+          icon={<Users className="size-4" />}
+          label="A'zolar"
+          value={salon.members.toString()}
+          hint="Faol sartaroshlar"
+        />
+        <Stat
+          icon={<Images className="size-4" />}
+          label="Galereya"
+          value={salon.gallery.length.toString()}
+          hint="Rasmlar"
+        />
       </div>
 
       {/* Quick links */}

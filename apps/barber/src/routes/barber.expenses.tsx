@@ -72,9 +72,22 @@ function ExpensesPage() {
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard icon={<Wallet className="size-4" />} label="Jami xarajat" value={formatUZS(total)} hint="Ushbu davrda" />
-        <StatCard icon={<Receipt className="size-4" />} label="Yozuvlar soni" value={expenses.length} />
-        <StatCard icon={<TrendingDown className="size-4" />} label="Eng katta xarajat" value={formatUZS(Math.max(...expenses.map((e) => e.amount), 0))} />
+        <StatCard
+          icon={<Wallet className="size-4" />}
+          label="Jami xarajat"
+          value={formatUZS(total)}
+          hint="Ushbu davrda"
+        />
+        <StatCard
+          icon={<Receipt className="size-4" />}
+          label="Yozuvlar soni"
+          value={expenses.length}
+        />
+        <StatCard
+          icon={<TrendingDown className="size-4" />}
+          label="Eng katta xarajat"
+          value={formatUZS(Math.max(...expenses.map((e) => e.amount), 0))}
+        />
         <StatCard label="Kategoriyalar" value={byCat.length} />
       </div>
 
@@ -87,7 +100,9 @@ function ExpensesPage() {
               className="sm:col-span-3 h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm"
             >
               {(Object.keys(CATEGORY_LABEL) as Cat[]).map((k) => (
-                <option key={k} value={k}>{CATEGORY_LABEL[k]}</option>
+                <option key={k} value={k}>
+                  {CATEGORY_LABEL[k]}
+                </option>
               ))}
             </select>
             <input
@@ -140,7 +155,11 @@ function ExpensesPage() {
                 key={e.id}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/40 transition-colors"
               >
-                <div className={cn("size-9 rounded-lg flex items-center justify-center bg-muted text-foreground")}>
+                <div
+                  className={cn(
+                    "size-9 rounded-lg flex items-center justify-center bg-muted text-foreground",
+                  )}
+                >
                   <Receipt className="size-4" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -149,9 +168,7 @@ function ExpensesPage() {
                     {CATEGORY_LABEL[e.category]} · {e.date}
                   </div>
                 </div>
-                <div className="text-sm font-semibold text-destructive">
-                  −{formatUZS(e.amount)}
-                </div>
+                <div className="text-sm font-semibold text-destructive">−{formatUZS(e.amount)}</div>
               </div>
             ))}
           </div>

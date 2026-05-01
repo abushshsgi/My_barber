@@ -7,4 +7,3 @@ export const Route = createFileRoute("/onboarding/owner")({
 function OwnerOnboardingPage() {
   return <Navigate to="/salon/create" />;
 }
-

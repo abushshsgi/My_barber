@@ -27,6 +27,7 @@ Hammasi mock data ustida ishlaydi (haqiqiy backend yo'q).
 Mobile: icon rail + sub-nav birgalikda Sheet ichida ochiladi.
 
 **Sections:**
+
 - Operations: Dashboard, Bookings, Map
 - Network: Salons, Barbers, Users, Reviews
 - Catalog: Services, Categories
@@ -39,28 +40,34 @@ Mobile: icon rail + sub-nav birgalikda Sheet ichida ochiladi.
 ## 2. Yangi sahifalar
 
 ### Detail pages (har bir entity uchun)
+
 - `/admin/users/$userId` — profil, bronlar tarixi, sharhlar, faollik (timeline), tahrir tugmasi
 - `/admin/barbers/$barberId` — profil, joylashuv map, bronlar, sharhlar, daromad statistikasi, salon biriktirish
 - `/admin/salons/$salonId` — info, sartaroshlar ro'yxati, bronlar, daromad, joylashuv, gallery (mock)
 - `/admin/bookings/$bookingId` — booking detali, status timeline, mijoz/sartarosh kartochkalari, qaytarish/bekor qilish
 
 ### Support modul
+
 - `/admin/support` — ticket ro'yxati (open/pending/resolved, prioritet, kategoriya bo'yicha filter)
 - `/admin/support/$ticketId` — chat-style reply thread, status o'zgartirish, biriktirish (assign to admin)
 
 ### Catalog modul
+
 - `/admin/services` — xizmatlar CRUD (nom, narx, davomiyligi, kategoriya, faol/nofaol)
 - `/admin/categories` — kategoriyalar CRUD (nom, ikonka, tartib)
 
 ### Finance modul
+
 - `/admin/finance` — daromad dashboard (haftalik/oylik chart, top sartaroshlar, hudud bo'yicha taqsimot)
 - `/admin/finance/payouts` — sartaroshlarga to'lovlar (pending/paid/failed, eksport)
 - `/admin/finance/transactions` — barcha tranzaksiyalar log (booking → payment → commission → payout)
 
 ### Notifications
+
 - `/admin/broadcast` — xabar yuborish (audience: all / region / role), tarix, statistika (yuborildi/o'qildi)
 
 ### Audit & Settings
+
 - `/admin/audit` — admin amallari log (kim, qachon, nima o'zgartirdi, IP, before/after diff)
 - `/admin/admins` — admin foydalanuvchilar (rollar: superadmin, moderator, finance, support)
 - `/admin/profile` — admin o'zining profili
@@ -85,6 +92,7 @@ Har bir resurs uchun **EditDialog** komponenti (`react-hook-form` + `zod`):
 ## 4. Mock data kengaytmasi
 
 `src/lib/mock-data.ts` ga qo'shiladi:
+
 - `mockServices` (15 ta), `mockCategories` (6 ta)
 - `mockTickets` (20 ta) + `mockTicketReplies`
 - `mockTransactions` (100 ta), `mockPayouts` (30 ta)
@@ -102,19 +110,23 @@ Har bir resurs uchun **EditDialog** komponenti (`react-hook-form` + `zod`):
 **Yangi shadcn komponentlar (allaqachon mavjud):** dialog, command, tabs, popover, dropdown-menu, scroll-area, form, breadcrumb. Yangi paket o'rnatish shart emas (`react-hook-form`, `@hookform/resolvers` o'rnatiladi).
 
 **Routing:**
+
 - File-based, flat dot syntax: `admin.users.$userId.tsx`, `admin.support.$ticketId.tsx`, va h.k.
 - Har bir route: `validateSearch` + `errorComponent` + `notFoundComponent`.
 - `loaderDeps` faqat kerakli search paramlarni qaytaradi.
 
 **State:**
+
 - TanStack Query: `["admin", resource, params]` key konvensiyasi saqlanadi.
 - Mutation `onSuccess` da tegishli queriesni invalidate qiladi + optimistic update bookings/status uchun.
 
 **Cmd+K:**
+
 - `cmdk` (shadcn `command` allaqachon ishlatadi). Global hotkey listener `useEffect` da.
 - Static routes + dynamic search (mock-api dan top 10 natija).
 
 **Layout files:**
+
 - `src/components/admin/AdminShell.tsx` — yangi double sidebar shell (eski `AdminLayout` o'rnini bosadi)
 - `src/components/admin/IconRail.tsx`, `SubNav.tsx`, `TopBar.tsx`, `CommandPalette.tsx`
 - `src/components/admin/edit-dialogs/` — har bir EditXDialog

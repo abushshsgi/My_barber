@@ -12,9 +12,7 @@ function ClientsPage() {
   const { clients } = useBarberContext();
   const [q, setQ] = useState("");
 
-  const filtered = clients.filter((c) =>
-    c.name.toLowerCase().includes(q.toLowerCase()),
-  );
+  const filtered = clients.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()));
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
@@ -37,7 +35,10 @@ function ClientsPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyBlock title="Hech qanday mijoz topilmadi" description="Boshqa kalit so'z bilan urinib ko'ring." />
+        <EmptyBlock
+          title="Hech qanday mijoz topilmadi"
+          description="Boshqa kalit so'z bilan urinib ko'ring."
+        />
       ) : (
         <div className="rounded-xl border border-border bg-card overflow-hidden shadow-card">
           <div className="grid grid-cols-12 gap-4 px-5 py-3 text-xs uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/40">

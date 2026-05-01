@@ -1,11 +1,15 @@
 const ENV_API_BASE =
   (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_API_URL ||
-  (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.NEXT_PUBLIC_API_URL ||
+  (import.meta as unknown as { env?: Record<string, string | undefined> }).env
+    ?.NEXT_PUBLIC_API_URL ||
   "";
 
 const FALLBACK_DEV_BASE = import.meta.env.DEV ? "http://localhost:8000" : "";
 
-export const API_BASE = (ENV_API_BASE.trim() ? ENV_API_BASE : FALLBACK_DEV_BASE).replace(/\/+$/, "");
+export const API_BASE = (ENV_API_BASE.trim() ? ENV_API_BASE : FALLBACK_DEV_BASE).replace(
+  /\/+$/,
+  "",
+);
 
 const TOKEN_KEY_BARBER = "mybarber_barber_access";
 const REFRESH_KEY_BARBER = "mybarber_barber_refresh";
@@ -131,4 +135,3 @@ export async function apiJson<T>(path: string, options: RequestInit = {}): Promi
   if (!res.ok) throw new Error(formatApiError(body, res.statusText));
   return body as T;
 }
-

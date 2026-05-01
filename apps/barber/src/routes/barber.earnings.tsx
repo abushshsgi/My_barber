@@ -18,7 +18,9 @@ function EarningsPage() {
   const completed = bookings.filter((b) => b.status === "completed");
   const gross = completed.reduce((s, b) => s + b.price, 0);
   const tips = transactions.filter((t) => t.kind === "tip").reduce((s, t) => s + t.amount, 0);
-  const payouts = Math.abs(transactions.filter((t) => t.kind === "payout").reduce((s, t) => s + t.amount, 0));
+  const payouts = Math.abs(
+    transactions.filter((t) => t.kind === "payout").reduce((s, t) => s + t.amount, 0),
+  );
   const balance = gross + tips - payouts;
 
   // mock chart heights
@@ -53,9 +55,7 @@ function EarningsPage() {
         <div className="font-heading text-4xl sm:text-5xl font-semibold mt-2">
           {formatUZS(balance)}
         </div>
-        <div className="text-sm opacity-70 mt-2">
-          Keyingi to'lov: 30 Apr, payshanba
-        </div>
+        <div className="text-sm opacity-70 mt-2">Keyingi to'lov: 30 Apr, payshanba</div>
       </div>
 
       {/* Range tabs */}
@@ -78,10 +78,33 @@ function EarningsPage() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard icon={<TrendingUp className="size-4" />} label="Yalpi daromad" value={formatUZS(gross)} trend={{ value: 18 }} hint={range.toLowerCase()} />
-        <StatCard icon={<Coins className="size-4" />} label="Chaylar" value={formatUZS(tips)} trend={{ value: 5 }} hint={range.toLowerCase()} />
-        <StatCard icon={<ArrowDownToLine className="size-4" />} label="Yechilgan" value={formatUZS(payouts)} hint="Hammasi" />
-        <StatCard icon={<Wallet className="size-4" />} label="Bronlar" value={completed.length.toString()} trend={{ value: 12 }} hint={range.toLowerCase()} />
+        <StatCard
+          icon={<TrendingUp className="size-4" />}
+          label="Yalpi daromad"
+          value={formatUZS(gross)}
+          trend={{ value: 18 }}
+          hint={range.toLowerCase()}
+        />
+        <StatCard
+          icon={<Coins className="size-4" />}
+          label="Chaylar"
+          value={formatUZS(tips)}
+          trend={{ value: 5 }}
+          hint={range.toLowerCase()}
+        />
+        <StatCard
+          icon={<ArrowDownToLine className="size-4" />}
+          label="Yechilgan"
+          value={formatUZS(payouts)}
+          hint="Hammasi"
+        />
+        <StatCard
+          icon={<Wallet className="size-4" />}
+          label="Bronlar"
+          value={completed.length.toString()}
+          trend={{ value: 12 }}
+          hint={range.toLowerCase()}
+        />
       </div>
 
       {/* Chart */}
@@ -120,25 +143,39 @@ function EarningsPage() {
           <div className="col-span-1 text-right">Summa</div>
         </div>
         {transactions.map((t) => (
-          <div key={t.id} className="grid grid-cols-12 gap-4 px-5 py-3 items-center border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors">
+          <div
+            key={t.id}
+            className="grid grid-cols-12 gap-4 px-5 py-3 items-center border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors"
+          >
             <div className="col-span-3 text-sm text-muted-foreground">{t.date}</div>
             <div className="col-span-3 text-sm font-medium">{t.client}</div>
             <div className="col-span-3 text-sm text-muted-foreground">{t.service}</div>
             <div className="col-span-2">
-              <span className={cn(
-                "inline-flex items-center rounded-md border px-2 py-0.5 text-xs",
-                t.status === "completed" && "bg-foreground/10 text-foreground border-foreground/20",
-                t.status === "pending" && "bg-muted text-muted-foreground border-border",
-                t.status === "failed" && "bg-destructive/10 text-destructive border-destructive/20",
-              )}>
-                {t.status === "completed" ? "Yakunlandi" : t.status === "pending" ? "Kutilmoqda" : "Xato"}
+              <span
+                className={cn(
+                  "inline-flex items-center rounded-md border px-2 py-0.5 text-xs",
+                  t.status === "completed" &&
+                    "bg-foreground/10 text-foreground border-foreground/20",
+                  t.status === "pending" && "bg-muted text-muted-foreground border-border",
+                  t.status === "failed" &&
+                    "bg-destructive/10 text-destructive border-destructive/20",
+                )}
+              >
+                {t.status === "completed"
+                  ? "Yakunlandi"
+                  : t.status === "pending"
+                    ? "Kutilmoqda"
+                    : "Xato"}
               </span>
             </div>
-            <div className={cn(
-              "col-span-1 text-right text-sm font-medium",
-              t.amount < 0 && "text-destructive",
-            )}>
-              {t.amount < 0 ? "-" : "+"}{formatUZS(Math.abs(t.amount))}
+            <div
+              className={cn(
+                "col-span-1 text-right text-sm font-medium",
+                t.amount < 0 && "text-destructive",
+              )}
+            >
+              {t.amount < 0 ? "-" : "+"}
+              {formatUZS(Math.abs(t.amount))}
             </div>
           </div>
         ))}
