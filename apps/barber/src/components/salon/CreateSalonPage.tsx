@@ -451,7 +451,7 @@ export function CreateSalonPage() {
       setSuccess(true);
       window.setTimeout(() => {
         void navigate({ to: "/barber" });
-      }, 1200);
+      }, 8000);
     } finally {
       setSubmitting(false);
     }
