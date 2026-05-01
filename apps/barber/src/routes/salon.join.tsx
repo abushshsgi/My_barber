@@ -85,7 +85,10 @@ async function joinSalon(payload: JoinPayload): Promise<JoinResponse> {
   });
 }
 
-function friendlyError(error: unknown, fallback = "Kutilmagan xato yuz berdi. Qayta urinib ko'ring.") {
+function friendlyError(
+  error: unknown,
+  fallback = "Kutilmagan xato yuz berdi. Qayta urinib ko'ring.",
+) {
   const message = error instanceof Error ? error.message : String(error || "");
   const lower = message.toLowerCase();
 
@@ -243,10 +246,10 @@ function SalonJoinPage() {
 
   const canJoin = Boolean(
     hasBearer &&
-      selectedSalon &&
-      currentLocation.location &&
-      joinStatus !== "joining" &&
-      joinStatus !== "success",
+    selectedSalon &&
+    currentLocation.location &&
+    joinStatus !== "joining" &&
+    joinStatus !== "success",
   );
   const canSearch = query.trim().length >= MIN_QUERY_LENGTH;
   const selectedAddress = selectedSalon?.address || "Manzil kiritilmagan";
@@ -461,8 +464,8 @@ function SalonJoinPage() {
                 <UserRoundCheck className="h-4 w-4 text-foreground" />
                 <AlertTitle>Kuting</AlertTitle>
                 <AlertDescription>
-                  Salon qidiruvi akkauntingiz yaratilib, JWT chiqgach aktiv bo‘ladi — avval yuqoridagi qadamni
-                  yakunlang.
+                  Salon qidiruvi akkauntingiz yaratilib, JWT chiqgach aktiv bo‘ladi — avval
+                  yuqoridagi qadamni yakunlang.
                 </AlertDescription>
               </Alert>
             )}
@@ -472,9 +475,10 @@ function SalonJoinPage() {
                 <AlertTitle>Kirish zarur</AlertTitle>
                 <AlertDescription className="space-y-2">
                   <p>
-                    Salon qidiruvi va ulanish uchun barber akkaunt bilan kirilgan bo&apos;lishingiz kerak
-                    — so&apos;rovlar <code className="rounded bg-muted px-1 py-0.5 text-xs">Bearer</code> JWT
-                    bilan ketadi.
+                    Salon qidiruvi va ulanish uchun barber akkaunt bilan kirilgan bo&apos;lishingiz
+                    kerak — so&apos;rovlar{" "}
+                    <code className="rounded bg-muted px-1 py-0.5 text-xs">Bearer</code> JWT bilan
+                    ketadi.
                   </p>
                   <button
                     type="button"
@@ -580,70 +584,70 @@ function SalonJoinPage() {
           </Section>
 
           {!pendingEmployeeSignup && (
-          <Section
-            icon={<Crosshair className="h-4 w-4" />}
-            label="Qadam 2"
-            title="Lokatsiyani tasdiqlash"
-            description="Join uchun joriy lokatsiyani yuboring (100m qoidasi)."
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={currentLocation.requestLocation}
-                disabled={currentLocation.status === "locating"}
-                className={cn(
-                  "inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-medium text-foreground transition-[var(--transition-smooth)]",
-                  currentLocation.status === "locating"
-                    ? "cursor-not-allowed opacity-70"
-                    : "cursor-pointer hover:bg-muted active:scale-[0.98]",
-                )}
-              >
-                {currentLocation.status === "locating" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Navigation className="h-4 w-4" />
-                )}
-                {currentLocation.location ? "Lokatsiyani yangilash" : "Mening lokatsiyam"}
-              </button>
+            <Section
+              icon={<Crosshair className="h-4 w-4" />}
+              label="Qadam 2"
+              title="Lokatsiyani tasdiqlash"
+              description="Join uchun joriy lokatsiyani yuboring (100m qoidasi)."
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={currentLocation.requestLocation}
+                  disabled={currentLocation.status === "locating"}
+                  className={cn(
+                    "inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-medium text-foreground transition-[var(--transition-smooth)]",
+                    currentLocation.status === "locating"
+                      ? "cursor-not-allowed opacity-70"
+                      : "cursor-pointer hover:bg-muted active:scale-[0.98]",
+                  )}
+                >
+                  {currentLocation.status === "locating" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Navigation className="h-4 w-4" />
+                  )}
+                  {currentLocation.location ? "Lokatsiyani yangilash" : "Mening lokatsiyam"}
+                </button>
 
-              <span className="text-[11px] text-muted-foreground">
-                Eng yaxshi aniqlik uchun salonda turgan holatda bosing.
-              </span>
-            </div>
-
-            {currentLocation.error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Lokatsiya olinmadi</AlertTitle>
-                <AlertDescription>{currentLocation.error}</AlertDescription>
-              </Alert>
-            )}
-
-            {currentLocation.location && (
-              <div className="grid gap-3 rounded-2xl border border-border bg-background p-4 text-sm sm:grid-cols-3">
-                <div>
-                  <p className="text-muted-foreground">Latitude</p>
-                  <p className="mt-1 font-semibold text-foreground">
-                    {formatCoordinate(currentLocation.location.latitude)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Longitude</p>
-                  <p className="mt-1 font-semibold text-foreground">
-                    {formatCoordinate(currentLocation.location.longitude)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Aniqlik</p>
-                  <p className="mt-1 font-semibold text-foreground">
-                    {currentLocation.location.accuracy
-                      ? `${Math.round(currentLocation.location.accuracy)} m`
-                      : "Noma'lum"}
-                  </p>
-                </div>
+                <span className="text-[11px] text-muted-foreground">
+                  Eng yaxshi aniqlik uchun salonda turgan holatda bosing.
+                </span>
               </div>
-            )}
-          </Section>
+
+              {currentLocation.error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Lokatsiya olinmadi</AlertTitle>
+                  <AlertDescription>{currentLocation.error}</AlertDescription>
+                </Alert>
+              )}
+
+              {currentLocation.location && (
+                <div className="grid gap-3 rounded-2xl border border-border bg-background p-4 text-sm sm:grid-cols-3">
+                  <div>
+                    <p className="text-muted-foreground">Latitude</p>
+                    <p className="mt-1 font-semibold text-foreground">
+                      {formatCoordinate(currentLocation.location.latitude)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Longitude</p>
+                    <p className="mt-1 font-semibold text-foreground">
+                      {formatCoordinate(currentLocation.location.longitude)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Aniqlik</p>
+                    <p className="mt-1 font-semibold text-foreground">
+                      {currentLocation.location.accuracy
+                        ? `${Math.round(currentLocation.location.accuracy)} m`
+                        : "Noma'lum"}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </Section>
           )}
 
           <Section
@@ -767,7 +771,6 @@ function SalonJoinPage() {
   );
 }
 
-
 function ChecklistItem({ done, label }: { done: boolean; label: string }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-3">
@@ -781,7 +784,9 @@ function ChecklistItem({ done, label }: { done: boolean; label: string }) {
       >
         {done ? <CheckCircle2 className="h-4 w-4" /> : null}
       </span>
-      <span className={cn("text-sm", done ? "font-medium text-foreground" : "text-muted-foreground")}>
+      <span
+        className={cn("text-sm", done ? "font-medium text-foreground" : "text-muted-foreground")}
+      >
         {label}
       </span>
     </div>
@@ -823,4 +828,3 @@ function Section({
     </section>
   );
 }
-
