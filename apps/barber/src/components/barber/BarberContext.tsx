@@ -885,17 +885,16 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshNotifications = useCallback(async () => {
-    const apiNotifs =
-      await apiJson<
-        Array<{
-          id: number;
-          type: string;
-          title: string;
-          body: string;
-          read_at: string | null;
-          created_at: string;
-        }>
-      >("/api/v1/notifications/");
+    const apiNotifs = await apiJson<
+      Array<{
+        id: number;
+        type: string;
+        title: string;
+        body: string;
+        read_at: string | null;
+        created_at: string;
+      }>
+    >("/api/v1/notifications/");
     setNotifications(apiNotifs.map(mapApiNotification));
   }, []);
 
@@ -973,18 +972,17 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshGoals = useCallback(async () => {
-    const rows =
-      await apiJson<
-        Array<{
-          id: number;
-          title: string;
-          target: string | number;
-          current: string | number;
-          unit: string;
-          deadline: string;
-          done: boolean;
-        }>
-      >("/api/v1/barber/goals/");
+    const rows = await apiJson<
+      Array<{
+        id: number;
+        title: string;
+        target: string | number;
+        current: string | number;
+        unit: string;
+        deadline: string;
+        done: boolean;
+      }>
+    >("/api/v1/barber/goals/");
     setGoals(
       rows.map((g) => ({
         id: String(g.id),
@@ -999,19 +997,18 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshPromos = useCallback(async () => {
-    const rows =
-      await apiJson<
-        Array<{
-          id: number;
-          code: string;
-          description: string;
-          discount_pct: number;
-          uses: number;
-          max_uses: number;
-          is_active: boolean;
-          expires: string | null;
-        }>
-      >("/api/v1/barber/promos/");
+    const rows = await apiJson<
+      Array<{
+        id: number;
+        code: string;
+        description: string;
+        discount_pct: number;
+        uses: number;
+        max_uses: number;
+        is_active: boolean;
+        expires: string | null;
+      }>
+    >("/api/v1/barber/promos/");
     setPromos(
       rows.map((p) => ({
         id: String(p.id),
@@ -1080,19 +1077,18 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshReviews = useCallback(async () => {
-    const rows =
-      await apiJson<
-        Array<{
-          id: number;
-          client: string;
-          avatar: string;
-          rating: number;
-          text: string;
-          date: string;
-          service: string;
-          barber_reply?: string;
-        }>
-      >("/api/v1/barber/reviews/");
+    const rows = await apiJson<
+      Array<{
+        id: number;
+        client: string;
+        avatar: string;
+        rating: number;
+        text: string;
+        date: string;
+        service: string;
+        barber_reply?: string;
+      }>
+    >("/api/v1/barber/reviews/");
     setReviews(
       rows.map((r) => ({
         id: String(r.id),
@@ -1108,18 +1104,17 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
   const refreshSalonView = useCallback(async () => {
     try {
-      const rows =
-        await apiJson<
-          Array<{
-            id: number;
-            name: string;
-            address: string;
-            cover_image: string | null;
-            rating_avg: number;
-            review_count: number;
-            images?: Array<{ image: string }>;
-          }>
-        >("/api/v1/salons/mine/");
+      const rows = await apiJson<
+        Array<{
+          id: number;
+          name: string;
+          address: string;
+          cover_image: string | null;
+          rating_avg: number;
+          review_count: number;
+          images?: Array<{ image: string }>;
+        }>
+      >("/api/v1/salons/mine/");
       const one = rows[0];
       if (!one) return;
       setSalon({
