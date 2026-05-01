@@ -14,13 +14,16 @@ function StatsPage() {
   const cancelled = bookings.filter((b) => b.status === "cancelled");
   const completionRate = (completed.length / Math.max(1, bookings.length)) * 100;
   const avgTicket = completed.reduce((s, b) => s + b.price, 0) / Math.max(1, completed.length);
-  const repeatRate = (clients.filter((c) => c.visits >= 3).length / Math.max(1, clients.length)) * 100;
+  const repeatRate =
+    (clients.filter((c) => c.visits >= 3).length / Math.max(1, clients.length)) * 100;
   const avgRating = reviews.reduce((s, r) => s + r.rating, 0) / Math.max(1, reviews.length);
 
   // top services by frequency in bookings
   const serviceStats = services.map((s) => ({
     ...s,
-    count: bookings.filter((b) => b.service === s.name || b.service.startsWith(s.name.split(" ")[0])).length,
+    count: bookings.filter(
+      (b) => b.service === s.name || b.service.startsWith(s.name.split(" ")[0]),
+    ).length,
   }));
   const maxCount = Math.max(1, ...serviceStats.map((s) => s.count));
 
@@ -32,10 +35,30 @@ function StatsPage() {
       <PageHeader title="Statistika" description="Ish samaradorligingiz va ko'rsatkichlar." />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard icon={<TrendingUp className="size-4" />} label="Yakunlash %" value={`${completionRate.toFixed(0)}%`} trend={{ value: 4 }} />
-        <StatCard icon={<CalendarClock className="size-4" />} label="O'rt. chek" value={formatUZS(avgTicket)} trend={{ value: 8 }} />
-        <StatCard icon={<Repeat className="size-4" />} label="Qaytuvchi mijoz" value={`${repeatRate.toFixed(0)}%`} trend={{ value: 3 }} />
-        <StatCard icon={<Star className="size-4" />} label="O'rt. reyting" value={avgRating.toFixed(1)} hint={`${reviews.length} sharh`} />
+        <StatCard
+          icon={<TrendingUp className="size-4" />}
+          label="Yakunlash %"
+          value={`${completionRate.toFixed(0)}%`}
+          trend={{ value: 4 }}
+        />
+        <StatCard
+          icon={<CalendarClock className="size-4" />}
+          label="O'rt. chek"
+          value={formatUZS(avgTicket)}
+          trend={{ value: 8 }}
+        />
+        <StatCard
+          icon={<Repeat className="size-4" />}
+          label="Qaytuvchi mijoz"
+          value={`${repeatRate.toFixed(0)}%`}
+          trend={{ value: 3 }}
+        />
+        <StatCard
+          icon={<Star className="size-4" />}
+          label="O'rt. reyting"
+          value={avgRating.toFixed(1)}
+          hint={`${reviews.length} sharh`}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -79,17 +102,37 @@ function StatsPage() {
 
       <SectionCard title="Umumiy ko'rsatkichlar">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Metric icon={<CalendarClock className="size-4" />} label="Jami bronlar" value={bookings.length} />
-          <Metric icon={<TrendingUp className="size-4" />} label="Yakunlangan" value={completed.length} />
+          <Metric
+            icon={<CalendarClock className="size-4" />}
+            label="Jami bronlar"
+            value={bookings.length}
+          />
+          <Metric
+            icon={<TrendingUp className="size-4" />}
+            label="Yakunlangan"
+            value={completed.length}
+          />
           <Metric icon={<Users className="size-4" />} label="Mijozlar" value={clients.length} />
-          <Metric icon={<Star className="size-4" />} label="Bekor qilinganlar" value={cancelled.length} />
+          <Metric
+            icon={<Star className="size-4" />}
+            label="Bekor qilinganlar"
+            value={cancelled.length}
+          />
         </div>
       </SectionCard>
     </div>
   );
 }
 
-function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value: number | string }) {
+function Metric({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number | string;
+}) {
   return (
     <div className="rounded-lg bg-muted/40 p-4">
       <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider">

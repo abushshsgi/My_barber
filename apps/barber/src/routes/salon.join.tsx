@@ -16,4 +16,3 @@ function SalonJoinPage() {
     </div>
   );
 }
-

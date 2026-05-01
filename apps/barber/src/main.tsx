@@ -16,4 +16,3 @@ createRoot(root).render(
     <RouterProvider router={getRouter()} />
   </React.StrictMode>,
 );
-

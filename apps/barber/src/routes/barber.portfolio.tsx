@@ -43,9 +43,24 @@ function PortfolioPage() {
       />
       {showUpload && (
         <div className="rounded-xl border border-border bg-card p-4 grid grid-cols-1 sm:grid-cols-4 gap-2">
-          <input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} placeholder="Sarlavha" className="h-10 px-3 rounded-lg bg-muted/40 border border-border focus:bg-background focus:ring-2 focus:ring-ring outline-none text-sm" />
-          <input value={form.service} onChange={(e) => setForm((p) => ({ ...p, service: e.target.value }))} placeholder="Xizmat nomi" className="h-10 px-3 rounded-lg bg-muted/40 border border-border focus:bg-background focus:ring-2 focus:ring-ring outline-none text-sm" />
-          <input type="file" accept="image/*" onChange={(e) => setForm((p) => ({ ...p, file: e.target.files?.[0] || null }))} className="h-10 px-2 py-2 rounded-lg bg-muted/40 border border-border text-sm" />
+          <input
+            value={form.title}
+            onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+            placeholder="Sarlavha"
+            className="h-10 px-3 rounded-lg bg-muted/40 border border-border focus:bg-background focus:ring-2 focus:ring-ring outline-none text-sm"
+          />
+          <input
+            value={form.service}
+            onChange={(e) => setForm((p) => ({ ...p, service: e.target.value }))}
+            placeholder="Xizmat nomi"
+            className="h-10 px-3 rounded-lg bg-muted/40 border border-border focus:bg-background focus:ring-2 focus:ring-ring outline-none text-sm"
+          />
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setForm((p) => ({ ...p, file: e.target.files?.[0] || null }))}
+            className="h-10 px-2 py-2 rounded-lg bg-muted/40 border border-border text-sm"
+          />
           <button
             onClick={async () => {
               if (!form.file) {
@@ -74,8 +89,15 @@ function PortfolioPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard icon={<ImageIcon className="size-4" />} label="Ishlar" value={portfolio.length} />
-        <StatCard icon={<Heart className="size-4" />} label="Jami yoqtirishlar" value={totalLikes} />
-        <StatCard label="O'rta yoqtirish" value={Math.round(totalLikes / Math.max(1, portfolio.length))} />
+        <StatCard
+          icon={<Heart className="size-4" />}
+          label="Jami yoqtirishlar"
+          value={totalLikes}
+        />
+        <StatCard
+          label="O'rta yoqtirish"
+          value={Math.round(totalLikes / Math.max(1, portfolio.length))}
+        />
         <StatCard label="Xizmatlar" value={services.length} />
       </div>
 
@@ -143,7 +165,11 @@ function PortfolioPage() {
             className="bg-card rounded-2xl overflow-hidden max-w-3xl w-full shadow-card"
           >
             <div className="relative aspect-[4/3] bg-muted">
-              <img src={activeItem.image} alt={activeItem.title} className="size-full object-cover" />
+              <img
+                src={activeItem.image}
+                alt={activeItem.title}
+                className="size-full object-cover"
+              />
               <button
                 onClick={() => setActive(null)}
                 className="absolute top-3 right-3 size-9 rounded-full bg-background/90 flex items-center justify-center hover:bg-background"
@@ -154,7 +180,9 @@ function PortfolioPage() {
             <div className="p-5 flex items-center justify-between">
               <div>
                 <h3 className="font-heading text-lg font-semibold">{activeItem.title}</h3>
-                <p className="text-sm text-muted-foreground">{activeItem.service} · {activeItem.date}</p>
+                <p className="text-sm text-muted-foreground">
+                  {activeItem.service} · {activeItem.date}
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 <button className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border hover:bg-muted text-sm">

@@ -117,14 +117,19 @@ function AuthPage() {
             </div>
             <h1 className="mt-6 text-3xl font-semibold leading-tight">Barber kabineti</h1>
             <p className="mt-3 text-sm text-zinc-300 max-w-sm">
-              Beige va black uslubida yaratilgan xavfsiz autentifikatsiya oqimi. Kirish yoki ro'yxatdan o'tishni tanlang.
+              Beige va black uslubida yaratilgan xavfsiz autentifikatsiya oqimi. Kirish yoki
+              ro'yxatdan o'tishni tanlang.
             </p>
           </div>
           <div className="text-xs text-zinc-400">MyBarber · Auth Gateway</div>
         </div>
 
         <div className="p-5 sm:p-8">
-          <Tabs value={tab} onValueChange={(v) => setTab(v as "login" | "signup")} className="w-full">
+          <Tabs
+            value={tab}
+            onValueChange={(v) => setTab(v as "login" | "signup")}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-2 h-11 rounded-xl">
               <TabsTrigger value="login" className="rounded-lg font-medium">
                 Login
@@ -224,9 +229,21 @@ function AuthPage() {
                   <Label>Signup yo'li</Label>
                   <div className="grid grid-cols-1 gap-2">
                     <FlowOptionCard flow="owner" selected={flow === "owner"} onSelect={setFlow} />
-                    <FlowOptionCard flow="employee" selected={flow === "employee"} onSelect={setFlow} />
-                    <FlowOptionCard flow="mybarber" selected={flow === "mybarber"} onSelect={setFlow} />
-                    <FlowOptionCard flow="independent" selected={flow === "independent"} onSelect={setFlow} />
+                    <FlowOptionCard
+                      flow="employee"
+                      selected={flow === "employee"}
+                      onSelect={setFlow}
+                    />
+                    <FlowOptionCard
+                      flow="mybarber"
+                      selected={flow === "mybarber"}
+                      onSelect={setFlow}
+                    />
+                    <FlowOptionCard
+                      flow="independent"
+                      selected={flow === "independent"}
+                      onSelect={setFlow}
+                    />
                   </div>
                 </div>
 
@@ -246,4 +263,3 @@ function AuthPage() {
     </div>
   );
 }
-

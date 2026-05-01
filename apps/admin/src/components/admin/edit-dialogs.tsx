@@ -29,7 +29,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { REGIONS, type RegionCode } from "@/lib/mock-data";
+import { UZ_REGIONS, type UzRegionCode } from "@/lib/uz-regions";
+
+const regionSchema = z.enum(UZ_REGIONS.map((r) => r.value) as [UzRegionCode, ...UzRegionCode[]]);
+const DEFAULT_REGION: UzRegionCode = "TOSHKENT_V";
 
 // Reusable shell
 export function EditDialogShell({
@@ -77,7 +80,7 @@ const userSchema = z.object({
   name: z.string().min(2, "Kamida 2 ta belgi"),
   phone: z.string().min(7, "Telefon noto'g'ri"),
   email: z.string().email("Email noto'g'ri"),
-  region: z.enum(["tashkent", "samarkand", "bukhara", "fergana", "namangan"]),
+  region: regionSchema,
   is_active: z.boolean(),
 });
 export type UserFormValues = z.infer<typeof userSchema>;
@@ -103,7 +106,7 @@ export function EditUserDialog({
       name: "",
       phone: "",
       email: "",
-      region: "tashkent",
+      region: DEFAULT_REGION,
       is_active: true,
       ...defaultValues,
     },
@@ -115,7 +118,7 @@ export function EditUserDialog({
         name: "",
         phone: "",
         email: "",
-        region: "tashkent",
+        region: DEFAULT_REGION,
         is_active: true,
         ...defaultValues,
       });
@@ -178,16 +181,19 @@ export function EditUserDialog({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Hudud</FormLabel>
-                <Select value={field.value} onValueChange={(v) => field.onChange(v as RegionCode)}>
+                <Select
+                  value={field.value}
+                  onValueChange={(v) => field.onChange(v as UzRegionCode)}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {REGIONS.map((r) => (
-                      <SelectItem key={r.code} value={r.code}>
-                        {r.name}
+                    {UZ_REGIONS.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>
+                        {r.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -224,7 +230,7 @@ const barberSchema = z.object({
   name: z.string().min(2),
   phone: z.string().min(7),
   avatar: z.string().url().or(z.literal("")),
-  region: z.enum(["tashkent", "samarkand", "bukhara", "fergana", "namangan"]),
+  region: regionSchema,
   salon_id: z.string().nullable(),
   salon_name: z.string().nullable(),
   is_active: z.boolean(),
@@ -254,7 +260,7 @@ export function EditBarberDialog({
       name: "",
       phone: "",
       avatar: "",
-      region: "tashkent",
+      region: DEFAULT_REGION,
       salon_id: null,
       salon_name: null,
       is_active: true,
@@ -268,7 +274,7 @@ export function EditBarberDialog({
         name: "",
         phone: "",
         avatar: "",
-        region: "tashkent",
+        region: DEFAULT_REGION,
         salon_id: null,
         salon_name: null,
         is_active: true,
@@ -321,7 +327,7 @@ export function EditBarberDialog({
                   <FormLabel>Hudud</FormLabel>
                   <Select
                     value={field.value}
-                    onValueChange={(v) => field.onChange(v as RegionCode)}
+                    onValueChange={(v) => field.onChange(v as UzRegionCode)}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -329,9 +335,9 @@ export function EditBarberDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {REGIONS.map((r) => (
-                        <SelectItem key={r.code} value={r.code}>
-                          {r.name}
+                      {UZ_REGIONS.map((r) => (
+                        <SelectItem key={r.value} value={r.value}>
+                          {r.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -410,7 +416,7 @@ export function EditBarberDialog({
 const salonSchema = z.object({
   name: z.string().min(2),
   address: z.string().min(3),
-  region: z.enum(["tashkent", "samarkand", "bukhara", "fergana", "namangan"]),
+  region: regionSchema,
   published: z.boolean(),
 });
 export type SalonFormValues = z.infer<typeof salonSchema>;
@@ -435,14 +441,20 @@ export function EditSalonDialog({
     defaultValues: {
       name: "",
       address: "",
-      region: "tashkent",
+      region: DEFAULT_REGION,
       published: false,
       ...defaultValues,
     },
   });
   useEffect(() => {
     if (open)
-      form.reset({ name: "", address: "", region: "tashkent", published: false, ...defaultValues });
+      form.reset({
+        name: "",
+        address: "",
+        region: DEFAULT_REGION,
+        published: false,
+        ...defaultValues,
+      });
   }, [open, defaultValues, form]);
 
   return (
@@ -487,16 +499,19 @@ export function EditSalonDialog({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Hudud</FormLabel>
-                <Select value={field.value} onValueChange={(v) => field.onChange(v as RegionCode)}>
+                <Select
+                  value={field.value}
+                  onValueChange={(v) => field.onChange(v as UzRegionCode)}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {REGIONS.map((r) => (
-                      <SelectItem key={r.code} value={r.code}>
-                        {r.name}
+                    {UZ_REGIONS.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>
+                        {r.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -878,7 +893,7 @@ const broadcastSchema = z.object({
   title: z.string().min(2),
   body: z.string().min(5),
   audience: z.enum(["all", "users", "barbers", "region"]),
-  region: z.enum(["tashkent", "samarkand", "bukhara", "fergana", "namangan"]).optional(),
+  region: regionSchema.optional(),
   channel: z.enum(["push", "sms", "both"]),
 });
 export type BroadcastFormValues = z.infer<typeof broadcastSchema>;
@@ -1000,9 +1015,9 @@ export function NewBroadcastDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {REGIONS.map((r) => (
-                        <SelectItem key={r.code} value={r.code}>
-                          {r.name}
+                      {UZ_REGIONS.map((r) => (
+                        <SelectItem key={r.value} value={r.value}>
+                          {r.label}
                         </SelectItem>
                       ))}
                     </SelectContent>

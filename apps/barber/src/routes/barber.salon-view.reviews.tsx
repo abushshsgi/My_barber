@@ -44,7 +44,10 @@ function SalonReviewsPage() {
 
       <div className="space-y-3">
         {reviews.map((r) => (
-          <div key={r.id} className="rounded-xl border border-border bg-card p-5 shadow-card flex gap-3">
+          <div
+            key={r.id}
+            className="rounded-xl border border-border bg-card p-5 shadow-card flex gap-3"
+          >
             <img src={r.avatar} alt="" className="size-10 rounded-full" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2">
@@ -57,9 +60,7 @@ function SalonReviewsPage() {
                     key={i}
                     className={cn(
                       "size-3.5",
-                      i < r.rating
-                        ? "fill-foreground text-foreground"
-                        : "text-muted-foreground/30",
+                      i < r.rating ? "fill-foreground text-foreground" : "text-muted-foreground/30",
                     )}
                   />
                 ))}

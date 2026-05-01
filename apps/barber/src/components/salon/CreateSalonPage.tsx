@@ -316,7 +316,9 @@ export function CreateSalonPage() {
               : draft.flow === "owner"
                 ? salonName.trim()
                 : "",
-          address: [salonCity.trim(), salonAddress.trim(), salonLandmark.trim()].filter(Boolean).join(", "),
+          address: [salonCity.trim(), salonAddress.trim(), salonLandmark.trim()]
+            .filter(Boolean)
+            .join(", "),
           staff_count_at_signup: 1,
         };
 
@@ -456,16 +458,18 @@ export function CreateSalonPage() {
       const membershipsBody = await parseJsonSafe(membershipsRes);
       const memberships = Array.isArray(membershipsBody)
         ? membershipsBody
-        : membershipsBody && typeof membershipsBody === "object" && Array.isArray((membershipsBody as { results?: unknown }).results)
+        : membershipsBody &&
+            typeof membershipsBody === "object" &&
+            Array.isArray((membershipsBody as { results?: unknown }).results)
           ? ((membershipsBody as { results: unknown[] }).results ?? [])
           : [];
       if (!membershipsRes.ok || !Array.isArray(memberships)) {
         setSubmitError("Salon yaratildi, lekin membership ma'lumotini olishda xatolik bo'ldi.");
         return;
       }
-      const ownerMembership = (memberships as Array<{ id: number; salon: number; role: string }>).find(
-        (m) => Number(m.salon) === createdId && m.role === "owner",
-      );
+      const ownerMembership = (
+        memberships as Array<{ id: number; salon: number; role: string }>
+      ).find((m) => Number(m.salon) === createdId && m.role === "owner");
       if (!ownerMembership) {
         setSubmitError("Salon yaratildi, lekin owner membership topilmadi.");
         return;
@@ -484,7 +488,10 @@ export function CreateSalonPage() {
         if (!scheduleRes.ok) {
           const scheduleErr = await parseJsonSafe(scheduleRes);
           setSubmitError(
-            extractApiError(scheduleErr, "Salon yaratildi, lekin ish jadvalini saqlashda xatolik bo'ldi."),
+            extractApiError(
+              scheduleErr,
+              "Salon yaratildi, lekin ish jadvalini saqlashda xatolik bo'ldi.",
+            ),
           );
           return;
         }
@@ -501,7 +508,9 @@ export function CreateSalonPage() {
         });
         if (!imageRes.ok) {
           const imageErr = await parseJsonSafe(imageRes);
-          setSubmitError(extractApiError(imageErr, "Salon yaratildi, lekin cover rasm yuklanmadi."));
+          setSubmitError(
+            extractApiError(imageErr, "Salon yaratildi, lekin cover rasm yuklanmadi."),
+          );
           return;
         }
       }
@@ -538,26 +547,32 @@ export function CreateSalonPage() {
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-foreground sm:h-8 sm:w-8">
               <Scissors className="h-3.5 w-3.5 text-background sm:h-4 sm:w-4" />
             </div>
-            <span className="text-[13px] font-semibold tracking-tight sm:text-sm">Barber Studio</span>
+            <span className="text-[13px] font-semibold tracking-tight sm:text-sm">
+              Barber Studio
+            </span>
           </div>
           <span className="text-[11px] font-medium tabular-nums text-muted-foreground sm:text-xs">
             <span className="text-foreground">{step + 1}</span>
             <span className="opacity-50"> / {TOTAL_STEPS}</span>
           </span>
         </div>
-        <StepIndicator step={step} stepValid={stepValid} onJump={(i) => {
-          // Allow jumping back freely; jumping forward only if all preceding steps are valid
-          if (i === step) return;
-          if (i < step) {
-            setDirection(-1);
-            setStep(i);
-          } else {
-            const canReach = stepValid.slice(0, i).every(Boolean);
-            if (!canReach) return;
-            setDirection(1);
-            setStep(i);
-          }
-        }} />
+        <StepIndicator
+          step={step}
+          stepValid={stepValid}
+          onJump={(i) => {
+            // Allow jumping back freely; jumping forward only if all preceding steps are valid
+            if (i === step) return;
+            if (i < step) {
+              setDirection(-1);
+              setStep(i);
+            } else {
+              const canReach = stepValid.slice(0, i).every(Boolean);
+              if (!canReach) return;
+              setDirection(1);
+              setStep(i);
+            }
+          }}
+        />
       </header>
 
       <main className="mx-auto max-w-[920px] px-3.5 pt-5 sm:px-6 sm:pt-14">
@@ -654,17 +669,9 @@ export function CreateSalonPage() {
                 updateService={updateService}
               />
             )}
-            {step === 5 && (
-              <BarberScheduleStep
-                schedule={schedule}
-                setSchedule={setSchedule}
-              />
-            )}
+            {step === 5 && <BarberScheduleStep schedule={schedule} setSchedule={setSchedule} />}
             {step === 6 && (
-              <BarberLanguagesStep
-                languages={languages}
-                toggleLanguage={toggleLanguage}
-              />
+              <BarberLanguagesStep languages={languages} toggleLanguage={toggleLanguage} />
             )}
           </motion.div>
         </AnimatePresence>
@@ -686,9 +693,7 @@ export function CreateSalonPage() {
             disabled={step === 0 || submitting}
             className={cn(
               "inline-flex h-11 w-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-border bg-background text-sm font-medium text-foreground transition-[var(--transition-smooth)] sm:h-11 sm:w-auto sm:px-4",
-              step === 0
-                ? "cursor-not-allowed opacity-40"
-                : "hover:bg-muted active:scale-[0.98]",
+              step === 0 ? "cursor-not-allowed opacity-40" : "hover:bg-muted active:scale-[0.98]",
             )}
             aria-label="Orqaga"
           >
@@ -890,26 +895,24 @@ function SalonLocationStep(props: {
           Mashhur shaharlar
         </div>
         <div className="flex flex-wrap gap-1.5">
-          {["Toshkent", "Samarqand", "Buxoro", "Andijon", "Farg'ona", "Namangan"].map(
-            (city) => {
-              const active = props.salonCity.trim().toLowerCase() === city.toLowerCase();
-              return (
-                <button
-                  key={city}
-                  type="button"
-                  onClick={() => props.setSalonCity(city)}
-                  className={cn(
-                    "rounded-full border px-3 py-1 text-[11px] font-medium transition-[var(--transition-smooth)]",
-                    active
-                      ? "border-foreground bg-foreground text-background"
-                      : "border-border bg-card text-foreground hover:border-foreground/50",
-                  )}
-                >
-                  {city}
-                </button>
-              );
-            },
-          )}
+          {["Toshkent", "Samarqand", "Buxoro", "Andijon", "Farg'ona", "Namangan"].map((city) => {
+            const active = props.salonCity.trim().toLowerCase() === city.toLowerCase();
+            return (
+              <button
+                key={city}
+                type="button"
+                onClick={() => props.setSalonCity(city)}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-[11px] font-medium transition-[var(--transition-smooth)]",
+                  active
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border bg-card text-foreground hover:border-foreground/50",
+                )}
+              >
+                {city}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -988,11 +991,7 @@ function SalonCoverStep(props: {
       />
       {props.cover ? (
         <div className="group relative h-44 w-full overflow-hidden rounded-2xl border border-border bg-muted sm:h-72">
-          <img
-            src={props.cover}
-            alt="Salon cover"
-            className="h-full w-full object-cover"
-          />
+          <img src={props.cover} alt="Salon cover" className="h-full w-full object-cover" />
           <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/70 to-transparent p-3">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-background/90 px-2.5 py-1 text-[11px] font-semibold text-foreground backdrop-blur">
               <Check className="h-3 w-3" /> Yuklandi
@@ -1067,8 +1066,7 @@ function BarberProfileStep(props: {
   handleAvatarFile: (f: FileList | null) => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const initials =
-    (props.firstName.trim()[0] || "") + (props.lastName.trim()[0] || "");
+  const initials = (props.firstName.trim()[0] || "") + (props.lastName.trim()[0] || "");
 
   return (
     <Section
@@ -1095,11 +1093,7 @@ function BarberProfileStep(props: {
             className="group relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-border bg-muted text-2xl font-semibold uppercase text-muted-foreground transition-[var(--transition-smooth)] hover:border-foreground sm:h-28 sm:w-28"
           >
             {props.avatar ? (
-              <img
-                src={props.avatar}
-                alt="avatar"
-                className="h-full w-full object-cover"
-              />
+              <img src={props.avatar} alt="avatar" className="h-full w-full object-cover" />
             ) : initials.trim() ? (
               <span className="text-foreground">{initials}</span>
             ) : (
@@ -1240,17 +1234,13 @@ function BarberServicesStep(props: {
                     <FloatingInput
                       label="Narxi (so'm)"
                       value={s.price}
-                      onChange={(v) =>
-                        props.updateService(s.id, "price", v.replace(/\D/g, ""))
-                      }
+                      onChange={(v) => props.updateService(s.id, "price", v.replace(/\D/g, ""))}
                       compact
                     />
                     <FloatingInput
                       label="Vaqti (min)"
                       value={s.duration}
-                      onChange={(v) =>
-                        props.updateService(s.id, "duration", v.replace(/\D/g, ""))
-                      }
+                      onChange={(v) => props.updateService(s.id, "duration", v.replace(/\D/g, ""))}
                       compact
                     />
                   </div>
@@ -1341,9 +1331,7 @@ function BarberLanguagesStep(props: {
               <span
                 className={cn(
                   "flex h-4 w-4 items-center justify-center rounded-full border",
-                  active
-                    ? "border-background bg-background text-foreground"
-                    : "border-border",
+                  active ? "border-background bg-background text-foreground" : "border-border",
                 )}
               >
                 {active && <Check className="h-2.5 w-2.5" />}
@@ -1375,9 +1363,7 @@ function StepIndicator({
   const currentGroup = STEP_META[step].group;
 
   // Group salon (0..2) and barber (3..6) sub-steps
-  const salonSteps = STEP_META.map((m, i) => ({ ...m, idx: i })).filter(
-    (m) => m.group === "Salon",
-  );
+  const salonSteps = STEP_META.map((m, i) => ({ ...m, idx: i })).filter((m) => m.group === "Salon");
   const barberSteps = STEP_META.map((m, i) => ({ ...m, idx: i })).filter(
     (m) => m.group === "Barber",
   );
@@ -1391,20 +1377,14 @@ function StepIndicator({
         <GroupChip
           icon={Store}
           label="Salon"
-          state={
-            barberActive || salonDone ? "done" : currentGroup === "Salon" ? "active" : "idle"
-          }
+          state={barberActive || salonDone ? "done" : currentGroup === "Salon" ? "active" : "idle"}
         />
         <GroupConnector filled={salonDone || barberActive} />
         <GroupChip
           icon={User}
           label="Barber"
           state={
-            currentGroup === "Barber"
-              ? stepValid.every(Boolean)
-                ? "done"
-                : "active"
-              : "idle"
+            currentGroup === "Barber" ? (stepValid.every(Boolean) ? "done" : "active") : "idle"
           }
         />
       </div>
@@ -1434,9 +1414,7 @@ function StepIndicator({
           const isGroupStart = i > 0 && STEP_META[i - 1].group !== meta.group;
           return (
             <div key={i} className="flex shrink-0 items-center gap-1 sm:flex-1">
-              {isGroupStart && (
-                <span className="mx-1 h-4 w-px shrink-0 bg-border" />
-              )}
+              {isGroupStart && <span className="mx-1 h-4 w-px shrink-0 bg-border" />}
               <button
                 type="button"
                 onClick={() => reachable && onJump(i)}
@@ -1453,7 +1431,11 @@ function StepIndicator({
                 )}
                 aria-label={`${meta.short} qadami`}
               >
-                {done ? <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> : <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
+                {done ? (
+                  <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                ) : (
+                  <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                )}
                 {active && (
                   <motion.span
                     layoutId="active-ring"
@@ -1570,7 +1552,9 @@ function Section({
           <h2 className="text-[15px] font-semibold leading-tight tracking-tight text-foreground sm:text-lg">
             {title}
           </h2>
-          <p className="mt-0.5 text-[11.5px] leading-snug text-muted-foreground sm:text-sm">{description}</p>
+          <p className="mt-0.5 text-[11.5px] leading-snug text-muted-foreground sm:text-sm">
+            {description}
+          </p>
         </div>
       </div>
       <div className="space-y-3.5 sm:space-y-4">{children}</div>
@@ -1701,9 +1685,7 @@ function PhoneInput({
         {/* prefix */}
         <div className="flex items-center gap-1.5 border-r border-border px-3.5">
           <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-sm font-semibold tabular-nums text-foreground">
-            +998
-          </span>
+          <span className="text-sm font-semibold tabular-nums text-foreground">+998</span>
         </div>
         {/* input */}
         <div className="relative flex-1">
@@ -1855,7 +1837,9 @@ function ScheduleEditor({
             >
               {openCount}
             </motion.span>
-            <span className="text-[13px] font-semibold text-muted-foreground sm:text-sm">/ 7 kun</span>
+            <span className="text-[13px] font-semibold text-muted-foreground sm:text-sm">
+              / 7 kun
+            </span>
           </div>
           <div className="text-[10.5px] text-muted-foreground sm:text-[11px]">
             {openCount === 0
@@ -2182,7 +2166,9 @@ function TimePicker({
         const el = ref.current;
         if (!el) return;
         // showPicker is supported in modern browsers
-        if (typeof (el as HTMLInputElement & { showPicker?: () => void }).showPicker === "function") {
+        if (
+          typeof (el as HTMLInputElement & { showPicker?: () => void }).showPicker === "function"
+        ) {
           (el as HTMLInputElement & { showPicker?: () => void }).showPicker?.();
         } else {
           el.focus();

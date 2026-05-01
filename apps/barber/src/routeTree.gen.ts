@@ -12,14 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as BarberRouteImport } from './routes/barber'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BarberIndexRouteImport } from './routes/barber.index'
+import { Route as SalonJoinRouteImport } from './routes/salon.join'
+import { Route as SalonCreateRouteImport } from './routes/salon.create'
 import { Route as OnboardingOwnerRouteImport } from './routes/onboarding.owner'
-import { Route as OnboardingEmployeeRouteImport } from './routes/onboarding.employee'
 import { Route as OnboardingMybarberRouteImport } from './routes/onboarding.mybarber'
 import { Route as OnboardingIndependentRouteImport } from './routes/onboarding.independent'
-import { Route as SalonCreateRouteImport } from './routes/salon.create'
-import { Route as SalonJoinRouteImport } from './routes/salon.join'
+import { Route as OnboardingEmployeeRouteImport } from './routes/onboarding.employee'
 import { Route as IndependentSetupRouteImport } from './routes/independent.setup'
-import { Route as BarberIndexRouteImport } from './routes/barber.index'
 import { Route as BarberStatsRouteImport } from './routes/barber.stats'
 import { Route as BarberSettingsRouteImport } from './routes/barber.settings'
 import { Route as BarberReviewsRouteImport } from './routes/barber.reviews'
@@ -55,14 +55,24 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BarberIndexRoute = BarberIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => BarberRoute,
+} as any)
+const SalonJoinRoute = SalonJoinRouteImport.update({
+  id: '/salon/join',
+  path: '/salon/join',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SalonCreateRoute = SalonCreateRouteImport.update({
+  id: '/salon/create',
+  path: '/salon/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingOwnerRoute = OnboardingOwnerRouteImport.update({
   id: '/onboarding/owner',
   path: '/onboarding/owner',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingEmployeeRoute = OnboardingEmployeeRouteImport.update({
-  id: '/onboarding/employee',
-  path: '/onboarding/employee',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingMybarberRoute = OnboardingMybarberRouteImport.update({
@@ -75,25 +85,15 @@ const OnboardingIndependentRoute = OnboardingIndependentRouteImport.update({
   path: '/onboarding/independent',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SalonCreateRoute = SalonCreateRouteImport.update({
-  id: '/salon/create',
-  path: '/salon/create',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SalonJoinRoute = SalonJoinRouteImport.update({
-  id: '/salon/join',
-  path: '/salon/join',
+const OnboardingEmployeeRoute = OnboardingEmployeeRouteImport.update({
+  id: '/onboarding/employee',
+  path: '/onboarding/employee',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndependentSetupRoute = IndependentSetupRouteImport.update({
   id: '/independent/setup',
   path: '/independent/setup',
   getParentRoute: () => rootRouteImport,
-} as any)
-const BarberIndexRoute = BarberIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => BarberRoute,
 } as any)
 const BarberStatsRoute = BarberStatsRouteImport.update({
   id: '/stats',
@@ -194,14 +194,7 @@ const BarberSalonViewGalleryRoute = BarberSalonViewGalleryRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/independent/setup': typeof IndependentSetupRoute
-  '/onboarding/employee': typeof OnboardingEmployeeRoute
-  '/onboarding/independent': typeof OnboardingIndependentRoute
-  '/onboarding/mybarber': typeof OnboardingMybarberRoute
-  '/onboarding/owner': typeof OnboardingOwnerRoute
   '/barber': typeof BarberRouteWithChildren
-  '/salon/create': typeof SalonCreateRoute
-  '/salon/join': typeof SalonJoinRoute
   '/barber/bookings': typeof BarberBookingsRoute
   '/barber/calendar': typeof BarberCalendarRoute
   '/barber/chat': typeof BarberChatRoute
@@ -218,6 +211,13 @@ export interface FileRoutesByFullPath {
   '/barber/reviews': typeof BarberReviewsRoute
   '/barber/settings': typeof BarberSettingsRoute
   '/barber/stats': typeof BarberStatsRoute
+  '/independent/setup': typeof IndependentSetupRoute
+  '/onboarding/employee': typeof OnboardingEmployeeRoute
+  '/onboarding/independent': typeof OnboardingIndependentRoute
+  '/onboarding/mybarber': typeof OnboardingMybarberRoute
+  '/onboarding/owner': typeof OnboardingOwnerRoute
+  '/salon/create': typeof SalonCreateRoute
+  '/salon/join': typeof SalonJoinRoute
   '/barber/': typeof BarberIndexRoute
   '/barber/salon-view/gallery': typeof BarberSalonViewGalleryRoute
   '/barber/salon-view/reviews': typeof BarberSalonViewReviewsRoute
@@ -226,13 +226,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/independent/setup': typeof IndependentSetupRoute
-  '/onboarding/employee': typeof OnboardingEmployeeRoute
-  '/onboarding/independent': typeof OnboardingIndependentRoute
-  '/onboarding/mybarber': typeof OnboardingMybarberRoute
-  '/onboarding/owner': typeof OnboardingOwnerRoute
-  '/salon/create': typeof SalonCreateRoute
-  '/salon/join': typeof SalonJoinRoute
   '/barber/bookings': typeof BarberBookingsRoute
   '/barber/calendar': typeof BarberCalendarRoute
   '/barber/chat': typeof BarberChatRoute
@@ -249,6 +242,13 @@ export interface FileRoutesByTo {
   '/barber/reviews': typeof BarberReviewsRoute
   '/barber/settings': typeof BarberSettingsRoute
   '/barber/stats': typeof BarberStatsRoute
+  '/independent/setup': typeof IndependentSetupRoute
+  '/onboarding/employee': typeof OnboardingEmployeeRoute
+  '/onboarding/independent': typeof OnboardingIndependentRoute
+  '/onboarding/mybarber': typeof OnboardingMybarberRoute
+  '/onboarding/owner': typeof OnboardingOwnerRoute
+  '/salon/create': typeof SalonCreateRoute
+  '/salon/join': typeof SalonJoinRoute
   '/barber': typeof BarberIndexRoute
   '/barber/salon-view/gallery': typeof BarberSalonViewGalleryRoute
   '/barber/salon-view/reviews': typeof BarberSalonViewReviewsRoute
@@ -258,14 +258,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/independent/setup': typeof IndependentSetupRoute
-  '/onboarding/employee': typeof OnboardingEmployeeRoute
-  '/onboarding/independent': typeof OnboardingIndependentRoute
-  '/onboarding/mybarber': typeof OnboardingMybarberRoute
-  '/onboarding/owner': typeof OnboardingOwnerRoute
   '/barber': typeof BarberRouteWithChildren
-  '/salon/create': typeof SalonCreateRoute
-  '/salon/join': typeof SalonJoinRoute
   '/barber/bookings': typeof BarberBookingsRoute
   '/barber/calendar': typeof BarberCalendarRoute
   '/barber/chat': typeof BarberChatRoute
@@ -282,6 +275,13 @@ export interface FileRoutesById {
   '/barber/reviews': typeof BarberReviewsRoute
   '/barber/settings': typeof BarberSettingsRoute
   '/barber/stats': typeof BarberStatsRoute
+  '/independent/setup': typeof IndependentSetupRoute
+  '/onboarding/employee': typeof OnboardingEmployeeRoute
+  '/onboarding/independent': typeof OnboardingIndependentRoute
+  '/onboarding/mybarber': typeof OnboardingMybarberRoute
+  '/onboarding/owner': typeof OnboardingOwnerRoute
+  '/salon/create': typeof SalonCreateRoute
+  '/salon/join': typeof SalonJoinRoute
   '/barber/': typeof BarberIndexRoute
   '/barber/salon-view/gallery': typeof BarberSalonViewGalleryRoute
   '/barber/salon-view/reviews': typeof BarberSalonViewReviewsRoute
@@ -292,14 +292,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
-    | '/independent/setup'
-    | '/onboarding/employee'
-    | '/onboarding/independent'
-    | '/onboarding/mybarber'
-    | '/onboarding/owner'
     | '/barber'
-    | '/salon/create'
-    | '/salon/join'
     | '/barber/bookings'
     | '/barber/calendar'
     | '/barber/chat'
@@ -316,6 +309,13 @@ export interface FileRouteTypes {
     | '/barber/reviews'
     | '/barber/settings'
     | '/barber/stats'
+    | '/independent/setup'
+    | '/onboarding/employee'
+    | '/onboarding/independent'
+    | '/onboarding/mybarber'
+    | '/onboarding/owner'
+    | '/salon/create'
+    | '/salon/join'
     | '/barber/'
     | '/barber/salon-view/gallery'
     | '/barber/salon-view/reviews'
@@ -324,13 +324,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
-    | '/independent/setup'
-    | '/onboarding/employee'
-    | '/onboarding/independent'
-    | '/onboarding/mybarber'
-    | '/onboarding/owner'
-    | '/salon/create'
-    | '/salon/join'
     | '/barber/bookings'
     | '/barber/calendar'
     | '/barber/chat'
@@ -347,6 +340,13 @@ export interface FileRouteTypes {
     | '/barber/reviews'
     | '/barber/settings'
     | '/barber/stats'
+    | '/independent/setup'
+    | '/onboarding/employee'
+    | '/onboarding/independent'
+    | '/onboarding/mybarber'
+    | '/onboarding/owner'
+    | '/salon/create'
+    | '/salon/join'
     | '/barber'
     | '/barber/salon-view/gallery'
     | '/barber/salon-view/reviews'
@@ -355,14 +355,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/auth'
-    | '/independent/setup'
-    | '/onboarding/employee'
-    | '/onboarding/independent'
-    | '/onboarding/mybarber'
-    | '/onboarding/owner'
     | '/barber'
-    | '/salon/create'
-    | '/salon/join'
     | '/barber/bookings'
     | '/barber/calendar'
     | '/barber/chat'
@@ -379,6 +372,13 @@ export interface FileRouteTypes {
     | '/barber/reviews'
     | '/barber/settings'
     | '/barber/stats'
+    | '/independent/setup'
+    | '/onboarding/employee'
+    | '/onboarding/independent'
+    | '/onboarding/mybarber'
+    | '/onboarding/owner'
+    | '/salon/create'
+    | '/salon/join'
     | '/barber/'
     | '/barber/salon-view/gallery'
     | '/barber/salon-view/reviews'
@@ -388,14 +388,14 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
-  OnboardingOwnerRoute: typeof OnboardingOwnerRoute
+  BarberRoute: typeof BarberRouteWithChildren
+  IndependentSetupRoute: typeof IndependentSetupRoute
   OnboardingEmployeeRoute: typeof OnboardingEmployeeRoute
-  OnboardingMybarberRoute: typeof OnboardingMybarberRoute
   OnboardingIndependentRoute: typeof OnboardingIndependentRoute
+  OnboardingMybarberRoute: typeof OnboardingMybarberRoute
+  OnboardingOwnerRoute: typeof OnboardingOwnerRoute
   SalonCreateRoute: typeof SalonCreateRoute
   SalonJoinRoute: typeof SalonJoinRoute
-  IndependentSetupRoute: typeof IndependentSetupRoute
-  BarberRoute: typeof BarberRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -414,18 +414,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/barber/': {
+      id: '/barber/'
+      path: '/'
+      fullPath: '/barber/'
+      preLoaderRoute: typeof BarberIndexRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/salon/join': {
+      id: '/salon/join'
+      path: '/salon/join'
+      fullPath: '/salon/join'
+      preLoaderRoute: typeof SalonJoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/salon/create': {
+      id: '/salon/create'
+      path: '/salon/create'
+      fullPath: '/salon/create'
+      preLoaderRoute: typeof SalonCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding/owner': {
       id: '/onboarding/owner'
       path: '/onboarding/owner'
       fullPath: '/onboarding/owner'
       preLoaderRoute: typeof OnboardingOwnerRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding/employee': {
-      id: '/onboarding/employee'
-      path: '/onboarding/employee'
-      fullPath: '/onboarding/employee'
-      preLoaderRoute: typeof OnboardingEmployeeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding/mybarber': {
@@ -442,18 +463,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingIndependentRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/salon/create': {
-      id: '/salon/create'
-      path: '/salon/create'
-      fullPath: '/salon/create'
-      preLoaderRoute: typeof SalonCreateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/salon/join': {
-      id: '/salon/join'
-      path: '/salon/join'
-      fullPath: '/salon/join'
-      preLoaderRoute: typeof SalonJoinRouteImport
+    '/onboarding/employee': {
+      id: '/onboarding/employee'
+      path: '/onboarding/employee'
+      fullPath: '/onboarding/employee'
+      preLoaderRoute: typeof OnboardingEmployeeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/independent/setup': {
@@ -462,20 +476,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/independent/setup'
       preLoaderRoute: typeof IndependentSetupRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/barber/': {
-      id: '/barber/'
-      path: '/'
-      fullPath: '/barber/'
-      preLoaderRoute: typeof BarberIndexRouteImport
-      parentRoute: typeof BarberRoute
     }
     '/barber/stats': {
       id: '/barber/stats'
@@ -665,14 +665,14 @@ const BarberRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
-  OnboardingOwnerRoute: OnboardingOwnerRoute,
+  BarberRoute: BarberRouteWithChildren,
+  IndependentSetupRoute: IndependentSetupRoute,
   OnboardingEmployeeRoute: OnboardingEmployeeRoute,
-  OnboardingMybarberRoute: OnboardingMybarberRoute,
   OnboardingIndependentRoute: OnboardingIndependentRoute,
+  OnboardingMybarberRoute: OnboardingMybarberRoute,
+  OnboardingOwnerRoute: OnboardingOwnerRoute,
   SalonCreateRoute: SalonCreateRoute,
   SalonJoinRoute: SalonJoinRoute,
-  IndependentSetupRoute: IndependentSetupRoute,
-  BarberRoute: BarberRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

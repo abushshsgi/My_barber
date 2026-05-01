@@ -79,15 +79,11 @@ function ReviewsPage() {
           </Select>
         </div>
         <div className="w-full sm:w-44">
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-            Dan
-          </label>
+          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Dan</label>
           <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
         </div>
         <div className="w-full sm:w-44">
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-            Gacha
-          </label>
+          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Gacha</label>
           <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
         </div>
         <div className="flex gap-2">

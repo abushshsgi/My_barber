@@ -39,9 +39,7 @@ function ReviewsPage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
       <div>
         <h1 className="font-heading text-3xl font-semibold text-foreground">Sharhlar</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Mijozlardan kelgan baholar va izohlar.
-        </p>
+        <p className="text-muted-foreground mt-1 text-sm">Mijozlardan kelgan baholar va izohlar.</p>
       </div>
 
       {/* Summary */}

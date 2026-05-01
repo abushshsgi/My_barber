@@ -8,4 +8,3 @@ export const Route = createFileRoute("/salon/create")({
 function SalonCreatePage() {
   return <CreateSalonPage />;
 }
-

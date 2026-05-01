@@ -42,7 +42,9 @@ export function FlowOptionCard({
       onClick={() => onSelect(flow)}
       className={cn(
         "w-full rounded-xl border p-3 text-left transition-colors",
-        selected ? "border-foreground bg-foreground text-background" : "border-border hover:bg-muted/40",
+        selected
+          ? "border-foreground bg-foreground text-background"
+          : "border-border hover:bg-muted/40",
       )}
     >
       <div className="flex items-start gap-2.5">
@@ -56,7 +58,12 @@ export function FlowOptionCard({
         </div>
         <div>
           <p className="text-sm font-semibold">{meta.title}</p>
-          <p className={cn("text-xs mt-1", selected ? "text-background/80" : "text-muted-foreground")}>
+          <p
+            className={cn(
+              "text-xs mt-1",
+              selected ? "text-background/80" : "text-muted-foreground",
+            )}
+          >
             {meta.desc}
           </p>
         </div>
@@ -64,4 +71,3 @@ export function FlowOptionCard({
     </button>
   );
 }
-

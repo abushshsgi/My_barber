@@ -16,7 +16,8 @@ function GoalsPage() {
   const [form, setForm] = useState({ title: "", target: "", unit: "ta", deadline: "" });
   const done = goals.filter((g) => g.done).length;
   const avg = Math.round(
-    (goals.reduce((s, g) => s + Math.min(1, g.current / g.target), 0) / Math.max(1, goals.length)) * 100,
+    (goals.reduce((s, g) => s + Math.min(1, g.current / g.target), 0) / Math.max(1, goals.length)) *
+      100,
   );
 
   return (
@@ -37,10 +38,31 @@ function GoalsPage() {
       {openCreate && (
         <SectionCard title="Yangi maqsad">
           <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
-            <input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} placeholder="Sarlavha" className="sm:col-span-2 h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm" />
-            <input type="number" value={form.target} onChange={(e) => setForm((p) => ({ ...p, target: e.target.value }))} placeholder="Maqsad" className="h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm" />
-            <input value={form.unit} onChange={(e) => setForm((p) => ({ ...p, unit: e.target.value }))} placeholder="Birlik" className="h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm" />
-            <input type="date" value={form.deadline} onChange={(e) => setForm((p) => ({ ...p, deadline: e.target.value }))} className="h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm" />
+            <input
+              value={form.title}
+              onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+              placeholder="Sarlavha"
+              className="sm:col-span-2 h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm"
+            />
+            <input
+              type="number"
+              value={form.target}
+              onChange={(e) => setForm((p) => ({ ...p, target: e.target.value }))}
+              placeholder="Maqsad"
+              className="h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm"
+            />
+            <input
+              value={form.unit}
+              onChange={(e) => setForm((p) => ({ ...p, unit: e.target.value }))}
+              placeholder="Birlik"
+              className="h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm"
+            />
+            <input
+              type="date"
+              value={form.deadline}
+              onChange={(e) => setForm((p) => ({ ...p, deadline: e.target.value }))}
+              className="h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm"
+            />
             <button
               onClick={async () => {
                 if (!form.title.trim() || !form.target || !form.deadline) {
@@ -70,8 +92,17 @@ function GoalsPage() {
       )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard icon={<Target className="size-4" />} label="Jami maqsadlar" value={goals.length} />
-        <StatCard icon={<Trophy className="size-4" />} label="Bajarilgan" value={done} hint={`${goals.length - done} qoldi`} />
+        <StatCard
+          icon={<Target className="size-4" />}
+          label="Jami maqsadlar"
+          value={goals.length}
+        />
+        <StatCard
+          icon={<Trophy className="size-4" />}
+          label="Bajarilgan"
+          value={done}
+          hint={`${goals.length - done} qoldi`}
+        />
         <StatCard label="O'rtacha progress" value={`${avg}%`} />
         <StatCard label="Eng yaqin muddat" value={goals.find((g) => !g.done)?.deadline ?? "—"} />
       </div>

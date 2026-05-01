@@ -1,8 +1,4 @@
-import {
-  Outlet,
-  Link,
-  createRootRouteWithContext,
-} from "@tanstack/react-router";
+import { Outlet, Link, createRootRouteWithContext } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 

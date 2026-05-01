@@ -10,4 +10,3 @@ export function AuthErrorAlert({ error }: { error: string | null }) {
     </Alert>
   );
 }
-

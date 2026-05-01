@@ -44,9 +44,24 @@ function HelpPage() {
 
       {/* Contact channels */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Channel icon={<Phone className="size-5" />} label="Telefon" value="+998 71 200 00 00" hint="9:00 — 21:00" />
-        <Channel icon={<Mail className="size-5" />} label="Email" value="support@shearhq.uz" hint="24 soat ichida javob" />
-        <Channel icon={<BookOpen className="size-5" />} label="Hujjatlar" value="docs.shearhq.uz" hint="Qo'llanmalar" />
+        <Channel
+          icon={<Phone className="size-5" />}
+          label="Telefon"
+          value="+998 71 200 00 00"
+          hint="9:00 — 21:00"
+        />
+        <Channel
+          icon={<Mail className="size-5" />}
+          label="Email"
+          value="support@shearhq.uz"
+          hint="24 soat ichida javob"
+        />
+        <Channel
+          icon={<BookOpen className="size-5" />}
+          label="Hujjatlar"
+          value="docs.shearhq.uz"
+          hint="Qo'llanmalar"
+        />
       </div>
 
       {/* FAQ */}
@@ -69,9 +84,7 @@ function HelpPage() {
                   />
                 </button>
                 {isOpen && (
-                  <div className="pb-4 text-sm text-muted-foreground leading-relaxed">
-                    {item.a}
-                  </div>
+                  <div className="pb-4 text-sm text-muted-foreground leading-relaxed">{item.a}</div>
                 )}
               </div>
             );
@@ -124,7 +137,17 @@ function HelpPage() {
   );
 }
 
-function Channel({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: string; hint: string }) {
+function Channel({
+  icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  hint: string;
+}) {
   return (
     <div className="rounded-xl border border-border bg-card p-5 hover:border-foreground/30 transition-colors">
       <div className="size-10 rounded-lg bg-muted flex items-center justify-center mb-3">

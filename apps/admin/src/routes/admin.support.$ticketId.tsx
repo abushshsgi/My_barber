@@ -4,12 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ArrowLeft, Send, Settings2 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  getTicketById,
-  getTicketReplies,
-  postTicketReply,
-  updateTicket,
-} from "@/lib/admin-api";
+import { getTicketById, getTicketReplies, postTicketReply, updateTicket } from "@/lib/admin-api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/admin/StatusBadge";

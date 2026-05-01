@@ -16,7 +16,10 @@ function SettingsPage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
       <PageHeader title="Sozlamalar" description="Akkaunt, bildirishnomalar va xavfsizlik." />
 
-      <SectionCard title="Bildirishnomalar" description="Qaysi kanallar orqali xabar olishni tanlang">
+      <SectionCard
+        title="Bildirishnomalar"
+        description="Qaysi kanallar orqali xabar olishni tanlang"
+      >
         <div className="space-y-1">
           <Toggle
             icon={<Bell className="size-4" />}

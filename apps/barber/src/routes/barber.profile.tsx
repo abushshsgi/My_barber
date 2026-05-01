@@ -12,7 +12,8 @@ export const Route = createFileRoute("/barber/profile")({
 const WEEKDAYS = ["Yakshanba", "Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba"];
 
 function ProfilePage() {
-  const { profile, services, workingHours, salon, viewMode, toggleService, addService } = useBarberContext();
+  const { profile, services, workingHours, salon, viewMode, toggleService, addService } =
+    useBarberContext();
   const activeServices = services.filter((s) => s.is_active);
   const [creating, setCreating] = useState(false);
   const [serviceForm, setServiceForm] = useState({ name: "", duration: "", price: "" });
@@ -28,7 +29,11 @@ function ProfilePage() {
 
       {/* Identity */}
       <div className="rounded-xl border border-border bg-card p-6 shadow-card flex flex-col sm:flex-row gap-6">
-        <img src={profile.avatar} alt="" className="size-24 rounded-2xl object-cover ring-1 ring-border" />
+        <img
+          src={profile.avatar}
+          alt=""
+          className="size-24 rounded-2xl object-cover ring-1 ring-border"
+        />
         <div className="flex-1 space-y-4">
           <div>
             <h2 className="font-heading text-2xl font-semibold">{profile.name}</h2>
@@ -157,7 +162,9 @@ function ProfilePage() {
         <div className="rounded-xl border border-border bg-card p-6 shadow-card flex items-center gap-4">
           <img src={salon.cover} alt="" className="size-16 rounded-lg object-cover" />
           <div className="flex-1 min-w-0">
-            <div className="text-xs text-muted-foreground uppercase tracking-wider">A'zo bo'lgan salon</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wider">
+              A'zo bo'lgan salon
+            </div>
             <div className="font-heading font-medium">{salon.name}</div>
             <div className="text-xs text-muted-foreground truncate">{salon.address}</div>
           </div>
@@ -167,15 +174,7 @@ function ProfilePage() {
   );
 }
 
-function Field({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
+function Field({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div>
       <div className="text-xs text-muted-foreground uppercase tracking-wider inline-flex items-center gap-1.5">

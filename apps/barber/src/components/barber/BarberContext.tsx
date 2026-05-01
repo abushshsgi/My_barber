@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { apiFetch, apiJson, clearBarberTokens } from "@/lib/api";
 
 export type ViewMode = "independent" | "salon";
@@ -198,14 +206,24 @@ type Ctx = {
   toggleService: (id: string) => void;
   addService: (payload: { name: string; duration_min: number; price: number }) => Promise<boolean>;
   togglePromo: (id: string) => void;
-  addPromo: (payload: { code: string; description: string; discount_pct: number; max_uses: number; expires?: string }) => Promise<boolean>;
+  addPromo: (payload: {
+    code: string;
+    description: string;
+    discount_pct: number;
+    max_uses: number;
+    expires?: string;
+  }) => Promise<boolean>;
   sendAnnouncement: (payload: { title: string; message: string }) => Promise<boolean>;
   updateSettings: (patch: Partial<Settings>) => void;
   adjustInventory: (id: string, delta: number) => void;
-  addInventoryItem: (payload: Omit<InventoryItem, "id" | "stock"> & { stock?: number }) => Promise<boolean>;
+  addInventoryItem: (
+    payload: Omit<InventoryItem, "id" | "stock"> & { stock?: number },
+  ) => Promise<boolean>;
   addExpense: (e: Omit<Expense, "id">) => void;
   toggleGoal: (id: string) => void;
-  addGoal: (payload: Omit<Goal, "id" | "current" | "done"> & { current?: number; done?: boolean }) => Promise<boolean>;
+  addGoal: (
+    payload: Omit<Goal, "id" | "current" | "done"> & { current?: number; done?: boolean },
+  ) => Promise<boolean>;
   uploadPortfolio: (payload: { file: File; title: string; service: string }) => Promise<boolean>;
   addSalonImage: (payload: { file: File }) => Promise<boolean>;
   sendSupportTicket: (payload: { subject: string; message: string }) => Promise<boolean>;
@@ -401,7 +419,12 @@ const CONVERSATIONS_INIT: Conversation[] = [
     time: "10:24",
     unread: 0,
     messages: [
-      { id: "m1", sender_kind: "CLIENT", text: "Salom, ertaga 11:00 ga bron qila olamanmi?", time: "10:20" },
+      {
+        id: "m1",
+        sender_kind: "CLIENT",
+        text: "Salom, ertaga 11:00 ga bron qila olamanmi?",
+        time: "10:20",
+      },
       { id: "m2", sender_kind: "BARBER", text: "Salom! Albatta, sizni kutaman.", time: "10:22" },
       { id: "m3", sender_kind: "CLIENT", text: "Rahmat, ertaga keyaman.", time: "10:24" },
     ],
@@ -415,7 +438,12 @@ const CONVERSATIONS_INIT: Conversation[] = [
     unread: 2,
     messages: [
       { id: "m4", sender_kind: "CLIENT", text: "Salom, sizda joy bormi?", time: "Kecha 18:30" },
-      { id: "m5", sender_kind: "CLIENT", text: "Royal package ichida nima bor?", time: "Kecha 18:31" },
+      {
+        id: "m5",
+        sender_kind: "CLIENT",
+        text: "Royal package ichida nima bor?",
+        time: "Kecha 18:31",
+      },
     ],
   },
   {
@@ -426,7 +454,12 @@ const CONVERSATIONS_INIT: Conversation[] = [
     time: "2 kun",
     unread: 0,
     messages: [
-      { id: "m6", sender_kind: "BARBER", text: "Salom Otabek, vaqtingiz 15:00 ga ko'chirildi.", time: "2 kun" },
+      {
+        id: "m6",
+        sender_kind: "BARBER",
+        text: "Salom Otabek, vaqtingiz 15:00 ga ko'chirildi.",
+        time: "2 kun",
+      },
       { id: "m7", sender_kind: "CLIENT", text: "Vaqt o'zgardi.", time: "2 kun" },
     ],
   },
@@ -475,8 +508,7 @@ const SALON: Salon = {
   id: "sl1",
   name: "Royal Cuts Studio",
   address: "Toshkent sh., Yunusobod tumani, A. Temur ko'chasi 21",
-  cover:
-    "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=1200&q=80",
+  cover: "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=1200&q=80",
   rating: 4.8,
   reviews_count: 248,
   members: 6,
@@ -491,52 +523,285 @@ const SALON: Salon = {
 };
 
 const TRANSACTIONS_INIT: Transaction[] = [
-  { id: "t1", date: "Bugun, 10:30", client: "Sherzod A.", service: "Klassik", amount: 80000, kind: "booking", status: "completed" },
-  { id: "t2", date: "Bugun, 09:15", client: "Abdulla M.", service: "Klassik", amount: 80000, kind: "booking", status: "completed" },
-  { id: "t3", date: "Bugun, 09:20", client: "Abdulla M.", service: "Tip", amount: 20000, kind: "tip", status: "completed" },
-  { id: "t4", date: "Kecha, 17:45", client: "Anvar T.", service: "Soqol", amount: 50000, kind: "booking", status: "completed" },
-  { id: "t5", date: "Kecha, 12:00", client: "—", service: "Haftalik to'lov", amount: -450000, kind: "payout", status: "completed" },
-  { id: "t6", date: "2 kun oldin", client: "Diyor R.", service: "Royal", amount: 200000, kind: "booking", status: "pending" },
-  { id: "t7", date: "3 kun oldin", client: "Otabek S.", service: "Bola sochi", amount: 40000, kind: "refund", status: "failed" },
+  {
+    id: "t1",
+    date: "Bugun, 10:30",
+    client: "Sherzod A.",
+    service: "Klassik",
+    amount: 80000,
+    kind: "booking",
+    status: "completed",
+  },
+  {
+    id: "t2",
+    date: "Bugun, 09:15",
+    client: "Abdulla M.",
+    service: "Klassik",
+    amount: 80000,
+    kind: "booking",
+    status: "completed",
+  },
+  {
+    id: "t3",
+    date: "Bugun, 09:20",
+    client: "Abdulla M.",
+    service: "Tip",
+    amount: 20000,
+    kind: "tip",
+    status: "completed",
+  },
+  {
+    id: "t4",
+    date: "Kecha, 17:45",
+    client: "Anvar T.",
+    service: "Soqol",
+    amount: 50000,
+    kind: "booking",
+    status: "completed",
+  },
+  {
+    id: "t5",
+    date: "Kecha, 12:00",
+    client: "—",
+    service: "Haftalik to'lov",
+    amount: -450000,
+    kind: "payout",
+    status: "completed",
+  },
+  {
+    id: "t6",
+    date: "2 kun oldin",
+    client: "Diyor R.",
+    service: "Royal",
+    amount: 200000,
+    kind: "booking",
+    status: "pending",
+  },
+  {
+    id: "t7",
+    date: "3 kun oldin",
+    client: "Otabek S.",
+    service: "Bola sochi",
+    amount: 40000,
+    kind: "refund",
+    status: "failed",
+  },
 ];
 
 const INVENTORY_INIT: InventoryItem[] = [
-  { id: "i1", name: "Soch yog'i (Pomade)", category: "product", stock: 8, min_stock: 5, unit: "dona", price: 120000, supplier: "BarberPro" },
-  { id: "i2", name: "Soqol yuvgich shampuni", category: "product", stock: 3, min_stock: 5, unit: "dona", price: 90000, supplier: "BarberPro" },
-  { id: "i3", name: "Bir martalik ustara", category: "consumable", stock: 45, min_stock: 20, unit: "dona", price: 5000, supplier: "MedSupply" },
-  { id: "i4", name: "Sochiq", category: "consumable", stock: 24, min_stock: 10, unit: "dona", price: 15000 },
-  { id: "i5", name: "Mashinka tig'i (#2)", category: "tool", stock: 2, min_stock: 3, unit: "dona", price: 60000, supplier: "Wahl UZ" },
-  { id: "i6", name: "Talc kukuni", category: "consumable", stock: 12, min_stock: 5, unit: "dona", price: 25000 },
+  {
+    id: "i1",
+    name: "Soch yog'i (Pomade)",
+    category: "product",
+    stock: 8,
+    min_stock: 5,
+    unit: "dona",
+    price: 120000,
+    supplier: "BarberPro",
+  },
+  {
+    id: "i2",
+    name: "Soqol yuvgich shampuni",
+    category: "product",
+    stock: 3,
+    min_stock: 5,
+    unit: "dona",
+    price: 90000,
+    supplier: "BarberPro",
+  },
+  {
+    id: "i3",
+    name: "Bir martalik ustara",
+    category: "consumable",
+    stock: 45,
+    min_stock: 20,
+    unit: "dona",
+    price: 5000,
+    supplier: "MedSupply",
+  },
+  {
+    id: "i4",
+    name: "Sochiq",
+    category: "consumable",
+    stock: 24,
+    min_stock: 10,
+    unit: "dona",
+    price: 15000,
+  },
+  {
+    id: "i5",
+    name: "Mashinka tig'i (#2)",
+    category: "tool",
+    stock: 2,
+    min_stock: 3,
+    unit: "dona",
+    price: 60000,
+    supplier: "Wahl UZ",
+  },
+  {
+    id: "i6",
+    name: "Talc kukuni",
+    category: "consumable",
+    stock: 12,
+    min_stock: 5,
+    unit: "dona",
+    price: 25000,
+  },
 ];
 
 const EXPENSES_INIT: Expense[] = [
-  { id: "e1", date: "Bugun", category: "supplies", description: "Pomade va shampun", amount: 360000 },
-  { id: "e2", date: "Kecha", category: "marketing", description: "Instagram reklama", amount: 150000 },
+  {
+    id: "e1",
+    date: "Bugun",
+    category: "supplies",
+    description: "Pomade va shampun",
+    amount: 360000,
+  },
+  {
+    id: "e2",
+    date: "Kecha",
+    category: "marketing",
+    description: "Instagram reklama",
+    amount: 150000,
+  },
   { id: "e3", date: "1 Apr", category: "rent", description: "Aprel oyi ijara", amount: 2500000 },
-  { id: "e4", date: "5 Apr", category: "utility", description: "Elektr va internet", amount: 280000 },
-  { id: "e5", date: "10 Apr", category: "supplies", description: "Bir martalik ustaralar", amount: 100000 },
+  {
+    id: "e4",
+    date: "5 Apr",
+    category: "utility",
+    description: "Elektr va internet",
+    amount: 280000,
+  },
+  {
+    id: "e5",
+    date: "10 Apr",
+    category: "supplies",
+    description: "Bir martalik ustaralar",
+    amount: 100000,
+  },
 ];
 
 const PORTFOLIO_INIT: PortfolioItem[] = [
-  { id: "pf1", image: "https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=600&q=80", title: "Klassik Fade", service: "Klassik soch turmaklash", date: "2 kun oldin", likes: 24 },
-  { id: "pf2", image: "https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=600&q=80", title: "Pompadour", service: "Royal package", date: "1 hafta oldin", likes: 41 },
-  { id: "pf3", image: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=600&q=80", title: "Soqol parvarish", service: "Soqol olish", date: "1 hafta oldin", likes: 18 },
-  { id: "pf4", image: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=600&q=80", title: "Modern Crop", service: "Klassik soch turmaklash", date: "2 hafta", likes: 32 },
-  { id: "pf5", image: "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=600&q=80", title: "Buzz Cut", service: "Klassik soch turmaklash", date: "3 hafta", likes: 15 },
-  { id: "pf6", image: "https://images.unsplash.com/photo-1593702288056-f173a3a4c0a4?w=600&q=80", title: "Side Part", service: "Royal package", date: "1 oy", likes: 28 },
+  {
+    id: "pf1",
+    image: "https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=600&q=80",
+    title: "Klassik Fade",
+    service: "Klassik soch turmaklash",
+    date: "2 kun oldin",
+    likes: 24,
+  },
+  {
+    id: "pf2",
+    image: "https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=600&q=80",
+    title: "Pompadour",
+    service: "Royal package",
+    date: "1 hafta oldin",
+    likes: 41,
+  },
+  {
+    id: "pf3",
+    image: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=600&q=80",
+    title: "Soqol parvarish",
+    service: "Soqol olish",
+    date: "1 hafta oldin",
+    likes: 18,
+  },
+  {
+    id: "pf4",
+    image: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=600&q=80",
+    title: "Modern Crop",
+    service: "Klassik soch turmaklash",
+    date: "2 hafta",
+    likes: 32,
+  },
+  {
+    id: "pf5",
+    image: "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=600&q=80",
+    title: "Buzz Cut",
+    service: "Klassik soch turmaklash",
+    date: "3 hafta",
+    likes: 15,
+  },
+  {
+    id: "pf6",
+    image: "https://images.unsplash.com/photo-1593702288056-f173a3a4c0a4?w=600&q=80",
+    title: "Side Part",
+    service: "Royal package",
+    date: "1 oy",
+    likes: 28,
+  },
 ];
 
 const GOALS_INIT: Goal[] = [
-  { id: "g1", title: "Oylik daromad", target: 15000000, current: 9800000, unit: "so'm", deadline: "30 Apr 2026", done: false },
-  { id: "g2", title: "Yangi mijozlar", target: 20, current: 12, unit: "ta", deadline: "30 Apr 2026", done: false },
-  { id: "g3", title: "5⭐ sharhlar", target: 50, current: 38, unit: "ta", deadline: "30 Iyun 2026", done: false },
-  { id: "g4", title: "Instagram reels (10 ta)", target: 10, current: 10, unit: "ta", deadline: "20 Apr 2026", done: true },
+  {
+    id: "g1",
+    title: "Oylik daromad",
+    target: 15000000,
+    current: 9800000,
+    unit: "so'm",
+    deadline: "30 Apr 2026",
+    done: false,
+  },
+  {
+    id: "g2",
+    title: "Yangi mijozlar",
+    target: 20,
+    current: 12,
+    unit: "ta",
+    deadline: "30 Apr 2026",
+    done: false,
+  },
+  {
+    id: "g3",
+    title: "5⭐ sharhlar",
+    target: 50,
+    current: 38,
+    unit: "ta",
+    deadline: "30 Iyun 2026",
+    done: false,
+  },
+  {
+    id: "g4",
+    title: "Instagram reels (10 ta)",
+    target: 10,
+    current: 10,
+    unit: "ta",
+    deadline: "20 Apr 2026",
+    done: true,
+  },
 ];
 
 const PROMOS_INIT: Promo[] = [
-  { id: "p1", code: "WELCOME20", description: "Yangi mijozlar uchun 20%", discount_pct: 20, uses: 34, max_uses: 100, is_active: true, expires: "31 May 2026" },
-  { id: "p2", code: "FRIDAY10", description: "Juma kunlarida 10%", discount_pct: 10, uses: 12, max_uses: 50, is_active: true, expires: "30 Apr 2026" },
-  { id: "p3", code: "SUMMER25", description: "Yozgi aksiya 25%", discount_pct: 25, uses: 0, max_uses: 200, is_active: false, expires: "1 Jun 2026" },
+  {
+    id: "p1",
+    code: "WELCOME20",
+    description: "Yangi mijozlar uchun 20%",
+    discount_pct: 20,
+    uses: 34,
+    max_uses: 100,
+    is_active: true,
+    expires: "31 May 2026",
+  },
+  {
+    id: "p2",
+    code: "FRIDAY10",
+    description: "Juma kunlarida 10%",
+    discount_pct: 10,
+    uses: 12,
+    max_uses: 50,
+    is_active: true,
+    expires: "30 Apr 2026",
+  },
+  {
+    id: "p3",
+    code: "SUMMER25",
+    description: "Yozgi aksiya 25%",
+    discount_pct: 25,
+    uses: 0,
+    max_uses: 200,
+    is_active: false,
+    expires: "1 Jun 2026",
+  },
 ];
 
 export function BarberProvider({ children }: { children: ReactNode }) {
@@ -569,9 +834,15 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   });
 
   const refreshServices = useCallback(async () => {
-    const rows = await apiJson<Array<{ id: number; name: string; duration_minutes: number; price: string | number; is_active: boolean }>>(
-      "/api/v1/barber/services/",
-    );
+    const rows = await apiJson<
+      Array<{
+        id: number;
+        name: string;
+        duration_minutes: number;
+        price: string | number;
+        is_active: boolean;
+      }>
+    >("/api/v1/barber/services/");
     setServices(
       rows.map((s) => ({
         id: String(s.id),
@@ -584,9 +855,9 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshWorkingHours = useCallback(async () => {
-    const rows = await apiJson<Array<{ weekday: number; open_time: string; close_time: string; is_day_off: boolean }>>(
-      "/api/v1/barber/working-hours/",
-    );
+    const rows = await apiJson<
+      Array<{ weekday: number; open_time: string; close_time: string; is_day_off: boolean }>
+    >("/api/v1/barber/working-hours/");
     setWorkingHours(
       rows.map((w) => ({
         weekday: w.weekday,
@@ -615,21 +886,39 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
   const refreshNotifications = useCallback(async () => {
     const apiNotifs = await apiJson<
-      Array<{ id: number; type: string; title: string; body: string; read_at: string | null; created_at: string }>
+      Array<{
+        id: number;
+        type: string;
+        title: string;
+        body: string;
+        read_at: string | null;
+        created_at: string;
+      }>
     >("/api/v1/notifications/");
     setNotifications(apiNotifs.map(mapApiNotification));
   }, []);
 
   const refreshConversations = useCallback(async () => {
     const apiConvos = await apiJson<
-      Array<{ id: string; last_message_text: string; last_message_at: string | null; other: { id: number; full_name: string } }>
+      Array<{
+        id: string;
+        last_message_text: string;
+        last_message_at: string | null;
+        other: { id: number; full_name: string };
+      }>
     >("/api/v1/chat/conversations/");
     setConversations(apiConvos.map(mapApiConversation));
   }, []);
 
   const refreshClients = useCallback(async () => {
     const apiClients = await apiJson<
-      Array<{ id: number; full_name: string; phone: string; completed_bookings: number; total_spent: string }>
+      Array<{
+        id: number;
+        full_name: string;
+        phone: string;
+        completed_bookings: number;
+        total_spent: string;
+      }>
     >("/api/v1/analytics/clients/independent/");
     setClients(apiClients.map(mapApiClient));
   }, []);
@@ -663,7 +952,13 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
   const refreshExpenses = useCallback(async () => {
     const rows = await apiJson<
-      Array<{ id: number; category: Expense["category"]; description: string; amount: string | number; spent_on: string }>
+      Array<{
+        id: number;
+        category: Expense["category"];
+        description: string;
+        amount: string | number;
+        spent_on: string;
+      }>
     >("/api/v1/barber/expenses/");
     setExpenses(
       rows.map((e) => ({
@@ -678,7 +973,15 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
   const refreshGoals = useCallback(async () => {
     const rows = await apiJson<
-      Array<{ id: number; title: string; target: string | number; current: string | number; unit: string; deadline: string; done: boolean }>
+      Array<{
+        id: number;
+        title: string;
+        target: string | number;
+        current: string | number;
+        unit: string;
+        deadline: string;
+        done: boolean;
+      }>
     >("/api/v1/barber/goals/");
     setGoals(
       rows.map((g) => ({
@@ -695,7 +998,16 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
   const refreshPromos = useCallback(async () => {
     const rows = await apiJson<
-      Array<{ id: number; code: string; description: string; discount_pct: number; uses: number; max_uses: number; is_active: boolean; expires: string | null }>
+      Array<{
+        id: number;
+        code: string;
+        description: string;
+        discount_pct: number;
+        uses: number;
+        max_uses: number;
+        is_active: boolean;
+        expires: string | null;
+      }>
     >("/api/v1/barber/promos/");
     setPromos(
       rows.map((p) => ({
@@ -718,7 +1030,14 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
   const refreshPortfolio = useCallback(async () => {
     const rows = await apiJson<
-      Array<{ id: number; image: string; title: string; service_name: string; created_at: string; likes: number }>
+      Array<{
+        id: number;
+        image: string;
+        title: string;
+        service_name: string;
+        created_at: string;
+        likes: number;
+      }>
     >("/api/v1/barber/work-photos/");
     setPortfolio(
       rows.map((p) => ({
@@ -734,7 +1053,15 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
   const refreshFinanceSummary = useCallback(async () => {
     const r = await apiJson<{
-      transactions: Array<{ id: string; date: string; client: string; service: string; amount: string | number; kind: string; status: string }>;
+      transactions: Array<{
+        id: string;
+        date: string;
+        client: string;
+        service: string;
+        amount: string | number;
+        kind: string;
+        status: string;
+      }>;
     }>("/api/v1/barber/finance/summary/");
     setTransactions(
       r.transactions.map((t) => ({
@@ -750,9 +1077,18 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshReviews = useCallback(async () => {
-    const rows = await apiJson<Array<{ id: number; client: string; avatar: string; rating: number; text: string; date: string; service: string; barber_reply?: string }>>(
-      "/api/v1/barber/reviews/",
-    );
+    const rows = await apiJson<
+      Array<{
+        id: number;
+        client: string;
+        avatar: string;
+        rating: number;
+        text: string;
+        date: string;
+        service: string;
+        barber_reply?: string;
+      }>
+    >("/api/v1/barber/reviews/");
     setReviews(
       rows.map((r) => ({
         id: String(r.id),
@@ -768,9 +1104,17 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
   const refreshSalonView = useCallback(async () => {
     try {
-      const rows = await apiJson<Array<{ id: number; name: string; address: string; cover_image: string | null; rating_avg: number; review_count: number; images?: Array<{ image: string }> }>>(
-        "/api/v1/salons/mine/",
-      );
+      const rows = await apiJson<
+        Array<{
+          id: number;
+          name: string;
+          address: string;
+          cover_image: string | null;
+          rating_avg: number;
+          review_count: number;
+          images?: Array<{ image: string }>;
+        }>
+      >("/api/v1/salons/mine/");
       const one = rows[0];
       if (!one) return;
       setSalon({
@@ -788,11 +1132,14 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const mutateBooking = useCallback(async (id: string, action: "accept" | "reject" | "start" | "complete") => {
-    const res = await apiFetch(`/api/v1/bookings/${id}/${action}/`, { method: "POST" });
-    if (!res.ok) return;
-    await refreshBookings();
-  }, [refreshBookings]);
+  const mutateBooking = useCallback(
+    async (id: string, action: "accept" | "reject" | "start" | "complete") => {
+      const res = await apiFetch(`/api/v1/bookings/${id}/${action}/`, { method: "POST" });
+      if (!res.ok) return;
+      await refreshBookings();
+    },
+    [refreshBookings],
+  );
 
   const markNotifRead = useCallback(async (id: string) => {
     await apiFetch(`/api/v1/notifications/${id}/read/`, { method: "POST" });
@@ -810,9 +1157,12 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ text }),
     });
     if (!res.ok) return;
-    const msg = (await res.json().catch(() => null)) as
-      | { id: number; sender_kind: "USER" | "BARBER"; text: string; created_at: string }
-      | null;
+    const msg = (await res.json().catch(() => null)) as {
+      id: number;
+      sender_kind: "USER" | "BARBER";
+      text: string;
+      created_at: string;
+    } | null;
     if (!msg) return;
     const mapped = mapApiMessage(msg);
     setConversations((prev) =>
@@ -924,7 +1274,13 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   );
 
   const addPromoApi = useCallback(
-    async (payload: { code: string; description: string; discount_pct: number; max_uses: number; expires?: string }) => {
+    async (payload: {
+      code: string;
+      description: string;
+      discount_pct: number;
+      max_uses: number;
+      expires?: string;
+    }) => {
       const res = await apiFetch("/api/v1/barber/promos/", {
         method: "POST",
         body: JSON.stringify(payload),
@@ -961,7 +1317,9 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   );
 
   const addGoalApi = useCallback(
-    async (payload: Omit<Goal, "id" | "current" | "done"> & { current?: number; done?: boolean }) => {
+    async (
+      payload: Omit<Goal, "id" | "current" | "done"> & { current?: number; done?: boolean },
+    ) => {
       const res = await apiFetch("/api/v1/barber/goals/", {
         method: "POST",
         body: JSON.stringify({
@@ -1013,13 +1371,16 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     [refreshSalonView, salon.id],
   );
 
-  const sendSupportTicketApi = useCallback(async (payload: { subject: string; message: string }) => {
-    const res = await apiFetch("/api/v1/barber/support/", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-    return res.ok;
-  }, []);
+  const sendSupportTicketApi = useCallback(
+    async (payload: { subject: string; message: string }) => {
+      const res = await apiFetch("/api/v1/barber/support/", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      return res.ok;
+    },
+    [],
+  );
 
   useEffect(() => {
     let alive = true;
@@ -1129,19 +1490,21 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       completeBooking: (id) => void mutateBooking(id, "complete"),
       cancelBooking: (id) => void mutateBooking(id, "reject"),
       acceptBooking: (id) => void mutateBooking(id, "accept"),
-      markNotificationRead: (id) =>
-        void markNotifRead(id),
+      markNotificationRead: (id) => void markNotifRead(id),
       markAllNotificationsRead: () => void markAllNotifsRead(),
       sendChatMessage: (conversationId, text) => void sendMessage(conversationId, text),
       loadConversationMessages: async (conversationId) => {
-        const data = await apiJson<{ results: Array<{ id: number; sender_kind: "USER" | "BARBER"; text: string; created_at: string }> }>(
-          `/api/v1/chat/conversations/${conversationId}/messages/`,
-        );
+        const data = await apiJson<{
+          results: Array<{
+            id: number;
+            sender_kind: "USER" | "BARBER";
+            text: string;
+            created_at: string;
+          }>;
+        }>(`/api/v1/chat/conversations/${conversationId}/messages/`);
         setConversations((prev) =>
           prev.map((c) =>
-            c.id === conversationId
-              ? { ...c, messages: data.results.map(mapApiMessage) }
-              : c,
+            c.id === conversationId ? { ...c, messages: data.results.map(mapApiMessage) } : c,
           ),
         );
       },
@@ -1296,7 +1659,12 @@ function mapApiConversation(c: {
   };
 }
 
-function mapApiMessage(m: { id: number; sender_kind: "USER" | "BARBER"; text: string; created_at: string }): ChatMessage {
+function mapApiMessage(m: {
+  id: number;
+  sender_kind: "USER" | "BARBER";
+  text: string;
+  created_at: string;
+}): ChatMessage {
   const dt = new Date(m.created_at);
   const time = dt.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
   return {
@@ -1307,7 +1675,13 @@ function mapApiMessage(m: { id: number; sender_kind: "USER" | "BARBER"; text: st
   };
 }
 
-function mapApiClient(c: { id: number; full_name: string; phone: string; completed_bookings: number; total_spent: string }): Client {
+function mapApiClient(c: {
+  id: number;
+  full_name: string;
+  phone: string;
+  completed_bookings: number;
+  total_spent: string;
+}): Client {
   const spent = Number(c.total_spent);
   return {
     id: String(c.id),

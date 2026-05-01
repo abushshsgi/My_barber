@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { REGIONS, type RegionCode } from "@/lib/mock-data";
+import { UZ_REGIONS } from "@/lib/uz-regions";
 import { cn } from "@/lib/utils";
 
 export function FilterToolbar({
@@ -21,8 +21,8 @@ export function FilterToolbar({
 }: {
   search: string;
   onSearchChange: (v: string) => void;
-  region?: RegionCode | "";
-  onRegionChange?: (v: RegionCode | "") => void;
+  region?: string;
+  onRegionChange?: (v: string) => void;
   searchPlaceholder?: string;
   children?: React.ReactNode;
   className?: string;
@@ -40,18 +40,15 @@ export function FilterToolbar({
       </div>
 
       {onRegionChange && (
-        <Select
-          value={region || "all"}
-          onValueChange={(v) => onRegionChange(v === "all" ? "" : (v as RegionCode))}
-        >
+        <Select value={region || "all"} onValueChange={(v) => onRegionChange(v === "all" ? "" : v)}>
           <SelectTrigger className="w-44 bg-card">
             <SelectValue placeholder="Hudud" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Barcha hududlar</SelectItem>
-            {REGIONS.map((r) => (
-              <SelectItem key={r.code} value={r.code}>
-                {r.name}
+            {UZ_REGIONS.map((r) => (
+              <SelectItem key={r.value} value={r.value}>
+                {r.label}
               </SelectItem>
             ))}
           </SelectContent>

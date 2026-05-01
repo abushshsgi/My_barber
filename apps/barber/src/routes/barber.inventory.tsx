@@ -59,14 +59,40 @@ function InventoryPage() {
       />
       {showCreate && (
         <div className="rounded-xl border border-border bg-card p-4 grid grid-cols-1 sm:grid-cols-6 gap-2">
-          <input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Nomi" className="sm:col-span-2 h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm" />
-          <select value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value as "tool" | "product" | "consumable" }))} className="h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm">
+          <input
+            value={form.name}
+            onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+            placeholder="Nomi"
+            className="sm:col-span-2 h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm"
+          />
+          <select
+            value={form.category}
+            onChange={(e) =>
+              setForm((p) => ({
+                ...p,
+                category: e.target.value as "tool" | "product" | "consumable",
+              }))
+            }
+            className="h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm"
+          >
             <option value="tool">Asbob</option>
             <option value="product">Mahsulot</option>
             <option value="consumable">Sarf</option>
           </select>
-          <input type="number" value={form.min_stock} onChange={(e) => setForm((p) => ({ ...p, min_stock: e.target.value }))} placeholder="Min" className="h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm" />
-          <input type="number" value={form.price} onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))} placeholder="Narx" className="h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm" />
+          <input
+            type="number"
+            value={form.min_stock}
+            onChange={(e) => setForm((p) => ({ ...p, min_stock: e.target.value }))}
+            placeholder="Min"
+            className="h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm"
+          />
+          <input
+            type="number"
+            value={form.price}
+            onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))}
+            placeholder="Narx"
+            className="h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm"
+          />
           <button
             onClick={async () => {
               if (!form.name.trim()) {
@@ -84,7 +110,14 @@ function InventoryPage() {
               if (ok) {
                 toast.success("Mahsulot qo'shildi.");
                 setShowCreate(false);
-                setForm({ name: "", category: "product", min_stock: "0", unit: "dona", price: "0", supplier: "" });
+                setForm({
+                  name: "",
+                  category: "product",
+                  min_stock: "0",
+                  unit: "dona",
+                  price: "0",
+                  supplier: "",
+                });
               } else {
                 toast.error("Mahsulot qo'shib bo'lmadi.");
               }
@@ -97,8 +130,16 @@ function InventoryPage() {
       )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard icon={<Boxes className="size-4" />} label="Jami pozitsiya" value={inventory.length} />
-        <StatCard icon={<Package className="size-4" />} label="Umumiy zaxira qiymati" value={formatUZS(totalValue)} />
+        <StatCard
+          icon={<Boxes className="size-4" />}
+          label="Jami pozitsiya"
+          value={inventory.length}
+        />
+        <StatCard
+          icon={<Package className="size-4" />}
+          label="Umumiy zaxira qiymati"
+          value={formatUZS(totalValue)}
+        />
         <StatCard
           icon={<AlertTriangle className="size-4" />}
           label="Kam zaxira"

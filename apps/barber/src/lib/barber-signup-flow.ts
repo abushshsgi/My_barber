@@ -24,8 +24,10 @@ function deriveFlowFields(flow: SignupFlow) {
 export function validateCoordinates(latitude: string, longitude: string): string | null {
   const lat = Number(latitude);
   const lng = Number(longitude);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return "Latitude va longitude raqam bo'lishi kerak.";
-  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return "Koordinatalar noto'g'ri diapazonda.";
+  if (!Number.isFinite(lat) || !Number.isFinite(lng))
+    return "Latitude va longitude raqam bo'lishi kerak.";
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180)
+    return "Koordinatalar noto'g'ri diapazonda.";
   return null;
 }
 
@@ -49,7 +51,8 @@ export async function submitFlowSignup(flow: SignupFlow, payload: FlowPayload): 
     }),
   });
   const registerBody = await parseJsonSafe(registerRes);
-  if (!registerRes.ok) throw new Error(extractApiError(registerBody, "Ro'yxatdan o'tish amalga oshmadi."));
+  if (!registerRes.ok)
+    throw new Error(extractApiError(registerBody, "Ro'yxatdan o'tish amalga oshmadi."));
 
   const loginRes = await apiFetch("/api/v1/barber/auth/token/", {
     method: "POST",
@@ -62,4 +65,3 @@ export async function submitFlowSignup(flow: SignupFlow, payload: FlowPayload): 
   setBarberTokens(tokens.access, tokens.refresh);
   clearSignupDraft();
 }
-

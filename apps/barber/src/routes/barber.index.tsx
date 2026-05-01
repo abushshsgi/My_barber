@@ -43,8 +43,7 @@ function BarberDashboard() {
   const earnings = bookings
     .filter((b) => b.status === "completed")
     .reduce((s, b) => s + b.price, 0);
-  const avgRating =
-    reviews.reduce((s, r) => s + r.rating, 0) / Math.max(1, reviews.length);
+  const avgRating = reviews.reduce((s, r) => s + r.rating, 0) / Math.max(1, reviews.length);
   const lowStock = inventory.filter((i) => i.stock <= i.min_stock);
   const activeGoals = goals.filter((g) => !g.done);
   const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
@@ -155,12 +154,13 @@ function BarberDashboard() {
         </div>
         <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
           {today.length === 0 ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">
-              Bugun bronlar yo'q.
-            </div>
+            <div className="p-8 text-center text-sm text-muted-foreground">Bugun bronlar yo'q.</div>
           ) : (
             today.map((b) => (
-              <div key={b.id} className="p-4 flex items-center gap-3 hover:bg-muted/30 transition-colors">
+              <div
+                key={b.id}
+                className="p-4 flex items-center gap-3 hover:bg-muted/30 transition-colors"
+              >
                 <div className="text-center w-14 shrink-0">
                   <div className="font-heading font-semibold text-foreground">{b.time}</div>
                   <div className="text-[11px] text-muted-foreground">{b.duration_min}m</div>
@@ -213,7 +213,10 @@ function BarberDashboard() {
                     <span className="font-medium tabular-nums">{pct}%</span>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-foreground rounded-full" style={{ width: `${pct}%` }} />
+                    <div
+                      className="h-full bg-foreground rounded-full"
+                      style={{ width: `${pct}%` }}
+                    />
                   </div>
                 </div>
               );

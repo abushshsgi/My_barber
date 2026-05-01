@@ -58,19 +58,19 @@
   --radius: 0.75rem;
 
   /* Bejeviy fon, oq kartalar, qora matn */
-  --background: oklch(0.972 0.005 90);          /* warm cream / bone */
-  --foreground: oklch(0.18 0.005 60);            /* near black ink */
+  --background: oklch(0.972 0.005 90); /* warm cream / bone */
+  --foreground: oklch(0.18 0.005 60); /* near black ink */
 
-  --card: oklch(1 0 0);                          /* pure white cards */
+  --card: oklch(1 0 0); /* pure white cards */
   --card-foreground: oklch(0.18 0.005 60);
 
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.18 0.005 60);
 
-  --primary: oklch(0.18 0.005 60);               /* black */
+  --primary: oklch(0.18 0.005 60); /* black */
   --primary-foreground: oklch(0.98 0.003 90);
 
-  --secondary: oklch(0.93 0.008 80);             /* clay / warm gray */
+  --secondary: oklch(0.93 0.008 80); /* clay / warm gray */
   --secondary-foreground: oklch(0.18 0.005 60);
 
   --muted: oklch(0.94 0.006 85);
@@ -153,7 +153,12 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-heading);
     letter-spacing: -0.01em;
   }

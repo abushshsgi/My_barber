@@ -35,4 +35,3 @@ export function PasswordInput({ id, value, onChange, placeholder, autoComplete }
     </div>
   );
 }
-
