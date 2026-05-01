@@ -1,5 +1,6 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "@tanstack/react-router";
 import {
   Building2,
   MapPin,
@@ -22,6 +23,8 @@ import {
   Sparkles,
   Store,
 } from "lucide-react";
+import { apiFetch } from "@/lib/api";
+import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { cn } from "@/lib/utils";
 
 /* ============================================================
@@ -147,6 +150,7 @@ function formatPhone(digits: string) {
    ============================================================ */
 
 export function CreateSalonPage() {
+  const navigate = useNavigate();
   // --- Salon state ---
   const [salonName, setSalonName] = useState("");
   const [salonDescription, setSalonDescription] = useState("");
@@ -154,7 +158,10 @@ export function CreateSalonPage() {
   const [salonAddress, setSalonAddress] = useState("");
   const [salonCity, setSalonCity] = useState("");
   const [salonLandmark, setSalonLandmark] = useState("");
+  const [salonLatitude, setSalonLatitude] = useState("");
+  const [salonLongitude, setSalonLongitude] = useState("");
   const [cover, setCover] = useState<string | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverDrag, setCoverDrag] = useState(false);
 
   // --- Barber (owner) profile state ---
@@ -162,6 +169,7 @@ export function CreateSalonPage() {
   const [barberLastName, setBarberLastName] = useState("");
   const [barberPhoneDigits, setBarberPhoneDigits] = useState("");
   const [barberAvatar, setBarberAvatar] = useState<string | null>(null);
+  const [barberAvatarFile, setBarberAvatarFile] = useState<File | null>(null);
 
   const [services, setServices] = useState<Service[]>([
     { id: uid(), name: "", price: "", duration: "" },
@@ -180,6 +188,7 @@ export function CreateSalonPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // --- Multi-step wizard ---
   // 0..2 = Salon group (Info, Location, Cover)
@@ -192,7 +201,14 @@ export function CreateSalonPage() {
       // 0: Salon Info
       salonName.trim().length > 1 && salonPhoneDigits.length === 9,
       // 1: Location
-      salonCity.trim().length > 1 && salonAddress.trim().length > 2,
+      salonCity.trim().length > 1 &&
+        salonAddress.trim().length > 2 &&
+        Number.isFinite(Number(salonLatitude)) &&
+        Number.isFinite(Number(salonLongitude)) &&
+        Number(salonLatitude) >= -90 &&
+        Number(salonLatitude) <= 90 &&
+        Number(salonLongitude) >= -180 &&
+        Number(salonLongitude) <= 180,
       // 2: Cover (optional)
       true,
       // 3: Barber profile
@@ -211,6 +227,8 @@ export function CreateSalonPage() {
     salonPhoneDigits,
     salonCity,
     salonAddress,
+    salonLatitude,
+    salonLongitude,
     barberFirstName,
     barberLastName,
     barberPhoneDigits,
@@ -259,20 +277,184 @@ export function CreateSalonPage() {
     if (!files || !files[0]) return;
     if (!files[0].type.startsWith("image/")) return;
     setCover(URL.createObjectURL(files[0]));
+    setCoverFile(files[0]);
   };
 
   const handleAvatarFile = (files: FileList | null) => {
     if (!files || !files[0]) return;
     if (!files[0].type.startsWith("image/")) return;
     setBarberAvatar(URL.createObjectURL(files[0]));
+    setBarberAvatarFile(files[0]);
   };
 
   const handleSubmit = async () => {
     if (!allValid || submitting) return;
+    setSubmitError(null);
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 1400));
-    setSubmitting(false);
-    setSuccess(true);
+    try {
+      const fullName = `${barberFirstName} ${barberLastName}`.trim();
+      const barberPhone = barberPhoneDigits ? `+998${barberPhoneDigits}` : "";
+      const locationText = [salonCity.trim(), salonAddress.trim(), salonLandmark.trim()]
+        .filter(Boolean)
+        .join(", ");
+      const hoursPayload = schedule
+        .filter((d) => d.open)
+        .map((d) => ({
+          weekday: WEEKDAYS.indexOf(d.day),
+          open_time: d.from,
+          close_time: d.to,
+        }))
+        .filter((h) => h.weekday >= 0);
+      const closedWeekdays = schedule
+        .filter((d) => !d.open)
+        .map((d) => WEEKDAYS.indexOf(d.day))
+        .filter((d) => d >= 0);
+
+      // 1) Update barber basic profile so onboarding identity data is persisted.
+      if (barberAvatarFile) {
+        const meBody = new FormData();
+        meBody.append("full_name", fullName);
+        meBody.append("phone", barberPhone);
+        meBody.append("avatar", barberAvatarFile);
+        const meRes = await apiFetch("/api/v1/barber/auth/me/", {
+          method: "PATCH",
+          body: meBody,
+          headers: {},
+        });
+        if (!meRes.ok) {
+          const meErr = await parseJsonSafe(meRes);
+          setSubmitError(extractApiError(meErr, "Barber profilini saqlashda xatolik yuz berdi."));
+          return;
+        }
+      } else {
+        const meRes = await apiFetch("/api/v1/barber/auth/me/", {
+          method: "PATCH",
+          body: JSON.stringify({
+            full_name: fullName,
+            phone: barberPhone,
+          }),
+        });
+        if (!meRes.ok) {
+          const meErr = await parseJsonSafe(meRes);
+          setSubmitError(extractApiError(meErr, "Barber profilini saqlashda xatolik yuz berdi."));
+          return;
+        }
+      }
+
+      // 2) Persist barber location (required by onboarding gate).
+      const profileRes = await apiFetch("/api/v1/barber/profile/", {
+        method: "PATCH",
+        body: JSON.stringify({
+          location_text: locationText,
+          latitude: Number(salonLatitude),
+          longitude: Number(salonLongitude),
+        }),
+      });
+      if (!profileRes.ok) {
+        const profileErr = await parseJsonSafe(profileRes);
+        setSubmitError(extractApiError(profileErr, "Joylashuvni saqlashda xatolik yuz berdi."));
+        return;
+      }
+
+      // 3) Create salon and base entities.
+      const createPayload = {
+        name: salonName.trim(),
+        description: salonDescription.trim(),
+        latitude: Number(salonLatitude),
+        longitude: Number(salonLongitude),
+        address: locationText,
+        phone: salonPhoneDigits ? `+998${salonPhoneDigits}` : "",
+        languages,
+        closed_weekdays: closedWeekdays,
+        hours: hoursPayload,
+        services: services.map((s) => ({
+          name: s.name.trim(),
+          price: s.price,
+          duration_minutes: Number(s.duration),
+        })),
+      };
+
+      const createRes = await apiFetch("/api/v1/salons/", {
+        method: "POST",
+        body: JSON.stringify(createPayload),
+      });
+      const createBody = await parseJsonSafe(createRes);
+      if (!createRes.ok) {
+        setSubmitError(extractApiError(createBody, "Salon yaratishda xatolik yuz berdi."));
+        return;
+      }
+
+      const createdId =
+        createBody && typeof createBody === "object" && "id" in createBody
+          ? Number((createBody as { id?: number | string }).id)
+          : NaN;
+
+      // 4) Create membership working hours so owner onboarding can be completed.
+      if (!Number.isFinite(createdId)) {
+        setSubmitError("Salon yaratildi, lekin ID qaytmadi.");
+        return;
+      }
+      const membershipsRes = await apiFetch("/api/v1/memberships/");
+      const membershipsBody = await parseJsonSafe(membershipsRes);
+      const memberships = Array.isArray(membershipsBody)
+        ? membershipsBody
+        : membershipsBody && typeof membershipsBody === "object" && Array.isArray((membershipsBody as { results?: unknown }).results)
+          ? ((membershipsBody as { results: unknown[] }).results ?? [])
+          : [];
+      if (!membershipsRes.ok || !Array.isArray(memberships)) {
+        setSubmitError("Salon yaratildi, lekin membership ma'lumotini olishda xatolik bo'ldi.");
+        return;
+      }
+      const ownerMembership = (memberships as Array<{ id: number; salon: number; role: string }>).find(
+        (m) => Number(m.salon) === createdId && m.role === "owner",
+      );
+      if (!ownerMembership) {
+        setSubmitError("Salon yaratildi, lekin owner membership topilmadi.");
+        return;
+      }
+      for (const row of hoursPayload) {
+        const scheduleRes = await apiFetch("/api/v1/schedules/", {
+          method: "POST",
+          body: JSON.stringify({
+            membership: ownerMembership.id,
+            weekday: row.weekday,
+            open_time: row.open_time,
+            close_time: row.close_time,
+            is_day_off: false,
+          }),
+        });
+        if (!scheduleRes.ok) {
+          const scheduleErr = await parseJsonSafe(scheduleRes);
+          setSubmitError(
+            extractApiError(scheduleErr, "Salon yaratildi, lekin ish jadvalini saqlashda xatolik bo'ldi."),
+          );
+          return;
+        }
+      }
+
+      // 5) Optional cover upload as salon gallery image.
+      if (coverFile && Number.isFinite(createdId)) {
+        const imageBody = new FormData();
+        imageBody.append("images", coverFile);
+        const imageRes = await apiFetch(`/api/v1/salons/${createdId}/add_images/`, {
+          method: "POST",
+          body: imageBody,
+          headers: {},
+        });
+        if (!imageRes.ok) {
+          const imageErr = await parseJsonSafe(imageRes);
+          setSubmitError(extractApiError(imageErr, "Salon yaratildi, lekin cover rasm yuklanmadi."));
+          return;
+        }
+      }
+
+      setSuccess(true);
+      window.setTimeout(() => {
+        void navigate({ to: "/barber" });
+      }, 1200);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const currentMeta = STEP_META[step];
@@ -375,12 +557,19 @@ export function CreateSalonPage() {
                 setSalonLandmark={setSalonLandmark}
                 salonAddress={salonAddress}
                 setSalonAddress={setSalonAddress}
+                salonLatitude={salonLatitude}
+                setSalonLatitude={setSalonLatitude}
+                salonLongitude={salonLongitude}
+                setSalonLongitude={setSalonLongitude}
               />
             )}
             {step === 2 && (
               <SalonCoverStep
                 cover={cover}
-                setCover={setCover}
+                setCover={(v) => {
+                  setCover(v);
+                  if (!v) setCoverFile(null);
+                }}
                 coverDrag={coverDrag}
                 setCoverDrag={setCoverDrag}
                 handleCoverFile={handleCoverFile}
@@ -421,6 +610,14 @@ export function CreateSalonPage() {
           </motion.div>
         </AnimatePresence>
       </main>
+
+      {submitError && (
+        <div className="mx-auto mt-4 max-w-[920px] px-3.5 sm:px-6">
+          <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {submitError}
+          </div>
+        </div>
+      )}
 
       {/* Sticky bottom action bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-xl">
@@ -554,7 +751,25 @@ function SalonLocationStep(props: {
   setSalonLandmark: (v: string) => void;
   salonAddress: string;
   setSalonAddress: (v: string) => void;
+  salonLatitude: string;
+  setSalonLatitude: (v: string) => void;
+  salonLongitude: string;
+  setSalonLongitude: (v: string) => void;
 }) {
+  const fillCurrentLocation = () => {
+    if (!("geolocation" in navigator)) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        props.setSalonLatitude(pos.coords.latitude.toFixed(6));
+        props.setSalonLongitude(pos.coords.longitude.toFixed(6));
+      },
+      () => {
+        // Keep UI lightweight: validation and submit will show if coords are missing.
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
+
   return (
     <Section
       icon={<MapPin className="h-4 w-4" />}
@@ -658,6 +873,27 @@ function SalonLocationStep(props: {
         value={props.salonAddress}
         onChange={props.setSalonAddress}
       />
+      <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+        <FloatingInput
+          label="Latitude"
+          required
+          value={props.salonLatitude}
+          onChange={props.setSalonLatitude}
+        />
+        <FloatingInput
+          label="Longitude"
+          required
+          value={props.salonLongitude}
+          onChange={props.setSalonLongitude}
+        />
+        <button
+          type="button"
+          onClick={fillCurrentLocation}
+          className="h-14 rounded-xl border border-border bg-background px-3 text-xs font-semibold text-foreground transition-[var(--transition-smooth)] hover:border-foreground hover:bg-muted"
+        >
+          Joylashuvni olish
+        </button>
+      </div>
     </Section>
   );
 }
