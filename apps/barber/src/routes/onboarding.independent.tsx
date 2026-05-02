@@ -1,18 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 
+/** Eski havolalar mustaqil setup sahifasiga yo'naltiriladi. */
 export const Route = createFileRoute("/onboarding/independent")({
-  component: IndependentOnboardingPage,
+  component: IndependentOnboardingRedirect,
 });
 
-function IndependentOnboardingPage() {
-  return (
-    <div className="min-h-screen bg-background text-foreground px-4 py-10">
-      <div className="mx-auto w-full max-w-xl rounded-2xl border border-border bg-card p-6 sm:p-8">
-        <h1 className="text-2xl font-semibold">Independent onboarding keyin qilinadi</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Hozircha faqat owner flow yoqilgan. Bu sahifa vaqtincha kutish holatida.
-        </p>
-      </div>
-    </div>
-  );
+function IndependentOnboardingRedirect() {
+  return <Navigate to="/independent/setup" replace />;
 }
