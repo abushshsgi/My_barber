@@ -177,6 +177,13 @@ type Ctx = {
   viewMode: ViewMode;
   setViewMode: (v: ViewMode) => void;
   hasSalon: boolean;
+  /** Backend: Salon.objects.filter(owner_barber=self).exists() */
+  ownsSalon: boolean;
+  /** Faol OWNER membership yoki ACTIVE ishchi memberships salon id */
+  activeSalonId: number | null;
+  /** Salonga qoʻshilgan ishchi — salon boshqara olmaydi */
+  isJoinedWorker: boolean;
+  barberWorkMode: "salon" | "independent";
   onboardingComplete: boolean;
   requiredNextPath: string | null;
   profile: BarberProfile;
@@ -822,6 +829,9 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [hasSalon, setHasSalon] = useState(false);
+  const [ownsSalon, setOwnsSalon] = useState(false);
+  const [activeSalonId, setActiveSalonId] = useState<number | null>(null);
+  const [barberWorkMode, setBarberWorkMode] = useState<"salon" | "independent">("independent");
   const [onboardingComplete, setOnboardingComplete] = useState(true);
   const [requiredNextPath, setRequiredNextPath] = useState<string | null>(null);
   const [settings, setSettings] = useState<Settings>({
@@ -1117,6 +1127,17 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       >("/api/v1/salons/mine/");
       const one = rows[0];
       if (!one) return;
+
+      let members = 0;
+      try {
+        const staff = await apiJson<Array<{ id: number; full_name?: string; role?: string }>>(
+          `/api/v1/salons/${one.id}/staff/`,
+        );
+        members = Array.isArray(staff) ? staff.length : 0;
+      } catch {
+        /* staff endpoint optional */
+      }
+
       setSalon({
         id: String(one.id),
         name: one.name,
@@ -1124,7 +1145,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         cover: one.cover_image || SALON.cover,
         rating: Number(one.rating_avg || 0),
         reviews_count: Number(one.review_count || 0),
-        members: 0,
+        members,
         gallery: (one.images || []).map((i) => i.image),
       });
     } catch {
@@ -1391,10 +1412,21 @@ export function BarberProvider({ children }: { children: ReactNode }) {
           email: string;
           full_name: string;
           phone: string;
-          work_mode: "independent" | "salon_owner" | "salon_employee";
+          work_mode: "independent" | "salon";
           onboarding_completed: boolean;
+          owns_salon?: boolean;
+          active_salon_id?: number | null;
         }>("/api/v1/barber/auth/me/");
         if (!alive) return;
+        const wm = me.work_mode === "independent" ? "independent" : "salon";
+        setBarberWorkMode(wm);
+        const owns = Boolean(me.owns_salon);
+        setOwnsSalon(owns);
+        const aid =
+          me.active_salon_id != null && Number.isFinite(Number(me.active_salon_id))
+            ? Number(me.active_salon_id)
+            : null;
+        setActiveSalonId(aid);
         setProfile((prev) => ({
           ...prev,
           id: String(me.id),
@@ -1403,8 +1435,8 @@ export function BarberProvider({ children }: { children: ReactNode }) {
           email: me.email,
           phone: me.phone || prev.phone,
         }));
-        setViewMode(me.work_mode === "independent" ? "independent" : "salon");
-        setHasSalon(me.work_mode !== "independent");
+        setViewMode(wm === "independent" ? "independent" : "salon");
+        setHasSalon(wm !== "independent");
         setOnboardingComplete(Boolean(me.onboarding_completed ?? true));
         setRequiredNextPath(null);
         try {
@@ -1467,11 +1499,20 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     refreshWorkingHours,
   ]);
 
+  const isJoinedWorker = useMemo(
+    () => ownsSalon === false && barberWorkMode === "salon" && activeSalonId != null,
+    [ownsSalon, barberWorkMode, activeSalonId],
+  );
+
   const value = useMemo<Ctx>(
     () => ({
       viewMode,
       setViewMode,
       hasSalon,
+      ownsSalon,
+      activeSalonId,
+      isJoinedWorker,
+      barberWorkMode,
       onboardingComplete,
       requiredNextPath,
       profile,
@@ -1530,6 +1571,10 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     [
       viewMode,
       hasSalon,
+      ownsSalon,
+      activeSalonId,
+      isJoinedWorker,
+      barberWorkMode,
       onboardingComplete,
       requiredNextPath,
       profile,

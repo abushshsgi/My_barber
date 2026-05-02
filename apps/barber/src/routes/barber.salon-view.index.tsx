@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { MapPin, Star, Users, Images, ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useBarberContext } from "@/components/barber/BarberContext";
 
 export const Route = createFileRoute("/barber/salon-view/")({
@@ -7,7 +8,7 @@ export const Route = createFileRoute("/barber/salon-view/")({
 });
 
 function SalonViewPage() {
-  const { salon } = useBarberContext();
+  const { salon, isJoinedWorker } = useBarberContext();
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
@@ -47,7 +48,12 @@ function SalonViewPage() {
       </div>
 
       {/* Quick links */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div
+        className={cn(
+          "grid gap-3",
+          isJoinedWorker ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2",
+        )}
+      >
         <Link
           to="/barber/salon-view/gallery"
           className="rounded-xl border border-border bg-card p-5 hover:border-foreground/30 transition-colors flex items-center gap-4"
@@ -56,11 +62,30 @@ function SalonViewPage() {
             <Images className="size-5" />
           </div>
           <div className="flex-1">
-            <div className="font-medium">Galereyani boshqarish</div>
-            <div className="text-sm text-muted-foreground">Rasmlarni qo'shing yoki o'chiring</div>
+            <div className="font-medium">
+              {isJoinedWorker ? "Galereyani koʻrish" : "Galereyani boshqarish"}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {isJoinedWorker ? "Faqat ko‘rish rejimi" : "Rasmlarni qo'shing yoki o'chiring"}
+            </div>
           </div>
           <ArrowRight className="size-4 text-muted-foreground" />
         </Link>
+        {isJoinedWorker && (
+          <Link
+            to="/barber/salon-view/members"
+            className="rounded-xl border border-border bg-card p-5 hover:border-foreground/30 transition-colors flex items-center gap-4"
+          >
+            <div className="size-12 rounded-lg bg-muted flex items-center justify-center">
+              <Users className="size-5" />
+            </div>
+            <div className="flex-1">
+              <div className="font-medium">Jamoa</div>
+              <div className="text-sm text-muted-foreground">Salondagi sartaroshlar roʻyxati</div>
+            </div>
+            <ArrowRight className="size-4 text-muted-foreground" />
+          </Link>
+        )}
         <Link
           to="/barber/salon-view/reviews"
           className="rounded-xl border border-border bg-card p-5 hover:border-foreground/30 transition-colors flex items-center gap-4"

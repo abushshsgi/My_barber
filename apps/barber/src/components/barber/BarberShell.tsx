@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { flushSync } from "react-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard,
@@ -80,15 +82,51 @@ const INDEPENDENT_NAV: NavItem[] = [
   { to: "/barber/help", label: "Yordam", icon: HelpCircle, group: "Sozlama" },
 ];
 
-const SALON_NAV: NavItem[] = [
+/** Salon egasi: boshqaruv + jamoa */
+const OWNER_SALON_NAV: NavItem[] = [
   { to: "/barber/salon-view", label: "Salon", icon: Building2 },
   { to: "/barber/salon-view/gallery", label: "Galereya", icon: Images },
   { to: "/barber/salon-view/reviews", label: "Sharhlar", icon: Star },
+  { to: "/barber/salon-view/team", label: "Jamoa", icon: Users },
 ];
 
-function Sidebar({ nav, onNavigate }: { nav: NavItem[]; onNavigate?: () => void }) {
+/** Salon join qilgan ishchi: boshqarma, faqat ko‘rish + jamoa */
+const WORKER_SALON_NAV: NavItem[] = [
+  { to: "/barber/salon-view", label: "Salon", icon: Building2 },
+  { to: "/barber/salon-view/members", label: "Jamoa", icon: Users },
+  { to: "/barber/salon-view/reviews", label: "Sharhlar", icon: Star },
+  { to: "/barber/salon-view/gallery", label: "Galereya", icon: Images },
+];
+
+/** Salon rejimida URL orqali barber "asosiy" oynalariga kirmaslik (profil/sozlamalar/yordam/bildirishnoma ruxsat). */
+function pathAllowedInSalonWorkspace(pathname: string): boolean {
+  if (pathname === "/barber/salon-view" || pathname.startsWith("/barber/salon-view/")) {
+    return true;
+  }
+  if (
+    pathname === "/barber/profile" ||
+    pathname === "/barber/settings" ||
+    pathname === "/barber/help" ||
+    pathname === "/barber/notifications" ||
+    pathname.startsWith("/barber/notifications/")
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function Sidebar({
+  nav,
+  navAnimationKey,
+  onNavigate,
+}: {
+  nav: NavItem[];
+  navAnimationKey: string;
+  onNavigate?: () => void;
+}) {
   const { pathname } = useLocation();
-  const { viewMode, setViewMode, hasSalon, onboardingComplete, profile } = useBarberContext();
+  const { viewMode, setViewMode, hasSalon, onboardingComplete, ownsSalon, profile } =
+    useBarberContext();
 
   return (
     <div className="flex flex-col h-full bg-sidebar">
@@ -105,66 +143,86 @@ function Sidebar({ nav, onNavigate }: { nav: NavItem[]; onNavigate?: () => void 
         </div>
       </div>
 
-      {/* Mode switch */}
-      {hasSalon && onboardingComplete && (
-        <div className="p-3 border-b border-sidebar-border">
-          <button
+      {/* Mode switch — faqat salon egasi */}
+      {ownsSalon && hasSalon && onboardingComplete && (
+        <motion.div layout className="p-3 border-b border-sidebar-border">
+          <motion.button
+            type="button"
+            layout
+            whileTap={{ scale: 0.98 }}
             onClick={() => setViewMode(viewMode === "independent" ? "salon" : "independent")}
-            className="w-full inline-flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-sidebar-accent text-sidebar-accent-foreground text-sm hover:bg-foreground hover:text-background transition-colors"
+            className="w-full inline-flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-sidebar-accent text-sidebar-accent-foreground text-sm hover:bg-foreground hover:text-background transition-colors duration-300 ease-out"
           >
             <span className="inline-flex items-center gap-2">
               <ArrowLeftRight className="size-3.5" />
               {viewMode === "independent" ? "Salon View" : "Independent View"}
             </span>
             <span className="text-[10px] uppercase tracking-wider opacity-70">{viewMode}</span>
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
       )}
 
       {/* Nav */}
-      <nav className="flex-1 p-3 overflow-y-auto">
-        {(() => {
-          const groups = nav.reduce<Record<string, NavItem[]>>((acc, item) => {
-            const g = item.group ?? "—";
-            (acc[g] ??= []).push(item);
-            return acc;
-          }, {});
-          const order = Object.keys(groups);
-          return order.map((g) => (
-            <div key={g} className="mb-4 last:mb-0">
-              {g !== "—" && (
-                <div className="px-3 mb-1 text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold">
-                  {g}
+      <nav className="flex-1 p-3 overflow-y-auto overflow-x-hidden">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={navAnimationKey}
+            initial={{ opacity: 0, x: viewMode === "salon" ? 14 : -14 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: viewMode === "salon" ? -10 : 10 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="space-y-4"
+          >
+            {(() => {
+              const groups = nav.reduce<Record<string, NavItem[]>>((acc, item) => {
+                const g = item.group ?? "—";
+                (acc[g] ??= []).push(item);
+                return acc;
+              }, {});
+              const order = Object.keys(groups);
+              return order.map((g) => (
+                <div key={`${navAnimationKey}-${g}`} className="last:mb-0">
+                  {g !== "—" && (
+                    <div className="px-3 mb-1 text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold">
+                      {g}
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-0.5">
+                    {groups[g].map((item, idx) => {
+                      const Icon = item.icon;
+                      const active =
+                        item.to === "/barber"
+                          ? pathname === "/barber"
+                          : pathname === item.to || pathname.startsWith(item.to + "/");
+                      return (
+                        <motion.div
+                          key={item.to}
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.02 * idx, duration: 0.18 }}
+                        >
+                          <Link
+                            to={item.to}
+                            onClick={onNavigate}
+                            className={cn(
+                              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-200",
+                              active
+                                ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
+                                : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                            )}
+                          >
+                            <Icon className="size-4 shrink-0" />
+                            <span>{item.label}</span>
+                          </Link>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
                 </div>
-              )}
-              <div className="flex flex-col gap-0.5">
-                {groups[g].map((item) => {
-                  const Icon = item.icon;
-                  const active =
-                    item.to === "/barber"
-                      ? pathname === "/barber"
-                      : pathname === item.to || pathname.startsWith(item.to + "/");
-                  return (
-                    <Link
-                      key={item.to}
-                      to={item.to}
-                      onClick={onNavigate}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
-                        active
-                          ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
-                          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                      )}
-                    >
-                      <Icon className="size-4 shrink-0" />
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ));
-        })()}
+              ));
+            })()}
+          </motion.div>
+        </AnimatePresence>
       </nav>
 
       {/* Profile card */}
@@ -200,12 +258,14 @@ function Topbar({
 }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { notifications, profile, viewMode } = useBarberContext();
+  const { notifications, profile, viewMode, isJoinedWorker, setViewMode } = useBarberContext();
   const unread = notifications.filter((n) => !n.read).length;
 
   const currentItem =
     nav.find((i) => pathname === i.to || (i.to !== "/barber" && pathname.startsWith(i.to + "/"))) ??
     nav[0];
+
+  const onSalonViewArea = pathname.startsWith("/barber/salon-view");
 
   return (
     <header className="h-14 shrink-0 flex items-center justify-between gap-4 px-4 sm:px-6 bg-background/80 backdrop-blur-sm border-b border-border sticky top-0 z-10">
@@ -223,6 +283,41 @@ function Topbar({
       </div>
 
       <div className="flex items-center gap-2">
+        {isJoinedWorker && !onSalonViewArea && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="inline-flex shrink-0"
+            onClick={() => {
+              flushSync(() => {
+                setViewMode("salon");
+              });
+              void navigate({ to: "/barber/salon-view" });
+            }}
+          >
+            <Building2 className="size-3.5" />
+            Salonga oʻtish
+          </Button>
+        )}
+        {isJoinedWorker && onSalonViewArea && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="inline-flex shrink-0"
+            onClick={() => {
+              flushSync(() => {
+                setViewMode("independent");
+              });
+              void navigate({ to: "/barber" });
+            }}
+          >
+            <LayoutDashboard className="size-3.5" />
+            Barberga oʻtish
+          </Button>
+        )}
+
         <button
           onClick={onCommandOpen}
           className="hidden md:inline-flex items-center gap-2 h-9 pl-3 pr-2 rounded-lg border border-border bg-card hover:bg-accent transition-colors text-sm text-muted-foreground"
@@ -294,10 +389,16 @@ function CommandPalette({
   open,
   onOpenChange,
   nav,
+  viewMode,
+  onboardingComplete,
+  isJoinedWorker,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   nav: NavItem[];
+  viewMode: "independent" | "salon";
+  onboardingComplete: boolean;
+  isJoinedWorker: boolean;
 }) {
   const navigate = useNavigate();
   const go = (to: string) => {
@@ -310,18 +411,53 @@ function CommandPalette({
       <CommandList>
         <CommandEmpty>Hech narsa topilmadi.</CommandEmpty>
         <CommandGroup heading="Tezkor amallar">
-          <CommandItem onSelect={() => go("/barber/bookings")}>
-            <CalendarClock className="size-4 mr-2" />
-            Bugungi bronlarni ko'rish
-          </CommandItem>
-          <CommandItem onSelect={() => go("/barber/chat")}>
-            <MessageSquare className="size-4 mr-2" />
-            Yangi xabar
-          </CommandItem>
-          <CommandItem onSelect={() => go("/barber/profile")}>
-            <Sparkles className="size-4 mr-2" />
-            Xizmat qo'shish
-          </CommandItem>
+          {onboardingComplete && viewMode === "salon" ? (
+            <>
+              <CommandItem onSelect={() => go("/barber/salon-view")}>
+                <Building2 className="size-4 mr-2" />
+                Salon sahifasi
+              </CommandItem>
+              <CommandItem onSelect={() => go("/barber/salon-view/reviews")}>
+                <Star className="size-4 mr-2" />
+                Salon sharhlari
+              </CommandItem>
+              <CommandItem onSelect={() => go("/barber/salon-view/gallery")}>
+                <Images className="size-4 mr-2" />
+                Galereya
+              </CommandItem>
+              <CommandItem
+                onSelect={() =>
+                  go(
+                    isJoinedWorker
+                      ? "/barber/salon-view/members"
+                      : "/barber/salon-view/team",
+                  )
+                }
+              >
+                <Users className="size-4 mr-2" />
+                Jamoa
+              </CommandItem>
+              <CommandItem onSelect={() => go("/barber/profile")}>
+                <UserCog className="size-4 mr-2" />
+                Profil
+              </CommandItem>
+            </>
+          ) : (
+            <>
+              <CommandItem onSelect={() => go("/barber/bookings")}>
+                <CalendarClock className="size-4 mr-2" />
+                Bugungi bronlarni ko'rish
+              </CommandItem>
+              <CommandItem onSelect={() => go("/barber/chat")}>
+                <MessageSquare className="size-4 mr-2" />
+                Yangi xabar
+              </CommandItem>
+              <CommandItem onSelect={() => go("/barber/profile")}>
+                <Sparkles className="size-4 mr-2" />
+                Xizmat qo'shish
+              </CommandItem>
+            </>
+          )}
         </CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="Sahifalar">
@@ -341,7 +477,9 @@ function CommandPalette({
 }
 
 export function BarberShell() {
-  const { viewMode, onboardingComplete } = useBarberContext();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const { viewMode, onboardingComplete, isJoinedWorker } = useBarberContext();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
 
@@ -349,10 +487,34 @@ export function BarberShell() {
     if (!onboardingComplete) {
       return INDEPENDENT_NAV.filter((n) =>
         ["/barber", "/barber/notifications", "/barber/profile"].includes(n.to),
-      );
+      ).filter((n) => !n.to.startsWith("/barber/salon-view"));
     }
-    return viewMode === "salon" ? SALON_NAV : INDEPENDENT_NAV;
-  }, [viewMode, onboardingComplete]);
+    if (viewMode === "salon") {
+      const raw = isJoinedWorker ? WORKER_SALON_NAV : OWNER_SALON_NAV;
+      return raw.filter((i) => i.to.startsWith("/barber/salon-view"));
+    }
+    return INDEPENDENT_NAV.filter((n) => !n.to.startsWith("/barber/salon-view"));
+  }, [viewMode, onboardingComplete, isJoinedWorker]);
+
+  const navigationKey = useMemo(
+    () =>
+      `${viewMode}-${onboardingComplete ? "ok" : "onb"}-${nav.map((n) => n.to).join("|")}`,
+    [viewMode, onboardingComplete, nav],
+  );
+
+  useEffect(() => {
+    if (!onboardingComplete) return;
+    if (viewMode === "salon") {
+      if (pathAllowedInSalonWorkspace(pathname)) return;
+      if (!pathname.startsWith("/barber")) return;
+      void navigate({ to: "/barber/salon-view", replace: true });
+      return;
+    }
+    if (viewMode === "independent" && pathname.startsWith("/barber/salon-view")) {
+      if (isJoinedWorker) return;
+      void navigate({ to: "/barber", replace: true });
+    }
+  }, [onboardingComplete, viewMode, pathname, navigate, isJoinedWorker]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -368,12 +530,16 @@ export function BarberShell() {
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
       <aside className="hidden lg:flex w-64 shrink-0 border-r border-sidebar-border bg-sidebar">
-        <Sidebar nav={nav} />
+        <Sidebar nav={nav} navAnimationKey={navigationKey} />
       </aside>
 
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="p-0 w-[280px] bg-sidebar border-sidebar-border">
-          <Sidebar nav={nav} onNavigate={() => setMobileOpen(false)} />
+          <Sidebar
+            nav={nav}
+            navAnimationKey={navigationKey}
+            onNavigate={() => setMobileOpen(false)}
+          />
         </SheetContent>
       </Sheet>
 
@@ -383,12 +549,25 @@ export function BarberShell() {
           onMobileMenu={() => setMobileOpen(true)}
           onCommandOpen={() => setCmdOpen(true)}
         />
-        <div className="flex-1 overflow-y-auto">
+        <motion.div
+          key={viewMode}
+          initial={{ opacity: 0.94 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+          className="flex-1 overflow-y-auto"
+        >
           <Outlet />
-        </div>
+        </motion.div>
       </main>
 
-      <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} nav={nav} />
+      <CommandPalette
+        open={cmdOpen}
+        onOpenChange={setCmdOpen}
+        nav={nav}
+        viewMode={viewMode}
+        onboardingComplete={onboardingComplete}
+        isJoinedWorker={isJoinedWorker}
+      />
     </div>
   );
 }

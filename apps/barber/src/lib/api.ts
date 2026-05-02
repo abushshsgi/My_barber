@@ -42,7 +42,12 @@ function shouldOmitBearerForPath(path: string): boolean {
     p === "/api/v1/barber/auth/token/refresh" ||
     p === "/api/v1/barber/auth/token/refresh/" ||
     p === "/api/v1/auth/barber-register" ||
-    p === "/api/v1/auth/barber-register/"
+    p === "/api/v1/auth/barber-register/" ||
+    p === "/api/v1/auth/barber-register-join-salon" ||
+    p === "/api/v1/auth/barber-register-join-salon/" ||
+    // JWT yuborilsa SimpleJWT / boshqa auth xato qiladi; qidiruv — AllowAny
+    p === "/api/v1/salons/search" ||
+    p === "/api/v1/salons/search/"
   );
 }
 

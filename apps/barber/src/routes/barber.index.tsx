@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import {
   CalendarClock,
   TrendingUp,
@@ -36,7 +36,13 @@ function BarberDashboard() {
     expenses,
     startBooking,
     completeBooking,
+    viewMode,
   } = useBarberContext();
+
+  /** Salon rejimida indeks — mustaqil dashboard emas, salon overview (ishchi «Barberga oʻtish» mustaqil rejimga o‘tkazadi). */
+  if (onboardingComplete && viewMode === "salon") {
+    return <Navigate to="/barber/salon-view" replace />;
+  }
 
   const today = bookings.filter((b) => b.date === "Today");
   const active = bookings.find((b) => b.status === "in_progress");

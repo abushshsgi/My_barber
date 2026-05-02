@@ -12,6 +12,26 @@ from barbers.models import Barber, BarberProfile, BarberService, BarberWorkingHo
 from barbers.permissions import IsBarber
 
 
+def _barber_me_salon_fields(b: Barber):
+    """Panel: salon egasi vs ishchini ajratish (BarberOnboarding bilan mos)."""
+    from salons.models import Salon, SalonMembership
+
+    owns_salon = Salon.objects.filter(owner_barber=b).exists()
+    active_mem = SalonMembership.objects.filter(
+        barber=b,
+        invite_state=SalonMembership.InviteState.ACTIVE,
+    ).select_related("salon").first()
+    owner_mem = (
+        SalonMembership.objects.filter(barber=b, salon__owner_barber=b)
+        .select_related("salon")
+        .first()
+    )
+    active_salon_id = (
+        active_mem.salon_id if active_mem else (owner_mem.salon_id if owner_mem else None)
+    )
+    return owns_salon, active_salon_id
+
+
 class BarberTokenView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [AuthIPThrottle]
@@ -66,6 +86,7 @@ class BarberMeView(APIView):
 
     def get(self, request):
         b = request.user.barber
+        owns_salon, active_salon_id = _barber_me_salon_fields(b)
         return Response(
             {
                 "id": b.id,
@@ -75,6 +96,8 @@ class BarberMeView(APIView):
                 "role": "BARBER",
                 "work_mode": b.work_mode,
                 "onboarding_completed": bool(b.onboarding_completed_at),
+                "owns_salon": owns_salon,
+                "active_salon_id": active_salon_id,
             }
         )
 
@@ -97,6 +120,7 @@ class BarberMeView(APIView):
             b.save()
         except Exception as e:
             return Response({"detail": str(e)}, status=400)
+        owns_salon, active_salon_id = _barber_me_salon_fields(b)
         return Response(
             {
                 "id": b.id,
@@ -106,6 +130,8 @@ class BarberMeView(APIView):
                 "role": "BARBER",
                 "work_mode": b.work_mode,
                 "onboarding_completed": bool(b.onboarding_completed_at),
+                "owns_salon": owns_salon,
+                "active_salon_id": active_salon_id,
             }
         )
 
@@ -196,7 +222,7 @@ class BarberOnboardingStatusView(APIView):
             has_mem_hours = SalonWorkingHours.objects.filter(membership=active_mem).exists()
             payload["has_membership_hours"] = has_mem_hours
             if not has_location or not has_mem_hours:
-                return incomplete("/salon/join", payload)
+                return incomplete("/salon/join/setup", payload)
             return complete(payload)
 
         # Unknown: force auth
