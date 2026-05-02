@@ -382,7 +382,16 @@ export function BarberShell() {
       );
     }
     if (viewMode === "salon") {
-      return isJoinedWorker ? WORKER_SALON_NAV : OWNER_SALON_NAV;
+      if (isJoinedWorker) {
+        /** Salon ishchisi: salon bo‘limi + barcha asosiy barber sahifalari (dashboard, bronlar, …). */
+        const salonGroup = WORKER_SALON_NAV.map((item) => ({
+          ...item,
+          group: "Salon",
+          ...(item.to === "/barber/salon-view/reviews" ? { label: "Salon sharhlari" } : {}),
+        }));
+        return [...salonGroup, ...INDEPENDENT_NAV];
+      }
+      return OWNER_SALON_NAV;
     }
     return INDEPENDENT_NAV;
   }, [viewMode, onboardingComplete, isJoinedWorker]);
