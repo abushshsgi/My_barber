@@ -36,6 +36,7 @@ import { Route as BarberClientsRouteImport } from './routes/barber.clients'
 import { Route as BarberChatRouteImport } from './routes/barber.chat'
 import { Route as BarberCalendarRouteImport } from './routes/barber.calendar'
 import { Route as BarberBookingsRouteImport } from './routes/barber.bookings'
+import { Route as SalonJoinIndexRouteImport } from './routes/salon.join.index'
 import { Route as BarberSalonViewIndexRouteImport } from './routes/barber.salon-view.index'
 import { Route as SalonJoinSetupRouteImport } from './routes/salon.join.setup'
 import { Route as BarberSalonViewTeamRouteImport } from './routes/barber.salon-view.team'
@@ -178,6 +179,11 @@ const BarberBookingsRoute = BarberBookingsRouteImport.update({
   path: '/bookings',
   getParentRoute: () => BarberRoute,
 } as any)
+const SalonJoinIndexRoute = SalonJoinIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SalonJoinRoute,
+} as any)
 const BarberSalonViewIndexRoute = BarberSalonViewIndexRouteImport.update({
   id: '/salon-view/',
   path: '/salon-view/',
@@ -243,6 +249,7 @@ export interface FileRoutesByFullPath {
   '/barber/salon-view/team': typeof BarberSalonViewTeamRoute
   '/salon/join/setup': typeof SalonJoinSetupRoute
   '/barber/salon-view/': typeof BarberSalonViewIndexRoute
+  '/salon/join/': typeof SalonJoinIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -269,7 +276,6 @@ export interface FileRoutesByTo {
   '/onboarding/mybarber': typeof OnboardingMybarberRoute
   '/onboarding/owner': typeof OnboardingOwnerRoute
   '/salon/create': typeof SalonCreateRoute
-  '/salon/join': typeof SalonJoinRouteWithChildren
   '/barber': typeof BarberIndexRoute
   '/barber/salon-view/gallery': typeof BarberSalonViewGalleryRoute
   '/barber/salon-view/members': typeof BarberSalonViewMembersRoute
@@ -277,6 +283,7 @@ export interface FileRoutesByTo {
   '/barber/salon-view/team': typeof BarberSalonViewTeamRoute
   '/salon/join/setup': typeof SalonJoinSetupRoute
   '/barber/salon-view': typeof BarberSalonViewIndexRoute
+  '/salon/join': typeof SalonJoinIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -313,6 +320,7 @@ export interface FileRoutesById {
   '/barber/salon-view/team': typeof BarberSalonViewTeamRoute
   '/salon/join/setup': typeof SalonJoinSetupRoute
   '/barber/salon-view/': typeof BarberSalonViewIndexRoute
+  '/salon/join/': typeof SalonJoinIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -350,6 +358,7 @@ export interface FileRouteTypes {
     | '/barber/salon-view/team'
     | '/salon/join/setup'
     | '/barber/salon-view/'
+    | '/salon/join/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -376,7 +385,6 @@ export interface FileRouteTypes {
     | '/onboarding/mybarber'
     | '/onboarding/owner'
     | '/salon/create'
-    | '/salon/join'
     | '/barber'
     | '/barber/salon-view/gallery'
     | '/barber/salon-view/members'
@@ -384,6 +392,7 @@ export interface FileRouteTypes {
     | '/barber/salon-view/team'
     | '/salon/join/setup'
     | '/barber/salon-view'
+    | '/salon/join'
   id:
     | '__root__'
     | '/'
@@ -419,6 +428,7 @@ export interface FileRouteTypes {
     | '/barber/salon-view/team'
     | '/salon/join/setup'
     | '/barber/salon-view/'
+    | '/salon/join/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -625,6 +635,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BarberBookingsRouteImport
       parentRoute: typeof BarberRoute
     }
+    '/salon/join/': {
+      id: '/salon/join/'
+      path: '/'
+      fullPath: '/salon/join/'
+      preLoaderRoute: typeof SalonJoinIndexRouteImport
+      parentRoute: typeof SalonJoinRoute
+    }
     '/barber/salon-view/': {
       id: '/barber/salon-view/'
       path: '/salon-view'
@@ -725,10 +742,12 @@ const BarberRouteWithChildren =
 
 interface SalonJoinRouteChildren {
   SalonJoinSetupRoute: typeof SalonJoinSetupRoute
+  SalonJoinIndexRoute: typeof SalonJoinIndexRoute
 }
 
 const SalonJoinRouteChildren: SalonJoinRouteChildren = {
   SalonJoinSetupRoute: SalonJoinSetupRoute,
+  SalonJoinIndexRoute: SalonJoinIndexRoute,
 }
 
 const SalonJoinRouteWithChildren = SalonJoinRoute._addFileChildren(
