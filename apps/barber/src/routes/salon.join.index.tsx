@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  CheckCircle2,
   Crosshair,
   Loader2,
   MapPin,
@@ -89,15 +88,8 @@ const STEP_META = [
     short: "Lokatsiya",
     title: "Joriy joylashuvingiz",
     subtitle:
-      "GPS yoqib turganda eng aniq natija. Salonga taxminan 100 m ichida bo'lishingiz kerak.",
+      "GPS yoqib turganda eng aniq natija. Salonga taxminan 100 m ichida bo'lishingiz kerak. Keyin «Salonga qo'shilish» — profil va jadval alohida sahifada.",
     icon: Crosshair,
-  },
-  {
-    group: "Tasdiq",
-    short: "Tasdiq",
-    title: "Tasdiqlash va qo'shilish",
-    subtitle: "Ma'lumotlarni tekshiring va salonga ishchi sifatida qo'shilishni yakunlang.",
-    icon: ShieldCheck,
   },
 ] as const;
 
@@ -304,14 +296,10 @@ function SalonJoinPage() {
 
   const stepValid = useMemo(() => {
     return [
-      // 0: Salon selected
       Boolean(selectedSalon),
-      // 1: Location obtained
       Boolean(currentLocation.location),
-      // 2: Submit step — valid when allowed to submit
-      Boolean(selectedSalon && currentLocation.location && (hasBearer || employeeSignupDraft)),
     ];
-  }, [selectedSalon, currentLocation.location, hasBearer, employeeSignupDraft]);
+  }, [selectedSalon, currentLocation.location]);
 
   const isLast = step === TOTAL_STEPS - 1;
   const canNext = stepValid[step];
@@ -326,6 +314,7 @@ function SalonJoinPage() {
   const goNext = () => {
     if (!canNext || isLast) return;
     setDirection(1);
+    setJoinError(null);
     setStep((s) => Math.min(TOTAL_STEPS - 1, s + 1));
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -335,6 +324,7 @@ function SalonJoinPage() {
   const goBack = () => {
     if (step === 0) return;
     setDirection(-1);
+    setJoinError(null);
     setStep((s) => Math.max(0, s - 1));
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -534,15 +524,7 @@ function SalonJoinPage() {
                 status={currentLocation.status}
                 error={currentLocation.error}
                 onRequest={currentLocation.requestLocation}
-              />
-            )}
-            {step === 2 && (
-              <ReviewStep
-                salon={selectedSalon}
-                location={currentLocation.location}
-                joinStatus={joinStatus}
                 joinError={joinError}
-                isEmployeeSignup={employeeSignupDraft && !hasBearer}
               />
             )}
           </motion.div>
@@ -816,11 +798,13 @@ function LocationStep({
   status,
   error,
   onRequest,
+  joinError,
 }: {
   location: CurrentLocation | null;
   status: LocationStatus;
   error: string | null;
   onRequest: () => void;
+  joinError: string | null;
 }) {
   return (
     <Section
@@ -911,6 +895,7 @@ function LocationStep({
       </div>
 
       {error && <ErrorCard title="Lokatsiya olinmadi" message={error} />}
+      {joinError && <ErrorCard title="Qo‘shilish xatosi" message={joinError} />}
 
       {/* Coord cards */}
       {location && (
@@ -939,97 +924,7 @@ function CoordCell({ label, value }: { label: string; value: string }) {
 }
 
 /* ============================================================
-   Step 2 — Review & Submit
-   ============================================================ */
-
-function ReviewStep({
-  salon,
-  location,
-  joinStatus,
-  joinError,
-  isEmployeeSignup,
-}: {
-  salon: SalonSearchHit | null;
-  location: CurrentLocation | null;
-  joinStatus: JoinStatus;
-  joinError: string | null;
-  isEmployeeSignup: boolean;
-}) {
-  return (
-    <Section
-      icon={<ShieldCheck className="h-4 w-4" />}
-      label="Tasdiq"
-      title="Yakuniy tasdiq"
-      description="Ma'lumotlarni tekshiring va salonga qo‘shilishni yakunlang."
-    >
-      {/* Selected salon preview */}
-      <div className="rounded-2xl border border-border bg-background p-4">
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Tanlangan salon
-        </div>
-        {salon ? (
-          <div className="mt-2 flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-foreground text-background">
-              <Store className="h-4 w-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[15px] font-semibold text-foreground">{salon.name}</p>
-              <p className="mt-0.5 line-clamp-2 text-[12.5px] text-muted-foreground">
-                {salon.address || "Manzil kiritilmagan"}
-              </p>
-              <p className="mt-1 text-[11px] text-muted-foreground tabular-nums">
-                {formatCoordinate(salon.latitude)}, {formatCoordinate(salon.longitude)}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <p className="mt-2 text-sm text-muted-foreground">Hozircha tanlanmagan.</p>
-        )}
-      </div>
-
-      {/* Checklist */}
-      <div className="grid gap-2.5">
-        <ChecklistItem done={Boolean(salon)} label="Salon tanlandi" />
-        <ChecklistItem
-          done={Boolean(location)}
-          label={
-            location
-              ? `Lokatsiya olindi · ${formatCoordinate(location.latitude)}, ${formatCoordinate(location.longitude)}`
-              : "Lokatsiya olindi"
-          }
-        />
-        <ChecklistItem done={joinStatus === "success"} label="Membership faollashtirildi" />
-      </div>
-
-      {/* Reminder card */}
-      <div className="rounded-2xl border border-dashed border-border bg-muted/30 px-3.5 py-3 text-[12px] leading-snug text-muted-foreground">
-        <p className="font-semibold text-foreground">Eslatma</p>
-        <ul className="mt-1.5 space-y-1 list-disc pl-4">
-          <li>Salonga taxminan 100 m ichida turishingiz kerak.</li>
-          <li>Bir barber faqat bitta faol salonga ega bo‘ladi.</li>
-          {isEmployeeSignup && <li>Yakuniy tugma akkauntingizni yaratadi va salonga ulaydi.</li>}
-        </ul>
-      </div>
-
-      {joinError && <ErrorCard title="Qo‘shilish xatosi" message={joinError} />}
-
-      {joinStatus === "success" && (
-        <div className="flex items-start gap-2.5 rounded-2xl border border-foreground/20 bg-muted/40 px-3.5 py-3">
-          <CheckCircle2 className="mt-0.5 h-4 w-4 text-foreground" />
-          <div className="text-[12.5px]">
-            <p className="font-semibold text-foreground">Salonga qo‘shildingiz</p>
-            <p className="mt-0.5 text-muted-foreground">
-              Avtomatik ravishda profil va jadval sahifasiga o‘tasiz...
-            </p>
-          </div>
-        </div>
-      )}
-    </Section>
-  );
-}
-
-/* ============================================================
-   Step indicator (top) — mirrors CreateSalonPage
+   Step indicator (top)
    ============================================================ */
 
 function StepIndicator({
@@ -1043,30 +938,15 @@ function StepIndicator({
 }) {
   const total = STEP_META.length;
   const progress = ((step + 1) / total) * 100;
-  const currentGroup = STEP_META[step].group;
-
-  const salonSteps = STEP_META.map((m, i) => ({ ...m, idx: i })).filter((m) => m.group === "Salon");
-  const tasdiqSteps = STEP_META.map((m, i) => ({ ...m, idx: i })).filter(
-    (m) => m.group === "Tasdiq",
-  );
-  const salonDone = salonSteps.every((s) => stepValid[s.idx]);
-  const tasdiqActive = currentGroup === "Tasdiq";
-  const tasdiqDone = tasdiqSteps.every((s) => stepValid[s.idx]);
+  const salonDone = stepValid.every(Boolean);
 
   return (
     <div className="mx-auto max-w-[920px] px-3.5 pb-3.5 sm:px-6 sm:pb-5">
-      {/* Group chips */}
-      <div className="mb-3 flex items-center justify-center gap-2 sm:mb-4 sm:gap-4">
+      <div className="mb-3 flex items-center justify-center gap-2 sm:mb-4">
         <GroupChip
           icon={Store}
-          label="Salon"
-          state={tasdiqActive || salonDone ? "done" : currentGroup === "Salon" ? "active" : "idle"}
-        />
-        <GroupConnector filled={salonDone || tasdiqActive} />
-        <GroupChip
-          icon={ShieldCheck}
-          label="Tasdiq"
-          state={tasdiqActive ? (tasdiqDone ? "done" : "active") : "idle"}
+          label="Salonga ulanish"
+          state={salonDone ? "done" : "active"}
         />
       </div>
 
@@ -1180,19 +1060,6 @@ function GroupChip({
   );
 }
 
-function GroupConnector({ filled }: { filled: boolean }) {
-  return (
-    <div className="relative h-[2px] w-8 overflow-hidden rounded-full bg-border sm:w-14">
-      <motion.div
-        className="absolute inset-y-0 left-0 rounded-full bg-foreground"
-        initial={false}
-        animate={{ width: filled ? "100%" : "0%" }}
-        transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-      />
-    </div>
-  );
-}
-
 /* ============================================================
    Section — same look as CreateSalonPage
    ============================================================ */
@@ -1242,39 +1109,6 @@ function Section({
 /* ============================================================
    Misc small components
    ============================================================ */
-
-function ChecklistItem({ done, label }: { done: boolean; label: string }) {
-  return (
-    <motion.div
-      layout
-      initial={false}
-      animate={{
-        borderColor: done ? "var(--foreground)" : "var(--border)",
-      }}
-      transition={{ duration: 0.25 }}
-      className={cn("flex items-center gap-3 rounded-xl border bg-background px-3.5 py-2.5")}
-    >
-      <span
-        className={cn(
-          "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs transition-colors",
-          done
-            ? "border-foreground bg-foreground text-background"
-            : "border-border text-muted-foreground",
-        )}
-      >
-        {done ? <Check className="h-3.5 w-3.5" /> : null}
-      </span>
-      <span
-        className={cn(
-          "text-[12.5px] sm:text-sm",
-          done ? "font-medium text-foreground" : "text-muted-foreground",
-        )}
-      >
-        {label}
-      </span>
-    </motion.div>
-  );
-}
 
 function NoteCard({
   icon,
