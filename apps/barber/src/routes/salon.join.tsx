@@ -248,6 +248,16 @@ function SalonJoinPage() {
     };
   }, []);
 
+  /** Muvaffaqiyatdan keyingi profil/setup wizard — avtomatik yo‘nalish (tugmani oʻtkazmasdan). */
+  useEffect(() => {
+    if (joinStatus !== "success") return;
+    if (!getBarberAccessToken()) return;
+    const id = window.setTimeout(() => {
+      void navigate({ to: "/salon/join/setup", replace: true });
+    }, 400);
+    return () => window.clearTimeout(id);
+  }, [joinStatus, navigate]);
+
   const search = useSalonSearch(query, hasBearer || employeeSignupDraft);
   const currentLocation = useCurrentLocation();
 
@@ -670,10 +680,21 @@ function SalonJoinPage() {
             {joinStatus === "success" && (
               <Alert className="border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300">
                 <CheckCircle2 className="h-4 w-4" />
-                <AlertTitle>Salonga qo'shildingiz</AlertTitle>
-                <AlertDescription>
-                  Keyingi qadam: profilingiz, manzil matni va ish jadvalini kiriting — shundan keyin
-                  barber panel to‘liq ochiladi.
+                <AlertTitle>Salonga qoʻshildingiz</AlertTitle>
+                <AlertDescription className="space-y-3">
+                  <p>
+                    Bir zumda Salon yaratishdagi singari{" "}
+                    <strong className="text-foreground">barber profilingiz va ish jadvali</strong>{" "}
+                    sahifasi ochiladi. Agar oʻtmagan boʻlsa quyidagi tugmani bosing.
+                  </p>
+                  <button
+                    type="button"
+                    className="inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-foreground px-4 text-sm font-semibold text-background hover:opacity-90 sm:w-auto"
+                    onClick={() => void navigate({ to: "/salon/join/setup", replace: true })}
+                  >
+                    Profil va jadvalni kiritish
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
                 </AlertDescription>
               </Alert>
             )}
@@ -699,45 +720,42 @@ function SalonJoinPage() {
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            {joinStatus === "success" && (
+          <div className="flex flex-1 min-w-0 items-center justify-end gap-2 sm:flex-initial">
+            {joinStatus === "success" ? (
               <button
                 type="button"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 text-[13px] font-semibold text-foreground transition-[var(--transition-smooth)] hover:bg-muted"
-                onClick={() => navigate({ to: "/salon/join/setup" })}
+                className="inline-flex h-11 min-w-0 flex-1 shrink-0 cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-xl bg-foreground px-4 text-[13px] font-semibold text-background transition-[var(--transition-smooth)] hover:opacity-92 active:scale-[0.98] sm:min-w-[220px]"
+                onClick={() => void navigate({ to: "/salon/join/setup", replace: true })}
               >
-                Profilni yakunlash
-                <ArrowRight className="h-4 w-4" />
+                Profil va jadval · davom etish
+                <ArrowRight className="h-4 w-4 shrink-0" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleJoin}
+                disabled={!canJoin}
+                className={cn(
+                  "inline-flex h-11 min-w-[170px] items-center justify-center gap-2 overflow-hidden rounded-xl px-4 text-[13px] font-semibold transition-[var(--transition-smooth)] sm:text-sm",
+                  canJoin
+                    ? "cursor-pointer bg-foreground text-background hover:scale-[1.02] active:scale-[0.98]"
+                    : "cursor-not-allowed bg-muted text-muted-foreground",
+                )}
+              >
+                {joinStatus === "joining" ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Yuborilmoqda...
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="h-4 w-4" />{" "}
+                    {employeeSignupDraft
+                      ? "Akkaunt yaratish va salonga qo'shilish"
+                      : "Salonga qo'shilish"}
+                  </>
+                )}
               </button>
             )}
-            <button
-              type="button"
-              onClick={handleJoin}
-              disabled={!canJoin}
-              className={cn(
-                "inline-flex h-11 min-w-[170px] items-center justify-center gap-2 overflow-hidden rounded-xl px-4 text-[13px] font-semibold transition-[var(--transition-smooth)] sm:text-sm",
-                canJoin
-                  ? "cursor-pointer bg-foreground text-background hover:scale-[1.02] active:scale-[0.98]"
-                  : "cursor-not-allowed bg-muted text-muted-foreground",
-              )}
-            >
-              {joinStatus === "joining" ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Yuborilmoqda...
-                </>
-              ) : joinStatus === "success" ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4" /> Muvaffaqiyatli
-                </>
-              ) : (
-                <>
-                  <ShieldCheck className="h-4 w-4" />{" "}
-                  {employeeSignupDraft
-                    ? "Akkaunt yaratish va salonga qo'shilish"
-                    : "Salonga qo'shilish"}
-                </>
-              )}
-            </button>
           </div>
         </div>
       </div>
