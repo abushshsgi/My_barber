@@ -1,7 +1,7 @@
 /**
  * Alohida domenlarda sartarosh ilovasiga havola (asosiy sahifa `/`, kirish `/auth`).
  * Production: NEXT_PUBLIC_BARBER_WEB_ORIGIN=https://barber.sizning-domen.uz
- * Lokal (alohida port): http://localhost:3002
+ * Lokal (alohida port): http://localhost:3003
  */
 function readPublicEnv(name: string): string {
   const viteEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;

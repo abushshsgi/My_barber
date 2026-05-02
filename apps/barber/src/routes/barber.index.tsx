@@ -76,10 +76,14 @@ function BarberDashboard() {
           </div>
           <div className="flex-1">
             <h3 className="font-heading font-medium text-foreground">
-              Profilni to'liq ro'yxatdan o'tkazing
+              {requiredNextPath?.startsWith("/salon/join")
+                ? "Salonga qo'shilishni yakunlang"
+                : "Profilni to'liq ro'yxatdan o'tkazing"}
             </h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Mijozlar sizni topishi uchun salon yoki mustaqil profil yarating.
+              {requiredNextPath?.startsWith("/salon/join")
+                ? "Salonni tanlash, joylashuv va ish jadvali — barchasi salon join oqimida."
+                : "Mijozlar sizni topishi uchun salon yoki mustaqil profil yarating."}
             </p>
           </div>
           <Link

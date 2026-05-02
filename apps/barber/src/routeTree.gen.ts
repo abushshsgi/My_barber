@@ -18,7 +18,6 @@ import { Route as SalonCreateRouteImport } from './routes/salon.create'
 import { Route as OnboardingOwnerRouteImport } from './routes/onboarding.owner'
 import { Route as OnboardingMybarberRouteImport } from './routes/onboarding.mybarber'
 import { Route as OnboardingIndependentRouteImport } from './routes/onboarding.independent'
-import { Route as OnboardingEmployeeRouteImport } from './routes/onboarding.employee'
 import { Route as IndependentSetupRouteImport } from './routes/independent.setup'
 import { Route as BarberStatsRouteImport } from './routes/barber.stats'
 import { Route as BarberSettingsRouteImport } from './routes/barber.settings'
@@ -87,11 +86,6 @@ const OnboardingMybarberRoute = OnboardingMybarberRouteImport.update({
 const OnboardingIndependentRoute = OnboardingIndependentRouteImport.update({
   id: '/onboarding/independent',
   path: '/onboarding/independent',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingEmployeeRoute = OnboardingEmployeeRouteImport.update({
-  id: '/onboarding/employee',
-  path: '/onboarding/employee',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndependentSetupRoute = IndependentSetupRouteImport.update({
@@ -236,7 +230,6 @@ export interface FileRoutesByFullPath {
   '/barber/settings': typeof BarberSettingsRoute
   '/barber/stats': typeof BarberStatsRoute
   '/independent/setup': typeof IndependentSetupRoute
-  '/onboarding/employee': typeof OnboardingEmployeeRoute
   '/onboarding/independent': typeof OnboardingIndependentRoute
   '/onboarding/mybarber': typeof OnboardingMybarberRoute
   '/onboarding/owner': typeof OnboardingOwnerRoute
@@ -271,7 +264,6 @@ export interface FileRoutesByTo {
   '/barber/settings': typeof BarberSettingsRoute
   '/barber/stats': typeof BarberStatsRoute
   '/independent/setup': typeof IndependentSetupRoute
-  '/onboarding/employee': typeof OnboardingEmployeeRoute
   '/onboarding/independent': typeof OnboardingIndependentRoute
   '/onboarding/mybarber': typeof OnboardingMybarberRoute
   '/onboarding/owner': typeof OnboardingOwnerRoute
@@ -307,7 +299,6 @@ export interface FileRoutesById {
   '/barber/settings': typeof BarberSettingsRoute
   '/barber/stats': typeof BarberStatsRoute
   '/independent/setup': typeof IndependentSetupRoute
-  '/onboarding/employee': typeof OnboardingEmployeeRoute
   '/onboarding/independent': typeof OnboardingIndependentRoute
   '/onboarding/mybarber': typeof OnboardingMybarberRoute
   '/onboarding/owner': typeof OnboardingOwnerRoute
@@ -345,7 +336,6 @@ export interface FileRouteTypes {
     | '/barber/settings'
     | '/barber/stats'
     | '/independent/setup'
-    | '/onboarding/employee'
     | '/onboarding/independent'
     | '/onboarding/mybarber'
     | '/onboarding/owner'
@@ -380,7 +370,6 @@ export interface FileRouteTypes {
     | '/barber/settings'
     | '/barber/stats'
     | '/independent/setup'
-    | '/onboarding/employee'
     | '/onboarding/independent'
     | '/onboarding/mybarber'
     | '/onboarding/owner'
@@ -415,7 +404,6 @@ export interface FileRouteTypes {
     | '/barber/settings'
     | '/barber/stats'
     | '/independent/setup'
-    | '/onboarding/employee'
     | '/onboarding/independent'
     | '/onboarding/mybarber'
     | '/onboarding/owner'
@@ -436,7 +424,6 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   BarberRoute: typeof BarberRouteWithChildren
   IndependentSetupRoute: typeof IndependentSetupRoute
-  OnboardingEmployeeRoute: typeof OnboardingEmployeeRoute
   OnboardingIndependentRoute: typeof OnboardingIndependentRoute
   OnboardingMybarberRoute: typeof OnboardingMybarberRoute
   OnboardingOwnerRoute: typeof OnboardingOwnerRoute
@@ -507,13 +494,6 @@ declare module '@tanstack/react-router' {
       path: '/onboarding/independent'
       fullPath: '/onboarding/independent'
       preLoaderRoute: typeof OnboardingIndependentRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding/employee': {
-      id: '/onboarding/employee'
-      path: '/onboarding/employee'
-      fullPath: '/onboarding/employee'
-      preLoaderRoute: typeof OnboardingEmployeeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/independent/setup': {
@@ -759,7 +739,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   BarberRoute: BarberRouteWithChildren,
   IndependentSetupRoute: IndependentSetupRoute,
-  OnboardingEmployeeRoute: OnboardingEmployeeRoute,
   OnboardingIndependentRoute: OnboardingIndependentRoute,
   OnboardingMybarberRoute: OnboardingMybarberRoute,
   OnboardingOwnerRoute: OnboardingOwnerRoute,
