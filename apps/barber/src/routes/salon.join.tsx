@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { submitEmployeeRegisterAndJoin, roundCoord6 } from "@/lib/barber-signup-flow";
 import { readSignupDraft } from "@/lib/signup-draft";
-import { apiFetch, apiJson, formatApiError, getBarberAccessToken } from "@/lib/api";
+import { apiFetch, apiJson, formatApiError, clearBarberTokens, getBarberAccessToken } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/salon/join")({
@@ -221,7 +221,10 @@ function SalonJoinPage() {
   const [hasBearer, setHasBearer] = useState(false);
 
   const signupDraft = readSignupDraft();
-  const pendingEmployeeSignup = Boolean(!hasBearer && signupDraft?.flow === "employee");
+  /** Backendda register+join: draft bor bo‘lsa, eski JWT qoldig‘idan qat’i nazar shu tugma ishlaydi. */
+  const employeeSignupDraft = signupDraft?.flow === "employee";
+  /** Kirishidan oldingi employee UI (Qadam 1 faqat lokatsiya va h.k.). */
+  const showEmployeeSignupSteps = Boolean(employeeSignupDraft && !hasBearer);
 
   useEffect(() => {
     function syncBearer() {
@@ -236,7 +239,7 @@ function SalonJoinPage() {
     };
   }, []);
 
-  const search = useSalonSearch(query, hasBearer || pendingEmployeeSignup);
+  const search = useSalonSearch(query, hasBearer || employeeSignupDraft);
   const currentLocation = useCurrentLocation();
 
   const canJoin = Boolean(
@@ -244,7 +247,7 @@ function SalonJoinPage() {
       currentLocation.location &&
       joinStatus !== "joining" &&
       joinStatus !== "success" &&
-      (hasBearer || pendingEmployeeSignup),
+      (hasBearer || employeeSignupDraft),
   );
   const canSearch = query.trim().length >= MIN_QUERY_LENGTH;
   const selectedAddress = selectedSalon?.address || "Manzil kiritilmagan";
@@ -272,19 +275,19 @@ function SalonJoinPage() {
     setJoinError(null);
 
     try {
-      if (hasBearer) {
-        await joinSalon({
-          salon_id: selectedSalon.id,
-          latitude: roundCoord6(currentLocation.location.latitude),
-          longitude: roundCoord6(currentLocation.location.longitude),
-        });
-      } else if (pendingEmployeeSignup && signupDraft?.flow === "employee") {
+      if (employeeSignupDraft) {
         await submitEmployeeRegisterAndJoin({
           salon_id: selectedSalon.id,
           latitude: currentLocation.location.latitude,
           longitude: currentLocation.location.longitude,
         });
         setHasBearer(true);
+      } else if (hasBearer) {
+        await joinSalon({
+          salon_id: selectedSalon.id,
+          latitude: roundCoord6(currentLocation.location.latitude),
+          longitude: roundCoord6(currentLocation.location.longitude),
+        });
       } else {
         toast.error("Avval barber akkaunt bilan kirish kerak.");
         navigate({ to: "/auth" });
@@ -294,7 +297,19 @@ function SalonJoinPage() {
       setJoinStatus("success");
       toast.success(`${selectedSalon.name} saloniga muvaffaqiyatli qo'shildingiz.`);
     } catch (err) {
-      const message = friendlyError(err, "Salonga qo'shilib bo'lmadi.");
+      let message = friendlyError(err, "Salonga qo'shilib bo'lmadi.");
+      const raw = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
+      const authBroken =
+        raw.includes("authentication credentials") ||
+        raw.includes("not provided") ||
+        raw.includes("given token not valid") ||
+        (raw.includes("credentials") && raw.includes("provided"));
+      if (!employeeSignupDraft && authBroken) {
+        clearBarberTokens();
+        setHasBearer(false);
+        message =
+          "Sessiya eskirgan yoki token noto‘g‘ri. Qayta kiring va salonga qoʻshilishni takrorlang.";
+      }
       setJoinStatus("error");
       setJoinError(message);
       toast.error(message);
@@ -330,14 +345,14 @@ function SalonJoinPage() {
             Salonga ishchi sifatida qo'shiling
           </h1>
           <p className="mx-auto mt-2 max-w-[520px] px-1 text-[12.5px] leading-snug text-muted-foreground sm:mt-3 sm:px-0 sm:text-base">
-            {pendingEmployeeSignup
+            {showEmployeeSignupSteps
               ? "GPS bilan joylashuving, salonni qidiring va tanlang. Pastki tugma akkauntingizni yaratadi hamda tanlangan salonga qoʻshadi — salon bilan ~100 m ichida turishingiz kerak."
               : "Barber akkaunt bilan kirgach salonni serverdan qidirib tanlang, joylashuvni yuboring va salonga ulanishni tasdiqlang (taxminan 100 m ichida turishingiz kerak)."}
           </p>
         </div>
 
         <div className="space-y-4 sm:space-y-6">
-          {pendingEmployeeSignup && (
+          {showEmployeeSignupSteps && (
             <Section
               icon={<Crosshair className="h-4 w-4" />}
               label="Qadam 1"
@@ -405,11 +420,11 @@ function SalonJoinPage() {
 
           <Section
             icon={<Search className="h-4 w-4" />}
-            label={pendingEmployeeSignup ? "Qadam 2" : "Qadam 1"}
+            label={showEmployeeSignupSteps ? "Qadam 2" : "Qadam 1"}
             title="Salon qidirish"
             description="Salon nomini kiriting va ro'yxatdan birini tanlang."
           >
-            {!hasBearer && pendingEmployeeSignup && (
+            {!hasBearer && showEmployeeSignupSteps && (
               <Alert className="border-border bg-muted/30">
                 <UserRoundCheck className="h-4 w-4 text-foreground" />
                 <AlertTitle>Employee ro‘yxatdan o‘tish</AlertTitle>
@@ -419,7 +434,7 @@ function SalonJoinPage() {
                 </AlertDescription>
               </Alert>
             )}
-            {!hasBearer && !pendingEmployeeSignup && (
+            {!hasBearer && !employeeSignupDraft && (
               <Alert className="border-border bg-muted/30">
                 <UserRoundCheck className="h-4 w-4 text-foreground" />
                 <AlertTitle>Kirish zarur</AlertTitle>
@@ -450,10 +465,10 @@ function SalonJoinPage() {
                   setJoinError(null);
                 }}
                 placeholder="Masalan: Premium Barber"
-                disabled={!hasBearer && !pendingEmployeeSignup}
+                disabled={!hasBearer && !employeeSignupDraft}
                 className={cn(
                   "h-11 w-full rounded-xl border border-border bg-background pl-9 pr-3 text-sm text-foreground outline-none transition-[var(--transition-smooth)] placeholder:text-muted-foreground focus:border-foreground",
-                  !hasBearer && !pendingEmployeeSignup && "cursor-not-allowed opacity-60",
+                  !hasBearer && !employeeSignupDraft && "cursor-not-allowed opacity-60",
                 )}
                 aria-label="Salon nomi bo'yicha qidirish"
               />
@@ -478,12 +493,12 @@ function SalonJoinPage() {
               <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-8 text-center">
                 <Store className="mx-auto h-8 w-8 text-muted-foreground" />
                 <p className="mt-3 text-sm font-medium">
-                  {!hasBearer && !pendingEmployeeSignup
+                  {!hasBearer && !employeeSignupDraft
                     ? "Salonlar ro‘yxati uchun kirish kerak"
                     : "Salon topilmadi"}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {!hasBearer && !pendingEmployeeSignup
+                  {!hasBearer && !employeeSignupDraft
                     ? "/auth sahifasidan kirgach qidiruv avtomatik serverdan yuklanadi."
                     : "Nomni boshqacha yozib qidirib ko‘ring yoki boshqa salon nomidan urinib ko‘ring."}
                 </p>
@@ -528,7 +543,7 @@ function SalonJoinPage() {
             )}
           </Section>
 
-          {!pendingEmployeeSignup && (
+          {!showEmployeeSignupSteps && (
           <Section
             icon={<Crosshair className="h-4 w-4" />}
             label="Qadam 2"
@@ -706,7 +721,7 @@ function SalonJoinPage() {
               ) : (
                 <>
                   <ShieldCheck className="h-4 w-4" />{" "}
-                  {pendingEmployeeSignup ? "Akkaunt yaratish va salonga qo'shilish" : "Salonga qo'shilish"}
+                  {employeeSignupDraft ? "Akkaunt yaratish va salonga qo'shilish" : "Salonga qo'shilish"}
                 </>
               )}
             </button>
