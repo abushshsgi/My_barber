@@ -7,6 +7,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from barbers.barber_auth import encode_barber_tokens
 from barbers.models import Barber
+from salons.models import SalonMembership
 
 from .models import User
 from .uz_regions import UzRegion
@@ -53,14 +54,28 @@ class BarberRegisterJoinSalonView(APIView):
     def post(self, request):
         serializer = BarberRegisterJoinSalonSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        raw_sid = request.data.get("salon_id")
+        try:
+            salon_pk = int(raw_sid)
+        except (TypeError, ValueError):
+            salon_pk = None
         barber = serializer.save()
         access, refresh = encode_barber_tokens(barber.id)
         Barber.objects.filter(pk=barber.pk).update(last_login=timezone.now())
         rep = BarberSignupSerializer().to_representation(barber)
-        return Response(
-            {"access": access, "refresh": refresh, "barber": rep},
-            status=status.HTTP_201_CREATED,
-        )
+        mem = None
+        if salon_pk is not None:
+            mem = SalonMembership.objects.filter(
+                barber_id=barber.pk,
+                salon_id=int(salon_pk),
+                invite_state=SalonMembership.InviteState.ACTIVE,
+            ).first()
+        body = {"access": access, "refresh": refresh, "barber": rep}
+        if salon_pk is not None:
+            body["salon_id"] = int(salon_pk)
+        if mem is not None:
+            body["membership_id"] = mem.id
+        return Response(body, status=status.HTTP_201_CREATED)
 
 
 class EmailTokenObtainPairView(TokenObtainPairView):
