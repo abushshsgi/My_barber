@@ -68,8 +68,8 @@ function AuthPage() {
   const flowPathMap: Record<SignupFlow, string> = {
     owner: "/onboarding/owner",
     employee: "/salon/join",
-    mybarber: "/onboarding/mybarber",
-    independent: "/onboarding/independent",
+    mybarber: "/salon/create",
+    independent: "/independent/setup",
   };
 
   const onSignupSubmit = async (e: React.FormEvent) => {
