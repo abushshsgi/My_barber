@@ -1,22 +1,25 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  AlertCircle,
   ArrowLeft,
   ArrowRight,
+  Check,
   CheckCircle2,
   Crosshair,
   Loader2,
   MapPin,
   Navigation,
+  Scissors,
   Search,
   ShieldCheck,
   Store,
   UserRoundCheck,
+  X,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { submitEmployeeRegisterAndJoin, roundCoord6 } from "@/lib/barber-signup-flow";
 import { readSignupDraft } from "@/lib/signup-draft";
 import {
@@ -31,6 +34,10 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/salon/join/")({
   component: SalonJoinPage,
 });
+
+/* ============================================================
+   Types
+   ============================================================ */
 
 type SalonSearchHit = {
   id: number;
@@ -64,6 +71,41 @@ type JoinStatus = "idle" | "joining" | "success" | "error";
 
 const MIN_QUERY_LENGTH = 1;
 const SEARCH_DEBOUNCE_MS = 300;
+
+/* ============================================================
+   Step metadata — matches CreateSalonPage shape
+   ============================================================ */
+
+const STEP_META = [
+  {
+    group: "Salon",
+    short: "Qidirish",
+    title: "Salonni toping",
+    subtitle: "Salon nomini yozing va ro'yxatdan birini tanlang — keyin masofa tasdiqlanadi.",
+    icon: Search,
+  },
+  {
+    group: "Salon",
+    short: "Lokatsiya",
+    title: "Joriy joylashuvingiz",
+    subtitle:
+      "GPS yoqib turganda eng aniq natija. Salonga taxminan 100 m ichida bo'lishingiz kerak.",
+    icon: Crosshair,
+  },
+  {
+    group: "Tasdiq",
+    short: "Tasdiq",
+    title: "Tasdiqlash va qo'shilish",
+    subtitle: "Ma'lumotlarni tekshiring va salonga ishchi sifatida qo'shilishni yakunlang.",
+    icon: ShieldCheck,
+  },
+] as const;
+
+const TOTAL_STEPS = STEP_META.length;
+
+/* ============================================================
+   Helpers
+   ============================================================ */
 
 async function parseJsonSafe(res: Response): Promise<unknown> {
   const text = await res.text();
@@ -128,6 +170,10 @@ function friendlyError(
 function formatCoordinate(value: number) {
   return value.toFixed(6);
 }
+
+/* ============================================================
+   Hooks
+   ============================================================ */
 
 function useSalonSearch(query: string, allowSearch: boolean) {
   const [status, setStatus] = useState<SearchStatus>("idle");
@@ -221,6 +267,10 @@ function useCurrentLocation() {
   return { status, location, error, requestLocation };
 }
 
+/* ============================================================
+   Page
+   ============================================================ */
+
 function SalonJoinPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -230,10 +280,7 @@ function SalonJoinPage() {
   const [hasBearer, setHasBearer] = useState(false);
 
   const signupDraft = readSignupDraft();
-  /** Backendda register+join: draft bor bo‘lsa, eski JWT qoldig‘idan qat’i nazar shu tugma ishlaydi. */
   const employeeSignupDraft = signupDraft?.flow === "employee";
-  /** Kirishidan oldingi employee UI (Qadam 1 faqat lokatsiya va h.k.). */
-  const showEmployeeSignupSteps = Boolean(employeeSignupDraft && !hasBearer);
 
   useEffect(() => {
     function syncBearer() {
@@ -248,19 +295,26 @@ function SalonJoinPage() {
     };
   }, []);
 
-  /** Muvaffaqiyatdan keyingi profil/setup wizard — avtomatik yo‘nalish (tugmani oʻtkazmasdan). */
-  useEffect(() => {
-    if (joinStatus !== "success") return;
-    if (!getBarberAccessToken()) return;
-    const id = window.setTimeout(() => {
-      void navigate({ to: "/salon/join/setup", replace: true });
-    }, 400);
-    return () => window.clearTimeout(id);
-  }, [joinStatus, navigate]);
-
   const search = useSalonSearch(query, hasBearer || employeeSignupDraft);
   const currentLocation = useCurrentLocation();
 
+  // Wizard step state
+  const [step, setStep] = useState(0);
+  const [direction, setDirection] = useState(1);
+
+  const stepValid = useMemo(() => {
+    return [
+      // 0: Salon selected
+      Boolean(selectedSalon),
+      // 1: Location obtained
+      Boolean(currentLocation.location),
+      // 2: Submit step — valid when allowed to submit
+      Boolean(selectedSalon && currentLocation.location && (hasBearer || employeeSignupDraft)),
+    ];
+  }, [selectedSalon, currentLocation.location, hasBearer, employeeSignupDraft]);
+
+  const isLast = step === TOTAL_STEPS - 1;
+  const canNext = stepValid[step];
   const canJoin = Boolean(
     selectedSalon &&
     currentLocation.location &&
@@ -268,8 +322,39 @@ function SalonJoinPage() {
     joinStatus !== "success" &&
     (hasBearer || employeeSignupDraft),
   );
-  const canSearch = query.trim().length >= MIN_QUERY_LENGTH;
-  const selectedAddress = selectedSalon?.address || "Manzil kiritilmagan";
+
+  const goNext = () => {
+    if (!canNext || isLast) return;
+    setDirection(1);
+    setStep((s) => Math.min(TOTAL_STEPS - 1, s + 1));
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const goBack = () => {
+    if (step === 0) return;
+    setDirection(-1);
+    setStep((s) => Math.max(0, s - 1));
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  /** Auto-advance to setup wizard after success. */
+  useEffect(() => {
+    if (joinStatus !== "success") return;
+    if (!getBarberAccessToken()) return;
+    const id = window.setTimeout(() => {
+      void navigate({ to: "/salon/join/setup", replace: true });
+    }, 600);
+    return () => window.clearTimeout(id);
+  }, [joinStatus, navigate]);
+
+  const handleSelectSalon = (salon: SalonSearchHit) => {
+    setSelectedSalon(salon);
+    setJoinError(null);
+  };
 
   const statusLabel = useMemo(() => {
     if (joinStatus === "success") return "Ulandi";
@@ -278,11 +363,6 @@ function SalonJoinPage() {
     if (selectedSalon) return "Lokatsiya kerak";
     return "Salon tanlang";
   }, [currentLocation.location, joinStatus, selectedSalon]);
-
-  const handleSelectSalon = (salon: SalonSearchHit) => {
-    setSelectedSalon(salon);
-    setJoinError(null);
-  };
 
   const handleJoin = async () => {
     if (!selectedSalon || !currentLocation.location) {
@@ -335,378 +415,158 @@ function SalonJoinPage() {
     }
   };
 
+  const currentMeta = STEP_META[step];
+
   return (
     <div className="min-h-screen bg-background pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-foreground sm:pb-32">
+      {/* Success overlay */}
+      <AnimatePresence>
+        {joinStatus === "success" && (
+          <SuccessOverlay
+            salonName={selectedSalon?.name || ""}
+            onContinue={() => void navigate({ to: "/salon/join/setup", replace: true })}
+            onClose={() => void navigate({ to: "/barber" })}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[920px] items-center justify-between px-3.5 py-3 sm:px-6 sm:py-4">
           <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-foreground sm:h-8 sm:w-8">
-              <Store className="h-3.5 w-3.5 text-background sm:h-4 sm:w-4" />
+              <Scissors className="h-3.5 w-3.5 text-background sm:h-4 sm:w-4" />
             </div>
-            <span className="text-[13px] font-semibold tracking-tight sm:text-sm">Salon Join</span>
+            <span className="text-[13px] font-semibold tracking-tight sm:text-sm">
+              Barber Studio
+            </span>
           </div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-2.5 py-1 text-[11px] font-semibold text-foreground sm:text-xs">
-            <span className="text-muted-foreground">Holat:</span>
-            <span>{statusLabel}</span>
-          </div>
+          <span className="text-[11px] font-medium tabular-nums text-muted-foreground sm:text-xs">
+            <span className="text-foreground">{step + 1}</span>
+            <span className="opacity-50"> / {TOTAL_STEPS}</span>
+          </span>
         </div>
+        <StepIndicator
+          step={step}
+          stepValid={stepValid}
+          onJump={(i) => {
+            if (i === step) return;
+            if (i < step) {
+              setDirection(-1);
+              setStep(i);
+            } else {
+              const canReach = stepValid.slice(0, i).every(Boolean);
+              if (!canReach) return;
+              setDirection(1);
+              setStep(i);
+            }
+          }}
+        />
       </header>
 
       <main className="mx-auto max-w-[920px] px-3.5 pt-5 sm:px-6 sm:pt-14">
-        <div className="mb-6 overflow-hidden text-center sm:mb-10">
-          <div className="mb-2.5 inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground sm:mb-3 sm:px-2.5 sm:py-1 sm:text-[10px]">
-            <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-foreground text-background sm:h-4 sm:w-4">
-              <UserRoundCheck className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
-            </span>
-            Employee flow · Salon join
-          </div>
-          <h1 className="text-[22px] font-semibold leading-[1.15] tracking-tight text-foreground sm:text-5xl">
-            Salonga ishchi sifatida qo'shiling
-          </h1>
-          <p className="mx-auto mt-2 max-w-[520px] px-1 text-[12.5px] leading-snug text-muted-foreground sm:mt-3 sm:px-0 sm:text-base">
-            {showEmployeeSignupSteps
-              ? "GPS bilan joylashuving, salonni qidiring va tanlang. Pastki tugma akkauntingizni yaratadi hamda tanlangan salonga qoʻshadi — salon bilan ~100 m ichida turishingiz kerak."
-              : "Barber akkaunt bilan kirgach salonni serverdan qidirib tanlang, joylashuvni yuboring va salonga ulanishni tasdiqlang (taxminan 100 m ichida turishingiz kerak)."}
-          </p>
+        {/* Animated hero */}
+        <div className="mb-5 overflow-hidden text-center sm:mb-10">
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={`hero-${step}`}
+              custom={direction}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+            >
+              <div className="mb-2.5 inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground sm:mb-3 sm:px-2.5 sm:py-1 sm:text-[10px]">
+                <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-foreground text-background sm:h-4 sm:w-4">
+                  <currentMeta.icon className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+                </span>
+                {currentMeta.group} · Qadam {step + 1}
+              </div>
+              <h1 className="text-[22px] font-semibold leading-[1.15] tracking-tight text-foreground sm:text-5xl">
+                {currentMeta.title}
+              </h1>
+              <p className="mx-auto mt-2 max-w-[520px] px-1 text-[12.5px] leading-snug text-muted-foreground sm:mt-3 sm:px-0 sm:text-base">
+                {currentMeta.subtitle}
+              </p>
+              <div className="mx-auto mt-3 inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-2.5 py-1 text-[11px] font-semibold text-foreground sm:text-xs">
+                <span className="text-muted-foreground">Holat:</span>
+                <span>{statusLabel}</span>
+              </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
 
-        <div className="space-y-4 sm:space-y-6">
-          {showEmployeeSignupSteps && (
-            <Section
-              icon={<Crosshair className="h-4 w-4" />}
-              label="Qadam 1"
-              title="Joylashuv"
-              description="GPS bilan joriy nuqtani oling. Akkaunt va membership pastki tugma bilan — salon tanlangandan keyin va masofa mos kelganda — bir vaqtning o‘zida yaratiladi."
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={currentLocation.requestLocation}
-                  disabled={currentLocation.status === "locating"}
-                  className={cn(
-                    "inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-medium text-foreground transition-[var(--transition-smooth)]",
-                    currentLocation.status === "locating"
-                      ? "cursor-not-allowed opacity-70"
-                      : "cursor-pointer hover:bg-muted active:scale-[0.98]",
-                  )}
-                >
-                  {currentLocation.status === "locating" ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Navigation className="h-4 w-4" />
-                  )}
-                  {currentLocation.location ? "Lokatsiyani yangilash" : "Mening lokatsiyam"}
-                </button>
-                <span className="text-[11px] text-muted-foreground">
-                  Eng yaxshi aniqlik uchun salonda turgan holda oling.
-                </span>
-              </div>
+        {/* Auth gate — show once at the top if user can't search/join at all */}
+        {!hasBearer && !employeeSignupDraft && (
+          <div className="mb-4 sm:mb-6">
+            <AuthGateBanner onAuth={() => void navigate({ to: "/auth" })} />
+          </div>
+        )}
 
-              {currentLocation.error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Lokatsiya olinmadi</AlertTitle>
-                  <AlertDescription>{currentLocation.error}</AlertDescription>
-                </Alert>
-              )}
-
-              {currentLocation.location && (
-                <div className="grid gap-3 rounded-2xl border border-border bg-background p-4 text-sm sm:grid-cols-3">
-                  <div>
-                    <p className="text-muted-foreground">Latitude</p>
-                    <p className="mt-1 font-semibold text-foreground">
-                      {formatCoordinate(currentLocation.location.latitude)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Longitude</p>
-                    <p className="mt-1 font-semibold text-foreground">
-                      {formatCoordinate(currentLocation.location.longitude)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Aniqlik</p>
-                    <p className="mt-1 font-semibold text-foreground">
-                      {currentLocation.location.accuracy
-                        ? `${Math.round(currentLocation.location.accuracy)} m`
-                        : "Noma'lum"}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </Section>
-          )}
-
-          <Section
-            icon={<Search className="h-4 w-4" />}
-            label={showEmployeeSignupSteps ? "Qadam 2" : "Qadam 1"}
-            title="Salon qidirish"
-            description="Salon nomini kiriting va ro'yxatdan birini tanlang."
+        <AnimatePresence mode="wait" custom={direction}>
+          <motion.div
+            key={step}
+            custom={direction}
+            initial={{ opacity: 0, x: direction > 0 ? 60 : -60 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: direction > 0 ? -60 : 60 }}
+            transition={{ duration: 0.36, ease: [0.4, 0, 0.2, 1] }}
+            className="space-y-4 sm:space-y-6"
           >
-            {!hasBearer && showEmployeeSignupSteps && (
-              <Alert className="border-border bg-muted/30">
-                <UserRoundCheck className="h-4 w-4 text-foreground" />
-                <AlertTitle>Employee ro‘yxatdan o‘tish</AlertTitle>
-                <AlertDescription>
-                  Salonni qidiring va tanlang. Pastki tugma akkauntingizni yaratadi va tanlangan
-                  salonga qoʻshadi (GPS salon bilan taxminan 100 m ichida bo‘lishi kerak).
-                </AlertDescription>
-              </Alert>
-            )}
-            {!hasBearer && !employeeSignupDraft && (
-              <Alert className="border-border bg-muted/30">
-                <UserRoundCheck className="h-4 w-4 text-foreground" />
-                <AlertTitle>Kirish zarur</AlertTitle>
-                <AlertDescription className="space-y-2">
-                  <p>
-                    Salon qidiruvi va ulanish uchun barber akkaunt bilan kirilgan bo&apos;lishingiz
-                    kerak — so&apos;rovlar{" "}
-                    <code className="rounded bg-muted px-1 py-0.5 text-xs">Bearer</code> JWT bilan
-                    ketadi.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => navigate({ to: "/auth" })}
-                    className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-[13px] font-semibold text-foreground transition-[var(--transition-smooth)] hover:bg-muted active:scale-[0.98]"
-                  >
-                    Kirish / Ro‘yxatdan o‘tish
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                </AlertDescription>
-              </Alert>
-            )}
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value);
+            {step === 0 && (
+              <SalonSearchStep
+                query={query}
+                setQuery={(q) => {
+                  setQuery(q);
                   setSelectedSalon(null);
                   setJoinError(null);
                 }}
-                placeholder="Masalan: Premium Barber"
-                disabled={!hasBearer && !employeeSignupDraft}
-                className={cn(
-                  "h-11 w-full rounded-xl border border-border bg-background pl-9 pr-3 text-sm text-foreground outline-none transition-[var(--transition-smooth)] placeholder:text-muted-foreground focus:border-foreground",
-                  !hasBearer && !employeeSignupDraft && "cursor-not-allowed opacity-60",
-                )}
-                aria-label="Salon nomi bo'yicha qidirish"
+                hasAccess={hasBearer || employeeSignupDraft}
+                isEmployeeSignup={employeeSignupDraft && !hasBearer}
+                search={search}
+                selectedSalon={selectedSalon}
+                onSelectSalon={handleSelectSalon}
               />
-            </div>
-
-            {search.status === "searching" && (
-              <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Salonlar qidirilmoqda...
-              </div>
             )}
-
-            {search.status === "error" && search.error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Qidiruv xatosi</AlertTitle>
-                <AlertDescription>{search.error}</AlertDescription>
-              </Alert>
+            {step === 1 && (
+              <LocationStep
+                location={currentLocation.location}
+                status={currentLocation.status}
+                error={currentLocation.error}
+                onRequest={currentLocation.requestLocation}
+              />
             )}
-
-            {search.status === "empty" && canSearch && (
-              <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-8 text-center">
-                <Store className="mx-auto h-8 w-8 text-muted-foreground" />
-                <p className="mt-3 text-sm font-medium">
-                  {!hasBearer && !employeeSignupDraft
-                    ? "Salonlar ro‘yxati uchun kirish kerak"
-                    : "Salon topilmadi"}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {!hasBearer && !employeeSignupDraft
-                    ? "/auth sahifasidan kirgach qidiruv avtomatik serverdan yuklanadi."
-                    : "Nomni boshqacha yozib qidirib ko‘ring yoki boshqa salon nomidan urinib ko‘ring."}
-                </p>
-              </div>
+            {step === 2 && (
+              <ReviewStep
+                salon={selectedSalon}
+                location={currentLocation.location}
+                joinStatus={joinStatus}
+                joinError={joinError}
+                isEmployeeSignup={employeeSignupDraft && !hasBearer}
+              />
             )}
-
-            {search.results.length > 0 && (
-              <div className="grid gap-3">
-                {search.results.map((salon) => {
-                  const selected = selectedSalon?.id === salon.id;
-                  return (
-                    <button
-                      key={salon.id}
-                      type="button"
-                      onClick={() => handleSelectSalon(salon)}
-                      className={cn(
-                        "cursor-pointer rounded-2xl border border-border bg-card p-4 text-left shadow-[var(--shadow-soft)] transition-[var(--transition-smooth)] hover:border-foreground/40",
-                        selected && "border-foreground bg-muted/40",
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <Store className="h-4 w-4 text-foreground" />
-                            <p className="font-semibold text-foreground">{salon.name}</p>
-                          </div>
-                          <p className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
-                            <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-                            <span>{salon.address || "Manzil kiritilmagan"}</span>
-                          </p>
-                        </div>
-                        {selected && (
-                          <span className="inline-flex items-center rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-semibold text-foreground">
-                            Tanlandi
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </Section>
-
-          {!showEmployeeSignupSteps && (
-            <Section
-              icon={<Crosshair className="h-4 w-4" />}
-              label="Qadam 2"
-              title="Lokatsiyani tasdiqlash"
-              description="Join uchun joriy lokatsiyani yuboring (100m qoidasi)."
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={currentLocation.requestLocation}
-                  disabled={currentLocation.status === "locating"}
-                  className={cn(
-                    "inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-medium text-foreground transition-[var(--transition-smooth)]",
-                    currentLocation.status === "locating"
-                      ? "cursor-not-allowed opacity-70"
-                      : "cursor-pointer hover:bg-muted active:scale-[0.98]",
-                  )}
-                >
-                  {currentLocation.status === "locating" ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Navigation className="h-4 w-4" />
-                  )}
-                  {currentLocation.location ? "Lokatsiyani yangilash" : "Mening lokatsiyam"}
-                </button>
-
-                <span className="text-[11px] text-muted-foreground">
-                  Eng yaxshi aniqlik uchun salonda turgan holatda bosing.
-                </span>
-              </div>
-
-              {currentLocation.error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Lokatsiya olinmadi</AlertTitle>
-                  <AlertDescription>{currentLocation.error}</AlertDescription>
-                </Alert>
-              )}
-
-              {currentLocation.location && (
-                <div className="grid gap-3 rounded-2xl border border-border bg-background p-4 text-sm sm:grid-cols-3">
-                  <div>
-                    <p className="text-muted-foreground">Latitude</p>
-                    <p className="mt-1 font-semibold text-foreground">
-                      {formatCoordinate(currentLocation.location.latitude)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Longitude</p>
-                    <p className="mt-1 font-semibold text-foreground">
-                      {formatCoordinate(currentLocation.location.longitude)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Aniqlik</p>
-                    <p className="mt-1 font-semibold text-foreground">
-                      {currentLocation.location.accuracy
-                        ? `${Math.round(currentLocation.location.accuracy)} m`
-                        : "Noma'lum"}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </Section>
-          )}
-
-          <Section
-            icon={<ShieldCheck className="h-4 w-4" />}
-            label="Qadam 3"
-            title="Join ma'lumotlari"
-            description="Tanlangan salon va holatni tekshirib, arizani yuboring."
-          >
-            <div className="rounded-2xl border border-border bg-background p-4">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Tanlangan salon
-              </div>
-              {selectedSalon ? (
-                <div className="mt-2">
-                  <p className="font-semibold text-foreground">{selectedSalon.name}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{selectedAddress}</p>
-                </div>
-              ) : (
-                <p className="mt-2 text-sm text-muted-foreground">Hozircha tanlanmagan.</p>
-              )}
-              <div className="mt-2 flex items-center gap-2">
-                <span
-                  className={cn(
-                    "h-2.5 w-2.5 rounded-full",
-                    joinStatus === "success"
-                      ? "bg-green-500"
-                      : canJoin
-                        ? "bg-blue-500"
-                        : "bg-muted-foreground",
-                  )}
-                />
-                <span className="text-sm font-medium">{statusLabel}</span>
-              </div>
-            </div>
-
-            <div className="grid gap-3">
-              <ChecklistItem done={Boolean(selectedSalon)} label="Salon tanlandi" />
-              <ChecklistItem done={Boolean(currentLocation.location)} label="Lokatsiya olindi" />
-              <ChecklistItem done={joinStatus === "success"} label="Membership faollashtirildi" />
-            </div>
-
-            {joinError && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Qo'shilish xatosi</AlertTitle>
-                <AlertDescription>{joinError}</AlertDescription>
-              </Alert>
-            )}
-
-            {joinStatus === "success" && (
-              <Alert className="border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300">
-                <CheckCircle2 className="h-4 w-4" />
-                <AlertTitle>Salonga qoʻshildingiz</AlertTitle>
-                <AlertDescription className="space-y-3">
-                  <p>
-                    Bir zumda Salon yaratishdagi singari{" "}
-                    <strong className="text-foreground">barber profilingiz va ish jadvali</strong>{" "}
-                    sahifasi ochiladi. Agar oʻtmagan boʻlsa quyidagi tugmani bosing.
-                  </p>
-                  <button
-                    type="button"
-                    className="inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-foreground px-4 text-sm font-semibold text-background hover:opacity-90 sm:w-auto"
-                    onClick={() => void navigate({ to: "/salon/join/setup", replace: true })}
-                  >
-                    Profil va jadvalni kiritish
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                </AlertDescription>
-              </Alert>
-            )}
-          </Section>
-        </div>
+          </motion.div>
+        </AnimatePresence>
       </main>
 
+      {/* Sticky bottom action bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[920px] items-center justify-between gap-2 px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] sm:gap-3 sm:px-6 sm:py-4">
           <button
-            onClick={() => navigate({ to: hasBearer ? "/barber" : "/auth" })}
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-border bg-background text-sm font-medium text-foreground transition-[var(--transition-smooth)] hover:bg-muted active:scale-[0.98] sm:h-11 sm:w-auto sm:px-4"
+            onClick={() => {
+              if (step === 0) {
+                void navigate({ to: hasBearer ? "/barber" : "/auth" });
+                return;
+              }
+              goBack();
+            }}
+            disabled={joinStatus === "joining"}
+            className={cn(
+              "inline-flex h-11 w-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-border bg-background text-sm font-medium text-foreground transition-[var(--transition-smooth)] sm:h-11 sm:w-auto sm:px-4",
+              joinStatus === "joining"
+                ? "cursor-not-allowed opacity-40"
+                : "hover:bg-muted active:scale-[0.98]",
+            )}
             aria-label="Orqaga"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -714,76 +574,628 @@ function SalonJoinPage() {
           </button>
 
           <div className="hidden flex-1 items-center justify-center gap-2 text-xs sm:flex">
-            <span className="text-muted-foreground">Eslatma:</span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2.5 py-1 font-semibold text-foreground">
-              Bitta barber uchun bitta faol salon
-            </span>
+            <span className="text-muted-foreground">Hozirgi qadam:</span>
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={`crumb-${step}`}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.2 }}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2.5 py-1 font-semibold text-foreground"
+              >
+                <currentMeta.icon className="h-3 w-3" />
+                {currentMeta.short}
+              </motion.span>
+            </AnimatePresence>
           </div>
 
-          <div className="flex flex-1 min-w-0 items-center justify-end gap-2 sm:flex-initial">
-            {joinStatus === "success" ? (
-              <button
-                type="button"
-                className="inline-flex h-11 min-w-0 flex-1 shrink-0 cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-xl bg-foreground px-4 text-[13px] font-semibold text-background transition-[var(--transition-smooth)] hover:opacity-92 active:scale-[0.98] sm:min-w-[220px]"
-                onClick={() => void navigate({ to: "/salon/join/setup", replace: true })}
-              >
-                Profil va jadval · davom etish
-                <ArrowRight className="h-4 w-4 shrink-0" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleJoin}
-                disabled={!canJoin}
-                className={cn(
-                  "inline-flex h-11 min-w-[170px] items-center justify-center gap-2 overflow-hidden rounded-xl px-4 text-[13px] font-semibold transition-[var(--transition-smooth)] sm:text-sm",
-                  canJoin
-                    ? "cursor-pointer bg-foreground text-background hover:scale-[1.02] active:scale-[0.98]"
-                    : "cursor-not-allowed bg-muted text-muted-foreground",
-                )}
-              >
-                {joinStatus === "joining" ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" /> Yuborilmoqda...
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck className="h-4 w-4" />{" "}
-                    {employeeSignupDraft
-                      ? "Akkaunt yaratish va salonga qo'shilish"
-                      : "Salonga qo'shilish"}
-                  </>
-                )}
-              </button>
-            )}
-          </div>
+          {!isLast ? (
+            <button
+              onClick={goNext}
+              disabled={!canNext}
+              className={cn(
+                "group inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl px-4 text-[13px] font-semibold transition-[var(--transition-smooth)] sm:h-11 sm:flex-none sm:min-w-[170px] sm:text-sm",
+                canNext
+                  ? "bg-foreground text-background hover:scale-[1.02] active:scale-[0.98]"
+                  : "cursor-not-allowed bg-muted text-muted-foreground",
+              )}
+            >
+              Keyingisi
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </button>
+          ) : joinStatus === "success" ? (
+            <button
+              type="button"
+              className="inline-flex h-11 min-w-0 flex-1 shrink-0 cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-xl bg-foreground px-4 text-[13px] font-semibold text-background transition-[var(--transition-smooth)] hover:opacity-90 active:scale-[0.98] sm:min-w-[220px] sm:flex-none"
+              onClick={() => void navigate({ to: "/salon/join/setup", replace: true })}
+            >
+              Profil va jadval · davom etish
+              <ArrowRight className="h-4 w-4 shrink-0" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleJoin}
+              disabled={!canJoin}
+              className={cn(
+                "inline-flex h-11 flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl px-4 text-[13px] font-semibold transition-[var(--transition-smooth)] sm:h-11 sm:flex-none sm:min-w-[200px] sm:text-sm",
+                canJoin
+                  ? "bg-foreground text-background hover:scale-[1.02] active:scale-[0.98]"
+                  : "cursor-not-allowed bg-muted text-muted-foreground",
+              )}
+            >
+              {joinStatus === "joining" ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Yuborilmoqda…
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="h-4 w-4" />
+                  {employeeSignupDraft && !hasBearer
+                    ? "Akkaunt yaratish va qo‘shilish"
+                    : "Salonga qo‘shilish"}
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function ChecklistItem({ done, label }: { done: boolean; label: string }) {
+/* ============================================================
+   Step 0 — Salon search & select
+   ============================================================ */
+
+function SalonSearchStep({
+  query,
+  setQuery,
+  hasAccess,
+  isEmployeeSignup,
+  search,
+  selectedSalon,
+  onSelectSalon,
+}: {
+  query: string;
+  setQuery: (v: string) => void;
+  hasAccess: boolean;
+  isEmployeeSignup: boolean;
+  search: ReturnType<typeof useSalonSearch>;
+  selectedSalon: SalonSearchHit | null;
+  onSelectSalon: (s: SalonSearchHit) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const canSearch = query.trim().length >= MIN_QUERY_LENGTH;
+
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-3">
-      <span
-        className={cn(
-          "flex h-6 w-6 items-center justify-center rounded-full border text-xs",
-          done
-            ? "border-green-500 bg-green-500 text-white"
-            : "border-muted-foreground/30 text-muted-foreground",
+    <Section
+      icon={<Search className="h-4 w-4" />}
+      label="Salon"
+      title="Salonni qidiring"
+      description="Salon nomini yozing — jonli qidiruv natijalardan birini tanlang."
+    >
+      {isEmployeeSignup && (
+        <NoteCard
+          icon={<UserRoundCheck className="h-4 w-4" />}
+          title="Employee ro‘yxatdan o‘tish"
+          description="Salonni qidiring va tanlang. Pastki tugma akkauntingizni yaratadi va tanlangan salonga qo‘shadi (GPS salon bilan ~100 m ichida bo‘lishi kerak)."
+        />
+      )}
+
+      {/* Search input */}
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Masalan: Premium Barber"
+          disabled={!hasAccess}
+          className={cn(
+            "h-12 w-full rounded-xl border border-border bg-background pl-10 pr-10 text-sm text-foreground outline-none transition-[var(--transition-smooth)] placeholder:text-muted-foreground/70 focus:border-foreground sm:h-14 sm:text-[15px]",
+            !hasAccess && "cursor-not-allowed opacity-60",
+          )}
+          aria-label="Salon nomi bo'yicha qidirish"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => {
+              setQuery("");
+              inputRef.current?.focus();
+            }}
+            className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            aria-label="Tozalash"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
         )}
-      >
-        {done ? <CheckCircle2 className="h-4 w-4" /> : null}
-      </span>
-      <span
-        className={cn("text-sm", done ? "font-medium text-foreground" : "text-muted-foreground")}
-      >
+      </div>
+
+      {/* Empty hint when no query */}
+      {!canSearch && hasAccess && (
+        <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-7 text-center">
+          <Store className="mx-auto h-7 w-7 text-muted-foreground" />
+          <p className="mt-2 text-sm font-medium text-foreground">Salon nomini yozing</p>
+          <p className="mt-1 text-[12px] text-muted-foreground">
+            Kamida 1 ta belgi yozsangiz, tizim avtomatik ravishda qidirib beradi.
+          </p>
+        </div>
+      )}
+
+      {/* Searching */}
+      {search.status === "searching" && (
+        <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Salonlar qidirilmoqda...
+        </div>
+      )}
+
+      {/* Search error */}
+      {search.status === "error" && search.error && (
+        <ErrorCard title="Qidiruv xatosi" message={search.error} />
+      )}
+
+      {/* Empty after search */}
+      {search.status === "empty" && canSearch && (
+        <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-8 text-center">
+          <Store className="mx-auto h-8 w-8 text-muted-foreground" />
+          <p className="mt-3 text-sm font-medium">
+            {!hasAccess ? "Salonlar ro‘yxati uchun kirish kerak" : "Salon topilmadi"}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {!hasAccess
+              ? "/auth sahifasidan kirgach qidiruv avtomatik serverdan yuklanadi."
+              : "Nomni boshqacha yozib qidirib ko‘ring yoki boshqa salon nomidan urinib ko‘ring."}
+          </p>
+        </div>
+      )}
+
+      {/* Results */}
+      {search.results.length > 0 && (
+        <div className="grid gap-2.5">
+          <AnimatePresence initial={false}>
+            {search.results.map((salon, i) => {
+              const selected = selectedSalon?.id === salon.id;
+              return (
+                <motion.button
+                  key={salon.id}
+                  type="button"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.18, delay: i * 0.02 }}
+                  onClick={() => onSelectSalon(salon)}
+                  className={cn(
+                    "group relative flex cursor-pointer items-start gap-3 rounded-2xl border bg-card p-3.5 text-left shadow-[var(--shadow-soft)] transition-[var(--transition-smooth)] hover:border-foreground/40 sm:p-4",
+                    selected ? "border-foreground bg-muted/40" : "border-border",
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors sm:h-11 sm:w-11",
+                      selected ? "bg-foreground text-background" : "bg-muted text-foreground",
+                    )}
+                  >
+                    <Store className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-[14px] font-semibold text-foreground sm:text-[15px]">
+                        {salon.name}
+                      </p>
+                      {selected && (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-foreground px-2 py-0.5 text-[10px] font-semibold text-background">
+                          <Check className="h-2.5 w-2.5" /> Tanlandi
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 flex items-start gap-1.5 text-[12px] text-muted-foreground sm:text-[12.5px]">
+                      <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      <span className="line-clamp-2">{salon.address || "Manzil kiritilmagan"}</span>
+                    </p>
+                  </div>
+                </motion.button>
+              );
+            })}
+          </AnimatePresence>
+        </div>
+      )}
+    </Section>
+  );
+}
+
+/* ============================================================
+   Step 1 — Location
+   ============================================================ */
+
+function LocationStep({
+  location,
+  status,
+  error,
+  onRequest,
+}: {
+  location: CurrentLocation | null;
+  status: LocationStatus;
+  error: string | null;
+  onRequest: () => void;
+}) {
+  return (
+    <Section
+      icon={<Crosshair className="h-4 w-4" />}
+      label="Lokatsiya"
+      title="Joriy joylashuv"
+      description="GPS bilan joriy nuqtangizni oling — masofa server tomonidan tekshiriladi."
+    >
+      {/* Map preview — same look as CreateSalonPage location step */}
+      <div className="relative h-40 overflow-hidden rounded-2xl border border-border bg-muted/30 sm:h-60">
+        <div
+          className="absolute inset-0 opacity-60"
+          style={{
+            backgroundImage:
+              "linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)",
+            backgroundSize: "32px 32px",
+          }}
+        />
+        <div className="absolute left-0 right-0 top-1/3 h-[3px] bg-foreground/10" />
+        <div className="absolute bottom-1/4 left-0 right-0 h-[3px] bg-foreground/10" />
+        <div className="absolute bottom-0 left-1/3 top-0 w-[3px] bg-foreground/10" />
+        <div className="absolute bottom-0 right-1/4 top-0 w-[3px] bg-foreground/10" />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(circle at center, transparent 30%, var(--background) 100%)",
+          }}
+        />
+
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-2.5">
+            <div className="relative">
+              <div
+                className={cn(
+                  "absolute -inset-3 rounded-full bg-foreground/10",
+                  status === "locating" && "animate-ping",
+                )}
+              />
+              <div className="absolute -inset-1 rounded-full bg-foreground/20 blur-md" />
+              <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-foreground text-background shadow-[var(--shadow-pop)]">
+                {status === "locating" ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : location ? (
+                  <Check className="h-5 w-5" />
+                ) : (
+                  <Navigation className="h-5 w-5" />
+                )}
+              </div>
+            </div>
+            <div className="flex max-w-[280px] flex-col items-center gap-0.5 rounded-full border border-border bg-background/95 px-3 py-1 shadow-[var(--shadow-soft)] backdrop-blur">
+              <span className="truncate text-[11px] font-semibold text-foreground">
+                {location ? "Joylashuv olindi" : "Joylashuv olinmagan"}
+              </span>
+              {location && (
+                <span className="max-w-[260px] truncate text-[10px] text-muted-foreground tabular-nums">
+                  {formatCoordinate(location.latitude)}, {formatCoordinate(location.longitude)}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* CTA + accuracy hint */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={onRequest}
+          disabled={status === "locating"}
+          className={cn(
+            "inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-medium text-foreground transition-[var(--transition-smooth)]",
+            status === "locating"
+              ? "cursor-not-allowed opacity-70"
+              : "cursor-pointer hover:border-foreground hover:bg-muted active:scale-[0.98]",
+          )}
+        >
+          {status === "locating" ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Navigation className="h-4 w-4" />
+          )}
+          {location ? "Lokatsiyani yangilash" : "Mening lokatsiyam"}
+        </button>
+        <span className="text-[11px] text-muted-foreground">
+          Eng yaxshi aniqlik uchun salon ichida yoki yaqinida turgan holda oling.
+        </span>
+      </div>
+
+      {error && <ErrorCard title="Lokatsiya olinmadi" message={error} />}
+
+      {/* Coord cards */}
+      {location && (
+        <div className="grid gap-2 sm:grid-cols-3">
+          <CoordCell label="Latitude" value={formatCoordinate(location.latitude)} />
+          <CoordCell label="Longitude" value={formatCoordinate(location.longitude)} />
+          <CoordCell
+            label="Aniqlik"
+            value={location.accuracy ? `${Math.round(location.accuracy)} m` : "Noma'lum"}
+          />
+        </div>
+      )}
+    </Section>
+  );
+}
+
+function CoordCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-border bg-background px-3.5 py-3">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
-      </span>
+      </p>
+      <p className="mt-1 text-[14px] font-semibold text-foreground tabular-nums">{value}</p>
     </div>
   );
 }
+
+/* ============================================================
+   Step 2 — Review & Submit
+   ============================================================ */
+
+function ReviewStep({
+  salon,
+  location,
+  joinStatus,
+  joinError,
+  isEmployeeSignup,
+}: {
+  salon: SalonSearchHit | null;
+  location: CurrentLocation | null;
+  joinStatus: JoinStatus;
+  joinError: string | null;
+  isEmployeeSignup: boolean;
+}) {
+  return (
+    <Section
+      icon={<ShieldCheck className="h-4 w-4" />}
+      label="Tasdiq"
+      title="Yakuniy tasdiq"
+      description="Ma'lumotlarni tekshiring va salonga qo‘shilishni yakunlang."
+    >
+      {/* Selected salon preview */}
+      <div className="rounded-2xl border border-border bg-background p-4">
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Tanlangan salon
+        </div>
+        {salon ? (
+          <div className="mt-2 flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-foreground text-background">
+              <Store className="h-4 w-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[15px] font-semibold text-foreground">{salon.name}</p>
+              <p className="mt-0.5 line-clamp-2 text-[12.5px] text-muted-foreground">
+                {salon.address || "Manzil kiritilmagan"}
+              </p>
+              <p className="mt-1 text-[11px] text-muted-foreground tabular-nums">
+                {formatCoordinate(salon.latitude)}, {formatCoordinate(salon.longitude)}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-2 text-sm text-muted-foreground">Hozircha tanlanmagan.</p>
+        )}
+      </div>
+
+      {/* Checklist */}
+      <div className="grid gap-2.5">
+        <ChecklistItem done={Boolean(salon)} label="Salon tanlandi" />
+        <ChecklistItem
+          done={Boolean(location)}
+          label={
+            location
+              ? `Lokatsiya olindi · ${formatCoordinate(location.latitude)}, ${formatCoordinate(location.longitude)}`
+              : "Lokatsiya olindi"
+          }
+        />
+        <ChecklistItem done={joinStatus === "success"} label="Membership faollashtirildi" />
+      </div>
+
+      {/* Reminder card */}
+      <div className="rounded-2xl border border-dashed border-border bg-muted/30 px-3.5 py-3 text-[12px] leading-snug text-muted-foreground">
+        <p className="font-semibold text-foreground">Eslatma</p>
+        <ul className="mt-1.5 space-y-1 list-disc pl-4">
+          <li>Salonga taxminan 100 m ichida turishingiz kerak.</li>
+          <li>Bir barber faqat bitta faol salonga ega bo‘ladi.</li>
+          {isEmployeeSignup && <li>Yakuniy tugma akkauntingizni yaratadi va salonga ulaydi.</li>}
+        </ul>
+      </div>
+
+      {joinError && <ErrorCard title="Qo‘shilish xatosi" message={joinError} />}
+
+      {joinStatus === "success" && (
+        <div className="flex items-start gap-2.5 rounded-2xl border border-foreground/20 bg-muted/40 px-3.5 py-3">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 text-foreground" />
+          <div className="text-[12.5px]">
+            <p className="font-semibold text-foreground">Salonga qo‘shildingiz</p>
+            <p className="mt-0.5 text-muted-foreground">
+              Avtomatik ravishda profil va jadval sahifasiga o‘tasiz...
+            </p>
+          </div>
+        </div>
+      )}
+    </Section>
+  );
+}
+
+/* ============================================================
+   Step indicator (top) — mirrors CreateSalonPage
+   ============================================================ */
+
+function StepIndicator({
+  step,
+  stepValid,
+  onJump,
+}: {
+  step: number;
+  stepValid: boolean[];
+  onJump: (i: number) => void;
+}) {
+  const total = STEP_META.length;
+  const progress = ((step + 1) / total) * 100;
+  const currentGroup = STEP_META[step].group;
+
+  const salonSteps = STEP_META.map((m, i) => ({ ...m, idx: i })).filter((m) => m.group === "Salon");
+  const tasdiqSteps = STEP_META.map((m, i) => ({ ...m, idx: i })).filter(
+    (m) => m.group === "Tasdiq",
+  );
+  const salonDone = salonSteps.every((s) => stepValid[s.idx]);
+  const tasdiqActive = currentGroup === "Tasdiq";
+  const tasdiqDone = tasdiqSteps.every((s) => stepValid[s.idx]);
+
+  return (
+    <div className="mx-auto max-w-[920px] px-3.5 pb-3.5 sm:px-6 sm:pb-5">
+      {/* Group chips */}
+      <div className="mb-3 flex items-center justify-center gap-2 sm:mb-4 sm:gap-4">
+        <GroupChip
+          icon={Store}
+          label="Salon"
+          state={tasdiqActive || salonDone ? "done" : currentGroup === "Salon" ? "active" : "idle"}
+        />
+        <GroupConnector filled={salonDone || tasdiqActive} />
+        <GroupChip
+          icon={ShieldCheck}
+          label="Tasdiq"
+          state={tasdiqActive ? (tasdiqDone ? "done" : "active") : "idle"}
+        />
+      </div>
+
+      {/* Progress */}
+      <div className="mb-2.5 flex items-center gap-2.5 sm:mb-3 sm:gap-3">
+        <div className="relative h-1 flex-1 overflow-hidden rounded-full bg-muted sm:h-1.5">
+          <motion.div
+            className="absolute inset-y-0 left-0 rounded-full bg-foreground"
+            initial={false}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
+          />
+        </div>
+        <span className="text-[9px] font-semibold uppercase tracking-wider tabular-nums text-muted-foreground sm:text-[10px]">
+          {Math.round(progress)}%
+        </span>
+      </div>
+
+      {/* Sub-step dots */}
+      <div className="-mx-1 flex items-center justify-center gap-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {STEP_META.map((meta, i) => {
+          const Icon = meta.icon;
+          const done = i < step;
+          const active = i === step;
+          const reachable = i <= step || stepValid.slice(0, i).every(Boolean);
+          const isGroupStart = i > 0 && STEP_META[i - 1].group !== meta.group;
+          return (
+            <div key={i} className="flex shrink-0 items-center gap-1 sm:flex-1">
+              {isGroupStart && <span className="mx-1 h-4 w-px shrink-0 bg-border" />}
+              <button
+                type="button"
+                onClick={() => reachable && onJump(i)}
+                disabled={!reachable}
+                className={cn(
+                  "group relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold transition-[var(--transition-smooth)] sm:h-8 sm:w-8",
+                  done
+                    ? "border-foreground bg-foreground text-background"
+                    : active
+                      ? "border-foreground bg-background text-foreground shadow-[var(--shadow-soft)]"
+                      : "border-border bg-background text-muted-foreground",
+                  reachable && !active ? "cursor-pointer hover:border-foreground" : "",
+                  !reachable && "cursor-not-allowed opacity-40",
+                )}
+                aria-label={`${meta.short} qadami`}
+              >
+                {done ? (
+                  <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                ) : (
+                  <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                )}
+                {active && (
+                  <motion.span
+                    layoutId="active-ring-join"
+                    className="absolute -inset-1 rounded-full ring-2 ring-foreground/25"
+                    transition={{ duration: 0.3 }}
+                  />
+                )}
+              </button>
+              {i < STEP_META.length - 1 && !isGroupStart && (
+                <div
+                  className={cn(
+                    "hidden h-[2px] w-6 rounded-full transition-[var(--transition-smooth)] sm:block sm:w-auto sm:flex-1",
+                    i < step ? "bg-foreground" : "bg-border",
+                  )}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function GroupChip({
+  icon: Icon,
+  label,
+  state,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  state: "idle" | "active" | "done";
+}) {
+  return (
+    <motion.div
+      initial={false}
+      animate={{
+        scale: state === "active" ? 1.03 : 1,
+      }}
+      transition={{ duration: 0.3 }}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border px-2 py-1 transition-[var(--transition-smooth)] sm:gap-2 sm:px-2.5 sm:py-1.5",
+        state === "active" &&
+          "border-foreground bg-foreground text-background shadow-[var(--shadow-pop)]",
+        state === "done" && "border-foreground/40 bg-card text-foreground",
+        state === "idle" && "border-border bg-muted/40 text-muted-foreground",
+      )}
+    >
+      <span
+        className={cn(
+          "flex h-5 w-5 items-center justify-center rounded-full sm:h-6 sm:w-6",
+          state === "active" && "bg-background text-foreground",
+          state === "done" && "bg-foreground text-background",
+          state === "idle" && "bg-background text-muted-foreground",
+        )}
+      >
+        {state === "done" ? <Check className="h-3 w-3" /> : <Icon className="h-3 w-3" />}
+      </span>
+      <span className="text-[11px] font-semibold tracking-wide sm:text-xs">{label}</span>
+    </motion.div>
+  );
+}
+
+function GroupConnector({ filled }: { filled: boolean }) {
+  return (
+    <div className="relative h-[2px] w-8 overflow-hidden rounded-full bg-border sm:w-14">
+      <motion.div
+        className="absolute inset-y-0 left-0 rounded-full bg-foreground"
+        initial={false}
+        animate={{ width: filled ? "100%" : "0%" }}
+        transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+      />
+    </div>
+  );
+}
+
+/* ============================================================
+   Section — same look as CreateSalonPage
+   ============================================================ */
 
 function Section({
   icon,
@@ -799,12 +1211,18 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-card p-3.5 shadow-[var(--shadow-card)] sm:p-7">
-      <div className="mb-4 flex items-start gap-3 sm:mb-5">
-        <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-foreground text-background shadow-[var(--shadow-soft)]">
+    <motion.section
+      initial={{ opacity: 0, y: 12 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.4 }}
+      className="rounded-2xl border border-border bg-card p-3.5 shadow-[var(--shadow-card)] sm:p-7"
+    >
+      <div className="mb-4 flex items-start gap-3 sm:mb-5 sm:gap-3.5">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-foreground text-background sm:h-10 sm:w-10">
           {icon}
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <div className="text-[9px] font-semibold uppercase tracking-[0.16em] text-muted-foreground sm:text-[10px] sm:tracking-[0.18em]">
             {label}
           </div>
@@ -816,7 +1234,252 @@ function Section({
           </p>
         </div>
       </div>
-      <div className="space-y-4">{children}</div>
-    </section>
+      <div className="space-y-3.5 sm:space-y-4">{children}</div>
+    </motion.section>
+  );
+}
+
+/* ============================================================
+   Misc small components
+   ============================================================ */
+
+function ChecklistItem({ done, label }: { done: boolean; label: string }) {
+  return (
+    <motion.div
+      layout
+      initial={false}
+      animate={{
+        borderColor: done ? "var(--foreground)" : "var(--border)",
+      }}
+      transition={{ duration: 0.25 }}
+      className={cn("flex items-center gap-3 rounded-xl border bg-background px-3.5 py-2.5")}
+    >
+      <span
+        className={cn(
+          "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs transition-colors",
+          done
+            ? "border-foreground bg-foreground text-background"
+            : "border-border text-muted-foreground",
+        )}
+      >
+        {done ? <Check className="h-3.5 w-3.5" /> : null}
+      </span>
+      <span
+        className={cn(
+          "text-[12.5px] sm:text-sm",
+          done ? "font-medium text-foreground" : "text-muted-foreground",
+        )}
+      >
+        {label}
+      </span>
+    </motion.div>
+  );
+}
+
+function NoteCard({
+  icon,
+  title,
+  description,
+}: {
+  icon: ReactNode;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-border bg-muted/30 px-3.5 py-3">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-foreground text-background">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className="text-[12.5px] font-semibold text-foreground sm:text-sm">{title}</p>
+        <p className="mt-0.5 text-[11.5px] leading-snug text-muted-foreground sm:text-[12.5px]">
+          {description}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ErrorCard({ title, message }: { title: string; message: string }) {
+  return (
+    <div className="flex items-start gap-2.5 rounded-2xl border border-destructive/40 bg-destructive/10 px-3.5 py-3 text-destructive">
+      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+      <div className="min-w-0">
+        <p className="text-[12.5px] font-semibold sm:text-sm">{title}</p>
+        <p className="mt-0.5 text-[11.5px] leading-snug sm:text-[12.5px]">{message}</p>
+      </div>
+    </div>
+  );
+}
+
+function AuthGateBanner({ onAuth }: { onAuth: () => void }) {
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-3.5 shadow-[var(--shadow-soft)] sm:p-4">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-foreground text-background">
+        <UserRoundCheck className="h-4 w-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[13px] font-semibold text-foreground sm:text-sm">
+          Avval barber akkaunt bilan kirish kerak
+        </p>
+        <p className="mt-0.5 text-[11.5px] text-muted-foreground sm:text-[12.5px]">
+          So‘rovlar Bearer JWT bilan ketadi — kirgach qidiruv va ulanish faollashadi.
+        </p>
+        <button
+          type="button"
+          onClick={onAuth}
+          className="mt-2 inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl border border-border bg-background px-3 text-[12.5px] font-semibold text-foreground transition-[var(--transition-smooth)] hover:bg-muted active:scale-[0.98]"
+        >
+          Kirish / Ro‘yxatdan o‘tish
+          <ArrowRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   Success overlay — full-screen celebration
+   ============================================================ */
+
+function SuccessOverlay({
+  salonName,
+  onContinue,
+  onClose,
+}: {
+  salonName: string;
+  onContinue: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4 }}
+      className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-background/95 px-4 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] backdrop-blur-2xl sm:px-5 sm:py-6"
+    >
+      <div
+        className="pointer-events-none absolute inset-0 opacity-50"
+        style={{
+          background:
+            "radial-gradient(circle at 50% 30%, color-mix(in oklab, var(--foreground) 5%, transparent) 0%, transparent 60%)",
+        }}
+      />
+
+      <motion.div
+        initial={{ scale: 0.96, opacity: 0, y: 16 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.98, opacity: 0, y: 4 }}
+        transition={{ type: "spring", stiffness: 280, damping: 26 }}
+        className="relative my-auto w-full max-w-[420px] px-1 text-center"
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.5 }}
+          className="mb-6 flex flex-col items-center"
+        >
+          <motion.svg
+            viewBox="0 0 80 80"
+            className="mb-3 h-14 w-14 sm:mb-4 sm:h-20 sm:w-20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+          >
+            <motion.circle
+              cx="40"
+              cy="40"
+              r="36"
+              className="text-muted/60"
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: 1, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            />
+            <motion.path
+              d="M26 41 L36 51 L55 30"
+              className="text-foreground"
+              strokeWidth={3}
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 0.5, delay: 0.55, ease: "easeOut" }}
+            />
+          </motion.svg>
+
+          <motion.span
+            initial={{ opacity: 0, letterSpacing: "0.2em" }}
+            animate={{ opacity: 1, letterSpacing: "0.18em" }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+            className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+          >
+            Tabriklaymiz
+          </motion.span>
+        </motion.div>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.65, duration: 0.4 }}
+          className="text-[26px] font-bold leading-[1.1] tracking-tight text-foreground sm:text-4xl"
+        >
+          Salonga qo‘shildingiz
+        </motion.h2>
+
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.75, duration: 0.4 }}
+          className="mx-auto mt-2.5 max-w-[300px] px-2 text-[12.5px] leading-relaxed text-muted-foreground sm:mt-3 sm:px-0 sm:text-sm"
+        >
+          Endi profil va ish jadvalini yakunlasangiz, mijozlar sizni topa oladi.
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.85, duration: 0.4 }}
+          className="mx-auto mt-6 flex max-w-[340px] items-stretch justify-center divide-x divide-border sm:mt-7"
+        >
+          <div className="flex-1 px-3">
+            <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Salon
+            </div>
+            <div className="mt-0.5 truncate text-sm font-bold text-foreground">
+              {salonName || "—"}
+            </div>
+          </div>
+          <div className="flex-1 px-3">
+            <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Membership
+            </div>
+            <div className="mt-0.5 truncate text-sm font-bold text-foreground">Faol</div>
+          </div>
+        </motion.div>
+
+        <motion.button
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.0, duration: 0.4 }}
+          onClick={onContinue}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="mt-7 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground text-sm font-semibold text-background transition-colors hover:opacity-90 sm:mt-8"
+        >
+          Profil va jadvalni kiritish
+          <ArrowRight className="h-4 w-4" />
+        </motion.button>
+
+        <motion.button
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.15, duration: 0.4 }}
+          onClick={onClose}
+          className="mt-2 inline-flex h-10 w-full items-center justify-center text-[12px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          Keyinroq, Barber panelga o‘tish
+        </motion.button>
+      </motion.div>
+    </motion.div>
   );
 }
