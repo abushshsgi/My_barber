@@ -6,7 +6,7 @@ Backend bitta serverda qoladi; uchta **mustaqil** Vite/TanStack Start loyihasi �
 |--------|--------|---------------------|
 | `user` | Mijozlar: xarita, salon, bron | `http://localhost:3000` |
 | `admin` | Admin panel | `http://localhost:3001` (`/admin/...`) |
-| `barber` | Sartarosh kabineti | `http://localhost:3002` — asosiy `/`, kirish `/auth` (`/barber` prefiksi yo‘q) |
+| `barber` | Sartarosh kabineti | `http://localhost:3003` — asosiy `/`, kirish `/auth` (`/barber` prefiksi yo‘q) |
 
 Umumiy API va utilitarlar: `../packages/shared` (`@/lib/*` orqali har bir ilovada ulanadi).
 
@@ -16,7 +16,7 @@ Umumiy API va utilitarlar: `../packages/shared` (`@/lib/*` orqali har bir ilovad
 npm install
 npm run dev:user    # 3000
 npm run dev:admin   # 3001
-npm run dev:barber  # 3002
+npm run dev:barber  # 3003
 ```
 
 Build:

@@ -16,7 +16,6 @@ import { Route as BarberIndexRouteImport } from './routes/barber.index'
 import { Route as SalonJoinRouteImport } from './routes/salon.join'
 import { Route as SalonCreateRouteImport } from './routes/salon.create'
 import { Route as OnboardingOwnerRouteImport } from './routes/onboarding.owner'
-import { Route as OnboardingEmployeeRouteImport } from './routes/onboarding.employee'
 import { Route as IndependentSetupRouteImport } from './routes/independent.setup'
 import { Route as BarberStatsRouteImport } from './routes/barber.stats'
 import { Route as BarberSettingsRouteImport } from './routes/barber.settings'
@@ -75,11 +74,6 @@ const SalonCreateRoute = SalonCreateRouteImport.update({
 const OnboardingOwnerRoute = OnboardingOwnerRouteImport.update({
   id: '/onboarding/owner',
   path: '/onboarding/owner',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingEmployeeRoute = OnboardingEmployeeRouteImport.update({
-  id: '/onboarding/employee',
-  path: '/onboarding/employee',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndependentSetupRoute = IndependentSetupRouteImport.update({
@@ -224,7 +218,6 @@ export interface FileRoutesByFullPath {
   '/barber/settings': typeof BarberSettingsRoute
   '/barber/stats': typeof BarberStatsRoute
   '/independent/setup': typeof IndependentSetupRoute
-  '/onboarding/employee': typeof OnboardingEmployeeRoute
   '/onboarding/owner': typeof OnboardingOwnerRoute
   '/salon/create': typeof SalonCreateRoute
   '/salon/join': typeof SalonJoinRouteWithChildren
@@ -257,7 +250,6 @@ export interface FileRoutesByTo {
   '/barber/settings': typeof BarberSettingsRoute
   '/barber/stats': typeof BarberStatsRoute
   '/independent/setup': typeof IndependentSetupRoute
-  '/onboarding/employee': typeof OnboardingEmployeeRoute
   '/onboarding/owner': typeof OnboardingOwnerRoute
   '/salon/create': typeof SalonCreateRoute
   '/barber': typeof BarberIndexRoute
@@ -291,7 +283,6 @@ export interface FileRoutesById {
   '/barber/settings': typeof BarberSettingsRoute
   '/barber/stats': typeof BarberStatsRoute
   '/independent/setup': typeof IndependentSetupRoute
-  '/onboarding/employee': typeof OnboardingEmployeeRoute
   '/onboarding/owner': typeof OnboardingOwnerRoute
   '/salon/create': typeof SalonCreateRoute
   '/salon/join': typeof SalonJoinRouteWithChildren
@@ -327,7 +318,6 @@ export interface FileRouteTypes {
     | '/barber/settings'
     | '/barber/stats'
     | '/independent/setup'
-    | '/onboarding/employee'
     | '/onboarding/owner'
     | '/salon/create'
     | '/salon/join'
@@ -360,7 +350,6 @@ export interface FileRouteTypes {
     | '/barber/settings'
     | '/barber/stats'
     | '/independent/setup'
-    | '/onboarding/employee'
     | '/onboarding/owner'
     | '/salon/create'
     | '/barber'
@@ -393,7 +382,6 @@ export interface FileRouteTypes {
     | '/barber/settings'
     | '/barber/stats'
     | '/independent/setup'
-    | '/onboarding/employee'
     | '/onboarding/owner'
     | '/salon/create'
     | '/salon/join'
@@ -412,7 +400,6 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   BarberRoute: typeof BarberRouteWithChildren
   IndependentSetupRoute: typeof IndependentSetupRoute
-  OnboardingEmployeeRoute: typeof OnboardingEmployeeRoute
   OnboardingOwnerRoute: typeof OnboardingOwnerRoute
   SalonCreateRoute: typeof SalonCreateRoute
   SalonJoinRoute: typeof SalonJoinRouteWithChildren
@@ -467,13 +454,6 @@ declare module '@tanstack/react-router' {
       path: '/onboarding/owner'
       fullPath: '/onboarding/owner'
       preLoaderRoute: typeof OnboardingOwnerRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding/employee': {
-      id: '/onboarding/employee'
-      path: '/onboarding/employee'
-      fullPath: '/onboarding/employee'
-      preLoaderRoute: typeof OnboardingEmployeeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/independent/setup': {
@@ -719,7 +699,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   BarberRoute: BarberRouteWithChildren,
   IndependentSetupRoute: IndependentSetupRoute,
-  OnboardingEmployeeRoute: OnboardingEmployeeRoute,
   OnboardingOwnerRoute: OnboardingOwnerRoute,
   SalonCreateRoute: SalonCreateRoute,
   SalonJoinRoute: SalonJoinRouteWithChildren,

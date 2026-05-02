@@ -184,7 +184,7 @@ def _cors_allowed_origins():
       FRONTEND_USER_ORIGIN, FRONTEND_ADMIN_ORIGIN, FRONTEND_BARBER_ORIGIN
     Har biri bitta URL yoki vergul bilan bir nechta URL bo'lishi mumkin.
     Qo'shimcha yoki eski deploylar uchun: CORS_ALLOWED_ORIGINS (vergul bilan ro'yxat).
-    Hech biri bo'lmasa — lokal uchta port (3000/3001/3002) uchun defaultlar.
+    Hech biri bo'lmasa — lokal dev portlari uchun defaultlar (3000–3003, Vite 5173).
     """
     chunks: list[str] = []
     for key in (
@@ -212,6 +212,10 @@ def _cors_allowed_origins():
             "http://127.0.0.1:3001",
             "http://localhost:3002",
             "http://127.0.0.1:3002",
+            "http://localhost:3003",
+            "http://127.0.0.1:3003",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
         ]
     seen: set[str] = set()
     out: list[str] = []
