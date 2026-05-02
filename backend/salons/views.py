@@ -452,10 +452,19 @@ class SalonMembershipViewSet(viewsets.ModelViewSet):
         bp = request_barber(self.request)
         if bp is None:
             return SalonMembership.objects.none()
-        return SalonMembership.objects.filter(
+        qs = SalonMembership.objects.filter(
             Q(barber=bp)
             | Q(salon__owner_barber=bp)
         ).select_related("barber", "salon")
+        salon_param = self.request.query_params.get("salon")
+        if salon_param:
+            try:
+                sid = int(salon_param)
+            except (TypeError, ValueError):
+                return qs
+            if Salon.objects.filter(pk=sid, owner_barber=bp).exists():
+                qs = qs.filter(salon_id=sid)
+        return qs
 
     @action(detail=False, methods=["post"])
     def invite(self, request):
@@ -514,7 +523,7 @@ class SalonMembershipViewSet(viewsets.ModelViewSet):
             )
         if not (-90.0 <= lat <= 90.0) or not (-180.0 <= lng <= 180.0):
             return Response({"detail": "latitude / longitude noto‘g‘ri."}, status=400)
-        dist_km = _haversine_km(
+        dist_km = haversine_km(
             lat, lng, float(mem.salon.latitude), float(mem.salon.longitude)
         )
         if dist_km > JOIN_MAX_DISTANCE_KM:
@@ -581,7 +590,7 @@ class SalonMembershipViewSet(viewsets.ModelViewSet):
                 },
                 status=400,
             )
-        dist_km = _haversine_km(
+        dist_km = haversine_km(
             float(prof.latitude),
             float(prof.longitude),
             float(mem.salon.latitude),

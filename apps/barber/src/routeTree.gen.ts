@@ -37,7 +37,9 @@ import { Route as BarberChatRouteImport } from './routes/barber.chat'
 import { Route as BarberCalendarRouteImport } from './routes/barber.calendar'
 import { Route as BarberBookingsRouteImport } from './routes/barber.bookings'
 import { Route as BarberSalonViewIndexRouteImport } from './routes/barber.salon-view.index'
+import { Route as BarberSalonViewTeamRouteImport } from './routes/barber.salon-view.team'
 import { Route as BarberSalonViewReviewsRouteImport } from './routes/barber.salon-view.reviews'
+import { Route as BarberSalonViewMembersRouteImport } from './routes/barber.salon-view.members'
 import { Route as BarberSalonViewGalleryRouteImport } from './routes/barber.salon-view.gallery'
 
 const BarberRoute = BarberRouteImport.update({
@@ -180,9 +182,19 @@ const BarberSalonViewIndexRoute = BarberSalonViewIndexRouteImport.update({
   path: '/salon-view/',
   getParentRoute: () => BarberRoute,
 } as any)
+const BarberSalonViewTeamRoute = BarberSalonViewTeamRouteImport.update({
+  id: '/salon-view/team',
+  path: '/salon-view/team',
+  getParentRoute: () => BarberRoute,
+} as any)
 const BarberSalonViewReviewsRoute = BarberSalonViewReviewsRouteImport.update({
   id: '/salon-view/reviews',
   path: '/salon-view/reviews',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberSalonViewMembersRoute = BarberSalonViewMembersRouteImport.update({
+  id: '/salon-view/members',
+  path: '/salon-view/members',
   getParentRoute: () => BarberRoute,
 } as any)
 const BarberSalonViewGalleryRoute = BarberSalonViewGalleryRouteImport.update({
@@ -220,7 +232,9 @@ export interface FileRoutesByFullPath {
   '/salon/join': typeof SalonJoinRoute
   '/barber/': typeof BarberIndexRoute
   '/barber/salon-view/gallery': typeof BarberSalonViewGalleryRoute
+  '/barber/salon-view/members': typeof BarberSalonViewMembersRoute
   '/barber/salon-view/reviews': typeof BarberSalonViewReviewsRoute
+  '/barber/salon-view/team': typeof BarberSalonViewTeamRoute
   '/barber/salon-view/': typeof BarberSalonViewIndexRoute
 }
 export interface FileRoutesByTo {
@@ -251,7 +265,9 @@ export interface FileRoutesByTo {
   '/salon/join': typeof SalonJoinRoute
   '/barber': typeof BarberIndexRoute
   '/barber/salon-view/gallery': typeof BarberSalonViewGalleryRoute
+  '/barber/salon-view/members': typeof BarberSalonViewMembersRoute
   '/barber/salon-view/reviews': typeof BarberSalonViewReviewsRoute
+  '/barber/salon-view/team': typeof BarberSalonViewTeamRoute
   '/barber/salon-view': typeof BarberSalonViewIndexRoute
 }
 export interface FileRoutesById {
@@ -284,7 +300,9 @@ export interface FileRoutesById {
   '/salon/join': typeof SalonJoinRoute
   '/barber/': typeof BarberIndexRoute
   '/barber/salon-view/gallery': typeof BarberSalonViewGalleryRoute
+  '/barber/salon-view/members': typeof BarberSalonViewMembersRoute
   '/barber/salon-view/reviews': typeof BarberSalonViewReviewsRoute
+  '/barber/salon-view/team': typeof BarberSalonViewTeamRoute
   '/barber/salon-view/': typeof BarberSalonViewIndexRoute
 }
 export interface FileRouteTypes {
@@ -318,7 +336,9 @@ export interface FileRouteTypes {
     | '/salon/join'
     | '/barber/'
     | '/barber/salon-view/gallery'
+    | '/barber/salon-view/members'
     | '/barber/salon-view/reviews'
+    | '/barber/salon-view/team'
     | '/barber/salon-view/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -349,7 +369,9 @@ export interface FileRouteTypes {
     | '/salon/join'
     | '/barber'
     | '/barber/salon-view/gallery'
+    | '/barber/salon-view/members'
     | '/barber/salon-view/reviews'
+    | '/barber/salon-view/team'
     | '/barber/salon-view'
   id:
     | '__root__'
@@ -381,7 +403,9 @@ export interface FileRouteTypes {
     | '/salon/join'
     | '/barber/'
     | '/barber/salon-view/gallery'
+    | '/barber/salon-view/members'
     | '/barber/salon-view/reviews'
+    | '/barber/salon-view/team'
     | '/barber/salon-view/'
   fileRoutesById: FileRoutesById
 }
@@ -596,11 +620,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BarberSalonViewIndexRouteImport
       parentRoute: typeof BarberRoute
     }
+    '/barber/salon-view/team': {
+      id: '/barber/salon-view/team'
+      path: '/salon-view/team'
+      fullPath: '/barber/salon-view/team'
+      preLoaderRoute: typeof BarberSalonViewTeamRouteImport
+      parentRoute: typeof BarberRoute
+    }
     '/barber/salon-view/reviews': {
       id: '/barber/salon-view/reviews'
       path: '/salon-view/reviews'
       fullPath: '/barber/salon-view/reviews'
       preLoaderRoute: typeof BarberSalonViewReviewsRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/salon-view/members': {
+      id: '/barber/salon-view/members'
+      path: '/salon-view/members'
+      fullPath: '/barber/salon-view/members'
+      preLoaderRoute: typeof BarberSalonViewMembersRouteImport
       parentRoute: typeof BarberRoute
     }
     '/barber/salon-view/gallery': {
@@ -632,7 +670,9 @@ interface BarberRouteChildren {
   BarberStatsRoute: typeof BarberStatsRoute
   BarberIndexRoute: typeof BarberIndexRoute
   BarberSalonViewGalleryRoute: typeof BarberSalonViewGalleryRoute
+  BarberSalonViewMembersRoute: typeof BarberSalonViewMembersRoute
   BarberSalonViewReviewsRoute: typeof BarberSalonViewReviewsRoute
+  BarberSalonViewTeamRoute: typeof BarberSalonViewTeamRoute
   BarberSalonViewIndexRoute: typeof BarberSalonViewIndexRoute
 }
 
@@ -655,7 +695,9 @@ const BarberRouteChildren: BarberRouteChildren = {
   BarberStatsRoute: BarberStatsRoute,
   BarberIndexRoute: BarberIndexRoute,
   BarberSalonViewGalleryRoute: BarberSalonViewGalleryRoute,
+  BarberSalonViewMembersRoute: BarberSalonViewMembersRoute,
   BarberSalonViewReviewsRoute: BarberSalonViewReviewsRoute,
+  BarberSalonViewTeamRoute: BarberSalonViewTeamRoute,
   BarberSalonViewIndexRoute: BarberSalonViewIndexRoute,
 }
 

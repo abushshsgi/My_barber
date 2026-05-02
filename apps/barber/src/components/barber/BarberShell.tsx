@@ -80,15 +80,26 @@ const INDEPENDENT_NAV: NavItem[] = [
   { to: "/barber/help", label: "Yordam", icon: HelpCircle, group: "Sozlama" },
 ];
 
-const SALON_NAV: NavItem[] = [
+/** Salon egasi: boshqaruv + jamoa */
+const OWNER_SALON_NAV: NavItem[] = [
   { to: "/barber/salon-view", label: "Salon", icon: Building2 },
   { to: "/barber/salon-view/gallery", label: "Galereya", icon: Images },
   { to: "/barber/salon-view/reviews", label: "Sharhlar", icon: Star },
+  { to: "/barber/salon-view/team", label: "Jamoa", icon: Users },
+];
+
+/** Salon join qilgan ishchi: boshqarma, faqat ko‘rish + jamoa */
+const WORKER_SALON_NAV: NavItem[] = [
+  { to: "/barber/salon-view", label: "Salon", icon: Building2 },
+  { to: "/barber/salon-view/members", label: "Jamoa", icon: Users },
+  { to: "/barber/salon-view/reviews", label: "Sharhlar", icon: Star },
+  { to: "/barber/salon-view/gallery", label: "Galereya", icon: Images },
 ];
 
 function Sidebar({ nav, onNavigate }: { nav: NavItem[]; onNavigate?: () => void }) {
   const { pathname } = useLocation();
-  const { viewMode, setViewMode, hasSalon, onboardingComplete, profile } = useBarberContext();
+  const { viewMode, setViewMode, hasSalon, onboardingComplete, ownsSalon, profile } =
+    useBarberContext();
 
   return (
     <div className="flex flex-col h-full bg-sidebar">
@@ -105,8 +116,8 @@ function Sidebar({ nav, onNavigate }: { nav: NavItem[]; onNavigate?: () => void 
         </div>
       </div>
 
-      {/* Mode switch */}
-      {hasSalon && onboardingComplete && (
+      {/* Mode switch — faqat salon egasi */}
+      {ownsSalon && hasSalon && onboardingComplete && (
         <div className="p-3 border-b border-sidebar-border">
           <button
             onClick={() => setViewMode(viewMode === "independent" ? "salon" : "independent")}
@@ -200,7 +211,7 @@ function Topbar({
 }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { notifications, profile, viewMode } = useBarberContext();
+  const { notifications, profile, viewMode, isJoinedWorker } = useBarberContext();
   const unread = notifications.filter((n) => !n.read).length;
 
   const currentItem =
@@ -223,6 +234,15 @@ function Topbar({
       </div>
 
       <div className="flex items-center gap-2">
+        {isJoinedWorker && viewMode === "salon" && (
+          <Button variant="outline" size="sm" className="hidden sm:inline-flex shrink-0" asChild>
+            <Link to="/barber/salon-view">
+              <Building2 className="size-3.5" />
+              Salonga oʻtish
+            </Link>
+          </Button>
+        )}
+
         <button
           onClick={onCommandOpen}
           className="hidden md:inline-flex items-center gap-2 h-9 pl-3 pr-2 rounded-lg border border-border bg-card hover:bg-accent transition-colors text-sm text-muted-foreground"
@@ -341,7 +361,7 @@ function CommandPalette({
 }
 
 export function BarberShell() {
-  const { viewMode, onboardingComplete } = useBarberContext();
+  const { viewMode, onboardingComplete, isJoinedWorker } = useBarberContext();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
 
@@ -351,8 +371,11 @@ export function BarberShell() {
         ["/barber", "/barber/notifications", "/barber/profile"].includes(n.to),
       );
     }
-    return viewMode === "salon" ? SALON_NAV : INDEPENDENT_NAV;
-  }, [viewMode, onboardingComplete]);
+    if (viewMode === "salon") {
+      return isJoinedWorker ? WORKER_SALON_NAV : OWNER_SALON_NAV;
+    }
+    return INDEPENDENT_NAV;
+  }, [viewMode, onboardingComplete, isJoinedWorker]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
