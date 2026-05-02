@@ -218,6 +218,8 @@ function Topbar({
     nav.find((i) => pathname === i.to || (i.to !== "/barber" && pathname.startsWith(i.to + "/"))) ??
     nav[0];
 
+  const onSalonViewArea = pathname.startsWith("/barber/salon-view");
+
   return (
     <header className="h-14 shrink-0 flex items-center justify-between gap-4 px-4 sm:px-6 bg-background/80 backdrop-blur-sm border-b border-border sticky top-0 z-10">
       <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -234,11 +236,19 @@ function Topbar({
       </div>
 
       <div className="flex items-center gap-2">
-        {isJoinedWorker && viewMode === "salon" && (
-          <Button variant="outline" size="sm" className="hidden sm:inline-flex shrink-0" asChild>
+        {isJoinedWorker && viewMode === "salon" && !onSalonViewArea && (
+          <Button variant="outline" size="sm" className="inline-flex shrink-0" asChild>
             <Link to="/barber/salon-view">
               <Building2 className="size-3.5" />
               Salonga oʻtish
+            </Link>
+          </Button>
+        )}
+        {isJoinedWorker && viewMode === "salon" && onSalonViewArea && (
+          <Button variant="outline" size="sm" className="inline-flex shrink-0" asChild>
+            <Link to="/barber">
+              <LayoutDashboard className="size-3.5" />
+              Barberga oʻtish
             </Link>
           </Button>
         )}
