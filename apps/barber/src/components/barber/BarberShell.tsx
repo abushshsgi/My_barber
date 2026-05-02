@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { flushSync } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import {
@@ -257,7 +258,7 @@ function Topbar({
 }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { notifications, profile, viewMode, isJoinedWorker } = useBarberContext();
+  const { notifications, profile, viewMode, isJoinedWorker, setViewMode } = useBarberContext();
   const unread = notifications.filter((n) => !n.read).length;
 
   const currentItem =
@@ -282,20 +283,38 @@ function Topbar({
       </div>
 
       <div className="flex items-center gap-2">
-        {isJoinedWorker && viewMode === "salon" && !onSalonViewArea && (
-          <Button variant="outline" size="sm" className="inline-flex shrink-0" asChild>
-            <Link to="/barber/salon-view">
-              <Building2 className="size-3.5" />
-              Salonga oʻtish
-            </Link>
+        {isJoinedWorker && !onSalonViewArea && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="inline-flex shrink-0"
+            onClick={() => {
+              flushSync(() => {
+                setViewMode("salon");
+              });
+              void navigate({ to: "/barber/salon-view" });
+            }}
+          >
+            <Building2 className="size-3.5" />
+            Salonga oʻtish
           </Button>
         )}
-        {isJoinedWorker && viewMode === "salon" && onSalonViewArea && (
-          <Button variant="outline" size="sm" className="inline-flex shrink-0" asChild>
-            <Link to="/barber">
-              <LayoutDashboard className="size-3.5" />
-              Barberga oʻtish
-            </Link>
+        {isJoinedWorker && onSalonViewArea && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="inline-flex shrink-0"
+            onClick={() => {
+              flushSync(() => {
+                setViewMode("independent");
+              });
+              void navigate({ to: "/barber" });
+            }}
+          >
+            <LayoutDashboard className="size-3.5" />
+            Barberga oʻtish
           </Button>
         )}
 
@@ -492,9 +511,10 @@ export function BarberShell() {
       return;
     }
     if (viewMode === "independent" && pathname.startsWith("/barber/salon-view")) {
+      if (isJoinedWorker) return;
       void navigate({ to: "/barber", replace: true });
     }
-  }, [onboardingComplete, viewMode, pathname, navigate]);
+  }, [onboardingComplete, viewMode, pathname, navigate, isJoinedWorker]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

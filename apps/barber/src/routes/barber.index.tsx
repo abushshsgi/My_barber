@@ -39,7 +39,7 @@ function BarberDashboard() {
     viewMode,
   } = useBarberContext();
 
-  /** Salon rejimida indeks — mustaqil dashboard emas, salon overview. */
+  /** Salon rejimida indeks — mustaqil dashboard emas, salon overview (ishchi «Barberga oʻtish» mustaqil rejimga o‘tkazadi). */
   if (onboardingComplete && viewMode === "salon") {
     return <Navigate to="/barber/salon-view" replace />;
   }
