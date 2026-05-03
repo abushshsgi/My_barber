@@ -17,6 +17,8 @@ from .models import (
 )
 from salons.serializers import SalonHoursSerializer
 
+from .barber_segments import segment_for_barber, segment_label
+
 _WEEKDAY_ABBREV = ("Du", "Se", "Cho", "Pa", "Ju", "Sha", "Ya")
 
 
@@ -198,6 +200,8 @@ class AdminBarberSerializer(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField()
     reviews_count = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
+    account_segment = serializers.SerializerMethodField()
+    account_segment_label = serializers.SerializerMethodField()
 
     class Meta:
         model = Barber
@@ -223,6 +227,8 @@ class AdminBarberSerializer(serializers.ModelSerializer):
             "onboarding_flow",
             "onboarding_completed_at",
             "signup_snapshot",
+            "account_segment",
+            "account_segment_label",
         )
         read_only_fields = (
             "id",
@@ -242,12 +248,20 @@ class AdminBarberSerializer(serializers.ModelSerializer):
             "onboarding_flow",
             "onboarding_completed_at",
             "signup_snapshot",
+            "account_segment",
+            "account_segment_label",
         )
 
     def get_region_label(self, obj: Barber) -> str:
         if not obj.region:
             return ""
         return dict(UzRegion.choices).get(obj.region, obj.region)
+
+    def get_account_segment(self, obj: Barber) -> str:
+        return segment_for_barber(obj)
+
+    def get_account_segment_label(self, obj: Barber) -> str:
+        return segment_label(segment_for_barber(obj))
 
     def get_latitude(self, obj: Barber) -> str:
         p = getattr(obj, "profile", None)

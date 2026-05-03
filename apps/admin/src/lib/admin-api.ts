@@ -34,6 +34,23 @@ export type AdminUser = {
   bookings_count: number;
 };
 
+/** Admin barbers ro‘yxati / segment filtri (backend `segment` query bilan mos). */
+export type AdminBarberAccountSegment =
+  | "independent"
+  | "mybarber_salon"
+  | "salon_owner"
+  | "salon_employee"
+  | "unknown";
+
+export type AdminBarberSegmentStats = {
+  total: number;
+  independent: number;
+  mybarber_salon: number;
+  salon_owner: number;
+  salon_employee: number;
+  unknown: number;
+};
+
 export type AdminBarber = {
   id: string;
   name: string;
@@ -48,6 +65,8 @@ export type AdminBarber = {
   lat: number;
   lng: number;
   created_at: string;
+  account_segment: AdminBarberAccountSegment;
+  account_segment_label: string;
 };
 
 export type AdminBarberSignupSnapshot = {
@@ -326,6 +345,8 @@ type BackendBarberRow = {
   work_mode?: string;
   onboarding_flow?: string;
   onboarding_completed_at?: string | null;
+  account_segment?: string;
+  account_segment_label?: string;
   signup_snapshot?: BackendBarberSignupSnapshot | null;
   last_login?: string | null;
   location_text?: string;
@@ -411,8 +432,24 @@ function parseCoord(latStr?: string, lngStr?: string): { lat: number; lng: numbe
   return { lat, lng };
 }
 
+const ADMIN_BARBER_SEGMENTS: readonly AdminBarberAccountSegment[] = [
+  "independent",
+  "mybarber_salon",
+  "salon_owner",
+  "salon_employee",
+  "unknown",
+] as const;
+
+function mapAccountSegment(raw: string | undefined): AdminBarberAccountSegment {
+  const v = (raw || "").trim();
+  return ADMIN_BARBER_SEGMENTS.includes(v as AdminBarberAccountSegment)
+    ? (v as AdminBarberAccountSegment)
+    : "unknown";
+}
+
 function mapBarber(b: BackendBarberRow): AdminBarber {
   const coord = parseCoord(b.latitude, b.longitude);
+  const account_segment = mapAccountSegment(b.account_segment);
   return {
     id: String(b.id),
     name: b.full_name || b.email,
@@ -427,6 +464,10 @@ function mapBarber(b: BackendBarberRow): AdminBarber {
     lat: coord?.lat ?? Number.NaN,
     lng: coord?.lng ?? Number.NaN,
     created_at: b.date_joined,
+    account_segment,
+    account_segment_label:
+      (b.account_segment_label && String(b.account_segment_label).trim()) ||
+      account_segment,
   };
 }
 
@@ -609,10 +650,15 @@ export async function patchAdminUser(
   return mapUser(row);
 }
 
+export async function fetchAdminBarberSegmentStats(): Promise<AdminBarberSegmentStats> {
+  return apiJson<AdminBarberSegmentStats>("/api/v1/admin/barbers/segment-stats/");
+}
+
 export async function fetchAdminBarbers(params?: {
   q?: string;
   region?: RegionCode | "";
   page?: number;
+  segment?: AdminBarberAccountSegment | "";
 }): Promise<Paginated<AdminBarber>> {
   const page = params?.page ?? 1;
   const res = await apiFetch(
@@ -620,6 +666,7 @@ export async function fetchAdminBarbers(params?: {
       const sp = new URLSearchParams();
       if (params?.q) sp.set("q", params.q);
       if (params?.region) sp.set("region", params.region);
+      if (params?.segment) sp.set("segment", params.segment);
       sp.set("page", String(page));
       return `/api/v1/admin/barbers/?${sp.toString()}`;
     })(),

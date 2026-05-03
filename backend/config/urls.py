@@ -10,6 +10,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from control_panel.views import (
     AdminBarberDetailView,
     AdminBarberListView,
+    AdminBarberSegmentStatsView,
     AdminBookingListView,
     AdminBroadcastListCreateView,
     AdminCategoryDetailView,
@@ -123,6 +124,7 @@ api_routes = [
     path("admin/salons/", AdminSalonListView.as_view()),
     path("admin/salons/<int:pk>/", AdminSalonDetailView.as_view()),
     path("admin/barbers/", AdminBarberListView.as_view()),
+    path("admin/barbers/segment-stats/", AdminBarberSegmentStatsView.as_view()),
     path("admin/barbers/<int:pk>/", AdminBarberDetailView.as_view()),
     path("admin/bookings/", AdminBookingListView.as_view()),
     path("admin/reviews/", AdminReviewListView.as_view()),

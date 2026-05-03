@@ -285,7 +285,9 @@ class AdminSalonDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 def _admin_barber_queryset():
-    return (
+    from control_panel.barber_segments import annotate_barber_segment_fields
+
+    return annotate_barber_segment_fields(
         Barber.objects.select_related("profile", "signup_snapshot")
         .prefetch_related(
             Prefetch("owned_salons", queryset=Salon.objects.only("id", "name")),
@@ -311,6 +313,8 @@ class AdminBarberListView(generics.ListAPIView):
     pagination_class = AdminPageNumberPagination
 
     def get_queryset(self):
+        from control_panel.barber_segments import apply_segment_filter
+
         qs = _admin_barber_queryset()
         region = self.request.query_params.get("region")
         if region == "__UNSET__":
@@ -324,7 +328,19 @@ class AdminBarberListView(generics.ListAPIView):
                 | Q(full_name__icontains=q)
                 | Q(phone__icontains=q)
             )
-        return qs
+        seg = self.request.query_params.get("segment", "").strip()
+        return apply_segment_filter(qs, seg)
+
+
+class AdminBarberSegmentStatsView(APIView):
+    """Sartaroshlar segmentlari bo‘yicha sonlar (admin barbers filter bilan mos)."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        from control_panel.barber_segments import barber_segment_counts
+
+        return Response(barber_segment_counts())
 
 
 class AdminBarberDetailView(generics.RetrieveUpdateDestroyAPIView):

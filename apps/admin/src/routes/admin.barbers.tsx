@@ -3,9 +3,20 @@ import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tan
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Star, Trash2, MoreHorizontal } from "lucide-react";
-import { fetchAdminBarbers, patchAdminBarber, deleteAdminBarber, PAGE_SIZE } from "@/lib/admin-api";
+import { cn } from "@/lib/utils";
+import {
+  fetchAdminBarbers,
+  fetchAdminBarberSegmentStats,
+  patchAdminBarber,
+  deleteAdminBarber,
+  PAGE_SIZE,
+} from "@/lib/admin-api";
 import { UZ_REGIONS } from "@/lib/uz-regions";
-import type { AdminBarber } from "@/lib/admin-api";
+import type {
+  AdminBarber,
+  AdminBarberAccountSegment,
+  AdminBarberSegmentStats,
+} from "@/lib/admin-api";
 import { FilterToolbar } from "@/components/admin/FilterToolbar";
 import { Pagination } from "@/components/admin/Pagination";
 import { TableSkeleton } from "@/components/admin/Skeletons";
@@ -28,7 +39,35 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+const BARBER_SEGMENT_FILTERS = new Set<AdminBarberAccountSegment | "">([
+  "",
+  "independent",
+  "mybarber_salon",
+  "salon_owner",
+  "salon_employee",
+  "unknown",
+]);
+
 export const Route = createFileRoute("/admin/barbers")({
+  validateSearch: (raw: Record<string, unknown>) => {
+    const seg = typeof raw.segment === "string" ? raw.segment : "";
+    const pageRaw = raw.page;
+    let page = 1;
+    if (typeof pageRaw === "number" && Number.isFinite(pageRaw) && pageRaw >= 1) {
+      page = Math.floor(pageRaw);
+    } else if (typeof pageRaw === "string") {
+      const n = Number(pageRaw);
+      if (Number.isFinite(n) && n >= 1) page = Math.floor(n);
+    }
+    return {
+      q: typeof raw.q === "string" ? raw.q : "",
+      region: typeof raw.region === "string" ? raw.region : "",
+      page,
+      segment: BARBER_SEGMENT_FILTERS.has(seg as AdminBarberAccountSegment | "")
+        ? (seg as AdminBarberAccountSegment | "")
+        : "",
+    };
+  },
   component: BarbersPage,
 });
 
@@ -43,19 +82,44 @@ function BarbersPage() {
   return <BarbersListPage />;
 }
 
+const SEGMENT_CHIPS: {
+  segment: AdminBarberAccountSegment | "";
+  label: string;
+  countKey: keyof AdminBarberSegmentStats;
+}[] = [
+  { segment: "", label: "Barchasi", countKey: "total" },
+  { segment: "independent", label: "Mustaqil barber", countKey: "independent" },
+  { segment: "mybarber_salon", label: "MyBarber (salon)", countKey: "mybarber_salon" },
+  { segment: "salon_owner", label: "Salon egasi", countKey: "salon_owner" },
+  { segment: "salon_employee", label: "Salonga qo‘shilgan", countKey: "salon_employee" },
+  { segment: "unknown", label: "Aniqlanmagan / eski", countKey: "unknown" },
+];
+
 function BarbersListPage() {
-  const search = Route.useSearch() as { q?: unknown; region?: unknown; page?: unknown };
-  const q = typeof search.q === "string" ? search.q : "";
-  const region = typeof search.region === "string" ? search.region : "";
-  const pageRaw = typeof search.page === "number" ? search.page : Number(search.page);
-  const page = Number.isFinite(pageRaw) && pageRaw >= 1 ? Math.floor(pageRaw) : 1;
+  const search = Route.useSearch();
+  const q = search.q;
+  const region = search.region;
+  const page = search.page;
+  const segment = search.segment;
   const navigate = useNavigate({ from: Route.fullPath });
   const queryClient = useQueryClient();
   const [deleteTarget, setDeleteTarget] = useState<AdminBarber | null>(null);
 
+  const segmentStatsQ = useQuery({
+    queryKey: ["admin", "barbers", "segment-stats"],
+    queryFn: fetchAdminBarberSegmentStats,
+    staleTime: 60_000,
+  });
+
   const barbersQ = useQuery({
-    queryKey: ["admin", "barbers", { q, region, page }],
-    queryFn: () => fetchAdminBarbers({ q, region, page }),
+    queryKey: ["admin", "barbers", { q, region, page, segment }],
+    queryFn: () =>
+      fetchAdminBarbers({
+        q,
+        region,
+        page,
+        segment: segment || undefined,
+      }),
   });
 
   const patchBarber = useMutation({
@@ -63,6 +127,7 @@ function BarbersListPage() {
       patchAdminBarber(id, body),
     onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "barbers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "barbers", "segment-stats"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "barber", vars.id] });
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
       toast.success("Sartarosh yangilandi");
@@ -74,6 +139,7 @@ function BarbersListPage() {
     mutationFn: (id: string) => deleteAdminBarber(id),
     onSuccess: (_d, id) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "barbers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "barbers", "segment-stats"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "barber", id] });
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
       setDeleteTarget(null);
@@ -98,18 +164,50 @@ function BarbersListPage() {
       <FilterToolbar
         search={q}
         onSearchChange={(v) =>
-          navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, q: v, page: 1 }) })
+          navigate({ search: (prev) => ({ ...prev, q: v, page: 1 }) })
         }
         region={region}
         onRegionChange={(v) =>
-          navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, region: v, page: 1 }) })
+          navigate({ search: (prev) => ({ ...prev, region: v, page: 1 }) })
         }
         searchPlaceholder="Sartarosh ismi yoki telefoni..."
       />
 
+      <div className="flex flex-wrap gap-2">
+        {SEGMENT_CHIPS.map(({ segment: seg, label, countKey }) => {
+          const counts = segmentStatsQ.data;
+          const n = counts ? counts[countKey] : null;
+          const active = segment === seg;
+          return (
+            <Button
+              key={seg || "all"}
+              type="button"
+              variant={active ? "default" : "outline"}
+              size="sm"
+              className={cn("h-9 gap-1.5 rounded-full", active && "shadow-sm")}
+              onClick={() =>
+                navigate({
+                  search: (prev) => ({ ...prev, segment: seg, page: 1 }),
+                })
+              }
+            >
+              <span>{label}</span>
+              <span
+                className={cn(
+                  "tabular-nums text-xs font-medium",
+                  active ? "opacity-90" : "text-muted-foreground",
+                )}
+              >
+                {n != null ? n : "—"}
+              </span>
+            </Button>
+          );
+        })}
+      </div>
+
       <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
         {barbersQ.isLoading ? (
-          <TableSkeleton rows={8} cols={6} />
+          <TableSkeleton rows={8} cols={7} />
         ) : !data || data.results.length === 0 ? (
           <EmptyState
             title="Sartaroshlar topilmadi"
@@ -122,6 +220,7 @@ function BarbersListPage() {
                 <thead className="bg-background border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
                     <th className="px-6 py-3 font-medium">Sartarosh</th>
+                    <th className="px-6 py-3 font-medium min-w-[140px]">Akkaunt turi</th>
                     <th className="px-6 py-3 font-medium">Salon</th>
                     <th className="px-6 py-3 font-medium">Hudud</th>
                     <th className="px-6 py-3 font-medium">Reyting</th>
@@ -152,6 +251,11 @@ function BarbersListPage() {
                             </div>
                           </div>
                         </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-foreground max-w-[220px]">
+                        <span className="line-clamp-2" title={b.account_segment_label}>
+                          {b.account_segment_label}
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-foreground">
                         {b.salon_name ?? (
@@ -228,7 +332,7 @@ function BarbersListPage() {
               count={data.count}
               pageSize={PAGE_SIZE}
               onPageChange={(p) =>
-                navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, page: p }) })
+                navigate({ search: (prev) => ({ ...prev, page: p }) })
               }
             />
           </>
