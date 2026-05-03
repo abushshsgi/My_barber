@@ -152,6 +152,14 @@ function formatPhone(digits: string) {
 
 export function CreateSalonPage() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const d = readSignupDraft();
+    if (d?.flow === "mybarber") {
+      void navigate({ to: "/mybarber/setup", replace: true });
+    }
+  }, [navigate]);
+
   // --- Salon state ---
   const [salonName, setSalonName] = useState("");
   const [salonDescription, setSalonDescription] = useState("");
@@ -310,12 +318,7 @@ export function CreateSalonPage() {
           longitude: Number(salonLongitude),
           onboarding_flow: draft.flow,
           work_mode: draft.flow === "independent" ? "independent" : "salon",
-          shop_name:
-            draft.flow === "mybarber"
-              ? `MyBarber · ${draft.full_name}`
-              : draft.flow === "owner"
-                ? salonName.trim()
-                : "",
+          shop_name: draft.flow === "owner" ? salonName.trim() : "",
           address: [salonCity.trim(), salonAddress.trim(), salonLandmark.trim()]
             .filter(Boolean)
             .join(", "),

@@ -206,12 +206,18 @@ class BarberOnboardingStatusView(APIView):
 
         if flow in (Barber.OnboardingFlow.OWNER, Barber.OnboardingFlow.MYBARBER) or (flow == "" and owns_salon):
             if not owns_salon:
-                nxt = "/salon/create?preset=mybarber" if flow == Barber.OnboardingFlow.MYBARBER else "/salon/create"
+                nxt = (
+                    "/mybarber/setup"
+                    if flow == Barber.OnboardingFlow.MYBARBER
+                    else "/salon/create"
+                )
                 return incomplete(nxt, payload)
             mem = owner_mem
             has_mem_hours = bool(mem and SalonWorkingHours.objects.filter(membership=mem).exists())
             payload["has_membership_hours"] = has_mem_hours
             if not has_location or not has_mem_hours:
+                if flow == Barber.OnboardingFlow.MYBARBER:
+                    return incomplete("/mybarber/setup", payload)
                 return incomplete("/salon/create", payload)
             return complete(payload)
 
