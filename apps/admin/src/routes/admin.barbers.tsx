@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Star, Trash2, MoreHorizontal } from "lucide-react";
@@ -33,6 +33,17 @@ export const Route = createFileRoute("/admin/barbers")({
 });
 
 function BarbersPage() {
+  const parts = useRouterState({
+    select: (s) => s.location.pathname.split("/").filter(Boolean),
+  });
+  const isBarberDetail = parts.length === 3 && parts[0] === "admin" && parts[1] === "barbers";
+  if (isBarberDetail) {
+    return <Outlet />;
+  }
+  return <BarbersListPage />;
+}
+
+function BarbersListPage() {
   const search = Route.useSearch() as { q?: unknown; region?: unknown; page?: unknown };
   const q = typeof search.q === "string" ? search.q : "";
   const region = typeof search.region === "string" ? search.region : "";
@@ -50,8 +61,9 @@ function BarbersPage() {
   const patchBarber = useMutation({
     mutationFn: ({ id, body }: { id: string; body: Parameters<typeof patchAdminBarber>[1] }) =>
       patchAdminBarber(id, body),
-    onSuccess: () => {
+    onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "barbers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "barber", vars.id] });
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
       toast.success("Sartarosh yangilandi");
     },
@@ -60,8 +72,9 @@ function BarbersPage() {
 
   const removeBarber = useMutation({
     mutationFn: (id: string) => deleteAdminBarber(id),
-    onSuccess: () => {
+    onSuccess: (_d, id) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "barbers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "barber", id] });
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
       setDeleteTarget(null);
       toast.success("Sartarosh o'chirildi");
@@ -127,7 +140,13 @@ function BarbersPage() {
                             className="size-9 rounded-full object-cover ring-1 ring-border"
                           />
                           <div>
-                            <div className="font-medium text-foreground">{b.name}</div>
+                            <Link
+                              to="/admin/barbers/$barberId"
+                              params={{ barberId: b.id }}
+                              className="font-medium text-foreground hover:underline"
+                            >
+                              {b.name}
+                            </Link>
                             <div className="text-xs text-muted-foreground tabular-nums">
                               {b.phone}
                             </div>

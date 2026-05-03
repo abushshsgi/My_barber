@@ -15,7 +15,7 @@ import { TableSkeleton } from "@/components/admin/Skeletons";
 import { EmptyState } from "@/components/admin/EmptyState";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog";
-import { EditServiceDialog } from "@/components/admin/edit-dialogs";
+import { EditServiceDialog, type ServiceFormValues } from "@/components/admin/edit-dialogs";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -40,7 +40,15 @@ function ServicesPage() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["admin", "services"] });
 
   const createMut = useMutation({
-    mutationFn: createService,
+    mutationFn: (v: ServiceFormValues) =>
+      createService({
+        type: "salon",
+        name: v.name,
+        price: v.price,
+        duration_min: v.duration_min,
+        is_active: v.is_active,
+        category_ids: v.category_id ? [v.category_id] : [],
+      }),
     onSuccess: () => {
       invalidate();
       setCreateOpen(false);
@@ -48,8 +56,23 @@ function ServicesPage() {
     },
   });
   const updateMut = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<AdminService> }) =>
-      updateService(id, body),
+    mutationFn: ({
+      id,
+      body,
+      type,
+    }: {
+      id: string;
+      body: ServiceFormValues;
+      type: "salon" | "independent";
+    }) =>
+      updateService(id, {
+        type,
+        name: body.name,
+        price: body.price,
+        duration_min: body.duration_min,
+        is_active: body.is_active,
+        category_ids: body.category_id ? [body.category_id] : [],
+      }),
     onSuccess: () => {
       invalidate();
       setEditTarget(null);
@@ -161,9 +184,21 @@ function ServicesPage() {
         open={!!editTarget}
         onOpenChange={(v) => !v && setEditTarget(null)}
         categories={cats}
-        defaultValues={editTarget ?? undefined}
+        defaultValues={
+          editTarget
+            ? {
+                name: editTarget.name,
+                category_id: editTarget.category_ids[0] ?? "",
+                price: editTarget.price,
+                duration_min: editTarget.duration_min,
+                is_active: editTarget.is_active,
+              }
+            : undefined
+        }
         loading={updateMut.isPending}
-        onSave={(v) => editTarget && updateMut.mutate({ id: editTarget.id, body: v })}
+        onSave={(v) =>
+          editTarget && updateMut.mutate({ id: editTarget.id, body: v, type: editTarget.type })
+        }
       />
       <DeleteConfirmDialog
         open={!!deleteTarget}

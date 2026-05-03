@@ -1,4 +1,4 @@
-from django.db.models import Avg, Count, Q, Sum
+from django.db.models import Avg, Count, Prefetch, Q, Sum
 from django.utils import timezone
 from rest_framework import generics
 from rest_framework import status as http_status
@@ -13,11 +13,12 @@ from barbers.models import Barber, BarberService, BarberSupportTicket
 from accounts.permissions import IsAdmin
 from bookings.models import Booking, BookingLine, Review
 from bookings.serializers import BookingSerializer
-from salons.models import Category, Salon, Service
+from salons.models import Category, Salon, SalonMembership, Service
 
 from .serializers import (
     AdminAccountSerializer,
     AdminAccountWriteSerializer,
+    AdminBarberDetailSerializer,
     AdminBarberSerializer,
     AdminBarberUpdateSerializer,
     AdminBroadcastCampaignSerializer,
@@ -283,18 +284,34 @@ class AdminSalonDetailView(generics.RetrieveUpdateDestroyAPIView):
         instance.delete()
 
 
+def _admin_barber_queryset():
+    return (
+        Barber.objects.select_related("profile", "signup_snapshot")
+        .prefetch_related(
+            Prefetch("owned_salons", queryset=Salon.objects.only("id", "name")),
+            Prefetch(
+                "salon_memberships",
+                queryset=SalonMembership.objects.select_related("salon").order_by(
+                    "-activated_at", "-id"
+                ),
+                to_attr="_admin_memberships_ordered",
+            ),
+        )
+        .annotate(
+            reviews_count=Count("reviews_about", distinct=True),
+            rating=Avg("reviews_about__rating"),
+        )
+        .order_by("-date_joined")
+    )
+
+
 class AdminBarberListView(generics.ListAPIView):
     permission_classes = [IsAdmin]
     serializer_class = AdminBarberSerializer
     pagination_class = AdminPageNumberPagination
 
     def get_queryset(self):
-        qs = Barber.objects.select_related("profile", "signup_snapshot").annotate(
-            reviews_count=Count("reviews_about", distinct=True),
-            rating=Avg("reviews_about__rating"),
-        ).order_by(
-            "-date_joined"
-        )
+        qs = _admin_barber_queryset()
         region = self.request.query_params.get("region")
         if region == "__UNSET__":
             qs = qs.filter(region="")
@@ -312,12 +329,16 @@ class AdminBarberListView(generics.ListAPIView):
 
 class AdminBarberDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdmin]
-    queryset = Barber.objects.all()
     serializer_class = AdminBarberSerializer
+
+    def get_queryset(self):
+        return _admin_barber_queryset()
 
     def get_serializer_class(self):
         if self.request.method in ("PATCH", "PUT"):
             return AdminBarberUpdateSerializer
+        if self.request.method == "GET":
+            return AdminBarberDetailSerializer
         return AdminBarberSerializer
 
     def perform_update(self, serializer):

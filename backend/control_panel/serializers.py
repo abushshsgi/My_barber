@@ -3,9 +3,9 @@ from django.db.models import Avg
 
 from accounts.models import AdminAccount, User
 from accounts.uz_regions import UzRegion
-from barbers.models import Barber
+from barbers.models import Barber, BarberService
 from bookings.models import Review
-from salons.models import Category, Salon, Service
+from salons.models import Category, Salon, SalonMembership, Service
 
 from .models import (
     AuditLog,
@@ -169,6 +169,24 @@ class AdminSalonUpdateSerializer(serializers.ModelSerializer):
         fields = ("is_published", "premium", "name", "address", "phone")
 
 
+def _active_membership_for_barber(obj: Barber):
+    """Prefer prefetched `_admin_memberships_ordered`; else one DB hit."""
+    mems = getattr(obj, "_admin_memberships_ordered", None)
+    if mems is not None:
+        for m in mems:
+            if m.invite_state == SalonMembership.InviteState.ACTIVE:
+                return m
+        return None
+    return (
+        SalonMembership.objects.filter(
+            barber=obj, invite_state=SalonMembership.InviteState.ACTIVE
+        )
+        .select_related("salon")
+        .order_by("-activated_at", "-id")
+        .first()
+    )
+
+
 class AdminBarberSerializer(serializers.ModelSerializer):
     region_label = serializers.SerializerMethodField()
     owned_salons_count = serializers.SerializerMethodField()
@@ -251,14 +269,20 @@ class AdminBarberSerializer(serializers.ModelSerializer):
         if sid is not None:
             return sid
         first = obj.owned_salons.only("id").first()
-        return first.id if first else None
+        if first:
+            return first.id
+        m = _active_membership_for_barber(obj)
+        return m.salon_id if m else None
 
     def get_salon_name(self, obj: Barber):
         sname = getattr(obj, "salon_name", None)
         if sname is not None:
             return sname
         first = obj.owned_salons.only("name").first()
-        return first.name if first else None
+        if first:
+            return first.name
+        m = _active_membership_for_barber(obj)
+        return m.salon.name if m and m.salon else None
 
     def get_rating(self, obj: Barber) -> float:
         r = getattr(obj, "rating", None)
@@ -310,6 +334,116 @@ class AdminBarberUpdateSerializer(serializers.ModelSerializer):
         if value not in allowed:
             raise serializers.ValidationError("Noto'g'ri viloyat.")
         return value
+
+
+class AdminBarberDetailSerializer(AdminBarberSerializer):
+    """Full barber row for admin detail GET (profile, memberships, services)."""
+
+    location_text = serializers.SerializerMethodField()
+    spoken_languages = serializers.SerializerMethodField()
+    memberships = serializers.SerializerMethodField()
+    salon_services = serializers.SerializerMethodField()
+    independent_services = serializers.SerializerMethodField()
+
+    class Meta(AdminBarberSerializer.Meta):
+        fields = AdminBarberSerializer.Meta.fields + (
+            "last_login",
+            "location_text",
+            "spoken_languages",
+            "memberships",
+            "salon_services",
+            "independent_services",
+        )
+        read_only_fields = AdminBarberSerializer.Meta.read_only_fields + (
+            "last_login",
+            "location_text",
+            "spoken_languages",
+            "memberships",
+            "salon_services",
+            "independent_services",
+        )
+
+    def get_location_text(self, obj: Barber) -> str:
+        p = getattr(obj, "profile", None)
+        return (p.location_text or "") if p else ""
+
+    def get_spoken_languages(self, obj: Barber):
+        p = getattr(obj, "profile", None)
+        if not p:
+            return []
+        return list(p.spoken_languages or [])
+
+    def get_memberships(self, obj: Barber):
+        mems = getattr(obj, "_admin_memberships_ordered", None)
+        if mems is None:
+            mems = list(
+                SalonMembership.objects.filter(barber=obj)
+                .select_related("salon")
+                .order_by("-activated_at", "-id")[:50]
+            )
+        out = []
+        for m in mems[:50]:
+            sn = m.salon.name if m.salon else ""
+            out.append(
+                {
+                    "id": m.id,
+                    "salon_id": m.salon_id,
+                    "salon_name": sn,
+                    "role": m.role,
+                    "invite_state": m.invite_state,
+                    "activated_at": m.activated_at,
+                    "invited_at": m.invited_at,
+                }
+            )
+        return out
+
+    def get_salon_services(self, obj: Barber):
+        salon_ids: set[int] = set()
+        for s in obj.owned_salons.all():
+            salon_ids.add(s.id)
+        mems = getattr(obj, "_admin_memberships_ordered", None)
+        if mems is not None:
+            for m in mems:
+                salon_ids.add(m.salon_id)
+        else:
+            salon_ids.update(
+                SalonMembership.objects.filter(barber=obj).values_list("salon_id", flat=True)
+            )
+        if not salon_ids:
+            return []
+        rows = (
+            Service.objects.filter(salon_id__in=salon_ids)
+            .select_related("salon")
+            .order_by("salon_id", "name")
+        )
+        return [
+            {
+                "id": svc.id,
+                "salon_id": svc.salon_id,
+                "salon_name": svc.salon.name if svc.salon else "",
+                "name": svc.name,
+                "price": str(svc.price),
+                "duration_minutes": svc.duration_minutes,
+                "is_active": svc.is_active,
+                "barber_id": svc.barber_id,
+            }
+            for svc in rows
+        ]
+
+    def get_independent_services(self, obj: Barber):
+        p = getattr(obj, "profile", None)
+        if not p:
+            return []
+        return [
+            {
+                "id": s.id,
+                "name": s.name,
+                "price": str(s.price),
+                "duration_minutes": s.duration_minutes,
+                "is_active": s.is_active,
+            }
+            for s in BarberService.objects.filter(profile=p).order_by("name")
+        ]
 
 
 class AdminReviewListSerializer(serializers.ModelSerializer):

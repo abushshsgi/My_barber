@@ -50,6 +50,63 @@ export type AdminBarber = {
   created_at: string;
 };
 
+export type AdminBarberSignupSnapshot = {
+  has_salon: boolean;
+  shop_name: string;
+  age: number | null;
+  address: string;
+  staff_count_at_signup: number | null;
+  raw_payload: Record<string, unknown>;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+export type AdminBarberMembership = {
+  id: number;
+  salon_id: number;
+  salon_name: string;
+  role: string;
+  invite_state: string;
+  activated_at: string | null;
+  invited_at: string | null;
+};
+
+export type AdminBarberSalonService = {
+  id: number;
+  salon_id: number;
+  salon_name: string;
+  name: string;
+  price: string;
+  duration_minutes: number;
+  is_active: boolean;
+  barber_id: number | null;
+};
+
+export type AdminBarberIndependentService = {
+  id: number;
+  name: string;
+  price: string;
+  duration_minutes: number;
+  is_active: boolean;
+};
+
+export type AdminBarberDetail = AdminBarber & {
+  email: string;
+  username: string;
+  region_label: string;
+  owned_salons_count: number;
+  work_mode: string;
+  onboarding_flow: string;
+  onboarding_completed_at: string | null;
+  last_login: string | null;
+  signup_snapshot: AdminBarberSignupSnapshot | null;
+  location_text: string;
+  spoken_languages: string[];
+  memberships: AdminBarberMembership[];
+  salon_services: AdminBarberSalonService[];
+  independent_services: AdminBarberIndependentService[];
+};
+
 export type AdminSalon = {
   id: string;
   name: string;
@@ -122,9 +179,50 @@ type BackendUserRow = {
   bookings_count?: number;
 };
 
+type BackendBarberSignupSnapshot = {
+  has_salon?: boolean;
+  shop_name?: string;
+  age?: number | null;
+  address?: string;
+  staff_count_at_signup?: number | null;
+  raw_payload?: Record<string, unknown>;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+type BackendBarberMembership = {
+  id: number;
+  salon_id: number;
+  salon_name?: string;
+  role: string;
+  invite_state: string;
+  activated_at?: string | null;
+  invited_at?: string | null;
+};
+
+type BackendBarberSalonService = {
+  id: number;
+  salon_id: number;
+  salon_name?: string;
+  name: string;
+  price: string;
+  duration_minutes: number;
+  is_active: boolean;
+  barber_id?: number | null;
+};
+
+type BackendBarberIndependentService = {
+  id: number;
+  name: string;
+  price: string;
+  duration_minutes: number;
+  is_active: boolean;
+};
+
 type BackendBarberRow = {
   id: number;
   email: string;
+  username?: string;
   full_name: string;
   phone: string | null;
   region: string;
@@ -133,12 +231,22 @@ type BackendBarberRow = {
   longitude?: string;
   is_active: boolean;
   date_joined: string;
-  owned_salons_count: number;
+  owned_salons_count?: number;
   salon_id?: number | null;
   salon_name?: string | null;
   reviews_count?: number;
   rating?: number;
   avatar?: string | null;
+  work_mode?: string;
+  onboarding_flow?: string;
+  onboarding_completed_at?: string | null;
+  signup_snapshot?: BackendBarberSignupSnapshot | null;
+  last_login?: string | null;
+  location_text?: string;
+  spoken_languages?: string[];
+  memberships?: BackendBarberMembership[];
+  salon_services?: BackendBarberSalonService[];
+  independent_services?: BackendBarberIndependentService[];
 };
 
 type BackendSalonRow = {
@@ -221,7 +329,7 @@ function mapBarber(b: BackendBarberRow): AdminBarber {
     avatar: b.avatar || avatarFor(String(b.id)),
     phone: b.phone ?? "—",
     region: b.region,
-    salon_id: b.salon_id ? String(b.salon_id) : null,
+    salon_id: b.salon_id != null ? String(b.salon_id) : null,
     salon_name: b.salon_name ?? null,
     rating: Number(b.rating || 0),
     reviews_count: Number(b.reviews_count || 0),
@@ -229,6 +337,66 @@ function mapBarber(b: BackendBarberRow): AdminBarber {
     lat: coord?.lat ?? Number.NaN,
     lng: coord?.lng ?? Number.NaN,
     created_at: b.date_joined,
+  };
+}
+
+function mapSignupSnap(
+  s: BackendBarberSignupSnapshot | null | undefined,
+): AdminBarberSignupSnapshot | null {
+  if (!s) return null;
+  return {
+    has_salon: !!s.has_salon,
+    shop_name: s.shop_name ?? "",
+    age: s.age ?? null,
+    address: s.address ?? "",
+    staff_count_at_signup: s.staff_count_at_signup ?? null,
+    raw_payload: s.raw_payload && typeof s.raw_payload === "object" ? s.raw_payload : {},
+    created_at: s.created_at ?? null,
+    updated_at: s.updated_at ?? null,
+  };
+}
+
+function mapBarberDetail(b: BackendBarberRow): AdminBarberDetail {
+  const base = mapBarber(b);
+  return {
+    ...base,
+    email: b.email,
+    username: (b.username ?? b.email).trim(),
+    region_label: b.region_label ?? "",
+    owned_salons_count: toInt(b.owned_salons_count, 0),
+    work_mode: b.work_mode ?? "",
+    onboarding_flow: b.onboarding_flow ?? "",
+    onboarding_completed_at: b.onboarding_completed_at ?? null,
+    last_login: b.last_login ?? null,
+    signup_snapshot: mapSignupSnap(b.signup_snapshot),
+    location_text: b.location_text ?? "",
+    spoken_languages: Array.isArray(b.spoken_languages) ? [...b.spoken_languages] : [],
+    memberships: (b.memberships ?? []).map((m) => ({
+      id: m.id,
+      salon_id: m.salon_id,
+      salon_name: m.salon_name ?? "",
+      role: m.role,
+      invite_state: m.invite_state,
+      activated_at: m.activated_at ?? null,
+      invited_at: m.invited_at ?? null,
+    })),
+    salon_services: (b.salon_services ?? []).map((s) => ({
+      id: s.id,
+      salon_id: s.salon_id,
+      salon_name: s.salon_name ?? "",
+      name: s.name,
+      price: s.price,
+      duration_minutes: s.duration_minutes,
+      is_active: !!s.is_active,
+      barber_id: s.barber_id ?? null,
+    })),
+    independent_services: (b.independent_services ?? []).map((s) => ({
+      id: s.id,
+      name: s.name,
+      price: s.price,
+      duration_minutes: s.duration_minutes,
+      is_active: !!s.is_active,
+    })),
   };
 }
 
@@ -365,6 +533,11 @@ export async function deleteAdminBarber(id: string): Promise<{ ok: true }> {
     throw new Error((j as { detail?: string }).detail || "Sartarosh o‘chirilmadi");
   }
   return { ok: true as const };
+}
+
+export async function fetchAdminBarberDetail(id: string): Promise<AdminBarberDetail> {
+  const row = await apiJson<BackendBarberRow>(`/api/v1/admin/barbers/${id}/`);
+  return mapBarberDetail(row);
 }
 
 export async function fetchAdminSalons(params?: {
