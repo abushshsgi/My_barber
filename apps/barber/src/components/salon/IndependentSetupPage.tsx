@@ -9,13 +9,17 @@ import {
   Check,
   Clock,
   Crosshair,
+  Languages,
   Loader2,
   MapPin,
   Navigation,
+  Phone,
   Plus,
   Scissors,
   Sparkles,
   Trash2,
+  UploadCloud,
+  User,
   UserRoundCheck,
 } from "lucide-react";
 
@@ -72,11 +76,25 @@ const UZ_REGIONS = [
   "Qoraqalpog'iston",
 ];
 
+const LANGUAGES = [
+  { code: "uz", label: "O'zbek" },
+  { code: "ru", label: "Русский" },
+  { code: "en", label: "English" },
+  { code: "tr", label: "Türkçe" },
+  { code: "ar", label: "العربية" },
+] as const;
+
 /* ============================================================
    Step metadata
    ============================================================ */
 
 const STEP_META = [
+  {
+    short: "Profil",
+    title: "Barber profili",
+    subtitle: "Ism, familiya, telefon va rasm — mijozlar sizni shu profil bilan ko'radi.",
+    icon: User,
+  },
   {
     short: "Joylashuv",
     title: "Sizni qayerda topishadi?",
@@ -95,6 +113,12 @@ const STEP_META = [
     subtitle: "Qaysi kunlari ishlaysiz — vaqtlarni belgilang.",
     icon: CalendarDays,
   },
+  {
+    short: "Tillar",
+    title: "Muloqot tillari",
+    subtitle: "Mijozlar bilan qaysi tillarda gaplasha olasiz?",
+    icon: Languages,
+  },
 ] as const;
 
 const TOTAL_STEPS = STEP_META.length;
@@ -103,12 +127,31 @@ function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
+function normalizePhoneDigits(input: string) {
+  return input.replace(/\D/g, "").slice(0, 9);
+}
+
+function formatPhone(digits: string) {
+  const d = digits;
+  if (d.length === 0) return "";
+  if (d.length <= 2) return d;
+  if (d.length <= 5) return `${d.slice(0, 2)} ${d.slice(2)}`;
+  if (d.length <= 7) return `${d.slice(0, 2)} ${d.slice(2, 5)}-${d.slice(5)}`;
+  return `${d.slice(0, 2)} ${d.slice(2, 5)}-${d.slice(5, 7)}-${d.slice(7, 9)}`;
+}
+
 /* ============================================================
    Page
    ============================================================ */
 
 export function IndependentSetupPage() {
   const navigate = useNavigate();
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phoneDigits, setPhoneDigits] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   // Location state
   const [region, setRegion] = useState("");
@@ -133,23 +176,55 @@ export function IndependentSetupPage() {
     })),
   );
 
+  const [languages, setLanguages] = useState<string[]>(["uz"]);
+
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Pre-fill from existing profile if barber already logged in
+  // Pre-fill: signup draft (token yo'q) yoki server (token bor)
   useEffect(() => {
-    if (!getBarberAccessToken()) return;
     void (async () => {
+      if (!getBarberAccessToken()) {
+        const draft = readSignupDraft();
+        if (draft?.full_name) {
+          const parts = draft.full_name.trim().split(/\s+/).filter(Boolean);
+          setFirstName((p) => p || parts[0] || "");
+          setLastName((p) => p || parts.slice(1).join(" ") || "");
+          if (draft.phone) {
+            let ph = draft.phone.replace(/\D/g, "");
+            if (ph.startsWith("998")) ph = ph.slice(3);
+            setPhoneDigits((p) => p || ph.slice(0, 9));
+          }
+        }
+        return;
+      }
       try {
+        const meRes = await apiFetch("/api/v1/barber/auth/me/");
+        const meRaw = await parseJsonSafe(meRes);
+        if (meRes.ok && meRaw && typeof meRaw === "object") {
+          const me = meRaw as { full_name?: string; phone?: string; avatar?: string };
+          const full = ((me.full_name || "") as string).trim();
+          const nameParts = full.split(/\s+/).filter(Boolean);
+          setFirstName(nameParts[0] || "");
+          setLastName(nameParts.slice(1).join(" ") || "");
+          let ph = ((me.phone || "") as string).replace(/\D/g, "");
+          if (ph.startsWith("998")) ph = ph.slice(3);
+          setPhoneDigits(ph.slice(0, 9));
+          if (me.avatar && typeof me.avatar === "string") {
+            setAvatarPreview(me.avatar);
+          }
+        }
+
         const res = await apiFetch("/api/v1/barber/profile/");
         const body = (await parseJsonSafe(res)) as {
           exists?: boolean;
           location_text?: string;
           latitude?: string | number | null;
           longitude?: string | number | null;
+          spoken_languages?: string[];
         };
         if (!res.ok || !body?.exists) return;
         if (body.latitude != null) setLatitude(String(body.latitude));
@@ -158,21 +233,28 @@ export function IndependentSetupPage() {
           const parts = String(body.location_text)
             .split(",")
             .map((s) => s.trim());
-          if (parts[0] && !region) setRegion(parts[0]);
-          if (parts[1] && !address) setAddress(parts.slice(1).join(", "));
+          if (parts[0]) setRegion(parts[0]);
+          if (parts[1]) setAddress(parts.slice(1).join(", "));
+        }
+        const langs = body.spoken_languages;
+        if (Array.isArray(langs) && langs.length > 0) {
+          const allowed = new Set(LANGUAGES.map((l) => l.code));
+          const next = langs.filter((c): c is string => typeof c === "string" && allowed.has(c));
+          if (next.length > 0) setLanguages(next);
         }
       } catch {
         // optional
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const stepValid = useMemo(() => {
     const lat = Number(latitude);
     const lng = Number(longitude);
     return [
-      // 0: Location
+      // 0: Barber profile (Create salon bilan bir xil talablar)
+      firstName.trim().length > 1 && lastName.trim().length > 1 && phoneDigits.length === 9,
+      // 1: Location
       region.trim().length > 1 &&
         address.trim().length > 2 &&
         Number.isFinite(lat) &&
@@ -181,15 +263,28 @@ export function IndependentSetupPage() {
         lat <= 90 &&
         lng >= -180 &&
         lng <= 180,
-      // 1: Services - at least one valid
+      // 2: Services - at least one valid
       services.length > 0 &&
         services.every(
           (s) => s.name.trim().length > 0 && Number(s.price) > 0 && Number(s.duration) > 0,
         ),
-      // 2: Schedule - at least one open day
+      // 3: Schedule - at least one open day
       schedule.some((d) => d.open),
+      // 4: Languages
+      languages.length > 0,
     ];
-  }, [region, address, latitude, longitude, services, schedule]);
+  }, [
+    firstName,
+    lastName,
+    phoneDigits,
+    region,
+    address,
+    latitude,
+    longitude,
+    services,
+    schedule,
+    languages,
+  ]);
 
   const isLast = step === TOTAL_STEPS - 1;
   const canNext = stepValid[step];
@@ -246,6 +341,19 @@ export function IndependentSetupPage() {
   const removeService = (id: string) =>
     setServices((prev) => (prev.length > 1 ? prev.filter((s) => s.id !== id) : prev));
 
+  const toggleLanguage = (code: string) =>
+    setLanguages((prev) =>
+      prev.includes(code) ? prev.filter((l) => l !== code) : [...prev, code],
+    );
+
+  const handleAvatar = (files: FileList | null) => {
+    if (!files?.[0]) return;
+    const f = files[0];
+    if (!f.type.startsWith("image/")) return;
+    setAvatarFile(f);
+    setAvatarPreview(URL.createObjectURL(f));
+  };
+
   const handleSubmit = async () => {
     if (!allValid || submitting) return;
     setSubmitError(null);
@@ -254,6 +362,8 @@ export function IndependentSetupPage() {
       const lat = roundCoord6(Number(latitude));
       const lng = roundCoord6(Number(longitude));
       const locationText = [region.trim(), address.trim()].filter(Boolean).join(", ");
+      const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+      const barberPhone = `+998${phoneDigits}`;
 
       // 1) Ensure we are logged in: if no token, register the independent barber from draft.
       if (!getBarberAccessToken()) {
@@ -270,8 +380,8 @@ export function IndependentSetupPage() {
           body: JSON.stringify({
             email,
             password: draft.password,
-            full_name: draft.full_name,
-            phone: draft.phone || undefined,
+            full_name: fullName || draft.full_name,
+            phone: barberPhone,
             onboarding_flow: "independent",
             work_mode: "independent",
             has_salon: false,
@@ -305,13 +415,42 @@ export function IndependentSetupPage() {
         setBarberTokens(tokens.access, tokens.refresh);
       }
 
-      // 2) Save barber profile (location).
+      // 2) Barber asosiy profili (ism, telefon, avatar) — Create salon oqimidagi kabi.
+      if (avatarFile) {
+        const meBody = new FormData();
+        meBody.append("full_name", fullName);
+        meBody.append("phone", barberPhone);
+        meBody.append("avatar", avatarFile);
+        const meRes = await apiFetch("/api/v1/barber/auth/me/", {
+          method: "PATCH",
+          body: meBody,
+          headers: {},
+        });
+        const meErr = await parseJsonSafe(meRes);
+        if (!meRes.ok) {
+          setSubmitError(extractApiError(meErr, "Barber profilini saqlashda xatolik yuz berdi."));
+          return;
+        }
+      } else {
+        const meRes = await apiFetch("/api/v1/barber/auth/me/", {
+          method: "PATCH",
+          body: JSON.stringify({ full_name: fullName, phone: barberPhone }),
+        });
+        const meErr = await parseJsonSafe(meRes);
+        if (!meRes.ok) {
+          setSubmitError(extractApiError(meErr, "Barber profilini saqlashda xatolik yuz berdi."));
+          return;
+        }
+      }
+
+      // 3) Save barber profile (location + muloqot tillari).
       const profileRes = await apiFetch("/api/v1/barber/profile/", {
         method: "PATCH",
         body: JSON.stringify({
           location_text: locationText,
           latitude: lat,
           longitude: lng,
+          spoken_languages: languages,
         }),
       });
       if (!profileRes.ok) {
@@ -320,7 +459,7 @@ export function IndependentSetupPage() {
         return;
       }
 
-      // 3) Create services. Skip duplicates by name (case-insensitive) if backend
+      // 4) Create services. Skip duplicates by name (case-insensitive) if backend
       //    already returns existing ones.
       const existingRes = await apiFetch("/api/v1/barber/services/");
       const existingBody = (await parseJsonSafe(existingRes)) as
@@ -354,7 +493,7 @@ export function IndependentSetupPage() {
         }
       }
 
-      // 4) Replace working hours with current schedule. Delete then recreate.
+      // 5) Replace working hours with current schedule. Delete then recreate.
       const hoursRes = await apiFetch("/api/v1/barber/working-hours/");
       const hoursBody = (await parseJsonSafe(hoursRes)) as
         | Array<{ id: number; weekday: number }>
@@ -492,6 +631,18 @@ export function IndependentSetupPage() {
             className="space-y-4 sm:space-y-6"
           >
             {step === 0 && (
+              <IndependentBarberProfileStep
+                firstName={firstName}
+                setFirstName={setFirstName}
+                lastName={lastName}
+                setLastName={setLastName}
+                phoneDigits={phoneDigits}
+                setPhoneDigits={setPhoneDigits}
+                avatar={avatarPreview}
+                handleAvatarFile={handleAvatar}
+              />
+            )}
+            {step === 1 && (
               <LocationStep
                 region={region}
                 setRegion={setRegion}
@@ -506,7 +657,7 @@ export function IndependentSetupPage() {
                 requestLocation={requestLocation}
               />
             )}
-            {step === 1 && (
+            {step === 2 && (
               <ServicesStep
                 services={services}
                 addService={addService}
@@ -514,7 +665,10 @@ export function IndependentSetupPage() {
                 updateService={updateService}
               />
             )}
-            {step === 2 && <ScheduleStep schedule={schedule} setSchedule={setSchedule} />}
+            {step === 3 && <ScheduleStep schedule={schedule} setSchedule={setSchedule} />}
+            {step === 4 && (
+              <IndependentLanguagesStep languages={languages} toggleLanguage={toggleLanguage} />
+            )}
           </motion.div>
         </AnimatePresence>
 
@@ -607,7 +761,167 @@ export function IndependentSetupPage() {
 }
 
 /* ============================================================
-   Step 0 — Location
+   Step 0 — Barber profili (CreateSalonPage bilan bir xil UI)
+   ============================================================ */
+
+function IndependentBarberProfileStep(props: {
+  firstName: string;
+  setFirstName: (v: string) => void;
+  lastName: string;
+  setLastName: (v: string) => void;
+  phoneDigits: string;
+  setPhoneDigits: (v: string) => void;
+  avatar: string | null;
+  handleAvatarFile: (f: FileList | null) => void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const initials = (props.firstName.trim()[0] || "") + (props.lastName.trim()[0] || "");
+
+  return (
+    <Section
+      icon={<User className="h-4 w-4" />}
+      label="Shaxsiy"
+      title="Barber haqida"
+      description="Mijozlar sizni shu ism va rasm bilan ko'radi."
+    >
+      <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-5">
+        <div className="relative">
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              props.handleAvatarFile(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="group relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-border bg-muted text-2xl font-semibold uppercase text-muted-foreground transition-[var(--transition-smooth)] hover:border-foreground sm:h-28 sm:w-28"
+          >
+            {props.avatar ? (
+              <img src={props.avatar} alt="avatar" className="h-full w-full object-cover" />
+            ) : initials.trim() ? (
+              <span className="text-foreground">{initials}</span>
+            ) : (
+              <UploadCloud className="h-6 w-6" />
+            )}
+            <span className="absolute inset-x-0 bottom-0 translate-y-full bg-foreground py-1 text-[10px] font-medium uppercase tracking-wider text-background transition-transform group-hover:translate-y-0">
+              {props.avatar ? "O'zgartirish" : "Rasm yuklash"}
+            </span>
+          </button>
+        </div>
+        <div className="grid w-full flex-1 gap-3 sm:grid-cols-2">
+          <FloatingInput
+            label="Ism"
+            required
+            value={props.firstName}
+            onChange={props.setFirstName}
+          />
+          <FloatingInput
+            label="Familiya"
+            required
+            value={props.lastName}
+            onChange={props.setLastName}
+          />
+          <div className="sm:col-span-2">
+            <PhoneInput
+              label="Telefon raqami"
+              required
+              digits={props.phoneDigits}
+              onChange={props.setPhoneDigits}
+            />
+          </div>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+function PhoneInput({
+  label,
+  digits,
+  onChange,
+  required,
+}: {
+  label: string;
+  digits: string;
+  onChange: (digitsOnly: string) => void;
+  required?: boolean;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const formatted = formatPhone(digits);
+  const has = digits.length > 0;
+  const valid = digits.length === 9;
+
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    const len = el.value.length;
+    if (document.activeElement === el) {
+      el.setSelectionRange(len, len);
+    }
+  }, [formatted]);
+
+  return (
+    <div className="relative">
+      <div
+        className={cn(
+          "flex h-14 w-full items-stretch rounded-xl border border-border bg-background transition-[var(--transition-smooth)] focus-within:border-foreground",
+          has && !valid && "border-destructive/60 focus-within:border-destructive",
+        )}
+      >
+        <div className="flex items-center gap-1.5 border-r border-border px-3.5">
+          <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-sm font-semibold tabular-nums text-foreground">+998</span>
+        </div>
+        <div className="relative flex-1">
+          <input
+            ref={inputRef}
+            inputMode="numeric"
+            autoComplete="tel-national"
+            value={formatted}
+            onChange={(e) => onChange(normalizePhoneDigits(e.target.value))}
+            placeholder="99 123-45-67"
+            className={cn(
+              "peer h-full w-full rounded-r-xl bg-transparent px-3.5 text-sm tabular-nums text-foreground outline-none placeholder:text-muted-foreground/60",
+              has ? "pb-1.5 pt-5" : "",
+            )}
+          />
+          <label
+            className={cn(
+              "pointer-events-none absolute left-3.5 text-muted-foreground transition-[var(--transition-smooth)]",
+              has
+                ? "top-2 text-[10px] uppercase tracking-wider"
+                : "top-1/2 -translate-y-1/2 text-sm",
+              "peer-focus:top-2 peer-focus:translate-y-0 peer-focus:text-[10px] peer-focus:uppercase peer-focus:tracking-wider peer-focus:text-foreground",
+            )}
+          >
+            {label}
+            {required && <span className="ml-0.5 text-foreground">*</span>}
+          </label>
+        </div>
+        {valid && (
+          <div className="flex items-center pr-3">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-background">
+              <Check className="h-3 w-3" />
+            </span>
+          </div>
+        )}
+      </div>
+      {has && !valid && (
+        <p className="mt-1.5 text-[11px] font-medium text-destructive">
+          Telefon raqami 9 ta raqamdan iborat bo'lishi kerak
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+   Step 1 — Location
    ============================================================ */
 
 function LocationStep(props: {
@@ -763,7 +1077,7 @@ function LocationStep(props: {
 }
 
 /* ============================================================
-   Step 1 — Services
+   Step 2 — Services
    ============================================================ */
 
 function ServicesStep(props: {
@@ -903,7 +1217,7 @@ function ServicesStep(props: {
 }
 
 /* ============================================================
-   Step 2 — Schedule
+   Step 3 — Schedule
    ============================================================ */
 
 function ScheduleStep(props: {
@@ -1238,6 +1552,53 @@ function ScheduleStep(props: {
   );
 }
 
+/* ============================================================
+   Step 4 — Muloqot tillari
+   ============================================================ */
+
+function IndependentLanguagesStep(props: {
+  languages: string[];
+  toggleLanguage: (code: string) => void;
+}) {
+  return (
+    <Section
+      icon={<Languages className="h-4 w-4" />}
+      label="Tillar"
+      title="Qaysi tillarda gaplashasiz?"
+      description="Kamida bitta tilni tanlang — mijozlar siz bilan qanday tilda muloqot qilishini biladi."
+    >
+      <div className="flex flex-wrap gap-2">
+        {LANGUAGES.map((l) => {
+          const active = props.languages.includes(l.code);
+          return (
+            <button
+              key={l.code}
+              type="button"
+              onClick={() => props.toggleLanguage(l.code)}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition-[var(--transition-smooth)]",
+                active
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border bg-card text-foreground hover:border-foreground/40",
+              )}
+            >
+              <span
+                className={cn(
+                  "flex h-4 w-4 items-center justify-center rounded-full border",
+                  active ? "border-background bg-background text-foreground" : "border-border",
+                )}
+              >
+                {active && <Check className="h-2.5 w-2.5" />}
+              </span>
+              {l.label}
+            </button>
+          );
+        })}
+      </div>
+    </Section>
+  );
+}
+
 function TimePicker({
   label,
   value,
@@ -1529,7 +1890,8 @@ function SuccessOverlay({ onClose, onContinue }: { onClose: () => void; onContin
         </h2>
 
         <p className="mx-auto mt-2.5 max-w-[300px] px-2 text-[12.5px] leading-relaxed text-muted-foreground sm:mt-3 sm:px-0 sm:text-sm">
-          Joylashuv, xizmatlar va ish jadvalingiz saqlandi. Endi mijozlar sizni topa oladi.
+          Profil, joylashuv, xizmatlar, jadval va tillaringiz saqlandi. Endi mijozlar sizni topa
+          oladi.
         </p>
 
         <button
