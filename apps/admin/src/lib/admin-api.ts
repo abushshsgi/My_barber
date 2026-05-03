@@ -67,8 +67,49 @@ export type AdminBarberMembership = {
   salon_name: string;
   role: string;
   invite_state: string;
+  owner_approved: boolean;
+  experience_years: number | null;
   activated_at: string | null;
   invited_at: string | null;
+};
+
+export type AdminBarberOwnedSalon = {
+  id: number;
+  name: string;
+  slug: string;
+  address: string;
+  phone: string;
+  is_published: boolean;
+  latitude: string;
+  longitude: string;
+};
+
+export type AdminBarberBookingsSummary = {
+  total: number;
+  by_status: Record<string, number>;
+  revenue_completed_uzs: string;
+};
+
+export type AdminBarberRecentBooking = {
+  id: number;
+  customer_name: string;
+  customer_phone: string;
+  salon_name: string;
+  start_at: string;
+  status: string;
+  total_price: string;
+  services_preview: string;
+  created_at: string;
+};
+
+export type AdminBarberRecentReview = {
+  id: number;
+  rating: number;
+  text: string;
+  author_email: string;
+  barber_reply: string;
+  barber_replied_at: string | null;
+  created_at: string;
 };
 
 export type AdminBarberSalonService = {
@@ -105,6 +146,10 @@ export type AdminBarberDetail = AdminBarber & {
   memberships: AdminBarberMembership[];
   salon_services: AdminBarberSalonService[];
   independent_services: AdminBarberIndependentService[];
+  owned_salons: AdminBarberOwnedSalon[];
+  bookings_summary: AdminBarberBookingsSummary;
+  recent_bookings: AdminBarberRecentBooking[];
+  recent_reviews: AdminBarberRecentReview[];
 };
 
 export type AdminSalon = {
@@ -196,8 +241,49 @@ type BackendBarberMembership = {
   salon_name?: string;
   role: string;
   invite_state: string;
+  owner_approved?: boolean;
+  experience_years?: number | null;
   activated_at?: string | null;
   invited_at?: string | null;
+};
+
+type BackendBarberOwnedSalon = {
+  id: number;
+  name: string;
+  slug?: string;
+  address?: string;
+  phone?: string;
+  is_published?: boolean;
+  latitude?: string;
+  longitude?: string;
+};
+
+type BackendBarberBookingsSummary = {
+  total?: number;
+  by_status?: Record<string, number>;
+  revenue_completed_uzs?: string;
+};
+
+type BackendBarberRecentBooking = {
+  id: number;
+  customer_name?: string;
+  customer_phone?: string;
+  salon_name?: string;
+  start_at: string;
+  status: string;
+  total_price?: string;
+  services_preview?: string;
+  created_at: string;
+};
+
+type BackendBarberRecentReview = {
+  id: number;
+  rating: number;
+  text?: string;
+  author_email?: string;
+  barber_reply?: string;
+  barber_replied_at?: string | null;
+  created_at: string;
 };
 
 type BackendBarberSalonService = {
@@ -247,6 +333,10 @@ type BackendBarberRow = {
   memberships?: BackendBarberMembership[];
   salon_services?: BackendBarberSalonService[];
   independent_services?: BackendBarberIndependentService[];
+  owned_salons?: BackendBarberOwnedSalon[];
+  bookings_summary?: BackendBarberBookingsSummary;
+  recent_bookings?: BackendBarberRecentBooking[];
+  recent_reviews?: BackendBarberRecentReview[];
 };
 
 type BackendSalonRow = {
@@ -377,6 +467,8 @@ function mapBarberDetail(b: BackendBarberRow): AdminBarberDetail {
       salon_name: m.salon_name ?? "",
       role: m.role,
       invite_state: m.invite_state,
+      owner_approved: !!m.owner_approved,
+      experience_years: m.experience_years ?? null,
       activated_at: m.activated_at ?? null,
       invited_at: m.invited_at ?? null,
     })),
@@ -396,6 +488,41 @@ function mapBarberDetail(b: BackendBarberRow): AdminBarberDetail {
       price: s.price,
       duration_minutes: s.duration_minutes,
       is_active: !!s.is_active,
+    })),
+    owned_salons: (b.owned_salons ?? []).map((s) => ({
+      id: s.id,
+      name: s.name,
+      slug: s.slug ?? "",
+      address: s.address ?? "",
+      phone: s.phone ?? "",
+      is_published: !!s.is_published,
+      latitude: s.latitude ?? "",
+      longitude: s.longitude ?? "",
+    })),
+    bookings_summary: {
+      total: toInt(b.bookings_summary?.total, 0),
+      by_status: { ...(b.bookings_summary?.by_status ?? {}) },
+      revenue_completed_uzs: b.bookings_summary?.revenue_completed_uzs ?? "0",
+    },
+    recent_bookings: (b.recent_bookings ?? []).map((bk) => ({
+      id: bk.id,
+      customer_name: bk.customer_name ?? "—",
+      customer_phone: bk.customer_phone ?? "",
+      salon_name: bk.salon_name ?? "—",
+      start_at: bk.start_at,
+      status: bk.status,
+      total_price: bk.total_price ?? "0",
+      services_preview: bk.services_preview ?? "—",
+      created_at: bk.created_at,
+    })),
+    recent_reviews: (b.recent_reviews ?? []).map((r) => ({
+      id: r.id,
+      rating: r.rating,
+      text: r.text ?? "",
+      author_email: r.author_email ?? "",
+      barber_reply: r.barber_reply ?? "",
+      barber_replied_at: r.barber_replied_at ?? null,
+      created_at: r.created_at,
     })),
   };
 }
@@ -597,17 +724,8 @@ export async function deleteAdminSalon(id: string): Promise<{ ok: true }> {
   return { ok: true as const };
 }
 
-export async function fetchAdminBookings(params?: { status?: string }): Promise<AdminBooking[]> {
-  const sp = new URLSearchParams();
-  if (params?.status && params.status !== "all") sp.set("status", params.status);
-  const q = sp.toString();
-  const res = await apiFetch(q ? `/api/v1/admin/bookings/?${q}` : "/api/v1/admin/bookings/");
-  const j = (await res.json().catch(() => ({}))) as
-    | { results?: BackendBookingRow[] }
-    | BackendBookingRow[];
-  if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
-  const rows = Array.isArray(j) ? j : (j.results ?? []);
-  return rows.map((b) => ({
+function mapAdminBookingRow(b: BackendBookingRow): AdminBooking {
+  return {
     id: String(b.id),
     client_name: b.customer_name ?? "—",
     client_avatar: avatarFor(`c${b.id}`),
@@ -618,7 +736,36 @@ export async function fetchAdminBookings(params?: { status?: string }): Promise<
     start_at: b.start_at,
     status: b.status,
     region: "",
-  }));
+  };
+}
+
+export async function fetchAdminBookings(params?: {
+  status?: string;
+  barber?: string;
+  page?: number;
+}): Promise<Paginated<AdminBooking>> {
+  const page = params?.page ?? 1;
+  const sp = new URLSearchParams();
+  if (params?.status && params.status !== "all") sp.set("status", params.status);
+  if (params?.barber?.trim()) sp.set("barber", params.barber.trim());
+  sp.set("page", String(page));
+  const res = await apiFetch(`/api/v1/admin/bookings/?${sp.toString()}`);
+  const j = (await res.json().catch(() => ({}))) as
+    | { results?: BackendBookingRow[]; count?: number; page_size?: number }
+    | BackendBookingRow[];
+  if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
+  const rows = Array.isArray(j) ? j : (j.results ?? []);
+  const count = Array.isArray(j) ? rows.length : toInt(j.count, rows.length);
+  const pageSize = Array.isArray(j)
+    ? PAGE_SIZE
+    : toInt((j as { page_size?: unknown }).page_size, PAGE_SIZE);
+  return {
+    results: rows.map(mapAdminBookingRow),
+    count,
+    page,
+    page_size: pageSize,
+    total_pages: totalPages(count, pageSize),
+  };
 }
 
 export async function fetchAdminReviews(params?: {
@@ -626,28 +773,40 @@ export async function fetchAdminReviews(params?: {
   min_rating?: number;
   date_from?: string;
   date_to?: string;
-}): Promise<AdminReview[]> {
+  page?: number;
+}): Promise<Paginated<AdminReview>> {
+  const page = params?.page ?? 1;
   const sp = new URLSearchParams();
   if (params?.barber?.trim()) sp.set("barber", params.barber.trim());
   if ((params?.min_rating ?? 0) > 0) sp.set("min_rating", String(params?.min_rating));
   if (params?.date_from) sp.set("date_from", params.date_from);
   if (params?.date_to) sp.set("date_to", params.date_to);
-  const q = sp.toString();
-  const res = await apiFetch(q ? `/api/v1/admin/reviews/?${q}` : "/api/v1/admin/reviews/");
+  sp.set("page", String(page));
+  const res = await apiFetch(`/api/v1/admin/reviews/?${sp.toString()}`);
   const j = (await res.json().catch(() => ({}))) as
-    | { results?: BackendReviewRow[] }
+    | { results?: BackendReviewRow[]; count?: number; page_size?: number }
     | BackendReviewRow[];
   if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
   const rows = Array.isArray(j) ? j : (j.results ?? []);
-  return rows.map((r) => ({
-    id: String(r.id),
-    client_name: r.author_email,
-    barber_id: String(r.barber_id ?? ""),
-    barber_name: r.barber_email,
-    rating: r.rating,
-    comment: r.text,
-    created_at: r.created_at,
-  }));
+  const count = Array.isArray(j) ? rows.length : toInt(j.count, rows.length);
+  const pageSize = Array.isArray(j)
+    ? PAGE_SIZE
+    : toInt((j as { page_size?: unknown }).page_size, PAGE_SIZE);
+  return {
+    results: rows.map((r) => ({
+      id: String(r.id),
+      client_name: r.author_email,
+      barber_id: String(r.barber_id ?? ""),
+      barber_name: r.barber_email,
+      rating: r.rating,
+      comment: r.text,
+      created_at: r.created_at,
+    })),
+    count,
+    page,
+    page_size: pageSize,
+    total_pages: totalPages(count, pageSize),
+  };
 }
 
 export async function fetchAllSalonsForMap(region?: RegionCode | ""): Promise<AdminSalon[]> {

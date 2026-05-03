@@ -38,7 +38,7 @@ function DashboardPage() {
   });
 
   const stats = statsQ.data;
-  const recentBookings = (bookingsQ.data ?? []).slice(0, 6);
+  const recentBookings = (bookingsQ.data?.results ?? []).slice(0, 6);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-8">
@@ -148,7 +148,7 @@ function DashboardPage() {
                           {format(new Date(b.start_at), "dd MMM, HH:mm")}
                         </td>
                         <td className="px-6 py-4">
-                          <StatusBadge status={b.status} />
+                          <StatusBadge status={dashboardBookingBadge(b.status)} />
                         </td>
                       </tr>
                     ))}
@@ -204,4 +204,14 @@ function DashboardPage() {
       </div>
     </div>
   );
+}
+
+function dashboardBookingBadge(
+  s: string,
+): "pending" | "confirmed" | "in_chair" | "completed" | "cancelled" {
+  if (s === "accepted") return "confirmed";
+  if (s === "in_progress") return "in_chair";
+  if (s === "completed") return "completed";
+  if (s === "cancelled" || s === "rejected") return "cancelled";
+  return "pending";
 }

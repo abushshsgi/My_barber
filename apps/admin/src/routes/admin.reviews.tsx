@@ -3,7 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Star } from "lucide-react";
-import { fetchAdminReviews } from "@/lib/admin-api";
+import { fetchAdminReviews, PAGE_SIZE } from "@/lib/admin-api";
+import { Pagination } from "@/components/admin/Pagination";
 import { CardSkeleton } from "@/components/admin/Skeletons";
 import { EmptyState } from "@/components/admin/EmptyState";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ function ReviewsPage() {
   const [minRating, setMinRating] = useState("0");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [page, setPage] = useState(1);
   const [applied, setApplied] = useState({
     barber: "",
     min_rating: 0,
@@ -34,11 +36,12 @@ function ReviewsPage() {
   });
 
   const reviewsQ = useQuery({
-    queryKey: ["admin", "reviews", applied],
-    queryFn: () => fetchAdminReviews(applied),
+    queryKey: ["admin", "reviews", applied, page],
+    queryFn: () => fetchAdminReviews({ ...applied, page }),
   });
 
-  const data = reviewsQ.data ?? [];
+  const data = reviewsQ.data?.results ?? [];
+  const pag = reviewsQ.data;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
@@ -88,14 +91,15 @@ function ReviewsPage() {
         </div>
         <div className="flex gap-2">
           <Button
-            onClick={() =>
+            onClick={() => {
+              setPage(1);
               setApplied({
                 barber,
                 min_rating: Number(minRating),
                 date_from: dateFrom,
                 date_to: dateTo,
-              })
-            }
+              });
+            }}
           >
             Qo'llash
           </Button>
@@ -106,6 +110,7 @@ function ReviewsPage() {
               setMinRating("0");
               setDateFrom("");
               setDateTo("");
+              setPage(1);
               setApplied({ barber: "", min_rating: 0, date_from: "", date_to: "" });
             }}
           >
@@ -128,37 +133,49 @@ function ReviewsPage() {
           />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {data.map((r) => (
-            <div key={r.id} className="bg-card rounded-2xl border border-border shadow-card p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="font-medium text-foreground">{r.client_name}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    Sartarosh: <span className="text-foreground font-medium">{r.barber_name}</span>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {data.map((r) => (
+              <div key={r.id} className="bg-card rounded-2xl border border-border shadow-card p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-medium text-foreground">{r.client_name}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      Sartarosh:{" "}
+                      <span className="text-foreground font-medium">{r.barber_name}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        className={cn(
+                          "size-3.5",
+                          i < r.rating
+                            ? "fill-foreground text-foreground"
+                            : "text-muted-foreground/30",
+                        )}
+                      />
+                    ))}
                   </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className={cn(
-                        "size-3.5",
-                        i < r.rating
-                          ? "fill-foreground text-foreground"
-                          : "text-muted-foreground/30",
-                      )}
-                    />
-                  ))}
+                <p className="mt-3 text-sm text-foreground leading-relaxed">"{r.comment}"</p>
+                <div className="mt-3 text-xs text-muted-foreground">
+                  {format(new Date(r.created_at), "dd MMM yyyy")}
                 </div>
               </div>
-              <p className="mt-3 text-sm text-foreground leading-relaxed">"{r.comment}"</p>
-              <div className="mt-3 text-xs text-muted-foreground">
-                {format(new Date(r.created_at), "dd MMM yyyy")}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          {pag ? (
+            <Pagination
+              page={pag.page}
+              totalPages={pag.total_pages}
+              count={pag.count}
+              pageSize={PAGE_SIZE}
+              onPageChange={setPage}
+            />
+          ) : null}
+        </>
       )}
     </div>
   );

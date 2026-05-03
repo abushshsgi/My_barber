@@ -36,7 +36,7 @@ function BarbersPage() {
   const parts = useRouterState({
     select: (s) => s.location.pathname.split("/").filter(Boolean),
   });
-  const isBarberDetail = parts.length === 3 && parts[0] === "admin" && parts[1] === "barbers";
+  const isBarberDetail = parts.length >= 3 && parts[0] === "admin" && parts[1] === "barbers";
   if (isBarberDetail) {
     return <Outlet />;
   }

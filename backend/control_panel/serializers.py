@@ -1,10 +1,10 @@
 from rest_framework import serializers
-from django.db.models import Avg
+from django.db.models import Avg, Count, Sum
 
 from accounts.models import AdminAccount, User
 from accounts.uz_regions import UzRegion
 from barbers.models import Barber, BarberService
-from bookings.models import Review
+from bookings.models import Booking, Review
 from salons.models import Category, Salon, SalonMembership, Service
 
 from .models import (
@@ -344,6 +344,10 @@ class AdminBarberDetailSerializer(AdminBarberSerializer):
     memberships = serializers.SerializerMethodField()
     salon_services = serializers.SerializerMethodField()
     independent_services = serializers.SerializerMethodField()
+    owned_salons = serializers.SerializerMethodField()
+    bookings_summary = serializers.SerializerMethodField()
+    recent_bookings = serializers.SerializerMethodField()
+    recent_reviews = serializers.SerializerMethodField()
 
     class Meta(AdminBarberSerializer.Meta):
         fields = AdminBarberSerializer.Meta.fields + (
@@ -353,6 +357,10 @@ class AdminBarberDetailSerializer(AdminBarberSerializer):
             "memberships",
             "salon_services",
             "independent_services",
+            "owned_salons",
+            "bookings_summary",
+            "recent_bookings",
+            "recent_reviews",
         )
         read_only_fields = AdminBarberSerializer.Meta.read_only_fields + (
             "last_login",
@@ -361,6 +369,10 @@ class AdminBarberDetailSerializer(AdminBarberSerializer):
             "memberships",
             "salon_services",
             "independent_services",
+            "owned_salons",
+            "bookings_summary",
+            "recent_bookings",
+            "recent_reviews",
         )
 
     def get_location_text(self, obj: Barber) -> str:
@@ -391,8 +403,94 @@ class AdminBarberDetailSerializer(AdminBarberSerializer):
                     "salon_name": sn,
                     "role": m.role,
                     "invite_state": m.invite_state,
+                    "owner_approved": m.owner_approved,
+                    "experience_years": m.experience_years,
                     "activated_at": m.activated_at,
                     "invited_at": m.invited_at,
+                }
+            )
+        return out
+
+    def get_owned_salons(self, obj: Barber):
+        out = []
+        for s in obj.owned_salons.all():
+            out.append(
+                {
+                    "id": s.id,
+                    "name": s.name,
+                    "slug": s.slug or "",
+                    "address": (s.address or "")[:800],
+                    "phone": s.phone or "",
+                    "is_published": s.is_published,
+                    "latitude": str(s.latitude),
+                    "longitude": str(s.longitude),
+                }
+            )
+        return out
+
+    def get_bookings_summary(self, obj: Barber):
+        qs = Booking.objects.filter(barber=obj)
+        total = qs.count()
+        by_status = dict(qs.values("status").annotate(c=Count("id")).values_list("status", "c"))
+        rev = (
+            qs.filter(status=Booking.Status.COMPLETED)
+            .aggregate(s=Sum("total_price"))
+            .get("s")
+        )
+        return {
+            "total": total,
+            "by_status": by_status,
+            "revenue_completed_uzs": str(rev or 0),
+        }
+
+    def get_recent_bookings(self, obj: Barber):
+        rows = (
+            Booking.objects.filter(barber=obj)
+            .select_related("customer", "salon")
+            .prefetch_related("lines")
+            .order_by("-created_at")[:15]
+        )
+        out = []
+        for bk in rows:
+            line_list = list(bk.lines.all())[:6]
+            svc = ", ".join(el.service_name for el in line_list) if line_list else "—"
+            cust = bk.customer
+            cname = ""
+            if cust is not None:
+                cname = (getattr(cust, "full_name", None) or "").strip() or getattr(cust, "email", "") or ""
+            out.append(
+                {
+                    "id": bk.id,
+                    "customer_name": cname or "—",
+                    "customer_phone": bk.customer_phone or "",
+                    "salon_name": bk.salon.name if bk.salon_id else "—",
+                    "start_at": bk.start_at,
+                    "status": bk.status,
+                    "total_price": str(bk.total_price),
+                    "services_preview": svc[:400],
+                    "created_at": bk.created_at,
+                }
+            )
+        return out
+
+    def get_recent_reviews(self, obj: Barber):
+        rows = (
+            Review.objects.filter(barber=obj)
+            .select_related("author")
+            .order_by("-created_at")[:12]
+        )
+        out = []
+        for r in rows:
+            auth = r.author
+            out.append(
+                {
+                    "id": r.id,
+                    "rating": r.rating,
+                    "text": (r.text or "")[:1200],
+                    "author_email": auth.email if auth else "",
+                    "barber_reply": (r.barber_reply or "")[:500],
+                    "barber_replied_at": r.barber_replied_at,
+                    "created_at": r.created_at,
                 }
             )
         return out

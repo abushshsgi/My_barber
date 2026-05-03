@@ -370,6 +370,9 @@ class AdminBookingListView(generics.ListAPIView):
         status_value = self.request.query_params.get("status", "").strip()
         if status_value:
             qs = qs.filter(status=status_value)
+        barber_raw = self.request.query_params.get("barber", "").strip()
+        if barber_raw.isdigit():
+            qs = qs.filter(barber_id=int(barber_raw))
         return qs
 
 
