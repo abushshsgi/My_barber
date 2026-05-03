@@ -228,6 +228,7 @@ class MyBarberProfileView(APIView):
                 "location_text": prof.location_text,
                 "latitude": prof.latitude,
                 "longitude": prof.longitude,
+                "spoken_languages": list(prof.spoken_languages or []),
             }
         )
 

@@ -88,6 +88,8 @@ class BarberProfile(models.Model):
     location_text = models.CharField(max_length=255, blank=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    # Mijoz bilan muloqot tillari (masalan: ["uz","ru"]) — salon tillaridan mustaqil.
+    spoken_languages = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

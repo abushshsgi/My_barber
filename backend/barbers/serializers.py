@@ -134,10 +134,27 @@ class BarberPublicDetailSerializer(serializers.ModelSerializer):
         return _public_avatar_url(obj, self.context.get("request"))
 
 
+_ALLOWED_SPOKEN_LANG = frozenset({"uz", "ru", "en", "tr", "ar"})
+
+
 class BarberProfileUpsertSerializer(serializers.ModelSerializer):
     class Meta:
         model = BarberProfile
-        fields = ("location_text", "latitude", "longitude")
+        fields = ("location_text", "latitude", "longitude", "spoken_languages")
+
+    def validate_spoken_languages(self, value):
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            raise serializers.ValidationError("spoken_languages ro‘yxat bo‘lishi kerak.")
+        out = []
+        for item in value:
+            code = str(item).strip().lower()
+            if code not in _ALLOWED_SPOKEN_LANG:
+                raise serializers.ValidationError(f"Noma’lum til kodi: {item}")
+            if code not in out:
+                out.append(code)
+        return out
 
 
 class BarberWorkPhotoCreateSerializer(serializers.ModelSerializer):

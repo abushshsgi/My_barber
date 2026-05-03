@@ -8,10 +8,14 @@ import {
   CalendarDays,
   Check,
   CheckCircle2,
+  Languages,
   Loader2,
   MapPin,
   Phone,
+  Plus,
   Scissors,
+  Sparkles,
+  Trash2,
   UploadCloud,
   User,
 } from "lucide-react";
@@ -65,6 +69,25 @@ type ScheduleApiRow = {
   close_time: string;
   is_day_off: boolean;
 };
+
+type ServiceRow = {
+  id: string;
+  name: string;
+  price: string;
+  duration: string;
+};
+
+const LANGUAGES = [
+  { code: "uz", label: "O'zbek" },
+  { code: "ru", label: "Русский" },
+  { code: "en", label: "English" },
+  { code: "tr", label: "Türkçe" },
+  { code: "ar", label: "العربية" },
+] as const;
+
+function uid() {
+  return Math.random().toString(36).slice(2, 10);
+}
 
 /* ============================================================
    Helpers
@@ -122,11 +145,25 @@ const STEP_META = [
     icon: MapPin,
   },
   {
+    group: "Profil",
+    short: "Xizmatlar",
+    title: "Sizning xizmatlaringiz",
+    subtitle: "Mijozlar buyurtma berishi mumkin bo‘lgan xizmatlar — salon yaratish oqimidagi kabi.",
+    icon: Scissors,
+  },
+  {
     group: "Jadval",
     short: "Jadval",
     title: "Ish jadvali",
     subtitle: "Qaysi kunlari va qanday soatlarda mijoz qabul qilasiz?",
     icon: CalendarDays,
+  },
+  {
+    group: "Tillar",
+    short: "Tillar",
+    title: "Muloqot tillari",
+    subtitle: "Mijozlar bilan qaysi tillarda gaplasha olasiz?",
+    icon: Languages,
   },
 ] as const;
 
@@ -162,6 +199,11 @@ function SalonJoinSetupPage() {
       to: "20:00",
     })),
   );
+
+  const [services, setServices] = useState<ServiceRow[]>([
+    { id: uid(), name: "", price: "", duration: "" },
+  ]);
+  const [languages, setLanguages] = useState<string[]>(["uz"]);
 
   // Wizard state
   const [step, setStep] = useState(0);
@@ -234,8 +276,40 @@ function SalonJoinSetupPage() {
         const profRaw = await parseJsonSafe(profRes);
         if (!alive) return;
         if (profRes.ok && profRaw && typeof profRaw === "object") {
-          const lt = (profRaw as { location_text?: string }).location_text || "";
+          const po = profRaw as {
+            location_text?: string;
+            spoken_languages?: string[];
+          };
+          const lt = po.location_text || "";
           if (lt.trim()) setLocationText(lt.trim());
+          const langs = po.spoken_languages;
+          if (Array.isArray(langs) && langs.length > 0) {
+            const allowed = new Set(LANGUAGES.map((l) => l.code));
+            const next = langs.filter((c): c is string => typeof c === "string" && allowed.has(c));
+            if (next.length > 0) setLanguages(next);
+          }
+        }
+
+        const svcRes = await apiFetch("/api/v1/barber/services/");
+        const svcRaw = await parseJsonSafe(svcRes);
+        if (!alive) return;
+        if (svcRes.ok) {
+          const svcRows = unwrapResults<{
+            id: number;
+            name: string;
+            price: string;
+            duration_minutes: number;
+          }>(svcRaw).filter((r) => r.name?.trim());
+          if (svcRows.length > 0) {
+            setServices(
+              svcRows.map((r) => ({
+                id: uid(),
+                name: r.name.trim(),
+                price: String(r.price ?? "").replace(/\D/g, "") || String(r.price ?? ""),
+                duration: String(r.duration_minutes ?? ""),
+              })),
+            );
+          }
         }
 
         const schRes = await apiFetch(`/api/v1/schedules/?membership=${mid}`);
@@ -282,10 +356,14 @@ function SalonJoinSetupPage() {
       firstName.trim().length > 1 && lastName.trim().length > 1 && phoneDigits.length === 9,
       // 1: Location text
       locationText.trim().length > 4,
-      // 2: Schedule
+      // 2: Services
+      services.every((s) => s.name.trim() && s.price.trim() && s.duration.trim()),
+      // 3: Schedule
       schedule.some((d) => d.open),
+      // 4: Languages
+      languages.length > 0,
     ];
-  }, [firstName, lastName, phoneDigits, locationText, schedule]);
+  }, [firstName, lastName, phoneDigits, locationText, services, schedule, languages]);
 
   const isLast = step === TOTAL_STEPS - 1;
   const canNext = stepValid[step];
@@ -326,6 +404,45 @@ function SalonJoinSetupPage() {
     });
     const err = await parseJsonSafe(res);
     if (!res.ok) throw new Error(extractApiError(err, "Joylashuv matnini saqlab boʻlmadi."));
+  };
+
+  const persistServicesStep = async () => {
+    const listRes = await apiFetch("/api/v1/barber/services/");
+    const listRaw = await parseJsonSafe(listRes);
+    if (listRes.ok) {
+      const existing = unwrapResults<{ id: number }>(listRaw);
+      for (const row of existing) {
+        await apiFetch(`/api/v1/barber/services/${row.id}/`, { method: "DELETE" });
+      }
+    }
+    for (const s of services) {
+      const name = s.name.trim();
+      if (!name) continue;
+      const res = await apiFetch("/api/v1/barber/services/", {
+        method: "POST",
+        body: JSON.stringify({
+          name,
+          price: s.price.replace(/\D/g, "") || s.price,
+          duration_minutes: Number(s.duration.replace(/\D/g, "")) || 0,
+          is_active: true,
+        }),
+      });
+      const errBody = await parseJsonSafe(res);
+      if (!res.ok) {
+        throw new Error(extractApiError(errBody, "Xizmatlarni saqlab boʻlmadi."));
+      }
+    }
+  };
+
+  const persistSpokenLanguages = async () => {
+    const res = await apiFetch("/api/v1/barber/profile/", {
+      method: "PATCH",
+      body: JSON.stringify({
+        spoken_languages: languages,
+      }),
+    });
+    const err = await parseJsonSafe(res);
+    if (!res.ok) throw new Error(extractApiError(err, "Tillarni saqlab boʻlmadi."));
   };
 
   const replaceSchedules = useCallback(
@@ -375,6 +492,9 @@ function SalonJoinSetupPage() {
       } else if (step === 1) {
         await persistLocationStep();
         toast.success("Joylashuv saqlandi.");
+      } else if (step === 2) {
+        await persistServicesStep();
+        toast.success("Xizmatlar saqlandi.");
       }
       setDirection(1);
       setStep((s) => Math.min(TOTAL_STEPS - 1, s + 1));
@@ -404,6 +524,7 @@ function SalonJoinSetupPage() {
     setPageError(null);
     setBusy(true);
     try {
+      await persistSpokenLanguages();
       await replaceSchedules(membershipId);
       toast.success("Sozlamalar yakunlandi. Barber panel tayyor.");
       setSuccess(true);
@@ -425,6 +546,32 @@ function SalonJoinSetupPage() {
     if (!f.type.startsWith("image/")) return;
     setAvatarFile(f);
     setAvatarPreview(URL.createObjectURL(f));
+  };
+
+  const updateService = (id: string, key: keyof Omit<ServiceRow, "id">, value: string) =>
+    setServices((prev) => prev.map((s) => (s.id === id ? { ...s, [key]: value } : s)));
+
+  const addService = () =>
+    setServices((prev) => [...prev, { id: uid(), name: "", price: "", duration: "" }]);
+
+  const removeService = (id: string) =>
+    setServices((prev) => (prev.length > 1 ? prev.filter((s) => s.id !== id) : prev));
+
+  const toggleLanguage = (code: string) =>
+    setLanguages((prev) =>
+      prev.includes(code) ? prev.filter((l) => l !== code) : [...prev, code],
+    );
+
+  const applyServicePreset = (p: { name: string; price: string; duration: string }) => {
+    setServices((prev) => {
+      const empty = prev.find((s) => !s.name && !s.price && !s.duration);
+      if (empty) {
+        return prev.map((s) =>
+          s.id === empty.id ? { ...s, name: p.name, price: p.price, duration: p.duration } : s,
+        );
+      }
+      return [...prev, { id: uid(), name: p.name, price: p.price, duration: p.duration }];
+    });
   };
 
   /* --- Boot states --- */
@@ -559,7 +706,19 @@ function SalonJoinSetupPage() {
               />
             )}
             {step === 1 && <LocationStep value={locationText} onChange={setLocationText} />}
-            {step === 2 && <ScheduleStep schedule={schedule} setSchedule={setSchedule} />}
+            {step === 2 && (
+              <JoinServicesStep
+                services={services}
+                addService={addService}
+                removeService={removeService}
+                updateService={updateService}
+                applyPreset={applyServicePreset}
+              />
+            )}
+            {step === 3 && <ScheduleStep schedule={schedule} setSchedule={setSchedule} />}
+            {step === 4 && (
+              <JoinLanguagesStep languages={languages} toggleLanguage={toggleLanguage} />
+            )}
           </motion.div>
         </AnimatePresence>
 
@@ -841,6 +1000,178 @@ function ScheduleStep({
 }
 
 /* ============================================================
+   Services & languages — CreateSalonPage bilan bir xil tuzilma
+   ============================================================ */
+
+function JoinServicesStep(props: {
+  services: ServiceRow[];
+  addService: () => void;
+  removeService: (id: string) => void;
+  updateService: (id: string, k: keyof Omit<ServiceRow, "id">, v: string) => void;
+  applyPreset: (p: { name: string; price: string; duration: string }) => void;
+}) {
+  const PRESETS: Array<{ name: string; price: string; duration: string }> = [
+    { name: "Soch olish", price: "60000", duration: "30" },
+    { name: "Soqol olish", price: "40000", duration: "20" },
+    { name: "Bolalar uchun", price: "50000", duration: "25" },
+    { name: "Soch + Soqol", price: "90000", duration: "45" },
+    { name: "Soch yuvish", price: "20000", duration: "15" },
+  ];
+
+  return (
+    <Section
+      icon={<Scissors className="h-4 w-4" />}
+      label="Xizmatlar"
+      title="Sizning xizmatlaringiz"
+      description="Tezda qo‘shish uchun pastdagi tayyor xizmatlardan tanlang."
+    >
+      <div>
+        <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <Sparkles className="h-3 w-3" /> Tezkor qo‘shish
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {PRESETS.map((p) => {
+            const already = props.services.some(
+              (s) => s.name.trim().toLowerCase() === p.name.toLowerCase(),
+            );
+            return (
+              <button
+                key={p.name}
+                type="button"
+                disabled={already}
+                onClick={() => props.applyPreset(p)}
+                className={cn(
+                  "group inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-[11px] font-medium transition-[var(--transition-smooth)]",
+                  already
+                    ? "cursor-not-allowed opacity-40"
+                    : "hover:border-foreground hover:bg-muted/60",
+                )}
+              >
+                <Plus className="h-3 w-3 transition-transform group-hover:rotate-90" />
+                {p.name}
+                <span className="text-muted-foreground">· {p.duration}min</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="h-px bg-border" />
+
+      <div className="space-y-3">
+        <AnimatePresence initial={false}>
+          {props.services.map((s, i) => (
+            <motion.div
+              key={s.id}
+              initial={{ opacity: 0, y: -6, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto" }}
+              exit={{ opacity: 0, y: -6, height: 0 }}
+              transition={{ duration: 0.22 }}
+              className="overflow-hidden"
+            >
+              <div className="group relative rounded-2xl border border-border bg-card p-3 shadow-[var(--shadow-soft)] transition-[var(--transition-smooth)] hover:border-foreground/40 sm:p-4">
+                <div className="absolute -left-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-[10px] font-bold tabular-nums text-background shadow-[var(--shadow-soft)]">
+                  {i + 1}
+                </div>
+                <div className="grid gap-3 sm:grid-cols-[1fr_110px_110px_auto] sm:items-center">
+                  <FloatingInput
+                    label="Xizmat nomi"
+                    value={s.name}
+                    onChange={(v) => props.updateService(s.id, "name", v)}
+                    compact
+                  />
+                  <div className="grid grid-cols-2 gap-3 sm:contents">
+                    <FloatingInput
+                      label="Narxi (so'm)"
+                      value={s.price}
+                      onChange={(v) => props.updateService(s.id, "price", v.replace(/\D/g, ""))}
+                      compact
+                    />
+                    <FloatingInput
+                      label="Vaqti (min)"
+                      value={s.duration}
+                      onChange={(v) => props.updateService(s.id, "duration", v.replace(/\D/g, ""))}
+                      compact
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => props.removeService(s.id)}
+                    disabled={props.services.length === 1}
+                    className="hidden h-12 w-12 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground transition-[var(--transition-smooth)] hover:border-destructive/60 hover:bg-destructive/10 hover:text-destructive disabled:opacity-30 disabled:hover:border-border disabled:hover:bg-background disabled:hover:text-muted-foreground sm:flex"
+                    aria-label="O'chirish"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => props.removeService(s.id)}
+                  disabled={props.services.length === 1}
+                  className="mt-2 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-background text-[11px] font-medium text-muted-foreground transition-[var(--transition-smooth)] hover:border-destructive/60 hover:bg-destructive/10 hover:text-destructive disabled:opacity-30 sm:hidden"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> O'chirish
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        <button
+          type="button"
+          onClick={props.addService}
+          className="group flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-transparent px-4 py-3.5 text-sm font-semibold text-foreground transition-[var(--transition-smooth)] hover:border-foreground hover:bg-muted/60 active:scale-[0.99]"
+        >
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-background transition-transform group-hover:rotate-90">
+            <Plus className="h-4 w-4" />
+          </span>
+          Bo'sh xizmat qo'shish
+        </button>
+      </div>
+    </Section>
+  );
+}
+
+function JoinLanguagesStep(props: { languages: string[]; toggleLanguage: (code: string) => void }) {
+  return (
+    <Section
+      icon={<Languages className="h-4 w-4" />}
+      label="Tillar"
+      title="Qaysi tillarda gaplashasiz?"
+      description="Kamida bitta tilni tanlang."
+    >
+      <div className="flex flex-wrap gap-2">
+        {LANGUAGES.map((l) => {
+          const active = props.languages.includes(l.code);
+          return (
+            <button
+              key={l.code}
+              type="button"
+              onClick={() => props.toggleLanguage(l.code)}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition-[var(--transition-smooth)]",
+                active
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border bg-card text-foreground hover:border-foreground/40",
+              )}
+            >
+              <span
+                className={cn(
+                  "flex h-4 w-4 items-center justify-center rounded-full border",
+                  active ? "border-background bg-background text-foreground" : "border-border",
+                )}
+              >
+                {active && <Check className="h-2.5 w-2.5" />}
+              </span>
+              {l.label}
+            </button>
+          );
+        })}
+      </div>
+    </Section>
+  );
+}
+
+/* ============================================================
    Step indicator
    ============================================================ */
 
@@ -855,34 +1186,19 @@ function StepIndicator({
 }) {
   const total = STEP_META.length;
   const progress = ((step + 1) / total) * 100;
-  const currentGroup = STEP_META[step].group;
 
-  const profilSteps = STEP_META.map((m, i) => ({ ...m, idx: i })).filter(
-    (m) => m.group === "Profil",
-  );
-  const jadvalSteps = STEP_META.map((m, i) => ({ ...m, idx: i })).filter(
-    (m) => m.group === "Jadval",
-  );
-  const profilDone = profilSteps.every((s) => stepValid[s.idx]);
-  const jadvalActive = currentGroup === "Jadval";
-  const jadvalDone = jadvalSteps.every((s) => stepValid[s.idx]);
+  const profilChip: "idle" | "active" | "done" = step <= 2 ? "active" : "done";
+  const jadvalChip: "idle" | "active" | "done" = step < 3 ? "idle" : step === 3 ? "active" : "done";
+  const tillarChip: "idle" | "active" | "done" = step < 4 ? "idle" : step === 4 ? "active" : "done";
 
   return (
     <div className="mx-auto max-w-[920px] px-3.5 pb-3.5 sm:px-6 sm:pb-5">
-      <div className="mb-3 flex items-center justify-center gap-2 sm:mb-4 sm:gap-4">
-        <GroupChip
-          icon={User}
-          label="Profil"
-          state={
-            jadvalActive || profilDone ? "done" : currentGroup === "Profil" ? "active" : "idle"
-          }
-        />
-        <GroupConnector filled={profilDone || jadvalActive} />
-        <GroupChip
-          icon={CalendarDays}
-          label="Jadval"
-          state={jadvalActive ? (jadvalDone ? "done" : "active") : "idle"}
-        />
+      <div className="mb-3 flex flex-wrap items-center justify-center gap-2 sm:mb-4 sm:gap-3">
+        <GroupChip icon={User} label="Profil" state={profilChip} />
+        <GroupConnector filled={step >= 3} />
+        <GroupChip icon={CalendarDays} label="Jadval" state={jadvalChip} />
+        <GroupConnector filled={step >= 4} />
+        <GroupChip icon={Languages} label="Tillar" state={tillarChip} />
       </div>
 
       <div className="mb-2.5 flex items-center gap-2.5 sm:mb-3 sm:gap-3">
