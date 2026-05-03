@@ -8,7 +8,17 @@ import {
 } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { MapPin, MoreHorizontal, Star, Trash2, Users, MessageCircle } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  MapPin,
+  MoreHorizontal,
+  Star,
+  Trash2,
+  Users,
+  MessageCircle,
+  Store,
+  ChevronRight,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchAdminSalons, patchAdminSalon, deleteAdminSalon, PAGE_SIZE } from "@/lib/admin-api";
 import { uzRegionLabel } from "@/lib/uz-regions";
@@ -26,7 +36,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Separator } from "@/components/ui/separator";
 
 const STATUS_TABS = [
   { key: "all" as const, label: "Hammasi" },
@@ -110,89 +119,131 @@ function SalonsListPage() {
   const data = salonsQ.data;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-8">
-      <header className="rounded-2xl border border-border bg-gradient-to-br from-card to-muted/20 px-5 py-6 sm:px-8 shadow-sm">
-        <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">
-          Salonlar
-        </h1>
-        <p className="text-muted-foreground mt-2 text-sm max-w-2xl leading-relaxed">
-          Hamkor sartaroshxonalar: pastdagi qidiruv va filtrlardan foydalaning. Kartani bosing — umumiy
-          ma’lumot; «Jamoa» tabida sartarosh havolalari.
-        </p>
-      </header>
+    <div className="min-h-[calc(100dvh-3.5rem)] bg-gradient-to-b from-muted/50 via-background to-background">
+      <div className="mx-auto flex max-w-[1600px] flex-col lg:flex-row lg:items-stretch">
+        {/* Chap: filtr va navigatsiya */}
+        <aside className="shrink-0 border-b border-border bg-card/90 px-4 py-5 shadow-sm lg:w-[min(100%,320px)] lg:border-b-0 lg:border-r lg:shadow-none">
+          <div className="mx-auto max-w-lg lg:mx-0">
+            <div className="flex items-center gap-3">
+              <div className="flex size-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md">
+                <Store className="size-5" aria-hidden />
+              </div>
+              <div>
+                <h1 className="font-heading text-xl font-bold tracking-tight sm:text-2xl">
+                  Salonlar
+                </h1>
+                <p className="text-xs text-muted-foreground">
+                  Hamkor sartaroshxonalar katalogi
+                </p>
+              </div>
+            </div>
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+              Qatorni bosing — batafsil sahifa. Sartarosh havolalari «Jamoa» ichida; «Orqaga» bilan
+              ro‘yxatga qaytadi.
+            </p>
 
-      <div className="rounded-2xl border border-border bg-muted/15 p-4 sm:p-5 shadow-sm space-y-4">
-        <FilterToolbar
-          search={q}
-          onSearchChange={(v) =>
-            navigate({ search: (prev) => ({ ...prev, q: v, page: 1 }) })
-          }
-          region={region}
-          onRegionChange={(v) =>
-            navigate({ search: (prev) => ({ ...prev, region: v, page: 1 }) })
-          }
-          searchPlaceholder="Salon nomi bo'yicha qidirish..."
-        />
-        <Separator />
-        <div>
-          <p className="text-xs font-medium text-muted-foreground mb-2">Chop etish holati</p>
-          <div className="inline-flex flex-wrap gap-1.5 rounded-xl border border-border bg-card p-1.5 shadow-inner">
-            {STATUS_TABS.map((t) => (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() =>
-                  navigate({ search: (prev) => ({ ...prev, status: t.key, page: 1 }) })
+            <div className="mt-6 space-y-5">
+              <FilterToolbar
+                className="flex-col !items-stretch gap-3"
+                search={q}
+                onSearchChange={(v) =>
+                  navigate({ search: (prev) => ({ ...prev, q: v, page: 1 }) })
                 }
-                className={cn(
-                  "min-h-10 px-4 py-2 text-xs font-semibold rounded-lg transition-colors",
-                  status === t.key
-                    ? "bg-foreground text-background shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/80",
-                )}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+                region={region}
+                onRegionChange={(v) =>
+                  navigate({ search: (prev) => ({ ...prev, region: v, page: 1 }) })
+                }
+                searchPlaceholder="Salon nomi bo'yicha qidirish..."
+              />
 
-      {salonsQ.isLoading ? (
-        <TableSkeleton rows={6} cols={4} />
-      ) : !data || data.results.length === 0 ? (
-        <EmptyState
-          title="Salonlar topilmadi"
-          description="Qidiruv, viloyat yoki holat filtrini o‘zgartirib qayta urinib ko‘ring."
-        />
-      ) : (
-        <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
-            {data.results.map((s) => {
-              const regionName = uzRegionLabel(s.region);
-              return (
-                <CardSalon
-                  key={s.id}
-                  s={s}
-                  regionName={regionName}
-                  onPatch={(body) => patchSalon.mutate({ id: s.id, body })}
-                  patchPending={patchSalon.isPending}
-                  onDelete={() => setDeleteTarget(s)}
-                />
-              );
-            })}
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Chop etish holati
+                </p>
+                <div className="mt-2 flex flex-col gap-1.5">
+                  {STATUS_TABS.map((t) => (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() =>
+                        navigate({ search: (prev) => ({ ...prev, status: t.key, page: 1 }) })
+                      }
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-left text-sm font-medium transition-all",
+                        status === t.key
+                          ? "border-primary/40 bg-primary/10 text-foreground shadow-sm"
+                          : "border-transparent bg-muted/40 text-muted-foreground hover:border-border hover:bg-muted/70 hover:text-foreground",
+                      )}
+                    >
+                      {t.label}
+                      {status === t.key ? (
+                        <ChevronRight className="size-4 shrink-0 text-primary" aria-hidden />
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
-          <Pagination
-            page={data.page}
-            totalPages={data.total_pages}
-            count={data.count}
-            pageSize={PAGE_SIZE}
-            onPageChange={(p) =>
-              navigate({ search: (prev) => ({ ...prev, page: p }) })
-            }
-          />
-        </>
-      )}
+        </aside>
+
+        {/* O‘ng: natijalar */}
+        <main className="min-w-0 flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          {salonsQ.isLoading ? (
+            <TableSkeleton rows={8} cols={1} />
+          ) : !data || data.results.length === 0 ? (
+            <EmptyState
+              title="Salonlar topilmadi"
+              description="Qidiruv, viloyat yoki holat filtrini o‘zgartirib qayta urinib ko‘ring."
+            />
+          ) : (
+            <>
+              <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-border/60 pb-4">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Natija
+                  </p>
+                  <p className="mt-1 font-heading text-2xl font-semibold tabular-nums text-foreground">
+                    {data.count}{" "}
+                    <span className="text-base font-normal text-muted-foreground">ta salon</span>
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Sahifa {data.page} / {data.total_pages}
+                </p>
+              </div>
+
+              <ul className="space-y-2.5">
+                {data.results.map((s) => {
+                  const regionName = uzRegionLabel(s.region);
+                  return (
+                    <SalonListRow
+                      key={s.id}
+                      s={s}
+                      regionName={regionName}
+                      onPatch={(body) => patchSalon.mutate({ id: s.id, body })}
+                      patchPending={patchSalon.isPending}
+                      onDelete={() => setDeleteTarget(s)}
+                    />
+                  );
+                })}
+              </ul>
+
+              <div className="mt-8 border-t border-border/60 pt-6">
+                <Pagination
+                  page={data.page}
+                  totalPages={data.total_pages}
+                  count={data.count}
+                  pageSize={PAGE_SIZE}
+                  onPageChange={(p) =>
+                    navigate({ search: (prev) => ({ ...prev, page: p }) })
+                  }
+                />
+              </div>
+            </>
+          )}
+        </main>
+      </div>
 
       <DeleteConfirmDialog
         open={!!deleteTarget}
@@ -210,7 +261,7 @@ function SalonsListPage() {
   );
 }
 
-function CardSalon({
+function SalonListRow({
   s,
   regionName,
   onPatch,
@@ -224,103 +275,131 @@ function CardSalon({
   onDelete: () => void;
 }) {
   return (
-    <div className="group relative flex min-h-[300px] flex-col rounded-2xl border border-border bg-card shadow-card overflow-hidden transition-all hover:shadow-md hover:border-foreground/20">
+    <li className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm transition-[box-shadow,transform] hover:border-primary/25 hover:shadow-md sm:flex-row sm:items-stretch">
       <Link
         to="/admin/salons/$salonId"
         params={{ salonId: s.id }}
-        className="flex flex-1 flex-col p-4 sm:p-5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+        className="flex min-w-0 flex-1 gap-4 p-4 sm:gap-5 sm:p-5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         title={`${s.name} — batafsil`}
       >
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h2 className="font-heading text-lg font-semibold text-foreground leading-snug group-hover:underline line-clamp-2">
-              {s.name}
-            </h2>
-            <p className="text-xs text-muted-foreground mt-1">{regionName || "Viloyat ko‘rsatilmagan"}</p>
-          </div>
-          <StatusBadge status={s.published ? "published" : "draft"} />
+        <div
+          className="hidden size-12 shrink-0 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 sm:flex sm:items-center sm:justify-center"
+          aria-hidden
+        >
+          <Store className="size-6 text-primary" />
         </div>
-        <p className="mt-3 flex flex-1 items-start gap-1.5 text-sm text-muted-foreground line-clamp-3">
-          <MapPin className="size-3.5 shrink-0 mt-0.5" aria-hidden />
-          <span title={s.address || undefined}>{s.address || "—"}</span>
-        </p>
-        <div className="mt-auto pt-4 grid grid-cols-3 gap-2 border-t border-border text-center">
-          <div title="Faol jamoa (taxminiy)">
-            <div className="flex items-center justify-center gap-1 text-muted-foreground mb-0.5">
-              <Users className="size-3.5" aria-hidden />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="min-w-0">
+              <h2 className="font-heading text-base font-semibold leading-snug text-foreground transition-colors group-hover:text-primary sm:text-lg">
+                <span className="inline-flex items-center gap-2">
+                  {s.name}
+                  <ChevronRight className="size-4 shrink-0 opacity-0 transition-opacity group-hover:opacity-60 sm:inline" />
+                </span>
+              </h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {regionName || "Viloyat ko‘rsatilmagan"}
+              </p>
             </div>
-            <div className="font-heading text-lg font-semibold tabular-nums text-foreground">
-              {s.barbers_count}
-            </div>
-            <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              Sartarosh
-            </div>
+            <StatusBadge status={s.published ? "published" : "draft"} className="shrink-0" />
           </div>
-          <div title="Mijoz sharhlari soni">
-            <div className="flex items-center justify-center gap-1 text-muted-foreground mb-0.5">
-              <MessageCircle className="size-3.5" aria-hidden />
-            </div>
-            <div className="font-heading text-lg font-semibold tabular-nums text-foreground">
-              {s.reviews_count}
-            </div>
-            <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              Sharh
-            </div>
+          <p className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
+            <MapPin className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+            <span className="line-clamp-2" title={s.address || undefined}>
+              {s.address || "Manzil ko‘rsatilmagan"}
+            </span>
+          </p>
+          <div className="mt-3 flex flex-wrap gap-4 border-t border-dashed border-border/80 pt-3 sm:hidden">
+            <MetricMini icon={Users} label="Sartarosh" value={s.barbers_count} />
+            <MetricMini icon={MessageCircle} label="Sharh" value={s.reviews_count} />
+            <MetricMini icon={Star} label="Reyting" value={s.rating.toFixed(1)} />
           </div>
-          <div title="O‘rtacha reyting">
-            <div className="flex items-center justify-center gap-1 text-muted-foreground mb-0.5">
-              <Star className="size-3.5" aria-hidden />
-            </div>
-            <div className="font-heading text-lg font-semibold tabular-nums text-foreground">
-              {s.rating.toFixed(1)}
-            </div>
-            <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              Reyting
-            </div>
-          </div>
+        </div>
+        <div className="hidden shrink-0 flex-col items-end justify-center gap-3 border-l border-border/60 pl-5 sm:flex">
+          <MetricChip icon={Users} label="Sartarosh" value={s.barbers_count} />
+          <MetricChip icon={MessageCircle} label="Sharh" value={s.reviews_count} />
+          <MetricChip icon={Star} label="Reyting" value={s.rating.toFixed(1)} />
         </div>
       </Link>
-      <div className="flex items-center justify-end gap-2 border-t border-border bg-muted/20 px-3 py-2.5">
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 text-xs"
-            disabled={patchPending}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onPatch({ published: !s.published });
-            }}
-          >
-            {s.published ? "Yashirish" : "Chiqarish"}
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreHorizontal className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-              <DropdownMenuItem
-                onClick={() => onPatch({ published: !s.published })}
-                disabled={patchPending}
-              >
-                {s.published ? "Yashirish" : "Tasdiqlash"}
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive" onClick={onDelete}>
-                <Trash2 className="size-4 mr-2" />
-                O'chirish
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+      <div className="flex items-center justify-end gap-1.5 border-t border-border/80 bg-muted/25 px-3 py-2 sm:w-36 sm:flex-col sm:justify-center sm:border-l sm:border-t-0 sm:px-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          className="h-8 flex-1 text-xs sm:flex-none sm:w-full"
+          disabled={patchPending}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onPatch({ published: !s.published });
+          }}
+        >
+          {s.published ? "Yashirish" : "Chiqarish"}
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 shrink-0 sm:size-8"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreHorizontal className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenuItem
+              onClick={() => onPatch({ published: !s.published })}
+              disabled={patchPending}
+            >
+              {s.published ? "Yashirish" : "Tasdiqlash"}
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-destructive" onClick={onDelete}>
+              <Trash2 className="mr-2 size-4" />
+              O'chirish
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </li>
+  );
+}
+
+function MetricChip({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string | number;
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 px-2.5 py-1.5 text-right">
+      <Icon className="size-3.5 text-muted-foreground" aria-hidden />
+      <div>
+        <div className="text-sm font-semibold tabular-nums leading-none">{value}</div>
+        <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
         </div>
       </div>
+    </div>
+  );
+}
+
+function MetricMini({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string | number;
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <Icon className="size-3.5 text-muted-foreground" aria-hidden />
+      <span className="text-sm font-semibold tabular-nums">{value}</span>
+      <span className="text-[10px] text-muted-foreground">{label}</span>
     </div>
   );
 }

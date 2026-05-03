@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { Building2, MapPin, Phone, Star, Users } from "lucide-react";
+import { Building2, CalendarClock, MapPin, Phone, Star, Users } from "lucide-react";
 import { fetchAdminSalonDetail } from "@/lib/admin-api";
 import { uzRegionLabel } from "@/lib/uz-regions";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const Route = createFileRoute("/admin/salons/$salonId/")({
   component: SalonOverviewTab,
@@ -29,7 +29,13 @@ function SalonOverviewTab() {
   const s = salonQ.data;
 
   if (salonQ.isLoading) {
-    return <div className="h-40 animate-pulse rounded-xl bg-muted" />;
+    return (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="h-28 animate-pulse rounded-xl bg-muted" />
+        ))}
+      </div>
+    );
   }
   if (salonQ.isError) {
     return <p className="text-sm text-destructive">{(salonQ.error as Error)?.message}</p>;
@@ -39,92 +45,124 @@ function SalonOverviewTab() {
   return (
     <div className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-3">
-        <Card className="border-border/80 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardDescription>Yaratilgan</CardDescription>
-            <CardTitle className="text-lg tabular-nums">{fmtIso(s.created_at)}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card className="border-border/80 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-1">
-              <Star className="size-3.5" /> Sharhlar / reyting
-            </CardDescription>
-            <CardTitle className="text-lg">
-              <span className="tabular-nums">{s.reviews_count}</span>
-              <span className="text-muted-foreground font-normal text-base ml-2">
-                ({s.rating.toFixed(1)})
-              </span>
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card className="border-border/80 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-1">
-              <Users className="size-3.5" /> Sartaroshlar
-            </CardDescription>
-            <CardTitle className="text-lg tabular-nums">{s.barbers_count}</CardTitle>
-          </CardHeader>
-        </Card>
+        <div className="rounded-xl border border-border/70 bg-gradient-to-br from-muted/80 to-card p-4 shadow-sm sm:p-5">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Yaratilgan
+          </p>
+          <p className="mt-2 font-heading text-lg font-semibold tabular-nums text-foreground">
+            {fmtIso(s.created_at)}
+          </p>
+        </div>
+        <div className="rounded-xl border border-border/70 bg-gradient-to-br from-amber-500/5 to-card p-4 shadow-sm sm:p-5">
+          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <Star className="size-3.5 text-amber-600 dark:text-amber-400" aria-hidden />
+            Sharhlar / reyting
+          </p>
+          <p className="mt-2 font-heading text-xl font-bold tabular-nums">
+            {s.reviews_count}
+            <span className="ml-2 text-base font-semibold text-muted-foreground">
+              ({s.rating.toFixed(1)})
+            </span>
+          </p>
+        </div>
+        <div className="rounded-xl border border-border/70 bg-gradient-to-br from-primary/5 to-card p-4 shadow-sm sm:p-5">
+          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <Users className="size-3.5 text-primary" aria-hidden />
+            Sartaroshlar
+          </p>
+          <p className="mt-2 font-heading text-2xl font-bold tabular-nums">{s.barbers_count}</p>
+        </div>
       </div>
 
-      <Card className="border-border/80 shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Building2 className="size-4" /> Manzil va aloqa
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm space-y-2 text-muted-foreground">
-          <div className="flex items-start gap-2">
-            <MapPin className="size-4 shrink-0 mt-0.5" />
-            <span className="text-foreground">{s.address || "—"}</span>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Viloyat: </span>
-            <span className="text-foreground">{uzRegionLabel(s.region) || "—"}</span>
-          </div>
-          {s.phone ? (
-            <div className="flex items-center gap-2 tabular-nums">
-              <Phone className="size-4 shrink-0" />
-              <span className="text-foreground">{s.phone}</span>
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
-
-      {s.schedule_summary ? (
-        <Card className="border-border/80 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Ish vaqtlari (qisqa)</CardTitle>
-            <CardDescription>{s.schedule_summary}</CardDescription>
+      <div
+        className={
+          s.schedule_summary ? "grid gap-6 lg:grid-cols-5" : "grid gap-6"
+        }
+      >
+        <Card
+          className={
+            s.schedule_summary ? "border-border/70 shadow-sm lg:col-span-3" : "border-border/70 shadow-sm"
+          }
+        >
+          <CardHeader className="border-b border-border/60 bg-muted/20 pb-4">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <Building2 className="size-4 text-primary" aria-hidden />
+              Manzil va aloqa
+            </CardTitle>
           </CardHeader>
+          <CardContent className="space-y-4 pt-5 text-sm">
+            <div className="flex gap-3 rounded-lg bg-muted/30 p-3">
+              <MapPin className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+              <p className="leading-relaxed text-foreground">{s.address || "—"}</p>
+            </div>
+            <dl className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <dt className="text-xs font-medium text-muted-foreground">Viloyat</dt>
+                <dd className="mt-0.5 font-medium text-foreground">
+                  {uzRegionLabel(s.region) || "—"}
+                </dd>
+              </div>
+              {s.phone ? (
+                <div>
+                  <dt className="text-xs font-medium text-muted-foreground">Telefon</dt>
+                  <dd className="mt-0.5 flex items-center gap-2 font-medium tabular-nums text-foreground">
+                    <Phone className="size-3.5 text-muted-foreground" aria-hidden />
+                    {s.phone}
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          </CardContent>
         </Card>
-      ) : null}
+
+        {s.schedule_summary ? (
+          <Card className="border-border/70 shadow-sm lg:col-span-2">
+            <CardHeader className="border-b border-border/60 bg-muted/20 pb-4">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                <CalendarClock className="size-4 text-primary" aria-hidden />
+                Ish vaqtlari
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4 text-sm leading-relaxed text-muted-foreground">
+              {s.schedule_summary}
+            </CardContent>
+          </Card>
+        ) : null}
+      </div>
 
       {s.hours.length > 0 ? (
-        <Card className="border-border/80 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Haftalik soatlar</CardTitle>
+        <Card className="overflow-hidden border-border/70 shadow-sm">
+          <CardHeader className="border-b border-border/60 bg-muted/20 py-4">
+            <CardTitle className="text-base font-semibold">Haftalik soatlar</CardTitle>
           </CardHeader>
-          <CardContent className="overflow-x-auto text-sm">
-            <table className="w-full text-left">
-              <thead className="text-xs uppercase text-muted-foreground border-b border-border">
-                <tr>
-                  <th className="py-2 pr-4">Kun</th>
-                  <th className="py-2">Ochilish</th>
-                  <th className="py-2">Yopilish</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {s.hours.map((h) => (
-                  <tr key={h.weekday}>
-                    <td className="py-2 pr-4 tabular-nums">{h.weekday}</td>
-                    <td className="py-2 tabular-nums">{h.open_time}</td>
-                    <td className="py-2 tabular-nums">{h.close_time}</td>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[320px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <th className="px-4 py-3 sm:px-6">Kun</th>
+                    <th className="px-4 py-3 sm:px-6">Ochilish</th>
+                    <th className="px-4 py-3 sm:px-6">Yopilish</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border/80">
+                  {s.hours.map((h, idx) => (
+                    <tr
+                      key={h.weekday}
+                      className={idx % 2 === 0 ? "bg-card" : "bg-muted/20"}
+                    >
+                      <td className="px-4 py-2.5 font-medium tabular-nums sm:px-6">{h.weekday}</td>
+                      <td className="px-4 py-2.5 tabular-nums text-muted-foreground sm:px-6">
+                        {h.open_time}
+                      </td>
+                      <td className="px-4 py-2.5 tabular-nums text-muted-foreground sm:px-6">
+                        {h.close_time}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
       ) : null}
