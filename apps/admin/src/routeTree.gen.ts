@@ -32,7 +32,9 @@ import { Route as AdminSalonsSalonIdRouteImport } from './routes/admin.salons.$s
 import { Route as AdminFinanceTransactionsRouteImport } from './routes/admin.finance.transactions'
 import { Route as AdminFinancePayoutsRouteImport } from './routes/admin.finance.payouts'
 import { Route as AdminBarbersBarberIdRouteImport } from './routes/admin.barbers.$barberId'
+import { Route as AdminSalonsSalonIdIndexRouteImport } from './routes/admin.salons.$salonId.index'
 import { Route as AdminBarbersBarberIdIndexRouteImport } from './routes/admin.barbers.$barberId.index'
+import { Route as AdminSalonsSalonIdTeamRouteImport } from './routes/admin.salons.$salonId.team'
 import { Route as AdminBarbersBarberIdReviewsRouteImport } from './routes/admin.barbers.$barberId.reviews'
 import { Route as AdminBarbersBarberIdBookingsRouteImport } from './routes/admin.barbers.$barberId.bookings'
 
@@ -152,12 +154,22 @@ const AdminBarbersBarberIdRoute = AdminBarbersBarberIdRouteImport.update({
   path: '/$barberId',
   getParentRoute: () => AdminBarbersRoute,
 } as any)
+const AdminSalonsSalonIdIndexRoute = AdminSalonsSalonIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminSalonsSalonIdRoute,
+} as any)
 const AdminBarbersBarberIdIndexRoute =
   AdminBarbersBarberIdIndexRouteImport.update({
     id: '/',
     path: '/',
     getParentRoute: () => AdminBarbersBarberIdRoute,
   } as any)
+const AdminSalonsSalonIdTeamRoute = AdminSalonsSalonIdTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AdminSalonsSalonIdRoute,
+} as any)
 const AdminBarbersBarberIdReviewsRoute =
   AdminBarbersBarberIdReviewsRouteImport.update({
     id: '/reviews',
@@ -193,11 +205,13 @@ export interface FileRoutesByFullPath {
   '/admin/barbers/$barberId': typeof AdminBarbersBarberIdRouteWithChildren
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
-  '/admin/salons/$salonId': typeof AdminSalonsSalonIdRoute
+  '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
+  '/admin/salons/$salonId/team': typeof AdminSalonsSalonIdTeamRoute
   '/admin/barbers/$barberId/': typeof AdminBarbersBarberIdIndexRoute
+  '/admin/salons/$salonId/': typeof AdminSalonsSalonIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -219,11 +233,12 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
-  '/admin/salons/$salonId': typeof AdminSalonsSalonIdRoute
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
+  '/admin/salons/$salonId/team': typeof AdminSalonsSalonIdTeamRoute
   '/admin/barbers/$barberId': typeof AdminBarbersBarberIdIndexRoute
+  '/admin/salons/$salonId': typeof AdminSalonsSalonIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -248,11 +263,13 @@ export interface FileRoutesById {
   '/admin/barbers/$barberId': typeof AdminBarbersBarberIdRouteWithChildren
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
-  '/admin/salons/$salonId': typeof AdminSalonsSalonIdRoute
+  '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
+  '/admin/salons/$salonId/team': typeof AdminSalonsSalonIdTeamRoute
   '/admin/barbers/$barberId/': typeof AdminBarbersBarberIdIndexRoute
+  '/admin/salons/$salonId/': typeof AdminSalonsSalonIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -282,7 +299,9 @@ export interface FileRouteTypes {
     | '/admin/support/$ticketId'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
+    | '/admin/salons/$salonId/team'
     | '/admin/barbers/$barberId/'
+    | '/admin/salons/$salonId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -304,11 +323,12 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/finance/payouts'
     | '/admin/finance/transactions'
-    | '/admin/salons/$salonId'
     | '/admin/support/$ticketId'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
+    | '/admin/salons/$salonId/team'
     | '/admin/barbers/$barberId'
+    | '/admin/salons/$salonId'
   id:
     | '__root__'
     | '/'
@@ -336,7 +356,9 @@ export interface FileRouteTypes {
     | '/admin/support/$ticketId'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
+    | '/admin/salons/$salonId/team'
     | '/admin/barbers/$barberId/'
+    | '/admin/salons/$salonId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -508,12 +530,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBarbersBarberIdRouteImport
       parentRoute: typeof AdminBarbersRoute
     }
+    '/admin/salons/$salonId/': {
+      id: '/admin/salons/$salonId/'
+      path: '/'
+      fullPath: '/admin/salons/$salonId/'
+      preLoaderRoute: typeof AdminSalonsSalonIdIndexRouteImport
+      parentRoute: typeof AdminSalonsSalonIdRoute
+    }
     '/admin/barbers/$barberId/': {
       id: '/admin/barbers/$barberId/'
       path: '/'
       fullPath: '/admin/barbers/$barberId/'
       preLoaderRoute: typeof AdminBarbersBarberIdIndexRouteImport
       parentRoute: typeof AdminBarbersBarberIdRoute
+    }
+    '/admin/salons/$salonId/team': {
+      id: '/admin/salons/$salonId/team'
+      path: '/team'
+      fullPath: '/admin/salons/$salonId/team'
+      preLoaderRoute: typeof AdminSalonsSalonIdTeamRouteImport
+      parentRoute: typeof AdminSalonsSalonIdRoute
     }
     '/admin/barbers/$barberId/reviews': {
       id: '/admin/barbers/$barberId/reviews'
@@ -573,12 +609,25 @@ const AdminFinanceRouteWithChildren = AdminFinanceRoute._addFileChildren(
   AdminFinanceRouteChildren,
 )
 
+interface AdminSalonsSalonIdRouteChildren {
+  AdminSalonsSalonIdTeamRoute: typeof AdminSalonsSalonIdTeamRoute
+  AdminSalonsSalonIdIndexRoute: typeof AdminSalonsSalonIdIndexRoute
+}
+
+const AdminSalonsSalonIdRouteChildren: AdminSalonsSalonIdRouteChildren = {
+  AdminSalonsSalonIdTeamRoute: AdminSalonsSalonIdTeamRoute,
+  AdminSalonsSalonIdIndexRoute: AdminSalonsSalonIdIndexRoute,
+}
+
+const AdminSalonsSalonIdRouteWithChildren =
+  AdminSalonsSalonIdRoute._addFileChildren(AdminSalonsSalonIdRouteChildren)
+
 interface AdminSalonsRouteChildren {
-  AdminSalonsSalonIdRoute: typeof AdminSalonsSalonIdRoute
+  AdminSalonsSalonIdRoute: typeof AdminSalonsSalonIdRouteWithChildren
 }
 
 const AdminSalonsRouteChildren: AdminSalonsRouteChildren = {
-  AdminSalonsSalonIdRoute: AdminSalonsSalonIdRoute,
+  AdminSalonsSalonIdRoute: AdminSalonsSalonIdRouteWithChildren,
 }
 
 const AdminSalonsRouteWithChildren = AdminSalonsRoute._addFileChildren(

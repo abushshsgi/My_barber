@@ -15,6 +15,7 @@ import {
   User,
 } from "lucide-react";
 import { fetchAdminBarberDetail, type AdminBarber } from "@/lib/admin-api";
+import { barberDetailSearchFromRaw } from "@/lib/admin-nav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -23,6 +24,7 @@ import { TableSkeleton } from "@/components/admin/Skeletons";
 const AdminMapLeaflet = lazy(() => import("@/components/admin/AdminMapLeaflet"));
 
 export const Route = createFileRoute("/admin/barbers/$barberId/")({
+  validateSearch: (raw: Record<string, unknown>) => barberDetailSearchFromRaw(raw),
   component: BarberOverviewPage,
 });
 

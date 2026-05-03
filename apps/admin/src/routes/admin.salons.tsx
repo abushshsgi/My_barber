@@ -111,17 +111,17 @@ function SalonsListPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-8">
-      <div>
+      <header className="rounded-2xl border border-border bg-gradient-to-br from-card to-muted/20 px-5 py-6 sm:px-8 shadow-sm">
         <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">
           Salonlar
         </h1>
-        <p className="text-muted-foreground mt-1 text-sm max-w-xl">
-          Hamkor sartaroshxonalar: qidiruv, viloyat va chop etish holati. Kartani bosing — batafsil
-          ma’lumot va jamoa havolalari.
+        <p className="text-muted-foreground mt-2 text-sm max-w-2xl leading-relaxed">
+          Hamkor sartaroshxonalar: pastdagi qidiruv va filtrlardan foydalaning. Kartani bosing — umumiy
+          ma’lumot; «Jamoa» tabida sartarosh havolalari.
         </p>
-      </div>
+      </header>
 
-      <div className="rounded-2xl border border-border bg-card/40 p-4 sm:p-5 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-border bg-muted/15 p-4 sm:p-5 shadow-sm space-y-4">
         <FilterToolbar
           search={q}
           onSearchChange={(v) =>
@@ -136,7 +136,7 @@ function SalonsListPage() {
         <Separator />
         <div>
           <p className="text-xs font-medium text-muted-foreground mb-2">Chop etish holati</p>
-          <div className="inline-flex flex-wrap gap-1 rounded-xl border border-border bg-background p-1">
+          <div className="inline-flex flex-wrap gap-1.5 rounded-xl border border-border bg-card p-1.5 shadow-inner">
             {STATUS_TABS.map((t) => (
               <button
                 key={t.key}
@@ -145,7 +145,7 @@ function SalonsListPage() {
                   navigate({ search: (prev) => ({ ...prev, status: t.key, page: 1 }) })
                 }
                 className={cn(
-                  "px-3 py-2 text-xs font-medium rounded-lg transition-colors",
+                  "min-h-10 px-4 py-2 text-xs font-semibold rounded-lg transition-colors",
                   status === t.key
                     ? "bg-foreground text-background shadow-sm"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/80",
@@ -167,7 +167,7 @@ function SalonsListPage() {
         />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
             {data.results.map((s) => {
               const regionName = uzRegionLabel(s.region);
               return (
@@ -224,46 +224,59 @@ function CardSalon({
   onDelete: () => void;
 }) {
   return (
-    <div className="group relative flex flex-col rounded-2xl border border-border bg-card shadow-card overflow-hidden transition-shadow hover:shadow-md hover:border-foreground/15">
+    <div className="group relative flex min-h-[300px] flex-col rounded-2xl border border-border bg-card shadow-card overflow-hidden transition-all hover:shadow-md hover:border-foreground/20">
       <Link
         to="/admin/salons/$salonId"
         params={{ salonId: s.id }}
         className="flex flex-1 flex-col p-4 sm:p-5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+        title={`${s.name} — batafsil`}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h2 className="font-heading text-lg font-semibold text-foreground leading-snug group-hover:underline">
+            <h2 className="font-heading text-lg font-semibold text-foreground leading-snug group-hover:underline line-clamp-2">
               {s.name}
             </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">{regionName || "Viloyat ko‘rsatilmagan"}</p>
+            <p className="text-xs text-muted-foreground mt-1">{regionName || "Viloyat ko‘rsatilmagan"}</p>
           </div>
           <StatusBadge status={s.published ? "published" : "draft"} />
         </div>
-        <p className="mt-3 text-sm text-muted-foreground line-clamp-2 flex items-start gap-1.5">
-          <MapPin className="size-3.5 shrink-0 mt-0.5" />
-          <span>{s.address || "—"}</span>
+        <p className="mt-3 flex flex-1 items-start gap-1.5 text-sm text-muted-foreground line-clamp-3">
+          <MapPin className="size-3.5 shrink-0 mt-0.5" aria-hidden />
+          <span title={s.address || undefined}>{s.address || "—"}</span>
         </p>
-        <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border pt-4 text-center">
-          <div>
+        <div className="mt-auto pt-4 grid grid-cols-3 gap-2 border-t border-border text-center">
+          <div title="Faol jamoa (taxminiy)">
             <div className="flex items-center justify-center gap-1 text-muted-foreground mb-0.5">
-              <Users className="size-3.5" />
+              <Users className="size-3.5" aria-hidden />
             </div>
-            <div className="font-heading text-lg font-semibold tabular-nums">{s.barbers_count}</div>
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Sartarosh</div>
+            <div className="font-heading text-lg font-semibold tabular-nums text-foreground">
+              {s.barbers_count}
+            </div>
+            <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Sartarosh
+            </div>
           </div>
-          <div>
+          <div title="Mijoz sharhlari soni">
             <div className="flex items-center justify-center gap-1 text-muted-foreground mb-0.5">
-              <MessageCircle className="size-3.5" />
+              <MessageCircle className="size-3.5" aria-hidden />
             </div>
-            <div className="font-heading text-lg font-semibold tabular-nums">{s.reviews_count}</div>
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Sharh</div>
+            <div className="font-heading text-lg font-semibold tabular-nums text-foreground">
+              {s.reviews_count}
+            </div>
+            <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Sharh
+            </div>
           </div>
-          <div>
+          <div title="O‘rtacha reyting">
             <div className="flex items-center justify-center gap-1 text-muted-foreground mb-0.5">
-              <Star className="size-3.5" />
+              <Star className="size-3.5" aria-hidden />
             </div>
-            <div className="font-heading text-lg font-semibold tabular-nums">{s.rating.toFixed(1)}</div>
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Reyting</div>
+            <div className="font-heading text-lg font-semibold tabular-nums text-foreground">
+              {s.rating.toFixed(1)}
+            </div>
+            <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Reyting
+            </div>
           </div>
         </div>
       </Link>

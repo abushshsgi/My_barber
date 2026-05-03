@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { barberDetailSearchFromRaw } from "@/lib/admin-nav";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { fetchAdminBookings, PAGE_SIZE } from "@/lib/admin-api";
@@ -10,6 +11,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/barbers/$barberId/bookings")({
+  validateSearch: (raw: Record<string, unknown>) => barberDetailSearchFromRaw(raw),
   component: BarberBookingsPage,
 });
 

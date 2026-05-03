@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { barberDetailSearchFromRaw } from "@/lib/admin-nav";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Star } from "lucide-react";
@@ -10,6 +11,7 @@ import { EmptyState } from "@/components/admin/EmptyState";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/barbers/$barberId/reviews")({
+  validateSearch: (raw: Record<string, unknown>) => barberDetailSearchFromRaw(raw),
   component: BarberReviewsPage,
 });
 

@@ -3,15 +3,18 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, CalendarClock, LayoutGrid, MessageSquareText, UserCircle } from "lucide-react";
 import { fetchAdminBarberDetail } from "@/lib/admin-api";
 import { getBarberSegmentDescription } from "@/lib/barber-segment-copy";
+import { barberDetailSearchFromRaw } from "@/lib/admin-nav";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/barbers/$barberId")({
+  validateSearch: (raw: Record<string, unknown>) => barberDetailSearchFromRaw(raw),
   component: BarberIdLayout,
 });
 
 function BarberIdLayout() {
   const { barberId } = Route.useParams();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const search = Route.useSearch();
 
   const barberQ = useQuery({
     queryKey: ["admin", "barber", barberId],
@@ -38,10 +41,10 @@ function BarberIdLayout() {
       <div className="border-b border-border bg-card/80 backdrop-blur-sm">
         <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8 py-4">
           <Link
-            to="/admin/barbers"
+            to={search.returnTo ?? "/admin/barbers"}
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4"
           >
-            <ArrowLeft className="size-4" /> Sartaroshlar
+            <ArrowLeft className="size-4" /> {search.returnTo ? "Orqaga" : "Sartaroshlar"}
           </Link>
 
           {barberQ.isLoading ? (
@@ -114,6 +117,7 @@ function BarberIdLayout() {
             <Link
               to="/admin/barbers/$barberId"
               params={{ barberId }}
+              search={search.returnTo ? { returnTo: search.returnTo } : {}}
               className={tabCls("overview")}
             >
               <LayoutGrid className="size-4" /> Umumiy
@@ -121,6 +125,7 @@ function BarberIdLayout() {
             <Link
               to="/admin/barbers/$barberId/bookings"
               params={{ barberId }}
+              search={search.returnTo ? { returnTo: search.returnTo } : {}}
               className={tabCls("bookings")}
             >
               <CalendarClock className="size-4" /> Bronlar
@@ -128,6 +133,7 @@ function BarberIdLayout() {
             <Link
               to="/admin/barbers/$barberId/reviews"
               params={{ barberId }}
+              search={search.returnTo ? { returnTo: search.returnTo } : {}}
               className={tabCls("reviews")}
             >
               <MessageSquareText className="size-4" /> Sharhlar
