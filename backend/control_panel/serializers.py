@@ -119,13 +119,16 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
         return value
 
 
-class AdminSalonSerializer(serializers.ModelSerializer):
+class AdminSalonListSerializer(serializers.ModelSerializer):
     owner_email = serializers.EmailField(source="owner_barber.email", read_only=True)
     owner_name = serializers.CharField(source="owner_barber.full_name", read_only=True)
     region = serializers.SerializerMethodField()
     region_label = serializers.SerializerMethodField()
     hours = SalonHoursSerializer(many=True, read_only=True)
     schedule_summary = serializers.SerializerMethodField()
+    reviews_count = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
+    barbers_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Salon
@@ -148,8 +151,19 @@ class AdminSalonSerializer(serializers.ModelSerializer):
             "closed_weekdays",
             "hours",
             "schedule_summary",
+            "reviews_count",
+            "rating",
+            "barbers_count",
         )
-        read_only_fields = ("id", "slug", "owner_barber", "created_at")
+        read_only_fields = (
+            "id",
+            "slug",
+            "owner_barber",
+            "created_at",
+            "reviews_count",
+            "rating",
+            "barbers_count",
+        )
 
     def get_region(self, obj: Salon) -> str:
         ob = getattr(obj, "owner_barber", None)
@@ -163,6 +177,92 @@ class AdminSalonSerializer(serializers.ModelSerializer):
 
     def get_schedule_summary(self, obj: Salon) -> str:
         return salon_schedule_summary(obj)
+
+    def get_reviews_count(self, obj: Salon) -> int:
+        v = getattr(obj, "_reviews_count", None)
+        if v is not None:
+            return int(v)
+        return int(obj.reviews.count())
+
+    def get_rating(self, obj: Salon) -> float:
+        v = getattr(obj, "_reviews_avg", None)
+        if v is not None:
+            return float(v) if v is not None else 0.0
+        x = obj.reviews.aggregate(a=Avg("rating")).get("a")
+        return float(x) if x is not None else 0.0
+
+    def get_barbers_count(self, obj: Salon) -> int:
+        return len(_salon_distinct_barber_ids(obj))
+
+
+def _salon_distinct_barber_ids(obj: Salon) -> set[int]:
+    ids: set[int] = set()
+    if obj.owner_barber_id:
+        ids.add(obj.owner_barber_id)
+    mems = getattr(obj, "_admin_active_memberships", None)
+    if mems is not None:
+        for m in mems:
+            if m.barber_id:
+                ids.add(m.barber_id)
+        return ids
+    for m in obj.memberships.filter(invite_state=SalonMembership.InviteState.ACTIVE).only("barber_id"):
+        if m.barber_id:
+            ids.add(m.barber_id)
+    return ids
+
+
+class AdminSalonDetailSerializer(AdminSalonListSerializer):
+    staff_barbers = serializers.SerializerMethodField()
+
+    class Meta(AdminSalonListSerializer.Meta):
+        fields = AdminSalonListSerializer.Meta.fields + ("staff_barbers",)
+        read_only_fields = AdminSalonListSerializer.Meta.read_only_fields + ("staff_barbers",)
+
+    def get_staff_barbers(self, obj: Salon) -> list[dict]:
+        rows: list[dict] = []
+        seen: set[int] = set()
+        ob = getattr(obj, "owner_barber", None)
+        if ob is not None:
+            rows.append(
+                {
+                    "id": ob.id,
+                    "full_name": ob.full_name or "",
+                    "email": ob.email,
+                    "phone": ob.phone or "",
+                    "role": SalonMembership.Role.OWNER,
+                    "invite_state": SalonMembership.InviteState.ACTIVE,
+                }
+            )
+            seen.add(ob.id)
+        mems = getattr(obj, "_admin_active_memberships", None)
+        if mems is None:
+            mems = list(
+                obj.memberships.filter(invite_state=SalonMembership.InviteState.ACTIVE).select_related(
+                    "barber"
+                )
+            )
+        for m in mems:
+            if not m.barber_id or m.barber_id in seen:
+                continue
+            b = m.barber
+            if b is None:
+                continue
+            seen.add(b.id)
+            rows.append(
+                {
+                    "id": b.id,
+                    "full_name": b.full_name or "",
+                    "email": b.email,
+                    "phone": b.phone or "",
+                    "role": m.role,
+                    "invite_state": m.invite_state,
+                }
+            )
+        return rows
+
+
+# Back-compat import name
+AdminSalonSerializer = AdminSalonListSerializer
 
 
 class AdminSalonUpdateSerializer(serializers.ModelSerializer):

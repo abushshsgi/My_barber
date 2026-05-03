@@ -27,7 +27,8 @@ from .serializers import (
     AdminFinanceTransactionSerializer,
     AdminPayoutSerializer,
     AdminReviewListSerializer,
-    AdminSalonSerializer,
+    AdminSalonDetailSerializer,
+    AdminSalonListSerializer,
     AdminSalonUpdateSerializer,
     AdminSupportReplySerializer,
     AdminSupportTicketDetailSerializer,
@@ -232,17 +233,31 @@ class AdminUserDetailView(generics.RetrieveUpdateAPIView):
         _audit(self.request, "update", "user", updated.id, updated.email, before=before, after=after)
 
 
+def _admin_salon_queryset():
+    active_members = SalonMembership.objects.filter(
+        invite_state=SalonMembership.InviteState.ACTIVE
+    ).select_related("barber")
+    return (
+        Salon.objects.select_related("owner_barber")
+        .prefetch_related(
+            "hours",
+            Prefetch("memberships", queryset=active_members, to_attr="_admin_active_memberships"),
+        )
+        .annotate(
+            _reviews_count=Count("reviews", distinct=True),
+            _reviews_avg=Avg("reviews__rating"),
+        )
+        .order_by("-created_at")
+    )
+
+
 class AdminSalonListView(generics.ListAPIView):
     permission_classes = [IsAdmin]
-    serializer_class = AdminSalonSerializer
+    serializer_class = AdminSalonListSerializer
     pagination_class = AdminPageNumberPagination
 
     def get_queryset(self):
-        qs = (
-            Salon.objects.select_related("owner_barber")
-            .prefetch_related("hours")
-            .order_by("-created_at")
-        )
+        qs = _admin_salon_queryset()
         pub = self.request.query_params.get("published")
         if pub == "0":
             qs = qs.filter(is_published=False)
@@ -263,13 +278,14 @@ class AdminSalonListView(generics.ListAPIView):
 
 class AdminSalonDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdmin]
-    queryset = Salon.objects.select_related("owner_barber").prefetch_related("hours").all()
-    serializer_class = AdminSalonSerializer
+
+    def get_queryset(self):
+        return _admin_salon_queryset()
 
     def get_serializer_class(self):
         if self.request.method in ("PATCH", "PUT"):
             return AdminSalonUpdateSerializer
-        return AdminSalonSerializer
+        return AdminSalonDetailSerializer
 
     def perform_update(self, serializer):
         obj = self.get_object()

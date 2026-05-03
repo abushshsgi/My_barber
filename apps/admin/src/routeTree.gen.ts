@@ -28,6 +28,7 @@ import { Route as AdminBarbersRouteImport } from './routes/admin.barbers'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminAdminsRouteImport } from './routes/admin.admins'
 import { Route as AdminSupportTicketIdRouteImport } from './routes/admin.support.$ticketId'
+import { Route as AdminSalonsSalonIdRouteImport } from './routes/admin.salons.$salonId'
 import { Route as AdminFinanceTransactionsRouteImport } from './routes/admin.finance.transactions'
 import { Route as AdminFinancePayoutsRouteImport } from './routes/admin.finance.payouts'
 import { Route as AdminBarbersBarberIdRouteImport } from './routes/admin.barbers.$barberId'
@@ -130,6 +131,11 @@ const AdminSupportTicketIdRoute = AdminSupportTicketIdRouteImport.update({
   path: '/$ticketId',
   getParentRoute: () => AdminSupportRoute,
 } as any)
+const AdminSalonsSalonIdRoute = AdminSalonsSalonIdRouteImport.update({
+  id: '/$salonId',
+  path: '/$salonId',
+  getParentRoute: () => AdminSalonsRoute,
+} as any)
 const AdminFinanceTransactionsRoute =
   AdminFinanceTransactionsRouteImport.update({
     id: '/transactions',
@@ -179,7 +185,7 @@ export interface FileRoutesByFullPath {
   '/admin/map': typeof AdminMapRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/reviews': typeof AdminReviewsRoute
-  '/admin/salons': typeof AdminSalonsRoute
+  '/admin/salons': typeof AdminSalonsRouteWithChildren
   '/admin/services': typeof AdminServicesRoute
   '/admin/support': typeof AdminSupportRouteWithChildren
   '/admin/users': typeof AdminUsersRoute
@@ -187,6 +193,7 @@ export interface FileRoutesByFullPath {
   '/admin/barbers/$barberId': typeof AdminBarbersBarberIdRouteWithChildren
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
+  '/admin/salons/$salonId': typeof AdminSalonsSalonIdRoute
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
@@ -205,13 +212,14 @@ export interface FileRoutesByTo {
   '/admin/map': typeof AdminMapRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/reviews': typeof AdminReviewsRoute
-  '/admin/salons': typeof AdminSalonsRoute
+  '/admin/salons': typeof AdminSalonsRouteWithChildren
   '/admin/services': typeof AdminServicesRoute
   '/admin/support': typeof AdminSupportRouteWithChildren
   '/admin/users': typeof AdminUsersRoute
   '/admin': typeof AdminIndexRoute
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
+  '/admin/salons/$salonId': typeof AdminSalonsSalonIdRoute
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
@@ -232,7 +240,7 @@ export interface FileRoutesById {
   '/admin/map': typeof AdminMapRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/reviews': typeof AdminReviewsRoute
-  '/admin/salons': typeof AdminSalonsRoute
+  '/admin/salons': typeof AdminSalonsRouteWithChildren
   '/admin/services': typeof AdminServicesRoute
   '/admin/support': typeof AdminSupportRouteWithChildren
   '/admin/users': typeof AdminUsersRoute
@@ -240,6 +248,7 @@ export interface FileRoutesById {
   '/admin/barbers/$barberId': typeof AdminBarbersBarberIdRouteWithChildren
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
+  '/admin/salons/$salonId': typeof AdminSalonsSalonIdRoute
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
@@ -269,6 +278,7 @@ export interface FileRouteTypes {
     | '/admin/barbers/$barberId'
     | '/admin/finance/payouts'
     | '/admin/finance/transactions'
+    | '/admin/salons/$salonId'
     | '/admin/support/$ticketId'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
@@ -294,6 +304,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/finance/payouts'
     | '/admin/finance/transactions'
+    | '/admin/salons/$salonId'
     | '/admin/support/$ticketId'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
@@ -321,6 +332,7 @@ export interface FileRouteTypes {
     | '/admin/barbers/$barberId'
     | '/admin/finance/payouts'
     | '/admin/finance/transactions'
+    | '/admin/salons/$salonId'
     | '/admin/support/$ticketId'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
@@ -468,6 +480,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSupportTicketIdRouteImport
       parentRoute: typeof AdminSupportRoute
     }
+    '/admin/salons/$salonId': {
+      id: '/admin/salons/$salonId'
+      path: '/$salonId'
+      fullPath: '/admin/salons/$salonId'
+      preLoaderRoute: typeof AdminSalonsSalonIdRouteImport
+      parentRoute: typeof AdminSalonsRoute
+    }
     '/admin/finance/transactions': {
       id: '/admin/finance/transactions'
       path: '/transactions'
@@ -554,6 +573,18 @@ const AdminFinanceRouteWithChildren = AdminFinanceRoute._addFileChildren(
   AdminFinanceRouteChildren,
 )
 
+interface AdminSalonsRouteChildren {
+  AdminSalonsSalonIdRoute: typeof AdminSalonsSalonIdRoute
+}
+
+const AdminSalonsRouteChildren: AdminSalonsRouteChildren = {
+  AdminSalonsSalonIdRoute: AdminSalonsSalonIdRoute,
+}
+
+const AdminSalonsRouteWithChildren = AdminSalonsRoute._addFileChildren(
+  AdminSalonsRouteChildren,
+)
+
 interface AdminSupportRouteChildren {
   AdminSupportTicketIdRoute: typeof AdminSupportTicketIdRoute
 }
@@ -577,7 +608,7 @@ interface AdminRouteChildren {
   AdminMapRoute: typeof AdminMapRoute
   AdminProfileRoute: typeof AdminProfileRoute
   AdminReviewsRoute: typeof AdminReviewsRoute
-  AdminSalonsRoute: typeof AdminSalonsRoute
+  AdminSalonsRoute: typeof AdminSalonsRouteWithChildren
   AdminServicesRoute: typeof AdminServicesRoute
   AdminSupportRoute: typeof AdminSupportRouteWithChildren
   AdminUsersRoute: typeof AdminUsersRoute
@@ -595,7 +626,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminMapRoute: AdminMapRoute,
   AdminProfileRoute: AdminProfileRoute,
   AdminReviewsRoute: AdminReviewsRoute,
-  AdminSalonsRoute: AdminSalonsRoute,
+  AdminSalonsRoute: AdminSalonsRouteWithChildren,
   AdminServicesRoute: AdminServicesRoute,
   AdminSupportRoute: AdminSupportRouteWithChildren,
   AdminUsersRoute: AdminUsersRoute,

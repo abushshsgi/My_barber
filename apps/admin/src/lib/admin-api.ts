@@ -171,17 +171,46 @@ export type AdminBarberDetail = AdminBarber & {
   recent_reviews: AdminBarberRecentReview[];
 };
 
+export type AdminSalonHour = {
+  weekday: number;
+  open_time: string;
+  close_time: string;
+};
+
+export type AdminSalonStaffRow = {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  role: string;
+  invite_state: string;
+};
+
 export type AdminSalon = {
   id: string;
   name: string;
+  slug: string;
   address: string;
+  phone: string;
   region: RegionCode;
   published: boolean;
+  premium: boolean;
   barbers_count: number;
+  reviews_count: number;
   rating: number;
   lat: number;
   lng: number;
   created_at: string;
+  owner_barber_id: string | null;
+  owner_email: string;
+  owner_name: string;
+};
+
+export type AdminSalonDetail = AdminSalon & {
+  closed_weekdays: number[];
+  hours: AdminSalonHour[];
+  schedule_summary: string;
+  staff_barbers: AdminSalonStaffRow[];
 };
 
 export type AdminBooking = {
@@ -360,16 +389,38 @@ type BackendBarberRow = {
   recent_reviews?: BackendBarberRecentReview[];
 };
 
+type BackendSalonStaffRow = {
+  id: number;
+  full_name?: string;
+  email?: string;
+  phone?: string | null;
+  role?: string;
+  invite_state?: string;
+};
+
 type BackendSalonRow = {
   id: number;
   name: string;
+  slug?: string;
   address: string;
+  phone?: string;
   region?: string;
   region_label?: string;
+  owner_barber?: number | null;
+  owner_email?: string;
+  owner_name?: string;
   is_published: boolean;
+  premium?: boolean;
   latitude: string;
   longitude: string;
   created_at: string;
+  closed_weekdays?: number[];
+  hours?: Array<{ weekday: number; open_time: string; close_time: string }>;
+  schedule_summary?: string;
+  reviews_count?: number;
+  rating?: number;
+  barbers_count?: number;
+  staff_barbers?: BackendSalonStaffRow[];
 };
 
 type BackendBookingRow = {
@@ -573,14 +624,50 @@ function mapSalon(s: BackendSalonRow): AdminSalon {
   return {
     id: String(s.id),
     name: s.name,
+    slug: s.slug ?? "",
     address: s.address,
+    phone: s.phone ?? "",
     region: s.region ?? "",
     published: !!s.is_published,
-    barbers_count: 0,
-    rating: 0,
+    premium: !!s.premium,
+    barbers_count: toInt(s.barbers_count, 0),
+    reviews_count: toInt(s.reviews_count, 0),
+    rating: Number(s.rating ?? 0),
     lat: coord?.lat ?? Number.NaN,
     lng: coord?.lng ?? Number.NaN,
     created_at: s.created_at,
+    owner_barber_id: s.owner_barber != null ? String(s.owner_barber) : null,
+    owner_email: s.owner_email ?? "",
+    owner_name: s.owner_name ?? "",
+  };
+}
+
+function mapSalonDetail(s: BackendSalonRow): AdminSalonDetail {
+  const base = mapSalon(s);
+  const hours = Array.isArray(s.hours)
+    ? s.hours.map((h) => ({
+        weekday: toInt(h.weekday, 0),
+        open_time: String(h.open_time ?? ""),
+        close_time: String(h.close_time ?? ""),
+      }))
+    : [];
+  const closed = Array.isArray(s.closed_weekdays)
+    ? s.closed_weekdays.map((w) => toInt(w, 0))
+    : [];
+  const staff = (s.staff_barbers ?? []).map((b) => ({
+    id: String(b.id),
+    full_name: b.full_name ?? "",
+    email: b.email ?? "",
+    phone: b.phone ?? "",
+    role: b.role ?? "",
+    invite_state: b.invite_state ?? "",
+  }));
+  return {
+    ...base,
+    closed_weekdays: closed,
+    hours,
+    schedule_summary: s.schedule_summary ?? "",
+    staff_barbers: staff,
   };
 }
 
@@ -749,6 +836,11 @@ export async function fetchAdminSalons(params?: {
     page_size: pageSize,
     total_pages: totalPages(count, pageSize),
   };
+}
+
+export async function fetchAdminSalonDetail(id: string): Promise<AdminSalonDetail> {
+  const row = await apiJson<BackendSalonRow>(`/api/v1/admin/salons/${id}/`);
+  return mapSalonDetail(row);
 }
 
 export async function patchAdminSalon(
