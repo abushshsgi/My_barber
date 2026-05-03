@@ -17,8 +17,10 @@ import type {
   AdminBarberAccountSegment,
   AdminBarberSegmentStats,
 } from "@/lib/admin-api";
+import { getBarberSegmentTitle } from "@/lib/barber-segment-copy";
 import { FilterToolbar } from "@/components/admin/FilterToolbar";
 import { Pagination } from "@/components/admin/Pagination";
+import { Separator } from "@/components/ui/separator";
 import { TableSkeleton } from "@/components/admin/Skeletons";
 import { EmptyState } from "@/components/admin/EmptyState";
 import { StatusBadge } from "@/components/admin/StatusBadge";
@@ -82,18 +84,21 @@ function BarbersPage() {
   return <BarbersListPage />;
 }
 
-const SEGMENT_CHIPS: {
+const SEGMENT_GRID: {
   segment: AdminBarberAccountSegment | "";
-  label: string;
   countKey: keyof AdminBarberSegmentStats;
 }[] = [
-  { segment: "", label: "Barchasi", countKey: "total" },
-  { segment: "independent", label: "Mustaqil barber", countKey: "independent" },
-  { segment: "mybarber_salon", label: "MyBarber (salon)", countKey: "mybarber_salon" },
-  { segment: "salon_owner", label: "Salon egasi", countKey: "salon_owner" },
-  { segment: "salon_employee", label: "Salonga qo‘shilgan", countKey: "salon_employee" },
-  { segment: "unknown", label: "Aniqlanmagan / eski", countKey: "unknown" },
+  { segment: "", countKey: "total" },
+  { segment: "independent", countKey: "independent" },
+  { segment: "mybarber_salon", countKey: "mybarber_salon" },
+  { segment: "salon_owner", countKey: "salon_owner" },
+  { segment: "salon_employee", countKey: "salon_employee" },
+  { segment: "unknown", countKey: "unknown" },
 ];
+
+function segmentGridLabel(segment: AdminBarberAccountSegment | ""): string {
+  return segment === "" ? "Barchasi" : getBarberSegmentTitle(segment);
+}
 
 function BarbersListPage() {
   const search = Route.useSearch();
@@ -173,36 +178,50 @@ function BarbersListPage() {
         searchPlaceholder="Sartarosh ismi yoki telefoni..."
       />
 
-      <div className="flex flex-wrap gap-2">
-        {SEGMENT_CHIPS.map(({ segment: seg, label, countKey }) => {
-          const counts = segmentStatsQ.data;
-          const n = counts ? counts[countKey] : null;
-          const active = segment === seg;
-          return (
-            <Button
-              key={seg || "all"}
-              type="button"
-              variant={active ? "default" : "outline"}
-              size="sm"
-              className={cn("h-9 gap-1.5 rounded-full", active && "shadow-sm")}
-              onClick={() =>
-                navigate({
-                  search: (prev) => ({ ...prev, segment: seg, page: 1 }),
-                })
-              }
-            >
-              <span>{label}</span>
-              <span
+      <div className="space-y-4 rounded-2xl border border-border bg-card/50 p-4 sm:p-5 shadow-sm">
+        <div className="space-y-1">
+          <h2 className="font-heading text-base font-semibold tracking-tight text-foreground">
+            Hisob turi bo‘yicha taqsimot
+          </h2>
+          <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">
+            Bu yerda sartaroshlarni qanday akkaunt turi bilan ishlashini ko‘rasiz. Viloyat va qidiruvdan
+            alohida: tanlangan guruh bo‘yicha ro‘yxat yangilanadi.
+          </p>
+        </div>
+        <Separator className="bg-border" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {SEGMENT_GRID.map(({ segment: seg, countKey }) => {
+            const counts = segmentStatsQ.data;
+            const n = counts ? counts[countKey] : null;
+            const active = segment === seg;
+            const label = segmentGridLabel(seg);
+            return (
+              <button
+                key={seg || "all"}
+                type="button"
+                onClick={() =>
+                  navigate({
+                    search: (prev) => ({ ...prev, segment: seg, page: 1 }),
+                  })
+                }
                 className={cn(
-                  "tabular-nums text-xs font-medium",
-                  active ? "opacity-90" : "text-muted-foreground",
+                  "rounded-xl border bg-background p-3 sm:p-4 text-left transition-all outline-none",
+                  "hover:border-foreground/20 hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                  active
+                    ? "border-primary ring-2 ring-primary/30 shadow-md"
+                    : "border-border shadow-sm",
                 )}
               >
-                {n != null ? n : "—"}
-              </span>
-            </Button>
-          );
-        })}
+                <div className="font-heading text-2xl sm:text-3xl font-semibold tabular-nums text-foreground">
+                  {n != null ? n : "—"}
+                </div>
+                <div className="mt-2 text-[11px] sm:text-xs font-medium leading-snug text-muted-foreground">
+                  {label}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
@@ -211,7 +230,7 @@ function BarbersListPage() {
         ) : !data || data.results.length === 0 ? (
           <EmptyState
             title="Sartaroshlar topilmadi"
-            description="Filterlarni o'zgartirib qayta urinib ko'ring."
+            description="Qidiruv, viloyat yoki hisob turi bo‘yicha ko‘rinishni o‘zgartirib qayta urinib ko‘ring."
           />
         ) : (
           <>

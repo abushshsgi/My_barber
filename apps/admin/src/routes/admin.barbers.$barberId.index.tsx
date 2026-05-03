@@ -4,15 +4,17 @@ import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import {
   Building2,
+  CalendarClock,
   ChevronDown,
   ExternalLink,
   Loader2,
   MapPin,
+  MessageSquareText,
   Phone,
   Scissors,
   User,
 } from "lucide-react";
-import { fetchAdminBarberDetail, type AdminBarber, type AdminBarberDetail } from "@/lib/admin-api";
+import { fetchAdminBarberDetail, type AdminBarber } from "@/lib/admin-api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -81,6 +83,7 @@ function bookingStatusUz(code: string): string {
 function BarberOverviewPage() {
   const { barberId } = Route.useParams();
   const [rawOpen, setRawOpen] = useState(false);
+  const [technicalOpen, setTechnicalOpen] = useState(false);
 
   const q = useQuery({
     queryKey: ["admin", "barber", barberId],
@@ -103,6 +106,8 @@ function BarberOverviewPage() {
         lat: b.lat,
         lng: b.lng,
         created_at: b.created_at,
+        account_segment: b.account_segment,
+        account_segment_label: b.account_segment_label,
       }
     : null;
 
@@ -142,6 +147,24 @@ function BarberOverviewPage() {
 
   return (
     <div className="space-y-8">
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/80 bg-muted/20 px-3 py-2.5 sm:px-4">
+        <span className="text-xs font-medium text-muted-foreground shrink-0">Tezkor havolalar</span>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" className="h-8 gap-1.5" asChild>
+            <Link to="/admin/barbers/$barberId/bookings" params={{ barberId }}>
+              <CalendarClock className="size-3.5" />
+              Bronlar
+            </Link>
+          </Button>
+          <Button variant="outline" size="sm" className="h-8 gap-1.5" asChild>
+            <Link to="/admin/barbers/$barberId/reviews" params={{ barberId }}>
+              <MessageSquareText className="size-3.5" />
+              Sharhlar
+            </Link>
+          </Button>
+        </div>
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Jami bronlar" value={String(sum.total)} hint="Barcha holatlar" />
         <StatCard
@@ -150,7 +173,7 @@ function BarberOverviewPage() {
           hint="Faqat completed"
         />
         <StatCard label="Sharhlar" value={String(b.reviews_count)} hint="Mijoz baholari" />
-        <StatCard label="Egalik salonlari" value={String(b.owned_salons.length)} hint="Ro'yxat" />
+        <StatCard label="Egalik salonlari" value={String(b.owned_salons.length)} hint="Salonlar ro‘yxati" />
       </div>
 
       {statusKeys.length > 0 ? (
@@ -167,16 +190,17 @@ function BarberOverviewPage() {
         </div>
       ) : null}
 
-      {b.owned_salons.length > 0 ? (
-        <section>
-          <h2 className="font-heading text-lg font-semibold mb-3 flex items-center gap-2">
-            <Building2 className="size-5" /> Egalikdagi salonlar
-          </h2>
+      <section className="space-y-4">
+        <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
+          <Building2 className="size-5 shrink-0" />
+          Qaysi salonlar bilan bog‘langan
+        </h2>
+        {b.owned_salons.length > 0 ? (
           <div className="grid gap-3 sm:grid-cols-2">
             {b.owned_salons.map((s) => (
               <Card key={s.id} className="overflow-hidden border-border/80 shadow-sm">
                 <CardHeader className="pb-2 bg-muted/30">
-                  <CardTitle className="text-base">{s.name}</CardTitle>
+                  <CardTitle className="text-base">Egalik: {s.name}</CardTitle>
                   <CardDescription className="line-clamp-2">{s.address || "—"}</CardDescription>
                 </CardHeader>
                 <CardContent className="text-xs space-y-1 text-muted-foreground">
@@ -187,16 +211,64 @@ function BarberOverviewPage() {
               </Card>
             ))}
           </div>
-        </section>
-      ) : null}
+        ) : (
+          <p className="text-sm text-muted-foreground">O‘z nomiga ro‘yxatdan o‘tgan salon yo‘q.</p>
+        )}
+
+        <Card className="border-border/80 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Salon a’zoligi</CardTitle>
+            <CardDescription>Boshqa salonlarda ishchi / taklif holati</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {b.memberships.length === 0 ? (
+              <p className="text-sm text-muted-foreground">A’zolik yozuvlari yo‘q.</p>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-border">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+                    <tr>
+                      <th className="px-3 py-2">Salon</th>
+                      <th className="px-3 py-2">Rol</th>
+                      <th className="px-3 py-2">Holat</th>
+                      <th className="px-3 py-2">Tajriba (yil)</th>
+                      <th className="px-3 py-2">Ega tasdiq</th>
+                      <th className="px-3 py-2">Faollashtirilgan</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {b.memberships.map((m) => (
+                      <tr key={m.id} className="hover:bg-muted/20">
+                        <td className="px-3 py-2">
+                          {m.salon_name}
+                          <span className="text-xs text-muted-foreground ml-1">#{m.salon_id}</span>
+                        </td>
+                        <td className="px-3 py-2">{roleLabel(m.role)}</td>
+                        <td className="px-3 py-2">
+                          <span className="text-xs">{inviteLabel(m.invite_state)}</span>
+                        </td>
+                        <td className="px-3 py-2 tabular-nums">
+                          {m.experience_years != null ? m.experience_years : "—"}
+                        </td>
+                        <td className="px-3 py-2">{m.owner_approved ? "Ha" : "Yo‘q"}</td>
+                        <td className="px-3 py-2 tabular-nums text-xs">{fmtIso(m.activated_at)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="border-border/80 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <User className="size-4" /> Akkaunt va onboarding
+              <User className="size-4" /> Aloqa va profil
             </CardTitle>
-            <CardDescription>Ish rejimi va ro‘yxatdan o‘tish</CardDescription>
+            <CardDescription>Email, telefon va tizim vaqtlari (yuqorida ish turi alohida)</CardDescription>
           </CardHeader>
           <CardContent className="text-sm space-y-2">
             <DetailRow label="Username" value={b.username} />
@@ -212,14 +284,30 @@ function BarberOverviewPage() {
             <DetailRow label="Viloyat" value={b.region_label || b.region || "—"} />
             <DetailRow label="Egalikdagi salonlar soni" value={String(b.owned_salons_count)} />
             <DetailRow
-              label="Asosiy salon (ko‘rsatish)"
+              label="Profilda ko‘rinadigan salon"
               value={b.salon_name ? `${b.salon_name} (ID ${b.salon_id ?? "—"})` : "—"}
             />
-            <DetailRow label="Ish rejimi" value={workModeLabel(b.work_mode)} />
-            <DetailRow label="Ro‘yxatdan o‘tish oqimi" value={onboardingLabel(b.onboarding_flow)} />
             <DetailRow label="Onboarding tugagan" value={fmtIso(b.onboarding_completed_at)} />
             <DetailRow label="Ro‘yxatdan o‘tgan" value={fmtIso(b.created_at)} />
             <DetailRow label="So‘nggi kirish" value={fmtIso(b.last_login)} />
+            <Collapsible open={technicalOpen} onOpenChange={setTechnicalOpen}>
+              <CollapsibleTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-1 px-0 h-auto font-normal text-foreground"
+                >
+                  <ChevronDown
+                    className={`size-4 mr-1 transition-transform ${technicalOpen ? "rotate-180" : ""}`}
+                  />
+                  Tizim maydonlari (ish rejimi, oqim)
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-2 pt-2 border-t border-border/60 mt-2">
+                <DetailRow label="Ish rejimi" value={workModeLabel(b.work_mode)} />
+                <DetailRow label="Ro‘yxatdan o‘tish oqimi" value={onboardingLabel(b.onboarding_flow)} />
+              </CollapsibleContent>
+            </Collapsible>
           </CardContent>
         </Card>
 
@@ -314,68 +402,13 @@ function BarberOverviewPage() {
         </Card>
       ) : null}
 
-      <Card className="border-border/80 shadow-sm">
-        <CardHeader className="pb-2 flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-base">Salon a’zoligi</CardTitle>
-            <CardDescription>Membershiplar</CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {b.memberships.length === 0 ? (
-            <p className="text-sm text-muted-foreground">A’zolik yozuvlari yo‘q.</p>
-          ) : (
-            <div className="overflow-x-auto rounded-xl border border-border">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
-                  <tr>
-                    <th className="px-3 py-2">Salon</th>
-                    <th className="px-3 py-2">Rol</th>
-                    <th className="px-3 py-2">Holat</th>
-                    <th className="px-3 py-2">Tajriba (yil)</th>
-                    <th className="px-3 py-2">Ega tasdiq</th>
-                    <th className="px-3 py-2">Faollashtirilgan</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {b.memberships.map((m) => (
-                    <tr key={m.id} className="hover:bg-muted/20">
-                      <td className="px-3 py-2">
-                        {m.salon_name}
-                        <span className="text-xs text-muted-foreground ml-1">#{m.salon_id}</span>
-                      </td>
-                      <td className="px-3 py-2">{roleLabel(m.role)}</td>
-                      <td className="px-3 py-2">
-                        <span className="text-xs">{inviteLabel(m.invite_state)}</span>
-                      </td>
-                      <td className="px-3 py-2 tabular-nums">
-                        {m.experience_years != null ? m.experience_years : "—"}
-                      </td>
-                      <td className="px-3 py-2">{m.owner_approved ? "Ha" : "Yo‘q"}</td>
-                      <td className="px-3 py-2 tabular-nums text-xs">{fmtIso(m.activated_at)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="border-border/80 shadow-sm">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <div>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Scissors className="size-4" /> Salon xizmatlari
-              </CardTitle>
-              <CardDescription>Bog‘langan salonlar</CardDescription>
-            </div>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/admin/barbers/$barberId/bookings" params={{ barberId }}>
-                Bronlar
-              </Link>
-            </Button>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Scissors className="size-4" /> Salon xizmatlari
+            </CardTitle>
+            <CardDescription>Bog‘langan salonlar</CardDescription>
           </CardHeader>
           <CardContent>
             {b.salon_services.length === 0 ? (

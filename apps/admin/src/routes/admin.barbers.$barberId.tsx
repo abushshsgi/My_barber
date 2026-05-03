@@ -1,7 +1,8 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, CalendarClock, LayoutGrid, MessageSquareText } from "lucide-react";
+import { ArrowLeft, CalendarClock, LayoutGrid, MessageSquareText, UserCircle } from "lucide-react";
 import { fetchAdminBarberDetail } from "@/lib/admin-api";
+import { getBarberSegmentDescription } from "@/lib/barber-segment-copy";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/barbers/$barberId")({
@@ -79,6 +80,31 @@ function BarberIdLayout() {
                       <span className="rounded-md bg-muted px-2 py-0.5">Nofaol</span>
                     )}
                   </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {b ? (
+            <div
+              className="mt-5 rounded-xl border border-border bg-muted/40 px-4 py-4 sm:px-5 border-l-4 border-l-primary shadow-sm"
+              role="region"
+              aria-label="Ishlash turi"
+            >
+              <div className="flex gap-3 sm:gap-4">
+                <div className="mt-0.5 shrink-0 rounded-lg bg-primary/10 p-2 text-primary">
+                  <UserCircle className="size-6 sm:size-7" aria-hidden />
+                </div>
+                <div className="min-w-0 space-y-1.5">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Tizimda qanday ishlaydi
+                  </p>
+                  <p className="font-heading text-xl sm:text-2xl font-semibold leading-snug text-foreground">
+                    {b.account_segment_label}
+                  </p>
+                  <p className="text-sm text-muted-foreground leading-relaxed max-w-3xl">
+                    {getBarberSegmentDescription(b.account_segment)}
+                  </p>
                 </div>
               </div>
             </div>
