@@ -1,6 +1,6 @@
 /**
- * MyBarber brendi ostida virtual salon — CreateSalonPage UI uslubi, qisqartirilgan qadamlar:
- * Profil → Joylashuv → Xizmatlar → Tillar → (ichki default jadval) → salon + akkaunt.
+ * MyBarber brendi ostida virtual salon — CreateSalonPage UI uslubi.
+ * Tartib: MyBarber tanishtiruv → Profil → Joylashuv → Xizmatlar → Tillar → salon + akkaunt.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -40,6 +40,13 @@ const LANGUAGES = [
 ] as const;
 
 const STEP_META = [
+  {
+    short: "MyBarber",
+    title: "MyBarber orqali salon",
+    subtitle:
+      "Fizik salon bo'lmasa ham, MyBarber brendi ostida mijozlarga ochiq virtual salon ochasiz — keyingi qadamlarda batafsil to'ldirasiz.",
+    icon: Sparkles,
+  },
   {
     short: "Profil",
     title: "Barber profili",
@@ -179,6 +186,7 @@ export function MyBarberSetupPage() {
     const lat = Number(salonLatitude);
     const lng = Number(salonLongitude);
     return [
+      true,
       firstName.trim().length > 1 && lastName.trim().length > 1 && phoneDigits.length === 9,
       salonCity.trim().length > 1 &&
         salonAddress.trim().length > 2 &&
@@ -496,17 +504,19 @@ export function MyBarberSetupPage() {
       </header>
 
       <main className="mx-auto max-w-[920px] px-3.5 pt-5 sm:px-6 sm:pt-14">
-        <div className="mb-4 rounded-2xl border border-border bg-muted/30 px-3 py-2.5 text-center sm:mb-6 sm:px-4 sm:py-3">
-          <p className="text-[11px] font-semibold text-foreground sm:text-xs">
-            Salon nomi (brend):{" "}
-            <span className="text-foreground">
-              MyBarber · {`${firstName} ${lastName}`.trim() || "…"}
-            </span>
-          </p>
-          <p className="mt-0.5 text-[10px] text-muted-foreground sm:text-[11px]">
-            Avtomatik — faqat MyBarber brendi ostida yaratiladi. Keyinroq tahrirlash mumkin.
-          </p>
-        </div>
+        {step > 0 && (
+          <div className="mb-4 rounded-2xl border border-border bg-muted/30 px-3 py-2.5 text-center sm:mb-6 sm:px-4 sm:py-3">
+            <p className="text-[11px] font-semibold text-foreground sm:text-xs">
+              Salon nomi (brend):{" "}
+              <span className="text-foreground">
+                MyBarber · {`${firstName} ${lastName}`.trim() || "…"}
+              </span>
+            </p>
+            <p className="mt-0.5 text-[10px] text-muted-foreground sm:text-[11px]">
+              Avtomatik — faqat MyBarber brendi ostida yaratiladi. Keyinroq tahrirlash mumkin.
+            </p>
+          </div>
+        )}
 
         <div className="mb-5 overflow-hidden text-center sm:mb-10">
           <AnimatePresence mode="wait" custom={direction}>
@@ -544,7 +554,8 @@ export function MyBarberSetupPage() {
             transition={{ duration: 0.36, ease: [0.4, 0, 0.2, 1] }}
             className="space-y-4 sm:space-y-6"
           >
-            {step === 0 && (
+            {step === 0 && <MyBarberIntroStep />}
+            {step === 1 && (
               <ProfileStep
                 firstName={firstName}
                 setFirstName={setFirstName}
@@ -556,7 +567,7 @@ export function MyBarberSetupPage() {
                 onAvatar={handleAvatar}
               />
             )}
-            {step === 1 && (
+            {step === 2 && (
               <LocationStep
                 salonCity={salonCity}
                 setSalonCity={setSalonCity}
@@ -570,7 +581,7 @@ export function MyBarberSetupPage() {
                 setSalonLongitude={setSalonLongitude}
               />
             )}
-            {step === 2 && (
+            {step === 3 && (
               <ServicesStep
                 services={services}
                 addService={addService}
@@ -579,7 +590,7 @@ export function MyBarberSetupPage() {
                 applyPreset={applyServicePreset}
               />
             )}
-            {step === 3 && <LanguagesStep languages={languages} toggleLanguage={toggleLanguage} />}
+            {step === 4 && <LanguagesStep languages={languages} toggleLanguage={toggleLanguage} />}
           </motion.div>
         </AnimatePresence>
 
@@ -888,6 +899,40 @@ function PhoneInput({
         </p>
       )}
     </div>
+  );
+}
+
+function MyBarberIntroStep() {
+  return (
+    <Section
+      icon={<Sparkles className="h-4 w-4" />}
+      label="Boshlash"
+      title="MyBarber orqali salon yaratish"
+      description="Bu yerda virtual salon ochasiz: mijozlar ilovada sizning xizmatlaringizni ko'radi va buyurtma beradi. Fizik salon bo'lmasa ham, manzil va GPS orqali joylashuvni ko'rsatishingiz mumkin."
+    >
+      <div className="rounded-xl border border-border bg-muted/25 px-3.5 py-3 text-[12px] leading-relaxed text-foreground sm:px-4 sm:py-3.5 sm:text-sm">
+        <p className="font-semibold text-foreground">Keyingi qadamlar</p>
+        <ul className="mt-2 list-inside list-disc space-y-1 text-muted-foreground marker:text-foreground/50">
+          <li>
+            <span className="text-foreground">Profil</span> — ism, familiya, telefon va rasm
+          </li>
+          <li>
+            <span className="text-foreground">Joylashuv</span> — salon mijozlarga qanday ko'rinishi
+          </li>
+          <li>
+            <span className="text-foreground">Xizmatlar</span> — narx va davomiylik
+          </li>
+          <li>
+            <span className="text-foreground">Tillar</span> — muloqot tillari
+          </li>
+        </ul>
+        <p className="mt-3 border-t border-border pt-3 text-[11px] text-muted-foreground sm:text-xs">
+          Salon nomi (brend) avtomatik:{" "}
+          <span className="font-medium text-foreground">MyBarber · ism familiya</span> — profildan
+          keyin tepada ham ko'rinadi.
+        </p>
+      </div>
+    </Section>
   );
 }
 
