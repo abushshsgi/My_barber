@@ -2,28 +2,13 @@ import type { ReactNode } from "react";
 import type { SignupFlow } from "@/lib/auth-ui";
 import { cn } from "@/lib/utils";
 import { Briefcase, Sparkles, Store, UserPlus } from "lucide-react";
+import { FLOW_IDENTITY_META } from "@/lib/barber-flow-config";
 
-const FLOW_META: Record<SignupFlow, { title: string; desc: string; icon: ReactNode }> = {
-  owner: {
-    title: "Salon owner",
-    desc: "O'z saloningizni yaratib ish boshlang.",
-    icon: <Store className="size-4" />,
-  },
-  employee: {
-    title: "Salonga qo'shilish",
-    desc: "Mavjud salon tarkibiga ishchi sifatida qo'shiling.",
-    icon: <UserPlus className="size-4" />,
-  },
-  mybarber: {
-    title: "MyBarber salon",
-    desc: "Shaxsiy brendingiz bilan tezkor salon yarating.",
-    icon: <Sparkles className="size-4" />,
-  },
-  independent: {
-    title: "Mustaqil barber",
-    desc: "Salonsiz, mustaqil xizmatlar bilan ishlang.",
-    icon: <Briefcase className="size-4" />,
-  },
+const FLOW_ICON: Record<SignupFlow, ReactNode> = {
+  owner: <Store className="size-4" />,
+  employee: <UserPlus className="size-4" />,
+  mybarber: <Sparkles className="size-4" />,
+  independent: <Briefcase className="size-4" />,
 };
 
 export function FlowOptionCard({
@@ -35,7 +20,7 @@ export function FlowOptionCard({
   selected: boolean;
   onSelect: (flow: SignupFlow) => void;
 }) {
-  const meta = FLOW_META[flow];
+  const meta = FLOW_IDENTITY_META[flow];
   return (
     <button
       type="button"
@@ -54,7 +39,7 @@ export function FlowOptionCard({
             selected ? "bg-background/20 text-background" : "bg-muted text-foreground",
           )}
         >
-          {meta.icon}
+          {FLOW_ICON[flow]}
         </div>
         <div>
           <p className="text-sm font-semibold">{meta.title}</p>

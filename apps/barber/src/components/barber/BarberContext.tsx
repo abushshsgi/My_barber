@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { apiFetch, apiJson, clearBarberTokens } from "@/lib/api";
+import { inferFlowIdentity, type FlowIdentity } from "@/lib/barber-flow-config";
 
 export type ViewMode = "independent" | "salon";
 
@@ -184,6 +185,8 @@ type Ctx = {
   /** Salonga qoʻshilgan ishchi — salon boshqara olmaydi */
   isJoinedWorker: boolean;
   barberWorkMode: "salon" | "independent";
+  onboardingFlow: string | null;
+  flowIdentity: FlowIdentity;
   onboardingComplete: boolean;
   requiredNextPath: string | null;
   profile: BarberProfile;
@@ -832,6 +835,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   const [ownsSalon, setOwnsSalon] = useState(false);
   const [activeSalonId, setActiveSalonId] = useState<number | null>(null);
   const [barberWorkMode, setBarberWorkMode] = useState<"salon" | "independent">("independent");
+  const [onboardingFlow, setOnboardingFlow] = useState<string | null>(null);
   const [onboardingComplete, setOnboardingComplete] = useState(true);
   const [requiredNextPath, setRequiredNextPath] = useState<string | null>(null);
   const [settings, setSettings] = useState<Settings>({
@@ -1440,14 +1444,20 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         setOnboardingComplete(Boolean(me.onboarding_completed ?? true));
         setRequiredNextPath(null);
         try {
-          const st = await apiJson<{ is_complete?: boolean; required_next_path?: string }>(
+          const st = await apiJson<{
+            is_complete?: boolean;
+            required_next_path?: string;
+            flow?: string | null;
+          }>(
             "/api/v1/barber/onboarding/status/",
           );
           if (!alive) return;
           setOnboardingComplete(Boolean(st.is_complete));
           setRequiredNextPath(st.required_next_path ? String(st.required_next_path) : null);
+          setOnboardingFlow(st.flow ? String(st.flow) : null);
         } catch {
           // keep fallback from /auth/me when status endpoint is unavailable
+          setOnboardingFlow(null);
         }
       } catch {
         clearBarberTokens();
@@ -1503,6 +1513,16 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     () => ownsSalon === false && barberWorkMode === "salon" && activeSalonId != null,
     [ownsSalon, barberWorkMode, activeSalonId],
   );
+  const flowIdentity = useMemo(
+    () =>
+      inferFlowIdentity({
+        onboardingFlow,
+        workMode: barberWorkMode,
+        ownsSalon,
+        activeSalonId,
+      }),
+    [onboardingFlow, barberWorkMode, ownsSalon, activeSalonId],
+  );
 
   const value = useMemo<Ctx>(
     () => ({
@@ -1513,6 +1533,8 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       activeSalonId,
       isJoinedWorker,
       barberWorkMode,
+      onboardingFlow,
+      flowIdentity,
       onboardingComplete,
       requiredNextPath,
       profile,
@@ -1575,6 +1597,8 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       activeSalonId,
       isJoinedWorker,
       barberWorkMode,
+      onboardingFlow,
+      flowIdentity,
       onboardingComplete,
       requiredNextPath,
       profile,
@@ -1611,6 +1635,8 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       markNotifRead,
       markAllNotifsRead,
       sendMessage,
+      onboardingFlow,
+      flowIdentity,
     ],
   );
 

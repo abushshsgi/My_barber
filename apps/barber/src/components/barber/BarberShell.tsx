@@ -54,6 +54,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { useBarberContext } from "./BarberContext";
+import {
+  getCapabilities,
+  getWorkspaceLabel,
+  NAV_CONFIG,
+  type NavItem as MatrixNavItem,
+} from "@/lib/barber-flow-config";
 
 type NavItem = {
   to: string;
@@ -62,41 +68,36 @@ type NavItem = {
   group?: string;
 };
 
-const INDEPENDENT_NAV: NavItem[] = [
-  { to: "/barber", label: "Dashboard", icon: LayoutDashboard, group: "Asosiy" },
-  { to: "/barber/calendar", label: "Kalendar", icon: CalendarDays, group: "Asosiy" },
-  { to: "/barber/bookings", label: "Bronlar", icon: CalendarClock, group: "Asosiy" },
-  { to: "/barber/clients", label: "Mijozlar", icon: Users, group: "Asosiy" },
-  { to: "/barber/chat", label: "Chat", icon: MessageSquare, group: "Aloqa" },
-  { to: "/barber/notifications", label: "Bildirishnomalar", icon: Bell, group: "Aloqa" },
-  { to: "/barber/reviews", label: "Sharhlar", icon: Star, group: "Aloqa" },
-  { to: "/barber/portfolio", label: "Portfolio", icon: ImageIcon, group: "Aloqa" },
-  { to: "/barber/earnings", label: "Daromad", icon: Wallet, group: "Biznes" },
-  { to: "/barber/expenses", label: "Xarajatlar", icon: Receipt, group: "Biznes" },
-  { to: "/barber/inventory", label: "Inventar", icon: Package, group: "Biznes" },
-  { to: "/barber/stats", label: "Statistika", icon: BarChart3, group: "Biznes" },
-  { to: "/barber/marketing", label: "Marketing", icon: Megaphone, group: "Biznes" },
-  { to: "/barber/goals", label: "Maqsadlar", icon: Target, group: "Biznes" },
-  { to: "/barber/profile", label: "Profil", icon: UserCog, group: "Sozlama" },
-  { to: "/barber/settings", label: "Sozlamalar", icon: Settings, group: "Sozlama" },
-  { to: "/barber/help", label: "Yordam", icon: HelpCircle, group: "Sozlama" },
-];
+const ICON_BY_NAME: Record<MatrixNavItem["iconName"], NavItem["icon"]> = {
+  LayoutDashboard,
+  CalendarDays,
+  CalendarClock,
+  Users,
+  MessageSquare,
+  Bell,
+  Star,
+  ImageIcon,
+  Wallet,
+  Receipt,
+  Package,
+  BarChart3,
+  Megaphone,
+  Target,
+  UserCog,
+  Settings,
+  HelpCircle,
+  Building2,
+  Images,
+};
 
-/** Salon egasi: boshqaruv + jamoa */
-const OWNER_SALON_NAV: NavItem[] = [
-  { to: "/barber/salon-view", label: "Salon", icon: Building2 },
-  { to: "/barber/salon-view/gallery", label: "Galereya", icon: Images },
-  { to: "/barber/salon-view/reviews", label: "Sharhlar", icon: Star },
-  { to: "/barber/salon-view/team", label: "Jamoa", icon: Users },
-];
-
-/** Salon join qilgan ishchi: boshqarma, faqat ko‘rish + jamoa */
-const WORKER_SALON_NAV: NavItem[] = [
-  { to: "/barber/salon-view", label: "Salon", icon: Building2 },
-  { to: "/barber/salon-view/members", label: "Jamoa", icon: Users },
-  { to: "/barber/salon-view/reviews", label: "Sharhlar", icon: Star },
-  { to: "/barber/salon-view/gallery", label: "Galereya", icon: Images },
-];
+function mapNav(items: MatrixNavItem[]): NavItem[] {
+  return items.map((item) => ({
+    to: item.to,
+    label: item.label,
+    group: item.group,
+    icon: ICON_BY_NAME[item.iconName],
+  }));
+}
 
 /** Salon rejimida URL orqali barber "asosiy" oynalariga kirmaslik (profil/sozlamalar/yordam/bildirishnoma ruxsat). */
 function pathAllowedInSalonWorkspace(pathname: string): boolean {
@@ -274,9 +275,7 @@ function Topbar({
           <Menu className="size-5" />
         </Button>
         <div className="hidden sm:flex items-center gap-1.5 text-sm min-w-0">
-          <span className="text-muted-foreground capitalize">
-            {viewMode === "independent" ? "Mustaqil" : "Salon"}
-          </span>
+          <span className="text-muted-foreground">{getWorkspaceLabel({ isJoinedWorker, viewMode })}</span>
           <ChevronRight className="size-3.5 text-muted-foreground/50" />
           <span className="font-medium text-foreground truncate">{currentItem.label}</span>
         </div>
@@ -297,7 +296,7 @@ function Topbar({
             }}
           >
             <Building2 className="size-3.5" />
-            Salonga oʻtish
+            Salon ish maydoni
           </Button>
         )}
         {isJoinedWorker && onSalonViewArea && (
@@ -314,7 +313,7 @@ function Topbar({
             }}
           >
             <LayoutDashboard className="size-3.5" />
-            Barberga oʻtish
+            Shaxsiy ish maydoni
           </Button>
         )}
 
@@ -389,16 +388,12 @@ function CommandPalette({
   open,
   onOpenChange,
   nav,
-  viewMode,
-  onboardingComplete,
-  isJoinedWorker,
+  capability,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   nav: NavItem[];
-  viewMode: "independent" | "salon";
-  onboardingComplete: boolean;
-  isJoinedWorker: boolean;
+  capability: "independentBase" | "salonOwner" | "salonWorker";
 }) {
   const navigate = useNavigate();
   const go = (to: string) => {
@@ -411,7 +406,7 @@ function CommandPalette({
       <CommandList>
         <CommandEmpty>Hech narsa topilmadi.</CommandEmpty>
         <CommandGroup heading="Tezkor amallar">
-          {onboardingComplete && viewMode === "salon" ? (
+          {capability !== "independentBase" ? (
             <>
               <CommandItem onSelect={() => go("/barber/salon-view")}>
                 <Building2 className="size-4 mr-2" />
@@ -427,11 +422,7 @@ function CommandPalette({
               </CommandItem>
               <CommandItem
                 onSelect={() =>
-                  go(
-                    isJoinedWorker
-                      ? "/barber/salon-view/members"
-                      : "/barber/salon-view/team",
-                  )
+                  go(capability === "salonWorker" ? "/barber/salon-view/members" : "/barber/salon-view/team")
                 }
               >
                 <Users className="size-4 mr-2" />
@@ -454,7 +445,7 @@ function CommandPalette({
               </CommandItem>
               <CommandItem onSelect={() => go("/barber/profile")}>
                 <Sparkles className="size-4 mr-2" />
-                Xizmat qo'shish
+                Profilni tahrirlash
               </CommandItem>
             </>
           )}
@@ -484,17 +475,17 @@ export function BarberShell() {
   const [cmdOpen, setCmdOpen] = useState(false);
 
   const nav = useMemo(() => {
+    const capability = getCapabilities({ onboardingComplete, viewMode, isJoinedWorker });
+    const full = mapNav(NAV_CONFIG[capability]);
     if (!onboardingComplete) {
-      return INDEPENDENT_NAV.filter((n) =>
-        ["/barber", "/barber/notifications", "/barber/profile"].includes(n.to),
-      ).filter((n) => !n.to.startsWith("/barber/salon-view"));
+      return full.filter((n) => ["/barber", "/barber/notifications", "/barber/profile"].includes(n.to));
     }
-    if (viewMode === "salon") {
-      const raw = isJoinedWorker ? WORKER_SALON_NAV : OWNER_SALON_NAV;
-      return raw.filter((i) => i.to.startsWith("/barber/salon-view"));
-    }
-    return INDEPENDENT_NAV.filter((n) => !n.to.startsWith("/barber/salon-view"));
+    return full;
   }, [viewMode, onboardingComplete, isJoinedWorker]);
+  const capability = useMemo(
+    () => getCapabilities({ onboardingComplete, viewMode, isJoinedWorker }),
+    [onboardingComplete, viewMode, isJoinedWorker],
+  );
 
   const navigationKey = useMemo(
     () =>
@@ -564,9 +555,7 @@ export function BarberShell() {
         open={cmdOpen}
         onOpenChange={setCmdOpen}
         nav={nav}
-        viewMode={viewMode}
-        onboardingComplete={onboardingComplete}
-        isJoinedWorker={isJoinedWorker}
+        capability={capability}
       />
     </div>
   );

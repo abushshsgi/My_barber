@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
 import { StatusPill } from "@/components/barber/primitives";
+import { getOnboardingCta } from "@/lib/barber-flow-config";
 
 export const Route = createFileRoute("/barber/")({
   component: BarberDashboard,
@@ -53,6 +54,7 @@ function BarberDashboard() {
   const lowStock = inventory.filter((i) => i.stock <= i.min_stock);
   const activeGoals = goals.filter((g) => !g.done);
   const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
+  const onboardingCta = getOnboardingCta(requiredNextPath);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
@@ -75,19 +77,9 @@ function BarberDashboard() {
             <Sparkles className="size-5" />
           </div>
           <div className="flex-1">
-            <h3 className="font-heading font-medium text-foreground">
-              {requiredNextPath?.startsWith("/salon/join")
-                ? "Salonga qo'shilishni yakunlang"
-                : requiredNextPath?.startsWith("/mybarber/setup")
-                  ? "MyBarber salonni yakunlang"
-                  : "Profilni to'liq ro'yxatdan o'tkazing"}
-            </h3>
+            <h3 className="font-heading font-medium text-foreground">{onboardingCta.title}</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              {requiredNextPath?.startsWith("/salon/join")
-                ? "Salonni tanlash, joylashuv va ish jadvali — barchasi salon join oqimida."
-                : requiredNextPath?.startsWith("/mybarber/setup")
-                  ? "Profil, joylashuv, xizmatlar va tillar — MyBarber brendi ostida salon yaratish."
-                  : "Mijozlar sizni topishi uchun salon yoki mustaqil profil yarating."}
+              {onboardingCta.body}
             </p>
           </div>
           <Link

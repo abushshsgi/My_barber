@@ -18,6 +18,7 @@ import {
   type SignupFlow,
 } from "@/lib/auth-ui";
 import { saveSignupDraft } from "@/lib/signup-draft";
+import { SIGNUP_FLOW_PATH } from "@/lib/barber-flow-config";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -65,13 +66,6 @@ function AuthPage() {
     }
   };
 
-  const flowPathMap: Record<SignupFlow, string> = {
-    owner: "/salon/create",
-    employee: "/salon/join",
-    mybarber: "/mybarber/setup",
-    independent: "/independent/setup",
-  };
-
   const onSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -99,7 +93,7 @@ function AuthPage() {
         password: signupPassword,
         flow,
       });
-      await navigate({ to: flowPathMap[flow] });
+      await navigate({ to: SIGNUP_FLOW_PATH[flow] });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
     } finally {
