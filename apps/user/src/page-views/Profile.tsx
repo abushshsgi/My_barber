@@ -62,10 +62,10 @@ async function fetchMyReviewCount(): Promise<number> {
 const menuItems = [
   { label: "Band tarixi", icon: CalendarDays, color: "text-accent", href: "/bookings" },
   { label: "Yozilgan sharhlar", icon: Star, color: "text-accent", href: "/bookings" },
-  { label: "Sevimlilar", icon: Heart, color: "text-destructive", href: "/" },
-  { label: "Maxfiylik", icon: Shield, color: "text-success", href: "/" },
-  { label: "Yordam", icon: HelpCircle, color: "text-muted-foreground", href: "/" },
-  { label: "Sozlamalar", icon: Settings, color: "text-muted-foreground", href: "/" },
+  { label: "Sevimlilar", icon: Heart, color: "text-destructive", href: "/map" },
+  { label: "Maxfiylik", icon: Shield, color: "text-success", href: "/profile" },
+  { label: "Yordam", icon: HelpCircle, color: "text-muted-foreground", href: "/profile" },
+  { label: "Sozlamalar", icon: Settings, color: "text-muted-foreground", href: "/profile" },
 ];
 
 const Profile = () => {
@@ -236,22 +236,24 @@ const Profile = () => {
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
             Mening salonlarim
           </p>
-          <div className="space-y-2">
+          <div className="space-y-2 mb-3">
             {mySalons.map((s) => (
-              <Link key={s.id} href={`/booking/${s.id}`}>
-                <div className="bg-card rounded-2xl border border-border/50 p-4 flex items-center gap-3 hover:bg-muted/40 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center shrink-0">
-                    <Scissors className="h-5 w-5 text-accent" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm truncate">{s.name}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-1">{s.address || "Manzil"}</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div key={s.id} className="bg-card rounded-2xl border border-border/50 p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center shrink-0">
+                  <Scissors className="h-5 w-5 text-accent" />
                 </div>
-              </Link>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate">{s.name}</p>
+                  <p className="text-xs text-muted-foreground line-clamp-1">{s.address || "Manzil"}</p>
+                </div>
+              </div>
             ))}
           </div>
+          <Link href={barberWebUrl("/")}>
+            <Button className="rounded-2xl gold-gradient text-gold-foreground border-0 h-10">
+              Salon boshqaruvini ochish
+            </Button>
+          </Link>
         </motion.div>
       )}
 

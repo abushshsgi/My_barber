@@ -1,0 +1,46 @@
+# Users App API Status Matrix
+
+Canonical prefix: `/api/v1`
+
+## Active va ishlab turgan endpointlar
+
+- `POST /auth/token/` - login (`UserAuth.tsx`)
+- `POST /auth/register/` - register (`UserAuth.tsx`)
+- `GET /users/me/` - profile (`Profile.tsx`, booking flowlar)
+- `GET /salons/` - salon list (`Index.tsx` orqali shared query)
+- `GET /salons/{id}/` - salon detail (`SalonPage.tsx`, `BookingFlow.tsx`)
+- `GET /salons/{id}/staff/` - salon barberlari (`SalonPage.tsx`, `BookingFlow.tsx`)
+- `GET /salons/{id}/portfolio/` - salon ish natijalari (`SalonPage.tsx`)
+- `GET /salons/nearby/` - map discover (`MapView.tsx`)
+- `GET /barbers/` - barber catalog (`Index.tsx` orqali shared query)
+- `GET /barbers/nearby/` - nearby barber (`MapView.tsx`)
+- `GET /barbers/by-barber-id/` - independent detail (`IndependentBookingFlow.tsx`)
+- `GET /barbers/availability/` - independent slotlar (`IndependentBookingFlow.tsx`)
+- `GET /bookings/availability/` - salon booking slotlari (`BookingFlow.tsx`)
+- `GET /bookings/` - booking history (`MyBookings.tsx`, `Profile.tsx`)
+- `POST /bookings/` - booking create (`BookingFlow.tsx`, `IndependentBookingFlow.tsx`)
+- `GET /reviews/?salon={id}` - salon reviews (`SalonPage.tsx`)
+- `GET /reviews/?mine=1` - user reviews (`Profile.tsx`)
+- `GET /notifications/` - notifications list (`Notifications.tsx`)
+- `POST /notifications/{id}/read/` - single read (`Notifications.tsx`)
+- `POST /notifications/mark-all-read/` - bulk read (`Notifications.tsx`)
+- `GET /chat/conversations/` - chat list (`ChatList.tsx`)
+- `POST /chat/conversations/` - conversation create (`BookingFlow.tsx`, `IndependentBookingFlow.tsx`, `MapView.tsx`)
+- `GET /chat/conversations/{id}/messages/` - thread load (`ChatThread.tsx`)
+- `POST /chat/conversations/{id}/messages/` - send message (`ChatThread.tsx`)
+
+## WebSocket
+
+- `WS /ws/chat/{conversationId}/?token=...` - chat live updates.
+- `WS /ws/notifications/?token=...` - notifications invalidation (`useUserNotificationWs` via `UserLayout`).
+
+## Dead / Unwired / Legacy holatlar
+
+- `apps/user` ichida barber-worker membership actionlari (`accept_worker`, `decline_worker`) olib tashlandi; bu flow barber panel domeniga tegishli.
+- `packages/shared/src/salon-queries.ts` ichidagi users app tomonidan ishlatilmagan salon-join helperlar olib tashlandi (barber app local join flow ishlatadi).
+- `notifications` sahifasida customer app uchun barber-management CTA lar chiqarib tashlandi.
+
+## Contract risklar (monitoring)
+
+- Backendda `/api` va `/api/v1` parallel turibdi; frontendda faqat `/api/v1` ishlatish tavsiya etiladi.
+- `MapView`dan chat create qilishda booking precondition bo'lsa backend xatosi qaytishi mumkin; UI graceful fallback ko'rsatishi kerak.

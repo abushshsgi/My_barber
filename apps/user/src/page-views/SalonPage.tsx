@@ -52,6 +52,11 @@ type StaffApi = {
   experience_years: number | null;
 };
 
+type PortfolioItem = {
+  image: string | null;
+  booking_id: number;
+};
+
 export default function SalonPage() {
   const params = useParams();
   const id = params?.id as string;
@@ -89,6 +94,17 @@ export default function SalonPage() {
       if (!res.ok) return [];
       const j = (await res.json()) as StaffApi[];
       return Array.isArray(j) ? j : [];
+    },
+    enabled: !!id,
+  });
+
+  const { data: portfolio = [] } = useQuery({
+    queryKey: ["salon-portfolio", id],
+    queryFn: async () => {
+      const res = await apiFetch(`/api/v1/salons/${id}/portfolio/`);
+      if (!res.ok) return [];
+      const j = (await res.json()) as PortfolioItem[];
+      return Array.isArray(j) ? j.filter((row) => !!row.image) : [];
     },
     enabled: !!id,
   });
@@ -200,6 +216,22 @@ export default function SalonPage() {
                   key={img.id}
                   src={mediaSrc(img.image, PLACEHOLDER_SALON)}
                   alt=""
+                  className="w-32 h-24 object-cover rounded-lg shrink-0"
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {portfolio.length > 0 && (
+          <div>
+            <h2 className="text-lg font-semibold mb-2">Ish natijalari</h2>
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+              {portfolio.map((item) => (
+                <img
+                  key={item.booking_id}
+                  src={mediaSrc(item.image, PLACEHOLDER_SALON)}
+                  alt="Natija rasmi"
                   className="w-32 h-24 object-cover rounded-lg shrink-0"
                 />
               ))}

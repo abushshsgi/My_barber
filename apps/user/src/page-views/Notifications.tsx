@@ -6,20 +6,13 @@ import {
   Clock,
   Star,
   Loader2,
-  UserCheck,
-  XCircle,
-  PartyPopper,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
-import { barberWebUrl } from "@/lib/public-urls";
-import { useSalonInviteResponse } from "@/hooks/useSalonInviteResponse";
 import { format } from "date-fns";
-import { Link } from "@/navigation";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
 
 type NotifRow = {
   id: number;
@@ -38,18 +31,7 @@ const iconMap: Record<string, typeof Clock> = {
   salon_invite: Bell,
   barber_approved: Bell,
   new_booking: Bell,
-  worker_accepted: UserCheck,
-  membership_active: PartyPopper,
-  invite_declined: XCircle,
 };
-
-function membershipIdFromPayload(payload: unknown): number | null {
-  if (!payload || typeof payload !== "object") return null;
-  const m = (payload as { membership_id?: unknown }).membership_id;
-  if (typeof m === "number" && Number.isFinite(m)) return m;
-  if (typeof m === "string" && /^\d+$/.test(m)) return parseInt(m, 10);
-  return null;
-}
 
 async function fetchNotifications(): Promise<NotifRow[]> {
   const res = await apiFetch("/api/v1/notifications/");
@@ -64,8 +46,6 @@ async function fetchNotifications(): Promise<NotifRow[]> {
 
 const Notifications = () => {
   const qc = useQueryClient();
-  const [inviteErr, setInviteErr] = useState<string | null>(null);
-  const [busyMembershipId, setBusyMembershipId] = useState<number | null>(null);
 
   const { data: notifications = [], isLoading, error } = useQuery({
     queryKey: ["notifications"],
@@ -80,7 +60,13 @@ const Notifications = () => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
 
-  const respondInvite = useSalonInviteResponse();
+  const markAllRead = useMutation({
+    mutationFn: async () => {
+      const res = await apiFetch("/api/v1/notifications/mark-all-read/", { method: "POST" });
+      if (!res.ok) throw new Error("Hammasini o'qish belgilanmadi");
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+  });
 
   const unreadCount = notifications.filter((n) => !n.read_at).length;
 
@@ -134,20 +120,25 @@ const Notifications = () => {
         </div>
       </div>
 
-      {inviteErr && (
-        <div className="px-5 pb-2">
-          <p className="text-sm text-destructive bg-destructive/10 rounded-xl px-3 py-2">{inviteErr}</p>
+      {unreadCount > 0 ? (
+        <div className="px-5 pt-1">
+          <Button
+            variant="secondary"
+            size="sm"
+            className="rounded-xl"
+            disabled={markAllRead.isPending}
+            onClick={() => markAllRead.mutate()}
+          >
+            {markAllRead.isPending ? "Belgilanmoqda..." : "Hammasini o‘qilgan qilish"}
+          </Button>
         </div>
-      )}
+      ) : null}
 
       <div className="px-5 py-4 space-y-2.5">
         <AnimatePresence>
           {notifications.map((notif, i) => {
             const Icon = iconMap[notif.type] ?? Bell;
             const read = !!notif.read_at;
-            const mid = membershipIdFromPayload(notif.payload);
-            const isSalonInvite = notif.type === "salon_invite" && mid !== null;
-            const isWorkerAccepted = notif.type === "worker_accepted";
 
             return (
               <motion.div
@@ -168,8 +159,7 @@ const Notifications = () => {
                   type="button"
                   className="flex gap-3.5 w-full text-left"
                   onClick={() => {
-                    if (!isSalonInvite && !read) markRead.mutate(notif.id);
-                    if (isSalonInvite && !read) markRead.mutate(notif.id);
+                    if (!read) markRead.mutate(notif.id);
                   }}
                 >
                   <div
@@ -206,78 +196,6 @@ const Notifications = () => {
                     </p>
                   </div>
                 </button>
-
-                {isSalonInvite && (
-                  <div className="flex flex-wrap gap-2 pl-[52px]">
-                    <Button
-                      size="sm"
-                      className="rounded-xl gold-gradient text-gold-foreground border-0 h-9"
-                      disabled={respondInvite.isPending && busyMembershipId === mid}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setInviteErr(null);
-                        setBusyMembershipId(mid!);
-                        respondInvite.mutate(
-                          {
-                            membershipId: mid!,
-                            action: "accept",
-                            notificationId: notif.id,
-                          },
-                          {
-                            onError: (err) => setInviteErr((err as Error).message),
-                            onSettled: () => setBusyMembershipId(null),
-                          }
-                        );
-                      }}
-                    >
-                      {respondInvite.isPending && busyMembershipId === mid ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        "Roziman"
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="rounded-xl h-9"
-                      disabled={respondInvite.isPending && busyMembershipId === mid}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setInviteErr(null);
-                        setBusyMembershipId(mid!);
-                        respondInvite.mutate(
-                          {
-                            membershipId: mid!,
-                            action: "decline",
-                            notificationId: notif.id,
-                          },
-                          {
-                            onError: (err) => setInviteErr((err as Error).message),
-                            onSettled: () => setBusyMembershipId(null),
-                          }
-                        );
-                      }}
-                    >
-                      Rad etish
-                    </Button>
-                  </div>
-                )}
-
-                {isWorkerAccepted && (
-                  <div className="pl-[52px]">
-                    <Button asChild size="sm" variant="secondary" className="rounded-xl h-9">
-                      <Link href={barberWebUrl("/team")}>Jamoada tasdiqlash</Link>
-                    </Button>
-                  </div>
-                )}
-
-                {notif.type === "membership_active" && (
-                  <div className="pl-[52px]">
-                    <Button asChild size="sm" variant="secondary" className="rounded-xl h-9">
-                      <Link href={barberWebUrl("/")}>Sartarosh paneli</Link>
-                    </Button>
-                  </div>
-                )}
               </motion.div>
             );
           })}

@@ -6,6 +6,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { LocaleProvider } from "@/providers/locale-provider";
+import { UserLayout } from "@/components/UserLayout";
 
 interface RouterContext {
   queryClient: QueryClient;
@@ -43,7 +44,9 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <LocaleProvider>
-        <Outlet />
+        <UserLayout>
+          <Outlet />
+        </UserLayout>
         <Toaster position="top-right" richColors closeButton />
       </LocaleProvider>
     </QueryClientProvider>
