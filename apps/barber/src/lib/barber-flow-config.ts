@@ -3,6 +3,7 @@ import type { ViewMode } from "@/components/barber/BarberContext";
 export type SignupFlow = "owner" | "employee" | "mybarber" | "independent";
 export type FlowIdentity = SignupFlow | "unknown";
 export type NavCapability = "independentBase" | "salonOwner" | "salonWorker";
+export type Tone = "salon" | "team" | "brand" | "solo" | "neutral";
 
 export type NavItem = {
   to: string;
@@ -76,29 +77,113 @@ export const FLOW_IDENTITY_META: Record<
   {
     title: string;
     desc: string;
-    accent: "salon" | "team" | "brand" | "solo";
+    accent: Tone;
+    badge: string;
+    accentClass: string;
+    heroTitle: string;
+    heroSubtitle: string;
+    successTitle: string;
+    successBody: string;
+    emptyTitle: string;
+    emptyBody: string;
   }
 > = {
   owner: {
     title: "Salon owner",
     desc: "Salonni boshqarish, jamoa va salon workspace bilan ishlash.",
     accent: "salon",
+    badge: "Boshqaruv",
+    accentClass: "border-amber-500/40 bg-amber-500/10 text-amber-700",
+    heroTitle: "Salon boshqaruvini ishga tushiring",
+    heroSubtitle: "Jamoa, xizmatlar va salon jarayonlarini owner sifatida boshqaring.",
+    successTitle: "Owner onboarding tayyor",
+    successBody: "Endi salon workspace orqali jamoa va salon natijalarini boshqarishingiz mumkin.",
+    emptyTitle: "Owner panel hali bo'sh",
+    emptyBody: "Jamoa va xizmatlar qo'shilgach boshqaruv ko'rsatkichlari shu yerda ko'rinadi.",
   },
   employee: {
     title: "Salonga qo'shilish",
     desc: "Mavjud salon jamoasiga ulanib, salon workspace'da ishlash.",
     accent: "team",
+    badge: "Jamoa",
+    accentClass: "border-sky-500/40 bg-sky-500/10 text-sky-700",
+    heroTitle: "Salon jamoasiga ulanish",
+    heroSubtitle: "Join worker sifatida salon ichida mijozlar oqimi bilan ishlang.",
+    successTitle: "Worker onboarding tayyor",
+    successBody: "Endi salon ish maydonida jamoa bilan birga bronlar ustida ishlashingiz mumkin.",
+    emptyTitle: "Salon ish maydoni hali bo'sh",
+    emptyBody: "Salon ichidagi ishlar va jamoa faoliyati shu yerda ko'rinadi.",
   },
   mybarber: {
     title: "MyBarber salon",
     desc: "MyBarber brendi ostida tezkor salon ochish va sozlash.",
     accent: "brand",
+    badge: "MyBarber",
+    accentClass: "border-violet-500/40 bg-violet-500/10 text-violet-700",
+    heroTitle: "MyBarber brend saloningiz",
+    heroSubtitle: "MyBarber uslubida tez ishga tushadigan salon tajribasini yarating.",
+    successTitle: "MyBarber onboarding tayyor",
+    successBody: "MyBarber saloningiz yaratildi, endi mijoz oqimi va xizmatlarni faollashtiring.",
+    emptyTitle: "MyBarber panel hali bo'sh",
+    emptyBody: "Brand sahifalari va xizmatlar to'ldirilgach bu yerda natijalar chiqadi.",
   },
   independent: {
     title: "Mustaqil barber",
     desc: "Salonsiz shaxsiy ish maydoni va mustaqil xizmatlar.",
     accent: "solo",
+    badge: "Solo",
+    accentClass: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700",
+    heroTitle: "Mustaqil barber workspace",
+    heroSubtitle: "Shaxsiy xizmatlar, jadval va daromadlarni to'liq o'zingiz boshqaring.",
+    successTitle: "Mustaqil onboarding tayyor",
+    successBody: "Endi mustaqil ish maydonida mijozlar va daromadlarni boshqarishga tayyorsiz.",
+    emptyTitle: "Mustaqil panel hali bo'sh",
+    emptyBody: "Xizmatlar va bronlar kelgach shaxsiy ko'rsatkichlar shu yerda chiqadi.",
   },
+};
+
+export const UNKNOWN_FLOW_META = {
+  title: "Barber workspace",
+  desc: "Flow aniqlanmagan holat, standart ish maydoni ishlatiladi.",
+  accent: "neutral" as const,
+  badge: "Standart",
+  accentClass: "border-zinc-500/30 bg-zinc-500/10 text-zinc-700",
+  heroTitle: "Barber ish maydoni",
+  heroSubtitle: "Asosiy ishlar va onboarding bosqichlarini shu yerdan davom ettiring.",
+  successTitle: "Onboarding yakunlandi",
+  successBody: "Barber panel ishlashga tayyor.",
+  emptyTitle: "Panel hali bo'sh",
+  emptyBody: "Dastlabki ma'lumotlar paydo bo'lishi bilan karta to'ldiriladi.",
+};
+
+export type QuickAction = { to: string; label: string; iconName: NavItem["iconName"] };
+
+export const QUICK_ACTIONS: Record<FlowIdentity, QuickAction[]> = {
+  owner: [
+    { to: "/barber/salon-view/team", label: "Jamoani boshqarish", iconName: "Users" },
+    { to: "/barber/salon-view", label: "Salon overview", iconName: "Building2" },
+    { to: "/barber/marketing", label: "Marketing", iconName: "Megaphone" },
+  ],
+  employee: [
+    { to: "/barber/salon-view/members", label: "Jamoa a'zolari", iconName: "Users" },
+    { to: "/barber/bookings", label: "Bronlar", iconName: "CalendarClock" },
+    { to: "/barber/salon-view", label: "Salon sahifasi", iconName: "Building2" },
+  ],
+  mybarber: [
+    { to: "/barber/salon-view/gallery", label: "Brand galereya", iconName: "Images" },
+    { to: "/barber/salon-view", label: "MyBarber salon", iconName: "Building2" },
+    { to: "/barber/marketing", label: "Brend marketing", iconName: "Megaphone" },
+  ],
+  independent: [
+    { to: "/barber/bookings", label: "Bronlarni boshqarish", iconName: "CalendarClock" },
+    { to: "/barber/earnings", label: "Daromad", iconName: "Wallet" },
+    { to: "/barber/portfolio", label: "Portfolio", iconName: "ImageIcon" },
+  ],
+  unknown: [
+    { to: "/barber/profile", label: "Profilni to'ldirish", iconName: "UserCog" },
+    { to: "/barber/bookings", label: "Bronlar", iconName: "CalendarClock" },
+    { to: "/barber/help", label: "Yordam", iconName: "HelpCircle" },
+  ],
 };
 
 export function inferFlowIdentity(input: {
@@ -136,6 +221,11 @@ export function getWorkspaceLabel(input: { isJoinedWorker: boolean; viewMode: Vi
   return input.viewMode === "salon" ? "Salon" : "Mustaqil";
 }
 
+export function getFlowMeta(flowIdentity: FlowIdentity) {
+  if (flowIdentity === "unknown") return UNKNOWN_FLOW_META;
+  return FLOW_IDENTITY_META[flowIdentity];
+}
+
 export function getOnboardingCta(requiredNextPath: string | null): { title: string; body: string } {
   if (requiredNextPath?.startsWith("/salon/join")) {
     return {
@@ -159,4 +249,12 @@ export function getOnboardingCta(requiredNextPath: string | null): { title: stri
     title: "Profilni to'liq ro'yxatdan o'tkazing",
     body: "Mijozlar sizni topishi uchun onboarding bosqichlarini yakunlang.",
   };
+}
+
+export function getOnboardingTone(requiredNextPath: string | null): Tone {
+  if (requiredNextPath?.startsWith("/salon/create")) return "salon";
+  if (requiredNextPath?.startsWith("/salon/join")) return "team";
+  if (requiredNextPath?.startsWith("/mybarber/setup")) return "brand";
+  if (requiredNextPath?.startsWith("/independent/setup")) return "solo";
+  return "neutral";
 }

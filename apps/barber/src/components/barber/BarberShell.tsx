@@ -18,7 +18,6 @@ import {
   Building2,
   Images,
   ArrowLeftRight,
-  Sparkles,
   Scissors,
   Wallet,
   BarChart3,
@@ -56,6 +55,8 @@ import { toast } from "sonner";
 import { useBarberContext } from "./BarberContext";
 import {
   getCapabilities,
+  getFlowMeta,
+  QUICK_ACTIONS,
   getWorkspaceLabel,
   NAV_CONFIG,
   type NavItem as MatrixNavItem,
@@ -259,7 +260,8 @@ function Topbar({
 }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { notifications, profile, viewMode, isJoinedWorker, setViewMode } = useBarberContext();
+  const { notifications, profile, viewMode, isJoinedWorker, setViewMode, flowIdentity } =
+    useBarberContext();
   const unread = notifications.filter((n) => !n.read).length;
 
   const currentItem =
@@ -267,6 +269,7 @@ function Topbar({
     nav[0];
 
   const onSalonViewArea = pathname.startsWith("/barber/salon-view");
+  const flowMeta = getFlowMeta(flowIdentity);
 
   return (
     <header className="h-14 shrink-0 flex items-center justify-between gap-4 px-4 sm:px-6 bg-background/80 backdrop-blur-sm border-b border-border sticky top-0 z-10">
@@ -274,10 +277,15 @@ function Topbar({
         <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMobileMenu}>
           <Menu className="size-5" />
         </Button>
-        <div className="hidden sm:flex items-center gap-1.5 text-sm min-w-0">
-          <span className="text-muted-foreground">{getWorkspaceLabel({ isJoinedWorker, viewMode })}</span>
-          <ChevronRight className="size-3.5 text-muted-foreground/50" />
-          <span className="font-medium text-foreground truncate">{currentItem.label}</span>
+        <div className="hidden sm:flex flex-col min-w-0">
+          <div className="flex items-center gap-1.5 text-sm min-w-0">
+            <span className="text-muted-foreground">
+              {getWorkspaceLabel({ isJoinedWorker, viewMode })}
+            </span>
+            <ChevronRight className="size-3.5 text-muted-foreground/50" />
+            <span className="font-medium text-foreground truncate">{currentItem.label}</span>
+          </div>
+          <span className="text-[11px] text-muted-foreground truncate">{flowMeta.heroSubtitle}</span>
         </div>
       </div>
 
@@ -389,65 +397,44 @@ function CommandPalette({
   onOpenChange,
   nav,
   capability,
+  flowIdentity,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   nav: NavItem[];
   capability: "independentBase" | "salonOwner" | "salonWorker";
+  flowIdentity: "owner" | "employee" | "mybarber" | "independent" | "unknown";
 }) {
   const navigate = useNavigate();
   const go = (to: string) => {
     onOpenChange(false);
     navigate({ to });
   };
+  const quickActions = QUICK_ACTIONS[flowIdentity];
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <CommandInput placeholder="Sahifa yoki amalni qidiring..." />
       <CommandList>
         <CommandEmpty>Hech narsa topilmadi.</CommandEmpty>
         <CommandGroup heading="Tezkor amallar">
-          {capability !== "independentBase" ? (
-            <>
-              <CommandItem onSelect={() => go("/barber/salon-view")}>
-                <Building2 className="size-4 mr-2" />
-                Salon sahifasi
+          {quickActions.map((action) => {
+            const Icon = ICON_BY_NAME[action.iconName];
+            return (
+              <CommandItem key={action.to} onSelect={() => go(action.to)}>
+                <Icon className="size-4 mr-2" />
+                {action.label}
               </CommandItem>
-              <CommandItem onSelect={() => go("/barber/salon-view/reviews")}>
-                <Star className="size-4 mr-2" />
-                Salon sharhlari
-              </CommandItem>
-              <CommandItem onSelect={() => go("/barber/salon-view/gallery")}>
-                <Images className="size-4 mr-2" />
-                Galereya
-              </CommandItem>
-              <CommandItem
-                onSelect={() =>
-                  go(capability === "salonWorker" ? "/barber/salon-view/members" : "/barber/salon-view/team")
-                }
-              >
-                <Users className="size-4 mr-2" />
-                Jamoa
-              </CommandItem>
-              <CommandItem onSelect={() => go("/barber/profile")}>
-                <UserCog className="size-4 mr-2" />
-                Profil
-              </CommandItem>
-            </>
-          ) : (
-            <>
-              <CommandItem onSelect={() => go("/barber/bookings")}>
-                <CalendarClock className="size-4 mr-2" />
-                Bugungi bronlarni ko'rish
-              </CommandItem>
-              <CommandItem onSelect={() => go("/barber/chat")}>
-                <MessageSquare className="size-4 mr-2" />
-                Yangi xabar
-              </CommandItem>
-              <CommandItem onSelect={() => go("/barber/profile")}>
-                <Sparkles className="size-4 mr-2" />
-                Profilni tahrirlash
-              </CommandItem>
-            </>
+            );
+          })}
+          {capability !== "independentBase" && (
+            <CommandItem
+              onSelect={() =>
+                go(capability === "salonWorker" ? "/barber/salon-view/members" : "/barber/salon-view/team")
+              }
+            >
+              <Users className="size-4 mr-2" />
+              Jamoa
+            </CommandItem>
           )}
         </CommandGroup>
         <CommandSeparator />
@@ -470,7 +457,7 @@ function CommandPalette({
 export function BarberShell() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { viewMode, onboardingComplete, isJoinedWorker } = useBarberContext();
+  const { viewMode, onboardingComplete, isJoinedWorker, flowIdentity } = useBarberContext();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
 
@@ -556,6 +543,7 @@ export function BarberShell() {
         onOpenChange={setCmdOpen}
         nav={nav}
         capability={capability}
+        flowIdentity={flowIdentity}
       />
     </div>
   );

@@ -18,7 +18,7 @@ import {
   type SignupFlow,
 } from "@/lib/auth-ui";
 import { saveSignupDraft } from "@/lib/signup-draft";
-import { SIGNUP_FLOW_PATH } from "@/lib/barber-flow-config";
+import { FLOW_IDENTITY_META, SIGNUP_FLOW_PATH } from "@/lib/barber-flow-config";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -101,6 +101,8 @@ function AuthPage() {
     }
   };
 
+  const selectedMeta = flow ? FLOW_IDENTITY_META[flow] : null;
+
   return (
     <div className="min-h-screen bg-background text-foreground px-4 py-10">
       <div className="mx-auto w-full max-w-[960px] rounded-3xl border border-border bg-card shadow-xl overflow-hidden grid md:grid-cols-[1.05fr_0.95fr]">
@@ -109,11 +111,21 @@ function AuthPage() {
             <div className="size-10 rounded-xl bg-amber-100 text-zinc-900 flex items-center justify-center">
               <Scissors className="size-5" />
             </div>
-            <h1 className="mt-6 text-3xl font-semibold leading-tight">Barber kabineti</h1>
+            <h1 className="mt-6 text-3xl font-semibold leading-tight">
+              {selectedMeta ? selectedMeta.heroTitle : "Barber kabineti"}
+            </h1>
             <p className="mt-3 text-sm text-zinc-300 max-w-sm">
-              Beige va black uslubida yaratilgan xavfsiz autentifikatsiya oqimi. Kirish yoki
-              ro'yxatdan o'tishni tanlang.
+              {selectedMeta
+                ? selectedMeta.heroSubtitle
+                : "Xavfsiz autentifikatsiya oqimi. Kirish yoki ro'yxatdan o'tishni tanlang."}
             </p>
+            {selectedMeta && (
+              <div
+                className={`mt-4 inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${selectedMeta.accentClass}`}
+              >
+                {selectedMeta.badge}
+              </div>
+            )}
           </div>
           <div className="text-xs text-zinc-400">MyBarber · Auth Gateway</div>
         </div>

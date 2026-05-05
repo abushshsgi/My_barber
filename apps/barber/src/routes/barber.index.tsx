@@ -17,7 +17,8 @@ import {
 } from "lucide-react";
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
 import { StatusPill } from "@/components/barber/primitives";
-import { getOnboardingCta } from "@/lib/barber-flow-config";
+import { getFlowMeta, getOnboardingCta, getOnboardingTone } from "@/lib/barber-flow-config";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/barber/")({
   component: BarberDashboard,
@@ -38,6 +39,7 @@ function BarberDashboard() {
     startBooking,
     completeBooking,
     viewMode,
+    flowIdentity,
   } = useBarberContext();
 
   /** Salon rejimida indeks — mustaqil dashboard emas, salon overview (ishchi «Barberga oʻtish» mustaqil rejimga o‘tkazadi). */
@@ -55,6 +57,8 @@ function BarberDashboard() {
   const activeGoals = goals.filter((g) => !g.done);
   const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
   const onboardingCta = getOnboardingCta(requiredNextPath);
+  const flowMeta = getFlowMeta(flowIdentity);
+  const tone = getOnboardingTone(requiredNextPath);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
@@ -62,17 +66,28 @@ function BarberDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
           <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">
-            Salom, {profile.name.split(" ")[0]}
+            {flowMeta.heroTitle}
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Bugun sizda {today.length} ta bron, {active ? "1 ta faol seans" : "faol seans yo'q"}.
+            {flowMeta.heroSubtitle}
           </p>
+        </div>
+        <div className={cn("inline-flex rounded-full border px-3 py-1 text-xs font-semibold", flowMeta.accentClass)}>
+          {flowMeta.badge}
         </div>
       </div>
 
       {/* Onboarding gate */}
       {!onboardingComplete && (
-        <div className="rounded-xl border border-border bg-card p-6 flex flex-col sm:flex-row sm:items-center gap-4 shadow-card">
+        <div
+          className={cn(
+            "rounded-xl border bg-card p-6 flex flex-col sm:flex-row sm:items-center gap-4 shadow-card",
+            tone === "team" && "border-sky-500/40",
+            tone === "brand" && "border-violet-500/40",
+            tone === "solo" && "border-emerald-500/40",
+            tone === "salon" && "border-amber-500/40",
+          )}
+        >
           <div className="size-12 rounded-full bg-foreground text-background flex items-center justify-center shrink-0">
             <Sparkles className="size-5" />
           </div>

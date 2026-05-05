@@ -27,6 +27,7 @@ import { apiFetch, getBarberAccessToken, setBarberTokens } from "@/lib/api";
 import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { clearSignupDraft, readSignupDraft } from "@/lib/signup-draft";
 import { cn } from "@/lib/utils";
+import { getFlowMeta } from "@/lib/barber-flow-config";
 
 /* ============================================================
    Types
@@ -529,6 +530,7 @@ export function CreateSalonPage() {
   };
 
   const currentMeta = STEP_META[step];
+  const flowMeta = getFlowMeta("owner");
 
   return (
     <div className="min-h-screen bg-background pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-32">
@@ -550,9 +552,7 @@ export function CreateSalonPage() {
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-foreground sm:h-8 sm:w-8">
               <Scissors className="h-3.5 w-3.5 text-background sm:h-4 sm:w-4" />
             </div>
-            <span className="text-[13px] font-semibold tracking-tight sm:text-sm">
-              Barber Studio
-            </span>
+            <span className="text-[13px] font-semibold tracking-tight sm:text-sm">{flowMeta.title}</span>
           </div>
           <span className="text-[11px] font-medium tabular-nums text-muted-foreground sm:text-xs">
             <span className="text-foreground">{step + 1}</span>
@@ -590,11 +590,16 @@ export function CreateSalonPage() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
             >
-              <div className="mb-2.5 inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground sm:mb-3 sm:px-2.5 sm:py-1 sm:text-[10px]">
+              <div
+                className={cn(
+                  "mb-2.5 inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider sm:mb-3 sm:px-2.5 sm:py-1 sm:text-[10px]",
+                  flowMeta.accentClass,
+                )}
+              >
                 <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-foreground text-background sm:h-4 sm:w-4">
                   <currentMeta.icon className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
                 </span>
-                {currentMeta.group} · Qadam {step + 1}
+                {flowMeta.badge} · Qadam {step + 1}
               </div>
               <h1 className="text-[22px] font-semibold leading-[1.15] tracking-tight text-foreground sm:text-5xl">
                 {currentMeta.title}

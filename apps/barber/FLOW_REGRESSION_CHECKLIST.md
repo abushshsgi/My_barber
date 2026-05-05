@@ -44,3 +44,11 @@ Use this checklist after changing onboarding, navigation, role permissions, or w
 - Verify `required_next_path` CTA card on dashboard shows flow-appropriate message.
 - Verify notifications/profile pages remain accessible across workspaces.
 
+## 6) UI identity checks (20% distinction)
+
+- Owner: header badge/tone and hero copy show management-oriented identity.
+- Employee: join/setup pages and workspace labels clearly indicate team context.
+- MyBarber: branding language and accent differ from owner generic wording.
+- Independent: solo workspace tone and copy differ from salon-based flows.
+- Shared design system remains unchanged (buttons/inputs/cards/spacing structure consistent).
+

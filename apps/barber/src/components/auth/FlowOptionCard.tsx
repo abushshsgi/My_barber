@@ -42,7 +42,17 @@ export function FlowOptionCard({
           {FLOW_ICON[flow]}
         </div>
         <div>
-          <p className="text-sm font-semibold">{meta.title}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold">{meta.title}</p>
+            <span
+              className={cn(
+                "inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold",
+                selected ? "border-background/40 text-background/90" : meta.accentClass,
+              )}
+            >
+              {meta.badge}
+            </span>
+          </div>
           <p
             className={cn(
               "text-xs mt-1",
