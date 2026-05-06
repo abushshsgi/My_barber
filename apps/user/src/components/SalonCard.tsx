@@ -23,7 +23,7 @@ export const SalonCard = forwardRef<HTMLDivElement, SalonCardProps>(function Sal
   ref
 ) {
   return (
-    <Link href={`/salon/${salon.id}`}>
+    <Link href={`/salon/${salon.id}`} className="block cursor-pointer">
       <motion.div
         ref={ref}
         layout
@@ -36,7 +36,7 @@ export const SalonCard = forwardRef<HTMLDivElement, SalonCardProps>(function Sal
         }}
         whileTap={{ scale: 0.98 }}
       >
-        <div className="flex gap-3.5 p-3 rounded-2xl bg-card hover:bg-muted/50 transition-colors duration-200 group">
+        <div className="flex gap-3.5 p-3 rounded-2xl bg-card border border-border/50 hover:border-accent/30 hover:bg-muted/35 hover:shadow-lg hover:shadow-accent/5 transition-all duration-200 group card-shadow">
           <div className="relative w-[100px] h-[100px] rounded-xl overflow-hidden shrink-0 bg-muted">
             <img
               src={coverSrc(salon)}

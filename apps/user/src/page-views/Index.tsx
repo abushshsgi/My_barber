@@ -10,6 +10,11 @@ import {
   Crown,
   Flame,
   TrendingUp,
+  Scissors,
+  UserCircle2,
+  Hand,
+  Palette,
+  type LucideIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -33,12 +38,12 @@ import { BarberCard } from "@/components/BarberCard";
 import { UZ_REGIONS } from "@/lib/uz-regions";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const categories = [
-  { icon: "✂️", label: "Soch turmak" },
-  { icon: "🧔", label: "Soqol" },
-  { icon: "💆", label: "Massaj" },
-  { icon: "🎨", label: "Rang" },
-  { icon: "👑", label: "VIP" },
+const categories: { icon: LucideIcon; label: string }[] = [
+  { icon: Scissors, label: "Soch turmak" },
+  { icon: UserCircle2, label: "Soqol" },
+  { icon: Hand, label: "Massaj" },
+  { icon: Palette, label: "Rang" },
+  { icon: Crown, label: "VIP" },
 ];
 
 const Index = () => {
@@ -227,11 +232,11 @@ const Index = () => {
               </Link>
             </div>
             <motion.div
-              whileTap={{ scale: 0.9 }}
-              className="w-11 h-11 shrink-0 rounded-2xl gold-gradient flex items-center justify-center shadow-lg shadow-accent/30"
+              whileTap={{ scale: 0.95 }}
+              className="w-11 h-11 shrink-0 rounded-2xl gold-gradient flex items-center justify-center shadow-lg shadow-accent/25 ring-1 ring-white/15"
               aria-hidden
             >
-              <span className="text-lg">✂</span>
+              <Scissors className="h-5 w-5 text-gold-foreground" strokeWidth={2.25} />
             </motion.div>
           </motion.div>
 
@@ -265,7 +270,7 @@ const Index = () => {
               <SheetTrigger asChild>
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-background/10 hover:bg-background/20 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-background/10 hover:bg-background/20 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
                   aria-label="Filtrlar"
                 >
                   <SlidersHorizontal className="h-4 w-4 text-background/60" />
@@ -360,41 +365,59 @@ const Index = () => {
           className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 snap-x snap-mandatory scroll-pl-5 -mx-5 px-5"
           aria-label="Xizmat turlari"
         >
-          {categories.map((cat, i) => (
-            <motion.button
-              key={cat.label}
-              type="button"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.15 + i * 0.04 }}
-              whileTap={{ scale: 0.92 }}
-              onClick={() =>
-                setSelectedCategory(selectedCategory === cat.label ? null : cat.label)
-              }
-              aria-pressed={selectedCategory === cat.label}
-              className={`snap-start flex flex-col items-center gap-1.5 min-w-[68px] py-2.5 px-3 rounded-2xl transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-                selectedCategory === cat.label
-                  ? "bg-accent/15 ring-1 ring-accent/30"
-                  : "bg-muted/50 hover:bg-muted"
-              }`}
-            >
-              <span className="text-xl" aria-hidden>
-                {cat.icon}
-              </span>
-              <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">
-                {cat.label}
-              </span>
-            </motion.button>
-          ))}
+          {categories.map((cat, i) => {
+            const CatIcon = cat.icon;
+            return (
+              <motion.button
+                key={cat.label}
+                type="button"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.15 + i * 0.04 }}
+                whileTap={{ scale: 0.92 }}
+                onClick={() =>
+                  setSelectedCategory(selectedCategory === cat.label ? null : cat.label)
+                }
+                aria-pressed={selectedCategory === cat.label}
+                className={`snap-start flex flex-col items-center gap-1.5 min-w-[68px] py-2.5 px-3 rounded-2xl transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                  selectedCategory === cat.label
+                    ? "bg-accent/15 ring-1 ring-accent/40 shadow-[0_0_20px_-4px_hsl(var(--accent)/0.35)]"
+                    : "bg-muted/50 hover:bg-muted border border-transparent hover:border-border/50"
+                }`}
+              >
+                <span
+                  className={`flex h-9 w-9 items-center justify-center rounded-xl transition-colors ${
+                    selectedCategory === cat.label
+                      ? "bg-accent/20 text-accent"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                  aria-hidden
+                >
+                  <CatIcon className="h-[18px] w-[18px]" strokeWidth={2} />
+                </span>
+                <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">
+                  {cat.label}
+                </span>
+              </motion.button>
+            );
+          })}
         </div>
       </motion.div>
 
       <div className="px-5 pb-2">
         <div
-          className="flex gap-2 p-1 rounded-2xl bg-muted/50 border border-border/40"
+          className="relative flex gap-1 p-1 rounded-2xl bg-muted/40 border border-border/50 shadow-inner"
           role="tablist"
           aria-label="Ro‘yxat turi"
         >
+          <div
+            className={`pointer-events-none absolute top-1 bottom-1 rounded-[0.65rem] bg-card border border-border/60 shadow-sm transition-all duration-300 ease-out ${
+              feedTab === "salons"
+                ? "left-1 w-[calc(50%-0.25rem)]"
+                : "left-[calc(50%+0.125rem)] w-[calc(50%-0.25rem)]"
+            }`}
+            aria-hidden
+          />
           <button
             type="button"
             role="tab"
@@ -402,10 +425,10 @@ const Index = () => {
             aria-selected={feedTab === "salons"}
             aria-controls="feed-panel"
             onClick={() => setFeedTab("salons")}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+            className={`relative z-[1] flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
               feedTab === "salons"
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground/90"
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground/85"
             }`}
           >
             Salonlar
@@ -417,10 +440,10 @@ const Index = () => {
             aria-selected={feedTab === "barbers"}
             aria-controls="feed-panel"
             onClick={() => setFeedTab("barbers")}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+            className={`relative z-[1] flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
               feedTab === "barbers"
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground/90"
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground/85"
             }`}
           >
             Barberlar

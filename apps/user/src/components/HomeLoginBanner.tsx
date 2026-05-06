@@ -33,7 +33,7 @@ export function HomeLoginBanner() {
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: -120, opacity: 0 }}
         transition={{ type: "spring", stiffness: 380, damping: 28 }}
-        className="relative z-50 mx-4 mt-3 mb-1 rounded-2xl border border-accent/25 bg-card/95 backdrop-blur-md shadow-lg shadow-black/20"
+        className="relative z-50 mx-4 mt-3 mb-1 rounded-2xl border border-accent/30 bg-card/90 backdrop-blur-md shadow-lg shadow-black/25 ring-1 ring-white/[0.06]"
       >
         <div className="flex items-center gap-3 px-4 py-3">
           <div className="flex-1 min-w-0">

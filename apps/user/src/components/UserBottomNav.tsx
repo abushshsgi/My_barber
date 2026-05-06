@@ -18,10 +18,13 @@ export function UserBottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 safe-area-bottom">
-      <div className="mx-2 sm:mx-3 mb-1.5 sm:mb-2">
-        <div className="bg-foreground/95 backdrop-blur-xl rounded-2xl sm:rounded-[20px] shadow-2xl shadow-foreground/20">
-          <div className="flex items-center justify-around h-[52px] sm:h-[56px] max-w-lg mx-auto px-1 sm:px-2">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 safe-area-bottom pointer-events-none"
+      aria-label="Asosiy navigatsiya"
+    >
+      <div className="mx-3 sm:mx-auto sm:max-w-md mb-3 pointer-events-auto">
+        <div className="nav-dock-surface backdrop-blur-xl rounded-[1.35rem] px-0.5 py-1">
+          <div className="flex items-center justify-around h-[52px] sm:h-[56px]">
             {navItems.map(({ icon: Icon, label, path }) => {
               const active =
                 path === "/" ? pathname === "/" : pathname.startsWith(path);
@@ -30,7 +33,7 @@ export function UserBottomNav() {
                 <Link
                   key={path}
                   href={path}
-                  className="relative flex flex-col items-center gap-0.5 px-1.5 sm:px-3 py-1 min-w-0 flex-1 max-w-[72px]"
+                  className="relative flex flex-col items-center gap-0.5 px-1.5 sm:px-3 py-1 min-w-0 flex-1 max-w-[72px] cursor-pointer rounded-lg"
                 >
                   {active && (
                     <motion.div
@@ -45,15 +48,15 @@ export function UserBottomNav() {
                   >
                     <Icon
                       className={cn(
-                        "h-[18px] w-[18px] sm:h-[20px] sm:w-[20px] transition-colors duration-150",
-                        active ? "text-accent stroke-[2.5]" : "text-background/50"
+                        "h-[18px] w-[18px] sm:h-[20px] sm:w-[20px] transition-colors duration-200",
+                        active ? "text-accent stroke-[2.25]" : "text-muted-foreground"
                       )}
                     />
                   </motion.div>
                   <span
                     className={cn(
-                      "text-[8px] sm:text-[9px] font-semibold leading-tight text-center transition-colors duration-150 truncate w-full",
-                      active ? "text-accent" : "text-background/40"
+                      "text-[8px] sm:text-[9px] font-semibold leading-tight text-center transition-colors duration-200 truncate w-full",
+                      active ? "text-accent" : "text-muted-foreground"
                     )}
                   >
                     {label}

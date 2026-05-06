@@ -13,7 +13,7 @@ function avatarSrc(path: string | null): string {
 
 export function BarberCard({ barber }: { barber: BarberListApi }) {
   return (
-    <Card className="p-4 rounded-2xl border border-border/50">
+    <Card className="group p-4 rounded-2xl border border-border/50 bg-card/90 hover:border-accent/25 hover:shadow-lg hover:shadow-accent/5 transition-all duration-200 cursor-pointer">
       <div className="flex items-start gap-3">
         <img
           src={avatarSrc(barber.avatar)}
@@ -43,9 +43,13 @@ export function BarberCard({ barber }: { barber: BarberListApi }) {
               : "Xizmatlar kiritilmagan"}
           </p>
         </div>
-        <Button asChild size="sm" className="rounded-xl gold-gradient text-gold-foreground border-0">
+        <Button
+          asChild
+          size="sm"
+          className="rounded-xl gold-gradient text-gold-foreground border-0 shadow-md shadow-accent/10"
+        >
           <Link href={`/booking/barber/${barber.barber_id}`}>
-            <Scissors className="h-4 w-4 mr-1" /> Book
+            <Scissors className="h-4 w-4 mr-1" /> Band qilish
           </Link>
         </Button>
       </div>

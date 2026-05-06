@@ -1,12 +1,13 @@
 "use client";
 
 import { UserBottomNav } from "./UserBottomNav";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { usePathname } from "@/navigation";
 import { useUserNotificationWs } from "@/hooks/useUserNotificationWs";
 
 export function UserLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const reduceMotion = useReducedMotion();
   useUserNotificationWs();
   const hideBottomNav = pathname.startsWith("/auth");
   const contentPaddingClass = hideBottomNav
@@ -18,10 +19,10 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
       <AnimatePresence mode="wait">
         <motion.main
           key={pathname}
-          initial={{ opacity: 0, x: 8 }}
+          initial={reduceMotion ? false : { opacity: 0, x: 8 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -8 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
+          exit={reduceMotion ? false : { opacity: 0, x: -8 }}
+          transition={{ duration: reduceMotion ? 0 : 0.2, ease: "easeOut" }}
           className={contentPaddingClass}
         >
           {children}
