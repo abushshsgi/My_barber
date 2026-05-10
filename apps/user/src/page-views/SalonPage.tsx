@@ -3,13 +3,14 @@
 import { useParams } from "@/navigation";
 import { useEffect, useState } from "react";
 import { Link } from "@/navigation";
-import { StarRating } from "@/components/StarRating";
-import { ArrowLeft, MapPin, Clock, Phone, Globe, Crown } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { useRouter } from "@/navigation";
+import { ArrowLeft, Clock, Globe, Heart, MapPin, Phone, Share2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch, getAccessToken } from "@/lib/api";
 import { mediaSrc, PLACEHOLDER_SALON } from "@/lib/media";
+import { RatingStars } from "@/components/luxury/RatingStars";
+import { EmptyStateLuxury, LoadingSkeleton } from "@/components/luxury/States";
+import { formatSom } from "@/lib/format";
 
 type SalonDetail = {
   id: number;
@@ -59,8 +60,10 @@ type PortfolioItem = {
 
 export default function SalonPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params?.id as string;
   const [loggedIn, setLoggedIn] = useState(false);
+  const [tab, setTab] = useState<"about" | "services" | "staff" | "reviews">("about");
 
   useEffect(() => {
     setLoggedIn(!!getAccessToken());
@@ -109,21 +112,20 @@ export default function SalonPage() {
     enabled: !!id,
   });
 
-  if (isLoading) {
+  if (isLoading || !salon) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Yuklanmoqda...</p>
+      <div className="space-y-3 p-4">
+        <LoadingSkeleton className="h-64 w-full rounded-3xl" />
+        <LoadingSkeleton className="h-24 w-full" />
       </div>
     );
   }
 
   if (isError || !salon) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-8 gap-3">
-        <p className="text-muted-foreground text-center">
-          {error instanceof Error ? error.message : "Salon topilmadi yoki yuklanmadi."}
-        </p>
-        <Link href="/" className="text-sm text-accent font-medium">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 p-8">
+        <EmptyStateLuxury title="Salon yo‘q" body={error instanceof Error ? error.message : "Ma’lumot yuklanmadi."} />
+        <Link to="/" className="text-sm font-semibold text-foreground underline">
           Asosiy sahifaga
         </Link>
       </div>
@@ -132,191 +134,281 @@ export default function SalonPage() {
 
   const sortedHours = [...(salon.hours || [])].sort((a, b) => a.weekday - b.weekday);
   const reviewAvgFromList =
-    reviews.length > 0
-      ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
-      : 0;
+    reviews.length > 0 ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length : 0;
   const starsRating =
     typeof salon.rating_avg === "number" && salon.rating_avg > 0
       ? salon.rating_avg
       : reviewAvgFromList;
+  const reviewCountShown =
+    typeof salon.review_count === "number" ? salon.review_count : reviews.length;
+
+  const hoursLine =
+    sortedHours.length > 0
+      ? sortedHours.map((h) => `${WEEKDAY_UZ[h.weekday]?.slice(0, 3) ?? h.weekday}: ${h.open_time}–${h.close_time}`).join(" · ")
+      : "";
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="mx-auto w-full max-w-md bg-background pb-32">
       <div className="relative">
         <img
           src={mediaSrc(salon.cover_image, PLACEHOLDER_SALON)}
           alt={salon.name}
-          className="w-full h-56 object-cover"
+          className="h-72 w-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
-        <Link
-          href="/"
-          className="absolute top-4 left-4 p-2 rounded-full bg-background/80 backdrop-blur-sm"
-        >
-          <ArrowLeft className="h-5 w-5 text-foreground" />
-        </Link>
-        {salon.premium && (
-          <div className="absolute top-4 right-4 gold-gradient text-gold-foreground px-3 py-1 rounded-full flex items-center gap-1 text-xs font-semibold">
-            <Crown className="h-3.5 w-3.5" /> Premium
+        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4 pt-safe">
+          <button
+            type="button"
+            onClick={() =>
+              typeof window !== "undefined" && window.history.length > 1
+                ? window.history.back()
+                : router.push("/")
+            }
+            className="grid h-10 w-10 cursor-pointer place-items-center rounded-full bg-surface/90 shadow-soft backdrop-blur focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Orqaga"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              aria-label="Ulashish"
+              className="grid h-10 w-10 cursor-pointer place-items-center rounded-full bg-surface/90 shadow-soft backdrop-blur focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() =>
+                navigator.share?.({ title: salon.name, url: window.location.href }).catch(() => null)
+              }
+            >
+              <Share2 className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              aria-label="Saqlash"
+              className="grid h-10 w-10 cursor-pointer place-items-center rounded-full bg-surface/90 shadow-soft backdrop-blur focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Heart className="h-4 w-4" />
+            </button>
           </div>
-        )}
-        <div className="absolute bottom-4 left-4 right-4">
-          <h1 className="text-2xl font-bold text-foreground">{salon.name}</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{salon.description}</p>
         </div>
       </div>
 
-      <div className="px-4 -mt-2 space-y-4">
-        <Card className="p-4 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <StarRating rating={starsRating} size="md" showValue={starsRating > 0} />
-            <span className="text-sm text-muted-foreground">
-              {typeof salon.review_count === "number" ? salon.review_count : reviews.length}{" "}
-              sharh
+      <div className="-mt-10 rounded-t-3xl bg-background px-5 pt-6">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <h1 className="text-2xl font-bold tracking-tight">{salon.name}</h1>
+          {salon.premium ? (
+            <span className="rounded-full bg-foreground px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-background">
+              Premium
             </span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4 shrink-0" /> {salon.address || "Manzil ko‘rsatilmagan"}
-          </div>
-          {sortedHours.length > 0 && (
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <Clock className="h-4 w-4 shrink-0" /> Ish vaqti
-              </div>
-              <ul className="text-xs text-muted-foreground space-y-0.5 pl-6">
-                {sortedHours.map((h) => (
-                  <li key={h.weekday}>
-                    {WEEKDAY_UZ[h.weekday] ?? `Kun ${h.weekday}`}: {h.open_time} — {h.close_time}
+          ) : null}
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
+          <RatingStars value={starsRating || 0} count={reviewCountShown} size="md" />
+          <span className="text-muted-foreground">·</span>
+          <span className="flex min-w-0 items-center gap-1 text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{salon.address}</span>
+          </span>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {hoursLine ? (
+            <>
+              <span className="font-semibold text-success">Ish jadvali</span>
+              {" · "}
+              {hoursLine}
+            </>
+          ) : (
+            <>
+              <span className="text-muted-foreground">Ish jadvali kiritilmagan</span>
+            </>
+          )}
+        </p>
+
+        <div className="mt-5 -mx-5 flex gap-1 overflow-x-auto border-b border-border px-5 scrollbar-none">
+          {([
+            { id: "about" as const, label: "Ma'lumot" },
+            { id: "services" as const, label: "Xizmatlar" },
+            { id: "staff" as const, label: "Staff" },
+            { id: "reviews" as const, label: "Sharhlar" },
+          ] as const).map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={[
+                "shrink-0 cursor-pointer px-4 py-3 text-sm font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-ring",
+                tab === t.id ? "border-b-2 border-foreground text-foreground" : "text-muted-foreground",
+              ].join(" ")}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-5">
+          {tab === "about" && (
+            <div className="space-y-4">
+              <p className="text-sm leading-relaxed text-foreground/80">
+                {salon.description?.trim() || "Salon haqida matn mavjud emas."}
+              </p>
+              {salon.phone ? (
+                <a
+                  href={`tel:${salon.phone.replace(/\s/g, "")}`}
+                  className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-foreground underline-offset-2 hover:underline"
+                >
+                  <Phone className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  {salon.phone}
+                </a>
+              ) : null}
+              {(salon.languages || []).length > 0 ? (
+                <p className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <Globe className="mt-0.5 h-4 w-4 shrink-0" />
+                  {(salon.languages || []).join(", ")}
+                </p>
+              ) : null}
+              {sortedHours.length > 0 ? (
+                <ul className="space-y-1 rounded-2xl border border-border bg-surface p-3 text-xs text-muted-foreground shadow-soft">
+                  {sortedHours.map((h) => (
+                    <li key={h.weekday} className="flex gap-2">
+                      <Clock className="h-3.5 w-3.5 shrink-0" />
+                      <span className="text-foreground/90">
+                        {WEEKDAY_UZ[h.weekday] ?? `Kun ${h.weekday}`}: {h.open_time} — {h.close_time}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {(salon.images ?? []).length > 0 ? (
+                <div>
+                  <p className="label-eyebrow mb-2 px-1">Galereya</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {salon.images?.slice(0, 9).map((img) => (
+                      <img
+                        key={img.id}
+                        src={mediaSrc(img.image, PLACEHOLDER_SALON)}
+                        alt=""
+                        loading="lazy"
+                        className="aspect-square w-full rounded-xl object-cover"
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {portfolio.length > 0 ? (
+                <div>
+                  <p className="label-eyebrow mb-2 px-1">Ish natijalari</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {portfolio.slice(0, 9).map((item) => (
+                      <img
+                        key={item.booking_id}
+                        src={mediaSrc(item.image, PLACEHOLDER_SALON)}
+                        alt=""
+                        loading="lazy"
+                        className="aspect-square w-full rounded-xl object-cover"
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          {tab === "services" &&
+            ((salon.services?.length ?? 0) === 0 ? (
+              <EmptyStateLuxury title="Xizmatlar yo‘q" body="Administrator xizmatlarni qoʻshishi kerak." />
+            ) : (
+              <ul className="space-y-2">
+                {salon.services?.map((s) => (
+                  <li
+                    key={s.id}
+                    className="flex items-center justify-between rounded-2xl border border-border bg-surface p-3 shadow-soft"
+                  >
+                    <div>
+                      <h3 className="text-sm font-semibold">{s.name}</h3>
+                      <p className="text-xs text-muted-foreground">{s.duration_minutes} daqiqa</p>
+                    </div>
+                    <span className="text-sm font-bold">{formatSom(parseFloat(s.price || "0") || 0)}</span>
                   </li>
                 ))}
               </ul>
-            </div>
-          )}
-          {salon.phone ? (
-            <a
-              href={`tel:${salon.phone.replace(/\s/g, "")}`}
-              className="flex items-center gap-2 text-sm text-accent font-medium"
-            >
-              <Phone className="h-4 w-4 shrink-0" /> {salon.phone}
-            </a>
-          ) : null}
-          {(salon.languages || []).length > 0 && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Globe className="h-4 w-4 shrink-0" /> {(salon.languages || []).join(", ")}
-            </div>
-          )}
-        </Card>
-
-        {salon.images?.length > 0 && (
-          <div>
-            <h2 className="text-lg font-semibold mb-2">Galereya</h2>
-            <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
-              {salon.images.map((img) => (
-                <img
-                  key={img.id}
-                  src={mediaSrc(img.image, PLACEHOLDER_SALON)}
-                  alt=""
-                  className="w-32 h-24 object-cover rounded-lg shrink-0"
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {portfolio.length > 0 && (
-          <div>
-            <h2 className="text-lg font-semibold mb-2">Ish natijalari</h2>
-            <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
-              {portfolio.map((item) => (
-                <img
-                  key={item.booking_id}
-                  src={mediaSrc(item.image, PLACEHOLDER_SALON)}
-                  alt="Natija rasmi"
-                  className="w-32 h-24 object-cover rounded-lg shrink-0"
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div>
-          <h2 className="text-lg font-semibold mb-2">Xizmatlar</h2>
-          <div className="space-y-2">
-            {salon.services?.map((service) => (
-              <Card key={service.id} className="p-3 flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-sm">{service.name}</p>
-                  <p className="text-xs text-muted-foreground">{service.duration_minutes} daqiqa</p>
-                </div>
-                <span className="font-semibold text-accent">
-                  {parseFloat(service.price).toLocaleString()} so&apos;m
-                </span>
-              </Card>
             ))}
-          </div>
-        </div>
 
-        {staff.length > 0 && (
-          <div>
-            <h2 className="text-lg font-semibold mb-2">Salon barberlari</h2>
-            <div className="space-y-2">
-              {staff.map((member) => (
-                <Card key={member.id} className="p-3 flex items-center gap-3">
-                  <img
-                    src={mediaSrc(member.avatar, "/placeholder.svg")}
-                    alt={member.full_name}
-                    className="h-11 w-11 rounded-full object-cover bg-muted"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{member.full_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {member.role === "owner" ? "Owner barber" : "Barber"}
-                      {member.experience_years ? ` · ${member.experience_years} yil tajriba` : ""}
-                    </p>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div>
-          <h2 className="text-lg font-semibold mb-2">Sharhlar</h2>
-          <div className="space-y-2">
-            {reviews.map((review) => (
-              <Card key={review.id} className="p-3">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{review.author_name || "User"}</p>
-                    <p className="text-xs text-muted-foreground">{review.created_at}</p>
-                  </div>
-                  <StarRating rating={review.rating} size="sm" showValue={false} />
-                </div>
-                <p className="text-sm text-muted-foreground">{review.text}</p>
-                {review.barber_reply ? (
-                  <div className="mt-2 rounded-md bg-muted/40 p-2.5">
-                    <p className="text-xs font-medium text-foreground">Barber javobi</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{review.barber_reply}</p>
-                  </div>
-                ) : null}
-              </Card>
+          {tab === "staff" &&
+            (staff.length === 0 ? (
+              <EmptyStateLuxury title="Barberlar yoʻq" />
+            ) : (
+              <ul className="space-y-2">
+                {staff.map((b) => (
+                  <li key={b.id}>
+                    <Link
+                      to="/booking/$salonId"
+                      params={{ salonId: String(salon.id) }}
+                      className="flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-surface p-3 shadow-soft outline-none transition hover:border-foreground/20 focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <img
+                        src={mediaSrc(b.avatar, "/placeholder.svg")}
+                        alt=""
+                        className="h-12 w-12 rounded-full object-cover"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-sm font-semibold">{b.full_name}</h3>
+                        <p className="text-xs text-muted-foreground capitalize">
+                          {b.role === "owner" ? "Owner" : "Barber"}
+                          {b.experience_years ? ` · ${b.experience_years} yil` : ""}
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-soft">
+                        Tanlash
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             ))}
-          </div>
+
+          {tab === "reviews" &&
+            (reviews.length === 0 ? (
+              <EmptyStateLuxury title="Sharhlar yoʻq" body="Bron qilib, ilk sharh yozing." />
+            ) : (
+              <ul className="space-y-3">
+                {reviews.map((r) => (
+                  <li key={r.id} className="rounded-2xl border border-border bg-surface p-3 shadow-soft">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="text-sm font-semibold">{r.author_name || "Mehmon"}</h3>
+                      <RatingStars value={r.rating} />
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">{r.created_at}</p>
+                    <p className="mt-2 text-sm text-foreground/80">{r.text}</p>
+                    {r.barber_reply ? (
+                      <div className="mt-3 rounded-xl border border-border/60 bg-background/50 p-2.5 text-xs">
+                        <p className="font-semibold text-foreground">Barber javobi</p>
+                        <p className="mt-0.5 text-muted-foreground">{r.barber_reply}</p>
+                      </div>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            ))}
         </div>
       </div>
 
-      <div className="fixed bottom-20 left-4 right-4 z-40">
-        <Link
-          href={
-            loggedIn
-              ? `/booking/${salon.id}`
-              : `/auth?next=${encodeURIComponent(`/booking/${salon.id}`)}`
-          }
-        >
-          <Button className="w-full h-12 rounded-xl text-base font-semibold gold-gradient text-gold-foreground border-0 shadow-lg">
-            {loggedIn ? "Band qilish" : "Kirish va band qilish"}
-          </Button>
-        </Link>
+      <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-md border-t border-border bg-surface/95 pb-safe pt-3 backdrop-blur">
+        <div className="px-5">
+          {loggedIn ? (
+            <Link
+              to="/booking/$salonId"
+              params={{ salonId: String(salon.id) }}
+              className="grid h-12 w-full cursor-pointer place-items-center rounded-2xl bg-primary text-sm font-semibold text-primary-foreground shadow-luxury focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Band qilish
+            </Link>
+          ) : (
+            <Link
+              to="/auth"
+              search={{ next: `/booking/${salon.id}` }}
+              className="grid h-12 w-full cursor-pointer place-items-center rounded-2xl bg-primary text-sm font-semibold text-primary-foreground shadow-luxury focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Kirish va band qilish
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,71 +1,82 @@
 "use client";
 
 import { Link, usePathname } from "@/navigation";
-import { Home, Map, CalendarDays, Bell, User, MessageCircle } from "lucide-react";
+import {
+  Compass,
+  MapPin,
+  CalendarDays,
+  MessageCircle,
+  Bell,
+  User,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { fetchNotifications } from "@/lib/notifications-queries";
 
-const navItems = [
-  { icon: Home, label: "Asosiy", path: "/" },
-  { icon: Map, label: "Xarita", path: "/map" },
-  { icon: CalendarDays, label: "Bandlar", path: "/bookings" },
-  { icon: MessageCircle, label: "Chat", path: "/chat" },
-  { icon: Bell, label: "Xabar", path: "/notifications" },
-  { icon: User, label: "Profil", path: "/profile" },
-];
+const TABS = [
+  { to: "/", label: "Asosiy", icon: Compass },
+  { to: "/map", label: "Xarita", icon: MapPin },
+  { to: "/bookings", label: "Bandlar", icon: CalendarDays },
+  { to: "/chat", label: "Chat", icon: MessageCircle },
+  { to: "/notifications", label: "Xabar", icon: Bell },
+  { to: "/profile", label: "Profil", icon: User },
+] as const;
 
 export function UserBottomNav() {
   const pathname = usePathname();
 
+  const { data: notifications = [], isError } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: fetchNotifications,
+    staleTime: 30_000,
+    retry: false,
+  });
+
+  const unread = isError ? 0 : notifications.filter((n) => !n.read_at).length;
+
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 safe-area-bottom pointer-events-none"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center pb-safe"
       aria-label="Asosiy navigatsiya"
     >
-      <div className="mx-3 sm:mx-auto sm:max-w-md mb-3 pointer-events-auto">
-        <div className="nav-dock-surface backdrop-blur-xl rounded-[1.35rem] px-0.5 py-1">
-          <div className="flex items-center justify-around h-[52px] sm:h-[56px]">
-            {navItems.map(({ icon: Icon, label, path }) => {
-              const active =
-                path === "/" ? pathname === "/" : pathname.startsWith(path);
-
-              return (
-                <Link
-                  key={path}
-                  href={path}
-                  className="relative flex flex-col items-center gap-0.5 px-1.5 sm:px-3 py-1 min-w-0 flex-1 max-w-[72px] cursor-pointer rounded-lg"
-                >
-                  {active && (
-                    <motion.div
-                      layoutId="nav-pill"
-                      className="absolute -top-0.5 w-6 sm:w-8 h-[2px] sm:h-[3px] rounded-full bg-accent"
-                      transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                    />
-                  )}
-                  <motion.div
-                    animate={active ? { y: -1, scale: 1.06 } : { y: 0, scale: 1 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  >
-                    <Icon
-                      className={cn(
-                        "h-[18px] w-[18px] sm:h-[20px] sm:w-[20px] transition-colors duration-200",
-                        active ? "text-accent stroke-[2.25]" : "text-muted-foreground"
-                      )}
-                    />
-                  </motion.div>
-                  <span
-                    className={cn(
-                      "text-[8px] sm:text-[9px] font-semibold leading-tight text-center transition-colors duration-200 truncate w-full",
-                      active ? "text-accent" : "text-muted-foreground"
-                    )}
-                  >
-                    {label}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
+      <div className="pointer-events-auto mx-3 mb-2 flex w-full max-w-md items-center justify-between rounded-[24px] border border-border bg-surface/95 p-1.5 shadow-dock backdrop-blur-2xl">
+        {TABS.map(({ to, label, icon: Icon }) => {
+          const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
+          return (
+            <Link
+              key={to}
+              to={to}
+              className={cn(
+                "group relative flex min-w-0 flex-1 cursor-pointer flex-col items-center gap-0.5 rounded-2xl py-1 text-[10px] font-medium outline-none transition",
+                "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              )}
+              aria-label={label}
+              aria-current={active ? "page" : undefined}
+            >
+              <span
+                className={cn(
+                  "relative grid h-9 w-9 place-items-center rounded-2xl transition",
+                  active
+                    ? "bg-foreground text-background shadow-soft"
+                    : "text-muted-foreground group-hover:text-foreground",
+                )}
+              >
+                <Icon className="h-[18px] w-[18px]" aria-hidden />
+                {to === "/notifications" && unread > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-foreground ring-2 ring-surface" />
+                )}
+              </span>
+              <span
+                className={cn(
+                  "text-[9px] tracking-wide transition",
+                  active ? "font-semibold text-foreground" : "text-muted-foreground",
+                )}
+              >
+                {label}
+              </span>
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );

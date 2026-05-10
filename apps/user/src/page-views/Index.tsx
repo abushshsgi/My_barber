@@ -1,631 +1,452 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Search,
-  SlidersHorizontal,
-  MapPin,
-  Star,
+  Baby,
+  Bell,
   ChevronRight,
   Crown,
-  Flame,
-  TrendingUp,
+  Locate,
+  MapPin,
   Scissors,
-  UserCircle2,
-  Hand,
-  Palette,
-  type LucideIcon,
+  Search,
+  Sparkles,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { SalonCard } from "@/components/SalonCard";
-import { motion, AnimatePresence } from "framer-motion";
-import { Link } from "@/navigation";
+import { Link, useRouter } from "@/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/api";
 import { fetchSalons } from "@/lib/salon-queries";
-import { fetchBarbers, type BarberExploreFilters } from "@/lib/barber-queries";
-import { HomeLoginBanner } from "@/components/HomeLoginBanner";
-import { getPublicApiBase } from "@/lib/api";
-import { BarberCard } from "@/components/BarberCard";
-import { UZ_REGIONS } from "@/lib/uz-regions";
-import { Skeleton } from "@/components/ui/skeleton";
+import { mapSalonListApi, type SalonListApi } from "@/lib/mapSalon";
+import type { Salon } from "@/types";
+import { RatingStars } from "@/components/luxury/RatingStars";
+import { formatKm, initials } from "@/lib/format";
+import type { DiscoveryMarkerItem } from "@/components/luxury/DiscoveryMap";
+import { fetchNotifications } from "@/lib/notifications-queries";
 
-const categories: { icon: LucideIcon; label: string }[] = [
-  { icon: Scissors, label: "Soch turmak" },
-  { icon: UserCircle2, label: "Soqol" },
-  { icon: Hand, label: "Massaj" },
-  { icon: Palette, label: "Rang" },
-  { icon: Crown, label: "VIP" },
-];
+const DiscoveryMap = lazy(async () => {
+  const m = await import("@/components/luxury/DiscoveryMap");
+  return { default: m.DiscoveryMap };
+});
 
-const Index = () => {
-  const [search, setSearch] = useState("");
-  const [isFocused, setIsFocused] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [feedTab, setFeedTab] = useState<"salons" | "barbers">("salons");
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [draftMin, setDraftMin] = useState("");
-  const [draftMax, setDraftMax] = useState("");
-  const [draftRating, setDraftRating] = useState("");
-  const [draftRegion, setDraftRegion] = useState("");
-  const [draftDate, setDraftDate] = useState("");
-  const [applied, setApplied] = useState({
-    min: "",
-    max: "",
-    rating: "",
-    region: "",
-    date: "",
+const DEFAULT_CENTER = { lat: 41.3111, lng: 69.2797 };
+
+const CATEGORIES = [
+  { id: "haircut", label: "Soch olish", Icon: Scissors },
+  { id: "beard", label: "Soqol", Icon: Sparkles },
+  { id: "premium", label: "Premium", Icon: Crown },
+  { id: "kids", label: "Bolalar", Icon: Baby },
+] as const;
+
+const SHEET = { peek: 0.32, mid: 0.6, full: 0.92 } as const;
+type SheetState = keyof typeof SHEET;
+
+type NearbyRow = { salon: SalonListApi; distance_km: number };
+
+type MeLite = { full_name?: string | null; email?: string };
+
+async function fetchMeOptional(): Promise<MeLite | null> {
+  const res = await apiFetch("/api/v1/users/me/");
+  if (res.status === 401 || res.status === 403) return null;
+  if (!res.ok) return null;
+  return res.json() as Promise<MeLite>;
+}
+
+async function fetchNearbySalons(lat: number, lng: number, radius: number): Promise<Salon[]> {
+  const params = new URLSearchParams({
+    lat: String(lat),
+    lng: String(lng),
+    radius_km: String(radius),
+  });
+  const res = await apiFetch(`/api/v1/salons/nearby/?${params}`);
+  if (!res.ok) throw new Error("Yaqin salonlar yuklanmadi");
+  const rows = (await res.json()) as NearbyRow[];
+  return rows.map((r) => {
+    const s = mapSalonListApi(r.salon);
+    return { ...s, distance: r.distance_km };
+  });
+}
+
+function matchesCategory(s: Salon, cat: string | null): boolean {
+  if (!cat) return true;
+  const blob = `${s.name} ${s.description}`.toLowerCase();
+  if (cat === "premium") return s.isPremium === true;
+  if (cat === "haircut") return /soch|hair|turmak/i.test(blob);
+  if (cat === "beard") return /soqol|beard/i.test(blob);
+  if (cat === "kids") return /bola|kids|bogcha/i.test(blob);
+  return true;
+}
+
+export default function Index() {
+  const router = useRouter();
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [radiusKm, setRadiusKm] = useState(2);
+  const [cat, setCat] = useState<string | null>(null);
+  const [sheet, setSheet] = useState<SheetState>("mid");
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sheetRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<{ y: number; h: number } | null>(null);
+  const [dragH, setDragH] = useState<number | null>(null);
+
+  const requestGeo = useCallback(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setCoords(DEFAULT_CENTER);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoords({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        });
+      },
+      () => {
+        setCoords(DEFAULT_CENTER);
+      },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 },
+    );
+  }, []);
+
+  useEffect(() => {
+    requestGeo();
+  }, [requestGeo]);
+
+  const nearbyQ = useQuery({
+    queryKey: ["home-nearby", coords?.lat, coords?.lng, radiusKm],
+    queryFn: () => fetchNearbySalons(coords!.lat, coords!.lng, radiusKm),
+    enabled: !!coords,
+    retry: false,
   });
 
-  const {
-    data: salons = [],
-    isLoading,
-    error,
-    refetch,
-    isFetching,
-  } = useQuery({
+  const allQ = useQuery({
     queryKey: ["salons"],
     queryFn: fetchSalons,
     retry: false,
   });
 
-  const filtered = salons.filter((s) =>
-    s.name.toLowerCase().includes(search.toLowerCase())
+  const { data: me } = useQuery({
+    queryKey: ["me-banner"],
+    queryFn: fetchMeOptional,
+    retry: false,
+    staleTime: 60_000,
+  });
+
+  const { data: notifications = [], isError: notifErr } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: fetchNotifications,
+    staleTime: 30_000,
+    retry: false,
+  });
+
+  const unreadTop = !notifErr ? notifications.filter((n) => !n.read_at).length : 0;
+
+  const listBase = useMemo(() => {
+    const nearbyOk = nearbyQ.data && nearbyQ.data.length > 0;
+    return nearbyOk ? nearbyQ.data! : allQ.data ?? [];
+  }, [nearbyQ.data, allQ.data]);
+
+  const list = useMemo(
+    () => listBase.filter((s) => matchesCategory(s, cat)),
+    [listBase, cat],
   );
 
-  const barberFilters = useMemo((): BarberExploreFilters => {
-    const f: BarberExploreFilters = { work_mode: "independent" };
-    if (applied.min) f.min_price = applied.min;
-    if (applied.max) f.max_price = applied.max;
-    if (applied.rating) f.min_rating = applied.rating;
-    if (applied.region) f.region = applied.region;
-    if (applied.date) f.available_date = applied.date;
-    if (selectedCategory) f.service_q = selectedCategory;
-    return f;
-  }, [applied, selectedCategory]);
+  const markers: DiscoveryMarkerItem[] = useMemo(
+    () =>
+      list
+        .filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lng) && Math.abs(s.lat) > 0.01)
+        .map((s) => ({ id: s.id, lat: s.lat, lng: s.lng, label: s.name })),
+    [list],
+  );
 
-  const { data: barbers = [], isLoading: loadingBarbers, error: barberError } = useQuery({
-    queryKey: ["barbers", barberFilters],
-    queryFn: () => fetchBarbers(barberFilters),
-    retry: false,
-    enabled: feedTab === "barbers",
-  });
+  const loadingList =
+    coords != null &&
+    (nearbyQ.isPending || nearbyQ.isFetching) &&
+    !(nearbyQ.data?.length || allQ.data?.length);
 
-  const filteredBarbers = barbers.filter((b) => {
-    const q = search.toLowerCase();
-    return (
-      (b.name || "").toLowerCase().includes(q) ||
-      (b.location_text || "").toLowerCase().includes(q) ||
-      (b.phone || "").toLowerCase().includes(q)
+  const onDragStart = (e: React.PointerEvent) => {
+    const el = sheetRef.current;
+    if (!el) return;
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    dragRef.current = { y: e.clientY, h: el.getBoundingClientRect().height };
+  };
+  const onDragMove = (e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    const dy = e.clientY - dragRef.current.y;
+    const next = Math.min(
+      window.innerHeight * 0.95,
+      Math.max(window.innerHeight * 0.18, dragRef.current.h - dy),
     );
-  });
-
-  const applyFilters = () => {
-    setApplied({
-      min: draftMin.trim(),
-      max: draftMax.trim(),
-      rating: draftRating.trim(),
-      region: draftRegion,
-      date: draftDate,
-    });
-    setFilterOpen(false);
+    setDragH(next);
+  };
+  const onDragEnd = () => {
+    if (!dragRef.current) return;
+    const h = dragH ?? dragRef.current.h;
+    const ratio = h / window.innerHeight;
+    const target: SheetState = ratio < 0.45 ? "peek" : ratio < 0.75 ? "mid" : "full";
+    setSheet(target);
+    setDragH(null);
+    dragRef.current = null;
   };
 
-  const clearFilters = () => {
-    setDraftMin("");
-    setDraftMax("");
-    setDraftRating("");
-    setDraftRegion("");
-    setDraftDate("");
-    setApplied({ min: "", max: "", rating: "", region: "", date: "" });
-  };
-
-  const topRated = [...salons].sort((a, b) => b.rating - a.rating).slice(0, 3);
-  const premiumSalons = salons.filter((s) => s.isPremium);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="relative overflow-hidden px-5 pt-[max(2.75rem,env(safe-area-inset-top))] pb-8">
-          <div className="absolute inset-0 bg-gradient-to-br from-foreground via-foreground/95 to-foreground/85" />
-          <div className="relative space-y-5">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-2 flex-1">
-                <Skeleton className="h-3 w-24 rounded-md bg-background/20" />
-                <Skeleton className="h-8 w-40 rounded-lg bg-background/20" />
-                <Skeleton className="h-3 w-full max-w-[220px] rounded-md bg-background/15" />
-              </div>
-              <Skeleton className="h-11 w-11 shrink-0 rounded-2xl bg-background/20" />
-            </div>
-            <Skeleton className="h-12 w-full rounded-2xl bg-background/15" />
-            <div className="flex gap-2">
-              <Skeleton className="h-9 flex-1 rounded-xl bg-background/10" />
-              <Skeleton className="h-9 flex-1 rounded-xl bg-background/10" />
-            </div>
-          </div>
-        </div>
-        <div className="px-5 pb-4 flex gap-3 overflow-hidden">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-[72px] w-[64px] shrink-0 rounded-2xl" />
-          ))}
-        </div>
-        <div className="px-5 pb-3">
-          <Skeleton className="h-11 w-full rounded-2xl" />
-        </div>
-        <div className="px-5 space-y-3 pb-8">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-[116px] w-full rounded-2xl" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6 gap-4 text-center">
-        <div className="rounded-2xl border border-border bg-card/80 p-6 max-w-md w-full card-shadow">
-          <p className="text-destructive text-sm font-medium">
-            {(error as Error).message}
-          </p>
-          <p className="text-muted-foreground text-xs mt-3 leading-relaxed">
-            API: {getPublicApiBase()}
-            {import.meta.env.VITE_API_URL || import.meta.env.NEXT_PUBLIC_API_URL
-              ? ""
-              : " — Deploy env’da API URL’ni o‘rnating."}
-          </p>
-          <Button
-            type="button"
-            variant="secondary"
-            className="mt-5 w-full rounded-xl"
-            onClick={() => void refetch()}
-            disabled={isFetching}
-          >
-            {isFetching ? "Yuklanmoqda…" : "Qayta urinish"}
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  const sheetHeight = dragH != null ? `${dragH}px` : `${SHEET[sheet] * 100}vh`;
+  const canRenderMap = typeof window !== "undefined";
 
   return (
-    <div className="min-h-screen bg-background">
-      <HomeLoginBanner />
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-foreground via-foreground/95 to-foreground/85" />
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-accent blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-accent/50 blur-2xl" />
-        </div>
-
-        <div className="relative px-5 pt-[max(2.75rem,env(safe-area-inset-top))] pb-7">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-start justify-between gap-4 mb-6"
-          >
-            <div className="min-w-0 flex-1">
-              <p className="text-background/60 text-xs font-medium tracking-wider uppercase">
-                Xush kelibsiz
-              </p>
-              <h1 className="text-2xl font-extrabold text-background tracking-tight mt-0.5">
-                My<span className="text-accent">Barber</span>
-              </h1>
-              <p className="text-background/55 text-sm mt-2 leading-snug max-w-[280px]">
-                Yaqin salon va barberlarni toping — bron va chat bir joyda.
-              </p>
-              <Link
-                href="/map"
-                className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-accent hover:text-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2 focus-visible:ring-offset-foreground rounded-lg px-1 -ml-1 py-0.5 transition-colors"
-              >
-                <MapPin className="h-3.5 w-3.5 shrink-0" />
-                Xaritada ko‘rish
-                <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-              </Link>
-            </div>
-            <motion.div
-              whileTap={{ scale: 0.95 }}
-              className="w-11 h-11 shrink-0 rounded-2xl gold-gradient flex items-center justify-center shadow-lg shadow-accent/25 ring-1 ring-white/15"
-              aria-hidden
-            >
-              <Scissors className="h-5 w-5 text-gold-foreground" strokeWidth={2.25} />
-            </motion.div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="relative"
-          >
-            <label htmlFor="home-search" className="sr-only">
-              Salon yoki sartarosh qidirish
-            </label>
-            <Search
-              className={`pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-200 ${
-                isFocused ? "text-accent" : "text-background/40"
-              }`}
-              aria-hidden
-            />
-            <Input
-              id="home-search"
-              placeholder="Salon yoki sartarosh qidirish..."
-              autoComplete="off"
-              aria-label="Salon yoki sartarosh qidirish"
-              className="pl-11 pr-12 h-12 rounded-2xl bg-background/10 border-background/10 text-background placeholder:text-background/40 text-sm focus:bg-background/15 focus:ring-2 focus:ring-accent/40 focus:border-transparent transition-all duration-200"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-            />
-            <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
-              <SheetTrigger asChild>
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-background/10 hover:bg-background/20 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
-                  aria-label="Filtrlar"
-                >
-                  <SlidersHorizontal className="h-4 w-4 text-background/60" />
-                </button>
-              </SheetTrigger>
-              <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] overflow-y-auto">
-                <SheetHeader>
-                  <SheetTitle>Barber filtrlari</SheetTitle>
-                  <p className="text-sm text-muted-foreground text-left font-normal">
-                    API orq mustaqil barberlar ro‘yxati yangilanadi.
-                  </p>
-                </SheetHeader>
-                <div className="mt-4 space-y-4 pb-6">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-xs">Min narx (so&apos;m)</Label>
-                      <Input
-                        inputMode="numeric"
-                        className="mt-1 rounded-xl"
-                        value={draftMin}
-                        onChange={(e) => setDraftMin(e.target.value)}
-                        placeholder="0"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Max narx</Label>
-                      <Input
-                        inputMode="numeric"
-                        className="mt-1 rounded-xl"
-                        value={draftMax}
-                        onChange={(e) => setDraftMax(e.target.value)}
-                        placeholder="∞"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Minimal reyting</Label>
-                    <Input
-                      inputMode="decimal"
-                      className="mt-1 rounded-xl"
-                      value={draftRating}
-                      onChange={(e) => setDraftRating(e.target.value)}
-                      placeholder="masalan 4"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Hudud</Label>
-                    <select
-                      className="mt-1 flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"
-                      value={draftRegion}
-                      onChange={(e) => setDraftRegion(e.target.value)}
-                    >
-                      <option value="">Barcha</option>
-                      {UZ_REGIONS.map((r) => (
-                        <option key={r.value} value={r.value}>
-                          {r.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Bo‘sh kun (YYYY-MM-DD)</Label>
-                    <Input
-                      type="date"
-                      className="mt-1 rounded-xl"
-                      value={draftDate}
-                      onChange={(e) => setDraftDate(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button className="flex-1 rounded-xl gold-gradient text-gold-foreground border-0" onClick={applyFilters}>
-                      Qo‘llash
-                    </Button>
-                    <Button variant="outline" className="rounded-xl" type="button" onClick={clearFilters}>
-                      Tozalash
-                    </Button>
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
-          </motion.div>
-        </div>
-      </div>
-
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.15 }}
-        className="px-5 py-4"
-      >
-        <div
-          className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 snap-x snap-mandatory scroll-pl-5 -mx-5 px-5"
-          aria-label="Xizmat turlari"
-        >
-          {categories.map((cat, i) => {
-            const CatIcon = cat.icon;
-            return (
-              <motion.button
-                key={cat.label}
-                type="button"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.15 + i * 0.04 }}
-                whileTap={{ scale: 0.92 }}
-                onClick={() =>
-                  setSelectedCategory(selectedCategory === cat.label ? null : cat.label)
-                }
-                aria-pressed={selectedCategory === cat.label}
-                className={`snap-start flex flex-col items-center gap-1.5 min-w-[68px] py-2.5 px-3 rounded-2xl transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-                  selectedCategory === cat.label
-                    ? "bg-accent/15 ring-1 ring-accent/40 shadow-[0_0_20px_-4px_hsl(var(--accent)/0.35)]"
-                    : "bg-muted/50 hover:bg-muted border border-transparent hover:border-border/50"
-                }`}
-              >
-                <span
-                  className={`flex h-9 w-9 items-center justify-center rounded-xl transition-colors ${
-                    selectedCategory === cat.label
-                      ? "bg-accent/20 text-accent"
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                  aria-hidden
-                >
-                  <CatIcon className="h-[18px] w-[18px]" strokeWidth={2} />
-                </span>
-                <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">
-                  {cat.label}
-                </span>
-              </motion.button>
-            );
-          })}
-        </div>
-      </motion.div>
-
-      <div className="px-5 pb-2">
-        <div
-          className="relative flex gap-1 p-1 rounded-2xl bg-muted/40 border border-border/50 shadow-inner"
-          role="tablist"
-          aria-label="Ro‘yxat turi"
-        >
-          <div
-            className={`pointer-events-none absolute top-1 bottom-1 rounded-[0.65rem] bg-card border border-border/60 shadow-sm transition-all duration-300 ease-out ${
-              feedTab === "salons"
-                ? "left-1 w-[calc(50%-0.25rem)]"
-                : "left-[calc(50%+0.125rem)] w-[calc(50%-0.25rem)]"
-            }`}
-            aria-hidden
-          />
-          <button
-            type="button"
-            role="tab"
-            id="tab-salons"
-            aria-selected={feedTab === "salons"}
-            aria-controls="feed-panel"
-            onClick={() => setFeedTab("salons")}
-            className={`relative z-[1] flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-              feedTab === "salons"
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground/85"
-            }`}
-          >
-            Salonlar
-          </button>
-          <button
-            type="button"
-            role="tab"
-            id="tab-barbers"
-            aria-selected={feedTab === "barbers"}
-            aria-controls="feed-panel"
-            onClick={() => setFeedTab("barbers")}
-            className={`relative z-[1] flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-              feedTab === "barbers"
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground/85"
-            }`}
-          >
-            Barberlar
-          </button>
-        </div>
-      </div>
-
-      {feedTab === "barbers" && (
-        <div
-          id="feed-panel"
-          role="tabpanel"
-          aria-labelledby="tab-barbers"
-          className="px-5 pb-6 space-y-3"
-        >
-          {loadingBarbers && <p className="text-sm text-muted-foreground">Yuklanmoqda...</p>}
-          {barberError && (
-            <p className="text-sm text-destructive">{(barberError as Error).message}</p>
-          )}
-          {!loadingBarbers && !barberError && filteredBarbers.length === 0 && (
-            <p className="text-sm text-muted-foreground">Barber topilmadi</p>
-          )}
-          {filteredBarbers.map((b, i) => (
-            <motion.div
-              key={b.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03 }}
-            >
-              <BarberCard barber={b} />
-            </motion.div>
-          ))}
-        </div>
-      )}
-
-      {feedTab === "salons" && (
-        <div
-          id="feed-panel"
-          role="tabpanel"
-          aria-labelledby="tab-salons"
-        >
-      {premiumSalons.length > 0 && (
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="px-5 mb-6"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Crown className="h-4 w-4 text-accent" />
-              <h2 className="text-base font-bold text-foreground">Premium salonlar</h2>
-            </div>
-            <Link
-              href="/map"
-              className="text-xs text-accent font-medium flex items-center gap-0.5 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/45 rounded-md px-1 py-0.5 -mr-1"
-            >
-              Barchasi <ChevronRight className="h-3 w-3" aria-hidden />
-            </Link>
-          </div>
-
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
-            {premiumSalons.map((salon, i) => (
-              <Link key={salon.id} href={`/salon/${salon.id}`}>
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.25 + i * 0.08 }}
-                  whileTap={{ scale: 0.96 }}
-                  className="relative min-w-[220px] h-[140px] rounded-2xl overflow-hidden group"
-                >
-                  <img
-                    src={salon.coverImage}
-                    alt={salon.name}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                  <div className="absolute top-3 right-3 gold-gradient px-2 py-0.5 rounded-full flex items-center gap-1 text-[10px] font-bold text-gold-foreground">
-                    <Crown className="h-2.5 w-2.5" /> Premium
-                  </div>
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <h3 className="text-white font-bold text-sm mb-0.5">{salon.name}</h3>
-                    <div className="flex items-center gap-2 text-white/80 text-[11px]">
-                      <span className="flex items-center gap-0.5">
-                        <Star className="h-3 w-3 fill-accent text-accent" /> {salon.rating}
-                      </span>
-                      <span>•</span>
-                      <span className="flex items-center gap-0.5">
-                        <MapPin className="h-3 w-3" /> {salon.distance} km
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
-              </Link>
-            ))}
-          </div>
-        </motion.section>
-      )}
-      
-
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="px-5 mb-4"
-      >
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-accent" />
-            <h2 className="text-base font-bold text-foreground">Mashhur salonlar</h2>
-          </div>
-        </div>
-
-        <div className="flex gap-2.5 mb-5">
-          {topRated.map((salon, i) => (
-            <Link key={salon.id} href={`/salon/${salon.id}`} className="flex-1 min-w-0">
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35 + i * 0.06 }}
-                whileTap={{ scale: 0.96 }}
-                className="relative rounded-2xl overflow-hidden bg-muted/50 group border border-border/30"
-              >
-                <div className="relative">
-                  <img
-                    src={salon.coverImage}
-                    alt=""
-                    className="w-full h-20 object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-accent flex items-center justify-center text-[10px] font-extrabold text-accent-foreground shadow-sm">
-                    {i + 1}
-                  </div>
-                </div>
-                <div className="p-2.5 pt-2">
-                  <p className="text-xs font-semibold text-foreground truncate pl-0.5">{salon.name}</p>
-                  <div className="flex items-center gap-1 mt-1 pl-0.5">
-                    <Star className="h-2.5 w-2.5 fill-accent text-accent shrink-0" aria-hidden />
-                    <span className="text-[10px] text-muted-foreground">{salon.rating}</span>
-                  </div>
-                </div>
-              </motion.div>
-            </Link>
-          ))}
-        </div>
-      </motion.section>
-
-      <section className="px-5 pb-8">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Flame className="h-4 w-4 text-accent" />
-            <h2 className="text-base font-bold text-foreground">Barcha salonlar</h2>
-          </div>
-          <span className="text-xs text-muted-foreground">{filtered.length} ta</span>
-        </div>
-
-        <div className="space-y-3">
-          <AnimatePresence mode="popLayout">
-            {filtered.map((salon, i) => (
-              <SalonCard key={salon.id} salon={salon} index={i} />
-            ))}
-          </AnimatePresence>
-
-          {filtered.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="text-center py-16"
-            >
-              <div className="w-16 h-16 rounded-full bg-muted/60 flex items-center justify-center mx-auto mb-4">
-                <Search className="h-7 w-7 text-muted-foreground/50" />
+    <div className="fixed inset-0 overflow-hidden bg-background">
+      <div className="absolute inset-0">
+        {canRenderMap && (
+          <Suspense
+            fallback={
+              <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
+                Xarita…
               </div>
-              <p className="text-base font-semibold text-foreground mb-1">Hech narsa topilmadi</p>
-              <p className="text-sm text-muted-foreground">
-                Filtrlarni tekshiring yoki boshqa nom bilan qidiring.
+            }
+          >
+            <DiscoveryMap
+              center={coords}
+              markers={markers}
+              activeId={activeId}
+              onMarkerClick={(id) => {
+                setActiveId(id);
+                setSheet("mid");
+              }}
+              radiusKm={radiusKm}
+            />
+          </Suspense>
+        )}
+      </div>
+
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 pt-safe">
+        <div className="pointer-events-auto mx-3 mt-3 flex items-center gap-2">
+          <Link
+            to={me ? "/profile" : "/auth"}
+            aria-label="Profil"
+            className="grid h-12 w-12 cursor-pointer place-items-center rounded-full bg-surface shadow-card ring-1 ring-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-[11px] font-bold text-background">
+              {me?.full_name ? initials(me.full_name) : me?.email ? initials(me.email) : "MB"}
+            </span>
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => router.push("/map")}
+            className="flex flex-1 cursor-pointer items-center gap-3 rounded-full bg-surface py-3 pl-4 pr-3 shadow-card ring-1 ring-border outline-none transition focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]"
+          >
+            <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+            <span className="flex-1 truncate text-left text-sm text-muted-foreground">
+              Salon yoki barber qidirish
+            </span>
+          </button>
+
+          <Link
+            to="/notifications"
+            aria-label="Xabarlar"
+            className="relative grid h-12 w-12 cursor-pointer place-items-center rounded-full bg-surface shadow-card ring-1 ring-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Bell className="h-5 w-5 text-foreground" />
+            {unreadTop > 0 && (
+              <span className="absolute right-1.5 top-1.5 grid h-4 min-w-4 cursor-pointer place-items-center rounded-full bg-foreground px-1 text-[9px] font-bold text-background ring-2 ring-surface">
+                {unreadTop > 9 ? "9+" : unreadTop}
+              </span>
+            )}
+          </Link>
+        </div>
+
+        <div className="pointer-events-auto absolute right-3 top-[6.5rem] flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={requestGeo}
+            aria-label="Mening joylashuvim"
+            className="grid h-11 w-11 cursor-pointer place-items-center rounded-full bg-surface shadow-card ring-1 ring-border transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Locate className="h-4 w-4 text-foreground" />
+          </button>
+          <RadiusInline radiusKm={radiusKm} setRadiusKm={setRadiusKm} />
+        </div>
+      </div>
+
+      <div
+        ref={sheetRef}
+        className="absolute inset-x-0 bottom-0 z-30 flex flex-col rounded-t-[28px] bg-surface shadow-luxury ring-1 ring-border transition-[height] duration-300 ease-out"
+        style={{
+          height: sheetHeight,
+          transitionDuration: dragH != null ? "0ms" : undefined,
+          paddingBottom: "calc(6.75rem + env(safe-area-inset-bottom, 0px))",
+        }}
+      >
+        <div
+          className="flex cursor-grab touch-none flex-col items-center pt-2.5 pb-1 active:cursor-grabbing"
+          onPointerDown={onDragStart}
+          onPointerMove={onDragMove}
+          onPointerUp={onDragEnd}
+          onPointerCancel={onDragEnd}
+          onClick={() => setSheet(sheet === "peek" ? "mid" : sheet === "mid" ? "full" : "peek")}
+          role="presentation"
+          aria-hidden
+        >
+          <span className="h-1.5 w-12 rounded-full bg-border" />
+        </div>
+
+        <div className="px-4 pt-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Xizmatlar
+          </p>
+          <div className="mt-2 grid grid-cols-4 gap-2">
+            {CATEGORIES.map(({ id, label, Icon }) => {
+              const active = cat === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setCat(active ? null : id)}
+                  className={[
+                    "group flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border px-2 py-3 text-[11px] font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97]",
+                    active
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-border bg-background text-foreground",
+                  ].join(" ")}
+                  aria-pressed={active}
+                >
+                  <Icon className="h-5 w-5" aria-hidden />
+                  <span className="text-center leading-tight">{label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between px-4">
+          <h2 className="text-[15px] font-bold tracking-tight text-foreground">
+            Yaqin atrofdagi salonlar
+          </h2>
+          <Link
+            to="/map"
+            className="inline-flex cursor-pointer items-center gap-0.5 text-xs font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Xaritada <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+          </Link>
+        </div>
+
+        <div className="scrollbar-none mt-2 flex-1 overflow-y-auto px-4 pb-4">
+          {nearbyQ.isError ? (
+            <div className="rounded-2xl border border-border border-dashed p-6 text-center">
+              <p className="text-sm font-semibold text-destructive">Yaqin salonlar olmadingiz</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {(nearbyQ.error as Error).message}. Xarita sahifasi yoki ro‘yxatdan foydalaning.
               </p>
-            </motion.div>
+              <button
+                type="button"
+                onClick={() => nearbyQ.refetch()}
+                className="mt-3 cursor-pointer rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                Qayta urinish
+              </button>
+            </div>
+          ) : loadingList || allQ.isLoading ? (
+            <div className="space-y-2">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-20 animate-pulse rounded-2xl bg-muted" />
+              ))}
+            </div>
+          ) : list.length === 0 ? (
+            <div className="rounded-2xl border border-border border-dashed p-6 text-center">
+              <p className="text-sm font-semibold text-foreground">Hech narsa topilmadi</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Filtrni o‘zgartiring yoki xarita sahifasiga o‘ting.
+              </p>
+              <button
+                type="button"
+                className="mt-4 cursor-pointer text-xs font-semibold text-foreground underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={() => router.push("/map")}
+              >
+                Kengaytirilgan qidiruv
+              </button>
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {list.map((s) => (
+                <li key={s.id}>
+                  <SalonRow salon={s} active={activeId === s.id} onActivate={() => setActiveId(s.id)} />
+                </li>
+              ))}
+            </ul>
           )}
         </div>
-      </section>
-        </div>
-      )}
+      </div>
     </div>
   );
-};
+}
 
-export default Index;
+/** Compact radius pills for home FAB column */
+function RadiusInline({
+  radiusKm,
+  setRadiusKm,
+}: {
+  radiusKm: number;
+  setRadiusKm: (n: number) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1 rounded-2xl border border-border bg-surface p-1 shadow-card ring-1 ring-border">
+      {([1, 2, 3] as const).map((r) => (
+        <button
+          key={r}
+          type="button"
+          onClick={() => setRadiusKm(r)}
+          className={[
+            "grid h-8 w-8 cursor-pointer place-items-center rounded-xl text-[10px] font-bold outline-none transition focus-visible:ring-2 focus-visible:ring-ring",
+            radiusKm === r ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground",
+          ].join(" ")}
+          aria-pressed={radiusKm === r}
+        >
+          {r}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function SalonRow({
+  salon,
+  active,
+  onActivate,
+}: {
+  salon: Salon;
+  active: boolean;
+  onActivate: () => void;
+}) {
+  return (
+    <Link
+      to="/salon/$id"
+      params={{ id: salon.id }}
+      onMouseEnter={onActivate}
+      onFocus={onActivate}
+      className={[
+        "flex cursor-pointer items-center gap-3 rounded-2xl bg-background p-3 ring-1 outline-none transition focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
+        active ? "ring-foreground" : "ring-border hover:ring-foreground/40",
+      ].join(" ")}
+    >
+      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-muted">
+        <img src={salon.coverImage} alt={salon.name} loading="lazy" className="h-full w-full object-cover" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <h3 className="truncate text-sm font-bold text-foreground">{salon.name}</h3>
+          {salon.isPremium ? (
+            <span className="ml-auto shrink-0 rounded-full bg-foreground px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-background">
+              Premium
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
+          <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+          {salon.address}
+          {salon.distance > 0 ? <span>· {formatKm(salon.distance)}</span> : null}
+        </p>
+        <div className="mt-1">
+          <RatingStars value={salon.rating} count={salon.reviewCount} />
+        </div>
+      </div>
+    </Link>
+  );
+}

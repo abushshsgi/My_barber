@@ -151,7 +151,7 @@ export default function BookingFlow() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -191,44 +191,39 @@ export default function BookingFlow() {
   const minDate = format(new Date(), "yyyy-MM-dd");
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="mx-auto min-h-screen w-full max-w-md bg-background pb-32 pt-safe">
       {me && !phoneOk && (
-        <div className="border-b border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-foreground">
-          <span className="text-destructive font-medium">Telefon kerak. </span>
+        <div className="border-b border-destructive/30 bg-destructive/5 px-5 py-3 text-sm text-foreground">
+          <span className="font-medium text-destructive">Telefon kerak. </span>
           Bron uchun profilda telefon raqamingizni kiriting.{" "}
-          <Link href="/profile" className="font-semibold text-accent underline">
+          <Link to="/profile" className="font-semibold text-foreground underline">
             Profilga o‘tish
           </Link>
         </div>
       )}
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b px-4 py-3">
-        <div className="flex items-center gap-3 mb-3">
-          <button
-            type="button"
-            onClick={() => (step > 1 ? setStep((step - 1) as Step) : router.back())}
-            className="p-1"
-          >
-            <ArrowLeft className="h-5 w-5 text-foreground" />
-          </button>
-          <div>
-            <h1 className="font-semibold text-foreground">{salon.name}</h1>
-            <p className="text-xs text-muted-foreground">{stepTitles[step - 1]}</p>
-          </div>
+      <header className="flex items-start gap-3 px-5 pt-4">
+        <button
+          type="button"
+          onClick={() => (step > 1 ? setStep((step - 1) as Step) : router.back())}
+          className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full border border-border bg-surface outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Orqaga"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+        <div className="min-w-0 flex-1">
+          <p className="label-eyebrow">{salon.name}</p>
+          <h1 className="truncate text-lg font-bold text-foreground">{stepTitles[step - 1]}</h1>
         </div>
-        <div className="flex gap-1.5">
-          {[1, 2, 3, 4].map((s) => (
-            <div
-              key={s}
-              className={cn(
-                "h-1 flex-1 rounded-full transition-all",
-                s <= step ? "bg-accent" : "bg-muted"
-              )}
-            />
-          ))}
-        </div>
+        <span className="mt-7 text-xs font-semibold tabular-nums text-muted-foreground">
+          {step}/4
+        </span>
+      </header>
+
+      <div className="mx-5 mt-4 h-1 overflow-hidden rounded-full bg-muted">
+        <div className="h-full bg-primary transition-all" style={{ width: `${(step / 4) * 100}%` }} />
       </div>
 
-      <div className="p-4">
+      <div className="px-5 pb-28 pt-6">
         <AnimatePresence mode="wait">
           {step === 1 && (
             <motion.div
@@ -242,8 +237,8 @@ export default function BookingFlow() {
                 <Card
                   key={barber.id}
                   className={cn(
-                    "p-4 flex items-center gap-3 cursor-pointer transition-all",
-                    selectedBarber === barber.id ? "ring-2 ring-accent" : "hover:bg-muted/50"
+                    "flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-soft transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    selectedBarber === barber.id ? "border-foreground ring-1 ring-foreground" : "hover:border-foreground/30",
                   )}
                   onClick={() => setSelectedBarber(barber.id)}
                 >
@@ -255,7 +250,7 @@ export default function BookingFlow() {
                   <div className="flex-1">
                     <p className="font-medium">{barber.full_name}</p>
                   </div>
-                  {selectedBarber === barber.id && <Check className="h-5 w-5 text-accent" />}
+                  {selectedBarber === barber.id && <Check className="h-5 w-5 shrink-0 text-foreground" />}
                 </Card>
               ))}
               {staff.length === 0 && (
@@ -266,7 +261,7 @@ export default function BookingFlow() {
               <Button
                 disabled={!selectedBarber}
                 onClick={() => setStep(2)}
-                className="w-full h-11 rounded-xl gold-gradient text-gold-foreground border-0 mt-4"
+                className="mt-4 h-12 w-full cursor-pointer rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-luxury focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Davom etish
               </Button>
@@ -285,38 +280,37 @@ export default function BookingFlow() {
                 <Card
                   key={service.id}
                   className={cn(
-                    "p-4 flex items-center justify-between cursor-pointer transition-all",
+                    "flex cursor-pointer items-center justify-between rounded-2xl border border-border bg-surface p-4 shadow-soft transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     selectedServices.includes(service.id)
-                      ? "ring-2 ring-accent"
-                      : "hover:bg-muted/50"
+                      ? "border-foreground bg-foreground text-background ring-1 ring-foreground"
+                      : "hover:border-foreground/30",
                   )}
                   onClick={() => toggleService(service.id)}
                 >
                   <div>
                     <p className="font-medium text-sm">{service.name}</p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <p className={"text-xs flex items-center gap-1 " + (selectedServices.includes(service.id) ? "text-background/70" : "text-muted-foreground")}>
                       <Clock className="h-3 w-3" /> {service.duration_minutes} daq
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-accent">
+                    <span className={"font-semibold " + (selectedServices.includes(service.id) ? "text-background" : "text-foreground")}>
                       {parseFloat(service.price).toLocaleString()}
                     </span>
                     {selectedServices.includes(service.id) && (
-                      <Check className="h-5 w-5 text-accent" />
+                      <Check className="h-5 w-5 shrink-0 text-background" />
                     )}
                   </div>
                 </Card>
               ))}
               {selectedServices.length > 0 && (
-                <Card className="p-3 bg-accent/10 border-accent/20">
+                <Card className="rounded-2xl border border-border bg-muted/40 p-3">
                   <div className="flex justify-between text-sm">
                     <span>
                       Jami vaqt: <strong>{totalDuration} daq</strong>
                     </span>
                     <span>
-                      Narx:{" "}
-                      <strong className="text-accent">{totalPrice.toLocaleString()} so&apos;m</strong>
+                      Narx: <strong>{totalPrice.toLocaleString()} so&apos;m</strong>
                     </span>
                   </div>
                 </Card>
@@ -324,7 +318,7 @@ export default function BookingFlow() {
               <Button
                 disabled={selectedServices.length === 0}
                 onClick={() => setStep(3)}
-                className="w-full h-11 rounded-xl gold-gradient text-gold-foreground border-0 mt-2"
+                className="mt-2 h-12 w-full cursor-pointer rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-luxury focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Davom etish
               </Button>
@@ -349,12 +343,12 @@ export default function BookingFlow() {
                     setSelectedDate(e.target.value);
                     setSelectedTime(null);
                   }}
-                  className="w-full h-11 px-3 rounded-xl border bg-background text-sm"
+                  className="h-11 w-full cursor-pointer rounded-2xl border border-border bg-surface px-3 text-sm font-medium outline-none shadow-soft transition focus-visible:ring-2 focus-visible:ring-ring"
                 />
               </div>
               {loadingSlots && (
                 <div className="flex justify-center py-6">
-                  <Loader2 className="h-8 w-8 animate-spin text-accent" />
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
               )}
               {!loadingSlots && (
@@ -365,10 +359,10 @@ export default function BookingFlow() {
                       type="button"
                       onClick={() => setSelectedTime(t)}
                       className={cn(
-                        "py-3 rounded-xl text-sm font-medium border transition-all",
+                        "cursor-pointer rounded-2xl border py-3 text-sm font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-ring",
                         selectedTime === t
-                          ? "bg-accent text-accent-foreground border-accent"
-                          : "bg-muted/50 border-transparent hover:bg-muted"
+                          ? "border-foreground bg-foreground text-background"
+                          : "border-border bg-surface hover:border-foreground/30",
                       )}
                     >
                       {t}
@@ -384,7 +378,7 @@ export default function BookingFlow() {
               <Button
                 disabled={!selectedTime}
                 onClick={() => setStep(4)}
-                className="w-full h-11 rounded-xl gold-gradient text-gold-foreground border-0 mt-4"
+                className="mt-4 h-12 w-full cursor-pointer rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-luxury focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Davom etish
               </Button>
@@ -398,7 +392,7 @@ export default function BookingFlow() {
               animate={{ opacity: 1, x: 0 }}
               className="space-y-4"
             >
-              <Card className="p-4 space-y-2 text-sm">
+              <Card className="space-y-2 rounded-2xl border border-border bg-surface p-4 text-sm shadow-soft">
                 <p>
                   <strong>Sana:</strong> {selectedDate}
                 </p>
@@ -417,7 +411,7 @@ export default function BookingFlow() {
                   <Button
                     onClick={handleConfirm}
                     disabled={!phoneOk}
-                    className="w-full h-12 rounded-xl gold-gradient text-gold-foreground border-0"
+                    className="h-12 w-full cursor-pointer rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-luxury focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     Bronni yuborish
                   </Button>
@@ -425,7 +419,7 @@ export default function BookingFlow() {
               )}
               {bookingMutation.isPending && (
                 <div className="flex flex-col items-center gap-2 py-8">
-                  <Loader2 className="h-10 w-10 animate-spin text-accent" />
+                  <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">Kutilmoqda...</p>
                 </div>
               )}
@@ -434,7 +428,7 @@ export default function BookingFlow() {
                   <motion.p
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className="text-lg font-semibold text-accent"
+                    className="text-lg font-semibold text-foreground"
                   >
                     Bron yuborildi!
                   </motion.p>

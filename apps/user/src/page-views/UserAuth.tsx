@@ -116,11 +116,11 @@ export default function UserAuth() {
         aria-hidden
         style={{
           background:
-            "radial-gradient(ellipse 90% 70% at 0% 0%, hsl(172 45% 22% / 0.45), transparent 55%), radial-gradient(ellipse 70% 60% at 100% 20%, hsl(217 40% 20% / 0.35), transparent 50%), radial-gradient(ellipse 60% 50% at 50% 100%, hsl(190 35% 18% / 0.25), transparent 45%)",
+            "radial-gradient(ellipse 90% 70% at 0% 0%, oklch(0.24 0.012 60 / 0.5), transparent 55%), radial-gradient(ellipse 70% 60% at 100% 20%, oklch(0.18 0.015 260 / 0.22), transparent 50%), radial-gradient(ellipse 60% 50% at 50% 100%, oklch(0.14 0.008 60 / 0.35), transparent 45%)",
         }}
       />
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.35] [background-size:28px_28px] [background-image:linear-gradient(hsl(217_28%_18%/0.5)_1px,transparent_1px),linear-gradient(90deg,hsl(217_28%_18%/0.5)_1px,transparent_1px)]"
+        className="pointer-events-none absolute inset-0 opacity-[0.35] [background-size:28px_28px] [background-image:linear-gradient(oklch(1_0_0_/0.05)_1px,transparent_1px),linear-gradient(90deg,oklch(1_0_0_/0.05)_1px,transparent_1px)]"
         aria-hidden
       />
 
@@ -128,8 +128,8 @@ export default function UserAuth() {
         {/* Hero — desktop */}
         <aside className="relative hidden flex-col justify-between border-border/60 bg-card/30 px-10 py-12 backdrop-blur-md lg:flex lg:w-[44%] xl:w-[40%] lg:border-r lg:px-12 xl:px-14">
           <div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl gold-gradient shadow-lg ring-1 ring-white/10">
-              <Scissors className="h-6 w-6 text-gold-foreground" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-foreground shadow-lg ring-1 ring-white/10">
+              <Scissors className="h-6 w-6 text-background" />
             </div>
             <h1 className="mt-10 text-3xl font-bold tracking-tight text-foreground xl:text-4xl">
               {t.title}
@@ -157,8 +157,8 @@ export default function UserAuth() {
         <div className="flex flex-1 flex-col">
           <header className="flex items-center justify-between gap-3 px-5 py-4 sm:px-8 lg:justify-end lg:px-10 lg:pt-10">
             <div className="flex items-center gap-3 lg:hidden">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl gold-gradient shadow-md ring-1 ring-white/10">
-                <Scissors className="h-5 w-5 text-gold-foreground" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-foreground shadow-md ring-1 ring-white/10">
+                <Scissors className="h-5 w-5 text-background" />
               </div>
               <div>
                 <p className="text-sm font-bold leading-tight">{t.title}</p>
@@ -184,13 +184,13 @@ export default function UserAuth() {
                 <TabsList className="grid h-12 w-full grid-cols-2 rounded-xl bg-muted/80 p-1 ring-1 ring-border/60">
                   <TabsTrigger
                     value="login"
-                    className="rounded-lg text-sm font-semibold data-[state=active]:gold-gradient data-[state=active]:text-gold-foreground data-[state=active]:shadow-md"
+                    className="rounded-lg text-sm font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-md"
                   >
                     {t.loginTitle}
                   </TabsTrigger>
                   <TabsTrigger
                     value="signup"
-                    className="rounded-lg text-sm font-semibold data-[state=active]:gold-gradient data-[state=active]:text-gold-foreground data-[state=active]:shadow-md"
+                    className="rounded-lg text-sm font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-md"
                   >
                     {t.signUp}
                   </TabsTrigger>
@@ -257,7 +257,7 @@ export default function UserAuth() {
                       <Button
                         type="submit"
                         disabled={loading}
-                        className="h-12 w-full rounded-xl border-0 text-base font-semibold shadow-lg gold-gradient text-gold-foreground"
+                        className="h-12 w-full rounded-2xl border-0 bg-primary text-base font-semibold text-primary-foreground shadow-luxury"
                       >
                         {loading ? (
                           <>
@@ -356,7 +356,7 @@ export default function UserAuth() {
                       <Button
                         type="submit"
                         disabled={loading}
-                        className="mt-2 flex h-12 w-full items-center justify-center rounded-xl border-0 text-base font-semibold shadow-lg gold-gradient text-gold-foreground"
+                        className="mt-2 flex h-12 w-full cursor-pointer items-center justify-center rounded-2xl border-0 bg-primary text-base font-semibold text-primary-foreground shadow-luxury"
                       >
                         {loading ? (
                           <>

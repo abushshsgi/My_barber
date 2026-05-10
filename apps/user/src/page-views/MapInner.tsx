@@ -36,8 +36,8 @@ export type BarberOnMap = {
   avatarUrl: string;
 };
 
-const ACCENT_LINE = "hsl(172 58% 52%)";
-const ACCENT_FILL = "hsl(172 55% 48%)";
+const ACCENT_LINE = "#0A0A0A";
+const ACCENT_FILL = "#0A0A0A";
 
 function escapeAttr(url: string): string {
   return url.replace(/"/g, "&quot;");
@@ -50,7 +50,7 @@ function salonDivIcon(coverUrl: string): L.DivIcon {
   const a = w / 2;
   return L.divIcon({
     className: "leaflet-div-icon-transparent",
-    html: `<div style="width:${w}px;height:${h}px;border-radius:9999px;background-image:url('${safe}');background-size:cover;background-position:center;border:3px solid #fff;box-shadow:0 6px 20px rgba(0,0,0,0.35),0 0 0 3px hsl(172 58% 45% / 0.85)"></div>`,
+    html: `<div style="width:${w}px;height:${h}px;border-radius:9999px;background-image:url('${safe}');background-size:cover;background-position:center;border:3px solid #fff;box-shadow:0 6px 20px rgba(0,0,0,0.35),0 0 0 3px rgba(10,10,10,0.82)"></div>`,
     iconSize: [w, h],
     iconAnchor: [a, h],
     popupAnchor: [0, -h + 6],
@@ -64,7 +64,7 @@ function barberDivIcon(avatarUrl: string): L.DivIcon {
   const a = w / 2;
   return L.divIcon({
     className: "leaflet-div-icon-transparent",
-    html: `<div style="width:${w}px;height:${h}px;border-radius:9999px;background-image:url('${safe}');background-size:cover;background-position:center;border:3px solid #fff;box-shadow:0 6px 20px rgba(0,0,0,0.35),0 0 0 3px hsl(38 92% 52% / 0.9)"></div>`,
+    html: `<div style="width:${w}px;height:${h}px;border-radius:9999px;background-image:url('${safe}');background-size:cover;background-position:center;border:3px solid #fff;box-shadow:0 6px 20px rgba(0,0,0,0.35),0 0 0 3px rgba(10,10,10,0.75)"></div>`,
     iconSize: [w, h],
     iconAnchor: [a, h],
     popupAnchor: [0, -h + 6],

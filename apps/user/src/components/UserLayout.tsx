@@ -10,12 +10,13 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
   const reduceMotion = useReducedMotion();
   useUserNotificationWs();
   const hideBottomNav = pathname.startsWith("/auth");
+  /** Match luxury floating dock height (~ pb-28) + safe area */
   const contentPaddingClass = hideBottomNav
     ? ""
-    : "pb-[calc(3.75rem+env(safe-area-inset-bottom))] sm:pb-[calc(4rem+env(safe-area-inset-bottom))]";
+    : "pb-[calc(7rem+env(safe-area-inset-bottom,0px))]";
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="relative min-h-screen overflow-x-hidden bg-background">
       <AnimatePresence mode="wait">
         <motion.main
           key={pathname}

@@ -11,18 +11,9 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { fetchNotifications } from "@/lib/notifications-queries";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-
-type NotifRow = {
-  id: number;
-  type: string;
-  title: string;
-  body: string;
-  payload: Record<string, unknown> | null;
-  read_at: string | null;
-  created_at: string;
-};
 
 const iconMap: Record<string, typeof Clock> = {
   reminder_1h: Clock,
@@ -32,17 +23,6 @@ const iconMap: Record<string, typeof Clock> = {
   barber_approved: Bell,
   new_booking: Bell,
 };
-
-async function fetchNotifications(): Promise<NotifRow[]> {
-  const res = await apiFetch("/api/v1/notifications/");
-  if (!res.ok) throw new Error("Xabarlar yuklanmadi");
-  const j = (await res.json()) as { results?: NotifRow[] } | NotifRow[];
-  const list = Array.isArray(j) ? j : j.results || [];
-  return list.map((n) => ({
-    ...n,
-    payload: n.payload && typeof n.payload === "object" ? (n.payload as Record<string, unknown>) : null,
-  }));
-}
 
 const Notifications = () => {
   const qc = useQueryClient();
@@ -73,7 +53,7 @@ const Notifications = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }

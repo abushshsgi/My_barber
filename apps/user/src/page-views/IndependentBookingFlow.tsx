@@ -176,8 +176,8 @@ export default function IndependentBookingFlow() {
 
   if (loadingBarber) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -193,50 +193,51 @@ export default function IndependentBookingFlow() {
   if (!barber) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="mx-auto min-h-screen w-full max-w-md bg-background pb-32 pt-safe">
       {me && !phoneOk && (
-        <div className="border-b border-destructive/30 bg-destructive/5 px-4 py-3 text-sm">
+        <div className="border-b border-destructive/30 bg-destructive/5 px-5 py-3 text-sm">
           <span className="font-medium text-destructive">Telefon kerak. </span>
           Bron uchun profilda telefon kiriting.{" "}
-          <Link href="/profile" className="font-semibold text-accent underline">
+          <Link to="/profile" className="font-semibold text-foreground underline">
             Profil
           </Link>
         </div>
       )}
-      <div className="px-4 pt-6 pb-4 flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => router.back()}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex items-center gap-3">
-          <img src={mediaSrc(barber.avatar, PLACEHOLDER_AVATAR)} alt={barber.name} className="w-10 h-10 rounded-2xl object-cover" />
-          <div>
-            <p className="font-bold text-sm">{barber.name}</p>
-            <p className="text-xs text-muted-foreground">{barber.location_text || "—"}</p>
+      <header className="flex items-start gap-3 px-5 pt-4">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full border border-border bg-surface outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Orqaga"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <img
+            src={mediaSrc(barber.avatar, PLACEHOLDER_AVATAR)}
+            alt=""
+            className="h-11 w-11 shrink-0 rounded-xl object-cover"
+          />
+          <div className="min-w-0">
+            <p className="label-eyebrow">Mustaqil sartarosh</p>
+            <h1 className="truncate text-base font-bold text-foreground">{barber.name}</h1>
+            <p className="truncate text-xs text-muted-foreground">{barber.location_text || "—"}</p>
           </div>
         </div>
+        <span className="mt-7 text-xs font-semibold tabular-nums text-muted-foreground">{step}/4</span>
+      </header>
+
+      <div className="mx-5 mt-4 h-1 overflow-hidden rounded-full bg-muted">
+        <div className="h-full bg-primary transition-all" style={{ width: `${(step / 4) * 100}%` }} />
       </div>
 
       {err && (
-        <div className="px-4 pb-2">
+        <div className="px-5 pb-2 pt-2">
           <p className="text-sm text-destructive">{err}</p>
         </div>
       )}
 
-      <div className="px-4 pb-4">
-        <div className="flex gap-2">
-          {([1, 2, 3, 4] as Step[]).map((s) => (
-            <div
-              key={s}
-              className={cn(
-                "flex-1 h-1.5 rounded-full",
-                step >= s ? "bg-accent" : "bg-muted"
-              )}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="px-4 pb-24">
+      <div className="px-5 pb-28 pt-6">
         <AnimatePresence mode="popLayout">
           {step === 1 && (
             <motion.div
@@ -254,8 +255,10 @@ export default function IndependentBookingFlow() {
                     <Card
                       key={s.id}
                       className={cn(
-                        "p-4 rounded-2xl border cursor-pointer transition-colors",
-                        selected ? "border-accent/50 bg-accent/[0.06]" : "border-border/50 hover:bg-muted/40"
+                        "cursor-pointer rounded-2xl border border-border bg-surface p-4 shadow-soft transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        selected
+                          ? "border-foreground bg-foreground text-background ring-1 ring-foreground"
+                          : "hover:border-foreground/30",
                       )}
                       onClick={() =>
                         setSelectedServices((prev) =>
@@ -263,18 +266,28 @@ export default function IndependentBookingFlow() {
                         )
                       }
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <p className="font-semibold text-sm">{s.name}</p>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                          <p
+                            className={cn(
+                              "mt-1 flex items-center gap-1 text-xs",
+                              selected ? "text-background/75" : "text-muted-foreground",
+                            )}
+                          >
                             <Clock className="h-3.5 w-3.5" /> {s.duration_minutes} daqiqa
                           </p>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm text-accent">
+                        <div className="flex shrink-0 items-center gap-2">
+                          <span
+                            className={cn(
+                              "text-sm font-bold",
+                              selected ? "text-background" : "text-foreground",
+                            )}
+                          >
                             {(parseFloat(s.price) || 0).toLocaleString()} so&apos;m
                           </span>
-                          {selected && <Check className="h-5 w-5 text-accent" />}
+                          {selected ? <Check className="h-5 w-5 text-background" /> : null}
                         </div>
                       </div>
                     </Card>
@@ -282,7 +295,7 @@ export default function IndependentBookingFlow() {
                 })}
               </div>
               <Button
-                className="w-full rounded-2xl gold-gradient text-gold-foreground border-0 h-12"
+                className="h-12 w-full cursor-pointer rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-luxury focus-visible:ring-2 focus-visible:ring-ring"
                 disabled={selectedServices.length === 0}
                 onClick={() => setStep(2)}
               >
@@ -302,11 +315,14 @@ export default function IndependentBookingFlow() {
               <h2 className="text-base font-semibold">Sana tanlang</h2>
               <Input
                 type="date"
-                className="rounded-2xl h-12"
+                className="h-11 w-full cursor-pointer rounded-2xl border border-border bg-surface px-3 text-sm font-medium shadow-soft focus-visible:ring-2 focus-visible:ring-ring"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
               />
-              <Button className="w-full rounded-2xl h-12" onClick={() => setStep(3)}>
+              <Button
+                className="h-12 w-full cursor-pointer rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-luxury focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={() => setStep(3)}
+              >
                 Vaqt tanlash
               </Button>
             </motion.div>
@@ -323,7 +339,7 @@ export default function IndependentBookingFlow() {
               <h2 className="text-base font-semibold">Vaqt tanlang</h2>
               {loadingSlots && (
                 <div className="flex justify-center py-10">
-                  <Loader2 className="h-8 w-8 animate-spin text-accent" />
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
               )}
               {!loadingSlots && (
@@ -343,10 +359,10 @@ export default function IndependentBookingFlow() {
                         whileHover={{ scale: 1.02 }}
                         onClick={() => setSelectedTime(t)}
                         className={cn(
-                          "h-10 rounded-xl border text-sm font-semibold transition-colors",
+                          "h-10 rounded-2xl border text-sm font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
                           selectedTime === t
-                            ? "border-accent bg-accent/10 text-accent"
-                            : "border-border/50 hover:bg-muted/40"
+                            ? "border-foreground bg-foreground text-background"
+                            : "border-border bg-surface hover:border-foreground/30",
                         )}
                       >
                         {t}
@@ -356,7 +372,7 @@ export default function IndependentBookingFlow() {
                 </>
               )}
               <Button
-                className="w-full rounded-2xl gold-gradient text-gold-foreground border-0 h-12"
+                className="h-12 w-full cursor-pointer rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-luxury focus-visible:ring-2 focus-visible:ring-ring"
                 disabled={!selectedTime}
                 onClick={() => setStep(4)}
               >
@@ -374,27 +390,31 @@ export default function IndependentBookingFlow() {
               className="space-y-3"
             >
               <h2 className="text-base font-semibold">Tasdiqlash</h2>
-              <Card className="p-4 rounded-2xl">
+              <Card className="space-y-2 rounded-2xl border border-border bg-surface p-4 shadow-soft">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold">Sana/vaqt</p>
                   <p className="text-sm text-muted-foreground">
                     {selectedDate} {selectedTime}
                   </p>
                 </div>
-                <div className="flex items-center justify-between mt-2">
+                <div className="mt-2 flex items-center justify-between">
                   <p className="text-sm font-semibold">Jami</p>
-                  <p className="text-sm font-bold text-accent">
+                  <p className="text-sm font-bold text-foreground">
                     {totalPrice.toLocaleString()} so&apos;m · {totalDuration} daqiqa
                   </p>
                 </div>
               </Card>
               <motion.div whileTap={{ scale: submitting ? 1 : 0.98 }}>
                 <Button
-                  className="w-full rounded-2xl gold-gradient text-gold-foreground border-0 h-12"
+                  className="h-12 w-full cursor-pointer rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-luxury focus-visible:ring-2 focus-visible:ring-ring"
                   disabled={submitting || !phoneOk}
                   onClick={submit}
                 >
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Bron qilish"}
+                  {submitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-primary-foreground" />
+                  ) : (
+                    "Bron qilish"
+                  )}
                 </Button>
               </motion.div>
             </motion.div>

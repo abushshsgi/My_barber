@@ -60,8 +60,8 @@ async function fetchMyReviewCount(): Promise<number> {
 }
 
 const menuItems = [
-  { label: "Band tarixi", icon: CalendarDays, color: "text-accent", href: "/bookings" },
-  { label: "Yozilgan sharhlar", icon: Star, color: "text-accent", href: "/bookings" },
+  { label: "Band tarixi", icon: CalendarDays, color: "text-teal", href: "/bookings" },
+  { label: "Yozilgan sharhlar", icon: Star, color: "text-gold", href: "/bookings" },
   { label: "Sevimlilar", icon: Heart, color: "text-destructive", href: "/map" },
   { label: "Maxfiylik", icon: Shield, color: "text-success", href: "/profile" },
   { label: "Yordam", icon: HelpCircle, color: "text-muted-foreground", href: "/profile" },
@@ -98,7 +98,7 @@ const Profile = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -107,8 +107,10 @@ const Profile = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-background gap-4">
         <p className="text-muted-foreground text-center">Tizimga kiring</p>
-        <Link href="/auth">
-          <Button className="rounded-2xl gold-gradient text-gold-foreground border-0">Kirish</Button>
+        <Link to="/auth">
+          <Button className="h-11 rounded-2xl border-0 bg-primary text-base font-semibold text-primary-foreground shadow-luxury">
+            Kirish
+          </Button>
         </Link>
       </div>
     );
@@ -172,12 +174,50 @@ const Profile = () => {
               transition={{ delay: 0.15 + i * 0.05 }}
               className="bg-card rounded-2xl p-3.5 text-center border border-border/50 shadow-sm"
             >
-              <stat.icon className="h-5 w-5 mx-auto mb-1.5 text-accent" />
+              <stat.icon className="mx-auto mb-1.5 h-5 w-5 text-muted-foreground" />
               <p className="text-xl font-extrabold text-foreground">{stat.value}</p>
               <p className="text-[10px] text-muted-foreground font-medium mt-0.5">{stat.label}</p>
             </motion.div>
           ))}
         </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.12 }}
+        className="px-5 mt-4"
+      >
+        {reviewCount > 0 ? (
+          <Link
+            to="/bookings"
+            className="block cursor-pointer rounded-2xl border border-border bg-surface p-4 shadow-soft outline-none transition hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <div className="flex items-center gap-4">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-muted">
+                <Star className="h-6 w-6 text-gold" />
+              </div>
+              <div className="min-w-0 flex-1 text-left">
+                <p className="label-eyebrow">Sharhlaringiz</p>
+                <p className="text-base font-semibold text-foreground">{reviewCount} ta yozilgan sharh</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Batafsil bandlar tarixida — salon yoki barber nomi bilan.
+                </p>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+            </div>
+          </Link>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-border bg-surface/40 p-4 text-center">
+            <p className="text-sm font-semibold text-foreground">Hali sharh yoʻq</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Band tugagach salon yoki barber uchun sharh yozishingiz mumkin.
+            </p>
+            <Link to="/" className="mt-3 inline-flex text-xs font-semibold text-foreground underline">
+              Salonlarni ochish
+            </Link>
+          </div>
+        )}
       </motion.div>
 
       {isBarberRole && mySalons.length === 0 && (
@@ -194,11 +234,9 @@ const Profile = () => {
               Salon bilan ishlash uchun salon yarating yoki admin orqali salonga ulanib oling.
             </p>
             <div className="mt-3">
-              <Link href={barberWebUrl("/salon/join")}>
-                <Button className="rounded-2xl gold-gradient text-gold-foreground border-0 h-10">
-                  Salonga qo‘shilish / yaratish
-                </Button>
-              </Link>
+              <Button className="h-10 rounded-2xl border-0 bg-primary text-sm font-semibold text-primary-foreground shadow-luxury" asChild>
+                <a href={barberWebUrl("/salon/join")}>Salonga qo‘shilish / yaratish</a>
+              </Button>
             </div>
           </div>
         </motion.div>
@@ -211,7 +249,7 @@ const Profile = () => {
           transition={{ delay: 0.18 }}
           className="px-5 mt-5"
         >
-          <Link href="/map">
+          <Link to="/map">
             <div className="bg-card rounded-2xl border border-border/50 p-4 flex items-center gap-3 hover:bg-muted/40 transition-colors">
               <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center shrink-0">
                 <MapPin className="h-5 w-5 text-accent" />
@@ -249,11 +287,9 @@ const Profile = () => {
               </div>
             ))}
           </div>
-          <Link href={barberWebUrl("/")}>
-            <Button className="rounded-2xl gold-gradient text-gold-foreground border-0 h-10">
-              Salon boshqaruvini ochish
-            </Button>
-          </Link>
+          <Button className="h-10 w-full rounded-2xl border-0 bg-primary text-sm font-semibold text-primary-foreground shadow-luxury" asChild>
+            <a href={barberWebUrl("/")}>Salon boshqaruvini ochish</a>
+          </Button>
         </motion.div>
       )}
 
@@ -264,8 +300,8 @@ const Profile = () => {
           transition={{ delay: 0.22 }}
           className="px-5 mt-5"
         >
-          <Link href={barberWebUrl("/")}>
-            <div className="bg-card rounded-2xl border border-border/50 p-4 flex items-center gap-3 hover:bg-muted/40 transition-colors">
+          <a href={barberWebUrl("/")} className="block">
+            <div className="flex items-center gap-3 rounded-2xl border border-border/50 bg-card p-4 transition-colors hover:bg-muted/40">
               <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center">
                 <Scissors className="h-5 w-5 text-accent" />
               </div>
@@ -273,9 +309,9 @@ const Profile = () => {
                 <p className="font-semibold text-sm">Sartarosh paneli</p>
                 <p className="text-xs text-muted-foreground">Dashboard, salon, mijozlar</p>
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
             </div>
-          </Link>
+          </a>
         </motion.div>
       )}
 
@@ -286,7 +322,7 @@ const Profile = () => {
         className="px-5 mt-6"
       >
         <div className="bg-card rounded-2xl border border-border/50 overflow-hidden divide-y divide-border/50">
-          <Link href="/notifications">
+          <Link to="/notifications">
             <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
@@ -294,7 +330,7 @@ const Profile = () => {
               className="w-full flex items-center gap-3.5 px-4 py-3.5 hover:bg-muted/50 transition-colors group"
             >
               <div className="w-8 h-8 rounded-xl bg-muted/60 flex items-center justify-center">
-                <Bell className="h-4 w-4 text-accent" />
+                <Bell className="h-4 w-4 text-muted-foreground" />
               </div>
               <span className="flex-1 text-left text-sm font-medium text-foreground">
                 Xabarnomalar
@@ -303,7 +339,7 @@ const Profile = () => {
             </motion.div>
           </Link>
           {menuItems.map((item, i) => (
-            <Link key={item.label} href={item.href}>
+            <Link key={item.label} to={item.href}>
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
