@@ -4,19 +4,18 @@ import { Link, usePathname } from "@/navigation";
 import {
   Compass,
   MapPin,
-  CalendarDays,
+  Calendar,
   MessageCircle,
   Bell,
   User,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { fetchNotifications } from "@/lib/notifications-queries";
 
 const TABS = [
   { to: "/", label: "Asosiy", icon: Compass },
   { to: "/map", label: "Xarita", icon: MapPin },
-  { to: "/bookings", label: "Bandlar", icon: CalendarDays },
+  { to: "/bookings", label: "Bandlar", icon: Calendar },
   { to: "/chat", label: "Chat", icon: MessageCircle },
   { to: "/notifications", label: "Xabar", icon: Bell },
   { to: "/profile", label: "Profil", icon: User },
@@ -46,20 +45,17 @@ export function UserBottomNav() {
             <Link
               key={to}
               to={to}
-              className={cn(
-                "group relative flex min-w-0 flex-1 cursor-pointer flex-col items-center gap-0.5 rounded-2xl py-1 text-[10px] font-medium outline-none transition",
-                "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-              )}
+              className="group relative flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-2xl py-1 text-[10px] font-medium transition"
               aria-label={label}
               aria-current={active ? "page" : undefined}
             >
               <span
-                className={cn(
+                className={[
                   "relative grid h-9 w-9 place-items-center rounded-2xl transition",
                   active
                     ? "bg-foreground text-background shadow-soft"
                     : "text-muted-foreground group-hover:text-foreground",
-                )}
+                ].join(" ")}
               >
                 <Icon className="h-[18px] w-[18px]" aria-hidden />
                 {to === "/notifications" && unread > 0 && (
@@ -67,10 +63,10 @@ export function UserBottomNav() {
                 )}
               </span>
               <span
-                className={cn(
+                className={[
                   "text-[9px] tracking-wide transition",
-                  active ? "font-semibold text-foreground" : "text-muted-foreground",
-                )}
+                  active ? "text-foreground font-semibold" : "text-muted-foreground",
+                ].join(" ")}
               >
                 {label}
               </span>

@@ -13,7 +13,7 @@ export function RadiusSelector({
           type="button"
           onClick={() => onChange(r)}
           className={[
-            "min-w-[44px] cursor-pointer rounded-full px-3 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "min-w-[44px] rounded-full px-3 py-1.5 text-xs font-semibold transition",
             radiusKm === r
               ? "bg-primary text-primary-foreground shadow-soft"
               : "text-muted-foreground hover:text-foreground",

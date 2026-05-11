@@ -11,6 +11,7 @@ import {
   Scissors,
   Search,
   Sparkles,
+  Star,
 } from "lucide-react";
 import { Link, useRouter } from "@/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -18,7 +19,6 @@ import { apiFetch } from "@/lib/api";
 import { fetchSalons } from "@/lib/salon-queries";
 import { mapSalonListApi, type SalonListApi } from "@/lib/mapSalon";
 import type { Salon } from "@/types";
-import { RatingStars } from "@/components/luxury/RatingStars";
 import { formatKm, initials } from "@/lib/format";
 import type { DiscoveryMarkerItem } from "@/components/luxury/DiscoveryMap";
 import { fetchNotifications } from "@/lib/notifications-queries";
@@ -37,6 +37,7 @@ const CATEGORIES = [
   { id: "kids", label: "Bolalar", Icon: Baby },
 ] as const;
 
+// Three sheet sizes (Yandex Go style)
 const SHEET = { peek: 0.32, mid: 0.6, full: 0.92 } as const;
 type SheetState = keyof typeof SHEET;
 
@@ -79,7 +80,7 @@ function matchesCategory(s: Salon, cat: string | null): boolean {
 export default function Index() {
   const router = useRouter();
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [radiusKm, setRadiusKm] = useState(2);
+  const [radiusKm] = useState(2);
   const [cat, setCat] = useState<string | null>(null);
   const [sheet, setSheet] = useState<SheetState>("mid");
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -221,7 +222,7 @@ export default function Index() {
           <Link
             to={me ? "/profile" : "/auth"}
             aria-label="Profil"
-            className="grid h-12 w-12 cursor-pointer place-items-center rounded-full bg-surface shadow-card ring-1 ring-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="grid h-12 w-12 place-items-center rounded-full bg-surface shadow-card ring-1 ring-border"
           >
             <span className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-[11px] font-bold text-background">
               {me?.full_name ? initials(me.full_name) : me?.email ? initials(me.email) : "MB"}
@@ -231,9 +232,9 @@ export default function Index() {
           <button
             type="button"
             onClick={() => router.push("/map")}
-            className="flex flex-1 cursor-pointer items-center gap-3 rounded-full bg-surface py-3 pl-4 pr-3 shadow-card ring-1 ring-border outline-none transition focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]"
+            className="flex flex-1 items-center gap-3 rounded-full bg-surface py-3 pl-4 pr-3 shadow-card ring-1 ring-border"
           >
-            <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+            <Search className="h-4 w-4 text-muted-foreground" />
             <span className="flex-1 truncate text-left text-sm text-muted-foreground">
               Salon yoki barber qidirish
             </span>
@@ -242,12 +243,12 @@ export default function Index() {
           <Link
             to="/notifications"
             aria-label="Xabarlar"
-            className="relative grid h-12 w-12 cursor-pointer place-items-center rounded-full bg-surface shadow-card ring-1 ring-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="relative grid h-12 w-12 place-items-center rounded-full bg-surface shadow-card ring-1 ring-border"
           >
             <Bell className="h-5 w-5 text-foreground" />
             {unreadTop > 0 && (
-              <span className="absolute right-1.5 top-1.5 grid h-4 min-w-4 cursor-pointer place-items-center rounded-full bg-foreground px-1 text-[9px] font-bold text-background ring-2 ring-surface">
-                {unreadTop > 9 ? "9+" : unreadTop}
+              <span className="absolute right-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-foreground px-1 text-[9px] font-bold text-background ring-2 ring-surface">
+                {unreadTop}
               </span>
             )}
           </Link>
@@ -258,11 +259,10 @@ export default function Index() {
             type="button"
             onClick={requestGeo}
             aria-label="Mening joylashuvim"
-            className="grid h-11 w-11 cursor-pointer place-items-center rounded-full bg-surface shadow-card ring-1 ring-border transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="grid h-11 w-11 place-items-center rounded-full bg-surface shadow-card ring-1 ring-border active:scale-95"
           >
             <Locate className="h-4 w-4 text-foreground" />
           </button>
-          <RadiusInline radiusKm={radiusKm} setRadiusKm={setRadiusKm} />
         </div>
       </div>
 
@@ -272,7 +272,7 @@ export default function Index() {
         style={{
           height: sheetHeight,
           transitionDuration: dragH != null ? "0ms" : undefined,
-          paddingBottom: "calc(6.75rem + env(safe-area-inset-bottom, 0px))",
+          paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom, 0px))",
         }}
       >
         <div
@@ -282,8 +282,6 @@ export default function Index() {
           onPointerUp={onDragEnd}
           onPointerCancel={onDragEnd}
           onClick={() => setSheet(sheet === "peek" ? "mid" : sheet === "mid" ? "full" : "peek")}
-          role="presentation"
-          aria-hidden
         >
           <span className="h-1.5 w-12 rounded-full bg-border" />
         </div>
@@ -301,14 +299,13 @@ export default function Index() {
                   type="button"
                   onClick={() => setCat(active ? null : id)}
                   className={[
-                    "group flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border px-2 py-3 text-[11px] font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97]",
+                    "group flex flex-col items-center justify-center gap-1.5 rounded-2xl border px-2 py-3 text-[11px] font-semibold transition active:scale-[0.97]",
                     active
                       ? "border-foreground bg-foreground text-background"
                       : "border-border bg-background text-foreground",
                   ].join(" ")}
-                  aria-pressed={active}
                 >
-                  <Icon className="h-5 w-5" aria-hidden />
+                  <Icon className="h-5 w-5" />
                   <span className="text-center leading-tight">{label}</span>
                 </button>
               );
@@ -320,54 +317,32 @@ export default function Index() {
           <h2 className="text-[15px] font-bold tracking-tight text-foreground">
             Yaqin atrofdagi salonlar
           </h2>
-          <Link
-            to="/map"
-            className="inline-flex cursor-pointer items-center gap-0.5 text-xs font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            Xaritada <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+          <Link to="/map" className="inline-flex items-center gap-0.5 text-xs font-semibold text-foreground">
+            Xaritada <ChevronRight className="h-3.5 w-3.5" />
           </Link>
         </div>
 
-        <div className="scrollbar-none mt-2 flex-1 overflow-y-auto px-4 pb-4">
-          {nearbyQ.isError ? (
-            <div className="rounded-2xl border border-border border-dashed p-6 text-center">
-              <p className="text-sm font-semibold text-destructive">Yaqin salonlar olmadingiz</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {(nearbyQ.error as Error).message}. Xarita sahifasi yoki ro‘yxatdan foydalaning.
-              </p>
-              <button
-                type="button"
-                onClick={() => nearbyQ.refetch()}
-                className="mt-3 cursor-pointer rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                Qayta urinish
-              </button>
-            </div>
-          ) : loadingList || allQ.isLoading ? (
+        <div className="mt-2 flex-1 overflow-y-auto px-4 pb-4 scrollbar-none">
+          {loadingList || allQ.isLoading ? (
             <div className="space-y-2">
               {[0, 1, 2].map((i) => (
                 <div key={i} className="h-20 animate-pulse rounded-2xl bg-muted" />
               ))}
             </div>
           ) : list.length === 0 ? (
-            <div className="rounded-2xl border border-border border-dashed p-6 text-center">
+            <div className="rounded-2xl border border-dashed border-border p-6 text-center">
               <p className="text-sm font-semibold text-foreground">Hech narsa topilmadi</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Filtrni o‘zgartiring yoki xarita sahifasiga o‘ting.
-              </p>
-              <button
-                type="button"
-                className="mt-4 cursor-pointer text-xs font-semibold text-foreground underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                onClick={() => router.push("/map")}
-              >
-                Kengaytirilgan qidiruv
-              </button>
+              <p className="mt-1 text-xs text-muted-foreground">Boshqa kategoriya tanlang.</p>
             </div>
           ) : (
             <ul className="space-y-2">
               {list.map((s) => (
                 <li key={s.id}>
-                  <SalonRow salon={s} active={activeId === s.id} onActivate={() => setActiveId(s.id)} />
+                  <SalonRow
+                    salon={s}
+                    active={activeId === s.id}
+                    onHover={() => setActiveId(s.id)}
+                  />
                 </li>
               ))}
             </ul>
@@ -378,74 +353,56 @@ export default function Index() {
   );
 }
 
-/** Compact radius pills for home FAB column */
-function RadiusInline({
-  radiusKm,
-  setRadiusKm,
-}: {
-  radiusKm: number;
-  setRadiusKm: (n: number) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-1 rounded-2xl border border-border bg-surface p-1 shadow-card ring-1 ring-border">
-      {([1, 2, 3] as const).map((r) => (
-        <button
-          key={r}
-          type="button"
-          onClick={() => setRadiusKm(r)}
-          className={[
-            "grid h-8 w-8 cursor-pointer place-items-center rounded-xl text-[10px] font-bold outline-none transition focus-visible:ring-2 focus-visible:ring-ring",
-            radiusKm === r ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground",
-          ].join(" ")}
-          aria-pressed={radiusKm === r}
-        >
-          {r}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function SalonRow({
   salon,
   active,
-  onActivate,
+  onHover,
 }: {
   salon: Salon;
   active: boolean;
-  onActivate: () => void;
+  onHover: () => void;
 }) {
   return (
     <Link
       to="/salon/$id"
       params={{ id: salon.id }}
-      onMouseEnter={onActivate}
-      onFocus={onActivate}
+      onMouseEnter={onHover}
+      onFocus={onHover}
       className={[
-        "flex cursor-pointer items-center gap-3 rounded-2xl bg-background p-3 ring-1 outline-none transition focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
+        "flex items-center gap-3 rounded-2xl bg-background p-3 ring-1 transition active:scale-[0.99]",
         active ? "ring-foreground" : "ring-border hover:ring-foreground/40",
       ].join(" ")}
     >
       <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-muted">
-        <img src={salon.coverImage} alt={salon.name} loading="lazy" className="h-full w-full object-cover" />
+        <img
+          src={salon.coverImage}
+          alt={salon.name}
+          loading="lazy"
+          className="h-full w-full object-cover"
+        />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <h3 className="truncate text-sm font-bold text-foreground">{salon.name}</h3>
-          {salon.isPremium ? (
-            <span className="ml-auto shrink-0 rounded-full bg-foreground px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-background">
-              Premium
-            </span>
-          ) : null}
+          <span
+            className={[
+              "ml-auto rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider",
+              salon.isPremium ? "bg-foreground text-background" : "bg-muted text-muted-foreground",
+            ].join(" ")}
+          >
+            {salon.isPremium ? "Ochiq" : "Yopiq"}
+          </span>
         </div>
         <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
-          <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+          <MapPin className="h-3 w-3" />
           {salon.address}
           {salon.distance > 0 ? <span>· {formatKm(salon.distance)}</span> : null}
         </p>
-        <div className="mt-1">
-          <RatingStars value={salon.rating} count={salon.reviewCount} />
-        </div>
+        <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-foreground">
+          <Star className="h-3 w-3 fill-foreground" />
+          {salon.rating.toFixed(1)}
+          <span className="font-normal text-muted-foreground">({salon.reviewCount})</span>
+        </p>
       </div>
     </Link>
   );

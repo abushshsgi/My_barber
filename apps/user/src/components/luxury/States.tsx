@@ -25,15 +25,7 @@ export function EmptyStateLuxury({
   );
 }
 
-export function ErrorStateLuxury({
-  title = "Xatolik",
-  body,
-  onRetry,
-}: {
-  title?: string;
-  body?: string;
-  onRetry?: () => void;
-}) {
+export function ErrorStateLuxury({ title = "Xatolik", body, onRetry }: { title?: string; body?: string; onRetry?: () => void }) {
   return (
     <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5 text-center">
       <h3 className="text-sm font-semibold text-destructive">{title}</h3>
@@ -42,7 +34,7 @@ export function ErrorStateLuxury({
         <button
           type="button"
           onClick={onRetry}
-          className="mt-3 cursor-pointer rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="mt-3 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground"
         >
           Qayta urinish
         </button>
@@ -55,15 +47,7 @@ export function LoadingSkeleton({ className = "h-24 w-full" }: { className?: str
   return <div className={`animate-pulse rounded-2xl bg-muted ${className}`} />;
 }
 
-export function SectionHeader({
-  eyebrow,
-  title,
-  action,
-}: {
-  eyebrow?: string;
-  title: string;
-  action?: ReactNode;
-}) {
+export function SectionHeader({ eyebrow, title, action }: { eyebrow?: string; title: string; action?: ReactNode }) {
   return (
     <div className="mb-3 flex items-end justify-between gap-3 px-1">
       <div>

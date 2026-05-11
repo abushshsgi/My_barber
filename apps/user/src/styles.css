@@ -5,7 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * MyBarber Luxury — ported from mybarbar-luxury (oklch tokens + beige/dark palette).
+ * MyBarber — Beige Luxury + Black Premium design system.
+ * All colors in oklch. Customize via tokens, never hardcode in components.
  */
 
 @theme inline {
@@ -48,18 +49,6 @@
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
 
-  --color-sidebar: var(--sidebar-background);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-
-  --color-warning: var(--warning);
-  --color-warning-foreground: var(--warning-foreground);
-
   --shadow-luxury: 0 24px 48px -20px oklch(0 0 0 / 0.18);
   --shadow-card: 0 6px 20px -10px oklch(0 0 0 / 0.12);
   --shadow-dock: 0 16px 40px -8px oklch(0 0 0 / 0.18), 0 0 0 1px oklch(0 0 0 / 0.05);
@@ -69,9 +58,10 @@
 :root {
   --radius: 0.875rem;
 
-  --background: oklch(0.985 0 0);
-  --foreground: oklch(0.12 0 0);
-  --surface: oklch(1 0 0);
+  /* Pure black + white system (Yandex Go inspired) */
+  --background: oklch(0.985 0 0);               /* near-white #F7F7F7 */
+  --foreground: oklch(0.12 0 0);                /* near-black */
+  --surface: oklch(1 0 0);                      /* pure white */
   --surface-foreground: oklch(0.12 0 0);
 
   --card: oklch(1 0 0);
@@ -79,17 +69,18 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.12 0 0);
 
-  --primary: oklch(0.12 0 0);
+  --primary: oklch(0.12 0 0);                   /* pure black */
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.96 0 0);
+  --secondary: oklch(0.96 0 0);                 /* light gray */
   --secondary-foreground: oklch(0.12 0 0);
 
   --muted: oklch(0.95 0 0);
-  --muted-foreground: oklch(0.48 0 0);
+  --muted-foreground: oklch(0.48 0 0);          /* neutral gray */
 
   --accent: oklch(0.94 0 0);
   --accent-foreground: oklch(0.12 0 0);
 
+  /* Accent tokens neutralized to black/white only */
   --gold: oklch(0.12 0 0);
   --gold-foreground: oklch(1 0 0);
   --teal: oklch(0.12 0 0);
@@ -99,23 +90,13 @@
   --destructive-foreground: oklch(0.99 0 0);
   --success: oklch(0.55 0.12 145);
   --success-foreground: oklch(0.99 0 0);
-  --warning: oklch(0.75 0.14 75);
-  --warning-foreground: oklch(0.15 0.02 60);
 
   --border: oklch(0.9 0 0);
   --input: oklch(0.94 0 0);
   --ring: oklch(0.12 0 0 / 0.4);
 
-  --sidebar-background: oklch(0.98 0 0);
-  --sidebar-foreground: oklch(0.12 0 0);
-  --sidebar-primary: oklch(0.12 0 0);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.95 0 0);
-  --sidebar-accent-foreground: oklch(0.12 0 0);
-  --sidebar-border: oklch(0.92 0 0);
-  --sidebar-ring: oklch(0.12 0 0);
-
   --gradient-gold: linear-gradient(135deg, oklch(0.18 0 0) 0%, oklch(0.08 0 0) 100%);
+  --gradient-beige-fade: linear-gradient(180deg, oklch(1 0 0) 0%, oklch(0.96 0 0) 100%);
   --gradient-dark: linear-gradient(135deg, oklch(0.12 0 0) 0%, oklch(0 0 0) 100%);
 }
 
@@ -138,34 +119,22 @@
   --accent-foreground: oklch(0.96 0.01 84);
   --gold: oklch(0.82 0.13 85);
   --gold-foreground: oklch(0.13 0.008 60);
-  --teal: oklch(0.7 0.1 180);
+  --teal: oklch(0.7 0.10 180);
   --teal-foreground: oklch(0.13 0.008 60);
-  --destructive: oklch(0.65 0.2 28);
+  --destructive: oklch(0.65 0.20 28);
   --destructive-foreground: oklch(0.99 0 0);
   --success: oklch(0.7 0.12 145);
   --success-foreground: oklch(0.13 0 0);
-  --warning: oklch(0.78 0.14 80);
-  --warning-foreground: oklch(0.13 0.008 60);
   --border: oklch(1 0 0 / 0.08);
   --input: oklch(1 0 0 / 0.12);
   --ring: oklch(0.82 0.13 85 / 0.6);
-
-  --sidebar-background: oklch(0.17 0.01 60);
-  --sidebar-foreground: oklch(0.92 0.01 84);
-  --sidebar-primary: oklch(0.82 0.13 85);
-  --sidebar-primary-foreground: oklch(0.13 0.008 60);
-  --sidebar-accent: oklch(0.22 0.01 60);
-  --sidebar-accent-foreground: oklch(0.96 0.01 84);
-  --sidebar-border: oklch(1 0 0 / 0.08);
-  --sidebar-ring: oklch(0.82 0.13 85 / 0.5);
 }
 
 @layer base {
   * {
     border-color: var(--color-border);
   }
-  html,
-  body {
+  html, body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
@@ -191,6 +160,11 @@
     backdrop-filter: saturate(140%) blur(20px);
     -webkit-backdrop-filter: saturate(140%) blur(20px);
   }
+  .glass-dark {
+    background: color-mix(in oklab, var(--primary) 80%, transparent);
+    backdrop-filter: saturate(140%) blur(20px);
+    -webkit-backdrop-filter: saturate(140%) blur(20px);
+  }
   .text-balance {
     text-wrap: balance;
   }
@@ -207,52 +181,6 @@
     text-transform: uppercase;
     color: var(--color-muted-foreground);
   }
-
-  /** Premium / VIP pill — luxury neutral gradient */
-  .gold-gradient {
-    background: var(--gradient-dark);
-  }
-  .text-gold-gradient {
-    background: linear-gradient(
-      135deg,
-      oklch(0.85 0.12 85) 0%,
-      oklch(0.72 0.1 175) 100%
-    );
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  .card-shadow {
-    box-shadow: var(--shadow-soft);
-    border-width: 1px;
-    border-color: color-mix(in oklab, var(--color-border) 70%, transparent);
-  }
-
-  .card-shadow-lg {
-    box-shadow: var(--shadow-card);
-  }
-
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-
-  .safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  .nav-dock-surface {
-    background: color-mix(in oklab, var(--surface) 95%, transparent);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    box-shadow: var(--shadow-dock);
-    border-width: 1px;
-    border-color: var(--color-border);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -262,25 +190,4 @@
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
-}
-
-.leaflet-container {
-  font-family: var(--font-sans), sans-serif !important;
-  z-index: 0;
-}
-
-.leaflet-div-icon-transparent {
-  background: transparent !important;
-  border: none !important;
-}
-
-.leaflet-popup-content-wrapper {
-  border-radius: 0.75rem !important;
-  overflow: hidden;
-  box-shadow: var(--shadow-luxury) !important;
-}
-
-.leaflet-popup-content {
-  margin: 10px 12px !important;
-  line-height: 1.35;
 }
