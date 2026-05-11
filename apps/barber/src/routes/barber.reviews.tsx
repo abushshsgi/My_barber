@@ -29,6 +29,7 @@ function Stars({ value, size = 4 }: { value: number; size?: number }) {
 function ReviewsPage() {
   const { reviews } = useBarberContext();
   const [replyByReview, setReplyByReview] = useState<Record<string, string>>({});
+  const [sentReplyByReview, setSentReplyByReview] = useState<Record<string, string>>({});
   const avg = reviews.reduce((s, r) => s + r.rating, 0) / Math.max(1, reviews.length);
   const dist = [5, 4, 3, 2, 1].map((star) => ({
     star,
@@ -73,7 +74,9 @@ function ReviewsPage() {
 
       {/* Review list */}
       <div className="space-y-3">
-        {reviews.map((r) => (
+        {reviews.map((r) => {
+          const replyText = sentReplyByReview[r.id] || r.barber_reply || "";
+          return (
           <div key={r.id} className="rounded-xl border border-border bg-card p-5 shadow-card">
             <div className="flex items-start gap-3">
               <img src={r.avatar} alt="" className="size-10 rounded-full" />
@@ -87,37 +90,46 @@ function ReviewsPage() {
                   <span className="text-xs text-muted-foreground">· {r.service}</span>
                 </div>
                 <p className="mt-2 text-sm text-foreground/90">{r.text}</p>
-                <div className="mt-3 flex gap-2">
-                  <input
-                    value={replyByReview[r.id] || ""}
-                    onChange={(e) => setReplyByReview((p) => ({ ...p, [r.id]: e.target.value }))}
-                    placeholder="Sharhga javob yozing..."
-                    className="flex-1 h-9 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm"
-                  />
-                  <button
-                    onClick={async () => {
-                      const reply = (replyByReview[r.id] || "").trim();
-                      if (!reply) return;
-                      const res = await apiFetch(`/api/v1/reviews/${r.id}/reply/`, {
-                        method: "POST",
-                        body: JSON.stringify({ reply }),
-                      });
-                      if (res.ok) {
-                        toast.success("Javob yuborildi.");
-                        setReplyByReview((p) => ({ ...p, [r.id]: "" }));
-                      } else {
-                        toast.error("Javob yuborilmadi.");
-                      }
-                    }}
-                    className="h-9 px-3 rounded-lg bg-foreground text-background text-xs font-medium hover:opacity-90"
-                  >
-                    Yuborish
-                  </button>
-                </div>
+                {replyText ? (
+                  <div className="mt-3 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
+                    <span className="font-medium text-muted-foreground">Javobingiz: </span>
+                    {replyText}
+                  </div>
+                ) : (
+                  <div className="mt-3 flex gap-2">
+                    <input
+                      value={replyByReview[r.id] || ""}
+                      onChange={(e) => setReplyByReview((p) => ({ ...p, [r.id]: e.target.value }))}
+                      placeholder="Sharhga javob yozing..."
+                      className="flex-1 h-9 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm"
+                    />
+                    <button
+                      onClick={async () => {
+                        const reply = (replyByReview[r.id] || "").trim();
+                        if (!reply) return;
+                        const res = await apiFetch(`/api/v1/reviews/${r.id}/reply/`, {
+                          method: "POST",
+                          body: JSON.stringify({ reply }),
+                        });
+                        if (res.ok) {
+                          toast.success("Javob yuborildi.");
+                          setReplyByReview((p) => ({ ...p, [r.id]: "" }));
+                          setSentReplyByReview((p) => ({ ...p, [r.id]: reply }));
+                        } else {
+                          toast.error("Javob yuborilmadi.");
+                        }
+                      }}
+                      className="h-9 px-3 rounded-lg bg-foreground text-background text-xs font-medium hover:opacity-90"
+                    >
+                      Yuborish
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        ))}
+        );
+        })}
       </div>
     </div>
   );

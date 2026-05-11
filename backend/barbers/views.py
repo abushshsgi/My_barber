@@ -189,7 +189,8 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
                 {"detail": "lat, lng required; radius_km optional."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        qs = BarberProfile.objects.select_related("barber").filter(
+        qs = self.get_queryset().filter(
+            barber__work_mode=Barber.WorkMode.INDEPENDENT,
             latitude__isnull=False,
             longitude__isnull=False,
         )

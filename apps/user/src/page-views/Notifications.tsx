@@ -14,11 +14,18 @@ import { apiFetch } from "@/lib/api";
 import { fetchNotifications } from "@/lib/notifications-queries";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { AuthGate } from "@/components/AuthGate";
+import { useRouter } from "@/navigation";
 
 const iconMap: Record<string, typeof Clock> = {
   reminder_1h: Clock,
   booking_accepted: CheckCircle,
   booking_done: Star,
+  booking_pending: Clock,
+  booking_rejected: Bell,
+  booking_cancelled: Bell,
+  booking_started: Clock,
+  chat_message: Bell,
   salon_invite: Bell,
   barber_approved: Bell,
   new_booking: Bell,
@@ -26,6 +33,7 @@ const iconMap: Record<string, typeof Clock> = {
 
 const Notifications = () => {
   const qc = useQueryClient();
+  const router = useRouter();
 
   const { data: notifications = [], isLoading, error } = useQuery({
     queryKey: ["notifications"],
@@ -49,6 +57,14 @@ const Notifications = () => {
   });
 
   const unreadCount = notifications.filter((n) => !n.read_at).length;
+
+  const targetFor = (payload: Record<string, unknown> | null): string | null => {
+    const conversationId = payload?.conversation_id;
+    if (typeof conversationId === "string" && conversationId) return `/chat/${conversationId}`;
+    const bookingId = payload?.booking_id;
+    if (typeof bookingId === "number" || typeof bookingId === "string") return "/bookings";
+    return null;
+  };
 
   if (isLoading) {
     return (
@@ -140,6 +156,8 @@ const Notifications = () => {
                   className="flex gap-3.5 w-full text-left"
                   onClick={() => {
                     if (!read) markRead.mutate(notif.id);
+                    const target = targetFor(notif.payload);
+                    if (target) router.push(target);
                   }}
                 >
                   <div
@@ -199,4 +217,10 @@ const Notifications = () => {
   );
 };
 
-export default Notifications;
+export default function NotificationsWithAuth() {
+  return (
+    <AuthGate title="Xabarnomalar uchun kiring" description="Booking va chat xabarlarini ko‘rish uchun mijoz akkaunti kerak.">
+      <Notifications />
+    </AuthGate>
+  );
+}

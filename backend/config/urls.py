@@ -84,6 +84,8 @@ from barbers.views_barber_auth import (
 )
 from salons.views import (
     BarberScheduleViewSet,
+    FavoriteSalonDetailView,
+    FavoriteSalonListCreateView,
     SalonMembershipViewSet,
     SalonViewSet,
     ServiceViewSet,
@@ -164,6 +166,8 @@ api_routes = [
     path("barber/settings/", MyBarberSettingsView.as_view()),
     path("barber/reviews/", MyBarberReviewsView.as_view()),
     path("barber/finance/summary/", MyBarberFinanceSummaryView.as_view()),
+    path("favorites/salons/", FavoriteSalonListCreateView.as_view()),
+    path("favorites/salons/<int:salon_id>/", FavoriteSalonDetailView.as_view()),
     path("notifications/", NotificationListView.as_view()),
     path("notifications/<int:pk>/read/", NotificationMarkReadView.as_view()),
     path("notifications/mark-all-read/", NotificationMarkAllReadView.as_view()),

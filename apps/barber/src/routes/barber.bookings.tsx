@@ -15,6 +15,8 @@ const TABS = [
   { id: "accepted", label: "Tasdiqlangan" },
   { id: "in_progress", label: "Davom etmoqda" },
   { id: "completed", label: "Yakunlangan" },
+  { id: "cancelled", label: "Bekor" },
+  { id: "rejected", label: "Rad etilgan" },
 ] as const;
 
 function BookingsPage() {
@@ -123,6 +125,11 @@ function BookingsPage() {
                       <CheckCircle2 className="size-3.5" />
                       Tugatish
                     </button>
+                  )}
+                  {b.status === "rejected" && (
+                    <span className="rounded-lg border border-destructive/20 px-3 py-2 text-sm font-medium text-destructive">
+                      Rad etilgan
+                    </span>
                   )}
                 </div>
               </div>

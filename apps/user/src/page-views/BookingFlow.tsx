@@ -128,8 +128,8 @@ export default function BookingFlow() {
     },
     onSuccess: async ({ barberId }) => {
       toast({
-        title: "Bron tasdiqlandi",
-        description: "Sartaroshga bildirishnoma ketdi.",
+        title: "Bron so‘rovi yuborildi",
+        description: "Sartarosh tasdiqlaguncha booking kutilmoqda holatida turadi.",
       });
       try {
         const cr = await apiFetch("/api/v1/chat/conversations/", {

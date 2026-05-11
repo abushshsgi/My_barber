@@ -31,6 +31,14 @@ from .serializers import (
 class BookingViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
+    def _barber_can_manage_booking(self, request, booking):
+        bp = request_barber(request)
+        if bp is None:
+            return False
+        return booking.barber_id == bp.id or (
+            booking.salon_id and booking.salon.owner_barber_id == bp.id
+        )
+
     def get_queryset(self):
         base = Booking.objects.select_related("customer", "salon", "barber").prefetch_related(
             "lines"
@@ -67,9 +75,9 @@ class BookingViewSet(viewsets.ModelViewSet):
         )
         notify_user(
             booking.customer,
-            "booking_accepted",
-            "Bron tasdiqlandi",
-            f"{place}: broningiz darhol tasdiqlandi.",
+            "booking_pending",
+            "Bron so‘rovi yuborildi",
+            f"{place}: bron so‘rovingiz sartarosh tasdig‘ini kutmoqda.",
             {"booking_id": booking.id},
             send_email=False,
         )
@@ -82,13 +90,25 @@ class BookingViewSet(viewsets.ModelViewSet):
         )
         return Response(BookingSerializer(booking).data, status=status.HTTP_201_CREATED)
 
+    def update(self, request, *args, **kwargs):
+        return Response(
+            {"detail": "Booking statusini faqat lifecycle actionlar orqali o‘zgartiring."},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
+    def partial_update(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        return Response(
+            {"detail": "Bookingni o‘chirish mumkin emas; bekor qilish actionidan foydalaning."},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
     @action(detail=True, methods=["post"])
     def accept(self, request, pk=None):
         booking = self.get_object()
-        bp = request_barber(request)
-        if bp is None:
-            return Response(status=403)
-        if booking.barber_id != bp.id and booking.salon_id and booking.salon.owner_barber_id != bp.id:
+        if not self._barber_can_manage_booking(request, booking):
             return Response(status=403)
         if booking.status != Booking.Status.PENDING:
             return Response({"detail": "Invalid status."}, status=400)
@@ -99,6 +119,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             "booking_accepted",
             "Bron tasdiqlandi",
             f"{booking.salon.name if booking.salon_id else (booking.barber.full_name or booking.barber.email)} broningiz tasdiqlandi.",
+            {"booking_id": booking.id},
             send_email=True,
         )
         return Response(BookingSerializer(booking).data)
@@ -106,21 +127,55 @@ class BookingViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def reject(self, request, pk=None):
         booking = self.get_object()
-        bp = request_barber(request)
-        if bp is None:
+        if not self._barber_can_manage_booking(request, booking):
             return Response(status=403)
-        if booking.barber_id != bp.id and booking.salon_id and booking.salon.owner_barber_id != bp.id:
-            return Response(status=403)
+        if booking.status != Booking.Status.PENDING:
+            return Response({"detail": "Faqat kutilayotgan bronni rad etish mumkin."}, status=400)
         booking.status = Booking.Status.REJECTED
         booking.save(update_fields=["status", "updated_at"])
-        notify_user(booking.customer, "booking_rejected", "Bron rad etildi", "")
+        notify_user(
+            booking.customer,
+            "booking_rejected",
+            "Bron rad etildi",
+            "Sartarosh bu bronni rad etdi. Boshqa vaqt yoki sartarosh tanlashingiz mumkin.",
+            {"booking_id": booking.id},
+        )
+        return Response(BookingSerializer(booking).data)
+
+    @action(detail=True, methods=["post"])
+    def cancel(self, request, pk=None):
+        booking = self.get_object()
+        is_customer = not isinstance(request.user, BarberPrincipal) and booking.customer_id == request.user.id
+        is_barber = self._barber_can_manage_booking(request, booking)
+        if not (is_customer or is_barber or is_platform_admin(request)):
+            return Response(status=403)
+        if booking.status in (Booking.Status.COMPLETED, Booking.Status.CANCELLED, Booking.Status.REJECTED):
+            return Response({"detail": "Bu bronni bekor qilib bo‘lmaydi."}, status=400)
+        booking.status = Booking.Status.CANCELLED
+        booking.save(update_fields=["status", "updated_at"])
+        payload = {"booking_id": booking.id}
+        if is_customer:
+            notify_barber(
+                booking.barber,
+                "booking_cancelled",
+                "Bron bekor qilindi",
+                f"{booking.customer.full_name or booking.customer.email} bronni bekor qildi.",
+                payload,
+            )
+        else:
+            notify_user(
+                booking.customer,
+                "booking_cancelled",
+                "Bron bekor qilindi",
+                "Bron sartarosh tomonidan bekor qilindi.",
+                payload,
+            )
         return Response(BookingSerializer(booking).data)
 
     @action(detail=True, methods=["post"])
     def start(self, request, pk=None):
         booking = self.get_object()
-        bp = request_barber(request)
-        if bp is None or booking.barber_id != bp.id:
+        if not self._barber_can_manage_booking(request, booking):
             return Response(status=403)
         if booking.status != Booking.Status.ACCEPTED:
             return Response({"detail": "Must be accepted."}, status=400)
@@ -128,19 +183,22 @@ class BookingViewSet(viewsets.ModelViewSet):
         booking.status = Booking.Status.IN_PROGRESS
         booking.started_at = now
         booking.save(update_fields=["status", "started_at", "updated_at"])
+        notify_user(
+            booking.customer,
+            "booking_started",
+            "Xizmat boshlandi",
+            "Sartarosh booking xizmatini boshladi.",
+            {"booking_id": booking.id},
+        )
         return Response(BookingSerializer(booking).data)
 
     @action(detail=True, methods=["post"])
     def complete(self, request, pk=None):
         booking = self.get_object()
-        bp = request_barber(request)
-        if bp is None or booking.barber_id != bp.id:
+        if not self._barber_can_manage_booking(request, booking):
             return Response(status=403)
-        if booking.status not in (
-            Booking.Status.ACCEPTED,
-            Booking.Status.IN_PROGRESS,
-        ):
-            return Response({"detail": "Invalid status."}, status=400)
+        if booking.status != Booking.Status.IN_PROGRESS:
+            return Response({"detail": "Xizmatni tugatishdan oldin boshlash kerak."}, status=400)
         portfolio_allowed = request.data.get("portfolio_allowed", False)
         early_finish = str(request.data.get("early_finish", "")).lower() in ("1", "true", "yes")
         actual_end = timezone.now()
@@ -241,6 +299,16 @@ class ReviewViewSet(viewsets.ModelViewSet):
             return [AllowAny()]
         return super().get_permissions()
 
+    def perform_create(self, serializer):
+        review = serializer.save()
+        notify_barber(
+            review.barber,
+            "review_created",
+            "Yangi sharh",
+            f"{review.author.full_name or review.author.email} {review.rating} yulduzli sharh qoldirdi.",
+            {"review_id": review.id, "booking_id": review.booking_id},
+        )
+
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
     def reply(self, request, pk=None):
         review = self.get_object()
@@ -248,15 +316,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
         if bp is None:
             return Response({"detail": "Faqat sartarosh javob bera oladi."}, status=403)
         allowed = review.barber_id == bp.id or (
-            review.salon_id
-            and (
-                review.salon.owner_barber_id == bp.id
-                or SalonMembership.objects.filter(
-                    salon_id=review.salon_id,
-                    barber=bp,
-                    invite_state=SalonMembership.InviteState.ACTIVE,
-                ).exists()
-            )
+            review.salon_id and review.salon.owner_barber_id == bp.id
         )
         if not allowed:
             return Response(status=403)
@@ -266,6 +326,13 @@ class ReviewViewSet(viewsets.ModelViewSet):
         review.barber_reply = text
         review.barber_replied_at = timezone.now()
         review.save(update_fields=["barber_reply", "barber_replied_at"])
+        notify_user(
+            review.author,
+            "review_reply",
+            "Sharhingizga javob keldi",
+            f"{bp.full_name or bp.email} sharhingizga javob berdi.",
+            {"review_id": review.id, "booking_id": review.booking_id},
+        )
         return Response(ReviewSerializer(review, context={"request": request}).data)
 
 

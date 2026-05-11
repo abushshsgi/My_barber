@@ -3,8 +3,9 @@
 import { Link } from "@/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { MessageCircle, Loader2 } from "lucide-react";
-import { apiJson } from "@/lib/api";
+import { apiList } from "@/lib/api";
 import { Card } from "@/components/ui/card";
+import { AuthGate } from "@/components/AuthGate";
 
 type ConversationRow = {
   id: string;
@@ -15,10 +16,10 @@ type ConversationRow = {
 };
 
 async function fetchConversations(): Promise<ConversationRow[]> {
-  return apiJson<ConversationRow[]>("/api/v1/chat/conversations/");
+  return apiList<ConversationRow>("/api/v1/chat/conversations/");
 }
 
-export default function ChatList() {
+function ChatList() {
   const { data = [], isLoading, error } = useQuery({
     queryKey: ["chat", "conversations"],
     queryFn: fetchConversations,
@@ -72,6 +73,14 @@ export default function ChatList() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ChatListWithAuth() {
+  return (
+    <AuthGate title="Chat uchun kiring" description="Sartarosh bilan yozishish uchun mijoz akkaunti kerak.">
+      <ChatList />
+    </AuthGate>
   );
 }
 

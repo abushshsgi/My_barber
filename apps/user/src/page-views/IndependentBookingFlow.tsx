@@ -119,7 +119,9 @@ export default function IndependentBookingFlow() {
 
   const createBooking = async () => {
     if (!barberId || !selectedTime || selectedServices.length === 0) throw new Error("missing");
-    const startAt = `${selectedDate}T${selectedTime}:00`;
+    const [hh, mm] = selectedTime.split(":").map(Number);
+    const [y, mo, d] = selectedDate.split("-").map(Number);
+    const startAt = new Date(y, mo - 1, d, hh, mm, 0, 0).toISOString();
     const res = await apiFetch("/api/v1/bookings/", {
       method: "POST",
       body: JSON.stringify({
@@ -150,8 +152,8 @@ export default function IndependentBookingFlow() {
     try {
       await createBooking();
       toast({
-        title: "Bron tasdiqlandi",
-        description: "Sartaroshga xabar ketdi. Chatdan yozishingiz mumkin.",
+        title: "Bron so‘rovi yuborildi",
+        description: "Sartarosh tasdiqlaguncha booking kutilmoqda holatida turadi.",
       });
       try {
         const cr = await apiFetch("/api/v1/chat/conversations/", {

@@ -10,7 +10,16 @@ from .models import Conversation
 
 
 def pair_has_booking_for_chat(user_id: int, barber_id: int) -> bool:
-    return Booking.objects.filter(customer_id=user_id, barber_id=barber_id).exists()
+    return Booking.objects.filter(
+        customer_id=user_id,
+        barber_id=barber_id,
+        status__in=[
+            Booking.Status.PENDING,
+            Booking.Status.ACCEPTED,
+            Booking.Status.IN_PROGRESS,
+            Booking.Status.COMPLETED,
+        ],
+    ).exists()
 
 
 def queryset_conversations_with_booking(qs: QuerySet) -> QuerySet:
@@ -19,6 +28,12 @@ def queryset_conversations_with_booking(qs: QuerySet) -> QuerySet:
             Booking.objects.filter(
                 customer_id=OuterRef("user_id"),
                 barber_id=OuterRef("barber_id"),
+                status__in=[
+                    Booking.Status.PENDING,
+                    Booking.Status.ACCEPTED,
+                    Booking.Status.IN_PROGRESS,
+                    Booking.Status.COMPLETED,
+                ],
             )
         )
     )

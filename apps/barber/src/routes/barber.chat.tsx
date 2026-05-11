@@ -16,6 +16,16 @@ function ChatPage() {
   const active = conversations.find((c) => c.id === activeId);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const targetId = params.get("conversation_id");
+    if (targetId && conversations.some((c) => c.id === targetId)) {
+      setActiveId(targetId);
+      return;
+    }
+    if (!activeId && conversations[0]) setActiveId(conversations[0].id);
+  }, [activeId, conversations]);
+
+  useEffect(() => {
     if (!activeId) return;
     const conv = conversations.find((c) => c.id === activeId);
     if (!conv) return;

@@ -7,6 +7,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from accounts.auth_utils import customer_catalog_region, is_platform_admin, request_barber
 from accounts.uz_regions import UzRegion
@@ -14,9 +15,14 @@ from accounts.throttles import SalonJoinThrottle, SalonSearchThrottle
 from barbers.models import Barber, BarberProfile
 from notifications.utils import notify_barber, notify_user
 
-from .geo_join import assert_join_distance_ok, haversine_km
+from .geo_join import (
+    JOIN_MAX_DISTANCE_KM,
+    LOCATION_MISMATCH_MSG,
+    assert_join_distance_ok,
+    haversine_km,
+)
 from .join_service import attach_worker_membership
-from .models import BarberWorkingHours, Salon, SalonImage, SalonMembership, Service
+from .models import BarberWorkingHours, FavoriteSalon, Salon, SalonImage, SalonMembership, Service
 from .serializers import (
     BarberWorkingHoursSerializer,
     BarberSalonViewSerializer,
@@ -441,6 +447,39 @@ class ServiceViewSet(viewsets.ModelViewSet):
 
             raise PermissionDenied()
         serializer.save(salon=salon)
+
+
+class FavoriteSalonListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        rows = FavoriteSalon.objects.filter(user=request.user).select_related("salon")
+        return Response(
+            {
+                "count": rows.count(),
+                "results": [
+                    {"id": row.id, "salon": row.salon_id, "created_at": row.created_at.isoformat()}
+                    for row in rows
+                ],
+            }
+        )
+
+    def post(self, request):
+        salon_id = request.data.get("salon")
+        salon = get_object_or_404(Salon, pk=salon_id, is_published=True)
+        row, _ = FavoriteSalon.objects.get_or_create(user=request.user, salon=salon)
+        return Response(
+            {"id": row.id, "salon": salon.id, "created_at": row.created_at.isoformat()},
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class FavoriteSalonDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, salon_id):
+        FavoriteSalon.objects.filter(user=request.user, salon_id=salon_id).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class SalonMembershipViewSet(viewsets.ModelViewSet):

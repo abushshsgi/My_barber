@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Bell, CalendarClock, Star, MessageSquare, Settings as SettingsIcon } from "lucide-react";
 import { useBarberContext } from "@/components/barber/BarberContext";
 import { cn } from "@/lib/utils";
@@ -16,7 +16,25 @@ const ICONS = {
 
 function NotificationsPage() {
   const { notifications, markNotificationRead } = useBarberContext();
+  const navigate = useNavigate();
   const unread = notifications.filter((n) => !n.read).length;
+  const openTarget = (n: (typeof notifications)[number]) => {
+    const payload = n.payload || {};
+    const conversationId = payload.conversation_id;
+    if (typeof conversationId === "string" && conversationId) {
+      void navigate({
+        to: "/barber/chat",
+        search: { conversation_id: conversationId },
+      });
+      return;
+    }
+    const bookingId = payload.booking_id;
+    if (typeof bookingId === "number" || typeof bookingId === "string") {
+      void navigate({ to: "/barber/bookings" });
+      return;
+    }
+    if (n.kind === "review") void navigate({ to: "/barber/reviews" });
+  };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
@@ -41,7 +59,10 @@ function NotificationsPage() {
             return (
               <button
                 key={n.id}
-                onClick={() => !n.read && markNotificationRead(n.id)}
+                onClick={() => {
+                  if (!n.read) markNotificationRead(n.id);
+                  openTarget(n);
+                }}
                 className={cn(
                   "w-full text-left rounded-xl border bg-card p-4 flex gap-3 transition-colors hover:bg-muted/40",
                   n.read ? "border-border" : "border-foreground/30 bg-card",

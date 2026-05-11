@@ -15,6 +15,7 @@ from rest_framework.views import APIView
 
 from accounts.models import User
 from barbers.models import Barber
+from notifications.utils import notify_barber, notify_user
 
 from .booking_gate import conversation_queryset_for_actor, pair_has_booking_for_chat
 from .models import Conversation, Message
@@ -152,6 +153,22 @@ class ConversationMessagesView(APIView, PageNumberPagination):
                 last_message_at=timezone.now(),
                 updated_at=timezone.now(),
             )
+            if actor["kind"] == "USER":
+                notify_barber(
+                    convo.barber,
+                    "chat_message",
+                    "Yangi xabar",
+                    f"{convo.user.full_name or convo.user.email}: {text[:80]}",
+                    {"conversation_id": str(convo.public_id)},
+                )
+            else:
+                notify_user(
+                    convo.user,
+                    "chat_message",
+                    "Yangi xabar",
+                    f"{convo.barber.full_name or convo.barber.email}: {text[:80]}",
+                    {"conversation_id": str(convo.public_id)},
+                )
 
         message_payload = MessageSerializer(msg).data
         channel_layer = get_channel_layer()

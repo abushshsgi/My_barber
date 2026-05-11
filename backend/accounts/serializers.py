@@ -36,6 +36,19 @@ class UserSerializer(serializers.ModelSerializer):
             return "ADMIN"
         return obj.role
 
+    def validate_phone(self, value):
+        value = (value or "").strip()
+        if not value:
+            return None
+        qs = User.objects.filter(phone=value)
+        if self.instance is not None:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("Bu telefon allaqachon mijozda ro'yxatdan o'tgan.")
+        if Barber.objects.filter(phone=value).exists():
+            raise serializers.ValidationError("Bu telefon sartarosh akkauntida band.")
+        return value
+
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     """Model unique validator inglizcha xabar bermasligi uchun email/phone qo‘lda tekshiriladi."""

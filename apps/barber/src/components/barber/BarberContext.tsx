@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { apiFetch, apiJson, clearBarberTokens } from "@/lib/api";
+import { apiFetch, apiJson, apiList, clearBarberTokens } from "@/lib/api";
 import { inferFlowIdentity, type FlowIdentity } from "@/lib/barber-flow-config";
 
 export type ViewMode = "independent" | "salon";
@@ -46,7 +46,7 @@ export type Booking = {
   time: string;
   duration_min: number;
   price: number;
-  status: "pending" | "accepted" | "in_progress" | "completed" | "cancelled";
+  status: "pending" | "accepted" | "in_progress" | "completed" | "cancelled" | "rejected";
 };
 
 export type Client = {
@@ -66,6 +66,7 @@ export type Notification = {
   time: string;
   read: boolean;
   kind: "booking" | "review" | "system" | "chat";
+  payload?: Record<string, unknown> | null;
 };
 
 export type ChatMessage = {
@@ -93,6 +94,7 @@ export type Review = {
   text: string;
   date: string;
   service: string;
+  barber_reply?: string;
 };
 
 export type Salon = {
@@ -848,15 +850,13 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   });
 
   const refreshServices = useCallback(async () => {
-    const rows = await apiJson<
-      Array<{
+    const rows = await apiList<{
         id: number;
         name: string;
         duration_minutes: number;
         price: string | number;
         is_active: boolean;
-      }>
-    >("/api/v1/barber/services/");
+      }>("/api/v1/barber/services/");
     setServices(
       rows.map((s) => ({
         id: String(s.id),
@@ -869,9 +869,9 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshWorkingHours = useCallback(async () => {
-    const rows = await apiJson<
-      Array<{ weekday: number; open_time: string; close_time: string; is_day_off: boolean }>
-    >("/api/v1/barber/working-hours/");
+    const rows = await apiList<{ weekday: number; open_time: string; close_time: string; is_day_off: boolean }>(
+      "/api/v1/barber/working-hours/",
+    );
     setWorkingHours(
       rows.map((w) => ({
         weekday: w.weekday,
@@ -883,8 +883,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshBookings = useCallback(async () => {
-    const apiBookings = await apiJson<
-      Array<{
+    const apiBookings = await apiList<{
         id: number;
         customer_name: string;
         customer_phone: string;
@@ -893,53 +892,46 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         status: string;
         total_price: string | number;
         lines: Array<{ service_name: string; duration_minutes: number; price: string | number }>;
-      }>
-    >("/api/v1/bookings/");
+      }>("/api/v1/bookings/");
     setBookings(apiBookings.map(mapApiBooking));
   }, []);
 
   const refreshNotifications = useCallback(async () => {
-    const apiNotifs = await apiJson<
-      Array<{
+    const apiNotifs = await apiList<{
         id: number;
         type: string;
         title: string;
         body: string;
+        payload?: Record<string, unknown> | null;
         read_at: string | null;
         created_at: string;
-      }>
-    >("/api/v1/notifications/");
+      }>("/api/v1/notifications/");
     setNotifications(apiNotifs.map(mapApiNotification));
   }, []);
 
   const refreshConversations = useCallback(async () => {
-    const apiConvos = await apiJson<
-      Array<{
+    const apiConvos = await apiList<{
         id: string;
         last_message_text: string;
         last_message_at: string | null;
         other: { id: number; full_name: string };
-      }>
-    >("/api/v1/chat/conversations/");
+      }>("/api/v1/chat/conversations/");
     setConversations(apiConvos.map(mapApiConversation));
   }, []);
 
   const refreshClients = useCallback(async () => {
-    const apiClients = await apiJson<
-      Array<{
+    const apiClients = await apiList<{
         id: number;
         full_name: string;
         phone: string;
         completed_bookings: number;
         total_spent: string;
-      }>
-    >("/api/v1/analytics/clients/independent/");
+      }>("/api/v1/analytics/clients/independent/");
     setClients(apiClients.map(mapApiClient));
   }, []);
 
   const refreshInventory = useCallback(async () => {
-    const rows = await apiJson<
-      Array<{
+    const rows = await apiList<{
         id: number;
         name: string;
         category: "tool" | "product" | "consumable";
@@ -948,8 +940,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         unit: string;
         price: string | number;
         supplier: string;
-      }>
-    >("/api/v1/barber/inventory/");
+      }>("/api/v1/barber/inventory/");
     setInventory(
       rows.map((it) => ({
         id: String(it.id),
@@ -965,15 +956,13 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshExpenses = useCallback(async () => {
-    const rows = await apiJson<
-      Array<{
+    const rows = await apiList<{
         id: number;
         category: Expense["category"];
         description: string;
         amount: string | number;
         spent_on: string;
-      }>
-    >("/api/v1/barber/expenses/");
+      }>("/api/v1/barber/expenses/");
     setExpenses(
       rows.map((e) => ({
         id: String(e.id),
@@ -986,8 +975,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshGoals = useCallback(async () => {
-    const rows = await apiJson<
-      Array<{
+    const rows = await apiList<{
         id: number;
         title: string;
         target: string | number;
@@ -995,8 +983,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         unit: string;
         deadline: string;
         done: boolean;
-      }>
-    >("/api/v1/barber/goals/");
+      }>("/api/v1/barber/goals/");
     setGoals(
       rows.map((g) => ({
         id: String(g.id),
@@ -1011,8 +998,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshPromos = useCallback(async () => {
-    const rows = await apiJson<
-      Array<{
+    const rows = await apiList<{
         id: number;
         code: string;
         description: string;
@@ -1021,8 +1007,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         max_uses: number;
         is_active: boolean;
         expires: string | null;
-      }>
-    >("/api/v1/barber/promos/");
+      }>("/api/v1/barber/promos/");
     setPromos(
       rows.map((p) => ({
         id: String(p.id),
@@ -1043,16 +1028,14 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshPortfolio = useCallback(async () => {
-    const rows = await apiJson<
-      Array<{
+    const rows = await apiList<{
         id: number;
         image: string;
         title: string;
         service_name: string;
         created_at: string;
         likes: number;
-      }>
-    >("/api/v1/barber/work-photos/");
+      }>("/api/v1/barber/work-photos/");
     setPortfolio(
       rows.map((p) => ({
         id: String(p.id),
@@ -1091,8 +1074,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshReviews = useCallback(async () => {
-    const rows = await apiJson<
-      Array<{
+    const rows = await apiList<{
         id: number;
         client: string;
         avatar: string;
@@ -1101,8 +1083,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         date: string;
         service: string;
         barber_reply?: string;
-      }>
-    >("/api/v1/barber/reviews/");
+      }>("/api/v1/barber/reviews/");
     setReviews(
       rows.map((r) => ({
         id: String(r.id),
@@ -1112,14 +1093,14 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         text: r.text,
         date: r.date,
         service: r.service,
+        barber_reply: r.barber_reply || "",
       })),
     );
   }, []);
 
   const refreshSalonView = useCallback(async () => {
     try {
-      const rows = await apiJson<
-        Array<{
+      const rows = await apiList<{
           id: number;
           name: string;
           address: string;
@@ -1127,14 +1108,13 @@ export function BarberProvider({ children }: { children: ReactNode }) {
           rating_avg: number;
           review_count: number;
           images?: Array<{ image: string }>;
-        }>
-      >("/api/v1/salons/mine/");
+        }>("/api/v1/salons/mine/");
       const one = rows[0];
       if (!one) return;
 
       let members = 0;
       try {
-        const staff = await apiJson<Array<{ id: number; full_name?: string; role?: string }>>(
+        const staff = await apiList<{ id: number; full_name?: string; role?: string }>(
           `/api/v1/salons/${one.id}/staff/`,
         );
         members = Array.isArray(staff) ? staff.length : 0;
@@ -1158,7 +1138,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const mutateBooking = useCallback(
-    async (id: string, action: "accept" | "reject" | "start" | "complete") => {
+    async (id: string, action: "accept" | "reject" | "start" | "complete" | "cancel") => {
       const res = await apiFetch(`/api/v1/bookings/${id}/${action}/`, { method: "POST" });
       if (!res.ok) return;
       await refreshBookings();
@@ -1551,7 +1531,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       settings,
       startBooking: (id) => void mutateBooking(id, "start"),
       completeBooking: (id) => void mutateBooking(id, "complete"),
-      cancelBooking: (id) => void mutateBooking(id, "reject"),
+      cancelBooking: (id) => void mutateBooking(id, "cancel"),
       acceptBooking: (id) => void mutateBooking(id, "accept"),
       markNotificationRead: (id) => void markNotifRead(id),
       markAllNotificationsRead: () => void markAllNotifsRead(),
@@ -1687,7 +1667,8 @@ function mapBookingStatus(st: string): Booking["status"] {
   if (s === "accepted") return "accepted";
   if (s === "in_progress") return "in_progress";
   if (s === "completed") return "completed";
-  if (s === "rejected" || s === "cancelled") return "cancelled";
+  if (s === "rejected") return "rejected";
+  if (s === "cancelled") return "cancelled";
   return "pending";
 }
 
@@ -1696,6 +1677,7 @@ function mapApiNotification(n: {
   type: string;
   title: string;
   body: string;
+  payload?: Record<string, unknown> | null;
   read_at: string | null;
   created_at: string;
 }): Notification {
@@ -1708,7 +1690,15 @@ function mapApiNotification(n: {
     if (t.includes("booking")) return "booking";
     return "system";
   })();
-  return { id: String(n.id), title: n.title, body: n.body, time, read: !!n.read_at, kind };
+  return {
+    id: String(n.id),
+    title: n.title,
+    body: n.body,
+    time,
+    read: !!n.read_at,
+    kind,
+    payload: n.payload && typeof n.payload === "object" ? n.payload : null,
+  };
 }
 
 function mapApiConversation(c: {

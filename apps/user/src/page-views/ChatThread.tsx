@@ -4,12 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "@/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, Send } from "lucide-react";
-import { apiJson, apiFetch, getAccessToken } from "@/lib/api";
+import { apiJson, apiFetch, formatApiError, getAccessToken } from "@/lib/api";
 import { chatWebSocketUrl } from "@/lib/ws-url";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { AuthGate } from "@/components/AuthGate";
 
 type MessageRow = {
   id: number;
@@ -29,7 +30,7 @@ async function fetchMessages(conversationId: string): Promise<MessagesApi> {
   return apiJson<MessagesApi>(`/api/v1/chat/conversations/${conversationId}/messages/`);
 }
 
-export default function ChatThread() {
+function ChatThread() {
   const params = useParams<{ id: string }>();
   const id = params?.id;
   const router = useRouter();
@@ -80,8 +81,9 @@ export default function ChatThread() {
         method: "POST",
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error("Xabar yuborilmadi");
-      return res.json() as Promise<MessageRow>;
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(formatApiError(payload, "Xabar yuborilmadi"));
+      return payload as MessageRow;
     },
     onSuccess: () => {
       setText("");
@@ -118,8 +120,8 @@ export default function ChatThread() {
           </div>
         )}
         {!isLoading && error && (
-          <p className="text-center text-muted-foreground py-10">
-            Xabarlar yuklanmadi
+          <p className="text-center text-muted-foreground py-10 px-4 leading-relaxed">
+            Xabarlar yuklanmadi. Chat faqat bekor qilinmagan booking mavjud bo‘lsa ochiladi.
           </p>
         )}
 
@@ -179,8 +181,21 @@ export default function ChatThread() {
             )}
           </Button>
         </div>
+        {sendMutation.isError && (
+          <p className="mt-2 px-1 text-xs text-destructive">
+            {(sendMutation.error as Error).message}
+          </p>
+        )}
       </form>
     </div>
+  );
+}
+
+export default function ChatThreadWithAuth() {
+  return (
+    <AuthGate title="Chat uchun kiring" description="Xabarlarni ko‘rish va yuborish uchun mijoz akkaunti kerak.">
+      <ChatThread />
+    </AuthGate>
   );
 }
 

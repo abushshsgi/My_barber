@@ -5,12 +5,13 @@ import { useEffect, useState } from "react";
 import { Link } from "@/navigation";
 import { useRouter } from "@/navigation";
 import { ArrowLeft, Clock, Globe, Heart, MapPin, Phone, Share2 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, getAccessToken } from "@/lib/api";
 import { mediaSrc, PLACEHOLDER_SALON } from "@/lib/media";
 import { RatingStars } from "@/components/luxury/RatingStars";
 import { EmptyStateLuxury, LoadingSkeleton } from "@/components/luxury/States";
 import { formatSom } from "@/lib/format";
+import { fetchFavoriteSalonIds, isFavoriteSalon, setFavoriteSalon } from "../lib/favorites";
 
 type SalonDetail = {
   id: number;
@@ -61,13 +62,35 @@ type PortfolioItem = {
 export default function SalonPage() {
   const params = useParams();
   const router = useRouter();
+  const qc = useQueryClient();
   const id = params?.id as string;
   const [loggedIn, setLoggedIn] = useState(false);
   const [tab, setTab] = useState<"about" | "services" | "staff" | "reviews">("about");
+  const [favorite, setFavorite] = useState(false);
 
   useEffect(() => {
     setLoggedIn(!!getAccessToken());
-  }, []);
+    if (id) setFavorite(isFavoriteSalon(id));
+  }, [id]);
+
+  useQuery({
+    queryKey: ["favorites", "salons"],
+    queryFn: async () => {
+      const ids = await fetchFavoriteSalonIds();
+      setFavorite(ids.includes(String(id)));
+      return ids;
+    },
+    enabled: !!id && loggedIn,
+  });
+
+  const favoriteMutation = useMutation({
+    mutationFn: async () => setFavoriteSalon(id, !favorite),
+    onSuccess: (next) => {
+      setFavorite(next);
+      qc.invalidateQueries({ queryKey: ["favorites", "salons"] });
+      qc.invalidateQueries({ queryKey: ["favorites", "salons", "count"] });
+    },
+  });
 
   const { data: salon, isLoading, isError, error } = useQuery({
     queryKey: ["salon", id],
@@ -181,10 +204,11 @@ export default function SalonPage() {
             </button>
             <button
               type="button"
-              aria-label="Saqlash"
+              aria-label={favorite ? "Sevimlidan olib tashlash" : "Saqlash"}
               className="grid h-10 w-10 cursor-pointer place-items-center rounded-full bg-surface/90 shadow-soft backdrop-blur focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() => favoriteMutation.mutate()}
             >
-              <Heart className="h-4 w-4" />
+              <Heart className={`h-4 w-4 ${favorite ? "fill-foreground text-foreground" : ""}`} />
             </button>
           </div>
         </div>

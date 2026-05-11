@@ -68,6 +68,22 @@ class SalonImage(models.Model):
         ordering = ["sort_order", "id"]
 
 
+class FavoriteSalon(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="favorite_salons",
+    )
+    salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name="favorited_by")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "salon"], name="favorite_salon_unique_user_salon")
+        ]
+        ordering = ["-created_at"]
+
+
 class SalonHours(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name="hours")
     weekday = models.PositiveSmallIntegerField()  # 0=Monday

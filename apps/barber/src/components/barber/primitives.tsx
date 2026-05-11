@@ -8,6 +8,7 @@ export type BarberStatus =
   | "in_progress"
   | "completed"
   | "cancelled"
+  | "rejected"
   | "active"
   | "inactive";
 
@@ -24,6 +25,10 @@ const STATUS_MAP: Record<BarberStatus, { label: string; className: string }> = {
   },
   cancelled: {
     label: "Bekor qilindi",
+    className: "bg-destructive/10 text-destructive border-destructive/20",
+  },
+  rejected: {
+    label: "Rad etildi",
     className: "bg-destructive/10 text-destructive border-destructive/20",
   },
   active: { label: "Faol", className: "bg-foreground text-background border-foreground" },

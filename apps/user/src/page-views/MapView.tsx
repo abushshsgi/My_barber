@@ -25,6 +25,9 @@ type BarberNearbyApi = {
   longitude: string | null;
   avatar: string | null;
   distance_km: number;
+  avg_rating?: number | null;
+  review_count?: number | null;
+  active_services?: Array<{ name: string }>;
 };
 
 async function fetchNearbySalons(lat: number, lng: number, radius: number): Promise<Salon[]> {
@@ -47,9 +50,11 @@ function mapBarberNearby(r: BarberNearbyApi): PremiumBarber {
     id: String(r.barber_id),
     name: r.name?.trim() || "Barber",
     avatar: mediaSrc(r.avatar, PLACEHOLDER_AVATAR),
-    salonName: "Mustaqil barber",
-    rating: 5,
-    reviewCount: 0,
+    salonName: r.active_services?.length
+      ? r.active_services.map((s) => s.name).join(", ")
+      : "Mustaqil barber",
+    rating: Number(r.avg_rating || 0),
+    reviewCount: Number(r.review_count || 0),
     lat: parseFloat(r.latitude ?? "0") || 0,
     lng: parseFloat(r.longitude ?? "0") || 0,
     distanceKm: r.distance_km,

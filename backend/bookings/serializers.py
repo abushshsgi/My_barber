@@ -24,6 +24,8 @@ class BookingSerializer(serializers.ModelSerializer):
     customer_phone = serializers.CharField(read_only=True)
     salon_name = serializers.SerializerMethodField()
     barber_name = serializers.CharField(source="barber.full_name", read_only=True)
+    has_review = serializers.SerializerMethodField()
+    review_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
@@ -42,6 +44,8 @@ class BookingSerializer(serializers.ModelSerializer):
             "status",
             "total_price",
             "lines",
+            "has_review",
+            "review_id",
             "created_at",
         )
         read_only_fields = (
@@ -56,6 +60,13 @@ class BookingSerializer(serializers.ModelSerializer):
 
     def get_salon_name(self, obj):
         return obj.salon.name if obj.salon_id else None
+
+    def get_has_review(self, obj):
+        return hasattr(obj, "review")
+
+    def get_review_id(self, obj):
+        review = getattr(obj, "review", None)
+        return review.id if review else None
 
 
 class BookingCreateSerializer(serializers.Serializer):
@@ -214,7 +225,7 @@ class BookingCreateSerializer(serializers.Serializer):
                 barber=barber,
                 start_at=start_at,
                 end_at=end_at,
-                status=Booking.Status.ACCEPTED,
+                status=Booking.Status.PENDING,
                 total_price=total_price,
                 customer_phone=phone_snap,
             )

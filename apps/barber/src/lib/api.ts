@@ -140,3 +140,20 @@ export async function apiJson<T>(path: string, options: RequestInit = {}): Promi
   if (!res.ok) throw new Error(formatApiError(body, res.statusText));
   return body as T;
 }
+
+type PaginatedResponse<T> = {
+  count?: number;
+  next?: string | null;
+  previous?: string | null;
+  results?: T[];
+};
+
+export function unwrapList<T>(body: T[] | PaginatedResponse<T>): T[] {
+  if (Array.isArray(body)) return body;
+  return Array.isArray(body.results) ? body.results : [];
+}
+
+export async function apiList<T>(path: string, options: RequestInit = {}): Promise<T[]> {
+  const body = await apiJson<T[] | PaginatedResponse<T>>(path, options);
+  return unwrapList(body);
+}

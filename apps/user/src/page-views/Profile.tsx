@@ -1,6 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Settings,
@@ -13,18 +14,16 @@ import {
   Shield,
   Edit3,
   Loader2,
-  Scissors,
   Bell,
   MapPin,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "@/navigation";
-import { apiFetch, clearTokens } from "@/lib/api";
-import { fetchMySalons } from "@/lib/salon-queries";
-import { mapSalonListApi } from "@/lib/mapSalon";
+import { apiFetch, clearTokens, formatApiError } from "@/lib/api";
 import { useRouter } from "@/navigation";
 import { uzRegionLabel } from "@/lib/uz-regions";
-import { barberWebUrl } from "@/lib/public-urls";
+import { AuthGate } from "@/components/AuthGate";
+import { fetchFavoriteSalonCount } from "../lib/favorites";
 
 type Me = {
   id: number;
@@ -70,6 +69,10 @@ const menuItems = [
 
 const Profile = () => {
   const router = useRouter();
+  const qc = useQueryClient();
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [phoneDraft, setPhoneDraft] = useState("");
+  const [nameDraft, setNameDraft] = useState("");
   const { data: user, isLoading, error } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
   const { data: bookingCount = 0 } = useQuery({
     queryKey: ["bookings", "count"],
@@ -81,19 +84,33 @@ const Profile = () => {
     queryFn: fetchMyReviewCount,
     enabled: !!user,
   });
-  const { data: mySalonRows = [] } = useQuery({
-    queryKey: ["salons", "mine"],
-    queryFn: fetchMySalons,
-    enabled: !!(
-      user &&
-      (user.role === "BARBER_OWNER" || user.role === "BARBER_STAFF")
-    ),
-  });
-  const mySalons = mySalonRows.map(mapSalonListApi);
-
-  const isBarberRole =
-    user?.role === "BARBER_OWNER" || user?.role === "BARBER_STAFF";
   const isEndUser = user?.role === "USER";
+  const { data: favoriteCount = 0 } = useQuery({
+    queryKey: ["favorites", "salons", "count"],
+    queryFn: fetchFavoriteSalonCount,
+    enabled: !!user,
+  });
+
+  const updateProfile = useMutation({
+    mutationFn: async (payload: { phone: string; full_name: string }) => {
+      const res = await apiFetch("/api/v1/users/me/", {
+        method: "PATCH",
+        body: JSON.stringify({
+          phone: payload.phone.trim() || null,
+          full_name: payload.full_name.trim(),
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(formatApiError(body, "Profil yangilanmadi"));
+      return body as Me;
+    },
+    onSuccess: () => {
+      setEditingProfile(false);
+      qc.invalidateQueries({ queryKey: ["me"] });
+      qc.invalidateQueries({ queryKey: ["me", "booking"] });
+      qc.invalidateQueries({ queryKey: ["me", "indep-booking"] });
+    },
+  });
 
   if (isLoading) {
     return (
@@ -138,6 +155,11 @@ const Profile = () => {
               </div>
               <button
                 type="button"
+                onClick={() => {
+                  setPhoneDraft(user.phone || "");
+                  setNameDraft(displayName);
+                  setEditingProfile((v) => !v);
+                }}
                 className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-accent flex items-center justify-center shadow-lg"
               >
                 <Edit3 className="h-3 w-3 text-accent-foreground" />
@@ -165,7 +187,7 @@ const Profile = () => {
           {[
             { value: bookingCount, label: "Bandlar", icon: CalendarDays },
             { value: reviewCount, label: "Sharhlar", icon: Star },
-            { value: "—", label: "Sevimli", icon: Heart },
+            { value: favoriteCount, label: "Sevimli", icon: Heart },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -181,6 +203,57 @@ const Profile = () => {
           ))}
         </div>
       </motion.div>
+
+      {editingProfile && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="px-5 mt-4"
+        >
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+            <p className="text-sm font-semibold text-foreground">Profil ma’lumotlari</p>
+            <label className="mt-3 block text-xs font-medium text-muted-foreground">
+              Ism
+              <input
+                value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+                className="mt-1 h-11 w-full rounded-2xl border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                placeholder="Ismingiz"
+              />
+            </label>
+            <label className="mt-3 block text-xs font-medium text-muted-foreground">
+              Telefon
+              <input
+                value={phoneDraft}
+                onChange={(e) => setPhoneDraft(e.target.value)}
+                className="mt-1 h-11 w-full rounded-2xl border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                placeholder="+998 90 123 45 67"
+              />
+            </label>
+            {updateProfile.isError && (
+              <p className="mt-2 text-xs text-destructive">{(updateProfile.error as Error).message}</p>
+            )}
+            <div className="mt-4 flex gap-2">
+              <Button
+                type="button"
+                className="h-10 flex-1 rounded-2xl bg-primary text-primary-foreground"
+                disabled={updateProfile.isPending}
+                onClick={() => updateProfile.mutate({ phone: phoneDraft, full_name: nameDraft })}
+              >
+                Saqlash
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 flex-1 rounded-2xl"
+                onClick={() => setEditingProfile(false)}
+              >
+                Bekor qilish
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -220,28 +293,6 @@ const Profile = () => {
         )}
       </motion.div>
 
-      {isBarberRole && mySalons.length === 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.16 }}
-          className="px-5 mt-5"
-        >
-          <div className="bg-card rounded-2xl border border-border/50 p-4">
-            <p className="font-semibold text-sm">Salon ulanmagan</p>
-            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              Siz sartarosh akkauntidasiz, lekin hali salon yaratmagan yoki mavjud salonga qo‘shilmagansiz.
-              Salon bilan ishlash uchun salon yarating yoki admin orqali salonga ulanib oling.
-            </p>
-            <div className="mt-3">
-              <Button className="h-10 rounded-2xl border-0 bg-primary text-sm font-semibold text-primary-foreground shadow-luxury" asChild>
-                <a href={barberWebUrl("/salon/join")}>Salonga qo‘shilish / yaratish</a>
-              </Button>
-            </div>
-          </div>
-        </motion.div>
-      )}
-
       {isEndUser && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -261,57 +312,6 @@ const Profile = () => {
               <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
             </div>
           </Link>
-        </motion.div>
-      )}
-
-      {isBarberRole && mySalons.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="px-5 mt-5"
-        >
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-            Mening salonlarim
-          </p>
-          <div className="space-y-2 mb-3">
-            {mySalons.map((s) => (
-              <div key={s.id} className="bg-card rounded-2xl border border-border/50 p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center shrink-0">
-                  <Scissors className="h-5 w-5 text-accent" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">{s.name}</p>
-                  <p className="text-xs text-muted-foreground line-clamp-1">{s.address || "Manzil"}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <Button className="h-10 w-full rounded-2xl border-0 bg-primary text-sm font-semibold text-primary-foreground shadow-luxury" asChild>
-            <a href={barberWebUrl("/")}>Salon boshqaruvini ochish</a>
-          </Button>
-        </motion.div>
-      )}
-
-      {isBarberRole && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.22 }}
-          className="px-5 mt-5"
-        >
-          <a href={barberWebUrl("/")} className="block">
-            <div className="flex items-center gap-3 rounded-2xl border border-border/50 bg-card p-4 transition-colors hover:bg-muted/40">
-              <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center">
-                <Scissors className="h-5 w-5 text-accent" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm">Sartarosh paneli</p>
-                <p className="text-xs text-muted-foreground">Dashboard, salon, mijozlar</p>
-              </div>
-              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-            </div>
-          </a>
         </motion.div>
       )}
 
@@ -376,4 +376,10 @@ const Profile = () => {
   );
 };
 
-export default Profile;
+export default function ProfileWithAuth() {
+  return (
+    <AuthGate title="Profil uchun kiring" description="Profil, telefon va booking ma’lumotlari uchun mijoz akkaunti kerak.">
+      <Profile />
+    </AuthGate>
+  );
+}
