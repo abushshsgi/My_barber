@@ -38,14 +38,15 @@ export function UserBottomNav() {
       className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center pb-safe"
       aria-label="Asosiy navigatsiya"
     >
-      <div className="pointer-events-auto mx-3 mb-2 flex w-full max-w-md items-center justify-between rounded-[24px] border border-border bg-surface/95 p-1.5 shadow-dock backdrop-blur-2xl">
+      <div className="pointer-events-auto mx-3 mb-2 flex w-full max-w-md items-center justify-between rounded-[26px] border border-border/60 nav-dock-surface p-1.5 shadow-dock">
         {TABS.map(({ to, label, icon: Icon }) => {
           const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
+          const showBadge = to === "/notifications" && unread > 0;
           return (
             <Link
               key={to}
               to={to}
-              className="group relative flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-2xl py-1 text-[10px] font-medium transition"
+              className="group relative flex min-w-0 flex-1 cursor-pointer flex-col items-center gap-0.5 rounded-2xl py-1 text-[10px] font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
               aria-label={label}
               aria-current={active ? "page" : undefined}
             >
@@ -58,14 +59,16 @@ export function UserBottomNav() {
                 ].join(" ")}
               >
                 <Icon className="h-[18px] w-[18px]" aria-hidden />
-                {to === "/notifications" && unread > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-foreground ring-2 ring-surface" />
+                {showBadge && (
+                  <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-[1rem] place-items-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground ring-2 ring-surface">
+                    {unread > 9 ? "9+" : unread}
+                  </span>
                 )}
               </span>
               <span
                 className={[
-                  "text-[9px] tracking-wide transition",
-                  active ? "text-foreground font-semibold" : "text-muted-foreground",
+                  "font-display text-[9px] tracking-wide transition",
+                  active ? "font-semibold text-foreground" : "text-muted-foreground",
                 ].join(" ")}
               >
                 {label}

@@ -232,7 +232,7 @@ export default function MapInner({
             >
               <Popup className="map-popup-card" minWidth={220} maxWidth={280}>
                 <Link href={`/booking/barber/${b.barberId}`} className="block">
-                  <div className="rounded-xl overflow-hidden border-2 border-amber-500/40 shadow-sm mb-2">
+                  <div className="rounded-xl overflow-hidden border-2 border-gold/50 shadow-sm mb-2">
                     <img
                       src={b.avatarUrl}
                       alt={b.name}
@@ -240,7 +240,7 @@ export default function MapInner({
                     />
                   </div>
                   <h3 className="font-bold text-sm leading-tight">{b.name}</h3>
-                  <p className="text-[10px] font-medium text-amber-600 dark:text-amber-400 mt-0.5">
+                  <p className="mt-0.5 text-[10px] font-medium text-gold">
                     Mustaqil barber
                   </p>
                   <span className="text-xs text-muted-foreground font-medium mt-1 inline-block">
