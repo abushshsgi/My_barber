@@ -413,7 +413,7 @@ export default function SalonPage() {
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-md border-t border-border bg-surface/95 pb-safe pt-3 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-40 mx-auto w-full max-w-md border-t border-border bg-surface/95 py-3 backdrop-blur">
         <div className="px-5">
           {loggedIn ? (
             <Link
