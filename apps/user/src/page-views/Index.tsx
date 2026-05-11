@@ -222,7 +222,7 @@ export default function Index() {
           <Link
             to={me ? "/profile" : "/auth"}
             aria-label="Profil"
-            className="grid h-12 w-12 place-items-center rounded-full bg-surface shadow-card ring-1 ring-border"
+            className="grid h-12 w-12 cursor-pointer place-items-center rounded-full bg-surface shadow-card ring-1 ring-border outline-none transition hover:ring-foreground/30 focus-visible:ring-2 focus-visible:ring-ring"
           >
             <span className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-[11px] font-bold text-background">
               {me?.full_name ? initials(me.full_name) : me?.email ? initials(me.email) : "MB"}
@@ -232,7 +232,7 @@ export default function Index() {
           <button
             type="button"
             onClick={() => router.push("/map")}
-            className="flex flex-1 items-center gap-3 rounded-full bg-surface py-3 pl-4 pr-3 shadow-card ring-1 ring-border"
+            className="flex flex-1 cursor-pointer items-center gap-3 rounded-full bg-surface py-3 pl-4 pr-3 shadow-card ring-1 ring-border outline-none transition hover:ring-foreground/25 focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Search className="h-4 w-4 text-muted-foreground" />
             <span className="flex-1 truncate text-left text-sm text-muted-foreground">
@@ -243,12 +243,12 @@ export default function Index() {
           <Link
             to="/notifications"
             aria-label="Xabarlar"
-            className="relative grid h-12 w-12 place-items-center rounded-full bg-surface shadow-card ring-1 ring-border"
+            className="relative grid h-12 w-12 cursor-pointer place-items-center rounded-full bg-surface shadow-card ring-1 ring-border outline-none transition hover:ring-foreground/30 focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Bell className="h-5 w-5 text-foreground" />
             {unreadTop > 0 && (
-              <span className="absolute right-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-foreground px-1 text-[9px] font-bold text-background ring-2 ring-surface">
-                {unreadTop}
+              <span className="absolute right-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground ring-2 ring-surface">
+                {unreadTop > 9 ? "9+" : unreadTop}
               </span>
             )}
           </Link>
@@ -259,7 +259,7 @@ export default function Index() {
             type="button"
             onClick={requestGeo}
             aria-label="Mening joylashuvim"
-            className="grid h-11 w-11 place-items-center rounded-full bg-surface shadow-card ring-1 ring-border active:scale-95"
+            className="grid h-11 w-11 cursor-pointer place-items-center rounded-full bg-surface shadow-card ring-1 ring-border outline-none transition active:scale-95 focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Locate className="h-4 w-4 text-foreground" />
           </button>
@@ -287,9 +287,7 @@ export default function Index() {
         </div>
 
         <div className="px-4 pt-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Xizmatlar
-          </p>
+          <p className="label-eyebrow">Xizmatlar</p>
           <div className="mt-2 grid grid-cols-4 gap-2">
             {CATEGORIES.map(({ id, label, Icon }) => {
               const active = cat === id;
@@ -298,11 +296,12 @@ export default function Index() {
                   key={id}
                   type="button"
                   onClick={() => setCat(active ? null : id)}
+                  aria-pressed={active}
                   className={[
-                    "group flex flex-col items-center justify-center gap-1.5 rounded-2xl border px-2 py-3 text-[11px] font-semibold transition active:scale-[0.97]",
+                    "group flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border px-2 py-3 text-[11px] font-semibold outline-none transition active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-ring",
                     active
-                      ? "border-foreground bg-foreground text-background"
-                      : "border-border bg-background text-foreground",
+                      ? "border-foreground bg-foreground text-background shadow-soft"
+                      : "border-border bg-background text-foreground hover:border-foreground/30",
                   ].join(" ")}
                 >
                   <Icon className="h-5 w-5" />
@@ -314,10 +313,13 @@ export default function Index() {
         </div>
 
         <div className="mt-4 flex items-center justify-between px-4">
-          <h2 className="text-[15px] font-bold tracking-tight text-foreground">
+          <h2 className="font-display text-[15px] font-bold tracking-tight text-foreground">
             Yaqin atrofdagi salonlar
           </h2>
-          <Link to="/map" className="inline-flex items-center gap-0.5 text-xs font-semibold text-foreground">
+          <Link
+            to="/map"
+            className="inline-flex cursor-pointer items-center gap-0.5 text-xs font-semibold text-foreground hover:underline"
+          >
             Xaritada <ChevronRight className="h-3.5 w-3.5" />
           </Link>
         </div>
@@ -383,15 +385,16 @@ function SalonRow({
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <h3 className="truncate text-sm font-bold text-foreground">{salon.name}</h3>
-          <span
-            className={[
-              "ml-auto rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider",
-              salon.isPremium ? "bg-foreground text-background" : "bg-muted text-muted-foreground",
-            ].join(" ")}
-          >
-            {salon.isPremium ? "Ochiq" : "Yopiq"}
-          </span>
+          <h3 className="truncate font-display text-sm font-bold text-foreground">{salon.name}</h3>
+          {salon.isPremium ? (
+            <span className="ml-auto inline-flex items-center gap-0.5 rounded-full gold-gradient px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-gold-foreground">
+              Premium
+            </span>
+          ) : (
+            <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Salon
+            </span>
+          )}
         </div>
         <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
           <MapPin className="h-3 w-3" />
@@ -399,7 +402,7 @@ function SalonRow({
           {salon.distance > 0 ? <span>· {formatKm(salon.distance)}</span> : null}
         </p>
         <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-foreground">
-          <Star className="h-3 w-3 fill-foreground" />
+          <Star className="h-3 w-3 fill-gold text-gold" />
           {salon.rating.toFixed(1)}
           <span className="font-normal text-muted-foreground">({salon.reviewCount})</span>
         </p>

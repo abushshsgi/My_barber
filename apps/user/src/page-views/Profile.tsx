@@ -120,35 +120,38 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-foreground via-foreground/95 to-foreground/85" />
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 right-10 w-40 h-40 rounded-full bg-accent blur-3xl" />
+      <div className="relative overflow-hidden rounded-b-[32px] dark-gradient text-background">
+        <div className="pointer-events-none absolute inset-0 opacity-30">
+          <div className="absolute -top-10 -right-10 h-44 w-44 rounded-full bg-gold/40 blur-3xl" />
+          <div className="absolute top-20 -left-10 h-32 w-32 rounded-full bg-teal/30 blur-3xl" />
         </div>
 
-        <div className="relative px-5 pt-12 pb-8">
+        <div className="relative px-5 pt-12 pb-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="flex items-center gap-4"
           >
             <div className="relative">
-              <div className="w-[72px] h-[72px] rounded-2xl bg-muted flex items-center justify-center ring-2 ring-accent/50 ring-offset-2 ring-offset-foreground text-background font-bold text-xl">
+              <div className="grid h-[72px] w-[72px] place-items-center rounded-2xl bg-background/10 text-xl font-bold text-background ring-2 ring-gold/40 ring-offset-2 ring-offset-foreground">
                 {displayName.slice(0, 1).toUpperCase()}
               </div>
               <button
                 type="button"
-                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-accent flex items-center justify-center shadow-lg"
+                aria-label="Profilni tahrirlash"
+                className="absolute -bottom-1 -right-1 grid h-7 w-7 cursor-pointer place-items-center rounded-lg gold-gradient shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-gold"
               >
-                <Edit3 className="h-3 w-3 text-accent-foreground" />
+                <Edit3 className="h-3 w-3 text-gold-foreground" />
               </button>
             </div>
-            <div>
-              <h1 className="text-xl font-extrabold text-background">{displayName}</h1>
-              <p className="text-sm text-background/50 mt-0.5">{user.phone || "—"}</p>
-              <p className="text-xs text-background/40">{user.email}</p>
+            <div className="min-w-0">
+              <h1 className="font-display text-xl font-extrabold leading-tight text-background">
+                {displayName}
+              </h1>
+              <p className="mt-0.5 truncate text-sm text-background/60">{user.phone || "—"}</p>
+              <p className="truncate text-xs text-background/45">{user.email}</p>
               {user.region ? (
-                <p className="text-xs text-background/35 mt-1">{uzRegionLabel(user.region)}</p>
+                <p className="mt-1 text-xs text-background/40">{uzRegionLabel(user.region)}</p>
               ) : null}
             </div>
           </motion.div>
@@ -159,24 +162,24 @@ const Profile = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="px-5 -mt-4"
+        className="px-5 -mt-6"
       >
         <div className="grid grid-cols-3 gap-3">
           {[
-            { value: bookingCount, label: "Bandlar", icon: CalendarDays },
-            { value: reviewCount, label: "Sharhlar", icon: Star },
-            { value: "—", label: "Sevimli", icon: Heart },
+            { value: bookingCount, label: "Bandlar", icon: CalendarDays, tone: "text-foreground" },
+            { value: reviewCount, label: "Sharhlar", icon: Star, tone: "text-gold" },
+            { value: "—", label: "Sevimli", icon: Heart, tone: "text-destructive" },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 + i * 0.05 }}
-              className="bg-card rounded-2xl p-3.5 text-center border border-border/50 shadow-sm"
+              className="rounded-2xl border border-border/60 bg-surface p-3.5 text-center shadow-card"
             >
-              <stat.icon className="mx-auto mb-1.5 h-5 w-5 text-muted-foreground" />
-              <p className="text-xl font-extrabold text-foreground">{stat.value}</p>
-              <p className="text-[10px] text-muted-foreground font-medium mt-0.5">{stat.label}</p>
+              <stat.icon className={`mx-auto mb-1.5 h-5 w-5 ${stat.tone}`} />
+              <p className="font-display text-xl font-extrabold text-foreground">{stat.value}</p>
+              <p className="mt-0.5 text-[10px] font-medium text-muted-foreground">{stat.label}</p>
             </motion.div>
           ))}
         </div>
