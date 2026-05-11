@@ -919,16 +919,25 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     setConversations(apiConvos.map(mapApiConversation));
   }, []);
 
-  const refreshClients = useCallback(async () => {
-    const apiClients = await apiList<{
-        id: number;
-        full_name: string;
-        phone: string;
-        completed_bookings: number;
-        total_spent: string;
-      }>("/api/v1/analytics/clients/independent/");
-    setClients(apiClients.map(mapApiClient));
-  }, []);
+  const refreshClients = useCallback(
+    async (scope?: { workMode?: "salon" | "independent"; salonId?: number | null }) => {
+      const mode = scope?.workMode ?? barberWorkMode;
+      const salonId = scope?.salonId ?? activeSalonId;
+      const endpoint =
+        mode === "salon" && salonId != null
+          ? `/api/v1/analytics/clients/?salon=${salonId}`
+          : "/api/v1/analytics/clients/independent/";
+      const apiClients = await apiList<{
+          id: number;
+          full_name: string;
+          phone: string;
+          completed_bookings: number;
+          total_spent: string;
+        }>(endpoint);
+      setClients(apiClients.map(mapApiClient));
+    },
+    [activeSalonId, barberWorkMode],
+  );
 
   const refreshInventory = useCallback(async () => {
     const rows = await apiList<{
@@ -1451,7 +1460,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
           refreshBookings(),
           refreshNotifications(),
           refreshConversations(),
-          refreshClients(),
+          refreshClients({ workMode: wm, salonId: aid }),
           refreshInventory(),
           refreshExpenses(),
           refreshGoals(),

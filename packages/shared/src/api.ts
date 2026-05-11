@@ -199,9 +199,9 @@ async function refreshAccess(kindHint: TokenKind, pathForRefresh: string): Promi
     return null;
   }
   const text = await res.text();
-  let data: { access?: string };
+  let data: { access?: string; refresh?: string };
   try {
-    data = JSON.parse(text) as { access?: string };
+    data = JSON.parse(text) as { access?: string; refresh?: string };
   } catch {
     const keys = keyFor(kind);
     localStorage.removeItem(keys.access);
@@ -224,8 +224,14 @@ async function refreshAccess(kindHint: TokenKind, pathForRefresh: string): Promi
   }
   const keys = keyFor(kind);
   localStorage.setItem(keys.access, data.access);
+  if (data.refresh) {
+    localStorage.setItem(keys.refresh, data.refresh);
+  }
   if (kind === "user") {
     localStorage.setItem(TOKEN_KEY, data.access);
+    if (data.refresh) {
+      localStorage.setItem(REFRESH_KEY, data.refresh);
+    }
   }
   return data.access;
 }
