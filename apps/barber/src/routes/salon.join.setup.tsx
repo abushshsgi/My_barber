@@ -356,10 +356,10 @@ function SalonJoinSetupPage() {
       firstName.trim().length > 1 && lastName.trim().length > 1 && phoneDigits.length === 9,
       // 1: Location text
       locationText.trim().length > 4,
-      // 2: Services
-      services.every((s) => s.name.trim() && s.price.trim() && s.duration.trim()),
-      // 3: Schedule
-      schedule.some((d) => d.open),
+      // 2: Services can be skipped; dashboard checklist will keep booking disabled.
+      true,
+      // 3: Schedule can be skipped; dashboard checklist will keep booking disabled.
+      true,
       // 4: Languages
       languages.length > 0,
     ];
@@ -368,6 +368,7 @@ function SalonJoinSetupPage() {
   const isLast = step === TOTAL_STEPS - 1;
   const canNext = stepValid[step];
   const allValid = stepValid.every(Boolean);
+  const isOptionalSetupStep = step === 2 || step === 3;
 
   /* --- Persistence helpers (preserve existing logic) --- */
   const persistProfileStep = async () => {
@@ -517,6 +518,18 @@ function SalonJoinSetupPage() {
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
+  };
+
+  const skipOptionalStep = () => {
+    if (step === 2) {
+      setServices([{ id: uid(), name: "", price: "", duration: "" }]);
+    }
+    if (step === 3) {
+      setSchedule((prev) => prev.map((day) => ({ ...day, open: false })));
+    }
+    setDirection(1);
+    setStep((s) => Math.min(TOTAL_STEPS - 1, s + 1));
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleFinish = async () => {
@@ -769,6 +782,17 @@ function SalonJoinSetupPage() {
               </motion.span>
             </AnimatePresence>
           </div>
+
+          {isOptionalSetupStep && (
+            <button
+              type="button"
+              onClick={skipOptionalStep}
+              disabled={busy || success}
+              className="inline-flex h-11 items-center rounded-xl border border-border bg-background px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50 sm:px-4 sm:text-sm"
+            >
+              Keyinroq
+            </button>
+          )}
 
           {!isLast ? (
             <button

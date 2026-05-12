@@ -37,6 +37,15 @@ export type WorkingHour = {
   closed: boolean;
 };
 
+export type BookingSetupStatus = {
+  ready: boolean;
+  missing: string[];
+  setupPath: string | null;
+  hasLocation: boolean;
+  hasServices: boolean;
+  hasWorkingHours: boolean;
+};
+
 export type Booking = {
   id: string;
   client: string;
@@ -191,6 +200,7 @@ type Ctx = {
   flowIdentity: FlowIdentity;
   onboardingComplete: boolean;
   requiredNextPath: string | null;
+  bookingSetup: BookingSetupStatus;
   profile: BarberProfile;
   services: Service[];
   workingHours: WorkingHour[];
@@ -840,6 +850,14 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   const [onboardingFlow, setOnboardingFlow] = useState<string | null>(null);
   const [onboardingComplete, setOnboardingComplete] = useState(true);
   const [requiredNextPath, setRequiredNextPath] = useState<string | null>(null);
+  const [bookingSetup, setBookingSetup] = useState<BookingSetupStatus>({
+    ready: true,
+    missing: [],
+    setupPath: null,
+    hasLocation: true,
+    hasServices: true,
+    hasWorkingHours: true,
+  });
   const [settings, setSettings] = useState<Settings>({
     notifications_email: true,
     notifications_push: true,
@@ -1437,6 +1455,13 @@ export function BarberProvider({ children }: { children: ReactNode }) {
             is_complete?: boolean;
             required_next_path?: string;
             flow?: string | null;
+            booking_ready?: boolean;
+            booking_missing?: string[];
+            booking_setup_path?: string | null;
+            has_location?: boolean;
+            has_services?: boolean;
+            has_working_hours?: boolean;
+            has_membership_hours?: boolean;
           }>(
             "/api/v1/barber/onboarding/status/",
           );
@@ -1444,6 +1469,14 @@ export function BarberProvider({ children }: { children: ReactNode }) {
           setOnboardingComplete(Boolean(st.is_complete));
           setRequiredNextPath(st.required_next_path ? String(st.required_next_path) : null);
           setOnboardingFlow(st.flow ? String(st.flow) : null);
+          setBookingSetup({
+            ready: st.booking_ready !== false,
+            missing: Array.isArray(st.booking_missing) ? st.booking_missing.map(String) : [],
+            setupPath: st.booking_setup_path ? String(st.booking_setup_path) : null,
+            hasLocation: Boolean(st.has_location),
+            hasServices: Boolean(st.has_services),
+            hasWorkingHours: Boolean(st.has_working_hours ?? st.has_membership_hours),
+          });
         } catch {
           // keep fallback from /auth/me when status endpoint is unavailable
           setOnboardingFlow(null);
@@ -1526,6 +1559,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       flowIdentity,
       onboardingComplete,
       requiredNextPath,
+      bookingSetup,
       profile,
       services,
       workingHours,
@@ -1590,6 +1624,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       flowIdentity,
       onboardingComplete,
       requiredNextPath,
+      bookingSetup,
       profile,
       services,
       workingHours,

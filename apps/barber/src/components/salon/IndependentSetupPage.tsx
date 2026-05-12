@@ -264,13 +264,10 @@ export function IndependentSetupPage() {
         lat <= 90 &&
         lng >= -180 &&
         lng <= 180,
-      // 2: Services - at least one valid
-      services.length > 0 &&
-        services.every(
-          (s) => s.name.trim().length > 0 && Number(s.price) > 0 && Number(s.duration) > 0,
-        ),
-      // 3: Schedule - at least one open day
-      schedule.some((d) => d.open),
+      // 2: Services can be skipped; booking activation checklist will keep it visible.
+      true,
+      // 3: Schedule can be skipped; booking activation checklist will keep it visible.
+      true,
       // 4: Languages
       languages.length > 0,
     ];
@@ -290,6 +287,7 @@ export function IndependentSetupPage() {
   const isLast = step === TOTAL_STEPS - 1;
   const canNext = stepValid[step];
   const allValid = stepValid.every(Boolean);
+  const isOptionalSetupStep = step === 2 || step === 3;
 
   const goNext = () => {
     if (!canNext || isLast) return;
@@ -302,6 +300,18 @@ export function IndependentSetupPage() {
     if (step === 0) return;
     setDirection(-1);
     setStep((s) => Math.max(0, s - 1));
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const skipOptionalStep = () => {
+    if (step === 2) {
+      setServices([{ id: uid(), name: "", price: "", duration: "" }]);
+    }
+    if (step === 3) {
+      setSchedule((prev) => prev.map((day) => ({ ...day, open: false })));
+    }
+    setDirection(1);
+    setStep((s) => Math.min(TOTAL_STEPS - 1, s + 1));
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -475,6 +485,7 @@ export function IndependentSetupPage() {
       const existingNames = new Set(existing.map((e) => e.name.trim().toLowerCase()));
 
       for (const s of services) {
+        if (!s.name.trim() && !s.price.trim() && !s.duration.trim()) continue;
         if (existingNames.has(s.name.trim().toLowerCase())) continue;
         const res = await apiFetch("/api/v1/barber/services/", {
           method: "POST",
@@ -720,6 +731,17 @@ export function IndependentSetupPage() {
               </motion.span>
             </AnimatePresence>
           </div>
+
+          {isOptionalSetupStep && (
+            <button
+              type="button"
+              onClick={skipOptionalStep}
+              disabled={submitting}
+              className="inline-flex h-11 items-center rounded-xl border border-border bg-background px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50 sm:px-4 sm:text-sm"
+            >
+              Keyinroq
+            </button>
+          )}
 
           {!isLast ? (
             <button

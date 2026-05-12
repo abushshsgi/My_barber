@@ -225,10 +225,10 @@ export function CreateSalonPage() {
       barberFirstName.trim().length > 1 &&
         barberLastName.trim().length > 1 &&
         barberPhoneDigits.length === 9,
-      // 4: Services
-      services.every((s) => s.name && s.price && s.duration),
-      // 5: Schedule
-      schedule.some((d) => d.open),
+      // 4: Services can be skipped; dashboard checklist will keep booking disabled.
+      true,
+      // 5: Schedule can be skipped; dashboard checklist will keep booking disabled.
+      true,
       // 6: Languages
       languages.length > 0,
     ];
@@ -250,6 +250,7 @@ export function CreateSalonPage() {
   const isLast = step === TOTAL_STEPS - 1;
   const canNext = stepValid[step];
   const allValid = stepValid.every(Boolean);
+  const isOptionalSetupStep = step === 4 || step === 5;
 
   const goNext = () => {
     if (!canNext || isLast) return;
@@ -267,6 +268,18 @@ export function CreateSalonPage() {
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
+  };
+
+  const skipOptionalStep = () => {
+    if (step === 4) {
+      setServices([{ id: uid(), name: "", price: "", duration: "" }]);
+    }
+    if (step === 5) {
+      setSchedule((prev) => prev.map((day) => ({ ...day, open: false })));
+    }
+    setDirection(1);
+    setStep((s) => Math.min(TOTAL_STEPS - 1, s + 1));
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const updateService = (id: string, key: keyof Service, value: string) =>
@@ -431,11 +444,13 @@ export function CreateSalonPage() {
         languages,
         closed_weekdays: closedWeekdays,
         hours: hoursPayload,
-        services: services.map((s) => ({
-          name: s.name.trim(),
-          price: s.price,
-          duration_minutes: Number(s.duration),
-        })),
+        services: services
+          .filter((s) => s.name.trim() && s.price.trim() && s.duration.trim())
+          .map((s) => ({
+            name: s.name.trim(),
+            price: s.price,
+            duration_minutes: Number(s.duration),
+          })),
       };
 
       const createRes = await apiFetch("/api/v1/salons/", {
@@ -725,6 +740,17 @@ export function CreateSalonPage() {
               </motion.span>
             </AnimatePresence>
           </div>
+
+          {isOptionalSetupStep && (
+            <button
+              type="button"
+              onClick={skipOptionalStep}
+              disabled={submitting}
+              className="inline-flex h-11 items-center rounded-xl border border-border bg-background px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50 sm:px-4 sm:text-sm"
+            >
+              Keyinroq
+            </button>
+          )}
 
           {!isLast ? (
             <button

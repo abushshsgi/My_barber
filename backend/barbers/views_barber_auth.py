@@ -146,7 +146,9 @@ class BarberOnboardingStatusView(APIView):
 
     def get(self, request):
         from django.utils import timezone
+        from django.db.models import Q
 
+        from salons.models import Service
         from salons.models import BarberWorkingHours as SalonWorkingHours
         from salons.models import Salon, SalonMembership
 
@@ -161,12 +163,19 @@ class BarberOnboardingStatusView(APIView):
             if not b.onboarding_completed_at:
                 Barber.objects.filter(pk=b.pk).update(onboarding_completed_at=timezone.now())
             payload["is_complete"] = True
+            payload.setdefault("required_next_path", None)
             return Response(payload)
 
         def incomplete(next_path: str, payload: dict) -> Response:
             payload["is_complete"] = False
             payload["required_next_path"] = next_path
             return Response(payload)
+
+        def add_booking_readiness(payload: dict, checks: dict[str, bool]) -> None:
+            missing = [key for key, ok in checks.items() if not ok]
+            payload["booking_ready"] = not missing
+            payload["booking_missing"] = missing
+            payload["booking_setup_path"] = "/barber/services" if missing else None
 
         payload = {
             "flow": flow or None,
@@ -177,9 +186,17 @@ class BarberOnboardingStatusView(APIView):
         # Independent flow
         if flow == Barber.OnboardingFlow.INDEPENDENT or wm == Barber.WorkMode.INDEPENDENT:
             has_services = BarberService.objects.filter(profile__barber=b, is_active=True).exists()
-            has_hours = IndepWorkingHours.objects.filter(profile__barber=b).exists()
+            has_hours = IndepWorkingHours.objects.filter(profile__barber=b, is_day_off=False).exists()
             payload.update({"has_services": has_services, "has_working_hours": has_hours})
-            if not has_location or not has_services or not has_hours:
+            add_booking_readiness(
+                payload,
+                {
+                    "location": has_location,
+                    "services": has_services,
+                    "working_hours": has_hours,
+                },
+            )
+            if not has_location:
                 return incomplete("/independent/setup", payload)
             return complete(payload)
 
@@ -213,22 +230,47 @@ class BarberOnboardingStatusView(APIView):
                 )
                 return incomplete(nxt, payload)
             mem = owner_mem
-            has_mem_hours = bool(mem and SalonWorkingHours.objects.filter(membership=mem).exists())
-            payload["has_membership_hours"] = has_mem_hours
-            if not has_location or not has_mem_hours:
-                if flow == Barber.OnboardingFlow.MYBARBER:
-                    return incomplete("/mybarber/setup", payload)
-                return incomplete("/salon/create", payload)
+            has_mem_hours = bool(mem and SalonWorkingHours.objects.filter(membership=mem, is_day_off=False).exists())
+            salon_id = owner_mem.salon_id if owner_mem else None
+            has_services = bool(
+                salon_id
+                and Service.objects.filter(
+                    salon_id=salon_id,
+                    is_active=True,
+                )
+                .filter(Q(barber=b) | Q(barber__isnull=True))
+                .exists()
+            )
+            payload.update({"has_membership_hours": has_mem_hours, "has_services": has_services})
+            add_booking_readiness(
+                payload,
+                {
+                    "location": has_location,
+                    "services": has_services,
+                    "working_hours": has_mem_hours,
+                },
+            )
+            if not has_location:
+                return incomplete("/mybarber/setup" if flow == Barber.OnboardingFlow.MYBARBER else "/salon/create", payload)
             return complete(payload)
 
         # Employee flow
         if flow == Barber.OnboardingFlow.EMPLOYEE or flow == "":
             if not active_mem:
                 return incomplete("/salon/join", payload)
-            has_mem_hours = SalonWorkingHours.objects.filter(membership=active_mem).exists()
-            payload["has_membership_hours"] = has_mem_hours
-            if not has_location or not has_mem_hours:
-                return incomplete("/salon/join/setup", payload)
+            has_mem_hours = SalonWorkingHours.objects.filter(membership=active_mem, is_day_off=False).exists()
+            has_services = Service.objects.filter(
+                salon=active_mem.salon,
+                is_active=True,
+            ).filter(Q(barber=b) | Q(barber__isnull=True)).exists()
+            payload.update({"has_membership_hours": has_mem_hours, "has_services": has_services})
+            add_booking_readiness(
+                payload,
+                {
+                    "services": has_services,
+                    "working_hours": has_mem_hours,
+                },
+            )
             return complete(payload)
 
         # Unknown: force auth

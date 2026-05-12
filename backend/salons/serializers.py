@@ -265,12 +265,7 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
         if self.instance is None:
             services = attrs.get("services")
             if not services:
-                if request and is_platform_admin(request):
-                    attrs["services"] = []
-                else:
-                    raise serializers.ValidationError(
-                        {"services": "Kamida bitta xizmat kiriting."}
-                    )
+                attrs["services"] = []
         return attrs
 
     def create(self, validated_data):

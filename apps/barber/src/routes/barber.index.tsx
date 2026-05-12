@@ -40,6 +40,7 @@ function BarberDashboard() {
     completeBooking,
     viewMode,
     flowIdentity,
+    bookingSetup,
   } = useBarberContext();
 
   /** Salon rejimida indeks — mustaqil dashboard emas, salon overview (ishchi «Barberga oʻtish» mustaqil rejimga o‘tkazadi). */
@@ -104,6 +105,35 @@ function BarberDashboard() {
             Davom etish
             <ArrowRight className="size-4" />
           </Link>
+        </div>
+      )}
+
+      {onboardingComplete && !bookingSetup.ready && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-5 shadow-card">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-700">
+              <AlertTriangle className="size-5" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-heading font-medium text-foreground">Booking hali yoqilmagan</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Dashboarddan foydalanishingiz mumkin. Mijozlar band qilishi uchun quyidagi
+                tayyorlovlarni yakunlang.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <SetupChip done={bookingSetup.hasLocation} label="Lokatsiya" />
+                <SetupChip done={bookingSetup.hasServices} label="Xizmatlar" />
+                <SetupChip done={bookingSetup.hasWorkingHours} label="Ish jadvali" />
+              </div>
+            </div>
+            <Link
+              to={bookingSetup.setupPath || "/barber/services"}
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90"
+            >
+              To'ldirish
+              <ArrowRight className="size-4" />
+            </Link>
+          </div>
         </div>
       )}
 
@@ -314,6 +344,22 @@ function BarberDashboard() {
         </Link>
       </section>
     </div>
+  );
+}
+
+function SetupChip({ done, label }: { done: boolean; label: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium",
+        done
+          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
+          : "border-amber-500/30 bg-background/70 text-amber-700",
+      )}
+    >
+      {done ? <CheckCircle2 className="size-3.5" /> : <AlertTriangle className="size-3.5" />}
+      {label}
+    </span>
   );
 }
 

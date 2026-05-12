@@ -201,7 +201,8 @@ export function MyBarberSetupPage() {
         lat <= 90 &&
         lng >= -180 &&
         lng <= 180,
-      services.every((s) => s.name.trim() && s.price.trim() && s.duration.trim()),
+      // Services can be skipped; dashboard checklist will keep booking disabled.
+      true,
       languages.length > 0,
     ];
   }, [
@@ -220,6 +221,7 @@ export function MyBarberSetupPage() {
   const isLast = step === TOTAL_STEPS - 1;
   const canNext = stepValid[step];
   const allValid = stepValid.every(Boolean);
+  const isOptionalSetupStep = step === 3;
 
   const goNext = () => {
     if (!canNext || isLast) return;
@@ -232,6 +234,15 @@ export function MyBarberSetupPage() {
     if (step === 0) return;
     setDirection(-1);
     setStep((s) => Math.max(0, s - 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const skipOptionalStep = () => {
+    if (step === 3) {
+      setServices([{ id: uid(), name: "", price: "", duration: "" }]);
+    }
+    setDirection(1);
+    setStep((s) => Math.min(TOTAL_STEPS - 1, s + 1));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -392,11 +403,13 @@ export function MyBarberSetupPage() {
         languages,
         closed_weekdays: closedWeekdays,
         hours: hoursPayload,
-        services: services.map((s) => ({
-          name: s.name.trim(),
-          price: s.price.replace(/\D/g, "") || s.price,
-          duration_minutes: Number(s.duration.replace(/\D/g, "")),
-        })),
+        services: services
+          .filter((s) => s.name.trim() && s.price.trim() && s.duration.trim())
+          .map((s) => ({
+            name: s.name.trim(),
+            price: s.price.replace(/\D/g, "") || s.price,
+            duration_minutes: Number(s.duration.replace(/\D/g, "")),
+          })),
       };
 
       const createRes = await apiFetch("/api/v1/salons/", {
@@ -634,6 +647,16 @@ export function MyBarberSetupPage() {
               {currentMeta.short}
             </span>
           </div>
+          {isOptionalSetupStep && (
+            <button
+              type="button"
+              onClick={skipOptionalStep}
+              disabled={submitting || success}
+              className="inline-flex h-11 items-center rounded-xl border border-border bg-background px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50 sm:px-4 sm:text-sm"
+            >
+              Keyinroq
+            </button>
+          )}
           {!isLast ? (
             <button
               type="button"
