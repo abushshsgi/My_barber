@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Link, useRouter } from "@/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, getAccessToken } from "@/lib/api";
 import { fetchSalons } from "@/lib/salon-queries";
 import { mapSalonListApi, type SalonListApi } from "@/lib/mapSalon";
 import type { Salon } from "@/types";
@@ -79,6 +79,7 @@ function matchesCategory(s: Salon, cat: string | null): boolean {
 
 export default function Index() {
   const router = useRouter();
+  const isLoggedIn = !!getAccessToken();
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [radiusKm] = useState(2);
   const [cat, setCat] = useState<string | null>(null);
@@ -128,6 +129,7 @@ export default function Index() {
   const { data: me } = useQuery({
     queryKey: ["me-banner"],
     queryFn: fetchMeOptional,
+    enabled: isLoggedIn,
     retry: false,
     staleTime: 60_000,
   });
@@ -137,6 +139,7 @@ export default function Index() {
     queryFn: fetchNotifications,
     staleTime: 30_000,
     retry: false,
+    enabled: isLoggedIn,
   });
 
   const unreadTop = !notifErr ? notifications.filter((n) => !n.read_at).length : 0;

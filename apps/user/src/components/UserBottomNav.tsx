@@ -10,6 +10,7 @@ import {
   User,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { getAccessToken } from "@/lib/api";
 import { fetchNotifications } from "@/lib/notifications-queries";
 
 const TABS = [
@@ -23,12 +24,14 @@ const TABS = [
 
 export function UserBottomNav() {
   const pathname = usePathname();
+  const isLoggedIn = !!getAccessToken();
 
   const { data: notifications = [], isError } = useQuery({
     queryKey: ["notifications"],
     queryFn: fetchNotifications,
     staleTime: 30_000,
     retry: false,
+    enabled: isLoggedIn,
   });
 
   const unread = isError ? 0 : notifications.filter((n) => !n.read_at).length;

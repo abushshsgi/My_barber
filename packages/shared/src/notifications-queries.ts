@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, getAccessToken } from "./api";
 
 export type NotifRow = {
   id: number;
@@ -11,7 +11,9 @@ export type NotifRow = {
 };
 
 export async function fetchNotifications(): Promise<NotifRow[]> {
+  if (!getAccessToken()) return [];
   const res = await apiFetch("/api/v1/notifications/");
+  if (res.status === 401 || res.status === 403) return [];
   if (!res.ok) throw new Error("Xabarlar yuklanmadi");
   const j = (await res.json()) as { results?: NotifRow[] } | NotifRow[];
   const list = Array.isArray(j) ? j : j.results || [];
