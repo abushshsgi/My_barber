@@ -19,6 +19,7 @@ import { Route as MybarberSetupRouteImport } from './routes/mybarber.setup'
 import { Route as IndependentSetupRouteImport } from './routes/independent.setup'
 import { Route as BarberStatsRouteImport } from './routes/barber.stats'
 import { Route as BarberSettingsRouteImport } from './routes/barber.settings'
+import { Route as BarberServicesRouteImport } from './routes/barber.services'
 import { Route as BarberReviewsRouteImport } from './routes/barber.reviews'
 import { Route as BarberProfileRouteImport } from './routes/barber.profile'
 import { Route as BarberPortfolioRouteImport } from './routes/barber.portfolio'
@@ -89,6 +90,11 @@ const BarberStatsRoute = BarberStatsRouteImport.update({
 const BarberSettingsRoute = BarberSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberServicesRoute = BarberServicesRouteImport.update({
+  id: '/services',
+  path: '/services',
   getParentRoute: () => BarberRoute,
 } as any)
 const BarberReviewsRoute = BarberReviewsRouteImport.update({
@@ -215,6 +221,7 @@ export interface FileRoutesByFullPath {
   '/barber/portfolio': typeof BarberPortfolioRoute
   '/barber/profile': typeof BarberProfileRoute
   '/barber/reviews': typeof BarberReviewsRoute
+  '/barber/services': typeof BarberServicesRoute
   '/barber/settings': typeof BarberSettingsRoute
   '/barber/stats': typeof BarberStatsRoute
   '/independent/setup': typeof IndependentSetupRoute
@@ -247,6 +254,7 @@ export interface FileRoutesByTo {
   '/barber/portfolio': typeof BarberPortfolioRoute
   '/barber/profile': typeof BarberProfileRoute
   '/barber/reviews': typeof BarberReviewsRoute
+  '/barber/services': typeof BarberServicesRoute
   '/barber/settings': typeof BarberSettingsRoute
   '/barber/stats': typeof BarberStatsRoute
   '/independent/setup': typeof IndependentSetupRoute
@@ -280,6 +288,7 @@ export interface FileRoutesById {
   '/barber/portfolio': typeof BarberPortfolioRoute
   '/barber/profile': typeof BarberProfileRoute
   '/barber/reviews': typeof BarberReviewsRoute
+  '/barber/services': typeof BarberServicesRoute
   '/barber/settings': typeof BarberSettingsRoute
   '/barber/stats': typeof BarberStatsRoute
   '/independent/setup': typeof IndependentSetupRoute
@@ -315,6 +324,7 @@ export interface FileRouteTypes {
     | '/barber/portfolio'
     | '/barber/profile'
     | '/barber/reviews'
+    | '/barber/services'
     | '/barber/settings'
     | '/barber/stats'
     | '/independent/setup'
@@ -347,6 +357,7 @@ export interface FileRouteTypes {
     | '/barber/portfolio'
     | '/barber/profile'
     | '/barber/reviews'
+    | '/barber/services'
     | '/barber/settings'
     | '/barber/stats'
     | '/independent/setup'
@@ -379,6 +390,7 @@ export interface FileRouteTypes {
     | '/barber/portfolio'
     | '/barber/profile'
     | '/barber/reviews'
+    | '/barber/services'
     | '/barber/settings'
     | '/barber/stats'
     | '/independent/setup'
@@ -475,6 +487,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/barber/settings'
       preLoaderRoute: typeof BarberSettingsRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/services': {
+      id: '/barber/services'
+      path: '/services'
+      fullPath: '/barber/services'
+      preLoaderRoute: typeof BarberServicesRouteImport
       parentRoute: typeof BarberRoute
     }
     '/barber/reviews': {
@@ -642,6 +661,7 @@ interface BarberRouteChildren {
   BarberPortfolioRoute: typeof BarberPortfolioRoute
   BarberProfileRoute: typeof BarberProfileRoute
   BarberReviewsRoute: typeof BarberReviewsRoute
+  BarberServicesRoute: typeof BarberServicesRoute
   BarberSettingsRoute: typeof BarberSettingsRoute
   BarberStatsRoute: typeof BarberStatsRoute
   BarberIndexRoute: typeof BarberIndexRoute
@@ -667,6 +687,7 @@ const BarberRouteChildren: BarberRouteChildren = {
   BarberPortfolioRoute: BarberPortfolioRoute,
   BarberProfileRoute: BarberProfileRoute,
   BarberReviewsRoute: BarberReviewsRoute,
+  BarberServicesRoute: BarberServicesRoute,
   BarberSettingsRoute: BarberSettingsRoute,
   BarberStatsRoute: BarberStatsRoute,
   BarberIndexRoute: BarberIndexRoute,

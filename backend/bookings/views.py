@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
 
 from django.db.models import Count, Q, Sum
@@ -16,10 +16,11 @@ from accounts.auth_utils import customer_catalog_region, is_platform_admin, requ
 from accounts.models import User
 from barbers.barber_auth import BarberPrincipal
 from barbers.models import Barber
+from bookings.availability import build_available_slots, get_salon_services_for_barber, parse_id_list
 from bookings.models import Booking, BookingCompletion, BookingLine, Review
 from notifications.serializers import NotificationSerializer
 from notifications.utils import notify_barber, notify_user
-from salons.models import BarberWorkingHours, Salon, SalonHours, SalonMembership, Service
+from salons.models import Salon, SalonMembership
 
 from .serializers import (
     BookingCreateSerializer,
@@ -465,75 +466,27 @@ class BookingAvailabilityView(APIView):
         ).exists():
             return Response({"slots": [], "detail": "Barber not active in this salon."})
 
-        id_list = [int(x) for x in service_ids.split(",") if x.strip().isdigit()]
+        id_list = parse_id_list(service_ids)
         if not id_list:
             return Response({"detail": "service_ids required (comma-separated)."}, status=400)
         if len(id_list) != len(set(id_list)):
             return Response({"detail": "Duplicate service_ids not allowed."}, status=400)
 
-        services = list(
-            Service.objects.filter(id__in=id_list, salon=salon, is_active=True)
-        )
+        services = get_salon_services_for_barber(salon, barber, id_list)
         if len(services) != len(set(id_list)):
-            return Response({"detail": "Invalid or inactive services."}, status=400)
+            return Response(
+                {"detail": "Invalid, inactive, or barber-restricted services."},
+                status=400,
+            )
 
-        total_minutes = sum(s.duration_minutes for s in services)
-        weekday = target_date.weekday()
-        closed = salon.closed_weekdays or []
-        if isinstance(closed, list) and weekday in closed:
-            return Response({"slots": []})
-
-        sh = SalonHours.objects.filter(salon=salon, weekday=weekday).first()
-        if not sh:
-            return Response({"slots": []})
-
-        mem = SalonMembership.objects.filter(
-            barber=barber,
-            salon=salon,
-            invite_state=SalonMembership.InviteState.ACTIVE,
-        ).first()
-        open_t = sh.open_time
-        close_t = sh.close_time
-        if mem:
-            bh = BarberWorkingHours.objects.filter(
-                membership=mem, weekday=weekday
-            ).first()
-            if bh and bh.is_day_off:
-                return Response({"slots": []})
-            if bh:
-                open_t = max(open_t, bh.open_time)
-                close_t = min(close_t, bh.close_time)
-        if open_t >= close_t:
-            return Response({"slots": []})
-
-        tz = timezone.get_current_timezone()
-        slot_step = 15
-        slots = []
-        day_start = timezone.make_aware(datetime.combine(target_date, open_t), tz)
-        day_end = timezone.make_aware(datetime.combine(target_date, close_t), tz)
-
-        t = day_start
-        now = timezone.now()
-        while t + timedelta(minutes=total_minutes) <= day_end:
-            if t < now:
-                t += timedelta(minutes=slot_step)
-                continue
-            end_slot = t + timedelta(minutes=total_minutes)
-            overlap = Booking.objects.filter(
+        return Response(
+            build_available_slots(
                 barber=barber,
-                status__in=[
-                    Booking.Status.PENDING,
-                    Booking.Status.ACCEPTED,
-                    Booking.Status.IN_PROGRESS,
-                ],
-                start_at__lt=end_slot,
-                end_at__gt=t,
-            ).exists()
-            if not overlap:
-                slots.append(t.strftime("%H:%M"))
-            t += timedelta(minutes=slot_step)
-
-        return Response({"slots": slots, "total_minutes": total_minutes})
+                salon=salon,
+                services=services,
+                target_date=target_date,
+            )
+        )
 
 
 class AnalyticsView(APIView):

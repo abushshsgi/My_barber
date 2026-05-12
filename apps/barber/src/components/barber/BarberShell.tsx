@@ -77,6 +77,7 @@ const ICON_BY_NAME: Record<MatrixNavItem["iconName"], NavItem["icon"]> = {
   MessageSquare,
   Bell,
   Star,
+  Scissors,
   ImageIcon,
   Wallet,
   Receipt,
@@ -107,6 +108,7 @@ function pathAllowedInSalonWorkspace(pathname: string): boolean {
   }
   if (
     pathname === "/barber/profile" ||
+    pathname === "/barber/services" ||
     pathname === "/barber/settings" ||
     pathname === "/barber/help" ||
     pathname === "/barber/notifications" ||

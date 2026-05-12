@@ -1,11 +1,10 @@
 import math
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from django.db import transaction
 from django.db.models import Avg, Count, Q
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -15,6 +14,11 @@ from rest_framework.views import APIView
 from accounts.auth_utils import customer_catalog_region
 from accounts.throttles import SalonSearchThrottle
 from accounts.uz_regions import UzRegion
+from bookings.availability import (
+    build_available_slots,
+    get_independent_services_for_barber,
+    parse_id_list,
+)
 from bookings.models import Booking, BookingLine, Review
 from notifications.utils import notify_user
 
@@ -59,25 +63,6 @@ def _haversine_km(lat1, lon1, lat2, lon2):
         + math.cos(lat1 * p) * math.cos(lat2 * p) * (1 - math.cos((lon2 - lon1) * p)) / 2
     )
     return 2 * r * math.asin(math.sqrt(a))
-
-
-def _slot_overlaps_breaks(t_aware, end_aware, breaks_list, tz):
-    """breaks_list: [{"start": "12:00", "end": "13:00"}, ...]"""
-    for br in breaks_list or []:
-        if not isinstance(br, dict):
-            continue
-        try:
-            st = datetime.strptime(str(br.get("start", "")), "%H:%M").time()
-            et = datetime.strptime(str(br.get("end", "")), "%H:%M").time()
-        except (ValueError, TypeError):
-            continue
-        if st >= et:
-            continue
-        bs = timezone.make_aware(datetime.combine(t_aware.date(), st), tz)
-        be = timezone.make_aware(datetime.combine(t_aware.date(), et), tz)
-        if bs < end_aware and be > t_aware:
-            return True
-    return False
 
 
 class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
@@ -485,6 +470,122 @@ class MyBarberWorkingHoursViewSet(viewsets.ModelViewSet):
         serializer.save(profile=prof)
 
 
+class MyBarberServiceRecommendationsView(APIView):
+    permission_classes = [IsBarber]
+
+    def get(self, request):
+        barber = request.user.barber
+        profile, _ = BarberProfile.objects.get_or_create(barber=barber)
+        services = list(profile.services.all())
+        service_names = {s.name.lower() for s in services}
+        avg_price = sum(float(s.price) for s in services) / len(services) if services else 0
+        recommendations = []
+
+        catalog = [
+            {
+                "key": "beard",
+                "name": "Soqol parvarishi",
+                "trigger": ("hair", "soch", "cut", "qirq"),
+                "price": 45000,
+                "duration": 30,
+                "reason": "Soch xizmati bor, soqol parvarishi bilan paket sotish osonroq.",
+            },
+            {
+                "key": "wash",
+                "name": "Soch yuvish va styling",
+                "trigger": ("hair", "soch", "cut", "qirq"),
+                "price": 35000,
+                "duration": 20,
+                "reason": "Asosiy xizmatdan keyin tez qo'shiladigan upsell xizmati.",
+            },
+            {
+                "key": "kids",
+                "name": "Bolalar soch turmagi",
+                "trigger": ("hair", "soch", "cut", "qirq"),
+                "price": 40000,
+                "duration": 35,
+                "reason": "Oilaviy mijozlar uchun alohida xizmat nomi bookingni aniqroq qiladi.",
+            },
+        ]
+
+        joined_names = " ".join(service_names)
+        for item in catalog:
+            already_exists = any(item["key"] in name or item["name"].lower() in name for name in service_names)
+            triggered = not services or any(token in joined_names for token in item["trigger"])
+            if not already_exists and triggered:
+                recommendations.append(
+                    {
+                        "kind": "add_service",
+                        "title": item["name"],
+                        "description": item["reason"],
+                        "action_label": "Qo'shish",
+                        "suggested_service": {
+                            "name": item["name"],
+                            "price": str(item["price"]),
+                            "duration_minutes": item["duration"],
+                        },
+                    }
+                )
+
+        if avg_price:
+            for service in services:
+                price = float(service.price)
+                if price < avg_price * 0.55:
+                    recommendations.append(
+                        {
+                            "kind": "adjust_price",
+                            "title": f"{service.name} narxini tekshiring",
+                            "description": "Bu xizmat narxi sizning o'rtacha narxingizdan ancha past.",
+                            "action_label": "Narxni moslash",
+                            "service_id": service.id,
+                            "suggested_price": str(round(avg_price * 0.85)),
+                        }
+                    )
+                elif price > avg_price * 1.8 and len(services) > 1:
+                    recommendations.append(
+                        {
+                            "kind": "adjust_price",
+                            "title": f"{service.name} narxi yuqori ko'rinyapti",
+                            "description": "Agar bu premium xizmat bo'lmasa, narxni mijozlar uchun tushunarli qiling.",
+                            "action_label": "Ko'rib chiqish",
+                            "service_id": service.id,
+                            "suggested_price": str(round(avg_price * 1.25)),
+                        }
+                    )
+                if service.duration_minutes < 10 or service.duration_minutes > 180:
+                    recommendations.append(
+                        {
+                            "kind": "adjust_duration",
+                            "title": f"{service.name} davomiyligini tekshiring",
+                            "description": "Slot algoritmi aniq ishlashi uchun duration real vaqtga yaqin bo'lishi kerak.",
+                            "action_label": "Durationni yangilash",
+                            "service_id": service.id,
+                            "suggested_duration_minutes": min(max(service.duration_minutes, 20), 120),
+                        }
+                    )
+
+        popular_lines = (
+            BookingLine.objects.filter(booking__barber=barber)
+            .values("service_name")
+            .annotate(count=Count("id"))
+            .order_by("-count")[:4]
+        )
+        for row in popular_lines:
+            name = (row["service_name"] or "").strip()
+            if not name:
+                continue
+            recommendations.append(
+                {
+                    "kind": "popular_service",
+                    "title": f"{name} ko'p bron qilingan",
+                    "description": f"Oxirgi bookinglarda {row['count']} marta uchradi. Uni alohida ko'rinarli qiling yoki paketga qo'shing.",
+                    "action_label": "Paket o'ylash",
+                }
+            )
+
+        return Response(recommendations[:8])
+
+
 class BarberSearchView(APIView):
     """Salon egasi boshqa sartaroshni qidirish (taklif uchun)."""
 
@@ -537,51 +638,20 @@ class IndependentAvailabilityView(APIView):
             )
         prof = get_object_or_404(BarberProfile, barber=barber)
 
-        id_list = [int(x) for x in service_ids.split(",") if x.strip().isdigit()]
+        id_list = parse_id_list(service_ids)
         if not id_list:
             return Response({"detail": "barber_service_ids required (comma-separated)."}, status=400)
         if len(id_list) != len(set(id_list)):
             return Response({"detail": "Duplicate barber_service_ids not allowed."}, status=400)
 
-        services = list(BarberService.objects.filter(profile=prof, id__in=id_list, is_active=True))
+        services = get_independent_services_for_barber(barber, id_list)
         if len(services) != len(set(id_list)):
             return Response({"detail": "Invalid or inactive barber services."}, status=400)
 
-        total_minutes = sum(s.duration_minutes for s in services)
-        weekday = target_date.weekday()
-
-        wh = BarberWorkingHours.objects.filter(profile=prof, weekday=weekday).first()
-        if wh and wh.is_day_off:
-            return Response({"slots": [], "total_minutes": total_minutes})
-
-        # Default hours if not configured
-        open_t = wh.open_time if wh else datetime.strptime("09:00", "%H:%M").time()
-        close_t = wh.close_time if wh else datetime.strptime("18:00", "%H:%M").time()
-        breaks_list = list(wh.breaks) if wh else []
-        if open_t >= close_t:
-            return Response({"slots": [], "total_minutes": total_minutes})
-
-        tz = timezone.get_current_timezone()
-        slot_step = 15
-        day_start = timezone.make_aware(datetime.combine(target_date, open_t), tz)
-        day_end = timezone.make_aware(datetime.combine(target_date, close_t), tz)
-
-        slots = []
-        t = day_start
-        now = timezone.now()
-        while t + timedelta(minutes=total_minutes) <= day_end:
-            if t < now:
-                t += timedelta(minutes=slot_step)
-                continue
-            end_slot = t + timedelta(minutes=total_minutes)
-            overlap = Booking.objects.filter(
+        return Response(
+            build_available_slots(
                 barber=barber,
-                status__in=[Booking.Status.PENDING, Booking.Status.ACCEPTED, Booking.Status.IN_PROGRESS],
-                start_at__lt=end_slot,
-                end_at__gt=t,
-            ).exists()
-            if not overlap and not _slot_overlaps_breaks(t, end_slot, breaks_list, tz):
-                slots.append(t.strftime("%H:%M"))
-            t += timedelta(minutes=slot_step)
-
-        return Response({"slots": slots, "total_minutes": total_minutes})
+                services=services,
+                target_date=target_date,
+            )
+        )

@@ -5,9 +5,14 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 
+from bookings.availability import (
+    assert_booking_slot_available,
+    get_independent_services_for_barber,
+    get_salon_services_for_barber,
+)
 from bookings.models import Booking, BookingCompletion, BookingLine, Review
-from barbers.models import Barber, BarberProfile, BarberService
-from salons.models import Salon, SalonMembership, Service
+from barbers.models import Barber, BarberProfile
+from salons.models import Salon, SalonMembership
 
 User = get_user_model()
 
@@ -133,31 +138,27 @@ class BookingCreateSerializer(serializers.Serializer):
             ).exists():
                 raise serializers.ValidationError({"barber": "Barber is not active in this salon."})
 
-            services = list(
-                Service.objects.filter(
-                    id__in=service_ids,
-                    salon=salon,
-                    is_active=True,
-                )
-            )
+            services = get_salon_services_for_barber(salon, barber, service_ids)
             if len(services) != len(set(service_ids)):
-                raise serializers.ValidationError("Invalid or duplicate services.")
+                raise serializers.ValidationError(
+                    "Invalid, inactive, duplicate, or barber-restricted services."
+                )
         else:
             if not BarberProfile.objects.filter(barber=barber).exists():
                 raise serializers.ValidationError({"barber": "Barber profile not found."})
-            services = list(
-                BarberService.objects.filter(
-                    profile__barber=barber,
-                    id__in=barber_service_ids,
-                    is_active=True,
-                )
-            )
+            services = get_independent_services_for_barber(barber, barber_service_ids)
             if len(services) != len(set(barber_service_ids)):
                 raise serializers.ValidationError("Invalid or duplicate barber services.")
 
         total_minutes = sum(s.duration_minutes for s in services)
         total_price = sum(s.price for s in services)
         end_at = start_at + timedelta(minutes=total_minutes)
+        assert_booking_slot_available(
+            barber=barber,
+            services=services,
+            start_at=start_at,
+            salon=salon if is_salon_flow else None,
+        )
 
         blocking = Booking.objects.filter(
             barber=barber,

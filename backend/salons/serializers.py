@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.db import transaction
 
 from rest_framework import serializers
@@ -33,13 +35,29 @@ class ServiceSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "salon")
 
+    def validate_name(self, value):
+        name = str(value or "").strip()
+        if not name:
+            raise serializers.ValidationError("Xizmat nomi majburiy.")
+        return name
+
+    def validate_duration_minutes(self, value):
+        if value < 5 or value > 480:
+            raise serializers.ValidationError("Davomiylik 5 va 480 daqiqa oralig'ida bo'lishi kerak.")
+        return value
+
+    def validate_price(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Narx 0 dan katta bo'lishi kerak.")
+        return value
+
 
 class PublicServiceSerializer(serializers.ModelSerializer):
     """Mijozlar uchun salon sahifasida — faqat band qilish uchun kerakli maydonlar."""
 
     class Meta:
         model = Service
-        fields = ("id", "name", "price", "duration_minutes")
+        fields = ("id", "barber", "name", "price", "duration_minutes")
 
 
 class SalonListSerializer(serializers.ModelSerializer):
@@ -323,5 +341,35 @@ class SalonMembershipSerializer(serializers.ModelSerializer):
 class BarberWorkingHoursSerializer(serializers.ModelSerializer):
     class Meta:
         model = BarberWorkingHours
-        fields = ("id", "membership", "weekday", "open_time", "close_time", "is_day_off")
+        fields = ("id", "membership", "weekday", "open_time", "close_time", "is_day_off", "breaks")
+
+    def validate_breaks(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError("breaks must be a list.")
+        for item in value:
+            if not isinstance(item, dict):
+                raise serializers.ValidationError("Each break must be an object with start/end.")
+            if "start" not in item or "end" not in item:
+                raise serializers.ValidationError("Each break needs start and end (HH:MM).")
+            try:
+                st = datetime.strptime(str(item["start"]), "%H:%M").time()
+                et = datetime.strptime(str(item["end"]), "%H:%M").time()
+            except (TypeError, ValueError):
+                raise serializers.ValidationError("Break start/end must be HH:MM.")
+            if st >= et:
+                raise serializers.ValidationError("Break start must be before end.")
+        return value
+
+    def validate_weekday(self, value):
+        if value < 0 or value > 6:
+            raise serializers.ValidationError("weekday must be between 0 and 6.")
+        return value
+
+    def validate(self, attrs):
+        open_time = attrs.get("open_time", getattr(self.instance, "open_time", None))
+        close_time = attrs.get("close_time", getattr(self.instance, "close_time", None))
+        is_day_off = attrs.get("is_day_off", getattr(self.instance, "is_day_off", False))
+        if not is_day_off and open_time and close_time and open_time >= close_time:
+            raise serializers.ValidationError({"close_time": "Yopilish vaqti ochilishdan keyin bo'lishi kerak."})
+        return attrs
 

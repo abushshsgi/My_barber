@@ -16,6 +16,7 @@ export type NavItem = {
     | "MessageSquare"
     | "Bell"
     | "Star"
+    | "Scissors"
     | "ImageIcon"
     | "Wallet"
     | "Receipt"
@@ -36,6 +37,7 @@ export const NAV_CONFIG: Record<NavCapability, NavItem[]> = {
     { to: "/barber", label: "Dashboard", iconName: "LayoutDashboard", group: "Asosiy" },
     { to: "/barber/calendar", label: "Kalendar", iconName: "CalendarDays", group: "Asosiy" },
     { to: "/barber/bookings", label: "Bronlar", iconName: "CalendarClock", group: "Asosiy" },
+    { to: "/barber/services", label: "Xizmatlar", iconName: "Scissors", group: "Asosiy" },
     { to: "/barber/clients", label: "Mijozlar", iconName: "Users", group: "Asosiy" },
     { to: "/barber/chat", label: "Chat", iconName: "MessageSquare", group: "Aloqa" },
     { to: "/barber/notifications", label: "Bildirishnomalar", iconName: "Bell", group: "Aloqa" },
@@ -53,12 +55,14 @@ export const NAV_CONFIG: Record<NavCapability, NavItem[]> = {
   ],
   salonOwner: [
     { to: "/barber/salon-view", label: "Salon", iconName: "Building2" },
+    { to: "/barber/services", label: "Xizmatlar", iconName: "Scissors" },
     { to: "/barber/salon-view/gallery", label: "Galereya", iconName: "Images" },
     { to: "/barber/salon-view/reviews", label: "Sharhlar", iconName: "Star" },
     { to: "/barber/salon-view/team", label: "Jamoa", iconName: "Users" },
   ],
   salonWorker: [
     { to: "/barber/salon-view", label: "Salon", iconName: "Building2" },
+    { to: "/barber/services", label: "Xizmatlar", iconName: "Scissors" },
     { to: "/barber/salon-view/members", label: "Jamoa", iconName: "Users" },
     { to: "/barber/salon-view/reviews", label: "Sharhlar", iconName: "Star" },
     { to: "/barber/salon-view/gallery", label: "Galereya", iconName: "Images" },

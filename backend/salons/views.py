@@ -428,9 +428,12 @@ class ServiceViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         salon_id = self.request.query_params.get("salon")
+        barber_id = self.request.query_params.get("barber")
         qs = Service.objects.all()
         if salon_id:
             qs = qs.filter(salon_id=salon_id)
+        if barber_id:
+            qs = qs.filter(Q(barber_id=barber_id) | Q(barber__isnull=True))
         return qs
 
     def perform_create(self, serializer):
@@ -442,11 +445,61 @@ class ServiceViewSet(viewsets.ModelViewSet):
             raise ValidationError({"salon": "This field is required."})
         salon = get_object_or_404(Salon, pk=salon_id)
         bp = request_barber(self.request)
-        if bp is None or salon.owner_barber_id != bp.id:
+        if bp is None:
             from rest_framework.exceptions import PermissionDenied
 
             raise PermissionDenied()
-        serializer.save(salon=salon)
+        is_owner = salon.owner_barber_id == bp.id
+        is_active_worker = SalonMembership.objects.filter(
+            salon=salon,
+            barber=bp,
+            invite_state=SalonMembership.InviteState.ACTIVE,
+        ).exists()
+        if not is_owner and not is_active_worker:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied()
+        barber = serializer.validated_data.get("barber")
+        if not is_owner:
+            serializer.save(salon=salon, barber=bp)
+        elif (
+            barber is not None
+            and barber.id != salon.owner_barber_id
+            and not SalonMembership.objects.filter(
+                salon=salon,
+                barber=barber,
+                invite_state=SalonMembership.InviteState.ACTIVE,
+            ).exists()
+        ):
+            from rest_framework.exceptions import ValidationError
+
+            raise ValidationError({"barber": "Barber bu salonda faol emas."})
+        else:
+            serializer.save(salon=salon)
+
+    def perform_update(self, serializer):
+        service = self.get_object()
+        bp = request_barber(self.request)
+        is_owner = bp is not None and service.salon.owner_barber_id == bp.id
+        is_service_barber = bp is not None and service.barber_id == bp.id
+        if not is_owner and not is_service_barber:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied()
+        if not is_owner:
+            serializer.save(salon=service.salon, barber=bp)
+        else:
+            serializer.save(salon=service.salon)
+
+    def perform_destroy(self, instance):
+        bp = request_barber(self.request)
+        is_owner = bp is not None and instance.salon.owner_barber_id == bp.id
+        is_service_barber = bp is not None and instance.barber_id == bp.id
+        if not is_owner and not is_service_barber:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied()
+        instance.delete()
 
 
 class FavoriteSalonListCreateView(APIView):
@@ -503,6 +556,8 @@ class SalonMembershipViewSet(viewsets.ModelViewSet):
                 return qs
             if Salon.objects.filter(pk=sid, owner_barber=bp).exists():
                 qs = qs.filter(salon_id=sid)
+            else:
+                qs = qs.filter(salon_id=sid, barber=bp)
         return qs
 
     @action(detail=False, methods=["post"])
@@ -678,14 +733,19 @@ class BarberScheduleViewSet(viewsets.ModelViewSet):
         mid = self.request.query_params.get("membership")
         qs = BarberWorkingHours.objects.select_related("membership")
         bp = request_barber(self.request)
-        if mid and bp is not None:
-            qs = qs.filter(membership_id=mid, membership__barber=bp)
+        if bp is None:
+            return qs.none()
+        qs = qs.filter(Q(membership__barber=bp) | Q(membership__salon__owner_barber=bp))
+        if mid:
+            qs = qs.filter(membership_id=mid)
         return qs
 
     def perform_create(self, serializer):
         mem = serializer.validated_data["membership"]
         bp = request_barber(self.request)
-        if bp is None or mem.barber_id != bp.id:
+        is_self = bp is not None and mem.barber_id == bp.id
+        is_owner = bp is not None and mem.salon.owner_barber_id == bp.id
+        if not is_self and not is_owner:
             from rest_framework.exceptions import PermissionDenied
 
             raise PermissionDenied()

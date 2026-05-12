@@ -18,7 +18,13 @@ type Step = 1 | 2 | 3 | 4;
 type SalonDetail = {
   id: number;
   name: string;
-  services: { id: number; name: string; price: string; duration_minutes: number }[];
+  services: {
+    id: number;
+    barber: number | null;
+    name: string;
+    price: string;
+    duration_minutes: number;
+  }[];
 };
 
 type StaffMember = {
@@ -77,6 +83,9 @@ export default function BookingFlow() {
   });
 
   const serviceIdsParam = selectedServices.join(",");
+  const visibleServices = (salon?.services || []).filter(
+    (service) => service.barber == null || service.barber === selectedBarber,
+  );
 
   const { data: availability, isFetching: loadingSlots } = useQuery({
     queryKey: ["availability", salonId, selectedBarber, selectedDate, serviceIdsParam],
@@ -169,14 +178,15 @@ export default function BookingFlow() {
     );
   }
 
-  const totalDuration = salon.services
+  const totalDuration = visibleServices
     .filter((s) => selectedServices.includes(s.id))
     .reduce((a, s) => a + s.duration_minutes, 0);
-  const totalPrice = salon.services
+  const totalPrice = visibleServices
     .filter((s) => selectedServices.includes(s.id))
     .reduce((a, s) => a + parseFloat(s.price), 0);
 
   const toggleService = (id: number) => {
+    setSelectedTime(null);
     setSelectedServices((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
@@ -240,7 +250,11 @@ export default function BookingFlow() {
                     "flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-soft transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     selectedBarber === barber.id ? "border-foreground ring-1 ring-foreground" : "hover:border-foreground/30",
                   )}
-                  onClick={() => setSelectedBarber(barber.id)}
+                  onClick={() => {
+                    setSelectedBarber(barber.id);
+                    setSelectedServices([]);
+                    setSelectedTime(null);
+                  }}
                 >
                   <img
                     src={mediaSrc(barber.avatar, PLACEHOLDER_AVATAR)}
@@ -276,7 +290,7 @@ export default function BookingFlow() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-3"
             >
-              {salon.services.map((service) => (
+              {visibleServices.map((service) => (
                 <Card
                   key={service.id}
                   className={cn(
@@ -303,6 +317,11 @@ export default function BookingFlow() {
                   </div>
                 </Card>
               ))}
+              {visibleServices.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Bu sartarosh uchun hozircha faol xizmat yo&apos;q.
+                </p>
+              )}
               {selectedServices.length > 0 && (
                 <Card className="rounded-2xl border border-border bg-muted/40 p-3">
                   <div className="flex justify-between text-sm">
