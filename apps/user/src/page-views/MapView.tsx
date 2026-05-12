@@ -76,7 +76,7 @@ async function fetchNearbyBarbers(lat: number, lng: number, radius: number): Pro
 export default function MapPage() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [status, setStatus] = useState<GeoStatus>("idle");
-  const [radiusKm, setRadiusKm] = useState(2);
+  const [radiusKm, setRadiusKm] = useState(5);
   const [tab, setTab] = useState<"salons" | "barbers">("salons");
   const [activeId, setActiveId] = useState<string | null>(null);
 

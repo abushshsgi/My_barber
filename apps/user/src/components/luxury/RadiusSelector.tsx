@@ -7,7 +7,7 @@ export function RadiusSelector({
 }) {
   return (
     <div className="inline-flex items-center gap-1 rounded-full border border-border bg-surface p-1 shadow-soft">
-      {([1, 2, 3] as const).map((r) => (
+      {([2, 5, 10, 25] as const).map((r) => (
         <button
           key={r}
           type="button"
