@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -15,8 +15,20 @@ import { TableSkeleton } from "@/components/admin/Skeletons";
 import { EmptyState } from "@/components/admin/EmptyState";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog";
-import { EditServiceDialog, type ServiceFormValues } from "@/components/admin/edit-dialogs";
+import {
+  EditServiceDialog,
+  type ServiceCreateFormValues,
+  type ServiceFormValues,
+} from "@/components/admin/edit-dialogs";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,27 +45,46 @@ function ServicesPage() {
   const [editTarget, setEditTarget] = useState<AdminService | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<AdminService | null>(null);
+  const [serviceQuery, setServiceQuery] = useState("");
+  const deferredQ = useDeferredValue(serviceQuery.trim());
+  const [typeFilter, setTypeFilter] = useState<"all" | "salon" | "independent">("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
-  const servicesQ = useQuery({ queryKey: ["admin", "services"], queryFn: () => fetchServices() });
+  const listParams = useMemo(
+    () => ({
+      q: deferredQ || undefined,
+      type: typeFilter === "all" ? undefined : typeFilter,
+      category: categoryFilter,
+    }),
+    [deferredQ, typeFilter, categoryFilter],
+  );
+
+  const servicesQ = useQuery({
+    queryKey: ["admin", "services", listParams],
+    queryFn: () => fetchServices(listParams),
+  });
   const catsQ = useQuery({ queryKey: ["admin", "categories"], queryFn: () => fetchCategories() });
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["admin", "services"] });
+  const invalidate = () => void qc.invalidateQueries({ queryKey: ["admin", "services"] });
 
   const createMut = useMutation({
-    mutationFn: (v: ServiceFormValues) =>
+    mutationFn: (v: ServiceCreateFormValues) =>
       createService({
-        type: "salon",
+        type: v.service_type,
         name: v.name,
         price: v.price,
         duration_min: v.duration_min,
         is_active: v.is_active,
         category_ids: v.category_id ? [v.category_id] : [],
+        salon_id: v.service_type === "salon" ? v.salon_id : undefined,
+        barber_id: v.service_type === "independent" ? v.barber_id : undefined,
       }),
     onSuccess: () => {
       invalidate();
       setCreateOpen(false);
       toast.success("Xizmat qo'shildi");
     },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Xizmat qo'shib bo'lmadi"),
   });
   const updateMut = useMutation({
     mutationFn: ({
@@ -78,6 +109,7 @@ function ServicesPage() {
       setEditTarget(null);
       toast.success("Xizmat yangilandi");
     },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Saqlab bo'lmadi"),
   });
   const deleteMut = useMutation({
     mutationFn: ({ id, type }: { id: string; type: "salon" | "independent" }) =>
@@ -87,6 +119,7 @@ function ServicesPage() {
       setDeleteTarget(null);
       toast.success("Xizmat o'chirildi");
     },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "O'chirib bo'lmadi"),
   });
 
   const data = servicesQ.data ?? [];
@@ -108,18 +141,55 @@ function ServicesPage() {
         </Button>
       </div>
 
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <Input
+          placeholder="Xizmat yoki salon nomi bo'yicha qidiruv…"
+          value={serviceQuery}
+          onChange={(e) => setServiceQuery(e.target.value)}
+          className="max-w-md"
+        />
+        <Select
+          value={typeFilter}
+          onValueChange={(v) => setTypeFilter(v as "all" | "salon" | "independent")}
+        >
+          <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectValue placeholder="Tur" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Barcha turlar</SelectItem>
+            <SelectItem value="salon">Salon</SelectItem>
+            <SelectItem value="independent">Mustaqil</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-full sm:w-[220px]">
+            <SelectValue placeholder="Kategoriya" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Barcha kategoriyalar</SelectItem>
+            {cats.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.icon} {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
         {servicesQ.isLoading ? (
-          <TableSkeleton rows={6} cols={5} />
+          <TableSkeleton rows={6} cols={9} />
         ) : data.length === 0 ? (
-          <EmptyState title="Xizmatlar topilmadi" description="Yangi xizmat qo'shing." />
+          <EmptyState title="Xizmatlar topilmadi" description="Filtrni o'zgartiring yoki yangi xizmat qo'shing." />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-background border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
+                  <th className="px-6 py-3 font-medium">Tur</th>
                   <th className="px-6 py-3 font-medium">Xizmat</th>
                   <th className="px-6 py-3 font-medium">Kategoriya</th>
+                  <th className="px-6 py-3 font-medium">Salon / Barber</th>
                   <th className="px-6 py-3 font-medium text-right">Narx</th>
                   <th className="px-6 py-3 font-medium text-right">Davomiyligi</th>
                   <th className="px-6 py-3 font-medium text-right">Bronlar</th>
@@ -129,9 +199,17 @@ function ServicesPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {data.map((s) => (
-                  <tr key={s.id} className="hover:bg-background/50">
+                  <tr key={`${s.type}-${s.id}`} className="hover:bg-background/50">
+                    <td className="px-6 py-4 text-muted-foreground">
+                      {s.type === "salon" ? "Salon" : "Mustaqil"}
+                    </td>
                     <td className="px-6 py-4 font-medium text-foreground">{s.name}</td>
                     <td className="px-6 py-4 text-muted-foreground">{s.category_names}</td>
+                    <td className="px-6 py-4 text-muted-foreground max-w-[220px] truncate">
+                      {s.type === "salon"
+                        ? s.salon_name || "—"
+                        : s.barber_name || (s.barber_id ? `ID ${s.barber_id}` : "—")}
+                    </td>
                     <td className="px-6 py-4 text-right tabular-nums text-foreground font-medium">
                       {s.price.toLocaleString()} so'm
                     </td>
@@ -177,7 +255,7 @@ function ServicesPage() {
         onOpenChange={setCreateOpen}
         categories={cats}
         loading={createMut.isPending}
-        onSave={(v) => createMut.mutate(v)}
+        onSave={(v) => createMut.mutate(v as ServiceCreateFormValues)}
         mode="create"
       />
       <EditServiceDialog
@@ -197,7 +275,7 @@ function ServicesPage() {
         }
         loading={updateMut.isPending}
         onSave={(v) =>
-          editTarget && updateMut.mutate({ id: editTarget.id, body: v, type: editTarget.type })
+          editTarget && updateMut.mutate({ id: editTarget.id, body: v as ServiceFormValues, type: editTarget.type })
         }
       />
       <DeleteConfirmDialog

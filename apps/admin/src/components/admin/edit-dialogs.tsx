@@ -1,7 +1,8 @@
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
+import { fetchAdminBarbers, fetchAdminSalons, type AdminBarber, type AdminSalon } from "@/lib/admin-api";
 import { UZ_REGIONS, type UzRegionCode } from "@/lib/uz-regions";
 
 const regionSchema = z.enum(UZ_REGIONS.map((r) => r.value) as [UzRegionCode, ...UzRegionCode[]]);
@@ -44,6 +56,7 @@ export function EditDialogShell({
   onSubmit,
   children,
   submitLabel = "Saqlash",
+  contentClassName,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -53,10 +66,11 @@ export function EditDialogShell({
   onSubmit: () => void;
   children: React.ReactNode;
   submitLabel?: string;
+  contentClassName?: string;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className={cn("max-w-lg", contentClassName)}>
         <DialogHeader>
           <DialogTitle className="font-heading">{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
@@ -541,14 +555,256 @@ export function EditSalonDialog({
 }
 
 // =================== SERVICE ===================
-const serviceSchema = z.object({
+const serviceEditSchema = z.object({
   name: z.string().min(2),
   category_id: z.string().min(1),
   price: z.number().min(0),
   duration_min: z.number().min(5),
   is_active: z.boolean(),
 });
-export type ServiceFormValues = z.infer<typeof serviceSchema>;
+
+const serviceCreateSchema = serviceEditSchema
+  .extend({
+    service_type: z.enum(["salon", "independent"]),
+    salon_id: z.string(),
+    barber_id: z.string(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.service_type === "salon") {
+      if (!data.salon_id?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Salonni tanlang",
+          path: ["salon_id"],
+        });
+      }
+    } else if (!data.barber_id?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Barberni tanlang",
+        path: ["barber_id"],
+      });
+    }
+  });
+
+export type ServiceFormValues = z.infer<typeof serviceEditSchema>;
+export type ServiceCreateFormValues = z.infer<typeof serviceCreateSchema>;
+
+const SEARCH_DEBOUNCE_MS = 320;
+
+function useDebouncedValue<T>(value: T, ms: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebounced(value), ms);
+    return () => window.clearTimeout(t);
+  }, [value, ms]);
+  return debounced;
+}
+
+function SalonCombobox({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
+  const [rows, setRows] = useState<AdminSalon[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [label, setLabel] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setLoading(true);
+    void fetchAdminSalons({ q: debouncedSearch, page: 1, published: "all" })
+      .then((pag) => {
+        if (!cancelled) setRows(pag.results);
+      })
+      .catch(() => {
+        if (!cancelled) setRows([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, debouncedSearch]);
+
+  useEffect(() => {
+    if (!value) {
+      setLabel("");
+      return;
+    }
+    const hit = rows.find((r) => r.id === value);
+    if (hit) setLabel(hit.name);
+  }, [value, rows]);
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) setSearch("");
+      }}
+    >
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between font-normal"
+        >
+          <span className="truncate text-left">
+            {value ? label || `ID: ${value}` : "Salonni qidiring…"}
+          </span>
+          <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput placeholder="Salon nomi…" value={search} onValueChange={setSearch} />
+          <CommandList>
+            {loading ? (
+              <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" />
+                Yuklanmoqda…
+              </div>
+            ) : (
+              <>
+                <CommandEmpty>Hech narsa topilmadi</CommandEmpty>
+                <CommandGroup>
+                  {rows.map((s) => (
+                    <CommandItem
+                      key={s.id}
+                      value={`${s.id}-${s.name}`}
+                      onSelect={() => {
+                        onChange(s.id);
+                        setLabel(s.name);
+                        setOpen(false);
+                        setSearch("");
+                      }}
+                    >
+                      <Check
+                        className={cn("mr-2 size-4", value === s.id ? "opacity-100" : "opacity-0")}
+                      />
+                      <span className="truncate">{s.name}</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function BarberCombobox({ value, onChange }: { value: string; onChange: (id: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
+  const [rows, setRows] = useState<AdminBarber[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [label, setLabel] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setLoading(true);
+    void fetchAdminBarbers({ q: debouncedSearch, page: 1 })
+      .then((pag) => {
+        if (!cancelled) setRows(pag.results);
+      })
+      .catch(() => {
+        if (!cancelled) setRows([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, debouncedSearch]);
+
+  useEffect(() => {
+    if (!value) {
+      setLabel("");
+      return;
+    }
+    const hit = rows.find((r) => r.id === value);
+    if (hit) setLabel([hit.name, hit.phone].filter(Boolean).join(" · ") || `ID ${hit.id}`);
+  }, [value, rows]);
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) setSearch("");
+      }}
+    >
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between font-normal"
+        >
+          <span className="truncate text-left">
+            {value ? label || `ID: ${value}` : "Barberni qidiring…"}
+          </span>
+          <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput placeholder="Ism yoki telefon…" value={search} onValueChange={setSearch} />
+          <CommandList>
+            {loading ? (
+              <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" />
+                Yuklanmoqda…
+              </div>
+            ) : (
+              <>
+                <CommandEmpty>Hech narsa topilmadi</CommandEmpty>
+                <CommandGroup>
+                  {rows.map((b) => {
+                    const line = [b.name, b.phone].filter(Boolean).join(" · ") || `ID ${b.id}`;
+                    return (
+                      <CommandItem
+                        key={b.id}
+                        value={`${b.id}-${line}`}
+                        onSelect={() => {
+                          onChange(b.id);
+                          setLabel(line);
+                          setOpen(false);
+                          setSearch("");
+                        }}
+                      >
+                        <Check
+                          className={cn("mr-2 size-4", value === b.id ? "opacity-100" : "opacity-0")}
+                        />
+                        <span className="truncate">{line}</span>
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              </>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export function EditServiceDialog({
   open,
@@ -564,31 +820,56 @@ export function EditServiceDialog({
   defaultValues?: Partial<ServiceFormValues>;
   categories: Array<{ id: string; name: string; icon: string }>;
   loading?: boolean;
-  onSave: (v: ServiceFormValues) => void;
+  onSave: (v: ServiceFormValues | ServiceCreateFormValues) => void;
   mode?: "edit" | "create";
 }) {
-  const form = useForm<ServiceFormValues>({
-    resolver: zodResolver(serviceSchema),
+  const schema = mode === "create" ? serviceCreateSchema : serviceEditSchema;
+  const createFieldDefaults = useMemo(
+    () =>
+      mode === "create"
+        ? ({ service_type: "salon" as const, salon_id: "", barber_id: "" } satisfies Partial<ServiceCreateFormValues>)
+        : {},
+    [mode],
+  );
+
+  const form = useForm<ServiceCreateFormValues | ServiceFormValues>({
+    resolver: zodResolver(schema),
     defaultValues: {
       name: "",
       category_id: categories[0]?.id ?? "",
       price: 50000,
       duration_min: 30,
       is_active: true,
+      ...createFieldDefaults,
       ...defaultValues,
     },
   });
+
+  const serviceType = useWatch({
+    control: form.control,
+    name: "service_type",
+    disabled: mode !== "create",
+  }) as ServiceCreateFormValues["service_type"] | undefined;
+
   useEffect(() => {
-    if (open)
-      form.reset({
-        name: "",
-        category_id: categories[0]?.id ?? "",
-        price: 50000,
-        duration_min: 30,
-        is_active: true,
-        ...defaultValues,
-      });
-  }, [open, defaultValues, form, categories]);
+    if (!open) return;
+    form.reset({
+      name: "",
+      category_id: categories[0]?.id ?? "",
+      price: 50000,
+      duration_min: 30,
+      is_active: true,
+      ...createFieldDefaults,
+      ...defaultValues,
+    });
+  }, [open, defaultValues, form, categories, createFieldDefaults]);
+
+  const handleSubmit = useCallback(
+    (v: ServiceCreateFormValues | ServiceFormValues) => {
+      onSave(v);
+    },
+    [onSave],
+  );
 
   return (
     <EditDialogShell
@@ -596,10 +877,73 @@ export function EditServiceDialog({
       onOpenChange={onOpenChange}
       title={mode === "create" ? "Yangi xizmat" : "Xizmatni tahrirlash"}
       loading={loading}
-      onSubmit={form.handleSubmit(onSave)}
+      onSubmit={form.handleSubmit(handleSubmit)}
+      contentClassName={mode === "create" ? "max-w-xl" : undefined}
     >
       <Form {...form}>
         <form className="space-y-4">
+          {mode === "create" ? (
+            <>
+              <FormField
+                name="service_type"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Xizmat turi</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={(v) => {
+                        field.onChange(v);
+                        form.setValue("salon_id", "");
+                        form.setValue("barber_id", "");
+                        void form.trigger(["salon_id", "barber_id"]);
+                      }}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="salon">Salon xizmati</SelectItem>
+                        <SelectItem value="independent">Mustaqil barber</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {serviceType === "independent" ? (
+                <FormField
+                  name="barber_id"
+                  control={form.control}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Barber</FormLabel>
+                      <FormControl>
+                        <BarberCombobox value={field.value} onChange={field.onChange} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : (
+                <FormField
+                  name="salon_id"
+                  control={form.control}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Salon</FormLabel>
+                      <FormControl>
+                        <SalonCombobox value={field.value} onChange={field.onChange} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </>
+          ) : null}
           <FormField
             name="name"
             control={form.control}
@@ -633,6 +977,7 @@ export function EditServiceDialog({
                     ))}
                   </SelectContent>
                 </Select>
+                <FormMessage />
               </FormItem>
             )}
           />

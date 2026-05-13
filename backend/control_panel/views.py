@@ -548,6 +548,10 @@ class AdminServicesView(APIView):
                         "duration_min": s.duration_minutes,
                         "bookings_count": BookingLine.objects.filter(salon_service_id=s.id).count(),
                         "is_active": s.is_active,
+                        "salon_id": str(s.salon_id),
+                        "salon_name": getattr(s.salon, "name", "") or "",
+                        "barber_id": "",
+                        "barber_name": "",
                     }
                 )
 
@@ -563,6 +567,14 @@ class AdminServicesView(APIView):
                     pass
             for s in qs.order_by("name")[:2000]:
                 cat_ids, cat_names = category_payload(s)
+                bp = getattr(s.profile, "barber", None) if getattr(s, "profile", None) else None
+                barber_label = ""
+                barber_pk = ""
+                if bp is not None:
+                    barber_pk = str(bp.id)
+                    barber_label = (getattr(bp, "full_name", None) or "").strip() or (
+                        getattr(bp, "email", None) or ""
+                    )
                 out.append(
                     {
                         "id": str(s.id),
@@ -574,6 +586,10 @@ class AdminServicesView(APIView):
                         "duration_min": s.duration_minutes,
                         "bookings_count": BookingLine.objects.filter(barber_service_id=s.id).count(),
                         "is_active": s.is_active,
+                        "salon_id": "",
+                        "salon_name": "",
+                        "barber_id": barber_pk,
+                        "barber_name": barber_label,
                     }
                 )
 

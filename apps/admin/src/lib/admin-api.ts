@@ -994,6 +994,10 @@ export type AdminService = {
   duration_min: number;
   bookings_count: number;
   is_active: boolean;
+  salon_id: string;
+  salon_name: string;
+  barber_id: string;
+  barber_name: string;
 };
 
 export async function fetchCategories(): Promise<ServiceCategory[]> {
@@ -1033,6 +1037,10 @@ export async function fetchServices(params?: {
     duration_min: Number(s.duration_min || 0),
     bookings_count: Number(s.bookings_count || 0),
     is_active: !!s.is_active,
+    salon_id: String(s.salon_id ?? ""),
+    salon_name: String(s.salon_name ?? ""),
+    barber_id: String(s.barber_id ?? ""),
+    barber_name: String(s.barber_name ?? ""),
   }));
 }
 
