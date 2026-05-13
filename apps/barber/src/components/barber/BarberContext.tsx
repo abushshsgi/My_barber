@@ -1491,6 +1491,9 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let alive = true;
     const run = async () => {
+      let gateFullyReady = false;
+      let wm: "independent" | "salon" = "independent";
+      let aid: number | null = null;
       try {
         const me = await apiJson<{
           id: number;
@@ -1503,11 +1506,11 @@ export function BarberProvider({ children }: { children: ReactNode }) {
           active_salon_id?: number | null;
         }>("/api/v1/barber/auth/me/");
         if (!alive) return;
-        const wm = me.work_mode === "independent" ? "independent" : "salon";
+        wm = me.work_mode === "independent" ? "independent" : "salon";
         setBarberWorkMode(wm);
         const owns = Boolean(me.owns_salon);
         setOwnsSalon(owns);
-        const aid =
+        aid =
           me.active_salon_id != null && Number.isFinite(Number(me.active_salon_id))
             ? Number(me.active_salon_id)
             : null;
@@ -1523,7 +1526,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         setViewMode(wm === "independent" ? "independent" : "salon");
         setHasSalon(wm !== "independent");
         if (!alive) return;
-        const gateFullyReady = await reloadActivationFromApi();
+        gateFullyReady = await reloadActivationFromApi();
       } catch {
         clearBarberTokens();
         return;

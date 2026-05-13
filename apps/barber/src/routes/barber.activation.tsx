@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Check, Loader2, Mail, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api";
@@ -61,6 +61,7 @@ function computePrimaryNext(
 }
 
 function BarberActivationPage() {
+  const navigate = useNavigate();
   const {
     fullyReady,
     readinessPercent,
@@ -115,6 +116,25 @@ function BarberActivationPage() {
     const i = stepMeta.findIndex((s) => !s.ok);
     return i === -1 ? stepMeta.length : i;
   }, [stepMeta]);
+
+  const goPrimary = (raw: string) => {
+    const hashIdx = raw.indexOf("#");
+    if (hashIdx === -1) {
+      void navigate({ to: raw });
+      return;
+    }
+    const path = raw.slice(0, hashIdx);
+    const hash = raw.slice(hashIdx + 1);
+    void navigate({ to: path });
+    window.setTimeout(() => {
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}#${hash}`,
+      );
+      document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+  };
 
   const onResend = async () => {
     setResending(true);
@@ -221,8 +241,13 @@ function BarberActivationPage() {
 
       <div className="flex flex-col gap-3 pt-2">
         {primaryNext ? (
-          <Button asChild size="lg" className="w-full">
-            <Link to={primaryNext.to}>{primaryNext.label}</Link>
+          <Button
+            type="button"
+            size="lg"
+            className="w-full"
+            onClick={() => goPrimary(primaryNext.to)}
+          >
+            {primaryNext.label}
           </Button>
         ) : (
           <Button

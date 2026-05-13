@@ -16,6 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/barber/services")({
@@ -172,7 +173,16 @@ async function parseError(res: Response, fallback: string) {
 }
 
 function ServicesSchedulePage() {
-  const { profile, viewMode, activeSalonId, ownsSalon, isJoinedWorker } = useBarberContext();
+  const {
+    profile,
+    viewMode,
+    activeSalonId,
+    ownsSalon,
+    isJoinedWorker,
+    refreshActivationStatus,
+    activationSteps,
+    fullyReady,
+  } = useBarberContext();
   const scope = viewMode === "salon" && activeSalonId ? "salon" : "independent";
   const barberId = Number(profile.id);
   const [services, setServices] = useState<ServiceForm[]>([]);
@@ -311,6 +321,7 @@ function ServicesSchedulePage() {
             : undefined,
       });
       await loadAll();
+      await refreshActivationStatus();
     } finally {
       setSavingServices(false);
     }
@@ -332,6 +343,7 @@ function ServicesSchedulePage() {
       setNewService({ name: "", price: "", duration_minutes: "", is_active: true });
       toast.success("Xizmat qo'shildi.");
       await loadAll();
+      await refreshActivationStatus();
     } finally {
       setSavingServices(false);
     }
@@ -350,6 +362,7 @@ function ServicesSchedulePage() {
     }
     toast.success("Xizmat o'chirildi.");
     await loadAll();
+    await refreshActivationStatus();
   };
 
   const saveSchedule = async () => {
@@ -394,6 +407,7 @@ function ServicesSchedulePage() {
       }
       toast.success("Ish jadvali saqlandi.");
       await loadAll();
+      await refreshActivationStatus();
     } finally {
       setSavingSchedule(false);
     }
@@ -424,6 +438,7 @@ function ServicesSchedulePage() {
       if (!ok) return;
       toast.success("Tavsiya saqlandi.");
       await loadAll();
+      await refreshActivationStatus();
     } finally {
       setSavingServices(false);
     }
@@ -466,6 +481,40 @@ function ServicesSchedulePage() {
             </div>
           }
         />
+
+        {!fullyReady && activationSteps.services_ok && !activationSteps.schedule_ok ? (
+          <div className="flex flex-col gap-3 rounded-xl border border-primary/35 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-foreground">
+              <span className="font-medium">Keyingi qadam:</span> pastdagi{" "}
+              <span className="font-medium">Ish jadvali</span> bo&apos;limida o&apos;zgarishlarni
+              kiriting va <span className="font-medium">Jadvalni saqlash</span> ni bosing.
+            </p>
+            <Button
+              type="button"
+              variant="default"
+              className="shrink-0"
+              onClick={() =>
+                document
+                  .getElementById("activation-schedule")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" })
+              }
+            >
+              Jadvalga o&apos;tish
+            </Button>
+          </div>
+        ) : null}
+
+        {!fullyReady &&
+        !activationSteps.services_ok &&
+        activeCount >= 5 &&
+        !savingServices ? (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-foreground">
+            <span className="font-medium">5 ta faol xizmat</span> ko&apos;rinmoqda. Serverga
+            yozilishini tekshirish uchun{" "}
+            <span className="font-medium">Xizmatlarni saqlash</span> ni bosing, so&apos;ng{" "}
+            <span className="font-medium">Profil tayyorligi</span> sahifasiga qayting.
+          </div>
+        ) : null}
 
         {loading ? (
           <div className="flex h-64 items-center justify-center rounded-xl border border-border bg-card">
