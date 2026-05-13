@@ -49,6 +49,12 @@ class Barber(models.Model):
         db_index=True,
     )
     onboarding_completed_at = models.DateTimeField(null=True, blank=True)
+    email_verified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Email tasdiqlangan vaqt. Mijozlarga ko‘rinish va to‘liq panel uchun talab.",
+    )
     is_active = models.BooleanField(default=True)
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(null=True, blank=True)

@@ -5,7 +5,9 @@ from django.db.models.functions import Cast, Coalesce
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
+
+from barbers.activation_permissions import IsAuthenticatedBarberAware
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -13,6 +15,7 @@ from accounts.auth_utils import customer_catalog_region, is_platform_admin, requ
 from accounts.uz_regions import UzRegion
 from accounts.throttles import SalonJoinThrottle, SalonSearchThrottle
 from barbers.models import Barber, BarberProfile
+from barbers.readiness import barber_is_publicly_visible
 from notifications.utils import notify_barber, notify_user
 
 from .geo_join import (
@@ -40,7 +43,7 @@ class SalonViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ("list", "retrieve", "nearby", "search"):
             return [AllowAny()]
-        return [IsAuthenticated()]
+        return [IsAuthenticatedBarberAware()]
 
     def _salon_public_list_qs(self):
         """Ro‘yxat va nearby uchun: reyting/sharhlar soni bitta so‘rovda."""
@@ -135,7 +138,7 @@ class SalonViewSet(viewsets.ModelViewSet):
             raise PermissionDenied()
         serializer.save()
 
-    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
+    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticatedBarberAware])
     def mine(self, request):
         """Salon egasi yoki faol a’zo bo‘lgan sartaroshlar."""
         bp = request_barber(request)
@@ -165,7 +168,7 @@ class SalonViewSet(viewsets.ModelViewSet):
             SalonListSerializer(qs, many=True, context={"request": request}).data
         )
 
-    @action(detail=True, methods=["get"], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=["get"], permission_classes=[IsAuthenticatedBarberAware])
     def barber_view(self, request, pk=None):
         """
         Barber panel uchun read-only salon ko‘rinishi (services yo‘q).
@@ -229,7 +232,7 @@ class SalonViewSet(viewsets.ModelViewSet):
     @action(
         detail=False,
         methods=["post"],
-        permission_classes=[IsAuthenticated],
+        permission_classes=[IsAuthenticatedBarberAware],
         throttle_classes=[SalonJoinThrottle],
     )
     def join(self, request):
@@ -301,6 +304,8 @@ class SalonViewSet(viewsets.ModelViewSet):
         out = []
         for m in mems:
             b = m.barber
+            if not barber_is_publicly_visible(b):
+                continue
             avatar = None
             if b.avatar:
                 avatar = request.build_absolute_uri(b.avatar.url)
@@ -315,7 +320,7 @@ class SalonViewSet(viewsets.ModelViewSet):
             )
         return Response(out)
 
-    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticatedBarberAware])
     def add_images(self, request, pk=None):
         salon = self.get_object()
         bp = request_barber(request)
@@ -328,7 +333,7 @@ class SalonViewSet(viewsets.ModelViewSet):
             order += 1
         return Response({"status": "ok"})
 
-    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticatedBarberAware])
     def upload_cover(self, request, pk=None):
         salon = self.get_object()
         bp = request_barber(request)
@@ -342,7 +347,7 @@ class SalonViewSet(viewsets.ModelViewSet):
             SalonDetailSerializer(salon, context={"request": request}).data
         )
 
-    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticatedBarberAware])
     def set_cover_from_gallery(self, request, pk=None):
         salon = self.get_object()
         bp = request_barber(request)
@@ -363,7 +368,7 @@ class SalonViewSet(viewsets.ModelViewSet):
             SalonDetailSerializer(salon, context={"request": request}).data
         )
 
-    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticatedBarberAware])
     def reorder_images(self, request, pk=None):
         salon = self.get_object()
         bp = request_barber(request)
@@ -397,7 +402,7 @@ class SalonViewSet(viewsets.ModelViewSet):
                 )
         return Response({"status": "ok"})
 
-    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticatedBarberAware])
     def remove_image(self, request, pk=None):
         salon = self.get_object()
         bp = request_barber(request)
@@ -424,7 +429,7 @@ class ServiceViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.request.method in ("GET", "HEAD", "OPTIONS"):
             return [AllowAny()]
-        return [IsAuthenticated()]
+        return [IsAuthenticatedBarberAware()]
 
     def get_queryset(self):
         salon_id = self.request.query_params.get("salon")
@@ -503,7 +508,7 @@ class ServiceViewSet(viewsets.ModelViewSet):
 
 
 class FavoriteSalonListCreateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedBarberAware]
 
     def get(self, request):
         rows = FavoriteSalon.objects.filter(user=request.user).select_related("salon")
@@ -528,7 +533,7 @@ class FavoriteSalonListCreateView(APIView):
 
 
 class FavoriteSalonDetailView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedBarberAware]
 
     def delete(self, request, salon_id):
         FavoriteSalon.objects.filter(user=request.user, salon_id=salon_id).delete()
@@ -537,7 +542,7 @@ class FavoriteSalonDetailView(APIView):
 
 class SalonMembershipViewSet(viewsets.ModelViewSet):
     serializer_class = SalonMembershipSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedBarberAware]
     http_method_names = ["get", "post", "patch", "head", "options"]
 
     def get_queryset(self):
@@ -727,7 +732,7 @@ class SalonMembershipViewSet(viewsets.ModelViewSet):
 
 class BarberScheduleViewSet(viewsets.ModelViewSet):
     serializer_class = BarberWorkingHoursSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedBarberAware]
 
     def get_queryset(self):
         mid = self.request.query_params.get("membership")

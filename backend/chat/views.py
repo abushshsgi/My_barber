@@ -9,7 +9,7 @@ from django.db.utils import OperationalError, ProgrammingError
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAuthenticated
+from barbers.activation_permissions import IsAuthenticatedBarberAware
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -46,7 +46,7 @@ def get_actor_from_request(request) -> Actor:
 
 
 class ConversationListCreateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedBarberAware]
 
     def get(self, request):
         actor = get_actor_from_request(request)
@@ -93,7 +93,7 @@ class ConversationListCreateView(APIView):
 
 
 class ConversationMessagesView(APIView, PageNumberPagination):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedBarberAware]
     page_size = 50
     max_page_size = 200
 

@@ -78,6 +78,8 @@ from barbers.views import (
     MyBarberWorkingHoursViewSet,
 )
 from barbers.views_barber_auth import (
+    BarberEmailResendView,
+    BarberEmailVerifyView,
     BarberMeView,
     BarberOnboardingStatusView,
     BarberTokenRefreshView,
@@ -161,6 +163,8 @@ api_routes = [
     path("barbers/search/", BarberSearchView.as_view()),
     path("barber/auth/token/", BarberTokenView.as_view()),
     path("barber/auth/token/refresh/", BarberTokenRefreshView.as_view()),
+    path("barber/auth/verify-email/", BarberEmailVerifyView.as_view()),
+    path("barber/auth/resend-verification-email/", BarberEmailResendView.as_view()),
     path("barber/auth/me/", BarberMeView.as_view()),
     path("barber/onboarding/status/", BarberOnboardingStatusView.as_view()),
     path("barber/profile/", MyBarberProfileView.as_view()),

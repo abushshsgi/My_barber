@@ -1,11 +1,11 @@
-from datetime import timedelta
+from datetime import time, timedelta
 
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from barbers.barber_auth import encode_barber_tokens
-from barbers.models import Barber
+from barbers.models import Barber, BarberProfile, BarberService, BarberWorkingHours
 from bookings.models import Booking
 from notifications.models import Notification
 
@@ -20,9 +20,33 @@ class BarberBusinessApiTests(APITestCase):
             username="barber@test.uz",
             full_name="Barber Test",
             is_active=True,
+            work_mode=Barber.WorkMode.INDEPENDENT,
+            onboarding_flow=Barber.OnboardingFlow.INDEPENDENT,
+            email_verified_at=timezone.now(),
         )
         self.barber.set_password("StrongPass123")
         self.barber.save()
+        prof = BarberProfile.objects.create(
+            barber=self.barber,
+            location_text="Toshkent",
+            latitude=41.31,
+            longitude=69.28,
+        )
+        for n in range(5):
+            BarberService.objects.create(
+                profile=prof,
+                name=f"Svc{n}",
+                price=40_000,
+                duration_minutes=30,
+                is_active=True,
+            )
+        BarberWorkingHours.objects.create(
+            profile=prof,
+            weekday=0,
+            open_time=time(9, 0),
+            close_time=time(18, 0),
+            is_day_off=False,
+        )
         access, _refresh = encode_barber_tokens(self.barber.id)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
 

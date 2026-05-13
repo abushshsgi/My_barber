@@ -206,8 +206,11 @@ class BarberSignupSerializer(serializers.Serializer):
         return attrs
 
     def create(self, validated_data):
-        # Keep serializer in charge of validation and delegate flow-specific creation.
-        return create_barber_with_flow(validated_data)
+        from barbers.barber_email import send_barber_email_verification
+
+        barber = create_barber_with_flow(validated_data)
+        send_barber_email_verification(barber)
+        return barber
 
     def to_representation(self, instance):
         if isinstance(instance, Barber):
@@ -320,6 +323,9 @@ class BarberRegisterJoinSalonSerializer(serializers.Serializer):
             barber = create_barber_with_flow(payload)
             attach_worker_membership(barber, salon, lat_f, lng_f)
 
+        from barbers.barber_email import send_barber_email_verification
+
+        send_barber_email_verification(barber)
         return barber
 
 

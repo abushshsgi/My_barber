@@ -128,12 +128,11 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-# Railway/Docker: collectstatic dan oldin papka bo‘lmasa Django ogohlantiradi
-if not DEBUG:
-    try:
-        STATIC_ROOT.mkdir(parents=True, exist_ok=True)
-    except OSError:
-        pass
+# Lokal / test / production: papka bo‘lmasa WhiteNoise va pytest ogohlantirish beradi.
+try:
+    STATIC_ROOT.mkdir(parents=True, exist_ok=True)
+except OSError:
+    pass
 # DEBUG=false bo'lsa ham admin CSS ishlashi: collectstatic bo'lmasa, app staticlari topiladi
 WHITENOISE_USE_FINDERS = True
 if DEBUG:
@@ -241,4 +240,15 @@ EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "true").lower() == "true"
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@mybarber.local")
+
+# Email tasdiq havolasi (barber frontend). FRONTEND_BARBER_ORIGIN ning birinchi origini ishlatiladi.
+def _barber_public_app_base() -> str:
+    raw = os.environ.get("FRONTEND_BARBER_ORIGIN", "").strip()
+    if raw:
+        part = raw.split(",")[0].strip().strip('"').strip("'")
+        return part.rstrip("/")
+    return "http://localhost:5173"
+
+
+BARBER_APP_PUBLIC_BASE = _barber_public_app_base()
 

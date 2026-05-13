@@ -1,12 +1,27 @@
-import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
+import { createFileRoute, isRedirect, redirect, useRouter } from "@tanstack/react-router";
 import { BarberShell } from "@/components/barber/BarberShell";
 import { BarberProvider } from "@/components/barber/BarberContext";
-import { getBarberAccessToken } from "@/lib/api";
+import { apiFetch, getBarberAccessToken } from "@/lib/api";
 
 export const Route = createFileRoute("/barber")({
-  beforeLoad: () => {
+  beforeLoad: async ({ location }) => {
     if (typeof window !== "undefined" && !getBarberAccessToken()) {
       throw redirect({ to: "/auth" });
+    }
+    const path = location.pathname;
+    if (path.startsWith("/barber/verify-email")) return;
+    if (path.startsWith("/barber/activation")) return;
+    if (typeof window === "undefined") return;
+    if (!getBarberAccessToken()) return;
+    try {
+      const res = await apiFetch("/api/v1/barber/onboarding/status/");
+      if (!res.ok) return;
+      const st = (await res.json()) as { fully_ready?: boolean };
+      if (st.fully_ready === false) {
+        throw redirect({ to: "/barber/activation" });
+      }
+    } catch (e) {
+      if (isRedirect(e)) throw e;
     }
   },
   component: BarberRoot,

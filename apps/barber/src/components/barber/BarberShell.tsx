@@ -29,6 +29,7 @@ import {
   Receipt,
   ImageIcon,
   Target,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -129,7 +130,7 @@ function Sidebar({
   onNavigate?: () => void;
 }) {
   const { pathname } = useLocation();
-  const { viewMode, setViewMode, hasSalon, onboardingComplete, ownsSalon, profile } =
+  const { viewMode, setViewMode, hasSalon, onboardingComplete, ownsSalon, profile, fullyReady } =
     useBarberContext();
 
   return (
@@ -198,6 +199,7 @@ function Sidebar({
                         item.to === "/barber"
                           ? pathname === "/barber"
                           : pathname === item.to || pathname.startsWith(item.to + "/");
+                      const locked = !fullyReady && item.to !== "/barber/activation";
                       return (
                         <motion.div
                           key={item.to}
@@ -207,12 +209,14 @@ function Sidebar({
                         >
                           <Link
                             to={item.to}
-                            onClick={onNavigate}
+                            onClick={locked ? (e) => e.preventDefault() : onNavigate}
+                            aria-disabled={locked}
                             className={cn(
                               "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-200",
                               active
                                 ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
                                 : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                              locked && "pointer-events-none opacity-35",
                             )}
                           >
                             <Icon className="size-4 shrink-0" />
@@ -287,7 +291,9 @@ function Topbar({
             <ChevronRight className="size-3.5 text-muted-foreground/50" />
             <span className="font-medium text-foreground truncate">{currentItem.label}</span>
           </div>
-          <span className="text-[11px] text-muted-foreground truncate">{flowMeta.heroSubtitle}</span>
+          <span className="text-[11px] text-muted-foreground truncate">
+            {flowMeta.heroSubtitle}
+          </span>
         </div>
       </div>
 
@@ -431,7 +437,11 @@ function CommandPalette({
           {capability !== "independentBase" && (
             <CommandItem
               onSelect={() =>
-                go(capability === "salonWorker" ? "/barber/salon-view/members" : "/barber/salon-view/team")
+                go(
+                  capability === "salonWorker"
+                    ? "/barber/salon-view/members"
+                    : "/barber/salon-view/team",
+                )
               }
             >
               <Users className="size-4 mr-2" />
@@ -459,18 +469,28 @@ function CommandPalette({
 export function BarberShell() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { viewMode, onboardingComplete, isJoinedWorker, flowIdentity } = useBarberContext();
+  const { viewMode, onboardingComplete, isJoinedWorker, flowIdentity, fullyReady } =
+    useBarberContext();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
 
   const nav = useMemo(() => {
     const capability = getCapabilities({ onboardingComplete, viewMode, isJoinedWorker });
     const full = mapNav(NAV_CONFIG[capability]);
+    const activationFirst: NavItem[] = [
+      { to: "/barber/activation", label: "Profil 100%", icon: Sparkles, group: "Asosiy" },
+    ];
+    if (!fullyReady) {
+      const seen = new Set(activationFirst.map((x) => x.to));
+      return [...activationFirst, ...full.filter((n) => !seen.has(n.to))];
+    }
     if (!onboardingComplete) {
-      return full.filter((n) => ["/barber", "/barber/notifications", "/barber/profile"].includes(n.to));
+      return full.filter((n) =>
+        ["/barber", "/barber/notifications", "/barber/profile"].includes(n.to),
+      );
     }
     return full;
-  }, [viewMode, onboardingComplete, isJoinedWorker]);
+  }, [viewMode, onboardingComplete, isJoinedWorker, fullyReady]);
   const capability = useMemo(
     () => getCapabilities({ onboardingComplete, viewMode, isJoinedWorker }),
     [onboardingComplete, viewMode, isJoinedWorker],
@@ -478,12 +498,12 @@ export function BarberShell() {
 
   const navigationKey = useMemo(
     () =>
-      `${viewMode}-${onboardingComplete ? "ok" : "onb"}-${nav.map((n) => n.to).join("|")}`,
-    [viewMode, onboardingComplete, nav],
+      `${viewMode}-${onboardingComplete ? "ok" : "onb"}-${fullyReady ? "live" : "act"}-${nav.map((n) => n.to).join("|")}`,
+    [viewMode, onboardingComplete, fullyReady, nav],
   );
 
   useEffect(() => {
-    if (!onboardingComplete) return;
+    if (!onboardingComplete || !fullyReady) return;
     if (viewMode === "salon") {
       if (pathAllowedInSalonWorkspace(pathname)) return;
       if (!pathname.startsWith("/barber")) return;
@@ -494,7 +514,7 @@ export function BarberShell() {
       if (isJoinedWorker) return;
       void navigate({ to: "/barber", replace: true });
     }
-  }, [onboardingComplete, viewMode, pathname, navigate, isJoinedWorker]);
+  }, [onboardingComplete, fullyReady, viewMode, pathname, navigate, isJoinedWorker]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

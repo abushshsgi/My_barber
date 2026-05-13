@@ -15,3 +15,4 @@ packages/**/node_modules/
 .env.local
 .cursor/
 .git.broken-*/
+*.tsbuildinfo

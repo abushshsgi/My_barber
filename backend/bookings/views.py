@@ -8,12 +8,13 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.auth_utils import customer_catalog_region, is_platform_admin, request_barber
 from accounts.models import User
+from barbers.activation_permissions import IsAuthenticatedBarberAware
 from barbers.barber_auth import BarberPrincipal
 from barbers.models import Barber
 from bookings.availability import build_available_slots, get_salon_services_for_barber, parse_id_list
@@ -30,7 +31,7 @@ from .serializers import (
 
 
 class BookingViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedBarberAware]
 
     def _barber_can_manage_booking(self, request, booking):
         bp = request_barber(request)
@@ -256,7 +257,7 @@ class SalonPortfolioView(APIView):
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedBarberAware]
 
     def get_queryset(self):
         if self.request.query_params.get("mine") == "1":
@@ -310,7 +311,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
             {"review_id": review.id, "booking_id": review.booking_id},
         )
 
-    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticatedBarberAware])
     def reply(self, request, pk=None):
         review = self.get_object()
         bp = request_barber(request)
@@ -340,7 +341,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class SalonClientsView(APIView):
     """Aggregated clients for a salon (completed bookings) with NEW / RETURNING tags."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedBarberAware]
 
     def get(self, request):
         salon_id = request.query_params.get("salon")
@@ -393,7 +394,7 @@ class SalonClientsView(APIView):
 class IndependentClientsView(APIView):
     """Aggregated clients for an independent barber (completed bookings where salon is null)."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedBarberAware]
 
     def get(self, request):
         bp = request_barber(request)
@@ -458,6 +459,10 @@ class BookingAvailabilityView(APIView):
 
         salon = get_object_or_404(Salon, pk=salon_id, is_published=True)
         barber = get_object_or_404(Barber, pk=barber_id)
+        from barbers.readiness import barber_is_publicly_visible
+
+        if not barber_is_publicly_visible(barber):
+            return Response({"slots": [], "detail": "Barber not available."})
 
         if not SalonMembership.objects.filter(
             barber=barber,
@@ -490,7 +495,7 @@ class BookingAvailabilityView(APIView):
 
 
 class AnalyticsView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedBarberAware]
 
     def get(self, request):
         start = request.query_params.get("start")
@@ -662,7 +667,7 @@ class AnalyticsView(APIView):
 
 
 class NotificationListView(generics.ListAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedBarberAware]
     serializer_class = NotificationSerializer
 
     def get_queryset(self):
@@ -675,7 +680,7 @@ class NotificationListView(generics.ListAPIView):
 
 
 class NotificationMarkReadView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedBarberAware]
 
     def post(self, request, pk):
         from notifications.models import Notification
@@ -691,7 +696,7 @@ class NotificationMarkReadView(APIView):
 
 
 class NotificationMarkAllReadView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedBarberAware]
 
     def post(self, request):
         from notifications.models import Notification

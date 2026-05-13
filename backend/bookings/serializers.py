@@ -97,6 +97,12 @@ class BookingCreateSerializer(serializers.Serializer):
                 )
 
         barber = attrs["barber"]
+        from barbers.readiness import barber_is_publicly_visible
+
+        if not barber_is_publicly_visible(barber):
+            raise serializers.ValidationError(
+                {"barber": "Bu sartarosh hozircha mijozlarga ochiq emas."}
+            )
         salon = attrs.get("salon", None)
         if request and request.user.is_authenticated:
             cust = request.user

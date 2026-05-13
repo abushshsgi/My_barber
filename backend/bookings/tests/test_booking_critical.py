@@ -44,6 +44,9 @@ class BookingCriticalTests(TestCase):
             username="b1@test.uz",
             full_name="Barber One",
             phone="+998904445566",
+            work_mode=Barber.WorkMode.INDEPENDENT,
+            onboarding_flow=Barber.OnboardingFlow.INDEPENDENT,
+            email_verified_at=timezone.now(),
         )
         self.barber.set_password("testpass12")
         self.barber.save()
@@ -60,6 +63,14 @@ class BookingCriticalTests(TestCase):
             duration_minutes=30,
             is_active=True,
         )
+        for n in range(2, 6):
+            BarberService.objects.create(
+                profile=self.profile,
+                name=f"Svc{n}",
+                price=40_000,
+                duration_minutes=20,
+                is_active=True,
+            )
         for weekday in range(7):
             BarberWorkingHours.objects.create(
                 profile=self.profile,
@@ -218,11 +229,16 @@ class BookingCriticalTests(TestCase):
         self.assertNotIn("12:00", availability.json()["slots"])
 
     def test_salon_booking_filters_services_by_selected_barber(self):
+        self.barber.work_mode = Barber.WorkMode.SALON
+        self.barber.onboarding_flow = Barber.OnboardingFlow.OWNER
+        self.barber.save()
         other = Barber.objects.create(
             email="b2@test.uz",
             username="b2@test.uz",
             full_name="Barber Two",
             phone="+998900000000",
+            email_verified_at=timezone.now(),
+            onboarding_flow=Barber.OnboardingFlow.EMPLOYEE,
         )
         salon = Salon.objects.create(
             owner_barber=self.barber,
@@ -285,6 +301,15 @@ class BookingCriticalTests(TestCase):
             duration_minutes=30,
             is_active=True,
         )
+        for i in range(4):
+            Service.objects.create(
+                salon=salon,
+                barber=None,
+                name=f"Salon extra {i}",
+                price=15_000,
+                duration_minutes=15,
+                is_active=True,
+            )
 
         self.client.force_authenticate(user=self.user)
         bad_availability = self.client.get(

@@ -37,6 +37,7 @@ from .models import (
     BarberWorkingHours,
 )
 from .permissions import IsBarber
+from .readiness import batch_publicly_visible_barber_ids
 from .serializers import (
     BarberExpenseSerializer,
     BarberGoalSerializer,
@@ -125,7 +126,9 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
             except ValueError:
                 pass
 
-        return qs
+        barber_ids = list(qs.values_list("barber_id", flat=True).distinct())
+        visible = batch_publicly_visible_barber_ids(barber_ids)
+        return qs.filter(barber_id__in=visible)
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -630,6 +633,10 @@ class IndependentAvailabilityView(APIView):
             return Response({"detail": "Invalid date."}, status=400)
 
         barber = get_object_or_404(Barber, pk=barber_id)
+        from barbers.readiness import barber_is_publicly_visible
+
+        if not barber_is_publicly_visible(barber):
+            return Response({"detail": "Topilmadi."}, status=status.HTTP_404_NOT_FOUND)
         forced_region = customer_catalog_region(request)
         if forced_region and (barber.region or "").strip() != forced_region:
             return Response(

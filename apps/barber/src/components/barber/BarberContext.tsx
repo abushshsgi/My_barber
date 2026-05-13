@@ -46,6 +46,13 @@ export type BookingSetupStatus = {
   hasWorkingHours: boolean;
 };
 
+export type ActivationSteps = {
+  email_verified: boolean;
+  signup_complete: boolean;
+  services_ok: boolean;
+  schedule_ok: boolean;
+};
+
 export type Booking = {
   id: string;
   client: string;
@@ -200,6 +207,10 @@ type Ctx = {
   flowIdentity: FlowIdentity;
   onboardingComplete: boolean;
   requiredNextPath: string | null;
+  fullyReady: boolean;
+  readinessPercent: number;
+  activationSteps: ActivationSteps;
+  refreshActivationStatus: () => Promise<void>;
   bookingSetup: BookingSetupStatus;
   profile: BarberProfile;
   services: Service[];
@@ -858,6 +869,14 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     hasServices: true,
     hasWorkingHours: true,
   });
+  const [fullyReady, setFullyReady] = useState(true);
+  const [readinessPercent, setReadinessPercent] = useState(100);
+  const [activationSteps, setActivationSteps] = useState<ActivationSteps>({
+    email_verified: true,
+    signup_complete: true,
+    services_ok: true,
+    schedule_ok: true,
+  });
   const [settings, setSettings] = useState<Settings>({
     notifications_email: true,
     notifications_push: true,
@@ -869,12 +888,12 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
   const refreshServices = useCallback(async () => {
     const rows = await apiList<{
-        id: number;
-        name: string;
-        duration_minutes: number;
-        price: string | number;
-        is_active: boolean;
-      }>("/api/v1/barber/services/");
+      id: number;
+      name: string;
+      duration_minutes: number;
+      price: string | number;
+      is_active: boolean;
+    }>("/api/v1/barber/services/");
     setServices(
       rows.map((s) => ({
         id: String(s.id),
@@ -887,9 +906,12 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshWorkingHours = useCallback(async () => {
-    const rows = await apiList<{ weekday: number; open_time: string; close_time: string; is_day_off: boolean }>(
-      "/api/v1/barber/working-hours/",
-    );
+    const rows = await apiList<{
+      weekday: number;
+      open_time: string;
+      close_time: string;
+      is_day_off: boolean;
+    }>("/api/v1/barber/working-hours/");
     setWorkingHours(
       rows.map((w) => ({
         weekday: w.weekday,
@@ -902,38 +924,38 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
   const refreshBookings = useCallback(async () => {
     const apiBookings = await apiList<{
-        id: number;
-        customer_name: string;
-        customer_phone: string;
-        start_at: string;
-        end_at: string;
-        status: string;
-        total_price: string | number;
-        lines: Array<{ service_name: string; duration_minutes: number; price: string | number }>;
-      }>("/api/v1/bookings/");
+      id: number;
+      customer_name: string;
+      customer_phone: string;
+      start_at: string;
+      end_at: string;
+      status: string;
+      total_price: string | number;
+      lines: Array<{ service_name: string; duration_minutes: number; price: string | number }>;
+    }>("/api/v1/bookings/");
     setBookings(apiBookings.map(mapApiBooking));
   }, []);
 
   const refreshNotifications = useCallback(async () => {
     const apiNotifs = await apiList<{
-        id: number;
-        type: string;
-        title: string;
-        body: string;
-        payload?: Record<string, unknown> | null;
-        read_at: string | null;
-        created_at: string;
-      }>("/api/v1/notifications/");
+      id: number;
+      type: string;
+      title: string;
+      body: string;
+      payload?: Record<string, unknown> | null;
+      read_at: string | null;
+      created_at: string;
+    }>("/api/v1/notifications/");
     setNotifications(apiNotifs.map(mapApiNotification));
   }, []);
 
   const refreshConversations = useCallback(async () => {
     const apiConvos = await apiList<{
-        id: string;
-        last_message_text: string;
-        last_message_at: string | null;
-        other: { id: number; full_name: string };
-      }>("/api/v1/chat/conversations/");
+      id: string;
+      last_message_text: string;
+      last_message_at: string | null;
+      other: { id: number; full_name: string };
+    }>("/api/v1/chat/conversations/");
     setConversations(apiConvos.map(mapApiConversation));
   }, []);
 
@@ -946,12 +968,12 @@ export function BarberProvider({ children }: { children: ReactNode }) {
           ? `/api/v1/analytics/clients/?salon=${salonId}`
           : "/api/v1/analytics/clients/independent/";
       const apiClients = await apiList<{
-          id: number;
-          full_name: string;
-          phone: string;
-          completed_bookings: number;
-          total_spent: string;
-        }>(endpoint);
+        id: number;
+        full_name: string;
+        phone: string;
+        completed_bookings: number;
+        total_spent: string;
+      }>(endpoint);
       setClients(apiClients.map(mapApiClient));
     },
     [activeSalonId, barberWorkMode],
@@ -959,15 +981,15 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
   const refreshInventory = useCallback(async () => {
     const rows = await apiList<{
-        id: number;
-        name: string;
-        category: "tool" | "product" | "consumable";
-        stock: number;
-        min_stock: number;
-        unit: string;
-        price: string | number;
-        supplier: string;
-      }>("/api/v1/barber/inventory/");
+      id: number;
+      name: string;
+      category: "tool" | "product" | "consumable";
+      stock: number;
+      min_stock: number;
+      unit: string;
+      price: string | number;
+      supplier: string;
+    }>("/api/v1/barber/inventory/");
     setInventory(
       rows.map((it) => ({
         id: String(it.id),
@@ -984,12 +1006,12 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
   const refreshExpenses = useCallback(async () => {
     const rows = await apiList<{
-        id: number;
-        category: Expense["category"];
-        description: string;
-        amount: string | number;
-        spent_on: string;
-      }>("/api/v1/barber/expenses/");
+      id: number;
+      category: Expense["category"];
+      description: string;
+      amount: string | number;
+      spent_on: string;
+    }>("/api/v1/barber/expenses/");
     setExpenses(
       rows.map((e) => ({
         id: String(e.id),
@@ -1003,14 +1025,14 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
   const refreshGoals = useCallback(async () => {
     const rows = await apiList<{
-        id: number;
-        title: string;
-        target: string | number;
-        current: string | number;
-        unit: string;
-        deadline: string;
-        done: boolean;
-      }>("/api/v1/barber/goals/");
+      id: number;
+      title: string;
+      target: string | number;
+      current: string | number;
+      unit: string;
+      deadline: string;
+      done: boolean;
+    }>("/api/v1/barber/goals/");
     setGoals(
       rows.map((g) => ({
         id: String(g.id),
@@ -1026,15 +1048,15 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
   const refreshPromos = useCallback(async () => {
     const rows = await apiList<{
-        id: number;
-        code: string;
-        description: string;
-        discount_pct: number;
-        uses: number;
-        max_uses: number;
-        is_active: boolean;
-        expires: string | null;
-      }>("/api/v1/barber/promos/");
+      id: number;
+      code: string;
+      description: string;
+      discount_pct: number;
+      uses: number;
+      max_uses: number;
+      is_active: boolean;
+      expires: string | null;
+    }>("/api/v1/barber/promos/");
     setPromos(
       rows.map((p) => ({
         id: String(p.id),
@@ -1056,13 +1078,13 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
   const refreshPortfolio = useCallback(async () => {
     const rows = await apiList<{
-        id: number;
-        image: string;
-        title: string;
-        service_name: string;
-        created_at: string;
-        likes: number;
-      }>("/api/v1/barber/work-photos/");
+      id: number;
+      image: string;
+      title: string;
+      service_name: string;
+      created_at: string;
+      likes: number;
+    }>("/api/v1/barber/work-photos/");
     setPortfolio(
       rows.map((p) => ({
         id: String(p.id),
@@ -1102,15 +1124,15 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
   const refreshReviews = useCallback(async () => {
     const rows = await apiList<{
-        id: number;
-        client: string;
-        avatar: string;
-        rating: number;
-        text: string;
-        date: string;
-        service: string;
-        barber_reply?: string;
-      }>("/api/v1/barber/reviews/");
+      id: number;
+      client: string;
+      avatar: string;
+      rating: number;
+      text: string;
+      date: string;
+      service: string;
+      barber_reply?: string;
+    }>("/api/v1/barber/reviews/");
     setReviews(
       rows.map((r) => ({
         id: String(r.id),
@@ -1128,14 +1150,14 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   const refreshSalonView = useCallback(async () => {
     try {
       const rows = await apiList<{
-          id: number;
-          name: string;
-          address: string;
-          cover_image: string | null;
-          rating_avg: number;
-          review_count: number;
-          images?: Array<{ image: string }>;
-        }>("/api/v1/salons/mine/");
+        id: number;
+        name: string;
+        address: string;
+        cover_image: string | null;
+        rating_avg: number;
+        review_count: number;
+        images?: Array<{ image: string }>;
+      }>("/api/v1/salons/mine/");
       const one = rows[0];
       if (!one) return;
 
@@ -1414,6 +1436,58 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const reloadActivationFromApi = useCallback(async (): Promise<boolean> => {
+    try {
+      const st = await apiJson<{
+        is_complete?: boolean;
+        required_next_path?: string | null;
+        flow?: string | null;
+        booking_ready?: boolean;
+        booking_missing?: string[];
+        booking_setup_path?: string | null;
+        has_location?: boolean;
+        has_services?: boolean;
+        has_working_hours?: boolean;
+        has_membership_hours?: boolean;
+        fully_ready?: boolean;
+        readiness_percent?: number;
+        steps?: Partial<ActivationSteps>;
+      }>("/api/v1/barber/onboarding/status/");
+      const gate = st.fully_ready !== false;
+      setOnboardingComplete(Boolean(st.is_complete));
+      setRequiredNextPath(st.required_next_path ? String(st.required_next_path) : null);
+      setOnboardingFlow(st.flow ? String(st.flow) : null);
+      setFullyReady(gate);
+      setReadinessPercent(
+        typeof st.readiness_percent === "number" && !Number.isNaN(st.readiness_percent)
+          ? st.readiness_percent
+          : 0,
+      );
+      const s = st.steps;
+      if (s && typeof s === "object") {
+        setActivationSteps({
+          email_verified: Boolean(s.email_verified),
+          signup_complete: Boolean(s.signup_complete),
+          services_ok: Boolean(s.services_ok),
+          schedule_ok: Boolean(s.schedule_ok),
+        });
+      }
+      setBookingSetup({
+        ready: st.booking_ready !== false,
+        missing: Array.isArray(st.booking_missing) ? st.booking_missing.map(String) : [],
+        setupPath: st.booking_setup_path ? String(st.booking_setup_path) : null,
+        hasLocation: Boolean(st.has_location),
+        hasServices: Boolean(st.has_services),
+        hasWorkingHours: Boolean(st.has_working_hours ?? st.has_membership_hours),
+      });
+      return gate;
+    } catch {
+      setOnboardingFlow(null);
+      setFullyReady(true);
+      return true;
+    }
+  }, []);
+
   useEffect(() => {
     let alive = true;
     const run = async () => {
@@ -1448,62 +1522,35 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         }));
         setViewMode(wm === "independent" ? "independent" : "salon");
         setHasSalon(wm !== "independent");
-        setOnboardingComplete(Boolean(me.onboarding_completed ?? true));
-        setRequiredNextPath(null);
-        try {
-          const st = await apiJson<{
-            is_complete?: boolean;
-            required_next_path?: string;
-            flow?: string | null;
-            booking_ready?: boolean;
-            booking_missing?: string[];
-            booking_setup_path?: string | null;
-            has_location?: boolean;
-            has_services?: boolean;
-            has_working_hours?: boolean;
-            has_membership_hours?: boolean;
-          }>(
-            "/api/v1/barber/onboarding/status/",
-          );
-          if (!alive) return;
-          setOnboardingComplete(Boolean(st.is_complete));
-          setRequiredNextPath(st.required_next_path ? String(st.required_next_path) : null);
-          setOnboardingFlow(st.flow ? String(st.flow) : null);
-          setBookingSetup({
-            ready: st.booking_ready !== false,
-            missing: Array.isArray(st.booking_missing) ? st.booking_missing.map(String) : [],
-            setupPath: st.booking_setup_path ? String(st.booking_setup_path) : null,
-            hasLocation: Boolean(st.has_location),
-            hasServices: Boolean(st.has_services),
-            hasWorkingHours: Boolean(st.has_working_hours ?? st.has_membership_hours),
-          });
-        } catch {
-          // keep fallback from /auth/me when status endpoint is unavailable
-          setOnboardingFlow(null);
-        }
+        if (!alive) return;
+        const gateFullyReady = await reloadActivationFromApi();
       } catch {
         clearBarberTokens();
         return;
       }
 
       try {
-        await Promise.all([
-          refreshServices(),
-          refreshWorkingHours(),
-          refreshBookings(),
-          refreshNotifications(),
-          refreshConversations(),
-          refreshClients({ workMode: wm, salonId: aid }),
-          refreshInventory(),
-          refreshExpenses(),
-          refreshGoals(),
-          refreshPromos(),
-          refreshSettings(),
-          refreshPortfolio(),
-          refreshFinanceSummary(),
-          refreshReviews(),
-          refreshSalonView(),
-        ]);
+        if (gateFullyReady) {
+          await Promise.all([
+            refreshServices(),
+            refreshWorkingHours(),
+            refreshBookings(),
+            refreshNotifications(),
+            refreshConversations(),
+            refreshClients({ workMode: wm, salonId: aid }),
+            refreshInventory(),
+            refreshExpenses(),
+            refreshGoals(),
+            refreshPromos(),
+            refreshSettings(),
+            refreshPortfolio(),
+            refreshFinanceSummary(),
+            refreshReviews(),
+            refreshSalonView(),
+          ]);
+        } else {
+          await Promise.all([refreshServices(), refreshWorkingHours()]);
+        }
       } catch {
         if (!alive) return;
         setBookings([]);
@@ -1529,6 +1576,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     refreshServices,
     refreshSettings,
     refreshWorkingHours,
+    reloadActivationFromApi,
   ]);
 
   const isJoinedWorker = useMemo(
@@ -1559,6 +1607,12 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       flowIdentity,
       onboardingComplete,
       requiredNextPath,
+      fullyReady,
+      readinessPercent,
+      activationSteps,
+      refreshActivationStatus: async () => {
+        await reloadActivationFromApi();
+      },
       bookingSetup,
       profile,
       services,
@@ -1624,6 +1678,9 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       flowIdentity,
       onboardingComplete,
       requiredNextPath,
+      fullyReady,
+      readinessPercent,
+      activationSteps,
       bookingSetup,
       profile,
       services,
@@ -1659,8 +1716,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       markNotifRead,
       markAllNotifsRead,
       sendMessage,
-      onboardingFlow,
-      flowIdentity,
+      reloadActivationFromApi,
     ],
   );
 

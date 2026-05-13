@@ -100,6 +100,7 @@ export type AdminBarberRow = {
   work_mode?: string;
   onboarding_flow?: string;
   onboarding_completed_at?: string | null;
+  email_verified_at?: string | null;
   signup_snapshot?: {
     has_salon: boolean;
     shop_name: string;
