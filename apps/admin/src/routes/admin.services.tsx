@@ -2,7 +2,7 @@ import { useDeferredValue, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, MoreHorizontal, Trash2, Pencil } from "lucide-react";
+import { Plus, MoreHorizontal, Trash2, Pencil, AlertCircle } from "lucide-react";
 import {
   fetchServices,
   fetchCategories,
@@ -35,6 +35,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export const Route = createFileRoute("/admin/services")({
   component: ServicesPage,
@@ -124,6 +125,13 @@ function ServicesPage() {
 
   const data = servicesQ.data ?? [];
   const cats = catsQ.data ?? [];
+  const servicesError = servicesQ.isError
+    ? (servicesQ.error as Error)?.message || "Xizmatlarni yuklab bo'lmadi"
+    : null;
+  const categoriesError = catsQ.isError
+    ? (catsQ.error as Error)?.message || "Kategoriyalarni yuklab bo'lmadi"
+    : null;
+  const canCreateService = !catsQ.isLoading && !catsQ.isError && cats.length > 0;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
@@ -136,7 +144,11 @@ function ServicesPage() {
             Barcha xizmatlar katalogi va narxlar.
           </p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
+        <Button
+          onClick={() => setCreateOpen(true)}
+          disabled={!canCreateService}
+          title={!canCreateService ? "Yangi xizmat uchun kamida bitta kategoriya kerak" : undefined}
+        >
           <Plus className="size-4 mr-1" /> Yangi
         </Button>
       </div>
@@ -161,7 +173,11 @@ function ServicesPage() {
             <SelectItem value="independent">Mustaqil</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+        <Select
+          value={categoryFilter}
+          onValueChange={setCategoryFilter}
+          disabled={catsQ.isLoading || !!categoriesError || cats.length === 0}
+        >
           <SelectTrigger className="w-full sm:w-[220px]">
             <SelectValue placeholder="Kategoriya" />
           </SelectTrigger>
@@ -176,9 +192,33 @@ function ServicesPage() {
         </Select>
       </div>
 
+      {categoriesError ? (
+        <Alert variant="destructive">
+          <AlertCircle className="size-4" />
+          <AlertTitle>Kategoriyalar yuklanmadi</AlertTitle>
+          <AlertDescription>{categoriesError}</AlertDescription>
+        </Alert>
+      ) : !catsQ.isLoading && cats.length === 0 ? (
+        <Alert>
+          <AlertCircle className="size-4" />
+          <AlertTitle>Kategoriya topilmadi</AlertTitle>
+          <AlertDescription>
+            Yangi xizmat qo'shishdan oldin kamida bitta kategoriya yarating.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
         {servicesQ.isLoading ? (
           <TableSkeleton rows={6} cols={9} />
+        ) : servicesError ? (
+          <div className="p-6">
+            <Alert variant="destructive">
+              <AlertCircle className="size-4" />
+              <AlertTitle>Xizmatlar yuklanmadi</AlertTitle>
+              <AlertDescription>{servicesError}</AlertDescription>
+            </Alert>
+          </div>
         ) : data.length === 0 ? (
           <EmptyState title="Xizmatlar topilmadi" description="Filtrni o'zgartiring yoki yangi xizmat qo'shing." />
         ) : (
