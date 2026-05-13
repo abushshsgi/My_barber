@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { useBarberContext } from "./BarberContext";
+import { UserAvatar } from "./primitives";
 import {
   getCapabilities,
   getFlowMeta,
@@ -243,10 +244,10 @@ function Sidebar({
           onClick={onNavigate}
           className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-sidebar-accent transition-colors"
         >
-          <img
+          <UserAvatar
             src={profile.avatar}
-            alt=""
-            className="size-9 rounded-full ring-1 ring-sidebar-border object-cover"
+            name={profile.name}
+            className="size-9 ring-1 ring-sidebar-border"
           />
           <div className="min-w-0">
             <div className="text-sm font-medium text-sidebar-primary truncate">{profile.name}</div>
@@ -362,8 +363,11 @@ function Topbar({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="size-9 rounded-full overflow-hidden ring-1 ring-border">
-              <img src={profile.avatar} alt="" className="size-full object-cover" />
+            <button
+              type="button"
+              className="size-9 rounded-full overflow-hidden ring-1 ring-border flex items-center justify-center"
+            >
+              <UserAvatar src={profile.avatar} name={profile.name} className="size-full min-h-0" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">

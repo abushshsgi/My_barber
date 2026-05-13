@@ -27,6 +27,7 @@ class BookingSerializer(serializers.ModelSerializer):
     lines = BookingLineSerializer(many=True)
     customer_name = serializers.CharField(source="customer.full_name", read_only=True)
     customer_phone = serializers.CharField(read_only=True)
+    customer_avatar = serializers.SerializerMethodField()
     salon_name = serializers.SerializerMethodField()
     barber_name = serializers.CharField(source="barber.full_name", read_only=True)
     has_review = serializers.SerializerMethodField()
@@ -39,6 +40,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "customer",
             "customer_name",
             "customer_phone",
+            "customer_avatar",
             "salon",
             "salon_name",
             "barber",
@@ -65,6 +67,16 @@ class BookingSerializer(serializers.ModelSerializer):
 
     def get_salon_name(self, obj):
         return obj.salon.name if obj.salon_id else None
+
+    def get_customer_avatar(self, obj):
+        cust = obj.customer
+        if not cust or not cust.avatar:
+            return ""
+        request = self.context.get("request")
+        url = cust.avatar.url
+        if request:
+            return request.build_absolute_uri(url)
+        return url
 
     def get_has_review(self, obj):
         return hasattr(obj, "review")

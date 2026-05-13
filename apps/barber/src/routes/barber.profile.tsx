@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Mail, Phone, Clock, Sparkles } from "lucide-react";
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
+import { UserAvatar } from "@/components/barber/primitives";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -29,10 +30,10 @@ function ProfilePage() {
 
       {/* Identity */}
       <div className="rounded-xl border border-border bg-card p-6 shadow-card flex flex-col sm:flex-row gap-6">
-        <img
+        <UserAvatar
           src={profile.avatar}
-          alt=""
-          className="size-24 rounded-2xl object-cover ring-1 ring-border"
+          name={profile.name}
+          className="size-24 rounded-2xl ring-1 ring-border"
         />
         <div className="flex-1 space-y-4">
           <div>

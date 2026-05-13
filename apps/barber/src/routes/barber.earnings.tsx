@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Wallet, TrendingUp, Download, ArrowDownToLine, Coins } from "lucide-react";
-import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
+import { useBarberContext, formatUZS, type Booking } from "@/components/barber/BarberContext";
 import { PageHeader, StatCard } from "@/components/barber/primitives";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,36 @@ export const Route = createFileRoute("/barber/earnings")({
 });
 
 const RANGES = ["Bugun", "Hafta", "Oy", "Yil"] as const;
+
+function startOfLocalDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/** Oxirgi 7 kun: yakunlangan bronlar summasi (start_at bo‘yicha). */
+function useLast7DaysCompletedSeries(bookings: Booking[]) {
+  return useMemo(() => {
+    const amounts = new Array(7).fill(0);
+    const end = startOfLocalDay(new Date());
+    const start = new Date(end);
+    start.setDate(start.getDate() - 6);
+    const labels: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      labels.push(d.toLocaleDateString("uz-UZ", { weekday: "short" }));
+    }
+    for (const b of bookings) {
+      if (b.status !== "completed" || !b.start_at) continue;
+      const dt = startOfLocalDay(new Date(b.start_at));
+      const dayIdx = Math.round((dt.getTime() - start.getTime()) / 86400000);
+      if (dayIdx >= 0 && dayIdx < 7) amounts[dayIdx] += b.price;
+    }
+    const max = Math.max(1, ...amounts);
+    const bars = amounts.map((a) => Math.round((a / max) * 100));
+    const weekSegmentTotal = amounts.reduce((s, x) => s + x, 0);
+    return { bars, labels, weekSegmentTotal };
+  }, [bookings]);
+}
 
 function EarningsPage() {
   const { transactions, bookings } = useBarberContext();
@@ -23,9 +53,7 @@ function EarningsPage() {
   );
   const balance = gross + tips - payouts;
 
-  // mock chart heights
-  const bars = [40, 65, 50, 80, 95, 70, 88];
-  const days = ["Du", "Se", "Ch", "Pa", "Ju", "Sh", "Ya"];
+  const { bars, labels, weekSegmentTotal } = useLast7DaysCompletedSeries(bookings);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
@@ -46,7 +74,6 @@ function EarningsPage() {
         }
       />
 
-      {/* Balance hero */}
       <div className="rounded-2xl bg-foreground text-background p-6 sm:p-8 shadow-card">
         <div className="flex items-center gap-2 text-xs uppercase tracking-wider opacity-70">
           <Wallet className="size-3.5" />
@@ -55,10 +82,12 @@ function EarningsPage() {
         <div className="font-heading text-4xl sm:text-5xl font-semibold mt-2">
           {formatUZS(balance)}
         </div>
-        <div className="text-sm opacity-70 mt-2">Keyingi to'lov: 30 Apr, payshanba</div>
+        <div className="text-sm opacity-70 mt-2">
+          Yalpi (yakunlangan bronlar): {formatUZS(gross)} · chaylar: {formatUZS(tips)} · yechilgan:{" "}
+          {formatUZS(payouts)}
+        </div>
       </div>
 
-      {/* Range tabs */}
       <div className="inline-flex gap-1 bg-muted p-1 rounded-lg">
         {RANGES.map((r) => (
           <button
@@ -76,20 +105,17 @@ function EarningsPage() {
         ))}
       </div>
 
-      {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
           icon={<TrendingUp className="size-4" />}
           label="Yalpi daromad"
           value={formatUZS(gross)}
-          trend={{ value: 18 }}
           hint={range.toLowerCase()}
         />
         <StatCard
           icon={<Coins className="size-4" />}
           label="Chaylar"
           value={formatUZS(tips)}
-          trend={{ value: 5 }}
           hint={range.toLowerCase()}
         />
         <StatCard
@@ -100,40 +126,41 @@ function EarningsPage() {
         />
         <StatCard
           icon={<Wallet className="size-4" />}
-          label="Bronlar"
+          label="Yakunlangan bronlar"
           value={completed.length.toString()}
-          trend={{ value: 12 }}
           hint={range.toLowerCase()}
         />
       </div>
 
-      {/* Chart */}
       <div className="rounded-xl border border-border bg-card p-6 shadow-card">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="font-heading text-lg font-semibold">Haftalik daromad</h2>
-            <div className="text-xs text-muted-foreground">Kunma-kun taqsimot</div>
+            <h2 className="font-heading text-lg font-semibold">Oxirgi 7 kun</h2>
+            <div className="text-xs text-muted-foreground">
+              Yakunlangan bronlar summasi (kun bo‘yicha) · jami {formatUZS(weekSegmentTotal)}
+            </div>
           </div>
-          <div className="text-2xl font-heading font-semibold">{formatUZS(gross)}</div>
+          <div className="text-2xl font-heading font-semibold">{formatUZS(weekSegmentTotal)}</div>
         </div>
         <div className="flex items-end gap-3 h-48">
           {bars.map((h, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-2">
+            <div key={labels[i] ?? i} className="flex-1 flex flex-col items-center gap-2">
               <div
-                className="w-full rounded-t-md bg-foreground/90 hover:bg-foreground transition-colors"
+                className="w-full min-h-[2px] rounded-t-md bg-foreground/90 hover:bg-foreground transition-colors"
                 style={{ height: `${h}%` }}
               />
-              <div className="text-xs text-muted-foreground">{days[i]}</div>
+              <div className="text-xs text-muted-foreground">{labels[i]}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Transactions table */}
       <div className="rounded-xl border border-border bg-card overflow-hidden shadow-card">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <h2 className="font-heading text-lg font-semibold">Tranzaksiyalar</h2>
-          <button className="text-xs text-muted-foreground hover:text-foreground">Hammasi</button>
+          <button type="button" className="text-xs text-muted-foreground hover:text-foreground">
+            Hammasi
+          </button>
         </div>
         <div className="grid grid-cols-12 gap-4 px-5 py-3 text-xs uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/30">
           <div className="col-span-3">Sana</div>
@@ -142,43 +169,49 @@ function EarningsPage() {
           <div className="col-span-2">Holat</div>
           <div className="col-span-1 text-right">Summa</div>
         </div>
-        {transactions.map((t) => (
-          <div
-            key={t.id}
-            className="grid grid-cols-12 gap-4 px-5 py-3 items-center border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors"
-          >
-            <div className="col-span-3 text-sm text-muted-foreground">{t.date}</div>
-            <div className="col-span-3 text-sm font-medium">{t.client}</div>
-            <div className="col-span-3 text-sm text-muted-foreground">{t.service}</div>
-            <div className="col-span-2">
-              <span
+        {transactions.length === 0 ? (
+          <div className="px-5 py-10 text-center text-sm text-muted-foreground">
+            Hozircha tranzaksiyalar yo‘q.
+          </div>
+        ) : (
+          transactions.map((t) => (
+            <div
+              key={t.id}
+              className="grid grid-cols-12 gap-4 px-5 py-3 items-center border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors"
+            >
+              <div className="col-span-3 text-sm text-muted-foreground">{t.date}</div>
+              <div className="col-span-3 text-sm font-medium">{t.client}</div>
+              <div className="col-span-3 text-sm text-muted-foreground">{t.service}</div>
+              <div className="col-span-2">
+                <span
+                  className={cn(
+                    "inline-flex items-center rounded-md border px-2 py-0.5 text-xs",
+                    t.status === "completed" &&
+                      "bg-foreground/10 text-foreground border-foreground/20",
+                    t.status === "pending" && "bg-muted text-muted-foreground border-border",
+                    t.status === "failed" &&
+                      "bg-destructive/10 text-destructive border-destructive/20",
+                  )}
+                >
+                  {t.status === "completed"
+                    ? "Yakunlandi"
+                    : t.status === "pending"
+                      ? "Kutilmoqda"
+                      : "Xato"}
+                </span>
+              </div>
+              <div
                 className={cn(
-                  "inline-flex items-center rounded-md border px-2 py-0.5 text-xs",
-                  t.status === "completed" &&
-                    "bg-foreground/10 text-foreground border-foreground/20",
-                  t.status === "pending" && "bg-muted text-muted-foreground border-border",
-                  t.status === "failed" &&
-                    "bg-destructive/10 text-destructive border-destructive/20",
+                  "col-span-1 text-right text-sm font-medium",
+                  t.amount < 0 && "text-destructive",
                 )}
               >
-                {t.status === "completed"
-                  ? "Yakunlandi"
-                  : t.status === "pending"
-                    ? "Kutilmoqda"
-                    : "Xato"}
-              </span>
+                {t.amount < 0 ? "-" : "+"}
+                {formatUZS(Math.abs(t.amount))}
+              </div>
             </div>
-            <div
-              className={cn(
-                "col-span-1 text-right text-sm font-medium",
-                t.amount < 0 && "text-destructive",
-              )}
-            >
-              {t.amount < 0 ? "-" : "+"}
-              {formatUZS(Math.abs(t.amount))}
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

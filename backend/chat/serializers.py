@@ -6,6 +6,15 @@ from barbers.models import Barber
 from .models import Conversation, Message
 
 
+def _absolute_file_url(request, filefield) -> str:
+    if not filefield:
+        return ""
+    url = filefield.url
+    if request:
+        return request.build_absolute_uri(url)
+    return url
+
+
 class ConversationListSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(source="public_id", read_only=True)
     other = serializers.SerializerMethodField()
@@ -21,13 +30,24 @@ class ConversationListSerializer(serializers.ModelSerializer):
         ]
 
     def get_other(self, obj: Conversation):
+        request = self.context.get("request")
         actor = self.context.get("actor") or {}
         kind = actor.get("kind")
         if kind == "USER":
             b: Barber = obj.barber
-            return {"kind": "BARBER", "id": b.id, "full_name": b.full_name or b.username}
+            return {
+                "kind": "BARBER",
+                "id": b.id,
+                "full_name": b.full_name or b.username,
+                "avatar": _absolute_file_url(request, b.avatar),
+            }
         u: User = obj.user
-        return {"kind": "USER", "id": u.id, "full_name": u.full_name or u.email}
+        return {
+            "kind": "USER",
+            "id": u.id,
+            "full_name": u.full_name or u.email,
+            "avatar": _absolute_file_url(request, u.avatar),
+        }
 
 
 class MessageSerializer(serializers.ModelSerializer):

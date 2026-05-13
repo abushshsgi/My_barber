@@ -2,9 +2,9 @@ import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Loader2, Users } from "lucide-react";
 import { useBarberContext } from "@/components/barber/BarberContext";
+import { UserAvatar } from "@/components/barber/primitives";
 import { apiFetch, formatApiError } from "@/lib/api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/barber/salon-view/members")({
   component: SalonMembersWorkerPage,
@@ -134,13 +134,10 @@ function SalonMembersWorkerPage() {
               key={r.id}
               className="rounded-xl border border-border bg-card p-4 shadow-card flex items-center gap-3"
             >
-              <img
-                src={r.avatar || `https://i.pravatar.cc/150?u=staff-${r.id}`}
-                alt=""
-                className={cn(
-                  "size-12 rounded-full object-cover ring-1 ring-border shrink-0",
-                  !r.avatar && "opacity-90",
-                )}
+              <UserAvatar
+                src={r.avatar || ""}
+                name={r.full_name}
+                className="size-12 ring-1 ring-border shrink-0"
               />
               <div className="min-w-0 flex-1">
                 <div className="font-medium truncate">{r.full_name}</div>

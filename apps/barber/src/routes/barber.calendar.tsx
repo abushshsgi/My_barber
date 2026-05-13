@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
-import { PageHeader, StatusPill } from "@/components/barber/primitives";
+import { PageHeader, StatusPill, UserAvatar } from "@/components/barber/primitives";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/barber/calendar")({
@@ -16,7 +16,6 @@ function CalendarPage() {
   const { bookings } = useBarberContext();
   const [weekOffset, setWeekOffset] = useState(0);
 
-  // group today's bookings by hour for demo
   const today = bookings.filter((b) => b.date === "Today");
   const slots = useMemo(() => {
     const map = new Map<number, typeof today>();
@@ -119,7 +118,7 @@ function CalendarPage() {
               className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/40"
             >
               <div className="text-sm font-medium w-14">{b.time}</div>
-              <img src={b.client_avatar} alt="" className="size-8 rounded-full" />
+              <UserAvatar src={b.client_avatar} name={b.client} className="size-8" />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">{b.client}</div>
                 <div className="text-xs text-muted-foreground truncate">{b.service}</div>

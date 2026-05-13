@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Send } from "lucide-react";
 import { useBarberContext } from "@/components/barber/BarberContext";
+import { UserAvatar } from "@/components/barber/primitives";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/barber/chat")({
@@ -56,7 +57,7 @@ function ChatPage() {
                 activeId === c.id && "bg-muted/60",
               )}
             >
-              <img src={c.avatar} alt="" className="size-10 rounded-full shrink-0" />
+              <UserAvatar src={c.avatar} name={c.client} className="size-10 shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
                   <div className="font-medium text-sm truncate">{c.client}</div>
@@ -79,7 +80,7 @@ function ChatPage() {
         {active ? (
           <>
             <header className="h-16 px-5 border-b border-border bg-card flex items-center gap-3">
-              <img src={active.avatar} alt="" className="size-10 rounded-full" />
+              <UserAvatar src={active.avatar} name={active.client} className="size-10" />
               <div>
                 <div className="font-medium text-sm">{active.client}</div>
                 <div className="text-xs text-muted-foreground">Online</div>

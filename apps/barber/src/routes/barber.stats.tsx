@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Users, Star, CalendarClock, TrendingUp, Repeat } from "lucide-react";
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
-import { PageHeader, StatCard, SectionCard } from "@/components/barber/primitives";
+import { PageHeader, StatCard, SectionCard, UserAvatar } from "@/components/barber/primitives";
 
 export const Route = createFileRoute("/barber/stats")({
   component: StatsPage,
@@ -88,7 +88,7 @@ function StatsPage() {
                 <div className="size-7 rounded-full bg-muted text-foreground text-xs font-semibold flex items-center justify-center">
                   {i + 1}
                 </div>
-                <img src={c.avatar} alt="" className="size-9 rounded-full" />
+                <UserAvatar src={c.avatar} name={c.name} className="size-9" />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{c.name}</div>
                   <div className="text-xs text-muted-foreground">{c.visits} ta tashrif</div>

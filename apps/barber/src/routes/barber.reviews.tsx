@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Star } from "lucide-react";
 import { useBarberContext } from "@/components/barber/BarberContext";
+import { UserAvatar } from "@/components/barber/primitives";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
 import { toast } from "sonner";
@@ -79,7 +80,7 @@ function ReviewsPage() {
           return (
           <div key={r.id} className="rounded-xl border border-border bg-card p-5 shadow-card">
             <div className="flex items-start gap-3">
-              <img src={r.avatar} alt="" className="size-10 rounded-full" />
+              <UserAvatar src={r.avatar} name={r.client} className="size-10" />
               <div className="flex-1 min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                   <div className="font-medium text-sm">{r.client}</div>

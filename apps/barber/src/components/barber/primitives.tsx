@@ -176,3 +176,31 @@ export function SectionCard({
     </div>
   );
 }
+
+/** Rasm bo‘lmasa — ism bosh harfi (tashqi mock URL ishlatilmaydi). */
+export function UserAvatar({
+  src,
+  name,
+  className,
+}: {
+  src: string;
+  name: string;
+  className?: string;
+}) {
+  const initial = (name || "?").trim().slice(0, 1).toUpperCase() || "?";
+  const merged = cn("rounded-full object-cover shrink-0", className);
+  if (src) {
+    return <img src={src} alt="" className={merged} />;
+  }
+  return (
+    <div
+      className={cn(
+        "rounded-full bg-muted flex items-center justify-center text-muted-foreground text-xs font-semibold shrink-0",
+        className,
+      )}
+      aria-hidden
+    >
+      {initial}
+    </div>
+  );
+}

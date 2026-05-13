@@ -52,7 +52,9 @@ class ConversationListCreateView(APIView):
         actor = get_actor_from_request(request)
         try:
             qs = conversation_queryset_for_actor(actor)
-            data = ConversationListSerializer(qs, many=True, context={"actor": actor}).data
+            data = ConversationListSerializer(
+                qs, many=True, context={"actor": actor, "request": request}
+            ).data
             return Response(data)
         except (OperationalError, ProgrammingError):
             # Production deploylarda migrate o'tkazilmagan bo'lsa 500 chiqmasin.
@@ -88,7 +90,9 @@ class ConversationListCreateView(APIView):
             )
 
         convo, _created = Conversation.objects.get_or_create(user=user, barber=barber)
-        payload = ConversationListSerializer(convo, context={"actor": actor}).data
+        payload = ConversationListSerializer(
+            convo, context={"actor": actor, "request": request}
+        ).data
         return Response(payload, status=201)
 
 

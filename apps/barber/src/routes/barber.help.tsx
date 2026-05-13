@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { ChevronDown, MessageSquare, Mail, Phone, BookOpen, Send } from "lucide-react";
+import { ChevronDown, MessageSquare, Send } from "lucide-react";
 import { PageHeader, SectionCard } from "@/components/barber/primitives";
 import { useBarberContext } from "@/components/barber/BarberContext";
 import { cn } from "@/lib/utils";
@@ -42,27 +42,14 @@ function HelpPage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
       <PageHeader title="Yordam markazi" description="Tez-tez so'raladigan savollar va support." />
 
-      {/* Contact channels */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Channel
-          icon={<Phone className="size-5" />}
-          label="Telefon"
-          value="+998 71 200 00 00"
-          hint="9:00 — 21:00"
-        />
-        <Channel
-          icon={<Mail className="size-5" />}
-          label="Email"
-          value="support@shearhq.uz"
-          hint="24 soat ichida javob"
-        />
-        <Channel
-          icon={<BookOpen className="size-5" />}
-          label="Hujjatlar"
-          value="docs.shearhq.uz"
-          hint="Qo'llanmalar"
-        />
-      </div>
+      <SectionCard
+        title="Aloqa"
+        description="Telefon va email manzillari platforma administratori tomonidan belgilanadi. Hozircha texnik yordam faqat pastdagi forma orqali."
+      >
+        <p className="text-sm text-muted-foreground">
+          Xabar serverga yuboriladi — javobni administrator yoki support jarayoni orqali olasiz.
+        </p>
+      </SectionCard>
 
       {/* FAQ */}
       <SectionCard title="Tez-tez so'raladigan savollar">
@@ -133,29 +120,6 @@ function HelpPage() {
           </div>
         </div>
       </SectionCard>
-    </div>
-  );
-}
-
-function Channel({
-  icon,
-  label,
-  value,
-  hint,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  hint: string;
-}) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-5 hover:border-foreground/30 transition-colors">
-      <div className="size-10 rounded-lg bg-muted flex items-center justify-center mb-3">
-        {icon}
-      </div>
-      <div className="text-xs text-muted-foreground uppercase tracking-wider">{label}</div>
-      <div className="font-heading font-medium mt-1">{value}</div>
-      <div className="text-xs text-muted-foreground mt-1">{hint}</div>
     </div>
   );
 }

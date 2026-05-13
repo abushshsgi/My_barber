@@ -124,12 +124,16 @@ class BarberMeView(APIView):
         b = request.user.barber
         owns_salon, active_salon_id = _barber_me_salon_fields(b)
         r = compute_barber_readiness(b)
+        avatar_url = ""
+        if b.avatar:
+            avatar_url = request.build_absolute_uri(b.avatar.url)
         return Response(
             {
                 "id": b.id,
                 "email": b.email,
                 "full_name": b.full_name,
                 "phone": b.phone,
+                "avatar": avatar_url,
                 "role": "BARBER",
                 "work_mode": b.work_mode,
                 "onboarding_completed": bool(b.onboarding_completed_at),
@@ -161,12 +165,16 @@ class BarberMeView(APIView):
             return Response({"detail": str(e)}, status=400)
         owns_salon, active_salon_id = _barber_me_salon_fields(b)
         r = compute_barber_readiness(b)
+        avatar_url = ""
+        if b.avatar:
+            avatar_url = request.build_absolute_uri(b.avatar.url)
         return Response(
             {
                 "id": b.id,
                 "email": b.email,
                 "full_name": b.full_name,
                 "phone": b.phone,
+                "avatar": avatar_url,
                 "role": "BARBER",
                 "work_mode": b.work_mode,
                 "onboarding_completed": bool(b.onboarding_completed_at),

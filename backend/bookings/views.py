@@ -370,6 +370,13 @@ class SalonClientsView(APIView):
         )
         ids = [r["customer_id"] for r in rows]
         users = {u.id: u for u in User.objects.filter(id__in=ids)}
+
+        def _avatar_url(user):
+            if not user.avatar:
+                return ""
+            url = user.avatar.url
+            return request.build_absolute_uri(url)
+
         out = []
         for r in rows:
             cid = r["customer_id"]
@@ -383,6 +390,7 @@ class SalonClientsView(APIView):
                     "full_name": u.full_name or u.email,
                     "email": u.email,
                     "phone": u.phone or "",
+                    "avatar": _avatar_url(u),
                     "completed_bookings": cnt,
                     "total_spent": str(r["spent"] or Decimal("0")),
                     "classification": "new" if cnt == 1 else "returning",
@@ -413,6 +421,13 @@ class IndependentClientsView(APIView):
         )
         ids = [r["customer_id"] for r in rows]
         users = {u.id: u for u in User.objects.filter(id__in=ids)}
+
+        def _avatar_url(user):
+            if not user.avatar:
+                return ""
+            url = user.avatar.url
+            return request.build_absolute_uri(url)
+
         out = []
         for r in rows:
             cid = r["customer_id"]
@@ -426,6 +441,7 @@ class IndependentClientsView(APIView):
                     "full_name": u.full_name or u.email,
                     "email": u.email,
                     "phone": u.phone or "",
+                    "avatar": _avatar_url(u),
                     "completed_bookings": cnt,
                     "total_spent": str(r["spent"] or Decimal("0")),
                     "classification": "new" if cnt == 1 else "returning",

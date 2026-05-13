@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Search, Phone } from "lucide-react";
 import { useState } from "react";
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
-import { EmptyBlock } from "@/components/barber/primitives";
+import { EmptyBlock, UserAvatar } from "@/components/barber/primitives";
 
 export const Route = createFileRoute("/barber/clients")({
   component: ClientsPage,
@@ -54,7 +54,7 @@ function ClientsPage() {
               className="grid grid-cols-12 gap-4 px-5 py-3 items-center hover:bg-muted/30 transition-colors border-b border-border last:border-b-0"
             >
               <div className="col-span-5 flex items-center gap-3 min-w-0">
-                <img src={c.avatar} alt="" className="size-9 rounded-full shrink-0" />
+                <UserAvatar src={c.avatar} name={c.name} className="size-9 shrink-0" />
                 <div className="min-w-0">
                   <div className="font-medium text-sm truncate">{c.name}</div>
                   <div className="text-xs text-muted-foreground">ID #{c.id}</div>

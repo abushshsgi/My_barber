@@ -15,7 +15,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
-import { StatusPill } from "@/components/barber/primitives";
+import { StatusPill, UserAvatar } from "@/components/barber/primitives";
 import { getFlowMeta } from "@/lib/barber-flow-config";
 import { cn } from "@/lib/utils";
 
@@ -105,10 +105,10 @@ function BarberDashboard() {
       {active && (
         <div className="rounded-xl border border-foreground bg-foreground text-background p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <img
+            <UserAvatar
               src={active.client_avatar}
-              alt=""
-              className="size-12 rounded-full ring-2 ring-background/30"
+              name={active.client}
+              className="size-12 ring-2 ring-background/30"
             />
             <div className="min-w-0">
               <div className="text-xs uppercase tracking-wider opacity-70">Faol seans</div>
@@ -152,7 +152,7 @@ function BarberDashboard() {
                   <div className="font-heading font-semibold text-foreground">{b.time}</div>
                   <div className="text-[11px] text-muted-foreground">{b.duration_min}m</div>
                 </div>
-                <img src={b.client_avatar} alt="" className="size-10 rounded-full" />
+                <UserAvatar src={b.client_avatar} name={b.client} className="size-10" />
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm truncate">{b.client}</div>
                   <div className="text-xs text-muted-foreground truncate">{b.service}</div>
