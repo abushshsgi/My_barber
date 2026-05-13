@@ -37,7 +37,7 @@ function StatsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
           icon={<TrendingUp className="size-4" />}
-          label="Yakunlash %"
+          label="Bronlarni yakunlash"
           value={`${completionRate.toFixed(0)}%`}
           trend={{ value: 4 }}
         />

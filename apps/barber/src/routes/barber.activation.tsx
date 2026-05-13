@@ -1,15 +1,64 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Loader2, Mail, Sparkles } from "lucide-react";
+import { Check, Loader2, Mail, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useBarberContext } from "@/components/barber/BarberContext";
+import { SIGNUP_FLOW_PATH } from "@/lib/barber-flow-config";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/barber/activation")({
   component: BarberActivationPage,
 });
+
+type ActivationSteps = {
+  email_verified: boolean;
+  signup_complete: boolean;
+  services_ok: boolean;
+  schedule_ok: boolean;
+};
+
+function signupFallbackPath(flow: string | null): string {
+  const f = (flow || "").trim();
+  if (f === "owner" || f === "employee" || f === "mybarber" || f === "independent") {
+    return SIGNUP_FLOW_PATH[f];
+  }
+  return "/salon/join";
+}
+
+function computePrimaryNext(
+  steps: ActivationSteps,
+  requiredNextPath: string | null,
+  onboardingFlow: string | null,
+): { to: string; label: string } | null {
+  if (!steps.email_verified) {
+    return { to: "/barber/verify-email", label: "Keyingi qadam: emailni tasdiqlang" };
+  }
+  if (!steps.signup_complete) {
+    if (requiredNextPath) {
+      return { to: requiredNextPath, label: "Keyingi qadam: ro‘yxatdan o‘tishni yakunlang" };
+    }
+    return {
+      to: signupFallbackPath(onboardingFlow),
+      label: "Keyingi qadam: joylashuv va profil",
+    };
+  }
+  if (!steps.services_ok) {
+    return {
+      to: "/barber/services#activation-services",
+      label: "Keyingi qadam: kamida 5 ta xizmat kiriting",
+    };
+  }
+  if (!steps.schedule_ok) {
+    return {
+      to: "/barber/services#activation-schedule",
+      label: "Keyingi qadam: ish jadvalini saqlang",
+    };
+  }
+  return null;
+}
 
 function BarberActivationPage() {
   const {
@@ -17,14 +66,55 @@ function BarberActivationPage() {
     readinessPercent,
     activationSteps,
     requiredNextPath,
-    bookingSetup,
+    onboardingFlow,
     refreshActivationStatus,
   } = useBarberContext();
   const [resending, setResending] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     void refreshActivationStatus();
   }, [refreshActivationStatus]);
+
+  const primaryNext = useMemo(
+    () => computePrimaryNext(activationSteps, requiredNextPath, onboardingFlow),
+    [activationSteps, requiredNextPath, onboardingFlow],
+  );
+
+  const stepMeta = useMemo(
+    () => [
+      {
+        n: 1,
+        ok: activationSteps.email_verified,
+        title: "Email",
+        body: "Tasdiq havolasi pochtangizga yuboriladi.",
+      },
+      {
+        n: 2,
+        ok: activationSteps.signup_complete,
+        title: "Ro‘yxatdan o‘tish",
+        body: "Salon yoki mustaqil oqim — joylashuv va asosiy ma’lumotlar.",
+      },
+      {
+        n: 3,
+        ok: activationSteps.services_ok,
+        title: "Xizmatlar",
+        body: "Kamida 5 ta faol xizmat (narx va vaqt).",
+      },
+      {
+        n: 4,
+        ok: activationSteps.schedule_ok,
+        title: "Ish jadvali",
+        body: "Kamida bitta ish kuni ochiq va jadval saqlangan.",
+      },
+    ],
+    [activationSteps],
+  );
+
+  const activeIndex = useMemo(() => {
+    const i = stepMeta.findIndex((s) => !s.ok);
+    return i === -1 ? stepMeta.length : i;
+  }, [stepMeta]);
 
   const onResend = async () => {
     setResending(true);
@@ -42,6 +132,16 @@ function BarberActivationPage() {
       toast.success("Tasdiq xati yuborildi");
     } finally {
       setResending(false);
+    }
+  };
+
+  const onRefreshStatus = async () => {
+    setRefreshing(true);
+    try {
+      await refreshActivationStatus();
+      toast.success("Holat yangilandi");
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -65,69 +165,94 @@ function BarberActivationPage() {
   return (
     <div className="p-4 sm:p-8 max-w-xl mx-auto space-y-6">
       <div>
-        <h1 className="font-heading text-xl font-semibold tracking-tight">Profilni tugating</h1>
+        <h1 className="font-heading text-xl font-semibold tracking-tight">Profil tayyorligi</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Booking va panelning barcha qismlari faqat 100% tayyorgarlikdan keyin ochiladi.
+          Barcha qadamlarni shu yerda bajaring. Dashboarddagi alohida «profilni to‘ldiring» bloklari
+          olib tashlangan — yo‘l-yo‘riq faqat shu sahifada.
         </p>
       </div>
 
       <div className="space-y-2">
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>Jarayon</span>
+          <span>Umumiy tayyorlik</span>
           <span>{readinessPercent}%</span>
         </div>
         <Progress value={readinessPercent} className="h-2" />
       </div>
 
-      <ul className="rounded-xl border bg-card divide-y">
-        <StepRow ok={activationSteps.email_verified} label="Email tasdiqlangan" />
-        <StepRow
-          ok={activationSteps.signup_complete}
-          label="Ro‘yxatdan o‘tish (salon / joylashuv)"
-        />
-        <StepRow
-          ok={activationSteps.services_ok}
-          label={`Kamida 5 ta xizmat (${bookingSetup.hasServices ? "OK" : "yetarli emas"})`}
-        />
-        <StepRow ok={activationSteps.schedule_ok} label="Ish jadvali kiritilgan" />
-      </ul>
+      <ol className="space-y-3">
+        {stepMeta.map((step, idx) => {
+          const isCurrent = idx === activeIndex && !step.ok;
+          return (
+            <li
+              key={step.n}
+              className={cn(
+                "flex gap-3 rounded-xl border p-4 transition-colors",
+                step.ok && "border-emerald-500/25 bg-emerald-500/[0.06]",
+                isCurrent && "border-primary/50 bg-primary/[0.06] ring-1 ring-primary/20",
+                !step.ok && !isCurrent && "border-border bg-card opacity-80",
+              )}
+            >
+              <span
+                className={cn(
+                  "flex size-9 shrink-0 items-center justify-center rounded-full border text-sm font-heading font-semibold",
+                  step.ok
+                    ? "border-emerald-600/40 bg-emerald-600 text-white"
+                    : "border-muted-foreground/25 bg-muted text-foreground",
+                )}
+              >
+                {step.ok ? <Check className="size-4" strokeWidth={3} /> : step.n}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-foreground">{step.title}</span>
+                  {isCurrent ? (
+                    <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                      navbat
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">{step.body}</p>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        {!activationSteps.email_verified && (
+      <div className="flex flex-col gap-3 pt-2">
+        {primaryNext ? (
+          <Button asChild size="lg" className="w-full">
+            <Link to={primaryNext.to}>{primaryNext.label}</Link>
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            size="lg"
+            className="w-full"
+            disabled={refreshing}
+            onClick={() => void onRefreshStatus()}
+          >
+            {refreshing ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              "Holatni yangilash (hammasi bajarilgan bo‘lsa)"
+            )}
+          </Button>
+        )}
+
+        {!activationSteps.email_verified ? (
           <Button
             type="button"
             variant="outline"
+            className="w-full"
             onClick={() => void onResend()}
             disabled={resending}
           >
             {resending ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
-            <span className="ml-2">Emailni qayta yuborish</span>
-          </Button>
-        )}
-        {requiredNextPath ? (
-          <Button asChild variant="default">
-            <Link to={requiredNextPath}>Keyingi qadam</Link>
+            <span className="ml-2">Tasdiq xatini qayta yuborish</span>
           </Button>
         ) : null}
-        <Button asChild variant="secondary">
-          <Link to="/barber/services">Xizmatlar va jadval</Link>
-        </Button>
       </div>
     </div>
-  );
-}
-
-function StepRow({ ok, label }: { ok: boolean; label: string }) {
-  return (
-    <li className="flex items-center gap-3 px-4 py-3 text-sm">
-      <span
-        className={
-          ok
-            ? "size-2 rounded-full bg-emerald-500 shrink-0"
-            : "size-2 rounded-full bg-muted-foreground/30 shrink-0"
-        }
-      />
-      <span className={ok ? "text-foreground" : "text-muted-foreground"}>{label}</span>
-    </li>
   );
 }

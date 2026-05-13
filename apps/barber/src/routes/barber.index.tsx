@@ -7,7 +7,6 @@ import {
   Play,
   CheckCircle2,
   ArrowRight,
-  Sparkles,
   Package,
   Target,
   Image as ImageIcon,
@@ -17,7 +16,7 @@ import {
 } from "lucide-react";
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
 import { StatusPill } from "@/components/barber/primitives";
-import { getFlowMeta, getOnboardingCta, getOnboardingTone } from "@/lib/barber-flow-config";
+import { getFlowMeta } from "@/lib/barber-flow-config";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/barber/")({
@@ -29,7 +28,6 @@ function BarberDashboard() {
     bookings,
     profile,
     onboardingComplete,
-    requiredNextPath,
     reviews,
     clients,
     inventory,
@@ -40,7 +38,6 @@ function BarberDashboard() {
     completeBooking,
     viewMode,
     flowIdentity,
-    bookingSetup,
   } = useBarberContext();
 
   /** Salon rejimida indeks — mustaqil dashboard emas, salon overview (ishchi «Barberga oʻtish» mustaqil rejimga o‘tkazadi). */
@@ -57,9 +54,7 @@ function BarberDashboard() {
   const lowStock = inventory.filter((i) => i.stock <= i.min_stock);
   const activeGoals = goals.filter((g) => !g.done);
   const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-  const onboardingCta = getOnboardingCta(requiredNextPath);
   const flowMeta = getFlowMeta(flowIdentity);
-  const tone = getOnboardingTone(requiredNextPath);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
@@ -77,65 +72,6 @@ function BarberDashboard() {
           {flowMeta.badge}
         </div>
       </div>
-
-      {/* Onboarding gate */}
-      {!onboardingComplete && (
-        <div
-          className={cn(
-            "rounded-xl border bg-card p-6 flex flex-col sm:flex-row sm:items-center gap-4 shadow-card",
-            tone === "team" && "border-sky-500/40",
-            tone === "brand" && "border-violet-500/40",
-            tone === "solo" && "border-emerald-500/40",
-            tone === "salon" && "border-amber-500/40",
-          )}
-        >
-          <div className="size-12 rounded-full bg-foreground text-background flex items-center justify-center shrink-0">
-            <Sparkles className="size-5" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-heading font-medium text-foreground">{onboardingCta.title}</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              {onboardingCta.body}
-            </p>
-          </div>
-          <Link
-            to={requiredNextPath || "/barber/profile"}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
-          >
-            Davom etish
-            <ArrowRight className="size-4" />
-          </Link>
-        </div>
-      )}
-
-      {onboardingComplete && !bookingSetup.ready && (
-        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-5 shadow-card">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-700">
-              <AlertTriangle className="size-5" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-heading font-medium text-foreground">Booking hali yoqilmagan</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Dashboarddan foydalanishingiz mumkin. Mijozlar band qilishi uchun quyidagi
-                tayyorlovlarni yakunlang.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <SetupChip done={bookingSetup.hasLocation} label="Lokatsiya" />
-                <SetupChip done={bookingSetup.hasServices} label="Xizmatlar" />
-                <SetupChip done={bookingSetup.hasWorkingHours} label="Ish jadvali" />
-              </div>
-            </div>
-            <Link
-              to={bookingSetup.setupPath || "/barber/services"}
-              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90"
-            >
-              To'ldirish
-              <ArrowRight className="size-4" />
-            </Link>
-          </div>
-        </div>
-      )}
 
       {/* KPI grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -344,22 +280,6 @@ function BarberDashboard() {
         </Link>
       </section>
     </div>
-  );
-}
-
-function SetupChip({ done, label }: { done: boolean; label: string }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium",
-        done
-          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
-          : "border-amber-500/30 bg-background/70 text-amber-700",
-      )}
-    >
-      {done ? <CheckCircle2 className="size-3.5" /> : <AlertTriangle className="size-3.5" />}
-      {label}
-    </span>
   );
 }
 

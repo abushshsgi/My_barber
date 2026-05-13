@@ -429,6 +429,16 @@ function ServicesSchedulePage() {
     }
   };
 
+  useEffect(() => {
+    if (loading) return;
+    const raw = window.location.hash.replace(/^#/, "");
+    if (raw === "activation-services" || raw === "activation-schedule") {
+      window.requestAnimationFrame(() => {
+        document.getElementById(raw)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }, [loading]);
+
   const blocker = useBlocker({
     shouldBlockFn: useCallback(() => {
       if (loading || savingServices || savingSchedule) return false;
@@ -464,6 +474,7 @@ function ServicesSchedulePage() {
         ) : (
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
             <div className="space-y-6">
+              <div id="activation-services" className="scroll-mt-24">
               <SectionCard
                 title="Xizmatlar"
                 description={`${activeCount} ta faol xizmat. Narx va davomiylik booking vaqtini hisoblaydi.`}
@@ -610,7 +621,9 @@ function ServicesSchedulePage() {
                   </div>
                 </div>
               </SectionCard>
+              </div>
 
+              <div id="activation-schedule" className="scroll-mt-24">
               <SectionCard
                 title="Ish jadvali"
                 description="Dam olish kuni va tanaffuslar slotlarni avtomatik yopadi."
@@ -719,6 +732,7 @@ function ServicesSchedulePage() {
                   ))}
                 </div>
               </SectionCard>
+              </div>
             </div>
 
             <aside className="space-y-6">
