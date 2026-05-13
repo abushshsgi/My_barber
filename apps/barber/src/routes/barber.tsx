@@ -3,14 +3,21 @@ import { BarberShell } from "@/components/barber/BarberShell";
 import { BarberProvider } from "@/components/barber/BarberContext";
 import { apiFetch, getBarberAccessToken } from "@/lib/api";
 
+/** 100% gate paytida ham ochiq bo‘lishi kerak bo‘lgan yo‘llar (xizmat/jadvalni to‘ldirish uchun). */
+function barberPathAllowedBeforeFullyReady(pathname: string): boolean {
+  if (pathname.startsWith("/barber/verify-email")) return true;
+  if (pathname.startsWith("/barber/activation")) return true;
+  if (pathname === "/barber/services" || pathname.startsWith("/barber/services/")) return true;
+  return false;
+}
+
 export const Route = createFileRoute("/barber")({
   beforeLoad: async ({ location }) => {
     if (typeof window !== "undefined" && !getBarberAccessToken()) {
       throw redirect({ to: "/auth" });
     }
     const path = location.pathname;
-    if (path.startsWith("/barber/verify-email")) return;
-    if (path.startsWith("/barber/activation")) return;
+    if (barberPathAllowedBeforeFullyReady(path)) return;
     if (typeof window === "undefined") return;
     if (!getBarberAccessToken()) return;
     try {

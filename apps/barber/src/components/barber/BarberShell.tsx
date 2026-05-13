@@ -199,7 +199,10 @@ function Sidebar({
                         item.to === "/barber"
                           ? pathname === "/barber"
                           : pathname === item.to || pathname.startsWith(item.to + "/");
-                      const locked = !fullyReady && item.to !== "/barber/activation";
+                      const locked =
+                        !fullyReady &&
+                        item.to !== "/barber/activation" &&
+                        item.to !== "/barber/services";
                       return (
                         <motion.div
                           key={item.to}
