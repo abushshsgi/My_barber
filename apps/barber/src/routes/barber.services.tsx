@@ -1,10 +1,10 @@
 import { createFileRoute, Link, useBlocker } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Clock, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
+import { CheckCircle2, Clock, Loader2, Plus, Search, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyBlock, PageHeader, SectionCard, StatusPill } from "@/components/barber/primitives";
 import { useBarberContext } from "@/components/barber/BarberContext";
-import { apiFetch, apiList, formatApiError } from "@/lib/api";
+import { API_BASE, apiFetch, apiList, formatApiError } from "@/lib/api";
 import { SIGNUP_FLOW_PATH } from "@/lib/barber-flow-config";
 import {
   AlertDialog,
@@ -26,19 +26,35 @@ export const Route = createFileRoute("/barber/services")({
 type ApiService = {
   id: number;
   barber?: number | null;
+  catalog_service?: number | null;
   name: string;
   price: string | number;
   duration_minutes: number;
   is_active: boolean;
+  image_url?: string;
 };
 
 type ServiceForm = {
   id?: string;
   barber?: number | null;
+  catalog_service?: string;
   name: string;
+  image_url?: string;
   price: string;
   duration_minutes: string;
   is_active: boolean;
+};
+
+type CatalogServiceOption = {
+  id: number;
+  name: string;
+  description: string;
+  image_url: string;
+  duration_minutes: number;
+  category_ids: number[];
+  category_names: string[];
+  sort_order: number;
+  index: number;
 };
 
 type ApiWorkingHour = {
@@ -86,6 +102,18 @@ type Recommendation = {
 };
 
 const WEEKDAYS = ["Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba", "Yakshanba"];
+const FALLBACK_SERVICE_IMAGE =
+  "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 520'%3E%3Crect width='800' height='520' rx='36' fill='%23111827'/%3E%3Ccircle cx='620' cy='120' r='120' fill='%232563eb' fill-opacity='0.25'/%3E%3Ccircle cx='700' cy='410' r='100' fill='%23ec4899' fill-opacity='0.18'/%3E%3Ctext x='72' y='274' font-family='Arial,sans-serif' font-size='56' font-weight='700' fill='white'%3EXizmat%3C/text%3E%3Ctext x='72' y='328' font-family='Arial,sans-serif' font-size='24' fill='rgba(255,255,255,0.8)'%3EMyBarber katalog%3C/text%3E%3C/svg%3E";
+
+function serviceImageSrc(path?: string | null): string {
+  const value = String(path || "").trim();
+  if (!value) return FALLBACK_SERVICE_IMAGE;
+  if (value.startsWith("data:") || value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
+  }
+  const normalized = value.startsWith("/") ? value : `/${value}`;
+  return `${API_BASE}${normalized}`;
+}
 
 const defaultDays = (): DayForm[] =>
   WEEKDAYS.map((_, weekday) => ({
@@ -100,7 +128,9 @@ function mapService(row: ApiService): ServiceForm {
   return {
     id: String(row.id),
     barber: row.barber ?? null,
+    catalog_service: row.catalog_service ? String(row.catalog_service) : "",
     name: row.name,
+    image_url: row.image_url || "",
     price: String(Number(row.price)),
     duration_minutes: String(row.duration_minutes),
     is_active: Boolean(row.is_active),
@@ -140,11 +170,16 @@ function parseBreaks(input: string): BreakItem[] {
     });
 }
 
-function serializeForm(services: ServiceForm[], days: DayForm[], newService: ServiceForm): string {
+function serializeForm(
+  services: ServiceForm[],
+  days: DayForm[],
+  newService: { catalog_service: string; price: string; is_active: boolean },
+): string {
   return JSON.stringify({
     services: services.map((s) => ({
       id: s.id,
       barber: s.barber ?? null,
+      catalog_service: s.catalog_service ?? "",
       name: s.name,
       price: s.price,
       duration_minutes: s.duration_minutes,
@@ -159,9 +194,8 @@ function serializeForm(services: ServiceForm[], days: DayForm[], newService: Ser
       breaksText: d.breaksText,
     })),
     newService: {
-      name: newService.name,
+      catalog_service: newService.catalog_service,
       price: newService.price,
-      duration_minutes: newService.duration_minutes,
       is_active: newService.is_active,
     },
   });
@@ -188,14 +222,20 @@ function ServicesSchedulePage() {
   const [services, setServices] = useState<ServiceForm[]>([]);
   const [days, setDays] = useState<DayForm[]>(defaultDays);
   const [membershipId, setMembershipId] = useState<number | null>(null);
+  const [catalogServices, setCatalogServices] = useState<CatalogServiceOption[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingServices, setSavingServices] = useState(false);
   const [savingSchedule, setSavingSchedule] = useState(false);
-  const [newService, setNewService] = useState<ServiceForm>({
-    name: "",
+  const [catalogQuery, setCatalogQuery] = useState("");
+  const [catalogCategory, setCatalogCategory] = useState<string>("all");
+  const [newService, setNewService] = useState<{
+    catalog_service: string;
+    price: string;
+    is_active: boolean;
+  }>({
+    catalog_service: "",
     price: "",
-    duration_minutes: "",
     is_active: true,
   });
 
@@ -204,6 +244,43 @@ function ServicesSchedulePage() {
   const committedRef = useRef<string | null>(null);
 
   const activeCount = useMemo(() => services.filter((item) => item.is_active).length, [services]);
+  const pickerCategories = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const item of catalogServices) {
+      for (const categoryName of item.category_names) {
+        const key = categoryName.trim();
+        if (key && !map.has(key)) {
+          map.set(key, key);
+        }
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
+  }, [catalogServices]);
+  const availableCatalog = useMemo(() => {
+    const ownedCatalogIds = new Set(
+      services
+        .filter((service) => service.barber === barberId || scope === "independent")
+        .map((service) => service.catalog_service)
+        .filter(Boolean),
+    );
+    return catalogServices.filter((item) => {
+      const matchesCategory =
+        catalogCategory === "all" || item.category_names.includes(catalogCategory);
+      const matchesQuery =
+        !catalogQuery.trim() ||
+        item.name.toLowerCase().includes(catalogQuery.toLowerCase()) ||
+        item.description.toLowerCase().includes(catalogQuery.toLowerCase()) ||
+        item.category_names.some((name) =>
+          name.toLowerCase().includes(catalogQuery.toLowerCase()),
+        );
+      const alreadyAdded = ownedCatalogIds.has(String(item.id));
+      return matchesCategory && matchesQuery && !alreadyAdded;
+    });
+  }, [barberId, catalogCategory, catalogQuery, catalogServices, scope, services]);
+  const selectedCatalog = useMemo(
+    () => catalogServices.find((item) => String(item.id) === newService.catalog_service) ?? null,
+    [catalogServices, newService.catalog_service],
+  );
 
   const loadAll = async () => {
     setLoading(true);
@@ -218,12 +295,13 @@ function ServicesSchedulePage() {
         );
         const ownMembership = memberships.find((m) => m.barber === barberId) ?? null;
         setMembershipId(ownMembership?.id ?? null);
-        const [serviceRows, scheduleRows, recsList] = await Promise.all([
+        const [serviceRows, scheduleRows, recsList, catalogRows] = await Promise.all([
           apiList<ApiService>(`/api/v1/services/?salon=${activeSalonId}&barber=${barberId}`),
           ownMembership
             ? apiList<ApiWorkingHour>(`/api/v1/schedules/?membership=${ownMembership.id}`)
             : Promise.resolve([]),
           apiList<Recommendation>("/api/v1/barber/service-recommendations/"),
+          apiList<CatalogServiceOption>("/api/v1/barber/catalog-services/"),
         ]);
         nextServices = serviceRows.map(mapService);
         nextDays = applyHours(scheduleRows);
@@ -231,11 +309,13 @@ function ServicesSchedulePage() {
         setServices(nextServices);
         setDays(nextDays);
         setRecommendations(recs);
+        setCatalogServices(catalogRows);
       } else {
-        const [serviceRows, scheduleRows, recsList] = await Promise.all([
+        const [serviceRows, scheduleRows, recsList, catalogRows] = await Promise.all([
           apiList<ApiService>("/api/v1/barber/services/"),
           apiList<ApiWorkingHour>("/api/v1/barber/working-hours/"),
           apiList<Recommendation>("/api/v1/barber/service-recommendations/"),
+          apiList<CatalogServiceOption>("/api/v1/barber/catalog-services/"),
         ]);
         setMembershipId(null);
         nextServices = serviceRows.map(mapService);
@@ -244,6 +324,7 @@ function ServicesSchedulePage() {
         setServices(nextServices);
         setDays(nextDays);
         setRecommendations(recs);
+        setCatalogServices(catalogRows);
       }
       committedRef.current = serializeForm(nextServices, nextDays, newServiceRef.current);
     } catch (error) {
@@ -262,28 +343,29 @@ function ServicesSchedulePage() {
     scope === "independent" || ownsSalon || service.barber === barberId;
 
   const saveService = async (service: ServiceForm) => {
-    const name = service.name.trim();
-    const duration = Number(service.duration_minutes);
     const price = Number(service.price);
-    if (!name || !price || !duration) {
-      toast.error("Xizmat nomi, narxi va davomiyligini to'ldiring.");
+    if (!price) {
+      toast.error("Xizmat narxini kiriting.");
       return false;
     }
-    if (duration < 5 || duration > 480 || price <= 0) {
-      toast.error(
-        "Xizmat davomiyligi 5 dan 480 daqiqagacha bo'lishi va narxi noldan katta bo'lishi kerak.",
-      );
+    if (price <= 0) {
+      toast.error("Xizmat narxi noldan katta bo'lishi kerak.");
       return false;
     }
-    const body = {
-      name,
+    const body: Record<string, unknown> = {
       price,
-      duration_minutes: duration,
       is_active: service.is_active,
       ...(scope === "salon"
         ? { salon: activeSalonId, barber: service.id ? (service.barber ?? null) : barberId }
         : {}),
     };
+    if (!service.id) {
+      if (!service.catalog_service) {
+        toast.error("Avval katalogdan xizmat tanlang.");
+        return false;
+      }
+      body.catalog_service = Number(service.catalog_service);
+    }
     const url =
       scope === "salon"
         ? service.id
@@ -328,19 +410,28 @@ function ServicesSchedulePage() {
   };
 
   const addService = async (preset?: Recommendation["suggested_service"]) => {
-    const draft = preset
-      ? {
-          name: preset.name,
-          price: String(preset.price),
-          duration_minutes: String(preset.duration_minutes),
-          is_active: true,
-        }
-      : newService;
+    const matchedCatalog = preset
+      ? catalogServices.find(
+          (item) => item.name.trim().toLowerCase() === preset.name.trim().toLowerCase(),
+        )
+      : selectedCatalog;
+    const draft: ServiceForm = {
+      catalog_service: matchedCatalog ? String(matchedCatalog.id) : newService.catalog_service,
+      name: matchedCatalog?.name || "",
+      image_url: matchedCatalog?.image_url || "",
+      duration_minutes: String(matchedCatalog?.duration_minutes || 0),
+      price: preset ? String(preset.price) : newService.price,
+      is_active: newService.is_active,
+    };
+    if (!draft.catalog_service) {
+      toast.error("Katalogdan xizmat tanlang.");
+      return;
+    }
     setSavingServices(true);
     try {
       const ok = await saveService(draft);
       if (!ok) return;
-      setNewService({ name: "", price: "", duration_minutes: "", is_active: true });
+      setNewService({ catalog_service: "", price: "", is_active: true });
       toast.success("Xizmat qo'shildi.");
       await loadAll();
       await refreshActivationStatus();
@@ -427,10 +518,6 @@ function ServicesSchedulePage() {
     const merged: ServiceForm = {
       ...svc,
       price: rec.suggested_price ?? svc.price,
-      duration_minutes:
-        rec.suggested_duration_minutes != null
-          ? String(rec.suggested_duration_minutes)
-          : svc.duration_minutes,
     };
     setSavingServices(true);
     try {
@@ -472,8 +559,8 @@ function ServicesSchedulePage() {
           title="Xizmatlar va jadval"
           description={
             scope === "salon"
-              ? "Salon ichidagi shaxsiy xizmatlaringiz va ish vaqtingiz user booking slotlarini boshqaradi."
-              : "Mustaqil booking uchun ko'rinadigan xizmatlar, ish kunlari va tanaffuslarni shu yerda sozlang."
+              ? "Admin katalogidagi xizmatlarni o'zingizga biriktirib, narx va ish vaqtingizni boshqaring."
+              : "Mustaqil booking uchun admin katalogidagi xizmatlarni tanlab, narx va ish vaqtingizni sozlang."
           }
           actions={
             <div className="rounded-full border border-border bg-muted/50 px-3 py-1 text-xs text-muted-foreground">
@@ -526,7 +613,7 @@ function ServicesSchedulePage() {
               <div id="activation-services" className="scroll-mt-24">
               <SectionCard
                 title="Xizmatlar"
-                description={`${activeCount} ta faol xizmat. Narx va davomiylik booking vaqtini hisoblaydi.`}
+                description={`${activeCount} ta faol xizmat. Narxni siz boshqarasiz, davomiylik va nom esa admin katalogidan keladi.`}
                 actions={
                   <button
                     onClick={saveAllServices}
@@ -551,24 +638,23 @@ function ServicesSchedulePage() {
                         <div
                           key={service.id}
                           className={cn(
-                            "grid gap-3 rounded-xl border border-border bg-muted/30 p-3 sm:grid-cols-[minmax(0,1.4fr)_120px_120px_90px_auto]",
+                            "grid gap-3 rounded-xl border border-border bg-muted/30 p-3 sm:grid-cols-[minmax(0,1.5fr)_130px_90px_auto]",
                             !editable && "opacity-70",
                           )}
                         >
-                          <input
-                            value={service.name}
-                            disabled={!editable}
-                            onChange={(event) =>
-                              setServices((prev) =>
-                                prev.map((item) =>
-                                  item.id === service.id
-                                    ? { ...item, name: event.target.value }
-                                    : item,
-                                ),
-                              )
-                            }
-                            className="h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed"
-                          />
+                          <div className="flex min-w-0 items-center gap-3 rounded-lg border border-border bg-background px-3 py-2">
+                            <img
+                              src={serviceImageSrc(service.image_url)}
+                              alt=""
+                              className="h-14 w-14 shrink-0 rounded-2xl object-cover"
+                            />
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-foreground">{service.name}</p>
+                              <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                                <Clock className="size-3.5" /> {service.duration_minutes} daqiqa
+                              </p>
+                            </div>
+                          </div>
                           <input
                             type="number"
                             value={service.price}
@@ -578,21 +664,6 @@ function ServicesSchedulePage() {
                                 prev.map((item) =>
                                   item.id === service.id
                                     ? { ...item, price: event.target.value }
-                                    : item,
-                                ),
-                              )
-                            }
-                            className="h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed"
-                          />
-                          <input
-                            type="number"
-                            value={service.duration_minutes}
-                            disabled={!editable}
-                            onChange={(event) =>
-                              setServices((prev) =>
-                                prev.map((item) =>
-                                  item.id === service.id
-                                    ? { ...item, duration_minutes: event.target.value }
                                     : item,
                                 ),
                               )
@@ -620,53 +691,120 @@ function ServicesSchedulePage() {
                           >
                             {service.is_active ? "Faol" : "O'chiq"}
                           </button>
-                          <button
-                            type="button"
-                            disabled={!editable}
-                            onClick={() => void deleteService(service)}
-                            className="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-background px-3 text-muted-foreground hover:text-destructive disabled:cursor-not-allowed"
-                          >
-                            <Trash2 className="size-4" />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              disabled={!editable}
+                              onClick={() => void deleteService(service)}
+                              className="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-background px-3 text-muted-foreground hover:text-destructive disabled:cursor-not-allowed"
+                            >
+                              <Trash2 className="size-4" />
+                            </button>
+                          </div>
                         </div>
                       );
                     })
                   )}
-                  <div className="grid gap-3 rounded-xl border border-dashed border-border p-3 sm:grid-cols-[minmax(0,1.4fr)_120px_120px_auto]">
-                    <input
-                      value={newService.name}
-                      onChange={(event) =>
-                        setNewService((prev) => ({ ...prev, name: event.target.value }))
-                      }
-                      placeholder="Yangi xizmat nomi"
-                      className="h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-                    />
-                    <input
-                      type="number"
-                      value={newService.price}
-                      onChange={(event) =>
-                        setNewService((prev) => ({ ...prev, price: event.target.value }))
-                      }
-                      placeholder="Narx"
-                      className="h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-                    />
-                    <input
-                      type="number"
-                      value={newService.duration_minutes}
-                      onChange={(event) =>
-                        setNewService((prev) => ({ ...prev, duration_minutes: event.target.value }))
-                      }
-                      placeholder="Daqiqa"
-                      className="h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-                    />
-                    <button
-                      onClick={() => void addService()}
-                      disabled={savingServices}
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-foreground px-3 text-sm font-medium text-background disabled:opacity-60"
-                    >
-                      <Plus className="size-4" />
-                      Qo'shish
-                    </button>
+                  <div className="space-y-4 rounded-xl border border-dashed border-border p-4">
+                    <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+                      <div className="relative">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <input
+                          value={catalogQuery}
+                          onChange={(event) => setCatalogQuery(event.target.value)}
+                          placeholder="Katalogdan xizmat qidiring"
+                          className="h-10 w-full rounded-lg border border-border bg-background pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                        />
+                      </div>
+                      <select
+                        value={catalogCategory}
+                        onChange={(event) => setCatalogCategory(event.target.value)}
+                        className="h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      >
+                        <option value="all">Barcha kategoriyalar</option>
+                        {pickerCategories.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {availableCatalog.map((item) => {
+                        const selected = newService.catalog_service === String(item.id);
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() =>
+                              setNewService((prev) => ({
+                                ...prev,
+                                catalog_service: String(item.id),
+                              }))
+                            }
+                            className={cn(
+                              "flex items-center gap-3 rounded-xl border p-3 text-left transition-colors",
+                              selected
+                                ? "border-foreground bg-foreground text-background"
+                                : "border-border bg-background hover:border-foreground/40",
+                            )}
+                          >
+                            <img
+                              src={serviceImageSrc(item.image_url)}
+                              alt=""
+                              className="h-16 w-16 shrink-0 rounded-2xl object-cover"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-semibold">{item.name}</p>
+                              <p
+                                className={cn(
+                                  "mt-1 line-clamp-2 text-xs",
+                                  selected ? "text-background/75" : "text-muted-foreground",
+                                )}
+                              >
+                                {item.description || item.category_names.join(" · ") || "Admin katalog xizmati"}
+                              </p>
+                              <p
+                                className={cn(
+                                  "mt-2 flex items-center gap-1 text-xs",
+                                  selected ? "text-background/75" : "text-muted-foreground",
+                                )}
+                              >
+                                <Clock className="size-3.5" /> {item.duration_minutes} daqiqa
+                              </p>
+                            </div>
+                            {selected ? <CheckCircle2 className="size-5 shrink-0" /> : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {availableCatalog.length === 0 ? (
+                      <div className="rounded-xl border border-border bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+                        Qidiruv bo&apos;yicha yangi katalog xizmati topilmadi yoki bular allaqachon sizga biriktirilgan.
+                      </div>
+                    ) : null}
+
+                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                      <input
+                        type="number"
+                        value={newService.price}
+                        onChange={(event) =>
+                          setNewService((prev) => ({ ...prev, price: event.target.value }))
+                        }
+                        placeholder="Tanlangan xizmat uchun narx"
+                        className="h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      />
+                      <button
+                        onClick={() => void addService()}
+                        disabled={savingServices || !newService.catalog_service}
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-foreground px-4 text-sm font-medium text-background disabled:opacity-60"
+                      >
+                        <Plus className="size-4" />
+                        Katalogdan qo&apos;shish
+                      </button>
+                    </div>
                   </div>
                 </div>
               </SectionCard>
@@ -820,13 +958,13 @@ function ServicesSchedulePage() {
                   <div className="flex gap-2">
                     <Clock className="mt-0.5 size-4 shrink-0" />
                     <p>
-                      Davomiylik tanlangan xizmatlar yig&apos;indisi bo&apos;yicha slot uzunligini
-                      belgilaydi.
+                      Slot uzunligi admin katalogida berilgan davomiyliklar yig&apos;indisi bo&apos;yicha
+                      hisoblanadi.
                     </p>
                   </div>
                   <p>
-                    Faol bo'lmagan xizmatlar user app’da ko'rinmaydi. Dam olish kunlari va
-                    tanaffuslar avtomatik yopiq slot sifatida qaytadi.
+                    Faol bo&apos;lmagan xizmatlar user app’da ko&apos;rinmaydi. Dam olish kunlari va tanaffuslar
+                    avtomatik yopiq slot sifatida qaytadi.
                   </p>
                   {scope === "salon" && isJoinedWorker && (
                     <p>

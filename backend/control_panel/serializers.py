@@ -5,7 +5,7 @@ from accounts.models import AdminAccount, User
 from accounts.uz_regions import UzRegion
 from barbers.models import Barber, BarberService
 from bookings.models import Booking, Review
-from salons.models import Category, Salon, SalonMembership, Service
+from salons.models import CatalogService, Category, Salon, SalonMembership, Service
 
 from .models import (
     AuditLog,
@@ -688,13 +688,76 @@ class AdminCategorySerializer(serializers.ModelSerializer):
         fields = ("id", "name", "icon", "order", "is_active", "services_count")
 
     def get_services_count(self, obj: Category) -> int:
-        return obj.services.count() + obj.barber_services.count()
+        return obj.services.count() + obj.barber_services.count() + obj.catalog_services.count()
 
 
 class AdminCategoryWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ("name", "icon", "order", "is_active")
+
+
+class AdminCatalogServiceSerializer(serializers.ModelSerializer):
+    category_ids = serializers.SerializerMethodField()
+    category_names = serializers.SerializerMethodField()
+    linked_rows_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CatalogService
+        fields = (
+            "id",
+            "name",
+            "slug",
+            "description",
+            "image_url",
+            "duration_minutes",
+            "is_active",
+            "sort_order",
+            "category_ids",
+            "category_names",
+            "linked_rows_count",
+        )
+
+    def get_category_ids(self, obj: CatalogService) -> list[int]:
+        return list(obj.categories.values_list("id", flat=True))
+
+    def get_category_names(self, obj: CatalogService) -> list[str]:
+        return list(obj.categories.order_by("order", "name").values_list("name", flat=True))
+
+    def get_linked_rows_count(self, obj: CatalogService) -> int:
+        return obj.assigned_salon_services.count() + obj.assigned_barber_services.count()
+
+
+class AdminCatalogServiceWriteSerializer(serializers.ModelSerializer):
+    category_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        required=False,
+        allow_empty=True,
+        write_only=True,
+    )
+
+    class Meta:
+        model = CatalogService
+        fields = (
+            "name",
+            "description",
+            "image_url",
+            "duration_minutes",
+            "is_active",
+            "sort_order",
+            "category_ids",
+        )
+
+    def validate_name(self, value):
+        name = str(value or "").strip()
+        if not name:
+            raise serializers.ValidationError("Xizmat nomi majburiy.")
+        return name
+
+    def validate_duration_minutes(self, value):
+        if value < 5 or value > 480:
+            raise serializers.ValidationError("Davomiylik 5 va 480 daqiqa oralig'ida bo'lishi kerak.")
+        return value
 
 
 class AdminServiceListSerializer(serializers.Serializer):

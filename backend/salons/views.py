@@ -25,7 +25,7 @@ from .geo_join import (
     haversine_km,
 )
 from .join_service import attach_worker_membership
-from .models import BarberWorkingHours, FavoriteSalon, Salon, SalonImage, SalonMembership, Service
+from .models import CatalogService, BarberWorkingHours, FavoriteSalon, Salon, SalonImage, SalonMembership, Service
 from .serializers import (
     BarberWorkingHoursSerializer,
     BarberSalonViewSerializer,
@@ -76,7 +76,7 @@ class SalonViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = Salon.objects.select_related("owner", "owner_barber")
         if self.action == "retrieve":
-            qs = qs.prefetch_related("images", "hours", "services")
+            qs = qs.prefetch_related("images", "hours", "services", "services__catalog_service")
 
         if self.action == "list":
             return self._apply_public_salon_region(self._salon_public_list_qs())
@@ -434,7 +434,7 @@ class ServiceViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         salon_id = self.request.query_params.get("salon")
         barber_id = self.request.query_params.get("barber")
-        qs = Service.objects.all()
+        qs = Service.objects.select_related("catalog_service", "salon", "barber").all()
         if salon_id:
             qs = qs.filter(salon_id=salon_id)
         if barber_id:
@@ -442,11 +442,11 @@ class ServiceViewSet(viewsets.ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
+        from rest_framework.exceptions import ValidationError
+
         # ServiceSerializer da salon read_only — validated_data da yo'q; body dan olamiz
         salon_id = self.request.data.get("salon")
         if salon_id is None:
-            from rest_framework.exceptions import ValidationError
-
             raise ValidationError({"salon": "This field is required."})
         salon = get_object_or_404(Salon, pk=salon_id)
         bp = request_barber(self.request)
@@ -465,8 +465,9 @@ class ServiceViewSet(viewsets.ModelViewSet):
 
             raise PermissionDenied()
         barber = serializer.validated_data.get("barber")
+        catalog = serializer.validated_data.get("catalog_service")
         if not is_owner:
-            serializer.save(salon=salon, barber=bp)
+            target_barber = bp
         elif (
             barber is not None
             and barber.id != salon.owner_barber_id
@@ -480,7 +481,34 @@ class ServiceViewSet(viewsets.ModelViewSet):
 
             raise ValidationError({"barber": "Barber bu salonda faol emas."})
         else:
-            serializer.save(salon=salon)
+            target_barber = barber
+
+        if catalog is not None:
+            obj = serializer.save(
+                salon=salon,
+                barber=target_barber,
+                catalog_service=catalog,
+                name=catalog.name,
+                duration_minutes=catalog.duration_minutes,
+            )
+            obj.categories.set(catalog.categories.all())
+            return
+
+        name = str(self.request.data.get("name", "") or "").strip()
+        try:
+            duration = int(self.request.data.get("duration_minutes") or 0)
+        except (TypeError, ValueError):
+            duration = 0
+        if not name:
+            raise ValidationError({"catalog_service": "Katalogdan xizmat tanlang."})
+        if duration < 5 or duration > 480:
+            raise ValidationError({"duration_minutes": "Davomiylik 5 va 480 daqiqa oralig'ida bo'lishi kerak."})
+        serializer.save(
+            salon=salon,
+            barber=target_barber,
+            name=name,
+            duration_minutes=duration,
+        )
 
     def perform_update(self, serializer):
         service = self.get_object()
@@ -491,10 +519,21 @@ class ServiceViewSet(viewsets.ModelViewSet):
             from rest_framework.exceptions import PermissionDenied
 
             raise PermissionDenied()
+        target_barber = service.barber
         if not is_owner:
-            serializer.save(salon=service.salon, barber=bp)
+            target_barber = bp
+        catalog = service.catalog_service
+        if catalog is not None:
+            updated = serializer.save(
+                salon=service.salon,
+                barber=target_barber,
+                catalog_service=catalog,
+                name=catalog.name,
+                duration_minutes=catalog.duration_minutes,
+            )
+            updated.categories.set(catalog.categories.all())
         else:
-            serializer.save(salon=service.salon)
+            serializer.save(salon=service.salon, barber=target_barber)
 
     def perform_destroy(self, instance):
         bp = request_barber(self.request)

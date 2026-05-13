@@ -29,6 +29,9 @@ export function mediaSrc(
   if (isKnownPlaceholderAsset(s)) {
     return fallback;
   }
+  if (s.startsWith("data:")) {
+    return s;
+  }
   if (s.startsWith("http://") || s.startsWith("https://")) {
     return s;
   }

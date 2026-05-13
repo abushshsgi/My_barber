@@ -94,6 +94,40 @@ class SalonHours(models.Model):
         unique_together = [["salon", "weekday"]]
 
 
+class CatalogService(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    slug = models.SlugField(max_length=280, unique=True, blank=True)
+    description = models.TextField(blank=True, default="")
+    image_url = models.TextField(blank=True, default="")
+    duration_minutes = models.PositiveIntegerField(default=30)
+    is_active = models.BooleanField(default=True, db_index=True)
+    sort_order = models.PositiveIntegerField(default=0, db_index=True)
+    categories = models.ManyToManyField(
+        "salons.Category",
+        blank=True,
+        related_name="catalog_services",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["sort_order", "name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.name)[:200] or "service"
+            slug = base
+            n = 0
+            while CatalogService.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                n += 1
+                slug = f"{base}-{n}"
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+
 class Service(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name="services")
     barber = models.ForeignKey(
@@ -102,6 +136,13 @@ class Service(models.Model):
         null=True,
         blank=True,
         related_name="salon_services",
+    )
+    catalog_service = models.ForeignKey(
+        "salons.CatalogService",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_salon_services",
     )
     name = models.CharField(max_length=255)
     price = models.DecimalField(max_digits=12, decimal_places=2)

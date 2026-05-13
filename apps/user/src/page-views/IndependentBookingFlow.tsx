@@ -257,7 +257,7 @@ export default function IndependentBookingFlow() {
                     <Card
                       key={s.id}
                       className={cn(
-                        "cursor-pointer rounded-2xl border border-border bg-surface p-4 shadow-soft transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        "cursor-pointer rounded-2xl border border-border bg-surface p-3 shadow-soft transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                         selected
                           ? "border-foreground bg-foreground text-background ring-1 ring-foreground"
                           : "hover:border-foreground/30",
@@ -269,16 +269,23 @@ export default function IndependentBookingFlow() {
                       }
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="font-semibold text-sm">{s.name}</p>
-                          <p
-                            className={cn(
-                              "mt-1 flex items-center gap-1 text-xs",
-                              selected ? "text-background/75" : "text-muted-foreground",
-                            )}
-                          >
-                            <Clock className="h-3.5 w-3.5" /> {s.duration_minutes} daqiqa
-                          </p>
+                        <div className="flex min-w-0 items-center gap-3">
+                          <img
+                            src={mediaSrc(s.image_url, PLACEHOLDER_AVATAR)}
+                            alt=""
+                            className="h-16 w-16 shrink-0 rounded-2xl object-cover"
+                          />
+                          <div>
+                            <p className="font-semibold text-sm">{s.name}</p>
+                            <p
+                              className={cn(
+                                "mt-1 flex items-center gap-1 text-xs",
+                                selected ? "text-background/75" : "text-muted-foreground",
+                              )}
+                            >
+                              <Clock className="h-3.5 w-3.5" /> {s.duration_minutes} daqiqa
+                            </p>
+                          </div>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
                           <span

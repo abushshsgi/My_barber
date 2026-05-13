@@ -1,6 +1,9 @@
 from datetime import datetime
 
+from django.db.models import Q
 from rest_framework import serializers
+
+from salons.models import CatalogService
 
 from .models import (
     BarberExpense,
@@ -39,25 +42,39 @@ class BarberWorkPhotoSerializer(serializers.ModelSerializer):
 
 
 class BarberServiceSerializer(serializers.ModelSerializer):
+    catalog_service = serializers.PrimaryKeyRelatedField(
+        queryset=CatalogService.objects.filter(is_active=True),
+        required=False,
+        allow_null=True,
+    )
+    name = serializers.SerializerMethodField()
+    duration_minutes = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
+
     class Meta:
         model = BarberService
-        fields = ("id", "name", "price", "duration_minutes", "is_active")
-
-    def validate_name(self, value):
-        name = str(value or "").strip()
-        if not name:
-            raise serializers.ValidationError("Xizmat nomi majburiy.")
-        return name
-
-    def validate_duration_minutes(self, value):
-        if value < 5 or value > 480:
-            raise serializers.ValidationError("Davomiylik 5 va 480 daqiqa oralig'ida bo'lishi kerak.")
-        return value
+        fields = ("id", "catalog_service", "name", "price", "duration_minutes", "is_active", "image_url")
+        read_only_fields = ("id", "name", "duration_minutes", "image_url")
 
     def validate_price(self, value):
         if value <= 0:
             raise serializers.ValidationError("Narx 0 dan katta bo'lishi kerak.")
         return value
+
+    def get_name(self, obj):
+        if obj.catalog_service_id and obj.catalog_service:
+            return obj.catalog_service.name
+        return obj.name
+
+    def get_duration_minutes(self, obj):
+        if obj.catalog_service_id and obj.catalog_service:
+            return obj.catalog_service.duration_minutes
+        return obj.duration_minutes
+
+    def get_image_url(self, obj):
+        if obj.catalog_service_id and obj.catalog_service:
+            return obj.catalog_service.image_url
+        return ""
 
 
 class BarberWorkingHoursSerializer(serializers.ModelSerializer):
@@ -129,7 +146,9 @@ class BarberPublicListSerializer(serializers.ModelSerializer):
         return _public_avatar_url(obj, self.context.get("request"))
 
     def get_active_services(self, obj):
-        qs = obj.services.filter(is_active=True).order_by("name")[:6]
+        qs = obj.services.filter(is_active=True).filter(
+            Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True)
+        ).order_by("name")[:6]
         return BarberServiceSerializer(qs, many=True).data
 
 
@@ -165,7 +184,9 @@ class BarberPublicDetailSerializer(serializers.ModelSerializer):
         )
 
     def get_services(self, obj):
-        qs = obj.services.filter(is_active=True).order_by("name")
+        qs = obj.services.filter(is_active=True).filter(
+            Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True)
+        ).order_by("name")
         return BarberServiceSerializer(qs, many=True).data
 
     def get_avatar(self, obj):

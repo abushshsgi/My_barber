@@ -21,9 +21,11 @@ type SalonDetail = {
   services: {
     id: number;
     barber: number | null;
+    catalog_service: number | null;
     name: string;
     price: string;
     duration_minutes: number;
+    image_url: string;
   }[];
 };
 
@@ -294,18 +296,32 @@ export default function BookingFlow() {
                 <Card
                   key={service.id}
                   className={cn(
-                    "flex cursor-pointer items-center justify-between rounded-2xl border border-border bg-surface p-4 shadow-soft transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    "cursor-pointer rounded-2xl border border-border bg-surface p-3 shadow-soft transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     selectedServices.includes(service.id)
                       ? "border-foreground bg-foreground text-background ring-1 ring-foreground"
                       : "hover:border-foreground/30",
                   )}
                   onClick={() => toggleService(service.id)}
                 >
-                  <div>
-                    <p className="font-medium text-sm">{service.name}</p>
-                    <p className={"text-xs flex items-center gap-1 " + (selectedServices.includes(service.id) ? "text-background/70" : "text-muted-foreground")}>
-                      <Clock className="h-3 w-3" /> {service.duration_minutes} daq
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={mediaSrc(service.image_url, PLACEHOLDER_AVATAR)}
+                      alt=""
+                      className="h-16 w-16 rounded-2xl object-cover"
+                    />
+                    <div>
+                      <p className="font-medium text-sm">{service.name}</p>
+                      <p
+                        className={
+                          "mt-1 flex items-center gap-1 text-xs " +
+                          (selectedServices.includes(service.id)
+                            ? "text-background/70"
+                            : "text-muted-foreground")
+                        }
+                      >
+                        <Clock className="h-3 w-3" /> {service.duration_minutes} daq
+                      </p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={"font-semibold " + (selectedServices.includes(service.id) ? "text-background" : "text-foreground")}>

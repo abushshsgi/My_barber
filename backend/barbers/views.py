@@ -21,6 +21,7 @@ from bookings.availability import (
 )
 from bookings.models import Booking, BookingLine, Review
 from notifications.utils import notify_user
+from salons.models import CatalogService
 
 from .models import (
     Barber,
@@ -68,12 +69,16 @@ def _haversine_km(lat1, lon1, lat2, lon2):
 
 class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [AllowAny]
-    queryset = BarberProfile.objects.select_related("barber").prefetch_related("services", "work_photos")
+    queryset = BarberProfile.objects.select_related("barber").prefetch_related(
+        "services",
+        "services__catalog_service",
+        "work_photos",
+    )
 
     def get_queryset(self):
         qs = (
             BarberProfile.objects.select_related("barber")
-            .prefetch_related("services", "work_photos", "working_hours")
+            .prefetch_related("services", "services__catalog_service", "work_photos", "working_hours")
             .annotate(
                 avg_rating=Coalesce(Avg("barber__reviews_about__rating"), 0.0),
                 review_count=Count("barber__reviews_about", distinct=True),
@@ -101,7 +106,10 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
         except (ValueError, TypeError):
             max_p = None
         if min_p is not None or max_p is not None:
-            pq = Q(services__is_active=True)
+            pq = Q(services__is_active=True) & (
+                Q(services__catalog_service__isnull=True)
+                | Q(services__catalog_service__is_active=True)
+            )
             if min_p is not None:
                 pq &= Q(services__price__gte=min_p)
             if max_p is not None:
@@ -118,7 +126,15 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
         elif region and region in valid_regions:
             qs = qs.filter(barber__region=region)
         if service_q:
-            qs = qs.filter(services__is_active=True, services__name__icontains=service_q).distinct()
+            qs = qs.filter(
+                services__is_active=True,
+            ).filter(
+                Q(services__catalog_service__isnull=True)
+                | Q(services__catalog_service__is_active=True)
+            ).filter(
+                Q(services__name__icontains=service_q)
+                | Q(services__catalog_service__name__icontains=service_q)
+            ).distinct()
         if available_date:
             try:
                 wd = datetime.fromisoformat(available_date).date().weekday()
@@ -230,6 +246,39 @@ class MyBarberProfileView(APIView):
         return Response({"status": "ok", **ser.data})
 
 
+class MyBarberCatalogServiceView(APIView):
+    permission_classes = [IsBarber]
+
+    def get(self, request):
+        q = str(request.query_params.get("q", "") or "").strip()
+        category = str(request.query_params.get("category", "") or "").strip()
+        qs = CatalogService.objects.filter(is_active=True).prefetch_related("categories")
+        if q:
+            qs = qs.filter(
+                Q(name__icontains=q)
+                | Q(description__icontains=q)
+                | Q(categories__name__icontains=q)
+            ).distinct()
+        if category.isdigit():
+            qs = qs.filter(categories__id=int(category))
+        rows = []
+        for idx, item in enumerate(qs.order_by("sort_order", "name", "id")[:200]):
+            rows.append(
+                {
+                    "id": item.id,
+                    "name": item.name,
+                    "description": item.description,
+                    "image_url": item.image_url,
+                    "duration_minutes": item.duration_minutes,
+                    "category_ids": list(item.categories.values_list("id", flat=True)),
+                    "category_names": [c.name for c in item.categories.order_by("order", "name")],
+                    "sort_order": item.sort_order,
+                    "index": idx,
+                }
+            )
+        return Response(rows)
+
+
 class MyBarberServiceViewSet(viewsets.ModelViewSet):
     permission_classes = [IsBarber]
     serializer_class = BarberServiceSerializer
@@ -240,9 +289,45 @@ class MyBarberServiceViewSet(viewsets.ModelViewSet):
         return BarberService.objects.filter(profile=prof).order_by("name")
 
     def perform_create(self, serializer):
+        from rest_framework.exceptions import ValidationError
+
         b = self.request.user.barber
         prof, _ = BarberProfile.objects.get_or_create(barber=b)
-        serializer.save(profile=prof)
+        catalog = serializer.validated_data.get("catalog_service")
+        if catalog is not None:
+            obj = serializer.save(
+                profile=prof,
+                catalog_service=catalog,
+                name=catalog.name,
+                duration_minutes=catalog.duration_minutes,
+            )
+            obj.categories.set(catalog.categories.all())
+            return
+
+        name = str(self.request.data.get("name", "") or "").strip()
+        try:
+            duration = int(self.request.data.get("duration_minutes") or 0)
+        except (TypeError, ValueError):
+            duration = 0
+        if not name:
+            raise ValidationError({"catalog_service": "Katalogdan xizmat tanlang."})
+        if duration < 5 or duration > 480:
+            raise ValidationError({"duration_minutes": "Davomiylik 5 va 480 daqiqa oralig'ida bo'lishi kerak."})
+        serializer.save(profile=prof, name=name, duration_minutes=duration)
+
+    def perform_update(self, serializer):
+        obj = self.get_object()
+        catalog = obj.catalog_service
+        if catalog is not None:
+            updated = serializer.save(
+                profile=obj.profile,
+                catalog_service=catalog,
+                name=catalog.name,
+                duration_minutes=catalog.duration_minutes,
+            )
+            updated.categories.set(catalog.categories.all())
+            return
+        serializer.save(profile=obj.profile)
 
 
 class MyBarberWorkPhotoViewSet(viewsets.ModelViewSet):

@@ -1,12 +1,21 @@
 from datetime import datetime
 
 from django.db import transaction
+from django.db.models import Q
 
 from rest_framework import serializers
 
 from accounts.auth_utils import is_platform_admin
 from accounts.models import User
-from .models import BarberWorkingHours, Salon, SalonHours, SalonImage, SalonMembership, Service
+from .models import (
+    BarberWorkingHours,
+    CatalogService,
+    Salon,
+    SalonHours,
+    SalonImage,
+    SalonMembership,
+    Service,
+)
 
 
 class SalonHoursSerializer(serializers.ModelSerializer):
@@ -22,42 +31,80 @@ class SalonImageSerializer(serializers.ModelSerializer):
 
 
 class ServiceSerializer(serializers.ModelSerializer):
+    catalog_service = serializers.PrimaryKeyRelatedField(
+        queryset=CatalogService.objects.filter(is_active=True),
+        required=False,
+        allow_null=True,
+    )
+    name = serializers.SerializerMethodField()
+    duration_minutes = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Service
         fields = (
             "id",
             "salon",
             "barber",
+            "catalog_service",
             "name",
             "price",
             "duration_minutes",
             "is_active",
+            "image_url",
         )
-        read_only_fields = ("id", "salon")
-
-    def validate_name(self, value):
-        name = str(value or "").strip()
-        if not name:
-            raise serializers.ValidationError("Xizmat nomi majburiy.")
-        return name
-
-    def validate_duration_minutes(self, value):
-        if value < 5 or value > 480:
-            raise serializers.ValidationError("Davomiylik 5 va 480 daqiqa oralig'ida bo'lishi kerak.")
-        return value
+        read_only_fields = ("id", "salon", "name", "duration_minutes", "image_url")
 
     def validate_price(self, value):
         if value <= 0:
             raise serializers.ValidationError("Narx 0 dan katta bo'lishi kerak.")
         return value
 
+    def get_name(self, obj):
+        if obj.catalog_service_id and obj.catalog_service:
+            return obj.catalog_service.name
+        return obj.name
+
+    def get_duration_minutes(self, obj):
+        if obj.catalog_service_id and obj.catalog_service:
+            return obj.catalog_service.duration_minutes
+        return obj.duration_minutes
+
+    def get_image_url(self, obj):
+        if obj.catalog_service_id and obj.catalog_service:
+            return obj.catalog_service.image_url
+        return ""
+
 
 class PublicServiceSerializer(serializers.ModelSerializer):
     """Mijozlar uchun salon sahifasida — faqat band qilish uchun kerakli maydonlar."""
 
+    name = serializers.SerializerMethodField()
+    duration_minutes = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
+    catalog_service = serializers.SerializerMethodField()
+
     class Meta:
         model = Service
-        fields = ("id", "barber", "name", "price", "duration_minutes")
+        fields = ("id", "barber", "catalog_service", "name", "price", "duration_minutes", "image_url")
+
+    def get_name(self, obj):
+        if obj.catalog_service_id and obj.catalog_service:
+            return obj.catalog_service.name
+        return obj.name
+
+    def get_duration_minutes(self, obj):
+        if obj.catalog_service_id and obj.catalog_service:
+            return obj.catalog_service.duration_minutes
+        return obj.duration_minutes
+
+    def get_image_url(self, obj):
+        if obj.catalog_service_id and obj.catalog_service:
+            return obj.catalog_service.image_url
+        return ""
+
+    def get_catalog_service(self, obj):
+        return obj.catalog_service_id
 
 
 class SalonListSerializer(serializers.ModelSerializer):
@@ -139,7 +186,9 @@ class SalonDetailSerializer(serializers.ModelSerializer):
         return obj.reviews.count()
 
     def get_services(self, obj):
-        qs = obj.services.filter(is_active=True).order_by("name")
+        qs = obj.services.filter(is_active=True).filter(
+            Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True)
+        ).order_by("name")
         return PublicServiceSerializer(qs, many=True, context=self.context).data
 
 

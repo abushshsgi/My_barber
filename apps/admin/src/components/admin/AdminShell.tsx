@@ -10,6 +10,7 @@ import {
   Star,
   Tag,
   ListTree,
+  BarChart3,
   TrendingUp,
   Wallet,
   Receipt,
@@ -94,6 +95,7 @@ const SECTIONS: Section[] = [
     matchPrefixes: ["/admin/services", "/admin/categories"],
     items: [
       { to: "/admin/services", label: "Xizmatlar", icon: Tag },
+      { to: "/admin/services/analytics", label: "Xizmat statistikasi", icon: BarChart3 },
       { to: "/admin/categories", label: "Kategoriyalar", icon: ListTree },
     ],
   },
@@ -372,6 +374,10 @@ function CommandPalette({
           <CommandItem onSelect={() => go("/admin/services")}>
             <Sparkles className="size-4 mr-2" />
             Yangi xizmat qo'shish
+          </CommandItem>
+          <CommandItem onSelect={() => go("/admin/services/analytics")}>
+            <BarChart3 className="size-4 mr-2" />
+            Service statistikasini ko'rish
           </CommandItem>
           <CommandItem onSelect={() => go("/admin/support")}>
             <LifeBuoy className="size-4 mr-2" />

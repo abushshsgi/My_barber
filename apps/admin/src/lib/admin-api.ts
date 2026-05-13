@@ -986,18 +986,49 @@ export type ServiceCategory = {
 
 export type AdminService = {
   id: string;
-  type: "salon" | "independent";
   name: string;
+  slug: string;
+  description: string;
+  image_url: string;
+  duration_minutes: number;
+  is_active: boolean;
+  sort_order: number;
   category_ids: string[];
-  category_names: string;
+  category_names: string[];
+  linked_rows_count: number;
+};
+
+export type AdminServiceAssignment = {
+  id: string;
+  type: "salon" | "independent";
+  catalog_service_id: string;
+  service_name: string;
   price: number;
-  duration_min: number;
-  bookings_count: number;
+  duration_minutes: number;
   is_active: boolean;
   salon_id: string;
   salon_name: string;
   barber_id: string;
   barber_name: string;
+  bookings_total: number;
+  bookings_completed: number;
+  bookings_cancelled: number;
+};
+
+export type AdminServiceUsage = {
+  id: string;
+  name: string;
+  description: string;
+  image_url: string;
+  duration_minutes: number;
+  is_active: boolean;
+  category_names: string[];
+  barbers_count: number;
+  bookings_total: number;
+  bookings_completed: number;
+  bookings_cancelled: number;
+  cancellation_rate: number;
+  rows: AdminServiceAssignment[];
 };
 
 export async function fetchCategories(): Promise<ServiceCategory[]> {
@@ -1017,88 +1048,177 @@ export async function fetchCategories(): Promise<ServiceCategory[]> {
 export async function fetchServices(params?: {
   q?: string;
   category?: string;
-  type?: string;
 }): Promise<AdminService[]> {
   const sp = new URLSearchParams();
   if (params?.q) sp.set("q", params.q);
   if (params?.category && params.category !== "all") sp.set("category", params.category);
-  if (params?.type) sp.set("type", params.type);
   const res = await apiFetch(`/api/v1/admin/services/?${sp.toString()}`);
   const j = (await res.json().catch(() => ({}))) as unknown;
   if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
   const rows = Array.isArray(j) ? j : (j as { results?: unknown[] }).results || [];
   return (rows as any[]).map((s) => ({
     id: String(s.id),
-    type: (s.type === "independent" ? "independent" : "salon") as "salon" | "independent",
     name: String(s.name || ""),
-    category_ids: Array.isArray(s.category_ids) ? s.category_ids.map((x: any) => String(x)) : [],
-    category_names: String(s.category_names || ""),
-    price: Number(s.price || 0),
-    duration_min: Number(s.duration_min || 0),
-    bookings_count: Number(s.bookings_count || 0),
+    slug: String(s.slug || ""),
+    description: String(s.description || ""),
+    image_url: String(s.image_url || ""),
+    duration_minutes: Number(s.duration_minutes || 0),
     is_active: !!s.is_active,
-    salon_id: String(s.salon_id ?? ""),
-    salon_name: String(s.salon_name ?? ""),
-    barber_id: String(s.barber_id ?? ""),
-    barber_name: String(s.barber_name ?? ""),
+    sort_order: Number(s.sort_order || 0),
+    category_ids: Array.isArray(s.category_ids) ? s.category_ids.map((x: any) => String(x)) : [],
+    category_names: Array.isArray(s.category_names) ? s.category_names.map((x: any) => String(x)) : [],
+    linked_rows_count: Number(s.linked_rows_count || 0),
   }));
 }
 
 export async function createService(body: {
-  type: "salon" | "independent";
   name: string;
-  price: number;
-  duration_min: number;
+  description: string;
+  image_url: string;
+  duration_minutes: number;
   is_active: boolean;
+  sort_order: number;
   category_ids: string[];
-  salon_id?: string;
-  barber_id?: string;
-}): Promise<{ ok: true; id: string }> {
+}): Promise<AdminService> {
   const res = await apiFetch("/api/v1/admin/services/", {
     method: "POST",
     body: JSON.stringify({
       ...body,
       category_ids: body.category_ids.map((x) => Number(x)),
-      salon_id: body.salon_id ? Number(body.salon_id) : undefined,
-      barber_id: body.barber_id ? Number(body.barber_id) : undefined,
     }),
   });
-  const j = (await res.json().catch(() => ({}))) as { id?: string; ok?: boolean; detail?: string };
+  const j = (await res.json().catch(() => ({}))) as any;
   if (!res.ok) throw new Error(j.detail || "Xato");
-  return { ok: true as const, id: String(j.id || "") };
+  return {
+    id: String(j.id),
+    name: String(j.name || ""),
+    slug: String(j.slug || ""),
+    description: String(j.description || ""),
+    image_url: String(j.image_url || ""),
+    duration_minutes: Number(j.duration_minutes || 0),
+    is_active: !!j.is_active,
+    sort_order: Number(j.sort_order || 0),
+    category_ids: Array.isArray(j.category_ids) ? j.category_ids.map((x: any) => String(x)) : [],
+    category_names: Array.isArray(j.category_names) ? j.category_names.map((x: any) => String(x)) : [],
+    linked_rows_count: Number(j.linked_rows_count || 0),
+  };
 }
 
 export async function updateService(
   id: string,
   body: Partial<
-    Pick<AdminService, "name" | "price" | "duration_min" | "is_active" | "category_ids">
-  > & {
-    type?: "salon" | "independent";
-  },
-): Promise<{ ok: true }> {
-  const sp = new URLSearchParams();
-  if (body.type) sp.set("type", body.type);
-  const res = await apiFetch(`/api/v1/admin/services/${id}/?${sp.toString()}`, {
+    Pick<
+      AdminService,
+      "name" | "description" | "image_url" | "duration_minutes" | "is_active" | "sort_order" | "category_ids"
+    >
+  >,
+): Promise<AdminService> {
+  const res = await apiFetch(`/api/v1/admin/services/${id}/`, {
     method: "PATCH",
     body: JSON.stringify({
       ...body,
       category_ids: body.category_ids ? body.category_ids.map((x) => Number(x)) : undefined,
     }),
   });
-  const j = (await res.json().catch(() => ({}))) as { detail?: string };
+  const j = (await res.json().catch(() => ({}))) as any;
   if (!res.ok) throw new Error(j.detail || "Xato");
-  return { ok: true as const };
+  return {
+    id: String(j.id),
+    name: String(j.name || ""),
+    slug: String(j.slug || ""),
+    description: String(j.description || ""),
+    image_url: String(j.image_url || ""),
+    duration_minutes: Number(j.duration_minutes || 0),
+    is_active: !!j.is_active,
+    sort_order: Number(j.sort_order || 0),
+    category_ids: Array.isArray(j.category_ids) ? j.category_ids.map((x: any) => String(x)) : [],
+    category_names: Array.isArray(j.category_names) ? j.category_names.map((x: any) => String(x)) : [],
+    linked_rows_count: Number(j.linked_rows_count || 0),
+  };
 }
 
-export async function deleteService(id: string, type: "salon" | "independent"): Promise<void> {
-  const sp = new URLSearchParams();
-  sp.set("type", type);
-  const res = await apiFetch(`/api/v1/admin/services/${id}/?${sp.toString()}`, {
+export async function deleteService(id: string): Promise<void> {
+  const res = await apiFetch(`/api/v1/admin/services/${id}/`, {
     method: "DELETE",
   });
   if (!res.ok) {
     const j = await res.json().catch(() => ({}));
     throw new Error((j as { detail?: string }).detail || "Xizmat o‘chirilmadi");
+  }
+}
+
+export async function fetchServiceUsage(params?: {
+  q?: string;
+  category?: string;
+}): Promise<AdminServiceUsage[]> {
+  const sp = new URLSearchParams();
+  if (params?.q) sp.set("q", params.q);
+  if (params?.category && params.category !== "all") sp.set("category", params.category);
+  const res = await apiFetch(`/api/v1/admin/services/usage/?${sp.toString()}`);
+  const j = (await res.json().catch(() => ({}))) as any;
+  if (!res.ok) throw new Error(j.detail || "Xato");
+  const rows = Array.isArray(j) ? j : j.results || [];
+  return rows.map((s: any) => ({
+    id: String(s.id),
+    name: String(s.name || ""),
+    description: String(s.description || ""),
+    image_url: String(s.image_url || ""),
+    duration_minutes: Number(s.duration_minutes || 0),
+    is_active: !!s.is_active,
+    category_names: Array.isArray(s.category_names) ? s.category_names.map((x: any) => String(x)) : [],
+    barbers_count: Number(s.barbers_count || 0),
+    bookings_total: Number(s.bookings_total || 0),
+    bookings_completed: Number(s.bookings_completed || 0),
+    bookings_cancelled: Number(s.bookings_cancelled || 0),
+    cancellation_rate: Number(s.cancellation_rate || 0),
+    rows: Array.isArray(s.rows)
+      ? s.rows.map((row: any) => ({
+          id: String(row.id),
+          type: row.type === "independent" ? "independent" : "salon",
+          catalog_service_id: String(row.catalog_service_id || ""),
+          service_name: String(row.service_name || ""),
+          price: Number(row.price || 0),
+          duration_minutes: Number(row.duration_minutes || 0),
+          is_active: !!row.is_active,
+          salon_id: String(row.salon_id ?? ""),
+          salon_name: String(row.salon_name ?? ""),
+          barber_id: String(row.barber_id ?? ""),
+          barber_name: String(row.barber_name ?? ""),
+          bookings_total: Number(row.bookings_total || 0),
+          bookings_completed: Number(row.bookings_completed || 0),
+          bookings_cancelled: Number(row.bookings_cancelled || 0),
+        }))
+      : [],
+  }));
+}
+
+export async function updateServiceAssignment(
+  kind: "salon" | "independent",
+  id: string,
+  body: {
+    price?: number;
+    is_active?: boolean;
+  },
+): Promise<{ ok: true }> {
+  const res = await apiFetch(`/api/v1/admin/service-assignments/${kind}/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+  const j = (await res.json().catch(() => ({}))) as { detail?: string };
+  if (!res.ok) throw new Error(j.detail || "Xato");
+  return { ok: true as const };
+}
+
+export async function deleteServiceAssignment(
+  kind: "salon" | "independent",
+  id: string,
+): Promise<void> {
+  const res = await apiFetch(`/api/v1/admin/service-assignments/${kind}/${id}/`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}));
+    throw new Error((j as { detail?: string }).detail || "Biriktirilgan xizmat o‘chirilmadi");
   }
 }
 

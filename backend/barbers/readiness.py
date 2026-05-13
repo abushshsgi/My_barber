@@ -39,7 +39,10 @@ class ReadinessBreakdown:
 def _service_count_independent(barber: Barber) -> int:
     from barbers.models import BarberService
 
-    return BarberService.objects.filter(profile__barber=barber, is_active=True).count()
+    return BarberService.objects.filter(
+        profile__barber=barber,
+        is_active=True,
+    ).filter(Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True)).count()
 
 
 def _service_count_salon(salon_id: int, barber: Barber) -> int:
@@ -47,6 +50,7 @@ def _service_count_salon(salon_id: int, barber: Barber) -> int:
 
     return (
         Service.objects.filter(salon_id=salon_id, is_active=True)
+        .filter(Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True))
         .filter(Q(barber=barber) | Q(barber__isnull=True))
         .count()
     )

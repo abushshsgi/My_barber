@@ -129,6 +129,13 @@ class BarberService(models.Model):
         on_delete=models.CASCADE,
         related_name="services",
     )
+    catalog_service = models.ForeignKey(
+        "salons.CatalogService",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_barber_services",
+    )
     name = models.CharField(max_length=255)
     price = models.DecimalField(max_digits=12, decimal_places=2)
     duration_minutes = models.PositiveIntegerField()

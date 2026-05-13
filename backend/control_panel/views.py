@@ -9,11 +9,12 @@ from rest_framework.exceptions import NotFound
 
 from accounts.models import AdminAccount, User
 from accounts.uz_regions import UzRegion
-from barbers.models import Barber, BarberService, BarberSupportTicket
 from accounts.permissions import IsAdmin
+from barbers.models import Barber, BarberService, BarberSupportTicket
 from bookings.models import Booking, BookingLine, Review
 from bookings.serializers import BookingSerializer
-from salons.models import Category, Salon, SalonMembership, Service
+from salons.catalog_visuals import build_catalog_service_image
+from salons.models import CatalogService, Category, Salon, SalonMembership, Service
 
 from .serializers import (
     AdminAccountSerializer,
@@ -22,6 +23,8 @@ from .serializers import (
     AdminBarberSerializer,
     AdminBarberUpdateSerializer,
     AdminBroadcastCampaignSerializer,
+    AdminCatalogServiceSerializer,
+    AdminCatalogServiceWriteSerializer,
     AdminCategorySerializer,
     AdminCategoryWriteSerializer,
     AdminFinanceTransactionSerializer,
@@ -508,185 +511,247 @@ class AdminServicesView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        kind = request.query_params.get("type", "").strip().lower()
         q = request.query_params.get("q", "").strip()
         cat = request.query_params.get("category")
-
-        out = []
-
-        def category_payload(obj):
-            """
-            Productionda legacy DB sxemasi (m2m jadval hali yo'q) bo'lsa ham endpoint 500 bermasin.
-            """
-            try:
-                ids = list(obj.categories.values_list("id", flat=True))
-                names = list(obj.categories.order_by("order", "name").values_list("name", flat=True))
-                return ids, ", ".join(names)
-            except Exception:
-                return [], ""
-
-        if kind in ("", "salon", "both"):
-            qs = Service.objects.select_related("salon").all()
-            if q:
-                qs = qs.filter(Q(name__icontains=q) | Q(salon__name__icontains=q))
-            if cat and str(cat).isdigit():
-                try:
-                    qs = qs.filter(categories__id=int(cat))
-                except Exception:
-                    # Legacy schema: categories m2m not ready yet, skip category filter.
-                    pass
-            for s in qs.order_by("name")[:2000]:
-                cat_ids, cat_names = category_payload(s)
-                out.append(
-                    {
-                        "id": str(s.id),
-                        "type": "salon",
-                        "name": s.name,
-                        "category_ids": cat_ids,
-                        "category_names": cat_names,
-                        "price": s.price,
-                        "duration_min": s.duration_minutes,
-                        "bookings_count": BookingLine.objects.filter(salon_service_id=s.id).count(),
-                        "is_active": s.is_active,
-                        "salon_id": str(s.salon_id),
-                        "salon_name": getattr(s.salon, "name", "") or "",
-                        "barber_id": "",
-                        "barber_name": "",
-                    }
-                )
-
-        if kind in ("", "independent", "both"):
-            qs = BarberService.objects.select_related("profile", "profile__barber").all()
-            if q:
-                qs = qs.filter(Q(name__icontains=q) | Q(profile__barber__email__icontains=q) | Q(profile__barber__full_name__icontains=q))
-            if cat and str(cat).isdigit():
-                try:
-                    qs = qs.filter(categories__id=int(cat))
-                except Exception:
-                    # Legacy schema: categories m2m not ready yet, skip category filter.
-                    pass
-            for s in qs.order_by("name")[:2000]:
-                cat_ids, cat_names = category_payload(s)
-                bp = getattr(s.profile, "barber", None) if getattr(s, "profile", None) else None
-                barber_label = ""
-                barber_pk = ""
-                if bp is not None:
-                    barber_pk = str(bp.id)
-                    barber_label = (getattr(bp, "full_name", None) or "").strip() or (
-                        getattr(bp, "email", None) or ""
-                    )
-                out.append(
-                    {
-                        "id": str(s.id),
-                        "type": "independent",
-                        "name": s.name,
-                        "category_ids": cat_ids,
-                        "category_names": cat_names,
-                        "price": s.price,
-                        "duration_min": s.duration_minutes,
-                        "bookings_count": BookingLine.objects.filter(barber_service_id=s.id).count(),
-                        "is_active": s.is_active,
-                        "salon_id": "",
-                        "salon_name": "",
-                        "barber_id": barber_pk,
-                        "barber_name": barber_label,
-                    }
-                )
-
-        return Response(out)
+        qs = CatalogService.objects.prefetch_related("categories")
+        if q:
+            qs = qs.filter(
+                Q(name__icontains=q)
+                | Q(description__icontains=q)
+                | Q(categories__name__icontains=q)
+            ).distinct()
+        if cat and str(cat).isdigit():
+            qs = qs.filter(categories__id=int(cat))
+        return Response(AdminCatalogServiceSerializer(qs.order_by("sort_order", "name")[:500], many=True).data)
 
     def post(self, request):
-        data = request.data or {}
-        kind = str(data.get("type", "salon")).strip().lower()
-        name = str(data.get("name", "")).strip()
-        if not name:
-            return Response({"detail": "name kerak"}, status=http_status.HTTP_400_BAD_REQUEST)
-        price = data.get("price", 0)
-        duration = int(data.get("duration_min") or 30)
-        is_active = bool(data.get("is_active", True))
-        category_ids = data.get("category_ids") or []
-
-        if kind == "salon":
-            salon_id = data.get("salon_id")
-            if not salon_id:
-                return Response({"detail": "salon_id kerak"}, status=http_status.HTTP_400_BAD_REQUEST)
-            salon = Salon.objects.filter(id=salon_id).first()
-            if not salon:
-                return Response({"detail": "Salon topilmadi"}, status=http_status.HTTP_404_NOT_FOUND)
-            obj = Service.objects.create(salon=salon, name=name, price=price, duration_minutes=duration, is_active=is_active)
-        else:
-            barber_id = data.get("barber_id")
-            if not barber_id:
-                return Response({"detail": "barber_id kerak"}, status=http_status.HTTP_400_BAD_REQUEST)
-            barber = Barber.objects.filter(id=barber_id).first()
-            if not barber or not getattr(barber, "profile", None):
-                return Response({"detail": "Barber/profile topilmadi"}, status=http_status.HTTP_404_NOT_FOUND)
-            obj = BarberService.objects.create(profile=barber.profile, name=name, price=price, duration_minutes=duration, is_active=is_active)
-
-        if category_ids:
-            obj.categories.set(Category.objects.filter(id__in=category_ids))
-
-        _audit(request, "create", "service", obj.id, name, before={}, after={"name": name, "type": kind})
-        return Response({"ok": True, "id": str(obj.id)})
+        serializer = AdminCatalogServiceWriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        category_ids = serializer.validated_data.pop("category_ids", [])
+        if not serializer.validated_data.get("image_url"):
+            serializer.validated_data["image_url"] = build_catalog_service_image(
+                serializer.validated_data["name"],
+            )
+        obj = serializer.save()
+        obj.categories.set(Category.objects.filter(id__in=category_ids))
+        _sync_catalog_service_assignments(obj)
+        _audit(request, "create", "catalog_service", obj.id, obj.name, before={}, after={"name": obj.name})
+        return Response(AdminCatalogServiceSerializer(obj).data, status=http_status.HTTP_201_CREATED)
 
 
 class AdminServiceDetailView(APIView):
     permission_classes = [IsAdmin]
 
     def patch(self, request, pk: str):
-        kind = request.query_params.get("type", "").strip().lower()
-        data = request.data or {}
-        category_ids = data.get("category_ids")
-
-        if kind == "independent":
-            obj = BarberService.objects.filter(id=pk).first()
-        else:
-            obj = Service.objects.filter(id=pk).first()
-
+        obj = CatalogService.objects.filter(pk=pk).prefetch_related("categories").first()
         if not obj:
             raise NotFound()
-
         before = {
             "name": obj.name,
-            "price": str(obj.price),
-            "duration_minutes": getattr(obj, "duration_minutes", getattr(obj, "duration_minutes", None)),
-            "is_active": obj.is_active,
-            "category_ids": list(obj.categories.values_list("id", flat=True)),
-        }
-
-        if "name" in data:
-            obj.name = str(data.get("name") or "").strip() or obj.name
-        if "price" in data:
-            obj.price = data.get("price") or obj.price
-        if "duration_min" in data:
-            obj.duration_minutes = int(data.get("duration_min") or obj.duration_minutes)
-        if "is_active" in data:
-            obj.is_active = bool(data.get("is_active"))
-        obj.save()
-
-        if category_ids is not None:
-            obj.categories.set(Category.objects.filter(id__in=category_ids))
-
-        after = {
-            "name": obj.name,
-            "price": str(obj.price),
+            "description": obj.description,
+            "image_url": obj.image_url,
             "duration_minutes": obj.duration_minutes,
             "is_active": obj.is_active,
+            "sort_order": obj.sort_order,
             "category_ids": list(obj.categories.values_list("id", flat=True)),
         }
-        _audit(request, "update", "service", obj.id, obj.name, before=before, after=after)
-        return Response({"ok": True})
+        serializer = AdminCatalogServiceWriteSerializer(instance=obj, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        category_ids = serializer.validated_data.pop("category_ids", None)
+        if "image_url" in serializer.validated_data and not serializer.validated_data["image_url"]:
+            serializer.validated_data["image_url"] = build_catalog_service_image(
+                serializer.validated_data.get("name", obj.name),
+                index=obj.sort_order,
+            )
+        updated = serializer.save()
+        if category_ids is not None:
+            updated.categories.set(Category.objects.filter(id__in=category_ids))
+        _sync_catalog_service_assignments(updated)
+        after = {
+            "name": updated.name,
+            "description": updated.description,
+            "image_url": updated.image_url,
+            "duration_minutes": updated.duration_minutes,
+            "is_active": updated.is_active,
+            "sort_order": updated.sort_order,
+            "category_ids": list(updated.categories.values_list("id", flat=True)),
+        }
+        _audit(request, "update", "catalog_service", updated.id, updated.name, before=before, after=after)
+        return Response(AdminCatalogServiceSerializer(updated).data)
 
     def delete(self, request, pk: str):
-        kind = request.query_params.get("type", "").strip().lower()
-        if kind == "independent":
-            obj = BarberService.objects.filter(id=pk).first()
-        else:
-            obj = Service.objects.filter(id=pk).first()
+        obj = CatalogService.objects.filter(pk=pk).first()
         if not obj:
             raise NotFound()
         before = {"name": obj.name}
-        _audit(request, "delete", "service", obj.id, obj.name, before=before, after={})
+        _audit(request, "delete", "catalog_service", obj.id, obj.name, before=before, after={})
+        obj.delete()
+        return Response(status=http_status.HTTP_204_NO_CONTENT)
+
+
+def _service_line_stats(kind: str, obj_id: int) -> dict[str, object]:
+    if kind == "independent":
+        qs = BookingLine.objects.filter(barber_service_id=obj_id)
+    else:
+        qs = BookingLine.objects.filter(service_id=obj_id)
+    return {
+        "total_bookings": qs.count(),
+        "completed_bookings": qs.filter(booking__status=Booking.Status.COMPLETED).count(),
+        "cancelled_bookings": qs.filter(booking__status=Booking.Status.CANCELLED).count(),
+        "barber_ids": set(qs.values_list("booking__barber_id", flat=True).distinct()),
+    }
+
+
+def _sync_catalog_service_assignments(catalog: CatalogService) -> None:
+    categories = list(catalog.categories.all())
+    for row in Service.objects.filter(catalog_service=catalog):
+        row.name = catalog.name
+        row.duration_minutes = catalog.duration_minutes
+        row.save(update_fields=["name", "duration_minutes"])
+        row.categories.set(categories)
+    for row in BarberService.objects.filter(catalog_service=catalog):
+        row.name = catalog.name
+        row.duration_minutes = catalog.duration_minutes
+        row.save(update_fields=["name", "duration_minutes"])
+        row.categories.set(categories)
+
+
+class AdminServiceUsageView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        q = request.query_params.get("q", "").strip()
+        cat = request.query_params.get("category")
+        catalog_qs = CatalogService.objects.prefetch_related("categories")
+        if q:
+            catalog_qs = catalog_qs.filter(
+                Q(name__icontains=q)
+                | Q(description__icontains=q)
+                | Q(categories__name__icontains=q)
+            ).distinct()
+        if cat and str(cat).isdigit():
+            catalog_qs = catalog_qs.filter(categories__id=int(cat))
+
+        rows = []
+        for catalog in catalog_qs.order_by("sort_order", "name")[:500]:
+            item_rows = []
+            used_barber_ids: set[int] = set()
+            total_bookings = 0
+            completed_bookings = 0
+            cancelled_bookings = 0
+
+            for service in Service.objects.filter(catalog_service=catalog).select_related("salon", "barber"):
+                stats = _service_line_stats("salon", service.id)
+                used_barber_ids.update(stats["barber_ids"])
+                if service.barber_id:
+                    used_barber_ids.add(service.barber_id)
+                total_bookings += int(stats["total_bookings"])
+                completed_bookings += int(stats["completed_bookings"])
+                cancelled_bookings += int(stats["cancelled_bookings"])
+                item_rows.append(
+                    {
+                        "id": str(service.id),
+                        "type": "salon",
+                        "catalog_service_id": str(catalog.id),
+                        "service_name": catalog.name,
+                        "price": float(service.price),
+                        "duration_minutes": service.duration_minutes,
+                        "is_active": service.is_active,
+                        "salon_id": str(service.salon_id),
+                        "salon_name": getattr(service.salon, "name", "") or "",
+                        "barber_id": str(service.barber_id or ""),
+                        "barber_name": (getattr(service.barber, "full_name", "") or getattr(service.barber, "email", "") or "").strip(),
+                        "bookings_total": int(stats["total_bookings"]),
+                        "bookings_completed": int(stats["completed_bookings"]),
+                        "bookings_cancelled": int(stats["cancelled_bookings"]),
+                    }
+                )
+
+            for service in BarberService.objects.filter(catalog_service=catalog).select_related("profile__barber"):
+                stats = _service_line_stats("independent", service.id)
+                used_barber_ids.update(stats["barber_ids"])
+                total_bookings += int(stats["total_bookings"])
+                completed_bookings += int(stats["completed_bookings"])
+                cancelled_bookings += int(stats["cancelled_bookings"])
+                barber = getattr(service.profile, "barber", None)
+                if barber is not None and getattr(barber, "id", None):
+                    used_barber_ids.add(barber.id)
+                item_rows.append(
+                    {
+                        "id": str(service.id),
+                        "type": "independent",
+                        "catalog_service_id": str(catalog.id),
+                        "service_name": catalog.name,
+                        "price": float(service.price),
+                        "duration_minutes": service.duration_minutes,
+                        "is_active": service.is_active,
+                        "salon_id": "",
+                        "salon_name": "",
+                        "barber_id": str(getattr(barber, "id", "") or ""),
+                        "barber_name": (getattr(barber, "full_name", "") or getattr(barber, "email", "") or "").strip(),
+                        "bookings_total": int(stats["total_bookings"]),
+                        "bookings_completed": int(stats["completed_bookings"]),
+                        "bookings_cancelled": int(stats["cancelled_bookings"]),
+                    }
+                )
+
+            rows.append(
+                {
+                    "id": str(catalog.id),
+                    "name": catalog.name,
+                    "description": catalog.description,
+                    "image_url": catalog.image_url,
+                    "duration_minutes": catalog.duration_minutes,
+                    "is_active": catalog.is_active,
+                    "category_names": list(catalog.categories.order_by("order", "name").values_list("name", flat=True)),
+                    "barbers_count": len([bid for bid in used_barber_ids if bid]),
+                    "bookings_total": total_bookings,
+                    "bookings_completed": completed_bookings,
+                    "bookings_cancelled": cancelled_bookings,
+                    "cancellation_rate": round((cancelled_bookings / total_bookings) * 100, 1) if total_bookings else 0,
+                    "rows": item_rows,
+                }
+            )
+        return Response(rows)
+
+
+class AdminRuntimeServiceDetailView(APIView):
+    permission_classes = [IsAdmin]
+
+    def _get_object(self, kind: str, pk: int):
+        if kind == "independent":
+            return BarberService.objects.select_related("catalog_service", "profile__barber").filter(pk=pk).first()
+        return Service.objects.select_related("catalog_service", "salon", "barber").filter(pk=pk).first()
+
+    def patch(self, request, kind: str, pk: int):
+        obj = self._get_object(kind, pk)
+        if obj is None:
+            raise NotFound()
+        before = {
+            "price": str(obj.price),
+            "is_active": obj.is_active,
+        }
+        if "price" in request.data:
+            obj.price = request.data.get("price") or obj.price
+        if "is_active" in request.data:
+            obj.is_active = bool(request.data.get("is_active"))
+        if obj.catalog_service_id and obj.catalog_service:
+            obj.name = obj.catalog_service.name
+            obj.duration_minutes = obj.catalog_service.duration_minutes
+        obj.save()
+        after = {
+            "price": str(obj.price),
+            "is_active": obj.is_active,
+        }
+        _audit(request, "update", "service_assignment", obj.id, obj.name, before=before, after=after)
+        return Response({"ok": True})
+
+    def delete(self, request, kind: str, pk: int):
+        obj = self._get_object(kind, pk)
+        if obj is None:
+            raise NotFound()
+        before = {"name": obj.name}
+        _audit(request, "delete", "service_assignment", obj.id, obj.name, before=before, after={})
         obj.delete()
         return Response(status=http_status.HTTP_204_NO_CONTENT)
 

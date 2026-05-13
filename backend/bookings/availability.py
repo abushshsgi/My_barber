@@ -46,6 +46,7 @@ def get_salon_services_for_barber(salon: Salon, barber: Barber, service_ids: Ite
     return list(
         Service.objects.filter(
             Q(barber__isnull=True) | Q(barber=barber),
+            Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True),
             id__in=ids,
             salon=salon,
             is_active=True,
@@ -57,6 +58,7 @@ def get_independent_services_for_barber(barber: Barber, service_ids: Iterable[in
     ids = list(service_ids)
     return list(
         BarberService.objects.filter(
+            Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True),
             profile__barber=barber,
             id__in=ids,
             is_active=True,

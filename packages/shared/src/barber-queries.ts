@@ -2,10 +2,12 @@ import { apiFetch, formatApiError } from "./api";
 
 export type BarberServiceApi = {
   id: number;
+  catalog_service?: number | null;
   name: string;
   price: string;
   duration_minutes: number;
   is_active: boolean;
+  image_url?: string;
 };
 
 export type BarberListApi = {

@@ -15,6 +15,7 @@ _REL_ALLOWED = (
     "barber/auth/me",
     "barber/onboarding/status",
     "barber/profile",
+    "barber/catalog-services",
     "barber/services",
     "barber/working-hours",
     "barber/service-recommendations",
