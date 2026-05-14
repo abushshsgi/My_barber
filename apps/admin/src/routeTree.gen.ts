@@ -21,7 +21,6 @@ import { Route as AdminReviewsRouteImport } from './routes/admin.reviews'
 import { Route as AdminProfileRouteImport } from './routes/admin.profile'
 import { Route as AdminMapRouteImport } from './routes/admin.map'
 import { Route as AdminFinanceRouteImport } from './routes/admin.finance'
-import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminBroadcastRouteImport } from './routes/admin.broadcast'
 import { Route as AdminBookingsRouteImport } from './routes/admin.bookings'
 import { Route as AdminBarbersRouteImport } from './routes/admin.barbers'
@@ -97,11 +96,6 @@ const AdminMapRoute = AdminMapRouteImport.update({
 const AdminFinanceRoute = AdminFinanceRouteImport.update({
   id: '/finance',
   path: '/finance',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
-  id: '/categories',
-  path: '/categories',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminBroadcastRoute = AdminBroadcastRouteImport.update({
@@ -198,7 +192,6 @@ export interface FileRoutesByFullPath {
   '/admin/barbers': typeof AdminBarbersRouteWithChildren
   '/admin/bookings': typeof AdminBookingsRoute
   '/admin/broadcast': typeof AdminBroadcastRoute
-  '/admin/categories': typeof AdminCategoriesRoute
   '/admin/finance': typeof AdminFinanceRouteWithChildren
   '/admin/map': typeof AdminMapRoute
   '/admin/profile': typeof AdminProfileRoute
@@ -228,7 +221,6 @@ export interface FileRoutesByTo {
   '/admin/barbers': typeof AdminBarbersRouteWithChildren
   '/admin/bookings': typeof AdminBookingsRoute
   '/admin/broadcast': typeof AdminBroadcastRoute
-  '/admin/categories': typeof AdminCategoriesRoute
   '/admin/finance': typeof AdminFinanceRouteWithChildren
   '/admin/map': typeof AdminMapRoute
   '/admin/profile': typeof AdminProfileRoute
@@ -258,7 +250,6 @@ export interface FileRoutesById {
   '/admin/barbers': typeof AdminBarbersRouteWithChildren
   '/admin/bookings': typeof AdminBookingsRoute
   '/admin/broadcast': typeof AdminBroadcastRoute
-  '/admin/categories': typeof AdminCategoriesRoute
   '/admin/finance': typeof AdminFinanceRouteWithChildren
   '/admin/map': typeof AdminMapRoute
   '/admin/profile': typeof AdminProfileRoute
@@ -291,7 +282,6 @@ export interface FileRouteTypes {
     | '/admin/barbers'
     | '/admin/bookings'
     | '/admin/broadcast'
-    | '/admin/categories'
     | '/admin/finance'
     | '/admin/map'
     | '/admin/profile'
@@ -321,7 +311,6 @@ export interface FileRouteTypes {
     | '/admin/barbers'
     | '/admin/bookings'
     | '/admin/broadcast'
-    | '/admin/categories'
     | '/admin/finance'
     | '/admin/map'
     | '/admin/profile'
@@ -350,7 +339,6 @@ export interface FileRouteTypes {
     | '/admin/barbers'
     | '/admin/bookings'
     | '/admin/broadcast'
-    | '/admin/categories'
     | '/admin/finance'
     | '/admin/map'
     | '/admin/profile'
@@ -463,13 +451,6 @@ declare module '@tanstack/react-router' {
       path: '/finance'
       fullPath: '/admin/finance'
       preLoaderRoute: typeof AdminFinanceRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/categories': {
-      id: '/admin/categories'
-      path: '/categories'
-      fullPath: '/admin/categories'
-      preLoaderRoute: typeof AdminCategoriesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/broadcast': {
@@ -683,7 +664,6 @@ interface AdminRouteChildren {
   AdminBarbersRoute: typeof AdminBarbersRouteWithChildren
   AdminBookingsRoute: typeof AdminBookingsRoute
   AdminBroadcastRoute: typeof AdminBroadcastRoute
-  AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminFinanceRoute: typeof AdminFinanceRouteWithChildren
   AdminMapRoute: typeof AdminMapRoute
   AdminProfileRoute: typeof AdminProfileRoute
@@ -701,7 +681,6 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminBarbersRoute: AdminBarbersRouteWithChildren,
   AdminBookingsRoute: AdminBookingsRoute,
   AdminBroadcastRoute: AdminBroadcastRoute,
-  AdminCategoriesRoute: AdminCategoriesRoute,
   AdminFinanceRoute: AdminFinanceRouteWithChildren,
   AdminMapRoute: AdminMapRoute,
   AdminProfileRoute: AdminProfileRoute,

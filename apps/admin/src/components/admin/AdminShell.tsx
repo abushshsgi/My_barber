@@ -9,7 +9,6 @@ import {
   Users,
   Star,
   Tag,
-  ListTree,
   BarChart3,
   TrendingUp,
   Wallet,
@@ -92,11 +91,10 @@ const SECTIONS: Section[] = [
     key: "catalog",
     label: "Katalog",
     icon: Tag,
-    matchPrefixes: ["/admin/services", "/admin/categories"],
+    matchPrefixes: ["/admin/services"],
     items: [
       { to: "/admin/services", label: "Xizmatlar", icon: Tag },
       { to: "/admin/services/analytics", label: "Xizmat statistikasi", icon: BarChart3 },
-      { to: "/admin/categories", label: "Kategoriyalar", icon: ListTree },
     ],
   },
   {

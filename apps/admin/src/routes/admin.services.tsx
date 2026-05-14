@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, ImagePlus, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -253,6 +253,7 @@ function ServiceEditorDialog({
 }
 
 function ServicesPage() {
+  const { pathname } = useLocation();
   const qc = useQueryClient();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingService, setEditingService] = useState<AdminService | null>(null);
@@ -342,6 +343,10 @@ function ServicesPage() {
   const categoriesError = catsQ.isError
     ? (catsQ.error as Error)?.message || "Kategoriyalar yuklab bo'lmadi"
     : null;
+
+  if (pathname !== "/admin/services") {
+    return <Outlet />;
+  }
 
   return (
     <div className="mx-auto max-w-[1440px] space-y-6 p-4 sm:p-6 lg:p-8">
