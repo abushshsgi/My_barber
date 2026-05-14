@@ -1,4 +1,5 @@
 from django.db.models import Avg, Count, Prefetch, Q, Sum
+from django.db.utils import OperationalError, ProgrammingError
 from django.utils import timezone
 from rest_framework import generics
 from rest_framework import status as http_status
@@ -480,6 +481,13 @@ class AdminCategoryListCreateView(generics.ListCreateAPIView):
             return AdminCategoryWriteSerializer
         return AdminCategorySerializer
 
+    def list(self, request, *args, **kwargs):
+        try:
+            return super().list(request, *args, **kwargs)
+        except (OperationalError, ProgrammingError):
+            # Deploy paytida catalog jadvallari hali migrate bo'lmagan bo'lsa admin sahifa 500 bo'lmasin.
+            return Response([])
+
     def perform_create(self, serializer):
         obj = serializer.save()
         _audit(self.request, "create", "category", obj.id, obj.name, before={}, after={"name": obj.name})
@@ -511,18 +519,24 @@ class AdminServicesView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        q = request.query_params.get("q", "").strip()
-        cat = request.query_params.get("category")
-        qs = CatalogService.objects.prefetch_related("categories")
-        if q:
-            qs = qs.filter(
-                Q(name__icontains=q)
-                | Q(description__icontains=q)
-                | Q(categories__name__icontains=q)
-            ).distinct()
-        if cat and str(cat).isdigit():
-            qs = qs.filter(categories__id=int(cat))
-        return Response(AdminCatalogServiceSerializer(qs.order_by("sort_order", "name")[:500], many=True).data)
+        try:
+            q = request.query_params.get("q", "").strip()
+            cat = request.query_params.get("category")
+            qs = CatalogService.objects.prefetch_related("categories")
+            if q:
+                qs = qs.filter(
+                    Q(name__icontains=q)
+                    | Q(description__icontains=q)
+                    | Q(categories__name__icontains=q)
+                ).distinct()
+            if cat and str(cat).isdigit():
+                qs = qs.filter(categories__id=int(cat))
+            return Response(
+                AdminCatalogServiceSerializer(qs.order_by("sort_order", "name")[:500], many=True).data
+            )
+        except (OperationalError, ProgrammingError):
+            # Catalog migratsiyasi to'liq tugamagan deploylarda sahifani bo'sh holatda ochib qo'yamiz.
+            return Response([])
 
     def post(self, request):
         serializer = AdminCatalogServiceWriteSerializer(data=request.data)
@@ -620,99 +634,106 @@ class AdminServiceUsageView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        q = request.query_params.get("q", "").strip()
-        cat = request.query_params.get("category")
-        catalog_qs = CatalogService.objects.prefetch_related("categories")
-        if q:
-            catalog_qs = catalog_qs.filter(
-                Q(name__icontains=q)
-                | Q(description__icontains=q)
-                | Q(categories__name__icontains=q)
-            ).distinct()
-        if cat and str(cat).isdigit():
-            catalog_qs = catalog_qs.filter(categories__id=int(cat))
+        try:
+            q = request.query_params.get("q", "").strip()
+            cat = request.query_params.get("category")
+            catalog_qs = CatalogService.objects.prefetch_related("categories")
+            if q:
+                catalog_qs = catalog_qs.filter(
+                    Q(name__icontains=q)
+                    | Q(description__icontains=q)
+                    | Q(categories__name__icontains=q)
+                ).distinct()
+            if cat and str(cat).isdigit():
+                catalog_qs = catalog_qs.filter(categories__id=int(cat))
 
-        rows = []
-        for catalog in catalog_qs.order_by("sort_order", "name")[:500]:
-            item_rows = []
-            used_barber_ids: set[int] = set()
-            total_bookings = 0
-            completed_bookings = 0
-            cancelled_bookings = 0
+            rows = []
+            for catalog in catalog_qs.order_by("sort_order", "name")[:500]:
+                item_rows = []
+                used_barber_ids: set[int] = set()
+                total_bookings = 0
+                completed_bookings = 0
+                cancelled_bookings = 0
 
-            for service in Service.objects.filter(catalog_service=catalog).select_related("salon", "barber"):
-                stats = _service_line_stats("salon", service.id)
-                used_barber_ids.update(stats["barber_ids"])
-                if service.barber_id:
-                    used_barber_ids.add(service.barber_id)
-                total_bookings += int(stats["total_bookings"])
-                completed_bookings += int(stats["completed_bookings"])
-                cancelled_bookings += int(stats["cancelled_bookings"])
-                item_rows.append(
+                for service in Service.objects.filter(catalog_service=catalog).select_related("salon", "barber"):
+                    stats = _service_line_stats("salon", service.id)
+                    used_barber_ids.update(stats["barber_ids"])
+                    if service.barber_id:
+                        used_barber_ids.add(service.barber_id)
+                    total_bookings += int(stats["total_bookings"])
+                    completed_bookings += int(stats["completed_bookings"])
+                    cancelled_bookings += int(stats["cancelled_bookings"])
+                    item_rows.append(
+                        {
+                            "id": str(service.id),
+                            "type": "salon",
+                            "catalog_service_id": str(catalog.id),
+                            "service_name": catalog.name,
+                            "price": float(service.price),
+                            "duration_minutes": service.duration_minutes,
+                            "is_active": service.is_active,
+                            "salon_id": str(service.salon_id),
+                            "salon_name": getattr(service.salon, "name", "") or "",
+                            "barber_id": str(service.barber_id or ""),
+                            "barber_name": (getattr(service.barber, "full_name", "") or getattr(service.barber, "email", "") or "").strip(),
+                            "bookings_total": int(stats["total_bookings"]),
+                            "bookings_completed": int(stats["completed_bookings"]),
+                            "bookings_cancelled": int(stats["cancelled_bookings"]),
+                        }
+                    )
+
+                for service in BarberService.objects.filter(catalog_service=catalog).select_related("profile__barber"):
+                    stats = _service_line_stats("independent", service.id)
+                    used_barber_ids.update(stats["barber_ids"])
+                    total_bookings += int(stats["total_bookings"])
+                    completed_bookings += int(stats["completed_bookings"])
+                    cancelled_bookings += int(stats["cancelled_bookings"])
+                    barber = getattr(service.profile, "barber", None)
+                    if barber is not None and getattr(barber, "id", None):
+                        used_barber_ids.add(barber.id)
+                    item_rows.append(
+                        {
+                            "id": str(service.id),
+                            "type": "independent",
+                            "catalog_service_id": str(catalog.id),
+                            "service_name": catalog.name,
+                            "price": float(service.price),
+                            "duration_minutes": service.duration_minutes,
+                            "is_active": service.is_active,
+                            "salon_id": "",
+                            "salon_name": "",
+                            "barber_id": str(getattr(barber, "id", "") or ""),
+                            "barber_name": (getattr(barber, "full_name", "") or getattr(barber, "email", "") or "").strip(),
+                            "bookings_total": int(stats["total_bookings"]),
+                            "bookings_completed": int(stats["completed_bookings"]),
+                            "bookings_cancelled": int(stats["cancelled_bookings"]),
+                        }
+                    )
+
+                rows.append(
                     {
-                        "id": str(service.id),
-                        "type": "salon",
-                        "catalog_service_id": str(catalog.id),
-                        "service_name": catalog.name,
-                        "price": float(service.price),
-                        "duration_minutes": service.duration_minutes,
-                        "is_active": service.is_active,
-                        "salon_id": str(service.salon_id),
-                        "salon_name": getattr(service.salon, "name", "") or "",
-                        "barber_id": str(service.barber_id or ""),
-                        "barber_name": (getattr(service.barber, "full_name", "") or getattr(service.barber, "email", "") or "").strip(),
-                        "bookings_total": int(stats["total_bookings"]),
-                        "bookings_completed": int(stats["completed_bookings"]),
-                        "bookings_cancelled": int(stats["cancelled_bookings"]),
+                        "id": str(catalog.id),
+                        "name": catalog.name,
+                        "description": catalog.description,
+                        "image_url": catalog.image_url,
+                        "duration_minutes": catalog.duration_minutes,
+                        "is_active": catalog.is_active,
+                        "category_names": list(
+                            catalog.categories.order_by("order", "name").values_list("name", flat=True)
+                        ),
+                        "barbers_count": len([bid for bid in used_barber_ids if bid]),
+                        "bookings_total": total_bookings,
+                        "bookings_completed": completed_bookings,
+                        "bookings_cancelled": cancelled_bookings,
+                        "cancellation_rate": round((cancelled_bookings / total_bookings) * 100, 1)
+                        if total_bookings
+                        else 0,
+                        "rows": item_rows,
                     }
                 )
-
-            for service in BarberService.objects.filter(catalog_service=catalog).select_related("profile__barber"):
-                stats = _service_line_stats("independent", service.id)
-                used_barber_ids.update(stats["barber_ids"])
-                total_bookings += int(stats["total_bookings"])
-                completed_bookings += int(stats["completed_bookings"])
-                cancelled_bookings += int(stats["cancelled_bookings"])
-                barber = getattr(service.profile, "barber", None)
-                if barber is not None and getattr(barber, "id", None):
-                    used_barber_ids.add(barber.id)
-                item_rows.append(
-                    {
-                        "id": str(service.id),
-                        "type": "independent",
-                        "catalog_service_id": str(catalog.id),
-                        "service_name": catalog.name,
-                        "price": float(service.price),
-                        "duration_minutes": service.duration_minutes,
-                        "is_active": service.is_active,
-                        "salon_id": "",
-                        "salon_name": "",
-                        "barber_id": str(getattr(barber, "id", "") or ""),
-                        "barber_name": (getattr(barber, "full_name", "") or getattr(barber, "email", "") or "").strip(),
-                        "bookings_total": int(stats["total_bookings"]),
-                        "bookings_completed": int(stats["completed_bookings"]),
-                        "bookings_cancelled": int(stats["cancelled_bookings"]),
-                    }
-                )
-
-            rows.append(
-                {
-                    "id": str(catalog.id),
-                    "name": catalog.name,
-                    "description": catalog.description,
-                    "image_url": catalog.image_url,
-                    "duration_minutes": catalog.duration_minutes,
-                    "is_active": catalog.is_active,
-                    "category_names": list(catalog.categories.order_by("order", "name").values_list("name", flat=True)),
-                    "barbers_count": len([bid for bid in used_barber_ids if bid]),
-                    "bookings_total": total_bookings,
-                    "bookings_completed": completed_bookings,
-                    "bookings_cancelled": cancelled_bookings,
-                    "cancellation_rate": round((cancelled_bookings / total_bookings) * 100, 1) if total_bookings else 0,
-                    "rows": item_rows,
-                }
-            )
-        return Response(rows)
+            return Response(rows)
+        except (OperationalError, ProgrammingError):
+            return Response([])
 
 
 class AdminRuntimeServiceDetailView(APIView):

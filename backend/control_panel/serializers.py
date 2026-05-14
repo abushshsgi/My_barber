@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.db.models import Avg, Count, Sum
+from django.db.utils import OperationalError, ProgrammingError
 
 from accounts.models import AdminAccount, User
 from accounts.uz_regions import UzRegion
@@ -688,7 +689,10 @@ class AdminCategorySerializer(serializers.ModelSerializer):
         fields = ("id", "name", "icon", "order", "is_active", "services_count")
 
     def get_services_count(self, obj: Category) -> int:
-        return obj.services.count() + obj.barber_services.count() + obj.catalog_services.count()
+        try:
+            return obj.services.count() + obj.barber_services.count() + obj.catalog_services.count()
+        except (OperationalError, ProgrammingError):
+            return 0
 
 
 class AdminCategoryWriteSerializer(serializers.ModelSerializer):
@@ -719,13 +723,22 @@ class AdminCatalogServiceSerializer(serializers.ModelSerializer):
         )
 
     def get_category_ids(self, obj: CatalogService) -> list[int]:
-        return list(obj.categories.values_list("id", flat=True))
+        try:
+            return list(obj.categories.values_list("id", flat=True))
+        except (OperationalError, ProgrammingError):
+            return []
 
     def get_category_names(self, obj: CatalogService) -> list[str]:
-        return list(obj.categories.order_by("order", "name").values_list("name", flat=True))
+        try:
+            return list(obj.categories.order_by("order", "name").values_list("name", flat=True))
+        except (OperationalError, ProgrammingError):
+            return []
 
     def get_linked_rows_count(self, obj: CatalogService) -> int:
-        return obj.assigned_salon_services.count() + obj.assigned_barber_services.count()
+        try:
+            return obj.assigned_salon_services.count() + obj.assigned_barber_services.count()
+        except (OperationalError, ProgrammingError):
+            return 0
 
 
 class AdminCatalogServiceWriteSerializer(serializers.ModelSerializer):
