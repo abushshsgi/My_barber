@@ -110,7 +110,6 @@ function pathAllowedInSalonWorkspace(pathname: string): boolean {
   }
   if (
     pathname === "/barber/profile" ||
-    pathname === "/barber/services" ||
     pathname === "/barber/settings" ||
     pathname === "/barber/help" ||
     pathname === "/barber/notifications" ||

@@ -94,7 +94,6 @@ from salons.views import (
     FavoriteSalonListCreateView,
     SalonMembershipViewSet,
     SalonViewSet,
-    ServiceViewSet,
 )
 from chat.views import ConversationListCreateView, ConversationMessagesView
 
@@ -105,7 +104,6 @@ def health(_request):
 
 router = DefaultRouter()
 router.register(r"salons", SalonViewSet, basename="salon")
-router.register(r"services", ServiceViewSet, basename="service")
 router.register(r"memberships", SalonMembershipViewSet, basename="membership")
 router.register(r"schedules", BarberScheduleViewSet, basename="schedule")
 router.register(r"bookings", BookingViewSet, basename="booking")

@@ -24,7 +24,6 @@ _REL_ALLOWED = (
     "schedules",
     "salons",
     "memberships",
-    "services",
 )
 
 

@@ -55,14 +55,12 @@ export const NAV_CONFIG: Record<NavCapability, NavItem[]> = {
   ],
   salonOwner: [
     { to: "/barber/salon-view", label: "Salon", iconName: "Building2" },
-    { to: "/barber/services", label: "Xizmatlar", iconName: "Scissors" },
     { to: "/barber/salon-view/gallery", label: "Galereya", iconName: "Images" },
     { to: "/barber/salon-view/reviews", label: "Sharhlar", iconName: "Star" },
     { to: "/barber/salon-view/team", label: "Jamoa", iconName: "Users" },
   ],
   salonWorker: [
     { to: "/barber/salon-view", label: "Salon", iconName: "Building2" },
-    { to: "/barber/services", label: "Xizmatlar", iconName: "Scissors" },
     { to: "/barber/salon-view/members", label: "Jamoa", iconName: "Users" },
     { to: "/barber/salon-view/reviews", label: "Sharhlar", iconName: "Star" },
     { to: "/barber/salon-view/gallery", label: "Galereya", iconName: "Images" },

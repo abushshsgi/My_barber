@@ -25,7 +25,7 @@ from .geo_join import (
     haversine_km,
 )
 from .join_service import attach_worker_membership
-from .models import CatalogService, BarberWorkingHours, FavoriteSalon, Salon, SalonImage, SalonMembership, Service
+from .models import CatalogService, BarberWorkingHours, FavoriteSalon, Salon, SalonImage, SalonMembership
 from .serializers import (
     BarberWorkingHoursSerializer,
     BarberSalonViewSerializer,
@@ -33,7 +33,6 @@ from .serializers import (
     SalonDetailSerializer,
     SalonListSerializer,
     SalonMembershipSerializer,
-    ServiceSerializer,
 )
 
 
@@ -421,130 +420,6 @@ class SalonViewSet(viewsets.ModelViewSet):
         for idx, img in enumerate(salon.images.order_by("sort_order", "id")):
             SalonImage.objects.filter(pk=img.pk).update(sort_order=idx)
         return Response({"status": "ok"})
-
-
-class ServiceViewSet(viewsets.ModelViewSet):
-    serializer_class = ServiceSerializer
-
-    def get_permissions(self):
-        if self.request.method in ("GET", "HEAD", "OPTIONS"):
-            return [AllowAny()]
-        return [IsAuthenticatedBarberAware()]
-
-    def get_queryset(self):
-        salon_id = self.request.query_params.get("salon")
-        barber_id = self.request.query_params.get("barber")
-        qs = Service.objects.select_related("catalog_service", "salon", "barber").all()
-        if salon_id:
-            qs = qs.filter(salon_id=salon_id)
-        if barber_id:
-            qs = qs.filter(Q(barber_id=barber_id) | Q(barber__isnull=True))
-        return qs
-
-    def perform_create(self, serializer):
-        from rest_framework.exceptions import ValidationError
-
-        # ServiceSerializer da salon read_only — validated_data da yo'q; body dan olamiz
-        salon_id = self.request.data.get("salon")
-        if salon_id is None:
-            raise ValidationError({"salon": "This field is required."})
-        salon = get_object_or_404(Salon, pk=salon_id)
-        bp = request_barber(self.request)
-        if bp is None:
-            from rest_framework.exceptions import PermissionDenied
-
-            raise PermissionDenied()
-        is_owner = salon.owner_barber_id == bp.id
-        is_active_worker = SalonMembership.objects.filter(
-            salon=salon,
-            barber=bp,
-            invite_state=SalonMembership.InviteState.ACTIVE,
-        ).exists()
-        if not is_owner and not is_active_worker:
-            from rest_framework.exceptions import PermissionDenied
-
-            raise PermissionDenied()
-        barber = serializer.validated_data.get("barber")
-        catalog = serializer.validated_data.get("catalog_service")
-        if not is_owner:
-            target_barber = bp
-        elif (
-            barber is not None
-            and barber.id != salon.owner_barber_id
-            and not SalonMembership.objects.filter(
-                salon=salon,
-                barber=barber,
-                invite_state=SalonMembership.InviteState.ACTIVE,
-            ).exists()
-        ):
-            from rest_framework.exceptions import ValidationError
-
-            raise ValidationError({"barber": "Barber bu salonda faol emas."})
-        else:
-            target_barber = barber
-
-        if catalog is not None:
-            obj = serializer.save(
-                salon=salon,
-                barber=target_barber,
-                catalog_service=catalog,
-                name=catalog.name,
-                duration_minutes=catalog.duration_minutes,
-            )
-            obj.categories.set(catalog.categories.all())
-            return
-
-        name = str(self.request.data.get("name", "") or "").strip()
-        try:
-            duration = int(self.request.data.get("duration_minutes") or 0)
-        except (TypeError, ValueError):
-            duration = 0
-        if not name:
-            raise ValidationError({"catalog_service": "Katalogdan xizmat tanlang."})
-        if duration < 5 or duration > 480:
-            raise ValidationError({"duration_minutes": "Davomiylik 5 va 480 daqiqa oralig'ida bo'lishi kerak."})
-        serializer.save(
-            salon=salon,
-            barber=target_barber,
-            name=name,
-            duration_minutes=duration,
-        )
-
-    def perform_update(self, serializer):
-        service = self.get_object()
-        bp = request_barber(self.request)
-        is_owner = bp is not None and service.salon.owner_barber_id == bp.id
-        is_service_barber = bp is not None and service.barber_id == bp.id
-        if not is_owner and not is_service_barber:
-            from rest_framework.exceptions import PermissionDenied
-
-            raise PermissionDenied()
-        target_barber = service.barber
-        if not is_owner:
-            target_barber = bp
-        catalog = service.catalog_service
-        if catalog is not None:
-            updated = serializer.save(
-                salon=service.salon,
-                barber=target_barber,
-                catalog_service=catalog,
-                name=catalog.name,
-                duration_minutes=catalog.duration_minutes,
-            )
-            updated.categories.set(catalog.categories.all())
-        else:
-            serializer.save(salon=service.salon, barber=target_barber)
-
-    def perform_destroy(self, instance):
-        bp = request_barber(self.request)
-        is_owner = bp is not None and instance.salon.owner_barber_id == bp.id
-        is_service_barber = bp is not None and instance.barber_id == bp.id
-        if not is_owner and not is_service_barber:
-            from rest_framework.exceptions import PermissionDenied
-
-            raise PermissionDenied()
-        instance.delete()
-
 
 class FavoriteSalonListCreateView(APIView):
     permission_classes = [IsAuthenticatedBarberAware]
