@@ -21,6 +21,7 @@ from bookings.availability import (
 )
 from bookings.models import Booking, BookingLine, Review
 from notifications.utils import notify_user
+from salons.catalog_bootstrap import ensure_default_catalog_seeded
 from salons.models import CatalogService
 
 from .models import (
@@ -250,6 +251,7 @@ class MyBarberCatalogServiceView(APIView):
     permission_classes = [IsBarber]
 
     def get(self, request):
+        ensure_default_catalog_seeded()
         q = str(request.query_params.get("q", "") or "").strip()
         category = str(request.query_params.get("category", "") or "").strip()
         qs = CatalogService.objects.filter(is_active=True).prefetch_related("categories")

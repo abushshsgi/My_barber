@@ -14,6 +14,7 @@ from accounts.permissions import IsAdmin
 from barbers.models import Barber, BarberService, BarberSupportTicket
 from bookings.models import Booking, BookingLine, Review
 from bookings.serializers import BookingSerializer
+from salons.catalog_bootstrap import ensure_default_catalog_seeded
 from salons.catalog_visuals import build_catalog_service_image
 from salons.models import CatalogService, Category, Salon, SalonMembership, Service
 
@@ -483,6 +484,7 @@ class AdminCategoryListCreateView(generics.ListCreateAPIView):
 
     def list(self, request, *args, **kwargs):
         try:
+            ensure_default_catalog_seeded()
             return super().list(request, *args, **kwargs)
         except (OperationalError, ProgrammingError):
             # Deploy paytida catalog jadvallari hali migrate bo'lmagan bo'lsa admin sahifa 500 bo'lmasin.
@@ -520,6 +522,7 @@ class AdminServicesView(APIView):
 
     def get(self, request):
         try:
+            ensure_default_catalog_seeded()
             q = request.query_params.get("q", "").strip()
             cat = request.query_params.get("category")
             qs = CatalogService.objects.prefetch_related("categories")
@@ -635,6 +638,7 @@ class AdminServiceUsageView(APIView):
 
     def get(self, request):
         try:
+            ensure_default_catalog_seeded()
             q = request.query_params.get("q", "").strip()
             cat = request.query_params.get("category")
             catalog_qs = CatalogService.objects.prefetch_related("categories")
