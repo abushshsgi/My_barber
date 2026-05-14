@@ -1,4 +1,4 @@
-import { getPublicApiBase } from "./api";
+import { getPublicApiBase, normalizeAbsoluteUrl } from "./api";
 
 /** Lokal SVG — tashqi CDN / ORB muammosi bo‘lmaydi */
 export const PLACEHOLDER_SALON = "/placeholder-salon.svg";
@@ -33,7 +33,7 @@ export function mediaSrc(
     return s;
   }
   if (s.startsWith("http://") || s.startsWith("https://")) {
-    return s;
+    return normalizeAbsoluteUrl(s);
   }
   const base = getPublicApiBase().replace(/\/$/, "");
   const pathPart = s.startsWith("/") ? s : `/${s}`;

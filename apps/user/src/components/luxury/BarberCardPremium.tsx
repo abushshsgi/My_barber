@@ -7,6 +7,8 @@ export type PremiumBarber = {
   name: string;
   avatar: string;
   salonName?: string;
+  bookingKind?: "independent" | "salon";
+  salonId?: string;
   rating: number;
   reviewCount: number;
   distanceKm?: number;
@@ -15,13 +17,11 @@ export type PremiumBarber = {
 };
 
 export function BarberCardPremium({ barber, layout = "vertical" }: { barber: PremiumBarber; layout?: "vertical" | "horizontal" }) {
+  const isSalonBooking = barber.bookingKind === "salon" && !!barber.salonId;
+
   if (layout === "horizontal") {
-    return (
-      <Link
-        to="/booking/barber/$barberId"
-        params={{ barberId: barber.id }}
-        className="group flex items-center gap-3 rounded-2xl border border-border/70 bg-surface p-3 shadow-soft transition active:scale-[0.99] hover:shadow-card hover:border-foreground/20"
-      >
+    const content = (
+      <>
         <div className="relative">
           <img
             src={barber.avatar}
@@ -42,15 +42,34 @@ export function BarberCardPremium({ barber, layout = "vertical" }: { barber: Pre
           </div>
         </div>
         <span className="rounded-full bg-primary px-3 py-2 text-[11px] font-semibold text-primary-foreground transition group-hover:bg-foreground">Band qilish</span>
+      </>
+    );
+
+    if (isSalonBooking) {
+      return (
+        <Link
+          to="/booking/$salonId"
+          params={{ salonId: barber.salonId! }}
+          className="group flex items-center gap-3 rounded-2xl border border-border/70 bg-surface p-3 shadow-soft transition active:scale-[0.99] hover:shadow-card hover:border-foreground/20"
+        >
+          {content}
+        </Link>
+      );
+    }
+
+    return (
+      <Link
+        to="/booking/barber/$barberId"
+        params={{ barberId: barber.id }}
+        className="group flex items-center gap-3 rounded-2xl border border-border/70 bg-surface p-3 shadow-soft transition active:scale-[0.99] hover:shadow-card hover:border-foreground/20"
+      >
+        {content}
       </Link>
     );
   }
-  return (
-    <Link
-      to="/booking/barber/$barberId"
-      params={{ barberId: barber.id }}
-      className="group relative block w-44 shrink-0 overflow-hidden rounded-3xl border border-border/70 bg-surface shadow-card transition active:scale-[0.98] hover:shadow-luxury"
-    >
+
+  const content = (
+    <>
       <div className="relative aspect-[4/5] overflow-hidden">
         <img src={barber.avatar} alt={barber.name} loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
         <span className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
@@ -62,6 +81,28 @@ export function BarberCardPremium({ barber, layout = "vertical" }: { barber: Pre
           </div>
         </div>
       </div>
+    </>
+  );
+
+  if (isSalonBooking) {
+    return (
+      <Link
+        to="/booking/$salonId"
+        params={{ salonId: barber.salonId! }}
+        className="group relative block w-44 shrink-0 overflow-hidden rounded-3xl border border-border/70 bg-surface shadow-card transition active:scale-[0.98] hover:shadow-luxury"
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <Link
+      to="/booking/barber/$barberId"
+      params={{ barberId: barber.id }}
+      className="group relative block w-44 shrink-0 overflow-hidden rounded-3xl border border-border/70 bg-surface shadow-card transition active:scale-[0.98] hover:shadow-luxury"
+    >
+      {content}
     </Link>
   );
 }

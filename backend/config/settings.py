@@ -32,6 +32,11 @@ ALLOWED_HOSTS = [
     if h.strip()
 ]
 
+# Reverse proxy (Railway / Nginx / Vercel upstream) ortida request.build_absolute_uri()
+# https sxemani to'g'ri aniqlashi uchun.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
+
 INSTALLED_APPS = [
     "daphne",
     "channels",

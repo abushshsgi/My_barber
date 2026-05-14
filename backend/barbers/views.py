@@ -22,7 +22,7 @@ from bookings.availability import (
 from bookings.models import Booking, BookingLine, Review
 from notifications.utils import notify_user
 from salons.catalog_bootstrap import ensure_default_catalog_seeded
-from salons.models import CatalogService
+from salons.models import CatalogService, Salon, SalonMembership
 
 from .models import (
     Barber,
@@ -66,6 +66,27 @@ def _haversine_km(lat1, lon1, lat2, lon2):
         + math.cos(lat1 * p) * math.cos(lat2 * p) * (1 - math.cos((lon2 - lon1) * p)) / 2
     )
     return 2 * r * math.asin(math.sqrt(a))
+
+
+def _public_salon_for_barber(barber):
+    owned = (
+        Salon.objects.filter(owner_barber=barber, is_published=True)
+        .only("id", "name", "latitude", "longitude")
+        .first()
+    )
+    if owned is not None:
+        return owned
+    membership = (
+        SalonMembership.objects.select_related("salon")
+        .filter(
+            barber=barber,
+            invite_state=SalonMembership.InviteState.ACTIVE,
+            salon__is_published=True,
+        )
+        .order_by("-activated_at", "-id")
+        .first()
+    )
+    return membership.salon if membership is not None else None
 
 
 class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
@@ -184,7 +205,7 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
         throttle_classes=[SalonSearchThrottle],
     )
     def nearby(self, request):
-        """Mustaqil barberlar — joylashuvi bor profillar, radius ichida."""
+        """Ochiq barberlar — mustaqil bo'lsa o'z lokatsiyasi, salonniki bo'lsa salon lokatsiyasi."""
         try:
             lat = float(request.query_params["lat"])
             lng = float(request.query_params["lng"])
@@ -194,11 +215,7 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
                 {"detail": "lat, lng required; radius_km optional."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        qs = self.get_queryset().filter(
-            barber__work_mode=Barber.WorkMode.INDEPENDENT,
-            latitude__isnull=False,
-            longitude__isnull=False,
-        )
+        qs = self.get_queryset().select_related("barber")
         forced_region = customer_catalog_region(request)
         if forced_region:
             qs = qs.filter(barber__region=forced_region)
@@ -209,10 +226,30 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
                 qs = qs.filter(barber__region=region)
         out = []
         for p in qs:
-            d = _haversine_km(lat, lng, float(p.latitude), float(p.longitude))
+            barber = p.barber
+            row_lat = p.latitude
+            row_lng = p.longitude
+            booking_kind = "independent"
+            salon = None
+            if barber.work_mode != Barber.WorkMode.INDEPENDENT:
+                salon = _public_salon_for_barber(barber)
+                if salon is None:
+                    continue
+                row_lat = salon.latitude
+                row_lng = salon.longitude
+                booking_kind = "salon"
+            if row_lat is None or row_lng is None:
+                continue
+            d = _haversine_km(lat, lng, float(row_lat), float(row_lng))
             if d <= radius:
                 ser = BarberPublicListSerializer(p, context={"request": request})
                 row = dict(ser.data)
+                row["latitude"] = str(row_lat)
+                row["longitude"] = str(row_lng)
+                row["work_mode"] = barber.work_mode
+                row["booking_kind"] = booking_kind
+                row["salon_id"] = salon.id if salon is not None else None
+                row["salon_name"] = salon.name if salon is not None else None
                 row["distance_km"] = round(d, 3)
                 out.append(row)
         out.sort(key=lambda x: x["distance_km"])

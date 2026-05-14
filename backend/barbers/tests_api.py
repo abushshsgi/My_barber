@@ -8,6 +8,8 @@ from barbers.barber_auth import encode_barber_tokens
 from barbers.models import Barber, BarberProfile, BarberService, BarberWorkingHours
 from bookings.models import Booking
 from notifications.models import Notification
+from salons.models import BarberWorkingHours as SalonWorkingHours
+from salons.models import Salon, SalonMembership, Service
 
 
 User = get_user_model()
@@ -109,3 +111,66 @@ class BarberBusinessApiTests(APITestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data["sent_count"], 1)
         self.assertTrue(Notification.objects.filter(user=customer, type="barber_announcement").exists())
+
+    def test_nearby_includes_public_salon_barbers_at_salon_location(self):
+        owner = Barber.objects.create(
+            email="owner@test.uz",
+            username="owner@test.uz",
+            full_name="Owner Barber",
+            is_active=True,
+            work_mode=Barber.WorkMode.SALON,
+            onboarding_flow=Barber.OnboardingFlow.OWNER,
+            email_verified_at=timezone.now(),
+        )
+        owner.set_password("StrongPass123")
+        owner.save()
+        BarberProfile.objects.create(
+            barber=owner,
+            location_text="Toshkent",
+            latitude=41.300000,
+            longitude=69.250000,
+        )
+        salon = Salon.objects.create(
+            owner_barber=owner,
+            name="Salon Nearby",
+            latitude=41.311500,
+            longitude=69.280100,
+            address="Toshkent",
+            is_published=True,
+        )
+        owner_membership = SalonMembership.objects.create(
+            barber=owner,
+            salon=salon,
+            role=SalonMembership.Role.OWNER,
+            invite_state=SalonMembership.InviteState.NA,
+        )
+        SalonWorkingHours.objects.create(
+            membership=owner_membership,
+            weekday=0,
+            open_time=time(9, 0),
+            close_time=time(18, 0),
+            is_day_off=False,
+        )
+        for n in range(5):
+            Service.objects.create(
+                salon=salon,
+                barber=owner,
+                name=f"SalonSvc{n}",
+                price=50_000,
+                duration_minutes=30,
+                is_active=True,
+            )
+
+        res = self.client.get(
+            "/api/v1/barbers/nearby/",
+            {"lat": 41.3111, "lng": 69.2797, "radius_km": 2},
+        )
+
+        self.assertEqual(res.status_code, 200)
+        row = next((item for item in res.data if item["barber_id"] == owner.id), None)
+        self.assertIsNotNone(row)
+        self.assertEqual(row["booking_kind"], "salon")
+        self.assertEqual(row["salon_id"], salon.id)
+        self.assertEqual(row["salon_name"], salon.name)
+        self.assertAlmostEqual(float(row["latitude"]), float(salon.latitude), places=4)
+        self.assertAlmostEqual(float(row["longitude"]), float(salon.longitude), places=4)

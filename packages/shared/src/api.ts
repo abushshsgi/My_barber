@@ -6,9 +6,30 @@ function readEnv(name: string): string | undefined {
   );
 }
 
+function isLocalHostname(hostname: string): boolean {
+  return hostname === "localhost" || hostname === "127.0.0.1";
+}
+
+export function normalizeAbsoluteUrl(raw: string): string {
+  if (!raw) return raw;
+  try {
+    const url = new URL(raw);
+    const pageIsHttps =
+      typeof window !== "undefined" && window.location.protocol === "https:";
+    if (pageIsHttps && url.protocol === "http:" && !isLocalHostname(url.hostname)) {
+      url.protocol = "https:";
+    }
+    return url.toString();
+  } catch {
+    return raw;
+  }
+}
+
 const ENV_API_BASE = readEnv("VITE_API_URL") || readEnv("NEXT_PUBLIC_API_URL") || "";
 const FALLBACK_DEV_BASE = import.meta.env.DEV ? "http://localhost:8000" : "";
-const API_BASE = (ENV_API_BASE.trim() ? ENV_API_BASE : FALLBACK_DEV_BASE).replace(/\/+$/, "");
+const API_BASE = normalizeAbsoluteUrl(
+  ENV_API_BASE.trim() ? ENV_API_BASE : FALLBACK_DEV_BASE
+).replace(/\/+$/, "");
 
 const TOKEN_KEY = "mybarber_access";
 const REFRESH_KEY = "mybarber_refresh";

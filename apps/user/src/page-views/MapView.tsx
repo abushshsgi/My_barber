@@ -25,10 +25,17 @@ type BarberNearbyApi = {
   longitude: string | null;
   avatar: string | null;
   distance_km: number;
+  booking_kind?: "independent" | "salon" | null;
+  salon_id?: number | null;
+  salon_name?: string | null;
   avg_rating?: number | null;
   review_count?: number | null;
   active_services?: Array<{ name: string }>;
 };
+
+function hasMapCoords(item: { lat: number; lng: number }): boolean {
+  return Number.isFinite(item.lat) && Number.isFinite(item.lng) && !(item.lat === 0 && item.lng === 0);
+}
 
 async function fetchNearbySalons(lat: number, lng: number, radius: number): Promise<Salon[]> {
   const params = new URLSearchParams({
@@ -46,18 +53,24 @@ async function fetchNearbySalons(lat: number, lng: number, radius: number): Prom
 }
 
 function mapBarberNearby(r: BarberNearbyApi): PremiumBarber {
+  const bookingKind = r.booking_kind === "salon" && r.salon_id ? "salon" : "independent";
   return {
     id: String(r.barber_id),
     name: r.name?.trim() || "Barber",
     avatar: mediaSrc(r.avatar, PLACEHOLDER_AVATAR),
-    salonName: r.active_services?.length
-      ? r.active_services.map((s) => s.name).join(", ")
-      : "Mustaqil barber",
+    salonName:
+      bookingKind === "salon"
+        ? (r.salon_name?.trim() || "Salon barberi")
+        : r.active_services?.length
+          ? r.active_services.map((s) => s.name).join(", ")
+          : "Mustaqil barber",
     rating: Number(r.avg_rating || 0),
     reviewCount: Number(r.review_count || 0),
     lat: parseFloat(r.latitude ?? "0") || 0,
     lng: parseFloat(r.longitude ?? "0") || 0,
     distanceKm: r.distance_km,
+    bookingKind,
+    salonId: r.salon_id ? String(r.salon_id) : undefined,
   };
 }
 
@@ -117,10 +130,13 @@ export default function MapPage() {
     retry: false,
   });
 
+  const visibleSalons = useMemo(() => (salonsQ.data ?? []).filter(hasMapCoords), [salonsQ.data]);
+  const visibleBarbers = useMemo(() => (barbersQ.data ?? []).filter(hasMapCoords), [barbersQ.data]);
+
   const markers = useMemo(() => {
-    if (tab === "salons") return (salonsQ.data ?? []).map((s) => ({ id: s.id, lat: s.lat, lng: s.lng, label: s.name }));
-    return (barbersQ.data ?? []).map((b) => ({ id: b.id, lat: b.lat, lng: b.lng, label: b.name }));
-  }, [tab, salonsQ.data, barbersQ.data]);
+    if (tab === "salons") return visibleSalons.map((s) => ({ id: s.id, lat: s.lat, lng: s.lng, label: s.name }));
+    return visibleBarbers.map((b) => ({ id: b.id, lat: b.lat, lng: b.lng, label: b.name }));
+  }, [tab, visibleSalons, visibleBarbers]);
 
   return (
     <div className="flex h-[calc(100dvh-5.5rem)] flex-col">
@@ -186,10 +202,10 @@ export default function MapPage() {
           {tab === "salons" ? (
             salonsQ.isLoading ? (
               <LoadingSkeleton className="h-20" />
-            ) : (salonsQ.data ?? []).length === 0 ? (
+            ) : visibleSalons.length === 0 ? (
               <EmptyStateLuxury title="Bo'sh" body="Radiusni kattalashtiring." />
             ) : (
-              (salonsQ.data ?? []).map((s) => (
+              visibleSalons.map((s) => (
                 <div key={s.id} onMouseEnter={() => setActiveId(s.id)} className={activeId === s.id ? "ring-2 ring-gold rounded-2xl" : undefined}>
                   <SalonCardPremium salon={s} layout="horizontal" />
                 </div>
@@ -197,10 +213,10 @@ export default function MapPage() {
             )
           ) : barbersQ.isLoading ? (
             <LoadingSkeleton className="h-20" />
-          ) : (barbersQ.data ?? []).length === 0 ? (
+          ) : visibleBarbers.length === 0 ? (
             <EmptyStateLuxury title="Bo'sh" body="Radiusni kattalashtiring." />
           ) : (
-            (barbersQ.data ?? []).map((b) => (
+            visibleBarbers.map((b) => (
               <div key={b.id} onMouseEnter={() => setActiveId(b.id)} className={activeId === b.id ? "ring-2 ring-gold rounded-2xl" : undefined}>
                 <BarberCardPremium barber={b} layout="horizontal" />
               </div>
