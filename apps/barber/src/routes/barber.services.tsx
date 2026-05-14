@@ -57,6 +57,12 @@ type CatalogServiceOption = {
   index: number;
 };
 
+type PendingCatalogService = {
+  catalog_service: string;
+  price: string;
+  is_active: boolean;
+};
+
 type ApiWorkingHour = {
   id: number;
   membership?: number;
@@ -173,7 +179,7 @@ function parseBreaks(input: string): BreakItem[] {
 function serializeForm(
   services: ServiceForm[],
   days: DayForm[],
-  newService: { catalog_service: string; price: string; is_active: boolean },
+  pendingServices: PendingCatalogService[],
 ): string {
   return JSON.stringify({
     services: services.map((s) => ({
@@ -193,11 +199,11 @@ function serializeForm(
       is_day_off: d.is_day_off,
       breaksText: d.breaksText,
     })),
-    newService: {
-      catalog_service: newService.catalog_service,
-      price: newService.price,
-      is_active: newService.is_active,
-    },
+    pendingServices: pendingServices.map((service) => ({
+      catalog_service: service.catalog_service,
+      price: service.price,
+      is_active: service.is_active,
+    })),
   });
 }
 
@@ -229,18 +235,10 @@ function ServicesSchedulePage() {
   const [savingSchedule, setSavingSchedule] = useState(false);
   const [catalogQuery, setCatalogQuery] = useState("");
   const [catalogCategory, setCatalogCategory] = useState<string>("all");
-  const [newService, setNewService] = useState<{
-    catalog_service: string;
-    price: string;
-    is_active: boolean;
-  }>({
-    catalog_service: "",
-    price: "",
-    is_active: true,
-  });
+  const [pendingServices, setPendingServices] = useState<PendingCatalogService[]>([]);
 
-  const newServiceRef = useRef(newService);
-  newServiceRef.current = newService;
+  const pendingServicesRef = useRef(pendingServices);
+  pendingServicesRef.current = pendingServices;
   const committedRef = useRef<string | null>(null);
 
   const activeCount = useMemo(() => services.filter((item) => item.is_active).length, [services]);
@@ -273,13 +271,23 @@ function ServicesSchedulePage() {
         item.category_names.some((name) =>
           name.toLowerCase().includes(catalogQuery.toLowerCase()),
         );
-      const alreadyAdded = ownedCatalogIds.has(String(item.id));
-      return matchesCategory && matchesQuery && !alreadyAdded;
+      return matchesCategory && matchesQuery && !ownedCatalogIds.has(String(item.id));
     });
   }, [barberId, catalogCategory, catalogQuery, catalogServices, scope, services]);
-  const selectedCatalog = useMemo(
-    () => catalogServices.find((item) => String(item.id) === newService.catalog_service) ?? null,
-    [catalogServices, newService.catalog_service],
+  const selectedCatalogIds = useMemo(
+    () => new Set(pendingServices.map((service) => service.catalog_service)),
+    [pendingServices],
+  );
+  const selectedCatalogRows = useMemo(
+    () =>
+      pendingServices
+        .map((service) => {
+          const catalog = catalogServices.find((item) => String(item.id) === service.catalog_service);
+          if (!catalog) return null;
+          return { ...service, catalog };
+        })
+        .filter((item): item is PendingCatalogService & { catalog: CatalogServiceOption } => Boolean(item)),
+    [catalogServices, pendingServices],
   );
 
   const loadAll = async () => {
@@ -326,7 +334,7 @@ function ServicesSchedulePage() {
         setRecommendations(recs);
         setCatalogServices(catalogRows);
       }
-      committedRef.current = serializeForm(nextServices, nextDays, newServiceRef.current);
+      committedRef.current = serializeForm(nextServices, nextDays, pendingServicesRef.current);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Ma'lumotlarni yuklab bo'lmadi.");
     } finally {
@@ -409,30 +417,77 @@ function ServicesSchedulePage() {
     }
   };
 
+  const togglePendingCatalog = (catalogId: string) => {
+    setPendingServices((prev) => {
+      if (prev.some((service) => service.catalog_service === catalogId)) {
+        return prev.filter((service) => service.catalog_service !== catalogId);
+      }
+      return [...prev, { catalog_service: catalogId, price: "", is_active: true }];
+    });
+  };
+
+  const updatePendingCatalog = (
+    catalogId: string,
+    patch: Partial<Pick<PendingCatalogService, "price" | "is_active">>,
+  ) => {
+    setPendingServices((prev) =>
+      prev.map((service) =>
+        service.catalog_service === catalogId ? { ...service, ...patch } : service,
+      ),
+    );
+  };
+
   const addService = async (preset?: Recommendation["suggested_service"]) => {
-    const matchedCatalog = preset
-      ? catalogServices.find(
-          (item) => item.name.trim().toLowerCase() === preset.name.trim().toLowerCase(),
-        )
-      : selectedCatalog;
-    const draft: ServiceForm = {
-      catalog_service: matchedCatalog ? String(matchedCatalog.id) : newService.catalog_service,
-      name: matchedCatalog?.name || "",
-      image_url: matchedCatalog?.image_url || "",
-      duration_minutes: String(matchedCatalog?.duration_minutes || 0),
-      price: preset ? String(preset.price) : newService.price,
-      is_active: newService.is_active,
-    };
-    if (!draft.catalog_service) {
-      toast.error("Katalogdan xizmat tanlang.");
-      return;
+    const drafts: ServiceForm[] = [];
+    if (preset) {
+      const matchedCatalog = catalogServices.find(
+        (item) => item.name.trim().toLowerCase() === preset.name.trim().toLowerCase(),
+      );
+      if (!matchedCatalog) {
+        toast.error("Tavsiya uchun katalog xizmati topilmadi.");
+        return;
+      }
+      drafts.push({
+        catalog_service: String(matchedCatalog.id),
+        name: matchedCatalog.name,
+        image_url: matchedCatalog.image_url,
+        duration_minutes: String(matchedCatalog.duration_minutes),
+        price: String(preset.price),
+        is_active: true,
+      });
+    } else {
+      if (pendingServices.length === 0) {
+        toast.error("Kamida bitta katalog xizmatini tanlang.");
+        return;
+      }
+      for (const pending of pendingServices) {
+        const matchedCatalog = catalogServices.find(
+          (item) => String(item.id) === pending.catalog_service,
+        );
+        if (!matchedCatalog) {
+          toast.error("Tanlangan xizmatlardan biri katalogda topilmadi.");
+          return;
+        }
+        drafts.push({
+          catalog_service: pending.catalog_service,
+          name: matchedCatalog.name,
+          image_url: matchedCatalog.image_url,
+          duration_minutes: String(matchedCatalog.duration_minutes),
+          price: pending.price,
+          is_active: pending.is_active,
+        });
+      }
     }
     setSavingServices(true);
     try {
-      const ok = await saveService(draft);
-      if (!ok) return;
-      setNewService({ catalog_service: "", price: "", is_active: true });
-      toast.success("Xizmat qo'shildi.");
+      const results = await Promise.all(drafts.map((draft) => saveService(draft)));
+      if (!results.every(Boolean)) return;
+      if (!preset) {
+        setPendingServices([]);
+      }
+      toast.success(
+        preset ? "Xizmat qo'shildi." : `${drafts.length} ta xizmat birdaniga qo'shildi.`,
+      );
       await loadAll();
       await refreshActivationStatus();
     } finally {
@@ -545,8 +600,8 @@ function ServicesSchedulePage() {
     shouldBlockFn: useCallback(() => {
       if (loading || savingServices || savingSchedule) return false;
       if (committedRef.current === null) return false;
-      return serializeForm(services, days, newService) !== committedRef.current;
-    }, [loading, savingServices, savingSchedule, services, days, newService]),
+      return serializeForm(services, days, pendingServices) !== committedRef.current;
+    }, [loading, savingServices, savingSchedule, services, days, pendingServices]),
     withResolver: true,
     enableBeforeUnload: true,
     disabled: loading,
@@ -732,17 +787,12 @@ function ServicesSchedulePage() {
 
                     <div className="grid gap-3 md:grid-cols-2">
                       {availableCatalog.map((item) => {
-                        const selected = newService.catalog_service === String(item.id);
+                        const selected = selectedCatalogIds.has(String(item.id));
                         return (
                           <button
                             key={item.id}
                             type="button"
-                            onClick={() =>
-                              setNewService((prev) => ({
-                                ...prev,
-                                catalog_service: String(item.id),
-                              }))
-                            }
+                            onClick={() => togglePendingCatalog(String(item.id))}
                             className={cn(
                               "flex items-center gap-3 rounded-xl border p-3 text-left transition-colors",
                               selected
@@ -786,25 +836,93 @@ function ServicesSchedulePage() {
                       </div>
                     ) : null}
 
-                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-                      <input
-                        type="number"
-                        value={newService.price}
-                        onChange={(event) =>
-                          setNewService((prev) => ({ ...prev, price: event.target.value }))
-                        }
-                        placeholder="Tanlangan xizmat uchun narx"
-                        className="h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-                      />
-                      <button
-                        onClick={() => void addService()}
-                        disabled={savingServices || !newService.catalog_service}
-                        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-foreground px-4 text-sm font-medium text-background disabled:opacity-60"
-                      >
-                        <Plus className="size-4" />
-                        Katalogdan qo&apos;shish
-                      </button>
-                    </div>
+                    {selectedCatalogRows.length > 0 ? (
+                      <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-sm font-medium text-foreground">
+                            Tanlangan xizmatlar: {selectedCatalogRows.length} ta
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setPendingServices([])}
+                            className="text-xs font-medium text-muted-foreground underline underline-offset-4"
+                          >
+                            Tozalash
+                          </button>
+                        </div>
+                        <div className="space-y-3">
+                          {selectedCatalogRows.map(({ catalog, catalog_service, price, is_active }) => (
+                            <div
+                              key={catalog_service}
+                              className="grid gap-3 rounded-xl border border-border bg-background p-3 sm:grid-cols-[minmax(0,1.4fr)_130px_90px_auto]"
+                            >
+                              <div className="flex min-w-0 items-center gap-3">
+                                <img
+                                  src={serviceImageSrc(catalog.image_url)}
+                                  alt=""
+                                  className="h-14 w-14 shrink-0 rounded-2xl object-cover"
+                                />
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-medium text-foreground">
+                                    {catalog.name}
+                                  </p>
+                                  <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                                    <Clock className="size-3.5" /> {catalog.duration_minutes} daqiqa
+                                  </p>
+                                </div>
+                              </div>
+                              <input
+                                type="number"
+                                min={0}
+                                value={price}
+                                onChange={(event) =>
+                                  updatePendingCatalog(catalog_service, {
+                                    price: event.target.value,
+                                  })
+                                }
+                                placeholder="Narx"
+                                className="h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updatePendingCatalog(catalog_service, {
+                                    is_active: !is_active,
+                                  })
+                                }
+                                className={cn(
+                                  "h-10 rounded-lg border px-2 text-xs font-medium",
+                                  is_active
+                                    ? "border-foreground bg-foreground text-background"
+                                    : "border-border bg-background text-muted-foreground",
+                                )}
+                              >
+                                {is_active ? "Faol" : "O'chiq"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => togglePendingCatalog(catalog_service)}
+                                className="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-background px-3 text-muted-foreground hover:text-destructive"
+                              >
+                                <Trash2 className="size-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => void addService()}
+                          disabled={savingServices || selectedCatalogRows.length === 0}
+                          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-foreground px-4 text-sm font-medium text-background disabled:opacity-60"
+                        >
+                          <Plus className="size-4" />
+                          {selectedCatalogRows.length} ta xizmatni qo&apos;shish
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-border bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+                        Bir nechta xizmatni belgilab, har biriga narx yozing va hammasini bitta bosishda qo&apos;shing.
+                      </div>
+                    )}
                   </div>
                 </div>
               </SectionCard>
