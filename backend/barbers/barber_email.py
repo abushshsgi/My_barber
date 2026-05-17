@@ -20,10 +20,11 @@ def send_barber_email_verification(barber: Barber) -> None:
         f"Email manzilingizni tasdiqlash uchun quyidagi havolani bosing:\n{link}\n\n"
         "Agar siz bu so‘rovni yubormagan bo‘lsangiz, xabarni e’tiborsiz qoldiring."
     )
+    from_email = getattr(settings, "BARBER_FROM_EMAIL", settings.DEFAULT_FROM_EMAIL)
     send_mail(
         subject,
         body,
-        settings.DEFAULT_FROM_EMAIL,
+        from_email,
         [barber.email],
-        fail_silently=True,
+        fail_silently=False,
     )

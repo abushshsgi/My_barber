@@ -38,4 +38,6 @@ Agar Postgres test DB (`test_*`) boshqa jarayon bilan band bo‘lsa, parallel `p
 
 ## Barber email tasdiq
 
-Ishlab chiqarishda `FRONTEND_BARBER_ORIGIN` (birinchi URL) va `EMAIL_*` / `DEFAULT_FROM_EMAIL` to‘g‘ri bo‘lishi kerak — batafsil `.env.example` ichida.
+Ishlab chiqarishda `FRONTEND_BARBER_ORIGIN` (birinchi URL), bitta SMTP (`EMAIL_*`) va `BARBER_FROM_EMAIL` (masalan `verify@mysaloon.uz`) to‘g‘ri bo‘lishi kerak — batafsil `.env.example` ichida.
+
+cPanel/aHost skrinshotidagi **port 2080** — CalDAV (kalendar), SMTP emas. SMTP uchun odatda **465** (SSL) yoki **587** (TLS) va `mail.mysaloon.uz`.

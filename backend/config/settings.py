@@ -242,9 +242,12 @@ EMAIL_BACKEND = os.environ.get(
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
 EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
 EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "true").lower() == "true"
+EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "false").lower() == "true"
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@mybarber.local")
+# Sartarosh email tasdiq xatlari (From). SMTP bitta — faqat manzil alohida.
+BARBER_FROM_EMAIL = os.environ.get("BARBER_FROM_EMAIL", "").strip() or DEFAULT_FROM_EMAIL
 
 # Email tasdiq havolasi (barber frontend). FRONTEND_BARBER_ORIGIN ning birinchi origini ishlatiladi.
 def _barber_public_app_base() -> str:
