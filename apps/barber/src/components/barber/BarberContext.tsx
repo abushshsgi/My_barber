@@ -888,7 +888,10 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const reloadActivationFromApi = useCallback(async (): Promise<boolean> => {
+  const reloadActivationFromApi = useCallback(async (): Promise<{
+    fullyReady: boolean;
+    emailVerified: boolean;
+  }> => {
     try {
       const st = await apiJson<{
         is_complete?: boolean;
@@ -902,6 +905,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         has_working_hours?: boolean;
         has_membership_hours?: boolean;
         fully_ready?: boolean;
+        email_verified?: boolean;
         readiness_percent?: number;
         steps?: Partial<ActivationSteps>;
       }>("/api/v1/barber/onboarding/status/");
@@ -932,10 +936,13 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         hasServices: Boolean(st.has_services),
         hasWorkingHours: Boolean(st.has_working_hours ?? st.has_membership_hours),
       });
-      return gate;
+      const emailVerified = Boolean(
+        st.email_verified ?? (s && typeof s === "object" ? s.email_verified : false),
+      );
+      return { fullyReady: gate, emailVerified };
     } catch {
       setOnboardingFlow(null);
-      return false;
+      return { fullyReady: false, emailVerified: false };
     }
   }, []);
 
@@ -943,6 +950,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     let alive = true;
     const run = async () => {
       let gateFullyReady = false;
+      let emailVerified = false;
       let wm: "independent" | "salon" = "independent";
       let aid: number | null = null;
       try {
@@ -979,7 +987,9 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         setViewMode(wm === "independent" ? "independent" : "salon");
         setHasSalon(wm !== "independent");
         if (!alive) return;
-        gateFullyReady = await reloadActivationFromApi();
+        const activation = await reloadActivationFromApi();
+        gateFullyReady = activation.fullyReady;
+        emailVerified = activation.emailVerified;
       } catch {
         clearBarberTokens();
         return;
@@ -1004,7 +1014,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
             refreshReviews(),
             refreshSalonView(),
           ]);
-        } else {
+        } else if (emailVerified) {
           await Promise.all([refreshServices(), refreshWorkingHours()]);
         }
       } catch {

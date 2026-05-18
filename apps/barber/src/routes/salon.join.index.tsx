@@ -288,7 +288,8 @@ function SalonJoinPage() {
     };
   }, []);
 
-  const search = useSalonSearch(query, hasBearer || employeeSignupDraft);
+  // Salon qidiruv API AllowAny — signup draft yo‘qolsa ham qidiruv ishlashi kerak.
+  const search = useSalonSearch(query, true);
   const currentLocation = useCurrentLocation();
 
   // Wizard step state

@@ -1,3 +1,4 @@
+import concurrent.futures
 import jwt
 from django.conf import settings
 from django.utils import timezone
@@ -8,7 +9,7 @@ from rest_framework.views import APIView
 from accounts.models import User
 from accounts.throttles import AuthIPThrottle
 from barbers.barber_auth import encode_barber_tokens
-from barbers.barber_email import send_barber_email_verification
+from barbers.barber_email import send_barber_email_verification_with_timeout
 from barbers.email_verification import unsign_barber_email_token
 from barbers.models import Barber
 from barbers.permissions import IsBarber
@@ -113,7 +114,15 @@ class BarberEmailResendView(APIView):
         b = request.user.barber
         if b.email_verified_at is not None:
             return Response({"detail": "Email allaqachon tasdiqlangan."}, status=400)
-        ok, err = send_barber_email_verification(b)
+        try:
+            ok, err = send_barber_email_verification_with_timeout(b, timeout=25)
+        except concurrent.futures.TimeoutError:
+            return Response(
+                {
+                    "detail": "SMTP javob bermadi (vaqt tugadi). EMAIL_HOST va parolni tekshiring.",
+                },
+                status=503,
+            )
         if not ok:
             return Response(
                 {

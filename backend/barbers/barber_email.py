@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import concurrent.futures
 import logging
 
 from django.conf import settings
@@ -9,6 +10,11 @@ from barbers.email_verification import sign_barber_email_token
 from barbers.models import Barber
 
 logger = logging.getLogger(__name__)
+
+_MAIL_EXECUTOR = concurrent.futures.ThreadPoolExecutor(
+    max_workers=2,
+    thread_name_prefix="barber-mail",
+)
 
 
 def send_barber_email_verification(barber: Barber) -> tuple[bool, str | None]:
@@ -54,3 +60,18 @@ def send_barber_email_verification(barber: Barber) -> tuple[bool, str | None]:
             barber.email,
         )
         return False, str(exc)
+
+
+def send_barber_email_verification_async(barber: Barber) -> None:
+    """Ro'yxatdan o'tish HTTP javobini SMTP kutib qotirmaslik uchun."""
+    _MAIL_EXECUTOR.submit(send_barber_email_verification, barber)
+
+
+def send_barber_email_verification_with_timeout(
+    barber: Barber,
+    *,
+    timeout: float = 25,
+) -> tuple[bool, str | None]:
+    """Resend endpoint: SMTP bloklamasligi uchun alohida threadda."""
+    future = _MAIL_EXECUTOR.submit(send_barber_email_verification, barber)
+    return future.result(timeout=timeout)

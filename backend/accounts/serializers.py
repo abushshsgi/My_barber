@@ -215,10 +215,10 @@ class BarberSignupSerializer(serializers.Serializer):
         return attrs
 
     def create(self, validated_data):
-        from barbers.barber_email import send_barber_email_verification
+        from barbers.barber_email import send_barber_email_verification_async
 
         barber = create_barber_with_flow(validated_data)
-        send_barber_email_verification(barber)  # noqa: RUF100 — xato bo‘lsa ham ro‘yxatdan o‘tish davom etadi
+        send_barber_email_verification_async(barber)
         return barber
 
     def to_representation(self, instance):
@@ -334,9 +334,9 @@ class BarberRegisterJoinSalonSerializer(serializers.Serializer):
             barber = create_barber_with_flow(payload)
             attach_worker_membership(barber, salon, lat_f, lng_f)
 
-        from barbers.barber_email import send_barber_email_verification
+        from barbers.barber_email import send_barber_email_verification_async
 
-        send_barber_email_verification(barber)
+        send_barber_email_verification_async(barber)
         return barber
 
 

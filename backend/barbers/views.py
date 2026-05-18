@@ -38,6 +38,8 @@ from .models import (
     BarberWorkPhoto,
     BarberWorkingHours,
 )
+from barbers.activation_permissions import IsAuthenticatedBarberAware
+
 from .permissions import IsBarber
 from .readiness import batch_publicly_visible_barber_ids
 from .serializers import (
@@ -319,7 +321,7 @@ class MyBarberCatalogServiceView(APIView):
 
 
 class MyBarberServiceViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsBarber]
+    permission_classes = [IsAuthenticatedBarberAware]
     serializer_class = BarberServiceSerializer
 
     def get_queryset(self):
@@ -583,7 +585,7 @@ class MyBarberReviewsView(APIView):
 
 
 class MyBarberWorkingHoursViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsBarber]
+    permission_classes = [IsAuthenticatedBarberAware]
     serializer_class = BarberWorkingHoursSerializer
 
     def get_queryset(self):
