@@ -260,9 +260,15 @@ CORS_ALLOW_CREDENTIALS = True
 # Productionda esa yuqoridagi allowlist (FRONTEND_* / CORS_ALLOWED_ORIGINS) ishlaydi.
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 
-EMAIL_BACKEND = os.environ.get(
-    "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
-)
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "").strip()
+
+# Railway / boshqa bulutda SMTP (465/587) tashqi ulanish bilan timeout ko'pincha blok — Resend HTTPS (443).
+if RESEND_API_KEY:
+    EMAIL_BACKEND = "config.resend_email_backend.ResendEmailBackend"
+else:
+    EMAIL_BACKEND = os.environ.get(
+        "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
+    )
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
 EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
 EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "true").lower() == "true"
@@ -270,7 +276,7 @@ EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "false").lower() == "true"
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@mybarber.local")
-# Sartarosh email tasdiq xatlari (From). SMTP bitta — faqat manzil alohida.
+# Sartarosh email tasdiq xatlari (From — Resend yoki SMTP ikkalasida ham kerak).
 BARBER_FROM_EMAIL = os.environ.get("BARBER_FROM_EMAIL", "").strip() or DEFAULT_FROM_EMAIL
 
 # Email tasdiq havolasi (barber frontend). FRONTEND_BARBER_ORIGIN ning birinchi origini ishlatiladi.

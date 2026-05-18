@@ -119,7 +119,11 @@ class BarberEmailResendView(APIView):
         except concurrent.futures.TimeoutError:
             return Response(
                 {
-                    "detail": "SMTP javob bermadi (vaqt tugadi). EMAIL_HOST va parolni tekshiring.",
+                    "detail": (
+                        "Email yuborish vaqt tugadi (SMTP blok yoki javob sodir). "
+                        "Production uchun RESEND_API_KEY qo‘shing (Railway-da SMTP ulanishi ko‘pincha ishlamaydi) "
+                        "yoki EMAIL_HOST/portni tekshiring."
+                    ),
                 },
                 status=503,
             )
@@ -127,11 +131,12 @@ class BarberEmailResendView(APIView):
             return Response(
                 {
                     "detail": (
-                        "Xat yuborilmadi. Railway da SMTP sozlamalarini tekshiring "
-                        "(EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD). "
+                        "Xat yuborilmadi. SMTP ulanmayotgan/Railway bo‘lsa, Resend uchun "
+                        "RESEND_API_KEY o‘rnating (mysaloon.uz domeni Resend-da tasdiqlangan bo‘lishi kerak); "
+                        "aks holda EMAIL_HOST / EMAIL_PORT / EMAIL_HOST_USER / EMAIL_HOST_PASSWORD. "
                         "FRONTEND_BARBER_ORIGIN=https://partner.mysaloon.uz bo‘lishi kerak."
                     ),
-                    "error": (err or "")[:200],
+                    "error": (err or "")[:400],
                 },
                 status=503,
             )

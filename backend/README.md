@@ -38,6 +38,12 @@ Agar Postgres test DB (`test_*`) boshqa jarayon bilan band bo‘lsa, parallel `p
 
 ## Barber email tasdiq
 
-Ishlab chiqarishda `FRONTEND_BARBER_ORIGIN` (birinchi URL), bitta SMTP (`EMAIL_*`) va `BARBER_FROM_EMAIL` (masalan `verify@mysaloon.uz`) to‘g‘ri bo‘lishi kerak — batafsil `.env.example` ichida.
+**Railway / boshqa bulut**: tashqi SMTP (465/587) ga ulanish ko‘pincha **timeout** (datacenter blok) beradi — logda `Connection timed out` ko‘rinadi.
 
-cPanel/aHost skrinshotidagi **port 2080** — CalDAV (kalendar), SMTP emas. SMTP uchun odatda **465** (SSL) yoki **587** (TLS) va `mail.mysaloon.uz`.
+1. **`RESEND_API_KEY`** ([resend.com](https://resend.com/), domenni ulang) va `DEFAULT_FROM_EMAIL` / `BARBER_FROM_EMAIL` Resend jadvalida ruxsat etilgan jo‘natuvchi manzil bo‘lsin — kalit mavjud bo‘lsa, backend **Resend HTTP** orqali yuboradi (443).
+
+2. Yoki chiqarilishda ishlayotgan SMTP (`EMAIL_BACKEND` va `EMAIL_*`) — `.env.example` VARIANT B.
+
+`FRONTEND_BARBER_ORIGIN` (oldingi URL — havola shu frontendga qaraydi).
+
+cPanel/aHost skrinshotidagi **port 2080** — CalDAV (kalendar), SMTP emas. SMTP uchun odatda **465** (SSL) yoki **587** (TLS).

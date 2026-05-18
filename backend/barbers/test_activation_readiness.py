@@ -12,7 +12,10 @@ from barbers.email_verification import sign_barber_email_token
 from barbers.models import Barber, BarberProfile, BarberService, BarberWorkingHours
 
 
-@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    RESEND_API_KEY="",
+)
 class BarberActivationReadinessTests(TestCase):
     def setUp(self):
         self.client = APIClient()
