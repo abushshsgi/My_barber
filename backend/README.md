@@ -42,6 +42,8 @@ Agar Postgres test DB (`test_*`) boshqa jarayon bilan band bo‘lsa, parallel `p
 
 1. **`RESEND_API_KEY`** ([resend.com](https://resend.com/), domenni ulang) va `DEFAULT_FROM_EMAIL` / `BARBER_FROM_EMAIL` Resend jadvalida ruxsat etilgan jo‘natuvchi manzil bo‘lsin — kalit mavjud bo‘lsa, backend **Resend HTTP** orqali yuboradi (443).
 
+   Agar logda **`Resend HTTP 403` va `error code: 1010`** bo‘lsa — Resend/Cloudflare uchun **`User-Agent`** talab qilinadi; backend so‘rovga qo‘shadi ([Resend KB](https://resend.com/docs/knowledge-base/403-error-1010)).
+
 2. Yoki chiqarilishda ishlayotgan SMTP (`EMAIL_BACKEND` va `EMAIL_*`) — `.env.example` VARIANT B.
 
 `FRONTEND_BARBER_ORIGIN` (oldingi URL — havola shu frontendga qaraydi).

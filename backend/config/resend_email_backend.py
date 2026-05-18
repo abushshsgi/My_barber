@@ -20,6 +20,8 @@ from django.core.mail.message import EmailMessage
 logger = logging.getLogger(__name__)
 
 RESEND_API_URL = "https://api.resend.com/emails"
+# Cloudflare «403 error code 1010» — Resend uchun User-Agent majburiy (https://resend.com/docs/knowledge-base/403-error-1010).
+RESEND_USER_AGENT = "MyBarber-Django/1.0"
 
 
 def _addr_only(addr: str) -> str:
@@ -85,6 +87,7 @@ class ResendEmailBackend(BaseEmailBackend):
                 headers={
                     "Authorization": f"Bearer {key}",
                     "Content-Type": "application/json",
+                    "User-Agent": RESEND_USER_AGENT,
                 },
                 method="POST",
             )
