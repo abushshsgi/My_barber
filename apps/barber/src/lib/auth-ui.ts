@@ -8,19 +8,17 @@ export type SignupIdentity = {
   flow: SignupFlow;
 };
 
-import {
-  formatApiErrorBody,
-  formatFetchError,
-  formatHttpApiError,
-  parseResponseBody,
-} from "@mybarber/shared/src/http-errors";
-
 export {
   formatApiErrorBody as formatApiError,
   formatFetchError,
   formatHttpApiError,
   parseResponseBody as parseJsonSafe,
-};
+} from "@/lib/http-errors";
+
+import {
+  formatApiErrorBody,
+  formatHttpApiError,
+} from "@/lib/http-errors";
 
 export function extractApiError(
   body: unknown,

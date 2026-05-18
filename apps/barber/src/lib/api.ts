@@ -103,9 +103,9 @@ export {
   formatHttpApiError,
   formatFetchError,
   parseResponseBody,
-} from "@mybarber/shared/src/http-errors";
+} from "@/lib/http-errors";
 
-import { formatHttpApiError, parseResponseBody } from "@mybarber/shared/src/http-errors";
+import { formatHttpApiError, parseResponseBody } from "@/lib/http-errors";
 
 export async function apiJson<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await apiFetch(path, options);

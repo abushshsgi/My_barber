@@ -946,6 +946,10 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const refreshActivationStatus = useCallback(async () => {
+    await reloadActivationFromApi();
+  }, [reloadActivationFromApi]);
+
   useEffect(() => {
     let alive = true;
     const run = async () => {
@@ -1076,9 +1080,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       fullyReady,
       readinessPercent,
       activationSteps,
-      refreshActivationStatus: async () => {
-        await reloadActivationFromApi();
-      },
+      refreshActivationStatus,
       bookingSetup,
       profile,
       services,
@@ -1147,6 +1149,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       fullyReady,
       readinessPercent,
       activationSteps,
+      refreshActivationStatus,
       bookingSetup,
       profile,
       services,

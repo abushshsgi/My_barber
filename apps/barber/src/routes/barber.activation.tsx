@@ -75,9 +75,11 @@ function BarberActivationPage() {
   const [resending, setResending] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  // BarberContext allaqachon status yuklaydi; qayta chaqirish loop bermasligi uchun faqat mount.
   useEffect(() => {
     void refreshActivationStatus();
-  }, [refreshActivationStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only refresh
+  }, []);
 
   const primaryNext = useMemo(
     () => computePrimaryNext(activationSteps, requiredNextPath, onboardingFlow),
