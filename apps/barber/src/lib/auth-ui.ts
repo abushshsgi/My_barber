@@ -8,48 +8,37 @@ export type SignupIdentity = {
   flow: SignupFlow;
 };
 
-function firstString(v: unknown): string | null {
-  if (typeof v === "string" && v.trim()) return v.trim();
-  if (Array.isArray(v) && v.length > 0) return firstString(v[0]);
-  return null;
-}
+import {
+  formatApiErrorBody,
+  formatFetchError,
+  formatHttpApiError,
+  parseResponseBody,
+} from "@mybarber/shared/src/http-errors";
 
-export function normalizeEmail(raw: string): string {
-  return raw.trim().toLowerCase();
-}
+export {
+  formatApiErrorBody as formatApiError,
+  formatFetchError,
+  formatHttpApiError,
+  parseResponseBody as parseJsonSafe,
+};
 
-export async function parseJsonSafe(res: Response): Promise<unknown> {
-  const text = await res.text();
-  const trimmed = text.trim();
-  if (!trimmed) return {};
-  try {
-    return JSON.parse(trimmed) as unknown;
-  } catch {
-    return { detail: "Server noto'g'ri formatda javob qaytardi." };
-  }
-}
-
-export function extractApiError(body: unknown, fallback: string): string {
-  if (body && typeof body === "object") {
-    const obj = body as Record<string, unknown>;
-    const detail = firstString(obj.detail);
-    if (detail) return detail;
-    const nf = firstString(obj.non_field_errors);
-    if (nf) return nf;
-    const keys = Object.keys(obj);
-    for (const key of keys) {
-      if (key === "detail" || key === "non_field_errors") continue;
-      const msg = firstString(obj[key]);
-      if (msg) return `${key}: ${msg}`;
-    }
-  }
-  return fallback;
+export function extractApiError(
+  body: unknown,
+  fallback: string,
+  res?: Response,
+): string {
+  if (res) return formatHttpApiError(res, body, fallback);
+  return formatApiErrorBody(body, fallback);
 }
 
 function looksLikeEmail(email: string): boolean {
   const e = email.trim();
   if (e.length < 5 || e.length > 254) return false;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+}
+
+export function normalizeEmail(raw: string): string {
+  return raw.trim().toLowerCase();
 }
 
 export function validateLogin(values: { email: string; password: string }): string | null {

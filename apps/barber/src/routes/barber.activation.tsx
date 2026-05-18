@@ -3,6 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Check, Loader2, Mail, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api";
+import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useBarberContext } from "@/components/barber/BarberContext";
@@ -33,8 +34,9 @@ function computePrimaryNext(
   requiredNextPath: string | null,
   onboardingFlow: string | null,
 ): { to: string; label: string } | null {
+  // Email tasdiqlash faqat pochtadagi havola orqali (token bilan). verify-email ga tokensiz yo‘naltirmaymiz.
   if (!steps.email_verified) {
-    return { to: "/barber/verify-email", label: "Keyingi qadam: emailni tasdiqlang" };
+    return null;
   }
   if (!steps.signup_complete) {
     if (requiredNextPath) {
@@ -144,12 +146,16 @@ function BarberActivationPage() {
         headers: { "Content-Type": "application/json" },
         body: "{}",
       });
+      const body = await parseJsonSafe(res);
       if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        toast.error((j as { detail?: string }).detail || "Yuborib bo‘lmadi");
+        toast.error(extractApiError(body, "Tasdiq xatini yuborib bo‘lmadi.", res));
         return;
       }
-      toast.success("Tasdiq xati yuborildi");
+      toast.success(
+        typeof body === "object" && body && "detail" in body
+          ? String((body as { detail?: string }).detail || "Tasdiq xati yuborildi")
+          : "Tasdiq xati yuborildi. Pochtadagi havolani bosing.",
+      );
     } finally {
       setResending(false);
     }
@@ -200,6 +206,16 @@ function BarberActivationPage() {
         <Progress value={readinessPercent} className="h-2" />
       </div>
 
+      {!activationSteps.email_verified ? (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
+          <p className="font-medium text-foreground">Emailni tasdiqlang</p>
+          <p className="mt-1 text-muted-foreground">
+            Quyidagi tugma orqali tasdiq xatini yuboring, so‘ng pochtangizdagi havolani bosing.
+            Havolada uzun <span className="font-medium">token=...</span> bo‘lishi kerak.
+          </p>
+        </div>
+      ) : null}
+
       <ol className="space-y-3">
         {stepMeta.map((step, idx) => {
           const isCurrent = idx === activeIndex && !step.ok;
@@ -240,7 +256,18 @@ function BarberActivationPage() {
       </ol>
 
       <div className="flex flex-col gap-3 pt-2">
-        {primaryNext ? (
+        {!activationSteps.email_verified ? (
+          <Button
+            type="button"
+            size="lg"
+            className="w-full"
+            onClick={() => void onResend()}
+            disabled={resending}
+          >
+            {resending ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
+            <span className="ml-2">Tasdiq xatini yuborish</span>
+          </Button>
+        ) : primaryNext ? (
           <Button
             type="button"
             size="lg"
@@ -270,11 +297,11 @@ function BarberActivationPage() {
             type="button"
             variant="outline"
             className="w-full"
-            onClick={() => void onResend()}
-            disabled={resending}
+            disabled={refreshing}
+            onClick={() => void onRefreshStatus()}
           >
-            {resending ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
-            <span className="ml-2">Tasdiq xatini qayta yuborish</span>
+            {refreshing ? <Loader2 className="size-4 animate-spin" /> : null}
+            <span className={refreshing ? "ml-2" : ""}>Tasdiqlangach holatni yangilash</span>
           </Button>
         ) : null}
       </div>

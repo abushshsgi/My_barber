@@ -1,3 +1,9 @@
+import {
+  formatApiErrorBody,
+  formatHttpApiError,
+  parseResponseBody,
+} from "./http-errors";
+
 function readEnv(name: string): string | undefined {
   const viteEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
   return (
@@ -284,62 +290,19 @@ export async function apiFetch(
 }
 
 export function formatApiError(body: unknown, fallback: string): string {
-  if (body && typeof body === "object") {
-    const d = body as {
-      detail?: unknown;
-      non_field_errors?: string[];
-      [key: string]: unknown;
-    };
-    if (typeof d.detail === "string") return d.detail;
-    if (Array.isArray(d.detail) && d.detail.length) return String(d.detail[0]);
-    if (Array.isArray(d.non_field_errors) && d.non_field_errors[0])
-      return String(d.non_field_errors[0]);
-    if (typeof d.detail === "object" && d.detail !== null && !Array.isArray(d.detail)) {
-      const parts = Object.entries(d.detail as Record<string, unknown>)
-        .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : String(v)}`)
-        .join("; ");
-      if (parts) return parts;
-    }
-    const fieldKeys = Object.keys(d).filter(
-      (k) => k !== "detail" && k !== "non_field_errors"
-    );
-    if (fieldKeys.length) {
-      const parts = fieldKeys
-        .map((k) => {
-          const v = d[k];
-          if (Array.isArray(v)) return `${k}: ${v.join(", ")}`;
-          if (v && typeof v === "object") return `${k}: ${JSON.stringify(v)}`;
-          return `${k}: ${String(v)}`;
-        })
-        .join("; ");
-      if (parts) return parts;
-    }
-  }
-  return fallback;
-}
-
-async function parseJsonSafe(res: Response): Promise<unknown> {
-  const text = await res.text();
-  const trimmed = text.trim();
-  if (!trimmed) return {};
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    const preview = trimmed.slice(0, 120);
-    throw new Error(
-      `Server javobi JSON emas (${res.status}). API manzili va backend ishlayotganini tekshiring. ${preview}`
-    );
-  }
+  return formatApiErrorBody(body, fallback);
 }
 
 export async function apiJson<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await apiFetch(path, options);
-  const body = await parseJsonSafe(res);
+  const body = await parseResponseBody(res);
   if (!res.ok) {
-    throw new Error(formatApiError(body, res.statusText));
+    throw new Error(formatHttpApiError(res, body, res.statusText));
   }
   return body as T;
 }
+
+export { formatHttpApiError, formatFetchError, parseResponseBody } from "./http-errors";
 
 type PaginatedResponse<T> = {
   count?: number;

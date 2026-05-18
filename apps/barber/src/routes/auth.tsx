@@ -11,6 +11,7 @@ import { PasswordInput } from "@/components/auth/PasswordInput";
 import { FlowOptionCard } from "@/components/auth/FlowOptionCard";
 import {
   extractApiError,
+  formatFetchError,
   normalizeEmail,
   parseJsonSafe,
   validateLogin,
@@ -54,13 +55,13 @@ function AuthPage() {
         body: JSON.stringify({ email, password: loginPassword }),
       });
       const body = await parseJsonSafe(res);
-      if (!res.ok) throw new Error(extractApiError(body, "Kirish amalga oshmadi."));
+      if (!res.ok) throw new Error(extractApiError(body, "Kirish amalga oshmadi.", res));
       const data = body as { access?: string; refresh?: string };
       if (!data.access || !data.refresh) throw new Error("Token qaytmadi.");
       setBarberTokens(data.access, data.refresh);
       await navigate({ to: "/barber" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
+      setError(formatFetchError(err, "Kirish amalga oshmadi."));
     } finally {
       setLoadingLogin(false);
     }

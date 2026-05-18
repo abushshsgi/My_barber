@@ -2,7 +2,13 @@
 # Start: backend/Procfile → daphne (ASGI) — WebSocket uchun WSGI emas.
 # Redis: “New” → Redis → REDIS_URL env avtomatik; WebSocket bir nechta replikada ishlaydi.
 # Cron: “Cron Jobs” yoki alohida servis — remind_bookings (qarang .env.example).
-# Frontend: CORS uchun FRONTEND_*_ORIGIN larni production URL ga qo‘ying.
+# Production (mysaloon.uz) — Railway Variables:
+#   DJANGO_DEBUG=false
+#   DJANGO_ALLOWED_HOSTS=api.mysaloon.uz,.railway.app
+#   API_PUBLIC_HOST=api.mysaloon.uz
+#   FRONTEND_USER_ORIGIN=https://www.mysaloon.uz,https://mysaloon.uz
+#   FRONTEND_ADMIN_ORIGIN=https://admin.mysaloon.uz
+#   FRONTEND_BARBER_ORIGIN=https://partner.mysaloon.uz
 
 [deploy]
 releaseCommand = "python manage.py migrate --noinput && python manage.py collectstatic --noinput"

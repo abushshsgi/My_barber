@@ -29,16 +29,30 @@ npm run build:barber
 npm run build:frontends
 ```
 
-## Alohida domenlar (tavsiya)
+## Alohida domenlar (mysaloon.uz)
 
-Masalan: `app.mybarber.uz` (mijoz), `admin.mybarber.uz` (admin), `barber.mybarber.uz` (sartarosh).
+| Ilova | Vercel domen | Env |
+|--------|----------------|-----|
+| mijoz | `https://www.mysaloon.uz` | `NEXT_PUBLIC_API_URL=https://api.mysaloon.uz` |
+| admin | `https://admin.mysaloon.uz` | `VITE_API_URL=https://api.mysaloon.uz` |
+| barber | `https://partner.mysaloon.uz` | `VITE_API_URL=https://api.mysaloon.uz` |
 
-1. **DNS** — har uchala domenni Vercel (yoki boshqa host) ga yo‘naltirasiz.
+**Railway (backend)** — `DisallowedHost` bo‘lmasligi uchun:
+
+```env
+DJANGO_DEBUG=false
+DJANGO_ALLOWED_HOSTS=api.mysaloon.uz,.railway.app
+FRONTEND_USER_ORIGIN=https://www.mysaloon.uz,https://mysaloon.uz
+FRONTEND_ADMIN_ORIGIN=https://admin.mysaloon.uz
+FRONTEND_BARBER_ORIGIN=https://partner.mysaloon.uz
+```
+
+Mijoz ilovasi: `NEXT_PUBLIC_BARBER_WEB_ORIGIN=https://partner.mysaloon.uz`
+
+1. **DNS** — frontend domenlar Vercel ga, `api` subdomain Railway ga.
 2. **Har bir ilova** — alohida Vercel project: Root Directory `apps/user` / `apps/admin` / `apps/barber`.
-3. **Backend** `CORS_ALLOWED_ORIGINS` — uchala `https://...` manzil + lokal portlar.
-4. **Mijoz ilovasi** `NEXT_PUBLIC_BARBER_WEB_ORIGIN=https://barber.mybarber.uz` — profil va xabarnomalardan sartarosh paneliga o‘tish uchun to‘g‘ri domen.
-
-Barcha ilovalarda: `VITE_API_URL=https://api.mybarber.uz` (backend).
+3. **Backend** `FRONTEND_*_ORIGIN` — CORS uchun (yuqoridagi ro‘yxat).
+4. O‘zgaruvchilarni o‘zgartirgach — Railway va Vercel da **Redeploy**.
 
 ## Deploy (masalan Vercel)
 

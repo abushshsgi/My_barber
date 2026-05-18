@@ -113,8 +113,20 @@ class BarberEmailResendView(APIView):
         b = request.user.barber
         if b.email_verified_at is not None:
             return Response({"detail": "Email allaqachon tasdiqlangan."}, status=400)
-        send_barber_email_verification(b)
-        return Response({"detail": "Xat yuborildi."})
+        ok, err = send_barber_email_verification(b)
+        if not ok:
+            return Response(
+                {
+                    "detail": (
+                        "Xat yuborilmadi. Railway da SMTP sozlamalarini tekshiring "
+                        "(EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD). "
+                        "FRONTEND_BARBER_ORIGIN=https://partner.mysaloon.uz bo‘lishi kerak."
+                    ),
+                    "error": (err or "")[:200],
+                },
+                status=503,
+            )
+        return Response({"detail": "Xat yuborildi. Pochtangizdagi havolani bosing."})
 
 
 class BarberMeView(APIView):

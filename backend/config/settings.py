@@ -26,11 +26,35 @@ JWT_HS256_SIGNING_KEY = hashlib.sha256(SECRET_KEY.encode("utf-8")).hexdigest()
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() in ("1", "true", "yes")
 
-ALLOWED_HOSTS = [
-    h.strip()
-    for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
-    if h.strip()
-]
+
+def _build_allowed_hosts() -> list[str]:
+    """
+    DJANGO_ALLOWED_HOSTS — vergul bilan ro‘yxat.
+    API_PUBLIC_HOST — maxsus API domeni (masalan api.mysaloon.uz), DisallowedHost oldini olish uchun.
+    RAILWAY_PUBLIC_DOMAIN — Railway default *.railway.app host (platforma beradi).
+    """
+    chunks: list[str] = []
+    raw = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").strip()
+    for part in raw.split(","):
+        part = part.strip().strip('"').strip("'")
+        if part:
+            chunks.append(part)
+    api_host = os.environ.get("API_PUBLIC_HOST", "").strip().strip('"').strip("'")
+    if api_host:
+        chunks.append(api_host.lstrip("."))
+    railway_domain = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "").strip()
+    if railway_domain:
+        chunks.append(railway_domain.strip().strip('"').strip("'"))
+    seen: set[str] = set()
+    out: list[str] = []
+    for h in chunks:
+        if h and h not in seen:
+            seen.add(h)
+            out.append(h)
+    return out
+
+
+ALLOWED_HOSTS = _build_allowed_hosts()
 
 # Reverse proxy (Railway / Nginx / Vercel upstream) ortida request.build_absolute_uri()
 # https sxemani to'g'ri aniqlashi uchun.

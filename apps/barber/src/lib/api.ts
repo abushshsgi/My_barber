@@ -98,47 +98,19 @@ export async function apiFetch(
   return res;
 }
 
-export function formatApiError(body: unknown, fallback: string): string {
-  if (body && typeof body === "object") {
-    const d = body as { detail?: unknown; non_field_errors?: unknown; [k: string]: unknown };
-    if (typeof d.detail === "string") return d.detail;
-    if (Array.isArray(d.detail) && d.detail.length) return String(d.detail[0]);
-    if (Array.isArray(d.non_field_errors) && d.non_field_errors.length)
-      return String(d.non_field_errors[0]);
-    const fieldKeys = Object.keys(d).filter((k) => k !== "detail" && k !== "non_field_errors");
-    if (fieldKeys.length) {
-      const parts = fieldKeys
-        .map((k) => {
-          const v = d[k];
-          if (Array.isArray(v)) return `${k}: ${v.join(", ")}`;
-          if (v && typeof v === "object") return `${k}: ${JSON.stringify(v)}`;
-          return `${k}: ${String(v)}`;
-        })
-        .join("; ");
-      if (parts) return parts;
-    }
-  }
-  return fallback;
-}
+export {
+  formatApiErrorBody as formatApiError,
+  formatHttpApiError,
+  formatFetchError,
+  parseResponseBody,
+} from "@mybarber/shared/src/http-errors";
 
-async function parseJsonSafe(res: Response): Promise<unknown> {
-  const text = await res.text();
-  const trimmed = text.trim();
-  if (!trimmed) return {};
-  try {
-    return JSON.parse(trimmed) as unknown;
-  } catch {
-    const preview = trimmed.slice(0, 120);
-    throw new Error(
-      `Server javobi JSON emas (${res.status}). API manzili va backend ishlayotganini tekshiring. ${preview}`,
-    );
-  }
-}
+import { formatHttpApiError, parseResponseBody } from "@mybarber/shared/src/http-errors";
 
 export async function apiJson<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await apiFetch(path, options);
-  const body = await parseJsonSafe(res);
-  if (!res.ok) throw new Error(formatApiError(body, res.statusText));
+  const body = await parseResponseBody(res);
+  if (!res.ok) throw new Error(formatHttpApiError(res, body, res.statusText));
   return body as T;
 }
 

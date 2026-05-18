@@ -218,7 +218,7 @@ class BarberSignupSerializer(serializers.Serializer):
         from barbers.barber_email import send_barber_email_verification
 
         barber = create_barber_with_flow(validated_data)
-        send_barber_email_verification(barber)
+        send_barber_email_verification(barber)  # noqa: RUF100 — xato bo‘lsa ham ro‘yxatdan o‘tish davom etadi
         return barber
 
     def to_representation(self, instance):

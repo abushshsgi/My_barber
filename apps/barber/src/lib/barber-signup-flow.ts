@@ -1,5 +1,11 @@
 import { apiFetch, setBarberTokens } from "@/lib/api";
-import { extractApiError, normalizeEmail, parseJsonSafe, type SignupFlow } from "@/lib/auth-ui";
+import {
+  extractApiError,
+  formatFetchError,
+  normalizeEmail,
+  parseJsonSafe,
+  type SignupFlow,
+} from "@/lib/auth-ui";
 import { clearSignupDraft, readSignupDraft } from "@/lib/signup-draft";
 
 export type FlowPayload = {
@@ -62,7 +68,9 @@ export async function submitFlowSignup(flow: SignupFlow, payload: FlowPayload): 
   });
   const registerBody = await parseJsonSafe(registerRes);
   if (!registerRes.ok)
-    throw new Error(extractApiError(registerBody, "Ro'yxatdan o'tish amalga oshmadi."));
+    throw new Error(
+      extractApiError(registerBody, "Ro'yxatdan o'tish amalga oshmadi.", registerRes),
+    );
 
   let access: string | undefined;
   let refresh: string | undefined;
@@ -77,7 +85,8 @@ export async function submitFlowSignup(flow: SignupFlow, payload: FlowPayload): 
       body: JSON.stringify({ email, password: draft.password }),
     });
     const loginBody = await parseJsonSafe(loginRes);
-    if (!loginRes.ok) throw new Error(extractApiError(loginBody, "Login amalga oshmadi."));
+    if (!loginRes.ok)
+      throw new Error(extractApiError(loginBody, "Login amalga oshmadi.", loginRes));
     const tokens = loginBody as { access?: string; refresh?: string };
     access = tokens.access;
     refresh = tokens.refresh;
@@ -113,7 +122,7 @@ export async function submitEmployeeRegisterAndJoin(payload: {
   const body = await parseJsonSafe(res);
   if (!res.ok) {
     throw new Error(
-      extractApiError(body, "Ro'yxatdan o'tish va salonga qo'shilish amalga oshmadi."),
+      extractApiError(body, "Ro'yxatdan o'tish va salonga qo'shilish amalga oshmadi.", res),
     );
   }
   const tokens = body as { access?: string; refresh?: string };

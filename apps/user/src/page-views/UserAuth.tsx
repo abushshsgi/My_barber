@@ -21,7 +21,13 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react";
-import { apiFetch, formatApiError, setTokens } from "@/lib/api";
+import {
+  apiFetch,
+  formatFetchError,
+  formatHttpApiError,
+  parseResponseBody,
+  setTokens,
+} from "@/lib/api";
 import { userAuthMessages } from "@/lib/i18n/user-auth";
 import { barberWebUrl } from "@/lib/public-urls";
 import { useLocale } from "@/providers/locale-provider";
@@ -57,13 +63,20 @@ export default function UserAuth() {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
+      const data = await parseResponseBody(res);
       if (!res.ok) {
-        setErr(formatApiError(data, t.errLoginFail));
+        setErr(formatHttpApiError(res, data, t.errLoginFail));
         return;
       }
-      setTokens(data.access, data.refresh);
+      const tok = data as { access?: string; refresh?: string };
+      if (!tok.access || !tok.refresh) {
+        setErr(t.errLoginFail);
+        return;
+      }
+      setTokens(tok.access, tok.refresh);
       router.push(nextPath());
+    } catch (e) {
+      setErr(formatFetchError(e, t.errLoginFail));
     } finally {
       setLoading(false);
     }
@@ -86,22 +99,29 @@ export default function UserAuth() {
           phone: phone || undefined,
         }),
       });
-      const data = await res.json();
+      const data = await parseResponseBody(res);
       if (!res.ok) {
-        setErr(formatApiError(data, t.errSignupFail));
+        setErr(formatHttpApiError(res, data, t.errSignupFail));
         return;
       }
       const loginRes = await apiFetch("/api/v1/auth/token/", {
         method: "POST",
         body: JSON.stringify({ email: email.trim(), password }),
       });
-      const tok = await loginRes.json();
+      const tok = await parseResponseBody(loginRes);
       if (!loginRes.ok) {
+        setErr(formatHttpApiError(loginRes, tok, t.errSignupLoginFail));
+        return;
+      }
+      const tokens = tok as { access?: string; refresh?: string };
+      if (!tokens.access || !tokens.refresh) {
         setErr(t.errSignupLoginFail);
         return;
       }
-      setTokens(tok.access, tok.refresh);
+      setTokens(tokens.access, tokens.refresh);
       router.push(nextPath());
+    } catch (e) {
+      setErr(formatFetchError(e, t.errSignupFail));
     } finally {
       setLoading(false);
     }

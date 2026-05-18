@@ -1,43 +1,75 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/barber/verify-email")({
   validateSearch: (raw: Record<string, unknown>) => ({
-    token: typeof raw.token === "string" ? raw.token : "",
+    token: typeof raw.token === "string" ? raw.token.trim() : "",
   }),
   component: BarberVerifyEmailPage,
 });
 
 function BarberVerifyEmailPage() {
   const { token } = Route.useSearch();
-  const [status, setStatus] = useState<"loading" | "ok" | "err">("loading");
+  const [status, setStatus] = useState<"loading" | "ok" | "err" | "idle">("idle");
   const [msg, setMsg] = useState("");
+  const [resending, setResending] = useState(false);
 
   useEffect(() => {
     const run = async () => {
       if (!token) {
         setStatus("err");
-        setMsg("Havolada token yo‘q.");
+        setMsg(
+          "Havolada token yo‘q. Emaildagi to‘liq havolani bosing yoki aktivatsiya sahifasidan xat qayta yuboring.",
+        );
         return;
       }
+      setStatus("loading");
       const res = await apiFetch("/api/v1/barber/auth/verify-email/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
       });
-      const body = (await res.json().catch(() => ({}))) as { detail?: string };
+      const body = await parseJsonSafe(res);
       if (!res.ok) {
         setStatus("err");
-        setMsg(body.detail || "Tasdiqlab bo‘lmadi");
+        setMsg(extractApiError(body, "Tasdiqlab bo‘lmadi.", res));
         return;
       }
       setStatus("ok");
-      setMsg(body.detail || "Email tasdiqlandi.");
+      setMsg(
+        typeof body === "object" && body && "detail" in body
+          ? String((body as { detail?: string }).detail)
+          : "Email tasdiqlandi.",
+      );
     };
     void run();
   }, [token]);
+
+  const onResend = async () => {
+    setResending(true);
+    try {
+      const res = await apiFetch("/api/v1/barber/auth/resend-verification-email/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      const body = await parseJsonSafe(res);
+      if (!res.ok) {
+        setMsg(extractApiError(body, "Xat yuborilmadi.", res));
+        setStatus("err");
+        return;
+      }
+      setMsg(
+        "Yangi tasdiq xati yuborildi. Pochtangizdagi yangi havolani oching (token bilan).",
+      );
+    } finally {
+      setResending(false);
+    }
+  };
 
   return (
     <div className="min-h-[50vh] flex items-center justify-center p-6">
@@ -59,12 +91,27 @@ function BarberVerifyEmailPage() {
             </Link>
           </>
         )}
-        {status === "err" && (
+        {(status === "err" || status === "idle") && (
           <>
-            <p className="text-sm text-destructive">{msg}</p>
-            <Link to="/barber/activation" className="text-sm text-primary underline">
-              Aktivatsiya sahifasiga
-            </Link>
+            <p className="text-sm text-destructive">{msg || "Token kutilmoqda…"}</p>
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                className="w-full"
+                disabled={resending}
+                onClick={() => void onResend()}
+              >
+                {resending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Mail className="size-4" />
+                )}
+                <span className="ml-2">Tasdiq xatini yuborish</span>
+              </Button>
+              <Link to="/barber/activation" className="text-sm text-primary underline">
+                Aktivatsiya sahifasiga
+              </Link>
+            </div>
           </>
         )}
       </div>
