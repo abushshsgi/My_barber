@@ -67,6 +67,8 @@ export type AdminBarber = {
   created_at: string;
   account_segment: AdminBarberAccountSegment;
   account_segment_label: string;
+  email_verified: boolean;
+  email_verified_at: string | null;
 };
 
 export type AdminBarberSignupSnapshot = {
@@ -374,6 +376,7 @@ type BackendBarberRow = {
   work_mode?: string;
   onboarding_flow?: string;
   onboarding_completed_at?: string | null;
+  email_verified_at?: string | null;
   account_segment?: string;
   account_segment_label?: string;
   signup_snapshot?: BackendBarberSignupSnapshot | null;
@@ -519,6 +522,8 @@ function mapBarber(b: BackendBarberRow): AdminBarber {
     account_segment_label:
       (b.account_segment_label && String(b.account_segment_label).trim()) ||
       account_segment,
+    email_verified: Boolean(b.email_verified_at),
+    email_verified_at: b.email_verified_at ?? null,
   };
 }
 

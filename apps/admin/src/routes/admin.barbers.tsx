@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { format, parseISO } from "date-fns";
 import { Star, Trash2, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -98,6 +99,15 @@ const SEGMENT_GRID: {
 
 function segmentGridLabel(segment: AdminBarberAccountSegment | ""): string {
   return segment === "" ? "Barchasi" : getBarberSegmentTitle(segment);
+}
+
+function fmtEmailVerifiedAt(iso: string | null): string {
+  if (!iso) return "";
+  try {
+    return format(parseISO(iso), "dd.MM.yyyy HH:mm");
+  } catch {
+    return iso;
+  }
 }
 
 function BarbersListPage() {
@@ -226,7 +236,7 @@ function BarbersListPage() {
 
       <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
         {barbersQ.isLoading ? (
-          <TableSkeleton rows={8} cols={7} />
+          <TableSkeleton rows={8} cols={8} />
         ) : !data || data.results.length === 0 ? (
           <EmptyState
             title="Sartaroshlar topilmadi"
@@ -243,6 +253,7 @@ function BarbersListPage() {
                     <th className="px-6 py-3 font-medium">Salon</th>
                     <th className="px-6 py-3 font-medium">Hudud</th>
                     <th className="px-6 py-3 font-medium">Reyting</th>
+                    <th className="px-6 py-3 font-medium min-w-[130px]">Email tasdiq</th>
                     <th className="px-6 py-3 font-medium">Holat</th>
                     <th className="px-6 py-3 font-medium text-right">Amallar</th>
                   </tr>
@@ -309,6 +320,22 @@ function BarbersListPage() {
                           <Star className="size-3.5 fill-foreground" />
                           <span className="tabular-nums font-medium">{b.rating.toFixed(1)}</span>
                           <span className="text-xs text-muted-foreground">({b.reviews_count})</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1 items-start">
+                          <StatusBadge
+                            status={b.email_verified ? "active" : "pending"}
+                            label={b.email_verified ? "Tasdiqlangan" : "Tasdiqlanmagan"}
+                          />
+                          {b.email_verified && b.email_verified_at ? (
+                            <span
+                              className="text-[11px] text-muted-foreground tabular-nums"
+                              title={b.email_verified_at}
+                            >
+                              {fmtEmailVerifiedAt(b.email_verified_at)}
+                            </span>
+                          ) : null}
                         </div>
                       </td>
                       <td className="px-6 py-4">
