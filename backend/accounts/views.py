@@ -44,6 +44,18 @@ class BarberRegisterView(generics.CreateAPIView):
     serializer_class = BarberSignupSerializer
     throttle_classes = [AuthIPThrottle]
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        barber = serializer.save()
+        access, refresh = encode_barber_tokens(barber.id)
+        Barber.objects.filter(pk=barber.pk).update(last_login=timezone.now())
+        rep = BarberSignupSerializer().to_representation(barber)
+        return Response(
+            {"access": access, "refresh": refresh, "barber": rep},
+            status=status.HTTP_201_CREATED,
+        )
+
 
 class BarberRegisterJoinSalonView(APIView):
     """Employee: register + salon join (100 m) bitta tranzaksiya; JWT qaytaradi."""

@@ -24,10 +24,10 @@ import {
 } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { apiFetch, getBarberAccessToken, setBarberTokens } from "@/lib/api";
-import { extractApiError, normalizeEmail, parseJsonSafe } from "@/lib/auth-ui";
-import { roundCoord6 } from "@/lib/barber-signup-flow";
-import { clearSignupDraft, readSignupDraft } from "@/lib/signup-draft";
+import { apiFetch, getBarberAccessToken } from "@/lib/api";
+import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
+import { roundCoord6, submitFlowSignup } from "@/lib/barber-signup-flow";
+import { readSignupDraft } from "@/lib/signup-draft";
 import { cn } from "@/lib/utils";
 import { getFlowMeta } from "@/lib/barber-flow-config";
 
@@ -379,51 +379,25 @@ export function IndependentSetupPage() {
       // 1) Ensure we are logged in: if no token, register the independent barber from draft.
       if (!getBarberAccessToken()) {
         const draft = readSignupDraft();
-        if (!draft) {
+        if (!draft || draft.flow !== "independent") {
           setSubmitError(
-            "Signup ma'lumotlari topilmadi. Iltimos, /auth sahifasidan qaytadan ro'yxatdan o'ting.",
+            "Mustaqil barber signup ma'lumotlari topilmadi. /auth sahifasidan qaytadan ro'yxatdan o'ting.",
           );
           return;
         }
-        const email = normalizeEmail(draft.email);
-        const registerRes = await apiFetch("/api/v1/auth/barber-register/", {
-          method: "POST",
-          body: JSON.stringify({
-            email,
-            password: draft.password,
-            full_name: fullName || draft.full_name,
-            phone: barberPhone,
-            onboarding_flow: "independent",
-            work_mode: "independent",
-            has_salon: false,
+        try {
+          await submitFlowSignup("independent", {
             latitude: lat,
             longitude: lng,
+            full_name: fullName || draft.full_name,
+            phone: barberPhone,
             address: locationText,
             shop_name: "Mustaqil barber",
-            staff_count_at_signup: 1,
-          }),
-        });
-        const registerBody = await parseJsonSafe(registerRes);
-        if (!registerRes.ok) {
-          setSubmitError(extractApiError(registerBody, "Ro'yxatdan o'tish amalga oshmadi."));
+          });
+        } catch (err) {
+          setSubmitError(err instanceof Error ? err.message : "Ro'yxatdan o'tish amalga oshmadi.");
           return;
         }
-
-        const loginRes = await apiFetch("/api/v1/barber/auth/token/", {
-          method: "POST",
-          body: JSON.stringify({ email, password: draft.password }),
-        });
-        const loginBody = await parseJsonSafe(loginRes);
-        if (!loginRes.ok) {
-          setSubmitError(extractApiError(loginBody, "Ro'yxatdan keyin tizimga kirib bo'lmadi."));
-          return;
-        }
-        const tokens = loginBody as { access?: string; refresh?: string };
-        if (!tokens.access || !tokens.refresh) {
-          setSubmitError("Login tokenlari qaytmadi.");
-          return;
-        }
-        setBarberTokens(tokens.access, tokens.refresh);
       }
 
       // 2) Barber asosiy profili (ism, telefon, avatar) — Create salon oqimidagi kabi.

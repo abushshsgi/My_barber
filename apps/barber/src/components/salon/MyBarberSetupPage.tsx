@@ -22,9 +22,10 @@ import {
   Phone,
 } from "lucide-react";
 
-import { apiFetch, getBarberAccessToken, setBarberTokens } from "@/lib/api";
-import { extractApiError, normalizeEmail, parseJsonSafe } from "@/lib/auth-ui";
-import { clearSignupDraft, readSignupDraft } from "@/lib/signup-draft";
+import { apiFetch, getBarberAccessToken } from "@/lib/api";
+import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
+import { roundCoord6, submitFlowSignup } from "@/lib/barber-signup-flow";
+import { readSignupDraft } from "@/lib/signup-draft";
 import { cn } from "@/lib/utils";
 import { getFlowMeta } from "@/lib/barber-flow-config";
 
@@ -311,44 +312,19 @@ export function MyBarberSetupPage() {
           setSubmitError("MyBarber signup ma'lumotlari topilmadi. /auth orqali qaytadan kiring.");
           return;
         }
-        const email = normalizeEmail(draft.email);
-        const registerRes = await apiFetch("/api/v1/auth/barber-register/", {
-          method: "POST",
-          body: JSON.stringify({
-            email,
-            password: draft.password,
+        try {
+          await submitFlowSignup("mybarber", {
+            latitude: roundCoord6(Number(salonLatitude)),
+            longitude: roundCoord6(Number(salonLongitude)),
             full_name: fullName,
             phone: barberPhone,
-            has_salon: false,
-            latitude: Number(salonLatitude),
-            longitude: Number(salonLongitude),
-            onboarding_flow: "mybarber",
-            work_mode: "salon",
             shop_name: salonBrandName,
             address: locationText,
-            staff_count_at_signup: 1,
-          }),
-        });
-        const registerBody = await parseJsonSafe(registerRes);
-        if (!registerRes.ok) {
-          setSubmitError(extractApiError(registerBody, "Ro'yxatdan o'tish amalga oshmadi."));
+          });
+        } catch (err) {
+          setSubmitError(err instanceof Error ? err.message : "Ro'yxatdan o'tish amalga oshmadi.");
           return;
         }
-        const loginRes = await apiFetch("/api/v1/barber/auth/token/", {
-          method: "POST",
-          body: JSON.stringify({ email, password: draft.password }),
-        });
-        const loginBody = await parseJsonSafe(loginRes);
-        if (!loginRes.ok) {
-          setSubmitError(extractApiError(loginBody, "Login amalga oshmadi."));
-          return;
-        }
-        const tokens = loginBody as { access?: string; refresh?: string };
-        if (!tokens.access || !tokens.refresh) {
-          setSubmitError("Token qaytmadi.");
-          return;
-        }
-        setBarberTokens(tokens.access, tokens.refresh);
       }
 
       if (avatarFile) {
@@ -382,8 +358,8 @@ export function MyBarberSetupPage() {
         method: "PATCH",
         body: JSON.stringify({
           location_text: locationText,
-          latitude: Number(salonLatitude),
-          longitude: Number(salonLongitude),
+          latitude: roundCoord6(Number(salonLatitude)),
+          longitude: roundCoord6(Number(salonLongitude)),
           spoken_languages: languages,
         }),
       });
@@ -396,8 +372,8 @@ export function MyBarberSetupPage() {
       const createPayload = {
         name: salonBrandName,
         description: "MyBarber hamkor virtual salon.",
-        latitude: Number(salonLatitude),
-        longitude: Number(salonLongitude),
+        latitude: roundCoord6(Number(salonLatitude)),
+        longitude: roundCoord6(Number(salonLongitude)),
         address: locationText,
         phone: barberPhone,
         languages,

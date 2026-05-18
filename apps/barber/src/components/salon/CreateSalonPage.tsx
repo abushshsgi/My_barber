@@ -23,9 +23,10 @@ import {
   Sparkles,
   Store,
 } from "lucide-react";
-import { apiFetch, getBarberAccessToken, setBarberTokens } from "@/lib/api";
+import { apiFetch, getBarberAccessToken } from "@/lib/api";
 import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
-import { clearSignupDraft, readSignupDraft } from "@/lib/signup-draft";
+import { roundCoord6, submitFlowSignup } from "@/lib/barber-signup-flow";
+import { readSignupDraft } from "@/lib/signup-draft";
 import { cn } from "@/lib/utils";
 import { getFlowMeta } from "@/lib/barber-flow-config";
 
@@ -318,55 +319,25 @@ export function CreateSalonPage() {
       // Signup onboarding path: if barber token is missing, complete register -> login first.
       if (!getBarberAccessToken()) {
         const draft = readSignupDraft();
-        if (!draft) {
-          setSubmitError("Signup ma'lumotlari topilmadi. Iltimos, avval ro'yxatdan o'ting.");
+        if (!draft || draft.flow !== "owner") {
+          setSubmitError(
+            "Salon owner signup ma'lumotlari topilmadi. /auth sahifasidan qaytadan ro'yxatdan o'ting.",
+          );
           return;
         }
-        const registerPayload = {
-          email: draft.email,
-          password: draft.password,
-          full_name: draft.full_name,
-          phone: draft.phone || "",
-          has_salon: draft.flow === "employee",
-          latitude: Number(salonLatitude),
-          longitude: Number(salonLongitude),
-          onboarding_flow: draft.flow,
-          work_mode: draft.flow === "independent" ? "independent" : "salon",
-          shop_name: draft.flow === "owner" ? salonName.trim() : "",
-          address: [salonCity.trim(), salonAddress.trim(), salonLandmark.trim()]
-            .filter(Boolean)
-            .join(", "),
-          staff_count_at_signup: 1,
-        };
-
-        const registerRes = await apiFetch("/api/v1/auth/barber-register/", {
-          method: "POST",
-          body: JSON.stringify(registerPayload),
-        });
-        const registerBody = await parseJsonSafe(registerRes);
-        if (!registerRes.ok) {
-          setSubmitError(extractApiError(registerBody, "Signup amalga oshmadi."));
+        try {
+          await submitFlowSignup("owner", {
+            latitude: roundCoord6(Number(salonLatitude)),
+            longitude: roundCoord6(Number(salonLongitude)),
+            shop_name: salonName.trim(),
+            address: [salonCity.trim(), salonAddress.trim(), salonLandmark.trim()]
+              .filter(Boolean)
+              .join(", "),
+          });
+        } catch (err) {
+          setSubmitError(err instanceof Error ? err.message : "Signup amalga oshmadi.");
           return;
         }
-
-        const loginRes = await apiFetch("/api/v1/barber/auth/token/", {
-          method: "POST",
-          body: JSON.stringify({
-            email: draft.email,
-            password: draft.password,
-          }),
-        });
-        const loginBody = await parseJsonSafe(loginRes);
-        if (!loginRes.ok) {
-          setSubmitError(extractApiError(loginBody, "Signupdan keyin login amalga oshmadi."));
-          return;
-        }
-        const tokens = loginBody as { access?: string; refresh?: string };
-        if (!tokens.access || !tokens.refresh) {
-          setSubmitError("Login tokenlari qaytmadi.");
-          return;
-        }
-        setBarberTokens(tokens.access, tokens.refresh);
       }
 
       const fullName = `${barberFirstName} ${barberLastName}`.trim();
@@ -423,8 +394,8 @@ export function CreateSalonPage() {
         method: "PATCH",
         body: JSON.stringify({
           location_text: locationText,
-          latitude: Number(salonLatitude),
-          longitude: Number(salonLongitude),
+          latitude: roundCoord6(Number(salonLatitude)),
+          longitude: roundCoord6(Number(salonLongitude)),
         }),
       });
       if (!profileRes.ok) {
@@ -437,8 +408,8 @@ export function CreateSalonPage() {
       const createPayload = {
         name: salonName.trim(),
         description: salonDescription.trim(),
-        latitude: Number(salonLatitude),
-        longitude: Number(salonLongitude),
+        latitude: roundCoord6(Number(salonLatitude)),
+        longitude: roundCoord6(Number(salonLongitude)),
         address: locationText,
         phone: salonPhoneDigits ? `+998${salonPhoneDigits}` : "",
         languages,

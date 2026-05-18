@@ -1,3 +1,5 @@
+from decimal import Decimal, ROUND_HALF_UP
+
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
@@ -12,6 +14,11 @@ from salons.models import Salon
 
 from .models import User
 from .uz_regions import UzRegion
+
+
+def _round_geo_coord(value) -> Decimal:
+    """DecimalField(max_digits=9, decimal_places=6) — JS float ortiqcha xonalar yuborishi mumkin."""
+    return Decimal(str(value)).quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -178,6 +185,8 @@ class BarberSignupSerializer(serializers.Serializer):
         return value
 
     def validate(self, attrs):
+        attrs["latitude"] = _round_geo_coord(attrs["latitude"])
+        attrs["longitude"] = _round_geo_coord(attrs["longitude"])
         lat = float(attrs["latitude"])
         lng = float(attrs["longitude"])
         if not (-90.0 <= lat <= 90.0) or not (-180.0 <= lng <= 180.0):
@@ -272,6 +281,8 @@ class BarberRegisterJoinSalonSerializer(serializers.Serializer):
         return value
 
     def validate(self, attrs):
+        attrs["latitude"] = _round_geo_coord(attrs["latitude"])
+        attrs["longitude"] = _round_geo_coord(attrs["longitude"])
         salon = get_object_or_404(
             Salon.objects.filter(is_published=True).select_related("owner_barber"),
             pk=int(attrs["salon_id"]),

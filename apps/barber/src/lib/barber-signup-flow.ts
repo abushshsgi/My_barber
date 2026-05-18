@@ -9,6 +9,8 @@ export type FlowPayload = {
   region?: string;
   shop_name?: string;
   staff_count_at_signup?: number;
+  full_name?: string;
+  phone?: string;
 };
 
 /** Backend `DecimalField(max_digits=9, decimal_places=6)` — float JSON ba'zan 6 dan ortiq xona beradi. */
@@ -43,14 +45,14 @@ export async function submitFlowSignup(flow: SignupFlow, payload: FlowPayload): 
   const flowFields = deriveFlowFields(flow);
   const email = normalizeEmail(draft.email);
 
-  const { latitude, longitude, ...payloadRest } = payload;
+  const { latitude, longitude, full_name, phone, ...payloadRest } = payload;
   const registerRes = await apiFetch("/api/v1/auth/barber-register/", {
     method: "POST",
     body: JSON.stringify({
       email,
       password: draft.password,
-      full_name: draft.full_name,
-      phone: draft.phone || undefined,
+      full_name: full_name?.trim() || draft.full_name,
+      phone: phone?.trim() || draft.phone || undefined,
       onboarding_flow: flow,
       ...flowFields,
       ...payloadRest,
@@ -62,15 +64,26 @@ export async function submitFlowSignup(flow: SignupFlow, payload: FlowPayload): 
   if (!registerRes.ok)
     throw new Error(extractApiError(registerBody, "Ro'yxatdan o'tish amalga oshmadi."));
 
-  const loginRes = await apiFetch("/api/v1/barber/auth/token/", {
-    method: "POST",
-    body: JSON.stringify({ email, password: draft.password }),
-  });
-  const loginBody = await parseJsonSafe(loginRes);
-  if (!loginRes.ok) throw new Error(extractApiError(loginBody, "Login amalga oshmadi."));
-  const tokens = loginBody as { access?: string; refresh?: string };
-  if (!tokens.access || !tokens.refresh) throw new Error("Token qaytmadi.");
-  setBarberTokens(tokens.access, tokens.refresh);
+  let access: string | undefined;
+  let refresh: string | undefined;
+  if (registerBody && typeof registerBody === "object") {
+    const reg = registerBody as { access?: string; refresh?: string };
+    access = reg.access;
+    refresh = reg.refresh;
+  }
+  if (!access || !refresh) {
+    const loginRes = await apiFetch("/api/v1/barber/auth/token/", {
+      method: "POST",
+      body: JSON.stringify({ email, password: draft.password }),
+    });
+    const loginBody = await parseJsonSafe(loginRes);
+    if (!loginRes.ok) throw new Error(extractApiError(loginBody, "Login amalga oshmadi."));
+    const tokens = loginBody as { access?: string; refresh?: string };
+    access = tokens.access;
+    refresh = tokens.refresh;
+  }
+  if (!access || !refresh) throw new Error("Token qaytmadi.");
+  setBarberTokens(access, refresh);
   clearSignupDraft();
 }
 
