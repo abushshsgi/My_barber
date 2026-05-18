@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Loader2, Mail } from "lucide-react";
-import { apiFetch } from "@/lib/api";
+import {
+  apiFetch,
+  formatFetchError,
+  isFetchAbortError,
+  RESEND_VERIFICATION_EMAIL_TIMEOUT_MS,
+} from "@/lib/api";
 import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { Button } from "@/components/ui/button";
 
@@ -56,6 +61,7 @@ function BarberVerifyEmailPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: "{}",
+        timeoutMs: RESEND_VERIFICATION_EMAIL_TIMEOUT_MS,
       });
       const body = await parseJsonSafe(res);
       if (!res.ok) {
@@ -66,6 +72,15 @@ function BarberVerifyEmailPage() {
       setMsg(
         "Yangi tasdiq xati yuborildi. Pochtangizdagi yangi havolani oching (token bilan).",
       );
+    } catch (e: unknown) {
+      setStatus("err");
+      if (isFetchAbortError(e)) {
+        setMsg(
+          "So‘rov uzoqqa cho‘zilmoqda yoki to‘xtatildi. Keyinroq qayta urinib ko‘ring; SMTP sozlamalarini ham tekshiring.",
+        );
+        return;
+      }
+      setMsg(formatFetchError(e, "Xat yuborilmadi."));
     } finally {
       setResending(false);
     }

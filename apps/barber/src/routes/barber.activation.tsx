@@ -2,7 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Check, Loader2, Mail, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { apiFetch } from "@/lib/api";
+import {
+  apiFetch,
+  formatFetchError,
+  isFetchAbortError,
+  RESEND_VERIFICATION_EMAIL_TIMEOUT_MS,
+} from "@/lib/api";
 import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -147,6 +152,7 @@ function BarberActivationPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: "{}",
+        timeoutMs: RESEND_VERIFICATION_EMAIL_TIMEOUT_MS,
       });
       const body = await parseJsonSafe(res);
       if (!res.ok) {
@@ -158,6 +164,14 @@ function BarberActivationPage() {
           ? String((body as { detail?: string }).detail || "Tasdiq xati yuborildi")
           : "Tasdiq xati yuborildi. Pochtadagi havolani bosing.",
       );
+    } catch (e: unknown) {
+      if (isFetchAbortError(e)) {
+        toast.error(
+          "Javob juda uzoqqa cho‘zilmoqda. Bir ozdan keyin qayta urinib ko‘ring; muammo davom etsa, SMTP (email) server sozlamalarini tekshiring.",
+        );
+        return;
+      }
+      toast.error(formatFetchError(e, "Tasdiq xatini yuborishda xatolik."));
     } finally {
       setResending(false);
     }

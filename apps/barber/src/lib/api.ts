@@ -52,6 +52,28 @@ function shouldOmitBearerForPath(path: string): boolean {
   );
 }
 
+function abortAfter(ms: number): AbortSignal {
+  const c = new AbortController();
+  window.setTimeout(() => c.abort(new DOMException("Vaqt tugadi", "AbortError")), ms);
+  return c.signal;
+}
+
+/** Bir nechta signaldan biri abort qilinsa, natijaviy ham abort bo‘ladi. */
+function mergeAbortSignals(parts: AbortSignal[]): AbortSignal {
+  if (parts.length === 0) {
+    return new AbortController().signal;
+  }
+  const c = new AbortController();
+  for (const s of parts) {
+    if (s.aborted) {
+      c.abort();
+      return c.signal;
+    }
+    s.addEventListener("abort", () => c.abort(), { once: true });
+  }
+  return c.signal;
+}
+
 async function refreshBarberAccess(): Promise<string | null> {
   const refresh = getBarberRefreshToken();
   if (!refresh) return null;
@@ -73,26 +95,51 @@ async function refreshBarberAccess(): Promise<string | null> {
   return body.access;
 }
 
+export const RESEND_VERIFICATION_EMAIL_TIMEOUT_MS = 45_000;
+
+export function isFetchAbortError(e: unknown): boolean {
+  if (e instanceof DOMException || e instanceof Error) return e.name === "AbortError";
+  return false;
+}
+
+export type ApiFetchOptions = RequestInit & {
+  /** Client-side: so‘rov shu millisikunddan keyin abort (tugma cheksiz yuklashda qolmasin). */
+  timeoutMs?: number;
+};
+
 export async function apiFetch(
   path: string,
-  options: RequestInit = {},
+  options: ApiFetchOptions = {},
   retry = true,
 ): Promise<Response> {
-  const headers = new Headers(options.headers);
+  const { timeoutMs, signal: callerSignal, ...fetchRest } = options;
+  const parts: AbortSignal[] = [];
+  if (callerSignal) parts.push(callerSignal);
+  if (timeoutMs !== undefined && timeoutMs > 0) {
+    parts.push(abortAfter(timeoutMs));
+  }
+  const mergedSignal =
+    parts.length === 0 ? undefined : parts.length === 1 ? parts[0] : mergeAbortSignals(parts);
+
+  const headers = new Headers(fetchRest.headers);
   const token = getBarberAccessToken();
   if (token && !shouldOmitBearerForPath(path)) {
     headers.set("Authorization", `Bearer ${token}`);
   }
-  if (!headers.has("Content-Type") && options.body && !(options.body instanceof FormData)) {
+  if (!headers.has("Content-Type") && fetchRest.body && !(fetchRest.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
 
-  let res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const url = `${API_BASE}${path}`;
+  const exec = () =>
+    fetch(url, mergedSignal === undefined ? { ...fetchRest, headers } : { ...fetchRest, headers, signal: mergedSignal });
+
+  let res = await exec();
   if (res.status === 401 && retry && token) {
     const newAccess = await refreshBarberAccess();
     if (newAccess) {
       headers.set("Authorization", `Bearer ${newAccess}`);
-      res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+      res = await exec();
     }
   }
   return res;
