@@ -64,6 +64,10 @@ def send_barber_email_verification(barber: Barber) -> tuple[bool, str | None]:
 
 def send_barber_email_verification_async(barber: Barber) -> None:
     """Ro'yxatdan o'tish HTTP javobini SMTP kutib qotirmaslik uchun."""
+    backend = getattr(settings, "EMAIL_BACKEND", "") or ""
+    if "locmem" in backend:
+        send_barber_email_verification(barber)
+        return
     _MAIL_EXECUTOR.submit(send_barber_email_verification, barber)
 
 
@@ -75,3 +79,38 @@ def send_barber_email_verification_with_timeout(
     """Resend endpoint: SMTP bloklamasligi uchun alohida threadda."""
     future = _MAIL_EXECUTOR.submit(send_barber_email_verification, barber)
     return future.result(timeout=timeout)
+
+
+def maybe_schedule_verification_email_when_setup_complete(barber_id: int) -> None:
+    """
+    Ro‘yxatdan o‘tishda emas: profil sozlamalari (signup + xizmatlar + jadval) tugaganda
+    bir marta tasdiq xatini yuborish.
+    """
+    from django.db import transaction
+    from django.utils import timezone
+
+    from barbers.readiness import compute_barber_readiness
+
+    should_send = False
+    with transaction.atomic():
+        b = (
+            Barber.objects.select_for_update()
+            .filter(pk=barber_id, is_active=True)
+            .first()
+        )
+        if not b or b.email_verified_at is not None:
+            return
+        if b.email_verification_invite_sent_at is not None:
+            return
+        r = compute_barber_readiness(b)
+        if not (r.signup_complete and r.services_ok and r.schedule_ok):
+            return
+        Barber.objects.filter(pk=b.pk).update(
+            email_verification_invite_sent_at=timezone.now(),
+        )
+        should_send = True
+
+    if should_send:
+        b2 = Barber.objects.filter(pk=barber_id, is_active=True).first()
+        if b2 and b2.email_verified_at is None:
+            send_barber_email_verification_async(b2)

@@ -55,6 +55,12 @@ class Barber(models.Model):
         db_index=True,
         help_text="Email tasdiqlangan vaqt. Mijozlarga ko‘rinish va to‘liq panel uchun talab.",
     )
+    email_verification_invite_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Tasdiq havolasi avtomatik yuborilgan vaqt (profil sozlamalari tugaganida, bir marta).",
+    )
     is_active = models.BooleanField(default=True)
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(null=True, blank=True)

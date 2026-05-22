@@ -50,6 +50,26 @@ class BarberActivationReadinessTests(TestCase):
             is_day_off=False,
         )
 
+    def test_onboarding_status_sends_verification_email_when_setup_ready(self):
+        access, _ = encode_barber_tokens(self.barber.id)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+        mail.outbox.clear()
+        res = self.client.get("/api/v1/barber/onboarding/status/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mail.outbox), 1)
+        self.barber.refresh_from_db()
+        self.assertIsNotNone(self.barber.email_verification_invite_sent_at)
+
+    def test_onboarding_status_does_not_resend_auto_invite(self):
+        access, _ = encode_barber_tokens(self.barber.id)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+        mail.outbox.clear()
+        self.client.get("/api/v1/barber/onboarding/status/")
+        self.assertEqual(len(mail.outbox), 1)
+        mail.outbox.clear()
+        self.client.get("/api/v1/barber/onboarding/status/")
+        self.assertEqual(len(mail.outbox), 0)
+
     def test_onboarding_status_not_fully_ready_without_email(self):
         access, _ = encode_barber_tokens(self.barber.id)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")

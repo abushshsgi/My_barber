@@ -1,6 +1,7 @@
-/** O'zbekistonning 12 ta viloyati — backend `UzRegion` bilan mos keladi. */
+/** O'zbekiston viloyatlari — backend `UzRegion` bilan mos keladi. */
 export const UZ_REGIONS = [
   { value: "TOSHKENT_SH", label: "Toshkent shahri" },
+  { value: "TOSHKENT_V", label: "Toshkent viloyati" },
   { value: "ANDIJON", label: "Andijon viloyati" },
   { value: "BUXORO", label: "Buxoro viloyati" },
   { value: "FARGONA", label: "Farg'ona viloyati" },
@@ -11,14 +12,20 @@ export const UZ_REGIONS = [
   { value: "SAMARQAND", label: "Samarqand viloyati" },
   { value: "SURXONDARYO", label: "Surxondaryo viloyati" },
   { value: "SIRDARYO", label: "Sirdaryo viloyati" },
-  { value: "TOSHKENT_V", label: "Toshkent viloyati" },
   { value: "XORAZM", label: "Xorazm viloyati" },
 ] as const;
 
 export type UzRegionCode = (typeof UZ_REGIONS)[number]["value"];
 
 export function uzRegionLabel(code: string | null | undefined): string {
-  if (!code) return "—";
+  if (!code) return "";
   const row = UZ_REGIONS.find((r) => r.value === code);
-  return row?.label ?? code;
+  if (row) return row.label;
+  const byLabel = UZ_REGIONS.find((r) => r.label.toLowerCase() === code.trim().toLowerCase());
+  return byLabel?.label ?? code;
+}
+
+export function uzRegionCodeFromLabel(label: string): UzRegionCode | "" {
+  const row = UZ_REGIONS.find((r) => r.label.toLowerCase() === label.trim().toLowerCase());
+  return row?.value ?? "";
 }

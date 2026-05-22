@@ -28,6 +28,7 @@ import { apiFetch, getBarberAccessToken } from "@/lib/api";
 import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { roundCoord6, submitFlowSignup } from "@/lib/barber-signup-flow";
 import { readSignupDraft } from "@/lib/signup-draft";
+import { UZ_REGIONS, uzRegionCodeFromLabel, uzRegionLabel } from "@/lib/uz-regions";
 import { cn } from "@/lib/utils";
 import { getFlowMeta } from "@/lib/barber-flow-config";
 
@@ -59,23 +60,6 @@ const WEEKDAY_LABELS: Record<string, string> = {
   Sat: "Shanba",
   Sun: "Yakshanba",
 };
-
-const UZ_REGIONS = [
-  "Toshkent shahri",
-  "Toshkent viloyati",
-  "Samarqand",
-  "Buxoro",
-  "Andijon",
-  "Farg'ona",
-  "Namangan",
-  "Qashqadaryo",
-  "Surxondaryo",
-  "Jizzax",
-  "Sirdaryo",
-  "Navoiy",
-  "Xorazm",
-  "Qoraqalpog'iston",
-];
 
 const LANGUAGES = [
   { code: "uz", label: "O'zbek" },
@@ -234,7 +218,10 @@ export function IndependentSetupPage() {
           const parts = String(body.location_text)
             .split(",")
             .map((s) => s.trim());
-          if (parts[0]) setRegion(parts[0]);
+          if (parts[0]) {
+            const code = uzRegionCodeFromLabel(parts[0]);
+            setRegion(code || parts[0]);
+          }
           if (parts[1]) setAddress(parts.slice(1).join(", "));
         }
         const langs = body.spoken_languages;
@@ -372,7 +359,9 @@ export function IndependentSetupPage() {
     try {
       const lat = roundCoord6(Number(latitude));
       const lng = roundCoord6(Number(longitude));
-      const locationText = [region.trim(), address.trim()].filter(Boolean).join(", ");
+      const regionCode = region.trim();
+      const regionLabel = uzRegionLabel(regionCode);
+      const locationText = [regionLabel, address.trim()].filter(Boolean).join(", ");
       const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
       const barberPhone = `+998${phoneDigits}`;
 
@@ -391,8 +380,10 @@ export function IndependentSetupPage() {
             longitude: lng,
             full_name: fullName || draft.full_name,
             phone: barberPhone,
+            region: regionCode || undefined,
             address: locationText,
             shop_name: "Mustaqil barber",
+            staff_count_at_signup: 1,
           });
         } catch (err) {
           setSubmitError(err instanceof Error ? err.message : "Ro'yxatdan o'tish amalga oshmadi.");
@@ -405,6 +396,7 @@ export function IndependentSetupPage() {
         const meBody = new FormData();
         meBody.append("full_name", fullName);
         meBody.append("phone", barberPhone);
+        if (regionCode) meBody.append("region", regionCode);
         meBody.append("avatar", avatarFile);
         const meRes = await apiFetch("/api/v1/barber/auth/me/", {
           method: "PATCH",
@@ -419,7 +411,11 @@ export function IndependentSetupPage() {
       } else {
         const meRes = await apiFetch("/api/v1/barber/auth/me/", {
           method: "PATCH",
-          body: JSON.stringify({ full_name: fullName, phone: barberPhone }),
+          body: JSON.stringify({
+            full_name: fullName,
+            phone: barberPhone,
+            ...(regionCode ? { region: regionCode } : {}),
+          }),
         });
         const meErr = await parseJsonSafe(meRes);
         if (!meRes.ok) {
@@ -973,7 +969,7 @@ function LocationStep(props: {
             </div>
             <div className="flex max-w-[280px] flex-col items-center gap-0.5 rounded-full border border-border bg-background/95 px-3 py-1 shadow-[var(--shadow-soft)] backdrop-blur">
               <span className="truncate text-[11px] font-semibold text-foreground">
-                {props.region.trim() || "Viloyat tanlang"}
+                {uzRegionLabel(props.region) || "Viloyat tanlang"}
               </span>
               <span className="max-w-[260px] truncate text-[10px] text-muted-foreground">
                 {props.address.trim() || "Manzil yoki mo'ljal"}
@@ -990,12 +986,12 @@ function LocationStep(props: {
         </div>
         <div className="flex flex-wrap gap-1.5">
           {UZ_REGIONS.map((r) => {
-            const active = props.region.trim().toLowerCase() === r.toLowerCase();
+            const active = props.region.trim() === r.value;
             return (
               <button
-                key={r}
+                key={r.value}
                 type="button"
-                onClick={() => props.setRegion(r)}
+                onClick={() => props.setRegion(r.value)}
                 className={cn(
                   "rounded-full border px-3 py-1 text-[11px] font-medium transition-[var(--transition-smooth)]",
                   active
@@ -1003,7 +999,7 @@ function LocationStep(props: {
                     : "border-border bg-card text-foreground hover:border-foreground/50",
                 )}
               >
-                {r}
+                {r.label}
               </button>
             );
           })}
@@ -1013,8 +1009,11 @@ function LocationStep(props: {
       <FloatingInput
         label="Viloyat / Shahar"
         required
-        value={props.region}
-        onChange={props.setRegion}
+        value={uzRegionLabel(props.region)}
+        onChange={(v) => {
+          const code = uzRegionCodeFromLabel(v);
+          props.setRegion(code || v);
+        }}
       />
 
       <FloatingInput

@@ -13,6 +13,7 @@ from barbers.barber_email import send_barber_email_verification_with_timeout
 from barbers.email_verification import unsign_barber_email_token
 from barbers.models import Barber
 from barbers.permissions import IsBarber
+from barbers.barber_email import maybe_schedule_verification_email_when_setup_complete
 from barbers.readiness import build_onboarding_status_payload, compute_barber_readiness
 
 
@@ -178,10 +179,13 @@ class BarberMeView(APIView):
         b = request.user.barber
         full_name = request.data.get("full_name")
         phone = request.data.get("phone")
+        region = request.data.get("region")
         if full_name is not None:
             b.full_name = str(full_name).strip()
         if phone is not None:
             b.phone = str(phone).strip()
+        if region is not None:
+            b.region = str(region).strip()
         avatar = request.FILES.get("avatar")
         if avatar is not None:
             b.avatar = avatar
@@ -225,4 +229,5 @@ class BarberOnboardingStatusView(APIView):
         payload = build_onboarding_status_payload(b)
         if payload["is_complete"] and not b.onboarding_completed_at:
             Barber.objects.filter(pk=b.pk).update(onboarding_completed_at=timezone.now())
+        maybe_schedule_verification_email_when_setup_complete(b.pk)
         return Response(payload)
