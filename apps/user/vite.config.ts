@@ -41,6 +41,7 @@ export default defineConfig(({ mode }) => {
           "icon-512-maskable.png",
         ],
         manifest: {
+          id: "/",
           name: "MySaloon",
           short_name: "MySaloon",
           description: "Salon va sartaroshlarni toping, onlayn band qiling",

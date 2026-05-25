@@ -23,6 +23,7 @@ import { apiFetch, clearTokens, formatApiError } from "@/lib/api";
 import { useRouter } from "@/navigation";
 import { uzRegionLabel } from "@/lib/uz-regions";
 import { AuthGate } from "@/components/AuthGate";
+import { PwaInstallGuide } from "@/components/PwaInstallGuide";
 import { fetchFavoriteSalonCount } from "../lib/favorites";
 
 type Me = {
@@ -203,6 +204,10 @@ const Profile = () => {
           ))}
         </div>
       </motion.div>
+
+      <div className="px-5 mt-4">
+        <PwaInstallGuide />
+      </div>
 
       {editingProfile && (
         <motion.div

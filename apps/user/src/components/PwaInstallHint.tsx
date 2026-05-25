@@ -1,36 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Share, X } from "lucide-react";
-
-const DISMISS_KEY = "mybarber_pwa_hint_dismissed";
-
-function isIos(): boolean {
-  if (typeof navigator === "undefined") return false;
-  return /iPad|iPhone|iPod/.test(navigator.userAgent);
-}
-
-function isStandalone(): boolean {
-  if (typeof window === "undefined") return false;
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    ("standalone" in navigator && (navigator as Navigator & { standalone?: boolean }).standalone === true)
-  );
-}
+import { ExternalLink, Share, X } from "lucide-react";
+import {
+  canShowIosInstallUi,
+  dismissPwaHint,
+  getIosInstallMode,
+  isPwaHintDismissed,
+  pwaInstallSiteUrl,
+} from "@/utils/pwa-install";
 
 export function PwaInstallHint() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (!isIos() || isStandalone()) return;
-    if (localStorage.getItem(DISMISS_KEY) === "1") return;
+    if (!canShowIosInstallUi() || isPwaHintDismissed()) return;
     setVisible(true);
   }, []);
 
   if (!visible) return null;
 
-  function dismiss() {
-    localStorage.setItem(DISMISS_KEY, "1");
+  const mode = getIosInstallMode();
+  const siteUrl = pwaInstallSiteUrl();
+
+  function close() {
+    dismissPwaHint();
     setVisible(false);
   }
 
@@ -41,21 +35,65 @@ export function PwaInstallHint() {
     >
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10">
-          <Share className="h-4 w-4" aria-hidden />
+          {mode === "safari" ? (
+            <Share className="h-4 w-4" aria-hidden />
+          ) : (
+            <ExternalLink className="h-4 w-4" aria-hidden />
+          )}
         </div>
-        <div className="min-w-0 flex-1 space-y-1">
-          <p className="text-sm font-semibold">Ilovani o‘rnating</p>
-          <p className="text-xs leading-relaxed text-white/75">
-            Safari pastidagi <strong>Share</strong> tugmasini bosing, keyin{" "}
-            <strong>Add to Home Screen</strong> ni tanlang.
-          </p>
-          <p className="text-xs leading-relaxed text-white/55">
-            Установите приложение: Share → «На экран Домой».
-          </p>
+        <div className="min-w-0 flex-1 space-y-2">
+          <p className="text-sm font-semibold">Ilovani uy ekraniga qo‘shing</p>
+
+          {mode === "in_app" && (
+            <>
+              <p className="text-xs leading-relaxed text-white/75">
+                Telegram yoki boshqa ilova ichida «Domoy» chiqmaydi. Avval{" "}
+                <strong>Safari</strong>da oching.
+              </p>
+              <a
+                href={siteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-medium text-white underline underline-offset-2"
+              >
+                Safari’da ochish
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </>
+          )}
+
+          {mode === "other_browser" && (
+            <>
+              <p className="text-xs leading-relaxed text-white/75">
+                iPhone’da faqat <strong>Safari</strong> orqali o‘rnatiladi. Chrome’da «На
+                экран Домой» bo‘lmaydi.
+              </p>
+              <a
+                href={siteUrl}
+                className="inline-flex items-center gap-1 text-xs font-medium text-white underline underline-offset-2"
+              >
+                Safari’da ochish: {siteUrl.replace(/^https:\/\//, "")}
+              </a>
+            </>
+          )}
+
+          {mode === "safari" && (
+            <ol className="list-decimal space-y-1 pl-4 text-xs leading-relaxed text-white/75">
+              <li>
+                Pastdagi <strong>Share</strong> (↗) tugmasini bosing
+              </li>
+              <li>
+                Pastga aylantiring → <strong>Add to Home Screen</strong>
+              </li>
+              <li>
+                Rus tilida: <strong>«На экран Домой»</strong> → Qoʻshish
+              </li>
+            </ol>
+          )}
         </div>
         <button
           type="button"
-          onClick={dismiss}
+          onClick={close}
           className="rounded-lg p-1 text-white/60 transition hover:bg-white/10 hover:text-white"
           aria-label="Yopish"
         >

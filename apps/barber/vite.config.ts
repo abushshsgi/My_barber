@@ -35,6 +35,7 @@ export default defineConfig(({ mode }) => {
           "icon-512-maskable.png",
         ],
         manifest: {
+          id: "/",
           name: "MySaloon Partner",
           short_name: "Partner",
           description: "Sartaroshlar uchun bookinglar, mijozlar va daromadlarni boshqarish paneli",
