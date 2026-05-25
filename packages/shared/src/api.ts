@@ -33,6 +33,13 @@ export function normalizeAbsoluteUrl(raw: string): string {
 
 const ENV_API_BASE = readEnv("VITE_API_URL") || readEnv("NEXT_PUBLIC_API_URL") || "";
 const FALLBACK_DEV_BASE = import.meta.env.DEV ? "http://localhost:8000" : "";
+
+if (import.meta.env.PROD && !ENV_API_BASE.trim()) {
+  throw new Error(
+    "Production build requires VITE_API_URL or NEXT_PUBLIC_API_URL (e.g. https://api.mysaloon.uz).",
+  );
+}
+
 const API_BASE = normalizeAbsoluteUrl(
   ENV_API_BASE.trim() ? ENV_API_BASE : FALLBACK_DEV_BASE
 ).replace(/\/+$/, "");

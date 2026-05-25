@@ -1,0 +1,122 @@
+# MySaloon — Mobil production qo'llanma
+
+## Capacitor ga animatsiya qo'shish mumkinmi?
+
+**Ha**, bir necha usul bor:
+
+| Usul | Nima qiladi | Qiyinlik |
+|------|-------------|----------|
+| **Splash fade** | Ilova ochilganda splash asta yo'qoladi | Tayyor (`launchFadeOutDuration: 600`) |
+| **CSS / Framer Motion** | Ilova ichida animatsiya (sizda bor) | Oson |
+| **Lottie JSON** | Logo animatsiyasi (`.json` fayl) | O'rtacha — `@lottiefiles/react-lottie-player` |
+| **HTML5 `<video>`** | Intro video (WebView ichida) | O'rtacha — `public/intro.mp4` |
+| **Native video splash** | Android/iOS alohida video fayl | Qiyin — custom native plugin kerak |
+
+**Tavsiya:** Splash fade (tayyor) + ilova ichida Lottie yoki qisqa video. To'liq native video splash Play Market uchun ortiqcha murakkab.
+
+Hozirgi sozlama (`capacitor.config.ts`):
+
+```typescript
+SplashScreen: {
+  launchShowDuration: 2000,      // 2 soniya ko'rinadi
+  launchFadeOutDuration: 600,    // 0.6s fade animatsiya
+  launchAutoHide: true,
+  backgroundColor: "#171512",    // user: qora, barber: #F7F5F0
+}
+```
+
+Keyinroq Lottie qo'shish uchun: `public/splash-lottie.json` + React komponent native platformda birinchi ochilishda.
+
+---
+
+## PWA qanday ishlaydi?
+
+PWA = veb-sayt + ilova xususiyatlari. **App Store kerak emas** (iOS uchun aynan shu).
+
+### iOS (Safari)
+
+1. Vercel'da deploy: `www.mysaloon.uz` (user) yoki `partner.mysaloon.uz` (barber)
+2. Foydalanuvchi Safari'da saytni ochadi
+3. Pastdagi **Share** → **Add to Home Screen**
+4. Uy ekranida ikonka paydo bo'ladi — to'liq ekran ishlaydi
+
+Service worker (`sw.js`) offline cache va tez yuklanish beradi.
+
+### Android (PWA emas — Capacitor)
+
+Android foydalanuvchilar **Play Market**dan `.apk/.aab` yuklab oladi. PWA emas.
+
+---
+
+## Production deploy
+
+### 1. Vercel (PWA — iOS va brauzer)
+
+| Project | Root Directory | Domen | Env |
+|---------|----------------|-------|-----|
+| user | `apps/user` | `www.mysaloon.uz` | `NEXT_PUBLIC_API_URL=https://api.mysaloon.uz`, `NEXT_PUBLIC_AUTH_KIND=user` |
+| barber | `apps/barber` | `partner.mysaloon.uz` | `VITE_API_URL=https://api.mysaloon.uz` |
+
+Deploy qilgandan keyin tekshiring:
+- `https://www.mysaloon.uz/manifest.webmanifest` — JSON qaytishi kerak
+- Login ishlashi kerak
+
+### 2. Railway (backend)
+
+```env
+DJANGO_DEBUG=false
+DJANGO_ALLOWED_HOSTS=api.mysaloon.uz,.railway.app
+API_PUBLIC_HOST=api.mysaloon.uz
+FRONTEND_USER_ORIGIN=https://www.mysaloon.uz,https://mysaloon.uz
+FRONTEND_BARBER_ORIGIN=https://partner.mysaloon.uz
+REDIS_URL=redis://...
+```
+
+### 3. Capacitor (Android Play Market)
+
+```bash
+# Mijoz ilovasi
+npm run cap:android
+npm run cap:open -w user-web
+
+# Barber ilovasi
+npm run cap:barber
+npm run cap:open -w tanstack_start_ts
+```
+
+Android Studio → **Build → Generate Signed Bundle (.aab)** → Play Console.
+
+| Ilova | App ID | Listing nomi |
+|-------|--------|--------------|
+| Mijoz | `uz.mysaloon.app` | MySaloon |
+| Barber | `uz.mysaloon.partner` | MySaloon Partner |
+
+---
+
+## Lokal production test
+
+```bash
+# Barcha build + Capacitor sync tekshiruvi
+npm run verify:mobile
+
+# Brauzerda production build ko'rish
+npm run build -w user-web && npm run preview -w user-web -- --port 4173
+npm run build -w tanstack_start_ts && npm run preview -w tanstack_start_ts -- --port 4174
+```
+
+Preview:
+- User: http://localhost:4173
+- Barber: http://localhost:4174
+
+Chrome DevTools → Application → Manifest / Service Workers tekshiring.
+
+---
+
+## Tekshiruv checklist
+
+- [ ] `https://api.mysaloon.uz/health/` → `{"ok": true}`
+- [ ] User login (www.mysaloon.uz)
+- [ ] Barber login (partner.mysaloon.uz)
+- [ ] iOS: Add to Home Screen → standalone rejim
+- [ ] Android: Capacitor APK login + dashboard
+- [ ] Chat WebSocket (REDIS_URL production'da yoqilgan)

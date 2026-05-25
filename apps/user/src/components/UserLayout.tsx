@@ -1,6 +1,7 @@
 "use client";
 
 import { UserBottomNav } from "./UserBottomNav";
+import { PwaInstallHint } from "./PwaInstallHint";
 import { usePathname } from "@/navigation";
 import { useUserNotificationWs } from "@/hooks/useUserNotificationWs";
 
@@ -11,6 +12,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="relative mx-auto min-h-screen w-full max-w-md bg-background pb-28">
+      <PwaInstallHint />
       {children}
       {!hideBottomNav ? <UserBottomNav /> : null}
     </div>

@@ -59,3 +59,12 @@ Mijoz ilovasi: `NEXT_PUBLIC_BARBER_WEB_ORIGIN=https://partner.mysaloon.uz`
 Har bir ilova uchun **alohida Vercel project**: Root Directory mos ravishda `apps/user`, `apps/admin`, yoki `apps/barber`. Environment: `VITE_API_URL` — backend HTTPS manzili.
 
 Monorepo: Vercelda “Include source files outside root” yoki workspace sozlamalari kerak bo‘lishi mumkin; `package.json` loyiha ildizida, `npm install` ildizdan bajariladi.
+
+## Mobil (PWA + Capacitor)
+
+| Ilova | iOS | Android Play Market | Script |
+|--------|-----|---------------------|--------|
+| mijoz (`apps/user`) | PWA — `www.mysaloon.uz` | Capacitor `uz.mysaloon.app` | `npm run cap:android` |
+| barber (`apps/barber`) | PWA — `partner.mysaloon.uz` | Capacitor `uz.mysaloon.partner` | `npm run cap:barber` |
+
+Batafsil: [`user/README.md`](user/README.md), [`barber/README.md`](barber/README.md).

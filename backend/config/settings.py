@@ -245,6 +245,15 @@ def _cors_allowed_origins():
             "http://localhost:5173",
             "http://127.0.0.1:5173",
         ]
+    # Capacitor Android/iOS WebView originlari — productionda ham REST fetch ishlashi uchun.
+    chunks.extend(
+        [
+            "https://localhost",
+            "http://localhost",
+            "capacitor://localhost",
+            "ionic://localhost",
+        ]
+    )
     seen: set[str] = set()
     out: list[str] = []
     for o in chunks:
