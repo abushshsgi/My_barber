@@ -15,22 +15,12 @@ export function isStandalonePwa(): boolean {
   );
 }
 
+/** Telegram, Instagram va h.k. — faqat shu yerda tashqi brauzerga o'tish kerak. */
 export function isInAppBrowser(): boolean {
   const ua = navigator.userAgent;
   return /FBAN|FBAV|Instagram|Line\/|Twitter|Telegram|WhatsApp|LinkedInApp|Snapchat/i.test(
     ua,
   );
-}
-
-export function isIosNonSafariBrowser(): boolean {
-  if (!isIosDevice()) return false;
-  return /CriOS|FxiOS|EdgiOS|OPiOS|DuckDuckGo|GSA\//i.test(navigator.userAgent);
-}
-
-export function isIosSafari(): boolean {
-  if (!isIosDevice()) return false;
-  if (isInAppBrowser() || isIosNonSafariBrowser()) return false;
-  return /Safari/i.test(navigator.userAgent);
 }
 
 export function canShowIosInstallUi(): boolean {
@@ -61,12 +51,11 @@ export function resetPwaHintDismissed(): void {
   }
 }
 
-export type IosInstallMode = "safari" | "in_app" | "other_browser";
+export type IosInstallMode = "browser" | "in_app";
 
 export function getIosInstallMode(): IosInstallMode {
   if (isInAppBrowser()) return "in_app";
-  if (isIosNonSafariBrowser()) return "other_browser";
-  return "safari";
+  return "browser";
 }
 
 export function pwaInstallSiteUrl(): string {

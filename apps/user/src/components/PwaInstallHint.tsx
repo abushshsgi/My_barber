@@ -35,20 +35,16 @@ export function PwaInstallHint() {
     >
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10">
-          {mode === "safari" ? (
-            <Share className="h-4 w-4" aria-hidden />
-          ) : (
-            <ExternalLink className="h-4 w-4" aria-hidden />
-          )}
+          <Share className="h-4 w-4" aria-hidden />
         </div>
         <div className="min-w-0 flex-1 space-y-2">
           <p className="text-sm font-semibold">Ilovani uy ekraniga qo‘shing</p>
 
-          {mode === "in_app" && (
+          {mode === "in_app" ? (
             <>
               <p className="text-xs leading-relaxed text-white/75">
-                Telegram yoki boshqa ilova ichida «Domoy» chiqmaydi. Avval{" "}
-                <strong>Safari</strong>da oching.
+                Telegram yoki boshqa ilova ichida o‘rnatib bo‘lmaydi. Safari yoki Chrome’da
+                oching.
               </p>
               <a
                 href={siteUrl}
@@ -56,37 +52,21 @@ export function PwaInstallHint() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs font-medium text-white underline underline-offset-2"
               >
-                Safari’da ochish
+                Brauzerda ochish
                 <ExternalLink className="h-3 w-3" />
               </a>
             </>
-          )}
-
-          {mode === "other_browser" && (
-            <>
-              <p className="text-xs leading-relaxed text-white/75">
-                iPhone’da faqat <strong>Safari</strong> orqali o‘rnatiladi. Chrome’da «На
-                экран Домой» bo‘lmaydi.
-              </p>
-              <a
-                href={siteUrl}
-                className="inline-flex items-center gap-1 text-xs font-medium text-white underline underline-offset-2"
-              >
-                Safari’da ochish: {siteUrl.replace(/^https:\/\//, "")}
-              </a>
-            </>
-          )}
-
-          {mode === "safari" && (
+          ) : (
             <ol className="list-decimal space-y-1 pl-4 text-xs leading-relaxed text-white/75">
               <li>
                 Pastdagi <strong>Share</strong> (↗) tugmasini bosing
               </li>
               <li>
-                Pastga aylantiring → <strong>Add to Home Screen</strong>
+                Pastga aylantiring → <strong>Add to Home Screen</strong> /{" "}
+                <strong>«На экран Домой»</strong>
               </li>
               <li>
-                Rus tilida: <strong>«На экран Домой»</strong> → Qoʻshish
+                <strong>Add</strong> / Qoʻshish
               </li>
             </ol>
           )}

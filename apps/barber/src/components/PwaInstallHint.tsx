@@ -35,19 +35,15 @@ export function PwaInstallHint() {
     >
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-          {mode === "safari" ? (
-            <Share className="h-4 w-4 text-primary" aria-hidden />
-          ) : (
-            <ExternalLink className="h-4 w-4 text-primary" aria-hidden />
-          )}
+          <Share className="h-4 w-4 text-primary" aria-hidden />
         </div>
         <div className="min-w-0 flex-1 space-y-2">
           <p className="text-sm font-semibold">Partner panelini o‘rnating</p>
 
-          {mode === "in_app" && (
+          {mode === "in_app" ? (
             <>
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Telegram ichida «Domoy» chiqmaydi. Avval <strong>Safari</strong>da oching.
+                Telegram ichida o‘rnatib bo‘lmaydi. Safari yoki Chrome’da oching.
               </p>
               <a
                 href={siteUrl}
@@ -55,27 +51,11 @@ export function PwaInstallHint() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs font-medium text-primary underline underline-offset-2"
               >
-                Safari’da ochish
+                Brauzerda ochish
                 <ExternalLink className="h-3 w-3" />
               </a>
             </>
-          )}
-
-          {mode === "other_browser" && (
-            <>
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                iPhone’da faqat <strong>Safari</strong>. Chrome’da «На экран Домой» yo‘q.
-              </p>
-              <a
-                href={siteUrl}
-                className="inline-flex items-center gap-1 text-xs font-medium text-primary underline underline-offset-2"
-              >
-                Safari’da ochish
-              </a>
-            </>
-          )}
-
-          {mode === "safari" && (
+          ) : (
             <ol className="list-decimal space-y-1 pl-4 text-xs leading-relaxed text-muted-foreground">
               <li>
                 Pastdagi <strong className="text-foreground">Share</strong> (↗) tugmasi
