@@ -211,29 +211,16 @@ function ServicesSchedulePage() {
       let nextServices: ServiceForm[];
       let recs: Recommendation[];
 
-      if (scope === "salon") {
-        const [serviceRows, recsList, catalogRows] = await Promise.all([
-          apiList<ApiService>(`/api/v1/services/?salon=${activeSalonId}&barber=${barberId}`),
-          apiList<Recommendation>("/api/v1/barber/service-recommendations/"),
-          apiList<CatalogServiceOption>("/api/v1/barber/catalog-services/"),
-        ]);
-        nextServices = serviceRows.map(mapService);
-        recs = recsList;
-        setServices(nextServices);
-        setRecommendations(recs);
-        setCatalogServices(catalogRows);
-      } else {
-        const [serviceRows, recsList, catalogRows] = await Promise.all([
-          apiList<ApiService>("/api/v1/barber/services/"),
-          apiList<Recommendation>("/api/v1/barber/service-recommendations/"),
-          apiList<CatalogServiceOption>("/api/v1/barber/catalog-services/"),
-        ]);
-        nextServices = serviceRows.map(mapService);
-        recs = recsList;
-        setServices(nextServices);
-        setRecommendations(recs);
-        setCatalogServices(catalogRows);
-      }
+      const [serviceRows, recsList, catalogRows] = await Promise.all([
+        apiList<ApiService>("/api/v1/barber/services/"),
+        apiList<Recommendation>("/api/v1/barber/service-recommendations/"),
+        apiList<CatalogServiceOption>("/api/v1/barber/catalog-services/"),
+      ]);
+      nextServices = serviceRows.map(mapService);
+      recs = recsList;
+      setServices(nextServices);
+      setRecommendations(recs);
+      setCatalogServices(catalogRows);
       committedRef.current = serializeForm(nextServices, pendingServicesRef.current);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Ma'lumotlarni yuklab bo'lmadi.");
@@ -248,7 +235,10 @@ function ServicesSchedulePage() {
   }, [scope, activeSalonId, barberId]);
 
   const canEditService = (service: ServiceForm) =>
-    scope === "independent" || ownsSalon || service.barber === barberId;
+    scope === "independent" ||
+    ownsSalon ||
+    service.barber == null ||
+    service.barber === barberId;
 
   const saveService = async (service: ServiceForm) => {
     const price = Number(service.price);
@@ -263,9 +253,6 @@ function ServicesSchedulePage() {
     const body: Record<string, unknown> = {
       price,
       is_active: service.is_active,
-      ...(scope === "salon"
-        ? { salon: activeSalonId, barber: service.id ? (service.barber ?? null) : barberId }
-        : {}),
     };
     if (!service.id) {
       if (!service.catalog_service) {
@@ -274,14 +261,9 @@ function ServicesSchedulePage() {
       }
       body.catalog_service = Number(service.catalog_service);
     }
-    const url =
-      scope === "salon"
-        ? service.id
-          ? `/api/v1/services/${service.id}/`
-          : "/api/v1/services/"
-        : service.id
-          ? `/api/v1/barber/services/${service.id}/`
-          : "/api/v1/barber/services/";
+    const url = service.id
+      ? `/api/v1/barber/services/${service.id}/`
+      : "/api/v1/barber/services/";
     const res = await apiFetch(url, {
       method: service.id ? "PATCH" : "POST",
       body: JSON.stringify(body),
@@ -397,10 +379,7 @@ function ServicesSchedulePage() {
 
   const deleteService = async (service: ServiceForm) => {
     if (!service.id || !canEditService(service)) return;
-    const endpoint =
-      scope === "salon"
-        ? `/api/v1/services/${service.id}/`
-        : `/api/v1/barber/services/${service.id}/`;
+    const endpoint = `/api/v1/barber/services/${service.id}/`;
     const res = await apiFetch(endpoint, { method: "DELETE" });
     if (!res.ok) {
       toast.error(await parseError(res, "Xizmatni o'chirib bo'lmadi."));

@@ -59,7 +59,10 @@ function hintFromPreview(preview: string, status: number): string | null {
       return "Server so‘rovni qabul qilmadi (400). API manzili va backend env o‘zgaruvchilarini tekshiring.";
     }
     if (status >= 500) return "Server vaqtincha ishlamayapti. Birozdan keyin qayta urinib ko‘ring.";
-    return "Server JSON o‘rniga HTML sahifa qaytardi. API_URL va backend ishlayotganini tekshiring.";
+    if (status === 404) {
+      return "API yo‘li topilmadi (404). Frontend eski bo‘lishi yoki noto‘g‘ri manzil bo‘lishi mumkin — VITE_API_URL=https://api.mysaloon.uz va yangi deployni tekshiring.";
+    }
+    return "Server JSON o‘rniga HTML sahifa qaytardi. API_URL (https://api.mysaloon.uz) va backend ishlayotganini tekshiring.";
   }
   return null;
 }
