@@ -8,6 +8,7 @@ function barberPathAllowedBeforeFullyReady(pathname: string): boolean {
   if (pathname.startsWith("/barber/verify-email")) return true;
   if (pathname.startsWith("/barber/activation")) return true;
   if (pathname === "/barber/services" || pathname.startsWith("/barber/services/")) return true;
+  if (pathname === "/barber/schedule" || pathname.startsWith("/barber/schedule/")) return true;
   return false;
 }
 

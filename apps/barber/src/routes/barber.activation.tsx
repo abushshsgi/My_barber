@@ -60,7 +60,7 @@ function computePrimaryNext(
   }
   if (!steps.schedule_ok) {
     return {
-      to: "/barber/services#activation-schedule",
+      to: "/barber/schedule",
       label: "Keyingi qadam: ish jadvalini saqlang",
     };
   }

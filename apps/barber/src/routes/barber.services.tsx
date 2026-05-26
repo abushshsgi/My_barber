@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { EmptyBlock, PageHeader, SectionCard, StatusPill } from "@/components/barber/primitives";
 import { useBarberContext } from "@/components/barber/BarberContext";
 import { API_BASE, apiFetch, apiList, formatApiError } from "@/lib/api";
-import { SIGNUP_FLOW_PATH } from "@/lib/barber-flow-config";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -63,35 +62,6 @@ type PendingCatalogService = {
   is_active: boolean;
 };
 
-type ApiWorkingHour = {
-  id: number;
-  membership?: number;
-  weekday: number;
-  open_time: string;
-  close_time: string;
-  is_day_off: boolean;
-  breaks?: BreakItem[];
-};
-
-type DayForm = {
-  id?: number;
-  weekday: number;
-  open_time: string;
-  close_time: string;
-  is_day_off: boolean;
-  breaksText: string;
-};
-
-type BreakItem = { start: string; end: string };
-
-type Membership = {
-  id: number;
-  barber: number | null;
-  salon: number;
-  role: string;
-  invite_state: string;
-};
-
 type Recommendation = {
   kind: string;
   title: string;
@@ -107,7 +77,6 @@ type Recommendation = {
   };
 };
 
-const WEEKDAYS = ["Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba", "Yakshanba"];
 const FALLBACK_SERVICE_IMAGE =
   "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 520'%3E%3Crect width='800' height='520' rx='36' fill='%23111827'/%3E%3Ccircle cx='620' cy='120' r='120' fill='%232563eb' fill-opacity='0.25'/%3E%3Ccircle cx='700' cy='410' r='100' fill='%23ec4899' fill-opacity='0.18'/%3E%3Ctext x='72' y='274' font-family='Arial,sans-serif' font-size='56' font-weight='700' fill='white'%3EXizmat%3C/text%3E%3Ctext x='72' y='328' font-family='Arial,sans-serif' font-size='24' fill='rgba(255,255,255,0.8)'%3EMyBarber katalog%3C/text%3E%3C/svg%3E";
 
@@ -120,15 +89,6 @@ function serviceImageSrc(path?: string | null): string {
   const normalized = value.startsWith("/") ? value : `/${value}`;
   return `${API_BASE}${normalized}`;
 }
-
-const defaultDays = (): DayForm[] =>
-  WEEKDAYS.map((_, weekday) => ({
-    weekday,
-    open_time: "09:00",
-    close_time: "18:00",
-    is_day_off: weekday === 6,
-    breaksText: weekday === 6 ? "" : "12:00-13:00",
-  }));
 
 function mapService(row: ApiService): ServiceForm {
   return {
@@ -143,42 +103,8 @@ function mapService(row: ApiService): ServiceForm {
   };
 }
 
-function applyHours(rows: ApiWorkingHour[]): DayForm[] {
-  const byWeekday = new Map(rows.map((row) => [row.weekday, row]));
-  return defaultDays().map((day) => {
-    const row = byWeekday.get(day.weekday);
-    if (!row) return day;
-    return {
-      id: row.id,
-      weekday: row.weekday,
-      open_time: String(row.open_time).slice(0, 5),
-      close_time: String(row.close_time).slice(0, 5),
-      is_day_off: Boolean(row.is_day_off),
-      breaksText: (row.breaks || []).map((br) => `${br.start}-${br.end}`).join(", "),
-    };
-  });
-}
-
-function parseBreaks(input: string): BreakItem[] {
-  return input
-    .split(",")
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .map((part) => {
-      const [start, end] = part.split("-").map((v) => v.trim());
-      if (!/^\d{2}:\d{2}$/.test(start || "") || !/^\d{2}:\d{2}$/.test(end || "")) {
-        throw new Error("Tanaffus HH:MM-HH:MM formatida bo'lishi kerak.");
-      }
-      if (start >= end) {
-        throw new Error("Tanaffus boshlanishi tugashidan oldin bo'lishi kerak.");
-      }
-      return { start, end };
-    });
-}
-
 function serializeForm(
   services: ServiceForm[],
-  days: DayForm[],
   pendingServices: PendingCatalogService[],
 ): string {
   return JSON.stringify({
@@ -190,14 +116,6 @@ function serializeForm(
       price: s.price,
       duration_minutes: s.duration_minutes,
       is_active: s.is_active,
-    })),
-    days: days.map((d) => ({
-      id: d.id,
-      weekday: d.weekday,
-      open_time: d.open_time,
-      close_time: d.close_time,
-      is_day_off: d.is_day_off,
-      breaksText: d.breaksText,
     })),
     pendingServices: pendingServices.map((service) => ({
       catalog_service: service.catalog_service,
@@ -226,13 +144,10 @@ function ServicesSchedulePage() {
   const scope = viewMode === "salon" && activeSalonId ? "salon" : "independent";
   const barberId = Number(profile.id);
   const [services, setServices] = useState<ServiceForm[]>([]);
-  const [days, setDays] = useState<DayForm[]>(defaultDays);
-  const [membershipId, setMembershipId] = useState<number | null>(null);
   const [catalogServices, setCatalogServices] = useState<CatalogServiceOption[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingServices, setSavingServices] = useState(false);
-  const [savingSchedule, setSavingSchedule] = useState(false);
   const [catalogQuery, setCatalogQuery] = useState("");
   const [catalogCategory, setCatalogCategory] = useState<string>("all");
   const [pendingServices, setPendingServices] = useState<PendingCatalogService[]>([]);
@@ -294,47 +209,32 @@ function ServicesSchedulePage() {
     setLoading(true);
     try {
       let nextServices: ServiceForm[];
-      let nextDays: DayForm[];
       let recs: Recommendation[];
 
       if (scope === "salon") {
-        const memberships = await apiList<Membership>(
-          `/api/v1/memberships/?salon=${activeSalonId}`,
-        );
-        const ownMembership = memberships.find((m) => m.barber === barberId) ?? null;
-        setMembershipId(ownMembership?.id ?? null);
-        const [serviceRows, scheduleRows, recsList, catalogRows] = await Promise.all([
+        const [serviceRows, recsList, catalogRows] = await Promise.all([
           apiList<ApiService>(`/api/v1/services/?salon=${activeSalonId}&barber=${barberId}`),
-          ownMembership
-            ? apiList<ApiWorkingHour>(`/api/v1/schedules/?membership=${ownMembership.id}`)
-            : Promise.resolve([]),
           apiList<Recommendation>("/api/v1/barber/service-recommendations/"),
           apiList<CatalogServiceOption>("/api/v1/barber/catalog-services/"),
         ]);
         nextServices = serviceRows.map(mapService);
-        nextDays = applyHours(scheduleRows);
         recs = recsList;
         setServices(nextServices);
-        setDays(nextDays);
         setRecommendations(recs);
         setCatalogServices(catalogRows);
       } else {
-        const [serviceRows, scheduleRows, recsList, catalogRows] = await Promise.all([
+        const [serviceRows, recsList, catalogRows] = await Promise.all([
           apiList<ApiService>("/api/v1/barber/services/"),
-          apiList<ApiWorkingHour>("/api/v1/barber/working-hours/"),
           apiList<Recommendation>("/api/v1/barber/service-recommendations/"),
           apiList<CatalogServiceOption>("/api/v1/barber/catalog-services/"),
         ]);
-        setMembershipId(null);
         nextServices = serviceRows.map(mapService);
-        nextDays = applyHours(scheduleRows);
         recs = recsList;
         setServices(nextServices);
-        setDays(nextDays);
         setRecommendations(recs);
         setCatalogServices(catalogRows);
       }
-      committedRef.current = serializeForm(nextServices, nextDays, pendingServicesRef.current);
+      committedRef.current = serializeForm(nextServices, pendingServicesRef.current);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Ma'lumotlarni yuklab bo'lmadi.");
     } finally {
@@ -511,54 +411,6 @@ function ServicesSchedulePage() {
     await refreshActivationStatus();
   };
 
-  const saveSchedule = async () => {
-    if (scope === "salon" && !membershipId) {
-      toast.error("Salon membership topilmadi. Avval salon bilan ulanishni yakunlang.");
-      return;
-    }
-    setSavingSchedule(true);
-    try {
-      const breaksByDay: { day: DayForm; breaks: BreakItem[] }[] = [];
-      for (const day of days) {
-        try {
-          breaksByDay.push({ day, breaks: parseBreaks(day.breaksText) });
-        } catch (error) {
-          toast.error(error instanceof Error ? error.message : "Jadvalni tekshiring.");
-          return;
-        }
-      }
-      const base = scope === "salon" ? "/api/v1/schedules" : "/api/v1/barber/working-hours";
-      const responses = await Promise.all(
-        breaksByDay.map(({ day, breaks }) => {
-          const body = {
-            weekday: day.weekday,
-            open_time: day.open_time,
-            close_time: day.close_time,
-            is_day_off: day.is_day_off,
-            breaks,
-            ...(scope === "salon" ? { membership: membershipId } : {}),
-          };
-          return apiFetch(day.id ? `${base}/${day.id}/` : `${base}/`, {
-            method: day.id ? "PATCH" : "POST",
-            body: JSON.stringify(body),
-          });
-        }),
-      );
-      for (const res of responses) {
-        if (!res.ok) {
-          toast.error(await parseError(res, "Jadvalni saqlab bo'lmadi."));
-          void loadAll();
-          return;
-        }
-      }
-      toast.success("Ish jadvali saqlandi.");
-      await loadAll();
-      await refreshActivationStatus();
-    } finally {
-      setSavingSchedule(false);
-    }
-  };
-
   const applyRecommendation = async (rec: Recommendation) => {
     if (rec.suggested_service) {
       await addService(rec.suggested_service);
@@ -589,7 +441,7 @@ function ServicesSchedulePage() {
   useEffect(() => {
     if (loading) return;
     const raw = window.location.hash.replace(/^#/, "");
-    if (raw === "activation-services" || raw === "activation-schedule") {
+    if (raw === "activation-services") {
       window.requestAnimationFrame(() => {
         document.getElementById(raw)?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
@@ -598,10 +450,10 @@ function ServicesSchedulePage() {
 
   const blocker = useBlocker({
     shouldBlockFn: useCallback(() => {
-      if (loading || savingServices || savingSchedule) return false;
+      if (loading || savingServices) return false;
       if (committedRef.current === null) return false;
-      return serializeForm(services, days, pendingServices) !== committedRef.current;
-    }, [loading, savingServices, savingSchedule, services, days, pendingServices]),
+      return serializeForm(services, pendingServices) !== committedRef.current;
+    }, [loading, savingServices, services, pendingServices]),
     withResolver: true,
     enableBeforeUnload: true,
     disabled: loading,
@@ -611,11 +463,11 @@ function ServicesSchedulePage() {
     <>
       <div className="mx-auto max-w-[1180px] space-y-6 p-4 sm:p-6 lg:p-8">
         <PageHeader
-          title="Xizmatlar va jadval"
+          title="Xizmatlar"
           description={
             scope === "salon"
-              ? "Admin katalogidagi xizmatlarni o'zingizga biriktirib, narx va ish vaqtingizni boshqaring."
-              : "Mustaqil booking uchun admin katalogidagi xizmatlarni tanlab, narx va ish vaqtingizni sozlang."
+              ? "Admin katalogidagi xizmatlarni o'zingizga biriktirib, narxlarni boshqaring. Ish vaqti alohida sahifada."
+              : "Mustaqil booking uchun admin katalogidagi xizmatlarni tanlab, narxlarni sozlang. Ish jadvali alohida."
           }
           actions={
             <div className="rounded-full border border-border bg-muted/50 px-3 py-1 text-xs text-muted-foreground">
@@ -627,21 +479,12 @@ function ServicesSchedulePage() {
         {!fullyReady && activationSteps.services_ok && !activationSteps.schedule_ok ? (
           <div className="flex flex-col gap-3 rounded-xl border border-primary/35 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-foreground">
-              <span className="font-medium">Keyingi qadam:</span> pastdagi{" "}
-              <span className="font-medium">Ish jadvali</span> bo&apos;limida o&apos;zgarishlarni
-              kiriting va <span className="font-medium">Jadvalni saqlash</span> ni bosing.
+              <span className="font-medium">Keyingi qadam:</span>{" "}
+              <span className="font-medium">Ish jadvali</span> sahifasida haftalik vaqtni sozlang va
+              saqlang.
             </p>
-            <Button
-              type="button"
-              variant="default"
-              className="shrink-0"
-              onClick={() =>
-                document
-                  .getElementById("activation-schedule")
-                  ?.scrollIntoView({ behavior: "smooth", block: "start" })
-              }
-            >
-              Jadvalga o&apos;tish
+            <Button type="button" variant="default" className="shrink-0" asChild>
+              <Link to="/barber/schedule">Ish jadvaliga o&apos;tish</Link>
             </Button>
           </div>
         ) : null}
@@ -927,117 +770,6 @@ function ServicesSchedulePage() {
                 </div>
               </SectionCard>
               </div>
-
-              <div id="activation-schedule" className="scroll-mt-24">
-              <SectionCard
-                title="Ish jadvali"
-                description="Dam olish kuni va tanaffuslar slotlarni avtomatik yopadi."
-                actions={
-                  <button
-                    onClick={saveSchedule}
-                    disabled={savingSchedule || (scope === "salon" && !membershipId)}
-                    className="rounded-lg bg-foreground px-3 py-2 text-sm font-medium text-background disabled:opacity-60"
-                  >
-                    {savingSchedule ? "Saqlanmoqda..." : "Jadvalni saqlash"}
-                  </button>
-                }
-              >
-                <div className="space-y-3">
-                  {scope === "salon" && !membershipId ? (
-                    <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-foreground">
-                      <p className="font-medium text-amber-950 dark:text-amber-100">
-                        Ish jadvalini saqlash uchun salon a&apos;zoligi kerak
-                      </p>
-                      <p className="mt-1 text-muted-foreground">
-                        Taklifni qabul qiling yoki salonga qo&apos;shiling — shundan keyin jadval
-                        serverga yoziladi.
-                      </p>
-                      <Link
-                        to={SIGNUP_FLOW_PATH.employee}
-                        className="mt-2 inline-block text-sm font-medium text-foreground underline underline-offset-4 hover:opacity-90"
-                      >
-                        Salonga qo&apos;shilish
-                      </Link>
-                    </div>
-                  ) : null}
-                  {days.map((day) => (
-                    <div
-                      key={day.weekday}
-                      className="grid gap-3 rounded-xl border border-border bg-muted/30 p-3 md:grid-cols-[120px_105px_105px_minmax(0,1fr)_90px]"
-                    >
-                      <div className="flex items-center text-sm font-medium">
-                        {WEEKDAYS[day.weekday]}
-                      </div>
-                      <input
-                        type="time"
-                        value={day.open_time}
-                        disabled={day.is_day_off}
-                        onChange={(event) =>
-                          setDays((prev) =>
-                            prev.map((item) =>
-                              item.weekday === day.weekday
-                                ? { ...item, open_time: event.target.value }
-                                : item,
-                            ),
-                          )
-                        }
-                        className="h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-                      />
-                      <input
-                        type="time"
-                        value={day.close_time}
-                        disabled={day.is_day_off}
-                        onChange={(event) =>
-                          setDays((prev) =>
-                            prev.map((item) =>
-                              item.weekday === day.weekday
-                                ? { ...item, close_time: event.target.value }
-                                : item,
-                            ),
-                          )
-                        }
-                        className="h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-                      />
-                      <input
-                        value={day.breaksText}
-                        disabled={day.is_day_off}
-                        onChange={(event) =>
-                          setDays((prev) =>
-                            prev.map((item) =>
-                              item.weekday === day.weekday
-                                ? { ...item, breaksText: event.target.value }
-                                : item,
-                            ),
-                          )
-                        }
-                        placeholder="12:00-13:00, 16:00-16:15"
-                        className="h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setDays((prev) =>
-                            prev.map((item) =>
-                              item.weekday === day.weekday
-                                ? { ...item, is_day_off: !item.is_day_off }
-                                : item,
-                            ),
-                          )
-                        }
-                        className={cn(
-                          "h-10 rounded-lg border px-2 text-xs font-medium",
-                          day.is_day_off
-                            ? "border-border bg-background text-muted-foreground"
-                            : "border-foreground bg-foreground text-background",
-                        )}
-                      >
-                        {day.is_day_off ? "Dam" : "Ish"}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </SectionCard>
-              </div>
             </div>
 
             <aside className="space-y-6">
@@ -1071,6 +803,18 @@ function ServicesSchedulePage() {
                 )}
               </SectionCard>
 
+              <SectionCard title="Ish jadvali">
+                <p className="text-sm text-muted-foreground">
+                  Haftalik ish vaqti, dam kunlari va tanaffuslar alohida sahifada boshqariladi.
+                </p>
+                <Link
+                  to="/barber/schedule"
+                  className="mt-3 inline-flex h-10 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                >
+                  Ish jadvalini ochish
+                </Link>
+              </SectionCard>
+
               <SectionCard title="Bookingga ta'siri">
                 <div className="space-y-3 text-sm text-muted-foreground">
                   <div className="flex gap-2">
@@ -1081,8 +825,11 @@ function ServicesSchedulePage() {
                     </p>
                   </div>
                   <p>
-                    Faol bo&apos;lmagan xizmatlar user app’da ko&apos;rinmaydi. Dam olish kunlari va tanaffuslar
-                    avtomatik yopiq slot sifatida qaytadi.
+                    Faol bo&apos;lmagan xizmatlar user app’da ko&apos;rinmaydi.{" "}
+                    <Link to="/barber/schedule" className="font-medium text-foreground underline-offset-4 hover:underline">
+                      Ish jadvali
+                    </Link>{" "}
+                    bo&apos;yicha dam kunlari va tanaffuslar yopiq slot sifatida qaytadi.
                   </p>
                   {scope === "salon" && isJoinedWorker && (
                     <p>

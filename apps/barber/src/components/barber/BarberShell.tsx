@@ -30,6 +30,7 @@ import {
   ImageIcon,
   Target,
   Sparkles,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,7 @@ const ICON_BY_NAME: Record<MatrixNavItem["iconName"], NavItem["icon"]> = {
   Bell,
   Star,
   Scissors,
+  Clock,
   ImageIcon,
   Wallet,
   Receipt,
@@ -202,7 +204,8 @@ function Sidebar({
                       const locked =
                         !fullyReady &&
                         item.to !== "/barber/activation" &&
-                        item.to !== "/barber/services";
+                        item.to !== "/barber/services" &&
+                        item.to !== "/barber/schedule";
                       return (
                         <motion.div
                           key={item.to}

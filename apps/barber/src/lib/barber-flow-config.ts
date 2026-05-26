@@ -17,6 +17,7 @@ export type NavItem = {
     | "Bell"
     | "Star"
     | "Scissors"
+    | "Clock"
     | "ImageIcon"
     | "Wallet"
     | "Receipt"
@@ -38,6 +39,7 @@ export const NAV_CONFIG: Record<NavCapability, NavItem[]> = {
     { to: "/barber/calendar", label: "Kalendar", iconName: "CalendarDays", group: "Asosiy" },
     { to: "/barber/bookings", label: "Bronlar", iconName: "CalendarClock", group: "Asosiy" },
     { to: "/barber/services", label: "Xizmatlar", iconName: "Scissors", group: "Asosiy" },
+    { to: "/barber/schedule", label: "Ish jadvali", iconName: "Clock", group: "Asosiy" },
     { to: "/barber/clients", label: "Mijozlar", iconName: "Users", group: "Asosiy" },
     { to: "/barber/chat", label: "Chat", iconName: "MessageSquare", group: "Aloqa" },
     { to: "/barber/notifications", label: "Bildirishnomalar", iconName: "Bell", group: "Aloqa" },
