@@ -8,13 +8,19 @@ import { useUserNotificationWs } from "@/hooks/useUserNotificationWs";
 export function UserLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   useUserNotificationWs();
-  const hideBottomNav = pathname.startsWith("/auth");
+  const isAuthRoute = pathname.startsWith("/auth");
 
   return (
-    <div className="relative mx-auto min-h-screen w-full max-w-md bg-background pb-28">
-      <PwaInstallHint />
+    <div
+      className={
+        isAuthRoute
+          ? "relative min-h-screen w-full max-w-none bg-background"
+          : "relative mx-auto min-h-screen w-full max-w-md bg-background pb-28"
+      }
+    >
+      {!isAuthRoute ? <PwaInstallHint /> : null}
       {children}
-      {!hideBottomNav ? <UserBottomNav /> : null}
+      {!isAuthRoute ? <UserBottomNav /> : null}
     </div>
   );
 }

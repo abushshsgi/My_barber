@@ -161,6 +161,9 @@
   .pt-safe {
     padding-top: max(env(safe-area-inset-top), 0.5rem);
   }
+  .user-auth-shell {
+    background: var(--background);
+  }
   .glass-beige {
     background: color-mix(in oklab, var(--surface) 70%, transparent);
     backdrop-filter: saturate(140%) blur(20px);

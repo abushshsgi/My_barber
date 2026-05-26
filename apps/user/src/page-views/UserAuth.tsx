@@ -130,7 +130,7 @@ export default function UserAuth() {
   const features = [t.authFeature1, t.authFeature2, t.authFeature3];
 
   return (
-    <div className="user-auth-shell relative min-h-screen overflow-hidden">
+    <div className="user-auth-shell relative min-h-dvh overflow-x-hidden">
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.55]"
         aria-hidden
@@ -144,7 +144,7 @@ export default function UserAuth() {
         aria-hidden
       />
 
-      <div className="relative z-10 flex min-h-screen flex-col lg:flex-row">
+      <div className="relative z-10 flex min-h-dvh flex-col lg:flex-row">
         {/* Hero — desktop */}
         <aside className="relative hidden flex-col justify-between border-border/60 bg-card/30 px-10 py-12 backdrop-blur-md lg:flex lg:w-[44%] xl:w-[40%] lg:border-r lg:px-12 xl:px-14">
           <div>
@@ -174,25 +174,25 @@ export default function UserAuth() {
         </aside>
 
         {/* Form column */}
-        <div className="flex flex-1 flex-col">
-          <header className="flex items-center justify-between gap-3 px-5 py-4 sm:px-8 lg:justify-end lg:px-10 lg:pt-10">
-            <div className="flex items-center gap-3 lg:hidden">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-foreground shadow-md ring-1 ring-white/10">
+        <div className="flex min-h-0 flex-1 flex-col pt-safe">
+          <header className="flex shrink-0 items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-6 lg:justify-end lg:px-10 lg:pt-10">
+            <div className="flex min-w-0 items-center gap-3 lg:hidden">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-foreground shadow-md ring-1 ring-white/10">
                 <Scissors className="h-5 w-5 text-background" />
               </div>
-              <div>
-                <p className="text-sm font-bold leading-tight">{t.title}</p>
-                <p className="text-xs text-muted-foreground">{t.subtitle}</p>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold leading-tight">{t.title}</p>
+                <p className="truncate text-xs text-muted-foreground">{t.subtitle}</p>
               </div>
             </div>
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex shrink-0 items-center gap-2">
               <span className="hidden text-xs text-muted-foreground sm:inline">{t.langHint}</span>
               <LanguageSwitcher />
             </div>
           </header>
 
-          <div className="flex flex-1 flex-col items-center justify-center px-5 pb-12 pt-2 sm:px-8 lg:px-10 lg:pb-16">
-            <div className="w-full max-w-[420px]">
+          <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto overscroll-contain px-4 pb-safe pt-2 sm:px-6 lg:justify-center lg:overflow-visible lg:px-10 lg:pb-16">
+            <div className="w-full sm:mx-auto sm:max-w-[420px]">
               <Tabs
                 value={mode}
                 onValueChange={(v) => {
@@ -216,7 +216,7 @@ export default function UserAuth() {
                   </TabsTrigger>
                 </TabsList>
 
-                <div className="mt-8 rounded-2xl border border-border/80 bg-card/70 p-6 shadow-xl ring-1 ring-white/5 backdrop-blur-md sm:p-8">
+                <div className="mt-4 rounded-2xl border border-border/80 bg-card/70 p-4 shadow-xl ring-1 ring-white/5 backdrop-blur-md sm:mt-8 sm:p-6 md:p-8">
                   {err && (
                     <Alert variant="destructive" className="mb-6 border-destructive/40 bg-destructive/10">
                       <AlertCircle className="h-4 w-4" />
@@ -293,7 +293,7 @@ export default function UserAuth() {
 
                   <TabsContent value="signup" className="mt-0 outline-none">
                     <form
-                      className="space-y-4"
+                      className="space-y-3 sm:space-y-4"
                       onSubmit={(e) => {
                         e.preventDefault();
                         void handleSignup();
@@ -392,7 +392,7 @@ export default function UserAuth() {
                 </div>
               </Tabs>
 
-              <Separator className="my-8 bg-border/60" />
+              <Separator className="my-6 bg-border/60 sm:my-8" />
 
               <p className="text-center text-sm text-muted-foreground">
                 <Link
