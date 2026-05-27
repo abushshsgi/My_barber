@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Link, useRouter } from "@/navigation";
+import { useRouter } from "@/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -14,6 +15,7 @@ import {
   EyeOff,
   Mail,
   Lock,
+  MapPin,
   User,
   Phone,
   Sparkles,
@@ -30,6 +32,7 @@ import {
 } from "@/lib/api";
 import { userAuthMessages } from "@/lib/i18n/user-auth";
 import { barberWebUrl } from "@/lib/public-urls";
+import { fetchUzRegions } from "@/lib/uz-regions";
 import { useLocale } from "@/providers/locale-provider";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
@@ -48,6 +51,13 @@ export default function UserAuth() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [region, setRegion] = useState("");
+  const { data: regions = [] } = useQuery({
+    queryKey: ["regions"],
+    queryFn: fetchUzRegions,
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+  const barberAuthUrl = barberWebUrl("/auth");
 
   const nextPath = () => {
     if (typeof window === "undefined") return "/";
@@ -97,6 +107,7 @@ export default function UserAuth() {
           password,
           full_name: fullName.trim(),
           phone: phone || undefined,
+          region: region || undefined,
         }),
       });
       const data = await parseResponseBody(res);
@@ -332,6 +343,30 @@ export default function UserAuth() {
                         </div>
                       </div>
                       <div className="space-y-2">
+                        <Label htmlFor="su-region" className="text-xs font-medium text-muted-foreground">
+                          Viloyat
+                        </Label>
+                        <div className="relative">
+                          <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          <select
+                            id="su-region"
+                            value={region}
+                            onChange={(e) => setRegion(e.target.value)}
+                            className="h-11 w-full appearance-none rounded-xl border border-border/80 bg-background/60 pl-10 pr-9 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <option value="">Viloyatni tanlang</option>
+                            {regions.map((item) => (
+                              <option key={item.value} value={item.value}>
+                                {item.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-muted-foreground">
+                          Viloyat salon katalogi va booking hudud tekshiruvini aniq ishlatadi.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
                         <Label htmlFor="su-email" className="text-xs font-medium text-muted-foreground">
                           {t.emailPh}
                         </Label>
@@ -395,12 +430,13 @@ export default function UserAuth() {
               <Separator className="my-6 bg-border/60 sm:my-8" />
 
               <p className="text-center text-sm text-muted-foreground">
-                <Link
-                  href={barberWebUrl("/auth")}
+                <a
+                  href={barberAuthUrl}
                   className="font-medium text-primary underline-offset-4 transition-colors hover:text-primary/80 hover:underline"
+                  rel={barberAuthUrl.startsWith("http") ? "noreferrer" : undefined}
                 >
                   {t.barberLoginLink}
-                </Link>
+                </a>
               </p>
             </div>
           </div>

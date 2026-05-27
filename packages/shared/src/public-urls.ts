@@ -10,7 +10,9 @@ function readPublicEnv(name: string): string {
 }
 
 export function barberWebUrl(path: string): string {
-  const origin = readPublicEnv("NEXT_PUBLIC_BARBER_WEB_ORIGIN").replace(/\/$/, "");
+  const origin = (
+    readPublicEnv("VITE_BARBER_WEB_ORIGIN") || readPublicEnv("NEXT_PUBLIC_BARBER_WEB_ORIGIN")
+  ).replace(/\/$/, "");
   const p = path.startsWith("/") ? path : `/${path}`;
   if (origin) return `${origin}${p}`;
   return p;
@@ -22,7 +24,9 @@ export function barberWebUrl(path: string): string {
  * Lokal: http://localhost:3000
  */
 export function userWebUrl(path: string): string {
-  const origin = readPublicEnv("NEXT_PUBLIC_USER_WEB_ORIGIN").replace(/\/$/, "");
+  const origin = (
+    readPublicEnv("VITE_USER_WEB_ORIGIN") || readPublicEnv("NEXT_PUBLIC_USER_WEB_ORIGIN")
+  ).replace(/\/$/, "");
   const p = path.startsWith("/") ? path : `/${path}`;
   if (origin) return `${origin}${p}`;
   return p;

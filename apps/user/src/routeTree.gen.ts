@@ -15,6 +15,10 @@ import { Route as MapRouteImport } from './routes/map'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as BookingsRouteImport } from './routes/bookings'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as SupportRouteImport } from './routes/support'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SalonIdRouteImport } from './routes/salon.$id'
 import { Route as ChatIdRouteImport } from './routes/chat.$id'
@@ -51,6 +55,26 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FavoritesRoute = FavoritesRouteImport.update({
+  id: '/favorites',
+  path: '/favorites',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -82,9 +106,13 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/bookings': typeof BookingsRoute
   '/chat': typeof ChatRouteWithChildren
+  '/favorites': typeof FavoritesRoute
   '/map': typeof MapRoute
   '/notifications': typeof NotificationsRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
+  '/settings': typeof SettingsRoute
+  '/support': typeof SupportRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/salon/$id': typeof SalonIdRoute
@@ -95,9 +123,13 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/bookings': typeof BookingsRoute
   '/chat': typeof ChatRouteWithChildren
+  '/favorites': typeof FavoritesRoute
   '/map': typeof MapRoute
   '/notifications': typeof NotificationsRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
+  '/settings': typeof SettingsRoute
+  '/support': typeof SupportRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/salon/$id': typeof SalonIdRoute
@@ -109,9 +141,13 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/bookings': typeof BookingsRoute
   '/chat': typeof ChatRouteWithChildren
+  '/favorites': typeof FavoritesRoute
   '/map': typeof MapRoute
   '/notifications': typeof NotificationsRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
+  '/settings': typeof SettingsRoute
+  '/support': typeof SupportRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/salon/$id': typeof SalonIdRoute
@@ -124,9 +160,13 @@ export interface FileRouteTypes {
     | '/auth'
     | '/bookings'
     | '/chat'
+    | '/favorites'
     | '/map'
     | '/notifications'
+    | '/privacy'
     | '/profile'
+    | '/settings'
+    | '/support'
     | '/booking/$salonId'
     | '/chat/$id'
     | '/salon/$id'
@@ -137,9 +177,13 @@ export interface FileRouteTypes {
     | '/auth'
     | '/bookings'
     | '/chat'
+    | '/favorites'
     | '/map'
     | '/notifications'
+    | '/privacy'
     | '/profile'
+    | '/settings'
+    | '/support'
     | '/booking/$salonId'
     | '/chat/$id'
     | '/salon/$id'
@@ -150,9 +194,13 @@ export interface FileRouteTypes {
     | '/auth'
     | '/bookings'
     | '/chat'
+    | '/favorites'
     | '/map'
     | '/notifications'
+    | '/privacy'
     | '/profile'
+    | '/settings'
+    | '/support'
     | '/booking/$salonId'
     | '/chat/$id'
     | '/salon/$id'
@@ -164,9 +212,13 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   BookingsRoute: typeof BookingsRoute
   ChatRoute: typeof ChatRouteWithChildren
+  FavoritesRoute: typeof FavoritesRoute
   MapRoute: typeof MapRoute
   NotificationsRoute: typeof NotificationsRoute
+  PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
+  SettingsRoute: typeof SettingsRoute
+  SupportRoute: typeof SupportRoute
   BookingSalonIdRoute: typeof BookingSalonIdRoute
   SalonIdRoute: typeof SalonIdRoute
   BookingBarberBarberIdRoute: typeof BookingBarberBarberIdRoute
@@ -214,6 +266,34 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/favorites': {
+      id: '/favorites'
+      path: '/favorites'
+      fullPath: '/favorites'
+      preLoaderRoute: typeof FavoritesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -269,9 +349,13 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   BookingsRoute: BookingsRoute,
   ChatRoute: ChatRouteWithChildren,
+  FavoritesRoute: FavoritesRoute,
   MapRoute: MapRoute,
   NotificationsRoute: NotificationsRoute,
+  PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
+  SettingsRoute: SettingsRoute,
+  SupportRoute: SupportRoute,
   BookingSalonIdRoute: BookingSalonIdRoute,
   SalonIdRoute: SalonIdRoute,
   BookingBarberBarberIdRoute: BookingBarberBarberIdRoute,

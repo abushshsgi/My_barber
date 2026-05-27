@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { apiFetch, getAccessToken } from "@/lib/api";
+import { apiFetch, formatApiError, getAccessToken } from "@/lib/api";
 import {
   fetchBarberPublicDetailByBarberId,
   type BarberPublicDetailApi,
@@ -16,7 +16,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { mediaSrc, PLACEHOLDER_AVATAR } from "@/lib/media";
 import { format } from "date-fns";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -131,7 +131,7 @@ export default function IndependentBookingFlow() {
       }),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error((data as { detail?: string }).detail || "Bron yaratilmadi");
+    if (!res.ok) throw new Error(formatApiError(data, "Bron yaratilmadi"));
   };
 
   const { data: me } = useQuery({
@@ -151,8 +151,7 @@ export default function IndependentBookingFlow() {
     setSubmitting(true);
     try {
       await createBooking();
-      toast({
-        title: "Bron so‘rovi yuborildi",
+      toast.success("Bron so‘rovi yuborildi", {
         description: "Sartarosh tasdiqlaguncha booking kutilmoqda holatida turadi.",
       });
       try {
@@ -165,8 +164,10 @@ export default function IndependentBookingFlow() {
           router.push(`/chat/${convo.id}`);
           return;
         }
+        const body = await cr.json().catch(() => ({}));
+        toast.warning(formatApiError(body, "Chat keyinroq ochiladi"));
       } catch {
-        /* chat ixtiyoriy */
+        toast.warning("Chat keyinroq ochiladi");
       }
       router.push("/bookings");
     } catch (e) {

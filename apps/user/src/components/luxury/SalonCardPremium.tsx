@@ -50,7 +50,7 @@ export function SalonCardPremium({ salon, layout = "vertical" }: { salon: Salon;
         <img src={salon.coverImage} alt={salon.name} loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
         <span className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
         <span className="absolute left-3 top-3 rounded-full bg-surface/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-foreground shadow-soft backdrop-blur">
-          {salon.isPremium ? "● Ochiq" : "Yopiq"}
+          {salon.isPremium ? "Premium" : "Standart"}
         </span>
         {distanceKm != null && (
           <span className="absolute right-3 top-3 rounded-full bg-foreground/85 px-2.5 py-1 text-[10px] font-semibold text-background backdrop-blur">

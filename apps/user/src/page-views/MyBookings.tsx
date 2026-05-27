@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { AuthGate } from "@/components/AuthGate";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "@/navigation";
+import { toast } from "sonner";
 
 type BookingLine = { service_name: string };
 type BookingRow = {
@@ -105,6 +106,9 @@ function MyBookings() {
       return body as { id: string };
     },
     onSuccess: (convo) => router.push(`/chat/${convo.id}`),
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Chat ochilmadi");
+    },
   });
 
   const createReview = useMutation({
