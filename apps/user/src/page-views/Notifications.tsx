@@ -2,17 +2,21 @@
 
 import {
   Bell,
+  CheckCheck,
   CheckCircle,
   Clock,
+  MessageCircle,
   Star,
   Loader2,
+  XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import { fetchNotifications } from "@/lib/notifications-queries";
-import { format } from "date-fns";
+import type { NotifRow } from "@/lib/notifications-queries";
+import { format, isSameDay, isToday, isYesterday } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { AuthGate } from "@/components/AuthGate";
 import { useRouter } from "@/navigation";
@@ -22,14 +26,35 @@ const iconMap: Record<string, typeof Clock> = {
   booking_accepted: CheckCircle,
   booking_done: Star,
   booking_pending: Clock,
-  booking_rejected: Bell,
-  booking_cancelled: Bell,
+  booking_rejected: XCircle,
+  booking_cancelled: XCircle,
   booking_started: Clock,
-  chat_message: Bell,
+  chat_message: MessageCircle,
   salon_invite: Bell,
-  barber_approved: Bell,
+  barber_approved: CheckCircle,
   new_booking: Bell,
 };
+
+function dayLabel(date: Date): string {
+  if (isToday(date)) return "Bugun";
+  if (isYesterday(date)) return "Kecha";
+  return format(date, "d MMMM");
+}
+
+function groupByDay(items: NotifRow[]): Array<{ key: string; date: Date; items: NotifRow[] }> {
+  const groups: Array<{ key: string; date: Date; items: NotifRow[] }> = [];
+  for (const n of items) {
+    const d = new Date(n.created_at);
+    const key = format(d, "yyyy-MM-dd");
+    const last = groups[groups.length - 1];
+    if (last && isSameDay(last.date, d)) {
+      last.items.push(n);
+    } else {
+      groups.push({ key, date: d, items: [n] });
+    }
+  }
+  return groups;
+}
 
 const Notifications = () => {
   const qc = useQueryClient();
@@ -51,7 +76,7 @@ const Notifications = () => {
   const markAllRead = useMutation({
     mutationFn: async () => {
       const res = await apiFetch("/api/v1/notifications/mark-all-read/", { method: "POST" });
-      if (!res.ok) throw new Error("Hammasini o'qish belgilanmadi");
+      if (!res.ok) throw new Error("Hammasini oʻqish belgilanmadi");
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
@@ -68,7 +93,7 @@ const Notifications = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -82,135 +107,138 @@ const Notifications = () => {
     );
   }
 
+  const groups = groupByDay(notifications);
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="px-5 pt-12 pb-2">
-        <div className="flex items-center justify-between">
+      <header className="px-5 pt-safe">
+        <div className="flex items-end justify-between pt-3">
           <div>
-            <motion.h1
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-2xl font-extrabold text-foreground tracking-tight"
-            >
+            <p className="label-eyebrow">Inbox</p>
+            <h1 className="font-display text-[26px] font-semibold tracking-tight text-foreground">
               Xabarnomalar
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.05 }}
-              className="text-sm text-muted-foreground mt-0.5"
-            >
-              {unreadCount > 0 ? `${unreadCount} ta yangi xabar` : "Hammasi o‘qilgan"}
-            </motion.p>
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {unreadCount > 0 ? `${unreadCount} ta yangi xabar` : "Hammasi oʻqilgan"}
+            </p>
           </div>
           {unreadCount > 0 && (
-            <motion.div
+            <motion.span
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 400, damping: 20 }}
-              className="w-8 h-8 rounded-full bg-accent flex items-center justify-center"
+              transition={{ type: "spring", stiffness: 380, damping: 22 }}
+              className="grid h-9 w-9 place-items-center rounded-full bg-gold text-[12px] font-bold text-gold-foreground shadow-soft"
             >
-              <span className="text-xs font-bold text-accent-foreground">{unreadCount}</span>
-            </motion.div>
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </motion.span>
           )}
         </div>
-      </div>
+      </header>
 
-      {unreadCount > 0 ? (
-        <div className="px-5 pt-1">
+      {unreadCount > 0 && (
+        <div className="px-5 pt-3">
           <Button
             variant="secondary"
             size="sm"
-            className="rounded-xl"
+            className="rounded-full"
             disabled={markAllRead.isPending}
             onClick={() => markAllRead.mutate()}
           >
-            {markAllRead.isPending ? "Belgilanmoqda..." : "Hammasini o‘qilgan qilish"}
+            <CheckCheck className="mr-1.5 h-3.5 w-3.5" />
+            {markAllRead.isPending ? "Belgilanmoqda…" : "Hammasini oʻqilgan qilish"}
           </Button>
         </div>
-      ) : null}
+      )}
 
-      <div className="px-5 py-4 space-y-2.5">
-        <AnimatePresence>
-          {notifications.map((notif, i) => {
-            const Icon = iconMap[notif.type] ?? Bell;
-            const read = !!notif.read_at;
-
-            return (
-              <motion.div
-                key={notif.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 60, height: 0 }}
-                transition={{ delay: i * 0.04 }}
-                layout
-                className={cn(
-                  "w-full text-left flex flex-col gap-3 p-4 rounded-2xl transition-colors border",
-                  !read
-                    ? "bg-accent/[0.06] border-accent/15"
-                    : "bg-card border-border/40"
-                )}
-              >
-                <button
-                  type="button"
-                  className="flex gap-3.5 w-full text-left"
-                  onClick={() => {
-                    if (!read) markRead.mutate(notif.id);
-                    const target = targetFor(notif.payload);
-                    if (target) router.push(target);
-                  }}
-                >
-                  <div
-                    className={cn(
-                      "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-                      notif.type === "reminder_1h"
-                        ? "bg-warning/15 text-warning"
-                        : "bg-accent/15 text-accent"
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <p
-                        className={cn(
-                          "font-semibold text-sm",
-                          !read ? "text-foreground" : "text-foreground/80"
-                        )}
-                      >
-                        {notif.title}
-                      </p>
-                      {!read && (
-                        <motion.span
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="w-2.5 h-2.5 rounded-full bg-accent shrink-0 mt-1"
-                        />
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{notif.body}</p>
-                    <p className="text-[10px] text-muted-foreground/50 mt-2 font-medium">
-                      {format(new Date(notif.created_at), "d MMM, HH:mm")}
-                    </p>
-                  </div>
-                </button>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-
-        {notifications.length === 0 && (
+      <div className="px-5 pb-6 pt-5">
+        {groups.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center py-20"
+            className="rounded-3xl border border-dashed border-border bg-surface py-16 text-center shadow-soft"
           >
-            <div className="w-16 h-16 rounded-full bg-muted/60 flex items-center justify-center mx-auto mb-4">
-              <Bell className="h-7 w-7 text-muted-foreground/50" />
+            <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-muted">
+              <Bell className="h-6 w-6 text-muted-foreground" />
             </div>
-            <p className="text-base font-semibold text-foreground mb-1">Xabarlar yo&apos;q</p>
-            <p className="text-sm text-muted-foreground">Yangi xabarlar shu yerda chiqadi</p>
+            <p className="text-base font-semibold text-foreground">Xabarlar yoʻq</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Yangi xabarlar shu yerda chiqadi
+            </p>
           </motion.div>
+        ) : (
+          <div className="space-y-6">
+            {groups.map((group) => (
+              <section key={group.key}>
+                <h2 className="label-eyebrow mb-2 px-1">{dayLabel(group.date)}</h2>
+                <div className="space-y-2">
+                  <AnimatePresence>
+                    {group.items.map((notif, i) => {
+                      const Icon = iconMap[notif.type] ?? Bell;
+                      const read = !!notif.read_at;
+                      return (
+                        <motion.button
+                          type="button"
+                          key={notif.id}
+                          initial={{ opacity: 0, x: -16 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 60, height: 0 }}
+                          transition={{ delay: i * 0.025 }}
+                          layout
+                          onClick={() => {
+                            if (!read) markRead.mutate(notif.id);
+                            const target = targetFor(notif.payload);
+                            if (target) router.push(target);
+                          }}
+                          className={cn(
+                            "flex w-full cursor-pointer items-start gap-3 rounded-2xl border p-3.5 text-left shadow-soft outline-none transition focus-visible:ring-2 focus-visible:ring-ring",
+                            !read
+                              ? "border-foreground/20 bg-surface ring-1 ring-foreground/10"
+                              : "border-border/60 bg-surface/70",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "grid h-10 w-10 shrink-0 place-items-center rounded-2xl",
+                              !read
+                                ? "bg-foreground text-background"
+                                : "bg-muted text-muted-foreground",
+                            )}
+                          >
+                            <Icon className="h-4 w-4" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <p
+                                className={cn(
+                                  "line-clamp-2 text-sm font-semibold",
+                                  !read ? "text-foreground" : "text-foreground/75",
+                                )}
+                              >
+                                {notif.title}
+                              </p>
+                              {!read && (
+                                <motion.span
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-gold ring-2 ring-surface"
+                                />
+                              )}
+                            </div>
+                            <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                              {notif.body}
+                            </p>
+                            <p className="mt-1.5 text-[10px] font-semibold tabular-nums text-muted-foreground/70">
+                              {format(new Date(notif.created_at), "HH:mm")}
+                            </p>
+                          </div>
+                        </motion.button>
+                      );
+                    })}
+                  </AnimatePresence>
+                </div>
+              </section>
+            ))}
+          </div>
         )}
       </div>
     </div>
@@ -219,7 +247,10 @@ const Notifications = () => {
 
 export default function NotificationsWithAuth() {
   return (
-    <AuthGate title="Xabarnomalar uchun kiring" description="Booking va chat xabarlarini ko‘rish uchun mijoz akkaunti kerak.">
+    <AuthGate
+      title="Xabarnomalar uchun kiring"
+      description="Booking va chat xabarlarini koʻrish uchun mijoz akkaunti kerak."
+    >
       <Notifications />
     </AuthGate>
   );

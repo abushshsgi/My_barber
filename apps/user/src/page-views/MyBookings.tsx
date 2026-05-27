@@ -3,7 +3,19 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { StatusBadge, type ApiBookingStatus } from "@/components/StatusBadge";
-import { CalendarDays, Clock, MessageCircle, Scissors, Star, X } from "lucide-react";
+import {
+  CalendarDays,
+  Check,
+  CheckCircle2,
+  Clock,
+  Hourglass,
+  MessageCircle,
+  Play,
+  Scissors,
+  Star,
+  X,
+  XCircle,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiFetch, formatApiError } from "@/lib/api";
 import { format } from "date-fns";
@@ -11,6 +23,7 @@ import { AuthGate } from "@/components/AuthGate";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "@/navigation";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 type BookingLine = { service_name: string };
 type BookingRow = {
@@ -57,10 +70,10 @@ const tabs = [
 ];
 
 const lifecycleSteps = [
-  { key: "pending", label: "Kutmoqda" },
-  { key: "accepted", label: "Tasdiq" },
-  { key: "in_progress", label: "Jarayon" },
-  { key: "completed", label: "Tugadi" },
+  { key: "pending", label: "Kutmoqda", Icon: Hourglass },
+  { key: "accepted", label: "Tasdiq", Icon: Check },
+  { key: "in_progress", label: "Jarayon", Icon: Play },
+  { key: "completed", label: "Tugadi", Icon: CheckCircle2 },
 ] as const;
 
 function lifecycleIndex(status: string) {
@@ -152,8 +165,8 @@ function MyBookings() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Clock className="h-8 w-8 animate-spin text-accent" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Clock className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -168,55 +181,58 @@ function MyBookings() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="px-5 pt-12 pb-2">
-        <motion.h1
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-2xl font-extrabold text-foreground tracking-tight"
-        >
-          Bandlarim
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.05 }}
-          className="text-sm text-muted-foreground mt-0.5"
-        >
-          Booking holati, chat va sharhlar
-        </motion.p>
-      </div>
+      <header className="px-5 pt-safe">
+        <div className="pt-3">
+          <p className="label-eyebrow">Mening profilim</p>
+          <h1 className="font-display text-[26px] font-semibold tracking-tight text-foreground">
+            Bandlarim
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Booking holati, chat va sharhlar
+          </p>
+        </div>
+      </header>
 
-      <div className="px-5 py-3">
-        <div className="flex gap-2 p-1 rounded-2xl bg-muted/50">
+      <div className="px-5 pt-4">
+        <div className="relative flex gap-1 rounded-full border border-border bg-surface p-1 shadow-soft">
           {tabs.map((t) => (
             <button
               key={t.key}
+              type="button"
               onClick={() => setTab(t.key)}
-              className="relative flex-1 py-2 rounded-xl text-sm font-medium transition-colors"
+              className="relative flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full py-2 text-[13px] font-semibold transition"
             >
               {tab === t.key && (
-                <motion.div
-                  layoutId="booking-tab"
-                  className="absolute inset-0 bg-card shadow-sm rounded-xl"
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                <motion.span
+                  layoutId="bookings-tab-pill"
+                  className="absolute inset-0 -z-0 rounded-full bg-foreground"
+                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
                 />
               )}
               <span
-                className={`relative z-10 flex items-center justify-center gap-1.5 ${
-                  tab === t.key ? "text-foreground" : "text-muted-foreground"
-                }`}
+                className={cn(
+                  "relative z-10",
+                  tab === t.key ? "text-background" : "text-muted-foreground",
+                )}
               >
                 {t.label}
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
-                  {t.key === "upcoming" ? upcoming.length : history.length}
-                </span>
+              </span>
+              <span
+                className={cn(
+                  "relative z-10 rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
+                  tab === t.key
+                    ? "bg-background/20 text-background"
+                    : "bg-muted text-muted-foreground",
+                )}
+              >
+                {t.key === "upcoming" ? upcoming.length : history.length}
               </span>
             </button>
           ))}
         </div>
       </div>
 
-      <div className="px-5 space-y-3 pb-4">
+      <div className="space-y-3 px-5 pb-6 pt-5">
         <AnimatePresence mode="popLayout">
           {list.map((booking, i) => (
             <BookingCard
@@ -233,60 +249,85 @@ function MyBookings() {
 
         {list.length === 0 && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-20"
+            className="rounded-3xl border border-dashed border-border bg-surface py-16 text-center shadow-soft"
           >
-            <div className="w-16 h-16 rounded-full bg-muted/60 flex items-center justify-center mx-auto mb-4">
-              <CalendarDays className="h-7 w-7 text-muted-foreground/50" />
+            <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-muted">
+              <CalendarDays className="h-6 w-6 text-muted-foreground" />
             </div>
-            <p className="text-base font-semibold text-foreground mb-1">Bandlar yo&apos;q</p>
-            <p className="text-sm text-muted-foreground">Salon tanlang va band qiling</p>
+            <p className="text-base font-semibold text-foreground">Bandlar yoʻq</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Salon yoki barberni tanlab bron qiling
+            </p>
           </motion.div>
         )}
       </div>
 
       {reviewDraft && (
-        <div className="fixed inset-0 z-50 flex items-end bg-black/30 p-4">
-          <div className="w-full rounded-3xl border border-border bg-card p-4 shadow-luxury">
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/30 px-3"
+          onClick={() => setReviewDraft(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-t-[28px] border border-border bg-surface p-5 pb-8 shadow-luxury"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between">
-              <p className="text-base font-bold text-foreground">Sharh qoldirish</p>
-              <button type="button" onClick={() => setReviewDraft(null)} aria-label="Yopish">
-                <X className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="label-eyebrow">Sharh</p>
+                <p className="font-display text-lg font-semibold text-foreground">
+                  Sharh qoldirish
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReviewDraft(null)}
+                aria-label="Yopish"
+                className="grid h-10 w-10 place-items-center rounded-full border border-border bg-surface"
+              >
+                <X className="h-4 w-4 text-foreground" />
               </button>
             </div>
-            <div className="mt-3 flex gap-1">
+            <div className="mt-4 flex justify-center gap-1.5">
               {[1, 2, 3, 4, 5].map((r) => (
                 <button
                   key={r}
                   type="button"
                   onClick={() => setReviewDraft((d) => (d ? { ...d, rating: r } : d))}
-                  className="p-1"
+                  className="p-1.5"
                   aria-label={`${r} yulduz`}
                 >
                   <Star
-                    className={`h-6 w-6 ${
-                      r <= reviewDraft.rating ? "fill-foreground text-foreground" : "text-muted-foreground"
-                    }`}
+                    className={cn(
+                      "h-7 w-7 transition",
+                      r <= reviewDraft.rating
+                        ? "fill-gold text-gold drop-shadow"
+                        : "text-muted-foreground/40",
+                    )}
                   />
                 </button>
               ))}
             </div>
             <textarea
               value={reviewDraft.text}
-              onChange={(e) => setReviewDraft((d) => (d ? { ...d, text: e.target.value } : d))}
-              className="mt-3 min-h-24 w-full rounded-2xl border border-border bg-background p-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              placeholder="Xizmat haqida fikringiz..."
+              onChange={(e) =>
+                setReviewDraft((d) => (d ? { ...d, text: e.target.value } : d))
+              }
+              className="mt-4 min-h-28 w-full rounded-2xl border border-border bg-background p-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              placeholder="Xizmat haqida fikringizni yozing…"
             />
             {createReview.isError && (
-              <p className="mt-2 text-xs text-destructive">{(createReview.error as Error).message}</p>
+              <p className="mt-2 text-xs text-destructive">
+                {(createReview.error as Error).message}
+              </p>
             )}
             <Button
-              className="mt-3 h-11 w-full rounded-2xl"
+              className="mt-4 h-12 w-full rounded-2xl bg-foreground text-background shadow-luxury hover:bg-foreground/90"
               disabled={createReview.isPending}
               onClick={() => createReview.mutate(reviewDraft)}
             >
-              Sharhni yuborish
+              {createReview.isPending ? "Yuborilmoqda…" : "Sharhni yuborish"}
             </Button>
           </div>
         </div>
@@ -314,97 +355,136 @@ function BookingCard({
   const stepIndex = lifecycleIndex(booking.status);
   const canCancel = booking.status === "pending" || booking.status === "accepted";
   const canChat = booking.status !== "cancelled" && booking.status !== "rejected";
+  const isCancelled = booking.status === "cancelled" || booking.status === "rejected";
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ delay: index * 0.05 }}
+      transition={{ delay: index * 0.04 }}
       layout
+      className="relative overflow-hidden rounded-3xl border border-border bg-surface p-4 shadow-card"
     >
-      <div className="rounded-2xl border border-border/50 bg-card p-4 transition-colors hover:border-accent/20">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10">
-              <Scissors className="h-4 w-4 text-accent" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="truncate text-sm font-bold text-foreground">
-                {booking.salon_name || booking.barber_name || "Barber"}
-              </h3>
-              <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
-                {booking.lines?.map((s) => s.service_name).join(", ") || "—"}
-              </p>
-            </div>
+      {/* Header */}
+      <div className="flex items-start gap-3">
+        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-foreground text-background">
+          <Scissors className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="line-clamp-1 text-[15px] font-bold text-foreground">
+            {booking.salon_name || booking.barber_name || "Barber"}
+          </h3>
+          <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+            {booking.lines?.map((s) => s.service_name).join(", ") || "—"}
+          </p>
+        </div>
+        <StatusBadge status={mapStatus(booking.status)} />
+      </div>
+
+      {/* Date row */}
+      <div className="mt-3 flex items-center gap-3 rounded-2xl bg-muted/60 px-3 py-2 text-xs">
+        <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
+          <CalendarDays className="h-3.5 w-3.5" />
+          {format(start, "d MMM yyyy")}
+        </span>
+        <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
+          <Clock className="h-3.5 w-3.5" />
+          {format(start, "HH:mm")}
+        </span>
+        <span className="ml-auto font-display text-sm font-bold text-foreground">
+          {parseFloat(booking.total_price).toLocaleString()} soʻm
+        </span>
+      </div>
+
+      {/* Lifecycle Timeline */}
+      {!isCancelled ? (
+        <div className="mt-4">
+          <div className="flex items-center gap-1">
+            {lifecycleSteps.map((step, idx) => {
+              const reached = stepIndex >= idx;
+              const Icon = step.Icon;
+              return (
+                <div key={step.key} className="contents">
+                  <div className="flex min-w-0 flex-1 flex-col items-center gap-1">
+                    <span
+                      className={cn(
+                        "grid h-7 w-7 place-items-center rounded-full border-2 transition",
+                        reached
+                          ? "border-foreground bg-foreground text-background"
+                          : "border-border bg-background text-muted-foreground",
+                      )}
+                    >
+                      <Icon className="h-3 w-3" />
+                    </span>
+                    <span
+                      className={cn(
+                        "max-w-full truncate text-[10px] font-semibold",
+                        reached ? "text-foreground" : "text-muted-foreground",
+                      )}
+                    >
+                      {step.label}
+                    </span>
+                  </div>
+                  {idx < lifecycleSteps.length - 1 && (
+                    <span
+                      className={cn(
+                        "mb-4 h-[2px] w-2 shrink-0 rounded-full",
+                        stepIndex > idx ? "bg-foreground" : "bg-border",
+                      )}
+                      aria-hidden
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
-          <StatusBadge status={mapStatus(booking.status)} />
         </div>
-
-        <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <CalendarDays className="h-3.5 w-3.5" /> {format(start, "d MMM yyyy")}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5" /> {format(start, "HH:mm")}
-          </span>
-          <span className="ml-auto font-bold text-foreground">
-            {parseFloat(booking.total_price).toLocaleString()} so&apos;m
-          </span>
+      ) : (
+        <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-destructive/10 px-3 py-1.5 text-xs font-semibold text-destructive">
+          <XCircle className="h-3.5 w-3.5" />
+          {booking.status === "cancelled" ? "Bekor qilindi" : "Rad etildi"}
         </div>
+      )}
 
-        <div className="mt-4 grid grid-cols-4 gap-1">
-          {lifecycleSteps.map((step, idx) => (
-            <div key={step.key} className="min-w-0">
-              <div
-                className={`h-1 rounded-full ${
-                  stepIndex >= idx ? "bg-foreground" : "bg-muted"
-                }`}
-              />
-              <p className="mt-1 truncate text-[10px] text-muted-foreground">{step.label}</p>
-            </div>
+      {/* Actions */}
+      <div className="mt-4 flex flex-wrap gap-2">
+        {canChat && (
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="rounded-full"
+            disabled={busy}
+            onClick={onChat}
+          >
+            <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
+            Chat
+          </Button>
+        )}
+        {canCancel && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-full text-destructive hover:bg-destructive/5"
+            disabled={busy}
+            onClick={onCancel}
+          >
+            Bekor qilish
+          </Button>
+        )}
+        {booking.status === "completed" &&
+          (booking.has_review ? (
+            <span className="inline-flex h-8 items-center rounded-full border border-border px-3 text-xs font-semibold text-muted-foreground">
+              <Check className="mr-1 h-3 w-3" /> Sharh yozilgan
+            </span>
+          ) : (
+            <Button type="button" size="sm" className="rounded-full" onClick={onReview}>
+              <Star className="mr-1.5 h-3.5 w-3.5 fill-gold text-gold" />
+              Sharh yozish
+            </Button>
           ))}
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          {canChat && (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="rounded-xl"
-              disabled={busy}
-              onClick={onChat}
-            >
-              <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
-              Chat
-            </Button>
-          )}
-          {canCancel && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="rounded-xl text-destructive"
-              disabled={busy}
-              onClick={onCancel}
-            >
-              Bekor qilish
-            </Button>
-          )}
-          {booking.status === "completed" && (
-            booking.has_review ? (
-              <span className="inline-flex h-8 items-center rounded-xl border border-border px-3 text-xs font-semibold text-muted-foreground">
-                Sharh yozilgan
-              </span>
-            ) : (
-              <Button type="button" size="sm" className="rounded-xl" onClick={onReview}>
-                <Star className="mr-1.5 h-3.5 w-3.5" />
-                Sharh yozish
-              </Button>
-            )
-          )}
-        </div>
       </div>
     </motion.div>
   );
@@ -412,7 +492,10 @@ function BookingCard({
 
 export default function MyBookingsWithAuth() {
   return (
-    <AuthGate title="Bandlaringiz uchun kiring" description="Booking tarixini ko‘rish uchun mijoz akkaunti kerak.">
+    <AuthGate
+      title="Bandlaringiz uchun kiring"
+      description="Booking tarixini koʻrish uchun mijoz akkaunti kerak."
+    >
       <MyBookings />
     </AuthGate>
   );
