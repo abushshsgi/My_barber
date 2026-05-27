@@ -42,16 +42,34 @@ def slot_overlaps_breaks(t_aware, end_aware, breaks_list, tz) -> bool:
 
 
 def get_salon_services_for_barber(salon: Salon, barber: Barber, service_ids: Iterable[int]):
-    ids = list(service_ids)
-    return list(
+    ids = list(set(service_ids))
+    if not ids:
+        return []
+    salon_rows = list(
         Service.objects.filter(
             Q(barber__isnull=True) | Q(barber=barber),
             Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True),
-            id__in=ids,
             salon=salon,
             is_active=True,
+            id__in=ids,
         )
     )
+    found = {s.id for s in salon_rows}
+    missing = [i for i in ids if i not in found]
+    if missing:
+        from barbers.salon_service_sync import ensure_salon_service_for_barber_service
+
+        for bs in BarberService.objects.filter(
+            Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True),
+            profile__barber=barber,
+            id__in=missing,
+            is_active=True,
+        ):
+            linked = ensure_salon_service_for_barber_service(salon, barber, bs)
+            if linked and linked.id not in found:
+                salon_rows.append(linked)
+                found.add(linked.id)
+    return salon_rows
 
 
 def get_independent_services_for_barber(barber: Barber, service_ids: Iterable[int]):
@@ -76,10 +94,6 @@ def _window_for_salon(salon: Salon, barber: Barber, target_date):
     if isinstance(closed, list) and weekday in closed:
         return None, None, [], "Salon bu kuni yopiq."
 
-    sh = SalonHours.objects.filter(salon=salon, weekday=weekday).first()
-    if not sh:
-        return None, None, [], "Salon ish vaqti kiritilmagan."
-
     mem = SalonMembership.objects.filter(
         barber=barber,
         salon=salon,
@@ -88,16 +102,25 @@ def _window_for_salon(salon: Salon, barber: Barber, target_date):
     if not mem:
         return None, None, [], "Barber bu salonda faol emas."
 
-    open_t = sh.open_time
-    close_t = sh.close_time
-    breaks_list = []
+    sh = SalonHours.objects.filter(salon=salon, weekday=weekday).first()
     bh = SalonBarberWorkingHours.objects.filter(membership=mem, weekday=weekday).first()
     if bh and bh.is_day_off:
         return None, None, [], "Barber bu kuni dam oladi."
-    if bh:
-        open_t = max(open_t, bh.open_time)
-        close_t = min(close_t, bh.close_time)
+
+    if sh:
+        open_t = sh.open_time
+        close_t = sh.close_time
+        breaks_list = []
+        if bh:
+            open_t = max(open_t, bh.open_time)
+            close_t = min(close_t, bh.close_time)
+            breaks_list = list(getattr(bh, "breaks", []) or [])
+    elif bh:
+        open_t = bh.open_time
+        close_t = bh.close_time
         breaks_list = list(getattr(bh, "breaks", []) or [])
+    else:
+        return None, None, [], "Salon yoki barber ish vaqti kiritilmagan."
     if open_t >= close_t:
         return None, None, [], "Bu kunda ish oralig'i mavjud emas."
     return open_t, close_t, breaks_list, None

@@ -324,6 +324,12 @@ class MyBarberServiceViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedBarberAware]
     serializer_class = BarberServiceSerializer
 
+    def list(self, request, *args, **kwargs):
+        from barbers.salon_service_sync import sync_all_barber_services_for_barber
+
+        sync_all_barber_services_for_barber(request.user.barber)
+        return super().list(request, *args, **kwargs)
+
     def get_queryset(self):
         b = self.request.user.barber
         prof, _ = BarberProfile.objects.get_or_create(barber=b)
@@ -343,6 +349,9 @@ class MyBarberServiceViewSet(viewsets.ModelViewSet):
                 duration_minutes=catalog.duration_minutes,
             )
             obj.categories.set(catalog.categories.all())
+            from barbers.salon_service_sync import sync_barber_service_to_salons
+
+            sync_barber_service_to_salons(obj)
             return
 
         name = str(self.request.data.get("name", "") or "").strip()
@@ -354,7 +363,10 @@ class MyBarberServiceViewSet(viewsets.ModelViewSet):
             raise ValidationError({"catalog_service": "Katalogdan xizmat tanlang."})
         if duration < 5 or duration > 480:
             raise ValidationError({"duration_minutes": "Davomiylik 5 va 480 daqiqa oralig'ida bo'lishi kerak."})
-        serializer.save(profile=prof, name=name, duration_minutes=duration)
+        obj = serializer.save(profile=prof, name=name, duration_minutes=duration)
+        from barbers.salon_service_sync import sync_barber_service_to_salons
+
+        sync_barber_service_to_salons(obj)
 
     def perform_update(self, serializer):
         obj = self.get_object()
@@ -367,8 +379,20 @@ class MyBarberServiceViewSet(viewsets.ModelViewSet):
                 duration_minutes=catalog.duration_minutes,
             )
             updated.categories.set(catalog.categories.all())
+            from barbers.salon_service_sync import sync_barber_service_to_salons
+
+            sync_barber_service_to_salons(updated)
             return
-        serializer.save(profile=obj.profile)
+        updated = serializer.save(profile=obj.profile)
+        from barbers.salon_service_sync import sync_barber_service_to_salons
+
+        sync_barber_service_to_salons(updated)
+
+    def perform_destroy(self, instance):
+        from barbers.salon_service_sync import remove_barber_service_from_salons
+
+        remove_barber_service_from_salons(instance)
+        instance.delete()
 
 
 class MyBarberWorkPhotoViewSet(viewsets.ModelViewSet):

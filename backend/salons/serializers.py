@@ -186,6 +186,14 @@ class SalonDetailSerializer(serializers.ModelSerializer):
         return obj.reviews.count()
 
     def get_services(self, obj):
+        from barbers.salon_service_sync import sync_all_barber_services_for_barber
+
+        for mem in SalonMembership.objects.filter(
+            salon=obj,
+            invite_state=SalonMembership.InviteState.ACTIVE,
+        ).select_related("barber"):
+            if mem.barber_id:
+                sync_all_barber_services_for_barber(mem.barber)
         qs = obj.services.filter(is_active=True).filter(
             Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True)
         ).order_by("name")
