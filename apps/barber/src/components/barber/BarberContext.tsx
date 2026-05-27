@@ -53,6 +53,8 @@ export type ActivationSteps = {
   schedule_ok: boolean;
 };
 
+export const MIN_ACTIVE_SERVICES = 5;
+
 export type Booking = {
   id: string;
   client: string;
@@ -212,6 +214,8 @@ type Ctx = {
   fullyReady: boolean;
   readinessPercent: number;
   activationSteps: ActivationSteps;
+  /** Serverdagi faol xizmatlar soni (onboarding/status). */
+  activationServicesCount: number;
   refreshActivationStatus: () => Promise<void>;
   bookingSetup: BookingSetupStatus;
   profile: BarberProfile;
@@ -327,6 +331,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     services_ok: true,
     schedule_ok: true,
   });
+  const [activationServicesCount, setActivationServicesCount] = useState(0);
   const [settings, setSettings] = useState<Settings>({
     notifications_email: true,
     notifications_push: true,
@@ -902,6 +907,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         booking_setup_path?: string | null;
         has_location?: boolean;
         has_services?: boolean;
+        has_services_count?: number;
         has_working_hours?: boolean;
         has_membership_hours?: boolean;
         fully_ready?: boolean;
@@ -928,6 +934,11 @@ export function BarberProvider({ children }: { children: ReactNode }) {
           schedule_ok: Boolean(s.schedule_ok),
         });
       }
+      setActivationServicesCount(
+        typeof st.has_services_count === "number" && !Number.isNaN(st.has_services_count)
+          ? st.has_services_count
+          : 0,
+      );
       setBookingSetup({
         ready: st.booking_ready !== false,
         missing: Array.isArray(st.booking_missing) ? st.booking_missing.map(String) : [],
@@ -1080,6 +1091,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       fullyReady,
       readinessPercent,
       activationSteps,
+      activationServicesCount,
       refreshActivationStatus,
       bookingSetup,
       profile,
@@ -1149,6 +1161,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       fullyReady,
       readinessPercent,
       activationSteps,
+      activationServicesCount,
       refreshActivationStatus,
       bookingSetup,
       profile,

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Clock, Loader2, Plus, Search, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyBlock, PageHeader, SectionCard, StatusPill } from "@/components/barber/primitives";
-import { useBarberContext } from "@/components/barber/BarberContext";
+import { MIN_ACTIVE_SERVICES, useBarberContext } from "@/components/barber/BarberContext";
 import { API_BASE, apiFetch, apiList, formatApiError } from "@/lib/api";
 import {
   AlertDialog,
@@ -139,6 +139,7 @@ function ServicesSchedulePage() {
     isJoinedWorker,
     refreshActivationStatus,
     activationSteps,
+    activationServicesCount,
     fullyReady,
   } = useBarberContext();
   const scope = viewMode === "salon" && activeSalonId ? "salon" : "independent";
@@ -222,6 +223,7 @@ function ServicesSchedulePage() {
       setRecommendations(recs);
       setCatalogServices(catalogRows);
       committedRef.current = serializeForm(nextServices, pendingServicesRef.current);
+      await refreshActivationStatus();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Ma'lumotlarni yuklab bo'lmadi.");
     } finally {
@@ -343,6 +345,11 @@ function ServicesSchedulePage() {
         return;
       }
       for (const pending of pendingServices) {
+        const price = Number(pending.price);
+        if (!price || price <= 0) {
+          toast.error("Har bir tanlangan xizmat uchun narx kiriting (0 dan katta).");
+          return;
+        }
         const matchedCatalog = catalogServices.find(
           (item) => String(item.id) === pending.catalog_service,
         );
@@ -468,15 +475,30 @@ function ServicesSchedulePage() {
           </div>
         ) : null}
 
-        {!fullyReady &&
-        !activationSteps.services_ok &&
-        activeCount >= 5 &&
-        !savingServices ? (
+        {!fullyReady && !activationSteps.services_ok ? (
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-foreground">
-            <span className="font-medium">5 ta faol xizmat</span> ko&apos;rinmoqda. Serverga
-            yozilishini tekshirish uchun{" "}
-            <span className="font-medium">Xizmatlarni saqlash</span> ni bosing, so&apos;ng{" "}
-            <span className="font-medium">Profil tayyorligi</span> sahifasiga qayting.
+            <p>
+              <span className="font-medium">Faol xizmatlar:</span> sahifada {activeCount} ta,
+              serverda {activationServicesCount} ta (kerak: kamida {MIN_ACTIVE_SERVICES} ta).
+            </p>
+            {activeCount >= MIN_ACTIVE_SERVICES && activationServicesCount < MIN_ACTIVE_SERVICES ? (
+              <p className="mt-2 text-muted-foreground">
+                Xizmatlar qo&apos;shilgan, lekin profil hali yangilanmagan.{" "}
+                <button
+                  type="button"
+                  className="font-medium text-foreground underline underline-offset-4"
+                  onClick={() => void refreshActivationStatus()}
+                >
+                  Holatni yangilash
+                </button>{" "}
+                yoki backend deploydan keyin qayta urinib ko&apos;ring.
+              </p>
+            ) : activeCount < MIN_ACTIVE_SERVICES ? (
+              <p className="mt-2 text-muted-foreground">
+                Katalogdan xizmat tanlang, narx kiriting va &quot;Qo&apos;shish&quot; yoki
+                &quot;Xizmatlarni saqlash&quot; ni bosing.
+              </p>
+            ) : null}
           </div>
         ) : null}
 

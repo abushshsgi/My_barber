@@ -12,6 +12,7 @@ import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useBarberContext } from "@/components/barber/BarberContext";
+import { MIN_ACTIVE_SERVICES } from "@/components/barber/BarberContext";
 import { SIGNUP_FLOW_PATH } from "@/lib/barber-flow-config";
 import { cn } from "@/lib/utils";
 
@@ -73,6 +74,7 @@ function BarberActivationPage() {
     fullyReady,
     readinessPercent,
     activationSteps,
+    activationServicesCount,
     requiredNextPath,
     onboardingFlow,
     refreshActivationStatus,
@@ -85,6 +87,14 @@ function BarberActivationPage() {
     void refreshActivationStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only refresh
   }, []);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refreshActivationStatus();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [refreshActivationStatus]);
 
   const primaryNext = useMemo(
     () => computePrimaryNext(activationSteps, requiredNextPath, onboardingFlow),
@@ -109,7 +119,9 @@ function BarberActivationPage() {
         n: 3,
         ok: activationSteps.services_ok,
         title: "Xizmatlar",
-        body: "Kamida 5 ta faol xizmat (narx va vaqt).",
+        body: activationSteps.services_ok
+          ? `Kamida ${MIN_ACTIVE_SERVICES} ta faol xizmat — bajarildi (${activationServicesCount} ta).`
+          : `Kamida ${MIN_ACTIVE_SERVICES} ta faol xizmat kerak. Serverda hozir: ${activationServicesCount} ta. Xizmatlar sahifasida narx kiriting va saqlang.`,
       },
       {
         n: 4,
@@ -118,7 +130,7 @@ function BarberActivationPage() {
         body: "Kamida bitta ish kuni ochiq va jadval saqlangan.",
       },
     ],
-    [activationSteps],
+    [activationSteps, activationServicesCount],
   );
 
   const activeIndex = useMemo(() => {

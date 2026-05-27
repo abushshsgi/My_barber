@@ -56,6 +56,17 @@ def _service_count_salon(salon_id: int, barber: Barber) -> int:
     )
 
 
+def _service_count_for_readiness(barber: Barber, salon_id: int | None = None) -> int:
+    """
+    Barber panel `/api/v1/barber/services/` BarberService yozadi.
+    Salon Service alohida bo‘lishi mumkin — ikkalasidan kattasini olamiz.
+    """
+    barber_count = _service_count_independent(barber)
+    if not salon_id:
+        return barber_count
+    return max(barber_count, _service_count_salon(salon_id, barber))
+
+
 def compute_barber_readiness(barber: Barber) -> ReadinessBreakdown:
     from barbers.models import BarberProfile, BarberWorkingHours as IndepWorkingHours
     from salons.models import BarberWorkingHours as SalonWorkingHours
@@ -89,7 +100,7 @@ def compute_barber_readiness(barber: Barber) -> ReadinessBreakdown:
 
     # Independent
     if flow == "independent" or wm == "independent":
-        svc_count = _service_count_independent(barber)
+        svc_count = _service_count_for_readiness(barber, None)
         has_work_hours_indep = IndepWorkingHours.objects.filter(
             profile__barber=barber, is_day_off=False
         ).exists()
@@ -113,8 +124,7 @@ def compute_barber_readiness(barber: Barber) -> ReadinessBreakdown:
         )
         schedule_ok = bool(has_membership_hours)
         sid = owner_mem.salon_id if owner_mem else None
-        if sid:
-            svc_count = _service_count_salon(sid, barber)
+        svc_count = _service_count_for_readiness(barber, sid)
         services_ok = svc_count >= MIN_ACTIVE_SERVICES
 
     elif flow == "employee" or flow == "":
@@ -127,7 +137,9 @@ def compute_barber_readiness(barber: Barber) -> ReadinessBreakdown:
         ).exists() if active_mem else False
         schedule_ok = bool(has_membership_hours)
         if active_mem:
-            svc_count = _service_count_salon(active_mem.salon_id, barber)
+            svc_count = _service_count_for_readiness(barber, active_mem.salon_id)
+        else:
+            svc_count = _service_count_for_readiness(barber, None)
         services_ok = svc_count >= MIN_ACTIVE_SERVICES
 
     else:

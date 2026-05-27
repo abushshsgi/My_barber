@@ -10,6 +10,7 @@ from rest_framework.test import APIClient
 from barbers.barber_auth import encode_barber_tokens
 from barbers.email_verification import sign_barber_email_token
 from barbers.models import Barber, BarberProfile, BarberService, BarberWorkingHours
+from salons.models import Salon, SalonMembership
 
 
 @override_settings(
@@ -90,6 +91,58 @@ class BarberActivationReadinessTests(TestCase):
         st = self.client.get("/api/v1/barber/onboarding/status/")
         self.assertEqual(st.status_code, status.HTTP_200_OK)
         self.assertTrue(st.json()["fully_ready"])
+
+    def test_owner_services_ok_counts_barber_services_not_only_salon_service(self):
+        """Barber panel BarberService yozadi; salon Service bo‘lmasa ham 5+ hisoblansin."""
+        owner = Barber.objects.create(
+            email="owner@test.uz",
+            username="owner@test.uz",
+            full_name="Owner B",
+            work_mode=Barber.WorkMode.SALON,
+            onboarding_flow=Barber.OnboardingFlow.OWNER,
+        )
+        owner.set_password("pass12345")
+        owner.save()
+        prof = BarberProfile.objects.create(
+            barber=owner,
+            latitude=41.0,
+            longitude=69.0,
+            location_text="Toshkent",
+        )
+        salon = Salon.objects.create(
+            name=f"Test Salon {owner.email}",
+            owner_barber=owner,
+            latitude=41.0,
+            longitude=69.0,
+        )
+        mem = SalonMembership.objects.create(
+            barber=owner,
+            salon=salon,
+            role=SalonMembership.Role.OWNER,
+            invite_state=SalonMembership.InviteState.ACTIVE,
+        )
+        for i in range(5):
+            BarberService.objects.create(
+                profile=prof,
+                name=f"OwnerSvc{i}",
+                price=15_000,
+                duration_minutes=30,
+                is_active=True,
+            )
+        from salons.models import BarberWorkingHours as SalonWH
+
+        SalonWH.objects.create(
+            membership=mem,
+            weekday=1,
+            open_time=time(9, 0),
+            close_time=time(18, 0),
+            is_day_off=False,
+        )
+        from barbers.readiness import compute_barber_readiness
+
+        r = compute_barber_readiness(owner)
+        self.assertGreaterEqual(r.has_services_count, 5)
+        self.assertTrue(r.services_ok)
 
     def test_resend_verification_sends_mail(self):
         access, _ = encode_barber_tokens(self.barber.id)
