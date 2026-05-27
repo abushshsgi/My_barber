@@ -51,7 +51,7 @@ function ChatList() {
         {!isLoading &&
           !error &&
           data.map((c) => (
-            <Link key={c.id} href={`/chat/${c.id}`}>
+            <Link key={c.id} to="/chat/$id" params={{ id: c.id }}>
               <Card className="p-3 flex items-center gap-3 hover:bg-muted/30 transition-colors">
                 <div className="w-11 h-11 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground">
                   <MessageCircle className="h-5 w-5" />

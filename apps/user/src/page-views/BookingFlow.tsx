@@ -11,7 +11,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiFetch, formatApiError, getAccessToken } from "@/lib/api";
 import { mediaSrc, PLACEHOLDER_AVATAR } from "@/lib/media";
 import { format } from "date-fns";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -138,8 +138,7 @@ export default function BookingFlow() {
       return { barberId: selectedBarber };
     },
     onSuccess: async ({ barberId }) => {
-      toast({
-        title: "Bron so‘rovi yuborildi",
+      toast.success("Bron so‘rovi yuborildi", {
         description: "Sartarosh tasdiqlaguncha booking kutilmoqda holatida turadi.",
       });
       try {
@@ -152,8 +151,10 @@ export default function BookingFlow() {
           router.push(`/chat/${convo.id}`);
           return;
         }
+        const body = await cr.json().catch(() => ({}));
+        toast.warning(formatApiError(body, "Chat keyinroq ochiladi"));
       } catch {
-        /* chat ixtiyoriy */
+        toast.warning("Chat keyinroq ochiladi");
       }
       router.push("/bookings");
     },

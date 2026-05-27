@@ -21,10 +21,11 @@ import { motion } from "framer-motion";
 import { Link } from "@/navigation";
 import { apiFetch, clearTokens, formatApiError } from "@/lib/api";
 import { useRouter } from "@/navigation";
-import { uzRegionLabel } from "@/lib/uz-regions";
+import { fetchUzRegions, uzRegionLabel } from "@/lib/uz-regions";
 import { AuthGate } from "@/components/AuthGate";
 import { PwaInstallGuide } from "@/components/PwaInstallGuide";
 import { fetchFavoriteSalonCount } from "../lib/favorites";
+import { toast } from "sonner";
 
 type Me = {
   id: number;
@@ -62,11 +63,11 @@ async function fetchMyReviewCount(): Promise<number> {
 const menuItems = [
   { label: "Band tarixi", icon: CalendarDays, color: "text-teal", href: "/bookings" },
   { label: "Yozilgan sharhlar", icon: Star, color: "text-gold", href: "/bookings" },
-  { label: "Sevimlilar", icon: Heart, color: "text-destructive", href: "/map" },
-  { label: "Maxfiylik", icon: Shield, color: "text-success", href: "/profile" },
-  { label: "Yordam", icon: HelpCircle, color: "text-muted-foreground", href: "/profile" },
-  { label: "Sozlamalar", icon: Settings, color: "text-muted-foreground", href: "/profile" },
-];
+  { label: "Sevimlilar", icon: Heart, color: "text-destructive", href: "/favorites" },
+  { label: "Maxfiylik", icon: Shield, color: "text-success", href: "/privacy" },
+  { label: "Yordam", icon: HelpCircle, color: "text-muted-foreground", href: "/support" },
+  { label: "Sozlamalar", icon: Settings, color: "text-muted-foreground", href: "/settings" },
+] as const;
 
 const Profile = () => {
   const router = useRouter();
@@ -74,7 +75,13 @@ const Profile = () => {
   const [editingProfile, setEditingProfile] = useState(false);
   const [phoneDraft, setPhoneDraft] = useState("");
   const [nameDraft, setNameDraft] = useState("");
+  const [regionDraft, setRegionDraft] = useState("");
   const { data: user, isLoading, error } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
+  const { data: regions = [] } = useQuery({
+    queryKey: ["regions"],
+    queryFn: fetchUzRegions,
+    staleTime: 24 * 60 * 60 * 1000,
+  });
   const { data: bookingCount = 0 } = useQuery({
     queryKey: ["bookings", "count"],
     queryFn: fetchBookingCount,
@@ -93,12 +100,13 @@ const Profile = () => {
   });
 
   const updateProfile = useMutation({
-    mutationFn: async (payload: { phone: string; full_name: string }) => {
+    mutationFn: async (payload: { phone: string; full_name: string; region: string }) => {
       const res = await apiFetch("/api/v1/users/me/", {
         method: "PATCH",
         body: JSON.stringify({
           phone: payload.phone.trim() || null,
           full_name: payload.full_name.trim(),
+          region: payload.region || "",
         }),
       });
       const body = await res.json().catch(() => ({}));
@@ -107,6 +115,7 @@ const Profile = () => {
     },
     onSuccess: () => {
       setEditingProfile(false);
+      toast.success("Profil yangilandi");
       qc.invalidateQueries({ queryKey: ["me"] });
       qc.invalidateQueries({ queryKey: ["me", "booking"] });
       qc.invalidateQueries({ queryKey: ["me", "indep-booking"] });
@@ -159,6 +168,7 @@ const Profile = () => {
                 onClick={() => {
                   setPhoneDraft(user.phone || "");
                   setNameDraft(displayName);
+                  setRegionDraft(user.region || "");
                   setEditingProfile((v) => !v);
                 }}
                 className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-accent flex items-center justify-center shadow-lg"
@@ -235,6 +245,24 @@ const Profile = () => {
                 placeholder="+998 90 123 45 67"
               />
             </label>
+            <label className="mt-3 block text-xs font-medium text-muted-foreground">
+              Viloyat
+              <select
+                value={regionDraft}
+                onChange={(e) => setRegionDraft(e.target.value)}
+                className="mt-1 h-11 w-full rounded-2xl border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="">Viloyat tanlanmagan</option>
+                {regions.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+              Viloyat katalog va booking hududini backend bilan bir xil tekshiradi.
+            </p>
             {updateProfile.isError && (
               <p className="mt-2 text-xs text-destructive">{(updateProfile.error as Error).message}</p>
             )}
@@ -243,7 +271,7 @@ const Profile = () => {
                 type="button"
                 className="h-10 flex-1 rounded-2xl bg-primary text-primary-foreground"
                 disabled={updateProfile.isPending}
-                onClick={() => updateProfile.mutate({ phone: phoneDraft, full_name: nameDraft })}
+                onClick={() => updateProfile.mutate({ phone: phoneDraft, full_name: nameDraft, region: regionDraft })}
               >
                 Saqlash
               </Button>

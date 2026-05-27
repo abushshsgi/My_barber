@@ -5,27 +5,33 @@ Canonical prefix: `/api/v1`
 ## Active va ishlab turgan endpointlar
 
 - `POST /auth/token/` - login (`UserAuth.tsx`)
-- `POST /auth/register/` - register (`UserAuth.tsx`)
+- `POST /auth/register/` - register (`UserAuth.tsx`, `region` bilan)
+- `GET /regions/` - signup/profile viloyat tanlovi (`UserAuth.tsx`, `Profile.tsx`)
 - `GET /users/me/` - profile (`Profile.tsx`, booking flowlar)
+- `PATCH /users/me/` - ism, telefon va viloyat yangilash (`Profile.tsx`)
 - `GET /salons/` - salon list (`Index.tsx` orqali shared query)
 - `GET /salons/{id}/` - salon detail (`SalonPage.tsx`, `BookingFlow.tsx`)
 - `GET /salons/{id}/staff/` - salon barberlari (`SalonPage.tsx`, `BookingFlow.tsx`)
 - `GET /salons/{id}/portfolio/` - salon ish natijalari (`SalonPage.tsx`)
 - `GET /salons/nearby/` - map discover (`MapView.tsx`)
-- `GET /barbers/` - barber catalog (`Index.tsx` orqali shared query)
 - `GET /barbers/nearby/` - nearby barber (`MapView.tsx`)
 - `GET /barbers/by-barber-id/` - independent detail (`IndependentBookingFlow.tsx`)
 - `GET /barbers/availability/` - independent slotlar (`IndependentBookingFlow.tsx`)
 - `GET /bookings/availability/` - salon booking slotlari (`BookingFlow.tsx`)
 - `GET /bookings/` - booking history (`MyBookings.tsx`, `Profile.tsx`)
 - `POST /bookings/` - booking create (`BookingFlow.tsx`, `IndependentBookingFlow.tsx`)
+- `POST /bookings/{id}/cancel/` - booking bekor qilish (`MyBookings.tsx`)
 - `GET /reviews/?salon={id}` - salon reviews (`SalonPage.tsx`)
 - `GET /reviews/?mine=1` - user reviews (`Profile.tsx`)
+- `POST /reviews/` - tugagan booking uchun sharh (`MyBookings.tsx`)
+- `GET /favorites/salons/` - sevimli salonlar (`Favorites.tsx`, `Profile.tsx`, `SalonPage.tsx`)
+- `POST /favorites/salons/` - salonni sevimliga qo'shish (`SalonPage.tsx`)
+- `DELETE /favorites/salons/{salon_id}/` - sevimlidan olib tashlash (`Favorites.tsx`, `SalonPage.tsx`)
 - `GET /notifications/` - notifications list (`Notifications.tsx`)
 - `POST /notifications/{id}/read/` - single read (`Notifications.tsx`)
 - `POST /notifications/mark-all-read/` - bulk read (`Notifications.tsx`)
 - `GET /chat/conversations/` - chat list (`ChatList.tsx`)
-- `POST /chat/conversations/` - conversation create (`BookingFlow.tsx`, `IndependentBookingFlow.tsx`, `MapView.tsx`)
+- `POST /chat/conversations/` - conversation create (`BookingFlow.tsx`, `IndependentBookingFlow.tsx`, `MyBookings.tsx`)
 - `GET /chat/conversations/{id}/messages/` - thread load (`ChatThread.tsx`)
 - `POST /chat/conversations/{id}/messages/` - send message (`ChatThread.tsx`)
 
@@ -43,4 +49,4 @@ Canonical prefix: `/api/v1`
 ## Contract risklar (monitoring)
 
 - Backendda `/api` va `/api/v1` parallel turibdi; frontendda faqat `/api/v1` ishlatish tavsiya etiladi.
-- `MapView`dan chat create qilishda booking precondition bo'lsa backend xatosi qaytishi mumkin; UI graceful fallback ko'rsatishi kerak.
+- Chat create faqat bookingdan keyin ishlaydi; booking flowlarda xato bo'lsa toast ko'rsatiladi va foydalanuvchi `Bandlarim` sahifasiga qaytariladi.

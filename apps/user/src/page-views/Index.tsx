@@ -393,7 +393,7 @@ function SalonRow({
               salon.isPremium ? "bg-foreground text-background" : "bg-muted text-muted-foreground",
             ].join(" ")}
           >
-            {salon.isPremium ? "Ochiq" : "Yopiq"}
+            {salon.isPremium ? "Premium" : "Standart"}
           </span>
         </div>
         <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
