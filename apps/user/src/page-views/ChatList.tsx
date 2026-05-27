@@ -6,6 +6,7 @@ import { MessageCircle, Loader2 } from "lucide-react";
 import { apiList } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { AuthGate } from "@/components/AuthGate";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 type ConversationRow = {
   id: string;
@@ -20,10 +21,12 @@ async function fetchConversations(): Promise<ConversationRow[]> {
 }
 
 function ChatList() {
+  const { chatAlerts } = useUserPreferences();
   const { data = [], isLoading, error } = useQuery({
     queryKey: ["chat", "conversations"],
     queryFn: fetchConversations,
     staleTime: 10_000,
+    refetchInterval: chatAlerts ? 30_000 : false,
   });
 
   return (
@@ -36,6 +39,20 @@ function ChatList() {
       </div>
 
       <div className="p-4 space-y-2">
+        {!chatAlerts ? (
+          <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+            <p className="font-semibold text-foreground">Chat eslatmalari o‘chirilgan</p>
+            <p className="mt-1 leading-relaxed">
+              Yangi xabarlar notificationlar sahifasida ko‘rsatilmaydi. Chat yozishmalarini ko‘rish mumkin.
+            </p>
+            <Link
+              to="/settings"
+              className="mt-2 inline-flex text-sm font-semibold text-accent underline-offset-2 hover:underline"
+            >
+              Sozlamalar
+            </Link>
+          </div>
+        ) : null}
         {isLoading && (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-accent" />

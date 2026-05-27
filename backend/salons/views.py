@@ -78,7 +78,17 @@ class SalonViewSet(viewsets.ModelViewSet):
             qs = qs.prefetch_related("images", "hours", "services", "services__catalog_service")
 
         if self.action == "list":
-            return self._apply_public_salon_region(self._salon_public_list_qs())
+            qs = self._apply_public_salon_region(self._salon_public_list_qs())
+            ids_param = (self.request.query_params.get("ids") or "").strip()
+            if ids_param:
+                id_list = []
+                for part in ids_param.split(","):
+                    part = part.strip()
+                    if part.isdigit():
+                        id_list.append(int(part))
+                if id_list:
+                    qs = qs.filter(pk__in=id_list)
+            return qs
 
         if self.action == "nearby":
             return self._apply_public_salon_region(self._salon_public_list_qs())

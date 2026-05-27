@@ -12,6 +12,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import { fetchNotifications } from "@/lib/notifications-queries";
+import { filterNotificationsByPrefs, unreadNotificationCount } from "../lib/notification-prefs";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { Link } from "@/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { AuthGate } from "@/components/AuthGate";
@@ -34,6 +37,7 @@ const iconMap: Record<string, typeof Clock> = {
 const Notifications = () => {
   const qc = useQueryClient();
   const router = useRouter();
+  const prefs = useUserPreferences();
 
   const { data: notifications = [], isLoading, error } = useQuery({
     queryKey: ["notifications"],
@@ -56,7 +60,9 @@ const Notifications = () => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
 
-  const unreadCount = notifications.filter((n) => !n.read_at).length;
+  const visibleNotifications = filterNotificationsByPrefs(notifications, prefs);
+  const unreadCount = unreadNotificationCount(notifications, prefs);
+  const alertsDisabled = !prefs.bookingReminders && !prefs.chatAlerts;
 
   const targetFor = (payload: Record<string, unknown> | null): string | null => {
     const conversationId = payload?.conversation_id;
@@ -116,6 +122,21 @@ const Notifications = () => {
         </div>
       </div>
 
+      {alertsDisabled ? (
+        <div className="mx-5 mt-3 rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+          <p className="font-semibold text-foreground">Xabarnomalar o‘chirilgan</p>
+          <p className="mt-1 leading-relaxed">
+            Booking va chat eslatmalarini qayta yoqish uchun sozlamalarga o‘ting.
+          </p>
+          <Link
+            to="/settings"
+            className="mt-3 inline-flex text-sm font-semibold text-accent underline-offset-2 hover:underline"
+          >
+            Sozlamalar
+          </Link>
+        </div>
+      ) : null}
+
       {unreadCount > 0 ? (
         <div className="px-5 pt-1">
           <Button
@@ -132,7 +153,7 @@ const Notifications = () => {
 
       <div className="px-5 py-4 space-y-2.5">
         <AnimatePresence>
-          {notifications.map((notif, i) => {
+          {visibleNotifications.map((notif, i) => {
             const Icon = iconMap[notif.type] ?? Bell;
             const read = !!notif.read_at;
 
@@ -199,7 +220,7 @@ const Notifications = () => {
           })}
         </AnimatePresence>
 
-        {notifications.length === 0 && (
+        {!alertsDisabled && visibleNotifications.length === 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

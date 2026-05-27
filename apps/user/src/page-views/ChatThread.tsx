@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { AuthGate } from "@/components/AuthGate";
+import { areChatAlertsEnabled } from "../lib/user-preferences";
 
 type MessageRow = {
   id: number;
@@ -66,7 +67,9 @@ function ChatThread() {
         const payload = JSON.parse(evt.data) as { type?: string; message?: MessageRow };
         if (payload.type === "message" && payload.message) {
           setLive((prev) => [...prev, payload.message!]);
-          qc.invalidateQueries({ queryKey: ["chat", "conversations"] });
+          if (areChatAlertsEnabled()) {
+            qc.invalidateQueries({ queryKey: ["chat", "conversations"] });
+          }
         }
       } catch {
         // ignore
@@ -88,7 +91,9 @@ function ChatThread() {
     onSuccess: () => {
       setText("");
       qc.invalidateQueries({ queryKey: ["chat", "messages", id] });
-      qc.invalidateQueries({ queryKey: ["chat", "conversations"] });
+      if (areChatAlertsEnabled()) {
+        qc.invalidateQueries({ queryKey: ["chat", "conversations"] });
+      }
     },
   });
 

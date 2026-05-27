@@ -12,6 +12,8 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { getAccessToken } from "@/lib/api";
 import { fetchNotifications } from "@/lib/notifications-queries";
+import { unreadNotificationCount } from "../lib/notification-prefs";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 const TABS = [
   { to: "/", label: "Asosiy", icon: Compass },
@@ -25,6 +27,7 @@ const TABS = [
 export function UserBottomNav() {
   const pathname = usePathname();
   const isLoggedIn = !!getAccessToken();
+  const prefs = useUserPreferences();
 
   const { data: notifications = [], isError } = useQuery({
     queryKey: ["notifications"],
@@ -34,7 +37,7 @@ export function UserBottomNav() {
     enabled: isLoggedIn,
   });
 
-  const unread = isError ? 0 : notifications.filter((n) => !n.read_at).length;
+  const unread = isError ? 0 : unreadNotificationCount(notifications, prefs);
 
   return (
     <nav

@@ -22,6 +22,8 @@ import type { Salon } from "@/types";
 import { formatKm, initials } from "@/lib/format";
 import type { DiscoveryMarkerItem } from "@/components/luxury/DiscoveryMap";
 import { fetchNotifications } from "@/lib/notifications-queries";
+import { unreadNotificationCount } from "../lib/notification-prefs";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 const DiscoveryMap = lazy(async () => {
   const m = await import("@/components/luxury/DiscoveryMap");
@@ -80,6 +82,7 @@ function matchesCategory(s: Salon, cat: string | null): boolean {
 export default function Index() {
   const router = useRouter();
   const isLoggedIn = !!getAccessToken();
+  const prefs = useUserPreferences();
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [radiusKm] = useState(2);
   const [cat, setCat] = useState<string | null>(null);
@@ -142,7 +145,7 @@ export default function Index() {
     enabled: isLoggedIn,
   });
 
-  const unreadTop = !notifErr ? notifications.filter((n) => !n.read_at).length : 0;
+  const unreadTop = !notifErr ? unreadNotificationCount(notifications, prefs) : 0;
 
   const listBase = useMemo(() => {
     const nearbyOk = nearbyQ.data && nearbyQ.data.length > 0;

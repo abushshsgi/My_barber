@@ -7,66 +7,19 @@ import { Button } from "@/components/ui/button";
 import { AuthGate } from "@/components/AuthGate";
 import { apiFetch } from "@/lib/api";
 import { formatKm } from "@/lib/format";
-import { mediaSrc, PLACEHOLDER_SALON } from "@/lib/media";
+import { mapSalonListApi, type SalonListApi } from "@/lib/mapSalon";
 import type { Salon } from "@/types";
 import { fetchFavoriteSalonIds, setFavoriteSalon } from "../lib/favorites";
 
-type SalonFavoriteDetail = {
-  id: number;
-  name: string;
-  description?: string;
-  cover_image: string | null;
-  address?: string;
-  phone?: string;
-  premium?: boolean;
-  rating_avg?: number;
-  review_count?: number;
-  latitude?: string | null;
-  longitude?: string | null;
-  services?: Array<{ id: number; name: string; price: string; duration_minutes: number }>;
-};
-
-function mapFavoriteDetail(row: SalonFavoriteDetail): Salon {
-  return {
-    id: String(row.id),
-    name: row.name,
-    description: row.description || row.address || "Salon",
-    coverImage: mediaSrc(row.cover_image, PLACEHOLDER_SALON),
-    gallery: [],
-    rating: Number(row.rating_avg || 0),
-    reviewCount: Number(row.review_count || 0),
-    distance: 0,
-    lat: parseFloat(row.latitude || "0") || 0,
-    lng: parseFloat(row.longitude || "0") || 0,
-    city: "",
-    address: row.address || "",
-    phone: row.phone || "",
-    languages: [],
-    isPremium: !!row.premium,
-    workingDays: [],
-    workingHours: { open: "09:00", close: "21:00" },
-    barbers: [],
-    services: (row.services || []).map((service) => ({
-      id: String(service.id),
-      name: service.name,
-      price: parseFloat(service.price || "0") || 0,
-      duration: service.duration_minutes,
-      salonId: String(row.id),
-    })),
-    reviews: [],
-  };
-}
-
 async function fetchFavoriteSalons(): Promise<Salon[]> {
   const ids = await fetchFavoriteSalonIds();
-  const rows = await Promise.all(
-    ids.map(async (id) => {
-      const res = await apiFetch(`/api/v1/salons/${id}/`);
-      if (!res.ok) return null;
-      return (await res.json()) as SalonFavoriteDetail;
-    }),
-  );
-  return rows.filter((row): row is SalonFavoriteDetail => !!row).map(mapFavoriteDetail);
+  if (ids.length === 0) return [];
+  const res = await apiFetch(`/api/v1/salons/?ids=${ids.join(",")}`);
+  if (!res.ok) throw new Error("Sevimlilar yuklanmadi");
+  const body = (await res.json()) as { results?: SalonListApi[] } | SalonListApi[];
+  const rows = Array.isArray(body) ? body : body.results || [];
+  const byId = new Map(rows.map((row) => [String(row.id), mapSalonListApi(row)]));
+  return ids.map((id) => byId.get(id)).filter((salon): salon is Salon => !!salon);
 }
 
 function Favorites() {
