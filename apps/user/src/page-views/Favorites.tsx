@@ -87,18 +87,22 @@ function Favorites() {
 
   return (
     <div className="min-h-screen bg-background pb-6">
-      <header className="px-5 pt-12">
-        <p className="label-eyebrow">Saqlangan joylar</p>
-        <div className="mt-2 flex items-end justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Sevimlilar</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Yoqtirgan salonlaringiz server bilan sinxron saqlanadi.
-            </p>
+      <header className="px-5 pt-safe">
+        <div className="pt-3">
+          <p className="label-eyebrow">Saqlangan joylar</p>
+          <div className="mt-1 flex items-end justify-between gap-3">
+            <div>
+              <h1 className="font-display text-[26px] font-semibold tracking-tight text-foreground">
+                Sevimlilar
+              </h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Yoqtirgan salonlaringiz server bilan sinxron saqlanadi.
+              </p>
+            </div>
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gold text-gold-foreground shadow-luxury">
+              <Heart className="h-5 w-5 fill-current" />
+            </span>
           </div>
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-foreground text-background shadow-card">
-            <Heart className="h-5 w-5 fill-current" />
-          </span>
         </div>
       </header>
 
@@ -162,7 +166,7 @@ function Favorites() {
                   <Link
                     to="/booking/$salonId"
                     params={{ salonId: salon.id }}
-                    className="mt-4 grid h-11 place-items-center rounded-2xl bg-primary text-sm font-semibold text-primary-foreground shadow-soft"
+                    className="mt-4 grid h-11 place-items-center rounded-2xl bg-foreground text-sm font-semibold text-background shadow-luxury"
                   >
                     Band qilish
                   </Link>

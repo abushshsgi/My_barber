@@ -21,18 +21,25 @@ const FAQ = [
 export default function Support() {
   return (
     <div className="min-h-screen bg-background pb-8">
-      <header className="relative overflow-hidden rounded-b-[32px] bg-foreground px-5 pb-8 pt-12 text-background">
-        <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-background/10 blur-2xl" />
-        <div className="relative">
-          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-background/10">
+      <header className="relative overflow-hidden rounded-b-[32px] px-5 pb-8 pt-safe text-background"
+        style={{ background: "var(--gradient-dark)" }}>
+        <div
+          aria-hidden
+          className="absolute -right-10 -top-10 h-40 w-40 rounded-full opacity-50 blur-3xl"
+          style={{ background: "oklch(0.78 0.13 80 / 0.5)" }}
+        />
+        <div className="relative pt-3">
+          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white/10 ring-1 ring-white/10">
             <HelpCircle className="h-6 w-6" />
           </span>
           <p className="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-background/55">
             Yordam markazi
           </p>
-          <h1 className="mt-2 text-2xl font-extrabold tracking-tight">Muammo bo'lsa tez yordam</h1>
+          <h1 className="mt-1 font-display text-[26px] font-semibold tracking-tight">
+            Muammo boʻlsa tez yordam
+          </h1>
           <p className="mt-2 text-sm leading-relaxed text-background/65">
-            Eng ko'p uchraydigan savollar va real aloqa kanallari.
+            Eng koʻp uchraydigan savollar va real aloqa kanallari.
           </p>
         </div>
       </header>
