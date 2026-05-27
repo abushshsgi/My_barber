@@ -2,9 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { Link, useParams, useRouter } from "@/navigation";
-import { ArrowLeft, Check, Clock, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar as CalendarIcon,
+  Check,
+  CheckCircle2,
+  Clock,
+  Loader2,
+  Scissors,
+  Sparkles,
+  User as UserIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -34,6 +43,13 @@ type StaffMember = {
   full_name: string;
   avatar: string | null;
 };
+
+const STEP_META = [
+  { id: 1, label: "Sartarosh", Icon: UserIcon },
+  { id: 2, label: "Xizmat", Icon: Scissors },
+  { id: 3, label: "Vaqt", Icon: CalendarIcon },
+  { id: 4, label: "Tasdiq", Icon: CheckCircle2 },
+] as const;
 
 export default function BookingFlow() {
   const params = useParams();
@@ -105,11 +121,7 @@ export default function BookingFlow() {
       }
       return res.json() as Promise<{ slots: string[] }>;
     },
-    enabled:
-      !!salonId &&
-      !!selectedBarber &&
-      selectedServices.length > 0 &&
-      step >= 3,
+    enabled: !!salonId && !!selectedBarber && selectedServices.length > 0 && step >= 3,
   });
 
   const timeSlots = availability?.slots ?? [];
@@ -162,7 +174,7 @@ export default function BookingFlow() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -170,11 +182,11 @@ export default function BookingFlow() {
 
   if (isError || !salon) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 gap-4">
-        <p className="text-muted-foreground text-center">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-6">
+        <p className="text-center text-muted-foreground">
           {error instanceof Error ? error.message : "Salon topilmadi."}
         </p>
-        <Button variant="outline" className="rounded-xl" onClick={() => router.back()}>
+        <Button variant="outline" className="rounded-2xl" onClick={() => router.back()}>
           Orqaga
         </Button>
       </div>
@@ -191,7 +203,7 @@ export default function BookingFlow() {
   const toggleService = (id: number) => {
     setSelectedTime(null);
     setSelectedServices((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   };
 
@@ -199,195 +211,285 @@ export default function BookingFlow() {
     bookingMutation.mutate();
   };
 
-  const stepTitles = ["Sartarosh tanlang", "Xizmatlarni tanlang", "Vaqt tanlang", "Tasdiqlash"];
-
   const minDate = format(new Date(), "yyyy-MM-dd");
 
+  const canAdvance =
+    (step === 1 && !!selectedBarber) ||
+    (step === 2 && selectedServices.length > 0) ||
+    (step === 3 && !!selectedTime) ||
+    step === 4;
+
+  const stepperGo = (target: Step) => {
+    if (target < step) {
+      setStep(target);
+      return;
+    }
+    if (target === 2 && selectedBarber) setStep(2);
+    else if (target === 3 && selectedBarber && selectedServices.length > 0) setStep(3);
+    else if (target === 4 && selectedBarber && selectedServices.length > 0 && selectedTime) setStep(4);
+  };
+
   return (
-    <div className="mx-auto min-h-screen w-full max-w-md bg-background pb-32 pt-safe">
+    <div className="relative min-h-screen w-full bg-background pb-44">
       {me && !phoneOk && (
-        <div className="border-b border-destructive/30 bg-destructive/5 px-5 py-3 text-sm text-foreground">
+        <div className="border-b border-destructive/30 bg-destructive/10 px-5 py-3 text-sm">
           <span className="font-medium text-destructive">Telefon kerak. </span>
           Bron uchun profilda telefon raqamingizni kiriting.{" "}
           <Link to="/profile" className="font-semibold text-foreground underline">
-            Profilga o‘tish
+            Profilga oʻtish
           </Link>
         </div>
       )}
-      <header className="flex items-start gap-3 px-5 pt-4">
-        <button
-          type="button"
-          onClick={() => (step > 1 ? setStep((step - 1) as Step) : router.back())}
-          className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full border border-border bg-surface outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label="Orqaga"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </button>
-        <div className="min-w-0 flex-1">
-          <p className="label-eyebrow">{salon.name}</p>
-          <h1 className="truncate text-lg font-bold text-foreground">{stepTitles[step - 1]}</h1>
+
+      {/* Header */}
+      <header className="px-5 pt-safe">
+        <div className="flex items-start gap-3 pt-3">
+          <button
+            type="button"
+            onClick={() => (step > 1 ? setStep((step - 1) as Step) : router.back())}
+            className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full border border-border bg-surface shadow-soft outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Orqaga"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <p className="label-eyebrow">{salon.name}</p>
+            <h1 className="font-display truncate text-[22px] font-semibold tracking-tight text-foreground">
+              Bron qilish
+            </h1>
+          </div>
         </div>
-        <span className="mt-7 text-xs font-semibold tabular-nums text-muted-foreground">
-          {step}/4
-        </span>
+
+        {/* Booking Theatre — chain step indicator */}
+        <div className="mt-5 rounded-3xl border border-border bg-surface p-3 shadow-card">
+          <div className="flex items-center gap-1">
+            {STEP_META.map((s, idx) => {
+              const isActive = step === s.id;
+              const isDone = step > s.id;
+              const Icon = s.Icon;
+              return (
+                <div key={s.id} className="contents">
+                  <button
+                    type="button"
+                    onClick={() => stepperGo(s.id as Step)}
+                    className={cn(
+                      "group flex min-w-0 flex-1 cursor-pointer flex-col items-center gap-1 rounded-2xl px-1 py-1.5 outline-none transition focus-visible:ring-2 focus-visible:ring-ring",
+                      isActive ? "bg-foreground/5" : "",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "relative grid h-9 w-9 place-items-center rounded-full border-2 transition",
+                        isDone
+                          ? "border-foreground bg-foreground text-background"
+                          : isActive
+                            ? "border-foreground bg-background text-foreground ring-4 ring-foreground/10"
+                            : "border-border bg-background text-muted-foreground",
+                      )}
+                    >
+                      {isDone ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+                    </span>
+                    <span
+                      className={cn(
+                        "max-w-full truncate text-[10px] font-semibold",
+                        isActive
+                          ? "text-foreground"
+                          : isDone
+                            ? "text-foreground/70"
+                            : "text-muted-foreground",
+                      )}
+                    >
+                      {s.label}
+                    </span>
+                  </button>
+                  {idx < STEP_META.length - 1 && (
+                    <span
+                      className={cn(
+                        "mt-4 h-[2px] w-3 shrink-0 rounded-full transition",
+                        step > s.id ? "bg-foreground" : "bg-border",
+                      )}
+                      aria-hidden
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </header>
 
-      <div className="mx-5 mt-4 h-1 overflow-hidden rounded-full bg-muted">
-        <div className="h-full bg-primary transition-all" style={{ width: `${(step / 4) * 100}%` }} />
-      </div>
-
-      <div className="px-5 pb-28 pt-6">
+      {/* Step content */}
+      <div className="px-5 pt-6">
         <AnimatePresence mode="wait">
           {step === 1 && (
-            <motion.div
+            <motion.section
               key="s1"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-3"
+              exit={{ opacity: 0, x: -16 }}
+              className="space-y-2.5"
             >
-              {staff.map((barber) => (
-                <Card
-                  key={barber.id}
-                  className={cn(
-                    "flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-soft transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    selectedBarber === barber.id ? "border-foreground ring-1 ring-foreground" : "hover:border-foreground/30",
-                  )}
-                  onClick={() => {
-                    setSelectedBarber(barber.id);
-                    setSelectedServices([]);
-                    setSelectedTime(null);
-                  }}
-                >
-                  <img
-                    src={mediaSrc(barber.avatar, PLACEHOLDER_AVATAR)}
-                    alt=""
-                    className="w-14 h-14 rounded-full object-cover"
-                  />
-                  <div className="flex-1">
-                    <p className="font-medium">{barber.full_name}</p>
-                  </div>
-                  {selectedBarber === barber.id && <Check className="h-5 w-5 shrink-0 text-foreground" />}
-                </Card>
-              ))}
-              {staff.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  Hozircha sartaroshlar ro&apos;yxati bo&apos;sh.
-                </p>
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                Sartarosh tanlang
+              </h2>
+              {staff.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-border bg-surface p-6 text-center">
+                  <p className="text-sm font-semibold text-foreground">Sartaroshlar yoʻq</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Bu salon uchun hozircha xodimlar roʻyxati boʻsh.
+                  </p>
+                </div>
+              ) : (
+                staff.map((barber) => {
+                  const active = selectedBarber === barber.id;
+                  return (
+                    <button
+                      type="button"
+                      key={barber.id}
+                      onClick={() => {
+                        setSelectedBarber(barber.id);
+                        setSelectedServices([]);
+                        setSelectedTime(null);
+                      }}
+                      className={cn(
+                        "flex w-full cursor-pointer items-center gap-3 rounded-3xl border bg-surface p-3.5 text-left shadow-soft outline-none transition focus-visible:ring-2 focus-visible:ring-ring",
+                        active
+                          ? "border-foreground ring-2 ring-foreground/20"
+                          : "border-border hover:border-foreground/30",
+                      )}
+                    >
+                      <img
+                        src={mediaSrc(barber.avatar, PLACEHOLDER_AVATAR)}
+                        alt=""
+                        className={cn(
+                          "h-14 w-14 rounded-2xl object-cover",
+                          active && "ring-2 ring-gold/60",
+                        )}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-foreground">{barber.full_name}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          MyBarber sartaroshi
+                        </p>
+                      </div>
+                      <span
+                        className={cn(
+                          "grid h-8 w-8 place-items-center rounded-full transition",
+                          active ? "bg-foreground text-background" : "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {active ? <Check className="h-4 w-4" /> : <Sparkles className="h-3.5 w-3.5" />}
+                      </span>
+                    </button>
+                  );
+                })
               )}
-              <Button
-                disabled={!selectedBarber}
-                onClick={() => setStep(2)}
-                className="mt-4 h-12 w-full cursor-pointer rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-luxury focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                Davom etish
-              </Button>
-            </motion.div>
+            </motion.section>
           )}
 
           {step === 2 && (
-            <motion.div
+            <motion.section
               key="s2"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-3"
+              exit={{ opacity: 0, x: -16 }}
+              className="space-y-2.5"
             >
-              {visibleServices.map((service) => (
-                <Card
-                  key={service.id}
-                  className={cn(
-                    "cursor-pointer rounded-2xl border border-border bg-surface p-3 shadow-soft transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    selectedServices.includes(service.id)
-                      ? "border-foreground bg-foreground text-background ring-1 ring-foreground"
-                      : "hover:border-foreground/30",
-                  )}
-                  onClick={() => toggleService(service.id)}
-                >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={mediaSrc(service.image_url, PLACEHOLDER_AVATAR)}
-                      alt=""
-                      className="h-16 w-16 rounded-2xl object-cover"
-                    />
-                    <div>
-                      <p className="font-medium text-sm">{service.name}</p>
-                      <p
-                        className={
-                          "mt-1 flex items-center gap-1 text-xs " +
-                          (selectedServices.includes(service.id)
-                            ? "text-background/70"
-                            : "text-muted-foreground")
-                        }
-                      >
-                        <Clock className="h-3 w-3" /> {service.duration_minutes} daq
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={"font-semibold " + (selectedServices.includes(service.id) ? "text-background" : "text-foreground")}>
-                      {parseFloat(service.price).toLocaleString()}
-                    </span>
-                    {selectedServices.includes(service.id) && (
-                      <Check className="h-5 w-5 shrink-0 text-background" />
-                    )}
-                  </div>
-                </Card>
-              ))}
-              {visibleServices.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  Bu sartarosh uchun hozircha faol xizmat yo&apos;q.
-                </p>
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                Xizmatlarni tanlang
+              </h2>
+              {visibleServices.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-border bg-surface p-6 text-center">
+                  <p className="text-sm font-semibold text-foreground">Faol xizmat yoʻq</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Bu sartarosh uchun hozircha faol xizmat sozlanmagan.
+                  </p>
+                </div>
+              ) : (
+                visibleServices.map((service) => {
+                  const active = selectedServices.includes(service.id);
+                  return (
+                    <button
+                      type="button"
+                      key={service.id}
+                      onClick={() => toggleService(service.id)}
+                      className={cn(
+                        "group flex w-full cursor-pointer items-center gap-3 rounded-3xl border p-3 text-left shadow-soft outline-none transition focus-visible:ring-2 focus-visible:ring-ring",
+                        active
+                          ? "border-foreground bg-foreground text-background"
+                          : "border-border bg-surface hover:border-foreground/30",
+                      )}
+                    >
+                      <img
+                        src={mediaSrc(service.image_url, PLACEHOLDER_AVATAR)}
+                        alt=""
+                        className="h-16 w-16 shrink-0 rounded-2xl object-cover"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-1 font-semibold">{service.name}</p>
+                        <p
+                          className={cn(
+                            "mt-1 inline-flex items-center gap-1 text-[11px]",
+                            active ? "text-background/70" : "text-muted-foreground",
+                          )}
+                        >
+                          <Clock className="h-3 w-3" /> {service.duration_minutes} daqiqa
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-1.5">
+                        <span className={cn("text-sm font-bold", active ? "text-background" : "text-foreground")}>
+                          {parseFloat(service.price || "0").toLocaleString()} soʻm
+                        </span>
+                        <span
+                          className={cn(
+                            "grid h-6 w-6 place-items-center rounded-full transition",
+                            active ? "bg-background/15 text-background" : "bg-muted text-muted-foreground",
+                          )}
+                        >
+                          {active ? <Check className="h-3.5 w-3.5" /> : null}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })
               )}
-              {selectedServices.length > 0 && (
-                <Card className="rounded-2xl border border-border bg-muted/40 p-3">
-                  <div className="flex justify-between text-sm">
-                    <span>
-                      Jami vaqt: <strong>{totalDuration} daq</strong>
-                    </span>
-                    <span>
-                      Narx: <strong>{totalPrice.toLocaleString()} so&apos;m</strong>
-                    </span>
-                  </div>
-                </Card>
-              )}
-              <Button
-                disabled={selectedServices.length === 0}
-                onClick={() => setStep(3)}
-                className="mt-2 h-12 w-full cursor-pointer rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-luxury focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                Davom etish
-              </Button>
-            </motion.div>
+            </motion.section>
           )}
 
           {step === 3 && (
-            <motion.div
+            <motion.section
               key="s3"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
+              exit={{ opacity: 0, x: -16 }}
               className="space-y-3"
             >
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Sana</label>
-                <input
-                  type="date"
-                  min={minDate}
-                  value={selectedDate}
-                  onChange={(e) => {
-                    setSelectedDate(e.target.value);
-                    setSelectedTime(null);
-                  }}
-                  className="h-11 w-full cursor-pointer rounded-2xl border border-border bg-surface px-3 text-sm font-medium outline-none shadow-soft transition focus-visible:ring-2 focus-visible:ring-ring"
-                />
-              </div>
-              {loadingSlots && (
-                <div className="flex justify-center py-6">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">Sana</h2>
+              <input
+                type="date"
+                min={minDate}
+                value={selectedDate}
+                onChange={(e) => {
+                  setSelectedDate(e.target.value);
+                  setSelectedTime(null);
+                }}
+                className="h-12 w-full cursor-pointer rounded-2xl border border-border bg-surface px-4 text-sm font-semibold text-foreground shadow-soft outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+              />
+              <h2 className="pt-2 text-sm font-semibold tracking-tight text-foreground">
+                Boʻsh vaqt
+              </h2>
+              {loadingSlots ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
                 </div>
-              )}
-              {!loadingSlots && (
+              ) : timeSlots.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-border bg-surface p-6 text-center">
+                  <p className="text-sm font-semibold text-foreground">Boʻsh vaqt yoʻq</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Boshqa kun tanlang yoki sartarosh ish jadvalini kuting.
+                  </p>
+                </div>
+              ) : (
                 <div className="grid grid-cols-3 gap-2">
                   {timeSlots.map((t) => (
                     <button
@@ -395,10 +497,10 @@ export default function BookingFlow() {
                       type="button"
                       onClick={() => setSelectedTime(t)}
                       className={cn(
-                        "cursor-pointer rounded-2xl border py-3 text-sm font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-ring",
+                        "h-11 cursor-pointer rounded-2xl border text-sm font-bold tabular-nums outline-none transition focus-visible:ring-2 focus-visible:ring-ring",
                         selectedTime === t
-                          ? "border-foreground bg-foreground text-background"
-                          : "border-border bg-surface hover:border-foreground/30",
+                          ? "border-foreground bg-foreground text-background shadow-soft"
+                          : "border-border bg-surface text-foreground hover:border-foreground/30",
                       )}
                     >
                       {t}
@@ -406,80 +508,121 @@ export default function BookingFlow() {
                   ))}
                 </div>
               )}
-              {!loadingSlots && timeSlots.length === 0 && (
-                <p className="text-sm text-center text-muted-foreground py-4">
-                  Bu kun uchun bo&apos;sh vaqt yo&apos;q yoki salon yopiq.
-                </p>
-              )}
-              <Button
-                disabled={!selectedTime}
-                onClick={() => setStep(4)}
-                className="mt-4 h-12 w-full cursor-pointer rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-luxury focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                Davom etish
-              </Button>
-            </motion.div>
+            </motion.section>
           )}
 
           {step === 4 && (
-            <motion.div
+            <motion.section
               key="s4"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
-              className="space-y-4"
+              className="space-y-3"
             >
-              <Card className="space-y-2 rounded-2xl border border-border bg-surface p-4 text-sm shadow-soft">
-                <p>
-                  <strong>Sana:</strong> {selectedDate}
-                </p>
-                <p>
-                  <strong>Vaqt:</strong> {selectedTime}
-                </p>
-                <p>
-                  <strong>Xizmatlar:</strong> {selectedServices.length} ta
-                </p>
-                <p>
-                  <strong>Jami:</strong> {totalPrice.toLocaleString()} so&apos;m
-                </p>
-              </Card>
-              {!bookingMutation.isPending && !bookingMutation.isSuccess && (
-                <motion.div whileTap={{ scale: 0.98 }}>
-                  <Button
-                    onClick={handleConfirm}
-                    disabled={!phoneOk}
-                    className="h-12 w-full cursor-pointer rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-luxury focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    Bronni yuborish
-                  </Button>
-                </motion.div>
-              )}
-              {bookingMutation.isPending && (
-                <div className="flex flex-col items-center gap-2 py-8">
-                  <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Kutilmoqda...</p>
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                Tasdiqlash
+              </h2>
+              <div className="rounded-3xl border border-border bg-surface p-4 shadow-card">
+                <Row label="Salon" value={salon.name} />
+                <Row
+                  label="Sartarosh"
+                  value={staff.find((s) => s.id === selectedBarber)?.full_name || "—"}
+                />
+                <Row label="Sana" value={format(new Date(selectedDate), "d MMMM yyyy")} />
+                <Row label="Vaqt" value={selectedTime || "—"} />
+                <Row label="Xizmatlar" value={`${selectedServices.length} ta`} />
+                <Row label="Davomiyligi" value={`${totalDuration} daq.`} />
+                <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+                  <span className="text-sm font-semibold text-foreground">Jami</span>
+                  <span className="font-display text-xl font-bold text-foreground">
+                    {totalPrice.toLocaleString()} soʻm
+                  </span>
                 </div>
-              )}
-              {bookingMutation.isSuccess && (
-                <div className="text-center py-8 space-y-4">
-                  <motion.p
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="text-lg font-semibold text-foreground"
-                  >
-                    Bron yuborildi!
-                  </motion.p>
-                  <p className="text-sm text-muted-foreground">Yo‘naltirilmoqda…</p>
-                </div>
-              )}
+              </div>
               {bookingMutation.isError && (
-                <p className="text-sm text-destructive text-center px-2">
+                <p className="text-center text-sm text-destructive">
                   {(bookingMutation.error as Error).message}
                 </p>
               )}
-            </motion.div>
+              {bookingMutation.isSuccess && (
+                <div className="rounded-2xl border border-success/30 bg-success/5 p-4 text-center">
+                  <CheckCircle2 className="mx-auto h-6 w-6 text-success" />
+                  <p className="mt-2 text-sm font-semibold text-foreground">
+                    Bron yuborildi!
+                  </p>
+                  <p className="text-xs text-muted-foreground">Yoʻnaltirilmoqda…</p>
+                </div>
+              )}
+            </motion.section>
           )}
         </AnimatePresence>
       </div>
+
+      {/* Floating Summary Pill */}
+      <motion.div
+        layout
+        className="pointer-events-none fixed inset-x-0 z-40 flex justify-center px-3"
+        style={{ bottom: "calc(5.75rem + env(safe-area-inset-bottom, 0px))" }}
+      >
+        <div className="pointer-events-auto w-full max-w-md">
+          <motion.div
+            layout
+            transition={{ type: "spring", stiffness: 400, damping: 32 }}
+            className="glass-pill flex items-center gap-3 rounded-full border border-border px-4 py-2 shadow-luxury"
+          >
+            <div className="min-w-0 flex-1">
+              {selectedServices.length > 0 ? (
+                <>
+                  <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {selectedServices.length} xizmat · {totalDuration} daq
+                  </p>
+                  <p className="truncate font-display text-base font-bold text-foreground">
+                    {totalPrice.toLocaleString()} soʻm
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Booking
+                  </p>
+                  <p className="truncate text-sm font-bold text-foreground">{salon.name}</p>
+                </>
+              )}
+            </div>
+            {step < 4 ? (
+              <Button
+                type="button"
+                onClick={() => canAdvance && setStep((Math.min(4, step + 1) as Step))}
+                disabled={!canAdvance}
+                className="h-11 cursor-pointer rounded-full bg-foreground px-5 text-[13px] font-bold text-background shadow-soft hover:bg-foreground/90"
+              >
+                Davom etish
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                onClick={handleConfirm}
+                disabled={bookingMutation.isPending || bookingMutation.isSuccess || !phoneOk}
+                className="h-11 cursor-pointer rounded-full bg-foreground px-5 text-[13px] font-bold text-background shadow-soft hover:bg-foreground/90"
+              >
+                {bookingMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Bron qilish"
+                )}
+              </Button>
+            )}
+          </motion.div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between py-1.5 text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="max-w-[60%] truncate text-right font-semibold text-foreground">{value}</span>
     </div>
   );
 }

@@ -14,17 +14,18 @@ const userIcon = L.divIcon({
 
 function makePinIcon(active: boolean) {
   const bg = active ? "#0A0A0A" : "#FFFFFF";
-  const fg = active ? "#FFFFFF" : "#0A0A0A";
+  const fg = active ? "#D4AF37" : "#0A0A0A";
+  const ring = active ? "#D4AF37" : "#0A0A0A";
   return L.divIcon({
     className: "",
-    html: `<div style="position:relative;width:34px;height:42px;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.3));">
-      <svg viewBox="0 0 34 42" width="34" height="42" xmlns="http://www.w3.org/2000/svg">
-        <path d="M17 41 C17 41 32 26 32 16 A15 15 0 1 0 2 16 C2 26 17 41 17 41 Z" fill="${bg}" stroke="#0A0A0A" stroke-width="1.5"/>
+    html: `<div style="position:relative;width:30px;height:38px;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.28));">
+      <svg viewBox="0 0 34 42" width="30" height="38" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17 41 C17 41 32 26 32 16 A15 15 0 1 0 2 16 C2 26 17 41 17 41 Z" fill="${bg}" stroke="${ring}" stroke-width="1.5"/>
         <circle cx="17" cy="16" r="5.5" fill="${fg}"/>
       </svg>
     </div>`,
-    iconSize: [34, 42],
-    iconAnchor: [17, 41],
+    iconSize: [30, 38],
+    iconAnchor: [15, 37],
   });
 }
 

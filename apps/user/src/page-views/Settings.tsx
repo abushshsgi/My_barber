@@ -97,15 +97,19 @@ function Settings() {
 
   return (
     <div className="min-h-screen bg-background pb-8">
-      <header className="px-5 pt-12">
-        <span className="grid h-12 w-12 place-items-center rounded-2xl bg-foreground text-background shadow-card">
-          <SettingsIcon className="h-6 w-6" />
-        </span>
-        <p className="mt-5 label-eyebrow">Ilova sozlamalari</p>
-        <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-foreground">Tez va aniq boshqaruv</h1>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Bu sozlamalar qurilmada saqlanadi va foydalanuvchi tajribasini moslashtiradi.
-        </p>
+      <header className="px-5 pt-safe">
+        <div className="pt-3">
+          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-foreground text-background shadow-card">
+            <SettingsIcon className="h-6 w-6" />
+          </span>
+          <p className="label-eyebrow mt-5">Ilova sozlamalari</p>
+          <h1 className="font-display mt-1 text-[26px] font-semibold tracking-tight text-foreground">
+            Tez va aniq boshqaruv
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Bu sozlamalar qurilmada saqlanadi va foydalanuvchi tajribasini moslashtiradi.
+          </p>
+        </div>
       </header>
 
       <main className="space-y-3 px-5 pt-5">

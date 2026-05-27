@@ -25,7 +25,9 @@ import { fetchUzRegions, uzRegionLabel } from "@/lib/uz-regions";
 import { AuthGate } from "@/components/AuthGate";
 import { PwaInstallGuide } from "@/components/PwaInstallGuide";
 import { fetchFavoriteSalonCount } from "../lib/favorites";
+import { initials } from "@/lib/format";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 type Me = {
   id: number;
@@ -61,12 +63,12 @@ async function fetchMyReviewCount(): Promise<number> {
 }
 
 const menuItems = [
-  { label: "Band tarixi", icon: CalendarDays, color: "text-teal", href: "/bookings" },
-  { label: "Yozilgan sharhlar", icon: Star, color: "text-gold", href: "/bookings" },
-  { label: "Sevimlilar", icon: Heart, color: "text-destructive", href: "/favorites" },
-  { label: "Maxfiylik", icon: Shield, color: "text-success", href: "/privacy" },
-  { label: "Yordam", icon: HelpCircle, color: "text-muted-foreground", href: "/support" },
-  { label: "Sozlamalar", icon: Settings, color: "text-muted-foreground", href: "/settings" },
+  { label: "Band tarixi", icon: CalendarDays, href: "/bookings" },
+  { label: "Yozilgan sharhlar", icon: Star, href: "/bookings" },
+  { label: "Sevimlilar", icon: Heart, href: "/favorites" },
+  { label: "Maxfiylik", icon: Shield, href: "/privacy" },
+  { label: "Yordam", icon: HelpCircle, href: "/support" },
+  { label: "Sozlamalar", icon: Settings, href: "/settings" },
 ] as const;
 
 const Profile = () => {
@@ -124,7 +126,7 @@ const Profile = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -132,10 +134,10 @@ const Profile = () => {
 
   if (error || !user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-background gap-4">
-        <p className="text-muted-foreground text-center">Tizimga kiring</p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-6">
+        <p className="text-center text-muted-foreground">Tizimga kiring</p>
         <Link to="/auth">
-          <Button className="h-11 rounded-2xl border-0 bg-primary text-base font-semibold text-primary-foreground shadow-luxury">
+          <Button className="h-11 rounded-2xl bg-foreground text-background shadow-luxury">
             Kirish
           </Button>
         </Link>
@@ -147,21 +149,38 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Hero */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-foreground via-foreground/95 to-foreground/85" />
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 right-10 w-40 h-40 rounded-full bg-accent blur-3xl" />
-        </div>
+        <div
+          aria-hidden
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(120% 100% at 0% 0%, oklch(0.18 0.012 60) 0%, oklch(0.08 0.005 60) 100%)",
+          }}
+        />
+        <div
+          aria-hidden
+          className="absolute inset-0 opacity-30 texture-grid"
+        />
+        <div
+          aria-hidden
+          className="absolute -right-10 -top-10 h-48 w-48 rounded-full opacity-40 blur-3xl"
+          style={{ background: "oklch(0.78 0.13 80 / 0.5)" }}
+        />
 
-        <div className="relative px-5 pt-12 pb-8">
+        <div className="relative px-5 pt-safe">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-4"
+            className="flex items-center gap-4 pb-8 pt-6"
           >
             <div className="relative">
-              <div className="w-[72px] h-[72px] rounded-2xl bg-muted flex items-center justify-center ring-2 ring-accent/50 ring-offset-2 ring-offset-foreground text-background font-bold text-xl">
-                {displayName.slice(0, 1).toUpperCase()}
+              <div
+                className="grid h-[76px] w-[76px] place-items-center rounded-2xl text-xl font-bold text-background ring-2 ring-gold/40"
+                style={{ background: "var(--gradient-gold)" }}
+              >
+                <span className="text-background">{initials(displayName) || "MB"}</span>
               </div>
               <button
                 type="button"
@@ -171,51 +190,56 @@ const Profile = () => {
                   setRegionDraft(user.region || "");
                   setEditingProfile((v) => !v);
                 }}
-                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-accent flex items-center justify-center shadow-lg"
+                aria-label="Tahrirlash"
+                className="absolute -bottom-1 -right-1 grid h-7 w-7 place-items-center rounded-xl bg-gold text-gold-foreground shadow-luxury"
               >
-                <Edit3 className="h-3 w-3 text-accent-foreground" />
+                <Edit3 className="h-3.5 w-3.5" />
               </button>
             </div>
-            <div>
-              <h1 className="text-xl font-extrabold text-background">{displayName}</h1>
-              <p className="text-sm text-background/50 mt-0.5">{user.phone || "—"}</p>
-              <p className="text-xs text-background/40">{user.email}</p>
-              {user.region ? (
-                <p className="text-xs text-background/35 mt-1">{uzRegionLabel(user.region)}</p>
-              ) : null}
+            <div className="min-w-0 flex-1">
+              <p className="label-eyebrow text-white/50">Akkaunt</p>
+              <h1 className="font-display truncate text-2xl font-semibold text-white tracking-tight">
+                {displayName}
+              </h1>
+              <p className="mt-0.5 truncate text-sm text-white/60">{user.phone || "Telefon yoʻq"}</p>
+              <p className="truncate text-[11px] text-white/40">{user.email}</p>
+              {user.region && (
+                <p className="mt-1 inline-flex rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/80">
+                  <MapPin className="mr-1 h-3 w-3" />
+                  {uzRegionLabel(user.region)}
+                </p>
+              )}
             </div>
           </motion.div>
         </div>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="px-5 -mt-4"
-      >
-        <div className="grid grid-cols-3 gap-3">
+      {/* Stats */}
+      <div className="-mt-5 px-5">
+        <div className="grid grid-cols-3 gap-2.5">
           {[
-            { value: bookingCount, label: "Bandlar", icon: CalendarDays },
-            { value: reviewCount, label: "Sharhlar", icon: Star },
-            { value: favoriteCount, label: "Sevimli", icon: Heart },
+            { value: bookingCount, label: "Bandlar", Icon: CalendarDays },
+            { value: reviewCount, label: "Sharhlar", Icon: Star },
+            { value: favoriteCount, label: "Sevimli", Icon: Heart },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 + i * 0.05 }}
-              className="bg-card rounded-2xl p-3.5 text-center border border-border/50 shadow-sm"
+              className="rounded-2xl border border-border bg-surface p-3 text-center shadow-card"
             >
-              <stat.icon className="mx-auto mb-1.5 h-5 w-5 text-muted-foreground" />
-              <p className="text-xl font-extrabold text-foreground">{stat.value}</p>
-              <p className="text-[10px] text-muted-foreground font-medium mt-0.5">{stat.label}</p>
+              <stat.Icon className="mx-auto mb-1 h-4 w-4 text-muted-foreground" />
+              <p className="font-display text-xl font-bold text-foreground tabular-nums">
+                {stat.value}
+              </p>
+              <p className="text-[10px] font-semibold text-muted-foreground">{stat.label}</p>
             </motion.div>
           ))}
         </div>
-      </motion.div>
+      </div>
 
-      <div className="px-5 mt-4">
+      <div className="mt-4 px-5">
         <PwaInstallGuide />
       </div>
 
@@ -223,11 +247,14 @@ const Profile = () => {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="px-5 mt-4"
+          className="mt-4 px-5"
         >
-          <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
-            <p className="text-sm font-semibold text-foreground">Profil ma’lumotlari</p>
-            <label className="mt-3 block text-xs font-medium text-muted-foreground">
+          <div className="rounded-3xl border border-border bg-surface p-4 shadow-card">
+            <p className="label-eyebrow">Profil</p>
+            <p className="mt-0.5 font-display text-lg font-semibold text-foreground">
+              Maʼlumotlarni tahrirlash
+            </p>
+            <label className="mt-4 block text-xs font-semibold text-muted-foreground">
               Ism
               <input
                 value={nameDraft}
@@ -236,7 +263,7 @@ const Profile = () => {
                 placeholder="Ismingiz"
               />
             </label>
-            <label className="mt-3 block text-xs font-medium text-muted-foreground">
+            <label className="mt-3 block text-xs font-semibold text-muted-foreground">
               Telefon
               <input
                 value={phoneDraft}
@@ -245,7 +272,7 @@ const Profile = () => {
                 placeholder="+998 90 123 45 67"
               />
             </label>
-            <label className="mt-3 block text-xs font-medium text-muted-foreground">
+            <label className="mt-3 block text-xs font-semibold text-muted-foreground">
               Viloyat
               <select
                 value={regionDraft}
@@ -264,21 +291,29 @@ const Profile = () => {
               Viloyat katalog va booking hududini backend bilan bir xil tekshiradi.
             </p>
             {updateProfile.isError && (
-              <p className="mt-2 text-xs text-destructive">{(updateProfile.error as Error).message}</p>
+              <p className="mt-2 text-xs text-destructive">
+                {(updateProfile.error as Error).message}
+              </p>
             )}
             <div className="mt-4 flex gap-2">
               <Button
                 type="button"
-                className="h-10 flex-1 rounded-2xl bg-primary text-primary-foreground"
+                className="h-11 flex-1 rounded-2xl bg-foreground text-background"
                 disabled={updateProfile.isPending}
-                onClick={() => updateProfile.mutate({ phone: phoneDraft, full_name: nameDraft, region: regionDraft })}
+                onClick={() =>
+                  updateProfile.mutate({
+                    phone: phoneDraft,
+                    full_name: nameDraft,
+                    region: regionDraft,
+                  })
+                }
               >
-                Saqlash
+                {updateProfile.isPending ? "Saqlanmoqda…" : "Saqlash"}
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                className="h-10 flex-1 rounded-2xl"
+                className="h-11 flex-1 rounded-2xl"
                 onClick={() => setEditingProfile(false)}
               >
                 Bekor qilish
@@ -288,120 +323,70 @@ const Profile = () => {
         </motion.div>
       )}
 
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.12 }}
-        className="px-5 mt-4"
-      >
-        {reviewCount > 0 ? (
-          <Link
-            to="/bookings"
-            className="block cursor-pointer rounded-2xl border border-border bg-surface p-4 shadow-soft outline-none transition hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <div className="flex items-center gap-4">
-              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-muted">
-                <Star className="h-6 w-6 text-gold" />
-              </div>
-              <div className="min-w-0 flex-1 text-left">
-                <p className="label-eyebrow">Sharhlaringiz</p>
-                <p className="text-base font-semibold text-foreground">{reviewCount} ta yozilgan sharh</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Batafsil bandlar tarixida — salon yoki barber nomi bilan.
-                </p>
-              </div>
-              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-            </div>
-          </Link>
-        ) : (
-          <div className="rounded-2xl border border-dashed border-border bg-surface/40 p-4 text-center">
-            <p className="text-sm font-semibold text-foreground">Hali sharh yoʻq</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Band tugagach salon yoki barber uchun sharh yozishingiz mumkin.
-            </p>
-            <Link to="/" className="mt-3 inline-flex text-xs font-semibold text-foreground underline">
-              Salonlarni ochish
-            </Link>
-          </div>
-        )}
-      </motion.div>
-
       {isEndUser && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.18 }}
-          className="px-5 mt-5"
-        >
-          <Link to="/map">
-            <div className="bg-card rounded-2xl border border-border/50 p-4 flex items-center gap-3 hover:bg-muted/40 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center shrink-0">
-                <MapPin className="h-5 w-5 text-accent" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm">Yaqin salonlar</p>
-                <p className="text-xs text-muted-foreground">Xarita orqali toping va band qiling</p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+        <div className="mt-5 px-5">
+          <Link
+            to="/map"
+            className="group flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-soft outline-none transition hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-foreground text-background">
+              <MapPin className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-foreground">Yaqin atrofda</p>
+              <p className="text-xs text-muted-foreground">Salon va barberlarni xaritada koʻring</p>
             </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-0.5" />
           </Link>
-        </motion.div>
+        </div>
       )}
 
+      {/* Menu */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.25 }}
-        className="px-5 mt-6"
+        transition={{ delay: 0.2 }}
+        className="mt-5 px-5"
       >
-        <div className="bg-card rounded-2xl border border-border/50 overflow-hidden divide-y divide-border/50">
-          <Link to="/notifications">
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.28 }}
-              className="w-full flex items-center gap-3.5 px-4 py-3.5 hover:bg-muted/50 transition-colors group"
-            >
-              <div className="w-8 h-8 rounded-xl bg-muted/60 flex items-center justify-center">
-                <Bell className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <span className="flex-1 text-left text-sm font-medium text-foreground">
-                Xabarnomalar
-              </span>
-              <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
-            </motion.div>
+        <div className="overflow-hidden rounded-3xl border border-border bg-surface shadow-card">
+          <Link
+            to="/notifications"
+            className="flex cursor-pointer items-center gap-3 px-4 py-3.5 transition hover:bg-muted/40"
+          >
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-muted">
+              <Bell className="h-4 w-4 text-foreground" />
+            </span>
+            <span className="flex-1 text-sm font-semibold text-foreground">Xabarnomalar</span>
+            <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
           </Link>
-          {menuItems.map((item, i) => (
-            <Link key={item.label} to={item.href}>
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 + i * 0.03 }}
-                className="w-full flex items-center gap-3.5 px-4 py-3.5 hover:bg-muted/50 transition-colors group"
-              >
-                <div className="w-8 h-8 rounded-xl bg-muted/60 flex items-center justify-center">
-                  <item.icon className={`h-4 w-4 ${item.color}`} />
-                </div>
-                <span className="flex-1 text-left text-sm font-medium text-foreground">
-                  {item.label}
-                </span>
-                <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
-              </motion.div>
+          {menuItems.map((item) => (
+            <Link
+              key={item.label}
+              to={item.href}
+              className={cn(
+                "flex cursor-pointer items-center gap-3 border-t border-border/60 px-4 py-3.5 transition hover:bg-muted/40",
+              )}
+            >
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-muted">
+                <item.icon className="h-4 w-4 text-foreground" />
+              </span>
+              <span className="flex-1 text-sm font-semibold text-foreground">{item.label}</span>
+              <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
             </Link>
           ))}
         </div>
       </motion.div>
 
-      <div className="px-5 mt-5 pb-6">
+      <div className="mt-5 px-5 pb-8">
         <Button
           variant="ghost"
-          className="w-full rounded-2xl h-12 text-destructive hover:text-destructive hover:bg-destructive/10 font-medium"
+          className="h-12 w-full rounded-2xl font-semibold text-destructive hover:bg-destructive/10 hover:text-destructive"
           onClick={() => {
             clearTokens();
             router.push("/auth");
           }}
         >
-          <LogOut className="h-4 w-4 mr-2" />
+          <LogOut className="mr-2 h-4 w-4" />
           Chiqish
         </Button>
       </div>
@@ -411,7 +396,10 @@ const Profile = () => {
 
 export default function ProfileWithAuth() {
   return (
-    <AuthGate title="Profil uchun kiring" description="Profil, telefon va booking ma’lumotlari uchun mijoz akkaunti kerak.">
+    <AuthGate
+      title="Profil uchun kiring"
+      description="Profil, telefon va booking maʼlumotlari uchun mijoz akkaunti kerak."
+    >
       <Profile />
     </AuthGate>
   );

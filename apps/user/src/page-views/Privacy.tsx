@@ -29,17 +29,19 @@ const rows = [
 export default function Privacy() {
   return (
     <div className="min-h-screen bg-background pb-8">
-      <header className="px-5 pt-12">
-        <span className="grid h-12 w-12 place-items-center rounded-2xl bg-foreground text-background shadow-card">
-          <ShieldCheck className="h-6 w-6" />
-        </span>
-        <p className="mt-5 label-eyebrow">Maxfiylik va xavfsizlik</p>
-        <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-foreground">
-          Mijoz ma'lumotlari aniq oqimlarda ishlatiladi
-        </h1>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Sahifa ilovada hozir ishlayotgan backend integratsiyalariga asoslangan qisqa izoh beradi.
-        </p>
+      <header className="px-5 pt-safe">
+        <div className="pt-3">
+          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-foreground text-background shadow-card">
+            <ShieldCheck className="h-6 w-6" />
+          </span>
+          <p className="label-eyebrow mt-5">Maxfiylik va xavfsizlik</p>
+          <h1 className="font-display mt-1 text-[26px] font-semibold tracking-tight text-foreground">
+            Mijoz maʼlumotlari aniq oqimlarda ishlatiladi
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Sahifa ilovada hozir ishlayotgan backend integratsiyalariga asoslangan qisqa izoh beradi.
+          </p>
+        </div>
       </header>
 
       <main className="px-5 pt-5">
@@ -61,7 +63,7 @@ export default function Privacy() {
 
         <Link
           to="/settings"
-          className="mt-5 grid h-12 place-items-center rounded-2xl bg-primary text-sm font-semibold text-primary-foreground shadow-soft"
+          className="mt-5 grid h-12 place-items-center rounded-2xl bg-foreground text-sm font-semibold text-background shadow-luxury"
         >
           Sozlamalarni ochish
         </Link>

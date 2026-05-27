@@ -143,15 +143,15 @@ export default function UserAuth() {
   return (
     <div className="user-auth-shell relative min-h-dvh overflow-x-hidden">
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.55]"
+        className="pointer-events-none absolute inset-0 opacity-[0.6]"
         aria-hidden
         style={{
           background:
-            "radial-gradient(ellipse 90% 70% at 0% 0%, oklch(0.24 0.012 60 / 0.5), transparent 55%), radial-gradient(ellipse 70% 60% at 100% 20%, oklch(0.18 0.015 260 / 0.22), transparent 50%), radial-gradient(ellipse 60% 50% at 50% 100%, oklch(0.14 0.008 60 / 0.35), transparent 45%)",
+            "radial-gradient(ellipse 90% 70% at 0% 0%, oklch(0.78 0.13 80 / 0.18), transparent 55%), radial-gradient(ellipse 70% 60% at 100% 20%, oklch(0.18 0.012 60 / 0.18), transparent 55%), radial-gradient(ellipse 60% 50% at 50% 100%, oklch(0.14 0.008 60 / 0.12), transparent 50%)",
         }}
       />
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.35] [background-size:28px_28px] [background-image:linear-gradient(oklch(1_0_0_/0.05)_1px,transparent_1px),linear-gradient(90deg,oklch(1_0_0_/0.05)_1px,transparent_1px)]"
+        className="pointer-events-none absolute inset-0 opacity-30 texture-grid"
         aria-hidden
       />
 
@@ -162,10 +162,10 @@ export default function UserAuth() {
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-foreground shadow-lg ring-1 ring-white/10">
               <Scissors className="h-6 w-6 text-background" />
             </div>
-            <h1 className="mt-10 text-3xl font-bold tracking-tight text-foreground xl:text-4xl">
+            <h1 className="font-display mt-10 text-4xl font-semibold tracking-tight text-foreground xl:text-5xl">
               {t.title}
             </h1>
-            <p className="mt-2 text-sm font-medium text-primary/90">{t.subtitle}</p>
+            <p className="mt-3 text-sm font-medium text-foreground/80">{t.subtitle}</p>
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-muted-foreground">{t.authPanelLead}</p>
             <ul className="mt-8 space-y-3">
               {features.map((line) => (
@@ -212,22 +212,22 @@ export default function UserAuth() {
                 }}
                 className="w-full"
               >
-                <TabsList className="grid h-12 w-full grid-cols-2 rounded-xl bg-muted/80 p-1 ring-1 ring-border/60">
+                <TabsList className="grid h-12 w-full grid-cols-2 rounded-full border border-border/60 bg-muted/70 p-1">
                   <TabsTrigger
                     value="login"
-                    className="rounded-lg text-sm font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-md"
+                    className="rounded-full text-sm font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-soft"
                   >
                     {t.loginTitle}
                   </TabsTrigger>
                   <TabsTrigger
                     value="signup"
-                    className="rounded-lg text-sm font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-md"
+                    className="rounded-full text-sm font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-soft"
                   >
                     {t.signUp}
                   </TabsTrigger>
                 </TabsList>
 
-                <div className="mt-4 rounded-2xl border border-border/80 bg-card/70 p-4 shadow-xl ring-1 ring-white/5 backdrop-blur-md sm:mt-8 sm:p-6 md:p-8">
+                <div className="mt-4 rounded-3xl border border-border/80 bg-card/85 p-4 shadow-luxury ring-1 ring-foreground/5 backdrop-blur-md sm:mt-8 sm:p-6 md:p-8">
                   {err && (
                     <Alert variant="destructive" className="mb-6 border-destructive/40 bg-destructive/10">
                       <AlertCircle className="h-4 w-4" />
@@ -288,7 +288,7 @@ export default function UserAuth() {
                       <Button
                         type="submit"
                         disabled={loading}
-                        className="h-12 w-full rounded-2xl border-0 bg-primary text-base font-semibold text-primary-foreground shadow-luxury"
+                        className="h-12 w-full rounded-2xl border-0 bg-foreground text-base font-semibold text-background shadow-luxury hover:bg-foreground/90"
                       >
                         {loading ? (
                           <>
@@ -411,7 +411,7 @@ export default function UserAuth() {
                       <Button
                         type="submit"
                         disabled={loading}
-                        className="mt-2 flex h-12 w-full cursor-pointer items-center justify-center rounded-2xl border-0 bg-primary text-base font-semibold text-primary-foreground shadow-luxury"
+                        className="mt-2 flex h-12 w-full cursor-pointer items-center justify-center rounded-2xl border-0 bg-foreground text-base font-semibold text-background shadow-luxury hover:bg-foreground/90"
                       >
                         {loading ? (
                           <>

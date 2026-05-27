@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Crosshair, Locate, MapPin } from "lucide-react";
+import { ArrowLeft, ChevronRight, Crosshair, MapPin, Star } from "lucide-react";
+import { Link, useRouter } from "@/navigation";
+import { motion } from "framer-motion";
 import { apiFetch } from "@/lib/api";
-import { mediaSrc, PLACEHOLDER_AVATAR } from "@/lib/media";
+import { mediaSrc, PLACEHOLDER_AVATAR, PLACEHOLDER_SALON } from "@/lib/media";
 import { mapSalonListApi, type SalonListApi } from "@/lib/mapSalon";
 import type { Salon } from "@/types";
-import { RadiusSelector } from "@/components/luxury/RadiusSelector";
-import { SalonCardPremium } from "@/components/luxury/SalonCardPremium";
-import { BarberCardPremium, type PremiumBarber } from "@/components/luxury/BarberCardPremium";
-import { EmptyStateLuxury, LoadingSkeleton } from "@/components/luxury/States";
+import { formatKm } from "@/lib/format";
 import { MapView as LuxuryMapView } from "@/components/luxury/MapView";
+import { RatingStars } from "@/components/luxury/RatingStars";
 
 const DEFAULT_CENTER = { lat: 41.3111, lng: 69.2797 };
 
@@ -32,6 +32,22 @@ type BarberNearbyApi = {
   review_count?: number | null;
   active_services?: Array<{ name: string }>;
 };
+
+type PremiumBarber = {
+  id: string;
+  name: string;
+  avatar: string;
+  salonName: string;
+  rating: number;
+  reviewCount: number;
+  lat: number;
+  lng: number;
+  distanceKm?: number;
+  bookingKind: "independent" | "salon";
+  salonId?: string;
+};
+
+const RADII = [1, 2, 5, 10, 25] as const;
 
 function hasMapCoords(item: { lat: number; lng: number }): boolean {
   return Number.isFinite(item.lat) && Number.isFinite(item.lng) && !(item.lat === 0 && item.lng === 0);
@@ -60,7 +76,7 @@ function mapBarberNearby(r: BarberNearbyApi): PremiumBarber {
     avatar: mediaSrc(r.avatar, PLACEHOLDER_AVATAR),
     salonName:
       bookingKind === "salon"
-        ? (r.salon_name?.trim() || "Salon barberi")
+        ? r.salon_name?.trim() || "Salon barberi"
         : r.active_services?.length
           ? r.active_services.map((s) => s.name).join(", ")
           : "Mustaqil barber",
@@ -87,11 +103,13 @@ async function fetchNearbyBarbers(lat: number, lng: number, radius: number): Pro
 }
 
 export default function MapPage() {
+  const router = useRouter();
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [status, setStatus] = useState<GeoStatus>("idle");
   const [radiusKm, setRadiusKm] = useState(5);
   const [tab, setTab] = useState<"salons" | "barbers">("salons");
   const [activeId, setActiveId] = useState<string | null>(null);
+  const carouselRef = useRef<HTMLDivElement | null>(null);
 
   const request = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -138,92 +156,309 @@ export default function MapPage() {
     return visibleBarbers.map((b) => ({ id: b.id, lat: b.lat, lng: b.lng, label: b.name }));
   }, [tab, visibleSalons, visibleBarbers]);
 
+  // When marker clicked -> scroll carousel to it
+  useEffect(() => {
+    if (!activeId || !carouselRef.current) return;
+    const el = carouselRef.current.querySelector<HTMLElement>(
+      `[data-card-id="${activeId}"]`,
+    );
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    }
+  }, [activeId]);
+
+  const totalCount = tab === "salons" ? visibleSalons.length : visibleBarbers.length;
+  const isLoading = tab === "salons" ? salonsQ.isLoading : barbersQ.isLoading;
+
   return (
-    <div className="flex h-[calc(100dvh-5.5rem)] flex-col">
-      <header className="px-4 pb-3 pt-safe">
-        <div className="flex items-center justify-between pt-4">
-          <div>
-            <p className="label-eyebrow">Yaqin atrofingiz</p>
-            <h1 className="text-xl font-bold tracking-tight">
-              {status === "loading" && "Joylashuv aniqlanmoqda..."}
-              {status === "granted" && "Joylashuv aniqlandi"}
-              {status === "fallback" && "Toshkent markazi"}
-              {status === "denied" && "Ruxsat berilmadi"}
-              {status === "idle" && "Joylashuv kerak"}
-            </h1>
+    <div className="fixed inset-0 z-0 overflow-hidden bg-background">
+      {/* Full-screen map */}
+      <div className="absolute inset-0">
+        {typeof window !== "undefined" ? (
+          <LuxuryMapView
+            center={coords}
+            markers={markers}
+            activeId={activeId}
+            onMarkerClick={setActiveId}
+            radiusKm={radiusKm}
+          />
+        ) : (
+          <div className="grid h-full place-items-center text-muted-foreground">
+            <MapPin className="h-6 w-6 animate-pulse" />
           </div>
+        )}
+      </div>
+
+      {/* Top floating overlay: back + status + tabs */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-3 pt-safe">
+        <div className="pointer-events-auto mt-3 flex items-center gap-2">
           <button
             type="button"
-            onClick={request}
-            className="rounded-full border border-border bg-surface px-3 py-2 text-xs font-semibold shadow-soft"
+            onClick={() => router.back()}
+            aria-label="Orqaga"
+            className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-border bg-surface shadow-card outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <Locate className="inline h-3.5 w-3.5" /> Qayta
+            <ArrowLeft className="h-4 w-4" />
           </button>
+          <div className="flex flex-1 items-center gap-2 rounded-full border border-border bg-surface px-3 py-2 shadow-card">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-foreground" />
+            <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-foreground">
+              {status === "loading" && "Joylashuv aniqlanmoqda…"}
+              {status === "granted" && "Joylashuv aniqlandi"}
+              {status === "fallback" && "Toshkent markazi"}
+              {status === "denied" && "Ruxsat kerak"}
+              {status === "idle" && "Atrofni qidirish"}
+            </span>
+            <span className="rounded-full bg-foreground px-2 py-0.5 text-[10px] font-bold text-background">
+              {totalCount}
+            </span>
+          </div>
         </div>
-        <div className="mt-3 flex items-center justify-between">
-          <RadiusSelector radiusKm={radiusKm} onChange={setRadiusKm} />
-          <span className="text-xs text-muted-foreground">{markers.length} ta natija</span>
-        </div>
-      </header>
 
-      <div className="relative mx-4 flex-1 overflow-hidden rounded-3xl border border-border bg-muted shadow-card">
-        {typeof window !== "undefined" ? (
-          <LuxuryMapView center={coords} markers={markers} activeId={activeId} onMarkerClick={setActiveId} radiusKm={radiusKm} />
-        ) : (
-          <div className="grid h-full place-items-center text-muted-foreground"><MapPin className="h-6 w-6 animate-pulse" /></div>
-        )}
+        {/* Tab pills */}
+        <div className="pointer-events-auto mt-2 flex justify-center">
+          <div className="inline-flex rounded-full border border-border bg-surface/95 p-1 shadow-card backdrop-blur">
+            {(["salons", "barbers"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => {
+                  setTab(t);
+                  setActiveId(null);
+                }}
+                className={[
+                  "relative rounded-full px-4 py-1.5 text-[12px] font-semibold transition",
+                  tab === t ? "text-background" : "text-muted-foreground",
+                ].join(" ")}
+              >
+                {tab === t && (
+                  <motion.span
+                    layoutId="map-tab-pill"
+                    className="absolute inset-0 -z-0 rounded-full bg-foreground"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">
+                  {t === "salons" ? "Salonlar" : "Barberlar"}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Floating right rail: locate + radius */}
+      <div className="pointer-events-none absolute right-3 top-1/2 z-20 flex -translate-y-1/2 flex-col items-end gap-2">
+        <div className="pointer-events-auto flex flex-col items-center gap-1.5 rounded-full border border-border bg-surface/95 p-1.5 shadow-card backdrop-blur">
+          {RADII.map((r) => {
+            const active = radiusKm === r;
+            return (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setRadiusKm(r)}
+                aria-pressed={active}
+                className={[
+                  "min-h-[36px] min-w-[40px] rounded-full px-2 text-[10px] font-bold transition",
+                  active
+                    ? "bg-foreground text-background shadow-soft"
+                    : "text-muted-foreground hover:text-foreground",
+                ].join(" ")}
+              >
+                {r}km
+              </button>
+            );
+          })}
+        </div>
         <button
           type="button"
           onClick={request}
           aria-label="Mening joylashuvim"
-          className="absolute bottom-4 right-4 grid h-12 w-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-luxury"
+          className="pointer-events-auto grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-border bg-surface shadow-card outline-none transition active:scale-95 focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <Crosshair className="h-5 w-5" />
+          <Crosshair className="h-4 w-4" />
         </button>
       </div>
 
-      <section className="px-4 pt-3">
-        <div className="inline-flex rounded-full border border-border bg-surface p-1 shadow-soft">
-          {(["salons", "barbers"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTab(t)}
-              className={[
-                "rounded-full px-4 py-1.5 text-xs font-semibold transition",
-                tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground",
-              ].join(" ")}
-            >
-              {t === "salons" ? "Salonlar" : "Barberlar"}
-            </button>
-          ))}
-        </div>
-        <div className="mt-3 max-h-56 space-y-2 overflow-y-auto pb-2 scrollbar-none">
-          {tab === "salons" ? (
-            salonsQ.isLoading ? (
-              <LoadingSkeleton className="h-20" />
-            ) : visibleSalons.length === 0 ? (
-              <EmptyStateLuxury title="Bo'sh" body="Radiusni kattalashtiring." />
-            ) : (
-              visibleSalons.map((s) => (
-                <div key={s.id} onMouseEnter={() => setActiveId(s.id)} className={activeId === s.id ? "ring-2 ring-gold rounded-2xl" : undefined}>
-                  <SalonCardPremium salon={s} layout="horizontal" />
-                </div>
+      {/* Bottom luxury carousel */}
+      <div
+        className="pointer-events-none absolute inset-x-0 z-20"
+        style={{ bottom: "calc(5.75rem + env(safe-area-inset-bottom, 0px))" }}
+      >
+        <div
+          ref={carouselRef}
+          className="pointer-events-auto flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-3 py-1 scrollbar-none"
+        >
+          {isLoading
+            ? [0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="h-[126px] w-[280px] shrink-0 animate-pulse snap-center rounded-3xl bg-surface/95 shadow-card backdrop-blur"
+                />
               ))
-            )
-          ) : barbersQ.isLoading ? (
-            <LoadingSkeleton className="h-20" />
-          ) : visibleBarbers.length === 0 ? (
-            <EmptyStateLuxury title="Bo'sh" body="Radiusni kattalashtiring." />
-          ) : (
-            visibleBarbers.map((b) => (
-              <div key={b.id} onMouseEnter={() => setActiveId(b.id)} className={activeId === b.id ? "ring-2 ring-gold rounded-2xl" : undefined}>
-                <BarberCardPremium barber={b} layout="horizontal" />
+            : tab === "salons"
+              ? visibleSalons.map((s) => (
+                  <SalonCarouselCard
+                    key={s.id}
+                    salon={s}
+                    active={activeId === s.id}
+                    onTap={() => setActiveId(s.id)}
+                  />
+                ))
+              : visibleBarbers.map((b) => (
+                  <BarberCarouselCard
+                    key={b.id}
+                    barber={b}
+                    active={activeId === b.id}
+                    onTap={() => setActiveId(b.id)}
+                  />
+                ))}
+          {!isLoading && totalCount === 0 && (
+            <div className="grid h-[126px] w-full place-items-center rounded-3xl border border-border bg-surface/95 px-4 text-center shadow-card backdrop-blur">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Hech narsa topilmadi</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Radiusni kengaytirib koʻring
+                </p>
               </div>
-            ))
+            </div>
           )}
         </div>
-      </section>
+      </div>
     </div>
+  );
+}
+
+function SalonCarouselCard({
+  salon,
+  active,
+  onTap,
+}: {
+  salon: Salon;
+  active: boolean;
+  onTap: () => void;
+}) {
+  return (
+    <Link
+      to="/salon/$id"
+      params={{ id: salon.id }}
+      data-card-id={salon.id}
+      onMouseEnter={onTap}
+      onTouchStart={onTap}
+      className={[
+        "group relative flex w-[280px] shrink-0 snap-center cursor-pointer items-center gap-3 overflow-hidden rounded-3xl border bg-surface/95 p-3 shadow-card backdrop-blur transition active:scale-[0.99]",
+        active ? "border-foreground ring-2 ring-foreground/40 shadow-luxury" : "border-border hover:border-foreground/30",
+      ].join(" ")}
+    >
+      <div className="relative h-[88px] w-[88px] shrink-0 overflow-hidden rounded-2xl">
+        <img
+          src={salon.coverImage || PLACEHOLDER_SALON}
+          alt={salon.name}
+          loading="lazy"
+          className="h-full w-full object-cover"
+        />
+        {salon.isPremium && (
+          <span className="absolute left-1 top-1 rounded-full bg-gold/95 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-gold-foreground">
+            Premium
+          </span>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <h3 className="line-clamp-1 text-[13px] font-bold text-foreground">{salon.name}</h3>
+        <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground">
+          {salon.address}
+        </p>
+        <div className="mt-1.5 flex items-center gap-2">
+          <RatingStars value={salon.rating} count={salon.reviewCount} />
+        </div>
+        <div className="mt-1.5 flex items-center gap-2">
+          {salon.distance > 0 && (
+            <span className="text-[10px] font-semibold text-foreground">
+              {formatKm(salon.distance)}
+            </span>
+          )}
+          <span className="ml-auto inline-flex items-center gap-0.5 rounded-full bg-foreground px-2 py-0.5 text-[10px] font-bold text-background">
+            Band <ChevronRight className="h-2.5 w-2.5" />
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function BarberCarouselCard({
+  barber,
+  active,
+  onTap,
+}: {
+  barber: PremiumBarber;
+  active: boolean;
+  onTap: () => void;
+}) {
+  const isSalon = barber.bookingKind === "salon" && !!barber.salonId;
+  const Wrapper = (props: { children: React.ReactNode }) =>
+    isSalon ? (
+      <Link
+        to="/booking/$salonId"
+        params={{ salonId: barber.salonId! }}
+        data-card-id={barber.id}
+        onMouseEnter={onTap}
+        onTouchStart={onTap}
+        className={[
+          "group relative flex w-[280px] shrink-0 snap-center cursor-pointer items-center gap-3 overflow-hidden rounded-3xl border bg-surface/95 p-3 shadow-card backdrop-blur transition active:scale-[0.99]",
+          active ? "border-foreground ring-2 ring-foreground/40 shadow-luxury" : "border-border hover:border-foreground/30",
+        ].join(" ")}
+      >
+        {props.children}
+      </Link>
+    ) : (
+      <Link
+        to="/booking/barber/$barberId"
+        params={{ barberId: barber.id }}
+        data-card-id={barber.id}
+        onMouseEnter={onTap}
+        onTouchStart={onTap}
+        className={[
+          "group relative flex w-[280px] shrink-0 snap-center cursor-pointer items-center gap-3 overflow-hidden rounded-3xl border bg-surface/95 p-3 shadow-card backdrop-blur transition active:scale-[0.99]",
+          active ? "border-foreground ring-2 ring-foreground/40 shadow-luxury" : "border-border hover:border-foreground/30",
+        ].join(" ")}
+      >
+        {props.children}
+      </Link>
+    );
+
+  return (
+    <Wrapper>
+      <div className="relative h-[88px] w-[88px] shrink-0">
+        <img
+          src={barber.avatar}
+          alt={barber.name}
+          loading="lazy"
+          className="h-full w-full rounded-full object-cover ring-2 ring-gold/30"
+        />
+        <span className="absolute -bottom-0.5 -right-0.5 grid h-5 w-5 place-items-center rounded-full bg-foreground text-[8px] font-bold text-background ring-2 ring-surface">
+          <Star className="h-3 w-3 fill-gold text-gold" />
+        </span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <h3 className="line-clamp-1 text-[13px] font-bold text-foreground">{barber.name}</h3>
+        <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground">
+          {barber.salonName}
+        </p>
+        <div className="mt-1.5">
+          <RatingStars value={barber.rating} count={barber.reviewCount} />
+        </div>
+        <div className="mt-1.5 flex items-center gap-2">
+          {barber.distanceKm != null && (
+            <span className="text-[10px] font-semibold text-foreground">
+              {formatKm(barber.distanceKm)}
+            </span>
+          )}
+          <span className="ml-auto inline-flex items-center gap-0.5 rounded-full bg-foreground px-2 py-0.5 text-[10px] font-bold text-background">
+            Band <ChevronRight className="h-2.5 w-2.5" />
+          </span>
+        </div>
+      </div>
+    </Wrapper>
   );
 }

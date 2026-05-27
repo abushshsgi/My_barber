@@ -2,10 +2,11 @@
 
 import { Link } from "@/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { MessageCircle, Loader2 } from "lucide-react";
+import { MessageCircle, Loader2, ChevronRight } from "lucide-react";
+import { format, isToday, isYesterday } from "date-fns";
 import { apiList } from "@/lib/api";
-import { Card } from "@/components/ui/card";
 import { AuthGate } from "@/components/AuthGate";
+import { initials } from "@/lib/format";
 
 type ConversationRow = {
   id: string;
@@ -19,6 +20,14 @@ async function fetchConversations(): Promise<ConversationRow[]> {
   return apiList<ConversationRow>("/api/v1/chat/conversations/");
 }
 
+function timeLabel(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isToday(d)) return format(d, "HH:mm");
+  if (isYesterday(d)) return "Kecha";
+  return format(d, "d MMM");
+}
+
 function ChatList() {
   const { data = [], isLoading, error } = useQuery({
     queryKey: ["chat", "conversations"],
@@ -27,49 +36,69 @@ function ChatList() {
   });
 
   return (
-    <div className="min-h-screen">
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b px-4 py-3">
-        <h1 className="text-xl font-bold">Chat</h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Faqat bron qilingandan keyin yozishmalar (voice/image yo&apos;q).
-        </p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <header className="px-5 pt-safe">
+        <div className="pt-3">
+          <p className="label-eyebrow">Suhbatlar</p>
+          <h1 className="font-display text-[26px] font-semibold tracking-tight text-foreground">
+            Chat
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Bron qilingandan keyin barber bilan bogʻlaning
+          </p>
+        </div>
+      </header>
 
-      <div className="p-4 space-y-2">
+      <div className="space-y-2 px-5 pb-6 pt-5">
         {isLoading && (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-accent" />
+          <div className="flex justify-center py-16">
+            <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
           </div>
         )}
 
         {!isLoading && error && (
-          <p className="text-center text-muted-foreground py-12">
-            Chatlar yuklanmadi
-          </p>
+          <p className="py-12 text-center text-sm text-muted-foreground">Chatlar yuklanmadi</p>
         )}
 
         {!isLoading &&
           !error &&
           data.map((c) => (
-            <Link key={c.id} to="/chat/$id" params={{ id: c.id }}>
-              <Card className="p-3 flex items-center gap-3 hover:bg-muted/30 transition-colors">
-                <div className="w-11 h-11 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground">
-                  <MessageCircle className="h-5 w-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{c.other.full_name}</p>
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">
-                    {c.last_message_text || "Hozircha xabar yo‘q"}
+            <Link
+              key={c.id}
+              to="/chat/$id"
+              params={{ id: c.id }}
+              className="group flex cursor-pointer items-center gap-3 rounded-3xl border border-border bg-surface p-3.5 shadow-soft outline-none transition hover:border-foreground/20 focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-foreground text-[12px] font-bold text-background ring-2 ring-gold/30">
+                {initials(c.other.full_name) || "MB"}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="line-clamp-1 text-sm font-bold text-foreground">
+                    {c.other.full_name}
                   </p>
+                  <span className="shrink-0 text-[10px] font-semibold tabular-nums text-muted-foreground">
+                    {timeLabel(c.last_message_at)}
+                  </span>
                 </div>
-              </Card>
+                <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                  {c.last_message_text || "Hozircha xabar yoʻq"}
+                </p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground/50 transition group-hover:translate-x-0.5" />
             </Link>
           ))}
 
         {!isLoading && !error && data.length === 0 && (
-          <p className="text-center text-muted-foreground py-12 px-4 leading-relaxed">
-            Hozircha chat yo&apos;q. Avval sartaroshda bron qiling — shundan keyin chat ochiladi.
-          </p>
+          <div className="rounded-3xl border border-dashed border-border bg-surface py-16 text-center shadow-soft">
+            <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-muted">
+              <MessageCircle className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <p className="text-base font-semibold text-foreground">Hozircha chat yoʻq</p>
+            <p className="mx-auto mt-1 max-w-[24ch] text-sm text-muted-foreground">
+              Avval sartaroshda bron qiling — shundan keyin chat ochiladi.
+            </p>
+          </div>
         )}
       </div>
     </div>
@@ -78,9 +107,11 @@ function ChatList() {
 
 export default function ChatListWithAuth() {
   return (
-    <AuthGate title="Chat uchun kiring" description="Sartarosh bilan yozishish uchun mijoz akkaunti kerak.">
+    <AuthGate
+      title="Chat uchun kiring"
+      description="Sartarosh bilan yozishish uchun mijoz akkaunti kerak."
+    >
       <ChatList />
     </AuthGate>
   );
 }
-
