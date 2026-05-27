@@ -13,6 +13,9 @@ import { useQuery } from "@tanstack/react-query";
 import { getAccessToken } from "@/lib/api";
 import { fetchNotifications } from "@/lib/notifications-queries";
 import { motion } from "framer-motion";
+import { unreadNotificationCount } from "../lib/notification-prefs";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { areNotificationAlertsEnabled } from "../lib/user-preferences";
 
 const TABS = [
   { to: "/", label: "Asosiy", icon: Compass },
@@ -26,16 +29,17 @@ const TABS = [
 export function UserBottomNav() {
   const pathname = usePathname();
   const isLoggedIn = !!getAccessToken();
+  const prefs = useUserPreferences();
 
   const { data: notifications = [], isError } = useQuery({
     queryKey: ["notifications"],
     queryFn: fetchNotifications,
     staleTime: 30_000,
     retry: false,
-    enabled: isLoggedIn,
+    enabled: isLoggedIn && areNotificationAlertsEnabled(prefs),
   });
 
-  const unread = isError ? 0 : notifications.filter((n) => !n.read_at).length;
+  const unread = isError ? 0 : unreadNotificationCount(notifications, prefs);
   const activeIndex = TABS.findIndex(({ to }) =>
     to === "/" ? pathname === "/" : pathname.startsWith(to),
   );

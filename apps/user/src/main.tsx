@@ -4,7 +4,10 @@ import { RouterProvider } from "@tanstack/react-router";
 
 import { getRouter } from "./router";
 import { initNativeShell } from "./lib/native-shell";
+import { applyReduceMotion } from "./lib/user-preferences";
 import "./styles.css";
+
+applyReduceMotion();
 
 const root = document.getElementById("root");
 

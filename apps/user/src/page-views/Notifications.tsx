@@ -16,10 +16,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import { fetchNotifications } from "@/lib/notifications-queries";
 import type { NotifRow } from "@/lib/notifications-queries";
+import { filterNotificationsByPrefs, unreadNotificationCount } from "../lib/notification-prefs";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { areNotificationAlertsEnabled } from "../lib/user-preferences";
+import { Link, useRouter } from "@/navigation";
 import { format, isSameDay, isToday, isYesterday } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { AuthGate } from "@/components/AuthGate";
-import { useRouter } from "@/navigation";
 
 const iconMap: Record<string, typeof Clock> = {
   reminder_1h: Clock,
@@ -59,10 +62,13 @@ function groupByDay(items: NotifRow[]): Array<{ key: string; date: Date; items: 
 const Notifications = () => {
   const qc = useQueryClient();
   const router = useRouter();
+  const prefs = useUserPreferences();
 
+  const alertsEnabled = areNotificationAlertsEnabled(prefs);
   const { data: notifications = [], isLoading, error } = useQuery({
     queryKey: ["notifications"],
     queryFn: fetchNotifications,
+    enabled: alertsEnabled,
   });
 
   const markRead = useMutation({
@@ -81,7 +87,9 @@ const Notifications = () => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
 
-  const unreadCount = notifications.filter((n) => !n.read_at).length;
+  const visibleNotifications = filterNotificationsByPrefs(notifications, prefs);
+  const unreadCount = unreadNotificationCount(notifications, prefs);
+  const alertsDisabled = !alertsEnabled;
 
   const targetFor = (payload: Record<string, unknown> | null): string | null => {
     const conversationId = payload?.conversation_id;
@@ -107,7 +115,7 @@ const Notifications = () => {
     );
   }
 
-  const groups = groupByDay(notifications);
+  const groups = groupByDay(visibleNotifications);
 
   return (
     <div className="min-h-screen bg-background">
@@ -135,7 +143,22 @@ const Notifications = () => {
         </div>
       </header>
 
-      {unreadCount > 0 && (
+      {alertsDisabled ? (
+        <div className="mx-5 mt-3 rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+          <p className="font-semibold text-foreground">Xabarnomalar o‘chirilgan</p>
+          <p className="mt-1 leading-relaxed">
+            Booking va chat eslatmalarini qayta yoqish uchun sozlamalarga o‘ting.
+          </p>
+          <Link
+            to="/settings"
+            className="mt-3 inline-flex text-sm font-semibold text-accent underline-offset-2 hover:underline"
+          >
+            Sozlamalar
+          </Link>
+        </div>
+      ) : null}
+
+      {!alertsDisabled && unreadCount > 0 ? (
         <div className="px-5 pt-3">
           <Button
             variant="secondary"
@@ -148,10 +171,10 @@ const Notifications = () => {
             {markAllRead.isPending ? "Belgilanmoqda…" : "Hammasini oʻqilgan qilish"}
           </Button>
         </div>
-      )}
+      ) : null}
 
       <div className="px-5 pb-6 pt-5">
-        {groups.length === 0 ? (
+        {!alertsDisabled && groups.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -165,7 +188,7 @@ const Notifications = () => {
               Yangi xabarlar shu yerda chiqadi
             </p>
           </motion.div>
-        ) : (
+        ) : !alertsDisabled ? (
           <div className="space-y-6">
             {groups.map((group) => (
               <section key={group.key}>
@@ -239,7 +262,7 @@ const Notifications = () => {
               </section>
             ))}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ Canonical prefix: `/api/v1`
 - `GET /users/me/` - profile (`Profile.tsx`, booking flowlar)
 - `PATCH /users/me/` - ism, telefon va viloyat yangilash (`Profile.tsx`)
 - `GET /salons/` - salon list (`Index.tsx` orqali shared query)
+- `GET /salons/?ids=1,2,3` - sevimli salonlar batch (`Favorites.tsx`)
 - `GET /salons/{id}/` - salon detail (`SalonPage.tsx`, `BookingFlow.tsx`)
 - `GET /salons/{id}/staff/` - salon barberlari (`SalonPage.tsx`, `BookingFlow.tsx`)
 - `GET /salons/{id}/portfolio/` - salon ish natijalari (`SalonPage.tsx`)

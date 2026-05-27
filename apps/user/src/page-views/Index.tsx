@@ -22,6 +22,9 @@ import type { Salon } from "@/types";
 import { formatKm, initials } from "@/lib/format";
 import type { DiscoveryMarkerItem } from "@/components/luxury/DiscoveryMap";
 import { fetchNotifications } from "@/lib/notifications-queries";
+import { unreadNotificationCount } from "../lib/notification-prefs";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { areNotificationAlertsEnabled } from "../lib/user-preferences";
 
 const DiscoveryMap = lazy(async () => {
   const m = await import("@/components/luxury/DiscoveryMap");
@@ -84,6 +87,7 @@ function greetingFor(date: Date): string {
 export default function Index() {
   const router = useRouter();
   const isLoggedIn = !!getAccessToken();
+  const prefs = useUserPreferences();
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [radiusKm] = useState(2);
   const [cat, setCat] = useState<string | null>(null);
@@ -134,10 +138,10 @@ export default function Index() {
     queryFn: fetchNotifications,
     staleTime: 30_000,
     retry: false,
-    enabled: isLoggedIn,
+    enabled: isLoggedIn && areNotificationAlertsEnabled(prefs),
   });
 
-  const unreadTop = !notifErr ? notifications.filter((n) => !n.read_at).length : 0;
+  const unreadTop = !notifErr ? unreadNotificationCount(notifications, prefs) : 0;
 
   const listBase = useMemo(() => {
     const nearbyOk = nearbyQ.data && nearbyQ.data.length > 0;

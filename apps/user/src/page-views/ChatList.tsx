@@ -7,6 +7,7 @@ import { format, isToday, isYesterday } from "date-fns";
 import { apiList } from "@/lib/api";
 import { AuthGate } from "@/components/AuthGate";
 import { initials } from "@/lib/format";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 type ConversationRow = {
   id: string;
@@ -29,10 +30,12 @@ function timeLabel(iso: string | null): string {
 }
 
 function ChatList() {
+  const { chatAlerts } = useUserPreferences();
   const { data = [], isLoading, error } = useQuery({
     queryKey: ["chat", "conversations"],
     queryFn: fetchConversations,
     staleTime: 10_000,
+    refetchInterval: chatAlerts ? 30_000 : false,
   });
 
   return (
@@ -50,6 +53,20 @@ function ChatList() {
       </header>
 
       <div className="space-y-2 px-5 pb-6 pt-5">
+        {!chatAlerts ? (
+          <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+            <p className="font-semibold text-foreground">Chat eslatmalari o‘chirilgan</p>
+            <p className="mt-1 leading-relaxed">
+              Yangi xabarlar notificationlar sahifasida ko‘rsatilmaydi. Chat yozishmalarini ko‘rish mumkin.
+            </p>
+            <Link
+              to="/settings"
+              className="mt-2 inline-flex text-sm font-semibold text-accent underline-offset-2 hover:underline"
+            >
+              Sozlamalar
+            </Link>
+          </div>
+        ) : null}
         {isLoading && (
           <div className="flex justify-center py-16">
             <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />

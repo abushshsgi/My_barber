@@ -8,30 +8,13 @@ import { Button } from "@/components/ui/button";
 import { clearTokens } from "@/lib/api";
 import { useRouter } from "@/navigation";
 import { toast } from "sonner";
-
-const PREF_KEY = "mybarber_user_preferences";
-
-type Preferences = {
-  bookingReminders: boolean;
-  chatAlerts: boolean;
-  reduceMotion: boolean;
-};
-
-const DEFAULT_PREFS: Preferences = {
-  bookingReminders: true,
-  chatAlerts: true,
-  reduceMotion: false,
-};
-
-function readPrefs(): Preferences {
-  if (typeof window === "undefined") return DEFAULT_PREFS;
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(PREF_KEY) || "{}") as Partial<Preferences>;
-    return { ...DEFAULT_PREFS, ...parsed };
-  } catch {
-    return DEFAULT_PREFS;
-  }
-}
+import {
+  applyReduceMotion,
+  DEFAULT_USER_PREFERENCES,
+  readUserPreferences,
+  writeUserPreferences,
+  type UserPreferences,
+} from "../lib/user-preferences";
 
 function ToggleRow({
   title,
@@ -79,19 +62,16 @@ function ToggleRow({
 
 function Settings() {
   const router = useRouter();
-  const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFS);
+  const [prefs, setPrefs] = useState<UserPreferences>(DEFAULT_USER_PREFERENCES);
 
   useEffect(() => {
-    setPrefs(readPrefs());
+    setPrefs(readUserPreferences());
   }, []);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle("reduce-motion", prefs.reduceMotion);
-  }, [prefs.reduceMotion]);
-
-  const update = (next: Preferences) => {
+  const update = (next: UserPreferences) => {
     setPrefs(next);
-    window.localStorage.setItem(PREF_KEY, JSON.stringify(next));
+    writeUserPreferences(next);
+    applyReduceMotion(next.reduceMotion);
     toast.success("Sozlama saqlandi");
   };
 
@@ -140,7 +120,7 @@ function Settings() {
             type="button"
             variant="outline"
             className="h-12 rounded-2xl"
-            onClick={() => update(DEFAULT_PREFS)}
+            onClick={() => update(DEFAULT_USER_PREFERENCES)}
           >
             <RotateCcw className="mr-2 h-4 w-4" />
             Reset

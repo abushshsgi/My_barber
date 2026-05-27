@@ -13,6 +13,14 @@
     <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <title>MySaloon</title>
+    <script>
+      (function () {
+        try {
+          var p = JSON.parse(localStorage.getItem("mybarber_user_preferences") || "{}");
+          document.documentElement.classList.toggle("reduce-motion", !!p.reduceMotion);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
