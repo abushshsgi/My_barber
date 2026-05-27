@@ -45,6 +45,11 @@ export function areChatAlertsEnabled(): boolean {
   return readUserPreferences().chatAlerts;
 }
 
+export function areNotificationAlertsEnabled(prefs?: UserPreferences): boolean {
+  const p = prefs ?? readUserPreferences();
+  return p.bookingReminders || p.chatAlerts;
+}
+
 export function isChatNotificationType(type: string): boolean {
   return type === "chat_message";
 }

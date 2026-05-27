@@ -17,7 +17,7 @@
       (function () {
         try {
           var p = JSON.parse(localStorage.getItem("mybarber_user_preferences") || "{}");
-          if (p.reduceMotion) document.documentElement.classList.add("reduce-motion");
+          document.documentElement.classList.toggle("reduce-motion", !!p.reduceMotion);
         } catch (e) {}
       })();
     </script>

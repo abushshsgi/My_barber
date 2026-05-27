@@ -14,6 +14,7 @@ import { apiFetch } from "@/lib/api";
 import { fetchNotifications } from "@/lib/notifications-queries";
 import { filterNotificationsByPrefs, unreadNotificationCount } from "../lib/notification-prefs";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { areNotificationAlertsEnabled } from "../lib/user-preferences";
 import { Link } from "@/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -39,9 +40,11 @@ const Notifications = () => {
   const router = useRouter();
   const prefs = useUserPreferences();
 
+  const alertsEnabled = areNotificationAlertsEnabled(prefs);
   const { data: notifications = [], isLoading, error } = useQuery({
     queryKey: ["notifications"],
     queryFn: fetchNotifications,
+    enabled: alertsEnabled,
   });
 
   const markRead = useMutation({
@@ -62,7 +65,7 @@ const Notifications = () => {
 
   const visibleNotifications = filterNotificationsByPrefs(notifications, prefs);
   const unreadCount = unreadNotificationCount(notifications, prefs);
-  const alertsDisabled = !prefs.bookingReminders && !prefs.chatAlerts;
+  const alertsDisabled = !alertsEnabled;
 
   const targetFor = (payload: Record<string, unknown> | null): string | null => {
     const conversationId = payload?.conversation_id;

@@ -14,6 +14,7 @@ import { getAccessToken } from "@/lib/api";
 import { fetchNotifications } from "@/lib/notifications-queries";
 import { unreadNotificationCount } from "../lib/notification-prefs";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { areNotificationAlertsEnabled } from "../lib/user-preferences";
 
 const TABS = [
   { to: "/", label: "Asosiy", icon: Compass },
@@ -34,7 +35,7 @@ export function UserBottomNav() {
     queryFn: fetchNotifications,
     staleTime: 30_000,
     retry: false,
-    enabled: isLoggedIn,
+    enabled: isLoggedIn && areNotificationAlertsEnabled(prefs),
   });
 
   const unread = isError ? 0 : unreadNotificationCount(notifications, prefs);

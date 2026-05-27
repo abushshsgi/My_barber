@@ -24,6 +24,7 @@ import type { DiscoveryMarkerItem } from "@/components/luxury/DiscoveryMap";
 import { fetchNotifications } from "@/lib/notifications-queries";
 import { unreadNotificationCount } from "../lib/notification-prefs";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { areNotificationAlertsEnabled } from "../lib/user-preferences";
 
 const DiscoveryMap = lazy(async () => {
   const m = await import("@/components/luxury/DiscoveryMap");
@@ -142,7 +143,7 @@ export default function Index() {
     queryFn: fetchNotifications,
     staleTime: 30_000,
     retry: false,
-    enabled: isLoggedIn,
+    enabled: isLoggedIn && areNotificationAlertsEnabled(prefs),
   });
 
   const unreadTop = !notifErr ? unreadNotificationCount(notifications, prefs) : 0;
