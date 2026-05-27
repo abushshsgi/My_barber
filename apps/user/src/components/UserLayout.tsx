@@ -15,7 +15,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
       className={
         isAuthRoute
           ? "relative min-h-screen w-full max-w-none bg-background"
-          : "relative mx-auto min-h-screen w-full max-w-md bg-background pb-28"
+          : "relative mx-auto min-h-screen w-full max-w-md bg-background pb-32"
       }
     >
       {!isAuthRoute ? <PwaInstallHint /> : null}
