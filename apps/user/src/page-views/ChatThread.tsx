@@ -4,11 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "@/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, Send } from "lucide-react";
+import { format, isSameDay } from "date-fns";
 import { apiJson, apiFetch, formatApiError, getAccessToken } from "@/lib/api";
 import { chatWebSocketUrl } from "@/lib/ws-url";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { AuthGate } from "@/components/AuthGate";
 
@@ -93,65 +92,85 @@ function ChatThread() {
   });
 
   return (
-    <div className="min-h-[100dvh] flex flex-col">
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b px-4 py-3 flex items-center gap-2">
+    <div className="flex min-h-[100dvh] flex-col bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-40 flex items-center gap-2 border-b border-border bg-surface/95 px-3 py-2 backdrop-blur pt-safe">
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="rounded-xl"
+          className="h-11 w-11 rounded-full"
           onClick={() => router.back()}
           aria-label="Orqaga"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div className="min-w-0">
-          <h1 className="text-base font-semibold truncate">Chat</h1>
-          <p className="text-[11px] text-muted-foreground truncate">
-            Faqat yozish (voice/image yo&apos;q)
-          </p>
+        <div className="min-w-0 flex-1">
+          <p className="label-eyebrow truncate">Suhbat</p>
+          <h1 className="truncate font-display text-lg font-semibold text-foreground">Chat</h1>
         </div>
-      </div>
+      </header>
 
-      <ScrollArea className="flex-1 px-4 py-3">
+      {/* Body */}
+      <div className="flex-1 overflow-y-auto px-4 py-4">
         {isLoading && (
-          <div className="flex justify-center py-10">
-            <Loader2 className="h-7 w-7 animate-spin text-accent" />
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
           </div>
         )}
         {!isLoading && error && (
-          <p className="text-center text-muted-foreground py-10 px-4 leading-relaxed">
-            Xabarlar yuklanmadi. Chat faqat bekor qilinmagan booking mavjud bo‘lsa ochiladi.
+          <p className="px-4 py-12 text-center text-sm leading-relaxed text-muted-foreground">
+            Xabarlar yuklanmadi. Chat faqat bekor qilinmagan booking mavjud boʻlsa ochiladi.
           </p>
         )}
 
         {!isLoading &&
           !error &&
-          allMessages.map((m) => {
+          allMessages.map((m, idx) => {
             const mine = m.sender_kind === "USER";
+            const created = new Date(m.created_at);
+            const prev = allMessages[idx - 1];
+            const showSeparator =
+              !prev || !isSameDay(new Date(prev.created_at), created);
             return (
-              <div
-                key={m.id}
-                className={cn("mb-2 flex", mine ? "justify-end" : "justify-start")}
-              >
-                <div
-                  className={cn(
-                    "max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed shadow-sm",
-                    mine
-                      ? "bg-primary text-primary-foreground rounded-br-md"
-                      : "bg-muted text-foreground rounded-bl-md",
-                  )}
-                >
-                  {m.text}
+              <div key={m.id}>
+                {showSeparator && (
+                  <div className="my-3 flex items-center justify-center">
+                    <span className="rounded-full bg-muted px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      {format(created, "d MMM yyyy")}
+                    </span>
+                  </div>
+                )}
+                <div className={cn("mb-2 flex", mine ? "justify-end" : "justify-start")}>
+                  <div
+                    className={cn(
+                      "max-w-[78%] rounded-3xl px-3.5 py-2 text-sm leading-relaxed shadow-soft",
+                      mine
+                        ? "rounded-br-md bg-foreground text-background"
+                        : "rounded-bl-md border border-border bg-surface text-foreground",
+                    )}
+                  >
+                    <p className="text-pretty">{m.text}</p>
+                    <p
+                      className={cn(
+                        "mt-0.5 text-right text-[10px] tabular-nums",
+                        mine ? "text-background/55" : "text-muted-foreground",
+                      )}
+                    >
+                      {format(created, "HH:mm")}
+                    </p>
+                  </div>
                 </div>
               </div>
             );
           })}
         <div ref={endRef} />
-      </ScrollArea>
+      </div>
 
+      {/* Composer */}
       <form
-        className="sticky bottom-[calc(3.75rem+env(safe-area-inset-bottom))] sm:bottom-[calc(4rem+env(safe-area-inset-bottom))] bg-background/95 backdrop-blur-xl border-t px-3 py-2"
+        className="sticky z-40 border-t border-border bg-surface/95 px-3 py-2 backdrop-blur"
+        style={{ bottom: "calc(5.5rem + env(safe-area-inset-bottom, 0px))" }}
         onSubmit={(e) => {
           e.preventDefault();
           const v = text.trim();
@@ -159,18 +178,27 @@ function ChatThread() {
           sendMutation.mutate({ text: v });
         }}
       >
-        <div className="flex items-center gap-2">
-          <Input
+        <div className="flex items-end gap-2">
+          <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Xabar yozing…"
             maxLength={4000}
+            rows={1}
             disabled={sendMutation.isPending}
+            className="max-h-32 min-h-[44px] flex-1 resize-none rounded-3xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                const v = text.trim();
+                if (v) sendMutation.mutate({ text: v });
+              }
+            }}
           />
           <Button
             type="submit"
             size="icon"
-            className="shrink-0"
+            className="h-11 w-11 shrink-0 rounded-full bg-foreground text-background hover:bg-foreground/90"
             disabled={sendMutation.isPending || !text.trim()}
             aria-label="Yuborish"
           >
@@ -193,9 +221,11 @@ function ChatThread() {
 
 export default function ChatThreadWithAuth() {
   return (
-    <AuthGate title="Chat uchun kiring" description="Xabarlarni ko‘rish va yuborish uchun mijoz akkaunti kerak.">
+    <AuthGate
+      title="Chat uchun kiring"
+      description="Xabarlarni koʻrish va yuborish uchun mijoz akkaunti kerak."
+    >
       <ChatThread />
     </AuthGate>
   );
 }
-
