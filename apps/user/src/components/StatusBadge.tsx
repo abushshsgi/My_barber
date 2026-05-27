@@ -15,36 +15,44 @@ interface StatusBadgeProps {
 
 const statusConfig: Record<
   ApiBookingStatus,
-  { label: string; className: string; pulse?: boolean }
+  { label: string; className: string; dot?: string; pulse?: boolean }
 > = {
   pending: {
     label: "Kutilmoqda",
-    className: "bg-warning/15 text-warning border-warning/20",
+    className: "bg-warning/15 text-foreground border-warning/30",
+    dot: "bg-warning",
     pulse: true,
   },
   accepted: {
     label: "Tasdiqlandi",
-    className: "bg-success/15 text-success border-success/20",
+    className: "bg-success/15 text-success border-success/30",
+    dot: "bg-success",
   },
   confirmed: {
     label: "Tasdiqlandi",
-    className: "bg-success/15 text-success border-success/20",
+    className: "bg-success/15 text-success border-success/30",
+    dot: "bg-success",
   },
   in_progress: {
     label: "Jarayonda",
-    className: "bg-accent/15 text-accent border-accent/20",
+    className: "bg-foreground text-background border-foreground",
+    dot: "bg-gold",
+    pulse: true,
   },
   rejected: {
     label: "Rad etildi",
-    className: "bg-destructive/15 text-destructive border-destructive/20",
+    className: "bg-destructive/15 text-destructive border-destructive/30",
+    dot: "bg-destructive",
   },
   completed: {
     label: "Bajarildi",
-    className: "bg-accent/15 text-accent border-accent/20",
+    className: "bg-foreground/5 text-foreground border-foreground/20",
+    dot: "bg-foreground",
   },
   cancelled: {
     label: "Bekor qilindi",
-    className: "bg-destructive/15 text-destructive border-destructive/20",
+    className: "bg-destructive/15 text-destructive border-destructive/30",
+    dot: "bg-destructive",
   },
 };
 
@@ -53,16 +61,17 @@ export function StatusBadge({ status }: StatusBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border",
-        config.className
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
+        config.className,
       )}
     >
-      {config.pulse && (
-        <span className="w-1.5 h-1.5 rounded-full bg-warning mr-1.5 animate-pulse" />
-      )}
-      {!config.pulse && status === "accepted" && (
-        <span className="w-1.5 h-1.5 rounded-full bg-success mr-1.5" />
-      )}
+      <span
+        className={cn(
+          "h-1.5 w-1.5 rounded-full",
+          config.dot,
+          config.pulse && "animate-pulse",
+        )}
+      />
       {config.label}
     </span>
   );
