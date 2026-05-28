@@ -114,7 +114,8 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
         min_rating = r.get("min_rating")
         forced_region = customer_catalog_region(self.request)
         region = (r.get("region") or "").strip()
-        service_q = (r.get("service_q") or r.get("q") or "").strip()
+        service_q = (r.get("service_q") or "").strip()
+        name_q = (r.get("name_q") or "").strip()
         available_date = (r.get("available_date") or "").strip()
         work_mode = (r.get("work_mode") or "").strip().lower()
 
@@ -149,6 +150,8 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
             qs = qs.filter(barber__region=forced_region)
         elif region and region in valid_regions:
             qs = qs.filter(barber__region=region)
+        if name_q:
+            qs = qs.filter(barber__full_name__icontains=name_q).distinct()
         if service_q:
             qs = qs.filter(
                 services__is_active=True,
@@ -255,6 +258,42 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
                 row["distance_km"] = round(d, 3)
                 out.append(row)
         out.sort(key=lambda x: x["distance_km"])
+        return Response(out)
+
+    @action(
+        detail=False,
+        methods=["get"],
+        permission_classes=[AllowAny],
+        url_path="find",
+        throttle_classes=[SalonSearchThrottle],
+    )
+    def find(self, request):
+        """Mijoz: sartarosh ismi bo‘yicha qidiruv."""
+        q = request.query_params.get("q", "").strip()
+        if len(q) < 1:
+            return Response([])
+        qs = (
+            self.get_queryset()
+            .filter(barber__full_name__icontains=q)
+            .order_by("barber__full_name")[:30]
+        )
+        out = []
+        for p in qs:
+            barber = p.barber
+            ser = BarberPublicListSerializer(p, context={"request": request})
+            row = dict(ser.data)
+            salon = _public_salon_for_barber(barber)
+            if barber.work_mode != Barber.WorkMode.INDEPENDENT and salon is not None:
+                row["booking_kind"] = "salon"
+                row["salon_id"] = salon.id
+                row["salon_name"] = salon.name
+                row["latitude"] = str(salon.latitude)
+                row["longitude"] = str(salon.longitude)
+            else:
+                row["booking_kind"] = "independent"
+                row["salon_id"] = None
+                row["salon_name"] = None
+            out.append(row)
         return Response(out)
 
 

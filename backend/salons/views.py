@@ -208,34 +208,25 @@ class SalonViewSet(viewsets.ModelViewSet):
         throttle_classes=[SalonSearchThrottle],
     )
     def search(self, request):
-        """Salon nomi bo‘yicha qidiruv (barber mavjud salonga qo‘shilish uchun)."""
+        """Salon nomi bo‘yicha qidiruv (mijoz discover + barber salonga qo‘shilish)."""
         q = request.query_params.get("q", "").strip()
         if len(q) < 1:
             return Response([])
-        qs = Salon.objects.filter(is_published=True, name__icontains=q)
+        qs = self._salon_public_list_qs().filter(name__icontains=q)
         bp = request_barber(request)
         if bp is not None:
             br = (bp.region or "").strip()
             if br:
                 qs = qs.filter(owner_barber__region=br)
         else:
-            # Anonim (employee join): ixtiyoriy ?region=
-            region = (request.query_params.get("region") or "").strip()
-            valid_regions = {c[0] for c in UzRegion.choices}
-            if region and region in valid_regions:
-                qs = qs.filter(owner_barber__region=region)
-        qs = qs.order_by("name")[:20]
+            qs = self._apply_public_salon_region(qs)
+        qs = qs.order_by("name")[:30]
         out = []
         for s in qs:
-            out.append(
-                {
-                    "id": s.id,
-                    "name": s.name,
-                    "address": s.address or "",
-                    "latitude": float(s.latitude),
-                    "longitude": float(s.longitude),
-                }
-            )
+            row = SalonListSerializer(s, context={"request": request}).data
+            row["latitude"] = float(s.latitude)
+            row["longitude"] = float(s.longitude)
+            out.append(row)
         return Response(out)
 
     @action(

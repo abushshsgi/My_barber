@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ChevronRight, Crosshair, MapPin, Star } from "lucide-react";
+import { ArrowLeft, ChevronRight, Crosshair, MapPin, Search, Star } from "lucide-react";
 import { Link, useRouter } from "@/navigation";
 import { motion } from "framer-motion";
 import { apiFetch } from "@/lib/api";
@@ -200,6 +200,14 @@ export default function MapPage() {
             className="grid h-11 w-11 cursor-pointer place-items-center rounded-lg border-2 border-border bg-surface shadow-card outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
           >
             <ArrowLeft className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/search")}
+            aria-label="Qidiruv"
+            className="grid h-11 w-11 cursor-pointer place-items-center rounded-lg border-2 border-border bg-surface shadow-card outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Search className="h-4 w-4" />
           </button>
           <div className="flex flex-1 items-center gap-2 rounded-lg border-2 border-border bg-surface px-3 py-2 shadow-card">
             <MapPin className="h-3.5 w-3.5 shrink-0 text-foreground" />

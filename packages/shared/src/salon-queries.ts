@@ -2,6 +2,20 @@ import { apiFetch, formatApiError } from "./api";
 import { mapSalonListApi, type SalonListApi } from "./mapSalon";
 import type { Salon } from "./types";
 
+/** GET /api/v1/salons/search/?q= — salon nomi bo‘yicha (mijoz qidiruv). */
+export async function searchSalons(q: string): Promise<Salon[]> {
+  const trimmed = q.trim();
+  if (!trimmed) return [];
+  const res = await apiFetch(`/api/v1/salons/search/?q=${encodeURIComponent(trimmed)}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(formatApiError(body, "Salon qidiruvda xatolik."));
+  }
+  const j = (await res.json()) as SalonListApi[];
+  const raw = Array.isArray(j) ? j : [];
+  return raw.map((r) => mapSalonListApi(r));
+}
+
 export async function fetchSalons(): Promise<Salon[]> {
   const res = await apiFetch("/api/v1/salons/");
   if (!res.ok) {

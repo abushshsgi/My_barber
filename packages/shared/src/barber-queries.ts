@@ -49,6 +49,25 @@ function buildBarberQuery(filters?: BarberExploreFilters): string {
   return s ? `?${s}` : "";
 }
 
+export type BarberFindApi = BarberListApi & {
+  booking_kind?: "independent" | "salon";
+  salon_id?: number | null;
+  salon_name?: string | null;
+};
+
+/** GET /api/v1/barbers/find/?q= — sartarosh ismi bo‘yicha (mijoz qidiruv). */
+export async function findBarbers(q: string): Promise<BarberFindApi[]> {
+  const trimmed = q.trim();
+  if (!trimmed) return [];
+  const res = await apiFetch(`/api/v1/barbers/find/?q=${encodeURIComponent(trimmed)}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(formatApiError(body, "Sartarosh qidiruvda xatolik."));
+  }
+  const j = (await res.json()) as BarberFindApi[];
+  return Array.isArray(j) ? j : [];
+}
+
 export async function fetchBarbers(filters?: BarberExploreFilters): Promise<BarberListApi[]> {
   const res = await apiFetch(`/api/v1/barbers/${buildBarberQuery(filters)}`);
   if (!res.ok) {

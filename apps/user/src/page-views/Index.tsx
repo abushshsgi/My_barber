@@ -227,19 +227,34 @@ export default function Index() {
           </div>
 
           {/* Search */}
-          <button
-            type="button"
-            onClick={() => router.push("/map")}
-            className="neo-panel mt-5 flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3.5 text-left outline-none transition active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-ring"
+          <form
+            className="neo-panel mt-5 flex w-full items-center gap-3 rounded-xl px-4 py-3.5 outline-none focus-within:ring-2 focus-within:ring-ring"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              const q = String(fd.get("q") || "").trim();
+              if (q.length >= 2) {
+                router.push(`/search?q=${encodeURIComponent(q)}`);
+              } else {
+                router.push("/search");
+              }
+            }}
           >
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <span className="flex-1 truncate text-sm text-muted-foreground">
-              Salon yoki barber qidirish
-            </span>
-            <span className="rounded-md border-2 border-border bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground">
+            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <input
+              name="q"
+              type="search"
+              placeholder="Salon yoki sartarosh nomi"
+              enterKeyHint="search"
+              className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
+            <button
+              type="submit"
+              className="shrink-0 rounded-md border-2 border-border bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground"
+            >
               Qidirish
-            </span>
-          </button>
+            </button>
+          </form>
         </header>
 
         {/* Categories */}
