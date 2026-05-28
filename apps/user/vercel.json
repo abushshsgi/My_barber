@@ -1,6 +1,6 @@
 {
   "framework": "vite",
-  "installCommand": "cd ../.. && git submodule update --init --recursive apps/salon-connect && npm install",
+  "installCommand": "cd ../.. && bash scripts/ensure-salon-connect-deps.sh && npm install",
   "buildCommand": "npm run build",
   "outputDirectory": "dist/client",
   "rewrites": [

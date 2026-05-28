@@ -20,7 +20,7 @@ npm install
 npm run dev:user
 ```
 
-**Vercel:** `apps/user/vercel.json` — submodule init + `npm install`.
+**Vercel (user):** Root Directory `apps/user`. Vercel Git → **Submodules** yoqing; `salon-connect` public yoki deploy key kerak.
 
 ## Qoidalar
 
