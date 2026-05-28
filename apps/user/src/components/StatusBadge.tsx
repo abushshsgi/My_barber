@@ -19,39 +19,39 @@ const statusConfig: Record<
 > = {
   pending: {
     label: "Kutilmoqda",
-    className: "bg-warning/15 text-foreground border-warning/30",
+    className: "bg-warning text-warning-foreground border-border",
     dot: "bg-warning",
     pulse: true,
   },
   accepted: {
     label: "Tasdiqlandi",
-    className: "bg-success/15 text-success border-success/30",
+    className: "bg-success text-success-foreground border-border",
     dot: "bg-success",
   },
   confirmed: {
     label: "Tasdiqlandi",
-    className: "bg-success/15 text-success border-success/30",
+    className: "bg-success text-success-foreground border-border",
     dot: "bg-success",
   },
   in_progress: {
     label: "Jarayonda",
-    className: "bg-foreground text-background border-foreground",
+    className: "bg-primary text-primary-foreground border-border",
     dot: "bg-gold",
     pulse: true,
   },
   rejected: {
     label: "Rad etildi",
-    className: "bg-destructive/15 text-destructive border-destructive/30",
+    className: "bg-destructive text-destructive-foreground border-border",
     dot: "bg-destructive",
   },
   completed: {
     label: "Bajarildi",
-    className: "bg-foreground/5 text-foreground border-foreground/20",
+    className: "bg-accent text-accent-foreground border-border",
     dot: "bg-foreground",
   },
   cancelled: {
     label: "Bekor qilindi",
-    className: "bg-destructive/15 text-destructive border-destructive/30",
+    className: "bg-destructive text-destructive-foreground border-border",
     dot: "bg-destructive",
   },
 };
@@ -61,7 +61,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
+        "inline-flex items-center gap-1.5 rounded-lg border-2 px-2.5 py-0.5 text-[11px] font-extrabold shadow-soft",
         config.className,
       )}
     >

@@ -2,6 +2,7 @@
 
 import { Bell, LockKeyhole, MapPin, ShieldCheck, UserCheck } from "lucide-react";
 import { Link } from "@/navigation";
+import { NeoPage, NeoSection } from "@/components/neo/NeoPrimitives";
 
 const rows = [
   {
@@ -28,14 +29,14 @@ const rows = [
 
 export default function Privacy() {
   return (
-    <div className="min-h-screen bg-background pb-8">
+    <NeoPage className="pb-8">
       <header className="px-5 pt-safe">
         <div className="pt-3">
-          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-foreground text-background shadow-card">
+          <span className="grid h-12 w-12 place-items-center rounded-lg border-2 border-border bg-primary text-primary-foreground shadow-luxury">
             <ShieldCheck className="h-6 w-6" />
           </span>
           <p className="label-eyebrow mt-5">Maxfiylik va xavfsizlik</p>
-          <h1 className="font-display mt-1 text-[26px] font-semibold tracking-tight text-foreground">
+          <h1 className="mt-1 text-[26px] font-extrabold tracking-tight text-foreground">
             Mijoz maʼlumotlari aniq oqimlarda ishlatiladi
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
@@ -45,11 +46,12 @@ export default function Privacy() {
       </header>
 
       <main className="px-5 pt-5">
-        <div className="space-y-3">
+        <NeoSection title="Nima saqlanadi va nima uchun" eyebrow="Maxfiylik">
+          <div className="space-y-3">
           {rows.map(({ icon: Icon, title, body }) => (
-            <article key={title} className="rounded-3xl border border-border bg-surface p-4 shadow-soft">
+            <article key={title} className="neo-panel p-4">
               <div className="flex gap-3">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-muted">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border-2 border-border bg-accent text-accent-foreground">
                   <Icon className="h-5 w-5 text-foreground" />
                 </span>
                 <div>
@@ -59,15 +61,16 @@ export default function Privacy() {
               </div>
             </article>
           ))}
-        </div>
+          </div>
+        </NeoSection>
 
         <Link
           to="/settings"
-          className="mt-5 grid h-12 place-items-center rounded-2xl bg-foreground text-sm font-semibold text-background shadow-luxury"
+          className="neo-cta mt-5 grid h-12 place-items-center bg-primary text-sm font-bold text-primary-foreground"
         >
           Sozlamalarni ochish
         </Link>
       </main>
-    </div>
+    </NeoPage>
   );
 }

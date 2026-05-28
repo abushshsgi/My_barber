@@ -12,6 +12,7 @@ import type { Salon } from "@/types";
 import { formatKm } from "@/lib/format";
 import { MapView as LuxuryMapView } from "@/components/luxury/MapView";
 import { RatingStars } from "@/components/luxury/RatingStars";
+import { NeoPage } from "@/components/neo/NeoPrimitives";
 
 const DEFAULT_CENTER = { lat: 41.3111, lng: 69.2797 };
 
@@ -171,7 +172,7 @@ export default function MapPage() {
   const isLoading = tab === "salons" ? salonsQ.isLoading : barbersQ.isLoading;
 
   return (
-    <div className="fixed inset-0 z-0 overflow-hidden bg-background">
+    <NeoPage className="fixed inset-0 z-0 overflow-hidden">
       {/* Full-screen map */}
       <div className="absolute inset-0">
         {typeof window !== "undefined" ? (
@@ -196,11 +197,11 @@ export default function MapPage() {
             type="button"
             onClick={() => router.back()}
             aria-label="Orqaga"
-            className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-border bg-surface shadow-card outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+            className="grid h-11 w-11 cursor-pointer place-items-center rounded-lg border-2 border-border bg-surface shadow-card outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <div className="flex flex-1 items-center gap-2 rounded-full border border-border bg-surface px-3 py-2 shadow-card">
+          <div className="flex flex-1 items-center gap-2 rounded-lg border-2 border-border bg-surface px-3 py-2 shadow-card">
             <MapPin className="h-3.5 w-3.5 shrink-0 text-foreground" />
             <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-foreground">
               {status === "loading" && "Joylashuv aniqlanmoqda…"}
@@ -209,7 +210,7 @@ export default function MapPage() {
               {status === "denied" && "Ruxsat kerak"}
               {status === "idle" && "Atrofni qidirish"}
             </span>
-            <span className="rounded-full bg-foreground px-2 py-0.5 text-[10px] font-bold text-background">
+            <span className="rounded-md border-2 border-border bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
               {totalCount}
             </span>
           </div>
@@ -217,7 +218,7 @@ export default function MapPage() {
 
         {/* Tab pills */}
         <div className="pointer-events-auto mt-2 flex justify-center">
-          <div className="inline-flex rounded-full border border-border bg-surface/95 p-1 shadow-card backdrop-blur">
+          <div className="inline-flex rounded-xl border-2 border-border bg-surface p-1 shadow-card">
             {(["salons", "barbers"] as const).map((t) => (
               <button
                 key={t}
@@ -227,14 +228,14 @@ export default function MapPage() {
                   setActiveId(null);
                 }}
                 className={[
-                  "relative rounded-full px-4 py-1.5 text-[12px] font-semibold transition",
-                  tab === t ? "text-background" : "text-muted-foreground",
+                  "relative rounded-lg px-4 py-1.5 text-[12px] font-extrabold transition",
+                  tab === t ? "text-primary-foreground" : "text-muted-foreground",
                 ].join(" ")}
               >
                 {tab === t && (
                   <motion.span
                     layoutId="map-tab-pill"
-                    className="absolute inset-0 -z-0 rounded-full bg-foreground"
+                    className="absolute inset-0 -z-0 rounded-lg border-2 border-border bg-primary"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
@@ -249,7 +250,7 @@ export default function MapPage() {
 
       {/* Floating right rail: locate + radius */}
       <div className="pointer-events-none absolute right-3 top-1/2 z-20 flex -translate-y-1/2 flex-col items-end gap-2">
-        <div className="pointer-events-auto flex flex-col items-center gap-1.5 rounded-full border border-border bg-surface/95 p-1.5 shadow-card backdrop-blur">
+        <div className="pointer-events-auto flex flex-col items-center gap-1.5 rounded-xl border-2 border-border bg-surface p-1.5 shadow-card">
           {RADII.map((r) => {
             const active = radiusKm === r;
             return (
@@ -259,9 +260,9 @@ export default function MapPage() {
                 onClick={() => setRadiusKm(r)}
                 aria-pressed={active}
                 className={[
-                  "min-h-[36px] min-w-[40px] rounded-full px-2 text-[10px] font-bold transition",
+                  "min-h-[36px] min-w-[40px] rounded-md border-2 border-border px-2 text-[10px] font-bold transition",
                   active
-                    ? "bg-foreground text-background shadow-soft"
+                    ? "bg-primary text-primary-foreground shadow-soft"
                     : "text-muted-foreground hover:text-foreground",
                 ].join(" ")}
               >
@@ -274,7 +275,7 @@ export default function MapPage() {
           type="button"
           onClick={request}
           aria-label="Mening joylashuvim"
-          className="pointer-events-auto grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-border bg-surface shadow-card outline-none transition active:scale-95 focus-visible:ring-2 focus-visible:ring-ring"
+          className="pointer-events-auto grid h-11 w-11 cursor-pointer place-items-center rounded-lg border-2 border-border bg-surface shadow-card outline-none transition active:scale-95 focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Crosshair className="h-4 w-4" />
         </button>
@@ -293,7 +294,7 @@ export default function MapPage() {
             ? [0, 1, 2].map((i) => (
                 <div
                   key={i}
-                  className="h-[126px] w-[280px] shrink-0 animate-pulse snap-center rounded-3xl bg-surface/95 shadow-card backdrop-blur"
+                  className="h-[126px] w-[280px] shrink-0 animate-pulse snap-center rounded-xl border-2 border-border bg-surface shadow-card"
                 />
               ))
             : tab === "salons"
@@ -314,7 +315,7 @@ export default function MapPage() {
                   />
                 ))}
           {!isLoading && totalCount === 0 && (
-            <div className="grid h-[126px] w-full place-items-center rounded-3xl border border-border bg-surface/95 px-4 text-center shadow-card backdrop-blur">
+            <div className="grid h-[126px] w-full place-items-center rounded-xl border-2 border-border bg-surface px-4 text-center shadow-card">
               <div>
                 <p className="text-sm font-semibold text-foreground">Hech narsa topilmadi</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
@@ -325,7 +326,7 @@ export default function MapPage() {
           )}
         </div>
       </div>
-    </div>
+    </NeoPage>
   );
 }
 

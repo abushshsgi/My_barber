@@ -22,6 +22,7 @@ import { EmptyStateLuxury, LoadingSkeleton } from "@/components/luxury/States";
 import { formatSom } from "@/lib/format";
 import { fetchFavoriteSalonIds, isFavoriteSalon, setFavoriteSalon } from "../lib/favorites";
 import { cn } from "@/lib/utils";
+import { NeoPage } from "@/components/neo/NeoPrimitives";
 
 type SalonDetail = {
   id: number;
@@ -183,7 +184,7 @@ export default function SalonPage() {
     typeof salon.review_count === "number" ? salon.review_count : reviews.length;
 
   return (
-    <div className="relative w-full bg-background pb-44">
+    <NeoPage className="relative w-full pb-44">
       {/* Hero cover */}
       <div className="relative">
         <img
@@ -207,7 +208,7 @@ export default function SalonPage() {
                 ? window.history.back()
                 : router.push("/")
             }
-            className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-white/30 bg-black/30 text-white shadow-soft backdrop-blur outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+            className="grid h-11 w-11 cursor-pointer place-items-center rounded-lg border-2 border-white/60 bg-black/45 text-white shadow-soft outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="Orqaga"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -216,7 +217,7 @@ export default function SalonPage() {
             <button
               type="button"
               aria-label="Ulashish"
-              className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-white/30 bg-black/30 text-white shadow-soft backdrop-blur outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+              className="grid h-11 w-11 cursor-pointer place-items-center rounded-lg border-2 border-white/60 bg-black/45 text-white shadow-soft outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() =>
                 navigator.share
                   ?.({ title: salon.name, url: window.location.href })
@@ -229,7 +230,7 @@ export default function SalonPage() {
               type="button"
               aria-label={favorite ? "Sevimlidan olib tashlash" : "Saqlash"}
               className={cn(
-                "grid h-11 w-11 cursor-pointer place-items-center rounded-full border shadow-soft backdrop-blur outline-none transition focus-visible:ring-2 focus-visible:ring-ring",
+                "grid h-11 w-11 cursor-pointer place-items-center rounded-lg border-2 shadow-soft outline-none transition focus-visible:ring-2 focus-visible:ring-ring",
                 favorite
                   ? "border-gold/60 bg-gold text-gold-foreground"
                   : "border-white/30 bg-black/30 text-white",
@@ -256,7 +257,7 @@ export default function SalonPage() {
 
         {/* Hero text on cover */}
         <div className="absolute inset-x-0 bottom-0 px-5 pb-5 text-white">
-          <h1 className="font-display text-3xl font-semibold leading-tight tracking-tight drop-shadow text-balance">
+          <h1 className="text-3xl font-extrabold leading-tight tracking-tight drop-shadow text-balance">
             {salon.name}
           </h1>
           <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-white/85">
@@ -513,6 +514,6 @@ export default function SalonPage() {
           )}
         </div>
       </div>
-    </div>
+    </NeoPage>
   );
 }

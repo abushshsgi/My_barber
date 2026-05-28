@@ -25,6 +25,7 @@ import { fetchNotifications } from "@/lib/notifications-queries";
 import { unreadNotificationCount } from "../lib/notification-prefs";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { areNotificationAlertsEnabled } from "../lib/user-preferences";
+import { NeoPage } from "@/components/neo/NeoPrimitives";
 
 const DiscoveryMap = lazy(async () => {
   const m = await import("@/components/luxury/DiscoveryMap");
@@ -172,11 +173,11 @@ export default function Index() {
   const canRenderMap = typeof window !== "undefined";
 
   return (
-    <div className="relative min-h-screen w-full overflow-x-hidden bg-background">
+    <NeoPage className="relative w-full overflow-x-hidden">
       {/* Hero gradient backdrop */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-[420px]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[420px] neo-stripe"
         style={{
           background:
             "radial-gradient(80% 60% at 100% 0%, oklch(0.82 0.13 80 / 0.18) 0%, transparent 60%), radial-gradient(110% 100% at 0% 0%, oklch(0.96 0.012 80) 0%, oklch(0.985 0.005 80) 70%)",
@@ -190,7 +191,7 @@ export default function Index() {
             <Link
               to={me ? "/profile" : "/auth"}
               aria-label="Profil"
-              className="grid h-11 w-11 cursor-pointer place-items-center rounded-full bg-foreground text-[12px] font-bold text-background shadow-soft ring-1 ring-foreground/20"
+              className="grid h-11 w-11 cursor-pointer place-items-center rounded-lg border-2 border-border bg-primary text-[12px] font-bold text-primary-foreground shadow-soft"
             >
               {me?.full_name ? initials(me.full_name) : me?.email ? initials(me.email) : "MB"}
             </Link>
@@ -203,11 +204,11 @@ export default function Index() {
             <Link
               to="/notifications"
               aria-label="Xabarlar"
-              className="relative grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-border bg-surface shadow-soft outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+              className="relative grid h-11 w-11 cursor-pointer place-items-center rounded-lg border-2 border-border bg-surface shadow-soft outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Bell className="h-[18px] w-[18px] text-foreground" />
               {unreadTop > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-[9px] font-bold leading-none text-gold-foreground ring-2 ring-background">
+                <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-md border border-border bg-gold px-1 text-[9px] font-bold leading-none text-gold-foreground">
                   {unreadTop > 9 ? "9+" : unreadTop}
                 </span>
               )}
@@ -216,7 +217,7 @@ export default function Index() {
 
           {/* Display title */}
           <div className="mt-6">
-            <h1 className="font-display text-[30px] font-semibold leading-[1.05] tracking-tight text-foreground text-balance">
+            <h1 className="text-[30px] font-extrabold leading-[1.05] tracking-tight text-foreground text-balance">
               Eng yaxshi sartaroshlar.<br />
               <span className="text-shimmer-gold">Bir tegishda.</span>
             </h1>
@@ -229,13 +230,13 @@ export default function Index() {
           <button
             type="button"
             onClick={() => router.push("/map")}
-            className="mt-5 flex w-full cursor-pointer items-center gap-3 rounded-full border border-border bg-surface px-4 py-3.5 text-left shadow-soft outline-none transition active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-ring"
+            className="neo-panel mt-5 flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3.5 text-left outline-none transition active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Search className="h-4 w-4 text-muted-foreground" />
             <span className="flex-1 truncate text-sm text-muted-foreground">
               Salon yoki barber qidirish
             </span>
-            <span className="rounded-full bg-foreground px-3 py-1.5 text-[11px] font-semibold text-background">
+            <span className="rounded-md border-2 border-border bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground">
               Qidirish
             </span>
           </button>
@@ -265,10 +266,10 @@ export default function Index() {
                   whileTap={{ scale: 0.96 }}
                   onClick={() => setCat(active ? null : id)}
                   className={[
-                    "group relative flex min-h-[80px] flex-col items-center justify-center gap-1.5 overflow-hidden rounded-2xl border px-2 py-3 text-[11px] font-semibold transition outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    "group relative flex min-h-[80px] flex-col items-center justify-center gap-1.5 overflow-hidden rounded-xl border-2 px-2 py-3 text-[11px] font-semibold transition outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     active
-                      ? "border-foreground bg-foreground text-background shadow-luxury"
-                      : "border-border bg-surface text-foreground shadow-soft hover:border-foreground/40",
+                      ? "border-border bg-primary text-primary-foreground shadow-luxury"
+                      : "border-border bg-surface text-foreground shadow-soft hover:border-foreground",
                   ].join(" ")}
                 >
                   {active && (
@@ -302,7 +303,7 @@ export default function Index() {
             type="button"
             onClick={() => router.push("/map")}
             aria-label="Xarita orqali qidirish"
-            className="group relative block w-full cursor-pointer overflow-hidden rounded-3xl border border-border bg-surface text-left shadow-card outline-none transition hover:shadow-luxury focus-visible:ring-2 focus-visible:ring-ring"
+            className="group neo-panel relative block w-full cursor-pointer overflow-hidden rounded-xl text-left outline-none transition hover:shadow-luxury focus-visible:ring-2 focus-visible:ring-ring"
           >
             <div className="relative h-[180px] w-full">
               {canRenderMap && coords && (
@@ -333,10 +334,10 @@ export default function Index() {
                     "linear-gradient(180deg, transparent 40%, color-mix(in oklab, var(--surface) 92%, transparent) 100%)",
                 }}
               />
-              <div className="pointer-events-none absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-foreground/85 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-background backdrop-blur">
+              <div className="pointer-events-none absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-md border-2 border-border bg-primary px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground">
                 <MapPin className="h-3 w-3" /> Xarita
               </div>
-              <div className="pointer-events-none absolute right-4 top-4 rounded-full bg-surface/95 px-3 py-1.5 text-[10px] font-semibold text-foreground shadow-soft backdrop-blur">
+              <div className="pointer-events-none absolute right-4 top-4 rounded-md border-2 border-border bg-surface px-3 py-1.5 text-[10px] font-semibold text-foreground shadow-soft">
                 {previewMarkers.length} ta atrofda
               </div>
             </div>
@@ -347,7 +348,7 @@ export default function Index() {
                   Joylashuvingiz atrofidagi salon va barberlarni xaritada koʻring
                 </p>
               </div>
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-foreground text-background transition group-hover:scale-105">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md border-2 border-border bg-primary text-primary-foreground transition group-hover:scale-105">
                 <ChevronRight className="h-4 w-4" />
               </span>
             </div>
@@ -359,7 +360,7 @@ export default function Index() {
           <div className="flex items-end justify-between">
             <div>
               <p className="label-eyebrow">Tavsiya etiladi</p>
-              <h2 className="font-display text-xl font-semibold tracking-tight text-foreground">
+              <h2 className="text-xl font-extrabold tracking-tight text-foreground">
                 Yuqori reytingli salonlar
               </h2>
             </div>
@@ -375,11 +376,11 @@ export default function Index() {
             {loadingList || allQ.isLoading ? (
               <div className="grid grid-cols-2 gap-3">
                 {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className="h-[220px] animate-pulse rounded-3xl bg-muted" />
+                  <div key={i} className="h-[220px] animate-pulse rounded-xl border-2 border-border bg-muted" />
                 ))}
               </div>
             ) : list.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-border bg-surface p-8 text-center shadow-soft">
+              <div className="neo-panel p-8 text-center">
                 <p className="text-sm font-semibold text-foreground">Hech narsa topilmadi</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Boshqa kategoriya tanlang yoki radiusni kengaytirish uchun xaritaga oʻting.
@@ -401,7 +402,7 @@ export default function Index() {
           </div>
         </section>
       </div>
-    </div>
+    </NeoPage>
   );
 }
 

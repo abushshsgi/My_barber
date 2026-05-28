@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { clearTokens } from "@/lib/api";
 import { useRouter } from "@/navigation";
 import { toast } from "sonner";
+import { NeoPage, NeoSection } from "@/components/neo/NeoPrimitives";
 import {
   applyReduceMotion,
   DEFAULT_USER_PREFERENCES,
@@ -33,10 +34,10 @@ function ToggleRow({
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className="flex w-full items-center gap-3 rounded-3xl border border-border bg-surface p-4 text-left shadow-soft transition active:scale-[0.99]"
+      className="neo-panel flex w-full items-center gap-3 p-4 text-left transition active:scale-[0.99]"
       aria-pressed={checked}
     >
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-muted">
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border-2 border-border bg-accent text-accent-foreground">
         <Icon className="h-5 w-5" />
       </span>
       <span className="min-w-0 flex-1">
@@ -46,12 +47,12 @@ function ToggleRow({
       <span
         className={[
           "relative h-7 w-12 shrink-0 rounded-full transition",
-          checked ? "bg-foreground" : "bg-muted",
+          checked ? "bg-primary" : "bg-muted",
         ].join(" ")}
       >
         <span
           className={[
-            "absolute top-1 h-5 w-5 rounded-full bg-background shadow-sm transition",
+            "absolute top-1 h-5 w-5 rounded-md border border-border bg-background shadow-sm transition",
             checked ? "left-6" : "left-1",
           ].join(" ")}
         />
@@ -76,14 +77,14 @@ function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-8">
+    <NeoPage className="pb-8">
       <header className="px-5 pt-safe">
         <div className="pt-3">
-          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-foreground text-background shadow-card">
+          <span className="grid h-12 w-12 place-items-center rounded-lg border-2 border-border bg-primary text-primary-foreground shadow-luxury">
             <SettingsIcon className="h-6 w-6" />
           </span>
           <p className="label-eyebrow mt-5">Ilova sozlamalari</p>
-          <h1 className="font-display mt-1 text-[26px] font-semibold tracking-tight text-foreground">
+          <h1 className="mt-1 text-[26px] font-extrabold tracking-tight text-foreground">
             Tez va aniq boshqaruv
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
@@ -93,6 +94,7 @@ function Settings() {
       </header>
 
       <main className="space-y-3 px-5 pt-5">
+        <NeoSection title="Bildirishnoma sozlamalari" eyebrow="Qisqa boshqaruv">
         <ToggleRow
           title="Booking eslatmalari"
           body="Bandlar va statuslar uchun notification badge va web-socket yangilanishlari faol qoladi."
@@ -115,11 +117,12 @@ function Settings() {
           onChange={(reduceMotion) => update({ ...prefs, reduceMotion })}
         />
 
-        <div className="grid grid-cols-2 gap-3 pt-3">
+        </NeoSection>
+        <div className="grid grid-cols-2 gap-3 pt-1">
           <Button
             type="button"
             variant="outline"
-            className="h-12 rounded-2xl"
+            className="neo-cta h-12 rounded-xl border-2 border-border"
             onClick={() => update(DEFAULT_USER_PREFERENCES)}
           >
             <RotateCcw className="mr-2 h-4 w-4" />
@@ -128,7 +131,7 @@ function Settings() {
           <Button
             type="button"
             variant="ghost"
-            className="h-12 rounded-2xl text-destructive hover:bg-destructive/10 hover:text-destructive"
+            className="neo-cta h-12 rounded-xl border-2 border-border text-destructive hover:bg-destructive/10 hover:text-destructive"
             onClick={() => {
               clearTokens();
               router.push("/auth");
@@ -139,7 +142,7 @@ function Settings() {
           </Button>
         </div>
       </main>
-    </div>
+    </NeoPage>
   );
 }
 

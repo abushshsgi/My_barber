@@ -28,6 +28,7 @@ import { fetchFavoriteSalonCount } from "../lib/favorites";
 import { initials } from "@/lib/format";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { NeoPage } from "@/components/neo/NeoPrimitives";
 
 type Me = {
   id: number;
@@ -148,7 +149,7 @@ const Profile = () => {
   const displayName = user.full_name || user.email;
 
   return (
-    <div className="min-h-screen bg-background">
+    <NeoPage>
       {/* Hero */}
       <div className="relative overflow-hidden">
         <div
@@ -227,7 +228,7 @@ const Profile = () => {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 + i * 0.05 }}
-              className="rounded-2xl border border-border bg-surface p-3 text-center shadow-card"
+              className="neo-panel rounded-xl p-3 text-center"
             >
               <stat.Icon className="mx-auto mb-1 h-4 w-4 text-muted-foreground" />
               <p className="font-display text-xl font-bold text-foreground tabular-nums">
@@ -249,7 +250,7 @@ const Profile = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mt-4 px-5"
         >
-          <div className="rounded-3xl border border-border bg-surface p-4 shadow-card">
+          <div className="neo-panel p-4">
             <p className="label-eyebrow">Profil</p>
             <p className="mt-0.5 font-display text-lg font-semibold text-foreground">
               Maʼlumotlarni tahrirlash
@@ -259,7 +260,7 @@ const Profile = () => {
               <input
                 value={nameDraft}
                 onChange={(e) => setNameDraft(e.target.value)}
-                className="mt-1 h-11 w-full rounded-2xl border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="mt-1 h-11 w-full rounded-lg border-2 border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 placeholder="Ismingiz"
               />
             </label>
@@ -268,7 +269,7 @@ const Profile = () => {
               <input
                 value={phoneDraft}
                 onChange={(e) => setPhoneDraft(e.target.value)}
-                className="mt-1 h-11 w-full rounded-2xl border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="mt-1 h-11 w-full rounded-lg border-2 border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 placeholder="+998 90 123 45 67"
               />
             </label>
@@ -277,7 +278,7 @@ const Profile = () => {
               <select
                 value={regionDraft}
                 onChange={(e) => setRegionDraft(e.target.value)}
-                className="mt-1 h-11 w-full rounded-2xl border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="mt-1 h-11 w-full rounded-lg border-2 border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <option value="">Viloyat tanlanmagan</option>
                 {regions.map((item) => (
@@ -298,7 +299,7 @@ const Profile = () => {
             <div className="mt-4 flex gap-2">
               <Button
                 type="button"
-                className="h-11 flex-1 rounded-2xl bg-foreground text-background"
+                className="neo-cta h-11 flex-1 rounded-xl border-2 border-border bg-primary text-primary-foreground"
                 disabled={updateProfile.isPending}
                 onClick={() =>
                   updateProfile.mutate({
@@ -313,7 +314,7 @@ const Profile = () => {
               <Button
                 type="button"
                 variant="outline"
-                className="h-11 flex-1 rounded-2xl"
+                className="neo-cta h-11 flex-1 rounded-xl border-2 border-border"
                 onClick={() => setEditingProfile(false)}
               >
                 Bekor qilish
@@ -390,7 +391,7 @@ const Profile = () => {
           Chiqish
         </Button>
       </div>
-    </div>
+    </NeoPage>
   );
 };
 

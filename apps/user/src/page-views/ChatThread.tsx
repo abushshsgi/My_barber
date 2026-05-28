@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AuthGate } from "@/components/AuthGate";
 import { areChatAlertsEnabled } from "../lib/user-preferences";
+import { NeoPage } from "@/components/neo/NeoPrimitives";
 
 type MessageRow = {
   id: number;
@@ -97,14 +98,14 @@ function ChatThread() {
   });
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-background">
+    <NeoPage className="flex min-h-[100dvh] flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-40 flex items-center gap-2 border-b border-border bg-surface/95 px-3 py-2 backdrop-blur pt-safe">
+      <header className="sticky top-0 z-40 mx-3 mt-safe flex items-center gap-2 rounded-xl border-2 border-border bg-surface px-3 py-2 shadow-soft">
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="h-11 w-11 rounded-full"
+          className="h-11 w-11 rounded-lg border-2 border-border"
           onClick={() => router.back()}
           aria-label="Orqaga"
         >
@@ -112,7 +113,7 @@ function ChatThread() {
         </Button>
         <div className="min-w-0 flex-1">
           <p className="label-eyebrow truncate">Suhbat</p>
-          <h1 className="truncate font-display text-lg font-semibold text-foreground">Chat</h1>
+          <h1 className="truncate text-lg font-extrabold text-foreground">Chat</h1>
         </div>
       </header>
 
@@ -149,7 +150,7 @@ function ChatThread() {
                 <div className={cn("mb-2 flex", mine ? "justify-end" : "justify-start")}>
                   <div
                     className={cn(
-                      "max-w-[78%] rounded-3xl px-3.5 py-2 text-sm leading-relaxed shadow-soft",
+                    "max-w-[78%] rounded-lg border-2 px-3.5 py-2 text-sm leading-relaxed shadow-soft",
                       mine
                         ? "rounded-br-md bg-foreground text-background"
                         : "rounded-bl-md border border-border bg-surface text-foreground",
@@ -174,7 +175,7 @@ function ChatThread() {
 
       {/* Composer */}
       <form
-        className="sticky z-40 border-t border-border bg-surface/95 px-3 py-2 backdrop-blur"
+        className="sticky z-40 mx-3 rounded-xl border-2 border-border bg-surface px-3 py-2 shadow-soft"
         style={{ bottom: "calc(5.5rem + env(safe-area-inset-bottom, 0px))" }}
         onSubmit={(e) => {
           e.preventDefault();
@@ -191,7 +192,7 @@ function ChatThread() {
             maxLength={4000}
             rows={1}
             disabled={sendMutation.isPending}
-            className="max-h-32 min-h-[44px] flex-1 resize-none rounded-3xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+            className="max-h-32 min-h-[44px] flex-1 resize-none rounded-lg border-2 border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -203,7 +204,7 @@ function ChatThread() {
           <Button
             type="submit"
             size="icon"
-            className="h-11 w-11 shrink-0 rounded-full bg-foreground text-background hover:bg-foreground/90"
+            className="neo-cta h-11 w-11 shrink-0 rounded-lg border-2 border-border bg-primary text-primary-foreground hover:bg-primary/90"
             disabled={sendMutation.isPending || !text.trim()}
             aria-label="Yuborish"
           >
@@ -220,7 +221,7 @@ function ChatThread() {
           </p>
         )}
       </form>
-    </div>
+    </NeoPage>
   );
 }
 

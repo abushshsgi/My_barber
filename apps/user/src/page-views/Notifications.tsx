@@ -23,6 +23,7 @@ import { Link, useRouter } from "@/navigation";
 import { format, isSameDay, isToday, isYesterday } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { AuthGate } from "@/components/AuthGate";
+import { NeoPage } from "@/components/neo/NeoPrimitives";
 
 const iconMap: Record<string, typeof Clock> = {
   reminder_1h: Clock,
@@ -118,12 +119,12 @@ const Notifications = () => {
   const groups = groupByDay(visibleNotifications);
 
   return (
-    <div className="min-h-screen bg-background">
+    <NeoPage>
       <header className="px-5 pt-safe">
         <div className="flex items-end justify-between pt-3">
           <div>
             <p className="label-eyebrow">Inbox</p>
-            <h1 className="font-display text-[26px] font-semibold tracking-tight text-foreground">
+            <h1 className="text-[26px] font-extrabold tracking-tight text-foreground">
               Xabarnomalar
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -135,7 +136,7 @@ const Notifications = () => {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 380, damping: 22 }}
-              className="grid h-9 w-9 place-items-center rounded-full bg-gold text-[12px] font-bold text-gold-foreground shadow-soft"
+              className="grid h-9 w-9 place-items-center rounded-lg border-2 border-border bg-gold text-[12px] font-bold text-gold-foreground shadow-soft"
             >
               {unreadCount > 99 ? "99+" : unreadCount}
             </motion.span>
@@ -144,14 +145,14 @@ const Notifications = () => {
       </header>
 
       {alertsDisabled ? (
-        <div className="mx-5 mt-3 rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-          <p className="font-semibold text-foreground">Xabarnomalar o‘chirilgan</p>
+        <div className="neo-panel mx-5 mt-3 bg-muted/40 p-4 text-sm text-muted-foreground">
+          <p className="font-extrabold text-foreground">Xabarnomalar o‘chirilgan</p>
           <p className="mt-1 leading-relaxed">
             Booking va chat eslatmalarini qayta yoqish uchun sozlamalarga o‘ting.
           </p>
           <Link
             to="/settings"
-            className="mt-3 inline-flex text-sm font-semibold text-accent underline-offset-2 hover:underline"
+            className="mt-3 inline-flex text-sm font-extrabold text-accent underline-offset-2 hover:underline"
           >
             Sozlamalar
           </Link>
@@ -163,7 +164,7 @@ const Notifications = () => {
           <Button
             variant="secondary"
             size="sm"
-            className="rounded-full"
+            className="neo-cta rounded-xl border-2 border-border"
             disabled={markAllRead.isPending}
             onClick={() => markAllRead.mutate()}
           >
@@ -178,9 +179,9 @@ const Notifications = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="rounded-3xl border border-dashed border-border bg-surface py-16 text-center shadow-soft"
+            className="neo-panel py-16 text-center"
           >
-            <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-muted">
+            <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-lg border-2 border-border bg-accent text-accent-foreground">
               <Bell className="h-6 w-6 text-muted-foreground" />
             </div>
             <p className="text-base font-semibold text-foreground">Xabarlar yoʻq</p>
@@ -213,7 +214,7 @@ const Notifications = () => {
                             if (target) router.push(target);
                           }}
                           className={cn(
-                            "flex w-full cursor-pointer items-start gap-3 rounded-2xl border p-3.5 text-left shadow-soft outline-none transition focus-visible:ring-2 focus-visible:ring-ring",
+                            "flex w-full cursor-pointer items-start gap-3 rounded-xl border-2 p-3.5 text-left shadow-soft outline-none transition focus-visible:ring-2 focus-visible:ring-ring",
                             !read
                               ? "border-foreground/20 bg-surface ring-1 ring-foreground/10"
                               : "border-border/60 bg-surface/70",
@@ -221,7 +222,7 @@ const Notifications = () => {
                         >
                           <span
                             className={cn(
-                              "grid h-10 w-10 shrink-0 place-items-center rounded-2xl",
+                              "grid h-10 w-10 shrink-0 place-items-center rounded-lg border-2 border-border",
                               !read
                                 ? "bg-foreground text-background"
                                 : "bg-muted text-muted-foreground",
@@ -264,7 +265,7 @@ const Notifications = () => {
           </div>
         ) : null}
       </div>
-    </div>
+    </NeoPage>
   );
 };
 

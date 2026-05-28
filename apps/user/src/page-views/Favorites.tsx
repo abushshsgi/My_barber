@@ -10,6 +10,7 @@ import { formatKm } from "@/lib/format";
 import { mapSalonListApi, type SalonListApi } from "@/lib/mapSalon";
 import type { Salon } from "@/types";
 import { fetchFavoriteSalonIds, setFavoriteSalon } from "../lib/favorites";
+import { NeoPage, NeoSection } from "@/components/neo/NeoPrimitives";
 
 async function fetchFavoriteSalons(): Promise<Salon[]> {
   const ids = await fetchFavoriteSalonIds();
@@ -39,20 +40,20 @@ function Favorites() {
   });
 
   return (
-    <div className="min-h-screen bg-background pb-6">
+    <NeoPage className="pb-6">
       <header className="px-5 pt-safe">
         <div className="pt-3">
           <p className="label-eyebrow">Saqlangan joylar</p>
           <div className="mt-1 flex items-end justify-between gap-3">
             <div>
-              <h1 className="font-display text-[26px] font-semibold tracking-tight text-foreground">
+              <h1 className="text-[26px] font-extrabold tracking-tight text-foreground">
                 Sevimlilar
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 Yoqtirgan salonlaringiz server bilan sinxron saqlanadi.
               </p>
             </div>
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gold text-gold-foreground shadow-luxury">
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg border-2 border-border bg-gold text-gold-foreground shadow-luxury">
               <Heart className="h-5 w-5 fill-current" />
             </span>
           </div>
@@ -65,13 +66,13 @@ function Favorites() {
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : error ? (
-          <div className="rounded-3xl border border-destructive/25 bg-destructive/5 p-5 text-center">
+          <div className="neo-panel border-destructive bg-destructive/10 p-5 text-center">
             <p className="text-sm font-semibold text-destructive">Sevimlilar yuklanmadi</p>
             <p className="mt-1 text-xs text-muted-foreground">{(error as Error).message}</p>
           </div>
         ) : data.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-border bg-surface p-8 text-center shadow-soft">
-            <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-muted">
+          <div className="neo-panel p-8 text-center">
+            <div className="mx-auto grid h-16 w-16 place-items-center rounded-lg border-2 border-border bg-accent text-accent-foreground">
               <Search className="h-7 w-7 text-muted-foreground" />
             </div>
             <h2 className="mt-4 text-lg font-bold text-foreground">Hali sevimli salon yo'q</h2>
@@ -79,15 +80,16 @@ function Favorites() {
               Salon sahifasidagi yurak belgisi orqali saqlang, keyin shu yerda tez topasiz.
             </p>
             <Link to="/map" className="mt-5 inline-flex">
-              <Button className="h-11 rounded-2xl bg-primary px-5 text-primary-foreground">
+              <Button className="neo-cta h-11 rounded-xl border-2 border-border bg-primary px-5 text-primary-foreground">
                 Salonlarni ko'rish
               </Button>
             </Link>
           </div>
         ) : (
+          <NeoSection title="Saqlangan salonlar" eyebrow="Shaxsiy ro‘yxat">
           <ul className="space-y-3">
             {data.map((salon) => (
-              <li key={salon.id} className="overflow-hidden rounded-3xl border border-border bg-surface shadow-card">
+              <li key={salon.id} className="neo-panel overflow-hidden">
                 <Link to="/salon/$id" params={{ id: salon.id }} className="block">
                   <img
                     src={salon.coverImage}
@@ -108,7 +110,7 @@ function Favorites() {
                     </Link>
                     <button
                       type="button"
-                      className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-border text-muted-foreground transition hover:border-destructive/40 hover:text-destructive"
+                      className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border-2 border-border text-muted-foreground transition hover:border-destructive hover:text-destructive"
                       onClick={() => removeFavorite.mutate(salon.id)}
                       disabled={removeFavorite.isPending}
                       aria-label="Sevimlidan olib tashlash"
@@ -119,7 +121,7 @@ function Favorites() {
                   <Link
                     to="/booking/$salonId"
                     params={{ salonId: salon.id }}
-                    className="mt-4 grid h-11 place-items-center rounded-2xl bg-foreground text-sm font-semibold text-background shadow-luxury"
+                    className="neo-cta mt-4 grid h-11 place-items-center rounded-xl border-2 border-border bg-primary text-sm font-bold text-primary-foreground"
                   >
                     Band qilish
                   </Link>
@@ -127,9 +129,10 @@ function Favorites() {
               </li>
             ))}
           </ul>
+          </NeoSection>
         )}
       </main>
-    </div>
+    </NeoPage>
   );
 }
 

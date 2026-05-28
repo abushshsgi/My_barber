@@ -35,6 +35,7 @@ import { barberWebUrl } from "@/lib/public-urls";
 import { fetchUzRegions } from "@/lib/uz-regions";
 import { useLocale } from "@/providers/locale-provider";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { NeoPage } from "@/components/neo/NeoPrimitives";
 
 export default function UserAuth() {
   const router = useRouter();
@@ -141,7 +142,7 @@ export default function UserAuth() {
   const features = [t.authFeature1, t.authFeature2, t.authFeature3];
 
   return (
-    <div className="user-auth-shell relative min-h-dvh overflow-x-hidden">
+    <NeoPage className="user-auth-shell relative min-h-dvh overflow-x-hidden">
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.6]"
         aria-hidden
@@ -157,12 +158,12 @@ export default function UserAuth() {
 
       <div className="relative z-10 flex min-h-dvh flex-col lg:flex-row">
         {/* Hero — desktop */}
-        <aside className="relative hidden flex-col justify-between border-border/60 bg-card/30 px-10 py-12 backdrop-blur-md lg:flex lg:w-[44%] xl:w-[40%] lg:border-r lg:px-12 xl:px-14">
+        <aside className="relative hidden flex-col justify-between border-r-2 border-border bg-surface px-10 py-12 lg:flex lg:w-[44%] xl:w-[40%] lg:px-12 xl:px-14">
           <div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-foreground shadow-lg ring-1 ring-white/10">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg border-2 border-border bg-primary shadow-card">
               <Scissors className="h-6 w-6 text-background" />
             </div>
-            <h1 className="font-display mt-10 text-4xl font-semibold tracking-tight text-foreground xl:text-5xl">
+            <h1 className="mt-10 text-4xl font-extrabold tracking-tight text-foreground xl:text-5xl">
               {t.title}
             </h1>
             <p className="mt-3 text-sm font-medium text-foreground/80">{t.subtitle}</p>
@@ -178,7 +179,7 @@ export default function UserAuth() {
               ))}
             </ul>
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
             <span>MyBarber</span>
           </div>
@@ -188,7 +189,7 @@ export default function UserAuth() {
         <div className="flex min-h-0 flex-1 flex-col pt-safe">
           <header className="flex shrink-0 items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-6 lg:justify-end lg:px-10 lg:pt-10">
             <div className="flex min-w-0 items-center gap-3 lg:hidden">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-foreground shadow-md ring-1 ring-white/10">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border-2 border-border bg-primary shadow-soft">
                 <Scissors className="h-5 w-5 text-background" />
               </div>
               <div className="min-w-0">
@@ -212,22 +213,22 @@ export default function UserAuth() {
                 }}
                 className="w-full"
               >
-                <TabsList className="grid h-12 w-full grid-cols-2 rounded-full border border-border/60 bg-muted/70 p-1">
+                <TabsList className="neo-panel grid h-12 w-full grid-cols-2 rounded-xl p-1">
                   <TabsTrigger
                     value="login"
-                    className="rounded-full text-sm font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-soft"
+                    className="rounded-lg text-sm font-extrabold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-soft"
                   >
                     {t.loginTitle}
                   </TabsTrigger>
                   <TabsTrigger
                     value="signup"
-                    className="rounded-full text-sm font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-soft"
+                    className="rounded-lg text-sm font-extrabold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-soft"
                   >
                     {t.signUp}
                   </TabsTrigger>
                 </TabsList>
 
-                <div className="mt-4 rounded-3xl border border-border/80 bg-card/85 p-4 shadow-luxury ring-1 ring-foreground/5 backdrop-blur-md sm:mt-8 sm:p-6 md:p-8">
+                <div className="neo-panel mt-4 p-4 sm:mt-8 sm:p-6 md:p-8">
                   {err && (
                     <Alert variant="destructive" className="mb-6 border-destructive/40 bg-destructive/10">
                       <AlertCircle className="h-4 w-4" />
@@ -442,6 +443,6 @@ export default function UserAuth() {
           </div>
         </div>
       </div>
-    </div>
+    </NeoPage>
   );
 }

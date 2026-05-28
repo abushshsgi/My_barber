@@ -7,15 +7,15 @@ export type DiscoveryMarkerItem = { id: string; lat: number; lng: number; label:
 
 const userIcon = L.divIcon({
   className: "",
-  html: `<span style="display:block;width:18px;height:18px;border-radius:9999px;background:#0A0A0A;border:3px solid #ffffff;box-shadow:0 0 0 6px rgba(10,10,10,0.18), 0 2px 6px rgba(0,0,0,0.25);"></span>`,
+  html: `<span style="display:block;width:18px;height:18px;border-radius:4px;background:#F94144;border:3px solid #1B123F;box-shadow:0 0 0 6px rgba(27,18,63,0.22), 0 2px 6px rgba(0,0,0,0.25);"></span>`,
   iconSize: [18, 18],
   iconAnchor: [9, 9],
 });
 
 function makePinIcon(active: boolean) {
-  const bg = active ? "#0A0A0A" : "#FFFFFF";
-  const fg = active ? "#D4AF37" : "#0A0A0A";
-  const ring = active ? "#D4AF37" : "#0A0A0A";
+  const bg = active ? "#F94144" : "#F9F3D7";
+  const fg = active ? "#F9F3D7" : "#1B123F";
+  const ring = "#1B123F";
   return L.divIcon({
     className: "",
     html: `<div style="position:relative;width:30px;height:38px;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.28));">
@@ -90,10 +90,10 @@ export function DiscoveryMap({
             center={[center.lat, center.lng]}
             radius={radiusKm * 1000}
             pathOptions={{
-              color: "#0A0A0A",
-              weight: 1.5,
-              fillColor: "#0A0A0A",
-              fillOpacity: 0.05,
+              color: "#1B123F",
+              weight: 2,
+              fillColor: "#F9C74F",
+              fillOpacity: 0.08,
               dashArray: "4 6",
             }}
           />

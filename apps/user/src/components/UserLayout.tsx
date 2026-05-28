@@ -15,8 +15,8 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
     <div
       className={
         isAuthRoute
-          ? "relative min-h-screen w-full max-w-none bg-background"
-          : "relative mx-auto min-h-screen w-full max-w-md bg-background pb-32"
+          ? "neo-page relative min-h-screen w-full max-w-none"
+          : "neo-page texture-grid relative mx-auto min-h-screen w-full max-w-md pb-32"
       }
     >
       <UserPreferencesInit />

@@ -13,22 +13,18 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/*
- * MyBarber — "Midnight Opulence" design system.
- * Premium dark + warm ivory + copper/gold accent.
- * All colors in oklch. Customize via tokens, never hardcode in components.
- */
+/* MyBarber — Neo Brutal design system */
 
 @theme inline {
   --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Playfair Display", "Plus Jakarta Sans", ui-serif, Georgia, serif;
+  --font-display: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  --radius-sm: calc(var(--radius) - 6px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: calc(var(--radius) - 1px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 6px);
-  --radius-2xl: calc(var(--radius) + 12px);
-  --radius-3xl: calc(var(--radius) + 20px);
+  --radius-xl: calc(var(--radius) + 2px);
+  --radius-2xl: calc(var(--radius) + 4px);
+  --radius-3xl: calc(var(--radius) + 6px);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -61,95 +57,90 @@
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
 
-  /* Luxury shadows — soft, layered, high-end */
-  --shadow-luxury: 0 24px 48px -20px oklch(0 0 0 / 0.18), 0 4px 12px -4px oklch(0 0 0 / 0.08);
-  --shadow-card: 0 6px 20px -10px oklch(0 0 0 / 0.12);
-  --shadow-dock: 0 16px 40px -8px oklch(0 0 0 / 0.22), 0 0 0 1px oklch(0 0 0 / 0.06);
-  --shadow-soft: 0 2px 8px -3px oklch(0 0 0 / 0.1);
-  --shadow-glow-gold: 0 0 0 1px oklch(0.78 0.12 80 / 0.25), 0 8px 24px -8px oklch(0.78 0.12 80 / 0.35);
+  --shadow-luxury: 6px 6px 0 0 oklch(0.17 0.03 262 / 0.95);
+  --shadow-card: 4px 4px 0 0 oklch(0.17 0.03 262 / 0.85);
+  --shadow-dock: 6px 6px 0 0 oklch(0.17 0.03 262 / 0.95);
+  --shadow-soft: 3px 3px 0 0 oklch(0.17 0.03 262 / 0.65);
+  --shadow-glow-gold: 0 0 0 3px oklch(0.84 0.19 87 / 0.4);
 }
 
 :root {
-  --radius: 1rem;
+  --radius: 0.55rem;
 
-  /* === Light mode — "Ivory Atelier" === */
-  /* Warm off-white background, deep charcoal foreground, copper/gold accent */
-  --background: oklch(0.985 0.005 80);              /* ivory #FDFBF7 */
-  --foreground: oklch(0.14 0.005 60);               /* near-black with warmth */
-  --surface: oklch(1 0 0);                          /* pure white card */
-  --surface-foreground: oklch(0.14 0.005 60);
+  --background: oklch(0.95 0.06 95);
+  --foreground: oklch(0.23 0.09 264);
+  --surface: oklch(0.995 0.01 95);
+  --surface-foreground: oklch(0.23 0.09 264);
 
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.14 0.005 60);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.14 0.005 60);
 
-  --primary: oklch(0.14 0.005 60);                  /* obsidian */
-  --primary-foreground: oklch(0.99 0.005 80);
-  --secondary: oklch(0.95 0.008 80);                /* warm light */
-  --secondary-foreground: oklch(0.14 0.005 60);
+  --primary: oklch(0.67 0.21 24);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.9 0.03 92);
+  --secondary-foreground: oklch(0.23 0.09 264);
 
-  --muted: oklch(0.94 0.008 80);
-  --muted-foreground: oklch(0.46 0.012 60);
+  --muted: oklch(0.92 0.025 97);
+  --muted-foreground: oklch(0.38 0.06 264);
 
-  --accent: oklch(0.93 0.012 80);
-  --accent-foreground: oklch(0.14 0.005 60);
+  --accent: oklch(0.83 0.19 87);
+  --accent-foreground: oklch(0.22 0.08 264);
 
-  /* Copper/gold accent — D4AF37 inspired */
-  --gold: oklch(0.74 0.13 80);
-  --gold-foreground: oklch(0.14 0.005 60);
-  --teal: oklch(0.55 0.06 200);
-  --teal-foreground: oklch(0.99 0 0);
+  --gold: oklch(0.83 0.19 87);
+  --gold-foreground: oklch(0.22 0.08 264);
+  --teal: oklch(0.72 0.15 183);
+  --teal-foreground: oklch(0.2 0.05 264);
 
-  --destructive: oklch(0.55 0.18 28);
+  --destructive: oklch(0.61 0.21 24);
   --destructive-foreground: oklch(0.99 0 0);
-  --success: oklch(0.55 0.12 145);
-  --success-foreground: oklch(0.99 0 0);
-  --warning: oklch(0.78 0.13 75);
-  --warning-foreground: oklch(0.18 0.01 60);
+  --success: oklch(0.71 0.17 151);
+  --success-foreground: oklch(0.18 0.05 264);
+  --warning: oklch(0.84 0.19 87);
+  --warning-foreground: oklch(0.18 0.05 264);
 
-  --border: oklch(0.88 0.008 80);
-  --input: oklch(0.93 0.008 80);
-  --ring: oklch(0.74 0.13 80 / 0.45);
+  --border: oklch(0.23 0.09 264);
+  --input: oklch(0.92 0.025 97);
+  --ring: oklch(0.67 0.21 24 / 0.6);
 
-  --gradient-gold: linear-gradient(135deg, oklch(0.78 0.14 82) 0%, oklch(0.64 0.13 70) 100%);
-  --gradient-beige-fade: linear-gradient(180deg, oklch(1 0 0) 0%, oklch(0.96 0.008 80) 100%);
-  --gradient-dark: linear-gradient(135deg, oklch(0.18 0.012 60) 0%, oklch(0.06 0.005 60) 100%);
-  --gradient-hero: radial-gradient(110% 100% at 0% 0%, oklch(0.96 0.012 80) 0%, oklch(0.985 0.005 80) 60%);
+  --gradient-gold: linear-gradient(135deg, oklch(0.87 0.2 90) 0%, oklch(0.76 0.17 78) 100%);
+  --gradient-beige-fade: linear-gradient(180deg, oklch(0.98 0.05 95) 0%, oklch(0.93 0.045 93) 100%);
+  --gradient-dark: linear-gradient(135deg, oklch(0.3 0.11 264) 0%, oklch(0.2 0.07 264) 100%);
+  --gradient-hero: radial-gradient(120% 90% at 0% 0%, oklch(0.92 0.09 95) 0%, oklch(0.95 0.06 95) 65%);
 }
 
 .dark {
-  /* === Dark mode — "Midnight Opulence" === */
-  --background: oklch(0.085 0.005 60);              /* obsidian #0A0A0B */
-  --foreground: oklch(0.97 0.008 80);
-  --surface: oklch(0.13 0.008 60);
-  --surface-foreground: oklch(0.97 0.008 80);
-  --card: oklch(0.13 0.008 60);
-  --card-foreground: oklch(0.97 0.008 80);
-  --popover: oklch(0.13 0.008 60);
-  --popover-foreground: oklch(0.97 0.008 80);
-  --primary: oklch(0.78 0.14 82);                   /* gold becomes primary in dark */
-  --primary-foreground: oklch(0.085 0.005 60);
-  --secondary: oklch(0.18 0.01 60);
-  --secondary-foreground: oklch(0.97 0.008 80);
-  --muted: oklch(0.18 0.01 60);
-  --muted-foreground: oklch(0.68 0.012 70);
-  --accent: oklch(0.20 0.012 60);
-  --accent-foreground: oklch(0.97 0.008 80);
-  --gold: oklch(0.82 0.14 82);
-  --gold-foreground: oklch(0.085 0.005 60);
-  --teal: oklch(0.7 0.10 180);
-  --teal-foreground: oklch(0.085 0.005 60);
-  --destructive: oklch(0.65 0.20 28);
+  --background: oklch(0.19 0.06 264);
+  --foreground: oklch(0.96 0.03 95);
+  --surface: oklch(0.24 0.07 264);
+  --surface-foreground: oklch(0.96 0.03 95);
+  --card: oklch(0.24 0.07 264);
+  --card-foreground: oklch(0.96 0.03 95);
+  --popover: oklch(0.24 0.07 264);
+  --popover-foreground: oklch(0.96 0.03 95);
+  --primary: oklch(0.76 0.2 24);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.3 0.07 264);
+  --secondary-foreground: oklch(0.96 0.03 95);
+  --muted: oklch(0.3 0.07 264);
+  --muted-foreground: oklch(0.82 0.03 95);
+  --accent: oklch(0.83 0.2 87);
+  --accent-foreground: oklch(0.2 0.07 264);
+  --gold: oklch(0.83 0.2 87);
+  --gold-foreground: oklch(0.2 0.07 264);
+  --teal: oklch(0.75 0.16 183);
+  --teal-foreground: oklch(0.2 0.07 264);
+  --destructive: oklch(0.71 0.22 24);
   --destructive-foreground: oklch(0.99 0 0);
-  --success: oklch(0.7 0.12 145);
-  --success-foreground: oklch(0.13 0 0);
-  --warning: oklch(0.82 0.14 80);
-  --warning-foreground: oklch(0.13 0.008 60);
-  --border: oklch(1 0 0 / 0.08);
-  --input: oklch(1 0 0 / 0.10);
-  --ring: oklch(0.82 0.14 82 / 0.55);
-  --gradient-hero: radial-gradient(110% 100% at 0% 0%, oklch(0.16 0.012 60) 0%, oklch(0.085 0.005 60) 60%);
+  --success: oklch(0.77 0.18 151);
+  --success-foreground: oklch(0.2 0.07 264);
+  --warning: oklch(0.87 0.2 87);
+  --warning-foreground: oklch(0.2 0.07 264);
+  --border: oklch(0.96 0.03 95);
+  --input: oklch(0.3 0.07 264);
+  --ring: oklch(0.83 0.2 87 / 0.7);
+  --gradient-hero: radial-gradient(115% 90% at 0% 0%, oklch(0.36 0.1 264) 0%, oklch(0.19 0.06 264) 65%);
 }
 
 @layer base {
@@ -171,7 +162,13 @@
   }
   .font-display {
     font-family: var(--font-display);
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
+  }
+  h1, h2, h3, h4 {
+    letter-spacing: -0.02em;
+  }
+  button, a {
+    cursor: pointer;
   }
 }
 
@@ -189,24 +186,20 @@
     background: var(--background);
   }
   .glass-light {
-    background: color-mix(in oklab, var(--surface) 72%, transparent);
-    backdrop-filter: saturate(180%) blur(22px);
-    -webkit-backdrop-filter: saturate(180%) blur(22px);
+    background: var(--surface);
+    border: 2px solid var(--color-border);
   }
   .glass-dark {
-    background: color-mix(in oklab, oklch(0.085 0.005 60) 55%, transparent);
-    backdrop-filter: saturate(180%) blur(22px);
-    -webkit-backdrop-filter: saturate(180%) blur(22px);
+    background: var(--surface);
+    border: 2px solid var(--color-border);
   }
   .glass-dock {
-    background: color-mix(in oklab, var(--surface) 78%, transparent);
-    backdrop-filter: saturate(200%) blur(28px);
-    -webkit-backdrop-filter: saturate(200%) blur(28px);
+    background: var(--surface);
+    border: 2px solid var(--color-border);
   }
   .glass-pill {
-    background: color-mix(in oklab, var(--surface) 88%, transparent);
-    backdrop-filter: saturate(180%) blur(18px);
-    -webkit-backdrop-filter: saturate(180%) blur(18px);
+    background: var(--surface);
+    border: 2px solid var(--color-border);
   }
   .text-balance {
     text-wrap: balance;
@@ -221,9 +214,9 @@
     display: none;
   }
   .label-eyebrow {
-    font-size: 0.68rem;
-    font-weight: 600;
-    letter-spacing: 0.16em;
+    font-size: 0.64rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
     color: var(--color-muted-foreground);
   }
@@ -239,13 +232,8 @@
     color: transparent;
   }
   .gold-divider {
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      oklch(0.74 0.13 80 / 0.6) 50%,
-      transparent 100%
-    );
-    height: 1px;
+    background: var(--color-border);
+    height: 2px;
   }
   .ring-gold-soft {
     box-shadow: 0 0 0 1px oklch(0.74 0.13 80 / 0.4);
@@ -257,9 +245,44 @@
   /* Subtle grid micro-texture for hero panels */
   .texture-grid {
     background-image:
-      linear-gradient(oklch(0.6 0.005 60 / 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, oklch(0.6 0.005 60 / 0.05) 1px, transparent 1px);
-    background-size: 24px 24px;
+      linear-gradient(oklch(0.23 0.09 264 / 0.11) 2px, transparent 2px),
+      linear-gradient(90deg, oklch(0.23 0.09 264 / 0.11) 2px, transparent 2px);
+    background-size: 30px 30px;
+  }
+  .neo-panel {
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-2xl);
+    background: var(--surface);
+    box-shadow: var(--shadow-card);
+  }
+  .neo-pill {
+    border: 2px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--surface);
+    box-shadow: var(--shadow-soft);
+  }
+  .neo-cta {
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-card);
+    transition: transform 120ms ease;
+  }
+  .neo-cta:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 0 oklch(0.17 0.03 262 / 0.9);
+  }
+  .neo-page {
+    background:
+      radial-gradient(70% 55% at 0% 0%, oklch(0.89 0.1 90 / 0.55), transparent 65%),
+      radial-gradient(70% 55% at 100% 0%, oklch(0.82 0.2 24 / 0.22), transparent 60%),
+      var(--background);
+  }
+  .neo-stripe {
+    background-image: repeating-linear-gradient(
+      135deg,
+      transparent 0 10px,
+      oklch(0.23 0.09 264 / 0.08) 10px 14px
+    );
   }
 }
 
@@ -282,5 +305,5 @@
 
 /* Leaflet tile filter for premium dark mode */
 .dark .leaflet-tile-pane {
-  filter: invert(0.92) hue-rotate(180deg) brightness(0.95) contrast(0.92) saturate(0.6);
+  filter: invert(0.98) hue-rotate(180deg) brightness(0.8) contrast(1.15) saturate(0.75);
 }

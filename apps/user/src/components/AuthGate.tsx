@@ -19,19 +19,19 @@ export function AuthGate({
         ? `${window.location.pathname}${window.location.search}`
         : "/";
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-5 bg-background px-6 text-center">
-        <div className="grid h-16 w-16 place-items-center rounded-3xl bg-foreground text-background shadow-luxury">
+      <div className="neo-page flex min-h-screen flex-col items-center justify-center gap-5 px-6 text-center">
+        <div className="grid h-16 w-16 place-items-center rounded-xl border-2 border-border bg-primary text-primary-foreground shadow-luxury">
           <Lock className="h-7 w-7" />
         </div>
         <div className="max-w-[28ch]">
-          <p className="font-display text-xl font-semibold tracking-tight text-foreground">
+          <p className="text-xl font-extrabold tracking-tight text-foreground">
             {title}
           </p>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
         </div>
         <a
           href={`/auth?next=${encodeURIComponent(next)}`}
-          className="inline-flex h-12 items-center justify-center rounded-2xl bg-foreground px-6 text-sm font-semibold text-background shadow-luxury transition active:scale-[0.98]"
+          className="neo-cta inline-flex h-12 items-center justify-center bg-primary px-6 text-sm font-bold text-primary-foreground"
         >
           Kirish
         </a>

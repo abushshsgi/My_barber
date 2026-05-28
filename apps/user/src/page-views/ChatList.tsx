@@ -8,6 +8,7 @@ import { apiList } from "@/lib/api";
 import { AuthGate } from "@/components/AuthGate";
 import { initials } from "@/lib/format";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { NeoPage } from "@/components/neo/NeoPrimitives";
 
 type ConversationRow = {
   id: string;
@@ -39,11 +40,11 @@ function ChatList() {
   });
 
   return (
-    <div className="min-h-screen bg-background">
+    <NeoPage>
       <header className="px-5 pt-safe">
         <div className="pt-3">
           <p className="label-eyebrow">Suhbatlar</p>
-          <h1 className="font-display text-[26px] font-semibold tracking-tight text-foreground">
+          <h1 className="text-[26px] font-extrabold tracking-tight text-foreground">
             Chat
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -54,8 +55,8 @@ function ChatList() {
 
       <div className="space-y-2 px-5 pb-6 pt-5">
         {!chatAlerts ? (
-          <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-            <p className="font-semibold text-foreground">Chat eslatmalari o‘chirilgan</p>
+          <div className="neo-panel bg-muted/50 p-4 text-sm text-muted-foreground">
+            <p className="font-extrabold text-foreground">Chat eslatmalari o‘chirilgan</p>
             <p className="mt-1 leading-relaxed">
               Yangi xabarlar notificationlar sahifasida ko‘rsatilmaydi. Chat yozishmalarini ko‘rish mumkin.
             </p>
@@ -84,9 +85,9 @@ function ChatList() {
               key={c.id}
               to="/chat/$id"
               params={{ id: c.id }}
-              className="group flex cursor-pointer items-center gap-3 rounded-3xl border border-border bg-surface p-3.5 shadow-soft outline-none transition hover:border-foreground/20 focus-visible:ring-2 focus-visible:ring-ring"
+              className="neo-panel group flex cursor-pointer items-center gap-3 p-3.5 outline-none transition hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-foreground text-[12px] font-bold text-background ring-2 ring-gold/30">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-lg border-2 border-border bg-primary text-[12px] font-bold text-primary-foreground ring-2 ring-gold/40">
                 {initials(c.other.full_name) || "MB"}
               </div>
               <div className="min-w-0 flex-1">
@@ -107,8 +108,8 @@ function ChatList() {
           ))}
 
         {!isLoading && !error && data.length === 0 && (
-          <div className="rounded-3xl border border-dashed border-border bg-surface py-16 text-center shadow-soft">
-            <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-muted">
+          <div className="neo-panel py-16 text-center">
+            <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-lg border-2 border-border bg-accent text-accent-foreground">
               <MessageCircle className="h-6 w-6 text-muted-foreground" />
             </div>
             <p className="text-base font-semibold text-foreground">Hozircha chat yoʻq</p>
@@ -118,7 +119,7 @@ function ChatList() {
           </div>
         )}
       </div>
-    </div>
+    </NeoPage>
   );
 }
 

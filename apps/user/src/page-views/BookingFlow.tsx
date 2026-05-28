@@ -21,6 +21,7 @@ import { apiFetch, formatApiError, getAccessToken } from "@/lib/api";
 import { mediaSrc, PLACEHOLDER_AVATAR } from "@/lib/media";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { NeoPage } from "@/components/neo/NeoPrimitives";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -230,7 +231,7 @@ export default function BookingFlow() {
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-background pb-44">
+    <NeoPage className="relative w-full pb-44">
       {me && !phoneOk && (
         <div className="border-b border-destructive/30 bg-destructive/10 px-5 py-3 text-sm">
           <span className="font-medium text-destructive">Telefon kerak. </span>
@@ -247,21 +248,21 @@ export default function BookingFlow() {
           <button
             type="button"
             onClick={() => (step > 1 ? setStep((step - 1) as Step) : router.back())}
-            className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full border border-border bg-surface shadow-soft outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+            className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-lg border-2 border-border bg-surface shadow-soft outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="Orqaga"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div className="min-w-0 flex-1">
             <p className="label-eyebrow">{salon.name}</p>
-            <h1 className="font-display truncate text-[22px] font-semibold tracking-tight text-foreground">
+            <h1 className="truncate text-[22px] font-extrabold tracking-tight text-foreground">
               Bron qilish
             </h1>
           </div>
         </div>
 
         {/* Booking Theatre — chain step indicator */}
-        <div className="mt-5 rounded-3xl border border-border bg-surface p-3 shadow-card">
+        <div className="neo-panel mt-5 p-3">
           <div className="flex items-center gap-1">
             {STEP_META.map((s, idx) => {
               const isActive = step === s.id;
@@ -273,7 +274,7 @@ export default function BookingFlow() {
                     type="button"
                     onClick={() => stepperGo(s.id as Step)}
                     className={cn(
-                      "group flex min-w-0 flex-1 cursor-pointer flex-col items-center gap-1 rounded-2xl px-1 py-1.5 outline-none transition focus-visible:ring-2 focus-visible:ring-ring",
+                      "group flex min-w-0 flex-1 cursor-pointer flex-col items-center gap-1 rounded-lg px-1 py-1.5 outline-none transition focus-visible:ring-2 focus-visible:ring-ring",
                       isActive ? "bg-foreground/5" : "",
                     )}
                   >
@@ -614,7 +615,7 @@ export default function BookingFlow() {
           </motion.div>
         </div>
       </motion.div>
-    </div>
+    </NeoPage>
   );
 }
 

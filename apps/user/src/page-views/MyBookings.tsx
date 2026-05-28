@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "@/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { NeoPage } from "@/components/neo/NeoPrimitives";
 
 type BookingLine = { service_name: string };
 type BookingRow = {
@@ -180,11 +181,11 @@ function MyBookings() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <NeoPage>
       <header className="px-5 pt-safe">
         <div className="pt-3">
           <p className="label-eyebrow">Mening profilim</p>
-          <h1 className="font-display text-[26px] font-semibold tracking-tight text-foreground">
+          <h1 className="text-[26px] font-extrabold tracking-tight text-foreground">
             Bandlarim
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -194,25 +195,25 @@ function MyBookings() {
       </header>
 
       <div className="px-5 pt-4">
-        <div className="relative flex gap-1 rounded-full border border-border bg-surface p-1 shadow-soft">
+        <div className="neo-panel relative flex gap-1 rounded-xl p-1">
           {tabs.map((t) => (
             <button
               key={t.key}
               type="button"
               onClick={() => setTab(t.key)}
-              className="relative flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full py-2 text-[13px] font-semibold transition"
+              className="relative flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg py-2 text-[13px] font-extrabold transition"
             >
               {tab === t.key && (
                 <motion.span
                   layoutId="bookings-tab-pill"
-                  className="absolute inset-0 -z-0 rounded-full bg-foreground"
+                  className="absolute inset-0 -z-0 rounded-lg border-2 border-border bg-primary"
                   transition={{ type: "spring", stiffness: 400, damping: 32 }}
                 />
               )}
               <span
                 className={cn(
                   "relative z-10",
-                  tab === t.key ? "text-background" : "text-muted-foreground",
+                  tab === t.key ? "text-primary-foreground" : "text-muted-foreground",
                 )}
               >
                 {t.label}
@@ -221,7 +222,7 @@ function MyBookings() {
                 className={cn(
                   "relative z-10 rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
                   tab === t.key
-                    ? "bg-background/20 text-background"
+                    ? "bg-primary-foreground/20 text-primary-foreground"
                     : "bg-muted text-muted-foreground",
                 )}
               >
@@ -251,9 +252,9 @@ function MyBookings() {
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="rounded-3xl border border-dashed border-border bg-surface py-16 text-center shadow-soft"
+            className="neo-panel py-16 text-center"
           >
-            <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-muted">
+            <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-lg border-2 border-border bg-accent text-accent-foreground">
               <CalendarDays className="h-6 w-6 text-muted-foreground" />
             </div>
             <p className="text-base font-semibold text-foreground">Bandlar yoʻq</p>
@@ -270,7 +271,7 @@ function MyBookings() {
           onClick={() => setReviewDraft(null)}
         >
           <div
-            className="w-full max-w-md rounded-t-[28px] border border-border bg-surface p-5 pb-8 shadow-luxury"
+            className="w-full max-w-md rounded-t-[20px] border-2 border-border bg-surface p-5 pb-8 shadow-luxury"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
@@ -284,7 +285,7 @@ function MyBookings() {
                 type="button"
                 onClick={() => setReviewDraft(null)}
                 aria-label="Yopish"
-                className="grid h-10 w-10 place-items-center rounded-full border border-border bg-surface"
+                className="grid h-10 w-10 place-items-center rounded-lg border-2 border-border bg-surface"
               >
                 <X className="h-4 w-4 text-foreground" />
               </button>
@@ -314,7 +315,7 @@ function MyBookings() {
               onChange={(e) =>
                 setReviewDraft((d) => (d ? { ...d, text: e.target.value } : d))
               }
-              className="mt-4 min-h-28 w-full rounded-2xl border border-border bg-background p-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="mt-4 min-h-28 w-full rounded-lg border-2 border-border bg-background p-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
               placeholder="Xizmat haqida fikringizni yozing…"
             />
             {createReview.isError && (
@@ -323,7 +324,7 @@ function MyBookings() {
               </p>
             )}
             <Button
-              className="mt-4 h-12 w-full rounded-2xl bg-foreground text-background shadow-luxury hover:bg-foreground/90"
+              className="neo-cta mt-4 h-12 w-full rounded-xl border-2 border-border bg-primary text-primary-foreground hover:bg-primary/90"
               disabled={createReview.isPending}
               onClick={() => createReview.mutate(reviewDraft)}
             >
@@ -332,7 +333,7 @@ function MyBookings() {
           </div>
         </div>
       )}
-    </div>
+    </NeoPage>
   );
 }
 
