@@ -1,53 +1,29 @@
-# MySaloon — User app (Vite + React)
+# User app (salon-connect + MyBarber UI)
 
-Mobil mijoz ilovasi: salon/sartarosh qidirish, band qilish, chat.
+Mijoz ilovasi **salon-connect** vendor kodiga asoslangan; `apps/salon-connect` submodule **o‘zgartirilmaydi**.
+
+## Tuzilma
+
+| Joy | Vazifa |
+|-----|--------|
+| [`../salon-connect/`](../salon-connect/) | To‘liq frontend (TanStack Start, mock/API) — faqat submodule yangilanishi |
+| [`../../packages/user-ui/`](../../packages/user-ui/) | MyBarber neo-brutal UI komponentlari va `styles.css` |
+| [`bridge/`](bridge/) | Vite alias, layout override, tema qo‘shimchasi |
+| [`vite.config.ts`](vite.config.ts) | Dev/build: root = salon-connect, alias = bridge |
+| [`_archive/pre-salon-connect/`](_archive/pre-salon-connect/) | Eski Django user ilova (reference) |
 
 ## Ishga tushirish
 
 ```bash
-# Monorepo root
+# Submodule (birinchi marta)
+git submodule update --init apps/salon-connect
+
+# Root
+npm install
 npm run dev:user
 ```
 
-Brauzer: http://localhost:3000
+## Qoidalar
 
-Backend: `backend/` da `python manage.py runserver` (port 8000).
-
-## Env
-
-Nusxa: `cp .env.example .env`
-
-| O‘zgaruvchi | Maqsad |
-|-------------|--------|
-| `NEXT_PUBLIC_API_URL` / `VITE_API_URL` | Django API (production: `https://api.mysaloon.uz`) |
-| `NEXT_PUBLIC_AUTH_KIND=user` | JWT kalitlarini ajratish |
-
-Production build: `.env.production` (Vercel va Capacitor uchun).
-
-## PWA (iOS)
-
-Vercel’da `www.mysaloon.uz` deploy qiling. iOS foydalanuvchilar Safari → Share → **Add to Home Screen**.
-
-Vercel env:
-
-```env
-NEXT_PUBLIC_API_URL=https://api.mysaloon.uz
-NEXT_PUBLIC_AUTH_KIND=user
-```
-
-## Capacitor (Android / Play Market)
-
-```bash
-npm run cap:android    # root — build + sync
-npm run cap:open -w user-web   # Android Studio
-```
-
-Android Studio’da signed `.aab` yig‘ib Play Console’ga yuklang.
-
-## Build
-
-```bash
-npm run build -w user-web
-```
-
-Chiqish: `dist/client`
+- `apps/salon-connect/**` ichida commit qilmang.
+- Integratsiya faqat `bridge/` va `packages/user-ui/` orqali.

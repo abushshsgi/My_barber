@@ -1,6 +1,10 @@
 # Users App API Status Matrix
 
-Canonical prefix: `/api/v1`
+**Eslatma (2026):** Mijoz ilovasi endi [`apps/salon-connect`](../salon-connect/) (vendor submodule) + [`packages/user-ui`](../../packages/user-ui/) + [`bridge/`](bridge/).  
+Hozirgi ma’lumot manbai: salon-connect `lib/mock-data.ts` (Django `/api/v1` keyin ulash rejasida).  
+Arxiv (Django user): [`_archive/pre-salon-connect/`](_archive/pre-salon-connect/).
+
+Canonical prefix (MyBarber backend — keyin): `/api/v1`
 
 ## Active va ishlab turgan endpointlar
 

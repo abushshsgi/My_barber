@@ -1,0 +1,4 @@
+/* salon-connect base tokens (vendor, unchanged on disk) */
+@import "../../salon-connect/src/styles.css";
+/* MyBarber neo-brutal theme overrides */
+@import "../../../packages/user-ui/src/styles.css";
