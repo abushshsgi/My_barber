@@ -57,8 +57,12 @@ class BarberServiceSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "name", "duration_minutes", "image_url")
 
     def validate_price(self, value):
+        from .pricing import MIN_SERVICE_PRICE_ERROR, MIN_SERVICE_PRICE_UZS
+
         if value <= 0:
             raise serializers.ValidationError("Narx 0 dan katta bo'lishi kerak.")
+        if value < MIN_SERVICE_PRICE_UZS:
+            raise serializers.ValidationError(MIN_SERVICE_PRICE_ERROR)
         return value
 
     def get_name(self, obj):

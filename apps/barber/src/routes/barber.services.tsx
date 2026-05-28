@@ -3,6 +3,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Clock, Loader2, Plus, Search, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyBlock, PageHeader, SectionCard, StatusPill } from "@/components/barber/primitives";
+import {
+  parseSomDigits,
+  SomPriceInput,
+  validateServicePrice,
+} from "@/components/barber/SomPriceInput";
 import { MIN_ACTIVE_SERVICES, useBarberContext } from "@/components/barber/BarberContext";
 import { API_BASE, apiFetch, apiList, formatApiError } from "@/lib/api";
 import {
@@ -243,13 +248,10 @@ function ServicesSchedulePage() {
     service.barber === barberId;
 
   const saveService = async (service: ServiceForm) => {
-    const price = Number(service.price);
-    if (!price) {
-      toast.error("Xizmat narxini kiriting.");
-      return false;
-    }
-    if (price <= 0) {
-      toast.error("Xizmat narxi noldan katta bo'lishi kerak.");
+    const price = parseSomDigits(String(service.price));
+    const priceError = validateServicePrice(price);
+    if (priceError) {
+      toast.error(priceError);
       return false;
     }
     const body: Record<string, unknown> = {
@@ -345,9 +347,10 @@ function ServicesSchedulePage() {
         return;
       }
       for (const pending of pendingServices) {
-        const price = Number(pending.price);
-        if (!price || price <= 0) {
-          toast.error("Har bir tanlangan xizmat uchun narx kiriting (0 dan katta).");
+        const price = parseSomDigits(pending.price);
+        const priceError = validateServicePrice(price);
+        if (priceError) {
+          toast.error(priceError);
           return;
         }
         const matchedCatalog = catalogServices.find(
@@ -554,20 +557,18 @@ function ServicesSchedulePage() {
                               </p>
                             </div>
                           </div>
-                          <input
-                            type="number"
+                          <SomPriceInput
                             value={service.price}
                             disabled={!editable}
-                            onChange={(event) =>
+                            onChange={(digits) =>
                               setServices((prev) =>
                                 prev.map((item) =>
                                   item.id === service.id
-                                    ? { ...item, price: event.target.value }
+                                    ? { ...item, price: digits }
                                     : item,
                                 ),
                               )
                             }
-                            className="h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed"
                           />
                           <button
                             type="button"
@@ -715,17 +716,13 @@ function ServicesSchedulePage() {
                                   </p>
                                 </div>
                               </div>
-                              <input
-                                type="number"
-                                min={0}
+                              <SomPriceInput
                                 value={price}
-                                onChange={(event) =>
+                                onChange={(digits) =>
                                   updatePendingCatalog(catalog_service, {
-                                    price: event.target.value,
+                                    price: digits,
                                   })
                                 }
-                                placeholder="Narx"
-                                className="h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
                               />
                               <button
                                 type="button"

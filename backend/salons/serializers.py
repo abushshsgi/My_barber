@@ -56,8 +56,12 @@ class ServiceSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "salon", "name", "duration_minutes", "image_url")
 
     def validate_price(self, value):
+        from barbers.pricing import MIN_SERVICE_PRICE_ERROR, MIN_SERVICE_PRICE_UZS
+
         if value <= 0:
             raise serializers.ValidationError("Narx 0 dan katta bo'lishi kerak.")
+        if value < MIN_SERVICE_PRICE_UZS:
+            raise serializers.ValidationError(MIN_SERVICE_PRICE_ERROR)
         return value
 
     def get_name(self, obj):
@@ -261,6 +265,15 @@ class ServiceCreateNestedSerializer(serializers.Serializer):
         if not v:
             raise serializers.ValidationError("Xizmat nomi bo‘sh bo‘lmasin.")
         return v
+
+    def validate_price(self, value):
+        from barbers.pricing import MIN_SERVICE_PRICE_ERROR, MIN_SERVICE_PRICE_UZS
+
+        if value <= 0:
+            raise serializers.ValidationError("Narx 0 dan katta bo'lishi kerak.")
+        if value < MIN_SERVICE_PRICE_UZS:
+            raise serializers.ValidationError(MIN_SERVICE_PRICE_ERROR)
+        return value
 
 
 class SalonCreateUpdateSerializer(serializers.ModelSerializer):

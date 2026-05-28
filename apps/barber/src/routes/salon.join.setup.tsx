@@ -21,6 +21,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import {
+  parseSomDigits,
+  SomPriceInput,
+  validateServicePrice,
+} from "@/components/barber/SomPriceInput";
 import { apiFetch, getBarberAccessToken } from "@/lib/api";
 import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { cn } from "@/lib/utils";
@@ -419,11 +424,16 @@ function SalonJoinSetupPage() {
     for (const s of services) {
       const name = s.name.trim();
       if (!name) continue;
+      const price = parseSomDigits(s.price);
+      const priceError = validateServicePrice(price);
+      if (priceError) {
+        throw new Error(priceError);
+      }
       const res = await apiFetch("/api/v1/barber/services/", {
         method: "POST",
         body: JSON.stringify({
           name,
-          price: s.price.replace(/\D/g, "") || s.price,
+          price,
           duration_minutes: Number(s.duration.replace(/\D/g, "")) || 0,
           is_active: true,
         }),
@@ -1105,10 +1115,10 @@ function JoinServicesStep(props: {
                     compact
                   />
                   <div className="grid grid-cols-2 gap-3 sm:contents">
-                    <FloatingInput
+                    <SomPriceInput
                       label="Narxi (so'm)"
                       value={s.price}
-                      onChange={(v) => props.updateService(s.id, "price", v.replace(/\D/g, ""))}
+                      onChange={(digits) => props.updateService(s.id, "price", digits)}
                       compact
                     />
                     <FloatingInput

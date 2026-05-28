@@ -22,6 +22,11 @@ import {
   Phone,
 } from "lucide-react";
 
+import {
+  parseSomDigits,
+  SomPriceInput,
+  validateServicePrice,
+} from "@/components/barber/SomPriceInput";
 import { apiFetch, getBarberAccessToken } from "@/lib/api";
 import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { roundCoord6, submitFlowSignup } from "@/lib/barber-signup-flow";
@@ -369,6 +374,16 @@ export function MyBarberSetupPage() {
         return;
       }
 
+      const serviceRows = services.filter(
+        (s) => s.name.trim() && s.price.trim() && s.duration.trim(),
+      );
+      for (const s of serviceRows) {
+        const priceError = validateServicePrice(parseSomDigits(s.price));
+        if (priceError) {
+          setSubmitError(priceError);
+          return;
+        }
+      }
       const createPayload = {
         name: salonBrandName,
         description: "MyBarber hamkor virtual salon.",
@@ -379,13 +394,11 @@ export function MyBarberSetupPage() {
         languages,
         closed_weekdays: closedWeekdays,
         hours: hoursPayload,
-        services: services
-          .filter((s) => s.name.trim() && s.price.trim() && s.duration.trim())
-          .map((s) => ({
-            name: s.name.trim(),
-            price: s.price.replace(/\D/g, "") || s.price,
-            duration_minutes: Number(s.duration.replace(/\D/g, "")),
-          })),
+        services: serviceRows.map((s) => ({
+          name: s.name.trim(),
+          price: parseSomDigits(s.price),
+          duration_minutes: Number(s.duration.replace(/\D/g, "")),
+        })),
       };
 
       const createRes = await apiFetch("/api/v1/salons/", {
@@ -1232,10 +1245,10 @@ function ServicesStep(props: {
                 value={s.name}
                 onChange={(v) => props.updateService(s.id, "name", v)}
               />
-              <FloatingInput
+              <SomPriceInput
                 label="Narx"
                 value={s.price}
-                onChange={(v) => props.updateService(s.id, "price", v.replace(/\D/g, ""))}
+                onChange={(digits) => props.updateService(s.id, "price", digits)}
               />
               <FloatingInput
                 label="Min"

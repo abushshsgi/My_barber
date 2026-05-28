@@ -17,6 +17,7 @@ import {
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
 import { StatusPill, UserAvatar } from "@/components/barber/primitives";
 import { getFlowMeta } from "@/lib/barber-flow-config";
+import { isCurrentMonth } from "@/lib/finance-range";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/barber/")({
@@ -48,7 +49,7 @@ function BarberDashboard() {
   const today = bookings.filter((b) => b.date === "Today");
   const active = bookings.find((b) => b.status === "in_progress");
   const earnings = bookings
-    .filter((b) => b.status === "completed")
+    .filter((b) => b.status === "completed" && isCurrentMonth(b.start_at))
     .reduce((s, b) => s + b.price, 0);
   const avgRating = reviews.reduce((s, r) => s + r.rating, 0) / Math.max(1, reviews.length);
   const lowStock = inventory.filter((i) => i.stock <= i.min_stock);

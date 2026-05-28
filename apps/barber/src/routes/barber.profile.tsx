@@ -2,6 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Mail, Phone, Clock, Sparkles } from "lucide-react";
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
+import {
+  parseSomDigits,
+  SomPriceInput,
+  validateServicePrice,
+} from "@/components/barber/SomPriceInput";
 import { UserAvatar } from "@/components/barber/primitives";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -80,20 +85,22 @@ function ProfilePage() {
               placeholder="Daqiqa"
               className="h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm"
             />
-            <input
-              type="number"
+            <SomPriceInput
               value={serviceForm.price}
-              onChange={(e) => setServiceForm((p) => ({ ...p, price: e.target.value }))}
-              placeholder="Narx"
-              className="h-10 px-3 rounded-lg bg-muted border border-transparent focus:border-border focus:bg-background outline-none text-sm"
+              onChange={(digits) => setServiceForm((p) => ({ ...p, price: digits }))}
             />
             <button
               onClick={async () => {
                 const name = serviceForm.name.trim();
                 const duration = Number(serviceForm.duration);
-                const price = Number(serviceForm.price);
-                if (!name || !duration || !price) {
+                const price = parseSomDigits(serviceForm.price);
+                if (!name || !duration) {
                   toast.error("Barcha maydonlarni to'ldiring.");
+                  return;
+                }
+                const priceError = validateServicePrice(price);
+                if (priceError) {
+                  toast.error(priceError);
                   return;
                 }
                 const ok = await addService({ name, duration_min: duration, price });

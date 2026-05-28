@@ -138,6 +138,12 @@ export type Transaction = {
   status: "completed" | "pending" | "failed";
 };
 
+export type FinanceTotals = {
+  income_total: number;
+  expense_total: number;
+  net_total: number;
+};
+
 export type Promo = {
   id: string;
   code: string;
@@ -228,6 +234,7 @@ type Ctx = {
   reviews: Review[];
   salon: Salon;
   transactions: Transaction[];
+  financeTotals: FinanceTotals;
   promos: Promo[];
   inventory: InventoryItem[];
   expenses: Expense[];
@@ -303,6 +310,11 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [salon, setSalon] = useState<Salon>(EMPTY_SALON);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [financeTotals, setFinanceTotals] = useState<FinanceTotals>({
+    income_total: 0,
+    expense_total: 0,
+    net_total: 0,
+  });
   const [promos, setPromos] = useState<Promo[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -556,6 +568,9 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
   const refreshFinanceSummary = useCallback(async () => {
     const r = await apiJson<{
+      income_total: string | number;
+      expense_total: string | number;
+      net_total: string | number;
       transactions: Array<{
         id: string;
         date: string;
@@ -566,6 +581,11 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         status: string;
       }>;
     }>("/api/v1/barber/finance/summary/");
+    setFinanceTotals({
+      income_total: Number(r.income_total) || 0,
+      expense_total: Number(r.expense_total) || 0,
+      net_total: Number(r.net_total) || 0,
+    });
     setTransactions(
       r.transactions.map((t) => ({
         id: t.id,
@@ -1104,6 +1124,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       reviews,
       salon,
       transactions,
+      financeTotals,
       promos,
       settings,
       startBooking: (id) => void mutateBooking(id, "start"),
@@ -1174,6 +1195,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       reviews,
       salon,
       transactions,
+      financeTotals,
       promos,
       settings,
       inventory,

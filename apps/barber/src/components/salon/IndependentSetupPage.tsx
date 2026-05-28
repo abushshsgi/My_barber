@@ -24,6 +24,11 @@ import {
 } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  parseSomDigits,
+  SomPriceInput,
+  validateServicePrice,
+} from "@/components/barber/SomPriceInput";
 import { apiFetch, getBarberAccessToken } from "@/lib/api";
 import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { roundCoord6, submitFlowSignup } from "@/lib/barber-signup-flow";
@@ -457,11 +462,17 @@ export function IndependentSetupPage() {
       for (const s of services) {
         if (!s.name.trim() && !s.price.trim() && !s.duration.trim()) continue;
         if (existingNames.has(s.name.trim().toLowerCase())) continue;
+        const price = parseSomDigits(s.price);
+        const priceError = validateServicePrice(price);
+        if (priceError) {
+          setSubmitError(priceError);
+          return;
+        }
         const res = await apiFetch("/api/v1/barber/services/", {
           method: "POST",
           body: JSON.stringify({
             name: s.name.trim(),
-            price: s.price,
+            price,
             duration_minutes: Number(s.duration),
             is_active: true,
           }),
@@ -1168,10 +1179,10 @@ function ServicesStep(props: {
                     compact
                   />
                   <div className="grid grid-cols-2 gap-3 sm:contents">
-                    <FloatingInput
+                    <SomPriceInput
                       label="Narxi (so'm)"
                       value={s.price}
-                      onChange={(v) => props.updateService(s.id, "price", v.replace(/\D/g, ""))}
+                      onChange={(digits) => props.updateService(s.id, "price", digits)}
                       compact
                     />
                     <FloatingInput
