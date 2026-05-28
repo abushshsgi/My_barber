@@ -1,29 +1,28 @@
-# User app (salon-connect + MyBarber UI)
+# User app (salon-connect)
 
-Mijoz ilovasi **salon-connect** vendor kodiga asoslangan; `apps/salon-connect` submodule **o‘zgartirilmaydi**.
+Mijoz ilovasi — [salon-connect](https://github.com/abushshsgi/salon-connect.git) UI (submodule).  
+`apps/user` faqat Vite shell: dev/build `apps/salon-connect` dan ishlaydi.
 
 ## Tuzilma
 
 | Joy | Vazifa |
 |-----|--------|
-| [`../salon-connect/`](../salon-connect/) | To‘liq frontend (TanStack Start, mock/API) — faqat submodule yangilanishi |
-| [`../../packages/user-ui/`](../../packages/user-ui/) | MyBarber neo-brutal UI komponentlari va `styles.css` |
-| [`bridge/`](bridge/) | Vite alias, layout override, tema qo‘shimchasi |
-| [`vite.config.ts`](vite.config.ts) | Dev/build: root = salon-connect, alias = bridge |
-| [`_archive/pre-salon-connect/`](_archive/pre-salon-connect/) | Eski Django user ilova (reference) |
+| [`../salon-connect/`](../salon-connect/) | Barcha UI, route'lar, mock data — **o'zgartirilmaydi** |
+| [`vite.config.ts`](vite.config.ts) | `root` → salon-connect, `@` → `salon-connect/src` |
+
+Eski MyBarber user UI (`src/`, `android/`, `_archive/`) olib tashlangan.
 
 ## Ishga tushirish
 
 ```bash
-# Submodule (birinchi marta)
-git submodule update --init apps/salon-connect
-
-# Root
+git submodule update --init --recursive apps/salon-connect
 npm install
 npm run dev:user
 ```
 
+**Vercel:** `apps/user/vercel.json` — submodule init + `npm install`.
+
 ## Qoidalar
 
 - `apps/salon-connect/**` ichida commit qilmang.
-- Integratsiya faqat `bridge/` va `packages/user-ui/` orqali.
+- Yangilash: `git submodule update --remote apps/salon-connect`

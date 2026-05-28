@@ -1,59 +1,52 @@
 # Users App API Status Matrix
 
-**Eslatma (2026):** Mijoz ilovasi endi [`apps/salon-connect`](../salon-connect/) (vendor submodule) + [`packages/user-ui`](../../packages/user-ui/) + [`bridge/`](bridge/).  
-Hozirgi ma’lumot manbai: salon-connect `lib/mock-data.ts` (Django `/api/v1` keyin ulash rejasida).  
-Arxiv (Django user): [`_archive/pre-salon-connect/`](_archive/pre-salon-connect/).
+**Eslatma (2026):** Mijoz ilovasi — faqat [`apps/salon-connect`](../salon-connect/) UI (submodule).  
+Hozirgi ma'lumot: salon-connect `lib/mock-data.ts`. Quyidagi Django endpointlar **keyin** ulanadi.
 
-Canonical prefix (MyBarber backend — keyin): `/api/v1`
+Canonical prefix (MyBarber backend): `/api/v1`
 
-## Active va ishlab turgan endpointlar
+## Rejadagi endpointlar (MyBarber backend)
 
-- `POST /auth/token/` - login (`UserAuth.tsx`)
-- `POST /auth/register/` - register (`UserAuth.tsx`, `region` bilan)
-- `GET /regions/` - signup/profile viloyat tanlovi (`UserAuth.tsx`, `Profile.tsx`)
-- `GET /users/me/` - profile (`Profile.tsx`, booking flowlar)
-- `PATCH /users/me/` - ism, telefon va viloyat yangilash (`Profile.tsx`)
-- `GET /salons/` - salon list (`Index.tsx` orqali shared query)
-- `GET /salons/?ids=1,2,3` - sevimli salonlar batch (`Favorites.tsx`)
-- `GET /salons/{id}/` - salon detail (`SalonPage.tsx`, `BookingFlow.tsx`)
-- `GET /salons/{id}/staff/` - salon barberlari (`SalonPage.tsx`, `BookingFlow.tsx`)
-- `GET /salons/{id}/portfolio/` - salon ish natijalari (`SalonPage.tsx`)
-- `GET /salons/nearby/` - map discover (`MapView.tsx`)
-- `GET /salons/search/?q=` - salon nomi qidiruv (`Search.tsx`, `salon-queries.searchSalons`)
-- `GET /barbers/nearby/` - nearby barber (`MapView.tsx`)
-- `GET /barbers/find/?q=` - sartarosh ismi qidiruv (`Search.tsx`, `barber-queries.findBarbers`)
-- `GET /barbers/by-barber-id/` - independent detail (`IndependentBookingFlow.tsx`)
-- `GET /barbers/availability/` - independent slotlar (`IndependentBookingFlow.tsx`)
-- `GET /bookings/availability/` - salon booking slotlari (`BookingFlow.tsx`)
-- `GET /bookings/` - booking history (`MyBookings.tsx`, `Profile.tsx`)
-- `POST /bookings/` - booking create (`BookingFlow.tsx`, `IndependentBookingFlow.tsx`)
-- `POST /bookings/{id}/cancel/` - booking bekor qilish (`MyBookings.tsx`)
-- `GET /reviews/?salon={id}` - salon reviews (`SalonPage.tsx`)
-- `GET /reviews/?mine=1` - user reviews (`Profile.tsx`)
-- `POST /reviews/` - tugagan booking uchun sharh (`MyBookings.tsx`)
-- `GET /favorites/salons/` - sevimli salonlar (`Favorites.tsx`, `Profile.tsx`, `SalonPage.tsx`)
-- `POST /favorites/salons/` - salonni sevimliga qo'shish (`SalonPage.tsx`)
-- `DELETE /favorites/salons/{salon_id}/` - sevimlidan olib tashlash (`Favorites.tsx`, `SalonPage.tsx`)
-- `GET /notifications/` - notifications list (`Notifications.tsx`)
-- `POST /notifications/{id}/read/` - single read (`Notifications.tsx`)
-- `POST /notifications/mark-all-read/` - bulk read (`Notifications.tsx`)
-- `GET /chat/conversations/` - chat list (`ChatList.tsx`)
-- `POST /chat/conversations/` - conversation create (`BookingFlow.tsx`, `IndependentBookingFlow.tsx`, `MyBookings.tsx`)
-- `GET /chat/conversations/{id}/messages/` - thread load (`ChatThread.tsx`)
-- `POST /chat/conversations/{id}/messages/` - send message (`ChatThread.tsx`)
+- `POST /auth/token/` — login
+- `POST /auth/register/` — register (`region` bilan)
+- `GET /regions/` — viloyat tanlovi
+- `GET /users/me/` — profile
+- `PATCH /users/me/` — profil yangilash
+- `GET /salons/` — salon list
+- `GET /salons/?ids=1,2,3` — sevimli salonlar batch
+- `GET /salons/{id}/` — salon detail
+- `GET /salons/{id}/staff/` — salon barberlari
+- `GET /salons/{id}/portfolio/` — portfolio
+- `GET /salons/nearby/` — map discover
+- `GET /salons/search/?q=` — salon qidiruv
+- `GET /barbers/nearby/` — nearby barber
+- `GET /barbers/find/?q=` — barber qidiruv
+- `GET /barbers/by-barber-id/` — independent detail
+- `GET /barbers/availability/` — independent slotlar
+- `GET /bookings/availability/` — salon slotlar
+- `GET /bookings/` — booking history
+- `POST /bookings/` — booking create
+- `POST /bookings/{id}/cancel/` — bekor qilish
+- `GET /reviews/?salon={id}` — salon reviews
+- `GET /reviews/?mine=1` — user reviews
+- `POST /reviews/` — sharh yozish
+- `GET /favorites/salons/` — sevimlilar
+- `POST /favorites/salons/` — qo'shish
+- `DELETE /favorites/salons/{salon_id}/` — olib tashlash
+- `GET /notifications/` — notifications
+- `POST /notifications/{id}/read/` — o'qilgan
+- `POST /notifications/mark-all-read/` — hammasi
+- `GET /chat/conversations/` — chat list
+- `POST /chat/conversations/` — yangi chat
+- `GET /chat/conversations/{id}/messages/` — thread
+- `POST /chat/conversations/{id}/messages/` — xabar yuborish
 
-## WebSocket
+## WebSocket (reja)
 
-- `WS /ws/chat/{conversationId}/?token=...` - chat live updates.
-- `WS /ws/notifications/?token=...` - notifications invalidation (`useUserNotificationWs` via `UserLayout`).
+- `WS /ws/chat/{conversationId}/?token=...`
+- `WS /ws/notifications/?token=...`
 
-## Dead / Unwired / Legacy holatlar
+## Contract risklar
 
-- `apps/user` ichida barber-worker membership actionlari (`accept_worker`, `decline_worker`) olib tashlandi; bu flow barber panel domeniga tegishli.
-- `packages/shared/src/salon-queries.ts` ichidagi users app tomonidan ishlatilmagan salon-join helperlar olib tashlandi (barber app local join flow ishlatadi).
-- `notifications` sahifasida customer app uchun barber-management CTA lar chiqarib tashlandi.
-
-## Contract risklar (monitoring)
-
-- Backendda `/api` va `/api/v1` parallel turibdi; frontendda faqat `/api/v1` ishlatish tavsiya etiladi.
-- Chat create faqat bookingdan keyin ishlaydi; booking flowlarda xato bo'lsa toast ko'rsatiladi va foydalanuvchi `Bandlarim` sahifasiga qaytariladi.
+- Backendda `/api` va `/api/v1` parallel; frontendda faqat `/api/v1`.
+- API adapter: `packages/user-api-adapter` (hali yozilmagan).

@@ -1,16 +1,11 @@
 {
-  "include": ["bridge/**/*.ts", "bridge/**/*.tsx", "vite.config.ts"],
+  "include": ["vite.config.ts"],
   "compilerOptions": {
     "target": "ES2022",
-    "jsx": "react-jsx",
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "strict": true,
     "skipLibCheck": true,
-    "noEmit": true,
-    "paths": {
-      "@mybarber/user-ui": ["../../packages/user-ui/src/index.ts"],
-      "@mybarber/user-ui/*": ["../../packages/user-ui/src/*"]
-    }
+    "noEmit": true
   }
 }
