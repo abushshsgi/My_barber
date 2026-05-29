@@ -26,3 +26,21 @@ class Notification(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+
+
+class BarberPushToken(models.Model):
+    """Expo push token (ExponentPushToken[...]) — barber mobil ilova."""
+
+    barber = models.ForeignKey(
+        "barbers.Barber",
+        on_delete=models.CASCADE,
+        related_name="push_tokens",
+    )
+    token = models.CharField(max_length=255, unique=True, db_index=True)
+    platform = models.CharField(max_length=16, blank=True)
+    device_name = models.CharField(max_length=128, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]

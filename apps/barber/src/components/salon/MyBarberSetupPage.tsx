@@ -30,7 +30,7 @@ import {
 import { apiFetch, getBarberAccessToken } from "@/lib/api";
 import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { roundCoord6, submitFlowSignup } from "@/lib/barber-signup-flow";
-import { readSignupDraft } from "@/lib/signup-draft";
+import { clearSignupDraft, readSignupDraft } from "@/lib/signup-draft";
 import { cn } from "@/lib/utils";
 import { getFlowMeta } from "@/lib/barber-flow-config";
 
@@ -181,7 +181,7 @@ export function MyBarberSetupPage() {
           }
           const langs = b.spoken_languages;
           if (Array.isArray(langs) && langs.length > 0) {
-            const ok = new Set(LANGUAGES.map((l) => l.code));
+            const ok = new Set<string>(LANGUAGES.map((l) => l.code));
             const n = langs.filter((c): c is string => typeof c === "string" && ok.has(c));
             if (n.length) setLanguages(n);
           }

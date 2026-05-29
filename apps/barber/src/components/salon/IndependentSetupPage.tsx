@@ -32,7 +32,7 @@ import {
 import { apiFetch, getBarberAccessToken } from "@/lib/api";
 import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { roundCoord6, submitFlowSignup } from "@/lib/barber-signup-flow";
-import { readSignupDraft } from "@/lib/signup-draft";
+import { clearSignupDraft, readSignupDraft } from "@/lib/signup-draft";
 import { UZ_REGIONS, uzRegionCodeFromLabel, uzRegionLabel } from "@/lib/uz-regions";
 import { cn } from "@/lib/utils";
 import { getFlowMeta } from "@/lib/barber-flow-config";
@@ -231,7 +231,7 @@ export function IndependentSetupPage() {
         }
         const langs = body.spoken_languages;
         if (Array.isArray(langs) && langs.length > 0) {
-          const allowed = new Set(LANGUAGES.map((l) => l.code));
+          const allowed = new Set<string>(LANGUAGES.map((l) => l.code));
           const next = langs.filter((c): c is string => typeof c === "string" && allowed.has(c));
           if (next.length > 0) setLanguages(next);
         }

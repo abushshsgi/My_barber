@@ -45,7 +45,7 @@ function ExpensesPage() {
       return;
     }
     addExpense({
-      date: "Bugun",
+      date: new Date().toISOString().slice(0, 10),
       category: form.category,
       description: form.description.trim(),
       amount: amt,

@@ -96,6 +96,7 @@ from salons.views import (
     SalonViewSet,
 )
 from chat.views import ConversationListCreateView, ConversationMessagesView
+from notifications.push_views import BarberPushTokenView
 
 
 def health(_request):
@@ -173,6 +174,7 @@ api_routes = [
     path("barber/profile/", MyBarberProfileView.as_view()),
     path("barber/catalog-services/", MyBarberCatalogServiceView.as_view()),
     path("barber/settings/", MyBarberSettingsView.as_view()),
+    path("barber/push-token/", BarberPushTokenView.as_view()),
     path("barber/service-recommendations/", MyBarberServiceRecommendationsView.as_view()),
     path("barber/reviews/", MyBarberReviewsView.as_view()),
     path("barber/finance/summary/", MyBarberFinanceSummaryView.as_view()),

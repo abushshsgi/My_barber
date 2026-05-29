@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Notification
+from .models import BarberPushToken, Notification
 
 
 @admin.register(Notification)
@@ -12,3 +12,10 @@ class NotificationAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
     readonly_fields = ("created_at",)
     list_per_page = 50
+
+
+@admin.register(BarberPushToken)
+class BarberPushTokenAdmin(admin.ModelAdmin):
+    list_display = ("barber", "platform", "token", "updated_at")
+    search_fields = ("token", "barber__email", "barber__full_name")
+    autocomplete_fields = ("barber",)

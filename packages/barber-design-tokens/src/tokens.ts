@@ -1,0 +1,38 @@
+/** Web `apps/barber/src/styles.css` :root — RN / NativeWind uchun hex ekvivalentlar. */
+export const barberColors = {
+  background: "#f8f7f4",
+  foreground: "#1c1917",
+  card: "#ffffff",
+  cardForeground: "#1c1917",
+  muted: "#efeeeb",
+  mutedForeground: "#78716c",
+  primary: "#1c1917",
+  primaryForeground: "#fafaf9",
+  secondary: "#ebe8e3",
+  secondaryForeground: "#1c1917",
+  accent: "#ebe8e3",
+  accentForeground: "#1c1917",
+  destructive: "#dc2626",
+  destructiveForeground: "#fafaf9",
+  border: "#e4e0d8",
+  input: "#e4e0d8",
+  ring: "#1c1917",
+  success: "#16a34a",
+  warning: "#f59e0b",
+  info: "#2563eb",
+  sidebar: "#f5f4f1",
+  sidebarForeground: "#57534e",
+  sidebarPrimary: "#1c1917",
+  sidebarPrimaryForeground: "#fafaf9",
+  sidebarAccent: "#ebe8e3",
+  sidebarAccentForeground: "#1c1917",
+  sidebarBorder: "#e0ddd6",
+} as const;
+
+export const barberRadius = {
+  DEFAULT: 12,
+  sm: 8,
+  md: 10,
+  lg: 12,
+  xl: 16,
+} as const;

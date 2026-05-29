@@ -35,11 +35,17 @@ def send_barber_email_verification(barber: Barber) -> tuple[bool, str | None]:
             )
 
     token = sign_barber_email_token(barber.id)
-    link = f"{base}/barber/verify-email?token={token}"
+    web_link = f"{base}/barber/verify-email?token={token}"
+    scheme = getattr(settings, "BARBER_MOBILE_VERIFY_SCHEME", "mysaloonpartner")
+    mobile_link = f"{scheme}://verify-email?token={token}"
     subject = "MySaloon — email manzilingizni tasdiqlang"
     body = (
         f"Salom{', ' + barber.full_name if barber.full_name else ''}!\n\n"
-        f"Email manzilingizni tasdiqlash uchun quyidagi havolani bosing:\n{link}\n\n"
+        "Email manzilingizni tasdiqlash uchun quyidagi havolalardan birini bosing.\n\n"
+        f"📱 Partner mobil ilova (tavsiya etiladi):\n{mobile_link}\n\n"
+        f"🌐 Veb-brauzer (kompyuter yoki ilova o‘rnatilmagan bo‘lsa):\n{web_link}\n\n"
+        "Mobil telefonda ilovadan ro‘yxatdan o‘tgan bo‘lsangiz, birinchi (📱) havolani bosing — "
+        "brauzer o‘rniga MySaloon Partner ilovasi ochiladi.\n\n"
         "Agar siz bu so‘rovni yubormagan bo‘lsangiz, xabarni e’tiborsiz qoldiring."
     )
     from_email = getattr(settings, "BARBER_FROM_EMAIL", settings.DEFAULT_FROM_EMAIL)

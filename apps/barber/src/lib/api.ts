@@ -21,6 +21,7 @@ const TOKEN_KEY_BARBER = "mybarber_barber_access";
 const REFRESH_KEY_BARBER = "mybarber_barber_refresh";
 
 export function getBarberAccessToken(): string | null {
+  if (typeof window === "undefined") return null;
   const tok = localStorage.getItem(TOKEN_KEY_BARBER);
   return tok || null;
 }

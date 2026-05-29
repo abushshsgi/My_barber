@@ -299,3 +299,9 @@ def _barber_public_app_base() -> str:
 
 BARBER_APP_PUBLIC_BASE = _barber_public_app_base()
 
+# Partner mobil ilova (Expo) — email deep link: mysaloonpartner://verify-email?token=...
+BARBER_MOBILE_VERIFY_SCHEME = (
+    os.environ.get("BARBER_MOBILE_VERIFY_SCHEME", "mysaloonpartner").strip().rstrip("://")
+    or "mysaloonpartner"
+)
+

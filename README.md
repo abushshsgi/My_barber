@@ -1,6 +1,6 @@
 # MyBarber
 
-Backend: `backend/` (Django). Frontend uchta alohida Vite/TanStack Start ilova: `apps/user`, `apps/admin`, `apps/barber` (sartarosh kabineti — yangilangan UI, `packages/shared` orqali API). Umumiy kutubxona: `packages/shared`.
+Backend: `backend/` (Django). Frontend uchta alohida Vite/TanStack Start ilova: `apps/user`, `apps/admin`, `apps/barber`. Mobil (Android): Capacitor — `apps/user`, `apps/barber`. Umumiy kutubxona: `packages/shared`.
 
 Qisqa qo‘llanma: [apps/README.md](apps/README.md).
 

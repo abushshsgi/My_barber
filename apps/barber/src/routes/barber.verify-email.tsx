@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Loader2, Mail } from "lucide-react";
+import { Loader2, Mail, Smartphone } from "lucide-react";
 import {
   apiFetch,
   formatFetchError,
@@ -17,11 +17,18 @@ export const Route = createFileRoute("/barber/verify-email")({
   component: BarberVerifyEmailPage,
 });
 
+const PARTNER_APP_SCHEME = "mysaloonpartner";
+
+function partnerAppVerifyUrl(token: string): string {
+  return `${PARTNER_APP_SCHEME}://verify-email?token=${encodeURIComponent(token)}`;
+}
+
 function BarberVerifyEmailPage() {
   const { token } = Route.useSearch();
   const [status, setStatus] = useState<"loading" | "ok" | "err" | "idle">("idle");
   const [msg, setMsg] = useState("");
   const [resending, setResending] = useState(false);
+  const appLink = useMemo(() => (token ? partnerAppVerifyUrl(token) : ""), [token]);
 
   useEffect(() => {
     const run = async () => {
@@ -98,17 +105,35 @@ function BarberVerifyEmailPage() {
         {status === "ok" && (
           <>
             <p className="text-sm text-foreground">{msg}</p>
+            {appLink ? (
+              <a
+                href={appLink}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-4 py-2.5 text-sm font-medium text-foreground"
+              >
+                <Smartphone className="size-4" />
+                Partner ilovasida davom etish
+              </a>
+            ) : null}
             <Link
               to="/barber/activation"
               className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
             >
-              Davom etish
+              Vebda davom etish
             </Link>
           </>
         )}
         {(status === "err" || status === "idle") && (
           <>
             <p className="text-sm text-destructive">{msg || "Token kutilmoqda…"}</p>
+            {token && appLink ? (
+              <a
+                href={appLink}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-4 py-2.5 text-sm font-medium text-foreground"
+              >
+                <Smartphone className="size-4" />
+                Partner ilovasida ochish
+              </a>
+            ) : null}
             <div className="flex flex-col gap-2">
               <Button
                 type="button"

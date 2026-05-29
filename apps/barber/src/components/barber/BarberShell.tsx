@@ -59,6 +59,7 @@ import { UserAvatar } from "./primitives";
 import {
   getCapabilities,
   getFlowMeta,
+  pathAllowedInSalonWorkspace,
   QUICK_ACTIONS,
   getWorkspaceLabel,
   NAV_CONFIG,
@@ -103,23 +104,6 @@ function mapNav(items: MatrixNavItem[]): NavItem[] {
     group: item.group,
     icon: ICON_BY_NAME[item.iconName],
   }));
-}
-
-/** Salon rejimida URL orqali barber "asosiy" oynalariga kirmaslik (profil/sozlamalar/yordam/bildirishnoma ruxsat). */
-function pathAllowedInSalonWorkspace(pathname: string): boolean {
-  if (pathname === "/barber/salon-view" || pathname.startsWith("/barber/salon-view/")) {
-    return true;
-  }
-  if (
-    pathname === "/barber/profile" ||
-    pathname === "/barber/settings" ||
-    pathname === "/barber/help" ||
-    pathname === "/barber/notifications" ||
-    pathname.startsWith("/barber/notifications/")
-  ) {
-    return true;
-  }
-  return false;
 }
 
 function Sidebar({
@@ -423,11 +407,16 @@ function CommandPalette({
   flowIdentity: "owner" | "employee" | "mybarber" | "independent" | "unknown";
 }) {
   const navigate = useNavigate();
+  const { viewMode } = useBarberContext();
   const go = (to: string) => {
     onOpenChange(false);
     navigate({ to });
   };
-  const quickActions = QUICK_ACTIONS[flowIdentity];
+  const quickActionsAll = QUICK_ACTIONS[flowIdentity];
+  const quickActions =
+    viewMode === "salon"
+      ? quickActionsAll.filter((a) => pathAllowedInSalonWorkspace(a.to))
+      : quickActionsAll;
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <CommandInput placeholder="Sahifa yoki amalni qidiring..." />

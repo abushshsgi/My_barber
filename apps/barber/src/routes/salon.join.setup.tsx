@@ -289,7 +289,7 @@ function SalonJoinSetupPage() {
           if (lt.trim()) setLocationText(lt.trim());
           const langs = po.spoken_languages;
           if (Array.isArray(langs) && langs.length > 0) {
-            const allowed = new Set(LANGUAGES.map((l) => l.code));
+            const allowed = new Set<string>(LANGUAGES.map((l) => l.code));
             const next = langs.filter((c): c is string => typeof c === "string" && allowed.has(c));
             if (next.length > 0) setLanguages(next);
           }

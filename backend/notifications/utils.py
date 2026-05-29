@@ -3,6 +3,7 @@ from django.core.mail import send_mail
 
 from barbers.models import Barber
 
+from .expo_push import send_barber_expo_push
 from .models import Notification
 from .ws_broadcast import push_ws_barber, push_ws_user
 
@@ -58,6 +59,12 @@ def notify_barber(
         payload=payload or {},
     )
     push_ws_barber(barber.id, _ws_payload(n))
+    send_barber_expo_push(
+        barber,
+        title=title,
+        body=body or title,
+        payload={**(payload or {}), "notification_id": n.id, "type": type_},
+    )
     if send_email and barber.email:
         try:
             send_mail(
