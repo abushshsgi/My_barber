@@ -16,6 +16,11 @@ npm run dev:user
 
 Root Directory: `apps/user`. `installCommand` salon-connect dependencylarini ham o‘rnatadi.
 
+**Vercel dashboard (muhim):** Settings → Build → Override larni **o‘chiring** yoki quyidagiga moslang:
+- Output Directory: `dist` ( **`dist/client` emas** )
+- Install Command: repodagi `vercel.json` dagi buyruq
+- Framework: Other / null
+
 ## Yangilash (salon-connect dan)
 
 ```bash
