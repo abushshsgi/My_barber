@@ -17,11 +17,11 @@ http://localhost:3000
 | Sozlama | Qiymat |
 |---------|--------|
 | Root Directory | `apps/user` |
-| Output Directory | `dist` |
+| Output Directory | **bo‘sh / Override o‘chirilgan** (`.vercel/output` avtomatik) |
 | Build Command | `npm run build` |
 | Install Command | `cd ../.. && npm install` |
 
-Dashboardda **Output Directory** `dist/client` bo‘lmasin — faqat `dist`.
+**Muhim:** Dashboardda Output Directory **`dist` yoki `dist/client` qo‘ymang** — build `.vercel/output` yaratadi.
 
 ## Ma'lumot
 
