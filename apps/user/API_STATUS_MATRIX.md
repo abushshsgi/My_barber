@@ -1,7 +1,7 @@
 # Users App API Status Matrix
 
-**Eslatma (2026):** Mijoz ilovasi — faqat [`apps/salon-connect`](../salon-connect/) UI (submodule).  
-Hozirgi ma'lumot: salon-connect `lib/mock-data.ts`. Quyidagi Django endpointlar **keyin** ulanadi.
+**Eslatma (2026):** Mijoz ilovasi — `apps/user/src`.  
+Hozirgi ma'lumot: `src/lib/mock-data.ts`. Quyidagi Django endpointlar **keyin** ulanadi.
 
 Canonical prefix (MyBarber backend): `/api/v1`
 

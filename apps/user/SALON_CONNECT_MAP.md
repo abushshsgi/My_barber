@@ -1,24 +1,21 @@
-# salon-connect route xaritasi
-
-Vendor: [`apps/salon-connect`](../salon-connect/) (repoda 1:1, [salon-connect](https://github.com/abushshsgi/salon-connect) dan).
+# User app route xaritasi
 
 | Route | Fayl |
 |-------|------|
-| `/` | `routes/index.tsx` |
-| `/map` | `routes/map.tsx` |
-| `/explore` | `routes/explore.tsx` |
-| `/salon/$id` | `routes/salon.$id.tsx` |
-| `/booking/$salonId` | `routes/booking.$salonId.tsx` |
-| `/booking/barber/$barberId` | `routes/booking.barber.$barberId.tsx` |
-| `/bookings` | `routes/bookings.tsx` |
-| `/chat`, `/chat/$id` | `routes/chat*.tsx` |
-| `/notifications` | `routes/notifications.tsx` |
-| `/profile` | `routes/profile.tsx` |
-| `/auth` | `routes/auth.tsx` |
-| `/favorites` | `routes/favorites.tsx` |
-| `/settings` | `routes/settings.tsx` |
-| `/stylists` | `routes/stylists.tsx` |
+| `/` | `src/routes/index.tsx` |
+| `/map` | `src/routes/map.tsx` |
+| `/explore` | `src/routes/explore.tsx` |
+| `/salon/$id` | `src/routes/salon.$id.tsx` |
+| `/booking/$salonId` | `src/routes/booking.$salonId.tsx` |
+| `/booking/barber/$barberId` | `src/routes/booking.barber.$barberId.tsx` |
+| `/bookings` | `src/routes/bookings.tsx` |
+| `/chat`, `/chat/$id` | `src/routes/chat*.tsx` |
+| `/notifications` | `src/routes/notifications.tsx` |
+| `/profile` | `src/routes/profile.tsx` |
+| `/auth` | `src/routes/auth.tsx` |
+| `/favorites` | `src/routes/favorites.tsx` |
+| `/settings` | `src/routes/settings.tsx` |
+| `/stylists` | `src/routes/stylists.tsx` |
 | `/offers`, `/loyalty`, `/giftcard`, `/today`, `/support`, `/privacy` | mos route fayllar |
 
-Ma'lumot: `lib/mock-data.ts`, `lib/api/`.  
-MyBarber Django API — keyingi bosqich (`API_STATUS_MATRIX.md`).
+Ma'lumot: `src/lib/mock-data.ts`, `src/lib/api/`.

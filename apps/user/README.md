@@ -1,31 +1,28 @@
-# User app (salon-connect UI)
+# User app (mijoz ilovasi)
 
-Mijoz ilovasi — [salon-connect](https://github.com/abushshsgi/salon-connect) UI **1:1** (`apps/salon-connect` repoda, submodule emas).
-
-`apps/user` faqat Vite shell: `vite.config.ts` → `root: ../salon-connect`.
+Mijoz ilovasi — barcha UI kodi shu papkada (`src/`).
 
 ## Ishga tushirish
 
 ```bash
+# loyiha ildizidan
 npm install
-npm install --prefix apps/salon-connect --no-package-lock
 npm run dev:user
 ```
 
+http://localhost:3000
+
 ## Vercel
 
-Root Directory: `apps/user`. `installCommand` salon-connect dependencylarini ham o‘rnatadi.
+| Sozlama | Qiymat |
+|---------|--------|
+| Root Directory | `apps/user` |
+| Output Directory | `dist` |
+| Build Command | `npm run build` |
+| Install Command | `cd ../.. && npm install` |
 
-**Vercel dashboard (muhim):** Settings → Build → Override larni **o‘chiring** yoki quyidagiga moslang:
-- Output Directory: `dist` ( **`dist/client` emas** )
-- Install Command: repodagi `vercel.json` dagi buyruq
-- Framework: Other / null
+Dashboardda **Output Directory** `dist/client` bo‘lmasin — faqat `dist`.
 
-## Yangilash (salon-connect dan)
+## Ma'lumot
 
-```bash
-cd apps/salon-connect
-git init && git remote add origin https://github.com/abushshsgi/salon-connect.git
-git fetch origin && git checkout origin/main -- .
-# keyin My_barber repoga commit
-```
+Hozir: `src/lib/mock-data.ts`. Backend API — `API_STATUS_MATRIX.md`.

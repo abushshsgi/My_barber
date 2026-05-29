@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "cd ../.. && npm install && npm install --prefix apps/salon-connect --no-package-lock",
+  "installCommand": "cd ../.. && npm install",
   "buildCommand": "npm run build",
   "framework": null,
   "outputDirectory": "dist"
