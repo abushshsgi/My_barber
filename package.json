@@ -20,9 +20,7 @@
     "build:barber": "npm run build -w tanstack_start_ts",
     "build:frontends": "npm run build:user && npm run build:admin && npm run build:barber",
     "cap:barber": "npm run cap:sync -w tanstack_start_ts",
-    "verify:mobile": "bash scripts/verify-mobile-production.sh",
-    "install:salon-connect": "bash scripts/ensure-salon-connect-deps.sh",
-    "postinstall": "npm run install:salon-connect"
+    "verify:mobile": "bash scripts/verify-mobile-production.sh"
   },
   "overrides": {
     "react": "18.3.1",

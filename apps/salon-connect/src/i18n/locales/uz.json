@@ -1,0 +1,125 @@
+{
+  "nav": {
+    "home": "Asosiy",
+    "map": "Xarita",
+    "bookings": "Buyurtma",
+    "chat": "Chat",
+    "notifications": "Xabar",
+    "profile": "Profil"
+  },
+  "audience": {
+    "all": "Hammasi",
+    "men": "Erkaklar",
+    "women": "Ayollar"
+  },
+  "common": {
+    "search": "Salonlar va ustalarni izlang",
+    "all": "Barchasi",
+    "viewAll": "Hammasi",
+    "viewMap": "Xaritada ko'rish",
+    "back": "Orqaga",
+    "next": "Keyingi",
+    "confirm": "Tasdiqlash",
+    "cancel": "Bekor",
+    "save": "Saqlash",
+    "edit": "Tahrirlash",
+    "logout": "Chiqish",
+    "loading": "Yuklanmoqda...",
+    "empty": "Hozircha bo'sh"
+  },
+  "home": {
+    "title": "Ko'rinishingizni bugun yangilang",
+    "nearby": "Yaqin atrofdagi salonlar",
+    "categories": {
+      "all": "Barchasi",
+      "barber": "Barber",
+      "beauty": "Go'zallik",
+      "nails": "Manikyur",
+      "spa": "Spa"
+    }
+  },
+  "map": { "salons": "Salonlar", "barbers": "Ustalar", "radius": "Radius", "search": "Salon yoki manzil" },
+  "salon": {
+    "tabs": {
+      "about": "Haqida",
+      "services": "Xizmatlar",
+      "staff": "Ustalar",
+      "reviews": "Sharhlar",
+      "portfolio": "Portfolio"
+    },
+    "bookNow": "Hoziroq band qilish",
+    "select": "Tanlash",
+    "minutes": "daqiqa"
+  },
+  "booking": {
+    "title": "Band qilish",
+    "step1": "Usta",
+    "step2": "Xizmat",
+    "step3": "Vaqt",
+    "step4": "Tasdiq",
+    "selectBarber": "Ustani tanlang",
+    "selectService": "Xizmatlarni tanlang",
+    "selectTime": "Vaqtni tanlang",
+    "summary": "Buyurtma tafsiloti",
+    "total": "Jami",
+    "confirm": "Buyurtmani tasdiqlash"
+  },
+  "bookings": {
+    "title": "Buyurtmalarim",
+    "upcoming": "Kelayotgan",
+    "history": "Tarix",
+    "chat": "Chat",
+    "review": "Sharh",
+    "writeReview": "Sharh yozish",
+    "status": {
+      "pending": "Kutilmoqda",
+      "accepted": "Tasdiqlangan",
+      "done": "Bajarilgan",
+      "cancelled": "Bekor qilingan"
+    }
+  },
+  "chat": {
+    "title": "Xabarlar",
+    "placeholder": "Xabar yozing...",
+    "empty": "Hali xabarlar yo'q"
+  },
+  "notifications": {
+    "title": "Bildirishnomalar",
+    "markAll": "Hammasini o'qilgan deb belgilash",
+    "empty": "Bildirishnomalar yo'q"
+  },
+  "profile": {
+    "title": "Profil",
+    "bookings": "Buyurtmalar",
+    "reviews": "Sharhlar",
+    "favorites": "Sevimlilar",
+    "offers": "Aksiyalar",
+    "loyalty": "Bonus dasturi",
+    "giftcard": "Sovg'a karta",
+    "editProfile": "Profilni tahrirlash",
+    "settings": "Sozlamalar",
+    "language": "Til",
+    "support": "Yordam",
+    "privacy": "Maxfiylik"
+  },
+  "settings": {
+    "title": "Sozlamalar",
+    "bookingReminders": "Buyurtma eslatmalari",
+    "chatAlerts": "Chat bildirishnomalari",
+    "reduceMotion": "Animatsiyani kamaytirish",
+    "language": "Til",
+    "reset": "Standart sozlamalarga qaytarish"
+  },
+  "favorites": {
+    "title": "Sevimli salonlar",
+    "empty": "Hali sevimli salon yo'q"
+  },
+  "auth": {
+    "phone": "Telefon raqami",
+    "code": "Tasdiq kodi",
+    "login": "Kirish",
+    "sendCode": "Kod yuborish",
+    "title": "Xush kelibsiz",
+    "subtitle": "Telefon raqamingizni kiriting"
+  }
+}

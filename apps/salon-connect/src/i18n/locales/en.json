@@ -1,0 +1,110 @@
+{
+  "nav": {
+    "home": "Home",
+    "map": "Map",
+    "bookings": "Bookings",
+    "chat": "Chat",
+    "notifications": "Inbox",
+    "profile": "Profile"
+  },
+  "audience": { "all": "All", "men": "Men", "women": "Women" },
+  "common": {
+    "search": "Search salons and barbers",
+    "all": "All",
+    "viewAll": "View all",
+    "viewMap": "Open map",
+    "back": "Back",
+    "next": "Next",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "logout": "Log out",
+    "loading": "Loading...",
+    "empty": "Nothing here yet"
+  },
+  "home": {
+    "title": "Refresh your look today",
+    "nearby": "Salons nearby",
+    "categories": {
+      "all": "All",
+      "barber": "Barber",
+      "beauty": "Beauty",
+      "nails": "Nails",
+      "spa": "Spa"
+    }
+  },
+  "map": { "salons": "Salons", "barbers": "Barbers", "radius": "Radius" },
+  "salon": {
+    "tabs": {
+      "about": "About",
+      "services": "Services",
+      "staff": "Staff",
+      "reviews": "Reviews",
+      "portfolio": "Portfolio"
+    },
+    "bookNow": "Book now",
+    "select": "Select",
+    "minutes": "min"
+  },
+  "booking": {
+    "title": "Booking",
+    "step1": "Barber",
+    "step2": "Service",
+    "step3": "Time",
+    "step4": "Confirm",
+    "selectBarber": "Choose your barber",
+    "selectService": "Select services",
+    "selectTime": "Pick a time",
+    "summary": "Order summary",
+    "total": "Total",
+    "confirm": "Confirm booking"
+  },
+  "bookings": {
+    "title": "My bookings",
+    "upcoming": "Upcoming",
+    "history": "History",
+    "chat": "Chat",
+    "review": "Review",
+    "writeReview": "Write a review",
+    "status": {
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "done": "Completed",
+      "cancelled": "Cancelled"
+    }
+  },
+  "chat": { "title": "Messages", "placeholder": "Type a message...", "empty": "No messages yet" },
+  "notifications": { "title": "Notifications", "markAll": "Mark all as read", "empty": "No notifications" },
+  "profile": {
+    "title": "Profile",
+    "bookings": "Bookings",
+    "reviews": "Reviews",
+    "favorites": "Favorites",
+    "offers": "Offers",
+    "loyalty": "Loyalty",
+    "giftcard": "Gift card",
+    "editProfile": "Edit profile",
+    "settings": "Settings",
+    "language": "Language",
+    "support": "Support",
+    "privacy": "Privacy"
+  },
+  "settings": {
+    "title": "Settings",
+    "bookingReminders": "Booking reminders",
+    "chatAlerts": "Chat alerts",
+    "reduceMotion": "Reduce motion",
+    "language": "Language",
+    "reset": "Reset to defaults"
+  },
+  "favorites": { "title": "Favorite salons", "empty": "No favorites yet" },
+  "auth": {
+    "phone": "Phone number",
+    "code": "Verification code",
+    "login": "Sign in",
+    "sendCode": "Send code",
+    "title": "Welcome",
+    "subtitle": "Enter your phone number"
+  }
+}

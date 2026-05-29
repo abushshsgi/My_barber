@@ -1,6 +1,6 @@
 # salon-connect route xaritasi
 
-Vendor: [`apps/salon-connect`](../salon-connect/) (submodule).
+Vendor: [`apps/salon-connect`](../salon-connect/) (repoda 1:1, [salon-connect](https://github.com/abushshsgi/salon-connect) dan).
 
 | Route | Fayl |
 |-------|------|
