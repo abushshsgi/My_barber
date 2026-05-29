@@ -17,6 +17,7 @@
 /build
 /dist
 /.wrangler
+/.tanstack
 
 # misc
 .DS_Store
