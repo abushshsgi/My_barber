@@ -19,7 +19,7 @@ TanStack Start + Nitro **oddiy static `dist` emas**. Build `.vercel/output` yara
 | Sozlama | To‘g‘ri qiymat | Noto‘g‘ri |
 |---------|----------------|-----------|
 | **Root Directory** | `apps/user` | `dist` ❌ |
-| **Output Directory** | **bo‘sh** (Override yoq) | `dist` ❌ |
+| **Output Directory** | **`dist`** | `dist/client` ❌ |
 | **Framework Preset** | Other | Vite ❌ |
 | **Build Command** | `npm run build` | |
 | **Install Command** | `cd ../.. && npm install` | |
@@ -33,11 +33,11 @@ TanStack Start + Nitro **oddiy static `dist` emas**. Build `.vercel/output` yara
 ### Deploy qadamlari
 
 1. Vercel → Project → Settings → General → Root Directory = `apps/user`
-2. Settings → Build → **Output Directory override ni o‘chiring** (maydon bo‘sh)
+2. Settings → Build → Output Directory = **`dist`** ( **`dist/client` emas** )
 3. Redeploy
-4. Tekshiruv: `https://YOUR-DOMAIN/assets/` — CSS fayl 200 qaytarishi kerak
+4. Tekshiruv: `https://YOUR-DOMAIN/assets/` — CSS fayl **200** qaytarishi kerak
 
-`vercel.json` ichida ham `outputDirectory` **bo‘lmasin**.
+`vercel.json` ichida `outputDirectory: "dist"` — Build Output API (`config.json` + `static/` + `functions/`).
 
 ## Env (Vercel)
 
