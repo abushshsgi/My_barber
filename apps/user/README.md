@@ -27,7 +27,7 @@ TanStack Start + Nitro **oddiy static `dist` emas**. Build `.vercel/output` yara
 ### Belgilar (Output Directory noto‘g‘ri bo‘lsa)
 
 - Sahifa oq fon, stilsiz
-- `nav.home`, `nav.map` kabi kalitlar ko‘rinadi
+- `nav.home`, `nav.map` kabi kalitlar ko‘rinadi (JS yuklanmagan)
 - Console: barcha `/assets/*.css` va `/assets/*.js` → **404**
 
 ### Deploy qadamlari
