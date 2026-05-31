@@ -14,30 +14,33 @@ http://localhost:3000
 
 ## Vercel deploy (MUHIM)
 
-TanStack Start + Nitro **oddiy static `dist` emas**. Build `.vercel/output` yaratadi.
+TanStack Start + Nitro **Build Output API** ishlatadi. Build `.vercel/output` yaratadi.
 
 | Sozlama | To‘g‘ri qiymat | Noto‘g‘ri |
 |---------|----------------|-----------|
 | **Root Directory** | `apps/user` | `dist` ❌ |
-| **Output Directory** | **`dist`** | `dist/client` ❌ |
+| **Output Directory** | **bo‘sh** (Override o‘chirilgan) | `dist` ❌ |
 | **Framework Preset** | Other | Vite ❌ |
 | **Build Command** | `npm run build` | |
 | **Install Command** | `cd ../.. && npm install` | |
 
-### Belgilar (Output Directory noto‘g‘ri bo‘lsa)
+### Nima uchun stilsiz sahifa chiqadi?
 
-- Sahifa oq fon, stilsiz
-- `nav.home`, `nav.map` kabi kalitlar ko‘rinadi (JS yuklanmagan)
-- Console: barcha `/assets/*.css` va `/assets/*.js` → **404**
+Agar Output Directory = `dist` qo‘ysangiz, Vercel faqat **server function** (HTML) deploy qiladi, **CSS/JS static fayllar CDN ga chiqmaydi** → barcha `/assets/*` **404**.
+
+Belgilar:
+- Oq fon, stilsiz matn
+- `nav.home`, `nav.map` (JS yuklanmagan)
+- Console: `/assets/*.css` va `/assets/*.js` → 404
 
 ### Deploy qadamlari
 
-1. Vercel → Project → Settings → General → Root Directory = `apps/user`
-2. Settings → Build → Output Directory = **`dist`** ( **`dist/client` emas** )
+1. Vercel → Settings → General → **Root Directory** = `apps/user`
+2. Settings → Build → **Output Directory override ni O‘CHIRING** (maydon bo‘sh!)
 3. Redeploy
-4. Tekshiruv: `https://YOUR-DOMAIN/assets/` — CSS fayl **200** qaytarishi kerak
+4. Tekshiruv: `https://YOUR-DOMAIN/assets/styles-D-UzSqGe.css` → **200**
 
-`vercel.json` ichida `outputDirectory: "dist"` — Build Output API (`config.json` + `static/` + `functions/`).
+`vercel.json` da `outputDirectory` **bo‘lmasligi** kerak — build `.vercel/output` ni avtomatik ishlatadi.
 
 ## Env (Vercel)
 

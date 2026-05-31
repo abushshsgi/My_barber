@@ -40,8 +40,8 @@ if (Array.isArray(config.routes)) {
 
 writeFileSync(configPath, JSON.stringify(config, null, 2));
 
-// Vercel git deploy: dashboard Output Directory = dist (Build Output API)
-// Vercel CLI prebuilt: .vercel/output (same contents)
+// Vercel Build Output API: faqat .vercel/output ishlatiladi.
+// Dashboard Output Directory bo'sh bo'lishi kerak (dist EMAS).
 rmSync(vercelOut, { recursive: true, force: true });
 cpSync(distDir, vercelOut, { recursive: true });
 
