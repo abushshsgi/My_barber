@@ -77,10 +77,10 @@
   --input: oklch(0.88 0.018 85);
   --ring: oklch(0.25 0 0);
 
-  /* Audience switch — faqat bej soyalar */
+  /* Audience switch — faqat bej soyalar (aniq farq) */
   --audience-all: oklch(0.945 0.014 85);
-  --audience-men: oklch(0.875 0.016 68);   /* qoraroq, salqin bej */
-  --audience-women: oklch(0.935 0.022 92); /* iliqroq bej */
+  --audience-men: oklch(0.78 0.024 58);    /* qoraroq, salqin bej */
+  --audience-women: oklch(0.94 0.034 98);  /* yorug‘, iliq bej */
 }
 
 .dark {
@@ -107,8 +107,8 @@
   --ring: oklch(0.85 0 0);
 
   --audience-all: oklch(0.22 0.008 85);
-  --audience-men: oklch(0.17 0.010 65);
-  --audience-women: oklch(0.25 0.012 88);
+  --audience-men: oklch(0.14 0.012 58);
+  --audience-women: oklch(0.30 0.016 95);
 }
 
 @layer base {

@@ -3,15 +3,17 @@ import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAudience, type AudienceFilter } from "@/hooks/use-audience";
 
-const OPTIONS: {
-  key: AudienceFilter;
-  tKey: string;
-  tone: "bg-audience-all" | "bg-audience-men" | "bg-audience-women";
-}[] = [
-  { key: "all", tKey: "audience.all", tone: "bg-audience-all" },
-  { key: "men", tKey: "audience.men", tone: "bg-audience-men" },
-  { key: "women", tKey: "audience.women", tone: "bg-audience-women" },
+const OPTIONS: { key: AudienceFilter; tKey: string }[] = [
+  { key: "all", tKey: "audience.all" },
+  { key: "men", tKey: "audience.men" },
+  { key: "women", tKey: "audience.women" },
 ];
+
+const ACTIVE_TONE: Record<AudienceFilter, string> = {
+  all: "bg-audience-all",
+  men: "bg-audience-men",
+  women: "bg-audience-women",
+};
 
 type Props = {
   showProfileHint?: boolean;
@@ -27,7 +29,7 @@ export function AudienceSwitch({ showProfileHint = true }: Props) {
       <div
         role="radiogroup"
         aria-label={t("settings.preferredAudience")}
-        className="grid grid-cols-3 gap-1.5 rounded-2xl bg-background p-1"
+        className="grid grid-cols-3 gap-1.5 rounded-2xl border border-border bg-surface p-1"
       >
         {OPTIONS.map((opt) => {
           const active = audience === opt.key;
@@ -40,10 +42,9 @@ export function AudienceSwitch({ showProfileHint = true }: Props) {
               onClick={() => setAudience(opt.key)}
               className={cn(
                 "relative rounded-xl py-2.5 text-[12px] font-bold tracking-wide transition-all active:scale-[0.98]",
-                opt.tone,
                 active
-                  ? "pr-5 text-foreground ring-2 ring-foreground"
-                  : "text-foreground/65 hover:text-foreground/85",
+                  ? cn(ACTIVE_TONE[opt.key], "pr-5 text-foreground ring-2 ring-foreground")
+                  : "bg-background/80 text-foreground/55 hover:bg-background hover:text-foreground/75",
               )}
             >
               {t(opt.tKey)}
