@@ -16,3 +16,4 @@ packages/**/node_modules/
 .cursor/
 .git.broken-*/
 *.tsbuildinfo
+_upstream_salon_creator_suite/
