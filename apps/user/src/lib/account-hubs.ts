@@ -43,6 +43,7 @@ export const ACCOUNT_HUBS: AccountHubMeta[] = [
       { icon: Star, label: "", to: "/reviews" },
       { icon: Heart, label: "", to: "/favorites" },
       { icon: Award, label: "", to: "/favorite-stylists" },
+      { icon: Gift, label: "", to: "/giftcard" },
     ],
   },
   {
@@ -58,7 +59,6 @@ export const ACCOUNT_HUBS: AccountHubMeta[] = [
       { icon: CreditCard, label: "", to: "/payment-methods" },
       { icon: Tag, label: "", to: "/offers" },
       { icon: Repeat, label: "", to: "/subscriptions" },
-      { icon: Gift, label: "", to: "/giftcard" },
     ],
   },
   {
@@ -91,14 +91,13 @@ export const ACCOUNT_HUBS: AccountHubMeta[] = [
 
 /** i18n label keys for hub menu items (order matches items[] above). */
 export const ACCOUNT_HUB_LABEL_KEYS: Record<AccountHubKey, string[]> = {
-  activity: ["reviews.title", "favorites.title", "favoriteStylists.title"],
+  activity: ["reviews.title", "favorites.title", "favoriteStylists.title", "profile.giftcard"],
   payments: [
     "profile.wallet",
     "profile.loyalty",
     "paymentMethods.title",
     "profile.offers",
     "subscriptions.title",
-    "profile.giftcard",
   ],
   household: ["family.title", "addresses.title"],
   preferences: [

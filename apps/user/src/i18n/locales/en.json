@@ -178,7 +178,7 @@
     "hubs": {
       "activity": {
         "title": "My activity",
-        "desc": "Reviews and favorites",
+        "desc": "Reviews, favorites, stylists, gift cards",
         "pageTitle": "My activity"
       },
       "payments": {

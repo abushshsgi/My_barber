@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import {
   Bell,
   Calendar,
+  CalendarCheck,
   ChevronRight,
   CreditCard,
   Headphones,
@@ -12,7 +13,6 @@ import {
   Sparkles,
   Tag,
   Users,
-  CalendarCheck,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ProfileGoMenuGroup, ProfileGoQuickRow, ProfileWalletCard } from "@/components/profile/ProfileGroupedMenu";
@@ -93,6 +93,17 @@ export function ProfileVariant13() {
 
       <div className="mt-6 space-y-3 px-4">
         <ProfileWalletCard title={t("profile.wallet")} balance={formatPrice(walletSummary.balance)} />
+
+        <ProfileGoMenuGroup
+          items={[
+            {
+              icon: CalendarCheck,
+              title: t("account.hubs.activity.title"),
+              subtitle: t("account.hubs.activity.desc"),
+              to: "/account/activity",
+            },
+          ]}
+        />
 
         <ProfileGoMenuGroup
           items={[

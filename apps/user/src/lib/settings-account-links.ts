@@ -21,11 +21,12 @@ export const SETTINGS_ACCOUNT_SECTIONS: {
 }[] = [
   {
     titleKey: "settings.sections.activity",
-    labelKeys: ["reviews.title", "favorites.title", "favoriteStylists.title"],
+    labelKeys: ["reviews.title", "favorites.title", "favoriteStylists.title", "profile.giftcard"],
     items: [
       { icon: Star, to: "/reviews" },
       { icon: Heart, to: "/favorites" },
       { icon: Award, to: "/favorite-stylists" },
+      { icon: Gift, to: "/giftcard" },
     ],
   },
   {
@@ -36,7 +37,6 @@ export const SETTINGS_ACCOUNT_SECTIONS: {
       "paymentMethods.title",
       "profile.offers",
       "subscriptions.title",
-      "profile.giftcard",
     ],
     items: [
       { icon: Wallet, to: "/wallet" },
@@ -44,7 +44,6 @@ export const SETTINGS_ACCOUNT_SECTIONS: {
       { icon: CreditCard, to: "/payment-methods" },
       { icon: Tag, to: "/offers" },
       { icon: Repeat, to: "/subscriptions" },
-      { icon: Gift, to: "/giftcard" },
     ],
   },
   {
