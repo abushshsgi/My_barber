@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, Sparkles } from "lucide-react";
-import { PageHeader } from "@/components/PageHeader";
+import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { loyaltyMock } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/loyalty")({
@@ -13,10 +13,8 @@ function LoyaltyPage() {
   const pct = Math.round((loyaltyMock.points / total) * 100);
 
   return (
-    <div className="pb-8">
-      <PageHeader showBack title="Bonus dasturi" />
-
-      <div className="mx-5 overflow-hidden rounded-2xl bg-foreground p-6 text-background">
+    <ProfileSubpageLayout title="Bonus dasturi">
+      <ProfileSubpageCard className="border-foreground bg-foreground text-background">
         <div className="flex items-center justify-between">
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-background/60">
             {loyaltyMock.tier} a'zo
@@ -41,26 +39,21 @@ function LoyaltyPage() {
             {loyaltyMock.nextTier} darajasigacha {loyaltyMock.toNext} ball
           </p>
         </div>
-      </div>
+      </ProfileSubpageCard>
 
-      <section className="mt-6 px-5">
-        <h3 className="text-sm font-bold uppercase tracking-[0.18em] text-muted-foreground">
-          Imtiyozlaringiz
-        </h3>
-        <ul className="mt-3 space-y-2">
-          {loyaltyMock.perks.map((p) => (
-            <li
-              key={p}
-              className="flex items-start gap-3 rounded-2xl border border-border p-4"
-            >
-              <div className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-foreground">
-                <Check className="h-3.5 w-3.5 text-background" strokeWidth={3} />
-              </div>
-              <p className="text-sm font-medium">{p}</p>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </div>
+      <h3 className="mb-3 mt-6 text-sm font-bold uppercase tracking-[0.18em] text-muted-foreground">
+        Imtiyozlaringiz
+      </h3>
+      <ul className="space-y-2">
+        {loyaltyMock.perks.map((p) => (
+          <ProfileSubpageCard key={p} className="flex items-start gap-3">
+            <div className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-foreground">
+              <Check className="h-3.5 w-3.5 text-background" strokeWidth={3} />
+            </div>
+            <p className="text-sm font-medium">{p}</p>
+          </ProfileSubpageCard>
+        ))}
+      </ul>
+    </ProfileSubpageLayout>
   );
 }

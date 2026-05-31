@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Home, Map, CalendarCheck, MessageSquare, Bell, User, Heart, Settings, Tag, Sparkles, Gift, Flame, Award, GitCompareArrows, Film, Wand2, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { isNavTabActive } from "@/lib/navigation";
 
 const tabs = [
   { to: "/", icon: Home, key: "home" },
@@ -15,8 +16,7 @@ const tabs = [
 export function DesktopSidebar() {
   const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isActive = (to: string) =>
-    to === "/" ? pathname === "/" : pathname.startsWith(to);
+  const isActive = (to: string) => isNavTabActive(pathname, to);
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-[240px] flex-col border-r border-border bg-background px-6 py-8 lg:flex">
@@ -33,6 +33,7 @@ export function DesktopSidebar() {
             <Link
               key={tab.to}
               to={tab.to}
+              preload="intent"
               className={cn(
                 "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition-colors",
                 active

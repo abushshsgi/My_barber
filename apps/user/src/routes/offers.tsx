@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Tag } from "lucide-react";
-import { PageHeader } from "@/components/PageHeader";
+import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { EmptyState } from "@/components/EmptyState";
 import { offers } from "@/lib/mock-data";
 import { useAudience, matchAudience } from "@/hooks/use-audience";
@@ -16,16 +16,15 @@ function OffersPage() {
   const list = offers.filter((o) => matchAudience(o.audience, audience));
 
   return (
-    <div className="pb-8">
-      <PageHeader showBack title="Aksiyalar" />
-      <div className="px-5">
+    <ProfileSubpageLayout title="Aksiyalar">
+      <ProfileSubpageCard className="mb-4">
         <AudienceSwitch />
-      </div>
+      </ProfileSubpageCard>
 
       {list.length === 0 ? (
         <EmptyState icon={<Tag className="h-7 w-7" />} title="Aksiya topilmadi" />
       ) : (
-        <div className="mt-5 space-y-3 px-5">
+        <div className="space-y-3">
           {list.map((o) => (
             <Link
               key={o.id}
@@ -49,6 +48,6 @@ function OffersPage() {
           ))}
         </div>
       )}
-    </div>
+    </ProfileSubpageLayout>
   );
 }

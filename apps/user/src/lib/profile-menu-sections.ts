@@ -1,0 +1,77 @@
+import {
+  Award,
+  Bell,
+  CreditCard,
+  Gift,
+  Heart,
+  HelpCircle,
+  MapPin,
+  Repeat,
+  Settings,
+  Shield,
+  Sparkles,
+  Star,
+  Tag,
+  Users,
+  Wallet,
+} from "lucide-react";
+import type { ProfileMenuItem } from "@/components/profile/ProfileMenuSection";
+
+/** Variant 5 — profilda to'g'ridan-to'g'ri ochiladigan guruhlar (hub sahifa yo'q). */
+export const PROFILE_MENU_SECTIONS: {
+  titleKey: string;
+  labelKeys: string[];
+  items: Omit<ProfileMenuItem, "label">[];
+}[] = [
+  {
+    titleKey: "settings.sections.activity",
+    labelKeys: ["reviews.title", "favorites.title", "favoriteStylists.title"],
+    items: [
+      { icon: Star, to: "/reviews" },
+      { icon: Heart, to: "/favorites" },
+      { icon: Award, to: "/favorite-stylists" },
+    ],
+  },
+  {
+    titleKey: "settings.sections.payments",
+    labelKeys: [
+      "profile.wallet",
+      "profile.loyalty",
+      "paymentMethods.title",
+      "profile.offers",
+      "subscriptions.title",
+      "profile.giftcard",
+    ],
+    items: [
+      { icon: Wallet, to: "/wallet" },
+      { icon: Sparkles, to: "/loyalty" },
+      { icon: CreditCard, to: "/payment-methods" },
+      { icon: Tag, to: "/offers" },
+      { icon: Repeat, to: "/subscriptions" },
+      { icon: Gift, to: "/giftcard" },
+    ],
+  },
+  {
+    titleKey: "settings.sections.household",
+    labelKeys: ["family.title", "addresses.title"],
+    items: [
+      { icon: Users, to: "/family" },
+      { icon: MapPin, to: "/addresses" },
+    ],
+  },
+  {
+    titleKey: "profile.sections.app",
+    labelKeys: [
+      "notifications.title",
+      "profile.settings",
+      "profile.support",
+      "profile.privacy",
+    ],
+    items: [
+      { icon: Bell, to: "/notifications", badge: "2" },
+      { icon: Settings, to: "/settings" },
+      { icon: HelpCircle, to: "/support" },
+      { icon: Shield, to: "/privacy" },
+    ],
+  },
+];

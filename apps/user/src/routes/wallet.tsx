@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Wallet, Gift, ArrowDownLeft, ArrowUpRight, Plus, Receipt } from "lucide-react";
-import { PageHeader } from "@/components/PageHeader";
+import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/wallet")({
@@ -43,11 +43,10 @@ function WalletPage() {
   const balance = TXS.reduce((a, t) => a + t.amount, 0) + 240000;
 
   return (
-    <div className="pb-24">
-      <PageHeader title="Hamyon" subtitle="Cashback, sovg'a karta, tarix" />
-
-      {/* Balance card */}
-      <section className="px-5">
+    <ProfileSubpageLayout
+      title="Hamyon"
+      subtitle="Cashback, sovg'a karta, tarix"
+    >
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -87,10 +86,9 @@ function WalletPage() {
             style={{ background: "radial-gradient(circle, rgba(255,255,255,0.18), transparent 70%)" }}
           />
         </motion.div>
-      </section>
 
       {/* Stats */}
-      <section className="mt-5 grid grid-cols-3 gap-2 px-5">
+      <section className="mt-5 grid grid-cols-3 gap-2">
         {[
           { label: "Cashback", value: "87k" },
           { label: "Bonus", value: "240" },
@@ -106,7 +104,7 @@ function WalletPage() {
       </section>
 
       {/* Tabs */}
-      <section className="mt-6 px-5">
+      <section className="mt-6">
         <div className="inline-flex rounded-full bg-surface p-1">
           {(["all", "in", "out"] as Tab[]).map((k) => (
             <button
@@ -157,6 +155,6 @@ function WalletPage() {
           <Receipt className="h-4 w-4" /> To'liq tarix
         </button>
       </section>
-    </div>
+    </ProfileSubpageLayout>
   );
 }

@@ -1,30 +1,44 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Calendar, MessageSquare, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { bookings, formatPrice } from "@/lib/mock-data";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
+import { getUpcomingBookings } from "@/lib/bookings-utils";
 import { cn } from "@/lib/utils";
 
+type BookingsSearch = { focus?: string };
+
 export const Route = createFileRoute("/bookings")({
+  validateSearch: (search: Record<string, unknown>): BookingsSearch => ({
+    focus: typeof search.focus === "string" ? search.focus : undefined,
+  }),
   head: () => ({ meta: [{ title: "Buyurtmalarim — mysaloon.uz" }] }),
   component: MyBookings,
 });
 
 function MyBookings() {
   const { t } = useTranslation();
+  const { focus } = Route.useSearch();
   const [tab, setTab] = useState<"upcoming" | "history">("upcoming");
   const now = Date.now();
 
-  const upcoming = bookings.filter(
-    (b) => new Date(b.date).getTime() >= now && b.status !== "cancelled",
-  );
+  const upcoming = getUpcomingBookings(bookings, now);
   const history = bookings.filter(
     (b) => new Date(b.date).getTime() < now || b.status === "cancelled",
   );
 
   const list = tab === "upcoming" ? upcoming : history;
+
+  useEffect(() => {
+    if (!focus) return;
+    const el = document.getElementById(`booking-${focus}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (bookings.some((b) => b.id === focus && getUpcomingBookings([b], now).length)) {
+      setTab("upcoming");
+    }
+  }, [focus, now]);
 
   return (
     <div>
@@ -66,7 +80,7 @@ function MyBookings() {
         ) : (
           <div className="space-y-3">
             {list.map((b) => (
-              <BookingCard key={b.id} booking={b} />
+              <BookingCard key={b.id} booking={b} focused={focus === b.id} />
             ))}
           </div>
         )}
@@ -75,7 +89,13 @@ function MyBookings() {
   );
 }
 
-function BookingCard({ booking: b }: { booking: typeof bookings[number] }) {
+function BookingCard({
+  booking: b,
+  focused,
+}: {
+  booking: typeof bookings[number];
+  focused?: boolean;
+}) {
   const { t } = useTranslation();
   const d = new Date(b.date);
   const dateStr = d.toLocaleDateString("uz-UZ", { day: "numeric", month: "short" });
@@ -89,7 +109,13 @@ function BookingCard({ booking: b }: { booking: typeof bookings[number] }) {
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-background p-4">
+    <div
+      id={`booking-${b.id}`}
+      className={cn(
+        "rounded-2xl border border-border bg-background p-4 transition-shadow",
+        focused && "ring-2 ring-foreground",
+      )}
+    >
       <div className="flex items-start gap-3">
         <div
           className="h-16 w-16 shrink-0 rounded-xl"

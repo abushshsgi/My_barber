@@ -5,7 +5,8 @@
     "bookings": "Bookings",
     "chat": "Chat",
     "notifications": "Inbox","today": "Today",
-    "profile": "Profile"
+    "profile": "Profile",
+    "wallet": "Wallet"
   },
   "audience": { "all": "All", "men": "Men", "women": "Women", "profileHint": "Based on profile" },
   "common": {
@@ -84,13 +85,155 @@
     "offers": "Offers",
     "loyalty": "Loyalty",
     "giftcard": "Gift card",
-    "editProfile": "Edit profile",
     "settings": "Settings",
     "language": "Language",
     "support": "Support",
     "privacy": "Privacy",
     "preferredAudience": "Search preference",
-    "editInSettings": "Change in settings"
+    "wallet": "Wallet",
+    "walletHint": "Cashback & balance",
+    "upgrade": "Upgrade",
+    "addresses": "Addresses",
+    "promoHint": "Enter promo code",
+    "loyaltyHint": "{{points}} pts · {{tier}}",
+    "info": "Info",
+    "sections": {
+      "activity": "My activity",
+      "payments": "Payments & rewards",
+      "account": "Profile & family",
+      "app": "App"
+    },
+    "tabs": {
+      "activity": "Activity",
+      "payments": "Payments",
+      "household": "Family",
+      "app": "App"
+    },
+    "nextBooking": {
+      "title": "Next booking",
+      "empty": "No upcoming booking",
+      "emptyHint": "Pick a salon and book your first visit",
+      "browse": "Browse salons",
+      "details": "Details"
+    },
+    "variant1": {
+      "hint": "Wallet, family and more are inside Settings."
+    },
+    "variant3": {
+      "hint": "Bookings and chat via bottom nav and notifications. Wallet is its own tab."
+    },
+    "variant4": {
+      "quickActions": "Quick access",
+      "recentActivity": "Recent activity",
+      "viewAll": "See all",
+      "walletOpen": "Open wallet →"
+    },
+    "variant7": {
+      "services": "Services & settings",
+      "items": "items",
+      "more": "All sections",
+      "explore": "Open a section",
+      "account": "My account",
+      "sections": "sections"
+    },
+    "variant8": {
+      "items": "items",
+      "account": "My account",
+      "sections": "sections"
+    },
+    "variant9": {
+      "hubs": "Sections"
+    },
+    "variant10": {
+      "hubs": "Account hub"
+    },
+    "variant11": {
+      "hubs": "Sections",
+      "upcoming": "Upcoming visit"
+    },
+    "variant13": {
+      "addresses": "Addresses",
+      "promoHint": "Enter promo code",
+      "loyaltyHint": "{{points}} pts · {{tier}}",
+      "info": "Information",
+      "partner": "Become a barber",
+      "partnerHint": "mysaloon.uz partner program",
+      "shortcuts": "Quick access",
+      "subscribe": "Subscribe",
+      "upgrade": "Upgrade"
+    },
+    "layoutPicker": {
+      "title": "Pick a layout (preview)",
+      "v1": "Variant 1",
+      "v2": "Variant 2",
+      "v3": "Variant 3",
+      "desc1": "Minimal profile — Uber style",
+      "desc2": "4 hubs — Google style",
+      "desc3": "Ultra short + Wallet tab — Booking style"
+    }
+  },
+  "account": {
+    "myAccount": "My account",
+    "hubMenuTitle": "Sections",
+    "hubs": {
+      "activity": {
+        "title": "My activity",
+        "desc": "Reviews and favorites",
+        "pageTitle": "My activity"
+      },
+      "payments": {
+        "title": "Payments & rewards",
+        "desc": "Wallet, payment, subscription, offers",
+        "pageTitle": "Payments & rewards"
+      },
+      "household": {
+        "title": "Family & address",
+        "desc": "Family profiles and saved addresses",
+        "pageTitle": "Family & address"
+      },
+      "preferences": {
+        "title": "Settings",
+        "desc": "Language, notifications, help",
+        "pageTitle": "Settings & help"
+      }
+    }
+  },
+  "reviews": {
+    "title": "My reviews",
+    "empty": "No reviews yet",
+    "emptyHint": "Leave a rating after your visit"
+  },
+  "paymentMethods": {
+    "title": "Payment methods",
+    "primary": "Primary",
+    "add": "Add method",
+    "mockNote": "Demo mode — no real payments connected"
+  },
+  "addresses": {
+    "title": "My addresses",
+    "default": "Default",
+    "add": "Add address",
+    "hint": "Used to find nearby salons faster"
+  },
+  "favoriteStylists": {
+    "title": "Favorite stylists",
+    "empty": "No favorite stylists",
+    "emptyHint": "Add from the stylists page",
+    "browse": "Browse stylists"
+  },
+  "subscriptions": {
+    "title": "Subscriptions",
+    "subtitle": "Monthly hair, beard or beauty packages",
+    "visitsPerMonth": "{{count}} visits per month",
+    "perMonth": "per month",
+    "active": "Active",
+    "subscribe": "Subscribe"
+  },
+  "family": {
+    "title": "Family profile",
+    "subtitle": "Book separately for family members",
+    "bookFor": "Book for {{name}}",
+    "addMember": "Add member"
   },
   "settings": {
     "title": "Settings",
@@ -99,7 +242,13 @@
     "reduceMotion": "Reduce motion",
     "language": "Language",
     "preferredAudience": "Who are you searching for",
-    "reset": "Reset to defaults"
+    "reset": "Reset to defaults",
+    "sections": {
+      "activity": "Activity",
+      "payments": "Payments & rewards",
+      "household": "Family & address",
+      "chat": "Messages"
+    }
   },
   "favorites": { "title": "Favorite salons", "empty": "No favorites yet" },
   "auth": {

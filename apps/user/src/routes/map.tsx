@@ -105,7 +105,7 @@ function MapView() {
   };
 
   return (
-    <div className="relative h-[100dvh] overflow-hidden bg-surface">
+    <div className="relative h-[calc(100dvh-68px-env(safe-area-inset-bottom))] overflow-hidden bg-surface lg:h-[100dvh]">
       {/* Fake map */}
       <motion.div
         className="absolute inset-0"

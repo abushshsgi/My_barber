@@ -12,9 +12,10 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { notifications as initial, type Notification } from "@/lib/mock-data";
-import { PageHeader } from "@/components/PageHeader";
+import { ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
+import { getNotificationLinkProps } from "@/lib/notification-links";
 
 export const Route = createFileRoute("/notifications")({
   head: () => ({ meta: [{ title: "Bildirishnomalar — mysaloon.uz" }] }),
@@ -122,34 +123,33 @@ function Notifications() {
   const allOff = Object.values(prefs).every((v) => !v);
 
   return (
-    <div className="pb-12">
-      <PageHeader
-        title={t("notifications.title")}
-        right={
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setShowSettings((s) => !s)}
-              className={cn(
-                "grid h-9 w-9 place-items-center rounded-full transition-colors",
-                showSettings ? "bg-foreground text-background" : "bg-surface text-foreground",
-              )}
-              aria-label="Settings"
-            >
-              <Settings2 className="h-4 w-4" />
-            </button>
-            <button
-              onClick={markAll}
-              className="rounded-full bg-surface px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-foreground"
-            >
-              {t("notifications.markAll")}
-            </button>
-          </div>
-        }
-      />
+    <ProfileSubpageLayout
+      title={t("notifications.title")}
+      right={
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            onClick={() => setShowSettings((s) => !s)}
+            className={cn(
+              "grid h-9 w-9 place-items-center rounded-full transition-colors",
+              showSettings ? "bg-foreground text-background" : "bg-background text-foreground shadow-sm",
+            )}
+            aria-label="Settings"
+          >
+            <Settings2 className="h-4 w-4" />
+          </button>
+          <button
+            onClick={markAll}
+            className="rounded-full bg-background px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-foreground shadow-sm"
+          >
+            {t("notifications.markAll")}
+          </button>
+        </div>
+      }
+    >
 
       {/* Channel preferences */}
       {showSettings && (
-        <section className="mx-5 mb-4 rounded-2xl border border-border bg-background p-4">
+        <section className="mb-4 rounded-2xl border border-border bg-background p-4">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
               Bildirishnoma kanallari
@@ -201,7 +201,7 @@ function Notifications() {
       )}
 
       {/* Quick filter chips */}
-      <div className="no-scrollbar -mx-5 mb-2 flex gap-2 overflow-x-auto px-5">
+      <div className="no-scrollbar -mx-1 mb-2 flex gap-2 overflow-x-auto px-1">
         {FILTERS.map((f) => {
           const active = filter === f.key;
           const count = counts[f.key];
@@ -286,16 +286,27 @@ function Notifications() {
                 </div>
               </div>
             );
-            return n.link ? (
-              <Link key={n.id} to={n.link} className="block">
+            const target = getNotificationLinkProps(n);
+            const hasLink = Boolean(n.bookingId || n.chatId || n.reviewId || n.link);
+            return hasLink ? (
+              <Link
+                key={n.id}
+                to={target.to as never}
+                params={target.params as never}
+                search={target.search as never}
+                onClick={() => markOne(n.id)}
+                className="block"
+              >
                 {content}
               </Link>
             ) : (
-              <div key={n.id}>{content}</div>
+              <div key={n.id} onClick={() => markOne(n.id)} role="presentation">
+                {content}
+              </div>
             );
           })}
         </div>
       )}
-    </div>
+    </ProfileSubpageLayout>
   );
 }

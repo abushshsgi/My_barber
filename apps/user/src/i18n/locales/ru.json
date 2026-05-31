@@ -4,8 +4,10 @@
     "map": "Карта",
     "bookings": "Записи",
     "chat": "Чат",
-    "notifications": "Уведомления","today": "Сегодня",
-    "profile": "Профиль"
+    "notifications": "Уведомления",
+    "today": "Сегодня",
+    "profile": "Профиль",
+    "wallet": "Кошелёк"
   },
   "audience": { "all": "Все", "men": "Мужчины", "women": "Женщины", "profileHint": "По профилю" },
   "common": {
@@ -84,13 +86,155 @@
     "offers": "Акции",
     "loyalty": "Бонусы",
     "giftcard": "Подарочная карта",
-    "editProfile": "Редактировать профиль",
     "settings": "Настройки",
     "language": "Язык",
     "support": "Поддержка",
     "privacy": "Конфиденциальность",
     "preferredAudience": "Тип поиска",
-    "editInSettings": "Изменить в настройках"
+    "wallet": "Кошелёк",
+    "walletHint": "Кэшбэк и баланс",
+    "upgrade": "Upgrade",
+    "addresses": "Адреса",
+    "promoHint": "Ввести промокод",
+    "loyaltyHint": "{{points}} баллов · {{tier}}",
+    "info": "Информация",
+    "sections": {
+      "activity": "Активность",
+      "payments": "Оплата и бонусы",
+      "account": "Профиль и семья",
+      "app": "Приложение"
+    },
+    "tabs": {
+      "activity": "Активность",
+      "payments": "Оплата",
+      "household": "Семья",
+      "app": "Приложение"
+    },
+    "nextBooking": {
+      "title": "Ближайшая запись",
+      "empty": "Нет предстоящих записей",
+      "emptyHint": "Выберите салон и создайте первую запись",
+      "browse": "Смотреть салоны",
+      "details": "Подробнее"
+    },
+    "variant1": {
+      "hint": "Кошелёк, семья и др. — в Настройках."
+    },
+    "variant3": {
+      "hint": "Записи и чат — в меню и уведомлениях. Кошелёк — отдельная вкладка."
+    },
+    "variant4": {
+      "quickActions": "Быстрый доступ",
+      "recentActivity": "Недавняя активность",
+      "viewAll": "Все",
+      "walletOpen": "Открыть кошелёк →"
+    },
+    "variant7": {
+      "services": "Услуги и настройки",
+      "items": "шт.",
+      "more": "Все разделы",
+      "explore": "Открыть раздел",
+      "account": "Мой аккаунт",
+      "sections": "раздела"
+    },
+    "variant8": {
+      "items": "шт.",
+      "account": "Мой аккаунт",
+      "sections": "раздела"
+    },
+    "variant9": {
+      "hubs": "Разделы"
+    },
+    "variant10": {
+      "hubs": "Центр аккаунта"
+    },
+    "variant11": {
+      "hubs": "Разделы",
+      "upcoming": "Ближайший визит"
+    },
+    "variant13": {
+      "addresses": "Адреса",
+      "promoHint": "Ввести промокод",
+      "loyaltyHint": "{{points}} баллов · {{tier}}",
+      "info": "Информация",
+      "partner": "Работа барбером",
+      "partnerHint": "Партнёрская программа mysaloon.uz",
+      "shortcuts": "Быстрый доступ",
+      "subscribe": "Подписка",
+      "upgrade": "Upgrade"
+    },
+    "layoutPicker": {
+      "title": "Выберите layout (тест)",
+      "v1": "Вариант 1",
+      "v2": "Вариант 2",
+      "v3": "Вариант 3",
+      "desc1": "Минимальный профиль — стиль Uber",
+      "desc2": "4 hub — стиль Google",
+      "desc3": "Короткий профиль + Кошелёк — стиль Booking"
+    }
+  },
+  "account": {
+    "myAccount": "Мой аккаунт",
+    "hubMenuTitle": "Разделы",
+    "hubs": {
+      "activity": {
+        "title": "Активность",
+        "desc": "Отзывы и избранное",
+        "pageTitle": "Моя активность"
+      },
+      "payments": {
+        "title": "Оплата и бонусы",
+        "desc": "Кошелёк, оплата, подписка, акции",
+        "pageTitle": "Оплата и бонусы"
+      },
+      "household": {
+        "title": "Семья и адрес",
+        "desc": "Семейный профиль и адреса",
+        "pageTitle": "Семья и адрес"
+      },
+      "preferences": {
+        "title": "Настройки",
+        "desc": "Язык, уведомления, помощь",
+        "pageTitle": "Настройки и помощь"
+      }
+    }
+  },
+  "reviews": {
+    "title": "Мои отзывы",
+    "empty": "Отзывов пока нет",
+    "emptyHint": "Оставьте оценку после визита"
+  },
+  "paymentMethods": {
+    "title": "Способы оплаты",
+    "primary": "Основной",
+    "add": "Добавить способ",
+    "mockNote": "Демо — реальная оплата не подключена"
+  },
+  "addresses": {
+    "title": "Мои адреса",
+    "default": "Основной",
+    "add": "Добавить адрес",
+    "hint": "Помогает быстрее найти салоны рядом"
+  },
+  "favoriteStylists": {
+    "title": "Избранные мастера",
+    "empty": "Нет избранных мастеров",
+    "emptyHint": "Добавьте со страницы мастеров",
+    "browse": "Смотреть мастеров"
+  },
+  "subscriptions": {
+    "title": "Подписки",
+    "subtitle": "Месячные пакеты стрижки, бороды или beauty",
+    "visitsPerMonth": "{{count}} визитов в месяц",
+    "perMonth": "в месяц",
+    "active": "Активна",
+    "subscribe": "Оформить"
+  },
+  "family": {
+    "title": "Семейный профиль",
+    "subtitle": "Отдельная запись для членов семьи",
+    "bookFor": "Запись для {{name}}",
+    "addMember": "Добавить участника"
   },
   "settings": {
     "title": "Настройки",
@@ -99,7 +243,13 @@
     "reduceMotion": "Уменьшить анимацию",
     "language": "Язык",
     "preferredAudience": "Для кого вы ищете",
-    "reset": "Сбросить настройки"
+    "reset": "Сбросить настройки",
+    "sections": {
+      "activity": "Активность",
+      "payments": "Оплата и бонусы",
+      "household": "Семья и адрес",
+      "chat": "Сообщения"
+    }
   },
   "favorites": { "title": "Избранные салоны", "empty": "Избранных салонов пока нет" },
   "auth": {

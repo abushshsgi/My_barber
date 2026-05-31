@@ -12,27 +12,37 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as TodayRouteImport } from './routes/today'
 import { Route as SupportRouteImport } from './routes/support'
+import { Route as SubscriptionsRouteImport } from './routes/subscriptions'
 import { Route as StylistsRouteImport } from './routes/stylists'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ReviewsRouteImport } from './routes/reviews'
 import { Route as ReelsRouteImport } from './routes/reels'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as PaymentMethodsRouteImport } from './routes/payment-methods'
 import { Route as OffersRouteImport } from './routes/offers'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as LoyaltyRouteImport } from './routes/loyalty'
 import { Route as GiftcardRouteImport } from './routes/giftcard'
 import { Route as FavoritesRouteImport } from './routes/favorites'
+import { Route as FavoriteStylistsRouteImport } from './routes/favorite-stylists'
+import { Route as FamilyRouteImport } from './routes/family'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as BookingsRouteImport } from './routes/bookings'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AiStyleRouteImport } from './routes/ai-style'
+import { Route as AddressesRouteImport } from './routes/addresses'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SalonIdRouteImport } from './routes/salon.$id'
 import { Route as ChatIdRouteImport } from './routes/chat.$id'
 import { Route as BookingSalonIdRouteImport } from './routes/booking.$salonId'
+import { Route as AccountPreferencesRouteImport } from './routes/account.preferences'
+import { Route as AccountPaymentsRouteImport } from './routes/account.payments'
+import { Route as AccountHouseholdRouteImport } from './routes/account.household'
+import { Route as AccountActivityRouteImport } from './routes/account.activity'
 import { Route as BookingBarberBarberIdRouteImport } from './routes/booking.barber.$barberId'
 
 const WalletRoute = WalletRouteImport.update({
@@ -50,6 +60,11 @@ const SupportRoute = SupportRouteImport.update({
   path: '/support',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SubscriptionsRoute = SubscriptionsRouteImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StylistsRoute = StylistsRouteImport.update({
   id: '/stylists',
   path: '/stylists',
@@ -58,6 +73,11 @@ const StylistsRoute = StylistsRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReviewsRoute = ReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReelsRoute = ReelsRouteImport.update({
@@ -73,6 +93,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaymentMethodsRoute = PaymentMethodsRouteImport.update({
+  id: '/payment-methods',
+  path: '/payment-methods',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OffersRoute = OffersRouteImport.update({
@@ -105,6 +130,16 @@ const FavoritesRoute = FavoritesRouteImport.update({
   path: '/favorites',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FavoriteStylistsRoute = FavoriteStylistsRouteImport.update({
+  id: '/favorite-stylists',
+  path: '/favorite-stylists',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FamilyRoute = FamilyRouteImport.update({
+  id: '/family',
+  path: '/family',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ExploreRoute = ExploreRouteImport.update({
   id: '/explore',
   path: '/explore',
@@ -135,6 +170,11 @@ const AiStyleRoute = AiStyleRouteImport.update({
   path: '/ai-style',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AddressesRoute = AddressesRouteImport.update({
+  id: '/addresses',
+  path: '/addresses',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -155,6 +195,26 @@ const BookingSalonIdRoute = BookingSalonIdRouteImport.update({
   path: '/booking/$salonId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountPreferencesRoute = AccountPreferencesRouteImport.update({
+  id: '/account/preferences',
+  path: '/account/preferences',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountPaymentsRoute = AccountPaymentsRouteImport.update({
+  id: '/account/payments',
+  path: '/account/payments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountHouseholdRoute = AccountHouseholdRouteImport.update({
+  id: '/account/household',
+  path: '/account/household',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountActivityRoute = AccountActivityRouteImport.update({
+  id: '/account/activity',
+  path: '/account/activity',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BookingBarberBarberIdRoute = BookingBarberBarberIdRouteImport.update({
   id: '/booking/barber/$barberId',
   path: '/booking/barber/$barberId',
@@ -163,26 +223,36 @@ const BookingBarberBarberIdRoute = BookingBarberBarberIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/addresses': typeof AddressesRoute
   '/ai-style': typeof AiStyleRoute
   '/auth': typeof AuthRoute
   '/bookings': typeof BookingsRoute
   '/chat': typeof ChatRouteWithChildren
   '/compare': typeof CompareRoute
   '/explore': typeof ExploreRoute
+  '/family': typeof FamilyRoute
+  '/favorite-stylists': typeof FavoriteStylistsRoute
   '/favorites': typeof FavoritesRoute
   '/giftcard': typeof GiftcardRoute
   '/loyalty': typeof LoyaltyRoute
   '/map': typeof MapRoute
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
+  '/payment-methods': typeof PaymentMethodsRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
+  '/reviews': typeof ReviewsRoute
   '/settings': typeof SettingsRoute
   '/stylists': typeof StylistsRoute
+  '/subscriptions': typeof SubscriptionsRoute
   '/support': typeof SupportRoute
   '/today': typeof TodayRoute
   '/wallet': typeof WalletRoute
+  '/account/activity': typeof AccountActivityRoute
+  '/account/household': typeof AccountHouseholdRoute
+  '/account/payments': typeof AccountPaymentsRoute
+  '/account/preferences': typeof AccountPreferencesRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/salon/$id': typeof SalonIdRoute
@@ -190,26 +260,36 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/addresses': typeof AddressesRoute
   '/ai-style': typeof AiStyleRoute
   '/auth': typeof AuthRoute
   '/bookings': typeof BookingsRoute
   '/chat': typeof ChatRouteWithChildren
   '/compare': typeof CompareRoute
   '/explore': typeof ExploreRoute
+  '/family': typeof FamilyRoute
+  '/favorite-stylists': typeof FavoriteStylistsRoute
   '/favorites': typeof FavoritesRoute
   '/giftcard': typeof GiftcardRoute
   '/loyalty': typeof LoyaltyRoute
   '/map': typeof MapRoute
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
+  '/payment-methods': typeof PaymentMethodsRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
+  '/reviews': typeof ReviewsRoute
   '/settings': typeof SettingsRoute
   '/stylists': typeof StylistsRoute
+  '/subscriptions': typeof SubscriptionsRoute
   '/support': typeof SupportRoute
   '/today': typeof TodayRoute
   '/wallet': typeof WalletRoute
+  '/account/activity': typeof AccountActivityRoute
+  '/account/household': typeof AccountHouseholdRoute
+  '/account/payments': typeof AccountPaymentsRoute
+  '/account/preferences': typeof AccountPreferencesRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/salon/$id': typeof SalonIdRoute
@@ -218,26 +298,36 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/addresses': typeof AddressesRoute
   '/ai-style': typeof AiStyleRoute
   '/auth': typeof AuthRoute
   '/bookings': typeof BookingsRoute
   '/chat': typeof ChatRouteWithChildren
   '/compare': typeof CompareRoute
   '/explore': typeof ExploreRoute
+  '/family': typeof FamilyRoute
+  '/favorite-stylists': typeof FavoriteStylistsRoute
   '/favorites': typeof FavoritesRoute
   '/giftcard': typeof GiftcardRoute
   '/loyalty': typeof LoyaltyRoute
   '/map': typeof MapRoute
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
+  '/payment-methods': typeof PaymentMethodsRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
+  '/reviews': typeof ReviewsRoute
   '/settings': typeof SettingsRoute
   '/stylists': typeof StylistsRoute
+  '/subscriptions': typeof SubscriptionsRoute
   '/support': typeof SupportRoute
   '/today': typeof TodayRoute
   '/wallet': typeof WalletRoute
+  '/account/activity': typeof AccountActivityRoute
+  '/account/household': typeof AccountHouseholdRoute
+  '/account/payments': typeof AccountPaymentsRoute
+  '/account/preferences': typeof AccountPreferencesRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/salon/$id': typeof SalonIdRoute
@@ -247,26 +337,36 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/addresses'
     | '/ai-style'
     | '/auth'
     | '/bookings'
     | '/chat'
     | '/compare'
     | '/explore'
+    | '/family'
+    | '/favorite-stylists'
     | '/favorites'
     | '/giftcard'
     | '/loyalty'
     | '/map'
     | '/notifications'
     | '/offers'
+    | '/payment-methods'
     | '/privacy'
     | '/profile'
     | '/reels'
+    | '/reviews'
     | '/settings'
     | '/stylists'
+    | '/subscriptions'
     | '/support'
     | '/today'
     | '/wallet'
+    | '/account/activity'
+    | '/account/household'
+    | '/account/payments'
+    | '/account/preferences'
     | '/booking/$salonId'
     | '/chat/$id'
     | '/salon/$id'
@@ -274,26 +374,36 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/addresses'
     | '/ai-style'
     | '/auth'
     | '/bookings'
     | '/chat'
     | '/compare'
     | '/explore'
+    | '/family'
+    | '/favorite-stylists'
     | '/favorites'
     | '/giftcard'
     | '/loyalty'
     | '/map'
     | '/notifications'
     | '/offers'
+    | '/payment-methods'
     | '/privacy'
     | '/profile'
     | '/reels'
+    | '/reviews'
     | '/settings'
     | '/stylists'
+    | '/subscriptions'
     | '/support'
     | '/today'
     | '/wallet'
+    | '/account/activity'
+    | '/account/household'
+    | '/account/payments'
+    | '/account/preferences'
     | '/booking/$salonId'
     | '/chat/$id'
     | '/salon/$id'
@@ -301,26 +411,36 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/addresses'
     | '/ai-style'
     | '/auth'
     | '/bookings'
     | '/chat'
     | '/compare'
     | '/explore'
+    | '/family'
+    | '/favorite-stylists'
     | '/favorites'
     | '/giftcard'
     | '/loyalty'
     | '/map'
     | '/notifications'
     | '/offers'
+    | '/payment-methods'
     | '/privacy'
     | '/profile'
     | '/reels'
+    | '/reviews'
     | '/settings'
     | '/stylists'
+    | '/subscriptions'
     | '/support'
     | '/today'
     | '/wallet'
+    | '/account/activity'
+    | '/account/household'
+    | '/account/payments'
+    | '/account/preferences'
     | '/booking/$salonId'
     | '/chat/$id'
     | '/salon/$id'
@@ -329,26 +449,36 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AddressesRoute: typeof AddressesRoute
   AiStyleRoute: typeof AiStyleRoute
   AuthRoute: typeof AuthRoute
   BookingsRoute: typeof BookingsRoute
   ChatRoute: typeof ChatRouteWithChildren
   CompareRoute: typeof CompareRoute
   ExploreRoute: typeof ExploreRoute
+  FamilyRoute: typeof FamilyRoute
+  FavoriteStylistsRoute: typeof FavoriteStylistsRoute
   FavoritesRoute: typeof FavoritesRoute
   GiftcardRoute: typeof GiftcardRoute
   LoyaltyRoute: typeof LoyaltyRoute
   MapRoute: typeof MapRoute
   NotificationsRoute: typeof NotificationsRoute
   OffersRoute: typeof OffersRoute
+  PaymentMethodsRoute: typeof PaymentMethodsRoute
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
   ReelsRoute: typeof ReelsRoute
+  ReviewsRoute: typeof ReviewsRoute
   SettingsRoute: typeof SettingsRoute
   StylistsRoute: typeof StylistsRoute
+  SubscriptionsRoute: typeof SubscriptionsRoute
   SupportRoute: typeof SupportRoute
   TodayRoute: typeof TodayRoute
   WalletRoute: typeof WalletRoute
+  AccountActivityRoute: typeof AccountActivityRoute
+  AccountHouseholdRoute: typeof AccountHouseholdRoute
+  AccountPaymentsRoute: typeof AccountPaymentsRoute
+  AccountPreferencesRoute: typeof AccountPreferencesRoute
   BookingSalonIdRoute: typeof BookingSalonIdRoute
   SalonIdRoute: typeof SalonIdRoute
   BookingBarberBarberIdRoute: typeof BookingBarberBarberIdRoute
@@ -377,6 +507,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SupportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/subscriptions': {
+      id: '/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/subscriptions'
+      preLoaderRoute: typeof SubscriptionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/stylists': {
       id: '/stylists'
       path: '/stylists'
@@ -389,6 +526,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reviews': {
+      id: '/reviews'
+      path: '/reviews'
+      fullPath: '/reviews'
+      preLoaderRoute: typeof ReviewsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reels': {
@@ -410,6 +554,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payment-methods': {
+      id: '/payment-methods'
+      path: '/payment-methods'
+      fullPath: '/payment-methods'
+      preLoaderRoute: typeof PaymentMethodsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/offers': {
@@ -454,6 +605,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FavoritesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/favorite-stylists': {
+      id: '/favorite-stylists'
+      path: '/favorite-stylists'
+      fullPath: '/favorite-stylists'
+      preLoaderRoute: typeof FavoriteStylistsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/family': {
+      id: '/family'
+      path: '/family'
+      fullPath: '/family'
+      preLoaderRoute: typeof FamilyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/explore': {
       id: '/explore'
       path: '/explore'
@@ -496,6 +661,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AiStyleRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/addresses': {
+      id: '/addresses'
+      path: '/addresses'
+      fullPath: '/addresses'
+      preLoaderRoute: typeof AddressesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -524,6 +696,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookingSalonIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account/preferences': {
+      id: '/account/preferences'
+      path: '/account/preferences'
+      fullPath: '/account/preferences'
+      preLoaderRoute: typeof AccountPreferencesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/payments': {
+      id: '/account/payments'
+      path: '/account/payments'
+      fullPath: '/account/payments'
+      preLoaderRoute: typeof AccountPaymentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/household': {
+      id: '/account/household'
+      path: '/account/household'
+      fullPath: '/account/household'
+      preLoaderRoute: typeof AccountHouseholdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/activity': {
+      id: '/account/activity'
+      path: '/account/activity'
+      fullPath: '/account/activity'
+      preLoaderRoute: typeof AccountActivityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/booking/barber/$barberId': {
       id: '/booking/barber/$barberId'
       path: '/booking/barber/$barberId'
@@ -546,26 +746,36 @@ const ChatRouteWithChildren = ChatRoute._addFileChildren(ChatRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AddressesRoute: AddressesRoute,
   AiStyleRoute: AiStyleRoute,
   AuthRoute: AuthRoute,
   BookingsRoute: BookingsRoute,
   ChatRoute: ChatRouteWithChildren,
   CompareRoute: CompareRoute,
   ExploreRoute: ExploreRoute,
+  FamilyRoute: FamilyRoute,
+  FavoriteStylistsRoute: FavoriteStylistsRoute,
   FavoritesRoute: FavoritesRoute,
   GiftcardRoute: GiftcardRoute,
   LoyaltyRoute: LoyaltyRoute,
   MapRoute: MapRoute,
   NotificationsRoute: NotificationsRoute,
   OffersRoute: OffersRoute,
+  PaymentMethodsRoute: PaymentMethodsRoute,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
   ReelsRoute: ReelsRoute,
+  ReviewsRoute: ReviewsRoute,
   SettingsRoute: SettingsRoute,
   StylistsRoute: StylistsRoute,
+  SubscriptionsRoute: SubscriptionsRoute,
   SupportRoute: SupportRoute,
   TodayRoute: TodayRoute,
   WalletRoute: WalletRoute,
+  AccountActivityRoute: AccountActivityRoute,
+  AccountHouseholdRoute: AccountHouseholdRoute,
+  AccountPaymentsRoute: AccountPaymentsRoute,
+  AccountPreferencesRoute: AccountPreferencesRoute,
   BookingSalonIdRoute: BookingSalonIdRoute,
   SalonIdRoute: SalonIdRoute,
   BookingBarberBarberIdRoute: BookingBarberBarberIdRoute,

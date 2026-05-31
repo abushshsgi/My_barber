@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHeader } from "@/components/PageHeader";
+import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
 import { setLang } from "@/i18n/config";
 import { userProfile } from "@/lib/mock-data";
@@ -68,88 +68,76 @@ function Settings() {
   ];
 
   return (
-    <div className="pb-8">
-      <PageHeader showBack title={t("settings.title")} />
+    <ProfileSubpageLayout title={t("settings.title")}>
+      <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+        Bildirishnoma
+      </p>
+      <ProfileSubpageCard className="overflow-hidden p-0">
+        {items.map((item, i) => (
+          <div
+            key={item.key}
+            className={
+              "flex items-center justify-between gap-4 px-4 py-4" +
+              (i < items.length - 1 ? " border-b border-border" : "")
+            }
+          >
+            <span className="text-sm font-bold">{item.label}</span>
+            <Toggle value={prefs[item.key]} onChange={(v) => update(item.key, v)} />
+          </div>
+        ))}
+      </ProfileSubpageCard>
 
-      <div className="px-5">
-        <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-          Bildirishnoma
-        </p>
-        <div className="overflow-hidden rounded-2xl border border-border">
-          {items.map((item, i) => (
-            <div
-              key={item.key}
+      <p className="mb-3 mt-6 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+        {t("settings.preferredAudience")}
+      </p>
+      <ProfileSubpageCard>
+        <AudienceSwitch showProfileHint={false} />
+      </ProfileSubpageCard>
+
+      <p className="mb-3 mt-6 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+        {t("settings.language")}
+      </p>
+      <ProfileSubpageCard className="overflow-hidden p-0">
+        {LANGS.map((l, i) => {
+          const active = i18n.language === l.code;
+          return (
+            <button
+              key={l.code}
+              onClick={() => setLang(l.code)}
               className={
-                "flex items-center justify-between gap-4 px-4 py-4" +
-                (i < items.length - 1 ? " border-b border-border" : "")
+                "flex w-full items-center justify-between gap-4 px-4 py-4 text-left" +
+                (i < LANGS.length - 1 ? " border-b border-border" : "")
               }
             >
-              <span className="text-sm font-bold">{item.label}</span>
-              <Toggle
-                value={prefs[item.key]}
-                onChange={(v) => update(item.key, v)}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-6 px-5">
-        <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-          {t("settings.preferredAudience")}
-        </p>
-        <AudienceSwitch showProfileHint={false} />
-      </div>
-
-      <div className="mt-6 px-5">
-        <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-          {t("settings.language")}
-        </p>
-        <div className="overflow-hidden rounded-2xl border border-border">
-          {LANGS.map((l, i) => {
-            const active = i18n.language === l.code;
-            return (
-              <button
-                key={l.code}
-                onClick={() => setLang(l.code)}
-                className={
-                  "flex w-full items-center justify-between gap-4 px-4 py-4 text-left" +
-                  (i < LANGS.length - 1 ? " border-b border-border" : "")
-                }
+              <span className="text-sm font-bold">{l.label}</span>
+              <div
+                className={cn(
+                  "h-5 w-5 rounded-full border-2",
+                  active ? "border-foreground bg-foreground" : "border-border",
+                )}
               >
-                <span className="text-sm font-bold">{l.label}</span>
-                <div
-                  className={cn(
-                    "h-5 w-5 rounded-full border-2",
-                    active ? "border-foreground bg-foreground" : "border-border",
-                  )}
-                >
-                  {active && (
-                    <div className="m-1 h-1.5 w-1.5 rounded-full bg-background" />
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+                {active && <div className="m-1 h-1.5 w-1.5 rounded-full bg-background" />}
+              </div>
+            </button>
+          );
+        })}
+      </ProfileSubpageCard>
 
-      <div className="mt-6 px-5">
-        <button
-          onClick={() => {
-            setPrefs(DEFAULTS);
-            try {
-              localStorage.setItem(PREFS_KEY, JSON.stringify(DEFAULTS));
-            } catch {}
-            setAudience(DEFAULTS.preferredAudience);
-            document.documentElement.classList.toggle("reduce-motion", DEFAULTS.reduceMotion);
-          }}
-          className="w-full rounded-2xl border-2 border-border py-4 text-sm font-bold text-muted-foreground"
-        >
-          {t("settings.reset")}
-        </button>
-      </div>
-    </div>
+      <button
+        type="button"
+        onClick={() => {
+          setPrefs(DEFAULTS);
+          try {
+            localStorage.setItem(PREFS_KEY, JSON.stringify(DEFAULTS));
+          } catch {}
+          setAudience(DEFAULTS.preferredAudience);
+          document.documentElement.classList.toggle("reduce-motion", DEFAULTS.reduceMotion);
+        }}
+        className="mt-6 w-full rounded-2xl border-2 border-border bg-background py-4 text-sm font-bold text-muted-foreground"
+      >
+        {t("settings.reset")}
+      </button>
+    </ProfileSubpageLayout>
   );
 }
 

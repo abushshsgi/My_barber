@@ -2,6 +2,8 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { setSession } from "@/lib/auth";
+import { userProfile } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Kirish — mysaloon.uz" }] }),
@@ -29,6 +31,10 @@ function Auth() {
       return;
     }
     toast.success("Xush kelibsiz!");
+    setSession(`mock-token-${Date.now()}`, {
+      phone: `+998${phone}`,
+      name: userProfile.name,
+    });
     router.navigate({ to: "/" });
   };
 

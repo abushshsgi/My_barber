@@ -42,7 +42,7 @@ function ReelsPage() {
   const prev = () => setIdx((i) => (i - 1 + REELS.length) % REELS.length);
 
   return (
-    <div className="relative h-[100dvh] overflow-hidden bg-black">
+    <div className="relative h-[calc(100dvh-68px-env(safe-area-inset-bottom))] overflow-hidden bg-black lg:h-[100dvh]">
       <AnimatePresence mode="wait">
         <motion.div
           key={reel.id}

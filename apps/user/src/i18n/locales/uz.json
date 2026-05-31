@@ -4,8 +4,10 @@
     "map": "Xarita",
     "bookings": "Buyurtma",
     "chat": "Chat",
-    "notifications": "Xabar","today": "Bugun",
-    "profile": "Profil"
+    "notifications": "Xabar",
+    "today": "Bugun",
+    "profile": "Profil",
+    "wallet": "Hamyon"
   },
   "audience": {
     "all": "Hammasi",
@@ -97,13 +99,155 @@
     "offers": "Aksiyalar",
     "loyalty": "Bonus dasturi",
     "giftcard": "Sovg'a karta",
-    "editProfile": "Profilni tahrirlash",
     "settings": "Sozlamalar",
     "language": "Til",
     "support": "Yordam",
     "privacy": "Maxfiylik",
     "preferredAudience": "Qidiruv turi",
-    "editInSettings": "Sozlamalarda o'zgartirish"
+    "wallet": "Hamyon",
+    "walletHint": "Cashback va balans",
+    "upgrade": "Upgrade",
+    "addresses": "Manzillar",
+    "promoHint": "Promokod kiritish",
+    "loyaltyHint": "{{points}} ball · {{tier}}",
+    "info": "Ma'lumot",
+    "sections": {
+      "activity": "Faoliyatim",
+      "payments": "To'lov va bonus",
+      "account": "Profil va oila",
+      "app": "Ilova"
+    },
+    "tabs": {
+      "activity": "Faoliyat",
+      "payments": "To'lov",
+      "household": "Oila",
+      "app": "Ilova"
+    },
+    "nextBooking": {
+      "title": "Keyingi buyurtma",
+      "empty": "Yaqinlashayotgan buyurtma yo'q",
+      "emptyHint": "Salon tanlang va birinchi broningizni qiling",
+      "browse": "Salonlarni ko'rish",
+      "details": "Batafsil"
+    },
+    "variant1": {
+      "hint": "Hamyon, oila va boshqa bo'limlar Sozlamalar ichida."
+    },
+    "variant3": {
+      "hint": "Buyurtma va chat pastki menyu va bildirishnomalardan. Hamyon alohida tab."
+    },
+    "variant4": {
+      "quickActions": "Tez kirish",
+      "recentActivity": "So'nggi faoliyat",
+      "viewAll": "Hammasi",
+      "walletOpen": "Hamyonni ochish →"
+    },
+    "variant7": {
+      "services": "Xizmatlar va sozlamalar",
+      "items": "ta",
+      "more": "Barcha bo'limlar",
+      "explore": "Bo'limlarni oching",
+      "account": "Mening hisobim",
+      "sections": "bo'lim"
+    },
+    "variant8": {
+      "items": "ta",
+      "account": "Mening hisobim",
+      "sections": "bo'lim"
+    },
+    "variant9": {
+      "hubs": "Bo'limlar"
+    },
+    "variant10": {
+      "hubs": "Hisob markazi"
+    },
+    "variant11": {
+      "hubs": "Bo'limlar",
+      "upcoming": "Keyingi tashrif"
+    },
+    "variant13": {
+      "addresses": "Manzillar",
+      "promoHint": "Promokod kiritish",
+      "loyaltyHint": "{{points}} ball · {{tier}}",
+      "info": "Ma'lumot",
+      "partner": "Barber bo'ling",
+      "partnerHint": "mysaloon.uz hamkor dasturi",
+      "shortcuts": "Tez kirish",
+      "subscribe": "Obuna",
+      "upgrade": "Upgrade"
+    },
+    "layoutPicker": {
+      "title": "Layout tanlang (sinov)",
+      "v1": "Variant 1",
+      "v2": "Variant 2",
+      "v3": "Variant 3",
+      "desc1": "Minimal profil — Uber uslubi",
+      "desc2": "4 ta hub — Google uslubi",
+      "desc3": "Ultra qisqa + Hamyon nav — Booking uslubi"
+    }
+  },
+  "account": {
+    "myAccount": "Mening akkauntim",
+    "hubMenuTitle": "Bo'limlar",
+    "hubs": {
+      "activity": {
+        "title": "Faoliyatim",
+        "desc": "Sharhlar va sevimlilar",
+        "pageTitle": "Faoliyatim"
+      },
+      "payments": {
+        "title": "To'lov va bonus",
+        "desc": "Hamyon, to'lov, obuna, aksiyalar",
+        "pageTitle": "To'lov va bonus"
+      },
+      "household": {
+        "title": "Oila va manzil",
+        "desc": "Oilaviy profil va manzillar",
+        "pageTitle": "Oila va manzil"
+      },
+      "preferences": {
+        "title": "Sozlamalar",
+        "desc": "Til, bildirishnoma, yordam",
+        "pageTitle": "Sozlamalar va yordam"
+      }
+    }
+  },
+  "reviews": {
+    "title": "Mening sharhlarim",
+    "empty": "Hali sharh yo'q",
+    "emptyHint": "Tashrifdan keyin baho qoldiring"
+  },
+  "paymentMethods": {
+    "title": "To'lov usullari",
+    "primary": "Asosiy",
+    "add": "Usul qo'shish",
+    "mockNote": "Demo rejim — haqiqiy to'lov ulanmagan"
+  },
+  "addresses": {
+    "title": "Manzillarim",
+    "default": "Asosiy",
+    "add": "Manzil qo'shish",
+    "hint": "Yaqin salonlarni tezroq topish uchun ishlatiladi"
+  },
+  "favoriteStylists": {
+    "title": "Sevimli ustalar",
+    "empty": "Sevimli usta yo'q",
+    "emptyHint": "Ustalar sahifasidan qo'shing",
+    "browse": "Ustalarni ko'rish"
+  },
+  "subscriptions": {
+    "title": "Obunalar",
+    "subtitle": "Oylik soch, soqol yoki go'zallik paketlari",
+    "visitsPerMonth": "Oyiga {{count}} tashrif",
+    "perMonth": "har oy",
+    "active": "Faol",
+    "subscribe": "Obuna bo'lish"
+  },
+  "family": {
+    "title": "Oilaviy profil",
+    "subtitle": "Oila a'zolari uchun alohida bron",
+    "bookFor": "{{name}} uchun bron",
+    "addMember": "A'zo qo'shish"
   },
   "settings": {
     "title": "Sozlamalar",
@@ -112,7 +256,13 @@
     "reduceMotion": "Animatsiyani kamaytirish",
     "language": "Til",
     "preferredAudience": "Kim uchun qidiryapsiz",
-    "reset": "Standart sozlamalarga qaytarish"
+    "reset": "Standart sozlamalarga qaytarish",
+    "sections": {
+      "activity": "Faoliyat",
+      "payments": "To'lov va bonus",
+      "household": "Oila va manzil",
+      "chat": "Xabarlar"
+    }
   },
   "favorites": {
     "title": "Sevimli salonlar",

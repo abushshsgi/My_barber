@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Gift } from "lucide-react";
-import { PageHeader } from "@/components/PageHeader";
+import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { giftCards, formatPrice } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -16,10 +16,8 @@ function GiftCardPage() {
   const [note, setNote] = useState("");
 
   return (
-    <div className="pb-8">
-      <PageHeader showBack title="Sovg'a karta" />
-
-      <div className="mx-5 overflow-hidden rounded-2xl bg-foreground p-6 text-background">
+    <ProfileSubpageLayout title="Sovg'a karta">
+      <ProfileSubpageCard className="border-foreground bg-foreground text-background">
         <div className="flex items-center justify-between">
           <Gift className="h-5 w-5" />
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-background/60">
@@ -32,9 +30,9 @@ function GiftCardPage() {
         <p className="mt-1 text-xs font-bold text-background/60">
           {recipient || "Sovg'a oluvchi ismi"}
         </p>
-      </div>
+      </ProfileSubpageCard>
 
-      <section className="mt-6 px-5">
+      <section className="mt-6">
         <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
           Summani tanlang
         </h3>
@@ -64,7 +62,7 @@ function GiftCardPage() {
         </div>
       </section>
 
-      <section className="mt-6 space-y-3 px-5">
+      <section className="mt-6 space-y-3">
         <div>
           <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
             Kimga
@@ -90,11 +88,12 @@ function GiftCardPage() {
         </div>
       </section>
 
-      <div className="mt-8 px-5">
-        <button className="w-full rounded-2xl bg-foreground py-4 text-sm font-bold text-background active:scale-[0.98] transition-transform">
-          Sovg'ani yuborish
-        </button>
-      </div>
-    </div>
+      <button
+        type="button"
+        className="mt-8 w-full rounded-2xl bg-foreground py-4 text-sm font-bold text-background active:scale-[0.98] transition-transform"
+      >
+        Sovg'ani yuborish
+      </button>
+    </ProfileSubpageLayout>
   );
 }
