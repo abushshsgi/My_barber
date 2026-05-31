@@ -8,6 +8,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -15,6 +16,7 @@ import {
 import appCss from "../styles.css?url";
 import { UserLayout } from "../components/UserLayout";
 import { Toaster } from "sonner";
+import { AudienceProvider } from "../hooks/use-audience";
 
 function NotFoundComponent() {
   return (
@@ -72,7 +74,20 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
+function RoutePending() {
+  return (
+    <div
+      className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-0.5 overflow-hidden bg-border"
+      aria-hidden
+    >
+      <div className="h-full w-1/3 animate-pulse bg-foreground" />
+    </div>
+  );
+}
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  ssr: false,
+  pendingComponent: RoutePending,
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -112,12 +127,16 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
   return (
     <QueryClientProvider client={queryClient}>
-      <UserLayout>
-        <Outlet />
-      </UserLayout>
-      <Toaster position="top-center" />
+      <AudienceProvider>
+        <UserLayout>
+          <Outlet key={pathname} />
+        </UserLayout>
+        <Toaster position="top-center" />
+      </AudienceProvider>
     </QueryClientProvider>
   );
 }

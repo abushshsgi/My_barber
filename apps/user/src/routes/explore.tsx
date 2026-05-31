@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/PageHeader";
 import { trendingStyles } from "@/lib/mock-data";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
-import { useAudience } from "@/hooks/use-audience";
+import { useAudience, matchAudience } from "@/hooks/use-audience";
 
 export const Route = createFileRoute("/explore")({
   head: () => ({ meta: [{ title: "Trend uslublar — mysaloon.uz" }] }),
@@ -11,9 +11,7 @@ export const Route = createFileRoute("/explore")({
 
 function ExplorePage() {
   const { audience } = useAudience();
-  const list = trendingStyles.filter(
-    (x) => audience === "all" || x.audience === "unisex" || x.audience === audience,
-  );
+  const list = trendingStyles.filter((x) => matchAudience(x.audience, audience));
 
   return (
     <div className="pb-8">

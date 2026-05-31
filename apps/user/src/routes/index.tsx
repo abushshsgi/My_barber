@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, ChevronRight, Bell, Sparkles, Tag, Gift, Award, Flame, GitCompareArrows, Film, Wand2, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { salons, notifications, trendingStyles, offers } from "@/lib/mock-data";
 import type { Category } from "@/lib/mock-data";
 import { SalonCard } from "@/components/SalonCard";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
-import { useAudience, matchAudience, audienceToCategory } from "@/hooks/use-audience";
+import { useAudience, matchAudience, audienceToCategory, categoriesForAudience } from "@/hooks/use-audience";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -41,20 +41,27 @@ function Home() {
     setCat(audienceToCategory(audience));
   }, [audience]);
 
+  const effectiveCat = useMemo(() => {
+    if (audience === "all") return cat;
+    const allowed = categoriesForAudience(audience);
+    if (allowed.includes(cat)) return cat;
+    return audienceToCategory(audience);
+  }, [audience, cat]);
+
+  const visibleCategories = CATEGORIES.filter((c) =>
+    categoriesForAudience(audience).includes(c.key),
+  );
+
   const filtered = salons.filter(
     (s) =>
-      (cat === "all" || s.category === cat) &&
       matchAudience(s.audience, audience) &&
+      (effectiveCat === "all" || s.category === effectiveCat) &&
       (query === "" || s.name.toLowerCase().includes(query.toLowerCase())),
   );
 
-  const trending = trendingStyles.filter(
-    (x) => audience === "all" || x.audience === "unisex" || x.audience === audience,
-  );
+  const trending = trendingStyles.filter((x) => matchAudience(x.audience, audience));
 
-  const topOffer = offers.find(
-    (o) => audience === "all" || o.audience === "unisex" || o.audience === audience,
-  );
+  const topOffer = offers.find((o) => matchAudience(o.audience, audience));
 
   return (
     <div>
@@ -115,8 +122,8 @@ function Home() {
 
       {/* Categories */}
       <div className="no-scrollbar mt-5 flex gap-2 overflow-x-auto px-5">
-        {CATEGORIES.map((c) => {
-          const active = cat === c.key;
+        {visibleCategories.map((c) => {
+          const active = effectiveCat === c.key;
           return (
             <button
               key={c.key}

@@ -1,10 +1,25 @@
-import { useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { userProfile, type Audience, type Category } from "@/lib/mock-data";
 
 export type AudienceFilter = Audience | "all";
 
 const AUDIENCE_KEY = "mysaloon.audience";
 export const PREFS_KEY = "mysaloon.prefs";
+
+type AudienceContextValue = {
+  audience: AudienceFilter;
+  setAudience: (v: AudienceFilter) => void;
+  profileDefault: AudienceFilter;
+};
+
+const AudienceContext = createContext<AudienceContextValue | null>(null);
 
 function isValidAudienceFilter(v: unknown): v is AudienceFilter {
   return v === "men" || v === "women" || v === "all";
@@ -49,7 +64,7 @@ function readInitialAudience(): AudienceFilter {
   return getProfileDefaultAudience();
 }
 
-export function useAudience() {
+export function AudienceProvider({ children }: { children: ReactNode }) {
   const [audience, setAudienceState] = useState<AudienceFilter>(readInitialAudience);
   const profileDefault = getProfileDefaultAudience();
 
@@ -57,7 +72,17 @@ export function useAudience() {
     setAudienceState(readInitialAudience());
   }, []);
 
-  const setAudience = (v: AudienceFilter) => {
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === AUDIENCE_KEY && isValidAudienceFilter(e.newValue)) {
+        setAudienceState(e.newValue);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  const setAudience = useCallback((v: AudienceFilter) => {
     setAudienceState(v);
     try {
       localStorage.setItem(AUDIENCE_KEY, v);
@@ -65,9 +90,21 @@ export function useAudience() {
     } catch {
       /* noop */
     }
-  };
+  }, []);
 
-  return { audience, setAudience, profileDefault };
+  return (
+    <AudienceContext.Provider value={{ audience, setAudience, profileDefault }}>
+      {children}
+    </AudienceContext.Provider>
+  );
+}
+
+export function useAudience() {
+  const ctx = useContext(AudienceContext);
+  if (!ctx) {
+    throw new Error("useAudience must be used within AudienceProvider");
+  }
+  return ctx;
 }
 
 export function audienceToCategory(a: AudienceFilter): Category | "all" {
@@ -76,8 +113,14 @@ export function audienceToCategory(a: AudienceFilter): Category | "all" {
   return "all";
 }
 
-export function matchAudience(salonAudience: Audience, filter: AudienceFilter): boolean {
+/** Erkak/Ayol tanlanganda faqat shu auditoriyaga mos kontent (unisex ham kirmaydi). */
+export function matchAudience(itemAudience: Audience, filter: AudienceFilter): boolean {
   if (filter === "all") return true;
-  if (salonAudience === "unisex") return true;
-  return salonAudience === filter;
+  return itemAudience === filter;
+}
+
+export function categoriesForAudience(a: AudienceFilter): (Category | "all")[] {
+  if (a === "men") return ["all", "barber"];
+  if (a === "women") return ["all", "beauty", "nails", "spa"];
+  return ["all", "barber", "beauty", "nails", "spa"];
 }
