@@ -2,26 +2,34 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
+import { AudienceSwitch } from "@/components/AudienceSwitch";
 import { setLang } from "@/i18n/config";
+import { userProfile } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { useAudience, PREFS_KEY, type AudienceFilter } from "@/hooks/use-audience";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Sozlamalar — mysaloon.uz" }] }),
   component: Settings,
 });
 
-const STORAGE_KEY = "mysaloon.prefs";
-
 interface Prefs {
   bookingReminders: boolean;
   chatAlerts: boolean;
   reduceMotion: boolean;
+  preferredAudience: AudienceFilter;
 }
+
+const defaultPreferredAudience: AudienceFilter =
+  userProfile.preferredAudience === "men" || userProfile.preferredAudience === "women"
+    ? userProfile.preferredAudience
+    : "all";
 
 const DEFAULTS: Prefs = {
   bookingReminders: true,
   chatAlerts: true,
   reduceMotion: false,
+  preferredAudience: defaultPreferredAudience,
 };
 
 const LANGS = [
@@ -32,11 +40,12 @@ const LANGS = [
 
 function Settings() {
   const { t, i18n } = useTranslation();
+  const { setAudience } = useAudience();
   const [prefs, setPrefs] = useState<Prefs>(DEFAULTS);
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(PREFS_KEY);
       if (raw) setPrefs({ ...DEFAULTS, ...JSON.parse(raw) });
     } catch {}
   }, []);
@@ -45,7 +54,7 @@ function Settings() {
     const next = { ...prefs, [key]: value };
     setPrefs(next);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      localStorage.setItem(PREFS_KEY, JSON.stringify(next));
     } catch {}
     if (key === "reduceMotion") {
       document.documentElement.classList.toggle("reduce-motion", value);
@@ -87,6 +96,13 @@ function Settings() {
 
       <div className="mt-6 px-5">
         <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+          {t("settings.preferredAudience")}
+        </p>
+        <AudienceSwitch showProfileHint={false} />
+      </div>
+
+      <div className="mt-6 px-5">
+        <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
           {t("settings.language")}
         </p>
         <div className="overflow-hidden rounded-2xl border border-border">
@@ -123,8 +139,10 @@ function Settings() {
           onClick={() => {
             setPrefs(DEFAULTS);
             try {
-              localStorage.removeItem(STORAGE_KEY);
+              localStorage.setItem(PREFS_KEY, JSON.stringify(DEFAULTS));
             } catch {}
+            setAudience(DEFAULTS.preferredAudience);
+            document.documentElement.classList.toggle("reduce-motion", DEFAULTS.reduceMotion);
           }}
           className="w-full rounded-2xl border-2 border-border py-4 text-sm font-bold text-muted-foreground"
         >

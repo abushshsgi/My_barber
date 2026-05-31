@@ -7,7 +7,7 @@
     "notifications": "Inbox","today": "Today",
     "profile": "Profile"
   },
-  "audience": { "all": "All", "men": "Men", "women": "Women" },
+  "audience": { "all": "All", "men": "Men", "women": "Women", "profileHint": "Based on profile" },
   "common": {
     "search": "Search salons and barbers",
     "all": "All",
@@ -88,7 +88,9 @@
     "settings": "Settings",
     "language": "Language",
     "support": "Support",
-    "privacy": "Privacy"
+    "privacy": "Privacy",
+    "preferredAudience": "Search preference",
+    "editInSettings": "Change in settings"
   },
   "settings": {
     "title": "Settings",
@@ -96,6 +98,7 @@
     "chatAlerts": "Chat alerts",
     "reduceMotion": "Reduce motion",
     "language": "Language",
+    "preferredAudience": "Who are you searching for",
     "reset": "Reset to defaults"
   },
   "favorites": { "title": "Favorite salons", "empty": "No favorites yet" },

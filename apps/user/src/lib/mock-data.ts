@@ -406,6 +406,7 @@ export const userProfile = {
   phone: "+998 90 123 45 67",
   email: "aziz@example.com",
   avatarSeed: "azizbek",
+  preferredAudience: "men" as Audience,
 };
 
 export const formatPrice = (uzs: number): string =>

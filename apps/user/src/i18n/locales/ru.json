@@ -7,7 +7,7 @@
     "notifications": "Уведомления","today": "Сегодня",
     "profile": "Профиль"
   },
-  "audience": { "all": "Все", "men": "Мужчины", "women": "Женщины" },
+  "audience": { "all": "Все", "men": "Мужчины", "women": "Женщины", "profileHint": "По профилю" },
   "common": {
     "search": "Поиск салонов и мастеров",
     "all": "Все",
@@ -88,7 +88,9 @@
     "settings": "Настройки",
     "language": "Язык",
     "support": "Поддержка",
-    "privacy": "Конфиденциальность"
+    "privacy": "Конфиденциальность",
+    "preferredAudience": "Тип поиска",
+    "editInSettings": "Изменить в настройках"
   },
   "settings": {
     "title": "Настройки",
@@ -96,6 +98,7 @@
     "chatAlerts": "Уведомления чата",
     "reduceMotion": "Уменьшить анимацию",
     "language": "Язык",
+    "preferredAudience": "Для кого вы ищете",
     "reset": "Сбросить настройки"
   },
   "favorites": { "title": "Избранные салоны", "empty": "Избранных салонов пока нет" },

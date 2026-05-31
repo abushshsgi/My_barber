@@ -10,7 +10,8 @@
   "audience": {
     "all": "Hammasi",
     "men": "Erkaklar",
-    "women": "Ayollar"
+    "women": "Ayollar",
+    "profileHint": "Profil bo'yicha"
   },
   "common": {
     "search": "Salonlar va ustalarni izlang",
@@ -100,7 +101,9 @@
     "settings": "Sozlamalar",
     "language": "Til",
     "support": "Yordam",
-    "privacy": "Maxfiylik"
+    "privacy": "Maxfiylik",
+    "preferredAudience": "Qidiruv turi",
+    "editInSettings": "Sozlamalarda o'zgartirish"
   },
   "settings": {
     "title": "Sozlamalar",
@@ -108,6 +111,7 @@
     "chatAlerts": "Chat bildirishnomalari",
     "reduceMotion": "Animatsiyani kamaytirish",
     "language": "Til",
+    "preferredAudience": "Kim uchun qidiryapsiz",
     "reset": "Standart sozlamalarga qaytarish"
   },
   "favorites": {

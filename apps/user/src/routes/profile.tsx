@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { bookings, salons, userProfile, loyaltyMock } from "@/lib/mock-data";
 import { PageHeader } from "@/components/PageHeader";
 import { useFavorites } from "@/hooks/use-favorites";
+import { useAudience } from "@/hooks/use-audience";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({ meta: [{ title: "Profil — mysaloon.uz" }] }),
@@ -24,6 +25,8 @@ export const Route = createFileRoute("/profile")({
 function Profile() {
   const { t } = useTranslation();
   const { ids: favIds } = useFavorites();
+  const { audience } = useAudience();
+  const audienceLabel = t(`audience.${audience}`);
 
   const stats = [
     { label: t("profile.bookings"), value: bookings.length, to: "/bookings" as const },
@@ -61,6 +64,15 @@ function Profile() {
             <p className="mt-0.5 text-xs font-bold text-muted-foreground">
               {userProfile.phone}
             </p>
+            <p className="mt-2 text-xs font-bold text-muted-foreground">
+              {t("profile.preferredAudience")}: {audienceLabel}
+            </p>
+            <Link
+              to="/settings"
+              className="mt-0.5 inline-block text-xs font-bold text-foreground underline underline-offset-2"
+            >
+              {t("profile.editInSettings")}
+            </Link>
           </div>
         </div>
       </div>

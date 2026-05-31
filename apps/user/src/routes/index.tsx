@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, ChevronRight, Bell, Sparkles, Tag, Gift, Award, Flame, GitCompareArrows, Film, Wand2, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { salons, notifications, trendingStyles, offers } from "@/lib/mock-data";
 import type { Category } from "@/lib/mock-data";
 import { SalonCard } from "@/components/SalonCard";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
-import { useAudience, matchAudience } from "@/hooks/use-audience";
+import { useAudience, matchAudience, audienceToCategory } from "@/hooks/use-audience";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -36,6 +36,10 @@ function Home() {
   const [cat, setCat] = useState<Category | "all">("all");
   const [query, setQuery] = useState("");
   const unread = notifications.filter((n) => !n.read).length;
+
+  useEffect(() => {
+    setCat(audienceToCategory(audience));
+  }, [audience]);
 
   const filtered = salons.filter(
     (s) =>
