@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Map, CalendarCheck, MessageSquare, Bell, User, Heart, Settings, Tag, Sparkles, Gift, Flame, Award } from "lucide-react";
+import { Home, Map, CalendarCheck, MessageSquare, Bell, User, Heart, Settings, Tag, Sparkles, Gift, Flame, Award, GitCompareArrows, Film, Wand2, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
@@ -41,7 +41,7 @@ export function DesktopSidebar() {
               )}
             >
               <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 2} />
-              {t(`nav.${tab.key}`)}
+              <span suppressHydrationWarning>{t(`nav.${tab.key}`)}</span>
             </Link>
           );
         })}
@@ -53,6 +53,18 @@ export function DesktopSidebar() {
         </Link>
         <Link to="/stylists" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
           <Award className="h-5 w-5" /> Top ustalar
+        </Link>
+        <Link to="/reels" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
+          <Film className="h-5 w-5" /> Reels
+        </Link>
+        <Link to="/ai-style" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
+          <Wand2 className="h-5 w-5" /> AI stil
+        </Link>
+        <Link to="/wallet" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
+          <Wallet className="h-5 w-5" /> Hamyon
+        </Link>
+        <Link to="/compare" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
+          <GitCompareArrows className="h-5 w-5" /> Taqqoslash
         </Link>
         <Link to="/explore" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
           <Sparkles className="h-5 w-5" /> Trendlar

@@ -1,6 +1,7 @@
 # User app (mijoz ilovasi)
 
-Mijoz ilovasi — barcha UI kodi shu papkada (`src/`).
+Mijoz ilovasi — barcha UI kodi shu papkada (`src/`).  
+Manba: [salon-connect](https://github.com/abushshsgi/salon-connect) (yangilash: repodan `src/` ni sync qiling).
 
 ## Ishga tushirish
 

@@ -4,7 +4,7 @@
     "map": "Map",
     "bookings": "Bookings",
     "chat": "Chat",
-    "notifications": "Inbox",
+    "notifications": "Inbox","today": "Today",
     "profile": "Profile"
   },
   "audience": { "all": "All", "men": "Men", "women": "Women" },

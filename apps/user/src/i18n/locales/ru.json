@@ -4,7 +4,7 @@
     "map": "Карта",
     "bookings": "Записи",
     "chat": "Чат",
-    "notifications": "Уведомления",
+    "notifications": "Уведомления","today": "Сегодня",
     "profile": "Профиль"
   },
   "audience": { "all": "Все", "men": "Мужчины", "women": "Женщины" },

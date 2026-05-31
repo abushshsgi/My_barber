@@ -1,14 +1,14 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Map, CalendarCheck, MessageSquare, Bell, User } from "lucide-react";
+import { Home, Map, CalendarCheck, MessageSquare, Flame, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { to: "/", icon: Home, key: "home" },
   { to: "/map", icon: Map, key: "map" },
+  { to: "/today", icon: Flame, key: "today" },
   { to: "/bookings", icon: CalendarCheck, key: "bookings" },
   { to: "/chat", icon: MessageSquare, key: "chat" },
-  { to: "/notifications", icon: Bell, key: "notifications" },
   { to: "/profile", icon: User, key: "profile" },
 ] as const;
 
@@ -37,7 +37,7 @@ export function UserBottomNav({ unreadCount = 2 }: Props) {
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active = isActive(tab.to);
-          const showBadge = tab.key === "notifications" && unreadCount > 0;
+          const showBadge = tab.key === "today" && unreadCount > 0;
           return (
             <Link
               key={tab.to}
@@ -63,6 +63,7 @@ export function UserBottomNav({ unreadCount = 2 }: Props) {
                   "text-[10px] font-bold tracking-wide",
                   active ? "text-foreground" : "text-muted-foreground",
                 )}
+                suppressHydrationWarning
               >
                 {t(`nav.${tab.key}`)}
               </span>
