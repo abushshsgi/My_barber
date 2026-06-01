@@ -47,7 +47,10 @@ export function ProfileGoMenuGroup({ items, dark, className }: GroupProps) {
                 dark ? "bg-background/15" : "bg-background",
               )}
             >
-              <Icon className={cn("h-[18px] w-[18px]", dark && "text-background")} strokeWidth={2} />
+              <Icon
+                className={cn("h-[18px] w-[18px]", dark && "text-background")}
+                strokeWidth={2}
+              />
             </div>
             <div
               className={cn(
@@ -136,7 +139,9 @@ export function ProfileGoQuickRow({ items }: QuickProps) {
           <div className="grid h-[58px] w-[58px] place-items-center rounded-full bg-surface">
             <Icon className="h-[22px] w-[22px] text-foreground" strokeWidth={1.8} />
           </div>
-          <span className="max-w-[72px] text-center text-[11px] font-bold leading-tight">{label}</span>
+          <span className="max-w-[72px] text-center text-[11px] font-bold leading-tight">
+            {label}
+          </span>
         </Link>
       ))}
     </div>

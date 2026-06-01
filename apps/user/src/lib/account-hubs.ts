@@ -100,12 +100,7 @@ export const ACCOUNT_HUB_LABEL_KEYS: Record<AccountHubKey, string[]> = {
     "subscriptions.title",
   ],
   household: ["family.title", "addresses.title"],
-  preferences: [
-    "notifications.title",
-    "profile.settings",
-    "profile.support",
-    "profile.privacy",
-  ],
+  preferences: ["notifications.title", "profile.settings", "profile.support", "profile.privacy"],
 };
 
 export function getHubByKey(key: AccountHubKey): AccountHubMeta {

@@ -2,7 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CreditCard, Plus, Smartphone } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { paymentMethods } from "@/lib/mock-data";
-import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
+import {
+  ProfileSubpageCard,
+  ProfileSubpageLayout,
+} from "@/components/profile/ProfileSubpageLayout";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/payment-methods")({
@@ -20,10 +23,7 @@ function PaymentMethodsPage() {
   const { t } = useTranslation();
 
   return (
-    <ProfileSubpageLayout
-      title={t("paymentMethods.title")}
-      subtitle={t("paymentMethods.mockNote")}
-    >
+    <ProfileSubpageLayout title={t("paymentMethods.title")} subtitle={t("paymentMethods.mockNote")}>
       <div className="space-y-3">
         {paymentMethods.map((pm) => {
           const Icon = ICONS[pm.type];

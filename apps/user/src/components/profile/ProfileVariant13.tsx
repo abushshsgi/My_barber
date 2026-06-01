@@ -15,7 +15,11 @@ import {
   Users,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { ProfileGoMenuGroup, ProfileGoQuickRow, ProfileWalletCard } from "@/components/profile/ProfileGroupedMenu";
+import {
+  ProfileGoMenuGroup,
+  ProfileGoQuickRow,
+  ProfileWalletCard,
+} from "@/components/profile/ProfileGroupedMenu";
 import { useProfileScreen } from "@/components/profile/useProfileScreen";
 import { useNotifications } from "@/hooks/use-user-data";
 import { formatBookingWhen } from "@/lib/bookings-utils";
@@ -78,7 +82,10 @@ export function ProfileVariant13() {
         <div className="grid h-[104px] w-[104px] place-items-center rounded-full bg-surface">
           <span className="text-[36px] font-bold leading-none">{initials}</span>
         </div>
-        <Link to="/settings" className="mt-4 inline-flex max-w-full items-center gap-1 active:opacity-70">
+        <Link
+          to="/settings"
+          className="mt-4 inline-flex max-w-full items-center gap-1 active:opacity-70"
+        >
           <p className="truncate text-[22px] font-bold tracking-tight">{userProfile.name}</p>
           <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" strokeWidth={2} />
         </Link>
@@ -93,7 +100,10 @@ export function ProfileVariant13() {
       </div>
 
       <div className="mt-6 space-y-3 px-4">
-        <ProfileWalletCard title={t("profile.wallet")} balance={formatPrice(walletSummary.balance)} />
+        <ProfileWalletCard
+          title={t("profile.wallet")}
+          balance={formatPrice(walletSummary.balance)}
+        />
 
         <ProfileGoMenuGroup
           items={[
@@ -168,9 +178,7 @@ export function ProfileVariant13() {
           ]}
         />
 
-        <ProfileGoMenuGroup
-          items={[{ icon: Info, title: t("profile.info"), to: "/support" }]}
-        />
+        <ProfileGoMenuGroup items={[{ icon: Info, title: t("profile.info"), to: "/support" }]} />
       </div>
     </div>
   );

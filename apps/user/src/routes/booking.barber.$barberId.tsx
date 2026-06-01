@@ -31,10 +31,7 @@ function IndependentBookingFlow() {
   const [slot, setSlot] = useState<string | null>(null);
 
   const labels = [t("booking.step2"), t("booking.step3"), t("booking.step4")];
-  const canAdvance =
-    (step === 1 && serviceIds.length > 0) ||
-    (step === 2 && slot) ||
-    step === 3;
+  const canAdvance = (step === 1 && serviceIds.length > 0) || (step === 2 && slot) || step === 3;
 
   const selected = salon.services.filter((s) => serviceIds.includes(s.id));
   const total = selected.reduce((sum, s) => sum + s.price, 0);
@@ -62,7 +59,10 @@ function IndependentBookingFlow() {
       {/* Barber banner */}
       <div className="mx-5 mt-6 flex items-center gap-3 rounded-2xl bg-surface p-4">
         <div className="grid h-12 w-12 place-items-center rounded-full bg-foreground text-sm font-bold text-background">
-          {barber.name.split(" ").map((n) => n[0]).join("")}
+          {barber.name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")}
         </div>
         <div>
           <p className="text-sm font-bold">{barber.name}</p>
@@ -198,9 +198,7 @@ function IndependentBookingFlow() {
               onClick={() => canAdvance && setStep((s) => s + 1)}
               className={cn(
                 "flex-[2] rounded-2xl py-4 text-sm font-bold tracking-wide",
-                canAdvance
-                  ? "bg-foreground text-background"
-                  : "bg-surface-2 text-muted-foreground",
+                canAdvance ? "bg-foreground text-background" : "bg-surface-2 text-muted-foreground",
               )}
             >
               {t("common.next")}

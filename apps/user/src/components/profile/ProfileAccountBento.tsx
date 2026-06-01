@@ -3,10 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ACCOUNT_HUBS } from "@/lib/account-hubs";
 import { cn } from "@/lib/utils";
 
-const BENTO_LAYOUT: Record<
-  (typeof ACCOUNT_HUBS)[number]["key"],
-  string
-> = {
+const BENTO_LAYOUT: Record<(typeof ACCOUNT_HUBS)[number]["key"], string> = {
   activity: "col-span-2 min-h-[88px] border-2 border-foreground bg-surface",
   payments: "col-span-1 min-h-[108px] bg-background",
   household: "col-span-1 min-h-[108px] bg-background",
@@ -65,9 +62,7 @@ export function ProfileAccountBento() {
               <span
                 className={cn(
                   "font-bold tabular-nums text-foreground",
-                  isWide
-                    ? "text-2xl"
-                    : "absolute right-3 top-3 text-lg text-muted-foreground/40",
+                  isWide ? "text-2xl" : "absolute right-3 top-3 text-lg text-muted-foreground/40",
                 )}
                 aria-hidden
               >

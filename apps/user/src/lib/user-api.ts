@@ -160,7 +160,9 @@ function normalizeBase(raw: string): string {
 }
 
 const ENV_API_BASE = readEnv("VITE_API_URL") || readEnv("NEXT_PUBLIC_API_URL") || "";
-const API_BASE = normalizeBase(ENV_API_BASE || (import.meta.env.DEV ? "http://localhost:8000" : ""));
+const API_BASE = normalizeBase(
+  ENV_API_BASE || (import.meta.env.DEV ? "http://localhost:8000" : ""),
+);
 
 function absolutePath(path: string): string {
   const normalized = path.startsWith("/") ? path : `/${path}`;
@@ -275,7 +277,11 @@ async function apiFetch(path: string, options: RequestInit = {}, retry = true): 
   return res;
 }
 
-export async function apiJson<T>(path: string, options: RequestInit = {}, fallback = "So'rov bajarilmadi."): Promise<T> {
+export async function apiJson<T>(
+  path: string,
+  options: RequestInit = {},
+  fallback = "So'rov bajarilmadi.",
+): Promise<T> {
   const res = await apiFetch(path, options);
   const body = await parseBody(res);
   if (!res.ok) throw new Error(formatError(body, fallback));
@@ -337,7 +343,9 @@ export function fetchMe(): Promise<ApiUser> {
   return apiJson<ApiUser>("/api/v1/users/me/", {}, "Profil yuklanmadi.");
 }
 
-export function updateMe(data: Partial<Pick<ApiUser, "email" | "phone" | "full_name" | "region">>): Promise<ApiUser> {
+export function updateMe(
+  data: Partial<Pick<ApiUser, "email" | "phone" | "full_name" | "region">>,
+): Promise<ApiUser> {
   return apiJson<ApiUser>(
     "/api/v1/users/me/",
     { method: "PATCH", body: JSON.stringify(data) },
@@ -347,29 +355,51 @@ export function updateMe(data: Partial<Pick<ApiUser, "email" | "phone" | "full_n
 
 export function fetchSalons(query?: string): Promise<SalonListApi[]> {
   const q = query?.trim();
-  if (q) return apiList<SalonListApi>(`/api/v1/salons/search/?q=${encodeURIComponent(q)}`, "Salon qidiruvda xatolik.");
+  if (q)
+    return apiList<SalonListApi>(
+      `/api/v1/salons/search/?q=${encodeURIComponent(q)}`,
+      "Salon qidiruvda xatolik.",
+    );
   return apiList<SalonListApi>("/api/v1/salons/", "Salonlar yuklanmadi.");
 }
 
 export function fetchSalonBatch(ids: string[]): Promise<SalonListApi[]> {
   if (ids.length === 0) return Promise.resolve([]);
-  return apiList<SalonListApi>(`/api/v1/salons/?ids=${encodeURIComponent(ids.join(","))}`, "Sevimli salonlar yuklanmadi.");
+  return apiList<SalonListApi>(
+    `/api/v1/salons/?ids=${encodeURIComponent(ids.join(","))}`,
+    "Sevimli salonlar yuklanmadi.",
+  );
 }
 
 export function fetchSalonDetail(id: string): Promise<SalonDetailApi> {
-  return apiJson<SalonDetailApi>(`/api/v1/salons/${encodeURIComponent(id)}/`, {}, "Salon topilmadi.");
+  return apiJson<SalonDetailApi>(
+    `/api/v1/salons/${encodeURIComponent(id)}/`,
+    {},
+    "Salon topilmadi.",
+  );
 }
 
 export function fetchSalonStaff(id: string): Promise<ApiSalonStaff[]> {
-  return apiList<ApiSalonStaff>(`/api/v1/salons/${encodeURIComponent(id)}/staff/`, "Ustalar yuklanmadi.");
+  return apiList<ApiSalonStaff>(
+    `/api/v1/salons/${encodeURIComponent(id)}/staff/`,
+    "Ustalar yuklanmadi.",
+  );
 }
 
 export function fetchSalonReviews(id: string): Promise<ApiReview[]> {
-  return apiList<ApiReview>(`/api/v1/reviews/?salon=${encodeURIComponent(id)}`, "Sharhlar yuklanmadi.");
+  return apiList<ApiReview>(
+    `/api/v1/reviews/?salon=${encodeURIComponent(id)}`,
+    "Sharhlar yuklanmadi.",
+  );
 }
 
-export function fetchSalonPortfolio(id: string): Promise<{ image: string | null; booking_id: number }[]> {
-  return apiList<{ image: string | null; booking_id: number }>(`/api/v1/salons/${encodeURIComponent(id)}/portfolio/`, "Portfolio yuklanmadi.");
+export function fetchSalonPortfolio(
+  id: string,
+): Promise<{ image: string | null; booking_id: number }[]> {
+  return apiList<{ image: string | null; booking_id: number }>(
+    `/api/v1/salons/${encodeURIComponent(id)}/portfolio/`,
+    "Portfolio yuklanmadi.",
+  );
 }
 
 export function fetchBookings(): Promise<ApiBooking[]> {
@@ -377,7 +407,11 @@ export function fetchBookings(): Promise<ApiBooking[]> {
 }
 
 export function cancelBooking(id: string): Promise<ApiBooking> {
-  return apiJson<ApiBooking>(`/api/v1/bookings/${encodeURIComponent(id)}/cancel/`, { method: "POST" }, "Bron bekor qilinmadi.");
+  return apiJson<ApiBooking>(
+    `/api/v1/bookings/${encodeURIComponent(id)}/cancel/`,
+    { method: "POST" },
+    "Bron bekor qilinmadi.",
+  );
 }
 
 export function fetchBookingAvailability(input: {
@@ -392,7 +426,11 @@ export function fetchBookingAvailability(input: {
     date: input.date,
     service_ids: input.serviceIds.join(","),
   });
-  return apiJson<AvailabilityResponse>(`/api/v1/bookings/availability/?${params.toString()}`, {}, "Bo'sh vaqtlar yuklanmadi.");
+  return apiJson<AvailabilityResponse>(
+    `/api/v1/bookings/availability/?${params.toString()}`,
+    {},
+    "Bo'sh vaqtlar yuklanmadi.",
+  );
 }
 
 export function createBooking(input: {
@@ -418,9 +456,11 @@ export function createBooking(input: {
 
 export function fetchFavoriteSalons(): Promise<FavoriteSalonRow[]> {
   if (!getUserAccessToken()) return Promise.resolve([]);
-  return apiJson<PaginatedResponse<FavoriteSalonRow>>("/api/v1/favorites/salons/", {}, "Sevimlilar yuklanmadi.").then((body) =>
-    unwrapList(body),
-  );
+  return apiJson<PaginatedResponse<FavoriteSalonRow>>(
+    "/api/v1/favorites/salons/",
+    {},
+    "Sevimlilar yuklanmadi.",
+  ).then((body) => unwrapList(body));
 }
 
 export function addFavoriteSalon(salonId: string): Promise<FavoriteSalonRow> {
@@ -445,7 +485,9 @@ export function fetchNotifications(): Promise<ApiNotification[]> {
 }
 
 export function markNotificationRead(id: string): Promise<ApiNotification> {
-  return apiJson<ApiNotification>(`/api/v1/notifications/${encodeURIComponent(id)}/read/`, { method: "POST" });
+  return apiJson<ApiNotification>(`/api/v1/notifications/${encodeURIComponent(id)}/read/`, {
+    method: "POST",
+  });
 }
 
 export function markAllNotificationsRead(): Promise<{ status?: string }> {

@@ -1,7 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, MessageCircle, Share2, CalendarPlus, ChevronUp, ChevronDown, Play } from "lucide-react";
+import {
+  Heart,
+  MessageCircle,
+  Share2,
+  CalendarPlus,
+  ChevronUp,
+  ChevronDown,
+  Play,
+} from "lucide-react";
 import { salons } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -27,10 +35,46 @@ interface Reel {
 }
 
 const REELS: Reel[] = [
-  { id: "r1", title: "Klassik fade + dizayn", salonId: salons[0].id, salonName: salons[0].name, barber: "Otabek", likes: 1240, bgHue: 240, badge: "Trend #1" },
-  { id: "r2", title: "Balayage — kuzgi ohang", salonId: salons[1]?.id ?? salons[0].id, salonName: salons[1]?.name ?? salons[0].name, barber: "Madina", likes: 2310, bgHue: 18, badge: "Yangi" },
-  { id: "r3", title: "Soqol kontur + skin fade", salonId: salons[2]?.id ?? salons[0].id, salonName: salons[2]?.name ?? salons[0].name, barber: "Sardor", likes: 845, bgHue: 140, badge: "Top" },
-  { id: "r4", title: "French nails — minimal", salonId: salons[3]?.id ?? salons[0].id, salonName: salons[3]?.name ?? salons[0].name, barber: "Nilufar", likes: 1980, bgHue: 320, badge: "Viral" },
+  {
+    id: "r1",
+    title: "Klassik fade + dizayn",
+    salonId: salons[0].id,
+    salonName: salons[0].name,
+    barber: "Otabek",
+    likes: 1240,
+    bgHue: 240,
+    badge: "Trend #1",
+  },
+  {
+    id: "r2",
+    title: "Balayage — kuzgi ohang",
+    salonId: salons[1]?.id ?? salons[0].id,
+    salonName: salons[1]?.name ?? salons[0].name,
+    barber: "Madina",
+    likes: 2310,
+    bgHue: 18,
+    badge: "Yangi",
+  },
+  {
+    id: "r3",
+    title: "Soqol kontur + skin fade",
+    salonId: salons[2]?.id ?? salons[0].id,
+    salonName: salons[2]?.name ?? salons[0].name,
+    barber: "Sardor",
+    likes: 845,
+    bgHue: 140,
+    badge: "Top",
+  },
+  {
+    id: "r4",
+    title: "French nails — minimal",
+    salonId: salons[3]?.id ?? salons[0].id,
+    salonName: salons[3]?.name ?? salons[0].name,
+    barber: "Nilufar",
+    likes: 1980,
+    bgHue: 320,
+    badge: "Viral",
+  },
 ];
 
 function ReelsPage() {
@@ -122,9 +166,7 @@ function ReelsPage() {
         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/70">
           @{reel.barber} · {reel.salonName}
         </p>
-        <h2 className="mt-1 text-2xl font-bold leading-tight text-white">
-          {reel.title}
-        </h2>
+        <h2 className="mt-1 text-2xl font-bold leading-tight text-white">{reel.title}</h2>
         <Link
           to="/booking/$salonId"
           params={{ salonId: reel.salonId }}

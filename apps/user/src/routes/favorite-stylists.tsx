@@ -2,7 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Award, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { favoriteStylists } from "@/lib/mock-data";
-import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
+import {
+  ProfileSubpageCard,
+  ProfileSubpageLayout,
+} from "@/components/profile/ProfileSubpageLayout";
 import { EmptyState } from "@/components/EmptyState";
 
 export const Route = createFileRoute("/favorite-stylists")({
@@ -14,16 +17,17 @@ function FavoriteStylistsPage() {
   const { t } = useTranslation();
 
   return (
-    <ProfileSubpageLayout
-      title={t("favoriteStylists.title")}
-    >
+    <ProfileSubpageLayout title={t("favoriteStylists.title")}>
       {favoriteStylists.length === 0 ? (
         <EmptyState
           icon={<Award className="h-7 w-7" />}
           title={t("favoriteStylists.empty")}
           description={t("favoriteStylists.emptyHint")}
           action={
-            <Link to="/stylists" className="rounded-2xl bg-foreground px-5 py-3 text-sm font-bold text-background">
+            <Link
+              to="/stylists"
+              className="rounded-2xl bg-foreground px-5 py-3 text-sm font-bold text-background"
+            >
               {t("favoriteStylists.browse")}
             </Link>
           }

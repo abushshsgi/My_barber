@@ -1,5 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
+import {
+  ProfileSubpageCard,
+  ProfileSubpageLayout,
+} from "@/components/profile/ProfileSubpageLayout";
 
 export const Route = createFileRoute("/privacy")({
   head: () => ({
@@ -18,8 +21,8 @@ function Privacy() {
         <ProfileSubpageCard>
           <h2 className="text-base font-bold tracking-tight">Ma'lumotlaringiz</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            mysaloon.uz sizning shaxsiy ma'lumotlaringizni faqat platformadan foydalanish va
-            xizmat ko'rsatish uchun ishlatadi. Uchinchi shaxslarga sotmaymiz.
+            mysaloon.uz sizning shaxsiy ma'lumotlaringizni faqat platformadan foydalanish va xizmat
+            ko'rsatish uchun ishlatadi. Uchinchi shaxslarga sotmaymiz.
           </p>
         </ProfileSubpageCard>
         <ProfileSubpageCard>

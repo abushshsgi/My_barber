@@ -1,6 +1,15 @@
 import { createFileRoute, useParams, Link } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
-import { Send, Phone, MoreVertical, Image as ImageIcon, Smile, Check, CheckCheck, ArrowLeft } from "lucide-react";
+import {
+  Send,
+  Phone,
+  MoreVertical,
+  Image as ImageIcon,
+  Smile,
+  Check,
+  CheckCheck,
+  ArrowLeft,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { chatMessages, chatThreads } from "@/lib/mock-data";
@@ -22,7 +31,12 @@ interface Msg {
 }
 
 function initials(name: string) {
-  return name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+  return name
+    .split(" ")
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 }
 
 function ChatThread() {
@@ -121,7 +135,11 @@ function ChatThread() {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.18 }}
-              className={cn("flex", m.fromMe ? "justify-end" : "justify-start", grouped ? "mt-0.5" : "mt-2")}
+              className={cn(
+                "flex",
+                m.fromMe ? "justify-end" : "justify-start",
+                grouped ? "mt-0.5" : "mt-2",
+              )}
             >
               <div
                 className={cn(
@@ -139,7 +157,8 @@ function ChatThread() {
                   )}
                 >
                   <span>{m.time}</span>
-                  {m.fromMe && (m.read ? <CheckCheck className="h-3 w-3" /> : <Check className="h-3 w-3" />)}
+                  {m.fromMe &&
+                    (m.read ? <CheckCheck className="h-3 w-3" /> : <Check className="h-3 w-3" />)}
                 </div>
               </div>
             </motion.div>
@@ -209,7 +228,9 @@ function ChatThread() {
             disabled={!input.trim()}
             className={cn(
               "grid h-11 w-11 shrink-0 place-items-center rounded-full transition-all",
-              input.trim() ? "bg-foreground text-background active:scale-95" : "bg-surface text-muted-foreground",
+              input.trim()
+                ? "bg-foreground text-background active:scale-95"
+                : "bg-surface text-muted-foreground",
             )}
           >
             <Send className="h-4 w-4" />

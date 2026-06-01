@@ -3,10 +3,8 @@ import { cn } from "@/lib/utils";
 /** Hamyon kartasi — pastki qora, yuqori krem yarim (gorizontal split). */
 export const walletCardStyle = {
   background: "oklch(0.145 0 0)",
-  creamCap:
-    "linear-gradient(180deg, oklch(1 0 0) 0%, oklch(0.96 0.014 88) 100%)",
-  boxShadow:
-    "0 20px 48px -14px oklch(0.1 0 0 / 0.45), 0 0 0 1px oklch(0.97 0.011 85 / 0.06) inset",
+  creamCap: "linear-gradient(180deg, oklch(1 0 0) 0%, oklch(0.96 0.014 88) 100%)",
+  boxShadow: "0 20px 48px -14px oklch(0.1 0 0 / 0.45), 0 0 0 1px oklch(0.97 0.011 85 / 0.06) inset",
   profileShadow: "0 12px 32px -12px oklch(0.1 0 0 / 0.35)",
 } as const;
 
@@ -29,10 +27,7 @@ export function WalletCardCreamCap({ className }: { className?: string }) {
 /** EMV chip — metallik korpus + kontakt panellari. */
 export function WalletEmvChip({ className, onDark }: { className?: string; onDark?: boolean }) {
   return (
-    <div
-      className={cn("relative h-[30px] w-[40px] shrink-0", className)}
-      aria-hidden
-    >
+    <div className={cn("relative h-[30px] w-[40px] shrink-0", className)} aria-hidden>
       <div
         className="absolute inset-0 rounded-[6px] border border-[oklch(0.38_0.04_68/0.55)]"
         style={{
@@ -46,16 +41,47 @@ export function WalletEmvChip({ className, onDark }: { className?: string; onDar
       <div
         className="absolute inset-[4px] overflow-hidden rounded-[4px] border border-[oklch(0.32_0.04_65/0.45)]"
         style={{
-          background:
-            "linear-gradient(160deg, oklch(0.62 0.08 76), oklch(0.48 0.07 70))",
+          background: "linear-gradient(160deg, oklch(0.62 0.08 76), oklch(0.48 0.07 70))",
           boxShadow: "inset 0 1px 3px oklch(0.2 0 0 / 0.35)",
         }}
       >
         <svg viewBox="0 0 32 22" className="h-full w-full" preserveAspectRatio="none">
-          <rect x="1" y="1" width="8" height="20" rx="0.5" fill="oklch(0.78 0.1 86)" opacity="0.9" />
-          <rect x="11" y="1" width="8" height="20" rx="0.5" fill="oklch(0.72 0.09 84)" opacity="0.85" />
-          <rect x="21" y="1" width="10" height="9" rx="0.5" fill="oklch(0.76 0.1 85)" opacity="0.9" />
-          <rect x="21" y="12" width="10" height="9" rx="0.5" fill="oklch(0.68 0.09 82)" opacity="0.85" />
+          <rect
+            x="1"
+            y="1"
+            width="8"
+            height="20"
+            rx="0.5"
+            fill="oklch(0.78 0.1 86)"
+            opacity="0.9"
+          />
+          <rect
+            x="11"
+            y="1"
+            width="8"
+            height="20"
+            rx="0.5"
+            fill="oklch(0.72 0.09 84)"
+            opacity="0.85"
+          />
+          <rect
+            x="21"
+            y="1"
+            width="10"
+            height="9"
+            rx="0.5"
+            fill="oklch(0.76 0.1 85)"
+            opacity="0.9"
+          />
+          <rect
+            x="21"
+            y="12"
+            width="10"
+            height="9"
+            rx="0.5"
+            fill="oklch(0.68 0.09 82)"
+            opacity="0.85"
+          />
           <path
             d="M1 11h30M16 1v20"
             stroke="oklch(0.35 0.05 68)"

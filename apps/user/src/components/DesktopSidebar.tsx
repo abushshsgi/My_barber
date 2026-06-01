@@ -1,5 +1,23 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Map, CalendarCheck, MessageSquare, Bell, User, Heart, Settings, Tag, Sparkles, Gift, Flame, Award, GitCompareArrows, Film, Wand2, Wallet } from "lucide-react";
+import {
+  Home,
+  Map,
+  CalendarCheck,
+  MessageSquare,
+  Bell,
+  User,
+  Heart,
+  Settings,
+  Tag,
+  Sparkles,
+  Gift,
+  Flame,
+  Award,
+  GitCompareArrows,
+  Film,
+  Wand2,
+  Wallet,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { isNavTabActive } from "@/lib/navigation";
@@ -36,9 +54,7 @@ export function DesktopSidebar() {
               preload="intent"
               className={cn(
                 "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition-colors",
-                active
-                  ? "bg-foreground text-background"
-                  : "text-foreground hover:bg-surface",
+                active ? "bg-foreground text-background" : "text-foreground hover:bg-surface",
               )}
             >
               <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 2} />
@@ -49,40 +65,76 @@ export function DesktopSidebar() {
       </nav>
 
       <div className="mt-4 flex flex-col gap-1 border-t border-border pt-4">
-        <Link to="/today" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
+        <Link
+          to="/today"
+          className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface"
+        >
           <Flame className="h-5 w-5" /> Bugungi vaqtlar
         </Link>
-        <Link to="/stylists" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
+        <Link
+          to="/stylists"
+          className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface"
+        >
           <Award className="h-5 w-5" /> Top ustalar
         </Link>
-        <Link to="/reels" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
+        <Link
+          to="/reels"
+          className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface"
+        >
           <Film className="h-5 w-5" /> Reels
         </Link>
-        <Link to="/ai-style" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
+        <Link
+          to="/ai-style"
+          className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface"
+        >
           <Wand2 className="h-5 w-5" /> AI stil
         </Link>
-        <Link to="/wallet" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
+        <Link
+          to="/wallet"
+          className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface"
+        >
           <Wallet className="h-5 w-5" /> Hamyon
         </Link>
-        <Link to="/compare" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
+        <Link
+          to="/compare"
+          className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface"
+        >
           <GitCompareArrows className="h-5 w-5" /> Taqqoslash
         </Link>
-        <Link to="/explore" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
+        <Link
+          to="/explore"
+          className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface"
+        >
           <Sparkles className="h-5 w-5" /> Trendlar
         </Link>
-        <Link to="/offers" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
+        <Link
+          to="/offers"
+          className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface"
+        >
           <Tag className="h-5 w-5" /> Aksiyalar
         </Link>
-        <Link to="/loyalty" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
+        <Link
+          to="/loyalty"
+          className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface"
+        >
           <Sparkles className="h-5 w-5" /> Bonus
         </Link>
-        <Link to="/giftcard" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
+        <Link
+          to="/giftcard"
+          className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface"
+        >
           <Gift className="h-5 w-5" /> Sovg'a karta
         </Link>
-        <Link to="/favorites" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
+        <Link
+          to="/favorites"
+          className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface"
+        >
           <Heart className="h-5 w-5" /> Sevimlilar
         </Link>
-        <Link to="/settings" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
+        <Link
+          to="/settings"
+          className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface"
+        >
           <Settings className="h-5 w-5" /> Sozlamalar
         </Link>
       </div>

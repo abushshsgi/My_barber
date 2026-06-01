@@ -98,11 +98,19 @@ export function useBookings() {
     enabled: Boolean(getUserAccessToken()) || allowFallback,
     queryFn: async () => {
       if (!getUserAccessToken()) {
-        return { bookings: allowFallback ? mockBookings : [], fallback: allowFallback, error: null as string | null };
+        return {
+          bookings: allowFallback ? mockBookings : [],
+          fallback: allowFallback,
+          error: null as string | null,
+        };
       }
       try {
         const rows = await fetchBookings();
-        return { bookings: rows.map(bookingToViewModel), fallback: false, error: null as string | null };
+        return {
+          bookings: rows.map(bookingToViewModel),
+          fallback: false,
+          error: null as string | null,
+        };
       } catch (error) {
         if (!allowFallback) throw error;
         const message = error instanceof Error ? error.message : "Bronlar yuklanmadi.";
@@ -120,7 +128,8 @@ export function useCancelBooking() {
       toast.success("Bron bekor qilindi");
       await queryClient.invalidateQueries({ queryKey: ["user", "bookings"] });
     },
-    onError: (error) => toast.error(error instanceof Error ? error.message : "Bron bekor qilinmadi"),
+    onError: (error) =>
+      toast.error(error instanceof Error ? error.message : "Bron bekor qilinmadi"),
   });
 }
 
@@ -179,7 +188,8 @@ export function useFavoriteSalonIds() {
       await queryClient.invalidateQueries({ queryKey: ["user", "favorite-salons"] });
       await queryClient.invalidateQueries({ queryKey: ["user", "favorite-salon-details"] });
     },
-    onError: (error) => toast.error(error instanceof Error ? error.message : "Sevimlilar yangilanmadi"),
+    onError: (error) =>
+      toast.error(error instanceof Error ? error.message : "Sevimlilar yangilanmadi"),
   });
 
   return {

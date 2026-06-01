@@ -11,14 +11,18 @@ export function useFavorites() {
     try {
       const raw = localStorage.getItem(KEY);
       if (raw) setLocalIds(JSON.parse(raw));
-    } catch {}
+    } catch {
+      /* noop */
+    }
   }, []);
 
   const persist = (next: string[]) => {
     setLocalIds(next);
     try {
       localStorage.setItem(KEY, JSON.stringify(next));
-    } catch {}
+    } catch {
+      /* noop */
+    }
   };
 
   const toggleLocal = useCallback((id: string) => {
@@ -26,7 +30,9 @@ export function useFavorites() {
       const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
       try {
         localStorage.setItem(KEY, JSON.stringify(next));
-      } catch {}
+      } catch {
+        /* noop */
+      }
       return next;
     });
   }, []);

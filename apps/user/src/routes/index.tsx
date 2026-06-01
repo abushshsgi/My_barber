@@ -1,12 +1,30 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Search, ChevronRight, Sparkles, Tag, Gift, Award, Flame, GitCompareArrows, Film, Wand2, Wallet, WifiOff } from "lucide-react";
+import {
+  Search,
+  ChevronRight,
+  Sparkles,
+  Tag,
+  Gift,
+  Award,
+  Flame,
+  GitCompareArrows,
+  Film,
+  Wand2,
+  Wallet,
+  WifiOff,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { trendingStyles, offers, formatPrice, walletSummary } from "@/lib/mock-data";
 import type { Category } from "@/lib/mock-data";
 import { SalonCard } from "@/components/SalonCard";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
-import { useAudience, matchAudience, audienceToCategory, categoriesForAudience } from "@/hooks/use-audience";
+import {
+  useAudience,
+  matchAudience,
+  audienceToCategory,
+  categoriesForAudience,
+} from "@/hooks/use-audience";
 import { useSalons } from "@/hooks/use-user-data";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +34,8 @@ export const Route = createFileRoute("/")({
       { title: "mysaloon.uz — Sartaroshxona va salon bron qiling" },
       {
         name: "description",
-        content: "O'zbekistondagi sartaroshlar va go'zallik salonlarini online bron qiluvchi platforma.",
+        content:
+          "O'zbekistondagi sartaroshlar va go'zallik salonlarini online bron qiluvchi platforma.",
       },
     ],
   }),
@@ -115,7 +134,8 @@ function Home() {
         <div className="mx-5 mt-3 flex items-start gap-2 rounded-2xl border border-border bg-surface p-3 text-xs text-muted-foreground">
           <WifiOff className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            Backend katalogiga ulanishda muammo: {salonsQuery.data.error}. Hozir demo katalog ko'rsatilmoqda.
+            Backend katalogiga ulanishda muammo: {salonsQuery.data.error}. Hozir demo katalog
+            ko'rsatilmoqda.
           </p>
         </div>
       )}
@@ -236,10 +256,7 @@ function Home() {
         <section className="mt-8">
           <div className="mb-4 flex items-end justify-between px-5">
             <h2 className="text-lg font-bold tracking-tight">Trend uslublar</h2>
-            <Link
-              to="/explore"
-              className="flex items-center text-[12px] font-bold text-foreground"
-            >
+            <Link to="/explore" className="flex items-center text-[12px] font-bold text-foreground">
               Hammasi <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
@@ -254,7 +271,11 @@ function Home() {
                 />
                 <p className="mt-2 text-[13px] font-bold leading-tight">{s.title}</p>
                 <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                  {s.audience === "men" ? "Erkaklar" : s.audience === "women" ? "Ayollar" : "Universal"}
+                  {s.audience === "men"
+                    ? "Erkaklar"
+                    : s.audience === "women"
+                      ? "Ayollar"
+                      : "Universal"}
                 </p>
               </div>
             ))}
@@ -266,10 +287,7 @@ function Home() {
       <section className="mt-8 px-5">
         <div className="mb-4 flex items-end justify-between">
           <h2 className="text-lg font-bold tracking-tight">{t("home.nearby")}</h2>
-          <Link
-            to="/map"
-            className="flex items-center text-[12px] font-bold text-foreground"
-          >
+          <Link to="/map" className="flex items-center text-[12px] font-bold text-foreground">
             {t("common.viewMap")} <ChevronRight className="h-4 w-4" />
           </Link>
         </div>

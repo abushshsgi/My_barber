@@ -1,6 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, Sparkles } from "lucide-react";
-import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
+import {
+  ProfileSubpageCard,
+  ProfileSubpageLayout,
+} from "@/components/profile/ProfileSubpageLayout";
 import { loyaltyMock } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/loyalty")({
@@ -30,10 +33,7 @@ function LoyaltyPage() {
             <span>{loyaltyMock.nextTier}</span>
           </div>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-background/20">
-            <div
-              className="h-full rounded-full bg-background"
-              style={{ width: `${pct}%` }}
-            />
+            <div className="h-full rounded-full bg-background" style={{ width: `${pct}%` }} />
           </div>
           <p className="mt-2 text-[11px] font-bold text-background/70">
             {loyaltyMock.nextTier} darajasigacha {loyaltyMock.toNext} ball

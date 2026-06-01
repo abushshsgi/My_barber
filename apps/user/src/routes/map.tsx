@@ -2,8 +2,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from "framer-motion";
 import {
-  MapPin, Star, SlidersHorizontal, Search, Navigation, Locate,
-  ChevronUp, Compass, Flame, ChevronLeft, ChevronRight,
+  MapPin,
+  Star,
+  SlidersHorizontal,
+  Search,
+  Navigation,
+  Locate,
+  ChevronUp,
+  Compass,
+  Flame,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { shortPrice } from "@/lib/mock-data";
@@ -44,7 +53,7 @@ function MapView() {
   const [heatmap, setHeatmap] = useState(false);
   const [bearing, setBearing] = useState(0);
   const salonsQuery = useSalons(query);
-  const salons = salonsQuery.data?.salons ?? [];
+  const salons = useMemo(() => salonsQuery.data?.salons ?? [], [salonsQuery.data?.salons]);
 
   useEffect(() => {
     if (!active && salons[0]) setActive(salons[0].id);
@@ -327,7 +336,12 @@ function MapView() {
           <div className="mt-2 flex w-full items-center justify-between px-5">
             <div>
               <h3 className="text-[15px] font-bold" suppressHydrationWarning>
-                {salonsQuery.isLoading ? "..." : filtered.length} {mounted ? (t(tab === "salons" ? "map.salons" : "map.barbers") as string) : tab === "salons" ? "Salonlar" : "Ustalar"}
+                {salonsQuery.isLoading ? "..." : filtered.length}{" "}
+                {mounted
+                  ? (t(tab === "salons" ? "map.salons" : "map.barbers") as string)
+                  : tab === "salons"
+                    ? "Salonlar"
+                    : "Ustalar"}
               </h3>
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
                 Yaqin atrofda
@@ -335,21 +349,30 @@ function MapView() {
             </div>
             <div className="flex items-center gap-1.5">
               <button
-                onClick={(e) => { e.stopPropagation(); cycle(-1); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  cycle(-1);
+                }}
                 className="grid h-8 w-8 place-items-center rounded-full bg-surface active:scale-95"
                 aria-label="Prev"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button
-                onClick={(e) => { e.stopPropagation(); cycle(1); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  cycle(1);
+                }}
                 className="grid h-8 w-8 place-items-center rounded-full bg-surface active:scale-95"
                 aria-label="Next"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
               <button
-                onClick={(e) => { e.stopPropagation(); snapTo("full"); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  snapTo("full");
+                }}
                 className="grid h-8 w-8 place-items-center rounded-full bg-foreground text-background active:scale-95"
               >
                 <ChevronUp className="h-4 w-4" />
@@ -415,7 +438,9 @@ function MapView() {
                 onClick={() => focusSalon(s.id)}
                 className={cn(
                   "mb-2 flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-colors",
-                  isActive ? "border-foreground bg-surface" : "border-border bg-background active:bg-surface",
+                  isActive
+                    ? "border-foreground bg-surface"
+                    : "border-border bg-background active:bg-surface",
                 )}
               >
                 <div
@@ -426,7 +451,9 @@ function MapView() {
                 />
                 <div className="min-w-0 flex-1">
                   <h4 className="truncate text-sm font-bold">{s.name}</h4>
-                  <p className="truncate text-[11px] font-medium text-muted-foreground">{s.address}</p>
+                  <p className="truncate text-[11px] font-medium text-muted-foreground">
+                    {s.address}
+                  </p>
                   <div className="mt-1 flex items-center gap-2 text-[11px] font-bold">
                     <span className="flex items-center gap-1">
                       <Star className="h-3 w-3 fill-foreground" strokeWidth={0} />

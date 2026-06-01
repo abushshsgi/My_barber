@@ -56,10 +56,7 @@ export function SalonCard({ salon }: { salon: Salon }) {
               aria-label="Sevimli"
               className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-surface active:scale-90 transition-transform"
             >
-              <Heart
-                className={cn("h-3.5 w-3.5", fav && "fill-foreground")}
-                strokeWidth={2.4}
-              />
+              <Heart className={cn("h-3.5 w-3.5", fav && "fill-foreground")} strokeWidth={2.4} />
             </button>
           </div>
           <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-muted-foreground">
@@ -70,9 +67,7 @@ export function SalonCard({ salon }: { salon: Salon }) {
           </p>
         </div>
         <div className="shrink-0 text-right">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-            dan
-          </p>
+          <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">dan</p>
           <p className="text-sm font-bold">{shortPrice(salon.priceFrom)}</p>
         </div>
       </div>

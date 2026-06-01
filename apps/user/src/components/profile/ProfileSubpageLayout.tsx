@@ -13,7 +13,12 @@ type Props = {
 /** Ichki sahifalar — krem fon + oq kartochka (profil hero emas, ro'yxat emas). */
 export function ProfileSubpageLayout({ title, subtitle, children, className, right }: Props) {
   return (
-    <div className={cn("min-h-full bg-surface pb-[calc(68px+env(safe-area-inset-bottom)+12px)]", className)}>
+    <div
+      className={cn(
+        "min-h-full bg-surface pb-[calc(68px+env(safe-area-inset-bottom)+12px)]",
+        className,
+      )}
+    >
       <div className="px-5 pb-4 pt-[calc(env(safe-area-inset-top)+12px)]">
         <div className="flex items-start gap-3">
           <Link
@@ -50,10 +55,7 @@ export function ProfileSubpageCard({
   id?: string;
 }) {
   return (
-    <div
-      id={id}
-      className={cn("rounded-2xl border border-border bg-surface/30 p-4", className)}
-    >
+    <div id={id} className={cn("rounded-2xl border border-border bg-surface/30 p-4", className)}>
       {children}
     </div>
   );

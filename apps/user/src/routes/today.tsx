@@ -19,7 +19,9 @@ function TodayDeals() {
         <div className="rounded-2xl bg-foreground p-4 text-background">
           <div className="flex items-center gap-2">
             <Flame className="h-4 w-4" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.18em]">Tezkor takliflar</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em]">
+              Tezkor takliflar
+            </span>
           </div>
           <p className="mt-2 text-lg font-bold leading-tight">
             Bugun bo'sh qolgan vaqtlarga 30% gacha chegirma
@@ -53,7 +55,9 @@ function TodayDeals() {
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="truncate text-sm font-bold">{s.name}</h3>
-                <p className="truncate text-[11px] font-medium text-muted-foreground">{s.address}</p>
+                <p className="truncate text-[11px] font-medium text-muted-foreground">
+                  {s.address}
+                </p>
                 <div className="mt-1 flex items-center gap-2 text-[11px] font-bold">
                   <span className="flex items-center gap-1">
                     <Star className="h-3 w-3 fill-foreground" strokeWidth={0} />

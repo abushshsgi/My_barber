@@ -187,9 +187,33 @@ const reviews: Review[] = [
 ];
 
 const barbers = (salonId: string): Barber[] => [
-  { id: `${salonId}-b1`, name: "Jasur K.", role: "Senior Barber", rating: 4.9, avatarSeed: "jasur", serviceIds: ["s1", "s2", "s3"], salonId },
-  { id: `${salonId}-b2`, name: "Malika A.", role: "Stylist", rating: 4.8, avatarSeed: "malika", serviceIds: ["s1", "s3", "s5"], salonId },
-  { id: `${salonId}-b3`, name: "Timur V.", role: "Barber", rating: 4.7, avatarSeed: "timur", serviceIds: ["s1", "s2", "s4"], salonId },
+  {
+    id: `${salonId}-b1`,
+    name: "Jasur K.",
+    role: "Senior Barber",
+    rating: 4.9,
+    avatarSeed: "jasur",
+    serviceIds: ["s1", "s2", "s3"],
+    salonId,
+  },
+  {
+    id: `${salonId}-b2`,
+    name: "Malika A.",
+    role: "Stylist",
+    rating: 4.8,
+    avatarSeed: "malika",
+    serviceIds: ["s1", "s3", "s5"],
+    salonId,
+  },
+  {
+    id: `${salonId}-b3`,
+    name: "Timur V.",
+    role: "Barber",
+    rating: 4.7,
+    avatarSeed: "timur",
+    serviceIds: ["s1", "s2", "s4"],
+    salonId,
+  },
 ];
 
 export const salons: Salon[] = [
@@ -291,7 +315,7 @@ export const salons: Salon[] = [
     reviews,
     portfolio: ["p1", "p2", "p3"],
     lat: 41.2755,
-    lng: 69.2030,
+    lng: 69.203,
   },
   {
     id: "6",
@@ -310,8 +334,8 @@ export const salons: Salon[] = [
     staff: barbers("6"),
     reviews,
     portfolio: ["p1", "p2"],
-    lat: 41.3300,
-    lng: 69.3400,
+    lat: 41.33,
+    lng: 69.34,
   },
 ];
 
@@ -381,9 +405,7 @@ export const chatMessages: Record<string, ChatMessage[]> = {
     { id: "m2", fromMe: true, text: "Rahmat! Ertaga 10:00 ga to'g'rimi?", time: "12:32" },
     { id: "m3", fromMe: false, text: "Albatta, ertaga kutamiz!", time: "12:34" },
   ],
-  c2: [
-    { id: "m1", fromMe: false, text: "Vaqt sizga qulay bo'ladimi?", time: "yest." },
-  ],
+  c2: [{ id: "m1", fromMe: false, text: "Vaqt sizga qulay bo'ladimi?", time: "yest." }],
 };
 
 export const notifications: Notification[] = [
@@ -426,10 +448,42 @@ export const notifications: Notification[] = [
 ];
 
 export const offers: Offer[] = [
-  { id: "of1", salonId: "1", salonName: "Legacy Barbershop", title: "Soch + soqol kombo", discountPct: 25, validUntil: "31.12", audience: "men" },
-  { id: "of2", salonId: "2", salonName: "Atelier Beauty", title: "Manikyur + dizayn", discountPct: 20, validUntil: "30.11", audience: "women" },
-  { id: "of3", salonId: "5", salonName: "Noir Studio", title: "Birinchi tashrif", discountPct: 15, validUntil: "15.12", audience: "unisex" },
-  { id: "of4", salonId: "6", salonName: "Glow Spa", title: "Yuz tozalash paketi", discountPct: 30, validUntil: "20.12", audience: "women" },
+  {
+    id: "of1",
+    salonId: "1",
+    salonName: "Legacy Barbershop",
+    title: "Soch + soqol kombo",
+    discountPct: 25,
+    validUntil: "31.12",
+    audience: "men",
+  },
+  {
+    id: "of2",
+    salonId: "2",
+    salonName: "Atelier Beauty",
+    title: "Manikyur + dizayn",
+    discountPct: 20,
+    validUntil: "30.11",
+    audience: "women",
+  },
+  {
+    id: "of3",
+    salonId: "5",
+    salonName: "Noir Studio",
+    title: "Birinchi tashrif",
+    discountPct: 15,
+    validUntil: "15.12",
+    audience: "unisex",
+  },
+  {
+    id: "of4",
+    salonId: "6",
+    salonName: "Glow Spa",
+    title: "Yuz tozalash paketi",
+    discountPct: 30,
+    validUntil: "20.12",
+    audience: "women",
+  },
 ];
 
 export const trendingStyles: TrendingStyle[] = [
@@ -587,7 +641,13 @@ export function getUserSubscription(): SubscriptionPlan | null {
 }
 
 export const familyMembers: FamilyMember[] = [
-  { id: "f1", name: "Azizbek Karimov", relation: "O'zim", audience: "men", phone: "+998 90 123 45 67" },
+  {
+    id: "f1",
+    name: "Azizbek Karimov",
+    relation: "O'zim",
+    audience: "men",
+    phone: "+998 90 123 45 67",
+  },
   { id: "f2", name: "Dilnoza K.", relation: "Rafiqa", audience: "women" },
   { id: "f3", name: "Amir K.", relation: "O'g'il", audience: "men", phone: "+998 91 000 12 34" },
 ];

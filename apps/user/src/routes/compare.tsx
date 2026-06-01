@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { Check, Plus, X, Star, MapPin, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
-import { salons, shortPrice } from "@/lib/mock-data";
+import { salons, shortPrice, type Salon } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/compare")({
@@ -83,7 +83,12 @@ function ComparePage() {
                   }}
                 />
                 <p className="line-clamp-1 text-[12px] font-bold leading-tight">{s.name}</p>
-                <p className={cn("mt-0.5 text-[10px] font-bold uppercase tracking-wide", on ? "text-background/70" : "text-muted-foreground")}>
+                <p
+                  className={cn(
+                    "mt-0.5 text-[10px] font-bold uppercase tracking-wide",
+                    on ? "text-background/70" : "text-muted-foreground",
+                  )}
+                >
                   {s.category}
                 </p>
               </button>
@@ -129,19 +134,34 @@ function ComparePage() {
 
           {/* Metrics table */}
           <section className="mt-5 px-5">
-            <MetricRow label="Reyting" salons={chosen} bestId={best.rating} render={(s) => (
-              <span className="inline-flex items-center gap-1">
-                <Star className="h-3.5 w-3.5 fill-current" /> {s.rating}
-              </span>
-            )} />
+            <MetricRow
+              label="Reyting"
+              salons={chosen}
+              bestId={best.rating}
+              render={(s) => (
+                <span className="inline-flex items-center gap-1">
+                  <Star className="h-3.5 w-3.5 fill-current" /> {s.rating}
+                </span>
+              )}
+            />
             <MetricRow label="Sharhlar" salons={chosen} render={(s) => `${s.reviewCount}`} />
-            <MetricRow label="Narx (dan)" salons={chosen} bestId={best.price} render={(s) => shortPrice(s.priceFrom)} />
+            <MetricRow
+              label="Narx (dan)"
+              salons={chosen}
+              bestId={best.price}
+              render={(s) => shortPrice(s.priceFrom)}
+            />
             <MetricRow label="Narx (gacha)" salons={chosen} render={(s) => shortPrice(s.priceTo)} />
-            <MetricRow label="Masofa" salons={chosen} bestId={best.distance} render={(s) => (
-              <span className="inline-flex items-center gap-1">
-                <MapPin className="h-3.5 w-3.5" /> {s.distanceKm} km
-              </span>
-            )} />
+            <MetricRow
+              label="Masofa"
+              salons={chosen}
+              bestId={best.distance}
+              render={(s) => (
+                <span className="inline-flex items-center gap-1">
+                  <MapPin className="h-3.5 w-3.5" /> {s.distanceKm} km
+                </span>
+              )}
+            />
             <MetricRow label="Ustalar" salons={chosen} render={(s) => `${s.staff.length}`} />
           </section>
 
@@ -165,7 +185,11 @@ function ComparePage() {
                     const svc = s.services.find((x) => x.name === svcName);
                     return (
                       <span key={s.id} className="text-right font-bold tabular-nums">
-                        {svc ? shortPrice(svc.price) : <span className="text-muted-foreground">—</span>}
+                        {svc ? (
+                          shortPrice(svc.price)
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </span>
                     );
                   })}
@@ -175,7 +199,10 @@ function ComparePage() {
           </section>
 
           {/* CTAs */}
-          <section className="mt-6 grid gap-2 px-5" style={{ gridTemplateColumns: `repeat(${chosen.length}, minmax(0, 1fr))` }}>
+          <section
+            className="mt-6 grid gap-2 px-5"
+            style={{ gridTemplateColumns: `repeat(${chosen.length}, minmax(0, 1fr))` }}
+          >
             {chosen.map((s) => (
               <Link
                 key={s.id}
@@ -201,7 +228,7 @@ function MetricRow({
 }: {
   label: string;
   salons: { id: string }[];
-  render: (s: any) => React.ReactNode;
+  render: (s: Salon) => React.ReactNode;
   bestId?: string;
 }) {
   return (

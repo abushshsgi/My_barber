@@ -2,7 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { MapPin, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { savedAddresses } from "@/lib/mock-data";
-import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
+import {
+  ProfileSubpageCard,
+  ProfileSubpageLayout,
+} from "@/components/profile/ProfileSubpageLayout";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/addresses")({
@@ -14,10 +17,7 @@ function AddressesPage() {
   const { t } = useTranslation();
 
   return (
-    <ProfileSubpageLayout
-      title={t("addresses.title")}
-      subtitle={t("addresses.hint")}
-    >
+    <ProfileSubpageLayout title={t("addresses.title")} subtitle={t("addresses.hint")}>
       <div className="space-y-3">
         {savedAddresses.map((a) => (
           <ProfileSubpageCard

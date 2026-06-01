@@ -45,7 +45,7 @@ def get_salon_services_for_barber(salon: Salon, barber: Barber, service_ids: Ite
     ids = list(set(service_ids))
     if not ids:
         return []
-    salon_rows = list(
+    return list(
         Service.objects.filter(
             Q(barber__isnull=True) | Q(barber=barber),
             Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True),
@@ -54,22 +54,6 @@ def get_salon_services_for_barber(salon: Salon, barber: Barber, service_ids: Ite
             id__in=ids,
         )
     )
-    found = {s.id for s in salon_rows}
-    missing = [i for i in ids if i not in found]
-    if missing:
-        from barbers.salon_service_sync import ensure_salon_service_for_barber_service
-
-        for bs in BarberService.objects.filter(
-            Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True),
-            profile__barber=barber,
-            id__in=missing,
-            is_active=True,
-        ):
-            linked = ensure_salon_service_for_barber_service(salon, barber, bs)
-            if linked and linked.id not in found:
-                salon_rows.append(linked)
-                found.add(linked.id)
-    return salon_rows
 
 
 def get_independent_services_for_barber(barber: Barber, service_ids: Iterable[int]):

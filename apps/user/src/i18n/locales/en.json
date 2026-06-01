@@ -4,7 +4,8 @@
     "map": "Map",
     "bookings": "Bookings",
     "chat": "Chat",
-    "notifications": "Inbox","today": "Today",
+    "notifications": "Inbox",
+    "today": "Today",
     "profile": "Profile",
     "wallet": "Wallet"
   },
@@ -76,7 +77,11 @@
     }
   },
   "chat": { "title": "Messages", "placeholder": "Type a message...", "empty": "No messages yet" },
-  "notifications": { "title": "Notifications", "markAll": "Mark all as read", "empty": "No notifications" },
+  "notifications": {
+    "title": "Notifications",
+    "markAll": "Mark all as read",
+    "empty": "No notifications"
+  },
   "profile": {
     "title": "Profile",
     "bookings": "Bookings",

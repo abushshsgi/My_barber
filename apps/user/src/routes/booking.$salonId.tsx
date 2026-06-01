@@ -18,9 +18,24 @@ export const Route = createFileRoute("/booking/$salonId")({
 
 const DAYS = ["Dush", "Sesh", "Chor", "Pay", "Juma", "Shan", "Yak"];
 const SLOTS = [
-  "09:00", "09:15", "09:30", "09:45", "10:00", "10:15",
-  "10:30", "10:45", "11:00", "11:15", "11:30", "11:45",
-  "12:00", "12:15", "14:00", "14:15", "14:30", "14:45",
+  "09:00",
+  "09:15",
+  "09:30",
+  "09:45",
+  "10:00",
+  "10:15",
+  "10:30",
+  "10:45",
+  "11:00",
+  "11:15",
+  "11:30",
+  "11:45",
+  "12:00",
+  "12:15",
+  "14:00",
+  "14:15",
+  "14:30",
+  "14:45",
 ];
 
 function BookingFlow() {
@@ -37,7 +52,12 @@ function BookingFlow() {
   const [dayIdx, setDayIdx] = useState(0);
   const [slot, setSlot] = useState<string | null>(null);
 
-  const stepLabels = [t("booking.step1"), t("booking.step2"), t("booking.step3"), t("booking.step4")];
+  const stepLabels = [
+    t("booking.step1"),
+    t("booking.step2"),
+    t("booking.step3"),
+    t("booking.step4"),
+  ];
   const canAdvance =
     (step === 1 && barberId) ||
     (step === 2 && serviceIds.length > 0) ||
@@ -98,7 +118,10 @@ function BookingFlow() {
     return (
       <div>
         <PageHeader showBack title={t("booking.title")} />
-        <EmptyState title="Salon topilmadi" description="Bron qilish uchun salon ma'lumotlari kerak." />
+        <EmptyState
+          title="Salon topilmadi"
+          description="Bron qilish uchun salon ma'lumotlari kerak."
+        />
       </div>
     );
   }
@@ -119,7 +142,10 @@ function BookingFlow() {
             <div className="mt-6 grid grid-cols-2 gap-3">
               {salon.staff.length === 0 && (
                 <div className="col-span-2">
-                  <EmptyState title="Aktiv ustalar yo'q" description="Bu salon hozircha bron qabul qilmayapti." />
+                  <EmptyState
+                    title="Aktiv ustalar yo'q"
+                    description="Bu salon hozircha bron qabul qilmayapti."
+                  />
                 </div>
               )}
               {salon.staff.map((b) => {
@@ -130,13 +156,14 @@ function BookingFlow() {
                     onClick={() => setBarberId(b.id)}
                     className={cn(
                       "rounded-2xl border-2 p-4 text-left transition-all",
-                      sel
-                        ? "border-foreground bg-surface"
-                        : "border-transparent bg-surface",
+                      sel ? "border-foreground bg-surface" : "border-transparent bg-surface",
                     )}
                   >
                     <div className="grid h-14 w-14 place-items-center rounded-full bg-foreground text-base font-bold text-background">
-                      {b.name.split(" ").map((n) => n[0]).join("")}
+                      {b.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
                     </div>
                     <p className="mt-3 text-sm font-bold">{b.name}</p>
                     <p className="text-xs text-muted-foreground">{b.role}</p>
@@ -153,12 +180,13 @@ function BookingFlow() {
         {step === 2 && (
           <div>
             <h2 className="text-xl font-bold tracking-tight">{t("booking.selectService")}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {selectedBarber?.name}
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground">{selectedBarber?.name}</p>
             <div className="mt-6 space-y-2">
               {salon.services.length === 0 && (
-                <EmptyState title="Xizmatlar yo'q" description="Salon xizmat qo'shmaguncha bron yaratib bo'lmaydi." />
+                <EmptyState
+                  title="Xizmatlar yo'q"
+                  description="Salon xizmat qo'shmaguncha bron yaratib bo'lmaydi."
+                />
               )}
               {salon.services.map((s) => {
                 const sel = serviceIds.includes(s.id);
@@ -210,14 +238,10 @@ function BookingFlow() {
                     onClick={() => setDayIdx(i)}
                     className={cn(
                       "flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-xl transition-all",
-                      sel
-                        ? "bg-foreground text-background"
-                        : "bg-surface text-foreground",
+                      sel ? "bg-foreground text-background" : "bg-surface text-foreground",
                     )}
                   >
-                    <span className="text-[10px] font-bold uppercase opacity-70">
-                      {d.day}
-                    </span>
+                    <span className="text-[10px] font-bold uppercase opacity-70">{d.day}</span>
                     <span className="text-lg font-bold">{d.date}</span>
                   </button>
                 );

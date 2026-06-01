@@ -48,7 +48,10 @@ function SalonPage() {
     return (
       <div>
         <PageHeader showBack title="Salon" />
-        <EmptyState title="Salon topilmadi" description="Bu salon mavjud emas yoki backend javob bermadi." />
+        <EmptyState
+          title="Salon topilmadi"
+          description="Bu salon mavjud emas yoki backend javob bermadi."
+        />
       </div>
     );
   }
@@ -81,10 +84,7 @@ function SalonPage() {
                   onClick={() => toggle(salon.id)}
                   className="grid h-10 w-10 place-items-center rounded-full bg-background/90 backdrop-blur active:scale-95"
                 >
-                  <Heart
-                    className={cn("h-4 w-4", fav && "fill-foreground")}
-                    strokeWidth={2}
-                  />
+                  <Heart className={cn("h-4 w-4", fav && "fill-foreground")} strokeWidth={2} />
                 </button>
               </>
             }
@@ -150,9 +150,7 @@ function SalonPage() {
                 Manzil
               </p>
               <p className="mt-1 text-sm font-bold">{salon.address}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {salon.distanceKm} km uzoqlikda
-              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{salon.distanceKm} km uzoqlikda</p>
             </div>
           </div>
         )}
@@ -160,7 +158,10 @@ function SalonPage() {
         {tab === "services" && (
           <div className="divide-y divide-border">
             {salon.services.length === 0 && (
-              <EmptyState title="Xizmatlar hali qo'shilmagan" description="Salon xizmatlari backend orqali kelishi bilan ko'rinadi." />
+              <EmptyState
+                title="Xizmatlar hali qo'shilmagan"
+                description="Salon xizmatlari backend orqali kelishi bilan ko'rinadi."
+              />
             )}
             {salon.services.map((s) => (
               <div key={s.id} className="flex items-center justify-between gap-3 py-4">
@@ -189,13 +190,19 @@ function SalonPage() {
           <div className="grid grid-cols-2 gap-3">
             {salon.staff.length === 0 && (
               <div className="col-span-2">
-                <EmptyState title="Ustalar hali ko'rsatilmagan" description="Salon aktiv ustalarni backendda e'lon qilishi kerak." />
+                <EmptyState
+                  title="Ustalar hali ko'rsatilmagan"
+                  description="Salon aktiv ustalarni backendda e'lon qilishi kerak."
+                />
               </div>
             )}
             {salon.staff.map((b) => (
               <div key={b.id} className="rounded-2xl bg-surface p-4 text-center">
                 <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-foreground text-lg font-bold text-background">
-                  {b.name.split(" ").map((n) => n[0]).join("")}
+                  {b.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
                 </div>
                 <p className="mt-3 text-sm font-bold">{b.name}</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">{b.role}</p>
@@ -211,7 +218,10 @@ function SalonPage() {
         {tab === "reviews" && (
           <div className="space-y-4">
             {salon.reviews.length === 0 && (
-              <EmptyState title="Sharhlar yo'q" description="Birinchi tashrifdan keyin sharh qoldiring." />
+              <EmptyState
+                title="Sharhlar yo'q"
+                description="Birinchi tashrifdan keyin sharh qoldiring."
+              />
             )}
             {salon.reviews.map((r) => (
               <div key={r.id} className="rounded-2xl bg-surface p-4">
@@ -236,7 +246,10 @@ function SalonPage() {
           <div className="grid grid-cols-3 gap-2">
             {salon.portfolio.length === 0 && (
               <div className="col-span-3">
-                <EmptyState title="Portfolio bo'sh" description="Tugallangan ish rasmlari shu yerda chiqadi." />
+                <EmptyState
+                  title="Portfolio bo'sh"
+                  description="Tugallangan ish rasmlari shu yerda chiqadi."
+                />
               </div>
             )}
             {salon.portfolio.map((p, i) => (

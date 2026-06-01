@@ -2,7 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { CalendarPlus, Plus, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { familyMembers } from "@/lib/mock-data";
-import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
+import {
+  ProfileSubpageCard,
+  ProfileSubpageLayout,
+} from "@/components/profile/ProfileSubpageLayout";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/family")({
@@ -14,10 +17,7 @@ function FamilyPage() {
   const { t } = useTranslation();
 
   return (
-    <ProfileSubpageLayout
-      title={t("family.title")}
-      subtitle={t("family.subtitle")}
-    >
+    <ProfileSubpageLayout title={t("family.title")} subtitle={t("family.subtitle")}>
       <div className="space-y-3">
         {familyMembers.map((m) => (
           <ProfileSubpageCard key={m.id}>
@@ -28,7 +28,10 @@ function FamilyPage() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold">{m.name}</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  {m.relation} · {t(`audience.${m.audience === "women" ? "women" : m.audience === "men" ? "men" : "all"}`)}
+                  {m.relation} ·{" "}
+                  {t(
+                    `audience.${m.audience === "women" ? "women" : m.audience === "men" ? "men" : "all"}`,
+                  )}
                 </p>
                 {m.phone && (
                   <p className="mt-1 text-xs font-medium text-muted-foreground">{m.phone}</p>

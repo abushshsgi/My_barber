@@ -31,7 +31,8 @@ function ExplorePage() {
             />
             <p className="mt-2 text-sm font-bold leading-tight">{s.title}</p>
             <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-              {s.audience === "men" ? "Erkaklar" : s.audience === "women" ? "Ayollar" : "Universal"} · {s.category}
+              {s.audience === "men" ? "Erkaklar" : s.audience === "women" ? "Ayollar" : "Universal"}{" "}
+              · {s.category}
             </p>
           </div>
         ))}

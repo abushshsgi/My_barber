@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Calendar, MessageSquare, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatPrice, type BookingItem } from "@/lib/mock-data";
@@ -24,7 +24,10 @@ function MyBookings() {
   const { focus } = Route.useSearch();
   const [tab, setTab] = useState<"upcoming" | "history">("upcoming");
   const bookingsQuery = useBookings();
-  const bookings = bookingsQuery.data?.bookings ?? [];
+  const bookings = useMemo(
+    () => bookingsQuery.data?.bookings ?? [],
+    [bookingsQuery.data?.bookings],
+  );
   const now = Date.now();
 
   const upcoming = getUpcomingBookings(bookings, now);
@@ -38,10 +41,10 @@ function MyBookings() {
     if (!focus) return;
     const el = document.getElementById(`booking-${focus}`);
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    if (bookings.some((b) => b.id === focus && getUpcomingBookings([b], now).length)) {
+    if (bookings.some((b) => b.id === focus && getUpcomingBookings([b], Date.now()).length)) {
       setTab("upcoming");
     }
-  }, [focus, now]);
+  }, [bookings, focus]);
 
   return (
     <div>
@@ -49,7 +52,8 @@ function MyBookings() {
 
       {bookingsQuery.data?.fallback && (
         <div className="mx-5 mb-4 rounded-2xl border border-border bg-surface p-3 text-xs text-muted-foreground">
-          Backend bronlariga ulanib bo'lmadi: {bookingsQuery.data.error}. Demo bronlar ko'rsatilmoqda.
+          Backend bronlariga ulanib bo'lmadi: {bookingsQuery.data.error}. Demo bronlar
+          ko'rsatilmoqda.
         </div>
       )}
 
@@ -104,13 +108,7 @@ function MyBookings() {
   );
 }
 
-function BookingCard({
-  booking: b,
-  focused,
-}: {
-  booking: BookingItem;
-  focused?: boolean;
-}) {
+function BookingCard({ booking: b, focused }: { booking: BookingItem; focused?: boolean }) {
   const { t } = useTranslation();
   const cancel = useCancelBooking();
   const d = new Date(b.date);

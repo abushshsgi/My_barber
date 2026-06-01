@@ -79,7 +79,8 @@ function Auth() {
           {mode === "login" ? "Xush kelibsiz" : "Ro'yxatdan o'ting"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Backend bilan ulangan real email/parol orqali kiring. Bron, sevimlilar va bildirishnomalar shu akkauntga bog'lanadi.
+          Backend bilan ulangan real email/parol orqali kiring. Bron, sevimlilar va bildirishnomalar
+          shu akkauntga bog'lanadi.
         </p>
 
         <div className="mt-8 space-y-4">

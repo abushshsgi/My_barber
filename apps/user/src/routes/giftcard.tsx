@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Gift } from "lucide-react";
-import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
+import {
+  ProfileSubpageCard,
+  ProfileSubpageLayout,
+} from "@/components/profile/ProfileSubpageLayout";
 import { giftCards, formatPrice } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -53,9 +56,7 @@ function GiftCardPage() {
                 <p className="text-[10px] font-bold uppercase tracking-wide opacity-70">
                   {g.label}
                 </p>
-                <p className="mt-1 text-sm font-bold">
-                  {Math.round(g.amount / 1000)}k
-                </p>
+                <p className="mt-1 text-sm font-bold">{Math.round(g.amount / 1000)}k</p>
               </button>
             );
           })}

@@ -3,7 +3,10 @@ import { useEffect } from "react";
 import { Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { userReviews } from "@/lib/mock-data";
-import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
+import {
+  ProfileSubpageCard,
+  ProfileSubpageLayout,
+} from "@/components/profile/ProfileSubpageLayout";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
 
@@ -29,52 +32,58 @@ function ReviewsPage() {
 
   return (
     <ProfileSubpageLayout title={t("reviews.title")}>
-        {userReviews.length === 0 ? (
-          <EmptyState
-            icon={<Star className="h-7 w-7" />}
-            title={t("reviews.empty")}
-            description={t("reviews.emptyHint")}
-            action={
-              <Link to="/bookings" className="rounded-2xl bg-foreground px-5 py-3 text-sm font-bold text-background">
-                {t("bookings.title")}
-              </Link>
-            }
-          />
-        ) : (
-          <div className="space-y-3">
-            {userReviews.map((r) => (
-              <ProfileSubpageCard
-                key={r.id}
-                id={`review-${r.id}`}
-                className={cn(focus === r.id && "ring-2 ring-foreground")}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-sm font-bold">{r.salonName}</h3>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{r.barberName}</p>
-                  </div>
-                  <div className="flex items-center gap-0.5">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className={cn("h-3.5 w-3.5", i < r.rating ? "fill-foreground" : "text-border")}
-                        strokeWidth={0}
-                      />
-                    ))}
-                  </div>
+      {userReviews.length === 0 ? (
+        <EmptyState
+          icon={<Star className="h-7 w-7" />}
+          title={t("reviews.empty")}
+          description={t("reviews.emptyHint")}
+          action={
+            <Link
+              to="/bookings"
+              className="rounded-2xl bg-foreground px-5 py-3 text-sm font-bold text-background"
+            >
+              {t("bookings.title")}
+            </Link>
+          }
+        />
+      ) : (
+        <div className="space-y-3">
+          {userReviews.map((r) => (
+            <ProfileSubpageCard
+              key={r.id}
+              id={`review-${r.id}`}
+              className={cn(focus === r.id && "ring-2 ring-foreground")}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-bold">{r.salonName}</h3>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{r.barberName}</p>
                 </div>
-                <p className="mt-3 text-sm leading-relaxed">{r.text}</p>
-                <p className="mt-2 text-[11px] font-bold text-muted-foreground">
-                  {new Date(r.date).toLocaleDateString("uz-UZ", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </p>
-              </ProfileSubpageCard>
-            ))}
-          </div>
-        )}
+                <div className="flex items-center gap-0.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className={cn(
+                        "h-3.5 w-3.5",
+                        i < r.rating ? "fill-foreground" : "text-border",
+                      )}
+                      strokeWidth={0}
+                    />
+                  ))}
+                </div>
+              </div>
+              <p className="mt-3 text-sm leading-relaxed">{r.text}</p>
+              <p className="mt-2 text-[11px] font-bold text-muted-foreground">
+                {new Date(r.date).toLocaleDateString("uz-UZ", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </p>
+            </ProfileSubpageCard>
+          ))}
+        </div>
+      )}
     </ProfileSubpageLayout>
   );
 }

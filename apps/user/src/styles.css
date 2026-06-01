@@ -49,25 +49,25 @@
   --radius: 0.875rem;
 
   /* Beige + black palette (oklch) */
-  --background: oklch(0.972 0.011 85);       /* #faf8f5 */
-  --surface: oklch(0.945 0.014 85);          /* #efe9dd */
-  --surface-2: oklch(0.905 0.020 85);        /* #e4dcc9 */
-  --foreground: oklch(0.145 0 0);            /* #0a0a0a */
+  --background: oklch(0.972 0.011 85); /* #faf8f5 */
+  --surface: oklch(0.945 0.014 85); /* #efe9dd */
+  --surface-2: oklch(0.905 0.02 85); /* #e4dcc9 */
+  --foreground: oklch(0.145 0 0); /* #0a0a0a */
   --muted: oklch(0.945 0.014 85);
-  --muted-foreground: oklch(0.45 0.012 70);  /* #6b6258 */
+  --muted-foreground: oklch(0.45 0.012 70); /* #6b6258 */
 
   --card: oklch(1 0 0);
   --card-foreground: var(--foreground);
   --popover: oklch(1 0 0);
   --popover-foreground: var(--foreground);
 
-  --primary: oklch(0.145 0 0);               /* qora */
+  --primary: oklch(0.145 0 0); /* qora */
   --primary-foreground: oklch(0.972 0.011 85);
 
   --secondary: var(--surface);
   --secondary-foreground: var(--foreground);
 
-  --accent: var(--foreground);               /* accent = qora (yagona) */
+  --accent: var(--foreground); /* accent = qora (yagona) */
   --accent-foreground: var(--background);
 
   --destructive: oklch(0.55 0.18 28);
@@ -79,16 +79,16 @@
 
   /* Audience switch — faqat bej soyalar (aniq farq) */
   --audience-all: oklch(0.945 0.014 85);
-  --audience-men: oklch(0.78 0.024 58);    /* qoraroq, salqin bej */
-  --audience-women: oklch(0.94 0.034 98);  /* yorug‘, iliq bej */
+  --audience-men: oklch(0.78 0.024 58); /* qoraroq, salqin bej */
+  --audience-women: oklch(0.94 0.034 98); /* yorug‘, iliq bej */
 }
 
 .dark {
   --background: oklch(0.145 0 0);
-  --surface: oklch(0.20 0 0);
+  --surface: oklch(0.2 0 0);
   --surface-2: oklch(0.25 0 0);
   --foreground: oklch(0.972 0.011 85);
-  --muted: oklch(0.20 0 0);
+  --muted: oklch(0.2 0 0);
   --muted-foreground: oklch(0.65 0.012 70);
   --card: oklch(0.18 0 0);
   --card-foreground: var(--foreground);
@@ -100,7 +100,7 @@
   --secondary-foreground: var(--foreground);
   --accent: var(--foreground);
   --accent-foreground: var(--background);
-  --destructive: oklch(0.65 0.20 28);
+  --destructive: oklch(0.65 0.2 28);
   --destructive-foreground: oklch(0.98 0 0);
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 15%);
@@ -108,7 +108,7 @@
 
   --audience-all: oklch(0.22 0.008 85);
   --audience-men: oklch(0.14 0.012 58);
-  --audience-women: oklch(0.30 0.016 95);
+  --audience-women: oklch(0.3 0.016 95);
 }
 
 @layer base {
@@ -116,7 +116,8 @@
     border-color: var(--color-border);
   }
 
-  html, body {
+  html,
+  body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
@@ -125,12 +126,22 @@
     font-feature-settings: "ss01", "cv11";
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-display);
     font-weight: 700;
     letter-spacing: -0.02em;
   }
 
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }

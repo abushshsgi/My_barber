@@ -17,19 +17,20 @@ http://localhost:3000
 
 TanStack Start + Nitro **Build Output API** ishlatadi. Build `.vercel/output` yaratadi.
 
-| Sozlama | To‘g‘ri qiymat | Noto‘g‘ri |
-|---------|----------------|-----------|
-| **Root Directory** | `apps/user` | `dist` ❌ |
+| Sozlama              | To‘g‘ri qiymat                   | Noto‘g‘ri |
+| -------------------- | -------------------------------- | --------- |
+| **Root Directory**   | `apps/user`                      | `dist` ❌ |
 | **Output Directory** | **bo‘sh** (Override o‘chirilgan) | `dist` ❌ |
-| **Framework Preset** | Other | Vite ❌ |
-| **Build Command** | `npm run build` | |
-| **Install Command** | `cd ../.. && npm install` | |
+| **Framework Preset** | Other                            | Vite ❌   |
+| **Build Command**    | `npm run build`                  |           |
+| **Install Command**  | `cd ../.. && npm install`        |           |
 
 ### Nima uchun stilsiz sahifa chiqadi?
 
 Agar Output Directory = `dist` qo‘ysangiz, Vercel faqat **server function** (HTML) deploy qiladi, **CSS/JS static fayllar CDN ga chiqmaydi** → barcha `/assets/*` **404**.
 
 Belgilar:
+
 - Oq fon, stilsiz matn
 - `nav.home`, `nav.map` (JS yuklanmagan)
 - Console: `/assets/*.css` va `/assets/*.js` → 404
@@ -45,8 +46,8 @@ Belgilar:
 
 ## Env (Vercel)
 
-| O‘zgaruvchi | Qiymat |
-|-------------|--------|
+| O‘zgaruvchi    | Qiymat                    |
+| -------------- | ------------------------- |
 | `VITE_API_URL` | `https://api.mysaloon.uz` |
 
 ## Ma'lumot

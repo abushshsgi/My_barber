@@ -1,14 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
-import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
+import {
+  ProfileSubpageCard,
+  ProfileSubpageLayout,
+} from "@/components/profile/ProfileSubpageLayout";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/support")({
   head: () => ({
     meta: [
       { title: "Yordam — mysaloon.uz" },
-      { name: "description", content: "mysaloon.uz yordam markazi va tez-tez so'raladigan savollar." },
+      {
+        name: "description",
+        content: "mysaloon.uz yordam markazi va tez-tez so'raladigan savollar.",
+      },
     ],
   }),
   component: Support,

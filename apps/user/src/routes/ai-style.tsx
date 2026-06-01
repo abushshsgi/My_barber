@@ -8,7 +8,10 @@ export const Route = createFileRoute("/ai-style")({
   head: () => ({
     meta: [
       { title: "AI Stil maslahatchi — mysaloon.uz" },
-      { name: "description", content: "Selfie yuklang — AI yuz shakliga mos turmag va ranglarni tavsiya qiladi." },
+      {
+        name: "description",
+        content: "Selfie yuklang — AI yuz shakliga mos turmag va ranglarni tavsiya qiladi.",
+      },
     ],
   }),
   component: AiStylePage,
@@ -23,9 +26,21 @@ interface Suggestion {
 }
 
 const SUGGESTIONS: Suggestion[] = [
-  { id: "s1", title: "Textured Crop", desc: "Yuz shakli ovalsiz — qisqa, yengil tepada", match: 94, hue: 240 },
+  {
+    id: "s1",
+    title: "Textured Crop",
+    desc: "Yuz shakli ovalsiz — qisqa, yengil tepada",
+    match: 94,
+    hue: 240,
+  },
   { id: "s2", title: "Mid Fade + Quiff", desc: "Klassik kontur, hajmli tepa", match: 88, hue: 18 },
-  { id: "s3", title: "Soft Layered Bob", desc: "Yumshoq qatlamlar, yuzga ramka", match: 82, hue: 320 },
+  {
+    id: "s3",
+    title: "Soft Layered Bob",
+    desc: "Yumshoq qatlamlar, yuzga ramka",
+    match: 82,
+    hue: 320,
+  },
 ];
 
 function AiStylePage() {
@@ -60,7 +75,10 @@ function AiStylePage() {
 
   return (
     <div className="pb-24">
-      <PageHeader title="AI Stil maslahatchi" subtitle="Selfie yuklang — moslashgan turmag taklif qilamiz" />
+      <PageHeader
+        title="AI Stil maslahatchi"
+        subtitle="Selfie yuklang — moslashgan turmag taklif qilamiz"
+      />
 
       <section className="px-5">
         <input
@@ -82,7 +100,9 @@ function AiStylePage() {
             </div>
             <div className="text-center">
               <p className="text-sm font-bold">Selfie yuklang</p>
-              <p className="mt-1 text-[11px] text-muted-foreground">JPG / PNG · yuz aniq ko'rinsin</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                JPG / PNG · yuz aniq ko'rinsin
+              </p>
             </div>
             <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-background px-3 py-1.5 text-[11px] font-bold">
               <Upload className="h-3 w-3" /> Faylni tanlash

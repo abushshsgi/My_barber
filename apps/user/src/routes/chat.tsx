@@ -117,10 +117,12 @@ function ChatList() {
                     <h3 className="truncate text-sm font-bold">{c.barberName}</h3>
                     {i === 0 && <Pin className="h-3 w-3 shrink-0 text-muted-foreground" />}
                   </div>
-                  <span className={cn(
-                    "shrink-0 text-[10px] font-bold uppercase tracking-wide",
-                    c.unread > 0 ? "text-foreground" : "text-muted-foreground",
-                  )}>
+                  <span
+                    className={cn(
+                      "shrink-0 text-[10px] font-bold uppercase tracking-wide",
+                      c.unread > 0 ? "text-foreground" : "text-muted-foreground",
+                    )}
+                  >
                     {c.lastTime}
                   </span>
                 </div>
@@ -128,10 +130,12 @@ function ChatList() {
                   {c.salonName}
                 </p>
                 <div className="mt-1 flex items-center gap-2">
-                  <p className={cn(
-                    "truncate flex-1 text-xs",
-                    c.unread > 0 ? "font-bold text-foreground" : "text-muted-foreground",
-                  )}>
+                  <p
+                    className={cn(
+                      "truncate flex-1 text-xs",
+                      c.unread > 0 ? "font-bold text-foreground" : "text-muted-foreground",
+                    )}
+                  >
                     {c.lastMessage}
                   </p>
                   {c.unread > 0 && (

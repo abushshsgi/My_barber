@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
+import {
+  ProfileSubpageCard,
+  ProfileSubpageLayout,
+} from "@/components/profile/ProfileSubpageLayout";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
 import { setLang } from "@/i18n/config";
 import { userProfile } from "@/lib/mock-data";
@@ -47,7 +50,9 @@ function Settings() {
     try {
       const raw = localStorage.getItem(PREFS_KEY);
       if (raw) setPrefs({ ...DEFAULTS, ...JSON.parse(raw) });
-    } catch {}
+    } catch {
+      /* noop */
+    }
   }, []);
 
   const update = (key: keyof Prefs, value: boolean) => {
@@ -55,7 +60,9 @@ function Settings() {
     setPrefs(next);
     try {
       localStorage.setItem(PREFS_KEY, JSON.stringify(next));
-    } catch {}
+    } catch {
+      /* noop */
+    }
     if (key === "reduceMotion") {
       document.documentElement.classList.toggle("reduce-motion", value);
     }
@@ -129,7 +136,9 @@ function Settings() {
           setPrefs(DEFAULTS);
           try {
             localStorage.setItem(PREFS_KEY, JSON.stringify(DEFAULTS));
-          } catch {}
+          } catch {
+            /* noop */
+          }
           setAudience(DEFAULTS.preferredAudience);
           document.documentElement.classList.toggle("reduce-motion", DEFAULTS.reduceMotion);
         }}
@@ -141,13 +150,7 @@ function Settings() {
   );
 }
 
-function Toggle({
-  value,
-  onChange,
-}: {
-  value: boolean;
-  onChange: (v: boolean) => void;
-}) {
+function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
       role="switch"

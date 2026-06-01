@@ -1,14 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { animate, motion, useMotionValue, useReducedMotion } from "framer-motion";
-import {
-  Gift,
-  Plus,
-  ChevronLeft,
-  ArrowDownLeft,
-  ArrowUpRight,
-  Nfc,
-} from "lucide-react";
+import { Gift, Plus, ChevronLeft, ArrowDownLeft, ArrowUpRight, Nfc } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   WalletCardCreamCap,
@@ -117,10 +110,7 @@ function PlasticCard() {
   );
 
   return (
-    <div
-      className="w-full max-w-[340px]"
-      style={{ perspective: 1100 }}
-    >
+    <div className="w-full max-w-[340px]" style={{ perspective: 1100 }}>
       <motion.article
         ref={cardRef}
         className={cn(
@@ -145,44 +135,44 @@ function PlasticCard() {
         onPointerUp={endTilt}
         onPointerCancel={endTilt}
       >
-      <WalletCardCreamCap />
+        <WalletCardCreamCap />
 
-      <div className="relative z-20 flex h-[54%] flex-col justify-between px-5 pb-4 pt-5 text-foreground">
-        <div className="flex items-start justify-between">
-          <WalletEmvChip />
-          <motion.div
-            className="grid h-9 w-9 place-items-center rounded-xl bg-foreground text-background"
-            animate={reduced ? undefined : { scale: [1, 1.04, 1] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-            aria-label={t("walletPage.nfc")}
-          >
-            <Nfc className="h-5 w-5" strokeWidth={2.2} />
-          </motion.div>
-        </div>
-        <p className="text-[42px] font-bold leading-none tracking-tight tabular-nums">
-          {walletSummary.balance.toLocaleString("uz-UZ")}
-          <span className="ml-1.5 text-lg font-bold text-muted-foreground">so'm</span>
-        </p>
-      </div>
-
-      <div className="absolute inset-x-0 bottom-0 flex h-[48%] flex-col justify-end px-5 pb-5 pt-2">
-        <p className="font-mono text-[14px] font-semibold tracking-[0.24em] tabular-nums text-background/80">
-          {plasticPan(walletSummary.balance)}
-        </p>
-        <div className="mt-3 flex items-center justify-between gap-2 border-t border-background/15 pt-3">
-          <p className="min-w-0 truncate text-[11px] font-bold uppercase tracking-wide text-background/90">
-            {userProfile.name}
+        <div className="relative z-20 flex h-[54%] flex-col justify-between px-5 pb-4 pt-5 text-foreground">
+          <div className="flex items-start justify-between">
+            <WalletEmvChip />
+            <motion.div
+              className="grid h-9 w-9 place-items-center rounded-xl bg-foreground text-background"
+              animate={reduced ? undefined : { scale: [1, 1.04, 1] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+              aria-label={t("walletPage.nfc")}
+            >
+              <Nfc className="h-5 w-5" strokeWidth={2.2} />
+            </motion.div>
+          </div>
+          <p className="text-[42px] font-bold leading-none tracking-tight tabular-nums">
+            {walletSummary.balance.toLocaleString("uz-UZ")}
+            <span className="ml-1.5 text-lg font-bold text-muted-foreground">so'm</span>
           </p>
-          <span className="shrink-0 rounded-sm bg-background px-2 py-0.5 text-[8px] font-bold uppercase text-foreground">
-            {loyaltyMock.tier}
-          </span>
-          <p className="shrink-0 font-mono text-[11px] font-bold text-background/55">12/28</p>
         </div>
-        <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.3em] text-background/40">
-          mysaloon
-        </p>
-      </div>
-    </motion.article>
+
+        <div className="absolute inset-x-0 bottom-0 flex h-[48%] flex-col justify-end px-5 pb-5 pt-2">
+          <p className="font-mono text-[14px] font-semibold tracking-[0.24em] tabular-nums text-background/80">
+            {plasticPan(walletSummary.balance)}
+          </p>
+          <div className="mt-3 flex items-center justify-between gap-2 border-t border-background/15 pt-3">
+            <p className="min-w-0 truncate text-[11px] font-bold uppercase tracking-wide text-background/90">
+              {userProfile.name}
+            </p>
+            <span className="shrink-0 rounded-sm bg-background px-2 py-0.5 text-[8px] font-bold uppercase text-foreground">
+              {loyaltyMock.tier}
+            </span>
+            <p className="shrink-0 font-mono text-[11px] font-bold text-background/55">12/28</p>
+          </div>
+          <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.3em] text-background/40">
+            mysaloon
+          </p>
+        </div>
+      </motion.article>
     </div>
   );
 }

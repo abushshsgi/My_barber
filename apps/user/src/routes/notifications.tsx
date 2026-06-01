@@ -34,9 +34,24 @@ type Channel = "booking" | "chat_message" | "review" | "promo";
 type FilterKey = "all" | "unread" | Channel;
 
 const CHANNELS: { key: Channel; label: string; desc: string; icon: typeof Bell }[] = [
-  { key: "booking", label: "Bron eslatmalari", desc: "Tasdiq, vaqt va o'zgarishlar", icon: CalendarCheck },
-  { key: "chat_message", label: "Chat xabarlari", desc: "Usta va salonlardan", icon: MessageSquare },
-  { key: "promo", label: "Chegirma va aksiyalar", desc: "Bugungi takliflar va kuponlar", icon: Tag },
+  {
+    key: "booking",
+    label: "Bron eslatmalari",
+    desc: "Tasdiq, vaqt va o'zgarishlar",
+    icon: CalendarCheck,
+  },
+  {
+    key: "chat_message",
+    label: "Chat xabarlari",
+    desc: "Usta va salonlardan",
+    icon: MessageSquare,
+  },
+  {
+    key: "promo",
+    label: "Chegirma va aksiyalar",
+    desc: "Bugungi takliflar va kuponlar",
+    icon: Tag,
+  },
   { key: "review", label: "Sharh eslatmalari", desc: "Tashrifdan keyin baho so'rovi", icon: Star },
 ];
 
@@ -96,14 +111,13 @@ function Notifications() {
 
   const items = useMemo<Notification[]>(() => {
     return (notificationsQuery.data || []).map((n) => {
-      const type: Notification["type"] =
-        n.type.includes("chat")
-          ? "chat_message"
-          : n.type.includes("review")
-            ? "review"
-            : n.type.includes("promo") || n.type.includes("offer")
-              ? "promo"
-              : "booking";
+      const type: Notification["type"] = n.type.includes("chat")
+        ? "chat_message"
+        : n.type.includes("review")
+          ? "review"
+          : n.type.includes("promo") || n.type.includes("offer")
+            ? "promo"
+            : "booking";
       const payload = n.payload || {};
       const bookingId = payload.booking_id ? String(payload.booking_id) : undefined;
       const chatId = payload.conversation_id ? String(payload.conversation_id) : undefined;
@@ -162,7 +176,9 @@ function Notifications() {
             onClick={() => setShowSettings((s) => !s)}
             className={cn(
               "grid h-9 w-9 place-items-center rounded-full transition-colors",
-              showSettings ? "bg-foreground text-background" : "bg-background text-foreground shadow-sm",
+              showSettings
+                ? "bg-foreground text-background"
+                : "bg-background text-foreground shadow-sm",
             )}
             aria-label="Settings"
           >
@@ -177,7 +193,6 @@ function Notifications() {
         </div>
       }
     >
-
       {/* Channel preferences */}
       {showSettings && (
         <section className="mb-4 rounded-2xl border border-border bg-background p-4">

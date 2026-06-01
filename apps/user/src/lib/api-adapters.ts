@@ -17,7 +17,8 @@ function inferCategory(name: string, services: ApiSalonService[] = []): Category
   const text = `${name} ${services.map((s) => s.name).join(" ")}`.toLowerCase();
   if (text.includes("nail") || text.includes("manikyur")) return "nails";
   if (text.includes("spa") || text.includes("massaj")) return "spa";
-  if (text.includes("beauty") || text.includes("go'zallik") || text.includes("make")) return "beauty";
+  if (text.includes("beauty") || text.includes("go'zallik") || text.includes("make"))
+    return "beauty";
   return "barber";
 }
 

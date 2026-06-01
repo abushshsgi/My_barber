@@ -14,7 +14,11 @@ export function ProfileIdentity({ audience }: Props) {
     <div className="px-5">
       <div className="flex items-center gap-4">
         <div className="grid h-20 w-20 place-items-center rounded-full bg-foreground text-2xl font-bold text-background">
-          {userProfile.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+          {userProfile.name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .slice(0, 2)}
         </div>
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-xl font-bold tracking-tight">{userProfile.name}</h2>
