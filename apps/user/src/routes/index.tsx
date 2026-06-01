@@ -59,14 +59,14 @@ const CATEGORIES: { key: Category | "all"; label: string }[] = [
 
 const QUICK_ACTIONS = [
   { to: "/today", icon: Flame, label: "Bugungi vaqtlar", featured: true },
-  { to: "/stylists", icon: Award, label: "Top ustalar" },
-  { to: "/explore", icon: Sparkles, label: "Trend uslublar" },
-  { to: "/offers", icon: Tag, label: "Aksiyalar" },
-  { to: "/giftcard", icon: Gift, label: "Sovg'a karta" },
-  { to: "/compare", icon: GitCompareArrows, label: "Taqqoslash" },
+  { to: "/stylists", icon: Award, label: "Top ustalar", featured: false },
+  { to: "/explore", icon: Sparkles, label: "Trend uslublar", featured: false },
+  { to: "/offers", icon: Tag, label: "Aksiyalar", featured: false },
+  { to: "/giftcard", icon: Gift, label: "Sovg'a karta", featured: false },
+  { to: "/compare", icon: GitCompareArrows, label: "Taqqoslash", featured: false },
   { to: "/reels", icon: Film, label: "Reels", featured: true },
-  { to: "/ai-style", icon: Wand2, label: "AI stil" },
-  { to: "/wallet", icon: Wallet, label: "Hamyon" },
+  { to: "/ai-style", icon: Wand2, label: "AI stil", featured: false },
+  { to: "/wallet", icon: Wallet, label: "Hamyon", featured: false },
 ] as const;
 
 function Home() {

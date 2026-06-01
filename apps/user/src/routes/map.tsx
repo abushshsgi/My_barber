@@ -1,9 +1,26 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion, useMotionValue, useTransform, animate, AnimatePresence } from "framer-motion";
 import {
-  MapPin, Star, SlidersHorizontal, Search, Navigation, Locate,
-  ChevronUp, Compass, Flame, ChevronLeft, ChevronRight,
+  motion,
+  useMotionValue,
+  useTransform,
+  animate,
+  AnimatePresence,
+  useReducedMotion,
+} from "framer-motion";
+import {
+  MapPin,
+  Star,
+  Search,
+  Navigation,
+  Locate,
+  ChevronUp,
+  Compass,
+  Flame,
+  ChevronLeft,
+  ChevronRight,
+  Scissors,
+  Sparkles as SparklesIcon,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { salons, shortPrice } from "@/lib/mock-data";
@@ -13,27 +30,30 @@ export const Route = createFileRoute("/map")({
   head: () => ({
     meta: [
       { title: "Xarita — mysaloon.uz" },
-      { name: "description", content: "Yaqin atrofdagi salonlar va ustalarni xaritada toping." },
+      {
+        name: "description",
+        content: "Yaqin atrofdagi salonlar va ustalarni xaritada toping.",
+      },
     ],
   }),
   component: MapView,
 });
 
-const SNAPS = { peek: 160, half: 380, full: 640 };
+const SNAPS = { peek: 168, half: 380, full: 640 };
 
-// Stable marker positions (so cluster math is deterministic)
 const POSITIONS = [
   { top: 28, left: 38 },
   { top: 42, left: 62 },
   { top: 36, left: 72 },
   { top: 56, left: 32 },
   { top: 62, left: 58 },
-  { top: 48, left: 48 }, // overlaps cluster zone
+  { top: 48, left: 48 },
   { top: 30, left: 50 },
 ];
 
 function MapView() {
   const { t } = useTranslation();
+  const reduce = useReducedMotion();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -42,6 +62,7 @@ function MapView() {
   const [query, setQuery] = useState("");
   const [heatmap, setHeatmap] = useState(false);
   const [bearing, setBearing] = useState(0);
+  const [radius, setRadius] = useState(5);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return salons;
@@ -53,7 +74,6 @@ function MapView() {
 
   const markers = filtered.map((s, i) => ({ ...s, pos: POSITIONS[i % POSITIONS.length] }));
 
-  // Simple cluster: any pair within 8% are clustered (here positions 1 & 5 & 6 are close)
   const clusters = useMemo(() => {
     const used = new Set<number>();
     const out: { x: number; y: number; ids: string[] }[] = [];
@@ -83,7 +103,6 @@ function MapView() {
     return { clusters: out, singles };
   }, [markers]);
 
-  // Bottom sheet
   const y = useMotionValue(0);
   const sheetH = useTransform(y, (v) => `${Math.max(SNAPS.peek, SNAPS.half - v)}px`);
   const snapTo = (target: "peek" | "half" | "full") => {
@@ -91,12 +110,11 @@ function MapView() {
     animate(y, delta, { type: "spring", stiffness: 300, damping: 34 });
   };
 
-  // Sync carousel — flying to marker
   const scrollRef = useRef<HTMLDivElement>(null);
   const focusSalon = (id: string) => {
     setActive(id);
     const el = scrollRef.current?.querySelector(`[data-id="${id}"]`) as HTMLElement | null;
-    el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    el?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", inline: "center", block: "nearest" });
   };
   const cycle = (dir: 1 | -1) => {
     const idx = filtered.findIndex((s) => s.id === active);
@@ -105,8 +123,8 @@ function MapView() {
   };
 
   return (
-    <div className="relative h-[calc(100dvh-68px-env(safe-area-inset-bottom))] overflow-hidden bg-surface lg:h-[100dvh]">
-      {/* Fake map */}
+    <div className="relative h-[100dvh] overflow-hidden bg-onyx text-ivory lg:h-[100dvh]">
+      {/* Dark minimal map base */}
       <motion.div
         className="absolute inset-0"
         animate={{ rotate: -bearing }}
@@ -116,8 +134,22 @@ function MapView() {
           className="h-full w-full"
           style={{
             backgroundImage:
-              "linear-gradient(45deg, transparent 48%, oklch(0.92 0.018 85) 49%, oklch(0.92 0.018 85) 51%, transparent 52%), linear-gradient(-45deg, transparent 48%, oklch(0.92 0.018 85) 49%, oklch(0.92 0.018 85) 51%, transparent 52%), linear-gradient(0deg, oklch(0.945 0.014 85), oklch(0.945 0.014 85))",
-            backgroundSize: "64px 64px, 64px 64px, 100% 100%",
+              "linear-gradient(45deg, transparent 48%, rgba(255,255,255,0.05) 49%, rgba(255,255,255,0.05) 51%, transparent 52%), linear-gradient(-45deg, transparent 48%, rgba(255,255,255,0.05) 49%, rgba(255,255,255,0.05) 51%, transparent 52%), radial-gradient(circle at 30% 30%, oklch(0.20 0.012 270), oklch(0.135 0.005 270) 70%)",
+            backgroundSize: "72px 72px, 72px 72px, 100% 100%",
+          }}
+        />
+
+        {/* Concentric radius hint around center */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+          style={{
+            width: `${Math.min(60 + radius * 4, 92)}%`,
+            aspectRatio: "1",
+            borderRadius: "9999px",
+            border: "1px dashed color-mix(in oklch, var(--gold) 35%, transparent)",
+            background:
+              "radial-gradient(circle, rgba(212,175,55,0.05), transparent 70%)",
           }}
         />
 
@@ -138,7 +170,7 @@ function MapView() {
                     top: `${p.top}%`,
                     left: `${p.left}%`,
                     background:
-                      "radial-gradient(circle, rgba(255,80,40,0.6), rgba(255,180,0,0.35), transparent 70%)",
+                      "radial-gradient(circle, rgba(212,175,55,0.55), rgba(255,180,0,0.25), transparent 70%)",
                   }}
                 />
               ))}
@@ -146,13 +178,19 @@ function MapView() {
           )}
         </AnimatePresence>
 
-        {/* Single markers */}
+        {/* Singles — luxury micro-pins */}
         {clusters.singles.map((s, i) => {
           const isActive = s.id === active;
+          const initials = s.name
+            .split(/\s+/)
+            .slice(0, 2)
+            .map((w) => w[0])
+            .join("")
+            .toUpperCase();
           return (
             <motion.button
               key={s.id}
-              initial={{ scale: 0, y: -10 }}
+              initial={reduce ? undefined : { scale: 0, y: -10 }}
               animate={{ scale: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 360, damping: 22, delay: i * 0.04 }}
               onClick={() => focusSalon(s.id)}
@@ -161,27 +199,26 @@ function MapView() {
               aria-label={s.name}
             >
               <div className="relative">
-                {isActive && (
+                {isActive && !reduce && (
                   <motion.span
-                    className="absolute inset-0 -m-2 rounded-full bg-foreground/20"
+                    className="absolute inset-0 -m-2 rounded-full bg-gold/30"
                     animate={{ scale: [1, 1.6, 1], opacity: [0.6, 0, 0.6] }}
                     transition={{ duration: 1.8, repeat: Infinity }}
                   />
                 )}
-                <motion.div
-                  animate={{ scale: isActive ? 1.15 : 1 }}
+                <div
                   className={cn(
-                    "relative grid place-items-center rounded-full text-background transition-colors",
+                    "relative grid place-items-center rounded-full font-bold tracking-tight transition-colors",
                     isActive
-                      ? "h-12 w-12 bg-foreground ring-4 ring-foreground/20"
-                      : "h-9 w-9 bg-foreground/85",
+                      ? "h-12 w-12 bg-gold text-onyx ring-4 ring-gold/30 shadow-luxury"
+                      : "h-10 w-10 bg-ivory text-onyx shadow-pill ring-2 ring-onyx/30",
                   )}
                 >
-                  <MapPin className="h-4 w-4 fill-background" strokeWidth={0} />
-                </motion.div>
+                  <span className="text-[10px]">{initials}</span>
+                </div>
               </div>
               {isActive && (
-                <span className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-0.5 text-[10px] font-bold text-background">
+                <span className="absolute left-1/2 top-full mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-full bg-onyx px-2 py-0.5 text-[10px] font-bold text-gold ring-1 ring-gold/30">
                   {shortPrice(s.priceFrom)}+
                 </span>
               )}
@@ -193,49 +230,57 @@ function MapView() {
         {clusters.clusters.map((c, i) => (
           <motion.button
             key={`c-${i}`}
-            initial={{ scale: 0 }}
+            initial={reduce ? undefined : { scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 320, damping: 22 }}
             onClick={() => focusSalon(c.ids[0])}
             style={{ top: `${c.y}%`, left: `${c.x}%` }}
             className="absolute -translate-x-1/2 -translate-y-1/2"
           >
-            <div className="relative grid h-14 w-14 place-items-center rounded-full bg-foreground text-background shadow-lg ring-4 ring-foreground/15">
-              <span className="text-sm font-bold">{c.ids.length}</span>
+            <div className="relative grid h-14 w-14 place-items-center rounded-full bg-onyx text-gold shadow-luxury ring-4 ring-gold/30">
+              <span className="font-display text-sm font-semibold">{c.ids.length}</span>
             </div>
           </motion.button>
         ))}
       </motion.div>
 
-      {/* TOP search + tabs */}
+      {/* TOP: glass search + tabs */}
       <div
         className="absolute inset-x-0 top-0 z-20 px-4"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 12px)" }}
       >
-        <div className="flex items-center gap-2 rounded-full bg-background px-4 py-3 shadow-lg">
-          <Search className="h-4 w-4 text-muted-foreground" strokeWidth={2.4} />
+        <div className="glass-dock flex items-center gap-2 rounded-full px-4 py-3 shadow-luxury">
+          <Search className="h-4 w-4 text-foreground/70" strokeWidth={2.4} />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={mounted ? (t("map.search") as string) : "Salon yoki manzil"}
-            className="flex-1 bg-transparent text-sm font-medium placeholder:text-muted-foreground focus:outline-none"
+            className="flex-1 bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
-          <button className="grid h-8 w-8 place-items-center rounded-full bg-surface active:scale-95">
-            <SlidersHorizontal className="h-4 w-4" />
+          <button
+            onClick={() => setHeatmap((v) => !v)}
+            className={cn(
+              "grid h-8 w-8 place-items-center rounded-full transition-colors active:scale-95",
+              heatmap ? "bg-gold text-onyx" : "bg-foreground/10 text-foreground",
+            )}
+            aria-label="Issiq hudud"
+          >
+            <Flame className="h-4 w-4" />
           </button>
         </div>
 
         <div className="mt-3 flex justify-center">
-          <div className="relative inline-flex rounded-full bg-background p-1 shadow-md">
+          <div className="glass-dock relative inline-flex rounded-full p-1 shadow-soft">
             {(["salons", "barbers"] as const).map((k) => {
               const isActive = tab === k;
               const fallback = k === "salons" ? "Salonlar" : "Ustalar";
+              const Icon = k === "salons" ? SparklesIcon : Scissors;
               return (
                 <button
                   key={k}
                   onClick={() => setTab(k)}
                   className={cn(
-                    "relative rounded-full px-6 py-2 text-[12px] font-bold tracking-wide transition-colors",
+                    "relative inline-flex items-center gap-1.5 rounded-full px-5 py-2 text-[12px] font-bold tracking-wide transition-colors",
                     isActive ? "text-background" : "text-foreground",
                   )}
                 >
@@ -246,8 +291,11 @@ function MapView() {
                       transition={{ type: "spring", stiffness: 380, damping: 32 }}
                     />
                   )}
-                  <span className="relative z-10" suppressHydrationWarning>
-                    {mounted ? (t(`map.${k}`) as string) : fallback}
+                  <span className="relative z-10 inline-flex items-center gap-1.5">
+                    <Icon className="h-3.5 w-3.5" strokeWidth={2.4} />
+                    <span suppressHydrationWarning>
+                      {mounted ? (t(`map.${k}`) as string) : fallback}
+                    </span>
                   </span>
                 </button>
               );
@@ -256,27 +304,37 @@ function MapView() {
         </div>
       </div>
 
-      {/* Heatmap chip (top-left under header) */}
-      <button
-        onClick={() => setHeatmap((v) => !v)}
-        className={cn(
-          "absolute left-4 z-20 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold shadow-md transition-colors",
-          heatmap ? "bg-foreground text-background" : "bg-background text-foreground",
-        )}
-        style={{ top: "calc(env(safe-area-inset-top) + 130px)" }}
+      {/* Radius selector — floating left */}
+      <div
+        className="absolute left-4 z-20"
+        style={{ top: "calc(env(safe-area-inset-top) + 132px)" }}
       >
-        <Flame className="h-3.5 w-3.5" />
-        Issiq hudud
-      </button>
+        <div className="glass-dock flex w-[148px] items-center gap-2 rounded-full px-3 py-2 shadow-soft">
+          <Locate className="h-3.5 w-3.5 text-gold" strokeWidth={2.4} />
+          <input
+            type="range"
+            min={1}
+            max={20}
+            step={1}
+            value={radius}
+            onChange={(e) => setRadius(Number(e.target.value))}
+            aria-label="Qidiruv radiusi"
+            className="h-1 flex-1 appearance-none rounded-full bg-foreground/15 accent-gold"
+          />
+          <span className="w-9 text-right text-[11px] font-bold tabular-nums text-foreground">
+            {radius} km
+          </span>
+        </div>
+      </div>
 
-      {/* FAB stack — right side, NO +/- zoom */}
+      {/* FAB stack — right */}
       <div
         className="absolute right-4 z-20 flex flex-col gap-2"
         style={{ bottom: "calc(env(safe-area-inset-bottom) + 220px)" }}
       >
         <button
           onClick={() => setBearing((b) => (b === 0 ? 30 : 0))}
-          className="grid h-11 w-11 place-items-center rounded-full bg-background shadow-md active:scale-95"
+          className="grid h-11 w-11 place-items-center rounded-full bg-background/90 text-foreground shadow-luxury ring-1 ring-foreground/10 backdrop-blur active:scale-95"
           aria-label="Compass"
         >
           <motion.div animate={{ rotate: -bearing }}>
@@ -288,7 +346,7 @@ function MapView() {
             setBearing(0);
             focusSalon(filtered[0].id);
           }}
-          className="grid h-11 w-11 place-items-center rounded-full bg-foreground text-background shadow-lg active:scale-95"
+          className="grid h-11 w-11 place-items-center rounded-full bg-gold text-onyx shadow-luxury active:scale-95"
           aria-label="Recenter"
         >
           <Locate className="h-5 w-5" />
@@ -309,7 +367,7 @@ function MapView() {
           else if (v > (SNAPS.half - SNAPS.peek) / 2) snapTo("peek");
           else snapTo("half");
         }}
-        className="absolute inset-x-0 bottom-0 z-30 flex flex-col rounded-t-3xl bg-background shadow-2xl"
+        className="absolute inset-x-0 bottom-0 z-30 flex flex-col rounded-t-[28px] bg-background text-foreground shadow-2xl ring-1 ring-foreground/5"
       >
         <div
           className="flex shrink-0 cursor-grab flex-col items-center pt-3 pb-2 active:cursor-grabbing"
@@ -318,31 +376,31 @@ function MapView() {
           <div className="h-1.5 w-12 rounded-full bg-muted-foreground/30" />
           <div className="mt-2 flex w-full items-center justify-between px-5">
             <div>
-              <h3 className="text-[15px] font-bold" suppressHydrationWarning>
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gold">
+                Yaqin atrofda · {radius} km
+              </p>
+              <h3 className="font-display text-lg font-semibold tracking-tight" suppressHydrationWarning>
                 {filtered.length} {mounted ? (t(tab === "salons" ? "map.salons" : "map.barbers") as string) : tab === "salons" ? "Salonlar" : "Ustalar"}
               </h3>
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                Yaqin atrofda
-              </p>
             </div>
             <div className="flex items-center gap-1.5">
               <button
                 onClick={(e) => { e.stopPropagation(); cycle(-1); }}
-                className="grid h-8 w-8 place-items-center rounded-full bg-surface active:scale-95"
+                className="grid h-9 w-9 place-items-center rounded-full border border-border bg-surface active:scale-95"
                 aria-label="Prev"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); cycle(1); }}
-                className="grid h-8 w-8 place-items-center rounded-full bg-surface active:scale-95"
+                className="grid h-9 w-9 place-items-center rounded-full border border-border bg-surface active:scale-95"
                 aria-label="Next"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); snapTo("full"); }}
-                className="grid h-8 w-8 place-items-center rounded-full bg-foreground text-background active:scale-95"
+                className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-background active:scale-95"
               >
                 <ChevronUp className="h-4 w-4" />
               </button>
@@ -350,7 +408,7 @@ function MapView() {
           </div>
         </div>
 
-        {/* Horizontal sync carousel (always visible in sheet) */}
+        {/* Luxury carousel */}
         <div
           ref={scrollRef}
           className="no-scrollbar flex shrink-0 gap-3 overflow-x-auto px-4 pb-3 pt-1 snap-x snap-mandatory"
@@ -363,25 +421,40 @@ function MapView() {
                 data-id={s.id}
                 onClick={() => focusSalon(s.id)}
                 className={cn(
-                  "snap-center flex w-[240px] shrink-0 items-center gap-3 rounded-2xl border p-3 text-left transition-all",
+                  "snap-center relative flex w-[280px] shrink-0 overflow-hidden rounded-3xl text-left transition-all",
                   isActive
-                    ? "border-foreground bg-surface scale-[1.02] shadow-md"
-                    : "border-border bg-background",
+                    ? "scale-[1.02] ring-2 ring-gold shadow-luxury"
+                    : "ring-1 ring-foreground/5 shadow-soft",
                 )}
               >
                 <div
-                  className="h-12 w-12 shrink-0 rounded-xl"
+                  className="h-[110px] w-[110px] shrink-0"
                   style={{
-                    background: `linear-gradient(135deg, oklch(0.85 0.04 ${(Number(s.id) * 80) % 360}), oklch(0.55 0.06 ${(Number(s.id) * 80 + 50) % 360}))`,
+                    background: `linear-gradient(135deg, oklch(0.78 0.05 ${(Number(s.id) * 80) % 360}), oklch(0.30 0.04 ${(Number(s.id) * 80 + 50) % 360}))`,
                   }}
                 />
-                <div className="min-w-0 flex-1">
-                  <h4 className="truncate text-sm font-bold">{s.name}</h4>
-                  <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-bold">
-                    <Star className="h-3 w-3 fill-foreground" strokeWidth={0} />
-                    {s.rating}
-                    <span className="text-muted-foreground">·</span>
-                    <span className="text-muted-foreground">{s.distanceKm} km</span>
+                <div className="flex min-w-0 flex-1 flex-col justify-between bg-background p-3">
+                  <div className="min-w-0">
+                    <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-gold">
+                      {s.category}
+                    </p>
+                    <h4 className="mt-0.5 truncate font-display text-base font-semibold leading-tight">
+                      {s.name}
+                    </h4>
+                    <p className="mt-1 flex items-center gap-1 truncate text-[11px] font-semibold text-muted-foreground">
+                      <MapPin className="h-3 w-3" strokeWidth={2.4} />
+                      <span className="truncate">{s.address}</span>
+                    </p>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between gap-1.5 text-[11px] font-bold">
+                    <span className="inline-flex items-center gap-1">
+                      <Star className="h-3 w-3 fill-gold text-gold" strokeWidth={0} />
+                      {s.rating}
+                      <span className="text-muted-foreground">· {s.distanceKm} km</span>
+                    </span>
+                    <span className="rounded-full bg-foreground px-2 py-0.5 text-background">
+                      {shortPrice(s.priceFrom)}+
+                    </span>
                   </div>
                 </div>
               </button>
@@ -392,7 +465,7 @@ function MapView() {
         {/* Full list (visible when expanded) */}
         <div
           className="flex-1 overflow-y-auto border-t border-border px-4 pt-3"
-          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 100px)" }}
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 120px)" }}
         >
           {filtered.map((s) => {
             const isActive = s.id === active;
@@ -402,21 +475,25 @@ function MapView() {
                 onClick={() => focusSalon(s.id)}
                 className={cn(
                   "mb-2 flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-colors",
-                  isActive ? "border-foreground bg-surface" : "border-border bg-background active:bg-surface",
+                  isActive
+                    ? "border-gold bg-surface"
+                    : "border-border bg-background active:bg-surface",
                 )}
               >
                 <div
-                  className="h-14 w-14 shrink-0 rounded-xl"
+                  className="h-14 w-14 shrink-0 rounded-2xl"
                   style={{
-                    background: `linear-gradient(135deg, oklch(0.85 0.04 ${(Number(s.id) * 80) % 360}), oklch(0.55 0.06 ${(Number(s.id) * 80 + 50) % 360}))`,
+                    background: `linear-gradient(135deg, oklch(0.78 0.05 ${(Number(s.id) * 80) % 360}), oklch(0.30 0.04 ${(Number(s.id) * 80 + 50) % 360}))`,
                   }}
                 />
                 <div className="min-w-0 flex-1">
                   <h4 className="truncate text-sm font-bold">{s.name}</h4>
-                  <p className="truncate text-[11px] font-medium text-muted-foreground">{s.address}</p>
+                  <p className="truncate text-[11px] font-medium text-muted-foreground">
+                    {s.address}
+                  </p>
                   <div className="mt-1 flex items-center gap-2 text-[11px] font-bold">
                     <span className="flex items-center gap-1">
-                      <Star className="h-3 w-3 fill-foreground" strokeWidth={0} />
+                      <Star className="h-3 w-3 fill-gold text-gold" strokeWidth={0} />
                       {s.rating}
                     </span>
                     <span className="text-muted-foreground">·</span>
