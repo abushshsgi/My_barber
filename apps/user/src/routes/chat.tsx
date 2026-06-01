@@ -58,7 +58,7 @@ function ChatList() {
 
       {/* Search */}
       <div className="px-5">
-        <div className="flex items-center gap-2 rounded-2xl bg-surface px-4 py-3">
+        <div className="flex items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3">
           <Search className="h-4 w-4 text-muted-foreground" strokeWidth={2.4} />
           <input
             value={q}
@@ -76,7 +76,9 @@ function ChatList() {
               onClick={() => setFilter(k)}
               className={cn(
                 "rounded-full px-4 py-1.5 text-[11px] font-bold uppercase tracking-wide transition-colors",
-                filter === k ? "bg-foreground text-background" : "bg-surface text-foreground/70",
+                filter === k
+                  ? "bg-onyx text-ivory shadow-soft"
+                  : "border border-border bg-background text-foreground/70",
               )}
             >
               {k === "all" ? "Hammasi" : `O'qilmagan${totalUnread > 0 ? ` · ${totalUnread}` : ""}`}
@@ -107,7 +109,7 @@ function ChatList() {
                   {initials(c.barberName)}
                 </div>
                 {online && (
-                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-foreground ring-2 ring-background" />
+                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-background" />
                 )}
               </div>
 
@@ -135,7 +137,7 @@ function ChatList() {
                     {c.lastMessage}
                   </p>
                   {c.unread > 0 && (
-                    <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-foreground px-1.5 text-[10px] font-bold text-background">
+                    <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-gold px-1.5 text-[10px] font-bold text-onyx shadow-soft">
                       {c.unread}
                     </span>
                   )}
