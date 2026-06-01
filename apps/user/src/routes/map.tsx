@@ -6,7 +6,8 @@ import {
   ChevronUp, Compass, Flame, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { salons, shortPrice } from "@/lib/mock-data";
+import { shortPrice } from "@/lib/mock-data";
+import { useSalons } from "@/hooks/use-user-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/map")({
@@ -38,10 +39,16 @@ function MapView() {
   useEffect(() => setMounted(true), []);
 
   const [tab, setTab] = useState<"salons" | "barbers">("salons");
-  const [active, setActive] = useState(salons[0].id);
+  const [active, setActive] = useState("");
   const [query, setQuery] = useState("");
   const [heatmap, setHeatmap] = useState(false);
   const [bearing, setBearing] = useState(0);
+  const salonsQuery = useSalons(query);
+  const salons = salonsQuery.data?.salons ?? [];
+
+  useEffect(() => {
+    if (!active && salons[0]) setActive(salons[0].id);
+  }, [active, salons]);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return salons;
@@ -49,7 +56,7 @@ function MapView() {
     return salons.filter(
       (s) => s.name.toLowerCase().includes(q) || s.address.toLowerCase().includes(q),
     );
-  }, [query]);
+  }, [query, salons]);
 
   const markers = filtered.map((s, i) => ({ ...s, pos: POSITIONS[i % POSITIONS.length] }));
 
@@ -99,6 +106,7 @@ function MapView() {
     el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   };
   const cycle = (dir: 1 | -1) => {
+    if (filtered.length === 0) return;
     const idx = filtered.findIndex((s) => s.id === active);
     const next = filtered[(idx + dir + filtered.length) % filtered.length];
     focusSalon(next.id);
@@ -286,7 +294,7 @@ function MapView() {
         <button
           onClick={() => {
             setBearing(0);
-            focusSalon(filtered[0].id);
+            if (filtered[0]) focusSalon(filtered[0].id);
           }}
           className="grid h-11 w-11 place-items-center rounded-full bg-foreground text-background shadow-lg active:scale-95"
           aria-label="Recenter"
@@ -319,7 +327,7 @@ function MapView() {
           <div className="mt-2 flex w-full items-center justify-between px-5">
             <div>
               <h3 className="text-[15px] font-bold" suppressHydrationWarning>
-                {filtered.length} {mounted ? (t(tab === "salons" ? "map.salons" : "map.barbers") as string) : tab === "salons" ? "Salonlar" : "Ustalar"}
+                {salonsQuery.isLoading ? "..." : filtered.length} {mounted ? (t(tab === "salons" ? "map.salons" : "map.barbers") as string) : tab === "salons" ? "Salonlar" : "Ustalar"}
               </h3>
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
                 Yaqin atrofda
@@ -355,6 +363,11 @@ function MapView() {
           ref={scrollRef}
           className="no-scrollbar flex shrink-0 gap-3 overflow-x-auto px-4 pb-3 pt-1 snap-x snap-mandatory"
         >
+          {filtered.length === 0 && !salonsQuery.isLoading && (
+            <div className="w-full px-5 py-10 text-center text-sm font-bold text-muted-foreground">
+              Xarita uchun salon topilmadi
+            </div>
+          )}
           {filtered.map((s) => {
             const isActive = s.id === active;
             return (

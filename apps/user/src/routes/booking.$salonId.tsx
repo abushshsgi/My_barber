@@ -3,9 +3,12 @@ import { useState } from "react";
 import { Check, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { salons, formatPrice } from "@/lib/mock-data";
+import { formatPrice } from "@/lib/mock-data";
 import { PageHeader } from "@/components/PageHeader";
 import { Stepper } from "@/components/Stepper";
+import { EmptyState } from "@/components/EmptyState";
+import { useBookingAvailability, useCreateBooking, useSalon } from "@/hooks/use-user-data";
+import { buildStartAt, todayDateValue } from "@/lib/api-adapters";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/$salonId")({
@@ -24,7 +27,9 @@ function BookingFlow() {
   const { t } = useTranslation();
   const { salonId } = useParams({ from: "/booking/$salonId" });
   const router = useRouter();
-  const salon = salons.find((s) => s.id === salonId) ?? salons[0];
+  const salonQuery = useSalon(salonId);
+  const salon = salonQuery.data?.salon;
+  const createBookingMutation = useCreateBooking();
 
   const [step, setStep] = useState(1);
   const [barberId, setBarberId] = useState<string | null>(null);
@@ -39,23 +44,64 @@ function BookingFlow() {
     (step === 3 && slot) ||
     step === 4;
 
-  const selectedServices = salon.services.filter((s) => serviceIds.includes(s.id));
+  const selectedServices = salon?.services.filter((s) => serviceIds.includes(s.id)) ?? [];
   const total = selectedServices.reduce((sum, s) => sum + s.price, 0);
-  const selectedBarber = salon.staff.find((b) => b.id === barberId);
+  const selectedBarber = salon?.staff.find((b) => b.id === barberId);
 
   const today = new Date();
   const dayList = Array.from({ length: 7 }).map((_, i) => {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
-    return { date: d.getDate(), day: DAYS[d.getDay() === 0 ? 6 : d.getDay() - 1] };
+    return {
+      date: d.getDate(),
+      dateValue: todayDateValue(i),
+      day: DAYS[d.getDay() === 0 ? 6 : d.getDay() - 1],
+    };
   });
+  const selectedDate = dayList[dayIdx].dateValue;
+  const availability = useBookingAvailability({
+    salon: salonId,
+    barber: barberId,
+    date: selectedDate,
+    serviceIds,
+  });
+  const availableSlots = availability.data?.slots?.length ? availability.data.slots : SLOTS;
 
-  const handleSubmit = () => {
-    toast.success("Buyurtma yuborildi!", {
-      description: `${salon.name} · ${slot}`,
+  const handleSubmit = async () => {
+    if (!salon || !barberId || !slot || serviceIds.length === 0) return;
+    if (salonQuery.data?.fallback) {
+      toast.success("Demo bron yaratildi", { description: `${salon.name} · ${slot}` });
+      setTimeout(() => router.navigate({ to: "/bookings" }), 700);
+      return;
+    }
+    await createBookingMutation.mutateAsync({
+      salon: salon.id,
+      barber: barberId,
+      serviceIds,
+      startAt: buildStartAt(selectedDate, slot),
     });
-    setTimeout(() => router.navigate({ to: "/bookings" }), 700);
+    void router.navigate({ to: "/bookings" });
   };
+
+  if (salonQuery.isLoading) {
+    return (
+      <div>
+        <PageHeader showBack title={t("booking.title")} />
+        <div className="px-5 pt-8">
+          <div className="h-96 animate-pulse rounded-3xl bg-surface" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!salon) {
+    return (
+      <div>
+        <PageHeader showBack title={t("booking.title")} />
+        <EmptyState title="Salon topilmadi" description="Bron qilish uchun salon ma'lumotlari kerak." />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -71,6 +117,11 @@ function BookingFlow() {
             <h2 className="text-xl font-bold tracking-tight">{t("booking.selectBarber")}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{salon.name}</p>
             <div className="mt-6 grid grid-cols-2 gap-3">
+              {salon.staff.length === 0 && (
+                <div className="col-span-2">
+                  <EmptyState title="Aktiv ustalar yo'q" description="Bu salon hozircha bron qabul qilmayapti." />
+                </div>
+              )}
               {salon.staff.map((b) => {
                 const sel = barberId === b.id;
                 return (
@@ -106,6 +157,9 @@ function BookingFlow() {
               {selectedBarber?.name}
             </p>
             <div className="mt-6 space-y-2">
+              {salon.services.length === 0 && (
+                <EmptyState title="Xizmatlar yo'q" description="Salon xizmat qo'shmaguncha bron yaratib bo'lmaydi." />
+              )}
               {salon.services.map((s) => {
                 const sel = serviceIds.includes(s.id);
                 return (
@@ -171,7 +225,17 @@ function BookingFlow() {
             </div>
 
             <div className="mt-6 grid grid-cols-3 gap-2">
-              {SLOTS.map((s) => {
+              {availability.isLoading && (
+                <div className="col-span-3 rounded-2xl bg-surface p-4 text-center text-sm font-bold text-muted-foreground">
+                  Bo'sh vaqtlar tekshirilmoqda...
+                </div>
+              )}
+              {availability.data?.closed_reason && (
+                <div className="col-span-3 rounded-2xl bg-surface p-4 text-center text-sm font-bold text-muted-foreground">
+                  {availability.data.closed_reason}
+                </div>
+              )}
+              {availableSlots.map((s) => {
                 const sel = slot === s;
                 return (
                   <button
@@ -283,7 +347,8 @@ function BookingFlow() {
           ) : (
             <button
               onClick={handleSubmit}
-              className="flex-[2] rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background"
+              disabled={createBookingMutation.isPending}
+              className="flex-[2] rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background disabled:opacity-50"
             >
               {t("booking.confirm")}
             </button>

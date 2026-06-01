@@ -6,6 +6,7 @@ import { ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout"
 import { SalonCard } from "@/components/SalonCard";
 import { EmptyState } from "@/components/EmptyState";
 import { useFavorites } from "@/hooks/use-favorites";
+import { useFavoriteSalons } from "@/hooks/use-user-data";
 
 export const Route = createFileRoute("/favorites")({
   head: () => ({ meta: [{ title: "Sevimlilar — mysaloon.uz" }] }),
@@ -14,12 +15,23 @@ export const Route = createFileRoute("/favorites")({
 
 function Favorites() {
   const { t } = useTranslation();
-  const { ids } = useFavorites();
-  const favs = ids.length > 0 ? salons.filter((s) => ids.includes(s.id)) : [];
+  const { ids, syncing } = useFavorites();
+  const apiFavorites = useFavoriteSalons();
+  const favs = syncing
+    ? apiFavorites.data || []
+    : ids.length > 0
+      ? salons.filter((s) => ids.includes(s.id))
+      : [];
 
   return (
     <ProfileSubpageLayout title={t("favorites.title")}>
-      {favs.length === 0 ? (
+      {apiFavorites.isLoading ? (
+        <div className="space-y-5">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="h-64 animate-pulse rounded-2xl bg-surface" />
+          ))}
+        </div>
+      ) : favs.length === 0 ? (
         <EmptyState
           icon={<Heart className="h-7 w-7" />}
           title={t("favorites.empty")}

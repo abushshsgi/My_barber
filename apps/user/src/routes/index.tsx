@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Search, ChevronRight, Sparkles, Tag, Gift, Award, Flame, GitCompareArrows, Film, Wand2, Wallet } from "lucide-react";
+import { Search, ChevronRight, Sparkles, Tag, Gift, Award, Flame, GitCompareArrows, Film, Wand2, Wallet, WifiOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { salons, trendingStyles, offers, formatPrice, walletSummary } from "@/lib/mock-data";
+import { trendingStyles, offers, formatPrice, walletSummary } from "@/lib/mock-data";
 import type { Category } from "@/lib/mock-data";
 import { SalonCard } from "@/components/SalonCard";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
 import { useAudience, matchAudience, audienceToCategory, categoriesForAudience } from "@/hooks/use-audience";
+import { useSalons } from "@/hooks/use-user-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -35,6 +36,8 @@ function Home() {
   const { audience } = useAudience();
   const [cat, setCat] = useState<Category | "all">("all");
   const [query, setQuery] = useState("");
+  const salonsQuery = useSalons(query);
+  const salonRows = salonsQuery.data?.salons ?? [];
 
   useEffect(() => {
     setCat(audienceToCategory(audience));
@@ -51,7 +54,7 @@ function Home() {
     categoriesForAudience(audience).includes(c.key),
   );
 
-  const filtered = salons.filter(
+  const filtered = salonRows.filter(
     (s) =>
       matchAudience(s.audience, audience) &&
       (effectiveCat === "all" || s.category === effectiveCat) &&
@@ -107,6 +110,15 @@ function Home() {
           />
         </div>
       </div>
+
+      {salonsQuery.data?.fallback && (
+        <div className="mx-5 mt-3 flex items-start gap-2 rounded-2xl border border-border bg-surface p-3 text-xs text-muted-foreground">
+          <WifiOff className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            Backend katalogiga ulanishda muammo: {salonsQuery.data.error}. Hozir demo katalog ko'rsatilmoqda.
+          </p>
+        </div>
+      )}
 
       {/* Categories */}
       <div className="no-scrollbar mt-5 flex gap-2 overflow-x-auto px-5">
@@ -262,7 +274,13 @@ function Home() {
           </Link>
         </div>
 
-        {filtered.length === 0 ? (
+        {salonsQuery.isLoading ? (
+          <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-64 animate-pulse rounded-2xl bg-surface" />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="rounded-2xl bg-surface p-8 text-center">
             <p className="text-sm font-bold">Mos salon topilmadi</p>
             <p className="mt-1 text-xs text-muted-foreground">

@@ -259,6 +259,11 @@ class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticatedBarberAware]
 
+    def _can_edit_review(self, request, review):
+        return is_platform_admin(request) or (
+            not isinstance(request.user, BarberPrincipal) and review.author_id == request.user.id
+        )
+
     def get_queryset(self):
         if self.request.query_params.get("mine") == "1":
             if not self.request.user.is_authenticated:
@@ -300,6 +305,32 @@ class ReviewViewSet(viewsets.ModelViewSet):
         if self.action in ("list", "retrieve"):
             return [AllowAny()]
         return super().get_permissions()
+
+    def create(self, request, *args, **kwargs):
+        if isinstance(request.user, BarberPrincipal):
+            return Response(
+                {"detail": "Sharh qoldirish uchun mijoz akkaunti bilan kiring."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        review = self.get_object()
+        if not self._can_edit_review(request, review):
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        review = self.get_object()
+        if not self._can_edit_review(request, review):
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        review = self.get_object()
+        if not self._can_edit_review(request, review):
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        return super().destroy(request, *args, **kwargs)
 
     def perform_create(self, serializer):
         review = serializer.save()

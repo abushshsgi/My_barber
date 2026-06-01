@@ -3,7 +3,16 @@
   "version": "0.0.0",
   "private": true,
   "exports": {
+    ".": "./src/index.ts",
+    "./api": "./src/api.ts",
+    "./barber-queries": "./src/barber-queries.ts",
+    "./format": "./src/format.ts",
     "./http-errors": "./src/http-errors.ts",
+    "./mapSalon": "./src/mapSalon.ts",
+    "./notifications-queries": "./src/notifications-queries.ts",
+    "./salon-queries": "./src/salon-queries.ts",
+    "./types": "./src/types/index.ts",
+    "./utils": "./src/utils.ts",
     "./ws-url": "./src/ws-url.ts"
   },
   "dependencies": {

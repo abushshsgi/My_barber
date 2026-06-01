@@ -113,10 +113,10 @@ export function audienceToCategory(a: AudienceFilter): Category | "all" {
   return "all";
 }
 
-/** Erkak/Ayol tanlanganda faqat shu auditoriyaga mos kontent (unisex ham kirmaydi). */
+/** Erkak/Ayol tanlanganda universal salonlar ham ko'rinsin. */
 export function matchAudience(itemAudience: Audience, filter: AudienceFilter): boolean {
   if (filter === "all") return true;
-  return itemAudience === filter;
+  return itemAudience === filter || itemAudience === "unisex";
 }
 
 export function categoriesForAudience(a: AudienceFilter): (Category | "all")[] {

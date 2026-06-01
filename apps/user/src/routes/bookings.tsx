@@ -2,10 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Calendar, MessageSquare, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { bookings, formatPrice } from "@/lib/mock-data";
+import { formatPrice, type BookingItem } from "@/lib/mock-data";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { getUpcomingBookings } from "@/lib/bookings-utils";
+import { useBookings, useCancelBooking } from "@/hooks/use-user-data";
 import { cn } from "@/lib/utils";
 
 type BookingsSearch = { focus?: string };
@@ -22,6 +23,8 @@ function MyBookings() {
   const { t } = useTranslation();
   const { focus } = Route.useSearch();
   const [tab, setTab] = useState<"upcoming" | "history">("upcoming");
+  const bookingsQuery = useBookings();
+  const bookings = bookingsQuery.data?.bookings ?? [];
   const now = Date.now();
 
   const upcoming = getUpcomingBookings(bookings, now);
@@ -44,6 +47,12 @@ function MyBookings() {
     <div>
       <PageHeader title={t("bookings.title")} />
 
+      {bookingsQuery.data?.fallback && (
+        <div className="mx-5 mb-4 rounded-2xl border border-border bg-surface p-3 text-xs text-muted-foreground">
+          Backend bronlariga ulanib bo'lmadi: {bookingsQuery.data.error}. Demo bronlar ko'rsatilmoqda.
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="px-5">
         <div className="flex gap-1 rounded-2xl bg-surface p-1">
@@ -63,7 +72,13 @@ function MyBookings() {
       </div>
 
       <div className="px-5 pt-6">
-        {list.length === 0 ? (
+        {bookingsQuery.isLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-32 animate-pulse rounded-2xl bg-surface" />
+            ))}
+          </div>
+        ) : list.length === 0 ? (
           <EmptyState
             icon={<Calendar className="h-7 w-7" />}
             title={t("common.empty")}
@@ -93,10 +108,11 @@ function BookingCard({
   booking: b,
   focused,
 }: {
-  booking: typeof bookings[number];
+  booking: BookingItem;
   focused?: boolean;
 }) {
   const { t } = useTranslation();
+  const cancel = useCancelBooking();
   const d = new Date(b.date);
   const dateStr = d.toLocaleDateString("uz-UZ", { day: "numeric", month: "short" });
   const timeStr = d.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
@@ -162,7 +178,11 @@ function BookingCard({
           </Link>
         )}
         {b.status === "pending" || b.status === "accepted" ? (
-          <button className="flex-1 rounded-xl border-2 border-foreground py-2.5 text-xs font-bold">
+          <button
+            onClick={() => cancel.mutate(b.id)}
+            disabled={cancel.isPending}
+            className="flex-1 rounded-xl border-2 border-foreground py-2.5 text-xs font-bold disabled:opacity-50"
+          >
             {t("common.cancel")}
           </button>
         ) : null}

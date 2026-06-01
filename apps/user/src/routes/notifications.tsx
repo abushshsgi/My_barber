@@ -11,11 +11,12 @@ import {
   Check,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { notifications as initial, type Notification } from "@/lib/mock-data";
+import type { Notification } from "@/lib/mock-data";
 import { ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
 import { getNotificationLinkProps } from "@/lib/notification-links";
+import { useNotifications } from "@/hooks/use-user-data";
 
 export const Route = createFileRoute("/notifications")({
   head: () => ({ meta: [{ title: "Bildirishnomalar — mysaloon.uz" }] }),
@@ -88,14 +89,44 @@ function usePrefs() {
 
 function Notifications() {
   const { t } = useTranslation();
-  const [items, setItems] = useState(initial);
+  const notificationsQuery = useNotifications();
   const [filter, setFilter] = useState<FilterKey>("all");
   const [showSettings, setShowSettings] = useState(false);
   const { prefs, update, mounted } = usePrefs();
 
-  const markAll = () => setItems((prev) => prev.map((n) => ({ ...n, read: true })));
-  const markOne = (id: string) =>
-    setItems((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  const items = useMemo<Notification[]>(() => {
+    return (notificationsQuery.data || []).map((n) => {
+      const type: Notification["type"] =
+        n.type.includes("chat")
+          ? "chat_message"
+          : n.type.includes("review")
+            ? "review"
+            : n.type.includes("promo") || n.type.includes("offer")
+              ? "promo"
+              : "booking";
+      const payload = n.payload || {};
+      const bookingId = payload.booking_id ? String(payload.booking_id) : undefined;
+      const chatId = payload.conversation_id ? String(payload.conversation_id) : undefined;
+      const reviewId = payload.review_id ? String(payload.review_id) : undefined;
+      return {
+        id: String(n.id),
+        type,
+        title: n.title,
+        body: n.body,
+        time: new Date(n.created_at).toLocaleDateString("uz-UZ", {
+          day: "numeric",
+          month: "short",
+        }),
+        read: Boolean(n.read_at),
+        bookingId,
+        chatId,
+        reviewId,
+      };
+    });
+  }, [notificationsQuery.data]);
+
+  const markAll = () => notificationsQuery.markAll();
+  const markOne = (id: string) => notificationsQuery.markOne(id);
 
   const enabledItems = useMemo(
     () => (mounted ? items.filter((n) => prefs[n.type]) : items),
@@ -248,7 +279,13 @@ function Notifications() {
         </div>
       )}
 
-      {filtered.length === 0 ? (
+      {notificationsQuery.isLoading ? (
+        <div className="divide-y divide-border">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="mx-5 my-3 h-20 animate-pulse rounded-2xl bg-surface" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
         <EmptyState icon={<Bell className="h-7 w-7" />} title={t("notifications.empty")} />
       ) : (
         <div className="divide-y divide-border">

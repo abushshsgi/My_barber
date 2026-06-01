@@ -2,17 +2,19 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { Heart, Star, MapPin, Share2, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { salons, formatPrice } from "@/lib/mock-data";
+import { formatPrice } from "@/lib/mock-data";
 import { PageHeader } from "@/components/PageHeader";
+import { EmptyState } from "@/components/EmptyState";
+import { useSalon } from "@/hooks/use-user-data";
+import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/salon/$id")({
   head: ({ params }) => {
-    const salon = salons.find((s) => s.id === params.id);
     return {
       meta: [
-        { title: `${salon?.name ?? "Salon"} — mysaloon.uz` },
-        { name: "description", content: salon?.about ?? "Salon detail page." },
+        { title: `Salon ${params.id} — mysaloon.uz` },
+        { name: "description", content: "Salon detail page." },
       ],
     };
   },
@@ -25,9 +27,33 @@ type TabKey = (typeof TAB_KEYS)[number];
 function SalonPage() {
   const { t } = useTranslation();
   const { id } = useParams({ from: "/salon/$id" });
-  const salon = salons.find((s) => s.id === id) ?? salons[0];
+  const salonQuery = useSalon(id);
+  const salon = salonQuery.data?.salon;
   const [tab, setTab] = useState<TabKey>("services");
-  const [fav, setFav] = useState(false);
+  const { isFav, toggle } = useFavorites();
+
+  if (salonQuery.isLoading) {
+    return (
+      <div>
+        <PageHeader showBack title="Salon" />
+        <div className="px-5 pt-4">
+          <div className="h-96 animate-pulse rounded-3xl bg-surface" />
+          <div className="mt-5 h-28 animate-pulse rounded-2xl bg-surface" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!salon) {
+    return (
+      <div>
+        <PageHeader showBack title="Salon" />
+        <EmptyState title="Salon topilmadi" description="Bu salon mavjud emas yoki backend javob bermadi." />
+      </div>
+    );
+  }
+
+  const fav = isFav(salon.id);
 
   return (
     <div className="pb-32">
@@ -52,7 +78,7 @@ function SalonPage() {
                   <Share2 className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => setFav((f) => !f)}
+                  onClick={() => toggle(salon.id)}
                   className="grid h-10 w-10 place-items-center rounded-full bg-background/90 backdrop-blur active:scale-95"
                 >
                   <Heart
@@ -67,6 +93,11 @@ function SalonPage() {
 
         {/* Bottom info */}
         <div className="absolute inset-x-0 bottom-0 p-5 text-background">
+          {salonQuery.data?.fallback && (
+            <p className="mb-2 inline-flex rounded-full bg-background/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground">
+              Demo ma'lumot
+            </p>
+          )}
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] opacity-80">
             {salon.category}
           </p>
@@ -128,6 +159,9 @@ function SalonPage() {
 
         {tab === "services" && (
           <div className="divide-y divide-border">
+            {salon.services.length === 0 && (
+              <EmptyState title="Xizmatlar hali qo'shilmagan" description="Salon xizmatlari backend orqali kelishi bilan ko'rinadi." />
+            )}
             {salon.services.map((s) => (
               <div key={s.id} className="flex items-center justify-between gap-3 py-4">
                 <div className="min-w-0">
@@ -153,6 +187,11 @@ function SalonPage() {
 
         {tab === "staff" && (
           <div className="grid grid-cols-2 gap-3">
+            {salon.staff.length === 0 && (
+              <div className="col-span-2">
+                <EmptyState title="Ustalar hali ko'rsatilmagan" description="Salon aktiv ustalarni backendda e'lon qilishi kerak." />
+              </div>
+            )}
             {salon.staff.map((b) => (
               <div key={b.id} className="rounded-2xl bg-surface p-4 text-center">
                 <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-foreground text-lg font-bold text-background">
@@ -171,6 +210,9 @@ function SalonPage() {
 
         {tab === "reviews" && (
           <div className="space-y-4">
+            {salon.reviews.length === 0 && (
+              <EmptyState title="Sharhlar yo'q" description="Birinchi tashrifdan keyin sharh qoldiring." />
+            )}
             {salon.reviews.map((r) => (
               <div key={r.id} className="rounded-2xl bg-surface p-4">
                 <div className="flex items-center justify-between">
@@ -192,6 +234,11 @@ function SalonPage() {
 
         {tab === "portfolio" && (
           <div className="grid grid-cols-3 gap-2">
+            {salon.portfolio.length === 0 && (
+              <div className="col-span-3">
+                <EmptyState title="Portfolio bo'sh" description="Tugallangan ish rasmlari shu yerda chiqadi." />
+              </div>
+            )}
             {salon.portfolio.map((p, i) => (
               <div
                 key={p}

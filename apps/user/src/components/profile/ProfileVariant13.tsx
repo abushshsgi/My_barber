@@ -17,20 +17,21 @@ import {
 import { useTranslation } from "react-i18next";
 import { ProfileGoMenuGroup, ProfileGoQuickRow, ProfileWalletCard } from "@/components/profile/ProfileGroupedMenu";
 import { useProfileScreen } from "@/components/profile/useProfileScreen";
+import { useNotifications } from "@/hooks/use-user-data";
 import { formatBookingWhen } from "@/lib/bookings-utils";
 import {
   formatPrice,
   getUserSubscription,
   loyaltyMock,
   paymentMethods,
-  userProfile,
   walletSummary,
 } from "@/lib/mock-data";
 
 /** Profil — Yandex Go uslubi. */
 export function ProfileVariant13() {
   const { t } = useTranslation();
-  const { audience, nextBooking } = useProfileScreen();
+  const { audience, nextBooking, userProfile } = useProfileScreen();
+  const notifications = useNotifications();
   const audienceLabel = t(`audience.${audience}`);
   const initials = userProfile.name
     .split(" ")
@@ -158,7 +159,12 @@ export function ProfileVariant13() {
           items={[
             { icon: Users, title: t("family.title"), to: "/family" },
             { icon: Shield, title: t("profile.privacy"), to: "/privacy" },
-            { icon: Bell, title: t("notifications.title"), to: "/notifications", badge: "2" },
+            {
+              icon: Bell,
+              title: t("notifications.title"),
+              to: "/notifications",
+              badge: notifications.unreadCount > 0 ? String(notifications.unreadCount) : undefined,
+            },
           ]}
         />
 

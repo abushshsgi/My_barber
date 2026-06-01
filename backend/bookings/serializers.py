@@ -292,8 +292,20 @@ class ReviewSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "created_at", "author_name")
 
+    def validate_rating(self, value):
+        if value < 1 or value > 5:
+            raise serializers.ValidationError("Rating 1 dan 5 gacha bo'lishi kerak.")
+        return value
+
+    def validate(self, attrs):
+        if self.instance is not None and "booking" in attrs:
+            raise serializers.ValidationError({"booking": "Sharh bookingini o'zgartirib bo'lmaydi."})
+        return attrs
+
     def validate_booking(self, booking):
         user = self.context["request"].user
+        if not isinstance(user, User):
+            raise serializers.ValidationError("Sharh qoldirish uchun mijoz akkaunti kerak.")
         if booking.customer_id != user.id:
             raise serializers.ValidationError("Not your booking.")
         if booking.status != Booking.Status.COMPLETED:

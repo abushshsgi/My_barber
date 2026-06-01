@@ -1,9 +1,9 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { setSession } from "@/lib/auth";
-import { userProfile } from "@/lib/mock-data";
+import { signInWithPassword, signUpAndSignIn } from "@/lib/auth";
+import { fetchRegions, type RegionOption } from "@/lib/user-api";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Kirish — mysaloon.uz" }] }),
@@ -12,30 +12,56 @@ export const Route = createFileRoute("/auth")({
 
 function Auth() {
   const router = useRouter();
-  const [step, setStep] = useState<"phone" | "code">("phone");
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [code, setCode] = useState(["", "", "", ""]);
+  const [region, setRegion] = useState("");
+  const [regions, setRegions] = useState<RegionOption[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const handleSendCode = () => {
-    if (phone.length < 9) {
-      toast.error("Telefon raqamini to'g'ri kiriting");
+  useEffect(() => {
+    fetchRegions()
+      .then((rows) => {
+        setRegions(rows);
+        if (rows[0]) setRegion(rows[0].value);
+      })
+      .catch(() => {
+        setRegions([]);
+      });
+  }, []);
+
+  const submit = async () => {
+    if (!email.trim() || !password) {
+      toast.error("Email va parolni kiriting");
       return;
     }
-    setStep("code");
-    toast.success("Tasdiq kodi yuborildi");
-  };
-
-  const handleVerify = () => {
-    if (code.join("").length < 4) {
-      toast.error("4 raqamli kodni kiriting");
+    if (mode === "register" && !fullName.trim()) {
+      toast.error("Ism familiyani kiriting");
       return;
     }
-    toast.success("Xush kelibsiz!");
-    setSession(`mock-token-${Date.now()}`, {
-      phone: `+998${phone}`,
-      name: userProfile.name,
-    });
-    router.navigate({ to: "/" });
+    setLoading(true);
+    try {
+      if (mode === "login") {
+        await signInWithPassword(email, password);
+      } else {
+        await signUpAndSignIn({
+          email,
+          password,
+          full_name: fullName,
+          phone: phone.trim() || undefined,
+          region: region || undefined,
+        });
+      }
+      toast.success("Xush kelibsiz!");
+      await router.invalidate();
+      router.navigate({ to: "/" });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Kirishda xatolik");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -47,80 +73,112 @@ function Auth() {
 
       <div className="flex flex-1 flex-col justify-center py-12">
         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-          {step === "phone" ? "Kirish" : "Tasdiqlash"}
+          {mode === "login" ? "Mijoz kabineti" : "Yangi mijoz"}
         </p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">
-          {step === "phone" ? "Xush kelibsiz" : "Kodni kiriting"}
+          {mode === "login" ? "Xush kelibsiz" : "Ro'yxatdan o'ting"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {step === "phone"
-            ? "Telefon raqamingizni kiriting, sizga SMS orqali tasdiq kodi yuboramiz."
-            : `+998 ${phone} raqamiga yuborilgan 4 raqamli kodni kiriting.`}
+          Backend bilan ulangan real email/parol orqali kiring. Bron, sevimlilar va bildirishnomalar shu akkauntga bog'lanadi.
         </p>
 
-        {step === "phone" ? (
-          <div className="mt-8">
-            <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-              Telefon raqami
-            </label>
-            <div className="mt-2 flex items-center overflow-hidden rounded-2xl border-2 border-border bg-background focus-within:border-foreground">
-              <span className="border-r border-border px-4 py-4 text-sm font-bold">
-                +998
-              </span>
+        <div className="mt-8 space-y-4">
+          {mode === "register" && (
+            <div>
+              <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                Ism familiya
+              </label>
               <input
-                type="tel"
-                inputMode="numeric"
-                value={phone}
-                onChange={(e) =>
-                  setPhone(e.target.value.replace(/\D/g, "").slice(0, 9))
-                }
-                placeholder="90 123 45 67"
-                className="flex-1 border-0 bg-transparent px-4 py-4 text-sm font-bold placeholder:text-muted-foreground/50 focus:outline-none"
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Ali Valiyev"
+                className="mt-2 w-full rounded-2xl border-2 border-border bg-background px-4 py-4 text-sm font-bold placeholder:text-muted-foreground/50 focus:border-foreground focus:outline-none"
               />
             </div>
+          )}
+
+          <div>
+            <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="ali@example.com"
+              className="mt-2 w-full rounded-2xl border-2 border-border bg-background px-4 py-4 text-sm font-bold placeholder:text-muted-foreground/50 focus:border-foreground focus:outline-none"
+            />
           </div>
-        ) : (
-          <div className="mt-8">
-            <div className="flex justify-center gap-3">
-              {code.map((c, i) => (
+
+          <div>
+            <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+              Parol
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Kamida 8 belgi"
+              className="mt-2 w-full rounded-2xl border-2 border-border bg-background px-4 py-4 text-sm font-bold placeholder:text-muted-foreground/50 focus:border-foreground focus:outline-none"
+            />
+          </div>
+
+          {mode === "register" && (
+            <>
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                  Telefon
+                </label>
                 <input
-                  key={i}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={c}
-                  onChange={(e) => {
-                    const v = e.target.value.replace(/\D/g, "").slice(0, 1);
-                    const next = [...code];
-                    next[i] = v;
-                    setCode(next);
-                    if (v && i < 3) {
-                      const el = document.getElementById(`otp-${i + 1}`);
-                      el?.focus();
-                    }
-                  }}
-                  id={`otp-${i}`}
-                  className="h-16 w-14 rounded-2xl border-2 border-border bg-background text-center text-2xl font-bold focus:border-foreground focus:outline-none"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+998901234567"
+                  className="mt-2 w-full rounded-2xl border-2 border-border bg-background px-4 py-4 text-sm font-bold placeholder:text-muted-foreground/50 focus:border-foreground focus:outline-none"
                 />
-              ))}
-            </div>
-            <button
-              onClick={() => setStep("phone")}
-              className="mt-6 w-full text-center text-xs font-bold text-muted-foreground underline"
-            >
-              Boshqa raqam kiritish
-            </button>
-          </div>
-        )}
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                  Hudud
+                </label>
+                <select
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value)}
+                  className="mt-2 w-full rounded-2xl border-2 border-border bg-background px-4 py-4 text-sm font-bold focus:border-foreground focus:outline-none"
+                >
+                  {regions.length === 0 ? (
+                    <option value="">Hudud keyin tanlanadi</option>
+                  ) : (
+                    regions.map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {item.label}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+            </>
+          )}
+        </div>
+
+        <button
+          onClick={() => setMode((current) => (current === "login" ? "register" : "login"))}
+          className="mt-6 w-full text-center text-xs font-bold text-muted-foreground underline"
+        >
+          {mode === "login" ? "Akkauntingiz yo'qmi? Ro'yxatdan o'ting" : "Akkaunt bor — kirish"}
+        </button>
       </div>
 
       <button
-        onClick={step === "phone" ? handleSendCode : handleVerify}
+        onClick={submit}
+        disabled={loading}
         className={cn(
-          "w-full rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background active:scale-[0.99]",
+          "w-full rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background active:scale-[0.99] disabled:opacity-50",
         )}
       >
-        {step === "phone" ? "Kod yuborish" : "Tasdiqlash"}
+        {loading ? "Tekshirilmoqda..." : mode === "login" ? "Kirish" : "Ro'yxatdan o'tish"}
       </button>
 
       <p className="mt-4 text-center text-[11px] text-muted-foreground">

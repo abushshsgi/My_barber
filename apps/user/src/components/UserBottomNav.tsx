@@ -20,7 +20,7 @@ interface Props {
   unreadCount?: number;
 }
 
-export function UserBottomNav({ unreadCount = 2 }: Props) {
+export function UserBottomNav({ unreadCount = 0 }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
   const navigate = useNavigate();
