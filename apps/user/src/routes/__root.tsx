@@ -1,5 +1,9 @@
-import "@fontsource-variable/space-grotesk";
+import "@fontsource-variable/plus-jakarta-sans";
 import "@fontsource-variable/inter";
+import "@fontsource/playfair-display/400.css";
+import "@fontsource/playfair-display/500.css";
+import "@fontsource/playfair-display/600.css";
+import "@fontsource/playfair-display/700.css";
 import "../i18n/config";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -92,7 +96,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { name: "theme-color", content: "#faf8f5" },
+      { name: "theme-color", content: "#FDFBF7" },
       { title: "mysaloon.uz — Online salon bron qilish" },
       {
         name: "description",

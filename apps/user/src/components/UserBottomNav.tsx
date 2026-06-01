@@ -2,10 +2,15 @@ import { Link, useNavigate, useRouter, useRouterState } from "@tanstack/react-ro
 import { useEffect } from "react";
 import { Home, Map, CalendarCheck, MessageSquare, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { motion, LayoutGroup } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { isNavTabActive, isNavTabCurrent } from "@/lib/navigation";
 
-/** Asosiy 5 tab — qolgan funksiyalar profil hublarida. */
+/**
+ * Floating Control Center Dock — premium glass dock.
+ * Lives detached from the bottom edge, respects safe-area, and uses
+ * `glass-dock` utility (backdrop-blur) for the Midnight Opulence aesthetic.
+ */
 const tabs = [
   { to: "/", icon: Home, key: "home" },
   { to: "/map", icon: Map, key: "map" },
@@ -49,53 +54,74 @@ export function UserBottomNav({ unreadCount = 2 }: Props) {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 backdrop-blur-md lg:hidden"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 lg:hidden"
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
       aria-label="Bottom navigation"
     >
-      <div className="mx-auto flex h-[68px] max-w-[480px] items-center justify-around px-2">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const active = isNavTabActive(pathname, tab.to);
-          const showBadge = tab.key === "chat" && unreadCount > 0;
-          return (
-            <Link
-              key={tab.to}
-              to={tab.to}
-              preload="intent"
-              onClick={handleTabClick(tab.to)}
-              className="relative flex h-full flex-1 flex-col items-center justify-center gap-1"
-            >
-              <div className="relative">
-                <Icon
-                  className={cn(
-                    "h-[22px] w-[22px] transition-all",
-                    active ? "text-foreground" : "text-muted-foreground",
-                  )}
-                  strokeWidth={active ? 2.4 : 1.8}
-                />
-                {showBadge && (
-                  <span className="absolute -right-1.5 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-foreground px-1 text-[9px] font-bold text-background">
-                    {unreadCount}
-                  </span>
-                )}
-              </div>
-              <span
+      <LayoutGroup id="user-bottom-dock">
+        <div className="glass-dock pointer-events-auto flex w-full max-w-[440px] items-center justify-between gap-1 rounded-full px-2 py-2 shadow-luxury">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const active = isNavTabActive(pathname, tab.to);
+            const showBadge = tab.key === "chat" && unreadCount > 0;
+            return (
+              <Link
+                key={tab.to}
+                to={tab.to}
+                preload="intent"
+                onClick={handleTabClick(tab.to)}
                 className={cn(
-                  "text-[10px] font-bold tracking-wide",
-                  active ? "text-foreground" : "text-muted-foreground",
+                  "relative flex h-12 flex-1 items-center justify-center rounded-full px-2",
+                  "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-foreground/40",
                 )}
-                suppressHydrationWarning
+                aria-current={active ? "page" : undefined}
+                aria-label={t(`nav.${tab.key}`) as string}
               >
-                {t(`nav.${tab.key}`)}
-              </span>
-              {active && (
-                <span className="absolute -top-px h-[3px] w-8 rounded-b-full bg-foreground" />
-              )}
-            </Link>
-          );
-        })}
-      </div>
+                {active && (
+                  <motion.span
+                    layoutId="dock-active-pill"
+                    className="absolute inset-0 rounded-full bg-foreground"
+                    transition={{ type: "spring", stiffness: 360, damping: 32 }}
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-2">
+                  <span className="relative">
+                    <Icon
+                      className={cn(
+                        "h-[20px] w-[20px] transition-colors",
+                        active ? "text-background" : "text-foreground/70",
+                      )}
+                      strokeWidth={active ? 2.4 : 1.9}
+                    />
+                    {showBadge && (
+                      <span
+                        className={cn(
+                          "absolute -right-1.5 -top-1 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[9px] font-bold",
+                          "bg-gold text-onyx ring-2 ring-background",
+                        )}
+                      >
+                        {unreadCount}
+                      </span>
+                    )}
+                  </span>
+                  {active && (
+                    <motion.span
+                      key={tab.key}
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: "auto" }}
+                      transition={{ duration: 0.18 }}
+                      className="overflow-hidden whitespace-nowrap text-[12px] font-semibold tracking-wide text-background"
+                      suppressHydrationWarning
+                    >
+                      {t(`nav.${tab.key}`)}
+                    </motion.span>
+                  )}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </LayoutGroup>
     </nav>
   );
 }

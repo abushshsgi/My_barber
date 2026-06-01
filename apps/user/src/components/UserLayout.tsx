@@ -26,7 +26,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
             "mx-auto w-full max-w-[480px] lg:max-w-[720px]",
             isFullBleed
               ? "pb-0 lg:pb-12"
-              : "pb-[calc(68px+env(safe-area-inset-bottom)+16px)] lg:pb-12",
+              : "pb-[calc(96px+env(safe-area-inset-bottom))] lg:pb-12",
           )}
         >
           {children}
