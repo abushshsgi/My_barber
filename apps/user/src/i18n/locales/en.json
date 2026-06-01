@@ -251,6 +251,53 @@
     }
   },
   "favorites": { "title": "Favorite salons", "empty": "No favorites yet" },
+  "walletPage": {
+    "title": "Wallet",
+    "subtitle": "Cashback, gift cards & history",
+    "balanceLabel": "Current balance",
+    "monthTrend": "+12% this month",
+    "topUp": "Top up",
+    "gift": "Gift",
+    "stats": {
+      "cashback": "Cashback",
+      "bonus": "Points",
+      "history": "Transactions"
+    },
+    "transactions": "Transactions",
+    "recent": "Recent activity",
+    "cardHolder": "Cardholder",
+    "validThru": "Valid thru",
+    "plasticHint": "Mysaloon cashback card",
+    "nfc": "NFC",
+    "dragHint": "Hold and tilt the card in place",
+    "cardFront": "Front",
+    "cardBack": "Back",
+    "cardBackNote": "This card is for cashback at mysaloon.uz and partner salons only.",
+    "pouch": "Wallet",
+    "metalHint": "Titanium plastic · contactless",
+    "glassHint": "Transparent plastic · contactless pay",
+    "retroHint": "Classic plastic · magnetic stripe",
+    "pillHint": "Rounded fintech plastic · contactless",
+    "statement": "Card statement",
+    "tabs": {
+      "all": "All",
+      "in": "Incoming",
+      "out": "Outgoing"
+    },
+    "empty": "No transactions in this filter",
+    "fullHistory": "Full history",
+    "quick": {
+      "topUp": "Top up",
+      "gift": "Gift",
+      "loyalty": "Rewards",
+      "history": "History"
+    },
+    "views": {
+      "overview": "Balance",
+      "activity": "Activity"
+    },
+    "loyaltyRemaining": "{{points}} pts to next tier"
+  },
   "auth": {
     "phone": "Phone number",
     "code": "Verification code",

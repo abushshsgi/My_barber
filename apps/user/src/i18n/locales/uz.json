@@ -268,6 +268,53 @@
     "title": "Sevimli salonlar",
     "empty": "Hali sevimli salon yo'q"
   },
+  "walletPage": {
+    "title": "Hamyon",
+    "subtitle": "Cashback, sovg'a karta va tarix",
+    "balanceLabel": "Joriy balans",
+    "monthTrend": "+12% bu oy",
+    "topUp": "To'ldirish",
+    "gift": "Sovg'a",
+    "stats": {
+      "cashback": "Cashback",
+      "bonus": "Ball",
+      "history": "Tranzaksiya"
+    },
+    "transactions": "Tranzaksiyalar",
+    "recent": "Oxirgi harakatlar",
+    "cardHolder": "Egasi",
+    "validThru": "Amal qilish",
+    "plasticHint": "Mysaloon cashback kartasi",
+    "nfc": "NFC",
+    "dragHint": "Kartani ushlab buring — o'z joyida egiladi",
+    "cardFront": "Old tomon",
+    "cardBack": "Orqa tomon",
+    "cardBackNote": "Bu karta faqat mysaloon.uz va hamkor salonlarda cashback uchun.",
+    "pouch": "Hamyon",
+    "metalHint": "Titanium plastik · kontaktsiz to'lov",
+    "glassHint": "Shaffof plastik · kontaktsiz to'lov",
+    "retroHint": "Klassik plastik · magnit chiziq",
+    "pillHint": "Yumaloq fintech plastik · kontaktsiz",
+    "statement": "Karta hisoboti",
+    "tabs": {
+      "all": "Hammasi",
+      "in": "Kirim",
+      "out": "Chiqim"
+    },
+    "empty": "Bu filtrda tranzaksiya yo'q",
+    "fullHistory": "To'liq tarix",
+    "quick": {
+      "topUp": "To'ldirish",
+      "gift": "Sovg'a",
+      "loyalty": "Bonus",
+      "history": "Tarix"
+    },
+    "views": {
+      "overview": "Balans",
+      "activity": "Harakatlar"
+    },
+    "loyaltyRemaining": "{{points}} ball qoldi · keyingi daraja"
+  },
   "auth": {
     "phone": "Telefon raqami",
     "code": "Tasdiq kodi",

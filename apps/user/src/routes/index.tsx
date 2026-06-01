@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Search, ChevronRight, Bell, Sparkles, Tag, Gift, Award, Flame, GitCompareArrows, Film, Wand2, Wallet } from "lucide-react";
+import { Search, ChevronRight, Sparkles, Tag, Gift, Award, Flame, GitCompareArrows, Film, Wand2, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { salons, notifications, trendingStyles, offers } from "@/lib/mock-data";
+import { salons, trendingStyles, offers, formatPrice, walletSummary } from "@/lib/mock-data";
 import type { Category } from "@/lib/mock-data";
 import { SalonCard } from "@/components/SalonCard";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
@@ -35,7 +35,6 @@ function Home() {
   const { audience } = useAudience();
   const [cat, setCat] = useState<Category | "all">("all");
   const [query, setQuery] = useState("");
-  const unread = notifications.filter((n) => !n.read).length;
 
   useEffect(() => {
     setCat(audienceToCategory(audience));
@@ -79,25 +78,14 @@ function Home() {
               Ko'rinishingizni bugun yangilang
             </h1>
           </div>
-          <div className="flex items-center gap-2">
-            <Link
-              to="/notifications"
-              className="relative grid h-11 w-11 place-items-center rounded-full bg-surface active:scale-95"
-              aria-label="Notifications"
-            >
-              <Bell className="h-5 w-5" strokeWidth={2} />
-              {unread > 0 && (
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-foreground ring-2 ring-background" />
-              )}
-            </Link>
-            <Link
-              to="/profile"
-              className="grid h-11 w-11 place-items-center overflow-hidden rounded-full bg-foreground text-background"
-              aria-label="Profile"
-            >
-              <span className="text-sm font-bold">A</span>
-            </Link>
-          </div>
+          <Link
+            to="/wallet"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-foreground px-3 py-2 text-[12px] font-bold tabular-nums text-background active:opacity-90"
+            aria-label={t("profile.wallet")}
+          >
+            {formatPrice(walletSummary.balance)}
+            <Wallet className="h-4 w-4" strokeWidth={2.5} />
+          </Link>
         </div>
       </header>
 

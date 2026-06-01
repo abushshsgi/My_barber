@@ -1,8 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Wallet, Gift, ArrowDownLeft, ArrowUpRight, Plus, Receipt } from "lucide-react";
-import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { animate, motion, useMotionValue, useReducedMotion } from "framer-motion";
+import {
+  Gift,
+  Plus,
+  ChevronLeft,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Nfc,
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
+import {
+  WalletCardCreamCap,
+  WalletEmvChip,
+  walletCardStyle,
+} from "@/components/wallet/WalletCardBrand";
+import { formatPrice, loyaltyMock, userProfile, walletSummary } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/wallet")({
@@ -33,128 +46,284 @@ const TXS: Tx[] = [
   { id: "t5", kind: "in", title: "Promo · Yangi yil", date: "1 hafta", amount: 50000 },
 ];
 
-function fmt(n: number) {
+function formatTxAmount(n: number) {
   return new Intl.NumberFormat("uz-UZ").format(Math.abs(n)) + " so'm";
 }
 
-function WalletPage() {
-  const [tab, setTab] = useState<Tab>("all");
-  const visible = TXS.filter((t) => tab === "all" || t.kind === tab);
-  const balance = TXS.reduce((a, t) => a + t.amount, 0) + 240000;
+function plasticPan(balance: number) {
+  const n = String(balance).padStart(12, "0").slice(-12);
+  return `8600 ${n.slice(0, 4)} ${n.slice(4, 8)} ${n.slice(8, 12)}`;
+}
+
+const TILT_SPRING = { type: "spring" as const, stiffness: 320, damping: 24 };
+const MAX_TILT_Y = 24;
+const MAX_TILT_X = 18;
+
+/** Plastik karta — o'z joyida 3D egilish (tilt), surilmaydi. */
+function PlasticCard() {
+  const { t } = useTranslation();
+  const reduced = useReducedMotion();
+  const cardRef = useRef<HTMLElement>(null);
+  const pressing = useRef(false);
+  const rotateX = useMotionValue(0);
+  const rotateY = useMotionValue(0);
+
+  const resetTilt = useCallback(() => {
+    animate(rotateX, 0, TILT_SPRING);
+    animate(rotateY, 0, TILT_SPRING);
+  }, [rotateX, rotateY]);
+
+  const applyTilt = useCallback(
+    (clientX: number, clientY: number) => {
+      const el = cardRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const dx = ((clientX - rect.left) / rect.width - 0.5) * 2;
+      const dy = ((clientY - rect.top) / rect.height - 0.5) * 2;
+      rotateY.set(dx * MAX_TILT_Y);
+      rotateX.set(-dy * MAX_TILT_X);
+    },
+    [rotateX, rotateY],
+  );
+
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLElement>) => {
+      if (reduced) return;
+      pressing.current = true;
+      e.currentTarget.setPointerCapture(e.pointerId);
+      applyTilt(e.clientX, e.clientY);
+    },
+    [reduced, applyTilt],
+  );
+
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent<HTMLElement>) => {
+      if (!pressing.current || reduced) return;
+      applyTilt(e.clientX, e.clientY);
+    },
+    [reduced, applyTilt],
+  );
+
+  const endTilt = useCallback(
+    (e: React.PointerEvent<HTMLElement>) => {
+      if (!pressing.current) return;
+      pressing.current = false;
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+      resetTilt();
+    },
+    [resetTilt],
+  );
 
   return (
-    <ProfileSubpageLayout
-      title="Hamyon"
-      subtitle="Cashback, sovg'a karta, tarix"
+    <div
+      className="w-full max-w-[340px]"
+      style={{ perspective: 1100 }}
     >
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-3xl p-5 text-white"
-          style={{
-            background:
-              "linear-gradient(135deg, oklch(0.42 0.18 280), oklch(0.28 0.14 320))",
-          }}
+      <motion.article
+        ref={cardRef}
+        className={cn(
+          "relative aspect-[1.586/1] w-full touch-none select-none overflow-hidden rounded-[26px] text-background",
+          !reduced && "cursor-grab active:cursor-grabbing",
+        )}
+        style={{
+          rotateX,
+          rotateY,
+          transformStyle: "preserve-3d",
+          touchAction: "none",
+          transformOrigin: "50% 55%",
+          background: walletCardStyle.background,
+          boxShadow: walletCardStyle.boxShadow,
+        }}
+        initial={reduced ? false : { opacity: 0, scale: 0.88 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        whileTap={reduced ? undefined : { scale: 0.98 }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endTilt}
+        onPointerCancel={endTilt}
+      >
+      <WalletCardCreamCap />
+
+      <div className="relative z-20 flex h-[54%] flex-col justify-between px-5 pb-4 pt-5 text-foreground">
+        <div className="flex items-start justify-between">
+          <WalletEmvChip />
+          <motion.div
+            className="grid h-9 w-9 place-items-center rounded-xl bg-foreground text-background"
+            animate={reduced ? undefined : { scale: [1, 1.04, 1] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+            aria-label={t("walletPage.nfc")}
+          >
+            <Nfc className="h-5 w-5" strokeWidth={2.2} />
+          </motion.div>
+        </div>
+        <p className="text-[42px] font-bold leading-none tracking-tight tabular-nums">
+          {walletSummary.balance.toLocaleString("uz-UZ")}
+          <span className="ml-1.5 text-lg font-bold text-muted-foreground">so'm</span>
+        </p>
+      </div>
+
+      <div className="absolute inset-x-0 bottom-0 flex h-[48%] flex-col justify-end px-5 pb-5 pt-2">
+        <p className="font-mono text-[14px] font-semibold tracking-[0.24em] tabular-nums text-background/80">
+          {plasticPan(walletSummary.balance)}
+        </p>
+        <div className="mt-3 flex items-center justify-between gap-2 border-t border-background/15 pt-3">
+          <p className="min-w-0 truncate text-[11px] font-bold uppercase tracking-wide text-background/90">
+            {userProfile.name}
+          </p>
+          <span className="shrink-0 rounded-sm bg-background px-2 py-0.5 text-[8px] font-bold uppercase text-foreground">
+            {loyaltyMock.tier}
+          </span>
+          <p className="shrink-0 font-mono text-[11px] font-bold text-background/55">12/28</p>
+        </div>
+        <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.3em] text-background/40">
+          mysaloon
+        </p>
+      </div>
+    </motion.article>
+    </div>
+  );
+}
+
+function WalletPage() {
+  const { t } = useTranslation();
+  const [tab, setTab] = useState<Tab>("all");
+
+  const visible = TXS.filter((tx) => tab === "all" || tx.kind === tab);
+
+  const cashbackTotal = useMemo(
+    () => TXS.filter((tx) => tx.kind === "in").reduce((sum, tx) => sum + tx.amount, 0),
+    [],
+  );
+
+  const tabLabels: Record<Tab, string> = {
+    all: t("walletPage.tabs.all"),
+    in: t("walletPage.tabs.in"),
+    out: t("walletPage.tabs.out"),
+  };
+
+  return (
+    <div className="min-h-full bg-background pb-[calc(68px+env(safe-area-inset-bottom)+16px)]">
+      <header className="flex items-center gap-3 px-5 pt-[calc(env(safe-area-inset-top)+12px)]">
+        <Link
+          to="/profile"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface active:opacity-80"
+          aria-label={t("common.back")}
         >
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/70">
-                Joriy balans
-              </p>
-              <p className="mt-2 text-3xl font-bold tracking-tight">{fmt(balance)}</p>
-              <p className="mt-1 text-[11px] font-bold text-white/80">
-                +12% bu oy
-              </p>
-            </div>
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/15 backdrop-blur-md">
-              <Wallet className="h-6 w-6" />
-            </div>
-          </div>
-          <div className="mt-5 flex gap-2">
-            <button className="flex-1 rounded-full bg-white py-2.5 text-[12px] font-bold text-black active:scale-95">
-              <Plus className="mr-1 inline h-3.5 w-3.5" /> To'ldirish
-            </button>
-            <Link
-              to="/giftcard"
-              className="flex-1 rounded-full bg-white/20 py-2.5 text-center text-[12px] font-bold backdrop-blur-md active:scale-95"
-            >
-              <Gift className="mr-1 inline h-3.5 w-3.5" /> Sovg'a
-            </Link>
-          </div>
-          <div
-            className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full"
-            style={{ background: "radial-gradient(circle, rgba(255,255,255,0.18), transparent 70%)" }}
-          />
-        </motion.div>
+          <ChevronLeft className="h-5 w-5" strokeWidth={2.4} />
+        </Link>
+        <h1 className="text-lg font-bold">{t("walletPage.title")}</h1>
+      </header>
 
-      {/* Stats */}
-      <section className="mt-5 grid grid-cols-3 gap-2">
-        {[
-          { label: "Cashback", value: "87k" },
-          { label: "Bonus", value: "240" },
-          { label: "Tarix", value: TXS.length.toString() },
-        ].map((s) => (
-          <div key={s.label} className="rounded-2xl bg-surface p-3 text-center">
-            <p className="text-base font-bold">{s.value}</p>
-            <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-              {s.label}
-            </p>
-          </div>
-        ))}
-      </section>
+      <div className="px-5 pt-4">
+        <div className="relative mx-auto flex min-h-[210px] w-full max-w-[360px] items-center justify-center overflow-visible py-6">
+          <PlasticCard />
+        </div>
+        <p className="text-center text-[11px] font-medium text-muted-foreground">
+          {t("walletPage.dragHint")}
+        </p>
+      </div>
 
-      {/* Tabs */}
-      <section className="mt-6">
-        <div className="inline-flex rounded-full bg-surface p-1">
+      <div className="mt-8 flex justify-center gap-10 px-5">
+        <button type="button" className="flex flex-col items-center gap-2 active:scale-95">
+          <span className="grid h-[60px] w-[60px] place-items-center rounded-full bg-foreground text-background shadow-lg">
+            <Plus className="h-7 w-7" strokeWidth={2.2} />
+          </span>
+          <span className="text-[11px] font-bold">{t("walletPage.topUp")}</span>
+        </button>
+        <Link to="/giftcard" className="flex flex-col items-center gap-2 active:scale-95">
+          <span className="grid h-[60px] w-[60px] place-items-center rounded-full border-2 border-foreground bg-card">
+            <Gift className="h-7 w-7" strokeWidth={2} />
+          </span>
+          <span className="text-[11px] font-bold">{t("walletPage.gift")}</span>
+        </Link>
+      </div>
+
+      <div className="mx-5 mt-6 flex gap-3">
+        <div className="flex-1 rounded-[24px] bg-surface px-4 py-3 text-center">
+          <p className="text-lg font-bold tabular-nums">{Math.round(cashbackTotal / 1000)}k</p>
+          <p className="text-[9px] font-bold uppercase text-muted-foreground">
+            {t("walletPage.stats.cashback")}
+          </p>
+        </div>
+        <Link
+          to="/loyalty"
+          className="flex-1 rounded-[24px] bg-surface px-4 py-3 text-center active:opacity-90"
+        >
+          <p className="text-lg font-bold tabular-nums">{loyaltyMock.points.toLocaleString()}</p>
+          <p className="text-[9px] font-bold uppercase text-muted-foreground">
+            {t("walletPage.stats.bonus")}
+          </p>
+        </Link>
+      </div>
+
+      <section className="mx-5 mt-8">
+        <h2 className="text-sm font-bold">{t("walletPage.recent")}</h2>
+
+        <div className="mt-3 flex gap-2">
           {(["all", "in", "out"] as Tab[]).map((k) => (
             <button
               key={k}
+              type="button"
               onClick={() => setTab(k)}
               className={cn(
-                "rounded-full px-4 py-1.5 text-[12px] font-bold transition-colors",
-                tab === k ? "bg-foreground text-background" : "text-foreground/70",
+                "rounded-full px-4 py-2 text-[12px] font-bold",
+                tab === k ? "bg-foreground text-background" : "bg-surface text-muted-foreground",
               )}
             >
-              {k === "all" ? "Hammasi" : k === "in" ? "Kirim" : "Chiqim"}
+              {tabLabels[k]}
             </button>
           ))}
         </div>
 
-        <ul className="mt-4 space-y-2">
-          {visible.map((t) => (
-            <li
-              key={t.id}
-              className="flex items-center gap-3 rounded-2xl border border-border bg-background p-3"
-            >
-              <div
-                className={cn(
-                  "grid h-10 w-10 place-items-center rounded-full",
-                  t.kind === "in" ? "bg-green-500/15 text-green-600" : "bg-foreground/10 text-foreground",
-                )}
+        {visible.length === 0 ? (
+          <p className="mt-10 text-center text-sm text-muted-foreground">{t("walletPage.empty")}</p>
+        ) : (
+          <ul className="mt-4 space-y-3">
+            {visible.map((tx) => (
+              <li
+                key={tx.id}
+                className="flex items-center gap-3 rounded-[24px] bg-surface px-4 py-4"
               >
-                {t.kind === "in" ? <ArrowDownLeft className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold">{t.title}</p>
-                <p className="text-[11px] text-muted-foreground">{t.date}</p>
-              </div>
-              <p
-                className={cn(
-                  "shrink-0 text-sm font-bold",
-                  t.kind === "in" ? "text-green-600" : "text-foreground",
-                )}
-              >
-                {t.kind === "in" ? "+" : "−"}
-                {fmt(t.amount)}
-              </p>
-            </li>
-          ))}
-        </ul>
+                <span
+                  className={cn(
+                    "grid h-11 w-11 shrink-0 place-items-center rounded-full",
+                    tx.kind === "in" ? "bg-foreground text-background" : "bg-background",
+                  )}
+                >
+                  {tx.kind === "in" ? (
+                    <ArrowDownLeft className="h-5 w-5" strokeWidth={2.2} />
+                  ) : (
+                    <ArrowUpRight className="h-5 w-5" strokeWidth={2.2} />
+                  )}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[15px] font-bold">{tx.title}</p>
+                  <p className="text-[11px] text-muted-foreground">{tx.date}</p>
+                </div>
+                <p
+                  className={cn(
+                    "shrink-0 text-[15px] font-bold tabular-nums",
+                    tx.kind === "in" ? "text-foreground" : "text-muted-foreground",
+                  )}
+                >
+                  {tx.kind === "in" ? "+" : "−"}
+                  {formatTxAmount(tx.amount)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
 
-        <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-surface py-3 text-[12px] font-bold">
-          <Receipt className="h-4 w-4" /> To'liq tarix
+        <button
+          type="button"
+          className="mt-4 w-full rounded-full bg-surface py-3.5 text-[12px] font-bold active:opacity-80"
+        >
+          {t("walletPage.fullHistory")}
         </button>
       </section>
-    </ProfileSubpageLayout>
+    </div>
   );
 }
