@@ -1,25 +1,26 @@
 import { cn } from "@/lib/utils";
 
-/** Hamyon kartasi — pastki qora, yuqori krem yarim (gorizontal split). */
 export const walletCardStyle = {
-  background: "oklch(0.145 0 0)",
+  // Chuqur quyuq fon, diagonal gradient va iliq highlight
+  background:
+    "radial-gradient(circle at 0% 0%, oklch(0.32 0.09 75 / 0.55), transparent 55%), radial-gradient(circle at 110% 110%, oklch(0.32 0.09 75 / 0.4), transparent 55%), linear-gradient(135deg, oklch(0.18 0.03 260), oklch(0.12 0.02 260))",
   creamCap:
-    "linear-gradient(180deg, oklch(1 0 0) 0%, oklch(0.96 0.014 88) 100%)",
+    "linear-gradient(180deg, oklch(0.99 0.01 97) 0%, oklch(0.95 0.02 90) 40%, oklch(0.9 0.03 88) 100%)",
   boxShadow:
-    "0 20px 48px -14px oklch(0.1 0 0 / 0.45), 0 0 0 1px oklch(0.97 0.011 85 / 0.06) inset",
-  profileShadow: "0 12px 32px -12px oklch(0.1 0 0 / 0.35)",
+    "0 24px 60px -18px oklch(0.06 0 0 / 0.72), 0 0 0 1px oklch(0.85 0.02 90 / 0.16) inset",
+  profileShadow: "0 18px 40px -20px oklch(0.06 0 0 / 0.7)",
 } as const;
 
 export function WalletCardCreamCap({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "pointer-events-none absolute inset-x-0 top-0 z-10 h-[54%] rounded-b-[30px]",
+        "pointer-events-none absolute inset-x-0 top-0 z-10 h-[54%] rounded-b-[30px] before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_0%_0%,oklch(1_0_0/0.85)_0,transparent_55%)] before:opacity-80",
         className,
       )}
       style={{
         background: walletCardStyle.creamCap,
-        boxShadow: "0 10px 28px -12px oklch(0.2 0 0 / 0.18)",
+        boxShadow: "0 12px 32px -14px oklch(0.2 0 0 / 0.18)",
       }}
       aria-hidden
     />

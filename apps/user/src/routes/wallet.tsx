@@ -145,44 +145,68 @@ function PlasticCard() {
         onPointerUp={endTilt}
         onPointerCancel={endTilt}
       >
-      <WalletCardCreamCap />
+        <WalletCardCreamCap />
 
-      <div className="relative z-20 flex h-[54%] flex-col justify-between px-5 pb-4 pt-5 text-foreground">
-        <div className="flex items-start justify-between">
-          <WalletEmvChip />
-          <motion.div
-            className="grid h-9 w-9 place-items-center rounded-xl bg-foreground text-background"
-            animate={reduced ? undefined : { scale: [1, 1.04, 1] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-            aria-label={t("walletPage.nfc")}
-          >
-            <Nfc className="h-5 w-5" strokeWidth={2.2} />
-          </motion.div>
+        <div className="relative z-20 flex h-[54%] flex-col justify-between px-5 pb-4 pt-4 text-foreground">
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                mysaloon wallet
+              </p>
+              <p className="inline-flex items-baseline gap-1 text-xs font-medium text-muted-foreground/90">
+                <span className="h-1 w-1 rounded-full bg-emerald-400" />
+                <span>{t("walletPage.available")}</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <WalletEmvChip />
+              <motion.div
+                className="grid h-9 w-9 place-items-center rounded-xl bg-foreground/95 text-background shadow-lg shadow-black/30 backdrop-blur"
+                animate={reduced ? undefined : { scale: [1, 1.04, 1] }}
+                transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                aria-label={t("walletPage.nfc")}
+              >
+                <Nfc className="h-5 w-5" strokeWidth={2.2} />
+              </motion.div>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-[38px] font-semibold leading-none tracking-tight tabular-nums md:text-[42px]">
+              {walletSummary.balance.toLocaleString("uz-UZ")}
+              <span className="ml-1.5 text-lg font-semibold text-muted-foreground">so'm</span>
+            </p>
+            <p className="text-[11px] font-medium text-muted-foreground">
+              {t("walletPage.balanceCaption", {
+                value: formatPrice(walletSummary.balance),
+              })}
+            </p>
+          </div>
         </div>
-        <p className="text-[42px] font-bold leading-none tracking-tight tabular-nums">
-          {walletSummary.balance.toLocaleString("uz-UZ")}
-          <span className="ml-1.5 text-lg font-bold text-muted-foreground">so'm</span>
-        </p>
-      </div>
 
-      <div className="absolute inset-x-0 bottom-0 flex h-[48%] flex-col justify-end px-5 pb-5 pt-2">
-        <p className="font-mono text-[14px] font-semibold tracking-[0.24em] tabular-nums text-background/80">
-          {plasticPan(walletSummary.balance)}
-        </p>
-        <div className="mt-3 flex items-center justify-between gap-2 border-t border-background/15 pt-3">
-          <p className="min-w-0 truncate text-[11px] font-bold uppercase tracking-wide text-background/90">
-            {userProfile.name}
+        <div className="absolute inset-x-0 bottom-0 flex h-[48%] flex-col justify-end px-5 pb-5 pt-2">
+          <p className="font-mono text-[14px] font-semibold tracking-[0.24em] tabular-nums text-background/82">
+            {plasticPan(walletSummary.balance)}
           </p>
-          <span className="shrink-0 rounded-sm bg-background px-2 py-0.5 text-[8px] font-bold uppercase text-foreground">
-            {loyaltyMock.tier}
-          </span>
-          <p className="shrink-0 font-mono text-[11px] font-bold text-background/55">12/28</p>
+          <div className="mt-3 flex items-center justify-between gap-2 border-t border-background/18 pt-3">
+            <p className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-wide text-background/92">
+              {userProfile.name}
+            </p>
+            <span className="inline-flex items-center gap-1 rounded-sm bg-background/95 px-2 py-0.5 text-[8px] font-semibold uppercase text-foreground shadow-sm shadow-black/20">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+              {loyaltyMock.tier}
+            </span>
+            <p className="shrink-0 font-mono text-[11px] font-semibold text-background/60">12/28</p>
+          </div>
+          <div className="mt-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.3em] text-background/45">
+            <span>mysaloon</span>
+            <span className="flex items-center gap-[3px]">
+              <span className="h-4 w-4 rounded-full bg-[oklch(0.78_0.16_65)] opacity-90" />
+              <span className="h-4 w-4 -ml-1 rounded-full bg-[oklch(0.72_0.18_40)] opacity-90" />
+            </span>
+          </div>
         </div>
-        <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.3em] text-background/40">
-          mysaloon
-        </p>
-      </div>
-    </motion.article>
+      </motion.article>
     </div>
   );
 }
