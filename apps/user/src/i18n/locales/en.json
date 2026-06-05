@@ -300,23 +300,7 @@
       "overview": "Balance",
       "activity": "Activity"
     },
-    "loyaltyRemaining": "{{points}} pts to next tier",
-    "variantPicker": {
-      "title": "Card design (preview)",
-      "subtitle": "Pick your favorite — we'll remove the rest",
-      "premium": "Premium",
-      "metal": "Titanium",
-      "glass": "Glass",
-      "retro": "Retro",
-      "pill": "Fintech"
-    },
-    "variants": {
-      "premium": "Premium",
-      "metal": "Titanium",
-      "glass": "Glass",
-      "retro": "Retro",
-      "pill": "Fintech"
-    }
+    "loyaltyRemaining": "{{points}} pts to next tier"
   },
   "auth": {
     "phone": "Phone number",

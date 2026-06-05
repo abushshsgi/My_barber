@@ -3,14 +3,7 @@ import { useMemo, useState } from "react";
 import { Gift, Plus, ChevronLeft, ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PlasticCard } from "@/components/wallet/PlasticCard";
-import { WalletVariantPicker } from "@/components/wallet/WalletVariantPicker";
-import {
-  readWalletVariant,
-  saveWalletVariant,
-  walletCardThemes,
-  type WalletCardVariant,
-} from "@/components/wallet/wallet-variants";
-import { formatPrice, loyaltyMock, walletSummary } from "@/lib/mock-data";
+import { loyaltyMock } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/wallet")({
@@ -48,7 +41,6 @@ function formatTxAmount(n: number) {
 function WalletPage() {
   const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("all");
-  const [variant, setVariant] = useState<WalletCardVariant>(() => readWalletVariant());
 
   const visible = TXS.filter((tx) => tab === "all" || tx.kind === tab);
 
@@ -61,11 +53,6 @@ function WalletPage() {
     all: t("walletPage.tabs.all"),
     in: t("walletPage.tabs.in"),
     out: t("walletPage.tabs.out"),
-  };
-
-  const onVariantChange = (next: WalletCardVariant) => {
-    setVariant(next);
-    saveWalletVariant(next);
   };
 
   return (
@@ -81,15 +68,10 @@ function WalletPage() {
         <h1 className="text-lg font-bold">{t("walletPage.title")}</h1>
       </header>
 
-      <WalletVariantPicker value={variant} onChange={onVariantChange} />
-
-      <div className="px-5 pt-2">
+      <div className="px-5 pt-4">
         <div className="relative mx-auto flex min-h-[210px] w-full max-w-[360px] items-center justify-center overflow-visible py-6">
-          <PlasticCard variant={variant} />
+          <PlasticCard />
         </div>
-        <p className="text-center text-[11px] font-medium text-muted-foreground">
-          {t(walletCardThemes[variant].hintKey)}
-        </p>
       </div>
 
       <div className="mt-8 flex justify-center gap-10 px-5">

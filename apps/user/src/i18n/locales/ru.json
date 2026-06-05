@@ -300,23 +300,7 @@
       "overview": "Баланс",
       "activity": "Операции"
     },
-    "loyaltyRemaining": "Ещё {{points}} баллов до следующего уровня",
-    "variantPicker": {
-      "title": "Дизайн карты (тест)",
-      "subtitle": "Выберите понравившийся — остальные удалим",
-      "premium": "Premium",
-      "metal": "Титан",
-      "glass": "Стекло",
-      "retro": "Ретро",
-      "pill": "Fintech"
-    },
-    "variants": {
-      "premium": "Premium",
-      "metal": "Титан",
-      "glass": "Стекло",
-      "retro": "Ретро",
-      "pill": "Fintech"
-    }
+    "loyaltyRemaining": "Ещё {{points}} баллов до следующего уровня"
   },
   "auth": {
     "phone": "Номер телефона",

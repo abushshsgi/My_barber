@@ -316,23 +316,7 @@
       "overview": "Balans",
       "activity": "Harakatlar"
     },
-    "loyaltyRemaining": "{{points}} ball qoldi · keyingi daraja",
-    "variantPicker": {
-      "title": "Karta dizayni (sinov)",
-      "subtitle": "Yoqqan variantni tanlang — keyin qolganlarini o'chiramiz",
-      "premium": "Premium",
-      "metal": "Titan",
-      "glass": "Shaffof",
-      "retro": "Retro",
-      "pill": "Fintech"
-    },
-    "variants": {
-      "premium": "Premium",
-      "metal": "Titan",
-      "glass": "Shaffof",
-      "retro": "Retro",
-      "pill": "Fintech"
-    }
+    "loyaltyRemaining": "{{points}} ball qoldi · keyingi daraja"
   },
   "auth": {
     "phone": "Telefon raqami",
