@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ProfileVariant13 } from "@/components/profile/ProfileVariant13";
+import { UserProfile } from "@/components/profile/UserProfile";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({ meta: [{ title: "Profil — mysaloon.uz" }] }),
@@ -9,7 +9,7 @@ export const Route = createFileRoute("/profile")({
 function Profile() {
   return (
     <div className="pb-[calc(68px+env(safe-area-inset-bottom)+8px)]">
-      <ProfileVariant13 />
+      <UserProfile />
     </div>
   );
 }

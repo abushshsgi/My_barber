@@ -27,8 +27,7 @@ import {
   walletSummary,
 } from "@/lib/mock-data";
 
-/** Profil — Yandex Go uslubi. */
-export function ProfileVariant13() {
+export function UserProfile() {
   const { t } = useTranslation();
   const { audience, nextBooking } = useProfileScreen();
   const audienceLabel = t(`audience.${audience}`);
