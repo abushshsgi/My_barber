@@ -30,11 +30,16 @@ if (!i18n.isInitialized) {
     lng: getInitialLang(),
     fallbackLng: "uz",
     supportedLngs: [...SUPPORTED_LANGS],
-    nonExplicitSupportedLngs: false,
     load: "languageOnly",
     initAsync: false,
+    returnEmptyString: false,
+    returnNull: false,
     interpolation: { escapeValue: false },
-    react: { useSuspense: false },
+    react: {
+      useSuspense: false,
+      bindI18n: "languageChanged loaded",
+      bindI18nStore: "added removed",
+    },
   });
 }
 
@@ -44,8 +49,8 @@ export const currentLang = (): AppLang => {
   return SUPPORTED_LANGS.includes(code) ? code : "uz";
 };
 
-export const setLang = (lang: AppLang) => {
-  void i18n.changeLanguage(lang);
+export const setLang = async (lang: AppLang): Promise<void> => {
+  await i18n.changeLanguage(lang);
   try {
     window.localStorage.setItem(STORAGE_KEY, lang);
   } catch {

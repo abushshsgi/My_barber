@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
-import { currentLang, setLang } from "@/i18n/config";
+import { setLang, type AppLang } from "@/i18n/config";
 import { userProfile } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { useAudience, PREFS_KEY, type AudienceFilter } from "@/hooks/use-audience";
@@ -41,7 +41,8 @@ const LANGS = [
 ];
 
 function Settings() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const activeLang = (i18n.resolvedLanguage || i18n.language || "uz").split("-")[0] as AppLang;
   const { setAudience } = useAudience();
   const [prefs, setPrefs] = useState<Prefs>(DEFAULTS);
 
@@ -101,11 +102,11 @@ function Settings() {
       </p>
       <ProfileSubpageCard className="overflow-hidden p-0">
         {LANGS.map((l, i) => {
-          const active = currentLang() === l.code;
+          const active = activeLang === l.code;
           return (
             <button
               key={l.code}
-              onClick={() => setLang(l.code)}
+              onClick={() => void setLang(l.code)}
               className={
                 "flex w-full items-center justify-between gap-4 px-4 py-4 text-left" +
                 (i < LANGS.length - 1 ? " border-b border-border" : "")

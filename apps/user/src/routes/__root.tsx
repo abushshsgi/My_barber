@@ -4,17 +4,16 @@ import "../i18n/config";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
-  Outlet,
   Link,
   createRootRouteWithContext,
   useRouter,
-  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
 import { I18nProvider } from "../components/I18nProvider";
+import { LangAwareOutlet } from "../components/LangAwareOutlet";
 import { UserLayout } from "../components/UserLayout";
 import { Toaster } from "sonner";
 import { AudienceProvider } from "../hooks/use-audience";
@@ -126,20 +125,25 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function RootComponent() {
+function AppShell() {
   const { queryClient } = Route.useRouteContext();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
+    <QueryClientProvider client={queryClient}>
+      <AudienceProvider>
+        <UserLayout>
+          <LangAwareOutlet />
+        </UserLayout>
+        <Toaster position="top-center" />
+      </AudienceProvider>
+    </QueryClientProvider>
+  );
+}
+
+function RootComponent() {
+  return (
     <I18nProvider>
-      <QueryClientProvider client={queryClient}>
-        <AudienceProvider>
-          <UserLayout>
-            <Outlet key={pathname} />
-          </UserLayout>
-          <Toaster position="top-center" />
-        </AudienceProvider>
-      </QueryClientProvider>
+      <AppShell />
     </I18nProvider>
   );
 }

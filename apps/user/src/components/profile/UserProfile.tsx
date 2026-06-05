@@ -28,7 +28,8 @@ import {
 } from "@/lib/mock-data";
 
 export function UserProfile() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.resolvedLanguage || i18n.language;
   const { audience, nextBooking } = useProfileScreen();
   const audienceLabel = t(`audience.${audience}`);
   const initials = userProfile.name
@@ -49,7 +50,10 @@ export function UserProfile() {
   ];
 
   return (
-    <div className="min-h-[70vh] bg-background pb-4 pt-[calc(env(safe-area-inset-top)+6px)]">
+    <div
+      key={lang}
+      className="min-h-[70vh] bg-background pb-4 pt-[calc(env(safe-area-inset-top)+6px)]"
+    >
       <div className="flex items-center justify-between px-5">
         <Link
           to="/loyalty"
