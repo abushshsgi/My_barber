@@ -1,11 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion, useMotionValue, useTransform, animate, AnimatePresence } from "framer-motion";
+import type L from "leaflet";
+import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import {
-  MapPin, Star, SlidersHorizontal, Search, Navigation, Locate,
-  ChevronUp, Compass, Flame, ChevronLeft, ChevronRight,
+  Star,
+  SlidersHorizontal,
+  Search,
+  Navigation,
+  Locate,
+  ChevronUp,
+  Compass,
+  Flame,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import { fitMapToMarkers, SalonMap, type SalonMapMarker } from "@/components/map/SalonMap";
 import { salons, shortPrice } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -21,16 +32,13 @@ export const Route = createFileRoute("/map")({
 
 const SNAPS = { peek: 160, half: 380, full: 640 };
 
-// Stable marker positions (so cluster math is deterministic)
-const POSITIONS = [
-  { top: 28, left: 38 },
-  { top: 42, left: 62 },
-  { top: 36, left: 72 },
-  { top: 56, left: 32 },
-  { top: 62, left: 58 },
-  { top: 48, left: 48 }, // overlaps cluster zone
-  { top: 30, left: 50 },
-];
+function barberOffset(id: string, index: number) {
+  const h = id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return {
+    dLat: (((h + index * 7) % 9) - 4) * 0.00035,
+    dLng: (((h + index * 11) % 9) - 4) * 0.00035,
+  };
+}
 
 function MapView() {
   const { t } = useTranslation();
@@ -41,7 +49,9 @@ function MapView() {
   const [active, setActive] = useState(salons[0].id);
   const [query, setQuery] = useState("");
   const [heatmap, setHeatmap] = useState(false);
-  const [bearing, setBearing] = useState(0);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [flyToUser, setFlyToUser] = useState<{ lat: number; lng: number } | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return salons;
@@ -51,39 +61,36 @@ function MapView() {
     );
   }, [query]);
 
-  const markers = filtered.map((s, i) => ({ ...s, pos: POSITIONS[i % POSITIONS.length] }));
+  const mapMarkers = useMemo((): SalonMapMarker[] => {
+    if (tab === "salons") {
+      return filtered.map((s) => ({
+        id: s.id,
+        lat: s.lat,
+        lng: s.lng,
+        label: s.name,
+        kind: "salon",
+      }));
+    }
+    return filtered.flatMap((s) =>
+      s.staff.map((b, i) => {
+        const { dLat, dLng } = barberOffset(b.id, i);
+        return {
+          id: b.id,
+          lat: s.lat + dLat,
+          lng: s.lng + dLng,
+          label: b.name,
+          kind: "barber" as const,
+        };
+      }),
+    );
+  }, [filtered, tab]);
 
-  // Simple cluster: any pair within 8% are clustered (here positions 1 & 5 & 6 are close)
-  const clusters = useMemo(() => {
-    const used = new Set<number>();
-    const out: { x: number; y: number; ids: string[] }[] = [];
-    markers.forEach((m, i) => {
-      if (used.has(i)) return;
-      const group = [i];
-      markers.forEach((m2, j) => {
-        if (i === j || used.has(j)) return;
-        const dx = m.pos.left - m2.pos.left;
-        const dy = m.pos.top - m2.pos.top;
-        if (Math.hypot(dx, dy) < 10) group.push(j);
-      });
-      if (group.length > 1) {
-        const avg = group.reduce(
-          (a, k) => ({ x: a.x + markers[k].pos.left, y: a.y + markers[k].pos.top }),
-          { x: 0, y: 0 },
-        );
-        out.push({
-          x: avg.x / group.length,
-          y: avg.y / group.length,
-          ids: group.map((k) => markers[k].id),
-        });
-        group.forEach((k) => used.add(k));
-      }
-    });
-    const singles = markers.filter((_, i) => !used.has(i));
-    return { clusters: out, singles };
-  }, [markers]);
+  const activeMarkerId = useMemo(() => {
+    if (tab === "salons") return active;
+    const salon = filtered.find((s) => s.id === active);
+    return salon?.staff[0]?.id ?? null;
+  }, [tab, active, filtered]);
 
-  // Bottom sheet
   const y = useMotionValue(0);
   const sheetH = useTransform(y, (v) => `${Math.max(SNAPS.peek, SNAPS.half - v)}px`);
   const snapTo = (target: "peek" | "half" | "full") => {
@@ -91,128 +98,73 @@ function MapView() {
     animate(y, delta, { type: "spring", stiffness: 300, damping: 34 });
   };
 
-  // Sync carousel — flying to marker
   const scrollRef = useRef<HTMLDivElement>(null);
   const focusSalon = (id: string) => {
     setActive(id);
     const el = scrollRef.current?.querySelector(`[data-id="${id}"]`) as HTMLElement | null;
     el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   };
+
+  const onMarkerClick = (id: string) => {
+    if (tab === "barbers") {
+      const salon = filtered.find((s) => s.staff.some((b) => b.id === id));
+      if (salon) focusSalon(salon.id);
+      return;
+    }
+    focusSalon(id);
+  };
+
   const cycle = (dir: 1 | -1) => {
     const idx = filtered.findIndex((s) => s.id === active);
     const next = filtered[(idx + dir + filtered.length) % filtered.length];
     focusSalon(next.id);
   };
 
+  const locateMe = () => {
+    if (!navigator.geolocation) {
+      toast.error(t("map.locateUnsupported"));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserLocation(loc);
+        setFlyToUser(loc);
+      },
+      () => toast.error(t("map.locateError")),
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
+
+  const fitAllMarkers = () => {
+    if (mapRef.current) fitMapToMarkers(mapRef.current, mapMarkers);
+  };
+
   return (
     <div className="relative h-[calc(100dvh-68px-env(safe-area-inset-bottom))] overflow-hidden bg-surface lg:h-[100dvh]">
-      {/* Fake map */}
-      <motion.div
-        className="absolute inset-0"
-        animate={{ rotate: -bearing }}
-        transition={{ type: "spring", stiffness: 200, damping: 28 }}
-      >
-        <div
-          className="h-full w-full"
-          style={{
-            backgroundImage:
-              "linear-gradient(45deg, transparent 48%, oklch(0.92 0.018 85) 49%, oklch(0.92 0.018 85) 51%, transparent 52%), linear-gradient(-45deg, transparent 48%, oklch(0.92 0.018 85) 49%, oklch(0.92 0.018 85) 51%, transparent 52%), linear-gradient(0deg, oklch(0.945 0.014 85), oklch(0.945 0.014 85))",
-            backgroundSize: "64px 64px, 64px 64px, 100% 100%",
-          }}
-        />
+      <div className="absolute inset-0 z-0">
+        {mounted ? (
+          <SalonMap
+            markers={mapMarkers}
+            activeId={activeMarkerId}
+            onMarkerClick={onMarkerClick}
+            userLocation={userLocation}
+            flyToUser={flyToUser}
+            heatmap={heatmap}
+            onMapReady={(map) => {
+              mapRef.current = map;
+            }}
+          />
+        ) : (
+          <div className="h-full w-full bg-surface" />
+        )}
+      </div>
 
-        {/* Heatmap blobs */}
-        <AnimatePresence>
-          {heatmap && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.85 }}
-              exit={{ opacity: 0 }}
-              className="pointer-events-none absolute inset-0"
-            >
-              {POSITIONS.map((p, i) => (
-                <div
-                  key={i}
-                  className="absolute h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full blur-2xl"
-                  style={{
-                    top: `${p.top}%`,
-                    left: `${p.left}%`,
-                    background:
-                      "radial-gradient(circle, rgba(255,80,40,0.6), rgba(255,180,0,0.35), transparent 70%)",
-                  }}
-                />
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Single markers */}
-        {clusters.singles.map((s, i) => {
-          const isActive = s.id === active;
-          return (
-            <motion.button
-              key={s.id}
-              initial={{ scale: 0, y: -10 }}
-              animate={{ scale: 1, y: 0 }}
-              transition={{ type: "spring", stiffness: 360, damping: 22, delay: i * 0.04 }}
-              onClick={() => focusSalon(s.id)}
-              style={{ top: `${s.pos.top}%`, left: `${s.pos.left}%` }}
-              className="absolute -translate-x-1/2 -translate-y-1/2"
-              aria-label={s.name}
-            >
-              <div className="relative">
-                {isActive && (
-                  <motion.span
-                    className="absolute inset-0 -m-2 rounded-full bg-foreground/20"
-                    animate={{ scale: [1, 1.6, 1], opacity: [0.6, 0, 0.6] }}
-                    transition={{ duration: 1.8, repeat: Infinity }}
-                  />
-                )}
-                <motion.div
-                  animate={{ scale: isActive ? 1.15 : 1 }}
-                  className={cn(
-                    "relative grid place-items-center rounded-full text-background transition-colors",
-                    isActive
-                      ? "h-12 w-12 bg-foreground ring-4 ring-foreground/20"
-                      : "h-9 w-9 bg-foreground/85",
-                  )}
-                >
-                  <MapPin className="h-4 w-4 fill-background" strokeWidth={0} />
-                </motion.div>
-              </div>
-              {isActive && (
-                <span className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-0.5 text-[10px] font-bold text-background">
-                  {shortPrice(s.priceFrom)}+
-                </span>
-              )}
-            </motion.button>
-          );
-        })}
-
-        {/* Clusters */}
-        {clusters.clusters.map((c, i) => (
-          <motion.button
-            key={`c-${i}`}
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 320, damping: 22 }}
-            onClick={() => focusSalon(c.ids[0])}
-            style={{ top: `${c.y}%`, left: `${c.x}%` }}
-            className="absolute -translate-x-1/2 -translate-y-1/2"
-          >
-            <div className="relative grid h-14 w-14 place-items-center rounded-full bg-foreground text-background shadow-lg ring-4 ring-foreground/15">
-              <span className="text-sm font-bold">{c.ids.length}</span>
-            </div>
-          </motion.button>
-        ))}
-      </motion.div>
-
-      {/* TOP search + tabs */}
       <div
         className="absolute inset-x-0 top-0 z-20 px-4"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 12px)" }}
       >
-        <div className="flex items-center gap-2 rounded-full bg-background px-4 py-3 shadow-lg">
+        <div className="flex items-center gap-2 rounded-full bg-background/95 px-4 py-3 shadow-lg backdrop-blur-sm">
           <Search className="h-4 w-4 text-muted-foreground" strokeWidth={2.4} />
           <input
             value={query}
@@ -220,19 +172,24 @@ function MapView() {
             placeholder={mounted ? (t("map.search") as string) : "Salon yoki manzil"}
             className="flex-1 bg-transparent text-sm font-medium placeholder:text-muted-foreground focus:outline-none"
           />
-          <button className="grid h-8 w-8 place-items-center rounded-full bg-surface active:scale-95">
+          <button
+            type="button"
+            className="grid h-8 w-8 place-items-center rounded-full bg-surface active:scale-95"
+            aria-label={t("map.filters")}
+          >
             <SlidersHorizontal className="h-4 w-4" />
           </button>
         </div>
 
         <div className="mt-3 flex justify-center">
-          <div className="relative inline-flex rounded-full bg-background p-1 shadow-md">
+          <div className="relative inline-flex rounded-full bg-background/95 p-1 shadow-md backdrop-blur-sm">
             {(["salons", "barbers"] as const).map((k) => {
               const isActive = tab === k;
               const fallback = k === "salons" ? "Salonlar" : "Ustalar";
               return (
                 <button
                   key={k}
+                  type="button"
                   onClick={() => setTab(k)}
                   className={cn(
                     "relative rounded-full px-6 py-2 text-[12px] font-bold tracking-wide transition-colors",
@@ -256,46 +213,41 @@ function MapView() {
         </div>
       </div>
 
-      {/* Heatmap chip (top-left under header) */}
       <button
+        type="button"
         onClick={() => setHeatmap((v) => !v)}
         className={cn(
-          "absolute left-4 z-20 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold shadow-md transition-colors",
-          heatmap ? "bg-foreground text-background" : "bg-background text-foreground",
+          "absolute left-4 z-20 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold shadow-md backdrop-blur-sm transition-colors",
+          heatmap ? "bg-foreground text-background" : "bg-background/95 text-foreground",
         )}
         style={{ top: "calc(env(safe-area-inset-top) + 130px)" }}
       >
         <Flame className="h-3.5 w-3.5" />
-        Issiq hudud
+        {t("map.heatmap")}
       </button>
 
-      {/* FAB stack — right side, NO +/- zoom */}
       <div
         className="absolute right-4 z-20 flex flex-col gap-2"
         style={{ bottom: "calc(env(safe-area-inset-bottom) + 220px)" }}
       >
         <button
-          onClick={() => setBearing((b) => (b === 0 ? 30 : 0))}
-          className="grid h-11 w-11 place-items-center rounded-full bg-background shadow-md active:scale-95"
-          aria-label="Compass"
+          type="button"
+          onClick={fitAllMarkers}
+          className="grid h-11 w-11 place-items-center rounded-full bg-background/95 shadow-md backdrop-blur-sm active:scale-95"
+          aria-label={t("map.fitAll")}
         >
-          <motion.div animate={{ rotate: -bearing }}>
-            <Compass className="h-5 w-5" />
-          </motion.div>
+          <Compass className="h-5 w-5" />
         </button>
         <button
-          onClick={() => {
-            setBearing(0);
-            focusSalon(filtered[0].id);
-          }}
+          type="button"
+          onClick={locateMe}
           className="grid h-11 w-11 place-items-center rounded-full bg-foreground text-background shadow-lg active:scale-95"
-          aria-label="Recenter"
+          aria-label={t("map.locate")}
         >
           <Locate className="h-5 w-5" />
         </button>
       </div>
 
-      {/* DRAGGABLE BOTTOM SHEET */}
       <motion.div
         drag="y"
         dragConstraints={{ top: -(SNAPS.full - SNAPS.half), bottom: SNAPS.half - SNAPS.peek }}
@@ -319,29 +271,46 @@ function MapView() {
           <div className="mt-2 flex w-full items-center justify-between px-5">
             <div>
               <h3 className="text-[15px] font-bold" suppressHydrationWarning>
-                {filtered.length} {mounted ? (t(tab === "salons" ? "map.salons" : "map.barbers") as string) : tab === "salons" ? "Salonlar" : "Ustalar"}
+                {filtered.length}{" "}
+                {mounted
+                  ? (t(tab === "salons" ? "map.salons" : "map.barbers") as string)
+                  : tab === "salons"
+                    ? "Salonlar"
+                    : "Ustalar"}
               </h3>
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                Yaqin atrofda
+                {t("map.nearby")}
               </p>
             </div>
             <div className="flex items-center gap-1.5">
               <button
-                onClick={(e) => { e.stopPropagation(); cycle(-1); }}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  cycle(-1);
+                }}
                 className="grid h-8 w-8 place-items-center rounded-full bg-surface active:scale-95"
                 aria-label="Prev"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button
-                onClick={(e) => { e.stopPropagation(); cycle(1); }}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  cycle(1);
+                }}
                 className="grid h-8 w-8 place-items-center rounded-full bg-surface active:scale-95"
                 aria-label="Next"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
               <button
-                onClick={(e) => { e.stopPropagation(); snapTo("full"); }}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  snapTo("full");
+                }}
                 className="grid h-8 w-8 place-items-center rounded-full bg-foreground text-background active:scale-95"
               >
                 <ChevronUp className="h-4 w-4" />
@@ -350,7 +319,6 @@ function MapView() {
           </div>
         </div>
 
-        {/* Horizontal sync carousel (always visible in sheet) */}
         <div
           ref={scrollRef}
           className="no-scrollbar flex shrink-0 gap-3 overflow-x-auto px-4 pb-3 pt-1 snap-x snap-mandatory"
@@ -360,6 +328,7 @@ function MapView() {
             return (
               <button
                 key={s.id}
+                type="button"
                 data-id={s.id}
                 onClick={() => focusSalon(s.id)}
                 className={cn(
@@ -389,7 +358,6 @@ function MapView() {
           })}
         </div>
 
-        {/* Full list (visible when expanded) */}
         <div
           className="flex-1 overflow-y-auto border-t border-border px-4 pt-3"
           style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 100px)" }}
@@ -399,6 +367,7 @@ function MapView() {
             return (
               <button
                 key={s.id}
+                type="button"
                 onClick={() => focusSalon(s.id)}
                 className={cn(
                   "mb-2 flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-colors",

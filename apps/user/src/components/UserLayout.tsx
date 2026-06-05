@@ -4,7 +4,7 @@ import { DesktopSidebar } from "./DesktopSidebar";
 import { cn } from "@/lib/utils";
 
 const FULL_BLEED_EXACT = ["/auth"];
-const FULL_BLEED_PREFIX = ["/map"];
+const FULL_BLEED_PREFIX = ["/map", "/stories/"];
 
 export function UserLayout({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });

@@ -21,6 +21,7 @@
     "viewAll": "Hammasi",
     "viewMap": "Xaritada ko'rish",
     "back": "Orqaga",
+    "close": "Yopish",
     "next": "Keyingi",
     "confirm": "Tasdiqlash",
     "cancel": "Bekor",
@@ -41,7 +42,19 @@
       "spa": "Spa"
     }
   },
-  "map": { "salons": "Salonlar", "barbers": "Ustalar", "radius": "Radius", "search": "Salon yoki manzil" },
+  "map": {
+    "salons": "Salonlar",
+    "barbers": "Ustalar",
+    "radius": "Radius",
+    "search": "Salon yoki manzil",
+    "nearby": "Yaqin atrofda",
+    "heatmap": "Issiq hudud",
+    "locate": "Joylashuvim",
+    "fitAll": "Barchasini ko'rish",
+    "filters": "Filterlar",
+    "locateError": "Joylashuvni aniqlab bo'lmadi",
+    "locateUnsupported": "Brauzer joylashuvni qo'llab-quvvatlamaydi"
+  },
   "salon": {
     "tabs": {
       "about": "Haqida",
@@ -413,6 +426,14 @@
       "out": "Chiqim"
     },
     "empty": "Bu filtrda tranzaksiya yo'q",
+    "emptyTitle": "Hali tranzaksiya yo'q",
+    "emptyDesc": "Birinchi broningizni qiling — cashback va bonuslar shu yerda ko'rinadi.",
+    "emptyCta": "Birinchi broningizni qiling",
+    "pullHint": "Yangilash uchun pastga torting",
+    "savedCards": "Saqlangan kartalar",
+    "savedCardsHint": "Click, Payme, Uzcard",
+    "manageCards": "Boshqarish",
+    "defaultPayment": "Asosiy: {{method}}",
     "fullHistory": "To'liq tarix",
     "quick": {
       "topUp": "To'ldirish",
@@ -438,6 +459,19 @@
     "submit": "To'ldirish · {{amount}} so'm",
     "successTitle": "So'rov qabul qilindi",
     "successBody": "+{{amount}} so'm qo'shilishi rejalashtirildi. Yangi balans: {{balance}} so'm (demo)."
+  },
+  "storiesPage": {
+    "title": "Storylar",
+    "subtitle": "Salonlardan qisqa yangiliklar",
+    "seeAll": "Hammasi",
+    "allSalons": "Barcha salon storylari",
+    "slides": "slayd",
+    "unseen": "Ko'rilmagan",
+    "seen": "Ko'rilgan",
+    "continueWatching": "Davom etish",
+    "bookNow": "Band qilish",
+    "notFound": "Story topilmadi",
+    "backToHub": "Storylar ro'yxatiga"
   },
   "auth": {
     "phone": "Telefon raqami",

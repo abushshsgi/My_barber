@@ -13,6 +13,7 @@ import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as TodayRouteImport } from './routes/today'
 import { Route as SupportRouteImport } from './routes/support'
 import { Route as SubscriptionsRouteImport } from './routes/subscriptions'
+import { Route as StoriesRouteImport } from './routes/stories'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReviewsRouteImport } from './routes/reviews'
 import { Route as ReelsRouteImport } from './routes/reels'
@@ -36,6 +37,7 @@ import { Route as AiStyleRouteImport } from './routes/ai-style'
 import { Route as AddressesRouteImport } from './routes/addresses'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WalletTopUpRouteImport } from './routes/wallet_.top-up'
+import { Route as StoriesSalonIdRouteImport } from './routes/stories.$salonId'
 import { Route as SalonIdRouteImport } from './routes/salon.$id'
 import { Route as ChatIdRouteImport } from './routes/chat.$id'
 import { Route as BookingSalonIdRouteImport } from './routes/booking.$salonId'
@@ -63,6 +65,11 @@ const SupportRoute = SupportRouteImport.update({
 const SubscriptionsRoute = SubscriptionsRouteImport.update({
   id: '/subscriptions',
   path: '/subscriptions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StoriesRoute = StoriesRouteImport.update({
+  id: '/stories',
+  path: '/stories',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -180,6 +187,11 @@ const WalletTopUpRoute = WalletTopUpRouteImport.update({
   path: '/wallet/top-up',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StoriesSalonIdRoute = StoriesSalonIdRouteImport.update({
+  id: '/$salonId',
+  path: '/$salonId',
+  getParentRoute: () => StoriesRoute,
+} as any)
 const SalonIdRoute = SalonIdRouteImport.update({
   id: '/salon/$id',
   path: '/salon/$id',
@@ -244,6 +256,7 @@ export interface FileRoutesByFullPath {
   '/reels': typeof ReelsRoute
   '/reviews': typeof ReviewsRoute
   '/settings': typeof SettingsRoute
+  '/stories': typeof StoriesRouteWithChildren
   '/subscriptions': typeof SubscriptionsRoute
   '/support': typeof SupportRoute
   '/today': typeof TodayRoute
@@ -255,6 +268,7 @@ export interface FileRoutesByFullPath {
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/salon/$id': typeof SalonIdRoute
+  '/stories/$salonId': typeof StoriesSalonIdRoute
   '/wallet/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
 }
@@ -281,6 +295,7 @@ export interface FileRoutesByTo {
   '/reels': typeof ReelsRoute
   '/reviews': typeof ReviewsRoute
   '/settings': typeof SettingsRoute
+  '/stories': typeof StoriesRouteWithChildren
   '/subscriptions': typeof SubscriptionsRoute
   '/support': typeof SupportRoute
   '/today': typeof TodayRoute
@@ -292,6 +307,7 @@ export interface FileRoutesByTo {
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/salon/$id': typeof SalonIdRoute
+  '/stories/$salonId': typeof StoriesSalonIdRoute
   '/wallet/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
 }
@@ -319,6 +335,7 @@ export interface FileRoutesById {
   '/reels': typeof ReelsRoute
   '/reviews': typeof ReviewsRoute
   '/settings': typeof SettingsRoute
+  '/stories': typeof StoriesRouteWithChildren
   '/subscriptions': typeof SubscriptionsRoute
   '/support': typeof SupportRoute
   '/today': typeof TodayRoute
@@ -330,6 +347,7 @@ export interface FileRoutesById {
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/salon/$id': typeof SalonIdRoute
+  '/stories/$salonId': typeof StoriesSalonIdRoute
   '/wallet_/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
 }
@@ -358,6 +376,7 @@ export interface FileRouteTypes {
     | '/reels'
     | '/reviews'
     | '/settings'
+    | '/stories'
     | '/subscriptions'
     | '/support'
     | '/today'
@@ -369,6 +388,7 @@ export interface FileRouteTypes {
     | '/booking/$salonId'
     | '/chat/$id'
     | '/salon/$id'
+    | '/stories/$salonId'
     | '/wallet/top-up'
     | '/booking/barber/$barberId'
   fileRoutesByTo: FileRoutesByTo
@@ -395,6 +415,7 @@ export interface FileRouteTypes {
     | '/reels'
     | '/reviews'
     | '/settings'
+    | '/stories'
     | '/subscriptions'
     | '/support'
     | '/today'
@@ -406,6 +427,7 @@ export interface FileRouteTypes {
     | '/booking/$salonId'
     | '/chat/$id'
     | '/salon/$id'
+    | '/stories/$salonId'
     | '/wallet/top-up'
     | '/booking/barber/$barberId'
   id:
@@ -432,6 +454,7 @@ export interface FileRouteTypes {
     | '/reels'
     | '/reviews'
     | '/settings'
+    | '/stories'
     | '/subscriptions'
     | '/support'
     | '/today'
@@ -443,6 +466,7 @@ export interface FileRouteTypes {
     | '/booking/$salonId'
     | '/chat/$id'
     | '/salon/$id'
+    | '/stories/$salonId'
     | '/wallet_/top-up'
     | '/booking/barber/$barberId'
   fileRoutesById: FileRoutesById
@@ -470,6 +494,7 @@ export interface RootRouteChildren {
   ReelsRoute: typeof ReelsRoute
   ReviewsRoute: typeof ReviewsRoute
   SettingsRoute: typeof SettingsRoute
+  StoriesRoute: typeof StoriesRouteWithChildren
   SubscriptionsRoute: typeof SubscriptionsRoute
   SupportRoute: typeof SupportRoute
   TodayRoute: typeof TodayRoute
@@ -512,6 +537,13 @@ declare module '@tanstack/react-router' {
       path: '/subscriptions'
       fullPath: '/subscriptions'
       preLoaderRoute: typeof SubscriptionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/stories': {
+      id: '/stories'
+      path: '/stories'
+      fullPath: '/stories'
+      preLoaderRoute: typeof StoriesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -675,6 +707,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WalletTopUpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/stories/$salonId': {
+      id: '/stories/$salonId'
+      path: '/$salonId'
+      fullPath: '/stories/$salonId'
+      preLoaderRoute: typeof StoriesSalonIdRouteImport
+      parentRoute: typeof StoriesRoute
+    }
     '/salon/$id': {
       id: '/salon/$id'
       path: '/salon/$id'
@@ -744,6 +783,17 @@ const ChatRouteChildren: ChatRouteChildren = {
 
 const ChatRouteWithChildren = ChatRoute._addFileChildren(ChatRouteChildren)
 
+interface StoriesRouteChildren {
+  StoriesSalonIdRoute: typeof StoriesSalonIdRoute
+}
+
+const StoriesRouteChildren: StoriesRouteChildren = {
+  StoriesSalonIdRoute: StoriesSalonIdRoute,
+}
+
+const StoriesRouteWithChildren =
+  StoriesRoute._addFileChildren(StoriesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AddressesRoute: AddressesRoute,
@@ -767,6 +817,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReelsRoute: ReelsRoute,
   ReviewsRoute: ReviewsRoute,
   SettingsRoute: SettingsRoute,
+  StoriesRoute: StoriesRouteWithChildren,
   SubscriptionsRoute: SubscriptionsRoute,
   SupportRoute: SupportRoute,
   TodayRoute: TodayRoute,

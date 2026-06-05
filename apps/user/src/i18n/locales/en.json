@@ -16,6 +16,7 @@
     "viewAll": "View all",
     "viewMap": "Open map",
     "back": "Back",
+    "close": "Close",
     "next": "Next",
     "confirm": "Confirm",
     "cancel": "Cancel",
@@ -36,7 +37,19 @@
       "spa": "Spa"
     }
   },
-  "map": { "salons": "Salons", "barbers": "Barbers", "radius": "Radius", "search": "Salon or address" },
+  "map": {
+    "salons": "Salons",
+    "barbers": "Barbers",
+    "radius": "Radius",
+    "search": "Salon or address",
+    "nearby": "Nearby",
+    "heatmap": "Hot areas",
+    "locate": "My location",
+    "fitAll": "Show all",
+    "filters": "Filters",
+    "locateError": "Could not get your location",
+    "locateUnsupported": "Geolocation is not supported"
+  },
   "salon": {
     "tabs": {
       "about": "About",
@@ -397,6 +410,14 @@
       "out": "Outgoing"
     },
     "empty": "No transactions in this filter",
+    "emptyTitle": "No transactions yet",
+    "emptyDesc": "Book your first appointment — cashback and rewards will show up here.",
+    "emptyCta": "Book your first visit",
+    "pullHint": "Pull down to refresh balance",
+    "savedCards": "Saved cards",
+    "savedCardsHint": "Click, Payme, Uzcard",
+    "manageCards": "Manage",
+    "defaultPayment": "Default: {{method}}",
     "fullHistory": "Full history",
     "quick": {
       "topUp": "Top up",
@@ -422,6 +443,19 @@
     "submit": "Top up · {{amount}} UZS",
     "successTitle": "Request received",
     "successBody": "+{{amount}} UZS scheduled. New balance: {{balance}} UZS (demo)."
+  },
+  "storiesPage": {
+    "title": "Stories",
+    "subtitle": "Short updates from salons",
+    "seeAll": "See all",
+    "allSalons": "All salon stories",
+    "slides": "slides",
+    "unseen": "Unseen",
+    "seen": "Seen",
+    "continueWatching": "Continue",
+    "bookNow": "Book now",
+    "notFound": "Story not found",
+    "backToHub": "Back to stories"
   },
   "auth": {
     "phone": "Phone number",

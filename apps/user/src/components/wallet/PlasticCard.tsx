@@ -1,7 +1,7 @@
 import { useCallback, useRef } from "react";
 import { animate, motion, useMotionValue, useReducedMotion } from "framer-motion";
-import { Nfc } from "lucide-react";
-import { userProfile, walletSummary } from "@/lib/mock-data";
+import { Nfc, TrendingUp } from "lucide-react";
+import { userProfile } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 const TILT_SPRING = { type: "spring" as const, stiffness: 320, damping: 24 };
@@ -29,12 +29,20 @@ function EmvChip() {
   );
 }
 
-export function PlasticCard() {
-  const reduced = useReducedMotion();
+export function PlasticCard({
+  balance,
+  refreshing = false,
+  monthTrend,
+}: {
+  balance: number;
+  refreshing?: boolean;
+  monthTrend?: string;
+}) {
   const cardRef = useRef<HTMLElement>(null);
   const pressing = useRef(false);
   const rotateX = useMotionValue(0);
   const rotateY = useMotionValue(0);
+  const reduced = useReducedMotion();
 
   const resetTilt = useCallback(() => {
     animate(rotateX, 0, TILT_SPRING);
@@ -86,11 +94,21 @@ export function PlasticCard() {
 
   return (
     <div className="w-full max-w-[340px]" style={{ perspective: 1100 }}>
+      {monthTrend && (
+        <div className="mb-3 flex justify-center">
+          <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2.5 py-1 text-[10px] font-bold text-foreground shadow-sm">
+            <TrendingUp className="h-3 w-3" strokeWidth={2.4} />
+            {monthTrend}
+          </span>
+        </div>
+      )}
+
       <motion.article
         ref={cardRef}
         className={cn(
           "relative aspect-[1.586/1] w-full touch-none select-none overflow-hidden rounded-[26px]",
           !reduced && "cursor-grab active:cursor-grabbing",
+          refreshing && "ring-2 ring-foreground/15",
         )}
         style={{
           rotateX,
@@ -101,15 +119,23 @@ export function PlasticCard() {
           background: CARD.body,
           boxShadow: CARD.shadow,
         }}
+        animate={refreshing ? { scale: [1, 0.985, 1] } : { scale: 1, opacity: 1 }}
+        transition={refreshing ? { duration: 0.9, repeat: Infinity } : { duration: 0.45 }}
         initial={reduced ? false : { opacity: 0, scale: 0.92 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         whileTap={reduced ? undefined : { scale: 0.98 }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endTilt}
         onPointerCancel={endTilt}
       >
+        {refreshing && (
+          <motion.div
+            className="pointer-events-none absolute inset-0 z-30 bg-gradient-to-r from-transparent via-background/10 to-transparent"
+            animate={{ x: ["-120%", "120%"] }}
+            transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}
+          />
+        )}
+
         <div
           className="pointer-events-none absolute inset-x-0 top-0 z-10 h-[52%] rounded-b-[28px]"
           style={{
@@ -121,7 +147,7 @@ export function PlasticCard() {
 
         <div className="relative z-20 flex h-[52%] flex-col justify-end px-5 pb-5 pt-4 text-foreground">
           <p className="text-[40px] font-semibold leading-none tracking-tight tabular-nums">
-            {walletSummary.balance.toLocaleString("uz-UZ")}
+            {balance.toLocaleString("uz-UZ")}
             <span className="ml-1.5 text-lg font-semibold text-muted-foreground">so'm</span>
           </p>
         </div>

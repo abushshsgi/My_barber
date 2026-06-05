@@ -133,4 +133,13 @@
 
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .leaflet-container {
+    z-index: 0;
+    font-family: var(--font-sans);
+  }
+
+  .leaflet-control-attribution {
+    display: none;
+  }
 }

@@ -5,7 +5,9 @@ import { useTranslation } from "react-i18next";
 import { salons, trendingStyles, offers, formatPrice, walletSummary } from "@/lib/mock-data";
 import type { Category } from "@/lib/mock-data";
 import { SalonCard } from "@/components/SalonCard";
+import { StoryRings } from "@/components/stories/StoryRings";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
+import { salonStories } from "@/lib/stories-mock";
 import { useAudience, matchAudience, audienceToCategory, categoriesForAudience } from "@/hooks/use-audience";
 import { cn } from "@/lib/utils";
 
@@ -93,6 +95,17 @@ function Home() {
       <div className="px-5 pt-2">
         <AudienceSwitch />
       </div>
+
+      {/* Stories */}
+      <section className="mt-5 px-5">
+        <div className="mb-3 flex items-end justify-between">
+          <h2 className="text-sm font-bold">{t("storiesPage.title")}</h2>
+          <Link to="/stories" className="text-[11px] font-bold text-muted-foreground">
+            {t("storiesPage.seeAll")}
+          </Link>
+        </div>
+        <StoryRings stories={salonStories} linkTo="viewer" />
+      </section>
 
       {/* Search */}
       <div className="px-5 pt-3">
