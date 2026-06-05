@@ -302,6 +302,19 @@
     },
     "loyaltyRemaining": "{{points}} pts to next tier"
   },
+  "topUpPage": {
+    "title": "Top up",
+    "subtitle": "Add funds to your wallet",
+    "currentBalance": "Current balance",
+    "chooseAmount": "Choose amount",
+    "customAmount": "Custom amount",
+    "customPlaceholder": "e.g. 150,000",
+    "minAmount": "Minimum amount — 10,000 UZS",
+    "paymentMethod": "Payment method",
+    "submit": "Top up · {{amount}} UZS",
+    "successTitle": "Request received",
+    "successBody": "+{{amount}} UZS scheduled. New balance: {{balance}} UZS (demo)."
+  },
   "auth": {
     "phone": "Phone number",
     "code": "Verification code",

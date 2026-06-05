@@ -36,6 +36,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AiStyleRouteImport } from './routes/ai-style'
 import { Route as AddressesRouteImport } from './routes/addresses'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WalletTopUpRouteImport } from './routes/wallet_.top-up'
 import { Route as SalonIdRouteImport } from './routes/salon.$id'
 import { Route as ChatIdRouteImport } from './routes/chat.$id'
 import { Route as BookingSalonIdRouteImport } from './routes/booking.$salonId'
@@ -180,6 +181,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WalletTopUpRoute = WalletTopUpRouteImport.update({
+  id: '/wallet_/top-up',
+  path: '/wallet/top-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SalonIdRoute = SalonIdRouteImport.update({
   id: '/salon/$id',
   path: '/salon/$id',
@@ -256,6 +262,7 @@ export interface FileRoutesByFullPath {
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/salon/$id': typeof SalonIdRoute
+  '/wallet/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
 }
 export interface FileRoutesByTo {
@@ -293,6 +300,7 @@ export interface FileRoutesByTo {
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/salon/$id': typeof SalonIdRoute
+  '/wallet/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
 }
 export interface FileRoutesById {
@@ -331,6 +339,7 @@ export interface FileRoutesById {
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/salon/$id': typeof SalonIdRoute
+  '/wallet_/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
 }
 export interface FileRouteTypes {
@@ -370,6 +379,7 @@ export interface FileRouteTypes {
     | '/booking/$salonId'
     | '/chat/$id'
     | '/salon/$id'
+    | '/wallet/top-up'
     | '/booking/barber/$barberId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -407,6 +417,7 @@ export interface FileRouteTypes {
     | '/booking/$salonId'
     | '/chat/$id'
     | '/salon/$id'
+    | '/wallet/top-up'
     | '/booking/barber/$barberId'
   id:
     | '__root__'
@@ -444,6 +455,7 @@ export interface FileRouteTypes {
     | '/booking/$salonId'
     | '/chat/$id'
     | '/salon/$id'
+    | '/wallet_/top-up'
     | '/booking/barber/$barberId'
   fileRoutesById: FileRoutesById
 }
@@ -481,6 +493,7 @@ export interface RootRouteChildren {
   AccountPreferencesRoute: typeof AccountPreferencesRoute
   BookingSalonIdRoute: typeof BookingSalonIdRoute
   SalonIdRoute: typeof SalonIdRoute
+  WalletTopUpRoute: typeof WalletTopUpRoute
   BookingBarberBarberIdRoute: typeof BookingBarberBarberIdRoute
 }
 
@@ -675,6 +688,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/wallet_/top-up': {
+      id: '/wallet_/top-up'
+      path: '/wallet/top-up'
+      fullPath: '/wallet/top-up'
+      preLoaderRoute: typeof WalletTopUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/salon/$id': {
       id: '/salon/$id'
       path: '/salon/$id'
@@ -778,6 +798,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountPreferencesRoute: AccountPreferencesRoute,
   BookingSalonIdRoute: BookingSalonIdRoute,
   SalonIdRoute: SalonIdRoute,
+  WalletTopUpRoute: WalletTopUpRoute,
   BookingBarberBarberIdRoute: BookingBarberBarberIdRoute,
 }
 export const routeTree = rootRouteImport

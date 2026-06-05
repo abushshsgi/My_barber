@@ -8,18 +8,19 @@ type Props = {
   children: React.ReactNode;
   className?: string;
   right?: React.ReactNode;
+  backTo?: string;
 };
 
 /** Ichki sahifalar — krem fon + oq kartochka (profil hero emas, ro'yxat emas). */
-export function ProfileSubpageLayout({ title, subtitle, children, className, right }: Props) {
+export function ProfileSubpageLayout({ title, subtitle, children, className, right, backTo = "/profile" }: Props) {
   return (
     <div className={cn("min-h-full bg-surface pb-[calc(68px+env(safe-area-inset-bottom)+12px)]", className)}>
       <div className="px-5 pb-4 pt-[calc(env(safe-area-inset-top)+12px)]">
         <div className="flex items-start gap-3">
           <Link
-            to="/profile"
+            to={backTo}
             className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border bg-background active:opacity-80"
-            aria-label="Profil"
+            aria-label="Orqaga"
           >
             <ChevronLeft className="h-5 w-5" strokeWidth={2.4} />
           </Link>

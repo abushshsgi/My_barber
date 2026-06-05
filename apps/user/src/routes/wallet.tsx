@@ -75,12 +75,12 @@ function WalletPage() {
       </div>
 
       <div className="mt-8 flex justify-center gap-10 px-5">
-        <button type="button" className="flex flex-col items-center gap-2 active:scale-95">
+        <Link to="/wallet/top-up" className="flex flex-col items-center gap-2 active:scale-95">
           <span className="grid h-[60px] w-[60px] place-items-center rounded-full bg-foreground text-background shadow-lg">
             <Plus className="h-7 w-7" strokeWidth={2.2} />
           </span>
           <span className="text-[11px] font-bold">{t("walletPage.topUp")}</span>
-        </button>
+        </Link>
         <Link to="/giftcard" className="flex flex-col items-center gap-2 active:scale-95">
           <span className="grid h-[60px] w-[60px] place-items-center rounded-full border-2 border-foreground bg-card">
             <Gift className="h-7 w-7" strokeWidth={2} />

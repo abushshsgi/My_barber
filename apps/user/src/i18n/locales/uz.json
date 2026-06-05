@@ -318,6 +318,19 @@
     },
     "loyaltyRemaining": "{{points}} ball qoldi · keyingi daraja"
   },
+  "topUpPage": {
+    "title": "To'ldirish",
+    "subtitle": "Hamyon balansini oshiring",
+    "currentBalance": "Joriy balans",
+    "chooseAmount": "Summani tanlang",
+    "customAmount": "Boshqa summa",
+    "customPlaceholder": "Masalan, 150 000",
+    "minAmount": "Minimal summa — 10 000 so'm",
+    "paymentMethod": "To'lov usuli",
+    "submit": "To'ldirish · {{amount}} so'm",
+    "successTitle": "So'rov qabul qilindi",
+    "successBody": "+{{amount}} so'm qo'shilishi rejalashtirildi. Yangi balans: {{balance}} so'm (demo)."
+  },
   "auth": {
     "phone": "Telefon raqami",
     "code": "Tasdiq kodi",

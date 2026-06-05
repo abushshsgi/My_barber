@@ -302,6 +302,19 @@
     },
     "loyaltyRemaining": "Ещё {{points}} баллов до следующего уровня"
   },
+  "topUpPage": {
+    "title": "Пополнение",
+    "subtitle": "Пополните баланс кошелька",
+    "currentBalance": "Текущий баланс",
+    "chooseAmount": "Выберите сумму",
+    "customAmount": "Другая сумма",
+    "customPlaceholder": "Например, 150 000",
+    "minAmount": "Минимальная сумма — 10 000 сум",
+    "paymentMethod": "Способ оплаты",
+    "submit": "Пополнить · {{amount}} сум",
+    "successTitle": "Запрос принят",
+    "successBody": "+{{amount}} сум будет зачислено. Новый баланс: {{balance}} сум (демо)."
+  },
   "auth": {
     "phone": "Номер телефона",
     "code": "Код подтверждения",
