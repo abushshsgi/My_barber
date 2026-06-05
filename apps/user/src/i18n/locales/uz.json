@@ -272,6 +272,8 @@
   "walletPage": {
     "title": "Hamyon",
     "subtitle": "Cashback, sovg'a karta va tarix",
+    "available": "Mavjud",
+    "balanceCaption": "{{value}} so'm cashback",
     "balanceLabel": "Joriy balans",
     "monthTrend": "+12% bu oy",
     "topUp": "To'ldirish",
@@ -314,7 +316,23 @@
       "overview": "Balans",
       "activity": "Harakatlar"
     },
-    "loyaltyRemaining": "{{points}} ball qoldi · keyingi daraja"
+    "loyaltyRemaining": "{{points}} ball qoldi · keyingi daraja",
+    "variantPicker": {
+      "title": "Karta dizayni (sinov)",
+      "subtitle": "Yoqqan variantni tanlang — keyin qolganlarini o'chiramiz",
+      "premium": "Premium",
+      "metal": "Titan",
+      "glass": "Shaffof",
+      "retro": "Retro",
+      "pill": "Fintech"
+    },
+    "variants": {
+      "premium": "Premium",
+      "metal": "Titan",
+      "glass": "Shaffof",
+      "retro": "Retro",
+      "pill": "Fintech"
+    }
   },
   "auth": {
     "phone": "Telefon raqami",

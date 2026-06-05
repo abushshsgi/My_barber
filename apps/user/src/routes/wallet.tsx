@@ -1,21 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useMemo, useRef, useState } from "react";
-import { animate, motion, useMotionValue, useReducedMotion } from "framer-motion";
-import {
-  Gift,
-  Plus,
-  ChevronLeft,
-  ArrowDownLeft,
-  ArrowUpRight,
-  Nfc,
-} from "lucide-react";
+import { useMemo, useState } from "react";
+import { Gift, Plus, ChevronLeft, ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { PlasticCard } from "@/components/wallet/PlasticCard";
+import { WalletVariantPicker } from "@/components/wallet/WalletVariantPicker";
 import {
-  WalletCardCreamCap,
-  WalletEmvChip,
-  walletCardStyle,
-} from "@/components/wallet/WalletCardBrand";
-import { formatPrice, loyaltyMock, userProfile, walletSummary } from "@/lib/mock-data";
+  readWalletVariant,
+  saveWalletVariant,
+  walletCardThemes,
+  type WalletCardVariant,
+} from "@/components/wallet/wallet-variants";
+import { formatPrice, loyaltyMock, walletSummary } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/wallet")({
@@ -50,170 +45,10 @@ function formatTxAmount(n: number) {
   return new Intl.NumberFormat("uz-UZ").format(Math.abs(n)) + " so'm";
 }
 
-function plasticPan(balance: number) {
-  const n = String(balance).padStart(12, "0").slice(-12);
-  return `8600 ${n.slice(0, 4)} ${n.slice(4, 8)} ${n.slice(8, 12)}`;
-}
-
-const TILT_SPRING = { type: "spring" as const, stiffness: 320, damping: 24 };
-const MAX_TILT_Y = 24;
-const MAX_TILT_X = 18;
-
-/** Plastik karta — o'z joyida 3D egilish (tilt), surilmaydi. */
-function PlasticCard() {
-  const { t } = useTranslation();
-  const reduced = useReducedMotion();
-  const cardRef = useRef<HTMLElement>(null);
-  const pressing = useRef(false);
-  const rotateX = useMotionValue(0);
-  const rotateY = useMotionValue(0);
-
-  const resetTilt = useCallback(() => {
-    animate(rotateX, 0, TILT_SPRING);
-    animate(rotateY, 0, TILT_SPRING);
-  }, [rotateX, rotateY]);
-
-  const applyTilt = useCallback(
-    (clientX: number, clientY: number) => {
-      const el = cardRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const dx = ((clientX - rect.left) / rect.width - 0.5) * 2;
-      const dy = ((clientY - rect.top) / rect.height - 0.5) * 2;
-      rotateY.set(dx * MAX_TILT_Y);
-      rotateX.set(-dy * MAX_TILT_X);
-    },
-    [rotateX, rotateY],
-  );
-
-  const onPointerDown = useCallback(
-    (e: React.PointerEvent<HTMLElement>) => {
-      if (reduced) return;
-      pressing.current = true;
-      e.currentTarget.setPointerCapture(e.pointerId);
-      applyTilt(e.clientX, e.clientY);
-    },
-    [reduced, applyTilt],
-  );
-
-  const onPointerMove = useCallback(
-    (e: React.PointerEvent<HTMLElement>) => {
-      if (!pressing.current || reduced) return;
-      applyTilt(e.clientX, e.clientY);
-    },
-    [reduced, applyTilt],
-  );
-
-  const endTilt = useCallback(
-    (e: React.PointerEvent<HTMLElement>) => {
-      if (!pressing.current) return;
-      pressing.current = false;
-      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-        e.currentTarget.releasePointerCapture(e.pointerId);
-      }
-      resetTilt();
-    },
-    [resetTilt],
-  );
-
-  return (
-    <div
-      className="w-full max-w-[340px]"
-      style={{ perspective: 1100 }}
-    >
-      <motion.article
-        ref={cardRef}
-        className={cn(
-          "relative aspect-[1.586/1] w-full touch-none select-none overflow-hidden rounded-[26px] text-background",
-          !reduced && "cursor-grab active:cursor-grabbing",
-        )}
-        style={{
-          rotateX,
-          rotateY,
-          transformStyle: "preserve-3d",
-          touchAction: "none",
-          transformOrigin: "50% 55%",
-          background: walletCardStyle.background,
-          boxShadow: walletCardStyle.boxShadow,
-        }}
-        initial={reduced ? false : { opacity: 0, scale: 0.88 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        whileTap={reduced ? undefined : { scale: 0.98 }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={endTilt}
-        onPointerCancel={endTilt}
-      >
-        <WalletCardCreamCap />
-
-        <div className="relative z-20 flex h-[54%] flex-col justify-between px-5 pb-4 pt-4 text-foreground">
-          <div className="flex items-start justify-between gap-3">
-            <div className="space-y-1.5">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                mysaloon wallet
-              </p>
-              <p className="inline-flex items-baseline gap-1 text-xs font-medium text-muted-foreground/90">
-                <span className="h-1 w-1 rounded-full bg-emerald-400" />
-                <span>{t("walletPage.available")}</span>
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <WalletEmvChip />
-              <motion.div
-                className="grid h-9 w-9 place-items-center rounded-xl bg-foreground/95 text-background shadow-lg shadow-black/30 backdrop-blur"
-                animate={reduced ? undefined : { scale: [1, 1.04, 1] }}
-                transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-                aria-label={t("walletPage.nfc")}
-              >
-                <Nfc className="h-5 w-5" strokeWidth={2.2} />
-              </motion.div>
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <p className="text-[38px] font-semibold leading-none tracking-tight tabular-nums md:text-[42px]">
-              {walletSummary.balance.toLocaleString("uz-UZ")}
-              <span className="ml-1.5 text-lg font-semibold text-muted-foreground">so'm</span>
-            </p>
-            <p className="text-[11px] font-medium text-muted-foreground">
-              {t("walletPage.balanceCaption", {
-                value: formatPrice(walletSummary.balance),
-              })}
-            </p>
-          </div>
-        </div>
-
-        <div className="absolute inset-x-0 bottom-0 flex h-[48%] flex-col justify-end px-5 pb-5 pt-2">
-          <p className="font-mono text-[14px] font-semibold tracking-[0.24em] tabular-nums text-background/82">
-            {plasticPan(walletSummary.balance)}
-          </p>
-          <div className="mt-3 flex items-center justify-between gap-2 border-t border-background/18 pt-3">
-            <p className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-wide text-background/92">
-              {userProfile.name}
-            </p>
-            <span className="inline-flex items-center gap-1 rounded-sm bg-background/95 px-2 py-0.5 text-[8px] font-semibold uppercase text-foreground shadow-sm shadow-black/20">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-              {loyaltyMock.tier}
-            </span>
-            <p className="shrink-0 font-mono text-[11px] font-semibold text-background/60">12/28</p>
-          </div>
-          <div className="mt-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.3em] text-background/45">
-            <span>mysaloon</span>
-            <span className="flex items-center gap-[3px]">
-              <span className="h-4 w-4 rounded-full bg-[oklch(0.78_0.16_65)] opacity-90" />
-              <span className="h-4 w-4 -ml-1 rounded-full bg-[oklch(0.72_0.18_40)] opacity-90" />
-            </span>
-          </div>
-        </div>
-      </motion.article>
-    </div>
-  );
-}
-
 function WalletPage() {
   const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("all");
+  const [variant, setVariant] = useState<WalletCardVariant>(() => readWalletVariant());
 
   const visible = TXS.filter((tx) => tab === "all" || tx.kind === tab);
 
@@ -226,6 +61,11 @@ function WalletPage() {
     all: t("walletPage.tabs.all"),
     in: t("walletPage.tabs.in"),
     out: t("walletPage.tabs.out"),
+  };
+
+  const onVariantChange = (next: WalletCardVariant) => {
+    setVariant(next);
+    saveWalletVariant(next);
   };
 
   return (
@@ -241,12 +81,14 @@ function WalletPage() {
         <h1 className="text-lg font-bold">{t("walletPage.title")}</h1>
       </header>
 
-      <div className="px-5 pt-4">
+      <WalletVariantPicker value={variant} onChange={onVariantChange} />
+
+      <div className="px-5 pt-2">
         <div className="relative mx-auto flex min-h-[210px] w-full max-w-[360px] items-center justify-center overflow-visible py-6">
-          <PlasticCard />
+          <PlasticCard variant={variant} />
         </div>
         <p className="text-center text-[11px] font-medium text-muted-foreground">
-          {t("walletPage.dragHint")}
+          {t(walletCardThemes[variant].hintKey)}
         </p>
       </div>
 

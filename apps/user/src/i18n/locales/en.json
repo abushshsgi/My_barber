@@ -256,6 +256,8 @@
   "walletPage": {
     "title": "Wallet",
     "subtitle": "Cashback, gift cards & history",
+    "available": "Available",
+    "balanceCaption": "{{value}} UZS cashback",
     "balanceLabel": "Current balance",
     "monthTrend": "+12% this month",
     "topUp": "Top up",
@@ -298,7 +300,23 @@
       "overview": "Balance",
       "activity": "Activity"
     },
-    "loyaltyRemaining": "{{points}} pts to next tier"
+    "loyaltyRemaining": "{{points}} pts to next tier",
+    "variantPicker": {
+      "title": "Card design (preview)",
+      "subtitle": "Pick your favorite — we'll remove the rest",
+      "premium": "Premium",
+      "metal": "Titanium",
+      "glass": "Glass",
+      "retro": "Retro",
+      "pill": "Fintech"
+    },
+    "variants": {
+      "premium": "Premium",
+      "metal": "Titanium",
+      "glass": "Glass",
+      "retro": "Retro",
+      "pill": "Fintech"
+    }
   },
   "auth": {
     "phone": "Phone number",

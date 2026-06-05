@@ -256,6 +256,8 @@
   "walletPage": {
     "title": "Кошелёк",
     "subtitle": "Кэшбэк, подарочные карты и история",
+    "available": "Доступно",
+    "balanceCaption": "{{value}} сум кэшбэк",
     "balanceLabel": "Текущий баланс",
     "monthTrend": "+12% в этом месяце",
     "topUp": "Пополнить",
@@ -298,7 +300,23 @@
       "overview": "Баланс",
       "activity": "Операции"
     },
-    "loyaltyRemaining": "Ещё {{points}} баллов до следующего уровня"
+    "loyaltyRemaining": "Ещё {{points}} баллов до следующего уровня",
+    "variantPicker": {
+      "title": "Дизайн карты (тест)",
+      "subtitle": "Выберите понравившийся — остальные удалим",
+      "premium": "Premium",
+      "metal": "Титан",
+      "glass": "Стекло",
+      "retro": "Ретро",
+      "pill": "Fintech"
+    },
+    "variants": {
+      "premium": "Premium",
+      "metal": "Титан",
+      "glass": "Стекло",
+      "retro": "Ретро",
+      "pill": "Fintech"
+    }
   },
   "auth": {
     "phone": "Номер телефона",
