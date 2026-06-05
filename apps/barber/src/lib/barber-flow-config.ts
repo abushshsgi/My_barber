@@ -206,6 +206,26 @@ export function inferFlowIdentity(input: {
   return "unknown";
 }
 
+/** Salon rejimida yoqilgan marshrutlar — chuqur havola va bookmarklar ishlashi uchun. */
+export function pathAllowedInSalonWorkspace(pathname: string): boolean {
+  if (pathname === "/barber/salon-view" || pathname.startsWith("/barber/salon-view/")) {
+    return true;
+  }
+  if (
+    pathname === "/barber/profile" ||
+    pathname === "/barber/settings" ||
+    pathname === "/barber/help" ||
+    pathname === "/barber/notifications" ||
+    pathname.startsWith("/barber/notifications/")
+  ) {
+    return true;
+  }
+  if (pathname === "/barber/chat" || pathname.startsWith("/barber/chat/")) {
+    return true;
+  }
+  return false;
+}
+
 export function getCapabilities(input: {
   onboardingComplete: boolean;
   viewMode: ViewMode;
