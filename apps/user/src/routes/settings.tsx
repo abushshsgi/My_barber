@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
-import { setLang } from "@/i18n/config";
+import { currentLang, setLang } from "@/i18n/config";
 import { userProfile } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { useAudience, PREFS_KEY, type AudienceFilter } from "@/hooks/use-audience";
@@ -19,6 +19,8 @@ interface Prefs {
   reduceMotion: boolean;
   preferredAudience: AudienceFilter;
 }
+
+type BoolPref = "bookingReminders" | "chatAlerts" | "reduceMotion";
 
 const defaultPreferredAudience: AudienceFilter =
   userProfile.preferredAudience === "men" || userProfile.preferredAudience === "women"
@@ -39,7 +41,7 @@ const LANGS = [
 ];
 
 function Settings() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { setAudience } = useAudience();
   const [prefs, setPrefs] = useState<Prefs>(DEFAULTS);
 
@@ -50,7 +52,7 @@ function Settings() {
     } catch {}
   }, []);
 
-  const update = (key: keyof Prefs, value: boolean) => {
+  const update = (key: BoolPref, value: boolean) => {
     const next = { ...prefs, [key]: value };
     setPrefs(next);
     try {
@@ -61,7 +63,7 @@ function Settings() {
     }
   };
 
-  const items: { key: keyof Prefs; label: string }[] = [
+  const items: { key: BoolPref; label: string }[] = [
     { key: "bookingReminders", label: t("settings.bookingReminders") },
     { key: "chatAlerts", label: t("settings.chatAlerts") },
     { key: "reduceMotion", label: t("settings.reduceMotion") },
@@ -70,7 +72,7 @@ function Settings() {
   return (
     <ProfileSubpageLayout title={t("settings.title")}>
       <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-        Bildirishnoma
+        {t("settings.notificationsSection")}
       </p>
       <ProfileSubpageCard className="overflow-hidden p-0">
         {items.map((item, i) => (
@@ -99,7 +101,7 @@ function Settings() {
       </p>
       <ProfileSubpageCard className="overflow-hidden p-0">
         {LANGS.map((l, i) => {
-          const active = i18n.language === l.code;
+          const active = currentLang() === l.code;
           return (
             <button
               key={l.code}

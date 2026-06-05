@@ -6,14 +6,18 @@ import ru from "./locales/ru.json";
 import en from "./locales/en.json";
 
 const STORAGE_KEY = "mysaloon.lang";
+const SUPPORTED_LANGS = ["uz", "ru", "en"] as const;
+export type AppLang = (typeof SUPPORTED_LANGS)[number];
 
-const getInitialLang = (): string => {
+const getInitialLang = (): AppLang => {
   if (typeof window === "undefined") return "uz";
   try {
-    return window.localStorage.getItem(STORAGE_KEY) || "uz";
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (stored && SUPPORTED_LANGS.includes(stored as AppLang)) return stored as AppLang;
   } catch {
-    return "uz";
+    /* noop */
   }
+  return "uz";
 };
 
 if (!i18n.isInitialized) {
@@ -25,16 +29,30 @@ if (!i18n.isInitialized) {
     },
     lng: getInitialLang(),
     fallbackLng: "uz",
+    supportedLngs: [...SUPPORTED_LANGS],
+    nonExplicitSupportedLngs: false,
+    load: "languageOnly",
+    initAsync: false,
     interpolation: { escapeValue: false },
+    react: { useSuspense: false },
   });
 }
 
-export const setLang = (lang: "uz" | "ru" | "en") => {
-  i18n.changeLanguage(lang);
+export const currentLang = (): AppLang => {
+  const raw = i18n.resolvedLanguage || i18n.language || "uz";
+  const code = raw.split("-")[0] as AppLang;
+  return SUPPORTED_LANGS.includes(code) ? code : "uz";
+};
+
+export const setLang = (lang: AppLang) => {
+  void i18n.changeLanguage(lang);
   try {
     window.localStorage.setItem(STORAGE_KEY, lang);
   } catch {
     /* noop */
+  }
+  if (typeof document !== "undefined") {
+    document.documentElement.lang = lang;
   }
 };
 

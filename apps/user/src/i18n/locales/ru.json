@@ -36,7 +36,7 @@
       "spa": "Спа"
     }
   },
-  "map": { "salons": "Салоны", "barbers": "Мастера", "radius": "Радиус" },
+  "map": { "salons": "Салоны", "barbers": "Мастера", "radius": "Радиус", "search": "Салон или адрес" },
   "salon": {
     "tabs": {
       "about": "О салоне",
@@ -242,6 +242,7 @@
     "chatAlerts": "Уведомления чата",
     "reduceMotion": "Уменьшить анимацию",
     "language": "Язык",
+    "notificationsSection": "Уведомления",
     "preferredAudience": "Для кого вы ищете",
     "reset": "Сбросить настройки",
     "sections": {

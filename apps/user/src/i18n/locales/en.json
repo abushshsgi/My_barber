@@ -4,7 +4,8 @@
     "map": "Map",
     "bookings": "Bookings",
     "chat": "Chat",
-    "notifications": "Inbox","today": "Today",
+    "notifications": "Inbox",
+    "today": "Today",
     "profile": "Profile",
     "wallet": "Wallet"
   },
@@ -35,7 +36,7 @@
       "spa": "Spa"
     }
   },
-  "map": { "salons": "Salons", "barbers": "Barbers", "radius": "Radius" },
+  "map": { "salons": "Salons", "barbers": "Barbers", "radius": "Radius", "search": "Salon or address" },
   "salon": {
     "tabs": {
       "about": "About",
@@ -241,6 +242,7 @@
     "chatAlerts": "Chat alerts",
     "reduceMotion": "Reduce motion",
     "language": "Language",
+    "notificationsSection": "Notifications",
     "preferredAudience": "Who are you searching for",
     "reset": "Reset to defaults",
     "sections": {

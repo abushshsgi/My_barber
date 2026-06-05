@@ -255,6 +255,7 @@
     "chatAlerts": "Chat bildirishnomalari",
     "reduceMotion": "Animatsiyani kamaytirish",
     "language": "Til",
+    "notificationsSection": "Bildirishnomalar",
     "preferredAudience": "Kim uchun qidiryapsiz",
     "reset": "Standart sozlamalarga qaytarish",
     "sections": {

@@ -14,6 +14,7 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import { I18nProvider } from "../components/I18nProvider";
 import { UserLayout } from "../components/UserLayout";
 import { Toaster } from "sonner";
 import { AudienceProvider } from "../hooks/use-audience";
@@ -130,13 +131,15 @@ function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AudienceProvider>
-        <UserLayout>
-          <Outlet key={pathname} />
-        </UserLayout>
-        <Toaster position="top-center" />
-      </AudienceProvider>
-    </QueryClientProvider>
+    <I18nProvider>
+      <QueryClientProvider client={queryClient}>
+        <AudienceProvider>
+          <UserLayout>
+            <Outlet key={pathname} />
+          </UserLayout>
+          <Toaster position="top-center" />
+        </AudienceProvider>
+      </QueryClientProvider>
+    </I18nProvider>
   );
 }
