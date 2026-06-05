@@ -64,20 +64,20 @@ export function PlasticCard({
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent<HTMLElement>) => {
-      if (reduced) return;
+      if (reduced || refreshing || e.pointerType !== "mouse") return;
       pressing.current = true;
       e.currentTarget.setPointerCapture(e.pointerId);
       applyTilt(e.clientX, e.clientY);
     },
-    [reduced, applyTilt],
+    [reduced, refreshing, applyTilt],
   );
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLElement>) => {
-      if (!pressing.current || reduced) return;
+      if (!pressing.current || reduced || refreshing) return;
       applyTilt(e.clientX, e.clientY);
     },
-    [reduced, applyTilt],
+    [reduced, refreshing, applyTilt],
   );
 
   const endTilt = useCallback(
@@ -94,47 +94,55 @@ export function PlasticCard({
 
   return (
     <div className="w-full max-w-[340px]" style={{ perspective: 1100 }}>
-      {monthTrend && (
+      {monthTrend ? (
         <div className="mb-3 flex justify-center">
           <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2.5 py-1 text-[10px] font-bold text-foreground shadow-sm">
             <TrendingUp className="h-3 w-3" strokeWidth={2.4} />
             {monthTrend}
           </span>
         </div>
-      )}
+      ) : null}
 
       <motion.article
         ref={cardRef}
         className={cn(
-          "relative aspect-[1.586/1] w-full touch-none select-none overflow-hidden rounded-[26px]",
-          !reduced && "cursor-grab active:cursor-grabbing",
+          "relative aspect-[1.586/1] w-full select-none overflow-hidden rounded-[26px]",
+          !reduced && !refreshing && "cursor-grab active:cursor-grabbing",
           refreshing && "ring-2 ring-foreground/15",
         )}
         style={{
           rotateX,
           rotateY,
           transformStyle: "preserve-3d",
-          touchAction: "none",
+          touchAction: "pan-y",
           transformOrigin: "50% 55%",
           background: CARD.body,
           boxShadow: CARD.shadow,
         }}
-        animate={refreshing ? { scale: [1, 0.985, 1] } : { scale: 1, opacity: 1 }}
-        transition={refreshing ? { duration: 0.9, repeat: Infinity } : { duration: 0.45 }}
-        initial={reduced ? false : { opacity: 0, scale: 0.92 }}
-        whileTap={reduced ? undefined : { scale: 0.98 }}
+        initial={reduced ? false : { opacity: 0, scale: 0.96 }}
+        animate={
+          refreshing
+            ? { opacity: 1, scale: [1, 0.985, 1] }
+            : { opacity: 1, scale: 1 }
+        }
+        transition={
+          refreshing
+            ? { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
+            : { duration: 0.45, ease: [0.22, 1, 0.36, 1] }
+        }
+        whileTap={reduced || refreshing ? undefined : { scale: 0.98 }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endTilt}
         onPointerCancel={endTilt}
       >
-        {refreshing && (
+        {refreshing ? (
           <motion.div
             className="pointer-events-none absolute inset-0 z-30 bg-gradient-to-r from-transparent via-background/10 to-transparent"
             animate={{ x: ["-120%", "120%"] }}
             transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}
           />
-        )}
+        ) : null}
 
         <div
           className="pointer-events-none absolute inset-x-0 top-0 z-10 h-[52%] rounded-b-[28px]"
@@ -148,7 +156,7 @@ export function PlasticCard({
         <div className="relative z-20 flex h-[52%] flex-col justify-end px-5 pb-5 pt-4 text-foreground">
           <p className="text-[40px] font-semibold leading-none tracking-tight tabular-nums">
             {balance.toLocaleString("uz-UZ")}
-            <span className="ml-1.5 text-lg font-semibold text-muted-foreground">so'm</span>
+            <span className="ml-1.5 text-lg font-semibold text-muted-foreground">so&apos;m</span>
           </p>
         </div>
 

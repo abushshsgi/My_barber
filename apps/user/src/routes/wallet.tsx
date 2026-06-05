@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Gift, Plus, ChevronLeft, ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PlasticCard } from "@/components/wallet/PlasticCard";
+import { ClientOnly } from "@/components/ClientOnly";
 import { WalletEmptyTransactions } from "@/components/wallet/WalletEmptyTransactions";
 import { WalletPaymentMethodsRow } from "@/components/wallet/WalletPaymentMethodsRow";
 import { WalletPullRefresh } from "@/components/wallet/WalletPullRefresh";
@@ -10,6 +11,7 @@ import { loyaltyMock, walletSummary } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/wallet")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Hamyon — mysaloon.uz" },
@@ -69,7 +71,7 @@ function WalletPage() {
 
   return (
     <WalletPullRefresh onRefresh={refreshBalance} onRefreshingChange={setRefreshing}>
-      <div className="min-h-full bg-background pb-[calc(68px+env(safe-area-inset-bottom)+16px)]">
+      <div className="bg-background pb-[calc(68px+env(safe-area-inset-bottom)+16px)]">
         <header className="flex items-center gap-3 px-5 pt-[calc(env(safe-area-inset-top)+12px)]">
           <Link
             to="/profile"
@@ -86,11 +88,17 @@ function WalletPage() {
 
         <div className="px-5 pt-2">
           <div className="relative mx-auto flex min-h-[210px] w-full max-w-[360px] items-center justify-center overflow-visible py-4">
-            <PlasticCard
-              balance={balance}
-              refreshing={refreshing}
-              monthTrend={t("walletPage.monthTrend")}
-            />
+            <ClientOnly
+              fallback={
+                <div className="aspect-[1.586/1] w-full max-w-[340px] animate-pulse rounded-[26px] bg-surface" />
+              }
+            >
+              <PlasticCard
+                balance={balance}
+                refreshing={refreshing}
+                monthTrend={t("walletPage.monthTrend")}
+              />
+            </ClientOnly>
           </div>
         </div>
 

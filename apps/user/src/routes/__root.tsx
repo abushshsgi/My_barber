@@ -15,6 +15,7 @@ import appCss from "../styles.css?url";
 import { I18nProvider } from "../components/I18nProvider";
 import { LangAwareOutlet } from "../components/LangAwareOutlet";
 import { UserLayout } from "../components/UserLayout";
+import { ClientOnly } from "../components/ClientOnly";
 import { Toaster } from "sonner";
 import { AudienceProvider } from "../hooks/use-audience";
 
@@ -134,7 +135,9 @@ function AppShell() {
         <UserLayout>
           <LangAwareOutlet />
         </UserLayout>
-        <Toaster position="top-center" />
+        <ClientOnly>
+          <Toaster position="top-center" />
+        </ClientOnly>
       </AudienceProvider>
     </QueryClientProvider>
   );

@@ -21,24 +21,27 @@ export function WalletPullRefresh({
   const [refreshing, setRefreshing] = useState(false);
   const startY = useRef(0);
   const pulling = useRef(false);
+  const pullRef = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const triggerRefresh = useCallback(async () => {
     setRefreshing(true);
     onRefreshingChange?.(true);
     setPull(THRESHOLD);
+    pullRef.current = THRESHOLD;
     try {
       await onRefresh();
     } finally {
       setRefreshing(false);
       onRefreshingChange?.(false);
       setPull(0);
+      pullRef.current = 0;
     }
   }, [onRefresh, onRefreshingChange]);
 
   const onTouchStart = (e: React.TouchEvent) => {
     const el = containerRef.current;
-    if (!el || el.scrollTop > 0 || refreshing) return;
+    if (!el || el.scrollTop > 2 || refreshing) return;
     startY.current = e.touches[0].clientY;
     pulling.current = true;
   };
@@ -46,35 +49,48 @@ export function WalletPullRefresh({
   const onTouchMove = (e: React.TouchEvent) => {
     if (!pulling.current || refreshing) return;
     const el = containerRef.current;
-    if (!el || el.scrollTop > 0) {
+    if (!el || el.scrollTop > 2) {
       pulling.current = false;
       setPull(0);
+      pullRef.current = 0;
       return;
     }
     const delta = e.touches[0].clientY - startY.current;
     if (delta <= 0) {
       setPull(0);
+      pullRef.current = 0;
       return;
     }
-    setPull(Math.min(delta * 0.55, MAX_PULL));
+    const next = Math.min(delta * 0.55, MAX_PULL);
+    setPull(next);
+    pullRef.current = next;
+    if (next > 8) e.preventDefault();
   };
 
   const onTouchEnd = () => {
     if (!pulling.current) return;
     pulling.current = false;
-    if (pull >= THRESHOLD) void triggerRefresh();
-    else setPull(0);
+    if (pullRef.current >= THRESHOLD) void triggerRefresh();
+    else {
+      setPull(0);
+      pullRef.current = 0;
+    }
   };
 
   const ready = pull >= THRESHOLD;
+  const offset = refreshing ? THRESHOLD : pull * 0.35;
 
   return (
     <div
       ref={containerRef}
-      className={cn("relative min-h-full overflow-y-auto overscroll-y-contain", className)}
+      className={cn(
+        "relative min-h-[calc(100dvh-68px-env(safe-area-inset-bottom))] overflow-y-auto overscroll-y-contain lg:min-h-full",
+        className,
+      )}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
+      onTouchCancel={onTouchEnd}
     >
       <motion.div
         aria-hidden
@@ -95,7 +111,7 @@ export function WalletPullRefresh({
       </motion.div>
 
       <motion.div
-        animate={{ y: refreshing ? THRESHOLD : pull * 0.35 }}
+        animate={{ y: offset }}
         transition={{ type: "spring", stiffness: 420, damping: 34 }}
       >
         {children}
