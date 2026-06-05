@@ -272,7 +272,7 @@ function AiStylePage() {
                     </div>
                   </div>
                   <Link
-                    to="/stylists"
+                    to="/explore"
                     className="flex items-center justify-between border-t border-border/80 bg-surface/30 px-4 py-2.5 text-[11px] font-bold active:bg-surface/60"
                   >
                     {t("aiStylePage.findStylist")}

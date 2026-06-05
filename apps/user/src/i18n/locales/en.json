@@ -219,8 +219,8 @@
   "favoriteStylists": {
     "title": "Favorite stylists",
     "empty": "No favorite stylists",
-    "emptyHint": "Add from the stylists page",
-    "browse": "Browse stylists"
+    "emptyHint": "Add from salon pages",
+    "browse": "Browse trends"
   },
   "subscriptions": {
     "title": "Subscriptions",

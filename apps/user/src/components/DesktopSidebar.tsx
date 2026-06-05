@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Map, CalendarCheck, MessageSquare, Bell, User, Heart, Settings, Tag, Sparkles, Gift, Flame, Award, GitCompareArrows, Film, Wand2, Wallet } from "lucide-react";
+import { Home, Map, CalendarCheck, MessageSquare, Bell, User, Heart, Settings, Tag, Sparkles, Gift, Flame, GitCompareArrows, Film, Wand2, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { isNavTabActive } from "@/lib/navigation";
@@ -51,9 +51,6 @@ export function DesktopSidebar() {
       <div className="mt-4 flex flex-col gap-1 border-t border-border pt-4">
         <Link to="/today" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
           <Flame className="h-5 w-5" /> Bugungi vaqtlar
-        </Link>
-        <Link to="/stylists" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
-          <Award className="h-5 w-5" /> Top ustalar
         </Link>
         <Link to="/reels" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-foreground hover:bg-surface">
           <Film className="h-5 w-5" /> Reels

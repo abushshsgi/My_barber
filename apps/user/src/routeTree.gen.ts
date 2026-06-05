@@ -13,7 +13,6 @@ import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as TodayRouteImport } from './routes/today'
 import { Route as SupportRouteImport } from './routes/support'
 import { Route as SubscriptionsRouteImport } from './routes/subscriptions'
-import { Route as StylistsRouteImport } from './routes/stylists'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReviewsRouteImport } from './routes/reviews'
 import { Route as ReelsRouteImport } from './routes/reels'
@@ -64,11 +63,6 @@ const SupportRoute = SupportRouteImport.update({
 const SubscriptionsRoute = SubscriptionsRouteImport.update({
   id: '/subscriptions',
   path: '/subscriptions',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StylistsRoute = StylistsRouteImport.update({
-  id: '/stylists',
-  path: '/stylists',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -250,7 +244,6 @@ export interface FileRoutesByFullPath {
   '/reels': typeof ReelsRoute
   '/reviews': typeof ReviewsRoute
   '/settings': typeof SettingsRoute
-  '/stylists': typeof StylistsRoute
   '/subscriptions': typeof SubscriptionsRoute
   '/support': typeof SupportRoute
   '/today': typeof TodayRoute
@@ -288,7 +281,6 @@ export interface FileRoutesByTo {
   '/reels': typeof ReelsRoute
   '/reviews': typeof ReviewsRoute
   '/settings': typeof SettingsRoute
-  '/stylists': typeof StylistsRoute
   '/subscriptions': typeof SubscriptionsRoute
   '/support': typeof SupportRoute
   '/today': typeof TodayRoute
@@ -327,7 +319,6 @@ export interface FileRoutesById {
   '/reels': typeof ReelsRoute
   '/reviews': typeof ReviewsRoute
   '/settings': typeof SettingsRoute
-  '/stylists': typeof StylistsRoute
   '/subscriptions': typeof SubscriptionsRoute
   '/support': typeof SupportRoute
   '/today': typeof TodayRoute
@@ -367,7 +358,6 @@ export interface FileRouteTypes {
     | '/reels'
     | '/reviews'
     | '/settings'
-    | '/stylists'
     | '/subscriptions'
     | '/support'
     | '/today'
@@ -405,7 +395,6 @@ export interface FileRouteTypes {
     | '/reels'
     | '/reviews'
     | '/settings'
-    | '/stylists'
     | '/subscriptions'
     | '/support'
     | '/today'
@@ -443,7 +432,6 @@ export interface FileRouteTypes {
     | '/reels'
     | '/reviews'
     | '/settings'
-    | '/stylists'
     | '/subscriptions'
     | '/support'
     | '/today'
@@ -482,7 +470,6 @@ export interface RootRouteChildren {
   ReelsRoute: typeof ReelsRoute
   ReviewsRoute: typeof ReviewsRoute
   SettingsRoute: typeof SettingsRoute
-  StylistsRoute: typeof StylistsRoute
   SubscriptionsRoute: typeof SubscriptionsRoute
   SupportRoute: typeof SupportRoute
   TodayRoute: typeof TodayRoute
@@ -525,13 +512,6 @@ declare module '@tanstack/react-router' {
       path: '/subscriptions'
       fullPath: '/subscriptions'
       preLoaderRoute: typeof SubscriptionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/stylists': {
-      id: '/stylists'
-      path: '/stylists'
-      fullPath: '/stylists'
-      preLoaderRoute: typeof StylistsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -787,7 +767,6 @@ const rootRouteChildren: RootRouteChildren = {
   ReelsRoute: ReelsRoute,
   ReviewsRoute: ReviewsRoute,
   SettingsRoute: SettingsRoute,
-  StylistsRoute: StylistsRoute,
   SubscriptionsRoute: SubscriptionsRoute,
   SupportRoute: SupportRoute,
   TodayRoute: TodayRoute,

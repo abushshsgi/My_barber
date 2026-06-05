@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Search, ChevronRight, Sparkles, Tag, Gift, Award, Flame, GitCompareArrows, Film, Wand2, Wallet } from "lucide-react";
+import { Search, ChevronRight, Sparkles, Tag, Gift, Flame, GitCompareArrows, Film, Wand2, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { salons, trendingStyles, offers, formatPrice, walletSummary } from "@/lib/mock-data";
 import type { Category } from "@/lib/mock-data";
@@ -135,13 +135,6 @@ function Home() {
         >
           <Flame className="h-4 w-4" strokeWidth={2.4} />
           <span className="text-[11px] font-bold leading-tight">Bugungi vaqtlar</span>
-        </Link>
-        <Link
-          to="/stylists"
-          className="flex flex-col items-start gap-1 rounded-2xl bg-surface p-3 active:scale-[0.97] transition-transform"
-        >
-          <Award className="h-4 w-4" strokeWidth={2.4} />
-          <span className="text-[11px] font-bold leading-tight">Top ustalar</span>
         </Link>
         <Link
           to="/explore"

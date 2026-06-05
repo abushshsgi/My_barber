@@ -23,7 +23,7 @@ function FavoriteStylistsPage() {
           title={t("favoriteStylists.empty")}
           description={t("favoriteStylists.emptyHint")}
           action={
-            <Link to="/stylists" className="rounded-2xl bg-foreground px-5 py-3 text-sm font-bold text-background">
+            <Link to="/explore" className="rounded-2xl bg-foreground px-5 py-3 text-sm font-bold text-background">
               {t("favoriteStylists.browse")}
             </Link>
           }

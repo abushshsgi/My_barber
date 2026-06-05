@@ -232,8 +232,8 @@
   "favoriteStylists": {
     "title": "Sevimli ustalar",
     "empty": "Sevimli usta yo'q",
-    "emptyHint": "Ustalar sahifasidan qo'shing",
-    "browse": "Ustalarni ko'rish"
+    "emptyHint": "Salon sahifalaridan qo'shing",
+    "browse": "Trend uslublarni ko'rish"
   },
   "subscriptions": {
     "title": "Obunalar",
