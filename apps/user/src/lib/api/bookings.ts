@@ -1,4 +1,5 @@
 import { apiJson } from "./client";
+import { apiList } from "./list-utils";
 import type { ApiAvailabilitySlot, ApiBooking } from "./types";
 
 function qs(params: Record<string, string | number | undefined>): string {
@@ -11,7 +12,7 @@ function qs(params: Record<string, string | number | undefined>): string {
 }
 
 export async function fetchBookings(status?: string): Promise<ApiBooking[]> {
-  return apiJson<ApiBooking[]>(`/api/v1/bookings/${qs({ status })}`);
+  return apiList<ApiBooking>(`/api/v1/bookings/${qs({ status })}`);
 }
 
 export type CreateBookingPayload = {

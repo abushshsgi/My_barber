@@ -4,8 +4,9 @@ export function isUpcomingBooking(booking: BookingItem, now = Date.now()): boole
   return new Date(booking.date).getTime() >= now && booking.status !== "cancelled";
 }
 
-export function getUpcomingBookings(list: BookingItem[], now = Date.now()): BookingItem[] {
-  return list
+export function getUpcomingBookings(list: BookingItem[] | null | undefined, now = Date.now()): BookingItem[] {
+  const safe = Array.isArray(list) ? list : [];
+  return safe
     .filter((b) => isUpcomingBooking(b, now))
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }

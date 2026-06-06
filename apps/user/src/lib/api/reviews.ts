@@ -1,4 +1,5 @@
 import { apiJson } from "./client";
+import { apiList } from "./list-utils";
 import type { ApiReview } from "./types";
 
 function qs(params: Record<string, string | number | undefined>): string {
@@ -11,11 +12,11 @@ function qs(params: Record<string, string | number | undefined>): string {
 }
 
 export async function fetchMyReviews(): Promise<ApiReview[]> {
-  return apiJson<ApiReview[]>(`/api/v1/reviews/${qs({ mine: 1 })}`);
+  return apiList<ApiReview>(`/api/v1/reviews/${qs({ mine: 1 })}`);
 }
 
 export async function fetchSalonReviews(salonId: string | number): Promise<ApiReview[]> {
-  return apiJson<ApiReview[]>(`/api/v1/reviews/${qs({ salon: salonId })}`);
+  return apiList<ApiReview>(`/api/v1/reviews/${qs({ salon: salonId })}`);
 }
 
 export type CreateReviewPayload = {

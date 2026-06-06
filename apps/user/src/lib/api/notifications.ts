@@ -1,8 +1,9 @@
 import { apiJson } from "./client";
+import { apiList } from "./list-utils";
 import type { ApiNotification } from "./types";
 
 export async function fetchNotifications(): Promise<ApiNotification[]> {
-  return apiJson<ApiNotification[]>("/api/v1/notifications/");
+  return apiList<ApiNotification>("/api/v1/notifications/");
 }
 
 export async function markNotificationRead(id: number): Promise<{ status: string }> {

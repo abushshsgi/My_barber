@@ -1,8 +1,9 @@
 import { apiJson } from "./client";
+import { apiList } from "./list-utils";
 import type { ApiConversation, ApiMessage } from "./types";
 
 export async function fetchConversations(): Promise<ApiConversation[]> {
-  return apiJson<ApiConversation[]>("/api/v1/chat/conversations/");
+  return apiList<ApiConversation>("/api/v1/chat/conversations/");
 }
 
 export async function createConversation(barberId: number): Promise<ApiConversation> {
@@ -13,7 +14,7 @@ export async function createConversation(barberId: number): Promise<ApiConversat
 }
 
 export async function fetchMessages(conversationId: string): Promise<ApiMessage[]> {
-  return apiJson<ApiMessage[]>(`/api/v1/chat/conversations/${conversationId}/messages/`);
+  return apiList<ApiMessage>(`/api/v1/chat/conversations/${conversationId}/messages/`);
 }
 
 export async function sendMessage(conversationId: string, text: string): Promise<ApiMessage> {

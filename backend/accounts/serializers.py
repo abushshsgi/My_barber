@@ -1,3 +1,5 @@
+from decimal import Decimal, ROUND_HALF_UP
+
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
@@ -52,6 +54,17 @@ class UserSerializer(serializers.ModelSerializer):
         if year - value < 10:
             raise serializers.ValidationError("Yosh kamida 10 bo'lishi kerak.")
         return value
+
+    def _quantize_coord(self, value):
+        if value is None:
+            return value
+        return Decimal(str(value)).quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
+
+    def validate_latitude(self, value):
+        return self._quantize_coord(value)
+
+    def validate_longitude(self, value):
+        return self._quantize_coord(value)
 
     def validate(self, attrs):
         attrs = super().validate(attrs)

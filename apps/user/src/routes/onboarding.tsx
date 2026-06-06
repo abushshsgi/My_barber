@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Stepper } from "@/components/Stepper";
 import { useRegions } from "@/hooks/use-regions";
 import { useUpdateMe } from "@/hooks/use-me";
+import { roundCoord } from "@/lib/api/list-utils";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/onboarding")({
@@ -63,7 +64,7 @@ function OnboardingFlow() {
         birth_year: birthYear,
         region,
         ...(lat != null && lng != null
-          ? { latitude: lat, longitude: lng }
+          ? { latitude: roundCoord(lat), longitude: roundCoord(lng) }
           : {}),
         onboarding_completed: true,
       });
