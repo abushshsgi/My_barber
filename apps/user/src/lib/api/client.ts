@@ -19,37 +19,118 @@ export const API_BASE = (ENV_API_BASE.trim() ? ENV_API_BASE : FALLBACK_DEV_BASE)
 
 const TOKEN_KEY_USER = "mybarber_user_access";
 const REFRESH_KEY_USER = "mybarber_user_refresh";
+const TOKEN_KEY_LEGACY = "mybarber_access";
+const REFRESH_KEY_LEGACY = "mybarber_refresh";
+const USER_KEY = "mysaloon.auth.user";
+
+type JwtKind = "admin" | "barber" | "user";
+
+function jwtPayloadType(token: string | null): JwtKind | null {
+  if (!token) return null;
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const json = atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"));
+    const payload = JSON.parse(json) as { type?: string };
+    if (payload.type === "admin_access" || payload.type === "admin_refresh") return "admin";
+    if (payload.type === "barber_access" || payload.type === "barber_refresh") return "barber";
+    return "user";
+  } catch {
+    return null;
+  }
+}
+
+function readStoredUserAccess(): string | null {
+  const userToken = localStorage.getItem(TOKEN_KEY_USER);
+  if (userToken) {
+    const kind = jwtPayloadType(userToken);
+    if (kind === "user") return userToken;
+    clearUserTokens();
+    return null;
+  }
+  const legacy = localStorage.getItem(TOKEN_KEY_LEGACY);
+  if (!legacy) return null;
+  if (jwtPayloadType(legacy) === "user") return legacy;
+  return null;
+}
+
+function readStoredUserRefresh(): string | null {
+  const refresh = localStorage.getItem(REFRESH_KEY_USER);
+  if (refresh) {
+    const kind = jwtPayloadType(refresh);
+    if (kind === "user") return refresh;
+    clearUserTokens();
+    return null;
+  }
+  const legacy = localStorage.getItem(REFRESH_KEY_LEGACY);
+  if (!legacy) return null;
+  if (jwtPayloadType(legacy) === "user") return legacy;
+  return null;
+}
 
 export function getUserAccessToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY_USER);
+  return readStoredUserAccess();
 }
 
 function getUserRefreshToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(REFRESH_KEY_USER);
+  return readStoredUserRefresh();
 }
 
 export function setUserTokens(access: string, refresh: string) {
+  const accessKind = jwtPayloadType(access);
+  const refreshKind = jwtPayloadType(refresh);
+  if ((accessKind && accessKind !== "user") || (refreshKind && refreshKind !== "user")) {
+    throw new Error("Foydalanuvchi sessiyasi uchun noto'g'ri token turi.");
+  }
   localStorage.setItem(TOKEN_KEY_USER, access);
   localStorage.setItem(REFRESH_KEY_USER, refresh);
+  localStorage.setItem(TOKEN_KEY_LEGACY, access);
+  localStorage.setItem(REFRESH_KEY_LEGACY, refresh);
 }
 
 export function clearUserTokens() {
   localStorage.removeItem(TOKEN_KEY_USER);
   localStorage.removeItem(REFRESH_KEY_USER);
+  localStorage.removeItem(TOKEN_KEY_LEGACY);
+  localStorage.removeItem(REFRESH_KEY_LEGACY);
+  try {
+    localStorage.removeItem(USER_KEY);
+  } catch {
+    /* noop */
+  }
 }
 
 function shouldOmitBearerForPath(path: string): boolean {
   const p = path.split("?")[0].replace(/\/+$/, "");
   return (
     p === "/api/v1/auth/phone/send-code" ||
-    p === "/api/v1/auth/phone/send-code/" ||
     p === "/api/v1/auth/phone/verify" ||
-    p === "/api/v1/auth/phone/verify/" ||
-    p === "/api/v1/auth/token/refresh" ||
-    p === "/api/v1/auth/token/refresh/"
+    p === "/api/v1/auth/token/refresh"
   );
+}
+
+function isAuthFailureStatus(status: number): boolean {
+  return status === 401 || status === 403;
+}
+
+function isInvalidTokenMessage(message: string): boolean {
+  return /token not valid|not authenticated|authentication credentials were not provided/i.test(
+    message,
+  );
+}
+
+function redirectToAuthIfNeeded() {
+  if (typeof window === "undefined") return;
+  const path = window.location.pathname;
+  if (path === "/auth" || path.startsWith("/auth/")) return;
+  window.location.assign("/auth");
+}
+
+export function handleAuthFailure() {
+  clearUserTokens();
+  redirectToAuthIfNeeded();
 }
 
 async function refreshAccess(): Promise<string | null> {
@@ -61,12 +142,10 @@ async function refreshAccess(): Promise<string | null> {
     body: JSON.stringify({ refresh }),
   });
   if (!res.ok) {
-    clearUserTokens();
     return null;
   }
   const data = (await res.json()) as { access?: string; refresh?: string };
-  if (!data.access) {
-    clearUserTokens();
+  if (!data.access || jwtPayloadType(data.access) !== "user") {
     return null;
   }
   setUserTokens(data.access, data.refresh ?? refresh);
@@ -84,6 +163,14 @@ function formatApiError(body: unknown, fallback: string): string {
   return fallback;
 }
 
+async function parseJsonBody(res: Response): Promise<unknown> {
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 export async function apiFetch(
   path: string,
   options: RequestInit = {},
@@ -91,33 +178,44 @@ export async function apiFetch(
 ): Promise<Response> {
   const headers = new Headers(options.headers);
   const token = getUserAccessToken();
+
   if (token && !shouldOmitBearerForPath(path)) {
     headers.set("Authorization", `Bearer ${token}`);
   }
   if (!headers.has("Content-Type") && options.body && !(options.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
+
   let res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-  if (res.status === 401 && retry && token) {
+
+  if (isAuthFailureStatus(res.status) && retry && token) {
     const newAccess = await refreshAccess();
     if (newAccess) {
       headers.set("Authorization", `Bearer ${newAccess}`);
       res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+    } else {
+      handleAuthFailure();
     }
   }
+
   return res;
 }
 
 export async function apiJson<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await apiFetch(path, options);
-  let body: unknown = null;
-  try {
-    body = await res.json();
-  } catch {
-    body = null;
-  }
+  const body = await parseJsonBody(res);
+
   if (!res.ok) {
-    throw new Error(formatApiError(body, res.statusText || "Xatolik"));
+    const message = formatApiError(body, res.statusText || "Xatolik");
+    if (isAuthFailureStatus(res.status) && isInvalidTokenMessage(message)) {
+      handleAuthFailure();
+    }
+    throw new Error(message);
   }
+
   return body as T;
+}
+
+export function hasValidUserSession(): boolean {
+  return Boolean(getUserAccessToken());
 }

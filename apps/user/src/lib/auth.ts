@@ -1,6 +1,7 @@
 import {
   clearUserTokens,
   getUserAccessToken,
+  hasValidUserSession,
   setUserTokens,
   type ApiUser,
 } from "@/lib/api";
@@ -40,7 +41,7 @@ export function getAuthUser(): AuthUser | null {
 }
 
 export function isAuthenticated(): boolean {
-  return Boolean(getToken());
+  return hasValidUserSession();
 }
 
 export function logout() {

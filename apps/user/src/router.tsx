@@ -1,9 +1,32 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryCache, MutationCache } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
+import { handleAuthFailure } from "@/lib/api/client";
 import { routeTree } from "./routeTree.gen";
 
+function isAuthQueryError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return /token not valid|not authenticated|401|403|Unauthorized/i.test(error.message);
+}
+
+function onQueryError(error: unknown) {
+  if (isAuthQueryError(error)) {
+    handleAuthFailure();
+  }
+}
+
 export const getRouter = () => {
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    queryCache: new QueryCache({ onError: onQueryError }),
+    mutationCache: new MutationCache({ onError: onQueryError }),
+    defaultOptions: {
+      queries: {
+        retry: (failureCount, error) => {
+          if (isAuthQueryError(error)) return false;
+          return failureCount < 1;
+        },
+      },
+    },
+  });
 
   const router = createRouter({
     routeTree,

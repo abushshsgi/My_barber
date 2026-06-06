@@ -4,6 +4,8 @@ export {
   apiJson,
   clearUserTokens,
   getUserAccessToken,
+  hasValidUserSession,
+  handleAuthFailure,
   setUserTokens,
   sendPhoneCode,
   verifyPhoneCode,
