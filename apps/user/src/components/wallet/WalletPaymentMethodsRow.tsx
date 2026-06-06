@@ -30,7 +30,7 @@ export function WalletPaymentMethodsRow() {
         </Link>
       </div>
 
-      <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+      <div className="no-scrollbar flex gap-2 overflow-x-auto overscroll-x-contain pb-1">
         {paymentMethods.map((pm) => {
           const Icon = ICONS[pm.type];
           return (

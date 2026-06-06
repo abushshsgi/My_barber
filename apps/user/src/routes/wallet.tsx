@@ -71,7 +71,7 @@ function WalletPage() {
 
   return (
     <WalletPullRefresh onRefresh={refreshBalance} onRefreshingChange={setRefreshing}>
-      <div className="bg-background pb-[calc(68px+env(safe-area-inset-bottom)+16px)]">
+      <div className="overflow-x-hidden pb-6">
         <header className="flex items-center gap-3 px-5 pt-[calc(env(safe-area-inset-top)+12px)]">
           <Link
             to="/profile"
