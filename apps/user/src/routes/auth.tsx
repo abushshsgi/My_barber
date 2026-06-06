@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { sendPhoneCode, verifyPhoneCode } from "@/lib/api";
 import { setSession } from "@/lib/auth";
+import { needsOnboarding } from "@/lib/recommendations";
 import { redirectIfAuthenticated } from "@/lib/require-auth";
 
 export const Route = createFileRoute("/auth")({
@@ -53,7 +54,9 @@ function Auth() {
       setSession(data.access, data.refresh, data.user);
       void queryClient.invalidateQueries();
       toast.success(data.is_new_user ? "Ro'yxatdan o'tdingiz!" : "Xush kelibsiz!");
-      router.navigate({ to: "/" });
+      router.navigate({
+        to: needsOnboarding(data.user) ? "/onboarding" : "/",
+      });
     },
     onError: (e: Error) => toast.error(e.message),
   });

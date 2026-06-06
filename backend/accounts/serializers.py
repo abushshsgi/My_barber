@@ -23,10 +23,45 @@ class UserSerializer(serializers.ModelSerializer):
             "full_name",
             "role",
             "region",
+            "birth_year",
+            "latitude",
+            "longitude",
+            "onboarding_completed",
             "avatar",
             "date_joined",
         )
         read_only_fields = ("id", "role", "date_joined")
+
+    def validate_region(self, value):
+        value = (value or "").strip()
+        if not value:
+            return ""
+        valid = {c[0] for c in UzRegion.choices}
+        if value not in valid:
+            raise serializers.ValidationError("Noto'g'ri viloyat.")
+        return value
+
+    def validate_birth_year(self, value):
+        if value is None:
+            return value
+        from datetime import date
+
+        year = date.today().year
+        if value < 1940 or value > year:
+            raise serializers.ValidationError(f"Tug'ilgan yil {1940}–{year} oralig'ida bo'lishi kerak.")
+        if year - value < 10:
+            raise serializers.ValidationError("Yosh kamida 10 bo'lishi kerak.")
+        return value
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        lat = attrs.get("latitude", getattr(self.instance, "latitude", None))
+        lng = attrs.get("longitude", getattr(self.instance, "longitude", None))
+        if (lat is None) ^ (lng is None):
+            raise serializers.ValidationError(
+                {"latitude": "latitude va longitude birga berilishi kerak."}
+            )
+        return attrs
 
     def get_role(self, obj: User) -> str:
         if getattr(obj, "is_superuser", False) or getattr(obj, "is_staff", False):

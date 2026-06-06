@@ -7,11 +7,30 @@ import {
   matchAudience,
   useAudience,
 } from "@/hooks/use-audience";
-import { useSalonsList } from "@/hooks/use-salons";
+import { useMe } from "@/hooks/use-me";
+import { useSalonsList, useSalonsNearby } from "@/hooks/use-salons";
+import {
+  rankSalonsForUser,
+  userRecommendContext,
+} from "@/lib/recommendations";
 
 export function useHomeData() {
   const { audience } = useAudience();
-  const { data: salons = [], isLoading, error } = useSalonsList();
+  const { data: me } = useMe();
+  const ctx = useMemo(() => userRecommendContext(me), [me]);
+
+  const hasCoords = ctx.lat != null && ctx.lng != null;
+  const { data: nearbySalons = [], isLoading: nearbyLoading } = useSalonsNearby(
+    hasCoords ? ctx.lat! : undefined,
+    hasCoords ? ctx.lng! : undefined,
+  );
+  const { data: listSalons = [], isLoading: listLoading, error } = useSalonsList();
+
+  const salons = useMemo(() => {
+    const base = hasCoords && nearbySalons.length > 0 ? nearbySalons : listSalons;
+    return rankSalonsForUser(base, ctx);
+  }, [hasCoords, nearbySalons, listSalons, ctx]);
+
   const [cat, setCat] = useState<Category | "all">("all");
   const [query, setQuery] = useState("");
 
@@ -53,6 +72,7 @@ export function useHomeData() {
   );
 
   const featuredSalons = useMemo(() => filtered.slice(0, 4), [filtered]);
+  const personalized = hasCoords || Boolean(me?.region);
 
   return {
     audience,
@@ -66,7 +86,8 @@ export function useHomeData() {
     trending,
     topOffer,
     featuredSalons,
-    loading: isLoading,
+    personalized,
+    loading: nearbyLoading || listLoading,
     error,
   };
 }

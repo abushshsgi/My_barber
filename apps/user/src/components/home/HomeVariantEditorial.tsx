@@ -21,7 +21,10 @@ export function HomeVariantEditorial({ data }: Props) {
       <HomeEditorialHero />
       <HomeAudience />
       {data.topOffer ? <HomeOfferBanner offer={data.topOffer} /> : null}
-      <HomeSalonCarousel salons={data.featuredSalons} titleKey="homePage.pickedForYou" />
+      <HomeSalonCarousel
+        salons={data.featuredSalons}
+        titleKey={data.personalized ? "homePage.nearYou" : "homePage.pickedForYou"}
+      />
       <HomeTrendingStrip trending={data.trending} />
       <HomeAiPromo />
       <HomeSearchAndCategories {...data} />

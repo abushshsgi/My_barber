@@ -26,6 +26,10 @@ class User(AbstractUser):
         default="",
         db_index=True,
     )
+    birth_year = models.PositiveSmallIntegerField(null=True, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    onboarding_completed = models.BooleanField(default=False, db_index=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]

@@ -1,7 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchMe, updateMe } from "@/lib/api/user";
+import { fetchMe, updateMe, type UpdateMePayload } from "@/lib/api/user";
 import { getAuthUser, setSession } from "@/lib/auth";
+import { getUserAccessToken } from "@/lib/api/client";
 import { authQueryEnabled } from "@/lib/auth-query";
+import { needsOnboarding } from "@/lib/recommendations";
 
 export const meQueryKey = ["users", "me"] as const;
 
@@ -18,7 +20,7 @@ export function useMe() {
 export function useUpdateMe() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: updateMe,
+    mutationFn: (data: UpdateMePayload) => updateMe(data),
     onSuccess: (user) => {
       const cached = getAuthUser();
       const refresh = localStorage.getItem("mybarber_user_refresh");
@@ -39,5 +41,16 @@ export function useDisplayUser() {
     phone: me?.phone || cached?.phone || "",
     avatar: me?.avatar || null,
     id: me?.id ?? cached?.id,
+    region: me?.region || "",
+    birthYear: me?.birth_year ?? null,
+  };
+}
+
+export function useOnboardingRequired() {
+  const { data: me, isLoading } = useMe();
+  return {
+    required: me ? needsOnboarding(me) : false,
+    isLoading,
+    user: me,
   };
 }

@@ -44,6 +44,7 @@
     "emptyHint": "Try changing filters or audience",
     "editorialTagline": "Find a salon, pick a style, book in seconds.",
     "pickedForYou": "Picked for you",
+    "nearYou": "Salons near you",
     "aiPromoTitle": "AI style advisor",
     "aiPromoHint": "Upload a selfie — get style picks",
     "audience": {

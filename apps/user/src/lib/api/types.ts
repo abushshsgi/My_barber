@@ -5,6 +5,10 @@ export type ApiUser = {
   full_name: string;
   role: string;
   region: string;
+  birth_year: number | null;
+  latitude: string | number | null;
+  longitude: string | number | null;
+  onboarding_completed: boolean;
   avatar: string | null;
   date_joined: string;
 };

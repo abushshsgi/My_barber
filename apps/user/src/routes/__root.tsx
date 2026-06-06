@@ -23,6 +23,7 @@ import { APP_BUILD_ID } from "../lib/app-build-id";
 import { requireAuth } from "../lib/require-auth";
 import { AudienceProvider } from "../hooks/use-audience";
 import { AuthSessionGuard } from "../components/AuthSessionGuard";
+import { OnboardingGuard } from "../components/OnboardingGuard";
 
 function NotFoundComponent() {
   return (
@@ -151,9 +152,11 @@ function AppShell() {
     <QueryClientProvider client={queryClient}>
       <AudienceProvider>
         <AuthSessionGuard>
-          <UserLayout>
-            <LangAwareOutlet />
-          </UserLayout>
+          <OnboardingGuard>
+            <UserLayout>
+              <LangAwareOutlet />
+            </UserLayout>
+          </OnboardingGuard>
         </AuthSessionGuard>
         <ClientOnly>
           <AppVersionWatcher />

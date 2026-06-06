@@ -20,6 +20,7 @@ import { Route as ReelsRouteImport } from './routes/reels'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PaymentMethodsRouteImport } from './routes/payment-methods'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as OffersRouteImport } from './routes/offers'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as MapRouteImport } from './routes/map'
@@ -101,6 +102,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const PaymentMethodsRoute = PaymentMethodsRouteImport.update({
   id: '/payment-methods',
   path: '/payment-methods',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OffersRoute = OffersRouteImport.update({
@@ -256,6 +262,7 @@ export interface FileRoutesByFullPath {
   '/map': typeof MapRoute
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
+  '/onboarding': typeof OnboardingRoute
   '/payment-methods': typeof PaymentMethodsRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
@@ -296,6 +303,7 @@ export interface FileRoutesByTo {
   '/map': typeof MapRoute
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
+  '/onboarding': typeof OnboardingRoute
   '/payment-methods': typeof PaymentMethodsRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
@@ -337,6 +345,7 @@ export interface FileRoutesById {
   '/map': typeof MapRoute
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
+  '/onboarding': typeof OnboardingRoute
   '/payment-methods': typeof PaymentMethodsRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
@@ -379,6 +388,7 @@ export interface FileRouteTypes {
     | '/map'
     | '/notifications'
     | '/offers'
+    | '/onboarding'
     | '/payment-methods'
     | '/privacy'
     | '/profile'
@@ -419,6 +429,7 @@ export interface FileRouteTypes {
     | '/map'
     | '/notifications'
     | '/offers'
+    | '/onboarding'
     | '/payment-methods'
     | '/privacy'
     | '/profile'
@@ -459,6 +470,7 @@ export interface FileRouteTypes {
     | '/map'
     | '/notifications'
     | '/offers'
+    | '/onboarding'
     | '/payment-methods'
     | '/privacy'
     | '/profile'
@@ -500,6 +512,7 @@ export interface RootRouteChildren {
   MapRoute: typeof MapRoute
   NotificationsRoute: typeof NotificationsRoute
   OffersRoute: typeof OffersRoute
+  OnboardingRoute: typeof OnboardingRoute
   PaymentMethodsRoute: typeof PaymentMethodsRoute
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
@@ -599,6 +612,13 @@ declare module '@tanstack/react-router' {
       path: '/payment-methods'
       fullPath: '/payment-methods'
       preLoaderRoute: typeof PaymentMethodsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/offers': {
@@ -831,6 +851,7 @@ const rootRouteChildren: RootRouteChildren = {
   MapRoute: MapRoute,
   NotificationsRoute: NotificationsRoute,
   OffersRoute: OffersRoute,
+  OnboardingRoute: OnboardingRoute,
   PaymentMethodsRoute: PaymentMethodsRoute,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,

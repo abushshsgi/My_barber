@@ -5,7 +5,20 @@ export async function fetchMe(): Promise<ApiUser> {
   return apiJson<ApiUser>("/api/v1/users/me/");
 }
 
-export async function updateMe(data: Partial<Pick<ApiUser, "full_name" | "phone">>): Promise<ApiUser> {
+export type UpdateMePayload = Partial<
+  Pick<
+    ApiUser,
+    | "full_name"
+    | "phone"
+    | "region"
+    | "birth_year"
+    | "latitude"
+    | "longitude"
+    | "onboarding_completed"
+  >
+>;
+
+export async function updateMe(data: UpdateMePayload): Promise<ApiUser> {
   return apiJson<ApiUser>("/api/v1/users/me/", {
     method: "PATCH",
     body: JSON.stringify(data),
