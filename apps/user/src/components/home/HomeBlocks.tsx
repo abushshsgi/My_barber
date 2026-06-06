@@ -10,8 +10,6 @@ import type { HomeData } from "@/components/home/useHomeData";
 import { brandCoverGradient } from "@/lib/brand-gradients";
 import { SalonCard } from "@/components/SalonCard";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
-import { StoryRings } from "@/components/stories/StoryRings";
-import { salonStories } from "@/lib/stories-mock";
 import type { Offer, TrendingStyle } from "@/lib/mock-data";
 
 export function HomeAudience() {
@@ -19,21 +17,6 @@ export function HomeAudience() {
     <div className="px-5 pt-2">
       <AudienceSwitch />
     </div>
-  );
-}
-
-export function HomeStories() {
-  const { t } = useTranslation();
-  return (
-    <section className="mt-5 px-5">
-      <div className="mb-3 flex items-end justify-between">
-        <h2 className="text-sm font-bold">{t("storiesPage.title")}</h2>
-        <Link to="/stories" className="text-[11px] font-bold text-muted-foreground">
-          {t("storiesPage.seeAll")}
-        </Link>
-      </div>
-      <StoryRings stories={salonStories} linkTo="viewer" />
-    </section>
   );
 }
 

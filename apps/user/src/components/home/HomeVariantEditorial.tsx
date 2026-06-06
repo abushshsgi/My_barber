@@ -7,7 +7,6 @@ import {
   HomeSalonCarousel,
   HomeSalonList,
   HomeSearchAndCategories,
-  HomeStories,
   HomeTrendingStrip,
   HomeTrustStrip,
 } from "@/components/home/HomeBlocks";
@@ -21,7 +20,6 @@ export function HomeVariantEditorial({ data }: Props) {
       <header className="pt-4" style={{ paddingTop: "calc(env(safe-area-inset-top) + 12px)" }} />
       <HomeEditorialHero />
       <HomeAudience />
-      <HomeStories />
       {data.topOffer ? <HomeOfferBanner offer={data.topOffer} /> : null}
       <HomeSalonCarousel salons={data.featuredSalons} titleKey="homePage.pickedForYou" />
       <HomeTrendingStrip trending={data.trending} />
