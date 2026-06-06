@@ -44,8 +44,6 @@
     "emptyHint": "Try changing filters or audience",
     "editorialTagline": "Find a salon, pick a style, book in seconds.",
     "pickedForYou": "Picked for you",
-    "actionTodayHint": "Open slots now",
-    "actionMapHint": "Search nearby",
     "aiPromoTitle": "AI style advisor",
     "aiPromoHint": "Upload a selfie — get style picks",
     "audience": {
@@ -68,20 +66,6 @@
       "salons": "Salons",
       "barbers": "Pros",
       "rating": "Rating"
-    },
-    "variantPicker": {
-      "title": "Home — 3 layouts",
-      "subtitle": "Pick your favorite — we'll remove the rest"
-    },
-    "variants": {
-      "v01": "Discovery",
-      "v02": "Action hub",
-      "v03": "Editorial"
-    },
-    "hints": {
-      "v01": "Salons first — search-focused",
-      "v02": "Big CTAs + quick actions",
-      "v03": "Magazine style — hero & carousel"
     }
   },
   "map": {

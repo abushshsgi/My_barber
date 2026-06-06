@@ -49,8 +49,6 @@
     "emptyHint": "Filtr yoki auditoriyani o'zgartirib ko'ring",
     "editorialTagline": "Salon toping, uslub tanlang, bir zumda bron qiling.",
     "pickedForYou": "Siz uchun tanlangan",
-    "actionTodayHint": "Bo'sh slotlar hozir",
-    "actionMapHint": "Yaqin atrofda qidirish",
     "aiPromoTitle": "AI stil maslahatchi",
     "aiPromoHint": "Selfie yuklang — mos uslub tavsiyasi",
     "audience": {
@@ -73,20 +71,6 @@
       "salons": "Salon",
       "barbers": "Usta",
       "rating": "Reyting"
-    },
-    "variantPicker": {
-      "title": "Bosh sahifa — 3 ta layout",
-      "subtitle": "Yoqqanini tanlang, keyin qolganlarini o'chiramiz"
-    },
-    "variants": {
-      "v01": "Discovery",
-      "v02": "Action hub",
-      "v03": "Editorial"
-    },
-    "hints": {
-      "v01": "Salonlar birinchi — qidiruv markazida",
-      "v02": "Katta CTA + tez harakatlar",
-      "v03": "Magazine uslubi — hero va carousel"
     }
   },
   "map": {
