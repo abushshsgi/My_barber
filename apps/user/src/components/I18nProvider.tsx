@@ -28,7 +28,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   return (
     <I18nextProvider i18n={i18n} defaultNS="translation">
-      <div data-app-lang={lang.split("-")[0]}>{children}</div>
+      <div key={lang.split("-")[0]} data-app-lang={lang.split("-")[0]}>
+        {children}
+      </div>
     </I18nextProvider>
   );
 }

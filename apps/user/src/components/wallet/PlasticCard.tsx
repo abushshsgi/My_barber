@@ -1,7 +1,7 @@
 import { useCallback, useRef } from "react";
 import { animate, motion, useMotionValue, useReducedMotion } from "framer-motion";
 import { Nfc, TrendingUp } from "lucide-react";
-import { userProfile } from "@/lib/mock-data";
+import { useDisplayUser } from "@/hooks/use-me";
 import { cn } from "@/lib/utils";
 
 const TILT_SPRING = { type: "spring" as const, stiffness: 320, damping: 24 };
@@ -38,6 +38,7 @@ export function PlasticCard({
   refreshing?: boolean;
   monthTrend?: string;
 }) {
+  const { name } = useDisplayUser();
   const cardRef = useRef<HTMLElement>(null);
   const pressing = useRef(false);
   const rotateX = useMotionValue(0);
@@ -170,7 +171,7 @@ export function PlasticCard({
 
           <div className="flex items-end justify-between gap-3">
             <p className="min-w-0 truncate text-sm font-semibold uppercase tracking-wide">
-              {userProfile.name}
+              {name}
             </p>
             <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.28em] text-background/55">
               mysaloon

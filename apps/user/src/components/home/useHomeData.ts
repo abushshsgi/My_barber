@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Category } from "@/lib/mock-data";
-import { offers, salons, trendingStyles } from "@/lib/mock-data";
+import { offers, trendingStyles } from "@/lib/mock-data";
 import {
   audienceToCategory,
   categoriesForAudience,
   matchAudience,
   useAudience,
 } from "@/hooks/use-audience";
+import { useSalonsList } from "@/hooks/use-salons";
 
 export function useHomeData() {
   const { audience } = useAudience();
+  const { data: salons = [], isLoading, error } = useSalonsList();
   const [cat, setCat] = useState<Category | "all">("all");
   const [query, setQuery] = useState("");
 
@@ -37,7 +39,7 @@ export function useHomeData() {
           (effectiveCat === "all" || s.category === effectiveCat) &&
           (query === "" || s.name.toLowerCase().includes(query.toLowerCase())),
       ),
-    [audience, effectiveCat, query],
+    [salons, audience, effectiveCat, query],
   );
 
   const trending = useMemo(
@@ -64,6 +66,8 @@ export function useHomeData() {
     trending,
     topOffer,
     featuredSalons,
+    loading: isLoading,
+    error,
   };
 }
 

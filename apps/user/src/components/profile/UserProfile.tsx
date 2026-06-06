@@ -14,8 +14,8 @@ import {
   Tag,
   Users,
 } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import { ProfileGoMenuGroup, ProfileGoQuickRow, ProfileWalletCard } from "@/components/profile/ProfileGroupedMenu";
+import { useAppTranslation } from "@/hooks/use-app-translation";
 import { useProfileScreen } from "@/components/profile/useProfileScreen";
 import { formatBookingWhen } from "@/lib/bookings-utils";
 import {
@@ -23,16 +23,14 @@ import {
   getUserSubscription,
   loyaltyMock,
   paymentMethods,
-  userProfile,
   walletSummary,
 } from "@/lib/mock-data";
 
 export function UserProfile() {
-  const { t, i18n } = useTranslation();
-  const lang = i18n.resolvedLanguage || i18n.language;
-  const { audience, nextBooking } = useProfileScreen();
+  const { t } = useAppTranslation();
+  const { audience, nextBooking, user } = useProfileScreen();
   const audienceLabel = t(`audience.${audience}`);
-  const initials = userProfile.name
+  const initials = user.name
     .split(" ")
     .map((n) => n[0])
     .join("")
@@ -50,10 +48,7 @@ export function UserProfile() {
   ];
 
   return (
-    <div
-      key={lang}
-      className="min-h-[70vh] bg-background pb-4 pt-[calc(env(safe-area-inset-top)+6px)]"
-    >
+    <div className="min-h-[70vh] bg-background pb-4 pt-[calc(env(safe-area-inset-top)+6px)]">
       <div className="flex items-center justify-between px-5">
         <Link
           to="/loyalty"
@@ -81,10 +76,10 @@ export function UserProfile() {
           <span className="text-[36px] font-bold leading-none">{initials}</span>
         </div>
         <Link to="/settings" className="mt-4 inline-flex max-w-full items-center gap-1 active:opacity-70">
-          <p className="truncate text-[22px] font-bold tracking-tight">{userProfile.name}</p>
+          <p className="truncate text-[22px] font-bold tracking-tight">{user.name}</p>
           <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" strokeWidth={2} />
         </Link>
-        <p className="mt-1 text-[15px] font-medium text-muted-foreground">{userProfile.phone}</p>
+        <p className="mt-1 text-[15px] font-medium text-muted-foreground">{user.phone}</p>
         <span className="mt-2 rounded-full bg-surface px-3 py-1 text-[11px] font-bold text-muted-foreground">
           {audienceLabel}
         </span>

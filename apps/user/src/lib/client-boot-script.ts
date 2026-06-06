@@ -1,6 +1,6 @@
 /** Brauzer cache va eski PWA qoldiqlarini React yuklanishidan OLDIN bir marta tozalaydi. */
 export const CLIENT_BOOT_SCRIPT = `(function(){
-var CV="5",CK="mysaloon-ui-cache";
+var CV="6",CK="mysaloon-ui-cache";
 function purge(cb){
   var t=[];
   if("serviceWorker"in navigator)t.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister()}))}));

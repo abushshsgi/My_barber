@@ -4,9 +4,9 @@ import { useTranslation } from "react-i18next";
 import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
 import { setLang, type AppLang } from "@/i18n/config";
-import { userProfile } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { useAudience, PREFS_KEY, type AudienceFilter } from "@/hooks/use-audience";
+import { useDisplayUser, useUpdateMe } from "@/hooks/use-me";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Sozlamalar — mysaloon.uz" }] }),
@@ -22,10 +22,7 @@ interface Prefs {
 
 type BoolPref = "bookingReminders" | "chatAlerts" | "reduceMotion";
 
-const defaultPreferredAudience: AudienceFilter =
-  userProfile.preferredAudience === "men" || userProfile.preferredAudience === "women"
-    ? userProfile.preferredAudience
-    : "all";
+const defaultPreferredAudience: AudienceFilter = "all";
 
 const DEFAULTS: Prefs = {
   bookingReminders: true,
@@ -44,6 +41,8 @@ function Settings() {
   const { t, i18n } = useTranslation();
   const activeLang = (i18n.resolvedLanguage || i18n.language || "uz").split("-")[0] as AppLang;
   const { setAudience } = useAudience();
+  const user = useDisplayUser();
+  const updateMe = useUpdateMe();
   const [prefs, setPrefs] = useState<Prefs>(DEFAULTS);
 
   useEffect(() => {
@@ -73,6 +72,32 @@ function Settings() {
   return (
     <ProfileSubpageLayout title={t("settings.title")}>
       <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+        Profil
+      </p>
+      <ProfileSubpageCard className="space-y-3">
+        <label className="block">
+          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+            Ism
+          </span>
+          <input
+            type="text"
+            defaultValue={user.name}
+            key={user.name}
+            onBlur={(e) => {
+              const next = e.target.value.trim();
+              if (next && next !== user.name) {
+                updateMe.mutate({ full_name: next });
+              }
+            }}
+            className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-bold outline-none focus:border-foreground"
+          />
+        </label>
+        {user.phone ? (
+          <p className="text-xs text-muted-foreground">{user.phone}</p>
+        ) : null}
+      </ProfileSubpageCard>
+
+      <p className="mb-3 mt-6 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
         {t("settings.notificationsSection")}
       </p>
       <ProfileSubpageCard className="overflow-hidden p-0">

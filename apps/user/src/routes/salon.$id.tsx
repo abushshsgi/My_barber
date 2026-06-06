@@ -2,20 +2,17 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { Heart, Star, MapPin, Share2, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { salons, formatPrice } from "@/lib/mock-data";
+import { formatPrice } from "@/lib/mock-data";
+import { getSalonCoverUrl } from "@/lib/cover-images";
 import { PageHeader } from "@/components/PageHeader";
+import { useFavorites } from "@/hooks/use-favorites";
+import { useSalonPage } from "@/hooks/use-salon-page";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/salon/$id")({
-  head: ({ params }) => {
-    const salon = salons.find((s) => s.id === params.id);
-    return {
-      meta: [
-        { title: `${salon?.name ?? "Salon"} — mysaloon.uz` },
-        { name: "description", content: salon?.about ?? "Salon detail page." },
-      ],
-    };
-  },
+  head: () => ({
+    meta: [{ title: "Salon — mysaloon.uz" }],
+  }),
   component: SalonPage,
 });
 
@@ -25,19 +22,28 @@ type TabKey = (typeof TAB_KEYS)[number];
 function SalonPage() {
   const { t } = useTranslation();
   const { id } = useParams({ from: "/salon/$id" });
-  const salon = salons.find((s) => s.id === id) ?? salons[0];
+  const { salon, isLoading } = useSalonPage(id);
+  const { isFav, toggle } = useFavorites();
   const [tab, setTab] = useState<TabKey>("services");
-  const [fav, setFav] = useState(false);
+
+  if (isLoading || !salon) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+      </div>
+    );
+  }
+
+  const fav = isFav(salon.id);
 
   return (
     <div className="pb-32">
       {/* Hero */}
       <div className="relative aspect-[4/5] w-full overflow-hidden">
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `linear-gradient(135deg, oklch(0.82 0.04 ${(Number(salon.id) * 80) % 360}), oklch(0.45 0.06 ${(Number(salon.id) * 80 + 50) % 360}))`,
-          }}
+        <img
+          src={salon.coverUrl ?? getSalonCoverUrl(salon.coverSeed)}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-background" />
 
@@ -52,7 +58,7 @@ function SalonPage() {
                   <Share2 className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => setFav((f) => !f)}
+                  onClick={() => toggle(salon.id)}
                   className="grid h-10 w-10 place-items-center rounded-full bg-background/90 backdrop-blur active:scale-95"
                 >
                   <Heart

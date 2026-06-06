@@ -17,7 +17,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { fitMapToMarkers, SalonMap, type SalonMapMarker } from "@/components/map/SalonMap";
-import { salons, shortPrice } from "@/lib/mock-data";
+import { useSalonsList, useSalonsNearby } from "@/hooks/use-salons";
+import { shortPrice } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/map")({
@@ -46,10 +47,19 @@ function MapView() {
   useEffect(() => setMounted(true), []);
 
   const [tab, setTab] = useState<"salons" | "barbers">("salons");
-  const [active, setActive] = useState(salons[0].id);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const { data: listSalons = [] } = useSalonsList();
+  const { data: nearbySalons = [] } = useSalonsNearby(
+    userLocation?.lat,
+    userLocation?.lng,
+  );
+  const salons = nearbySalons.length > 0 ? nearbySalons : listSalons;
+  const [active, setActive] = useState("");
+  useEffect(() => {
+    if (!active && salons[0]) setActive(salons[0].id);
+  }, [salons, active]);
   const [query, setQuery] = useState("");
   const [heatmap, setHeatmap] = useState(false);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [flyToUser, setFlyToUser] = useState<{ lat: number; lng: number } | null>(null);
   const mapRef = useRef<L.Map | null>(null);
 
@@ -59,7 +69,7 @@ function MapView() {
     return salons.filter(
       (s) => s.name.toLowerCase().includes(q) || s.address.toLowerCase().includes(q),
     );
-  }, [query]);
+  }, [query, salons]);
 
   const mapMarkers = useMemo((): SalonMapMarker[] => {
     if (tab === "salons") {

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useTranslation } from "react-i18next";
+import "@/i18n/config";
 import { UserProfile } from "@/components/profile/UserProfile";
+import { useAppTranslation } from "@/hooks/use-app-translation";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({ meta: [{ title: "Profil — mysaloon.uz" }] }),
@@ -8,7 +9,7 @@ export const Route = createFileRoute("/profile")({
 });
 
 function Profile() {
-  const { i18n } = useTranslation();
+  const { i18n } = useAppTranslation();
   const lang = i18n.resolvedLanguage || i18n.language || "uz";
 
   return (

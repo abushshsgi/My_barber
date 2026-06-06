@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { Send, Phone, MoreVertical, Image as ImageIcon, Smile, Check, CheckCheck, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { chatMessages, chatThreads } from "@/lib/mock-data";
+import { useChatMessages, useConversations, useSendChatMessage } from "@/hooks/use-chat-api";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/chat/$id")({
@@ -28,17 +28,36 @@ function initials(name: string) {
 function ChatThread() {
   const { t } = useTranslation();
   const { id } = useParams({ from: "/chat/$id" });
-  const thread = chatThreads.find((c) => c.id === id) ?? chatThreads[0];
-  const [messages, setMessages] = useState<Msg[]>(
-    (chatMessages[id] ?? []).map((m) => ({ ...m, read: true })),
-  );
+  const { data: threads = [] } = useConversations();
+  const thread = threads.find((c) => c.id === id) ?? threads[0];
+  const { data: apiMessages = [], isLoading } = useChatMessages(id);
+  const sendMessage = useSendChatMessage(id);
+  const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    setMessages(apiMessages.map((m) => ({ ...m, read: true })));
+  }, [apiMessages]);
+
+  useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, typing]);
+
+  if (isLoading || !thread) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+        ) : (
+          <Link to="/chat" className="text-sm font-bold">
+            {t("common.back")}
+          </Link>
+        )}
+      </div>
+    );
+  }
 
   const send = (text: string) => {
     const v = text.trim();
@@ -49,20 +68,7 @@ function ChatThread() {
       { id: `m${Date.now()}`, fromMe: true, text: v, time: now, read: false },
     ]);
     setInput("");
-    // Mock: barber "javob yozmoqda" + auto-reply
-    setTimeout(() => setTyping(true), 400);
-    setTimeout(() => {
-      setTyping(false);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `b${Date.now()}`,
-          fromMe: false,
-          text: "Tushundim, bir daqiqada javob beraman.",
-          time: new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }),
-        },
-      ]);
-    }, 2000);
+    sendMessage.mutate(v);
   };
 
   return (

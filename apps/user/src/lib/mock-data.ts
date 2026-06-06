@@ -16,6 +16,7 @@ export interface Barber {
   role: string;
   rating: number;
   avatarSeed: string;
+  avatarUrl?: string;
   serviceIds: string[];
   independent?: boolean;
   salonId?: string;
@@ -41,6 +42,7 @@ export interface Salon {
   priceFrom: number;
   priceTo: number;
   coverSeed: string;
+  coverUrl?: string;
   about: string;
   services: Service[];
   staff: Barber[];

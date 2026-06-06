@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { MessageSquare, Search, Pin } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { chatThreads } from "@/lib/mock-data";
+import { useConversations } from "@/hooks/use-chat-api";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,7 @@ function initials(name: string) {
 
 function ChatList() {
   const { t } = useTranslation();
+  const { data: chatThreads = [], isLoading } = useConversations();
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "unread">("all");
 
@@ -40,6 +41,15 @@ function ChatList() {
     }
     return res;
   }, [q, filter]);
+
+  if (isLoading) {
+    return (
+      <>
+        <PageHeader title={t("chat.title")} />
+        <p className="px-5 text-sm text-muted-foreground">{t("common.loading")}</p>
+      </>
+    );
+  }
 
   if (chatThreads.length === 0) {
     return (

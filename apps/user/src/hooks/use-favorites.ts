@@ -1,35 +1,24 @@
-import { useCallback, useEffect, useState } from "react";
-
-const KEY = "mysaloon.favorites";
+import { useCallback } from "react";
+import { useFavoriteSalonIds, useToggleFavoriteApi } from "@/hooks/use-favorites-api";
 
 export function useFavorites() {
-  const [ids, setIds] = useState<string[]>([]);
+  const { data: ids = [], isLoading } = useFavoriteSalonIds();
+  const { add, remove } = useToggleFavoriteApi();
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) setIds(JSON.parse(raw));
-    } catch {}
-  }, []);
-
-  const persist = (next: string[]) => {
-    setIds(next);
-    try {
-      localStorage.setItem(KEY, JSON.stringify(next));
-    } catch {}
-  };
-
-  const toggle = useCallback((id: string) => {
-    setIds((prev) => {
-      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
-      try {
-        localStorage.setItem(KEY, JSON.stringify(next));
-      } catch {}
-      return next;
-    });
-  }, []);
+  const toggle = useCallback(
+    (id: string) => {
+      const numId = parseInt(id, 10);
+      if (!Number.isFinite(numId)) return;
+      if (ids.includes(id)) {
+        remove.mutate(numId);
+      } else {
+        add.mutate(numId);
+      }
+    },
+    [ids, add, remove],
+  );
 
   const isFav = useCallback((id: string) => ids.includes(id), [ids]);
 
-  return { ids, toggle, isFav, persist };
+  return { ids, toggle, isFav, loading: isLoading };
 }

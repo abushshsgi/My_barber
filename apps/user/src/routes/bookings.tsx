@@ -2,10 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Calendar, MessageSquare, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { bookings, formatPrice } from "@/lib/mock-data";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
+import { useBookings } from "@/hooks/use-bookings-api";
 import { getUpcomingBookings } from "@/lib/bookings-utils";
+import { formatPrice, type BookingItem } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 type BookingsSearch = { focus?: string };
@@ -22,6 +23,7 @@ function MyBookings() {
   const { t } = useTranslation();
   const { focus } = Route.useSearch();
   const [tab, setTab] = useState<"upcoming" | "history">("upcoming");
+  const { data: bookings = [], isLoading } = useBookings();
   const now = Date.now();
 
   const upcoming = getUpcomingBookings(bookings, now);
@@ -38,7 +40,7 @@ function MyBookings() {
     if (bookings.some((b) => b.id === focus && getUpcomingBookings([b], now).length)) {
       setTab("upcoming");
     }
-  }, [focus, now]);
+  }, [focus, now, bookings]);
 
   return (
     <div>
@@ -63,7 +65,9 @@ function MyBookings() {
       </div>
 
       <div className="px-5 pt-6">
-        {list.length === 0 ? (
+        {isLoading ? (
+          <p className="text-center text-sm text-muted-foreground">{t("common.loading")}</p>
+        ) : list.length === 0 ? (
           <EmptyState
             icon={<Calendar className="h-7 w-7" />}
             title={t("common.empty")}
@@ -93,7 +97,7 @@ function BookingCard({
   booking: b,
   focused,
 }: {
-  booking: typeof bookings[number];
+  booking: BookingItem;
   focused?: boolean;
 }) {
   const { t } = useTranslation();

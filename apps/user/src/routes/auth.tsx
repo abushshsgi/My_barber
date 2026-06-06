@@ -1,18 +1,23 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { sendPhoneCode, verifyPhoneCode } from "@/lib/api";
 import { setSession } from "@/lib/auth";
+import { redirectIfAuthenticated } from "@/lib/require-auth";
 
 export const Route = createFileRoute("/auth")({
+  beforeLoad: () => {
+    redirectIfAuthenticated();
+  },
   head: () => ({ meta: [{ title: "Kirish — mysaloon.uz" }] }),
   component: Auth,
 });
 
 function Auth() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<"phone" | "code">("phone");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState(["", "", "", ""]);
@@ -33,6 +38,7 @@ function Auth() {
     mutationFn: () => verifyPhoneCode(phone, code.join("")),
     onSuccess: (data) => {
       setSession(data.access, data.refresh, data.user);
+      void queryClient.invalidateQueries();
       toast.success(data.is_new_user ? "Ro'yxatdan o'tdingiz!" : "Xush kelibsiz!");
       router.navigate({ to: "/" });
     },

@@ -1,4 +1,6 @@
-import { bookings, userReviews } from "@/lib/mock-data";
+import { fetchBookings } from "@/lib/api/bookings";
+import { fetchFavoriteSalons } from "@/lib/api/favorites";
+import { fetchMyReviews } from "@/lib/api/reviews";
 
 export type ProfileStats = {
   bookingsCount: number;
@@ -7,32 +9,23 @@ export type ProfileStats = {
   upcomingCount: number;
 };
 
-const FAVORITES_KEY = "mysaloon.favorites";
-
-function readFavoriteSalonCount(): number {
-  try {
-    const raw = localStorage.getItem(FAVORITES_KEY);
-    if (!raw) return 0;
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.length : 0;
-  } catch {
-    return 0;
-  }
-}
-
-/** Mock API — backend tayyor bo'lganda shu interfeys saqlanadi. */
+/** Haqiqiy API — profil statistikasi. */
 export async function fetchProfileStats(): Promise<ProfileStats> {
-  await new Promise((r) => setTimeout(r, 280));
+  const [bookings, favorites, reviews] = await Promise.all([
+    fetchBookings(),
+    fetchFavoriteSalons(),
+    fetchMyReviews().catch(() => []),
+  ]);
 
   const now = Date.now();
   const upcomingCount = bookings.filter(
-    (b) => new Date(b.date).getTime() >= now && b.status !== "cancelled",
+    (b) => new Date(b.start_at).getTime() >= now && b.status !== "cancelled",
   ).length;
 
   return {
     bookingsCount: bookings.length,
-    reviewsCount: userReviews.length,
-    favoritesCount: readFavoriteSalonCount(),
+    reviewsCount: reviews.length,
+    favoritesCount: favorites.count,
     upcomingCount,
   };
 }

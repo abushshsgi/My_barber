@@ -1,13 +1,13 @@
-// Re-uses booking.$salonId flow shape but with barber id param.
-import { createFileRoute, useParams } from "@tanstack/react-router";
+import { createFileRoute, useParams, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { Check, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { useRouter } from "@tanstack/react-router";
-import { salons, formatPrice } from "@/lib/mock-data";
+import { formatPrice } from "@/lib/mock-data";
 import { PageHeader } from "@/components/PageHeader";
 import { Stepper } from "@/components/Stepper";
+import { useBarberByBarberId, useIndependentAvailability } from "@/hooks/use-barber";
+import { useCreateBooking } from "@/hooks/use-bookings-api";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/barber/$barberId")({
@@ -16,39 +16,78 @@ export const Route = createFileRoute("/booking/barber/$barberId")({
 });
 
 const DAYS = ["Dush", "Sesh", "Chor", "Pay", "Juma", "Shan", "Yak"];
-const SLOTS = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "14:00", "14:30", "15:00"];
+const FALLBACK_SLOTS = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "14:00", "14:30", "15:00"];
 
 function IndependentBookingFlow() {
   const { t } = useTranslation();
   const { barberId } = useParams({ from: "/booking/barber/$barberId" });
   const router = useRouter();
-  const salon = salons[0];
-  const barber = salon.staff.find((b) => b.id === barberId) ?? salon.staff[0];
+  const { data: barber, isLoading } = useBarberByBarberId(barberId);
+  const createBooking = useCreateBooking();
 
   const [step, setStep] = useState(1);
   const [serviceIds, setServiceIds] = useState<string[]>([]);
   const [dayIdx, setDayIdx] = useState(0);
   const [slot, setSlot] = useState<string | null>(null);
 
+  const today = new Date();
+  const days = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    return { date: d.getDate(), day: DAYS[d.getDay() === 0 ? 6 : d.getDay() - 1], full: d };
+  });
+
+  const dateIso = days[dayIdx]?.full ? days[dayIdx].full.toISOString().slice(0, 10) : "";
+
+  const availability = useIndependentAvailability({
+    barber: barber?.barber_id ?? 0,
+    date: dateIso,
+    barberServiceIds: serviceIds.map((id) => parseInt(id, 10)).filter(Number.isFinite),
+    enabled: step === 2 && Boolean(barber) && serviceIds.length > 0 && Boolean(dateIso),
+  });
+
+  const slotOptions =
+    availability.data?.slots?.map((s) =>
+      new Date(s.start).toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }),
+    ) ?? FALLBACK_SLOTS;
+
+  if (isLoading || !barber) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+      </div>
+    );
+  }
+
+  const services = barber.services ?? [];
   const labels = [t("booking.step2"), t("booking.step3"), t("booking.step4")];
   const canAdvance =
     (step === 1 && serviceIds.length > 0) ||
     (step === 2 && slot) ||
     step === 3;
 
-  const selected = salon.services.filter((s) => serviceIds.includes(s.id));
+  const selected = services.filter((s) => serviceIds.includes(String(s.id)));
   const total = selected.reduce((sum, s) => sum + s.price, 0);
+  const rating = barber.avg_rating ?? 0;
 
-  const today = new Date();
-  const days = Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    return { date: d.getDate(), day: DAYS[d.getDay() === 0 ? 6 : d.getDay() - 1] };
-  });
-
-  const handleSubmit = () => {
-    toast.success("Buyurtma yuborildi!");
-    setTimeout(() => router.navigate({ to: "/bookings" }), 700);
+  const handleSubmit = async () => {
+    if (!slot || serviceIds.length === 0) return;
+    const d = new Date(days[dayIdx].full);
+    const [h, m] = slot.split(":");
+    d.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
+    try {
+      await createBooking.mutateAsync({
+        barber: barber.barber_id,
+        start_at: d.toISOString(),
+        barber_service_ids: serviceIds.map((id) => parseInt(id, 10)),
+      });
+      toast.success("Buyurtma yuborildi!", {
+        description: `${barber.name} · ${slot}`,
+      });
+      setTimeout(() => router.navigate({ to: "/bookings" }), 700);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Xatolik");
+    }
   };
 
   return (
@@ -59,18 +98,16 @@ function IndependentBookingFlow() {
         <Stepper steps={labels} current={step} />
       </div>
 
-      {/* Barber banner */}
       <div className="mx-5 mt-6 flex items-center gap-3 rounded-2xl bg-surface p-4">
         <div className="grid h-12 w-12 place-items-center rounded-full bg-foreground text-sm font-bold text-background">
           {barber.name.split(" ").map((n) => n[0]).join("")}
         </div>
         <div>
           <p className="text-sm font-bold">{barber.name}</p>
-          <p className="text-xs text-muted-foreground">{barber.role}</p>
         </div>
         <div className="ml-auto flex items-center gap-1 text-xs font-bold">
           <Star className="h-3.5 w-3.5 fill-foreground" />
-          {barber.rating}
+          {rating.toFixed(1)}
         </div>
       </div>
 
@@ -79,14 +116,15 @@ function IndependentBookingFlow() {
           <div>
             <h2 className="text-xl font-bold tracking-tight">{t("booking.selectService")}</h2>
             <div className="mt-6 space-y-2">
-              {salon.services.map((s) => {
-                const sel = serviceIds.includes(s.id);
+              {services.map((s) => {
+                const id = String(s.id);
+                const sel = serviceIds.includes(id);
                 return (
                   <button
                     key={s.id}
                     onClick={() =>
                       setServiceIds((prev) =>
-                        prev.includes(s.id) ? prev.filter((x) => x !== s.id) : [...prev, s.id],
+                        prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
                       )
                     }
                     className={cn(
@@ -97,7 +135,7 @@ function IndependentBookingFlow() {
                     <div>
                       <h3 className="text-sm font-bold">{s.name}</h3>
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        {s.duration} {t("salon.minutes")} · {formatPrice(s.price)}
+                        {s.duration_minutes} {t("salon.minutes")} · {formatPrice(s.price)}
                       </p>
                     </div>
                     <div
@@ -122,7 +160,10 @@ function IndependentBookingFlow() {
               {days.map((d, i) => (
                 <button
                   key={i}
-                  onClick={() => setDayIdx(i)}
+                  onClick={() => {
+                    setDayIdx(i);
+                    setSlot(null);
+                  }}
                   className={cn(
                     "flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-xl",
                     dayIdx === i ? "bg-foreground text-background" : "bg-surface text-foreground",
@@ -134,7 +175,7 @@ function IndependentBookingFlow() {
               ))}
             </div>
             <div className="mt-6 grid grid-cols-3 gap-2">
-              {SLOTS.map((s) => (
+              {slotOptions.map((s) => (
                 <button
                   key={s}
                   onClick={() => setSlot(s)}
@@ -207,8 +248,9 @@ function IndependentBookingFlow() {
             </button>
           ) : (
             <button
-              onClick={handleSubmit}
-              className="flex-[2] rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background"
+              disabled={createBooking.isPending}
+              onClick={() => void handleSubmit()}
+              className="flex-[2] rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background disabled:opacity-60"
             >
               {t("booking.confirm")}
             </button>

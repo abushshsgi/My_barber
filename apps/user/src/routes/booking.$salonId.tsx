@@ -3,9 +3,11 @@ import { useState } from "react";
 import { Check, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { salons, formatPrice } from "@/lib/mock-data";
+import { formatPrice } from "@/lib/mock-data";
 import { PageHeader } from "@/components/PageHeader";
 import { Stepper } from "@/components/Stepper";
+import { useCreateBooking, useBookingAvailability } from "@/hooks/use-bookings-api";
+import { useSalonPage } from "@/hooks/use-salon-page";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/$salonId")({
@@ -24,7 +26,8 @@ function BookingFlow() {
   const { t } = useTranslation();
   const { salonId } = useParams({ from: "/booking/$salonId" });
   const router = useRouter();
-  const salon = salons.find((s) => s.id === salonId) ?? salons[0];
+  const { salon, isLoading } = useSalonPage(salonId);
+  const createBooking = useCreateBooking();
 
   const [step, setStep] = useState(1);
   const [barberId, setBarberId] = useState<string | null>(null);
@@ -33,6 +36,39 @@ function BookingFlow() {
   const [slot, setSlot] = useState<string | null>(null);
 
   const stepLabels = [t("booking.step1"), t("booking.step2"), t("booking.step3"), t("booking.step4")];
+
+  const today = new Date();
+  const dayList = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    return { date: d.getDate(), day: DAYS[d.getDay() === 0 ? 6 : d.getDay() - 1], full: d };
+  });
+
+  const dateIso = dayList[dayIdx]?.full
+    ? dayList[dayIdx].full.toISOString().slice(0, 10)
+    : "";
+
+  const availability = useBookingAvailability({
+    salon: parseInt(salonId, 10),
+    barber: barberId ? parseInt(barberId, 10) : 0,
+    date: dateIso,
+    serviceIds: serviceIds.map((id) => parseInt(id, 10)).filter(Number.isFinite),
+    enabled: step === 3 && Boolean(barberId) && serviceIds.length > 0 && Boolean(dateIso),
+  });
+
+  const slotOptions =
+    availability.data?.slots?.map((s) =>
+      new Date(s.start).toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }),
+    ) ?? SLOTS;
+
+  if (isLoading || !salon) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+      </div>
+    );
+  }
+
   const canAdvance =
     (step === 1 && barberId) ||
     (step === 2 && serviceIds.length > 0) ||
@@ -43,18 +79,25 @@ function BookingFlow() {
   const total = selectedServices.reduce((sum, s) => sum + s.price, 0);
   const selectedBarber = salon.staff.find((b) => b.id === barberId);
 
-  const today = new Date();
-  const dayList = Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    return { date: d.getDate(), day: DAYS[d.getDay() === 0 ? 6 : d.getDay() - 1] };
-  });
-
-  const handleSubmit = () => {
-    toast.success("Buyurtma yuborildi!", {
-      description: `${salon.name} · ${slot}`,
-    });
-    setTimeout(() => router.navigate({ to: "/bookings" }), 700);
+  const handleSubmit = async () => {
+    if (!salon || !barberId || !slot || serviceIds.length === 0) return;
+    const d = new Date(dayList[dayIdx].full);
+    const [h, m] = slot.split(":");
+    d.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
+    try {
+      await createBooking.mutateAsync({
+        salon: parseInt(salonId, 10),
+        barber: parseInt(barberId, 10),
+        start_at: d.toISOString(),
+        service_ids: serviceIds.map((id) => parseInt(id, 10)),
+      });
+      toast.success("Buyurtma yuborildi!", {
+        description: `${salon.name} · ${slot}`,
+      });
+      setTimeout(() => router.navigate({ to: "/bookings" }), 700);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Xatolik");
+    }
   };
 
   return (
@@ -171,7 +214,7 @@ function BookingFlow() {
             </div>
 
             <div className="mt-6 grid grid-cols-3 gap-2">
-              {SLOTS.map((s) => {
+              {slotOptions.map((s) => {
                 const sel = slot === s;
                 return (
                   <button

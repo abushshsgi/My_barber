@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { userReviews } from "@/lib/mock-data";
+import { useMyReviews } from "@/hooks/use-reviews-api";
 import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,7 @@ export const Route = createFileRoute("/reviews")({
 function ReviewsPage() {
   const { t } = useTranslation();
   const { focus } = Route.useSearch();
+  const { data: userReviews = [], isLoading } = useMyReviews();
 
   useEffect(() => {
     if (!focus) return;
@@ -29,7 +30,9 @@ function ReviewsPage() {
 
   return (
     <ProfileSubpageLayout title={t("reviews.title")}>
-        {userReviews.length === 0 ? (
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+        ) : userReviews.length === 0 ? (
           <EmptyState
             icon={<Star className="h-7 w-7" />}
             title={t("reviews.empty")}
@@ -46,12 +49,11 @@ function ReviewsPage() {
               <ProfileSubpageCard
                 key={r.id}
                 id={`review-${r.id}`}
-                className={cn(focus === r.id && "ring-2 ring-foreground")}
+                className={cn(focus === String(r.id) && "ring-2 ring-foreground")}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-sm font-bold">{r.salonName}</h3>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{r.barberName}</p>
+                    <h3 className="text-sm font-bold">{r.author_name}</h3>
                   </div>
                   <div className="flex items-center gap-0.5">
                     {Array.from({ length: 5 }).map((_, i) => (
@@ -65,7 +67,7 @@ function ReviewsPage() {
                 </div>
                 <p className="mt-3 text-sm leading-relaxed">{r.text}</p>
                 <p className="mt-2 text-[11px] font-bold text-muted-foreground">
-                  {new Date(r.date).toLocaleDateString("uz-UZ", {
+                  {new Date(r.created_at).toLocaleDateString("uz-UZ", {
                     day: "numeric",
                     month: "long",
                     year: "numeric",

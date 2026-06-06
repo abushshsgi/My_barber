@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { userProfile, type Audience, type Category } from "@/lib/mock-data";
+import { type Audience, type Category } from "@/lib/mock-data";
 
 export type AudienceFilter = Audience | "all";
 
@@ -49,8 +49,6 @@ function writePrefsPreferredAudience(v: AudienceFilter) {
 export function getProfileDefaultAudience(): AudienceFilter {
   const fromPrefs = readPrefsPreferredAudience();
   if (fromPrefs) return fromPrefs;
-  const fromProfile = userProfile.preferredAudience;
-  if (fromProfile === "men" || fromProfile === "women") return fromProfile;
   return "all";
 }
 

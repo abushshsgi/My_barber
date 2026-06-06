@@ -19,6 +19,8 @@ import { AppVersionWatcher } from "../components/AppVersionWatcher";
 import { ClientOnly } from "../components/ClientOnly";
 import { CLIENT_BOOT_SCRIPT } from "../lib/client-boot-script";
 import { Toaster } from "sonner";
+import { APP_BUILD_ID } from "../lib/app-build-id";
+import { requireAuth } from "../lib/require-auth";
 import { AudienceProvider } from "../hooks/use-audience";
 
 function NotFoundComponent() {
@@ -55,6 +57,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <p className="mt-2 text-sm text-muted-foreground">
           Sahifa yuklanmadi. Qaytadan urinib ko'ring.
         </p>
+        {import.meta.env.DEV ? (
+          <p className="mt-3 break-all text-left text-xs font-mono text-muted-foreground">
+            {error.message}
+          </p>
+        ) : null}
+        <p className="mt-2 text-[10px] text-muted-foreground">Build: {APP_BUILD_ID}</p>
         <div className="mt-6 flex justify-center gap-2">
           <button
             onClick={() => {
@@ -91,6 +99,9 @@ function RoutePending() {
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   ssr: false,
   pendingComponent: RoutePending,
+  beforeLoad: ({ location }) => {
+    requireAuth(location.pathname);
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },

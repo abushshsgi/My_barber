@@ -11,7 +11,12 @@ import {
   Check,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { notifications as initial, type Notification } from "@/lib/mock-data";
+import { notifications as initialFallback, type Notification } from "@/lib/mock-data";
+import {
+  useMarkAllNotificationsRead,
+  useMarkNotificationRead,
+  useNotificationsApi,
+} from "@/hooks/use-notifications-api";
 import { ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
@@ -88,14 +93,19 @@ function usePrefs() {
 
 function Notifications() {
   const { t } = useTranslation();
-  const [items, setItems] = useState(initial);
+  const { data: apiItems = [], isLoading } = useNotificationsApi();
+  const items = apiItems.length > 0 ? apiItems : initialFallback;
+  const markAllMutation = useMarkAllNotificationsRead();
+  const markOneMutation = useMarkNotificationRead();
   const [filter, setFilter] = useState<FilterKey>("all");
   const [showSettings, setShowSettings] = useState(false);
   const { prefs, update, mounted } = usePrefs();
 
-  const markAll = () => setItems((prev) => prev.map((n) => ({ ...n, read: true })));
-  const markOne = (id: string) =>
-    setItems((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  const markAll = () => markAllMutation.mutate();
+  const markOne = (id: string) => {
+    const num = parseInt(id, 10);
+    if (Number.isFinite(num)) markOneMutation.mutate(num);
+  };
 
   const enabledItems = useMemo(
     () => (mounted ? items.filter((n) => prefs[n.type]) : items),

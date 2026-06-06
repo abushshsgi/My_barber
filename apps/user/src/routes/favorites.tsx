@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Heart } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { salons } from "@/lib/mock-data";
 import { ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { SalonCard } from "@/components/SalonCard";
 import { EmptyState } from "@/components/EmptyState";
 import { useFavorites } from "@/hooks/use-favorites";
+import { useSalonsByIds } from "@/hooks/use-salons";
 
 export const Route = createFileRoute("/favorites")({
   head: () => ({ meta: [{ title: "Sevimlilar — mysaloon.uz" }] }),
@@ -14,12 +14,15 @@ export const Route = createFileRoute("/favorites")({
 
 function Favorites() {
   const { t } = useTranslation();
-  const { ids } = useFavorites();
-  const favs = ids.length > 0 ? salons.filter((s) => ids.includes(s.id)) : [];
+  const { ids, loading: favLoading } = useFavorites();
+  const { data: favs = [], isLoading } = useSalonsByIds(ids);
+  const loading = favLoading || isLoading;
 
   return (
     <ProfileSubpageLayout title={t("favorites.title")}>
-      {favs.length === 0 ? (
+      {loading ? (
+        <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+      ) : favs.length === 0 ? (
         <EmptyState
           icon={<Heart className="h-7 w-7" />}
           title={t("favorites.empty")}
