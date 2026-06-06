@@ -24,5 +24,9 @@ const payload = { buildId, builtAt: new Date().toISOString() };
 
 writeFileSync(path.join(appDir, ".build-id"), buildId);
 writeFileSync(path.join(appDir, "version.json"), JSON.stringify(payload));
+writeFileSync(
+  path.join(appDir, "src/lib/app-build-id.ts"),
+  `/** Generated at build — do not edit */\nexport const APP_BUILD_ID = ${JSON.stringify(buildId)};\n`,
+);
 
 console.log(`App build ID: ${buildId}`);

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { APP_BUILD_ID } from "@/lib/app-build-id";
 
 const POLL_MS = 5 * 60 * 1000;
 
@@ -22,7 +23,7 @@ function reloadForUpdate() {
 /** Deploy bo'lganda eski bundle cache'da qolgan foydalanuvchilarni avtomatik yangilaydi. */
 export function AppVersionWatcher() {
   useEffect(() => {
-    if (__APP_BUILD_ID__ === "dev") return;
+    if (APP_BUILD_ID === "dev") return;
 
     let reloading = false;
     const applyUpdate = () => {
@@ -32,8 +33,12 @@ export function AppVersionWatcher() {
     };
 
     const checkVersion = async () => {
-      const remote = await fetchRemoteBuildId();
-      if (remote && remote !== __APP_BUILD_ID__) applyUpdate();
+      try {
+        const remote = await fetchRemoteBuildId();
+        if (remote && remote !== APP_BUILD_ID) applyUpdate();
+      } catch {
+        // ignore network errors
+      }
     };
 
     void checkVersion();
