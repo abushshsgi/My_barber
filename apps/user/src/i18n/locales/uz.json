@@ -42,6 +42,53 @@
       "spa": "Spa"
     }
   },
+  "homePage": {
+    "featuredOffer": "Bugungi taklif",
+    "validUntil": "{{date}} gacha",
+    "emptyTitle": "Mos salon topilmadi",
+    "emptyHint": "Filtr yoki auditoriyani o'zgartirib ko'ring",
+    "editorialTagline": "Salon toping, uslub tanlang, bir zumda bron qiling.",
+    "pickedForYou": "Siz uchun tanlangan",
+    "actionTodayHint": "Bo'sh slotlar hozir",
+    "actionMapHint": "Yaqin atrofda qidirish",
+    "aiPromoTitle": "AI stil maslahatchi",
+    "aiPromoHint": "Selfie yuklang — mos uslub tavsiyasi",
+    "audience": {
+      "men": "Erkaklar",
+      "women": "Ayollar",
+      "unisex": "Universal"
+    },
+    "quick": {
+      "today": "Bugungi vaqtlar",
+      "map": "Xarita",
+      "offers": "Aksiyalar",
+      "aiStyle": "AI stil",
+      "stylists": "Top ustalar",
+      "trends": "Trend uslublar",
+      "gift": "Sovg'a karta",
+      "compare": "Taqqoslash",
+      "reels": "Reels"
+    },
+    "trust": {
+      "salons": "Salon",
+      "barbers": "Usta",
+      "rating": "Reyting"
+    },
+    "variantPicker": {
+      "title": "Bosh sahifa — 3 ta layout",
+      "subtitle": "Yoqqanini tanlang, keyin qolganlarini o'chiramiz"
+    },
+    "variants": {
+      "v01": "Discovery",
+      "v02": "Action hub",
+      "v03": "Editorial"
+    },
+    "hints": {
+      "v01": "Salonlar birinchi — qidiruv markazida",
+      "v02": "Katta CTA + tez harakatlar",
+      "v03": "Magazine uslubi — hero va carousel"
+    }
+  },
   "map": {
     "salons": "Salonlar",
     "barbers": "Ustalar",
@@ -312,7 +359,7 @@
     "title": "AI Stil maslahatchi",
     "subtitle": "Selfie · shaxsiy tavsiya",
     "steps": {
-      "upload": "Rasm",
+      "upload": "Selfie",
       "analyze": "Tahlil",
       "results": "Natija"
     },
@@ -321,16 +368,64 @@
     "uploadTitle": "Selfie yuklang",
     "uploadHint": "Yuz aniq ko'rinsin · yaxshi yorug'lik",
     "pickPhoto": "Faylni tanlash",
-    "analyzing": "Yuz tahlil qilinmoqda…",
+    "pickFile": "Faylni tanlash",
+    "selfieAlt": "Selfie",
+    "resetPhoto": "Rasmni almashtirish",
+    "privacyNote": "Demo rejim — rasm serverga yuborilmaydi, faqat qurilmada qoladi.",
+    "analyzing": "Tahlil qilinmoqda…",
     "retake": "Qayta olish",
     "analyzeBtn": "AI tavsiyasini olish",
+    "analyzeCta": "AI tavsiyasini olish",
     "faceShape": "Aniqlangan yuz shakli",
     "faceOval": "Oval",
+    "analysisTitle": "Tahlil natijasi",
     "resultDesc": "Bu shaklga qisqa yonlar va hajmli tepa yaxshi mos keladi.",
     "suggestionsTitle": "3 ta tavsiya",
+    "resultsTitle": "3 ta tavsiya",
     "findStylist": "Bu uslubni qiladigan ustani topish",
+    "bookCta": "Bron qilish",
+    "bookShort": "Bron",
+    "save": "Saqlash",
+    "matchPct": "{{value}}% mos",
     "tryAgain": "Yangi rasm",
-    "exploreStyles": "Trend uslublar"
+    "exploreStyles": "Trend uslublar",
+    "betaBadge": "Beta · demo",
+    "studioLabel": "Stil studiyasi",
+    "cameraLabel": "Kamera rejimi",
+    "swipeHint": "Chapga-o'ngga surib ko'ring",
+    "faceShapes": {
+      "oval": "Oval yuz",
+      "round": "Dumaloq yuz",
+      "square": "Burchak yuz"
+    },
+    "hairTypes": {
+      "short": "Qisqa soch",
+      "medium": "O'rtacha soch",
+      "long": "Uzun soch"
+    },
+    "reasons": {
+      "default": "Yuz shaklingiz va soch turiga mos keladi",
+      "t1": "Yuz konturini yumshatadi, zamonaviy fade balans",
+      "t2": "Yumshoq qatlamlar yuzga ramka beradi",
+      "t3": "Minimal parvarish, aniq siluet",
+      "t4": "Yorug'lik va hajm muvozanati",
+      "t5": "Tepada hajm, yonlar qisqa — oval yuz uchun ideal",
+      "t6": "Toza va klassik ko'rinish"
+    },
+    "variantPicker": {
+      "title": "AI Stil — 3 ta dizayn",
+      "subtitle": "Yoqqanini tanlang, keyin qolganlarini o'chiramiz"
+    },
+    "variants": {
+      "v01": "Wizard",
+      "v02": "Studio",
+      "v03": "Kamera"
+    },
+    "hints": {
+      "v01": "3 qadam + ranked kartochkalar",
+      "v02": "Pastdan ochiladigan studio sheet",
+      "v03": "To'liq ekran selfie + swipe natija"
+    }
   },
   "todayPage": {
     "title": "Bugungi vaqtlar",
@@ -476,6 +571,47 @@
     "bookNow": "Band qilish",
     "notFound": "Story topilmadi",
     "backToHub": "Storylar ro'yxatiga"
+  },
+  "offersPage": {
+    "title": "Aksiyalar",
+    "empty": "Aksiya topilmadi",
+    "featuredLabel": "Asosiy taklif",
+    "validUntil": "{{date}} gacha",
+    "bookNow": "Bron qilish",
+    "filters": {
+      "all": "Hammasi",
+      "ending": "Tez tugaydi",
+      "nearby": "Yaqin"
+    },
+    "promoInputLabel": "Promokod",
+    "promoPlaceholder": "Masalan, MYSL20",
+    "promoApply": "Qo'llash",
+    "promoApplied": "{{code}} faollashtirildi (demo)",
+    "promoHint": "Saqlangan kuponlardan birini tanlang yoki kod kiriting",
+    "savedCoupons": "Saqlangan kuponlar",
+    "salonOffers": "Salon aksiyalari",
+    "active": "Faol",
+    "swipeBadge": "Aksiya",
+    "swipeHint": "Chapga-o'ngga surib ko'ring",
+    "coupons": {
+      "mysl20": "Birinchi bron uchun −20%",
+      "friend10": "Do'st taklifi −10%",
+      "welcome15": "Yangi foydalanuvchi −15%"
+    },
+    "variantPicker": {
+      "title": "Aksiyalar — 3 ta dizayn",
+      "subtitle": "Yoqqanini tanlang, keyin qolganlarini o'chiramiz"
+    },
+    "variants": {
+      "v01": "Featured + feed",
+      "v02": "Promokod",
+      "v03": "Swipe"
+    },
+    "hints": {
+      "v01": "Asosiy taklif + filter + feed kartochkalar",
+      "v02": "Promokod markazi + saqlangan kuponlar",
+      "v03": "Gorizontal swipe karta lentasi"
+    }
   },
   "auth": {
     "phone": "Telefon raqami",

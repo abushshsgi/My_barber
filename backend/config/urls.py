@@ -41,12 +41,11 @@ from control_panel.views import (
 from accounts.views import (
     BarberRegisterJoinSalonView,
     BarberRegisterView,
-    EmailTokenObtainPairView,
     MeView,
-    RegisterView,
     UserSearchView,
     UzRegionsView,
 )
+from accounts.views_phone_auth import PhoneSendCodeView, PhoneVerifyView
 from accounts.views_admin_auth import AdminMeView, AdminTokenRefreshView, AdminTokenView
 from bookings.views import (
     AnalyticsView,
@@ -154,10 +153,10 @@ api_routes = [
     path("admin/admins/", AdminAdminAccountListCreateView.as_view()),
     path("admin/admins/<int:pk>/", AdminAdminAccountDetailView.as_view()),
     path("regions/", UzRegionsView.as_view()),
-    path("auth/register/", RegisterView.as_view()),
+    path("auth/phone/send-code/", PhoneSendCodeView.as_view()),
+    path("auth/phone/verify/", PhoneVerifyView.as_view()),
     path("auth/barber-register/", BarberRegisterView.as_view()),
     path("auth/barber-register-join-salon/", BarberRegisterJoinSalonView.as_view()),
-    path("auth/token/", EmailTokenObtainPairView.as_view()),
     path("auth/token/refresh/", TokenRefreshView.as_view()),
     path("admin/auth/token/", AdminTokenView.as_view()),
     path("admin/auth/token/refresh/", AdminTokenRefreshView.as_view()),

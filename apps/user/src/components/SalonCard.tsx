@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Star, MapPin, Heart } from "lucide-react";
 import type { Salon } from "@/lib/mock-data";
 import { shortPrice } from "@/lib/mock-data";
+import { brandCoverGradient } from "@/lib/brand-gradients";
 import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +27,7 @@ export function SalonCard({ salon }: { salon: Salon }) {
           <div
             className="absolute inset-0"
             style={{
-              background: `linear-gradient(135deg, oklch(0.85 0.04 ${(Number(salon.id) * 80) % 360}), oklch(0.45 0.03 ${(Number(salon.id) * 80 + 50) % 360}))`,
+              background: brandCoverGradient(salon.coverSeed),
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />

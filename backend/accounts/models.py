@@ -5,7 +5,7 @@ from .uz_regions import UzRegion
 
 
 class User(AbstractUser):
-    """Custom user: email login; optional phone."""
+    """Mijoz: telefon + OTP orqali kirish; ichki email sintetik bo'lishi mumkin."""
 
     class Role(models.TextChoices):
         """Faqat mijoz (mijoz app). Sartarosh — barbers.Barber; admin — AdminAccount."""

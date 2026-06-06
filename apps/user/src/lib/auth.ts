@@ -1,22 +1,33 @@
-const TOKEN_KEY = "mysaloon.auth.token";
+import {
+  clearUserTokens,
+  getUserAccessToken,
+  setUserTokens,
+  type ApiUser,
+} from "@/lib/api";
+
 const USER_KEY = "mysaloon.auth.user";
 
 export type AuthUser = {
   phone: string;
   name?: string;
+  id?: number;
 };
 
-export function getToken(): string | null {
-  try {
-    return localStorage.getItem(TOKEN_KEY);
-  } catch {
-    return null;
-  }
+function userFromApi(user: ApiUser): AuthUser {
+  return {
+    id: user.id,
+    phone: user.phone ?? "",
+    name: user.full_name || undefined,
+  };
 }
 
-export function setSession(token: string, user: AuthUser) {
-  localStorage.setItem(TOKEN_KEY, token);
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+export function getToken(): string | null {
+  return getUserAccessToken();
+}
+
+export function setSession(access: string, refresh: string, user: ApiUser) {
+  setUserTokens(access, refresh);
+  localStorage.setItem(USER_KEY, JSON.stringify(userFromApi(user)));
 }
 
 export function getAuthUser(): AuthUser | null {
@@ -33,8 +44,8 @@ export function isAuthenticated(): boolean {
 }
 
 export function logout() {
+  clearUserTokens();
   try {
-    localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
   } catch {
     /* noop */

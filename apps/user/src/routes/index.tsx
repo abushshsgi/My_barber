@@ -1,15 +1,17 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { Search, ChevronRight, Sparkles, Tag, Gift, Flame, GitCompareArrows, Film, Wand2, Wallet } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { salons, trendingStyles, offers, formatPrice, walletSummary } from "@/lib/mock-data";
-import type { Category } from "@/lib/mock-data";
-import { SalonCard } from "@/components/SalonCard";
-import { StoryRings } from "@/components/stories/StoryRings";
-import { AudienceSwitch } from "@/components/AudienceSwitch";
-import { salonStories } from "@/lib/stories-mock";
-import { useAudience, matchAudience, audienceToCategory, categoriesForAudience } from "@/hooks/use-audience";
-import { cn } from "@/lib/utils";
+import { HomeVariantActionHub } from "@/components/home/HomeVariantActionHub";
+import { HomeVariantDiscovery } from "@/components/home/HomeVariantDiscovery";
+import { HomeVariantEditorial } from "@/components/home/HomeVariantEditorial";
+import { HomeVariantPicker } from "@/components/home/HomeVariantPicker";
+import {
+  homeVariantMeta,
+  readHomeVariant,
+  saveHomeVariant,
+  type HomePageVariant,
+} from "@/components/home/home-variants";
+import { useHomeData } from "@/components/home/useHomeData";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -24,289 +26,30 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
-const CATEGORIES: { key: Category | "all"; label: string }[] = [
-  { key: "all", label: "Barchasi" },
-  { key: "barber", label: "Barber" },
-  { key: "beauty", label: "Go'zallik" },
-  { key: "nails", label: "Manikyur" },
-  { key: "spa", label: "Spa" },
-];
-
 function Home() {
   const { t } = useTranslation();
-  const { audience } = useAudience();
-  const [cat, setCat] = useState<Category | "all">("all");
-  const [query, setQuery] = useState("");
+  const [variant, setVariant] = useState<HomePageVariant>(() => readHomeVariant());
+  const data = useHomeData();
 
-  useEffect(() => {
-    setCat(audienceToCategory(audience));
-  }, [audience]);
-
-  const effectiveCat = useMemo(() => {
-    if (audience === "all") return cat;
-    const allowed = categoriesForAudience(audience);
-    if (allowed.includes(cat)) return cat;
-    return audienceToCategory(audience);
-  }, [audience, cat]);
-
-  const visibleCategories = CATEGORIES.filter((c) =>
-    categoriesForAudience(audience).includes(c.key),
-  );
-
-  const filtered = salons.filter(
-    (s) =>
-      matchAudience(s.audience, audience) &&
-      (effectiveCat === "all" || s.category === effectiveCat) &&
-      (query === "" || s.name.toLowerCase().includes(query.toLowerCase())),
-  );
-
-  const trending = trendingStyles.filter((x) => matchAudience(x.audience, audience));
-
-  const topOffer = offers.find((o) => matchAudience(o.audience, audience));
+  const onVariantChange = (next: HomePageVariant) => {
+    setVariant(next);
+    saveHomeVariant(next);
+  };
 
   return (
-    <div>
-      {/* Editorial header — no greeting */}
-      <header
-        className="px-5 pt-4 pb-3"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 16px)" }}
-      >
-        <div className="flex items-start justify-between">
-          <div className="max-w-[280px]">
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-              mysaloon.uz
-            </p>
-            <h1 className="mt-1 text-[26px] font-bold leading-[1.1] tracking-tight">
-              Ko'rinishingizni bugun yangilang
-            </h1>
-          </div>
-          <Link
-            to="/wallet"
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-foreground px-3 py-2 text-[12px] font-bold tabular-nums text-background active:opacity-90"
-            aria-label={t("profile.wallet")}
-          >
-            {formatPrice(walletSummary.balance)}
-            <Wallet className="h-4 w-4" strokeWidth={2.5} />
-          </Link>
-        </div>
-      </header>
+    <div className="pb-4">
+      <HomeVariantPicker value={variant} onChange={onVariantChange} />
+      <p className="mx-5 mb-3 text-center text-[11px] font-medium text-muted-foreground">
+        {t(homeVariantMeta[variant].hintKey)}
+      </p>
 
-      {/* Audience switch */}
-      <div className="px-5 pt-2">
-        <AudienceSwitch />
-      </div>
-
-      {/* Stories */}
-      <section className="mt-5 px-5">
-        <div className="mb-3 flex items-end justify-between">
-          <h2 className="text-sm font-bold">{t("storiesPage.title")}</h2>
-          <Link to="/stories" className="text-[11px] font-bold text-muted-foreground">
-            {t("storiesPage.seeAll")}
-          </Link>
-        </div>
-        <StoryRings stories={salonStories} linkTo="viewer" />
-      </section>
-
-      {/* Search */}
-      <div className="px-5 pt-3">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t("common.search")}
-            className="w-full rounded-2xl border-0 bg-surface py-3.5 pl-11 pr-4 text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground"
-          />
-        </div>
-      </div>
-
-      {/* Categories */}
-      <div className="no-scrollbar mt-5 flex gap-2 overflow-x-auto px-5">
-        {visibleCategories.map((c) => {
-          const active = effectiveCat === c.key;
-          return (
-            <button
-              key={c.key}
-              onClick={() => setCat(c.key)}
-              className={cn(
-                "shrink-0 rounded-full px-4 py-2 text-[12px] font-bold tracking-wide transition-colors",
-                active ? "bg-foreground text-background" : "bg-surface text-foreground",
-              )}
-            >
-              {c.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Quick actions */}
-      <section className="mt-6 grid grid-cols-3 gap-2 px-5">
-        <Link
-          to="/today"
-          className="flex flex-col items-start gap-1 rounded-2xl bg-foreground p-3 text-background active:scale-[0.97] transition-transform"
-        >
-          <Flame className="h-4 w-4" strokeWidth={2.4} />
-          <span className="text-[11px] font-bold leading-tight">Bugungi vaqtlar</span>
-        </Link>
-        <Link
-          to="/explore"
-          className="flex flex-col items-start gap-1 rounded-2xl bg-surface p-3 active:scale-[0.97] transition-transform"
-        >
-          <Sparkles className="h-4 w-4" strokeWidth={2.4} />
-          <span className="text-[11px] font-bold leading-tight">Trend uslublar</span>
-        </Link>
-        <Link
-          to="/offers"
-          className="flex flex-col items-start gap-1 rounded-2xl bg-surface p-3 active:scale-[0.97] transition-transform"
-        >
-          <Tag className="h-4 w-4" strokeWidth={2.4} />
-          <span className="text-[11px] font-bold leading-tight">Aksiyalar</span>
-        </Link>
-        <Link
-          to="/giftcard"
-          className="flex flex-col items-start gap-1 rounded-2xl bg-surface p-3 active:scale-[0.97] transition-transform"
-        >
-          <Gift className="h-4 w-4" strokeWidth={2.4} />
-          <span className="text-[11px] font-bold leading-tight">Sovg'a karta</span>
-        </Link>
-        <Link
-          to="/compare"
-          className="flex flex-col items-start gap-1 rounded-2xl bg-surface p-3 active:scale-[0.97] transition-transform"
-        >
-          <GitCompareArrows className="h-4 w-4" strokeWidth={2.4} />
-          <span className="text-[11px] font-bold leading-tight">Taqqoslash</span>
-        </Link>
-        <Link
-          to="/reels"
-          className="flex flex-col items-start gap-1 rounded-2xl bg-foreground p-3 text-background active:scale-[0.97] transition-transform"
-        >
-          <Film className="h-4 w-4" strokeWidth={2.4} />
-          <span className="text-[11px] font-bold leading-tight">Reels</span>
-        </Link>
-        <Link
-          to="/ai-style"
-          className="flex flex-col items-start gap-1 rounded-2xl bg-surface p-3 active:scale-[0.97] transition-transform"
-        >
-          <Wand2 className="h-4 w-4" strokeWidth={2.4} />
-          <span className="text-[11px] font-bold leading-tight">AI stil</span>
-        </Link>
-        <Link
-          to="/wallet"
-          className="flex flex-col items-start gap-1 rounded-2xl bg-surface p-3 active:scale-[0.97] transition-transform"
-        >
-          <Wallet className="h-4 w-4" strokeWidth={2.4} />
-          <span className="text-[11px] font-bold leading-tight">Hamyon</span>
-        </Link>
-      </section>
-
-      {/* Offer banner */}
-      {topOffer && (
-        <section className="mt-6 px-5">
-          <Link
-            to="/offers"
-            className="block overflow-hidden rounded-2xl bg-foreground p-5 text-background active:scale-[0.98] transition-transform"
-          >
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-background/60">
-              Bugungi taklif
-            </p>
-            <div className="mt-2 flex items-end justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-lg font-bold leading-tight">{topOffer.title}</p>
-                <p className="mt-0.5 truncate text-xs font-medium text-background/70">
-                  {topOffer.salonName} · {topOffer.validUntil} gacha
-                </p>
-              </div>
-              <div className="shrink-0 rounded-full bg-background px-3 py-1.5 text-sm font-bold text-foreground">
-                −{topOffer.discountPct}%
-              </div>
-            </div>
-          </Link>
-        </section>
+      {variant === "v01" ? (
+        <HomeVariantDiscovery data={data} />
+      ) : variant === "v02" ? (
+        <HomeVariantActionHub data={data} />
+      ) : (
+        <HomeVariantEditorial data={data} />
       )}
-
-      {/* Trending styles */}
-      {trending.length > 0 && (
-        <section className="mt-8">
-          <div className="mb-4 flex items-end justify-between px-5">
-            <h2 className="text-lg font-bold tracking-tight">Trend uslublar</h2>
-            <Link
-              to="/explore"
-              className="flex items-center text-[12px] font-bold text-foreground"
-            >
-              Hammasi <ChevronRight className="h-4 w-4" />
-            </Link>
-          </div>
-          <div className="no-scrollbar flex gap-3 overflow-x-auto px-5">
-            {trending.map((s) => (
-              <div key={s.id} className="w-[140px] shrink-0">
-                <div
-                  className="aspect-[3/4] rounded-2xl"
-                  style={{
-                    background: `linear-gradient(135deg, oklch(0.82 0.03 ${(s.id.charCodeAt(1) * 30) % 360}), oklch(0.38 0.02 ${(s.id.charCodeAt(1) * 30 + 80) % 360}))`,
-                  }}
-                />
-                <p className="mt-2 text-[13px] font-bold leading-tight">{s.title}</p>
-                <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                  {s.audience === "men" ? "Erkaklar" : s.audience === "women" ? "Ayollar" : "Universal"}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Nearby */}
-      <section className="mt-8 px-5">
-        <div className="mb-4 flex items-end justify-between">
-          <h2 className="text-lg font-bold tracking-tight">{t("home.nearby")}</h2>
-          <Link
-            to="/map"
-            className="flex items-center text-[12px] font-bold text-foreground"
-          >
-            {t("common.viewMap")} <ChevronRight className="h-4 w-4" />
-          </Link>
-        </div>
-
-        {filtered.length === 0 ? (
-          <div className="rounded-2xl bg-surface p-8 text-center">
-            <p className="text-sm font-bold">Mos salon topilmadi</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Filtr yoki auditoriyani o'zgartirib ko'ring
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-5">
-            {filtered.map((s) => (
-              <SalonCard key={s.id} salon={s} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Trust strip */}
-      <section className="mx-5 mt-8 rounded-2xl border border-border bg-surface/50 p-5">
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <p className="text-xl font-bold">120+</p>
-            <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-              Salon
-            </p>
-          </div>
-          <div className="border-x border-border">
-            <p className="text-xl font-bold">450+</p>
-            <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-              Usta
-            </p>
-          </div>
-          <div>
-            <p className="text-xl font-bold">4.9</p>
-            <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-              Reyting
-            </p>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

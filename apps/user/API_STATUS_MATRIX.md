@@ -7,8 +7,9 @@ Canonical prefix (MyBarber backend): `/api/v1`
 
 ## Rejadagi endpointlar (MyBarber backend)
 
-- `POST /auth/token/` — login
-- `POST /auth/register/` — register (`region` bilan)
+- `POST /auth/phone/send-code/` — telefon OTP yuborish (login = signup)
+- `POST /auth/phone/verify/` — kod tasdiqlash → `{ access, refresh, user }`
+- `POST /auth/token/refresh/` — JWT yangilash
 - `GET /regions/` — viloyat tanlovi
 - `GET /users/me/` — profile
 - `PATCH /users/me/` — profil yangilash

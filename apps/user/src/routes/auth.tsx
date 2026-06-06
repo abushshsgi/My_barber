@@ -1,9 +1,10 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { sendPhoneCode, verifyPhoneCode } from "@/lib/api";
 import { setSession } from "@/lib/auth";
-import { userProfile } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Kirish — mysaloon.uz" }] }),
@@ -16,13 +17,34 @@ function Auth() {
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState(["", "", "", ""]);
 
+  const sendCode = useMutation({
+    mutationFn: () => sendPhoneCode(phone),
+    onSuccess: (data) => {
+      setStep("code");
+      toast.success(data.detail);
+      if (data.debug_code) {
+        toast.message(`Demo kod: ${data.debug_code}`, { duration: 10000 });
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const verify = useMutation({
+    mutationFn: () => verifyPhoneCode(phone, code.join("")),
+    onSuccess: (data) => {
+      setSession(data.access, data.refresh, data.user);
+      toast.success(data.is_new_user ? "Ro'yxatdan o'tdingiz!" : "Xush kelibsiz!");
+      router.navigate({ to: "/" });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const handleSendCode = () => {
     if (phone.length < 9) {
       toast.error("Telefon raqamini to'g'ri kiriting");
       return;
     }
-    setStep("code");
-    toast.success("Tasdiq kodi yuborildi");
+    sendCode.mutate();
   };
 
   const handleVerify = () => {
@@ -30,13 +52,10 @@ function Auth() {
       toast.error("4 raqamli kodni kiriting");
       return;
     }
-    toast.success("Xush kelibsiz!");
-    setSession(`mock-token-${Date.now()}`, {
-      phone: `+998${phone}`,
-      name: userProfile.name,
-    });
-    router.navigate({ to: "/" });
+    verify.mutate();
   };
+
+  const busy = sendCode.isPending || verify.isPending;
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-background px-6 py-10">
@@ -71,11 +90,12 @@ function Auth() {
                 type="tel"
                 inputMode="numeric"
                 value={phone}
+                disabled={busy}
                 onChange={(e) =>
                   setPhone(e.target.value.replace(/\D/g, "").slice(0, 9))
                 }
                 placeholder="90 123 45 67"
-                className="flex-1 border-0 bg-transparent px-4 py-4 text-sm font-bold placeholder:text-muted-foreground/50 focus:outline-none"
+                className="flex-1 border-0 bg-transparent px-4 py-4 text-sm font-bold placeholder:text-muted-foreground/50 focus:outline-none disabled:opacity-60"
               />
             </div>
           </div>
@@ -89,6 +109,7 @@ function Auth() {
                   inputMode="numeric"
                   maxLength={1}
                   value={c}
+                  disabled={busy}
                   onChange={(e) => {
                     const v = e.target.value.replace(/\D/g, "").slice(0, 1);
                     const next = [...code];
@@ -100,13 +121,18 @@ function Auth() {
                     }
                   }}
                   id={`otp-${i}`}
-                  className="h-16 w-14 rounded-2xl border-2 border-border bg-background text-center text-2xl font-bold focus:border-foreground focus:outline-none"
+                  className="h-16 w-14 rounded-2xl border-2 border-border bg-background text-center text-2xl font-bold focus:border-foreground focus:outline-none disabled:opacity-60"
                 />
               ))}
             </div>
             <button
-              onClick={() => setStep("phone")}
-              className="mt-6 w-full text-center text-xs font-bold text-muted-foreground underline"
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setStep("phone");
+                setCode(["", "", "", ""]);
+              }}
+              className="mt-6 w-full text-center text-xs font-bold text-muted-foreground underline disabled:opacity-60"
             >
               Boshqa raqam kiritish
             </button>
@@ -115,12 +141,14 @@ function Auth() {
       </div>
 
       <button
+        type="button"
+        disabled={busy}
         onClick={step === "phone" ? handleSendCode : handleVerify}
         className={cn(
-          "w-full rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background active:scale-[0.99]",
+          "w-full rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background active:scale-[0.99] disabled:opacity-60",
         )}
       >
-        {step === "phone" ? "Kod yuborish" : "Tasdiqlash"}
+        {busy ? "Kutilmoqda…" : step === "phone" ? "Kod yuborish" : "Tasdiqlash"}
       </button>
 
       <p className="mt-4 text-center text-[11px] text-muted-foreground">

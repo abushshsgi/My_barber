@@ -3,7 +3,6 @@ from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.views import TokenObtainPairView
 
 from barbers.barber_auth import encode_barber_tokens
 from barbers.models import Barber
@@ -14,8 +13,6 @@ from .uz_regions import UzRegion
 from .serializers import (
     BarberRegisterJoinSalonSerializer,
     BarberSignupSerializer,
-    EmailTokenObtainPairSerializer,
-    UserRegisterSerializer,
     UserSearchSerializer,
     UserSerializer,
 )
@@ -31,12 +28,6 @@ class UzRegionsView(APIView):
         return Response(
             [{"value": c[0], "label": c[1]} for c in UzRegion.choices]
         )
-
-
-class RegisterView(generics.CreateAPIView):
-    permission_classes = [AllowAny]
-    serializer_class = UserRegisterSerializer
-    throttle_classes = [AuthIPThrottle]
 
 
 class BarberRegisterView(generics.CreateAPIView):
@@ -88,11 +79,6 @@ class BarberRegisterJoinSalonView(APIView):
         if mem is not None:
             body["membership_id"] = mem.id
         return Response(body, status=status.HTTP_201_CREATED)
-
-
-class EmailTokenObtainPairView(TokenObtainPairView):
-    serializer_class = EmailTokenObtainPairSerializer
-    throttle_classes = [AuthIPThrottle]
 
 
 class MeView(generics.RetrieveUpdateAPIView):

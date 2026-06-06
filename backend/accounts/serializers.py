@@ -1,9 +1,6 @@
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from rest_framework.exceptions import AuthenticationFailed
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
 from accounts.barber_signup_service import create_barber_with_flow
 from barbers.models import Barber
 from salons.geo_join import assert_join_distance_ok
@@ -48,68 +45,6 @@ class UserSerializer(serializers.ModelSerializer):
         if Barber.objects.filter(phone=value).exists():
             raise serializers.ValidationError("Bu telefon sartarosh akkauntida band.")
         return value
-
-
-class UserRegisterSerializer(serializers.ModelSerializer):
-    """Model unique validator inglizcha xabar bermasligi uchun email/phone qo‘lda tekshiriladi."""
-
-    email = serializers.EmailField()
-    phone = serializers.CharField(required=False, allow_blank=True, max_length=32)
-    password = serializers.CharField(
-        write_only=True,
-        min_length=8,
-        error_messages={
-            "min_length": "Parol kamida 8 belgidan iborat bo‘lishi kerak.",
-        },
-    )
-    region = serializers.ChoiceField(
-        choices=UzRegion.choices,
-        required=False,
-        allow_blank=True,
-        default="",
-        error_messages={"invalid_choice": "Viloyat noto‘g‘ri tanlangan."},
-    )
-
-    class Meta:
-        model = User
-        fields = ("email", "phone", "full_name", "password", "region")
-
-    def validate_email(self, value):
-        v = (value or "").strip().lower()
-        if User.objects.filter(email__iexact=v).exists():
-            raise serializers.ValidationError(
-                "Bu email allaqachon mijoz sifatida ro'yxatdan o'tgan."
-            )
-        if Barber.objects.filter(email__iexact=v).exists():
-            raise serializers.ValidationError(
-                "Bu email sartarosh akkauntida band. Mijoz va sartarosh bir xil email bilan ro'yxatdan o'ta olmaydi."
-            )
-        return v
-
-    def validate_phone(self, value):
-        value = (value or "").strip()
-        if not value:
-            return ""
-        if User.objects.filter(phone=value).exists():
-            raise serializers.ValidationError(
-                "Bu telefon allaqachon mijozda ro'yxatdan o'tgan."
-            )
-        if Barber.objects.filter(phone=value).exists():
-            raise serializers.ValidationError(
-                "Bu telefon sartarosh akkauntida band."
-            )
-        return value
-
-    def create(self, validated_data):
-        pwd = validated_data.pop("password")
-        if not validated_data.get("phone"):
-            validated_data["phone"] = None
-        user = User(**validated_data)
-        user.username = validated_data["email"]
-        user.role = User.Role.USER
-        user.set_password(pwd)
-        user.save()
-        return user
 
 
 class BarberSignupSerializer(serializers.Serializer):
@@ -320,31 +255,6 @@ class BarberRegisterJoinSalonSerializer(serializers.Serializer):
             attach_worker_membership(barber, salon, lat_f, lng_f)
 
         return barber
-
-
-class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
-    username_field = User.USERNAME_FIELD
-
-    def validate(self, attrs):
-        email = (attrs.get(self.username_field) or "").strip().lower()
-        if email:
-            has_user = User.objects.filter(email__iexact=email).exists()
-            has_barber = Barber.objects.filter(email__iexact=email).exists()
-            if has_barber and not has_user:
-                raise AuthenticationFailed(
-                    "Bu email sartarosh akkauntiga tegishli. Mijoz ilovasidan kirish mumkin emas — sartarosh ilovasidan kiring.",
-                    code="barber_account",
-                )
-        data = super().validate(attrs)
-        user = self.user
-        if getattr(user, "is_staff", False) or getattr(user, "is_superuser", False):
-            raise serializers.ValidationError(
-                {
-                    "detail": "Admin akkauntlari uchun maxsus kirish (admin/auth/token) ishlatiladi.",
-                }
-            )
-        data["user"] = UserSerializer(user).data
-        return data
 
 
 class UserSearchSerializer(serializers.ModelSerializer):

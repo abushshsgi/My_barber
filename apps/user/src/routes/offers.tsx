@@ -1,10 +1,22 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Tag } from "lucide-react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { OffersVariantFeatured } from "@/components/offers/OffersVariantFeatured";
+import { OffersVariantPromo } from "@/components/offers/OffersVariantPromo";
+import { OffersVariantSwipe } from "@/components/offers/OffersVariantSwipe";
+import { OffersVariantPicker } from "@/components/offers/OffersVariantPicker";
+import {
+  offersVariantMeta,
+  readOffersVariant,
+  saveOffersVariant,
+  type OffersPageVariant,
+} from "@/components/offers/offers-variants";
 import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { EmptyState } from "@/components/EmptyState";
+import { AudienceSwitch } from "@/components/AudienceSwitch";
 import { offers } from "@/lib/mock-data";
 import { useAudience, matchAudience } from "@/hooks/use-audience";
-import { AudienceSwitch } from "@/components/AudienceSwitch";
 
 export const Route = createFileRoute("/offers")({
   head: () => ({ meta: [{ title: "Aksiyalar — mysaloon.uz" }] }),
@@ -12,41 +24,32 @@ export const Route = createFileRoute("/offers")({
 });
 
 function OffersPage() {
+  const { t } = useTranslation();
   const { audience } = useAudience();
+  const [variant, setVariant] = useState<OffersPageVariant>(() => readOffersVariant());
   const list = offers.filter((o) => matchAudience(o.audience, audience));
 
+  const onVariantChange = (next: OffersPageVariant) => {
+    setVariant(next);
+    saveOffersVariant(next);
+  };
+
   return (
-    <ProfileSubpageLayout title="Aksiyalar">
+    <ProfileSubpageLayout title={t("offersPage.title")} subtitle={t(offersVariantMeta[variant].hintKey)}>
+      <OffersVariantPicker value={variant} onChange={onVariantChange} />
+
       <ProfileSubpageCard className="mb-4">
         <AudienceSwitch />
       </ProfileSubpageCard>
 
       {list.length === 0 ? (
-        <EmptyState icon={<Tag className="h-7 w-7" />} title="Aksiya topilmadi" />
+        <EmptyState icon={<Tag className="h-7 w-7" />} title={t("offersPage.empty")} />
+      ) : variant === "v01" ? (
+        <OffersVariantFeatured list={list} />
+      ) : variant === "v02" ? (
+        <OffersVariantPromo list={list} />
       ) : (
-        <div className="space-y-3">
-          {list.map((o) => (
-            <Link
-              key={o.id}
-              to="/salon/$id"
-              params={{ id: o.salonId }}
-              className="flex items-center gap-4 rounded-2xl border border-border bg-surface/40 p-4 active:scale-[0.98] transition-transform"
-            >
-              <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-foreground text-background">
-                <span className="text-lg font-bold">−{o.discountPct}%</span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                  {o.salonName}
-                </p>
-                <h3 className="mt-0.5 truncate text-sm font-bold">{o.title}</h3>
-                <p className="mt-1 text-[11px] font-bold text-muted-foreground">
-                  {o.validUntil} gacha amal qiladi
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
+        <OffersVariantSwipe list={list} />
       )}
     </ProfileSubpageLayout>
   );
