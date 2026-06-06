@@ -17,6 +17,7 @@ import { LangAwareOutlet } from "../components/LangAwareOutlet";
 import { UserLayout } from "../components/UserLayout";
 import { AppVersionWatcher } from "../components/AppVersionWatcher";
 import { ClientOnly } from "../components/ClientOnly";
+import { CLIENT_BOOT_SCRIPT } from "../lib/client-boot-script";
 import { Toaster } from "sonner";
 import { AudienceProvider } from "../hooks/use-audience";
 
@@ -121,11 +122,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
     <html lang="uz">
       <head>
         <HeadContent />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){if("serviceWorker"in navigator){navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(x){x.unregister()})})}if("caches"in window){caches.keys().then(function(k){k.forEach(function(n){caches.delete(n)})})}})();`,
-          }}
-        />
+        <script dangerouslySetInnerHTML={{ __html: CLIENT_BOOT_SCRIPT }} />
       </head>
       <body>
         {children}

@@ -1,2 +1,2 @@
-/** Dev fallback — production build overwrites via scripts/write-build-version.mjs */
-export const APP_BUILD_ID = "dev";
+/** Generated at build — do not edit */
+export const APP_BUILD_ID = "b6873e1";
