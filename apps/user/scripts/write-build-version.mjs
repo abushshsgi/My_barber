@@ -6,17 +6,20 @@ import { fileURLToPath } from "node:url";
 const appDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 function resolveBuildId() {
+  let raw;
   if (process.env.VERCEL_GIT_COMMIT_SHA) {
-    return process.env.VERCEL_GIT_COMMIT_SHA.slice(0, 12);
+    raw = process.env.VERCEL_GIT_COMMIT_SHA;
+  } else if (process.env.GITHUB_SHA) {
+    raw = process.env.GITHUB_SHA;
+  } else {
+    try {
+      raw = execSync("git rev-parse --short HEAD", { cwd: appDir, encoding: "utf8" }).trim();
+    } catch {
+      return `local-${Date.now().toString(36)}`;
+    }
   }
-  if (process.env.GITHUB_SHA) {
-    return process.env.GITHUB_SHA.slice(0, 12);
-  }
-  try {
-    return execSync("git rev-parse --short HEAD", { cwd: appDir, encoding: "utf8" }).trim();
-  } catch {
-    return `local-${Date.now().toString(36)}`;
-  }
+  // Vercel SHA (12) va git short (7) bir xil formatda bo'lsin — reload loop oldini olish.
+  return raw.slice(0, 7);
 }
 
 const buildId = resolveBuildId();
