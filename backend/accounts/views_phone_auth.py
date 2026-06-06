@@ -22,11 +22,14 @@ from .phone_auth import (
 )
 from .serializers import UserSerializer
 from .sms_otp import send_login_otp
-from .throttles import AuthIPThrottle
+from .throttles import AuthIPThrottle, PhoneSendThrottle, PhoneVerifyThrottle
 
 
 def _expose_debug_code() -> bool:
-    return settings.DEBUG or os.environ.get("OTP_EXPOSE_CODE", "").lower() in (
+    """Productionda OTP ekranda ko‘rinmasin — faqat DEBUG + OTP_EXPOSE_CODE."""
+    if not settings.DEBUG:
+        return False
+    return os.environ.get("OTP_EXPOSE_CODE", "").lower() in (
         "1",
         "true",
         "yes",
@@ -66,7 +69,7 @@ class PhoneSendCodeView(APIView):
     """POST { phone } — 4 xonali OTP yuborish (login = signup)."""
 
     permission_classes = [AllowAny]
-    throttle_classes = [AuthIPThrottle]
+    throttle_classes = [PhoneSendThrottle, AuthIPThrottle]
 
     def post(self, request):
         phone = normalize_uz_phone(request.data.get("phone"))
@@ -107,7 +110,7 @@ class PhoneVerifyView(APIView):
     """POST { phone, code } -> { access, refresh, user, is_new_user }."""
 
     permission_classes = [AllowAny]
-    throttle_classes = [AuthIPThrottle]
+    throttle_classes = [PhoneVerifyThrottle, AuthIPThrottle]
 
     def post(self, request):
         phone = normalize_uz_phone(request.data.get("phone"))

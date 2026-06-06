@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchSalonPortfolio, fetchSalonStaff } from "@/lib/api/salons";
 import { fetchSalonReviews } from "@/lib/api/reviews";
 import { mapReview } from "@/lib/mappers/review";
+import { authQueryEnabled } from "@/lib/auth-query";
 import { mapStaffToBarber } from "@/lib/mappers/salon";
 import { useSalonDetail } from "@/hooks/use-salons";
 
@@ -15,13 +16,13 @@ export function useSalonPage(id: string) {
       const serviceIds = detail.data?.services.map((s) => s.id) ?? [];
       return rows.map((r) => mapStaffToBarber(r, id, serviceIds));
     },
-    enabled: Boolean(id) && Boolean(detail.data),
+    enabled: authQueryEnabled(Boolean(id) && Boolean(detail.data)),
   });
 
   const reviews = useQuery({
     queryKey: ["reviews", "salon", id],
     queryFn: async () => (await fetchSalonReviews(id)).map(mapReview),
-    enabled: Boolean(id),
+    enabled: authQueryEnabled(Boolean(id)),
   });
 
   const portfolio = useQuery({
@@ -30,7 +31,7 @@ export function useSalonPage(id: string) {
       const rows = await fetchSalonPortfolio(id);
       return rows.map((r) => r.image).filter(Boolean) as string[];
     },
-    enabled: Boolean(id),
+    enabled: authQueryEnabled(Boolean(id)),
   });
 
   const salon = detail.data

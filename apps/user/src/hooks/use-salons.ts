@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchSalon, fetchSalons, fetchSalonsNearby, searchSalons } from "@/lib/api/salons";
+import { authQueryEnabled } from "@/lib/auth-query";
 import { mapNearbySalon, mapSalonDetail, mapSalonList } from "@/lib/mappers/salon";
 
 export const salonsQueryKey = ["salons"] as const;
@@ -12,6 +13,7 @@ export function useSalonsList() {
       return data.map((s) => mapSalonList(s));
     },
     staleTime: 30_000,
+    enabled: authQueryEnabled(),
   });
 }
 
@@ -19,7 +21,7 @@ export function useSalonDetail(id: string) {
   return useQuery({
     queryKey: [...salonsQueryKey, "detail", id],
     queryFn: async () => mapSalonDetail(await fetchSalon(id)),
-    enabled: Boolean(id),
+    enabled: authQueryEnabled(Boolean(id)),
   });
 }
 
@@ -31,7 +33,7 @@ export function useSalonsNearby(lat?: number, lng?: number) {
       const data = await fetchSalonsNearby(lat, lng);
       return data.map(mapNearbySalon);
     },
-    enabled: lat != null && lng != null,
+    enabled: authQueryEnabled(lat != null && lng != null),
     staleTime: 30_000,
   });
 }
@@ -44,7 +46,7 @@ export function useSalonSearch(q: string) {
       const data = await searchSalons(q.trim());
       return data.map((s) => mapSalonList(s));
     },
-    enabled: q.trim().length >= 2,
+    enabled: authQueryEnabled(q.trim().length >= 2),
   });
 }
 
@@ -56,6 +58,6 @@ export function useSalonsByIds(ids: string[]) {
       const data = await fetchSalons({ ids: ids.join(",") });
       return data.map((s) => mapSalonList(s));
     },
-    enabled: ids.length > 0,
+    enabled: authQueryEnabled(ids.length > 0),
   });
 }

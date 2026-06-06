@@ -4,6 +4,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from "@/lib/api/notifications";
+import { authQueryEnabled } from "@/lib/auth-query";
 import { mapNotification } from "@/lib/mappers/notification";
 
 export const notificationsQueryKey = ["notifications"] as const;
@@ -13,6 +14,7 @@ export function useNotificationsApi() {
     queryKey: notificationsQueryKey,
     queryFn: async () => (await fetchNotifications()).map(mapNotification),
     staleTime: 15_000,
+    enabled: authQueryEnabled(),
   });
 }
 

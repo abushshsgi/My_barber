@@ -6,6 +6,7 @@ import {
   fetchBookings,
   type CreateBookingPayload,
 } from "@/lib/api/bookings";
+import { authQueryEnabled } from "@/lib/auth-query";
 import { mapBookings } from "@/lib/mappers/booking";
 
 export const bookingsQueryKey = ["bookings"] as const;
@@ -15,6 +16,7 @@ export function useBookings() {
     queryKey: bookingsQueryKey,
     queryFn: async () => mapBookings(await fetchBookings()),
     staleTime: 15_000,
+    enabled: authQueryEnabled(),
   });
 }
 
@@ -51,10 +53,12 @@ export function useBookingAvailability(params: {
         service_ids: params.serviceIds.join(","),
       }),
     enabled:
-      (params.enabled ?? true) &&
-      params.salon > 0 &&
-      params.barber > 0 &&
-      params.date.length > 0 &&
-      params.serviceIds.length > 0,
+      authQueryEnabled(
+        (params.enabled ?? true) &&
+          params.salon > 0 &&
+          params.barber > 0 &&
+          params.date.length > 0 &&
+          params.serviceIds.length > 0,
+      ),
   });
 }

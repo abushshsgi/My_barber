@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addFavoriteSalon, fetchFavoriteSalons, removeFavoriteSalon } from "@/lib/api/favorites";
+import { authQueryEnabled } from "@/lib/auth-query";
 
 export const favoritesQueryKey = ["favorites"] as const;
 
@@ -11,6 +12,7 @@ export function useFavoriteSalonIds() {
       return data.results.map((r) => String(r.salon));
     },
     staleTime: 30_000,
+    enabled: authQueryEnabled(),
   });
 }
 

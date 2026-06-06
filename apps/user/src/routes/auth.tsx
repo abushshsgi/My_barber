@@ -27,8 +27,8 @@ function Auth() {
     onSuccess: (data) => {
       setStep("code");
       toast.success(data.detail);
-      if (data.debug_code) {
-        toast.message(`Demo kod: ${data.debug_code}`, { duration: 10000 });
+      if (import.meta.env.DEV && data.debug_code) {
+        toast.message(`Dev kod: ${data.debug_code}`, { duration: 10000 });
       }
     },
     onError: (e: Error) => toast.error(e.message),

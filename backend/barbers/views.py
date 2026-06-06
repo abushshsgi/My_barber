@@ -92,7 +92,7 @@ def _public_salon_for_barber(barber):
 
 
 class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticatedBarberAware]
     queryset = BarberProfile.objects.select_related("barber").prefetch_related(
         "services",
         "services__catalog_service",
@@ -181,7 +181,6 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
     @action(
         detail=False,
         methods=["get"],
-        permission_classes=[AllowAny],
         url_path="by-barber-id",
     )
     def by_barber_id(self, request):
@@ -206,7 +205,6 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
     @action(
         detail=False,
         methods=["get"],
-        permission_classes=[AllowAny],
         throttle_classes=[SalonSearchThrottle],
     )
     def nearby(self, request):
@@ -263,7 +261,6 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
     @action(
         detail=False,
         methods=["get"],
-        permission_classes=[AllowAny],
         url_path="find",
         throttle_classes=[SalonSearchThrottle],
     )
@@ -805,7 +802,7 @@ class BarberSearchView(APIView):
 
 
 class IndependentAvailabilityView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticatedBarberAware]
 
     def get(self, request):
         barber_id = request.query_params.get("barber")

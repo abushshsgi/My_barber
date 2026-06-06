@@ -5,6 +5,7 @@ import {
   fetchMessages,
   sendMessage,
 } from "@/lib/api/chat";
+import { authQueryEnabled } from "@/lib/auth-query";
 import { mapConversation, mapMessage } from "@/lib/mappers/chat";
 
 export const conversationsQueryKey = ["chat", "conversations"] as const;
@@ -14,6 +15,7 @@ export function useConversations() {
     queryKey: conversationsQueryKey,
     queryFn: async () => (await fetchConversations()).map(mapConversation),
     staleTime: 10_000,
+    enabled: authQueryEnabled(),
   });
 }
 
@@ -21,7 +23,7 @@ export function useChatMessages(conversationId: string) {
   return useQuery({
     queryKey: ["chat", "messages", conversationId],
     queryFn: async () => (await fetchMessages(conversationId)).map((m) => mapMessage(m, "USER")),
-    enabled: Boolean(conversationId),
+    enabled: authQueryEnabled(Boolean(conversationId)),
     refetchInterval: 15_000,
   });
 }

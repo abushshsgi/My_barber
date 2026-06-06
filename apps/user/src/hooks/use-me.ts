@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchMe, updateMe } from "@/lib/api/user";
 import { getAuthUser, setSession } from "@/lib/auth";
-import { getUserAccessToken } from "@/lib/api/client";
+import { authQueryEnabled } from "@/lib/auth-query";
 
 export const meQueryKey = ["users", "me"] as const;
 
@@ -9,7 +9,7 @@ export function useMe() {
   return useQuery({
     queryKey: meQueryKey,
     queryFn: fetchMe,
-    enabled: Boolean(getUserAccessToken()),
+    enabled: authQueryEnabled(),
     staleTime: 60_000,
     retry: 1,
   });

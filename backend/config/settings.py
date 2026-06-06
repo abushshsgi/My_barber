@@ -186,8 +186,16 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 50,
+    "DEFAULT_THROTTLE_CLASSES": (
+        "accounts.throttles.ApiAnonRateThrottle",
+        "accounts.throttles.ApiUserRateThrottle",
+    ),
     "DEFAULT_THROTTLE_RATES": {
-        "auth": "30/minute",
+        "anon": "60/minute",
+        "user": "300/minute",
+        "auth": "12/minute",
+        "phone_send": "6/minute",
+        "phone_verify": "20/minute",
         "salon_search": "60/minute",
         "salon_join": "20/minute",
     },
@@ -304,4 +312,18 @@ BARBER_MOBILE_VERIFY_SCHEME = (
     os.environ.get("BARBER_MOBILE_VERIFY_SCHEME", "mysaloonpartner").strip().rstrip("://")
     or "mysaloonpartner"
 )
+
+if not DEBUG:
+    SECURE_SSL_REDIRECT = os.environ.get("DJANGO_SECURE_SSL_REDIRECT", "true").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_HSTS_SECONDS", "31536000"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    X_FRAME_OPTIONS = "DENY"
 

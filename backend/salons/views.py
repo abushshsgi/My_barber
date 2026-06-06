@@ -40,8 +40,6 @@ class SalonViewSet(viewsets.ModelViewSet):
     lookup_field = "pk"
 
     def get_permissions(self):
-        if self.action in ("list", "retrieve", "nearby", "search"):
-            return [AllowAny()]
         return [IsAuthenticatedBarberAware()]
 
     def _salon_public_list_qs(self):

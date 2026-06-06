@@ -216,6 +216,35 @@ export async function apiJson<T>(path: string, options: RequestInit = {}): Promi
   return body as T;
 }
 
+function decodeJwtExp(token: string): number | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const json = atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"));
+    const payload = JSON.parse(json) as { exp?: number };
+    return typeof payload.exp === "number" ? payload.exp : null;
+  } catch {
+    return null;
+  }
+}
+
+function isTokenExpired(token: string, skewSeconds = 30): boolean {
+  const exp = decodeJwtExp(token);
+  if (exp == null) return false;
+  return exp * 1000 <= Date.now() + skewSeconds * 1000;
+}
+
 export function hasValidUserSession(): boolean {
-  return Boolean(getUserAccessToken());
+  if (typeof window === "undefined") return false;
+
+  const access = readStoredUserAccess();
+  if (access && !isTokenExpired(access)) return true;
+
+  const refresh = readStoredUserRefresh();
+  if (refresh && !isTokenExpired(refresh)) return true;
+
+  if (access || refresh) {
+    clearUserTokens();
+  }
+  return false;
 }

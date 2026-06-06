@@ -22,6 +22,7 @@ import { Toaster } from "sonner";
 import { APP_BUILD_ID } from "../lib/app-build-id";
 import { requireAuth } from "../lib/require-auth";
 import { AudienceProvider } from "../hooks/use-audience";
+import { AuthSessionGuard } from "../components/AuthSessionGuard";
 
 function NotFoundComponent() {
   return (
@@ -149,9 +150,11 @@ function AppShell() {
   return (
     <QueryClientProvider client={queryClient}>
       <AudienceProvider>
-        <UserLayout>
-          <LangAwareOutlet />
-        </UserLayout>
+        <AuthSessionGuard>
+          <UserLayout>
+            <LangAwareOutlet />
+          </UserLayout>
+        </AuthSessionGuard>
         <ClientOnly>
           <AppVersionWatcher />
           <Toaster position="top-center" />

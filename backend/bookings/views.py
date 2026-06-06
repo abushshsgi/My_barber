@@ -228,7 +228,7 @@ class BookingViewSet(viewsets.ModelViewSet):
 
 
 class SalonPortfolioView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticatedBarberAware]
 
     def get(self, request, salon_id):
         salon = get_object_or_404(
@@ -297,8 +297,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return qs
 
     def get_permissions(self):
-        if self.action in ("list", "retrieve"):
-            return [AllowAny()]
         return super().get_permissions()
 
     def perform_create(self, serializer):
@@ -456,7 +454,7 @@ class BookingAvailabilityView(APIView):
     Respects salon hours, barber working hours, closed days, and existing bookings.
     """
 
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticatedBarberAware]
 
     def get(self, request):
         salon_id = request.query_params.get("salon")
