@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Star, MapPin, Heart } from "lucide-react";
 import type { Salon } from "@/lib/mock-data";
 import { shortPrice } from "@/lib/mock-data";
-import { brandCoverGradient } from "@/lib/brand-gradients";
+import { getSalonCoverUrl } from "@/lib/cover-images";
 import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
 
@@ -24,11 +24,12 @@ export function SalonCard({ salon }: { salon: Salon }) {
         className="block active:scale-[0.98] transition-transform"
       >
         <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-surface">
-          <div
-            className="absolute inset-0"
-            style={{
-              background: brandCoverGradient(salon.coverSeed),
-            }}
+          <img
+            src={getSalonCoverUrl(salon.coverSeed)}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
           <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-background/95 px-2.5 py-1 text-[11px] font-bold">

@@ -7,7 +7,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import type { HomeData } from "@/components/home/useHomeData";
-import { brandCoverGradient } from "@/lib/brand-gradients";
+import { getTrendCoverUrl } from "@/lib/cover-images";
 import { SalonCard } from "@/components/SalonCard";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
 import type { Offer, TrendingStyle } from "@/lib/mock-data";
@@ -104,10 +104,15 @@ export function HomeTrendingStrip({ trending }: { trending: TrendingStyle[] }) {
       <div className="no-scrollbar flex gap-3 overflow-x-auto px-5">
         {trending.map((s) => (
           <div key={s.id} className="w-[140px] shrink-0">
-            <div
-              className="aspect-[3/4] rounded-2xl"
-              style={{ background: brandCoverGradient(s.seed) }}
-            />
+            <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-surface">
+              <img
+                src={getTrendCoverUrl(s.seed)}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            </div>
             <p className="mt-2 text-[13px] font-bold leading-tight">{s.title}</p>
             <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
               {t(`homePage.audience.${s.audience}`)}
