@@ -19,7 +19,9 @@ export type PhoneVerifyResponse = {
 export type PhoneSendCodeResponse = {
   detail: string;
   phone: string;
+  /** SMS ulanmaguncha — kod shu yerda keladi (keyin olib tashlanadi). */
   debug_code?: string;
+  delivery?: "sms" | "app";
 };
 
 export type ApiSalonList = {

@@ -21,12 +21,14 @@ from .phone_auth import (
     verify_otp,
 )
 from .serializers import UserSerializer
-from .sms_otp import send_login_otp
+from .sms_otp import is_sms_provider_configured, send_login_otp
 from .throttles import AuthIPThrottle, PhoneSendThrottle, PhoneVerifyThrottle
 
 
 def _expose_debug_code() -> bool:
-    """Productionda OTP ekranda ko‘rinmasin — faqat DEBUG + OTP_EXPOSE_CODE."""
+    """SMS ulanmagan — kod ilovada; yoki DEBUG + OTP_EXPOSE_CODE (dev)."""
+    if not is_sms_provider_configured():
+        return True
     if not settings.DEBUG:
         return False
     return os.environ.get("OTP_EXPOSE_CODE", "").lower() in (
@@ -98,8 +100,13 @@ class PhoneSendCodeView(APIView):
         mark_otp_sent(phone)
 
         body: dict[str, str] = {
-            "detail": "Tasdiq kodi yuborildi.",
+            "detail": (
+                "Tasdiq kodi yuborildi."
+                if is_sms_provider_configured()
+                else "Tasdiq kodi tayyor — quyidagi kodni kiriting (SMS hali ulanmagan)."
+            ),
             "phone": phone,
+            "delivery": "sms" if is_sms_provider_configured() else "app",
         }
         if _expose_debug_code():
             body["debug_code"] = code

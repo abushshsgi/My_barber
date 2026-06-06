@@ -21,15 +21,28 @@ function Auth() {
   const [step, setStep] = useState<"phone" | "code">("phone");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState(["", "", "", ""]);
+  const [appDeliveryCode, setAppDeliveryCode] = useState<string | null>(null);
+  const [deliveryMode, setDeliveryMode] = useState<"sms" | "app">("sms");
+
+  const applyOtpCode = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 4);
+    setCode(digits.split("").concat(["", "", "", ""]).slice(0, 4));
+  };
 
   const sendCode = useMutation({
     mutationFn: () => sendPhoneCode(phone),
     onSuccess: (data) => {
       setStep("code");
-      toast.success(data.detail);
-      if (import.meta.env.DEV && data.debug_code) {
-        toast.message(`Dev kod: ${data.debug_code}`, { duration: 10000 });
+      setAppDeliveryCode(null);
+      const mode = data.delivery === "app" ? "app" : "sms";
+      setDeliveryMode(mode);
+
+      if (data.debug_code) {
+        setAppDeliveryCode(data.debug_code);
+        applyOtpCode(data.debug_code);
       }
+
+      toast.success(data.detail);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -79,8 +92,10 @@ function Auth() {
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {step === "phone"
-            ? "Telefon raqamingizni kiriting, sizga SMS orqali tasdiq kodi yuboramiz."
-            : `+998 ${phone} raqamiga yuborilgan 4 raqamli kodni kiriting.`}
+            ? "Telefon raqamingizni kiriting. SMS ulanganda kod telefoningizga keladi."
+            : deliveryMode === "app"
+              ? `+998 ${phone} uchun tasdiq kodi quyida. (SMS provayder keyin ulanadi.)`
+              : `+998 ${phone} raqamiga yuborilgan 4 raqamli kodni kiriting.`}
         </p>
 
         {step === "phone" ? (
@@ -107,6 +122,26 @@ function Auth() {
           </div>
         ) : (
           <div className="mt-8">
+            {appDeliveryCode ? (
+              <div className="mb-6 rounded-2xl border-2 border-dashed border-foreground/30 bg-surface px-4 py-4 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                  Vaqtinchalik kod (SMS ulanmagan)
+                </p>
+                <p className="mt-2 font-mono text-3xl font-bold tracking-[0.35em]">
+                  {appDeliveryCode}
+                </p>
+                <button
+                  type="button"
+                  className="mt-3 text-xs font-bold text-muted-foreground underline"
+                  onClick={() => {
+                    void navigator.clipboard?.writeText(appDeliveryCode);
+                    toast.success("Kod nusxalandi");
+                  }}
+                >
+                  Nusxalash
+                </button>
+              </div>
+            ) : null}
             <div className="flex justify-center gap-3">
               {code.map((c, i) => (
                 <input
@@ -137,6 +172,7 @@ function Auth() {
               onClick={() => {
                 setStep("phone");
                 setCode(["", "", "", ""]);
+                setAppDeliveryCode(null);
               }}
               className="mt-6 w-full text-center text-xs font-bold text-muted-foreground underline disabled:opacity-60"
             >
