@@ -37,6 +37,7 @@ import { Route as AiStyleRouteImport } from './routes/ai-style'
 import { Route as AddressesRouteImport } from './routes/addresses'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WalletTopUpRouteImport } from './routes/wallet_.top-up'
+import { Route as WalletHistoryRouteImport } from './routes/wallet_.history'
 import { Route as StoriesSalonIdRouteImport } from './routes/stories.$salonId'
 import { Route as SalonIdRouteImport } from './routes/salon.$id'
 import { Route as ChatIdRouteImport } from './routes/chat.$id'
@@ -187,6 +188,11 @@ const WalletTopUpRoute = WalletTopUpRouteImport.update({
   path: '/wallet/top-up',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WalletHistoryRoute = WalletHistoryRouteImport.update({
+  id: '/wallet_/history',
+  path: '/wallet/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StoriesSalonIdRoute = StoriesSalonIdRouteImport.update({
   id: '/$salonId',
   path: '/$salonId',
@@ -269,6 +275,7 @@ export interface FileRoutesByFullPath {
   '/chat/$id': typeof ChatIdRoute
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
+  '/wallet/history': typeof WalletHistoryRoute
   '/wallet/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
 }
@@ -308,6 +315,7 @@ export interface FileRoutesByTo {
   '/chat/$id': typeof ChatIdRoute
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
+  '/wallet/history': typeof WalletHistoryRoute
   '/wallet/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
 }
@@ -348,6 +356,7 @@ export interface FileRoutesById {
   '/chat/$id': typeof ChatIdRoute
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
+  '/wallet_/history': typeof WalletHistoryRoute
   '/wallet_/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
 }
@@ -389,6 +398,7 @@ export interface FileRouteTypes {
     | '/chat/$id'
     | '/salon/$id'
     | '/stories/$salonId'
+    | '/wallet/history'
     | '/wallet/top-up'
     | '/booking/barber/$barberId'
   fileRoutesByTo: FileRoutesByTo
@@ -428,6 +438,7 @@ export interface FileRouteTypes {
     | '/chat/$id'
     | '/salon/$id'
     | '/stories/$salonId'
+    | '/wallet/history'
     | '/wallet/top-up'
     | '/booking/barber/$barberId'
   id:
@@ -467,6 +478,7 @@ export interface FileRouteTypes {
     | '/chat/$id'
     | '/salon/$id'
     | '/stories/$salonId'
+    | '/wallet_/history'
     | '/wallet_/top-up'
     | '/booking/barber/$barberId'
   fileRoutesById: FileRoutesById
@@ -505,6 +517,7 @@ export interface RootRouteChildren {
   AccountPreferencesRoute: typeof AccountPreferencesRoute
   BookingSalonIdRoute: typeof BookingSalonIdRoute
   SalonIdRoute: typeof SalonIdRoute
+  WalletHistoryRoute: typeof WalletHistoryRoute
   WalletTopUpRoute: typeof WalletTopUpRoute
   BookingBarberBarberIdRoute: typeof BookingBarberBarberIdRoute
 }
@@ -707,6 +720,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WalletTopUpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/wallet_/history': {
+      id: '/wallet_/history'
+      path: '/wallet/history'
+      fullPath: '/wallet/history'
+      preLoaderRoute: typeof WalletHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/stories/$salonId': {
       id: '/stories/$salonId'
       path: '/$salonId'
@@ -828,6 +848,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountPreferencesRoute: AccountPreferencesRoute,
   BookingSalonIdRoute: BookingSalonIdRoute,
   SalonIdRoute: SalonIdRoute,
+  WalletHistoryRoute: WalletHistoryRoute,
   WalletTopUpRoute: WalletTopUpRoute,
   BookingBarberBarberIdRoute: BookingBarberBarberIdRoute,
 }

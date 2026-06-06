@@ -447,6 +447,10 @@
     },
     "loyaltyRemaining": "{{points}} ball qoldi · keyingi daraja"
   },
+  "walletHistoryPage": {
+    "title": "To'liq tarix",
+    "subtitle": "{{count}} ta tranzaksiya"
+  },
   "topUpPage": {
     "title": "To'ldirish",
     "subtitle": "Hamyon balansini oshiring",

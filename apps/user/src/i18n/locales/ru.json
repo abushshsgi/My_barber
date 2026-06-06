@@ -431,6 +431,10 @@
     },
     "loyaltyRemaining": "Ещё {{points}} баллов до следующего уровня"
   },
+  "walletHistoryPage": {
+    "title": "Полная история",
+    "subtitle": "{{count}} транзакций"
+  },
   "topUpPage": {
     "title": "Пополнение",
     "subtitle": "Пополните баланс кошелька",

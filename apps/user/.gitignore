@@ -16,6 +16,8 @@
 # production
 /build
 /dist
+/.build-id
+/version.json
 /.wrangler
 /.tanstack
 

@@ -431,6 +431,10 @@
     },
     "loyaltyRemaining": "{{points}} pts to next tier"
   },
+  "walletHistoryPage": {
+    "title": "Full history",
+    "subtitle": "{{count}} transactions"
+  },
   "topUpPage": {
     "title": "Top up",
     "subtitle": "Add funds to your wallet",

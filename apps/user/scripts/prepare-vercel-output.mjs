@@ -1,4 +1,4 @@
-import { cpSync, existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -39,6 +39,13 @@ if (Array.isArray(config.routes)) {
 }
 
 writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+const versionSrc = path.join(appDir, "version.json");
+const versionDest = path.join(distDir, "static", "version.json");
+if (existsSync(versionSrc)) {
+  copyFileSync(versionSrc, versionDest);
+  console.log("version.json copied to static/");
+}
 
 // Vercel Build Output API: faqat .vercel/output ishlatiladi.
 // Dashboard Output Directory bo'sh bo'lishi kerak (dist EMAS).

@@ -1,13 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Gift, Plus, ChevronLeft, ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { Gift, Plus, ChevronLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PlasticCard } from "@/components/wallet/PlasticCard";
 import { ClientOnly } from "@/components/ClientOnly";
 import { WalletEmptyTransactions } from "@/components/wallet/WalletEmptyTransactions";
 import { WalletPaymentMethodsRow } from "@/components/wallet/WalletPaymentMethodsRow";
 import { WalletPullRefresh } from "@/components/wallet/WalletPullRefresh";
+import { WalletTransactionList } from "@/components/wallet/WalletTransactionList";
 import { loyaltyMock, walletSummary } from "@/lib/mock-data";
+import {
+  filterWalletTransactions,
+  WALLET_TRANSACTIONS,
+  type WalletTxTab,
+} from "@/lib/wallet-transactions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/wallet")({
@@ -21,36 +27,19 @@ export const Route = createFileRoute("/wallet")({
   component: WalletPage,
 });
 
-type Tab = "all" | "in" | "out";
-
-interface Tx {
-  id: string;
-  kind: "in" | "out";
-  title: string;
-  date: string;
-  amount: number;
-}
-
-const MOCK_TXS: Tx[] = [
-  { id: "t1", kind: "in", title: "Cashback · Modern Cuts", date: "Bugun", amount: 12000 },
-  { id: "t2", kind: "out", title: "Bron · Lazzat Spa", date: "Kecha", amount: -180000 },
-  { id: "t3", kind: "in", title: "Do'stni taklif qildingiz", date: "2 kun oldin", amount: 25000 },
-  { id: "t4", kind: "out", title: "Sovg'a karta · Madina", date: "5 kun oldin", amount: -100000 },
-  { id: "t5", kind: "in", title: "Promo · Yangi yil", date: "1 hafta", amount: 50000 },
-];
-
-function formatTxAmount(n: number) {
-  return new Intl.NumberFormat("uz-UZ").format(Math.abs(n)) + " so'm";
-}
+const RECENT_TX_LIMIT = 5;
 
 function WalletPage() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<Tab>("all");
+  const [tab, setTab] = useState<WalletTxTab>("all");
   const [balance, setBalance] = useState(walletSummary.balance);
-  const [transactions] = useState<Tx[]>(MOCK_TXS);
   const [refreshing, setRefreshing] = useState(false);
 
-  const visible = transactions.filter((tx) => tab === "all" || tx.kind === tab);
+  const transactions = WALLET_TRANSACTIONS;
+  const visible = useMemo(
+    () => filterWalletTransactions(transactions, tab).slice(0, RECENT_TX_LIMIT),
+    [transactions, tab],
+  );
   const hasAnyTransactions = transactions.length > 0;
 
   const cashbackTotal = useMemo(
@@ -58,7 +47,7 @@ function WalletPage() {
     [transactions],
   );
 
-  const tabLabels: Record<Tab, string> = {
+  const tabLabels: Record<WalletTxTab, string> = {
     all: t("walletPage.tabs.all"),
     in: t("walletPage.tabs.in"),
     out: t("walletPage.tabs.out"),
@@ -142,7 +131,7 @@ function WalletPage() {
 
           {hasAnyTransactions && (
             <div className="mt-3 flex gap-2">
-              {(["all", "in", "out"] as Tab[]).map((k) => (
+              {(["all", "in", "out"] as WalletTxTab[]).map((k) => (
                 <button
                   key={k}
                   type="button"
@@ -163,49 +152,18 @@ function WalletPage() {
           ) : visible.length === 0 ? (
             <WalletEmptyTransactions filteredEmpty />
           ) : (
-            <ul className="mt-4 space-y-3">
-              {visible.map((tx) => (
-                <li
-                  key={tx.id}
-                  className="flex items-center gap-3 rounded-[24px] bg-surface px-4 py-4"
-                >
-                  <span
-                    className={cn(
-                      "grid h-11 w-11 shrink-0 place-items-center rounded-full",
-                      tx.kind === "in" ? "bg-foreground text-background" : "bg-background",
-                    )}
-                  >
-                    {tx.kind === "in" ? (
-                      <ArrowDownLeft className="h-5 w-5" strokeWidth={2.2} />
-                    ) : (
-                      <ArrowUpRight className="h-5 w-5" strokeWidth={2.2} />
-                    )}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[15px] font-bold">{tx.title}</p>
-                    <p className="text-[11px] text-muted-foreground">{tx.date}</p>
-                  </div>
-                  <p
-                    className={cn(
-                      "shrink-0 text-[15px] font-bold tabular-nums",
-                      tx.kind === "in" ? "text-foreground" : "text-muted-foreground",
-                    )}
-                  >
-                    {tx.kind === "in" ? "+" : "−"}
-                    {formatTxAmount(tx.amount)}
-                  </p>
-                </li>
-              ))}
-            </ul>
+            <div className="mt-4">
+              <WalletTransactionList items={visible} />
+            </div>
           )}
 
           {hasAnyTransactions && (
-            <button
-              type="button"
-              className="mt-4 w-full rounded-full bg-surface py-3.5 text-[12px] font-bold active:opacity-80"
+            <Link
+              to="/wallet/history"
+              className="mt-4 flex w-full items-center justify-center rounded-full bg-surface py-3.5 text-[12px] font-bold active:opacity-80"
             >
               {t("walletPage.fullHistory")}
-            </button>
+            </Link>
           )}
         </section>
       </div>
