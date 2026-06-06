@@ -374,8 +374,6 @@
     "tryAgain": "Yangi rasm",
     "exploreStyles": "Trend uslublar",
     "betaBadge": "Beta · demo",
-    "studioLabel": "Stil studiyasi",
-    "cameraLabel": "Kamera rejimi",
     "swipeHint": "Chapga-o'ngga surib ko'ring",
     "faceShapes": {
       "oval": "Oval yuz",
@@ -395,20 +393,6 @@
       "t4": "Yorug'lik va hajm muvozanati",
       "t5": "Tepada hajm, yonlar qisqa — oval yuz uchun ideal",
       "t6": "Toza va klassik ko'rinish"
-    },
-    "variantPicker": {
-      "title": "AI Stil — 3 ta dizayn",
-      "subtitle": "Yoqqanini tanlang, keyin qolganlarini o'chiramiz"
-    },
-    "variants": {
-      "v01": "Wizard",
-      "v02": "Studio",
-      "v03": "Kamera"
-    },
-    "hints": {
-      "v01": "3 qadam + ranked kartochkalar",
-      "v02": "Pastdan ochiladigan studio sheet",
-      "v03": "To'liq ekran selfie + swipe natija"
     }
   },
   "todayPage": {

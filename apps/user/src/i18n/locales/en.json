@@ -358,8 +358,6 @@
     "tryAgain": "New photo",
     "exploreStyles": "Trending styles",
     "betaBadge": "Beta · demo",
-    "studioLabel": "Style studio",
-    "cameraLabel": "Camera mode",
     "swipeHint": "Swipe left or right",
     "faceShapes": {
       "oval": "Oval face",
@@ -379,20 +377,6 @@
       "t4": "Balanced light and volume",
       "t5": "Volume on top, short sides — ideal for oval faces",
       "t6": "Clean classic look"
-    },
-    "variantPicker": {
-      "title": "AI Style — 3 layouts",
-      "subtitle": "Pick your favorite — we'll remove the rest"
-    },
-    "variants": {
-      "v01": "Wizard",
-      "v02": "Studio",
-      "v03": "Camera"
-    },
-    "hints": {
-      "v01": "3 steps + ranked result cards",
-      "v02": "Bottom sheet studio panel",
-      "v03": "Full-screen selfie + swipe results"
     }
   },
   "todayPage": {
