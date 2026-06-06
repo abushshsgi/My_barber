@@ -24,6 +24,12 @@ if (!existsSync(staticAssets) || readdirSync(staticAssets).length === 0) {
 }
 
 const config = JSON.parse(readFileSync(configPath, "utf8"));
+const NO_STORE_HEADERS = {
+  "cache-control": "no-store, no-cache, must-revalidate, max-age=0",
+  pragma: "no-cache",
+  expires: "0",
+};
+
 if (Array.isArray(config.routes)) {
   for (const route of config.routes) {
     if (route.headers && !route.dest && !route.handle) {
@@ -35,6 +41,17 @@ if (Array.isArray(config.routes)) {
   if (fsIdx > 0) {
     const [filesystem] = config.routes.splice(fsIdx, 1);
     config.routes.unshift(filesystem);
+  }
+
+  const insertAt = config.routes.findIndex((r) => r.src === "/assets/(.*)");
+  const headerRoutes = [
+    { src: "/version.json", headers: NO_STORE_HEADERS, continue: true },
+    { src: "/((?!assets/).*)", headers: NO_STORE_HEADERS, continue: true },
+  ];
+  if (insertAt >= 0) {
+    config.routes.splice(insertAt, 0, ...headerRoutes);
+  } else {
+    config.routes.unshift(...headerRoutes);
   }
 }
 

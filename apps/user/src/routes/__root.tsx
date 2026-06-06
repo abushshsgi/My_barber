@@ -94,6 +94,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { httpEquiv: "Cache-Control", content: "no-cache, no-store, must-revalidate" },
+      { httpEquiv: "Pragma", content: "no-cache" },
+      { httpEquiv: "Expires", content: "0" },
       { name: "theme-color", content: "#faf8f5" },
       { title: "mysaloon.uz — Online salon bron qilish" },
       {
@@ -118,6 +121,11 @@ function RootShell({ children }: { children: React.ReactNode }) {
     <html lang="uz">
       <head>
         <HeadContent />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){if("serviceWorker"in navigator){navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(x){x.unregister()})})}if("caches"in window){caches.keys().then(function(k){k.forEach(function(n){caches.delete(n)})})}})();`,
+          }}
+        />
       </head>
       <body>
         {children}
