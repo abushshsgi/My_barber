@@ -85,7 +85,10 @@ INSTALLED_APPS = [
     "notifications",
     "chat",
     "wallet.apps.WalletConfig",
+    "ai.apps.AiConfig",
 ]
+
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -203,6 +206,7 @@ REST_FRAMEWORK = {
         "phone_verify": "15/minute",
         "phone_verify_per_number": "12/hour",
         "phone_check": "20/minute",
+        "ai_style": "10/hour",
         "salon_search": "60/minute",
         "salon_join": "20/minute",
         "wallet_gift": "30/minute",

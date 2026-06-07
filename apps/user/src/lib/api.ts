@@ -16,6 +16,8 @@ export {
   loginWithPassword,
   setPassword,
   changePassword,
+  analyzeAiStyle,
+  type AiStyleAnalyzeResponse,
   fetchWalletMe,
   topUpWallet,
   sendGift,

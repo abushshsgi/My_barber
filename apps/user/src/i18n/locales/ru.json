@@ -348,7 +348,7 @@
     "pickFile": "Выбрать файл",
     "selfieAlt": "Селфи",
     "resetPhoto": "Сменить фото",
-    "privacyNote": "Демо — фото не отправляется на сервер.",
+    "privacyNote": "Фото отправляется в Google Gemini только для анализа и не сохраняется на сервере.",
     "analyzing": "Анализ лица…",
     "retake": "Переснять",
     "analyzeBtn": "Получить совет AI",
@@ -367,6 +367,7 @@
     "tryAgain": "Новое фото",
     "exploreStyles": "Трендовые стили",
     "betaBadge": "Beta · демо",
+    "aiBadge": "Gemini AI",
     "swipeHint": "Листайте влево-вправо",
     "faceShapes": {
       "oval": "Овальное лицо",

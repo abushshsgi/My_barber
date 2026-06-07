@@ -364,7 +364,7 @@
     "pickFile": "Faylni tanlash",
     "selfieAlt": "Selfie",
     "resetPhoto": "Rasmni almashtirish",
-    "privacyNote": "Demo rejim — rasm serverga yuborilmaydi, faqat qurilmada qoladi.",
+    "privacyNote": "Rasm faqat tahlil uchun Google Gemini ga yuboriladi va serverda saqlanmaydi.",
     "analyzing": "Tahlil qilinmoqda…",
     "retake": "Qayta olish",
     "analyzeBtn": "AI tavsiyasini olish",
@@ -383,6 +383,7 @@
     "tryAgain": "Yangi rasm",
     "exploreStyles": "Trend uslublar",
     "betaBadge": "Beta · demo",
+    "aiBadge": "Gemini AI",
     "swipeHint": "Chapga-o'ngga surib ko'ring",
     "faceShapes": {
       "oval": "Oval yuz",

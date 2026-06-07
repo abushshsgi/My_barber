@@ -1,3 +1,4 @@
+import type { AiStyleAnalyzeResponse } from "@/lib/api/ai";
 import type { Audience } from "@/lib/mock-data";
 import { salons, trendingStyles } from "@/lib/mock-data";
 import { matchAudience } from "@/hooks/use-audience";
@@ -10,7 +11,8 @@ export interface AiSuggestion {
   title: string;
   match: number;
   seed: string;
-  reasonKey: string;
+  reason?: string;
+  reasonKey?: string;
   barberName: string;
   salonId: string;
   salonName: string;
@@ -19,6 +21,7 @@ export interface AiSuggestion {
 export interface AiAnalysisResult {
   faceShapeKey: FaceShapeKey;
   hairTypeKey: HairTypeKey;
+  summaryUz?: string;
   suggestions: AiSuggestion[];
 }
 
@@ -74,3 +77,21 @@ export function buildAnalysis(audience: Audience): AiAnalysisResult {
 }
 
 export const ANALYZE_MS = 1800;
+
+export function mapAiStyleResponse(data: AiStyleAnalyzeResponse): AiAnalysisResult {
+  return {
+    faceShapeKey: data.face_shape,
+    hairTypeKey: data.hair_type,
+    summaryUz: data.summary_uz,
+    suggestions: data.suggestions.map((s) => ({
+      id: s.id,
+      title: s.title,
+      match: s.match,
+      seed: s.seed,
+      reason: s.reason_uz,
+      barberName: s.barber_name ?? "—",
+      salonId: s.salon_id != null ? String(s.salon_id) : "",
+      salonName: s.salon_name ?? "—",
+    })),
+  };
+}

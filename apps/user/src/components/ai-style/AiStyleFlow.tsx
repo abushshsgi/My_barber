@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Bookmark, CalendarPlus, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
   AiStylePhotoInput,
   AiStylePhotoPreview,
@@ -36,9 +37,12 @@ function ResultsSummary({ result }: { result: AiAnalysisResult }) {
             {t(`aiStylePage.faceShapes.${result.faceShapeKey}`)} ·{" "}
             {t(`aiStylePage.hairTypes.${result.hairTypeKey}`)}
           </p>
+          {result.summaryUz ? (
+            <p className="mt-2 text-xs leading-relaxed text-background/75">{result.summaryUz}</p>
+          ) : null}
         </div>
         <span className="rounded-full bg-background px-2 py-0.5 text-[9px] font-bold uppercase text-foreground">
-          {t("aiStylePage.betaBadge")}
+          {t("aiStylePage.aiBadge")}
         </span>
       </div>
     </ProfileSubpageCard>
@@ -47,8 +51,12 @@ function ResultsSummary({ result }: { result: AiAnalysisResult }) {
 
 export function AiStyleFlow({ flow, audience }: Props) {
   const { t } = useTranslation();
-  const { photo, analyzing, done, result, fileRef, onFile, openFile, analyze, reset } = flow;
+  const { photo, analyzing, done, result, error, fileRef, onFile, openFile, analyze, reset } = flow;
   const [saved, setSaved] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
 
   const step: 1 | 2 | 3 = !photo ? 1 : analyzing ? 2 : done ? 3 : 2;
 
@@ -71,7 +79,7 @@ export function AiStyleFlow({ flow, audience }: Props) {
       {photo && !done ? (
         <button
           type="button"
-          onClick={() => analyze(audience)}
+          onClick={() => void analyze(audience)}
           disabled={analyzing}
           className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-foreground px-5 py-4 text-sm font-bold text-background active:scale-[0.98] disabled:opacity-60"
         >
@@ -105,7 +113,7 @@ export function AiStyleFlow({ flow, audience }: Props) {
                       </span>
                     </div>
                     <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">
-                      {t(s.reasonKey)}
+                      {s.reason ?? (s.reasonKey ? t(s.reasonKey) : "")}
                     </p>
                     <p className="mt-2 text-[10px] font-bold text-muted-foreground">
                       {s.barberName} · {s.salonName}
@@ -124,14 +132,21 @@ export function AiStyleFlow({ flow, audience }: Props) {
                         <Bookmark className="h-3 w-3" />
                         {t("aiStylePage.save")}
                       </button>
-                      <Link
-                        to="/booking/$salonId"
-                        params={{ salonId: s.salonId }}
-                        className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-foreground py-2 text-[10px] font-bold text-background"
-                      >
-                        <CalendarPlus className="h-3 w-3" />
-                        {t("aiStylePage.bookShort")}
-                      </Link>
+                      {s.salonId ? (
+                        <Link
+                          to="/booking/$salonId"
+                          params={{ salonId: s.salonId }}
+                          className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-foreground py-2 text-[10px] font-bold text-background"
+                        >
+                          <CalendarPlus className="h-3 w-3" />
+                          {t("aiStylePage.bookShort")}
+                        </Link>
+                      ) : (
+                        <span className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-muted py-2 text-[10px] font-bold text-muted-foreground">
+                          <CalendarPlus className="h-3 w-3" />
+                          {t("aiStylePage.bookShort")}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </motion.article>

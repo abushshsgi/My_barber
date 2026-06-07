@@ -348,7 +348,7 @@
     "pickFile": "Choose file",
     "selfieAlt": "Selfie",
     "resetPhoto": "Change photo",
-    "privacyNote": "Demo mode — photo stays on device, not uploaded.",
+    "privacyNote": "Photo is sent to Google Gemini for analysis only and is not stored on our server.",
     "analyzing": "Analyzing face…",
     "retake": "Retake",
     "analyzeBtn": "Get AI suggestions",
@@ -367,6 +367,7 @@
     "tryAgain": "New photo",
     "exploreStyles": "Trending styles",
     "betaBadge": "Beta · demo",
+    "aiBadge": "Gemini AI",
     "swipeHint": "Swipe left or right",
     "faceShapes": {
       "oval": "Oval face",
