@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Camera, ChevronLeft, ImagePlus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Camera, Check, ChevronLeft, ImagePlus } from "lucide-react";
+import { Fragment, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
 import { AiStyleAnalyzeCta, AiStyleScanLine } from "@/components/ai-style/AiStyleUi";
@@ -41,29 +41,49 @@ function StepRail({ step }: { step: 1 | 2 | 3 }) {
   ];
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-start px-1">
       {steps.map((label, index) => {
         const n = (index + 1) as 1 | 2 | 3;
-        const active = step >= n;
+        const done = step > n;
         const current = step === n;
+        const reached = step >= n;
+
         return (
-          <div key={label} className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <div
-              className={cn(
-                "h-1 rounded-full transition-colors",
-                active ? "bg-foreground" : "bg-border",
-                current && "ring-2 ring-foreground/20 ring-offset-2 ring-offset-white",
-              )}
-            />
-            <p
-              className={cn(
-                "truncate text-[9px] font-bold uppercase tracking-wide",
-                active ? "text-foreground" : "text-muted-foreground",
-              )}
-            >
-              {label}
-            </p>
-          </div>
+          <Fragment key={label}>
+            <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
+              <div
+                className={cn(
+                  "grid h-8 w-8 place-items-center rounded-full text-[11px] font-bold transition-all",
+                  reached
+                    ? "bg-foreground text-white shadow-sm"
+                    : "border border-border bg-neutral-50 text-muted-foreground",
+                  current && "ring-4 ring-foreground/10",
+                )}
+              >
+                {done ? <Check className="h-4 w-4" strokeWidth={2.5} /> : n}
+              </div>
+              <p
+                className={cn(
+                  "max-w-[72px] text-center text-[10px] font-bold leading-tight",
+                  current
+                    ? "text-foreground"
+                    : reached
+                      ? "text-foreground/70"
+                      : "text-muted-foreground",
+                )}
+              >
+                {label}
+              </p>
+            </div>
+            {index < steps.length - 1 ? (
+              <div
+                className={cn(
+                  "mt-4 h-0.5 w-full max-w-[48px] flex-1 rounded-full transition-colors",
+                  step > n ? "bg-foreground" : "bg-border",
+                )}
+              />
+            ) : null}
+          </Fragment>
         );
       })}
     </div>
@@ -134,27 +154,25 @@ function UploadActions({
   const { t } = useTranslation();
 
   return (
-    <div className="rounded-[20px] border border-border bg-background p-1.5">
-      <div className="grid grid-cols-2 gap-1.5">
-        <button
-          type="button"
-          disabled={validating}
-          onClick={onOpenCamera}
-          className="inline-flex min-h-[56px] items-center justify-center gap-2.5 rounded-2xl bg-foreground px-4 py-4 text-[15px] font-bold text-background active:scale-[0.98] disabled:opacity-60"
-        >
-          <Camera className="h-5 w-5 shrink-0" />
-          {t("aiStylePage.openCamera")}
-        </button>
-        <button
-          type="button"
-          disabled={validating}
-          onClick={onOpenGallery}
-          className="inline-flex min-h-[56px] items-center justify-center gap-2.5 rounded-2xl border border-border bg-surface px-4 py-4 text-[15px] font-bold active:scale-[0.98] disabled:opacity-60"
-        >
-          <ImagePlus className="h-5 w-5 shrink-0" />
-          {t("aiStylePage.pickFromGallery")}
-        </button>
-      </div>
+    <div className="grid grid-cols-2 gap-3">
+      <button
+        type="button"
+        disabled={validating}
+        onClick={onOpenCamera}
+        className="inline-flex min-h-[60px] flex-col items-center justify-center gap-1.5 rounded-2xl bg-foreground px-3 py-4 text-[14px] font-bold text-white shadow-[0_8px_24px_-6px_rgba(0,0,0,0.35)] active:scale-[0.98] disabled:opacity-60"
+      >
+        <Camera className="h-5 w-5 shrink-0" />
+        {t("aiStylePage.openCamera")}
+      </button>
+      <button
+        type="button"
+        disabled={validating}
+        onClick={onOpenGallery}
+        className="inline-flex min-h-[60px] flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-foreground/20 bg-transparent px-3 py-4 text-[14px] font-bold text-foreground active:scale-[0.98] disabled:opacity-60"
+      >
+        <ImagePlus className="h-5 w-5 shrink-0 text-foreground/70" />
+        {t("aiStylePage.pickFromGallery")}
+      </button>
     </div>
   );
 }
@@ -164,7 +182,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const busy = props.analyzing || props.validating;
 
   return (
-    <div className="relative flex min-h-full flex-col bg-foreground pb-[calc(68px+env(safe-area-inset-bottom))]">
+    <div className="relative flex min-h-full flex-col bg-white pb-[calc(68px+env(safe-area-inset-bottom))]">
       <div className="relative shrink-0">
         {props.photo ? (
           <>
@@ -190,7 +208,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         transition={{ type: "spring", damping: 28, stiffness: 280, mass: 0.9 }}
-        className="relative z-10 -mt-10 shrink-0 rounded-t-[28px] bg-white px-5 pb-6 pt-5 text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]"
+        className="relative z-10 -mt-10 flex flex-1 flex-col rounded-t-[28px] bg-white px-5 pb-6 pt-5 text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]"
       >
         <StepRail step={props.step} />
 
