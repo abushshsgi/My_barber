@@ -4,12 +4,8 @@ import { useTranslation } from "react-i18next";
 import { WalletEmptyTransactions } from "@/components/wallet/WalletEmptyTransactions";
 import { WalletTransactionList } from "@/components/wallet/WalletTransactionList";
 import { ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
-import {
-  filterWalletTransactions,
-  groupWalletTransactions,
-  WALLET_TRANSACTIONS,
-  type WalletTxTab,
-} from "@/lib/wallet-transactions";
+import { useWalletTransactions } from "@/hooks/use-wallet";
+import { filterWalletTransactions, groupWalletTransactions, type WalletTxTab } from "@/lib/wallet-transactions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/wallet_/history")({
@@ -26,10 +22,11 @@ export const Route = createFileRoute("/wallet_/history")({
 function WalletHistoryPage() {
   const { t } = useTranslation();
   const [tab, setTab] = useState<WalletTxTab>("all");
+  const { data: transactions = [], isLoading } = useWalletTransactions(tab, 100);
 
   const filtered = useMemo(
-    () => filterWalletTransactions(WALLET_TRANSACTIONS, tab),
-    [tab],
+    () => filterWalletTransactions(transactions, tab),
+    [transactions, tab],
   );
   const grouped = useMemo(() => groupWalletTransactions(filtered), [filtered]);
 
@@ -42,7 +39,7 @@ function WalletHistoryPage() {
   return (
     <ProfileSubpageLayout
       title={t("walletHistoryPage.title")}
-      subtitle={t("walletHistoryPage.subtitle", { count: WALLET_TRANSACTIONS.length })}
+      subtitle={t("walletHistoryPage.subtitle", { count: filtered.length })}
       backTo="/wallet"
     >
       <div className="flex gap-2">
@@ -61,7 +58,9 @@ function WalletHistoryPage() {
         ))}
       </div>
 
-      {filtered.length === 0 ? (
+      {isLoading ? (
+        <div className="mt-5 h-32 animate-pulse rounded-2xl bg-surface" />
+      ) : filtered.length === 0 ? (
         <WalletEmptyTransactions filteredEmpty />
       ) : (
         <div className="mt-5 space-y-6">

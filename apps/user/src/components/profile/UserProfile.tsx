@@ -4,7 +4,6 @@ import {
   Calendar,
   CalendarCheck,
   ChevronRight,
-  CreditCard,
   Headphones,
   Info,
   MapPin,
@@ -12,23 +11,22 @@ import {
   Shield,
   Sparkles,
   Tag,
-  Users,
 } from "lucide-react";
 import { ProfileGoMenuGroup, ProfileGoQuickRow, ProfileWalletCard } from "@/components/profile/ProfileGroupedMenu";
 import { useAppTranslation } from "@/hooks/use-app-translation";
 import { useProfileScreen } from "@/components/profile/useProfileScreen";
+import { useNotificationsApi } from "@/hooks/use-notifications-api";
+import { useWalletBalance } from "@/hooks/use-wallet";
 import { formatBookingWhen } from "@/lib/bookings-utils";
-import {
-  formatPrice,
-  getUserSubscription,
-  loyaltyMock,
-  paymentMethods,
-  walletSummary,
-} from "@/lib/mock-data";
+import { formatPrice } from "@/lib/mock-data";
 
 export function UserProfile() {
   const { t } = useAppTranslation();
-  const { audience, nextBooking, user } = useProfileScreen();
+  const { audience, nextBooking, user, stats } = useProfileScreen();
+  const { balance, isLoading: walletLoading } = useWalletBalance();
+  const { data: notifications = [] } = useNotificationsApi();
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
   const audienceLabel = t(`audience.${audience}`);
   const initials = user.name
     .split(" ")
@@ -36,8 +34,6 @@ export function UserProfile() {
     .join("")
     .slice(0, 2);
 
-  const primaryPayment = paymentMethods.find((p) => p.primary) ?? paymentMethods[0];
-  const userPlan = getUserSubscription();
   const when = nextBooking ? formatBookingWhen(nextBooking.date) : null;
 
   const quickItems = [
@@ -50,25 +46,13 @@ export function UserProfile() {
   return (
     <div className="min-h-[70vh] bg-background pb-4 pt-[calc(env(safe-area-inset-top)+6px)]">
       <div className="flex items-center justify-between px-5">
-        <Link
-          to="/loyalty"
-          className="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1.5 active:opacity-80"
-        >
-          <Sparkles className="h-3.5 w-3.5 shrink-0" strokeWidth={2.2} />
-          <span className="text-[12px] font-bold leading-none">{loyaltyMock.tier}</span>
-          <span className="text-[10px] font-medium text-muted-foreground">
-            · {loyaltyMock.points}
-          </span>
-        </Link>
-
-        <Link
-          to="/subscriptions"
-          className="inline-flex max-w-[140px] items-center rounded-full bg-surface px-2.5 py-1.5 active:opacity-80"
-        >
-          <span className="truncate text-[12px] font-bold leading-none">
-            {userPlan ? userPlan.name : t("profile.upgrade")}
-          </span>
-        </Link>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1.5 text-[10px] font-bold text-muted-foreground">
+          <Sparkles className="h-3 w-3" strokeWidth={2.2} />
+          Bonus · tez orada
+        </span>
+        <span className="inline-flex max-w-[140px] items-center rounded-full bg-surface px-2.5 py-1.5 text-[10px] font-bold text-muted-foreground">
+          Obuna · tez orada
+        </span>
       </div>
 
       <div className="mt-2 flex flex-col items-center px-5 text-center">
@@ -83,6 +67,11 @@ export function UserProfile() {
         <span className="mt-2 rounded-full bg-surface px-3 py-1 text-[11px] font-bold text-muted-foreground">
           {audienceLabel}
         </span>
+        {stats ? (
+          <p className="mt-2 text-[11px] font-medium text-muted-foreground">
+            {stats.bookingsCount} bron · {stats.favoritesCount} sevimli · {stats.reviewsCount} sharh
+          </p>
+        ) : null}
       </div>
 
       <div className="mt-7 px-3">
@@ -90,7 +79,10 @@ export function UserProfile() {
       </div>
 
       <div className="mt-6 space-y-3 px-4">
-        <ProfileWalletCard title={t("profile.wallet")} balance={formatPrice(walletSummary.balance)} />
+        <ProfileWalletCard
+          title={t("profile.wallet")}
+          balance={walletLoading ? "…" : formatPrice(balance)}
+        />
 
         <ProfileGoMenuGroup
           items={[
@@ -108,14 +100,8 @@ export function UserProfile() {
             {
               icon: Tag,
               title: t("profile.offers"),
-              subtitle: t("profile.promoHint"),
+              subtitle: "Tez orada",
               to: "/offers",
-            },
-            {
-              icon: CreditCard,
-              title: t("paymentMethods.title"),
-              subtitle: `${primaryPayment.label} ${primaryPayment.detail}`,
-              to: "/payment-methods",
             },
           ]}
         />
@@ -141,10 +127,7 @@ export function UserProfile() {
               {
                 icon: Sparkles,
                 title: t("profile.loyalty"),
-                subtitle: t("profile.loyaltyHint", {
-                  points: loyaltyMock.points,
-                  tier: loyaltyMock.tier,
-                }),
+                subtitle: "Tez orada",
                 to: "/loyalty",
                 chevronClassName: "text-background/80",
               },
@@ -154,9 +137,13 @@ export function UserProfile() {
 
         <ProfileGoMenuGroup
           items={[
-            { icon: Users, title: t("family.title"), to: "/family" },
             { icon: Shield, title: t("profile.privacy"), to: "/privacy" },
-            { icon: Bell, title: t("notifications.title"), to: "/notifications", badge: "2" },
+            {
+              icon: Bell,
+              title: t("notifications.title"),
+              to: "/notifications",
+              badge: unreadCount > 0 ? String(unreadCount > 9 ? "9+" : unreadCount) : undefined,
+            },
           ]}
         />
 

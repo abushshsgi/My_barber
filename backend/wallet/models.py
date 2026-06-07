@@ -1,0 +1,128 @@
+import uuid
+
+from django.conf import settings
+from django.db import models
+
+
+class Wallet(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="wallet",
+    )
+    wallet_number = models.CharField(max_length=19, unique=True, db_index=True)
+    balance = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.wallet_number} ({self.user_id})"
+
+
+class WalletCard(models.Model):
+    wallet = models.OneToOneField(
+        Wallet,
+        on_delete=models.CASCADE,
+        related_name="card",
+    )
+    cardholder_name = models.CharField(max_length=255)
+    card_display = models.CharField(max_length=32)
+    issued_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"{self.card_display} — {self.cardholder_name}"
+
+
+class LedgerEntry(models.Model):
+    class EntryType(models.TextChoices):
+        TOPUP = "topup", "Top-up"
+        GIFT_OUT = "gift_out", "Gift sent"
+        GIFT_IN = "gift_in", "Gift received"
+        BOOKING_PAY = "booking_pay", "Booking payment"
+        REFUND = "refund", "Refund"
+        ADJUSTMENT = "adjustment", "Adjustment"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    wallet = models.ForeignKey(
+        Wallet,
+        on_delete=models.PROTECT,
+        related_name="ledger_entries",
+    )
+    entry_type = models.CharField(max_length=32, choices=EntryType.choices, db_index=True)
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    balance_after = models.DecimalField(max_digits=14, decimal_places=2)
+    reference_type = models.CharField(max_length=64, blank=True, default="")
+    reference_id = models.CharField(max_length=64, blank=True, default="")
+    idempotency_key = models.CharField(max_length=128, unique=True, db_index=True)
+    prev_hash = models.CharField(max_length=64)
+    entry_hash = models.CharField(max_length=64, db_index=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        indexes = [
+            models.Index(fields=["wallet", "created_at"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.pk and LedgerEntry.objects.filter(pk=self.pk).exists():
+            raise PermissionError("Ledger entries are immutable.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise PermissionError("Ledger entries are immutable.")
+
+    def __str__(self) -> str:
+        return f"{self.entry_type} {self.amount} ({self.wallet_id})"
+
+
+class GiftTransfer(models.Model):
+    class Status(models.TextChoices):
+        COMPLETED = "completed", "Completed"
+        FAILED = "failed", "Failed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    sender_wallet = models.ForeignKey(
+        Wallet,
+        on_delete=models.PROTECT,
+        related_name="gifts_sent",
+    )
+    recipient_wallet = models.ForeignKey(
+        Wallet,
+        on_delete=models.PROTECT,
+        related_name="gifts_received",
+    )
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    message = models.TextField(blank=True, default="")
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.COMPLETED,
+        db_index=True,
+    )
+    sender_entry = models.ForeignKey(
+        LedgerEntry,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="gift_as_sender",
+    )
+    recipient_entry = models.ForeignKey(
+        LedgerEntry,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="gift_as_recipient",
+    )
+    idempotency_key = models.CharField(max_length=128, unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Gift {self.amount} {self.sender_wallet_id} → {self.recipient_wallet_id}"

@@ -18,3 +18,4 @@ export * from "./reviews";
 export * from "./favorites";
 export * from "./notifications";
 export * from "./chat";
+export * from "./wallet";

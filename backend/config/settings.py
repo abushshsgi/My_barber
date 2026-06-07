@@ -24,6 +24,9 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", get_random_secret_key())
 # HS256 uchun barqaror uzun kalit (qisqa DJANGO_SECRET_KEY ham RFC 7518 / PyJWT talabiga mos).
 JWT_HS256_SIGNING_KEY = hashlib.sha256(SECRET_KEY.encode("utf-8")).hexdigest()
 
+WALLET_HMAC_SECRET = os.environ.get("WALLET_HMAC_SECRET", SECRET_KEY)
+WALLET_DEBUG_TOPUP_MAX = int(os.environ.get("WALLET_DEBUG_TOPUP_MAX", "1000000"))
+
 DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() in ("1", "true", "yes")
 
 
@@ -81,6 +84,7 @@ INSTALLED_APPS = [
     "bookings",
     "notifications",
     "chat",
+    "wallet.apps.WalletConfig",
 ]
 
 MIDDLEWARE = [
@@ -198,6 +202,8 @@ REST_FRAMEWORK = {
         "phone_verify": "20/minute",
         "salon_search": "60/minute",
         "salon_join": "20/minute",
+        "wallet_gift": "30/minute",
+        "wallet_topup": "20/minute",
     },
 }
 

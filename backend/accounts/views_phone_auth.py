@@ -136,6 +136,9 @@ class PhoneVerifyView(APIView):
             return Response({"detail": "Akkaunt faol emas."}, status=403)
 
         User.objects.filter(pk=user.pk).update(last_login=timezone.now())
+        from wallet.services.wallet_service import WalletService
+
+        WalletService.ensure_wallet(user)
         access, refresh = _issue_tokens(user)
         return Response(
             {

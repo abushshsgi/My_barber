@@ -62,3 +62,11 @@ class ApiUserRateThrottle(UserRateThrottle):
     """Autentifikatsiyalangan foydalanuvchi — umumiy limit."""
 
     scope = "user"
+
+
+class WalletGiftThrottle(AuthIPThrottle):
+    scope = "wallet_gift"
+
+
+class WalletTopUpThrottle(AuthIPThrottle):
+    scope = "wallet_topup"

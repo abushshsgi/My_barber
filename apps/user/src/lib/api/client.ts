@@ -4,7 +4,8 @@ const ENV_API_BASE =
     ?.NEXT_PUBLIC_API_URL ||
   "";
 
-const FALLBACK_DEV_BASE = import.meta.env.DEV ? "http://localhost:8000" : "";
+/** Dev: bo'sh = joriy origin (/api/v1 server proxy orqali). */
+const FALLBACK_DEV_BASE = import.meta.env.DEV ? "" : "";
 
 if (import.meta.env.PROD && !ENV_API_BASE.trim()) {
   throw new Error(
@@ -133,23 +134,35 @@ export function handleAuthFailure() {
   redirectToAuthIfNeeded();
 }
 
+async function parseJsonBody(res: Response): Promise<unknown> {
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 async function refreshAccess(): Promise<string | null> {
   const refresh = getUserRefreshToken();
   if (!refresh) return null;
-  const res = await fetch(`${API_BASE}/api/v1/auth/token/refresh/`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh }),
-  });
-  if (!res.ok) {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/auth/token/refresh/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh }),
+    });
+    if (!res.ok) {
+      return null;
+    }
+    const data = (await parseJsonBody(res)) as { access?: string; refresh?: string } | null;
+    if (!data?.access || jwtPayloadType(data.access) !== "user") {
+      return null;
+    }
+    setUserTokens(data.access, data.refresh ?? refresh);
+    return data.access;
+  } catch {
     return null;
   }
-  const data = (await res.json()) as { access?: string; refresh?: string };
-  if (!data.access || jwtPayloadType(data.access) !== "user") {
-    return null;
-  }
-  setUserTokens(data.access, data.refresh ?? refresh);
-  return data.access;
 }
 
 function formatApiError(body: unknown, fallback: string): string {
@@ -161,14 +174,6 @@ function formatApiError(body: unknown, fallback: string): string {
     if (Array.isArray(first) && typeof first[0] === "string") return first[0];
   }
   return fallback;
-}
-
-async function parseJsonBody(res: Response): Promise<unknown> {
-  try {
-    return await res.json();
-  } catch {
-    return null;
-  }
 }
 
 export async function apiFetch(
@@ -211,6 +216,10 @@ export async function apiJson<T>(path: string, options: RequestInit = {}): Promi
       handleAuthFailure();
     }
     throw new Error(message);
+  }
+
+  if (body == null || typeof body !== "object") {
+    throw new Error("Server noto'g'ri javob qaytardi. Sahifani yangilab qayta urinib ko'ring.");
   }
 
   return body as T;

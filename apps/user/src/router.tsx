@@ -5,7 +5,9 @@ import { routeTree } from "./routeTree.gen";
 
 function isAuthQueryError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
-  return /token not valid|not authenticated|401|403|Unauthorized/i.test(error.message);
+  return /token not valid|given token not valid|not authenticated|authentication credentials were not provided/i.test(
+    error.message,
+  );
 }
 
 function onQueryError(error: unknown) {

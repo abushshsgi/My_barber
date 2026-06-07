@@ -2,18 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Gift, Plus, ChevronLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useQueryClient } from "@tanstack/react-query";
 import { PlasticCard } from "@/components/wallet/PlasticCard";
 import { ClientOnly } from "@/components/ClientOnly";
 import { WalletEmptyTransactions } from "@/components/wallet/WalletEmptyTransactions";
-import { WalletPaymentMethodsRow } from "@/components/wallet/WalletPaymentMethodsRow";
 import { WalletPullRefresh } from "@/components/wallet/WalletPullRefresh";
 import { WalletTransactionList } from "@/components/wallet/WalletTransactionList";
-import { loyaltyMock, walletSummary } from "@/lib/mock-data";
-import {
-  filterWalletTransactions,
-  WALLET_TRANSACTIONS,
-  type WalletTxTab,
-} from "@/lib/wallet-transactions";
+import { useWalletBalance, useWalletTransactions, walletMeQueryKey } from "@/hooks/use-wallet";
+import { filterWalletTransactions, type WalletTxTab } from "@/lib/wallet-transactions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/wallet")({
@@ -21,7 +17,7 @@ export const Route = createFileRoute("/wallet")({
   head: () => ({
     meta: [
       { title: "Hamyon — mysaloon.uz" },
-      { name: "description", content: "Cashback balansi, sovg'a kartalar va to'lov tarixi." },
+      { name: "description", content: "Hamyon balansi, sovg'a kartalar va to'lov tarixi." },
     ],
   }),
   component: WalletPage,
@@ -31,18 +27,19 @@ const RECENT_TX_LIMIT = 5;
 
 function WalletPage() {
   const { t } = useTranslation();
+  const qc = useQueryClient();
   const [tab, setTab] = useState<WalletTxTab>("all");
-  const [balance, setBalance] = useState(walletSummary.balance);
   const [refreshing, setRefreshing] = useState(false);
+  const { balance, walletNumber, card, isLoading } = useWalletBalance();
+  const { data: transactions = [], isLoading: txLoading } = useWalletTransactions(tab, 50);
 
-  const transactions = WALLET_TRANSACTIONS;
   const visible = useMemo(
     () => filterWalletTransactions(transactions, tab).slice(0, RECENT_TX_LIMIT),
     [transactions, tab],
   );
   const hasAnyTransactions = transactions.length > 0;
 
-  const cashbackTotal = useMemo(
+  const inflowTotal = useMemo(
     () => transactions.filter((tx) => tx.kind === "in").reduce((sum, tx) => sum + tx.amount, 0),
     [transactions],
   );
@@ -54,8 +51,8 @@ function WalletPage() {
   };
 
   const refreshBalance = async () => {
-    await new Promise((r) => setTimeout(r, 900));
-    setBalance(walletSummary.balance);
+    await qc.invalidateQueries({ queryKey: walletMeQueryKey });
+    await qc.invalidateQueries({ queryKey: ["wallet", "transactions"] });
   };
 
   return (
@@ -82,11 +79,17 @@ function WalletPage() {
                 <div className="aspect-[1.586/1] w-full max-w-[340px] animate-pulse rounded-[26px] bg-surface" />
               }
             >
-              <PlasticCard
-                balance={balance}
-                refreshing={refreshing}
-                monthTrend={t("walletPage.monthTrend")}
-              />
+              {isLoading ? (
+                <div className="aspect-[1.586/1] w-full max-w-[340px] animate-pulse rounded-[26px] bg-surface" />
+              ) : (
+                <PlasticCard
+                  balance={balance}
+                  cardholderName={card?.cardholder_name}
+                  walletNumber={walletNumber}
+                  refreshing={refreshing}
+                  monthTrend={t("walletPage.monthTrend")}
+                />
+              )}
             </ClientOnly>
           </div>
         </div>
@@ -106,24 +109,17 @@ function WalletPage() {
           </Link>
         </div>
 
-        <WalletPaymentMethodsRow />
-
         <div className="mx-5 mt-6 flex gap-3">
           <div className="flex-1 rounded-[24px] bg-surface px-4 py-3 text-center">
-            <p className="text-lg font-bold tabular-nums">{Math.round(cashbackTotal / 1000)}k</p>
+            <p className="text-lg font-bold tabular-nums">{Math.round(inflowTotal / 1000)}k</p>
             <p className="text-[9px] font-bold uppercase text-muted-foreground">
               {t("walletPage.stats.cashback")}
             </p>
           </div>
-          <Link
-            to="/loyalty"
-            className="flex-1 rounded-[24px] bg-surface px-4 py-3 text-center active:opacity-90"
-          >
-            <p className="text-lg font-bold tabular-nums">{loyaltyMock.points.toLocaleString()}</p>
-            <p className="text-[9px] font-bold uppercase text-muted-foreground">
-              {t("walletPage.stats.bonus")}
-            </p>
-          </Link>
+          <div className="flex-1 rounded-[24px] bg-surface px-4 py-3 text-center opacity-60">
+            <p className="text-[10px] font-bold uppercase text-muted-foreground">Tez orada</p>
+            <p className="mt-1 text-[9px] font-medium text-muted-foreground">Bonus ball</p>
+          </div>
         </div>
 
         <section className="mx-5 mt-8">
@@ -147,7 +143,9 @@ function WalletPage() {
             </div>
           )}
 
-          {!hasAnyTransactions ? (
+          {txLoading ? (
+            <div className="mt-4 h-24 animate-pulse rounded-2xl bg-surface" />
+          ) : !hasAnyTransactions ? (
             <WalletEmptyTransactions filteredEmpty={false} />
           ) : visible.length === 0 ? (
             <WalletEmptyTransactions filteredEmpty />

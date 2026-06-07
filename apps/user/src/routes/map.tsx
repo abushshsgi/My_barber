@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type L from "leaflet";
-import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import { motion, useMotionValue, animate, type PanInfo } from "framer-motion";
 import {
   Star,
   SlidersHorizontal,
@@ -31,7 +31,21 @@ export const Route = createFileRoute("/map")({
   component: MapView,
 });
 
-const SNAPS = { peek: 160, half: 380, full: 640 };
+const SNAPS = { peek: 86, half: 210, full: 460 };
+type SheetSnap = keyof typeof SNAPS;
+
+function nearestSnap(height: number): SheetSnap {
+  const entries = Object.entries(SNAPS) as [SheetSnap, number][];
+  return entries.reduce((best, [key, value]) =>
+    Math.abs(height - value) < Math.abs(height - SNAPS[best]) ? key : best,
+  entries[0][0]);
+}
+
+function formatDistanceKm(km: number): string {
+  if (!Number.isFinite(km) || km <= 0) return "—";
+  if (km < 1) return `${Math.round(km * 1000)} m`;
+  return `${km.toFixed(km < 10 ? 1 : 0)} km`;
+}
 
 function barberOffset(id: string, index: number) {
   const h = id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
@@ -101,11 +115,34 @@ function MapView() {
     return salon?.staff[0]?.id ?? null;
   }, [tab, active, filtered]);
 
-  const y = useMotionValue(0);
-  const sheetH = useTransform(y, (v) => `${Math.max(SNAPS.peek, SNAPS.half - v)}px`);
-  const snapTo = (target: "peek" | "half" | "full") => {
-    const delta = SNAPS.half - SNAPS[target];
-    animate(y, delta, { type: "spring", stiffness: 300, damping: 34 });
+  const sheetHeight = useMotionValue<number>(SNAPS.peek);
+  const [sheetSnap, setSheetSnap] = useState<SheetSnap>("peek");
+  const dragStartHeight = useRef(SNAPS.peek);
+
+  const snapTo = (target: SheetSnap) => {
+    setSheetSnap(target);
+    animate(sheetHeight, SNAPS[target], {
+      type: "spring",
+      stiffness: 420,
+      damping: 38,
+      mass: 0.85,
+    });
+  };
+
+  const onSheetPanStart = () => {
+    dragStartHeight.current = sheetHeight.get();
+  };
+
+  const onSheetPan = (_: unknown, info: PanInfo) => {
+    const next = dragStartHeight.current - info.offset.y;
+    sheetHeight.set(Math.min(SNAPS.full, Math.max(SNAPS.peek, next)));
+  };
+
+  const onSheetPanEnd = (_: unknown, info: PanInfo) => {
+    const current = sheetHeight.get();
+    if (info.velocity.y < -450) snapTo("full");
+    else if (info.velocity.y > 450) snapTo("peek");
+    else snapTo(nearestSnap(current));
   };
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -238,7 +275,7 @@ function MapView() {
 
       <div
         className="absolute right-4 z-20 flex flex-col gap-2"
-        style={{ bottom: "calc(env(safe-area-inset-bottom) + 220px)" }}
+        style={{ bottom: "calc(env(safe-area-inset-bottom) + 108px)" }}
       >
         <button
           type="button"
@@ -259,50 +296,40 @@ function MapView() {
       </div>
 
       <motion.div
-        drag="y"
-        dragConstraints={{ top: -(SNAPS.full - SNAPS.half), bottom: SNAPS.half - SNAPS.peek }}
-        dragElastic={0.05}
-        style={{ y, height: sheetH }}
-        onDragEnd={(_, info) => {
-          const v = y.get();
-          if (info.velocity.y < -500) snapTo("full");
-          else if (info.velocity.y > 500) snapTo("peek");
-          else if (v < -(SNAPS.full - SNAPS.half) / 2) snapTo("full");
-          else if (v > (SNAPS.half - SNAPS.peek) / 2) snapTo("peek");
-          else snapTo("half");
-        }}
-        className="absolute inset-x-0 bottom-0 z-30 flex flex-col rounded-t-3xl bg-background shadow-2xl"
+        style={{ height: sheetHeight }}
+        className="absolute inset-x-0 bottom-0 z-30 mx-auto flex max-w-[480px] flex-col overflow-hidden rounded-t-2xl border border-border/60 bg-background/98 shadow-[0_-8px_32px_rgba(0,0,0,0.12)] backdrop-blur-md lg:max-w-[720px]"
       >
-        <div
-          className="flex shrink-0 cursor-grab flex-col items-center pt-3 pb-2 active:cursor-grabbing"
-          onClick={() => snapTo(y.get() < 0 ? "half" : "full")}
+        <motion.div
+          className="flex shrink-0 touch-none cursor-grab flex-col items-center pt-1.5 pb-0.5 active:cursor-grabbing"
+          onPanStart={onSheetPanStart}
+          onPan={onSheetPan}
+          onPanEnd={onSheetPanEnd}
+          onClick={() =>
+            snapTo(sheetSnap === "peek" ? "half" : sheetSnap === "half" ? "full" : "peek")
+          }
         >
-          <div className="h-1.5 w-12 rounded-full bg-muted-foreground/30" />
-          <div className="mt-2 flex w-full items-center justify-between px-5">
-            <div>
-              <h3 className="text-[15px] font-bold" suppressHydrationWarning>
-                {filtered.length}{" "}
-                {mounted
-                  ? (t(tab === "salons" ? "map.salons" : "map.barbers") as string)
-                  : tab === "salons"
-                    ? "Salonlar"
-                    : "Ustalar"}
-              </h3>
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                {t("map.nearby")}
-              </p>
-            </div>
-            <div className="flex items-center gap-1.5">
+          <div className="h-0.5 w-8 rounded-full bg-muted-foreground/30" />
+          <div className="mt-1 flex w-full items-center justify-between gap-2 px-2.5">
+            <p className="min-w-0 truncate text-[10px] font-bold text-foreground" suppressHydrationWarning>
+              <span className="text-muted-foreground">{filtered.length}</span>{" "}
+              {mounted
+                ? (t(tab === "salons" ? "map.salons" : "map.barbers") as string)
+                : tab === "salons"
+                  ? "salon"
+                  : "usta"}{" "}
+              <span className="font-medium text-muted-foreground">· {t("map.nearby")}</span>
+            </p>
+            <div className="flex shrink-0 items-center gap-0.5">
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   cycle(-1);
                 }}
-                className="grid h-8 w-8 place-items-center rounded-full bg-surface active:scale-95"
+                className="grid h-6 w-6 place-items-center rounded-full bg-surface active:scale-95"
                 aria-label="Prev"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3 w-3" />
               </button>
               <button
                 type="button"
@@ -310,28 +337,30 @@ function MapView() {
                   e.stopPropagation();
                   cycle(1);
                 }}
-                className="grid h-8 w-8 place-items-center rounded-full bg-surface active:scale-95"
+                className="grid h-6 w-6 place-items-center rounded-full bg-surface active:scale-95"
                 aria-label="Next"
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-3 w-3" />
               </button>
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  snapTo("full");
+                  snapTo(sheetSnap === "full" ? "peek" : "full");
                 }}
-                className="grid h-8 w-8 place-items-center rounded-full bg-foreground text-background active:scale-95"
+                className="grid h-6 w-6 place-items-center rounded-full bg-foreground text-background active:scale-95"
               >
-                <ChevronUp className="h-4 w-4" />
+                <ChevronUp
+                  className={cn("h-3 w-3 transition-transform duration-200", sheetSnap === "full" && "rotate-180")}
+                />
               </button>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         <div
           ref={scrollRef}
-          className="no-scrollbar flex shrink-0 gap-3 overflow-x-auto px-4 pb-3 pt-1 snap-x snap-mandatory"
+          className="no-scrollbar flex shrink-0 gap-1.5 overflow-x-auto px-2.5 pb-1.5 snap-x snap-mandatory"
         >
           {filtered.map((s) => {
             const isActive = s.id === active;
@@ -342,25 +371,25 @@ function MapView() {
                 data-id={s.id}
                 onClick={() => focusSalon(s.id)}
                 className={cn(
-                  "snap-center flex w-[240px] shrink-0 items-center gap-3 rounded-2xl border p-3 text-left transition-all",
+                  "snap-center flex w-[112px] shrink-0 items-center gap-1.5 rounded-lg border px-1.5 py-1 text-left transition-colors",
                   isActive
-                    ? "border-foreground bg-surface scale-[1.02] shadow-md"
-                    : "border-border bg-background",
+                    ? "border-foreground bg-surface shadow-sm"
+                    : "border-border/70 bg-background/90",
                 )}
               >
                 <div
-                  className="h-12 w-12 shrink-0 rounded-xl"
+                  className="h-7 w-7 shrink-0 rounded-md"
                   style={{
                     background: `linear-gradient(135deg, oklch(0.85 0.04 ${(Number(s.id) * 80) % 360}), oklch(0.55 0.06 ${(Number(s.id) * 80 + 50) % 360}))`,
                   }}
                 />
                 <div className="min-w-0 flex-1">
-                  <h4 className="truncate text-sm font-bold">{s.name}</h4>
-                  <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-bold">
-                    <Star className="h-3 w-3 fill-foreground" strokeWidth={0} />
-                    {s.rating}
-                    <span className="text-muted-foreground">·</span>
-                    <span className="text-muted-foreground">{s.distanceKm} km</span>
+                  <h4 className="truncate text-[10px] font-bold leading-tight">{s.name}</h4>
+                  <div className="mt-px flex items-center gap-0.5 text-[9px] font-semibold text-muted-foreground">
+                    <Star className="h-2 w-2 fill-foreground text-foreground" strokeWidth={0} />
+                    {s.rating || "—"}
+                    <span>·</span>
+                    <span>{formatDistanceKm(s.distanceKm)}</span>
                   </div>
                 </div>
               </button>
@@ -368,54 +397,62 @@ function MapView() {
           })}
         </div>
 
-        <div
-          className="flex-1 overflow-y-auto border-t border-border px-4 pt-3"
-          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 100px)" }}
-        >
-          {filtered.map((s) => {
-            const isActive = s.id === active;
-            return (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => focusSalon(s.id)}
-                className={cn(
-                  "mb-2 flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-colors",
-                  isActive ? "border-foreground bg-surface" : "border-border bg-background active:bg-surface",
-                )}
-              >
-                <div
-                  className="h-14 w-14 shrink-0 rounded-xl"
-                  style={{
-                    background: `linear-gradient(135deg, oklch(0.85 0.04 ${(Number(s.id) * 80) % 360}), oklch(0.55 0.06 ${(Number(s.id) * 80 + 50) % 360}))`,
-                  }}
-                />
-                <div className="min-w-0 flex-1">
-                  <h4 className="truncate text-sm font-bold">{s.name}</h4>
-                  <p className="truncate text-[11px] font-medium text-muted-foreground">{s.address}</p>
-                  <div className="mt-1 flex items-center gap-2 text-[11px] font-bold">
-                    <span className="flex items-center gap-1">
-                      <Star className="h-3 w-3 fill-foreground" strokeWidth={0} />
-                      {s.rating}
-                    </span>
-                    <span className="text-muted-foreground">·</span>
-                    <span>{s.distanceKm} km</span>
-                    <span className="text-muted-foreground">·</span>
-                    <span>{shortPrice(s.priceFrom)}+</span>
-                  </div>
-                </div>
-                <Link
-                  to="/salon/$id"
-                  params={{ id: s.id }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-foreground text-background active:scale-95"
+        {sheetSnap !== "peek" ? (
+          <div
+            className="min-h-0 flex-1 overflow-y-auto border-t border-border/70 px-2.5 pt-1.5"
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 72px)" }}
+          >
+            {filtered.map((s) => {
+              const isActive = s.id === active;
+              return (
+                <button
+                  key={`list-${s.id}`}
+                  type="button"
+                  onClick={() => focusSalon(s.id)}
+                  className={cn(
+                    "mb-1 flex w-full items-center gap-2 rounded-lg border px-1.5 py-1.5 text-left transition-colors",
+                    isActive
+                      ? "border-foreground/80 bg-surface"
+                      : "border-transparent bg-transparent active:bg-surface/80",
+                  )}
                 >
-                  <Navigation className="h-3.5 w-3.5" />
-                </Link>
-              </button>
-            );
-          })}
-        </div>
+                  <div
+                    className="h-8 w-8 shrink-0 rounded-md"
+                    style={{
+                      background: `linear-gradient(135deg, oklch(0.85 0.04 ${(Number(s.id) * 80) % 360}), oklch(0.55 0.06 ${(Number(s.id) * 80 + 50) % 360}))`,
+                    }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <h4 className="truncate text-[11px] font-bold leading-tight">{s.name}</h4>
+                    <p className="truncate text-[9px] text-muted-foreground">{s.address || "—"}</p>
+                    <div className="mt-px flex items-center gap-1 text-[9px] font-semibold">
+                      <span className="flex items-center gap-0.5">
+                        <Star className="h-2 w-2 fill-foreground" strokeWidth={0} />
+                        {s.rating || "—"}
+                      </span>
+                      <span className="text-muted-foreground">·</span>
+                      <span>{formatDistanceKm(s.distanceKm)}</span>
+                      {s.priceFrom > 0 ? (
+                        <>
+                          <span className="text-muted-foreground">·</span>
+                          <span>{shortPrice(s.priceFrom)}+</span>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                  <Link
+                    to="/salon/$id"
+                    params={{ id: s.id }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-foreground text-background active:scale-95"
+                  >
+                    <Navigation className="h-2.5 w-2.5" />
+                  </Link>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
       </motion.div>
     </div>
   );

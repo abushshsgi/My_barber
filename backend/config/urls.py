@@ -96,6 +96,14 @@ from salons.views import (
 )
 from chat.views import ConversationListCreateView, ConversationMessagesView
 from notifications.push_views import BarberPushTokenView
+from wallet.views import (
+    AdminWalletTopUpView,
+    WalletGiftSendView,
+    WalletMeView,
+    WalletRecipientSearchView,
+    WalletTopUpView,
+    WalletTransactionsView,
+)
 
 
 def health(_request):
@@ -194,6 +202,12 @@ api_routes = [
         "chat/conversations/<uuid:conversation_id>/messages/",
         ConversationMessagesView.as_view(),
     ),
+    path("wallet/me/", WalletMeView.as_view()),
+    path("wallet/transactions/", WalletTransactionsView.as_view()),
+    path("wallet/top-up/", WalletTopUpView.as_view()),
+    path("wallet/gift/send/", WalletGiftSendView.as_view()),
+    path("wallet/recipients/search/", WalletRecipientSearchView.as_view()),
+    path("admin/wallet/top-up/", AdminWalletTopUpView.as_view()),
     path("", include(router.urls)),
 ]
 

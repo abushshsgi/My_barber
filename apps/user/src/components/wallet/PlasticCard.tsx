@@ -31,14 +31,19 @@ function EmvChip() {
 
 export function PlasticCard({
   balance,
+  cardholderName,
+  walletNumber,
   refreshing = false,
   monthTrend,
 }: {
   balance: number;
+  cardholderName?: string;
+  walletNumber?: string;
   refreshing?: boolean;
   monthTrend?: string;
 }) {
   const { name } = useDisplayUser();
+  const displayName = (cardholderName || name || "FOYDALANUVCHI").toUpperCase();
   const cardRef = useRef<HTMLElement>(null);
   const pressing = useRef(false);
   const rotateX = useMotionValue(0);
@@ -170,9 +175,14 @@ export function PlasticCard({
           </div>
 
           <div className="flex items-end justify-between gap-3">
-            <p className="min-w-0 truncate text-sm font-semibold uppercase tracking-wide">
-              {name}
-            </p>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold uppercase tracking-wide">{displayName}</p>
+              {walletNumber ? (
+                <p className="mt-1 truncate font-mono text-[9px] tracking-wider text-background/50">
+                  {walletNumber}
+                </p>
+              ) : null}
+            </div>
             <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.28em] text-background/55">
               mysaloon
             </span>

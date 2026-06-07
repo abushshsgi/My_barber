@@ -51,12 +51,18 @@ function Auth() {
   const verify = useMutation({
     mutationFn: () => verifyPhoneCode(phone, code.join("")),
     onSuccess: (data) => {
+      if (!data?.access || !data?.refresh || !data?.user) {
+        toast.error("Kirish javobi noto'g'ri. Qayta urinib ko'ring.");
+        return;
+      }
       setSession(data.access, data.refresh, data.user);
-      void queryClient.invalidateQueries();
       toast.success(data.is_new_user ? "Ro'yxatdan o'tdingiz!" : "Xush kelibsiz!");
-      router.navigate({
-        to: needsOnboarding(data.user) ? "/onboarding" : "/",
-      });
+      void router
+        .navigate({
+          to: needsOnboarding(data.user) ? "/onboarding" : "/",
+        })
+        .then(() => queryClient.invalidateQueries())
+        .catch(() => queryClient.invalidateQueries());
     },
     onError: (e: Error) => toast.error(e.message),
   });

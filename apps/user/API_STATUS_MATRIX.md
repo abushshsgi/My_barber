@@ -42,7 +42,15 @@ Canonical prefix (MyBarber backend): `/api/v1`
 - `GET /chat/conversations/{id}/messages/` — thread
 - `POST /chat/conversations/{id}/messages/` — xabar yuborish
 
-## WebSocket (reja)
+## Wallet (2026-06)
+
+- `GET /wallet/me/` — balans, hamyon raqami, virtual karta
+- `GET /wallet/transactions/` — hash-zanjir ledger
+- `POST /wallet/top-up/` — DEBUG test to'ldirish
+- `POST /wallet/gift/send/` — P2P sovg'a
+- `GET /wallet/recipients/search/?q=` — qabul qiluvchi qidiruv
+- `POST /admin/wallet/top-up/` — admin manual top-up
+
 
 - `WS /ws/chat/{conversationId}/?token=...`
 - `WS /ws/notifications/?token=...`
