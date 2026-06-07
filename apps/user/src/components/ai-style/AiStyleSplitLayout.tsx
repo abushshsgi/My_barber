@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Camera, Check, ChevronLeft, ImagePlus } from "lucide-react";
+import { Check, ChevronLeft } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
@@ -107,7 +107,7 @@ function HeroCarousel({ audience }: { audience: Audience }) {
   }, [slides.length]);
 
   return (
-    <div className="relative h-[58vh] min-h-[320px] w-full overflow-hidden">
+    <div className="relative h-full w-full overflow-hidden">
       <AnimatePresence mode="wait">
         <motion.img
           key={`${audience}-${slides[index]}`}
@@ -142,6 +142,28 @@ function HeroCarousel({ audience }: { audience: Audience }) {
   );
 }
 
+function SelfieFaceShape() {
+  return (
+    <div className="relative grid h-6 w-6 place-items-center rounded-lg border-2 border-white/70">
+      <div
+        className="h-3.5 w-2.5 border-2 border-white/80"
+        style={{ borderRadius: "50% 50% 42% 42%" }}
+      />
+      <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-white/90" />
+    </div>
+  );
+}
+
+function GalleryStackShape() {
+  return (
+    <div className="relative h-6 w-6">
+      <span className="absolute bottom-0 left-0 h-4 w-3 rounded-[4px] border border-foreground/25 bg-foreground/10 rotate-[-10deg]" />
+      <span className="absolute bottom-0 right-0 h-4 w-3 rounded-[4px] border border-foreground/30 bg-foreground/15 rotate-[8deg]" />
+      <span className="absolute left-1/2 top-0 h-4 w-3 -translate-x-1/2 rounded-[4px] border border-foreground/40 bg-foreground/20" />
+    </div>
+  );
+}
+
 function UploadActions({
   onOpenCamera,
   onOpenGallery,
@@ -154,23 +176,23 @@ function UploadActions({
   const { t } = useTranslation();
 
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 gap-2.5">
       <button
         type="button"
         disabled={validating}
         onClick={onOpenCamera}
-        className="inline-flex min-h-[60px] flex-col items-center justify-center gap-1.5 rounded-2xl bg-foreground px-3 py-4 text-[14px] font-bold text-white shadow-[0_8px_24px_-6px_rgba(0,0,0,0.35)] active:scale-[0.98] disabled:opacity-60"
+        className="inline-flex min-h-[50px] flex-col items-center justify-center gap-1 rounded-2xl bg-foreground px-2.5 py-3 text-[12px] font-bold leading-tight text-white shadow-[0_6px_20px_-6px_rgba(0,0,0,0.3)] active:scale-[0.98] disabled:opacity-60"
       >
-        <Camera className="h-5 w-5 shrink-0" />
+        <SelfieFaceShape />
         {t("aiStylePage.openCamera")}
       </button>
       <button
         type="button"
         disabled={validating}
         onClick={onOpenGallery}
-        className="inline-flex min-h-[60px] flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-foreground/20 bg-transparent px-3 py-4 text-[14px] font-bold text-foreground active:scale-[0.98] disabled:opacity-60"
+        className="inline-flex min-h-[50px] flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-foreground/20 bg-transparent px-2.5 py-3 text-[12px] font-bold leading-tight text-foreground active:scale-[0.98] disabled:opacity-60"
       >
-        <ImagePlus className="h-5 w-5 shrink-0 text-foreground/70" />
+        <GalleryStackShape />
         {t("aiStylePage.pickFromGallery")}
       </button>
     </div>
@@ -180,17 +202,21 @@ function UploadActions({
 export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const { t } = useTranslation();
   const busy = props.analyzing || props.validating;
+  const showResults = props.done && !!props.result;
 
   return (
-    <div className="relative flex min-h-full flex-col bg-white pb-[calc(68px+env(safe-area-inset-bottom))]">
-      <div className="relative shrink-0">
+    <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-white">
+      <div
+        className={cn(
+          "relative overflow-hidden",
+          !props.photo && "min-h-0 flex-1",
+          props.photo && !showResults && "h-[44dvh] shrink-0",
+          showResults && "h-[24dvh] shrink-0",
+        )}
+      >
         {props.photo ? (
           <>
-            <img
-              src={props.photo}
-              alt=""
-              className="h-[58vh] min-h-[320px] w-full object-cover object-top"
-            />
+            <img src={props.photo} alt="" className="h-full w-full object-cover object-top" />
             {busy ? <AiStyleScanLine /> : null}
           </>
         ) : (
@@ -207,8 +233,11 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
       <motion.div
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
-        transition={{ type: "spring", damping: 28, stiffness: 280, mass: 0.9 }}
-        className="relative z-10 -mt-10 flex flex-1 flex-col rounded-t-[28px] bg-white px-5 pb-6 pt-5 text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]"
+        transition={{ type: "spring", damping: 36, stiffness: 170, mass: 1.15 }}
+        className={cn(
+          "relative z-10 -mt-16 shrink-0 rounded-t-[28px] bg-white px-5 pb-5 pt-5 text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]",
+          showResults && "min-h-0 flex-1 overflow-y-auto pb-6",
+        )}
       >
         <StepRail step={props.step} />
 
@@ -216,7 +245,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.35 }}
+            transition={{ delay: 0.28, duration: 0.5, ease: "easeOut" }}
             className="mt-5 space-y-3"
           >
             <UploadActions

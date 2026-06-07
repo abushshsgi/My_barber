@@ -37,6 +37,14 @@ export function AiStyleFlow({ flow, audience }: Props) {
   const [saved, setSaved] = useState<string[]>([]);
 
   useEffect(() => {
+    const prev = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.documentElement.style.overflow = prev;
+    };
+  }, []);
+
+  useEffect(() => {
     if (error) toast.error(error);
   }, [error]);
 

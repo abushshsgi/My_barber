@@ -14,7 +14,7 @@ const tabs = [
   { to: "/profile", icon: User, key: "profile" },
 ] as const;
 
-const HIDE_ON = ["/auth"];
+const HIDE_ON = ["/auth", "/ai-style"];
 
 interface Props {
   unreadCount?: number;

@@ -3,14 +3,16 @@ import { UserBottomNav } from "./UserBottomNav";
 import { DesktopSidebar } from "./DesktopSidebar";
 import { cn } from "@/lib/utils";
 
-const FULL_BLEED_EXACT = ["/auth"];
+const FULL_BLEED_EXACT = ["/auth", "/ai-style"];
 const FULL_BLEED_PREFIX = ["/map", "/stories/"];
 
 export function UserLayout({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isAuth = FULL_BLEED_EXACT.includes(pathname);
+  const isAuth = pathname === "/auth";
+  const isAiStyle = pathname === "/ai-style";
   const isFullBleed =
     isAuth ||
+    isAiStyle ||
     FULL_BLEED_PREFIX.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 
   if (isAuth) {
@@ -27,6 +29,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
             isFullBleed
               ? "pb-0 lg:pb-12"
               : "pb-[calc(68px+env(safe-area-inset-bottom)+16px)] lg:pb-12",
+            isAiStyle && "h-[100dvh] overflow-hidden",
           )}
         >
           {children}
