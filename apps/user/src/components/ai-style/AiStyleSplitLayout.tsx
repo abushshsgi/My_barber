@@ -209,7 +209,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
       <div
         className={cn(
           "relative overflow-hidden",
-          !props.photo && "h-[56dvh] shrink-0",
+          !props.photo && "min-h-0 flex-1",
           props.photo && !showResults && "h-[44dvh] shrink-0",
           showResults && "h-[24dvh] shrink-0",
         )}
@@ -235,8 +235,8 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
         animate={{ y: 0 }}
         transition={{ type: "spring", damping: 36, stiffness: 170, mass: 1.15 }}
         className={cn(
-          "relative z-10 -mt-16 rounded-t-[28px] bg-white px-5 pb-6 pt-5 text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]",
-          !props.photo && !showResults && "min-h-[250px] max-h-[34dvh] flex-1",
+          "relative z-10 -mt-16 rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]",
+          !props.photo && !showResults && "h-[220px] shrink-0",
           (props.photo || showResults) && "shrink-0",
           showResults && "min-h-0 overflow-y-auto pb-6",
         )}
