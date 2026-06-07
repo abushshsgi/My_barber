@@ -209,7 +209,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
       <div
         className={cn(
           "relative overflow-hidden",
-          !props.photo && "min-h-0 flex-1",
+          !props.photo && "h-[52dvh] shrink-0",
           props.photo && !showResults && "h-[44dvh] shrink-0",
           showResults && "h-[24dvh] shrink-0",
         )}
@@ -235,8 +235,10 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
         animate={{ y: 0 }}
         transition={{ type: "spring", damping: 36, stiffness: 170, mass: 1.15 }}
         className={cn(
-          "relative z-10 -mt-16 shrink-0 rounded-t-[28px] bg-white px-5 pb-5 pt-5 text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]",
-          showResults && "min-h-0 flex-1 overflow-y-auto pb-6",
+          "relative z-10 -mt-16 rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]",
+          !props.photo && !showResults && "min-h-[300px] flex-1",
+          (props.photo || showResults) && "shrink-0",
+          showResults && "min-h-0 overflow-y-auto pb-6",
         )}
       >
         <StepRail step={props.step} />
