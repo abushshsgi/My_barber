@@ -19,7 +19,7 @@ ALLOWED_MIME = frozenset({"image/jpeg", "image/png", "image/webp"})
 FACE_SHAPES = frozenset({"oval", "round", "square"})
 HAIR_TYPES = frozenset({"short", "medium", "long"})
 CATEGORIES = frozenset({"barber", "beauty", "nails", "spa"})
-GEMINI_MODEL = "gemini-2.0-flash"
+MODEL_FALLBACKS = ("gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash")
 
 
 class AiStyleError(Exception):
@@ -27,6 +27,36 @@ class AiStyleError(Exception):
         super().__init__(message)
         self.message = message
         self.status = status
+
+
+def _gemini_models() -> tuple[str, ...]:
+    preferred = (getattr(settings, "GEMINI_MODEL", None) or "").strip()
+    ordered: list[str] = []
+    for model in (preferred, *MODEL_FALLBACKS):
+        if model and model not in ordered:
+            ordered.append(model)
+    return tuple(ordered)
+
+
+def _read_http_error_body(exc: urllib.error.HTTPError) -> str:
+    try:
+        return exc.read().decode("utf-8", errors="replace")
+    except Exception:
+        return ""
+
+
+def _map_gemini_http_error(status: int, body: str) -> str:
+    lowered = body.lower()
+    if status in (401, 403) or "api key" in lowered or "permission" in lowered:
+        return (
+            "GEMINI API kaliti noto'g'ri yoki ruxsat yo'q. "
+            "aistudio.google.com/apikey dan yangi kalit oling (service account bog'lamang)."
+        )
+    if status == 429 or "quota" in lowered or "rate" in lowered:
+        return "AI limiti tugadi. Biroz kutib qayta urinib ko'ring."
+    if status == 404:
+        return "AI model topilmadi. Backend GEMINI_MODEL sozlamasini tekshiring."
+    return "AI tahlil vaqtincha ishlamayapti. Keyinroq urinib ko'ring."
 
 
 def parse_data_url(data_url: str) -> tuple[str, bytes]:
@@ -136,6 +166,24 @@ def _normalize_analysis(data: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _post_gemini(model: str, api_key: str, body: dict[str, Any]) -> dict[str, Any]:
+    url = (
+        "https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{model}:generateContent"
+    )
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(body).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "x-goog-api-key": api_key,
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=45) as res:
+        return json.loads(res.read().decode("utf-8"))
+
+
 def call_gemini_style_analysis(mime: str, image_bytes: bytes, audience: str) -> dict[str, Any]:
     api_key = (getattr(settings, "GEMINI_API_KEY", None) or "").strip()
     if not api_key:
@@ -156,38 +204,45 @@ def call_gemini_style_analysis(mime: str, image_bytes: bytes, audience: str) -> 
             "responseMimeType": "application/json",
         },
     }
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{GEMINI_MODEL}:generateContent?key={api_key}"
-    )
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(body).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=45) as res:
-            payload = json.loads(res.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        logger.warning("Gemini HTTP error: %s", exc.code)
-        raise AiStyleError("AI tahlil vaqtincha ishlamayapti. Keyinroq urinib ko'ring.", 502) from exc
-    except urllib.error.URLError as exc:
-        logger.warning("Gemini network error: %s", exc)
-        raise AiStyleError("AI serveriga ulanib bo'lmadi.", 502) from exc
-    except TimeoutError as exc:
-        raise AiStyleError("AI tahlil juda uzoq davom etdi. Qayta urinib ko'ring.", 504) from exc
 
-    candidates = payload.get("candidates") or []
-    if not candidates:
-        raise AiStyleError("AI javob bermadi. Boshqa rasm bilan urinib ko'ring.", 502)
+    last_error: AiStyleError | None = None
+    for model in _gemini_models():
+        try:
+            payload = _post_gemini(model, api_key, body)
+        except urllib.error.HTTPError as exc:
+            err_body = _read_http_error_body(exc)
+            logger.warning("Gemini HTTP %s (%s): %s", exc.code, model, err_body[:800])
+            message = _map_gemini_http_error(exc.code, err_body)
+            last_error = AiStyleError(message, 502 if exc.code >= 500 else 400)
+            if exc.code == 404:
+                continue
+            raise last_error from exc
+        except urllib.error.URLError as exc:
+            logger.warning("Gemini network error (%s): %s", model, exc)
+            raise AiStyleError("AI serveriga ulanib bo'lmadi.", 502) from exc
+        except TimeoutError as exc:
+            raise AiStyleError("AI tahlil juda uzoq davom etdi. Qayta urinib ko'ring.", 504) from exc
 
-    parts = (candidates[0].get("content") or {}).get("parts") or []
-    text_parts = [p.get("text", "") for p in parts if isinstance(p, dict) and p.get("text")]
-    if not text_parts:
-        raise AiStyleError("AI javob bermadi.", 502)
+        candidates = payload.get("candidates") or []
+        if not candidates:
+            block = (payload.get("promptFeedback") or {}).get("blockReason")
+            if block:
+                raise AiStyleError("Rasm tahlil qilinmadi. Boshqa selfie yuklang.", 400)
+            last_error = AiStyleError("AI javob bermadi. Boshqa rasm bilan urinib ko'ring.", 502)
+            continue
 
-    return _normalize_analysis(_extract_json("".join(text_parts)))
+        parts = (candidates[0].get("content") or {}).get("parts") or []
+        text_parts = [p.get("text", "") for p in parts if isinstance(p, dict) and p.get("text")]
+        if not text_parts:
+            last_error = AiStyleError("AI javob bermadi.", 502)
+            continue
+
+        logger.info("Gemini style analysis ok via model=%s", model)
+        return _normalize_analysis(_extract_json("".join(text_parts)))
+
+    if last_error:
+        raise last_error
+    raise AiStyleError("AI tahlil vaqtincha ishlamayapti. Keyinroq urinib ko'ring.", 502)
 
 
 def analyze_style_from_data_url(data_url: str, audience: str) -> dict[str, Any]:
