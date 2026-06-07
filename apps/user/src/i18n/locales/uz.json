@@ -360,6 +360,16 @@
     "introDesc": "Selfie yuklang — AI 3 ta eng mos turmag va kesimni tavsiya qiladi.",
     "uploadTitle": "Selfie yuklang",
     "uploadHint": "Yuz aniq ko'rinsin · yaxshi yorug'lik",
+    "uploadFeatures": {
+      "face": "Yuz skaneri",
+      "styles": "3 ta uslub",
+      "book": "Salon bron",
+      "gallery": "Tayyor rasm"
+    },
+    "photoReadyTitle": "Rasm tayyor",
+    "photoReadyDesc": "AI tavsiyasini olish uchun tugmani bosing",
+    "hairTypeLabel": "Soch turi",
+    "resultsHint": "Sizga eng mos 3 ta uslub",
     "pickPhoto": "Faylni tanlash",
     "pickFile": "Faylni tanlash",
     "pickFromGallery": "Galereyadan tanlash",

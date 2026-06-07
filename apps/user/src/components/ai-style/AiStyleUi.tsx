@@ -1,5 +1,14 @@
 import { motion } from "framer-motion";
-import { Camera, ImagePlus, Loader2, RefreshCw } from "lucide-react";
+import {
+  Camera,
+  ImagePlus,
+  Loader2,
+  RefreshCw,
+  ScanFace,
+  Scissors,
+  Sparkles,
+  Store,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
@@ -26,44 +35,95 @@ type UploadProps = {
   validating?: boolean;
 };
 
+const FEATURES = [
+  { key: "face", icon: ScanFace },
+  { key: "styles", icon: Scissors },
+  { key: "book", icon: Store },
+] as const;
+
 export function AiStyleUploadEmpty({ onOpenGallery, onOpenCamera, validating }: UploadProps) {
   const { t } = useTranslation();
+
   return (
-    <div className="flex w-full flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-border bg-surface px-4 py-8">
-      <div className="grid h-16 w-16 place-items-center rounded-full bg-foreground text-background">
-        {validating ? (
-          <Loader2 className="h-7 w-7 animate-spin" />
-        ) : (
-          <Camera className="h-7 w-7" />
-        )}
+    <div className="space-y-4">
+      <div className="relative overflow-hidden rounded-[26px] border border-border bg-surface/50 p-5">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(0,0,0,0.04),transparent_55%)]" />
+        <div className="relative mx-auto flex h-36 w-36 items-center justify-center">
+          <div className="absolute inset-0 rounded-[32px] border-2 border-dashed border-foreground/15" />
+          <div className="absolute inset-3 rounded-[26px] border border-foreground/10" />
+          <div className="relative grid h-16 w-16 place-items-center rounded-2xl bg-foreground text-background shadow-lg">
+            {validating ? (
+              <Loader2 className="h-7 w-7 animate-spin" />
+            ) : (
+              <ScanFace className="h-7 w-7" />
+            )}
+          </div>
+        </div>
+        <div className="relative mt-5 text-center">
+          <p className="text-base font-bold">{t("aiStylePage.uploadTitle")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("aiStylePage.uploadHint")}</p>
+        </div>
       </div>
-      <div className="text-center">
-        <p className="text-sm font-bold">{t("aiStylePage.uploadTitle")}</p>
-        <p className="mt-1 text-[11px] text-muted-foreground">{t("aiStylePage.uploadHint")}</p>
-      </div>
-      <div className="flex w-full flex-col gap-2 sm:flex-row">
+
+      <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
           disabled={validating}
           onClick={onOpenCamera}
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-foreground px-4 py-3 text-sm font-bold text-background disabled:opacity-60"
+          className="group flex min-h-[132px] flex-col justify-between rounded-[22px] bg-foreground p-4 text-left text-background active:scale-[0.98] disabled:opacity-60"
         >
-          <Camera className="h-4 w-4" />
-          {t("aiStylePage.openCamera")}
+          <span className="grid h-11 w-11 place-items-center rounded-xl bg-background/15">
+            <Camera className="h-5 w-5" />
+          </span>
+          <span>
+            <span className="block text-sm font-bold">{t("aiStylePage.openCamera")}</span>
+            <span className="mt-1 block text-[11px] text-background/65">
+              {t("aiStylePage.uploadFeatures.face")}
+            </span>
+          </span>
         </button>
+
         <button
           type="button"
           disabled={validating}
           onClick={onOpenGallery}
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-border bg-background px-4 py-3 text-sm font-bold disabled:opacity-60"
+          className="group flex min-h-[132px] flex-col justify-between rounded-[22px] border-2 border-border bg-background p-4 text-left active:scale-[0.98] disabled:opacity-60"
         >
-          <ImagePlus className="h-4 w-4" />
-          {t("aiStylePage.pickFromGallery")}
+          <span className="grid h-11 w-11 place-items-center rounded-xl bg-surface">
+            <ImagePlus className="h-5 w-5" />
+          </span>
+          <span>
+            <span className="block text-sm font-bold">{t("aiStylePage.pickFromGallery")}</span>
+            <span className="mt-1 block text-[11px] text-muted-foreground">
+              {t("aiStylePage.uploadFeatures.gallery")}
+            </span>
+          </span>
         </button>
       </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        {FEATURES.map(({ key, icon: Icon }) => (
+          <div
+            key={key}
+            className="rounded-2xl border border-border bg-surface/40 px-2 py-3 text-center"
+          >
+            <Icon className="mx-auto h-4 w-4 text-foreground/70" />
+            <p className="mt-2 text-[10px] font-bold leading-tight">
+              {t(`aiStylePage.uploadFeatures.${key}`)}
+            </p>
+          </div>
+        ))}
+      </div>
+
       {validating ? (
-        <p className="text-[11px] font-medium text-muted-foreground">{t("aiStylePage.faceChecking")}</p>
-      ) : null}
+        <p className="text-center text-xs font-medium text-muted-foreground">
+          {t("aiStylePage.faceChecking")}
+        </p>
+      ) : (
+        <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+          {t("aiStylePage.privacyNote")}
+        </p>
+      )}
     </div>
   );
 }
@@ -73,96 +133,76 @@ type PhotoProps = {
   analyzing: boolean;
   validating?: boolean;
   onReset: () => void;
-  className?: string;
-  imageClassName?: string;
-  fullBleed?: boolean;
 };
 
-export function AiStylePhotoPreview({
-  photo,
-  analyzing,
-  validating,
-  onReset,
-  className,
-  imageClassName,
-  fullBleed,
-}: PhotoProps) {
+export function AiStylePhotoPreview({ photo, analyzing, validating, onReset }: PhotoProps) {
   const { t } = useTranslation();
+  const busy = analyzing || validating;
+
   return (
-    <div
-      className={cn(
-        "relative overflow-hidden",
-        fullBleed ? "rounded-none" : "rounded-3xl",
-        className,
-      )}
-    >
-      <img
-        src={photo}
-        alt={t("aiStylePage.selfieAlt")}
-        className={cn("w-full object-cover", imageClassName ?? "aspect-[4/5]")}
-      />
-      {analyzing || validating ? <AiStyleScanLine fullBleed={fullBleed} /> : null}
-      <button
-        type="button"
-        onClick={onReset}
-        className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-foreground/75 text-background backdrop-blur-md"
-        aria-label={t("aiStylePage.resetPhoto")}
-      >
-        <RefreshCw className="h-4 w-4" />
-      </button>
+    <div className="space-y-4">
+      <div className="relative overflow-hidden rounded-[26px] border border-border shadow-[0_18px_40px_-24px_rgba(0,0,0,0.45)]">
+        <img
+          src={photo}
+          alt={t("aiStylePage.selfieAlt")}
+          className="aspect-[4/5] w-full object-cover"
+        />
+        {busy ? <AiStyleScanLine /> : null}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/55 to-transparent" />
+        <button
+          type="button"
+          onClick={onReset}
+          className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-background/90 text-foreground shadow-md backdrop-blur-md active:scale-95"
+          aria-label={t("aiStylePage.resetPhoto")}
+        >
+          <RefreshCw className="h-4 w-4" />
+        </button>
+        <div className="absolute bottom-3 left-3 right-3">
+          <p className="text-sm font-bold text-white">{t("aiStylePage.photoReadyTitle")}</p>
+          <p className="mt-0.5 text-[11px] text-white/75">{t("aiStylePage.photoReadyDesc")}</p>
+        </div>
+      </div>
+
+      {busy ? (
+        <div className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface/50 px-4 py-3">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <p className="text-xs font-bold">
+            {validating ? t("aiStylePage.faceChecking") : t("aiStylePage.analyzing")}
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-export function AiStyleScanLine({ fullBleed }: { fullBleed?: boolean }) {
+export function AiStyleScanLine() {
   return (
     <motion.div
-      className={cn(
-        "pointer-events-none absolute inset-x-0 h-0.5 bg-background/90 shadow-[0_0_12px_oklch(1_0_0/0.5)]",
-        fullBleed ? "top-0" : "",
-      )}
-      animate={{ y: fullBleed ? [0, 520, 0] : [0, 400, 0] }}
-      transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+      className="pointer-events-none absolute inset-x-4 h-0.5 rounded-full bg-white/90 shadow-[0_0_16px_rgba(255,255,255,0.55)]"
+      animate={{ y: [24, 360, 24] }}
+      transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
     />
   );
 }
 
-type StepsProps = {
-  step: 1 | 2 | 3;
+type AnalyzeCtaProps = {
+  analyzing: boolean;
+  validating?: boolean;
+  onAnalyze: () => void;
 };
 
-export function AiStyleSteps({ step }: StepsProps) {
+export function AiStyleAnalyzeCta({ analyzing, validating, onAnalyze }: AnalyzeCtaProps) {
   const { t } = useTranslation();
-  const steps = [
-    t("aiStylePage.steps.upload"),
-    t("aiStylePage.steps.analyze"),
-    t("aiStylePage.steps.results"),
-  ];
 
   return (
-    <div className="mb-4 flex gap-2">
-      {steps.map((label, i) => {
-        const n = (i + 1) as 1 | 2 | 3;
-        const active = step >= n;
-        return (
-          <div key={label} className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <div
-              className={cn(
-                "h-1 rounded-full transition-colors",
-                active ? "bg-foreground" : "bg-border",
-              )}
-            />
-            <p
-              className={cn(
-                "truncate text-[9px] font-bold uppercase tracking-wide",
-                active ? "text-foreground" : "text-muted-foreground",
-              )}
-            >
-              {label}
-            </p>
-          </div>
-        );
-      })}
-    </div>
+    <button
+      type="button"
+      onClick={onAnalyze}
+      disabled={analyzing || validating}
+      className="flex w-full items-center justify-center gap-2 rounded-[20px] bg-foreground px-5 py-4 text-sm font-bold text-background shadow-[0_12px_28px_-14px_rgba(0,0,0,0.55)] active:scale-[0.98] disabled:opacity-60"
+    >
+      {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+      {analyzing ? t("aiStylePage.analyzing") : t("aiStylePage.analyzeCta")}
+    </button>
   );
 }

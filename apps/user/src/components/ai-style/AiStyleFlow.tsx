@@ -1,20 +1,20 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Bookmark, CalendarPlus, Sparkles } from "lucide-react";
+import { Bookmark, CalendarPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AiStyleCamera } from "@/components/ai-style/AiStyleCamera";
+import { AiStylePageLayout } from "@/components/ai-style/AiStylePageLayout";
 import {
+  AiStyleAnalyzeCta,
   AiStylePhotoInput,
   AiStylePhotoPreview,
-  AiStyleSteps,
   AiStyleUploadEmpty,
 } from "@/components/ai-style/AiStyleUi";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { styleCoverGradient } from "@/components/ai-style/ai-style-shared";
 import type { useAiStyleFlow } from "@/components/ai-style/useAiStyleFlow";
-import { ProfileSubpageCard } from "@/components/profile/ProfileSubpageLayout";
 import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -27,26 +27,118 @@ type Props = {
 
 function ResultsSummary({ result }: { result: AiAnalysisResult }) {
   const { t } = useTranslation();
+
   return (
-    <ProfileSubpageCard className="border-foreground bg-foreground text-background">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-background/55">
-            {t("aiStylePage.analysisTitle")}
+    <div className="overflow-hidden rounded-[24px] bg-foreground p-4 text-background">
+      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-background/55">
+        {t("aiStylePage.analysisTitle")}
+      </p>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <div className="rounded-2xl bg-background/10 px-3 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-background/55">
+            {t("aiStylePage.faceShape")}
           </p>
-          <p className="mt-2 text-sm font-bold">
-            {t(`aiStylePage.faceShapes.${result.faceShapeKey}`)} ·{" "}
+          <p className="mt-1 text-sm font-bold">
+            {t(`aiStylePage.faceShapes.${result.faceShapeKey}`)}
+          </p>
+        </div>
+        <div className="rounded-2xl bg-background/10 px-3 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-background/55">
+            {t("aiStylePage.hairTypeLabel")}
+          </p>
+          <p className="mt-1 text-sm font-bold">
             {t(`aiStylePage.hairTypes.${result.hairTypeKey}`)}
           </p>
-          {result.summaryUz ? (
-            <p className="mt-2 text-xs leading-relaxed text-background/75">{result.summaryUz}</p>
-          ) : null}
         </div>
-        <span className="rounded-full bg-background px-2 py-0.5 text-[9px] font-bold uppercase text-foreground">
-          {t("aiStylePage.aiBadge")}
-        </span>
       </div>
-    </ProfileSubpageCard>
+      {result.summaryUz ? (
+        <p className="mt-3 text-xs leading-relaxed text-background/75">{result.summaryUz}</p>
+      ) : (
+        <p className="mt-3 text-xs leading-relaxed text-background/75">
+          {t("aiStylePage.resultDesc")}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function SuggestionCard({
+  suggestion,
+  index,
+  saved,
+  onToggleSave,
+}: {
+  suggestion: AiAnalysisResult["suggestions"][number];
+  index: number;
+  saved: boolean;
+  onToggleSave: (id: string) => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.07 }}
+      className="overflow-hidden rounded-[22px] border border-border bg-surface/35"
+    >
+      <div className="flex gap-3 p-3">
+        <div
+          className="h-24 w-20 shrink-0 rounded-2xl"
+          style={{ background: styleCoverGradient(suggestion.seed) }}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                #{index + 1}
+              </p>
+              <h3 className="mt-0.5 text-sm font-bold leading-tight">{suggestion.title}</h3>
+            </div>
+            <span className="shrink-0 rounded-full bg-foreground px-2.5 py-1 text-[10px] font-bold text-background">
+              {t("aiStylePage.matchPct", { value: suggestion.match })}
+            </span>
+          </div>
+          <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
+            {suggestion.reason ?? (suggestion.reasonKey ? t(suggestion.reasonKey) : "")}
+          </p>
+          <p className="mt-2 text-[10px] font-bold text-muted-foreground">
+            {suggestion.barberName} · {suggestion.salonName}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 border-t border-border px-3 py-3">
+        <button
+          type="button"
+          onClick={() => onToggleSave(suggestion.id)}
+          className={cn(
+            "inline-flex items-center justify-center gap-1.5 rounded-xl border py-2.5 text-[11px] font-bold",
+            saved
+              ? "border-foreground bg-foreground text-background"
+              : "border-border bg-background",
+          )}
+        >
+          <Bookmark className="h-3.5 w-3.5" />
+          {t("aiStylePage.save")}
+        </button>
+        {suggestion.salonId ? (
+          <Link
+            to="/booking/$salonId"
+            params={{ salonId: suggestion.salonId }}
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-foreground py-2.5 text-[11px] font-bold text-background"
+          >
+            <CalendarPlus className="h-3.5 w-3.5" />
+            {t("aiStylePage.bookShort")}
+          </Link>
+        ) : (
+          <span className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-muted py-2.5 text-[11px] font-bold text-muted-foreground">
+            <CalendarPlus className="h-3.5 w-3.5" />
+            {t("aiStylePage.bookShort")}
+          </span>
+        )}
+      </div>
+    </motion.article>
   );
 }
 
@@ -89,10 +181,8 @@ export function AiStyleFlow({ flow, audience }: Props) {
   };
 
   return (
-    <div>
+    <AiStylePageLayout step={step}>
       <AiStylePhotoInput fileRef={fileRef} onFile={onFile} />
-      <AiStyleSteps step={step} />
-      <p className="mb-3 text-[11px] text-muted-foreground">{t("aiStylePage.privacyNote")}</p>
 
       {!photo ? (
         <AiStyleUploadEmpty
@@ -101,103 +191,59 @@ export function AiStyleFlow({ flow, audience }: Props) {
           validating={validating}
         />
       ) : (
-        <AiStylePhotoPreview
-          photo={photo}
-          analyzing={analyzing}
-          validating={validating}
-          onReset={reset}
-        />
+        <div className="space-y-4">
+          <AiStylePhotoPreview
+            photo={photo}
+            analyzing={analyzing}
+            validating={validating}
+            onReset={reset}
+          />
+
+          {!done ? (
+            <AiStyleAnalyzeCta
+              analyzing={analyzing}
+              validating={validating}
+              onAnalyze={() => void analyze(audience)}
+            />
+          ) : null}
+        </div>
       )}
 
-      <AiStyleCamera
-        open={cameraOpen}
-        onClose={closeCamera}
-        onCapture={onCameraCapture}
-      />
-
-      {photo && !done ? (
-        <button
-          type="button"
-          onClick={() => void analyze(audience)}
-          disabled={analyzing || validating}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-foreground px-5 py-4 text-sm font-bold text-background active:scale-[0.98] disabled:opacity-60"
-        >
-          <Sparkles className="h-4 w-4" />
-          {analyzing ? t("aiStylePage.analyzing") : t("aiStylePage.analyzeCta")}
-        </button>
-      ) : null}
+      <AiStyleCamera open={cameraOpen} onClose={closeCamera} onCapture={onCameraCapture} />
 
       {done && result ? (
         <div className="mt-6 space-y-4">
           <ResultsSummary result={result} />
-          <h2 className="text-sm font-bold">{t("aiStylePage.resultsTitle")}</h2>
 
-          <div className="no-scrollbar -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2">
-            {result.suggestions.map((s, i) => {
-              const isSaved = saved.includes(s.id);
-              return (
-                <motion.article
-                  key={s.id}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.06 }}
-                  className="w-[78vw] max-w-[280px] shrink-0 snap-center overflow-hidden rounded-[22px] border border-border bg-surface/30"
-                >
-                  <div className="h-28" style={{ background: styleCoverGradient(s.seed) }} />
-                  <div className="p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-sm font-bold">{s.title}</h3>
-                      <span className="shrink-0 rounded-full bg-background px-2 py-0.5 text-[10px] font-bold">
-                        {t("aiStylePage.matchPct", { value: s.match })}
-                      </span>
-                    </div>
-                    <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">
-                      {s.reason ?? (s.reasonKey ? t(s.reasonKey) : "")}
-                    </p>
-                    <p className="mt-2 text-[10px] font-bold text-muted-foreground">
-                      {s.barberName} · {s.salonName}
-                    </p>
-                    <div className="mt-3 flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => toggleSave(s.id)}
-                        className={cn(
-                          "inline-flex flex-1 items-center justify-center gap-1 rounded-xl border py-2 text-[10px] font-bold",
-                          isSaved
-                            ? "border-foreground bg-foreground text-background"
-                            : "border-border bg-background",
-                        )}
-                      >
-                        <Bookmark className="h-3 w-3" />
-                        {t("aiStylePage.save")}
-                      </button>
-                      {s.salonId ? (
-                        <Link
-                          to="/booking/$salonId"
-                          params={{ salonId: s.salonId }}
-                          className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-foreground py-2 text-[10px] font-bold text-background"
-                        >
-                          <CalendarPlus className="h-3 w-3" />
-                          {t("aiStylePage.bookShort")}
-                        </Link>
-                      ) : (
-                        <span className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-muted py-2 text-[10px] font-bold text-muted-foreground">
-                          <CalendarPlus className="h-3 w-3" />
-                          {t("aiStylePage.bookShort")}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </motion.article>
-              );
-            })}
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <h2 className="text-base font-bold">{t("aiStylePage.resultsTitle")}</h2>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {t("aiStylePage.resultsHint")}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={reset}
+              className="shrink-0 rounded-full border border-border px-3 py-1.5 text-[10px] font-bold"
+            >
+              {t("aiStylePage.tryAgain")}
+            </button>
           </div>
 
-          <p className="text-center text-[11px] font-medium text-muted-foreground">
-            {t("aiStylePage.swipeHint")}
-          </p>
+          <div className="space-y-3">
+            {result.suggestions.map((suggestion, index) => (
+              <SuggestionCard
+                key={suggestion.id}
+                suggestion={suggestion}
+                index={index}
+                saved={saved.includes(suggestion.id)}
+                onToggleSave={toggleSave}
+              />
+            ))}
+          </div>
         </div>
       ) : null}
-    </div>
+    </AiStylePageLayout>
   );
 }

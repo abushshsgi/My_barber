@@ -344,6 +344,16 @@
     "introDesc": "Upload a selfie — AI suggests 3 cuts and shapes that suit you.",
     "uploadTitle": "Upload a selfie",
     "uploadHint": "Face clearly visible · good lighting",
+    "uploadFeatures": {
+      "face": "Face scan",
+      "styles": "3 styles",
+      "book": "Book salon",
+      "gallery": "From gallery"
+    },
+    "photoReadyTitle": "Photo ready",
+    "photoReadyDesc": "Tap below to get your AI recommendations",
+    "hairTypeLabel": "Hair type",
+    "resultsHint": "Top 3 styles matched to you",
     "pickPhoto": "Choose photo",
     "pickFile": "Choose file",
     "pickFromGallery": "Choose from gallery",

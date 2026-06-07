@@ -344,6 +344,16 @@
     "introDesc": "Загрузите селфи — AI предложит 3 подходящие стрижки.",
     "uploadTitle": "Загрузите селфи",
     "uploadHint": "Лицо чётко видно · хорошее освещение",
+    "uploadFeatures": {
+      "face": "Сканер лица",
+      "styles": "3 стиля",
+      "book": "Запись в салон",
+      "gallery": "Из галереи"
+    },
+    "photoReadyTitle": "Фото готово",
+    "photoReadyDesc": "Нажмите ниже для AI-рекомендаций",
+    "hairTypeLabel": "Тип волос",
+    "resultsHint": "3 лучших стиля для вас",
     "pickPhoto": "Выбрать фото",
     "pickFile": "Выбрать файл",
     "pickFromGallery": "Из галереи",
