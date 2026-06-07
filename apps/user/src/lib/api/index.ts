@@ -5,6 +5,7 @@ export {
   clearUserTokens,
   getUserAccessToken,
   hasValidUserSession,
+  bootstrapUserSession,
   handleAuthFailure,
   setUserTokens,
 } from "./client";

@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from "react";
-import { handleAuthFailure, hasValidUserSession } from "@/lib/api/client";
+import { bootstrapUserSession, handleAuthFailure } from "@/lib/api/client";
 
 const AUTH_PATH = "/auth";
 
@@ -9,14 +9,14 @@ function isAuthRoute(): boolean {
   return path === AUTH_PATH || path.startsWith(`${AUTH_PATH}/`);
 }
 
-/** Tab qayta ochilganda yoki sessiya tugasa — /auth ga yo‘naltirish. */
+/** Tab qayta ochilganda refresh token orqali sessiyani tiklash. */
 export function AuthSessionGuard({ children }: { children: ReactNode }) {
   useEffect(() => {
     const verify = () => {
       if (isAuthRoute()) return;
-      if (!hasValidUserSession()) {
-        handleAuthFailure();
-      }
+      void bootstrapUserSession().then((ok) => {
+        if (!ok) handleAuthFailure();
+      });
     };
 
     verify();

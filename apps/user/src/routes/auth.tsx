@@ -9,8 +9,8 @@ import { needsOnboarding } from "@/lib/recommendations";
 import { redirectIfAuthenticated } from "@/lib/require-auth";
 
 export const Route = createFileRoute("/auth")({
-  beforeLoad: () => {
-    redirectIfAuthenticated();
+  beforeLoad: async () => {
+    await redirectIfAuthenticated();
   },
   head: () => ({ meta: [{ title: "Kirish — mysaloon.uz" }] }),
   component: Auth,

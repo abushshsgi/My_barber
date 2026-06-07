@@ -101,8 +101,8 @@ function RoutePending() {
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   ssr: false,
   pendingComponent: RoutePending,
-  beforeLoad: ({ location }) => {
-    requireAuth(location.pathname);
+  beforeLoad: async ({ location }) => {
+    await requireAuth(location.pathname);
   },
   head: () => ({
     meta: [

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { LogOut } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
@@ -7,6 +8,7 @@ import { setLang, type AppLang } from "@/i18n/config";
 import { cn } from "@/lib/utils";
 import { useAudience, PREFS_KEY, type AudienceFilter } from "@/hooks/use-audience";
 import { useDisplayUser, useUpdateMe } from "@/hooks/use-me";
+import { useProfileScreen } from "@/components/profile/useProfileScreen";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Sozlamalar — mysaloon.uz" }] }),
@@ -43,6 +45,7 @@ function Settings() {
   const { setAudience } = useAudience();
   const user = useDisplayUser();
   const updateMe = useUpdateMe();
+  const { handleLogout } = useProfileScreen();
   const [prefs, setPrefs] = useState<Prefs>(DEFAULTS);
 
   useEffect(() => {
@@ -164,6 +167,15 @@ function Settings() {
         className="mt-6 w-full rounded-2xl border-2 border-border bg-background py-4 text-sm font-bold text-muted-foreground"
       >
         {t("settings.reset")}
+      </button>
+
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-border bg-background py-4 text-sm font-bold text-muted-foreground transition-colors duration-200 active:bg-surface"
+      >
+        <LogOut className="h-4 w-4" strokeWidth={2.2} />
+        {t("common.logout")}
       </button>
     </ProfileSubpageLayout>
   );

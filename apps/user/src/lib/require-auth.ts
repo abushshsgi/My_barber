@@ -1,19 +1,21 @@
 import { redirect } from "@tanstack/react-router";
-import { isAuthenticated } from "@/lib/auth";
+import { bootstrapUserSession } from "@/lib/api/client";
 
 const PUBLIC_PATHS = ["/auth", "/privacy"];
 
-export function requireAuth(pathname: string) {
+export async function requireAuth(pathname: string) {
   if (typeof window === "undefined") return;
   if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return;
-  if (!isAuthenticated()) {
+  const ok = await bootstrapUserSession();
+  if (!ok) {
     throw redirect({ to: "/auth", search: { redirect: pathname } });
   }
 }
 
-export function redirectIfAuthenticated() {
+export async function redirectIfAuthenticated() {
   if (typeof window === "undefined") return;
-  if (isAuthenticated()) {
+  const ok = await bootstrapUserSession();
+  if (ok) {
     throw redirect({ to: "/" });
   }
 }

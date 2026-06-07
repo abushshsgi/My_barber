@@ -46,7 +46,8 @@ function readStoredUserAccess(): string | null {
   if (userToken) {
     const kind = jwtPayloadType(userToken);
     if (kind === "user") return userToken;
-    clearUserTokens();
+    localStorage.removeItem(TOKEN_KEY_USER);
+    localStorage.removeItem(TOKEN_KEY_LEGACY);
     return null;
   }
   const legacy = localStorage.getItem(TOKEN_KEY_LEGACY);
@@ -60,7 +61,8 @@ function readStoredUserRefresh(): string | null {
   if (refresh) {
     const kind = jwtPayloadType(refresh);
     if (kind === "user") return refresh;
-    clearUserTokens();
+    localStorage.removeItem(REFRESH_KEY_USER);
+    localStorage.removeItem(REFRESH_KEY_LEGACY);
     return null;
   }
   const legacy = localStorage.getItem(REFRESH_KEY_LEGACY);
@@ -79,6 +81,14 @@ function getUserRefreshToken(): string | null {
   return readStoredUserRefresh();
 }
 
+let sessionBootstrapped = false;
+let bootstrapInFlight: Promise<boolean> | null = null;
+
+export function resetSessionBootstrap() {
+  sessionBootstrapped = false;
+  bootstrapInFlight = null;
+}
+
 export function setUserTokens(access: string, refresh: string) {
   const accessKind = jwtPayloadType(access);
   const refreshKind = jwtPayloadType(refresh);
@@ -89,6 +99,7 @@ export function setUserTokens(access: string, refresh: string) {
   localStorage.setItem(REFRESH_KEY_USER, refresh);
   localStorage.setItem(TOKEN_KEY_LEGACY, access);
   localStorage.setItem(REFRESH_KEY_LEGACY, refresh);
+  resetSessionBootstrap();
 }
 
 export function clearUserTokens() {
@@ -101,6 +112,7 @@ export function clearUserTokens() {
   } catch {
     /* noop */
   }
+  resetSessionBootstrap();
 }
 
 function shouldOmitBearerForPath(path: string): boolean {
@@ -142,9 +154,13 @@ async function parseJsonBody(res: Response): Promise<unknown> {
   }
 }
 
-async function refreshAccess(): Promise<string | null> {
+type RefreshResult = { access: string | null; revoked: boolean };
+
+async function refreshAccess(): Promise<RefreshResult> {
   const refresh = getUserRefreshToken();
-  if (!refresh) return null;
+  if (!refresh || isTokenExpired(refresh)) {
+    return { access: null, revoked: true };
+  }
   try {
     const res = await fetch(`${API_BASE}/api/v1/auth/token/refresh/`, {
       method: "POST",
@@ -152,16 +168,16 @@ async function refreshAccess(): Promise<string | null> {
       body: JSON.stringify({ refresh }),
     });
     if (!res.ok) {
-      return null;
+      return { access: null, revoked: isAuthFailureStatus(res.status) };
     }
     const data = (await parseJsonBody(res)) as { access?: string; refresh?: string } | null;
     if (!data?.access || jwtPayloadType(data.access) !== "user") {
-      return null;
+      return { access: null, revoked: true };
     }
     setUserTokens(data.access, data.refresh ?? refresh);
-    return data.access;
+    return { access: data.access, revoked: false };
   } catch {
-    return null;
+    return { access: null, revoked: false };
   }
 }
 
@@ -194,11 +210,11 @@ export async function apiFetch(
   let res = await fetch(`${API_BASE}${path}`, { ...options, headers });
 
   if (isAuthFailureStatus(res.status) && retry && token) {
-    const newAccess = await refreshAccess();
-    if (newAccess) {
-      headers.set("Authorization", `Bearer ${newAccess}`);
+    const refreshed = await refreshAccess();
+    if (refreshed.access) {
+      headers.set("Authorization", `Bearer ${refreshed.access}`);
       res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-    } else {
+    } else if (refreshed.revoked) {
       handleAuthFailure();
     }
   }
@@ -252,8 +268,45 @@ export function hasValidUserSession(): boolean {
   const refresh = readStoredUserRefresh();
   if (refresh && !isTokenExpired(refresh)) return true;
 
-  if (access || refresh) {
-    clearUserTokens();
-  }
   return false;
+}
+
+/** Ilova ochilganda access tugasa refresh orqali sessiyani tiklash (7 kun eslab qolish). */
+export async function bootstrapUserSession(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  if (sessionBootstrapped) return hasValidUserSession();
+  if (bootstrapInFlight) return bootstrapInFlight;
+
+  bootstrapInFlight = (async () => {
+    const access = readStoredUserAccess();
+    const refresh = readStoredUserRefresh();
+
+    if (!access && !refresh) {
+      sessionBootstrapped = true;
+      return false;
+    }
+
+    if (access && !isTokenExpired(access)) {
+      sessionBootstrapped = true;
+      return true;
+    }
+
+    if (refresh && !isTokenExpired(refresh)) {
+      const refreshed = await refreshAccess();
+      sessionBootstrapped = true;
+      if (refreshed.access) return true;
+      if (refreshed.revoked) clearUserTokens();
+      return false;
+    }
+
+    clearUserTokens();
+    sessionBootstrapped = true;
+    return false;
+  })();
+
+  try {
+    return await bootstrapInFlight;
+  } finally {
+    bootstrapInFlight = null;
+  }
 }

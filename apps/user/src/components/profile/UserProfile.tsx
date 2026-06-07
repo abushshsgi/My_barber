@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Headphones,
   Info,
+  LogOut,
   MapPin,
   Settings,
   Shield,
@@ -22,7 +23,7 @@ import { formatPrice } from "@/lib/mock-data";
 
 export function UserProfile() {
   const { t } = useAppTranslation();
-  const { audience, nextBooking, user, stats } = useProfileScreen();
+  const { audience, nextBooking, user, stats, handleLogout } = useProfileScreen();
   const { balance, isLoading: walletLoading } = useWalletBalance();
   const { data: notifications = [] } = useNotificationsApi();
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -150,6 +151,15 @@ export function UserProfile() {
         <ProfileGoMenuGroup
           items={[{ icon: Info, title: t("profile.info"), to: "/support" }]}
         />
+
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-border bg-background py-4 text-sm font-bold text-muted-foreground transition-colors duration-200 active:bg-surface"
+        >
+          <LogOut className="h-4 w-4" strokeWidth={2.2} />
+          {t("common.logout")}
+        </button>
       </div>
     </div>
   );
