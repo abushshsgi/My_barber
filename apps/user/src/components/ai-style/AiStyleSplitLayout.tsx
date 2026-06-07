@@ -17,9 +17,7 @@ const HERO_SLIDES: Record<"men" | "women", readonly string[]> = {
 };
 const SLIDE_MS = 3800;
 const UPLOAD_PANEL_HEIGHT = 305;
-const UPLOAD_PANEL_DRAG_UP = 72;
-const UPLOAD_PANEL_DRAG_DOWN = 24;
-const UPLOAD_HISTORY_REVEAL_PX = 28;
+const UPLOAD_HISTORY_DRAG_RATIO = 0.48;
 
 export type AiStyleSplitLayoutProps = {
   audience: Audience;
@@ -204,7 +202,7 @@ function UploadActions({
   );
 }
 
-function UploadHistoryPeek({ visible }: { visible: boolean }) {
+function UploadHistorySheet() {
   const { t, i18n } = useTranslation();
   const [profile] = useState(() => loadFaceProfile());
 
@@ -217,26 +215,49 @@ function UploadHistoryPeek({ visible }: { visible: boolean }) {
       }).format(new Date(profile.scannedAt))
     : null;
 
+  const entries = profile
+    ? [
+        {
+          id: "latest",
+          title: t(`aiStylePage.faceShapes.${profile.faceShapeKey}`),
+          subtitle: profile.hairTypeKey
+            ? t(`aiStylePage.hairTypes.${profile.hairTypeKey}`)
+            : t("aiStylePage.steps.analyze"),
+          date: lastScan ?? "",
+        },
+      ]
+    : [];
+
   return (
-    <div
-      className={cn(
-        "transition-opacity duration-200",
-        visible ? "opacity-100" : "opacity-0",
-      )}
-    >
+    <div className="flex h-full flex-col px-5 pb-6 pt-4">
       <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
         {t("aiStylePage.historyTitle")}
       </p>
-      {profile ? (
-        <p className="mt-1 text-sm font-semibold text-foreground">
-          {t(`aiStylePage.faceShapes.${profile.faceShapeKey}`)}
-        </p>
-      ) : null}
-      <p className="mt-0.5 text-[11px] text-muted-foreground">
-        {lastScan
-          ? t("aiStylePage.historyLastScan", { date: lastScan })
-          : t("aiStylePage.historyEmpty")}
-      </p>
+      <p className="mt-1 text-base font-bold text-foreground">{t("aiStylePage.historySubtitle")}</p>
+
+      {entries.length > 0 ? (
+        <ul className="mt-4 space-y-2.5">
+          {entries.map((entry) => (
+            <li
+              key={entry.id}
+              className="rounded-2xl border border-border/60 bg-neutral-50 px-4 py-3"
+            >
+              <p className="text-sm font-semibold text-foreground">{entry.title}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{entry.subtitle}</p>
+              {entry.date ? (
+                <p className="mt-1 text-[10px] font-medium text-muted-foreground/80">{entry.date}</p>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="mt-6 flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-border/70 bg-neutral-50/80 px-4 py-8 text-center">
+          <p className="text-sm font-semibold text-foreground">{t("aiStylePage.historyEmpty")}</p>
+          <p className="mt-1 max-w-[240px] text-[11px] text-muted-foreground">
+            {t("aiStylePage.historyEmptyHint")}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -247,8 +268,16 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const showResults = props.done && !!props.result;
   const isUploadStep = !props.photo && !showResults;
   const uploadDragControls = useDragControls();
-  const [panelDragY, setPanelDragY] = useState(0);
-  const historyVisible = panelDragY <= -UPLOAD_HISTORY_REVEAL_PX;
+  const [maxDragUp, setMaxDragUp] = useState(400);
+
+  useEffect(() => {
+    const updateMaxDragUp = () => {
+      setMaxDragUp(Math.round(window.innerHeight * UPLOAD_HISTORY_DRAG_RATIO));
+    };
+    updateMaxDragUp();
+    window.addEventListener("resize", updateMaxDragUp);
+    return () => window.removeEventListener("resize", updateMaxDragUp);
+  }, []);
 
   return (
     <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-white">
@@ -281,17 +310,6 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
         </Link>
       </div>
 
-      {isUploadStep ? (
-        <div
-          className="absolute inset-x-0 bottom-0 z-[5] bg-white"
-          style={{ height: UPLOAD_PANEL_HEIGHT }}
-        >
-          <div className="absolute inset-x-0 bottom-0 border-t border-border/30 px-5 pb-4 pt-3">
-            <UploadHistoryPeek visible={historyVisible} />
-          </div>
-        </div>
-      ) : null}
-
       <motion.div
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
@@ -299,12 +317,8 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
         drag={isUploadStep ? "y" : false}
         dragControls={isUploadStep ? uploadDragControls : undefined}
         dragListener={false}
-        onDrag={(_, info) => setPanelDragY(info.offset.y)}
-        onDragEnd={(_, info) => setPanelDragY(info.offset.y)}
         dragConstraints={
-          isUploadStep
-            ? { top: -UPLOAD_PANEL_DRAG_UP, bottom: UPLOAD_PANEL_DRAG_DOWN }
-            : undefined
+          isUploadStep ? { top: -maxDragUp, bottom: 0 } : undefined
         }
         dragElastic={0.12}
         dragMomentum={false}
@@ -372,6 +386,17 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
           </div>
         )}
       </motion.div>
+
+      {isUploadStep ? (
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] overflow-hidden bg-white"
+          style={{ height: maxDragUp + UPLOAD_PANEL_HEIGHT }}
+        >
+          <div className="h-full overflow-hidden">
+            <UploadHistorySheet />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
