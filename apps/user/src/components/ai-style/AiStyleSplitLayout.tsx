@@ -235,8 +235,8 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
         animate={{ y: 0 }}
         transition={{ type: "spring", damping: 36, stiffness: 170, mass: 1.15 }}
         className={cn(
-          "relative z-10 -mt-16 flex flex-col rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-left text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]",
-          !props.photo && !showResults && "h-[320px] shrink-0",
+          "static z-10 -mt-16 flex flex-col rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-left text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]",
+          !props.photo && !showResults && "h-[740px] shrink-0",
           (props.photo || showResults) && "shrink-0",
           showResults && "min-h-0 overflow-y-auto pb-6",
         )}
