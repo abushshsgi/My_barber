@@ -1,5 +1,5 @@
-import { apiJson, apiList } from "./client";
-import type { Paginated } from "./list-utils";
+import { apiJson } from "./client";
+import { apiList, type Paginated } from "./list-utils";
 
 export type ApiWalletCard = {
   cardholder_name: string;
