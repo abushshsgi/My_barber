@@ -1,6 +1,27 @@
 import { apiFetch, apiJson } from "./client";
 import type { ApiUser, PhoneCheckResponse, PhoneSendCodeResponse, PhoneVerifyResponse } from "./types";
 
+export const OTP_RESEND_COOLDOWN_SECONDS = 60;
+
+export class SendCodeError extends Error {
+  retryAfter: number;
+
+  constructor(message: string, retryAfter: number) {
+    super(message);
+    this.name = "SendCodeError";
+    this.retryAfter = retryAfter;
+  }
+}
+
+function readRetryAfter(body: unknown, fallback = OTP_RESEND_COOLDOWN_SECONDS): number {
+  if (!body || typeof body !== "object") return fallback;
+  const value = (body as { retry_after?: unknown }).retry_after;
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return Math.ceil(value);
+  }
+  return fallback;
+}
+
 export async function checkPhone(phone: string): Promise<PhoneCheckResponse> {
   const res = await apiFetch("/api/v1/auth/phone/check/", {
     method: "POST",
@@ -22,10 +43,25 @@ export async function checkPhone(phone: string): Promise<PhoneCheckResponse> {
 }
 
 export async function sendPhoneCode(phone: string): Promise<PhoneSendCodeResponse> {
-  return apiJson<PhoneSendCodeResponse>("/api/v1/auth/phone/send-code/", {
+  const res = await apiFetch("/api/v1/auth/phone/send-code/", {
     method: "POST",
     body: JSON.stringify({ phone }),
   });
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    const detail =
+      body && typeof body === "object" && typeof (body as { detail?: unknown }).detail === "string"
+        ? (body as { detail: string }).detail
+        : res.statusText || "Xatolik";
+    if (res.status === 429) {
+      throw new SendCodeError(detail, readRetryAfter(body));
+    }
+    throw new Error(detail);
+  }
+  if (body == null || typeof body !== "object") {
+    throw new Error("Server noto'g'ri javob qaytardi. Sahifani yangilab qayta urinib ko'ring.");
+  }
+  return body as PhoneSendCodeResponse;
 }
 
 export async function verifyPhoneCode(

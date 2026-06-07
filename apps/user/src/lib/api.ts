@@ -8,6 +8,8 @@ export {
   handleAuthFailure,
   setUserTokens,
   checkPhone,
+  OTP_RESEND_COOLDOWN_SECONDS,
+  SendCodeError,
   sendPhoneCode,
   verifyPhoneCode,
   loginWithPassword,

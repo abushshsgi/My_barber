@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 import {
   checkPhone,
   loginWithPassword,
+  OTP_RESEND_COOLDOWN_SECONDS,
+  SendCodeError,
   sendPhoneCode,
   setPassword,
   verifyPhoneCode,
@@ -41,6 +43,27 @@ function Auth() {
   const [appDeliveryCode, setAppDeliveryCode] = useState<string | null>(null);
   const [deliveryMode, setDeliveryMode] = useState<"sms" | "app">("sms");
   const [pendingAuth, setPendingAuth] = useState<PhoneVerifyResponse | null>(null);
+  const [resendSeconds, setResendSeconds] = useState(0);
+
+  useEffect(() => {
+    if (resendSeconds <= 0) return;
+    const id = window.setInterval(() => {
+      setResendSeconds((seconds) => (seconds <= 1 ? 0 : seconds - 1));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [resendSeconds]);
+
+  const startResendCooldown = (seconds: number) => {
+    setResendSeconds(Math.max(1, Math.ceil(seconds)));
+  };
+
+  const requestOtpCode = () => {
+    if (resendSeconds > 0) {
+      toast.error(t("auth.resendWait", { seconds: resendSeconds }));
+      return;
+    }
+    goToOtp.mutate();
+  };
 
   const applyOtpCode = (value: string) => {
     const digits = value.replace(/\D/g, "").slice(0, 4);
@@ -64,13 +87,21 @@ function Auth() {
       setStep("code");
       setAppDeliveryCode(null);
       setDeliveryMode(data.delivery === "app" ? "app" : "sms");
+      startResendCooldown(data.resend_after ?? OTP_RESEND_COOLDOWN_SECONDS);
       if (data.debug_code) {
         setAppDeliveryCode(data.debug_code);
         applyOtpCode(data.debug_code);
       }
       toast.success(data.detail);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      if (e instanceof SendCodeError) {
+        startResendCooldown(e.retryAfter);
+        toast.error(t("auth.resendWait", { seconds: e.retryAfter }));
+        return;
+      }
+      toast.error(e.message);
+    },
   });
 
   const continuePhone = useMutation({
@@ -264,11 +295,13 @@ function Auth() {
             </div>
             <button
               type="button"
-              disabled={busy}
-              onClick={() => goToOtp.mutate()}
+              disabled={busy || resendSeconds > 0}
+              onClick={requestOtpCode}
               className="w-full text-center text-xs font-bold text-muted-foreground underline disabled:opacity-60"
             >
-              {t("auth.loginWithOtp")}
+              {resendSeconds > 0
+                ? t("auth.resendWait", { seconds: resendSeconds })
+                : t("auth.loginWithOtp")}
             </button>
             <button
               type="button"
@@ -314,13 +347,23 @@ function Auth() {
             </div>
             <button
               type="button"
+              disabled={busy || resendSeconds > 0}
+              onClick={requestOtpCode}
+              className="mt-6 w-full text-center text-xs font-bold text-muted-foreground underline disabled:opacity-60"
+            >
+              {resendSeconds > 0
+                ? t("auth.resendWait", { seconds: resendSeconds })
+                : t("auth.resendCode")}
+            </button>
+            <button
+              type="button"
               disabled={busy}
               onClick={() => {
                 setStep("phone");
                 setCode(["", "", "", ""]);
                 setAppDeliveryCode(null);
               }}
-              className="mt-6 w-full text-center text-xs font-bold text-muted-foreground underline disabled:opacity-60"
+              className="mt-3 w-full text-center text-xs font-bold text-muted-foreground underline disabled:opacity-60"
             >
               {t("auth.changePhone")}
             </button>

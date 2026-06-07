@@ -597,6 +597,8 @@
     "savePassword": "Сохранить пароль",
     "skipPassword": "Пропустить",
     "loginWithOtp": "Войти по SMS-коду",
+    "resendCode": "Отправить новый код",
+    "resendWait": "Новый код через {{seconds}} с",
     "changePhone": "Другой номер",
     "passwordHint": "Минимум 8 символов. Позже можно изменить в настройках.",
     "welcomeBack": "С возвращением!",

@@ -12,11 +12,13 @@ from barbers.models import Barber
 
 from .models import User
 from .phone_auth import (
+    OTP_RESEND_COOLDOWN_SECONDS,
     generate_otp_code,
     mark_otp_sent,
     normalize_uz_phone,
     phone_to_internal_email,
     resend_blocked,
+    resend_seconds_remaining,
     store_otp,
     verify_otp,
 )
@@ -89,8 +91,12 @@ class PhoneSendCodeView(APIView):
             )
 
         if resend_blocked(phone):
+            retry_after = resend_seconds_remaining(phone) or OTP_RESEND_COOLDOWN_SECONDS
             return Response(
-                {"detail": "Yangi kod uchun biroz kuting."},
+                {
+                    "detail": "Yangi kod uchun biroz kuting.",
+                    "retry_after": retry_after,
+                },
                 status=429,
             )
 
@@ -99,7 +105,7 @@ class PhoneSendCodeView(APIView):
         send_login_otp(phone, code)
         mark_otp_sent(phone)
 
-        body: dict[str, str] = {
+        body: dict[str, str | int] = {
             "detail": (
                 "Tasdiq kodi yuborildi."
                 if is_sms_provider_configured()
@@ -107,6 +113,7 @@ class PhoneSendCodeView(APIView):
             ),
             "phone": phone,
             "delivery": "sms" if is_sms_provider_configured() else "app",
+            "resend_after": OTP_RESEND_COOLDOWN_SECONDS,
         }
         if _expose_debug_code():
             body["debug_code"] = code

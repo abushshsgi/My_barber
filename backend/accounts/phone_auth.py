@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import secrets
+import time
 
 from django.core.cache import cache
 
@@ -58,9 +59,21 @@ def verify_otp(phone: str, code: str) -> tuple[bool, str | None]:
     return True, None
 
 
+def resend_seconds_remaining(phone: str) -> int:
+    expires_at = cache.get(f"{_SENT_KEY}{phone}")
+    if not expires_at:
+        return 0
+    try:
+        remaining = int(float(expires_at) - time.time())
+    except (TypeError, ValueError):
+        return 0
+    return max(0, remaining)
+
+
 def resend_blocked(phone: str) -> bool:
-    return bool(cache.get(f"{_SENT_KEY}{phone}"))
+    return resend_seconds_remaining(phone) > 0
 
 
 def mark_otp_sent(phone: str) -> None:
-    cache.set(f"{_SENT_KEY}{phone}", 1, OTP_RESEND_COOLDOWN_SECONDS)
+    expires_at = time.time() + OTP_RESEND_COOLDOWN_SECONDS
+    cache.set(f"{_SENT_KEY}{phone}", expires_at, OTP_RESEND_COOLDOWN_SECONDS)

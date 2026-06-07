@@ -613,6 +613,8 @@
     "savePassword": "Parolni saqlash",
     "skipPassword": "O'tkazib yuborish",
     "loginWithOtp": "SMS kod bilan kirish",
+    "resendCode": "Yangi kod yuborish",
+    "resendWait": "Yangi kod: {{seconds}} soniya",
     "changePhone": "Boshqa raqam",
     "passwordHint": "Kamida 8 belgi. Keyinroq Sozlamalardan o'zgartirishingiz mumkin.",
     "welcomeBack": "Xush kelibsiz!",

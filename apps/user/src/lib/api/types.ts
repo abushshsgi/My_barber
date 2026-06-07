@@ -33,6 +33,8 @@ export type PhoneSendCodeResponse = {
   /** SMS ulanmaguncha — kod shu yerda keladi (keyin olib tashlanadi). */
   debug_code?: string;
   delivery?: "sms" | "app";
+  /** Keyingi kod so'rashdan oldin kutish (soniya). */
+  resend_after?: number;
 };
 
 export type ApiSalonList = {
