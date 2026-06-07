@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Camera, RefreshCw, Upload } from "lucide-react";
+import { Camera, ImagePlus, Loader2, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
@@ -13,8 +13,7 @@ export function AiStylePhotoInput({ fileRef, onFile }: PhotoInputProps) {
     <input
       ref={fileRef}
       type="file"
-      accept="image/*"
-      capture="user"
+      accept="image/jpeg,image/png,image/webp"
       hidden
       onChange={(e) => onFile(e.target.files?.[0])}
     />
@@ -22,39 +21,57 @@ export function AiStylePhotoInput({ fileRef, onFile }: PhotoInputProps) {
 }
 
 type UploadProps = {
-  onOpen: () => void;
-  compact?: boolean;
+  onOpenGallery: () => void;
+  onOpenCamera: () => void;
+  validating?: boolean;
 };
 
-export function AiStyleUploadEmpty({ onOpen, compact }: UploadProps) {
+export function AiStyleUploadEmpty({ onOpenGallery, onOpenCamera, validating }: UploadProps) {
   const { t } = useTranslation();
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className={cn(
-        "flex w-full flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-border bg-surface active:scale-[0.99] transition-transform",
-        compact ? "aspect-[4/3] px-4 py-6" : "aspect-[4/5]",
-      )}
-    >
+    <div className="flex w-full flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-border bg-surface px-4 py-8">
       <div className="grid h-16 w-16 place-items-center rounded-full bg-foreground text-background">
-        <Camera className="h-7 w-7" />
+        {validating ? (
+          <Loader2 className="h-7 w-7 animate-spin" />
+        ) : (
+          <Camera className="h-7 w-7" />
+        )}
       </div>
       <div className="text-center">
         <p className="text-sm font-bold">{t("aiStylePage.uploadTitle")}</p>
         <p className="mt-1 text-[11px] text-muted-foreground">{t("aiStylePage.uploadHint")}</p>
       </div>
-      <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-background px-3 py-1.5 text-[11px] font-bold">
-        <Upload className="h-3 w-3" />
-        {t("aiStylePage.pickFile")}
-      </span>
-    </button>
+      <div className="flex w-full flex-col gap-2 sm:flex-row">
+        <button
+          type="button"
+          disabled={validating}
+          onClick={onOpenCamera}
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-foreground px-4 py-3 text-sm font-bold text-background disabled:opacity-60"
+        >
+          <Camera className="h-4 w-4" />
+          {t("aiStylePage.openCamera")}
+        </button>
+        <button
+          type="button"
+          disabled={validating}
+          onClick={onOpenGallery}
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-border bg-background px-4 py-3 text-sm font-bold disabled:opacity-60"
+        >
+          <ImagePlus className="h-4 w-4" />
+          {t("aiStylePage.pickFromGallery")}
+        </button>
+      </div>
+      {validating ? (
+        <p className="text-[11px] font-medium text-muted-foreground">{t("aiStylePage.faceChecking")}</p>
+      ) : null}
+    </div>
   );
 }
 
 type PhotoProps = {
   photo: string;
   analyzing: boolean;
+  validating?: boolean;
   onReset: () => void;
   className?: string;
   imageClassName?: string;
@@ -64,6 +81,7 @@ type PhotoProps = {
 export function AiStylePhotoPreview({
   photo,
   analyzing,
+  validating,
   onReset,
   className,
   imageClassName,
@@ -83,7 +101,7 @@ export function AiStylePhotoPreview({
         alt={t("aiStylePage.selfieAlt")}
         className={cn("w-full object-cover", imageClassName ?? "aspect-[4/5]")}
       />
-      {analyzing ? <AiStyleScanLine fullBleed={fullBleed} /> : null}
+      {analyzing || validating ? <AiStyleScanLine fullBleed={fullBleed} /> : null}
       <button
         type="button"
         onClick={onReset}

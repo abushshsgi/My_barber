@@ -1,4 +1,4 @@
-import { apiJson } from "./client";
+import { apiFetch, apiJson } from "./client";
 
 export type AiStyleSuggestionApi = {
   id: string;
@@ -18,6 +18,27 @@ export type AiStyleAnalyzeResponse = {
   summary_uz: string;
   suggestions: AiStyleSuggestionApi[];
 };
+
+export type AiFaceCheckResponse = {
+  has_face: boolean;
+  detail?: string;
+};
+
+export async function checkAiStyleFace(image: string): Promise<AiFaceCheckResponse> {
+  const res = await apiFetch("/api/v1/ai/face-check/", {
+    method: "POST",
+    body: JSON.stringify({ image }),
+  });
+  const body = (await res.json().catch(() => null)) as AiFaceCheckResponse | { detail?: string } | null;
+  if (!res.ok) {
+    const detail =
+      body && typeof body === "object" && typeof body.detail === "string"
+        ? body.detail
+        : "Iltimos, yuz shakli rasmini yuklang.";
+    throw new Error(detail);
+  }
+  return (body ?? { has_face: false }) as AiFaceCheckResponse;
+}
 
 export async function analyzeAiStyle(
   image: string,

@@ -20,6 +20,7 @@ FACE_SHAPES = frozenset({"oval", "round", "square"})
 HAIR_TYPES = frozenset({"short", "medium", "long"})
 CATEGORIES = frozenset({"barber", "beauty", "nails", "spa"})
 MODEL_FALLBACKS = ("gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash")
+NO_FACE_MESSAGE = "Iltimos, yuz shakli rasmini yuklang."
 
 
 class AiStyleError(Exception):
@@ -78,12 +79,24 @@ def parse_data_url(data_url: str) -> tuple[str, bytes]:
     return mime, payload
 
 
+def _build_face_check_prompt() -> str:
+    return """Does this image clearly show ONE human face suitable for a hairstyle selfie?
+Return ONLY JSON: {"has_face": true} or {"has_face": false}
+
+Set has_face to false when:
+- no human face is visible
+- only objects, landscapes, animals, text, or products
+- group photo without one clear main face
+- face is too small, fully hidden, or too blurry to analyze"""
+
+
 def _build_prompt(audience: str) -> str:
     return f"""You are a professional hair and grooming stylist for mysaloon.uz (Uzbekistan).
 Analyze the selfie photo. Target audience preference: {audience} (men / women / unisex).
 
 Return ONLY valid JSON, no markdown, no extra text:
 {{
+  "has_face": true | false,
   "face_shape": "oval" | "round" | "square",
   "hair_type": "short" | "medium" | "long",
   "summary_uz": "1-2 short sentences in Uzbek explaining the face/hair analysis",
@@ -98,9 +111,24 @@ Return ONLY valid JSON, no markdown, no extra text:
 }}
 
 Rules:
-- Exactly 3 suggestions, sorted by match descending.
-- Be realistic; if face is unclear, still give best-effort conservative suggestions.
+- If no clear single human face is visible, set has_face to false and leave other fields empty.
+- Exactly 3 suggestions when has_face is true, sorted by match descending.
+- Be realistic; if face is unclear, set has_face to false.
 - match must be integers between 75 and 98."""
+
+
+def _parse_has_face(data: dict[str, Any]) -> bool:
+    value = data.get("has_face")
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"true", "1", "yes"}
+    return False
+
+
+def _ensure_has_face(data: dict[str, Any]) -> None:
+    if not _parse_has_face(data):
+        raise AiStyleError(NO_FACE_MESSAGE, 400)
 
 
 def _extract_json(text: str) -> dict[str, Any]:
@@ -118,6 +146,7 @@ def _extract_json(text: str) -> dict[str, Any]:
 
 
 def _normalize_analysis(data: dict[str, Any]) -> dict[str, Any]:
+    _ensure_has_face(data)
     face_shape = str(data.get("face_shape", "oval")).lower()
     hair_type = str(data.get("hair_type", "medium")).lower()
     if face_shape not in FACE_SHAPES:
@@ -185,6 +214,11 @@ def _post_gemini(model: str, api_key: str, body: dict[str, Any]) -> dict[str, An
 
 
 def call_gemini_style_analysis(mime: str, image_bytes: bytes, audience: str) -> dict[str, Any]:
+    data = _gemini_vision_json(_build_prompt(audience), mime, image_bytes)
+    return _normalize_analysis(data)
+
+
+def _gemini_vision_json(prompt: str, mime: str, image_bytes: bytes) -> dict[str, Any]:
     api_key = (getattr(settings, "GEMINI_API_KEY", None) or "").strip()
     if not api_key:
         raise AiStyleError("AI xizmati hozircha ulanmagan.", 503)
@@ -194,13 +228,13 @@ def call_gemini_style_analysis(mime: str, image_bytes: bytes, audience: str) -> 
         "contents": [
             {
                 "parts": [
-                    {"text": _build_prompt(audience)},
+                    {"text": prompt},
                     {"inline_data": {"mime_type": mime, "data": b64}},
                 ]
             }
         ],
         "generationConfig": {
-            "temperature": 0.4,
+            "temperature": 0.2,
             "responseMimeType": "application/json",
         },
     }
@@ -225,10 +259,7 @@ def call_gemini_style_analysis(mime: str, image_bytes: bytes, audience: str) -> 
 
         candidates = payload.get("candidates") or []
         if not candidates:
-            block = (payload.get("promptFeedback") or {}).get("blockReason")
-            if block:
-                raise AiStyleError("Rasm tahlil qilinmadi. Boshqa selfie yuklang.", 400)
-            last_error = AiStyleError("AI javob bermadi. Boshqa rasm bilan urinib ko'ring.", 502)
+            last_error = AiStyleError("AI javob bermadi.", 502)
             continue
 
         parts = (candidates[0].get("content") or {}).get("parts") or []
@@ -237,12 +268,17 @@ def call_gemini_style_analysis(mime: str, image_bytes: bytes, audience: str) -> 
             last_error = AiStyleError("AI javob bermadi.", 502)
             continue
 
-        logger.info("Gemini style analysis ok via model=%s", model)
-        return _normalize_analysis(_extract_json("".join(text_parts)))
+        return _extract_json("".join(text_parts))
 
     if last_error:
         raise last_error
     raise AiStyleError("AI tahlil vaqtincha ishlamayapti. Keyinroq urinib ko'ring.", 502)
+
+
+def check_face_in_data_url(data_url: str) -> bool:
+    mime, image_bytes = parse_data_url(data_url)
+    data = _gemini_vision_json(_build_face_check_prompt(), mime, image_bytes)
+    return _parse_has_face(data)
 
 
 def analyze_style_from_data_url(data_url: str, audience: str) -> dict[str, Any]:

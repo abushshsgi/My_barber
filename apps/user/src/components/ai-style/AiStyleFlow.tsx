@@ -4,6 +4,7 @@ import { Bookmark, CalendarPlus, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { AiStyleCamera } from "@/components/ai-style/AiStyleCamera";
 import {
   AiStylePhotoInput,
   AiStylePhotoPreview,
@@ -51,14 +52,30 @@ function ResultsSummary({ result }: { result: AiAnalysisResult }) {
 
 export function AiStyleFlow({ flow, audience }: Props) {
   const { t } = useTranslation();
-  const { photo, analyzing, done, result, error, fileRef, onFile, openFile, analyze, reset } = flow;
+  const {
+    photo,
+    validating,
+    analyzing,
+    done,
+    result,
+    error,
+    cameraOpen,
+    fileRef,
+    onFile,
+    onCameraCapture,
+    openFile,
+    openCamera,
+    closeCamera,
+    analyze,
+    reset,
+  } = flow;
   const [saved, setSaved] = useState<string[]>([]);
 
   useEffect(() => {
     if (error) toast.error(error);
   }, [error]);
 
-  const step: 1 | 2 | 3 = !photo ? 1 : analyzing ? 2 : done ? 3 : 2;
+  const step: 1 | 2 | 3 = !photo ? 1 : analyzing || validating ? 2 : done ? 3 : 2;
 
   const toggleSave = (id: string) => {
     setSaved((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -71,16 +88,31 @@ export function AiStyleFlow({ flow, audience }: Props) {
       <p className="mb-3 text-[11px] text-muted-foreground">{t("aiStylePage.privacyNote")}</p>
 
       {!photo ? (
-        <AiStyleUploadEmpty onOpen={openFile} />
+        <AiStyleUploadEmpty
+          onOpenGallery={openFile}
+          onOpenCamera={openCamera}
+          validating={validating}
+        />
       ) : (
-        <AiStylePhotoPreview photo={photo} analyzing={analyzing} onReset={reset} />
+        <AiStylePhotoPreview
+          photo={photo}
+          analyzing={analyzing}
+          validating={validating}
+          onReset={reset}
+        />
       )}
+
+      <AiStyleCamera
+        open={cameraOpen}
+        onClose={closeCamera}
+        onCapture={onCameraCapture}
+      />
 
       {photo && !done ? (
         <button
           type="button"
           onClick={() => void analyze(audience)}
-          disabled={analyzing}
+          disabled={analyzing || validating}
           className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-foreground px-5 py-4 text-sm font-bold text-background active:scale-[0.98] disabled:opacity-60"
         >
           <Sparkles className="h-4 w-4" />

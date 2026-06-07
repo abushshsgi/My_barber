@@ -84,3 +84,24 @@ class AiStyleAnalyzeTests(TestCase):
         with self.assertRaises(AiStyleError) as ctx:
             analyze_style_from_data_url(self.tiny_png, "men")
         self.assertEqual(ctx.exception.status, 503)
+
+    @patch("ai.views.check_face_in_data_url", return_value=False)
+    def test_face_check_rejects_non_face(self, _mock_check):
+        res = self.client.post(
+            "/api/v1/ai/face-check/",
+            {"image": self.tiny_png},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 400)
+        self.assertFalse(res.json()["has_face"])
+        self.assertIn("yuz", res.json()["detail"].lower())
+
+    @patch("ai.views.check_face_in_data_url", return_value=True)
+    def test_face_check_accepts_face(self, _mock_check):
+        res = self.client.post(
+            "/api/v1/ai/face-check/",
+            {"image": self.tiny_png},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.json()["has_face"])

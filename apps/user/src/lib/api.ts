@@ -17,6 +17,7 @@ export {
   setPassword,
   changePassword,
   analyzeAiStyle,
+  checkAiStyleFace,
   type AiStyleAnalyzeResponse,
   fetchWalletMe,
   topUpWallet,
