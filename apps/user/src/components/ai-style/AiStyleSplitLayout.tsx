@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useDragControls } from "framer-motion";
 import { Check, ChevronLeft } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -15,6 +15,9 @@ const HERO_SLIDES: Record<"men" | "women", readonly string[]> = {
   women: ["tr2", "tr4", "tr6", "tr2", "tr4"],
 };
 const SLIDE_MS = 3800;
+const UPLOAD_PANEL_HEIGHT = 280;
+const UPLOAD_PANEL_DRAG_UP = 48;
+const UPLOAD_PANEL_DRAG_DOWN = 24;
 
 export type AiStyleSplitLayoutProps = {
   audience: Audience;
@@ -203,13 +206,15 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const { t } = useTranslation();
   const busy = props.analyzing || props.validating;
   const showResults = props.done && !!props.result;
+  const isUploadStep = !props.photo && !showResults;
+  const uploadDragControls = useDragControls();
 
   return (
     <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-white">
       <div
         className={cn(
           "relative overflow-hidden",
-          !props.photo && "h-[52dvh] shrink-0",
+          isUploadStep && "min-h-0 flex-1",
           props.photo && !showResults && "h-[44dvh] shrink-0",
           showResults && "h-[24dvh] shrink-0",
         )}
@@ -234,13 +239,33 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         transition={{ type: "spring", damping: 36, stiffness: 170, mass: 1.15 }}
+        drag={isUploadStep ? "y" : false}
+        dragControls={isUploadStep ? uploadDragControls : undefined}
+        dragListener={false}
+        dragConstraints={
+          isUploadStep
+            ? { top: -UPLOAD_PANEL_DRAG_UP, bottom: UPLOAD_PANEL_DRAG_DOWN }
+            : undefined
+        }
+        dragElastic={0.12}
+        dragMomentum={false}
         className={cn(
-          "static z-10 -mt-16 flex flex-col rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-left text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]",
-          !props.photo && !showResults && "h-[740px] shrink-0",
-          (props.photo || showResults) && "shrink-0",
+          "z-10 flex flex-col rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-left text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]",
+          isUploadStep && "absolute inset-x-0 bottom-0",
+          !isUploadStep && "relative -mt-16 shrink-0",
           showResults && "min-h-0 overflow-y-auto pb-6",
         )}
+        style={isUploadStep ? { height: UPLOAD_PANEL_HEIGHT } : undefined}
       >
+        {isUploadStep ? (
+          <div
+            aria-hidden
+            onPointerDown={(event) => uploadDragControls.start(event)}
+            className="-mt-2 mb-3 flex shrink-0 touch-none cursor-grab justify-center pb-0.5 pt-1 active:cursor-grabbing"
+          >
+            <div className="h-1 w-10 rounded-full bg-muted-foreground/25" />
+          </div>
+        ) : null}
         <StepRail step={props.step} />
 
         {!props.photo ? (
