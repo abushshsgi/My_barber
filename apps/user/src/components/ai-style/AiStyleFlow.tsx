@@ -60,6 +60,7 @@ export function AiStyleFlow({ flow, audience }: Props) {
     result,
     error,
     cameraOpen,
+    faceHint,
     fileRef,
     onFile,
     onCameraCapture,
@@ -74,6 +75,12 @@ export function AiStyleFlow({ flow, audience }: Props) {
   useEffect(() => {
     if (error) toast.error(error);
   }, [error]);
+
+  useEffect(() => {
+    if (photo && faceHint?.source === "camera_scan") {
+      toast.success(t("aiStylePage.faceProfileSaved"));
+    }
+  }, [photo, faceHint, t]);
 
   const step: 1 | 2 | 3 = !photo ? 1 : analyzing || validating ? 2 : done ? 3 : 2;
 

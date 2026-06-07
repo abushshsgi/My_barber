@@ -90,9 +90,29 @@ Set has_face to false when:
 - face is too small, fully hidden, or too blurry to analyze"""
 
 
-def _build_prompt(audience: str) -> str:
+def _format_face_hint(face_hint: dict[str, Any] | None) -> str:
+    if not face_hint:
+        return ""
+    shape = face_hint.get("shape")
+    w_h = face_hint.get("width_to_height")
+    j_f = face_hint.get("jaw_to_forehead")
+    parts = []
+    if shape:
+        parts.append(f"preliminary face shape from 3D scan: {shape}")
+    if w_h is not None:
+        parts.append(f"width/height ratio: {w_h}")
+    if j_f is not None:
+        parts.append(f"jaw/forehead ratio: {j_f}")
+    if not parts:
+        return ""
+    return "Client face scan measurements: " + "; ".join(parts) + ". Prefer matching styles for this shape.\n"
+
+
+def _build_prompt(audience: str, face_hint: dict[str, Any] | None = None) -> str:
+    hint_block = _format_face_hint(face_hint)
     return f"""You are a professional hair and grooming stylist for mysaloon.uz (Uzbekistan).
 Analyze the selfie photo. Target audience preference: {audience} (men / women / unisex).
+{hint_block}
 
 Return ONLY valid JSON, no markdown, no extra text:
 {{
@@ -213,9 +233,17 @@ def _post_gemini(model: str, api_key: str, body: dict[str, Any]) -> dict[str, An
         return json.loads(res.read().decode("utf-8"))
 
 
-def call_gemini_style_analysis(mime: str, image_bytes: bytes, audience: str) -> dict[str, Any]:
-    data = _gemini_vision_json(_build_prompt(audience), mime, image_bytes)
-    return _normalize_analysis(data)
+def call_gemini_style_analysis(
+    mime: str,
+    image_bytes: bytes,
+    audience: str,
+    face_hint: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    data = _gemini_vision_json(_build_prompt(audience, face_hint), mime, image_bytes)
+    normalized = _normalize_analysis(data)
+    if face_hint and face_hint.get("shape") in FACE_SHAPES:
+        normalized["face_shape"] = str(face_hint["shape"])
+    return normalized
 
 
 def _gemini_vision_json(prompt: str, mime: str, image_bytes: bytes) -> dict[str, Any]:
@@ -281,9 +309,13 @@ def check_face_in_data_url(data_url: str) -> bool:
     return _parse_has_face(data)
 
 
-def analyze_style_from_data_url(data_url: str, audience: str) -> dict[str, Any]:
+def analyze_style_from_data_url(
+    data_url: str,
+    audience: str,
+    face_hint: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     audience_norm = (audience or "unisex").strip().lower()
     if audience_norm not in {"men", "women", "unisex"}:
         audience_norm = "unisex"
     mime, image_bytes = parse_data_url(data_url)
-    return call_gemini_style_analysis(mime, image_bytes, audience_norm)
+    return call_gemini_style_analysis(mime, image_bytes, audience_norm, face_hint)

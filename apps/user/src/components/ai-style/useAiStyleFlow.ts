@@ -1,7 +1,10 @@
 import { useRef, useState } from "react";
 import { analyzeAiStyle, checkAiStyleFace } from "@/lib/api";
-import type { Audience } from "@/lib/mock-data";
+import type { CameraCapturePayload } from "@/components/ai-style/AiStyleCamera";
 import { mapAiStyleResponse, type AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
+import { saveFaceProfile } from "@/lib/face-profile";
+import type { Audience } from "@/lib/mock-data";
+import type { AiFaceHint } from "@/lib/api/ai";
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -20,6 +23,7 @@ export function useAiStyleFlow() {
   const [result, setResult] = useState<AiAnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [faceHint, setFaceHint] = useState<AiFaceHint | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const applyPhoto = async (dataUrl: string) => {
@@ -31,6 +35,7 @@ export function useAiStyleFlow() {
         throw new Error(check.detail ?? "Iltimos, yuz shakli rasmini yuklang.");
       }
       setPhoto(dataUrl);
+      setFaceHint(null);
       setDone(false);
       setResult(null);
     } catch (e) {
@@ -56,8 +61,28 @@ export function useAiStyleFlow() {
     }
   };
 
-  const onCameraCapture = (dataUrl: string) => {
-    void applyPhoto(dataUrl);
+  const onCameraCapture = (payload: CameraCapturePayload) => {
+    setError(null);
+    setFaceHint({
+      shape: payload.faceShapeKey,
+      width_to_height: payload.ratios.widthToHeight,
+      jaw_to_forehead: payload.ratios.jawToForehead,
+      source: "camera_scan",
+    });
+    saveFaceProfile({
+      faceShapeKey: payload.faceShapeKey,
+      ratios: {
+        widthToHeight: payload.ratios.widthToHeight,
+        jawToForehead: payload.ratios.jawToForehead,
+      },
+      scannedAt: new Date().toISOString(),
+      source: "camera_scan",
+    });
+    setPhoto(payload.dataUrl);
+    setDone(false);
+    setResult(null);
+    setValidating(false);
+    setCameraOpen(false);
   };
 
   const openFile = () => fileRef.current?.click();
@@ -70,8 +95,22 @@ export function useAiStyleFlow() {
     setDone(false);
     setError(null);
     try {
-      const data = await analyzeAiStyle(photo, audience);
-      setResult(mapAiStyleResponse(data));
+      const data = await analyzeAiStyle(photo, audience, faceHint);
+      const mapped = mapAiStyleResponse(data);
+      if (faceHint) {
+        mapped.faceShapeKey = faceHint.shape;
+      }
+      saveFaceProfile({
+        faceShapeKey: mapped.faceShapeKey,
+        hairTypeKey: mapped.hairTypeKey,
+        ratios: {
+          widthToHeight: faceHint?.width_to_height ?? 0,
+          jawToForehead: faceHint?.jaw_to_forehead ?? 0,
+        },
+        scannedAt: new Date().toISOString(),
+        source: faceHint ? "camera_scan" : "ai_analysis",
+      });
+      setResult(mapped);
       setDone(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "AI tahlil xatosi");
@@ -90,6 +129,7 @@ export function useAiStyleFlow() {
     setAnalyzing(false);
     setValidating(false);
     setCameraOpen(false);
+    setFaceHint(null);
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -101,6 +141,7 @@ export function useAiStyleFlow() {
     result,
     error,
     cameraOpen,
+    faceHint,
     fileRef,
     onFile,
     onCameraCapture,

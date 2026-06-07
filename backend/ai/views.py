@@ -22,11 +22,16 @@ class AiStyleAnalyzeView(APIView):
     def post(self, request):
         image = request.data.get("image")
         audience = request.data.get("audience") or "unisex"
+        face_hint = request.data.get("face_hint")
         if not image:
             return Response({"detail": "Selfie rasmini yuboring."}, status=400)
 
         try:
-            analysis = analyze_style_from_data_url(str(image), str(audience))
+            analysis = analyze_style_from_data_url(
+                str(image),
+                str(audience),
+                face_hint=face_hint if isinstance(face_hint, dict) else None,
+            )
             suggestions = attach_salons_to_suggestions(analysis["suggestions"])
             return Response(
                 {

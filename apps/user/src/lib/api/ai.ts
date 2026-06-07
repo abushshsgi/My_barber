@@ -40,12 +40,24 @@ export async function checkAiStyleFace(image: string): Promise<AiFaceCheckRespon
   return (body ?? { has_face: false }) as AiFaceCheckResponse;
 }
 
+export type AiFaceHint = {
+  shape: "oval" | "round" | "square";
+  width_to_height?: number;
+  jaw_to_forehead?: number;
+  source?: "camera_scan" | "ai_analysis";
+};
+
 export async function analyzeAiStyle(
   image: string,
   audience: "men" | "women" | "unisex",
+  faceHint?: AiFaceHint | null,
 ): Promise<AiStyleAnalyzeResponse> {
   return apiJson<AiStyleAnalyzeResponse>("/api/v1/ai/style-analyze/", {
     method: "POST",
-    body: JSON.stringify({ image, audience }),
+    body: JSON.stringify({
+      image,
+      audience,
+      face_hint: faceHint ?? undefined,
+    }),
   });
 }
