@@ -1,39 +1,75 @@
-import { Clock3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { OTP_RESEND_COOLDOWN_SECONDS } from "@/lib/api";
 
 type Props = {
   seconds: number;
+  busy?: boolean;
+  idleLabel: string;
+  onResend: () => void;
 };
 
-export function OtpResendTimer({ seconds }: Props) {
+const RING_R = 13;
+const RING_C = 2 * Math.PI * RING_R;
+
+export function OtpResendTimer({ seconds, busy = false, idleLabel, onResend }: Props) {
   const { t } = useTranslation();
+  const cooling = seconds > 0;
+  const progress = cooling ? seconds / OTP_RESEND_COOLDOWN_SECONDS : 0;
 
-  if (seconds <= 0) return null;
+  if (!cooling) {
+    return (
+      <button
+        type="button"
+        disabled={busy}
+        onClick={onResend}
+        className="w-full text-center text-xs font-bold text-muted-foreground underline underline-offset-4 transition-opacity disabled:opacity-50"
+      >
+        {idleLabel}
+      </button>
+    );
+  }
 
-  const minutes = Math.floor(seconds / 60);
-  const remainder = seconds % 60;
-  const display = minutes > 0 ? `${minutes}:${String(remainder).padStart(2, "0")}` : String(seconds);
+  const display =
+    seconds >= 60
+      ? `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`
+      : String(seconds);
 
   return (
     <div
       role="status"
       aria-live="polite"
-      className="mb-4 flex items-center gap-4 rounded-2xl border-2 border-amber-300/70 bg-amber-50 px-4 py-4 dark:border-amber-500/40 dark:bg-amber-950/40"
+      aria-label={t("auth.resendTimerHint", { seconds })}
+      className="flex items-center justify-center gap-3 py-1"
     >
-      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-amber-400/80 bg-background">
-        <span className="font-mono text-lg font-bold tabular-nums text-amber-900 dark:text-amber-100">
-          {display}
-        </span>
+      <div className="relative flex h-9 w-9 shrink-0 items-center justify-center">
+        <svg
+          className="absolute inset-0 -rotate-90"
+          viewBox="0 0 32 32"
+          aria-hidden
+        >
+          <circle
+            cx="16"
+            cy="16"
+            r={RING_R}
+            fill="none"
+            strokeWidth="2"
+            className="stroke-border"
+          />
+          <circle
+            cx="16"
+            cy="16"
+            r={RING_R}
+            fill="none"
+            strokeWidth="2"
+            strokeLinecap="round"
+            className="stroke-foreground transition-[stroke-dashoffset] duration-1000 ease-linear"
+            strokeDasharray={RING_C}
+            strokeDashoffset={RING_C * (1 - progress)}
+          />
+        </svg>
+        <span className="font-mono text-[11px] font-bold tabular-nums text-foreground">{display}</span>
       </div>
-      <div className="min-w-0 text-left">
-        <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
-          <Clock3 className="h-3.5 w-3.5" aria-hidden />
-          {t("auth.resendTimerLabel")}
-        </p>
-        <p className="mt-1 text-sm font-bold text-amber-950 dark:text-amber-50">
-          {t("auth.resendTimerHint", { seconds })}
-        </p>
-      </div>
+      <p className="text-xs font-medium text-muted-foreground">{t("auth.resendCountdown")}</p>
     </div>
   );
 }

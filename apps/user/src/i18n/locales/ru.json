@@ -601,6 +601,7 @@
     "resendWait": "Новый код через {{seconds}} с",
     "resendTimerLabel": "Ожидание",
     "resendTimerHint": "Новый код можно запросить через {{seconds}} с",
+    "resendCountdown": "Новый код скоро",
     "changePhone": "Другой номер",
     "passwordHint": "Минимум 8 символов. Позже можно изменить в настройках.",
     "welcomeBack": "С возвращением!",

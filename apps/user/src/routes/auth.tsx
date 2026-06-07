@@ -288,7 +288,6 @@ function Auth() {
 
         {step === "password" ? (
           <div className="mt-8 space-y-4">
-            <OtpResendTimer seconds={resendSeconds} />
             <div>
               <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
                 {t("auth.password")}
@@ -312,16 +311,12 @@ function Auth() {
                 </button>
               </div>
             </div>
-            <button
-              type="button"
-              disabled={busy || resendSeconds > 0}
-              onClick={requestOtpCode}
-              className="w-full text-center text-xs font-bold text-muted-foreground underline disabled:opacity-60"
-            >
-              {resendSeconds > 0
-                ? t("auth.resendWait", { seconds: resendSeconds })
-                : t("auth.loginWithOtp")}
-            </button>
+            <OtpResendTimer
+              seconds={resendSeconds}
+              busy={busy}
+              idleLabel={t("auth.loginWithOtp")}
+              onResend={requestOtpCode}
+            />
             <button
               type="button"
               disabled={busy}
@@ -335,7 +330,6 @@ function Auth() {
 
         {step === "code" ? (
           <div className="mt-8">
-            <OtpResendTimer seconds={resendSeconds} />
             {appDeliveryCode ? (
               <div className="mb-6 rounded-2xl border-2 border-dashed border-foreground/30 bg-surface px-4 py-4 text-center">
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
@@ -365,16 +359,14 @@ function Auth() {
                 />
               ))}
             </div>
-            <button
-              type="button"
-              disabled={busy || resendSeconds > 0}
-              onClick={requestOtpCode}
-              className="mt-6 w-full text-center text-xs font-bold text-muted-foreground underline disabled:opacity-60"
-            >
-              {resendSeconds > 0
-                ? t("auth.resendWait", { seconds: resendSeconds })
-                : t("auth.resendCode")}
-            </button>
+            <div className="mt-6">
+              <OtpResendTimer
+                seconds={resendSeconds}
+                busy={busy}
+                idleLabel={t("auth.resendCode")}
+                onResend={requestOtpCode}
+              />
+            </div>
             <button
               type="button"
               disabled={busy}

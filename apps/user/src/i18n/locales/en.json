@@ -601,6 +601,7 @@
     "resendWait": "New code in {{seconds}}s",
     "resendTimerLabel": "Please wait",
     "resendTimerHint": "You can request a new code in {{seconds}} seconds",
+    "resendCountdown": "New code soon",
     "changePhone": "Use a different number",
     "passwordHint": "At least 8 characters. You can change it later in Settings.",
     "welcomeBack": "Welcome back!",
