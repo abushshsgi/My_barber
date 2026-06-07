@@ -1,11 +1,14 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Camera, Loader2, ScanFace, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import {
   metricsFromLandmarks,
+  mirrorX,
   nextPhase,
   phaseSatisfied,
+  smoothMetrics,
   type FaceFrameMetrics,
   type ScanPhase,
 } from "@/components/ai-style/face-scan-utils";
@@ -13,7 +16,7 @@ import { useFaceLandmarker } from "@/components/ai-style/useFaceLandmarker";
 import type { FaceShapeKey } from "@/components/ai-style/ai-style-shared";
 
 const PHASE_HOLD_MS = 1100;
-const WASM_FALLBACK_MS = 8000;
+const FACE_CAMERA_ATTR = "data-face-camera";
 
 export type CameraCapturePayload = {
   dataUrl: string;
@@ -27,6 +30,35 @@ type Props = {
   onCapture: (payload: CameraCapturePayload) => void;
 };
 
+function drawFaceContour(
+  ctx: CanvasRenderingContext2D,
+  frame: FaceFrameMetrics,
+  width: number,
+  height: number,
+  locked: boolean,
+) {
+  const points = frame.contour.map(mirrorX);
+  if (points.length < 8) return;
+
+  ctx.save();
+  ctx.strokeStyle = locked ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.65)";
+  ctx.lineWidth = locked ? 3 : 2;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.setLineDash(locked ? [] : [8, 6]);
+  ctx.beginPath();
+  points.forEach((p, i) => {
+    const x = p.x * width;
+    const y = p.y * height;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.closePath();
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
 export function AiStyleCamera({ open, onClose, onCapture }: Props) {
   const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -35,87 +67,52 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
   const rafRef = useRef<number | null>(null);
   const phaseSinceRef = useRef(0);
   const stableMetricsRef = useRef<FaceFrameMetrics | null>(null);
+  const smoothRef = useRef<FaceFrameMetrics | null>(null);
+  const scanLineRef = useRef(0);
 
   const [phase, setPhase] = useState<ScanPhase>("loading");
   const [metrics, setMetrics] = useState<FaceFrameMetrics | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [scanLine, setScanLine] = useState(0);
 
-  const { landmarkerRef, ready: landmarkerReady, error: landmarkerError } = useFaceLandmarker(open);
+  const { landmarkerRef, ready: landmarkerReady } = useFaceLandmarker(open);
 
-  const drawOverlay = useCallback(
-    (frame: FaceFrameMetrics | null, currentPhase: ScanPhase) => {
-      const canvas = overlayRef.current;
-      const video = videoRef.current;
-      if (!canvas || !video) return;
+  const drawOverlay = useCallback((frame: FaceFrameMetrics | null, currentPhase: ScanPhase) => {
+    const canvas = overlayRef.current;
+    const video = videoRef.current;
+    if (!canvas || !video) return;
 
-      const w = video.clientWidth;
-      const h = video.clientHeight;
-      if (canvas.width !== w || canvas.height !== h) {
-        canvas.width = w;
-        canvas.height = h;
-      }
+    const w = video.clientWidth;
+    const h = video.clientHeight;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
 
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      ctx.clearRect(0, 0, w, h);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, w, h);
 
-      if (!frame) {
-        ctx.strokeStyle = "rgba(255,255,255,0.45)";
-        ctx.lineWidth = 2;
-        ctx.setLineDash([8, 8]);
-        ctx.beginPath();
-        ctx.ellipse(w / 2, h * 0.42, w * 0.28, h * 0.34, 0, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        return;
-      }
+    if (!frame) return;
 
-      const bx = frame.box.x * w;
-      const by = frame.box.y * h;
-      const bw = frame.box.width * w;
-      const bh = frame.box.height * h;
-      const cx = bx + bw / 2;
-      const cy = by + bh / 2;
+    const locked = phaseSatisfied(currentPhase, frame);
+    drawFaceContour(ctx, frame, w, h, locked);
 
-      const locked = phaseSatisfied(currentPhase, frame);
-      ctx.strokeStyle = locked ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.55)";
-      ctx.lineWidth = locked ? 3 : 2;
-      ctx.setLineDash(locked ? [] : [10, 8]);
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, bw * 0.56, bh * 0.62, 0, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
+    if (locked && frame.contour.length > 0) {
+      const mirrored = frame.contour.map(mirrorX);
+      const minY = Math.min(...mirrored.map((p) => p.y));
+      const maxY = Math.max(...mirrored.map((p) => p.y));
+      const y = minY * h + (maxY - minY) * h * scanLineRef.current;
 
-      if (locked) {
-        const y = by + bh * scanLine;
-        ctx.strokeStyle = "rgba(255,255,255,0.85)";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(bx, y);
-        ctx.lineTo(bx + bw, y);
-        ctx.stroke();
-      }
-
-      const corners: [number, number][] = [
-        [bx, by],
-        [bx + bw, by],
-        [bx, by + bh],
-        [bx + bw, by + bh],
-      ];
-      ctx.strokeStyle = "rgba(255,255,255,0.7)";
+      const boxLeft = (1 - frame.box.x - frame.box.width) * w;
+      const boxRight = (1 - frame.box.x) * w;
+      ctx.strokeStyle = "rgba(255,255,255,0.8)";
       ctx.lineWidth = 2;
-      for (const [x, y] of corners) {
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x + (x < cx ? 18 : -18), y);
-        ctx.moveTo(x, y);
-        ctx.lineTo(x, y + (y < cy ? 18 : -18));
-        ctx.stroke();
-      }
-    },
-    [scanLine],
-  );
+      ctx.beginPath();
+      ctx.moveTo(boxLeft, y);
+      ctx.lineTo(boxRight, y);
+      ctx.stroke();
+    }
+  }, []);
 
   const captureFrame = useCallback(() => {
     const video = videoRef.current;
@@ -141,22 +138,26 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
   }, [onCapture, onClose]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      document.documentElement.removeAttribute(FACE_CAMERA_ATTR);
+      document.body.style.overflow = "";
+      return;
+    }
+    document.documentElement.setAttribute(FACE_CAMERA_ATTR, "open");
+    document.body.style.overflow = "hidden";
+
     setPhase("loading");
     setMetrics(null);
     setCameraError(null);
     phaseSinceRef.current = 0;
     stableMetricsRef.current = null;
+    smoothRef.current = null;
 
     let cancelled = false;
     const start = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "user",
-            width: { ideal: 1280 },
-            height: { ideal: 1600 },
-          },
+          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: false,
         });
         if (cancelled) {
@@ -182,6 +183,8 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
+      document.documentElement.removeAttribute(FACE_CAMERA_ATTR);
+      document.body.style.overflow = "";
     };
   }, [open, t]);
 
@@ -196,7 +199,13 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
         if (landmarker && landmarkerReady) {
           const result = landmarker.detectForVideo(video, performance.now());
           const landmarks = result.faceLandmarks?.[0];
-          if (landmarks) frame = metricsFromLandmarks(landmarks);
+          if (landmarks) {
+            const raw = metricsFromLandmarks(landmarks);
+            if (raw) frame = smoothMetrics(smoothRef.current, raw);
+            smoothRef.current = frame;
+          } else {
+            smoothRef.current = null;
+          }
         }
         setMetrics(frame);
         drawOverlay(frame, phase);
@@ -225,7 +234,8 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
           } else {
             phaseSinceRef.current = 0;
           }
-        } else if (phase === "searching") {
+        } else if (phase !== "searching") {
+          setPhase("searching");
           phaseSinceRef.current = 0;
         }
       }
@@ -241,20 +251,12 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
   useEffect(() => {
     if (!open) return;
     const id = window.setInterval(() => {
-      setScanLine((v) => (v >= 1 ? 0 : v + 0.06));
+      scanLineRef.current = scanLineRef.current >= 1 ? 0 : scanLineRef.current + 0.05;
     }, 60);
     return () => window.clearInterval(id);
   }, [open]);
 
-  useEffect(() => {
-    if (!open || landmarkerReady || landmarkerError) return;
-    const id = window.setTimeout(() => {
-      if (!landmarkerRef.current) setPhase("searching");
-    }, WASM_FALLBACK_MS);
-    return () => window.clearTimeout(id);
-  }, [open, landmarkerReady, landmarkerError, landmarkerRef]);
-
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
   const phaseLabel = {
     loading: t("aiStylePage.scanLoading"),
@@ -268,9 +270,12 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
   const progressSteps = ["center", "turn_left", "turn_right"] as const;
   const progressIndex = progressSteps.indexOf(phase as (typeof progressSteps)[number]);
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black text-white">
-      <div className="flex items-center justify-between px-4 py-3">
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex flex-col bg-black text-white">
+      <div
+        className="flex items-center justify-between px-4 py-3"
+        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+      >
         <div className="flex items-center gap-2">
           <ScanFace className="h-4 w-4" />
           <p className="text-sm font-bold">{t("aiStylePage.cameraTitle")}</p>
@@ -285,9 +290,11 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
         </button>
       </div>
 
-      <div className="relative flex flex-1 items-center justify-center overflow-hidden">
+      <div className="relative min-h-0 flex-1 overflow-hidden">
         {cameraError ? (
-          <p className="px-6 text-center text-sm text-white/80">{cameraError}</p>
+          <p className="flex h-full items-center justify-center px-6 text-center text-sm text-white/80">
+            {cameraError}
+          </p>
         ) : (
           <>
             <video
@@ -303,7 +310,7 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
               <motion.div
                 animate={{ x: [-8, 8, -8] }}
                 transition={{ repeat: Infinity, duration: 1.2 }}
-                className="pointer-events-none absolute left-6 top-1/2 -translate-y-1/2 rounded-full bg-white/20 p-3"
+                className="pointer-events-none absolute left-6 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/20 p-3"
               >
                 <ArrowLeft className="h-6 w-6" />
               </motion.div>
@@ -312,14 +319,14 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
               <motion.div
                 animate={{ x: [8, -8, 8] }}
                 transition={{ repeat: Infinity, duration: 1.2 }}
-                className="pointer-events-none absolute right-6 top-1/2 -translate-y-1/2 rounded-full bg-white/20 p-3"
+                className="pointer-events-none absolute right-6 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/20 p-3"
               >
                 <ArrowRight className="h-6 w-6" />
               </motion.div>
             ) : null}
 
-            {metrics && phase !== "searching" && phase !== "loading" ? (
-              <div className="pointer-events-none absolute left-1/2 top-8 -translate-x-1/2 rounded-full bg-black/45 px-3 py-1 text-[10px] font-bold uppercase tracking-wide">
+            {metrics && phase !== "loading" ? (
+              <div className="pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide">
                 {t(`aiStylePage.faceShapes.${metrics.faceShapeKey}`)}
               </div>
             ) : null}
@@ -327,7 +334,10 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
         )}
       </div>
 
-      <div className="space-y-4 px-6 pb-10 pt-4">
+      <div
+        className="space-y-4 px-6 pt-4"
+        style={{ paddingBottom: "max(2.5rem, env(safe-area-inset-bottom))" }}
+      >
         <div className="flex justify-center gap-2">
           {progressSteps.map((step, i) => (
             <div
@@ -356,6 +366,7 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

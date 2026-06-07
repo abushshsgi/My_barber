@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Home, Map, CalendarCheck, MessageSquare, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,7 @@ export function UserBottomNav({ unreadCount = 2 }: Props) {
   const router = useRouter();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [faceCameraOpen, setFaceCameraOpen] = useState(false);
 
   useEffect(() => {
     tabs.forEach((tab) => {
@@ -32,7 +33,20 @@ export function UserBottomNav({ unreadCount = 2 }: Props) {
     });
   }, [router]);
 
-  if (HIDE_ON.includes(pathname)) return null;
+  useEffect(() => {
+    const sync = () => {
+      setFaceCameraOpen(document.documentElement.dataset.faceCamera === "open");
+    };
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-face-camera"],
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  if (HIDE_ON.includes(pathname) || faceCameraOpen) return null;
 
   const handleTabClick = (to: string) => (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (isNavTabCurrent(pathname, to)) {
