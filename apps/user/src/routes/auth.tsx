@@ -15,6 +15,7 @@ import {
   verifyPhoneCode,
 } from "@/lib/api";
 import { getLastPhone, setSession } from "@/lib/auth";
+import { formatUzLocalPhone, parseUzLocalPhone } from "@/lib/phone";
 import { needsOnboarding } from "@/lib/recommendations";
 import { redirectIfAuthenticated } from "@/lib/require-auth";
 import type { PhoneVerifyResponse } from "@/lib/api/types";
@@ -178,15 +179,15 @@ function Auth() {
     password: {
       kicker: t("auth.login"),
       title: t("auth.passwordTitle"),
-      desc: t("auth.passwordSubtitle", { phone: `+998 ${phone}` }),
+      desc: t("auth.passwordSubtitle", { phone: `+998 ${formatUzLocalPhone(phone)}` }),
     },
     code: {
       kicker: t("auth.verify"),
       title: t("auth.codeTitle"),
       desc:
         deliveryMode === "app"
-          ? t("auth.codeSubtitleApp", { phone: `+998 ${phone}` })
-          : t("auth.codeSubtitleSms", { phone: `+998 ${phone}` }),
+          ? t("auth.codeSubtitleApp", { phone: `+998 ${formatUzLocalPhone(phone)}` })
+          : t("auth.codeSubtitleSms", { phone: `+998 ${formatUzLocalPhone(phone)}` }),
     },
     "set-password": {
       kicker: t("auth.optional"),
@@ -258,10 +259,10 @@ function Auth() {
               <input
                 type="tel"
                 inputMode="numeric"
-                value={phone}
+                value={formatUzLocalPhone(phone)}
                 disabled={busy}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 9))}
-                placeholder="90 123 45 67"
+                onChange={(e) => setPhone(parseUzLocalPhone(e.target.value))}
+                placeholder="90-123-45-67"
                 className="flex-1 border-0 bg-transparent px-4 py-4 text-sm font-bold placeholder:text-muted-foreground/50 focus:outline-none disabled:opacity-60"
               />
             </div>
