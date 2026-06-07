@@ -1,6 +1,22 @@
 import type { FaceShapeKey } from "@/components/ai-style/ai-style-shared";
 
-export type ScanPhase = "loading" | "searching" | "center" | "turn_left" | "turn_right" | "capture";
+export type ScanPhase =
+  | "loading"
+  | "searching"
+  | "turn_left"
+  | "turn_right"
+  | "turn_up"
+  | "turn_down"
+  | "center"
+  | "capture";
+
+export const SCAN_SEQUENCE: ScanPhase[] = [
+  "turn_left",
+  "turn_right",
+  "turn_up",
+  "turn_down",
+  "center",
+];
 
 export type FaceLandmark = { x: number; y: number; z?: number };
 
@@ -14,6 +30,7 @@ export type FaceFrameMetrics = {
   box: { x: number; y: number; width: number; height: number };
   contour: FaceLandmark[];
   yaw: number;
+  pitch: number;
   faceShapeKey: FaceShapeKey;
   ratios: { widthToHeight: number; jawToForehead: number };
 };
@@ -85,12 +102,15 @@ export function metricsFromLandmarks(landmarks: FaceLandmark[]): FaceFrameMetric
   else if (jawToForehead >= 1.02 && widthToHeight <= 0.84) faceShapeKey = "square";
 
   const centerX = (leftCheek.x + rightCheek.x) / 2;
+  const faceCenterY = (forehead.y + chin.y) / 2;
   const yaw = ((nose.x - centerX) / Math.max(faceWidth, 0.001)) * 50;
+  const pitch = ((nose.y - faceCenterY) / Math.max(faceHeight, 0.001)) * 50;
 
   return {
     box,
     contour,
     yaw,
+    pitch,
     faceShapeKey,
     ratios: { widthToHeight, jawToForehead },
   };
@@ -123,6 +143,7 @@ export function smoothMetrics(
     box,
     contour,
     yaw: lerp(prev.yaw, next.yaw, t),
+    pitch: lerp(prev.pitch, next.pitch, t),
     faceShapeKey: next.faceShapeKey,
     ratios: next.ratios,
   };
@@ -131,16 +152,24 @@ export function smoothMetrics(
 export function phaseSatisfied(phase: ScanPhase, metrics: FaceFrameMetrics): boolean {
   if (metrics.contour.length < 12) return false;
 
-  if (phase === "center") return Math.abs(metrics.yaw) < 16;
   if (phase === "turn_left") return metrics.yaw < -11;
   if (phase === "turn_right") return metrics.yaw > 11;
+  if (phase === "turn_up") return metrics.pitch < -9;
+  if (phase === "turn_down") return metrics.pitch > 9;
+  if (phase === "center") {
+    return Math.abs(metrics.yaw) < 14 && Math.abs(metrics.pitch) < 10;
+  }
   return true;
 }
 
 export function nextPhase(phase: ScanPhase): ScanPhase {
-  if (phase === "searching") return "center";
-  if (phase === "center") return "turn_left";
-  if (phase === "turn_left") return "turn_right";
-  if (phase === "turn_right") return "capture";
+  if (phase === "searching") return "turn_left";
+  const idx = SCAN_SEQUENCE.indexOf(phase);
+  if (idx >= 0 && idx < SCAN_SEQUENCE.length - 1) return SCAN_SEQUENCE[idx + 1];
+  if (phase === "center") return "capture";
   return phase;
+}
+
+export function canCapturePhoto(phase: ScanPhase, metrics: FaceFrameMetrics | null): boolean {
+  return phase === "center" && metrics !== null && phaseSatisfied("center", metrics);
 }

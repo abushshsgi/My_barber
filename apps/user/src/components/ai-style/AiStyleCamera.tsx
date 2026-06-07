@@ -1,13 +1,15 @@
 import { motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Camera, Loader2, ScanFace, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Camera, Loader2, ScanFace, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import {
+  canCapturePhoto,
   metricsFromLandmarks,
   mirrorX,
   nextPhase,
   phaseSatisfied,
+  SCAN_SEQUENCE,
   smoothMetrics,
   type FaceFrameMetrics,
   type ScanPhase,
@@ -114,10 +116,11 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
     }
   }, []);
 
-  const captureFrame = useCallback(() => {
+  const captureFrame = useCallback((skipGuard = false) => {
     const video = videoRef.current;
     const finalMetrics = stableMetricsRef.current;
     if (!video || video.videoWidth <= 0 || !finalMetrics) return;
+    if (!skipGuard && !canCapturePhoto(phase, finalMetrics)) return;
 
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
@@ -135,7 +138,7 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
       ratios: finalMetrics.ratios,
     });
     onClose();
-  }, [onCapture, onClose]);
+  }, [onCapture, onClose, phase]);
 
   useEffect(() => {
     if (!open) {
@@ -212,7 +215,7 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
 
         if (frame) {
           if (phase === "searching") {
-            setPhase("center");
+            setPhase("turn_left");
             phaseSinceRef.current = 0;
           }
 
@@ -225,7 +228,7 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
               const upcoming = nextPhase(phase);
               if (upcoming === "capture") {
                 setPhase("capture");
-                captureFrame();
+                captureFrame(true);
               } else {
                 setPhase(upcoming);
                 phaseSinceRef.current = 0;
@@ -234,8 +237,9 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
           } else {
             phaseSinceRef.current = 0;
           }
-        } else if (phase !== "searching") {
-          setPhase("searching");
+        } else if (phase === "searching") {
+          phaseSinceRef.current = 0;
+        } else {
           phaseSinceRef.current = 0;
         }
       }
@@ -261,14 +265,20 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
   const phaseLabel = {
     loading: t("aiStylePage.scanLoading"),
     searching: t("aiStylePage.scanSearching"),
-    center: t("aiStylePage.scanCenter"),
     turn_left: t("aiStylePage.scanLeft"),
     turn_right: t("aiStylePage.scanRight"),
+    turn_up: t("aiStylePage.scanUp"),
+    turn_down: t("aiStylePage.scanDown"),
+    center: t("aiStylePage.scanCenter"),
     capture: t("aiStylePage.scanCapture"),
   }[phase];
 
-  const progressSteps = ["center", "turn_left", "turn_right"] as const;
-  const progressIndex = progressSteps.indexOf(phase as (typeof progressSteps)[number]);
+  const progressIndex =
+    phase === "capture"
+      ? SCAN_SEQUENCE.length
+      : SCAN_SEQUENCE.indexOf(phase as (typeof SCAN_SEQUENCE)[number]);
+
+  const readyToCapture = canCapturePhoto(phase, metrics);
 
   return createPortal(
     <div className="fixed inset-0 z-[200] flex flex-col bg-black text-white">
@@ -324,6 +334,24 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
                 <ArrowRight className="h-6 w-6" />
               </motion.div>
             ) : null}
+            {phase === "turn_up" ? (
+              <motion.div
+                animate={{ y: [-8, 8, -8] }}
+                transition={{ repeat: Infinity, duration: 1.2 }}
+                className="pointer-events-none absolute left-1/2 top-8 z-10 -translate-x-1/2 rounded-full bg-white/20 p-3"
+              >
+                <ArrowUp className="h-6 w-6" />
+              </motion.div>
+            ) : null}
+            {phase === "turn_down" ? (
+              <motion.div
+                animate={{ y: [8, -8, 8] }}
+                transition={{ repeat: Infinity, duration: 1.2 }}
+                className="pointer-events-none absolute bottom-24 left-1/2 z-10 -translate-x-1/2 rounded-full bg-white/20 p-3"
+              >
+                <ArrowDown className="h-6 w-6" />
+              </motion.div>
+            ) : null}
 
             {metrics && phase !== "loading" ? (
               <div className="pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide">
@@ -338,12 +366,12 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
         className="space-y-4 px-6 pt-4"
         style={{ paddingBottom: "max(2.5rem, env(safe-area-inset-bottom))" }}
       >
-        <div className="flex justify-center gap-2">
-          {progressSteps.map((step, i) => (
+        <div className="flex justify-center gap-1.5">
+          {SCAN_SEQUENCE.map((step, i) => (
             <div
               key={step}
-              className={`h-1.5 w-10 rounded-full transition-colors ${
-                progressIndex >= i ? "bg-white" : "bg-white/25"
+              className={`h-1.5 w-8 rounded-full transition-colors ${
+                progressIndex > i ? "bg-white" : progressIndex === i ? "bg-white/60" : "bg-white/25"
               }`}
             />
           ))}
@@ -357,9 +385,9 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
           ) : null}
           <button
             type="button"
-            onClick={captureFrame}
-            disabled={!metrics || phase === "loading"}
-            className="grid h-16 w-16 place-items-center rounded-full border-4 border-white/70 bg-white text-black disabled:opacity-40"
+            onClick={() => captureFrame()}
+            disabled={!readyToCapture}
+            className="grid h-16 w-16 place-items-center rounded-full border-4 border-white/70 bg-white text-black disabled:opacity-30 disabled:grayscale"
             aria-label={t("aiStylePage.capturePhoto")}
           >
             <Camera className="h-6 w-6" />
