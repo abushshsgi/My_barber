@@ -105,7 +105,7 @@ function Auth() {
         return;
       }
       setSession(data.access, data.refresh, data.user);
-      if (!data.user.has_password) {
+      if (data.user.has_password === false) {
         setPendingAuth(data);
         setStep("set-password");
         return;

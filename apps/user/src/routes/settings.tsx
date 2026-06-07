@@ -193,11 +193,13 @@ function Settings() {
         })}
       </ProfileSubpageCard>
 
+      {me?.has_password !== undefined && (
+        <>
       <p className="mb-3 mt-6 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
         {t("settings.passwordSection")}
       </p>
       <ProfileSubpageCard className="space-y-3">
-        {me?.has_password ? (
+        {me.has_password === true ? (
           <>
             <label className="block">
               <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
@@ -255,6 +257,8 @@ function Settings() {
           </>
         )}
       </ProfileSubpageCard>
+        </>
+      )}
 
       <button
         type="button"

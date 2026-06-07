@@ -1,11 +1,24 @@
-import { apiJson } from "./client";
+import { apiFetch, apiJson } from "./client";
 import type { ApiUser, PhoneCheckResponse, PhoneSendCodeResponse, PhoneVerifyResponse } from "./types";
 
 export async function checkPhone(phone: string): Promise<PhoneCheckResponse> {
-  return apiJson<PhoneCheckResponse>("/api/v1/auth/phone/check/", {
+  const res = await apiFetch("/api/v1/auth/phone/check/", {
     method: "POST",
     body: JSON.stringify({ phone }),
   });
+  // Eski production API da /check/ yo'q — OTP oqimiga o'tish.
+  if (res.status === 404) {
+    return { phone, has_password: false, registered: false };
+  }
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    const detail =
+      body && typeof body === "object" && typeof (body as { detail?: unknown }).detail === "string"
+        ? (body as { detail: string }).detail
+        : res.statusText || "Xatolik";
+    throw new Error(detail);
+  }
+  return body as PhoneCheckResponse;
 }
 
 export async function sendPhoneCode(phone: string): Promise<PhoneSendCodeResponse> {

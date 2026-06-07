@@ -10,7 +10,7 @@ export type ApiUser = {
   longitude: string | number | null;
   onboarding_completed: boolean;
   avatar: string | null;
-  has_password: boolean;
+  has_password?: boolean;
   date_joined: string;
 };
 
