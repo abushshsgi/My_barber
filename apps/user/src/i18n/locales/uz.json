@@ -409,15 +409,6 @@
     "tryAgain": "Yangi rasm",
     "exploreStyles": "Trend uslublar",
     "betaBadge": "Beta · demo",
-    "variantPicker": "Layout tanlang (test)",
-    "variantWizardStep": "Joriy bosqich",
-    "variants": {
-      "mirror": "Oyna",
-      "immersive": "Immersiv",
-      "wizard": "Qadam",
-      "split": "Split",
-      "bento": "Bento"
-    },
     "aiBadge": "Gemini AI",
     "swipeHint": "Chapga-o'ngga surib ko'ring",
     "faceShapes": {

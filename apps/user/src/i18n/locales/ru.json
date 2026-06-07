@@ -393,15 +393,6 @@
     "tryAgain": "Новое фото",
     "exploreStyles": "Трендовые стили",
     "betaBadge": "Beta · демо",
-    "variantPicker": "Выберите layout (тест)",
-    "variantWizardStep": "Текущий шаг",
-    "variants": {
-      "mirror": "Зеркало",
-      "immersive": "Иммерсив",
-      "wizard": "Шаги",
-      "split": "Split",
-      "bento": "Bento"
-    },
     "aiBadge": "Gemini AI",
     "swipeHint": "Листайте влево-вправо",
     "faceShapes": {

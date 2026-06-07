@@ -1,5 +1,14 @@
 import { motion } from "framer-motion";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Camera, Loader2, ScanFace, X } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  Camera,
+  Loader2,
+  ScanFace,
+  X,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
@@ -116,29 +125,32 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
     }
   }, []);
 
-  const captureFrame = useCallback((skipGuard = false) => {
-    const video = videoRef.current;
-    const finalMetrics = stableMetricsRef.current;
-    if (!video || video.videoWidth <= 0 || !finalMetrics) return;
-    if (!skipGuard && !canCapturePhoto(phase, finalMetrics)) return;
+  const captureFrame = useCallback(
+    (skipGuard = false) => {
+      const video = videoRef.current;
+      const finalMetrics = stableMetricsRef.current;
+      if (!video || video.videoWidth <= 0 || !finalMetrics) return;
+      if (!skipGuard && !canCapturePhoto(phase, finalMetrics)) return;
 
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
-    ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0);
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0);
 
-    onCapture({
-      dataUrl: canvas.toDataURL("image/jpeg", 0.92),
-      faceShapeKey: finalMetrics.faceShapeKey,
-      ratios: finalMetrics.ratios,
-    });
-    onClose();
-  }, [onCapture, onClose, phase]);
+      onCapture({
+        dataUrl: canvas.toDataURL("image/jpeg", 0.92),
+        faceShapeKey: finalMetrics.faceShapeKey,
+        ratios: finalMetrics.ratios,
+      });
+      onClose();
+    },
+    [onCapture, onClose, phase],
+  );
 
   useEffect(() => {
     if (!open) {
@@ -314,7 +326,10 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
               autoPlay
               className="h-full w-full scale-x-[-1] object-cover"
             />
-            <canvas ref={overlayRef} className="pointer-events-none absolute inset-0 h-full w-full" />
+            <canvas
+              ref={overlayRef}
+              className="pointer-events-none absolute inset-0 h-full w-full"
+            />
 
             {phase === "turn_left" ? (
               <motion.div

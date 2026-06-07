@@ -393,15 +393,6 @@
     "tryAgain": "New photo",
     "exploreStyles": "Trending styles",
     "betaBadge": "Beta · demo",
-    "variantPicker": "Pick layout (preview)",
-    "variantWizardStep": "Current step",
-    "variants": {
-      "mirror": "Mirror",
-      "immersive": "Immersive",
-      "wizard": "Wizard",
-      "split": "Split",
-      "bento": "Bento"
-    },
     "aiBadge": "Gemini AI",
     "swipeHint": "Swipe left or right",
     "faceShapes": {

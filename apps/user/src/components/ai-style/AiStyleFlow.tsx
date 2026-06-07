@@ -2,20 +2,8 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AiStyleCamera } from "@/components/ai-style/AiStyleCamera";
+import { AiStyleSplitLayout } from "@/components/ai-style/AiStyleSplitLayout";
 import { AiStylePhotoInput } from "@/components/ai-style/AiStyleUi";
-import {
-  loadAiStyleVariant,
-  saveAiStyleVariant,
-  type AiStyleVariant,
-} from "@/components/ai-style/ai-style-variants";
-import {
-  BentoVariant,
-  ImmersiveVariant,
-  MirrorVariant,
-  SplitVariant,
-  WizardVariant,
-} from "@/components/ai-style/AiStyleVariantLayouts";
-import { AiStyleVariantPicker } from "@/components/ai-style/AiStyleVariantPicker";
 import type { useAiStyleFlow } from "@/components/ai-style/useAiStyleFlow";
 import type { Audience } from "@/lib/mock-data";
 
@@ -25,14 +13,6 @@ type Props = {
   flow: Flow;
   audience: Audience;
 };
-
-const VARIANTS = {
-  mirror: MirrorVariant,
-  immersive: ImmersiveVariant,
-  wizard: WizardVariant,
-  split: SplitVariant,
-  bento: BentoVariant,
-} as const;
 
 export function AiStyleFlow({ flow, audience }: Props) {
   const { t } = useTranslation();
@@ -55,7 +35,6 @@ export function AiStyleFlow({ flow, audience }: Props) {
     reset,
   } = flow;
   const [saved, setSaved] = useState<string[]>([]);
-  const [variant, setVariant] = useState<AiStyleVariant>(() => loadAiStyleVariant());
 
   useEffect(() => {
     if (error) toast.error(error);
@@ -73,36 +52,22 @@ export function AiStyleFlow({ flow, audience }: Props) {
     setSaved((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
-  const handleVariantChange = (next: AiStyleVariant) => {
-    setVariant(next);
-    saveAiStyleVariant(next);
-  };
-
-  const Layout = VARIANTS[variant];
-  const layoutProps = {
-    step,
-    photo,
-    validating,
-    analyzing,
-    done,
-    result,
-    saved,
-    onToggleSave: toggleSave,
-    onReset: reset,
-    openFile,
-    openCamera,
-    onAnalyze: () => void analyze(audience),
-  };
-
   return (
     <>
-      <Layout {...layoutProps} />
-
-      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom)+8px)] z-[60] px-4">
-        <div className="pointer-events-auto mx-auto max-w-md">
-          <AiStyleVariantPicker variant={variant} onChange={handleVariantChange} />
-        </div>
-      </div>
+      <AiStyleSplitLayout
+        step={step}
+        photo={photo}
+        validating={validating}
+        analyzing={analyzing}
+        done={done}
+        result={result}
+        saved={saved}
+        onToggleSave={toggleSave}
+        onReset={reset}
+        openFile={openFile}
+        openCamera={openCamera}
+        onAnalyze={() => void analyze(audience)}
+      />
 
       <AiStylePhotoInput fileRef={fileRef} onFile={onFile} />
       <AiStyleCamera open={cameraOpen} onClose={closeCamera} onCapture={onCameraCapture} />
