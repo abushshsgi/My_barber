@@ -146,3 +146,44 @@ class PhoneAuthTests(TestCase):
         )
         self.assertEqual(me.status_code, 200)
         self.assertEqual(me.json()["phone"], "+998907776655")
+
+    def test_resend_blocked_returns_retry_after(self):
+        first = self.client.post(
+            "/api/v1/auth/phone/send-code/",
+            {"phone": "901556677"},
+            format="json",
+        )
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.json().get("resend_after"), 60)
+
+        second = self.client.post(
+            "/api/v1/auth/phone/send-code/",
+            {"phone": "901556677"},
+            format="json",
+        )
+        self.assertEqual(second.status_code, 429)
+        self.assertIn("retry_after", second.json())
+        self.assertGreater(second.json()["retry_after"], 0)
+
+    def test_password_login_lockout_after_failures(self):
+        User.objects.create_user(
+            username="901667788@phone.mysaloon.local",
+            email="901667788@phone.mysaloon.local",
+            phone="+998901667788",
+            password="securepass1",
+        )
+        for _ in range(5):
+            res = self.client.post(
+                "/api/v1/auth/phone/password-login/",
+                {"phone": "901667788", "password": "wrong"},
+                format="json",
+            )
+            self.assertEqual(res.status_code, 400)
+
+        locked = self.client.post(
+            "/api/v1/auth/phone/password-login/",
+            {"phone": "901667788", "password": "wrong"},
+            format="json",
+        )
+        self.assertEqual(locked.status_code, 429)
+        self.assertIn("retry_after", locked.json())

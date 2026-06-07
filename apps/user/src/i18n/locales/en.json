@@ -599,6 +599,8 @@
     "loginWithOtp": "Sign in with SMS code",
     "resendCode": "Send a new code",
     "resendWait": "New code in {{seconds}}s",
+    "resendTimerLabel": "Please wait",
+    "resendTimerHint": "You can request a new code in {{seconds}} seconds",
     "changePhone": "Use a different number",
     "passwordHint": "At least 8 characters. You can change it later in Settings.",
     "welcomeBack": "Welcome back!",

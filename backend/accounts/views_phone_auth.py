@@ -13,10 +13,16 @@ from barbers.models import Barber
 from .models import User
 from .phone_auth import (
     OTP_RESEND_COOLDOWN_SECONDS,
+    clear_password_failures,
+    daily_send_blocked,
     generate_otp_code,
+    increment_daily_send,
     mark_otp_sent,
     normalize_uz_phone,
+    password_lock_seconds_remaining,
+    password_login_locked,
     phone_to_internal_email,
+    record_password_failure,
     resend_blocked,
     resend_seconds_remaining,
     store_otp,
@@ -24,7 +30,14 @@ from .phone_auth import (
 )
 from .serializers import UserSerializer
 from .sms_otp import is_sms_provider_configured, send_login_otp
-from .throttles import AuthIPThrottle, PhoneSendThrottle, PhoneVerifyThrottle
+from .throttles import (
+    AuthIPThrottle,
+    PhoneCheckThrottle,
+    PhoneScopedSendThrottle,
+    PhoneScopedVerifyThrottle,
+    PhoneSendThrottle,
+    PhoneVerifyThrottle,
+)
 
 
 def _expose_debug_code() -> bool:
@@ -73,12 +86,25 @@ class PhoneSendCodeView(APIView):
     """POST { phone } — 4 xonali OTP yuborish (login = signup)."""
 
     permission_classes = [AllowAny]
-    throttle_classes = [PhoneSendThrottle, AuthIPThrottle]
+    throttle_classes = [
+        PhoneSendThrottle,
+        PhoneScopedSendThrottle,
+        AuthIPThrottle,
+    ]
 
     def post(self, request):
         phone = normalize_uz_phone(request.data.get("phone"))
         if not phone:
             return Response({"detail": "Telefon raqami noto'g'ri."}, status=400)
+
+        if daily_send_blocked(phone):
+            return Response(
+                {
+                    "detail": "Bugun juda ko'p kod so'raldi. Ertaga yoki parol bilan kiring.",
+                    "retry_after": 3600,
+                },
+                status=429,
+            )
 
         if Barber.objects.filter(phone=phone).exists() and not User.objects.filter(
             phone=phone
@@ -104,6 +130,7 @@ class PhoneSendCodeView(APIView):
         store_otp(phone, code)
         send_login_otp(phone, code)
         mark_otp_sent(phone)
+        increment_daily_send(phone)
 
         body: dict[str, str | int] = {
             "detail": (
@@ -134,7 +161,7 @@ class PhoneCheckView(APIView):
     """POST { phone } — parol o'rnatilganmi (login yo'lini tanlash uchun)."""
 
     permission_classes = [AllowAny]
-    throttle_classes = [AuthIPThrottle]
+    throttle_classes = [PhoneCheckThrottle, AuthIPThrottle]
 
     def post(self, request):
         phone = normalize_uz_phone(request.data.get("phone"))
@@ -165,12 +192,24 @@ class PhonePasswordLoginView(APIView):
         if not password:
             return Response({"detail": "Parolni kiriting."}, status=400)
 
+        if password_login_locked(phone):
+            retry_after = password_lock_seconds_remaining(phone) or 900
+            return Response(
+                {
+                    "detail": "Juda ko'p noto'g'ri urinish. Biroz kuting.",
+                    "retry_after": retry_after,
+                },
+                status=429,
+            )
+
         user = User.objects.filter(phone=phone, role=User.Role.USER).first()
         if not user or not user.has_usable_password() or not user.check_password(password):
+            record_password_failure(phone)
             return Response(
                 {"detail": "Telefon yoki parol noto'g'ri."},
                 status=400,
             )
+        clear_password_failures(phone)
         if not user.is_active:
             return Response({"detail": "Akkaunt faol emas."}, status=403)
 
@@ -236,7 +275,11 @@ class PhoneVerifyView(APIView):
     """POST { phone, code } -> { access, refresh, user, is_new_user }."""
 
     permission_classes = [AllowAny]
-    throttle_classes = [PhoneVerifyThrottle, AuthIPThrottle]
+    throttle_classes = [
+        PhoneVerifyThrottle,
+        PhoneScopedVerifyThrottle,
+        AuthIPThrottle,
+    ]
 
     def post(self, request):
         phone = normalize_uz_phone(request.data.get("phone"))

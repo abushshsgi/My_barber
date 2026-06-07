@@ -8,6 +8,7 @@ export {
   handleAuthFailure,
   setUserTokens,
   checkPhone,
+  AuthRateLimitError,
   OTP_RESEND_COOLDOWN_SECONDS,
   SendCodeError,
   sendPhoneCode,

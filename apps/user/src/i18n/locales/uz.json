@@ -615,6 +615,8 @@
     "loginWithOtp": "SMS kod bilan kirish",
     "resendCode": "Yangi kod yuborish",
     "resendWait": "Yangi kod: {{seconds}} soniya",
+    "resendTimerLabel": "Kutish vaqti",
+    "resendTimerHint": "Yangi kod olish uchun {{seconds}} soniya kuting",
     "changePhone": "Boshqa raqam",
     "passwordHint": "Kamida 8 belgi. Keyinroq Sozlamalardan o'zgartirishingiz mumkin.",
     "welcomeBack": "Xush kelibsiz!",

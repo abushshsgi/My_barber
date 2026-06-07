@@ -3,13 +3,20 @@ import type { ApiUser, PhoneCheckResponse, PhoneSendCodeResponse, PhoneVerifyRes
 
 export const OTP_RESEND_COOLDOWN_SECONDS = 60;
 
-export class SendCodeError extends Error {
+export class AuthRateLimitError extends Error {
   retryAfter: number;
 
   constructor(message: string, retryAfter: number) {
     super(message);
-    this.name = "SendCodeError";
+    this.name = "AuthRateLimitError";
     this.retryAfter = retryAfter;
+  }
+}
+
+export class SendCodeError extends AuthRateLimitError {
+  constructor(message: string, retryAfter: number) {
+    super(message, retryAfter);
+    this.name = "SendCodeError";
   }
 }
 
@@ -78,10 +85,25 @@ export async function loginWithPassword(
   phone: string,
   password: string,
 ): Promise<PhoneVerifyResponse> {
-  return apiJson<PhoneVerifyResponse>("/api/v1/auth/phone/password-login/", {
+  const res = await apiFetch("/api/v1/auth/phone/password-login/", {
     method: "POST",
     body: JSON.stringify({ phone, password }),
   });
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    const detail =
+      body && typeof body === "object" && typeof (body as { detail?: unknown }).detail === "string"
+        ? (body as { detail: string }).detail
+        : res.statusText || "Xatolik";
+    if (res.status === 429) {
+      throw new AuthRateLimitError(detail, readRetryAfter(body, 900));
+    }
+    throw new Error(detail);
+  }
+  if (body == null || typeof body !== "object") {
+    throw new Error("Server noto'g'ri javob qaytardi. Sahifani yangilab qayta urinib ko'ring.");
+  }
+  return body as PhoneVerifyResponse;
 }
 
 export async function setPassword(password: string): Promise<{ detail: string; user: ApiUser }> {

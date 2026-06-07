@@ -2,10 +2,12 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { OtpResendTimer } from "@/components/auth/OtpResendTimer";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
+  AuthRateLimitError,
   checkPhone,
   loginWithPassword,
   OTP_RESEND_COOLDOWN_SECONDS,
@@ -15,6 +17,7 @@ import {
   verifyPhoneCode,
 } from "@/lib/api";
 import { getLastPhone, setSession } from "@/lib/auth";
+import { getStoredOtpCooldownSeconds, storeOtpCooldown } from "@/lib/otp-cooldown";
 import { formatUzLocalPhone, parseUzLocalPhone } from "@/lib/phone";
 import { needsOnboarding } from "@/lib/recommendations";
 import { redirectIfAuthenticated } from "@/lib/require-auth";
@@ -44,7 +47,12 @@ function Auth() {
   const [appDeliveryCode, setAppDeliveryCode] = useState<string | null>(null);
   const [deliveryMode, setDeliveryMode] = useState<"sms" | "app">("sms");
   const [pendingAuth, setPendingAuth] = useState<PhoneVerifyResponse | null>(null);
-  const [resendSeconds, setResendSeconds] = useState(0);
+  const [resendSeconds, setResendSeconds] = useState(() => getStoredOtpCooldownSeconds(phone));
+
+  useEffect(() => {
+    const stored = getStoredOtpCooldownSeconds(phone);
+    if (stored > 0) setResendSeconds(stored);
+  }, [phone]);
 
   useEffect(() => {
     if (resendSeconds <= 0) return;
@@ -55,7 +63,9 @@ function Auth() {
   }, [resendSeconds]);
 
   const startResendCooldown = (seconds: number) => {
-    setResendSeconds(Math.max(1, Math.ceil(seconds)));
+    const next = Math.max(1, Math.ceil(seconds));
+    setResendSeconds(next);
+    storeOtpCooldown(phone, next);
   };
 
   const requestOtpCode = () => {
@@ -126,7 +136,14 @@ function Auth() {
       }
       finishLogin(data);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      if (e instanceof AuthRateLimitError) {
+        startResendCooldown(e.retryAfter);
+        toast.error(t("auth.resendTimerHint", { seconds: e.retryAfter }));
+        return;
+      }
+      toast.error(e.message);
+    },
   });
 
   const verify = useMutation({
@@ -271,6 +288,7 @@ function Auth() {
 
         {step === "password" ? (
           <div className="mt-8 space-y-4">
+            <OtpResendTimer seconds={resendSeconds} />
             <div>
               <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
                 {t("auth.password")}
@@ -317,6 +335,7 @@ function Auth() {
 
         {step === "code" ? (
           <div className="mt-8">
+            <OtpResendTimer seconds={resendSeconds} />
             {appDeliveryCode ? (
               <div className="mb-6 rounded-2xl border-2 border-dashed border-foreground/30 bg-surface px-4 py-4 text-center">
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">

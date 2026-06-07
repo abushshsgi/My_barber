@@ -599,6 +599,8 @@
     "loginWithOtp": "Войти по SMS-коду",
     "resendCode": "Отправить новый код",
     "resendWait": "Новый код через {{seconds}} с",
+    "resendTimerLabel": "Ожидание",
+    "resendTimerHint": "Новый код можно запросить через {{seconds}} с",
     "changePhone": "Другой номер",
     "passwordHint": "Минимум 8 символов. Позже можно изменить в настройках.",
     "welcomeBack": "С возвращением!",

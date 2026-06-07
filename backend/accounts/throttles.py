@@ -1,5 +1,6 @@
 """DRF throttles for auth and salon MVP endpoints (IP or user scoped)."""
 
+from accounts.phone_auth import normalize_uz_phone
 from rest_framework.throttling import AnonRateThrottle, SimpleRateThrottle, UserRateThrottle
 
 
@@ -25,6 +26,39 @@ class PhoneVerifyThrottle(SimpleRateThrottle):
     """OTP tekshirish — brute-force oldini olish."""
 
     scope = "phone_verify"
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {"scope": self.scope, "ident": self.get_ident(request)}
+
+
+class PhoneScopedSendThrottle(SimpleRateThrottle):
+    """OTP yuborish — telefon raqami bo'yicha limit (IP almashtirish hujumlari)."""
+
+    scope = "phone_send_per_number"
+
+    def get_cache_key(self, request, view):
+        phone = normalize_uz_phone(getattr(request, "data", {}).get("phone"))
+        if not phone:
+            return None
+        return self.cache_format % {"scope": self.scope, "ident": phone}
+
+
+class PhoneScopedVerifyThrottle(SimpleRateThrottle):
+    """OTP tekshirish — telefon raqami bo'yicha limit."""
+
+    scope = "phone_verify_per_number"
+
+    def get_cache_key(self, request, view):
+        phone = normalize_uz_phone(getattr(request, "data", {}).get("phone"))
+        if not phone:
+            return None
+        return self.cache_format % {"scope": self.scope, "ident": phone}
+
+
+class PhoneCheckThrottle(SimpleRateThrottle):
+    """Telefon tekshirish — enumeration / spam."""
+
+    scope = "phone_check"
 
     def get_cache_key(self, request, view):
         return self.cache_format % {"scope": self.scope, "ident": self.get_ident(request)}
