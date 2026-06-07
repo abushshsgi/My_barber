@@ -45,7 +45,14 @@ from accounts.views import (
     UserSearchView,
     UzRegionsView,
 )
-from accounts.views_phone_auth import PhoneSendCodeView, PhoneVerifyView
+from accounts.views_phone_auth import (
+    PhoneChangePasswordView,
+    PhoneCheckView,
+    PhonePasswordLoginView,
+    PhoneSendCodeView,
+    PhoneSetPasswordView,
+    PhoneVerifyView,
+)
 from accounts.views_admin_auth import AdminMeView, AdminTokenRefreshView, AdminTokenView
 from bookings.views import (
     AnalyticsView,
@@ -163,6 +170,10 @@ api_routes = [
     path("regions/", UzRegionsView.as_view()),
     path("auth/phone/send-code/", PhoneSendCodeView.as_view()),
     path("auth/phone/verify/", PhoneVerifyView.as_view()),
+    path("auth/phone/check/", PhoneCheckView.as_view()),
+    path("auth/phone/password-login/", PhonePasswordLoginView.as_view()),
+    path("auth/phone/set-password/", PhoneSetPasswordView.as_view()),
+    path("auth/phone/change-password/", PhoneChangePasswordView.as_view()),
     path("auth/barber-register/", BarberRegisterView.as_view()),
     path("auth/barber-register-join-salon/", BarberRegisterJoinSalonView.as_view()),
     path("auth/token/refresh/", TokenRefreshView.as_view()),

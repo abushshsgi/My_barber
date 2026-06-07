@@ -75,6 +75,63 @@ class PhoneAuthTests(TestCase):
         )
         self.assertEqual(res.status_code, 400)
 
+    def test_phone_check_and_password_login(self):
+        User.objects.create_user(
+            username="901334455@phone.mysaloon.local",
+            email="901334455@phone.mysaloon.local",
+            phone="+998901334455",
+            password="securepass1",
+        )
+        check = self.client.post(
+            "/api/v1/auth/phone/check/",
+            {"phone": "901334455"},
+            format="json",
+        )
+        self.assertEqual(check.status_code, 200)
+        self.assertTrue(check.json()["has_password"])
+
+        bad = self.client.post(
+            "/api/v1/auth/phone/password-login/",
+            {"phone": "901334455", "password": "wrong"},
+            format="json",
+        )
+        self.assertEqual(bad.status_code, 400)
+
+        ok = self.client.post(
+            "/api/v1/auth/phone/password-login/",
+            {"phone": "901334455", "password": "securepass1"},
+            format="json",
+        )
+        self.assertEqual(ok.status_code, 200)
+        self.assertFalse(ok.json()["is_new_user"])
+        self.assertTrue(ok.json()["user"]["has_password"])
+
+    def test_set_password_after_otp(self):
+        store_otp("+998901445566", "5678")
+        verify = self.client.post(
+            "/api/v1/auth/phone/verify/",
+            {"phone": "901445566", "code": "5678"},
+            format="json",
+        )
+        token = verify.json()["access"]
+        self.assertFalse(verify.json()["user"]["has_password"])
+
+        set_pw = self.client.post(
+            "/api/v1/auth/phone/set-password/",
+            {"password": "mynewpass1"},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(set_pw.status_code, 200)
+        self.assertTrue(set_pw.json()["user"]["has_password"])
+
+        login = self.client.post(
+            "/api/v1/auth/phone/password-login/",
+            {"phone": "901445566", "password": "mynewpass1"},
+            format="json",
+        )
+        self.assertEqual(login.status_code, 200)
+
     def test_me_requires_token(self):
         store_otp("+998907776655", "1111")
         verify = self.client.post(

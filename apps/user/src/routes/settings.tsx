@@ -1,13 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { LogOut } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
 import { setLang, type AppLang } from "@/i18n/config";
 import { cn } from "@/lib/utils";
 import { useAudience, PREFS_KEY, type AudienceFilter } from "@/hooks/use-audience";
-import { useDisplayUser, useUpdateMe } from "@/hooks/use-me";
+import { changePassword, setPassword } from "@/lib/api";
+import { setSession } from "@/lib/auth";
+import { meQueryKey, useDisplayUser, useMe, useUpdateMe } from "@/hooks/use-me";
 import { useProfileScreen } from "@/components/profile/useProfileScreen";
 
 export const Route = createFileRoute("/settings")({
@@ -43,10 +47,45 @@ function Settings() {
   const { t, i18n } = useTranslation();
   const activeLang = (i18n.resolvedLanguage || i18n.language || "uz").split("-")[0] as AppLang;
   const { setAudience } = useAudience();
+  const queryClient = useQueryClient();
   const user = useDisplayUser();
+  const { data: me } = useMe();
   const updateMe = useUpdateMe();
   const { handleLogout } = useProfileScreen();
   const [prefs, setPrefs] = useState<Prefs>(DEFAULTS);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+
+  const setPw = useMutation({
+    mutationFn: () => setPassword(newPassword),
+    onSuccess: (res) => {
+      toast.success(t("settings.passwordSaved"));
+      setNewPassword("");
+      void queryClient.invalidateQueries({ queryKey: meQueryKey });
+      if (res.user) {
+        const access = localStorage.getItem("mybarber_user_access");
+        const refresh = localStorage.getItem("mybarber_user_refresh");
+        if (access && refresh) setSession(access, refresh, res.user);
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const changePw = useMutation({
+    mutationFn: () => changePassword(oldPassword, newPassword),
+    onSuccess: (res) => {
+      toast.success(t("settings.passwordChanged"));
+      setOldPassword("");
+      setNewPassword("");
+      void queryClient.invalidateQueries({ queryKey: meQueryKey });
+      if (res.user) {
+        const access = localStorage.getItem("mybarber_user_access");
+        const refresh = localStorage.getItem("mybarber_user_refresh");
+        if (access && refresh) setSession(access, refresh, res.user);
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   useEffect(() => {
     try {
@@ -152,6 +191,69 @@ function Settings() {
             </button>
           );
         })}
+      </ProfileSubpageCard>
+
+      <p className="mb-3 mt-6 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+        {t("settings.passwordSection")}
+      </p>
+      <ProfileSubpageCard className="space-y-3">
+        {me?.has_password ? (
+          <>
+            <label className="block">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                {t("settings.currentPassword")}
+              </span>
+              <input
+                type="password"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-bold outline-none focus:border-foreground"
+              />
+            </label>
+            <label className="block">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                {t("settings.newPassword")}
+              </span>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-bold outline-none focus:border-foreground"
+              />
+            </label>
+            <button
+              type="button"
+              disabled={changePw.isPending || newPassword.length < 8 || !oldPassword}
+              onClick={() => changePw.mutate()}
+              className="w-full rounded-xl bg-foreground py-3 text-sm font-bold text-background disabled:opacity-60"
+            >
+              {t("settings.changePassword")}
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="text-xs text-muted-foreground">{t("settings.passwordNotSet")}</p>
+            <label className="block">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                {t("settings.newPassword")}
+              </span>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-bold outline-none focus:border-foreground"
+              />
+            </label>
+            <button
+              type="button"
+              disabled={setPw.isPending || newPassword.length < 8}
+              onClick={() => setPw.mutate()}
+              className="w-full rounded-xl bg-foreground py-3 text-sm font-bold text-background disabled:opacity-60"
+            >
+              {t("settings.setPassword")}
+            </button>
+          </>
+        )}
       </ProfileSubpageCard>
 
       <button

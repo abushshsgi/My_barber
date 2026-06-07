@@ -15,6 +15,7 @@ from .uz_regions import UzRegion
 
 class UserSerializer(serializers.ModelSerializer):
     role = serializers.SerializerMethodField()
+    has_password = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -30,9 +31,13 @@ class UserSerializer(serializers.ModelSerializer):
             "longitude",
             "onboarding_completed",
             "avatar",
+            "has_password",
             "date_joined",
         )
-        read_only_fields = ("id", "role", "date_joined")
+        read_only_fields = ("id", "role", "has_password", "date_joined")
+
+    def get_has_password(self, obj: User) -> bool:
+        return obj.has_usable_password()
 
     def validate_region(self, value):
         value = (value or "").strip()

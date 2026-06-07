@@ -1,12 +1,21 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { sendPhoneCode, verifyPhoneCode } from "@/lib/api";
-import { setSession } from "@/lib/auth";
+import {
+  checkPhone,
+  loginWithPassword,
+  sendPhoneCode,
+  setPassword,
+  verifyPhoneCode,
+} from "@/lib/api";
+import { getLastPhone, setSession } from "@/lib/auth";
 import { needsOnboarding } from "@/lib/recommendations";
 import { redirectIfAuthenticated } from "@/lib/require-auth";
+import type { PhoneVerifyResponse } from "@/lib/api/types";
 
 export const Route = createFileRoute("/auth")({
   beforeLoad: async () => {
@@ -16,34 +25,74 @@ export const Route = createFileRoute("/auth")({
   component: Auth,
 });
 
+type Step = "phone" | "password" | "code" | "set-password";
+
 function Auth() {
+  const { t } = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [step, setStep] = useState<"phone" | "code">("phone");
-  const [phone, setPhone] = useState("");
+  const [step, setStep] = useState<Step>("phone");
+  const [phone, setPhone] = useState(() => getLastPhone());
+  const [password, setPasswordInput] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [code, setCode] = useState(["", "", "", ""]);
   const [appDeliveryCode, setAppDeliveryCode] = useState<string | null>(null);
   const [deliveryMode, setDeliveryMode] = useState<"sms" | "app">("sms");
+  const [pendingAuth, setPendingAuth] = useState<PhoneVerifyResponse | null>(null);
 
   const applyOtpCode = (value: string) => {
     const digits = value.replace(/\D/g, "").slice(0, 4);
     setCode(digits.split("").concat(["", "", "", ""]).slice(0, 4));
   };
 
-  const sendCode = useMutation({
+  const finishLogin = (data: PhoneVerifyResponse) => {
+    setSession(data.access, data.refresh, data.user);
+    toast.success(data.is_new_user ? t("auth.welcomeNew") : t("auth.welcomeBack"));
+    void router
+      .navigate({
+        to: needsOnboarding(data.user) ? "/onboarding" : "/",
+      })
+      .then(() => queryClient.invalidateQueries())
+      .catch(() => queryClient.invalidateQueries());
+  };
+
+  const goToOtp = useMutation({
     mutationFn: () => sendPhoneCode(phone),
     onSuccess: (data) => {
       setStep("code");
       setAppDeliveryCode(null);
-      const mode = data.delivery === "app" ? "app" : "sms";
-      setDeliveryMode(mode);
-
+      setDeliveryMode(data.delivery === "app" ? "app" : "sms");
       if (data.debug_code) {
         setAppDeliveryCode(data.debug_code);
         applyOtpCode(data.debug_code);
       }
-
       toast.success(data.detail);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const continuePhone = useMutation({
+    mutationFn: () => checkPhone(phone),
+    onSuccess: (data) => {
+      if (data.has_password) {
+        setStep("password");
+        return;
+      }
+      goToOtp.mutate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const passwordLogin = useMutation({
+    mutationFn: () => loginWithPassword(phone, password),
+    onSuccess: (data) => {
+      if (!data?.access || !data?.refresh || !data?.user) {
+        toast.error(t("auth.errBadResponse"));
+        return;
+      }
+      finishLogin(data);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -52,14 +101,29 @@ function Auth() {
     mutationFn: () => verifyPhoneCode(phone, code.join("")),
     onSuccess: (data) => {
       if (!data?.access || !data?.refresh || !data?.user) {
-        toast.error("Kirish javobi noto'g'ri. Qayta urinib ko'ring.");
+        toast.error(t("auth.errBadResponse"));
         return;
       }
       setSession(data.access, data.refresh, data.user);
-      toast.success(data.is_new_user ? "Ro'yxatdan o'tdingiz!" : "Xush kelibsiz!");
+      if (!data.user.has_password) {
+        setPendingAuth(data);
+        setStep("set-password");
+        return;
+      }
+      finishLogin(data);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const savePassword = useMutation({
+    mutationFn: () => setPassword(newPassword),
+    onSuccess: (res) => {
+      toast.success(res.detail);
+      if (!pendingAuth) return;
+      setSession(pendingAuth.access, pendingAuth.refresh, res.user);
       void router
         .navigate({
-          to: needsOnboarding(data.user) ? "/onboarding" : "/",
+          to: needsOnboarding(res.user) ? "/onboarding" : "/",
         })
         .then(() => queryClient.invalidateQueries())
         .catch(() => queryClient.invalidateQueries());
@@ -67,23 +131,77 @@ function Auth() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const handleSendCode = () => {
-    if (phone.length < 9) {
-      toast.error("Telefon raqamini to'g'ri kiriting");
-      return;
-    }
-    sendCode.mutate();
+  const skipPasswordSetup = () => {
+    if (pendingAuth) finishLogin(pendingAuth);
   };
 
-  const handleVerify = () => {
-    if (code.join("").length < 4) {
-      toast.error("4 raqamli kodni kiriting");
+  const busy =
+    continuePhone.isPending ||
+    goToOtp.isPending ||
+    passwordLogin.isPending ||
+    verify.isPending ||
+    savePassword.isPending;
+
+  const header = {
+    phone: { kicker: t("auth.login"), title: t("auth.title"), desc: t("auth.subtitlePhone") },
+    password: {
+      kicker: t("auth.login"),
+      title: t("auth.passwordTitle"),
+      desc: t("auth.passwordSubtitle", { phone: `+998 ${phone}` }),
+    },
+    code: {
+      kicker: t("auth.verify"),
+      title: t("auth.codeTitle"),
+      desc:
+        deliveryMode === "app"
+          ? t("auth.codeSubtitleApp", { phone: `+998 ${phone}` })
+          : t("auth.codeSubtitleSms", { phone: `+998 ${phone}` }),
+    },
+    "set-password": {
+      kicker: t("auth.optional"),
+      title: t("auth.setPasswordTitle"),
+      desc: t("auth.setPasswordSubtitle"),
+    },
+  }[step];
+
+  const primaryAction = () => {
+    if (step === "phone") {
+      if (phone.length < 9) {
+        toast.error(t("auth.errPhone"));
+        return;
+      }
+      continuePhone.mutate();
       return;
     }
-    verify.mutate();
+    if (step === "password") {
+      if (password.length < 8) {
+        toast.error(t("auth.errPasswordShort"));
+        return;
+      }
+      passwordLogin.mutate();
+      return;
+    }
+    if (step === "code") {
+      if (code.join("").length < 4) {
+        toast.error(t("auth.errCode"));
+        return;
+      }
+      verify.mutate();
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error(t("auth.errPasswordShort"));
+      return;
+    }
+    savePassword.mutate();
   };
 
-  const busy = sendCode.isPending || verify.isPending;
+  const primaryLabel = {
+    phone: t("auth.continue"),
+    password: t("auth.login"),
+    code: t("auth.verify"),
+    "set-password": t("auth.savePassword"),
+  }[step];
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-background px-6 py-10">
@@ -94,61 +212,83 @@ function Auth() {
 
       <div className="flex flex-1 flex-col justify-center py-12">
         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-          {step === "phone" ? "Kirish" : "Tasdiqlash"}
+          {header.kicker}
         </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight">
-          {step === "phone" ? "Xush kelibsiz" : "Kodni kiriting"}
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {step === "phone"
-            ? "Telefon raqamingizni kiriting. SMS ulanganda kod telefoningizga keladi."
-            : deliveryMode === "app"
-              ? `+998 ${phone} uchun tasdiq kodi quyida. (SMS provayder keyin ulanadi.)`
-              : `+998 ${phone} raqamiga yuborilgan 4 raqamli kodni kiriting.`}
-        </p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight">{header.title}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{header.desc}</p>
 
         {step === "phone" ? (
           <div className="mt-8">
             <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-              Telefon raqami
+              {t("auth.phone")}
             </label>
             <div className="mt-2 flex items-center overflow-hidden rounded-2xl border-2 border-border bg-background focus-within:border-foreground">
-              <span className="border-r border-border px-4 py-4 text-sm font-bold">
-                +998
-              </span>
+              <span className="border-r border-border px-4 py-4 text-sm font-bold">+998</span>
               <input
                 type="tel"
                 inputMode="numeric"
                 value={phone}
                 disabled={busy}
-                onChange={(e) =>
-                  setPhone(e.target.value.replace(/\D/g, "").slice(0, 9))
-                }
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 9))}
                 placeholder="90 123 45 67"
                 className="flex-1 border-0 bg-transparent px-4 py-4 text-sm font-bold placeholder:text-muted-foreground/50 focus:outline-none disabled:opacity-60"
               />
             </div>
           </div>
-        ) : (
+        ) : null}
+
+        {step === "password" ? (
+          <div className="mt-8 space-y-4">
+            <div>
+              <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                {t("auth.password")}
+              </label>
+              <div className="mt-2 flex items-center overflow-hidden rounded-2xl border-2 border-border bg-background focus-within:border-foreground">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  disabled={busy}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  placeholder="••••••••"
+                  className="flex-1 border-0 bg-transparent px-4 py-4 text-sm font-bold focus:outline-none disabled:opacity-60"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="px-4 text-muted-foreground"
+                  aria-label="Toggle password"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => goToOtp.mutate()}
+              className="w-full text-center text-xs font-bold text-muted-foreground underline disabled:opacity-60"
+            >
+              {t("auth.loginWithOtp")}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setStep("phone")}
+              className="w-full text-center text-xs font-bold text-muted-foreground underline disabled:opacity-60"
+            >
+              {t("auth.changePhone")}
+            </button>
+          </div>
+        ) : null}
+
+        {step === "code" ? (
           <div className="mt-8">
             {appDeliveryCode ? (
               <div className="mb-6 rounded-2xl border-2 border-dashed border-foreground/30 bg-surface px-4 py-4 text-center">
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                  Vaqtinchalik kod (SMS ulanmagan)
+                  {t("auth.debugCode")}
                 </p>
-                <p className="mt-2 font-mono text-3xl font-bold tracking-[0.35em]">
-                  {appDeliveryCode}
-                </p>
-                <button
-                  type="button"
-                  className="mt-3 text-xs font-bold text-muted-foreground underline"
-                  onClick={() => {
-                    void navigator.clipboard?.writeText(appDeliveryCode);
-                    toast.success("Kod nusxalandi");
-                  }}
-                >
-                  Nusxalash
-                </button>
+                <p className="mt-2 font-mono text-3xl font-bold tracking-[0.35em]">{appDeliveryCode}</p>
               </div>
             ) : null}
             <div className="flex justify-center gap-3">
@@ -165,10 +305,7 @@ function Auth() {
                     const next = [...code];
                     next[i] = v;
                     setCode(next);
-                    if (v && i < 3) {
-                      const el = document.getElementById(`otp-${i + 1}`);
-                      el?.focus();
-                    }
+                    if (v && i < 3) document.getElementById(`otp-${i + 1}`)?.focus();
                   }}
                   id={`otp-${i}`}
                   className="h-16 w-14 rounded-2xl border-2 border-border bg-background text-center text-2xl font-bold focus:border-foreground focus:outline-none disabled:opacity-60"
@@ -185,29 +322,85 @@ function Auth() {
               }}
               className="mt-6 w-full text-center text-xs font-bold text-muted-foreground underline disabled:opacity-60"
             >
-              Boshqa raqam kiritish
+              {t("auth.changePhone")}
             </button>
           </div>
-        )}
+        ) : null}
+
+        {step === "set-password" ? (
+          <div className="mt-8 space-y-4">
+            <div>
+              <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                {t("auth.newPassword")}
+              </label>
+              <div className="mt-2 flex items-center overflow-hidden rounded-2xl border-2 border-border bg-background focus-within:border-foreground">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  disabled={busy}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder={t("auth.passwordMin")}
+                  className="flex-1 border-0 bg-transparent px-4 py-4 text-sm font-bold focus:outline-none disabled:opacity-60"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword((s) => !s)}
+                  className="px-4 text-muted-foreground"
+                >
+                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">{t("auth.passwordHint")}</p>
+            </div>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={skipPasswordSetup}
+              className="w-full text-center text-sm font-bold text-muted-foreground underline disabled:opacity-60"
+            >
+              {t("auth.skipPassword")}
+            </button>
+          </div>
+        ) : null}
       </div>
 
-      <button
-        type="button"
-        disabled={busy}
-        onClick={step === "phone" ? handleSendCode : handleVerify}
-        className={cn(
-          "w-full rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background active:scale-[0.99] disabled:opacity-60",
-        )}
-      >
-        {busy ? "Kutilmoqda…" : step === "phone" ? "Kod yuborish" : "Tasdiqlash"}
-      </button>
+      {step !== "set-password" ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={primaryAction}
+          className={cn(
+            "w-full rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background active:scale-[0.99] disabled:opacity-60",
+          )}
+        >
+          {busy ? t("auth.loading") : primaryLabel}
+        </button>
+      ) : (
+        <div className="space-y-3">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={primaryAction}
+            className="w-full rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background disabled:opacity-60"
+          >
+            {busy ? t("auth.loading") : primaryLabel}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={skipPasswordSetup}
+            className="w-full rounded-2xl border-2 border-border py-4 text-sm font-bold text-muted-foreground disabled:opacity-60"
+          >
+            {t("auth.skipPassword")}
+          </button>
+        </div>
+      )}
 
       <p className="mt-4 text-center text-[11px] text-muted-foreground">
-        Davom etish orqali siz{" "}
+        {t("auth.privacyPrefix")}{" "}
         <a href="/privacy" className="font-bold underline">
-          maxfiylik siyosati
-        </a>{" "}
-        bilan rozisiz.
+          {t("auth.privacyLink")}
+        </a>
       </p>
     </div>
   );

@@ -7,6 +7,24 @@ import {
 } from "@/lib/api";
 
 const USER_KEY = "mysaloon.auth.user";
+const LAST_PHONE_KEY = "mysaloon.auth.lastPhone";
+
+export function getLastPhone(): string {
+  try {
+    return localStorage.getItem(LAST_PHONE_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export function rememberPhone(phone: string) {
+  try {
+    const digits = phone.replace(/\D/g, "").slice(-9);
+    if (digits.length === 9) localStorage.setItem(LAST_PHONE_KEY, digits);
+  } catch {
+    /* noop */
+  }
+}
 
 export type AuthUser = {
   phone: string;
@@ -29,6 +47,7 @@ export function getToken(): string | null {
 export function setSession(access: string, refresh: string, user: ApiUser) {
   setUserTokens(access, refresh);
   localStorage.setItem(USER_KEY, JSON.stringify(userFromApi(user)));
+  if (user.phone) rememberPhone(user.phone);
 }
 
 export function getAuthUser(): AuthUser | null {
@@ -51,4 +70,5 @@ export function logout() {
   } catch {
     /* noop */
   }
+  /* LAST_PHONE_KEY saqlanadi — keyingi kirishda raqam tayyor bo'ladi */
 }
