@@ -35,13 +35,14 @@ export function OtpResendTimer({ seconds, busy = false, idleLabel, onResend }: P
       : String(seconds);
 
   return (
-    <div
+    <p
       role="status"
       aria-live="polite"
       aria-label={t("auth.resendTimerHint", { seconds })}
-      className="flex items-center justify-center gap-3 py-1"
+      className="flex items-center justify-center gap-2 py-1 text-xs font-medium text-muted-foreground"
     >
-      <div className="relative flex h-9 w-9 shrink-0 items-center justify-center">
+      <span>{t("auth.resendCountdown")}</span>
+      <span className="relative inline-flex h-7 w-7 shrink-0 items-center justify-center">
         <svg
           className="absolute inset-0 -rotate-90"
           viewBox="0 0 32 32"
@@ -67,9 +68,8 @@ export function OtpResendTimer({ seconds, busy = false, idleLabel, onResend }: P
             strokeDashoffset={RING_C * (1 - progress)}
           />
         </svg>
-        <span className="font-mono text-[11px] font-bold tabular-nums text-foreground">{display}</span>
-      </div>
-      <p className="text-xs font-medium text-muted-foreground">{t("auth.resendCountdown")}</p>
-    </div>
+        <span className="font-mono text-[10px] font-bold tabular-nums text-foreground">{display}</span>
+      </span>
+    </p>
   );
 }
