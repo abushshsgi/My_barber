@@ -7,6 +7,7 @@ import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
 import { AiStyleAnalyzeCta, AiStyleScanLine } from "@/components/ai-style/AiStyleUi";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { getTrendCoverUrl } from "@/lib/cover-images";
+import { loadFaceProfile } from "@/lib/face-profile";
 import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -15,9 +16,10 @@ const HERO_SLIDES: Record<"men" | "women", readonly string[]> = {
   women: ["tr2", "tr4", "tr6", "tr2", "tr4"],
 };
 const SLIDE_MS = 3800;
-const UPLOAD_PANEL_HEIGHT = 280;
-const UPLOAD_PANEL_DRAG_UP = 48;
+const UPLOAD_PANEL_HEIGHT = 305;
+const UPLOAD_PANEL_DRAG_UP = 72;
 const UPLOAD_PANEL_DRAG_DOWN = 24;
+const UPLOAD_HISTORY_REVEAL_PX = 28;
 
 export type AiStyleSplitLayoutProps = {
   audience: Audience;
@@ -202,22 +204,66 @@ function UploadActions({
   );
 }
 
+function UploadHistoryPeek({ visible }: { visible: boolean }) {
+  const { t, i18n } = useTranslation();
+  const [profile] = useState(() => loadFaceProfile());
+
+  const lastScan = profile
+    ? new Intl.DateTimeFormat(i18n.language, {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(profile.scannedAt))
+    : null;
+
+  return (
+    <div
+      className={cn(
+        "transition-opacity duration-200",
+        visible ? "opacity-100" : "opacity-0",
+      )}
+    >
+      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+        {t("aiStylePage.historyTitle")}
+      </p>
+      {profile ? (
+        <p className="mt-1 text-sm font-semibold text-foreground">
+          {t(`aiStylePage.faceShapes.${profile.faceShapeKey}`)}
+        </p>
+      ) : null}
+      <p className="mt-0.5 text-[11px] text-muted-foreground">
+        {lastScan
+          ? t("aiStylePage.historyLastScan", { date: lastScan })
+          : t("aiStylePage.historyEmpty")}
+      </p>
+    </div>
+  );
+}
+
 export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const { t } = useTranslation();
   const busy = props.analyzing || props.validating;
   const showResults = props.done && !!props.result;
   const isUploadStep = !props.photo && !showResults;
   const uploadDragControls = useDragControls();
+  const [panelDragY, setPanelDragY] = useState(0);
+  const historyVisible = panelDragY <= -UPLOAD_HISTORY_REVEAL_PX;
 
   return (
     <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-white">
       <div
         className={cn(
-          "relative overflow-hidden",
-          isUploadStep && "min-h-0 flex-1",
-          props.photo && !showResults && "h-[44dvh] shrink-0",
-          showResults && "h-[24dvh] shrink-0",
+          "relative shrink-0 overflow-hidden",
+          isUploadStep && "min-h-0",
+          props.photo && !showResults && "h-[44dvh]",
+          showResults && "h-[24dvh]",
         )}
+        style={
+          isUploadStep
+            ? { height: `calc(100dvh - ${UPLOAD_PANEL_HEIGHT}px)` }
+            : undefined
+        }
       >
         {props.photo ? (
           <>
@@ -235,6 +281,17 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
         </Link>
       </div>
 
+      {isUploadStep ? (
+        <div
+          className="absolute inset-x-0 bottom-0 z-[5] bg-white"
+          style={{ height: UPLOAD_PANEL_HEIGHT }}
+        >
+          <div className="absolute inset-x-0 bottom-0 border-t border-border/30 px-5 pb-4 pt-3">
+            <UploadHistoryPeek visible={historyVisible} />
+          </div>
+        </div>
+      ) : null}
+
       <motion.div
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
@@ -242,6 +299,8 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
         drag={isUploadStep ? "y" : false}
         dragControls={isUploadStep ? uploadDragControls : undefined}
         dragListener={false}
+        onDrag={(_, info) => setPanelDragY(info.offset.y)}
+        onDragEnd={(_, info) => setPanelDragY(info.offset.y)}
         dragConstraints={
           isUploadStep
             ? { top: -UPLOAD_PANEL_DRAG_UP, bottom: UPLOAD_PANEL_DRAG_DOWN }
@@ -250,9 +309,9 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
         dragElastic={0.12}
         dragMomentum={false}
         className={cn(
-          "z-10 flex flex-col rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-left text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]",
-          isUploadStep && "absolute inset-x-0 bottom-0",
-          !isUploadStep && "relative -mt-16 shrink-0",
+          "z-10 flex shrink-0 flex-col rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-left text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]",
+          isUploadStep && "relative",
+          !isUploadStep && "relative -mt-16",
           showResults && "min-h-0 overflow-y-auto pb-6",
         )}
         style={isUploadStep ? { height: UPLOAD_PANEL_HEIGHT } : undefined}
