@@ -3,17 +3,21 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Camera, ChevronLeft, ImagePlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AudienceSwitch } from "@/components/AudienceSwitch";
 import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
 import { AiStyleAnalyzeCta, AiStyleScanLine } from "@/components/ai-style/AiStyleUi";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { getTrendCoverUrl } from "@/lib/cover-images";
+import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
-const HERO_SLIDES = ["tr1", "tr2", "tr3", "tr4", "tr5"] as const;
+const HERO_SLIDES: Record<"men" | "women", readonly string[]> = {
+  men: ["tr1", "tr3", "tr5", "tr1", "tr3"],
+  women: ["tr2", "tr4", "tr6", "tr2", "tr4"],
+};
 const SLIDE_MS = 3800;
 
 export type AiStyleSplitLayoutProps = {
+  audience: Audience;
   step: 1 | 2 | 3;
   photo: string | null;
   validating: boolean;
@@ -48,7 +52,7 @@ function StepRail({ step }: { step: 1 | 2 | 3 }) {
               className={cn(
                 "h-1 rounded-full transition-colors",
                 active ? "bg-foreground" : "bg-border",
-                current && "ring-2 ring-foreground/20 ring-offset-2 ring-offset-background",
+                current && "ring-2 ring-foreground/20 ring-offset-2 ring-offset-white",
               )}
             />
             <p
@@ -66,44 +70,49 @@ function StepRail({ step }: { step: 1 | 2 | 3 }) {
   );
 }
 
-function HeroCarousel() {
+function HeroCarousel({ audience }: { audience: Audience }) {
   const { t } = useTranslation();
+  const slides = HERO_SLIDES[audience === "women" ? "women" : "men"];
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
+    setIndex(0);
+  }, [audience]);
+
+  useEffect(() => {
     const id = window.setInterval(() => {
-      setIndex((i) => (i + 1) % HERO_SLIDES.length);
+      setIndex((i) => (i + 1) % slides.length);
     }, SLIDE_MS);
     return () => window.clearInterval(id);
-  }, []);
+  }, [slides.length]);
 
   return (
-    <div className="relative h-full min-h-[42vh] w-full overflow-hidden">
+    <div className="relative h-[58vh] min-h-[320px] w-full overflow-hidden">
       <AnimatePresence mode="wait">
         <motion.img
-          key={HERO_SLIDES[index]}
-          src={getTrendCoverUrl(HERO_SLIDES[index])}
+          key={`${audience}-${slides[index]}`}
+          src={getTrendCoverUrl(slides[index])}
           alt=""
-          initial={{ opacity: 0, scale: 1.06 }}
+          initial={{ opacity: 0, scale: 1.04 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 1.02 }}
           transition={{ duration: 0.65, ease: "easeOut" }}
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover object-top"
         />
       </AnimatePresence>
 
-      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-black/55" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/45" />
 
-      <div className="absolute inset-x-0 bottom-8 flex flex-col items-center gap-3 px-6 text-center text-background">
+      <div className="absolute inset-x-0 bottom-[4.5rem] flex flex-col items-center gap-2.5 px-6 text-center text-white">
         <p className="text-lg font-bold drop-shadow-sm">{t("aiStylePage.uploadTitle")}</p>
-        <p className="max-w-[260px] text-xs text-background/80">{t("aiStylePage.uploadHint")}</p>
+        <p className="max-w-[260px] text-xs text-white/85">{t("aiStylePage.uploadHint")}</p>
         <div className="flex gap-1.5">
-          {HERO_SLIDES.map((seed, i) => (
+          {slides.map((seed, i) => (
             <span
-              key={seed}
+              key={`${seed}-${i}`}
               className={cn(
                 "h-1.5 rounded-full transition-all duration-300",
-                i === index ? "w-5 bg-background" : "w-1.5 bg-background/40",
+                i === index ? "w-5 bg-white" : "w-1.5 bg-white/40",
               )}
             />
           ))}
@@ -155,19 +164,23 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const busy = props.analyzing || props.validating;
 
   return (
-    <div className="flex min-h-full flex-col bg-foreground pb-[calc(68px+env(safe-area-inset-bottom))]">
-      <div className="relative min-h-[42vh] shrink-0">
+    <div className="relative flex min-h-full flex-col bg-foreground pb-[calc(68px+env(safe-area-inset-bottom))]">
+      <div className="relative shrink-0">
         {props.photo ? (
           <>
-            <img src={props.photo} alt="" className="h-full min-h-[42vh] w-full object-cover" />
+            <img
+              src={props.photo}
+              alt=""
+              className="h-[58vh] min-h-[320px] w-full object-cover object-top"
+            />
             {busy ? <AiStyleScanLine /> : null}
           </>
         ) : (
-          <HeroCarousel />
+          <HeroCarousel audience={props.audience} />
         )}
         <Link
           to="/profile"
-          className="absolute left-5 top-[calc(env(safe-area-inset-top)+12px)] z-10 grid h-10 w-10 place-items-center rounded-full bg-black/35 text-background backdrop-blur-md"
+          className="absolute left-5 top-[calc(env(safe-area-inset-top)+12px)] z-10 grid h-10 w-10 place-items-center rounded-full bg-black/35 text-white backdrop-blur-md"
         >
           <ChevronLeft className="h-5 w-5" />
         </Link>
@@ -177,12 +190,9 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         transition={{ type: "spring", damping: 28, stiffness: 280, mass: 0.9 }}
-        className="flex flex-1 flex-col rounded-t-[28px] bg-background px-5 pb-6 pt-5 text-foreground shadow-[0_-12px_40px_-8px_rgba(0,0,0,0.25)]"
+        className="relative z-10 -mt-10 shrink-0 rounded-t-[28px] bg-white px-5 pb-6 pt-5 text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]"
       >
         <StepRail step={props.step} />
-        <div className="mt-4">
-          <AudienceSwitch showProfileHint={false} />
-        </div>
 
         {!props.photo ? (
           <motion.div

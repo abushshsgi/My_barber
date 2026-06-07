@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AiStyleFlow } from "@/components/ai-style/AiStyleFlow";
 import { useAiStyleFlow } from "@/components/ai-style/useAiStyleFlow";
-import { useAudience } from "@/hooks/use-audience";
+import { resolveAiStyleAudience, useAudience } from "@/hooks/use-audience";
 
 export const Route = createFileRoute("/ai-style")({
   head: () => ({
@@ -17,8 +17,9 @@ export const Route = createFileRoute("/ai-style")({
 });
 
 function AiStylePage() {
-  const { audience } = useAudience();
+  const { audience, profileDefault } = useAudience();
   const flow = useAiStyleFlow();
+  const styleAudience = resolveAiStyleAudience(profileDefault, audience);
 
-  return <AiStyleFlow flow={flow} audience={audience} />;
+  return <AiStyleFlow flow={flow} audience={styleAudience} />;
 }

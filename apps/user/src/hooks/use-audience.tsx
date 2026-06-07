@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { type Audience, type Category } from "@/lib/mock-data";
 
 export type AudienceFilter = Audience | "all";
@@ -50,6 +43,16 @@ export function getProfileDefaultAudience(): AudienceFilter {
   const fromPrefs = readPrefsPreferredAudience();
   if (fromPrefs) return fromPrefs;
   return "all";
+}
+
+/** AI Style: profil (erkak/ayol) bo'yicha — «Hammasi» ishlatilmaydi. */
+export function resolveAiStyleAudience(
+  profileDefault: AudienceFilter,
+  audience: AudienceFilter,
+): Audience {
+  if (profileDefault === "men" || profileDefault === "women") return profileDefault;
+  if (audience === "men" || audience === "women") return audience;
+  return "men";
 }
 
 function readInitialAudience(): AudienceFilter {

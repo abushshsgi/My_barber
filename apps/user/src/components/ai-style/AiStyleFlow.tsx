@@ -55,6 +55,7 @@ export function AiStyleFlow({ flow, audience }: Props) {
   return (
     <>
       <AiStyleSplitLayout
+        audience={audience}
         step={step}
         photo={photo}
         validating={validating}
