@@ -17,7 +17,6 @@ const HERO_SLIDES: Record<"men" | "women", readonly string[]> = {
 };
 const SLIDE_MS = 4500;
 const UPLOAD_PANEL_HEIGHT = 280;
-const UPLOAD_PANEL_COMPACT_HEIGHT = 72;
 const UPLOAD_HISTORY_REVEAL_RATIO = 0.48;
 const HISTORY_HINT_MS = 6000;
 const HISTORY_HINT_NUDGE_MS = 1500;
@@ -333,15 +332,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const panelHeight = useMotionValue(UPLOAD_PANEL_HEIGHT);
   const nudgeY = useMotionValue(0);
   const panelCombinedY = useTransform([panelY, nudgeY], ([p, n]) => (p as number) + (n as number));
-
-  const historyOpacity = useTransform(panelY, (y) => {
-    const progress = Math.min(1, Math.max(0, -y / historyRevealHeight));
-    return progress;
-  });
-  const historySlideY = useTransform(panelY, (y) => {
-    const progress = Math.min(1, Math.max(0, -y / historyRevealHeight));
-    return (1 - progress) * historyRevealHeight * 0.35;
-  });
+  const openPanelHeight = UPLOAD_PANEL_HEIGHT + historyRevealHeight;
 
   useEffect(() => {
     const onResize = () => setHistoryRevealHeight(getHistoryRevealHeight());
@@ -398,13 +389,8 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const snapPanel = (open: boolean) => {
     historyOpenRef.current = open;
     setHistoryOpen(open);
-    animate(panelY, open ? -historyRevealHeight : 0, {
-      type: "spring",
-      stiffness: 420,
-      damping: 36,
-      mass: 0.9,
-    });
-    animate(panelHeight, open ? UPLOAD_PANEL_COMPACT_HEIGHT : UPLOAD_PANEL_HEIGHT, {
+    panelY.set(0);
+    animate(panelHeight, open ? openPanelHeight : UPLOAD_PANEL_HEIGHT, {
       type: "spring",
       stiffness: 420,
       damping: 36,
@@ -412,8 +398,22 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
     });
   };
 
+  const setPanelHeightFromDrag = (offsetY: number, opening: boolean) => {
+    if (opening) {
+      const lift = Math.max(0, -offsetY);
+      panelHeight.set(UPLOAD_PANEL_HEIGHT + Math.min(historyRevealHeight, lift));
+      return;
+    }
+    const closeDrag = Math.max(0, offsetY);
+    panelHeight.set(Math.max(UPLOAD_PANEL_HEIGHT, openPanelHeight - closeDrag));
+  };
+
   const onPanelDrag = (_: unknown, info: PanInfo) => {
-    if (historyOpenRef.current) return;
+    if (historyOpenRef.current) {
+      setPanelHeightFromDrag(info.offset.y, false);
+      return;
+    }
+    setPanelHeightFromDrag(info.offset.y, true);
     if (info.offset.y < -historyRevealHeight * 0.22) {
       snapPanel(true);
     }
@@ -473,18 +473,6 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
       {isUploadStep ? (
         <>
           <motion.div
-            className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] overflow-hidden bg-white"
-            style={{
-              height: historyRevealHeight,
-              opacity: historyOpacity,
-            }}
-          >
-            <motion.div className="h-full" style={{ y: historySlideY }}>
-              <UploadHistorySheet />
-            </motion.div>
-          </motion.div>
-
-          <motion.div
             style={{ y: panelCombinedY, bottom: UPLOAD_PANEL_HEIGHT }}
             className="pointer-events-none absolute inset-x-0 z-[15] flex justify-center pb-3"
           >
@@ -496,12 +484,12 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
               drag="y"
               dragControls={uploadDragControls}
               dragListener={false}
-              dragConstraints={{ top: -historyRevealHeight, bottom: 0 }}
-              dragElastic={0.1}
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={0.08}
               dragMomentum={false}
               onDrag={onPanelDrag}
               onDragEnd={onPanelDragEnd}
-              style={{ y: panelY, height: panelHeight }}
+              style={{ y: 0, height: panelHeight }}
               className="flex flex-col overflow-hidden rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-left text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]"
             >
             <div
@@ -511,8 +499,19 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
               <div aria-hidden className="h-1 w-10 rounded-full bg-muted-foreground/25" />
             </div>
 
-            <AnimatePresence initial={false}>
-              {!historyOpen ? (
+            <AnimatePresence initial={false} mode="wait">
+              {historyOpen ? (
+                <motion.div
+                  key="history-panel-content"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="min-h-0 flex-1 overflow-y-auto"
+                >
+                  <UploadHistorySheet />
+                </motion.div>
+              ) : (
                 <motion.div
                   key="upload-panel-content"
                   initial={{ opacity: 0, height: 0 }}
@@ -538,7 +537,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
                     </p>
                   </motion.div>
                 </motion.div>
-              ) : null}
+              )}
             </AnimatePresence>
             </motion.div>
           </motion.div>
