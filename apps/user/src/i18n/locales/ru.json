@@ -376,6 +376,7 @@
     "resetPhoto": "Сменить фото",
     "privacyNote": "Фото отправляется в Google Gemini только для анализа и не сохраняется на сервере.",
     "historyTitle": "История",
+    "historyButton": "Открыть историю",
     "historySubtitle": "Прошлые анализы",
     "historyEmpty": "Истории анализов пока нет",
     "historyEmptyHint": "После первого анализа результаты появятся здесь.",

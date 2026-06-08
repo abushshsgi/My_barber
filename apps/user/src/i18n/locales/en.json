@@ -376,6 +376,7 @@
     "resetPhoto": "Change photo",
     "privacyNote": "Photo is sent to Google Gemini for analysis only and is not stored on our server.",
     "historyTitle": "History",
+    "historyButton": "View history",
     "historySubtitle": "Past analyses",
     "historyEmpty": "No analysis history yet",
     "historyEmptyHint": "Your scans will appear here after the first analysis.",

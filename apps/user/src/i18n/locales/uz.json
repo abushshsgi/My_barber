@@ -392,6 +392,7 @@
     "resetPhoto": "Rasmni almashtirish",
     "privacyNote": "Rasm faqat tahlil uchun Google Gemini ga yuboriladi va serverda saqlanmaydi.",
     "historyTitle": "Tarix",
+    "historyButton": "Tarixni ko'rish",
     "historySubtitle": "Oldingi tahlillar",
     "historyEmpty": "Hali tahlil tarixi yo'q",
     "historyEmptyHint": "Birinchi selfi tahlilidan keyin bu yerda saqlanadi.",
