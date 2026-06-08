@@ -16,9 +16,11 @@ const HERO_SLIDES: Record<"men" | "women", readonly string[]> = {
   women: ["tr2", "tr4", "tr6", "tr2", "tr4"],
 };
 const SLIDE_MS = 3800;
-const UPLOAD_PANEL_HEIGHT = 328;
+const UPLOAD_PANEL_HEIGHT = 305;
 const UPLOAD_PANEL_COMPACT_HEIGHT = 72;
 const UPLOAD_HISTORY_REVEAL_RATIO = 0.48;
+const HISTORY_SWIPE_HINT_KEY = "mysaloon.aiStyle.historySwipeHintSeen";
+const HISTORY_SWIPE_HINT_MS = 5000;
 
 function getHistoryRevealHeight() {
   if (typeof window === "undefined") return 400;
@@ -216,25 +218,61 @@ function HistorySwipeHint({ visible }: { visible: boolean }) {
       {visible ? (
         <motion.div
           key="history-swipe-hint"
-          initial={{ opacity: 0, y: 6 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 4 }}
-          transition={{ duration: 0.2 }}
-          className="pointer-events-none flex flex-col items-center gap-1 pb-1"
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="pointer-events-none flex flex-col items-center gap-1.5"
         >
           <motion.div
-            animate={{ y: [0, -7, 0] }}
+            animate={{ y: [0, -8, 0] }}
             transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
           >
-            <ChevronsUp className="h-5 w-5 text-muted-foreground/75" strokeWidth={2.25} />
+            <ChevronsUp className="h-6 w-6 text-white drop-shadow-md" strokeWidth={2.25} />
           </motion.div>
-          <p className="text-[10px] font-semibold text-muted-foreground">
+          <p className="max-w-[220px] text-center text-[11px] font-semibold text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.55)]">
             {t("aiStylePage.historySwipeHint")}
           </p>
         </motion.div>
       ) : null}
     </AnimatePresence>
   );
+}
+
+function useHistorySwipeHint(isUploadStep: boolean, historyOpen: boolean) {
+  const [showHint, setShowHint] = useState(false);
+
+  useEffect(() => {
+    if (!isUploadStep || historyOpen) {
+      setShowHint(false);
+      return;
+    }
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem(HISTORY_SWIPE_HINT_KEY)) return;
+
+    setShowHint(true);
+    const hideTimer = window.setTimeout(() => {
+      setShowHint(false);
+      try {
+        localStorage.setItem(HISTORY_SWIPE_HINT_KEY, "1");
+      } catch {
+        /* noop */
+      }
+    }, HISTORY_SWIPE_HINT_MS);
+
+    return () => window.clearTimeout(hideTimer);
+  }, [isUploadStep, historyOpen]);
+
+  const dismissHint = () => {
+    setShowHint(false);
+    try {
+      localStorage.setItem(HISTORY_SWIPE_HINT_KEY, "1");
+    } catch {
+      /* noop */
+    }
+  };
+
+  return { showHint, dismissHint };
 }
 
 function UploadHistorySheet() {
@@ -306,6 +344,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const [historyRevealHeight, setHistoryRevealHeight] = useState(getHistoryRevealHeight);
   const [historyOpen, setHistoryOpen] = useState(false);
   const historyOpenRef = useRef(false);
+  const { showHint, dismissHint } = useHistorySwipeHint(isUploadStep, historyOpen);
   const panelY = useMotionValue(0);
   const panelHeight = useMotionValue(UPLOAD_PANEL_HEIGHT);
 
@@ -346,6 +385,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const snapPanel = (open: boolean) => {
     historyOpenRef.current = open;
     setHistoryOpen(open);
+    if (open) dismissHint();
     animate(panelY, open ? -historyRevealHeight : 0, {
       type: "spring",
       stiffness: 420,
@@ -433,6 +473,13 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
           </motion.div>
 
           <motion.div
+            style={{ y: panelY, bottom: UPLOAD_PANEL_HEIGHT }}
+            className="pointer-events-none absolute inset-x-0 z-[15] flex justify-center pb-3"
+          >
+            <HistorySwipeHint visible={showHint && !historyOpen} />
+          </motion.div>
+
+          <motion.div
             drag="y"
             dragControls={uploadDragControls}
             dragListener={false}
@@ -446,10 +493,9 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
           >
             <div
               onPointerDown={(event) => uploadDragControls.start(event)}
-              className="relative -mt-2 mb-3 flex shrink-0 touch-none cursor-grab flex-col items-center justify-center pb-0.5 pt-1 active:cursor-grabbing"
+              className="relative -mt-2 mb-3 flex shrink-0 touch-none cursor-grab items-center justify-center pb-0.5 pt-1 active:cursor-grabbing"
             >
-              <HistorySwipeHint visible={!historyOpen} />
-              <div aria-hidden className="mt-1 h-1 w-10 rounded-full bg-muted-foreground/25" />
+              <div aria-hidden className="h-1 w-10 rounded-full bg-muted-foreground/25" />
             </div>
 
             <AnimatePresence initial={false}>
