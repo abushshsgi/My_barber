@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, animate, motion, useDragControls, useMotionValue, useTransform, type PanInfo } from "framer-motion";
-import { Check, ChevronLeft, ChevronsUp } from "lucide-react";
+import { Check, ChevronLeft, History } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
@@ -19,9 +19,9 @@ const SLIDE_MS = 3800;
 const UPLOAD_PANEL_HEIGHT = 305;
 const UPLOAD_PANEL_COMPACT_HEIGHT = 72;
 const UPLOAD_HISTORY_REVEAL_RATIO = 0.48;
-const HISTORY_OPENED_KEY = "mysaloon.aiStyle.historyOpenedOnce";
-const HISTORY_SWIPE_FULL_HINT_MS = 5000;
-const HISTORY_SWIPE_NUDGE_MS = 9000;
+const HISTORY_HINT_MS = 6000;
+const HISTORY_HINT_NUDGE_MS = 1500;
+const HISTORY_HINT_NUDGE_OFFSET = -14;
 
 function getHistoryRevealHeight() {
   if (typeof window === "undefined") return 400;
@@ -211,89 +211,56 @@ function UploadActions({
   );
 }
 
-type HistoryAffordancePhase = "hidden" | "full" | "compact";
+function HistoryHintBadge() {
+  return (
+    <div className="relative grid h-12 w-12 place-items-center rounded-2xl border border-white/40 bg-black/30 shadow-[0_10px_28px_rgba(0,0,0,0.35)] backdrop-blur-md">
+      <History className="h-5 w-5 text-white" strokeWidth={2.1} />
+      <span className="absolute -top-1.5 left-1/2 grid h-4 w-4 -translate-x-1/2 place-items-center rounded-full bg-white text-[9px] font-bold text-foreground shadow-sm">
+        ↑
+      </span>
+    </div>
+  );
+}
 
-function HistorySwipeAffordance({ phase }: { phase: HistoryAffordancePhase }) {
+function HistorySwipeHint({ visible }: { visible: boolean }) {
   const { t } = useTranslation();
-  const visible = phase !== "hidden";
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence>
       {visible ? (
         <motion.div
-          key={phase}
-          initial={{ opacity: 0, y: 8 }}
+          key="history-swipe-hint"
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -4 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          className="pointer-events-none flex flex-col items-center gap-1.5"
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="pointer-events-none flex flex-col items-center gap-2"
         >
-          <motion.div
-            animate={{ y: phase === "full" ? [0, -8, 0] : [0, -5, 0] }}
-            transition={{
-              repeat: Infinity,
-              duration: phase === "full" ? 1.5 : 2.2,
-              ease: "easeInOut",
-            }}
-          >
-            <ChevronsUp
-              className={cn(
-                "text-white drop-shadow-md",
-                phase === "full" ? "h-6 w-6" : "h-5 w-5 opacity-90",
-              )}
-              strokeWidth={2.25}
-            />
-          </motion.div>
-          {phase === "full" ? (
-            <p className="max-w-[220px] text-center text-[11px] font-semibold text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.55)]">
-              {t("aiStylePage.historySwipeHint")}
-            </p>
-          ) : (
-            <p className="text-[10px] font-bold uppercase tracking-wide text-white/90 drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]">
-              {t("aiStylePage.historySwipeCompact")}
-            </p>
-          )}
+          <HistoryHintBadge />
+          <p className="max-w-[220px] text-center text-[11px] font-semibold text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.55)]">
+            {t("aiStylePage.historySwipeHint")}
+          </p>
         </motion.div>
       ) : null}
     </AnimatePresence>
   );
 }
 
-function useHistorySwipeAffordance(isUploadStep: boolean, historyOpen: boolean) {
-  const [phase, setPhase] = useState<HistoryAffordancePhase>("hidden");
-  const openedOnceRef = useRef(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    openedOnceRef.current = localStorage.getItem(HISTORY_OPENED_KEY) === "1";
-  }, []);
+function useHistorySwipeHint(isUploadStep: boolean, historyOpen: boolean) {
+  const [showHint, setShowHint] = useState(false);
 
   useEffect(() => {
     if (!isUploadStep || historyOpen) {
-      setPhase("hidden");
+      setShowHint(false);
       return;
     }
 
-    if (openedOnceRef.current) {
-      setPhase("compact");
-      return;
-    }
-
-    setPhase("full");
-    const toCompact = window.setTimeout(() => setPhase("compact"), HISTORY_SWIPE_FULL_HINT_MS);
-    return () => window.clearTimeout(toCompact);
+    setShowHint(true);
+    const hideTimer = window.setTimeout(() => setShowHint(false), HISTORY_HINT_MS);
+    return () => window.clearTimeout(hideTimer);
   }, [isUploadStep, historyOpen]);
 
-  const markHistoryOpened = () => {
-    openedOnceRef.current = true;
-    try {
-      localStorage.setItem(HISTORY_OPENED_KEY, "1");
-    } catch {
-      /* noop */
-    }
-  };
-
-  return { phase, markHistoryOpened };
+  return showHint;
 }
 
 function UploadHistorySheet() {
@@ -365,10 +332,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const [historyRevealHeight, setHistoryRevealHeight] = useState(getHistoryRevealHeight);
   const [historyOpen, setHistoryOpen] = useState(false);
   const historyOpenRef = useRef(false);
-  const { phase: affordancePhase, markHistoryOpened } = useHistorySwipeAffordance(
-    isUploadStep,
-    historyOpen,
-  );
+  const showHistoryHint = useHistorySwipeHint(isUploadStep, historyOpen);
   const panelY = useMotionValue(0);
   const panelHeight = useMotionValue(UPLOAD_PANEL_HEIGHT);
   const nudgeY = useMotionValue(0);
@@ -409,34 +373,35 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   }, [isUploadStep, panelY, panelHeight]);
 
   useEffect(() => {
-    if (!isUploadStep || historyOpen || affordancePhase === "hidden") {
+    if (!isUploadStep || historyOpen || !showHistoryHint) {
       nudgeY.set(0);
       return;
     }
 
     let cancelled = false;
-    const runNudge = () => {
+    const runSyncedNudge = () => {
       if (cancelled) return;
-      animate(nudgeY, -10, { duration: 0.32, ease: "easeOut" }).then(() => {
+      animate(nudgeY, HISTORY_HINT_NUDGE_OFFSET, {
+        duration: 0.45,
+        ease: "easeInOut",
+      }).then(() => {
         if (cancelled) return;
-        animate(nudgeY, 0, { type: "spring", stiffness: 420, damping: 28 });
+        animate(nudgeY, 0, { duration: 0.45, ease: "easeInOut" });
       });
     };
 
-    const id = window.setInterval(runNudge, HISTORY_SWIPE_NUDGE_MS);
-    const first = window.setTimeout(runNudge, 2800);
+    runSyncedNudge();
+    const id = window.setInterval(runSyncedNudge, HISTORY_HINT_NUDGE_MS);
     return () => {
       cancelled = true;
       window.clearInterval(id);
-      window.clearTimeout(first);
       nudgeY.set(0);
     };
-  }, [isUploadStep, historyOpen, affordancePhase, nudgeY]);
+  }, [isUploadStep, historyOpen, showHistoryHint, nudgeY]);
 
   const snapPanel = (open: boolean) => {
     historyOpenRef.current = open;
     setHistoryOpen(open);
-    if (open) markHistoryOpened();
     animate(panelY, open ? -historyRevealHeight : 0, {
       type: "spring",
       stiffness: 420,
@@ -527,7 +492,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
             style={{ y: panelCombinedY, bottom: UPLOAD_PANEL_HEIGHT }}
             className="pointer-events-none absolute inset-x-0 z-[15] flex justify-center pb-3"
           >
-            <HistorySwipeAffordance phase={affordancePhase} />
+            <HistorySwipeHint visible={showHistoryHint} />
           </motion.div>
 
           <motion.div style={{ y: nudgeY }} className="absolute inset-x-0 bottom-0 z-10">
@@ -545,12 +510,9 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
             >
             <div
               onPointerDown={(event) => uploadDragControls.start(event)}
-              className="relative -mt-2 mb-3 flex shrink-0 touch-none cursor-grab flex-col items-center justify-center gap-1 pb-0.5 pt-1 active:cursor-grabbing"
+              className="relative -mt-2 mb-3 flex shrink-0 touch-none cursor-grab items-center justify-center pb-0.5 pt-1 active:cursor-grabbing"
             >
               <div aria-hidden className="h-1 w-10 rounded-full bg-muted-foreground/25" />
-              <p className="pointer-events-none text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/55">
-                {t("aiStylePage.historyDragLabel")}
-              </p>
             </div>
 
             <AnimatePresence initial={false}>
