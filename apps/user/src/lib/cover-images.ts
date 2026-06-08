@@ -31,3 +31,12 @@ export function getSalonCoverUrl(seed: string): string {
 export function getTrendCoverUrl(seed: string): string {
   return TREND_COVERS[seed] ?? TREND_COVERS.tr1;
 }
+
+const AI_STYLE_HERO: Record<string, string> = {
+  "hero-men": "/ai-style/hero-men.png",
+  "hero-women": "/ai-style/hero-women.png",
+};
+
+export function getAiStyleHeroUrl(seed: string): string {
+  return AI_STYLE_HERO[seed] ?? AI_STYLE_HERO["hero-men"];
+}

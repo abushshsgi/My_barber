@@ -6,16 +6,16 @@ import { useTranslation } from "react-i18next";
 import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
 import { AiStyleAnalyzeCta, AiStyleScanLine } from "@/components/ai-style/AiStyleUi";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
-import { getTrendCoverUrl } from "@/lib/cover-images";
+import { getAiStyleHeroUrl } from "@/lib/cover-images";
 import { loadFaceProfile } from "@/lib/face-profile";
 import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 const HERO_SLIDES: Record<"men" | "women", readonly string[]> = {
-  men: ["tr1", "tr3", "tr5", "tr1", "tr3"],
-  women: ["tr2", "tr4", "tr6", "tr2", "tr4"],
+  men: ["hero-men", "hero-women"],
+  women: ["hero-women", "hero-men"],
 };
-const SLIDE_MS = 3800;
+const SLIDE_MS = 4500;
 const UPLOAD_PANEL_HEIGHT = 305;
 const UPLOAD_PANEL_COMPACT_HEIGHT = 72;
 const UPLOAD_HISTORY_REVEAL_RATIO = 0.48;
@@ -118,17 +118,24 @@ function HeroCarousel({ audience }: { audience: Audience }) {
     return () => window.clearInterval(id);
   }, [slides.length]);
 
+  const slideDuration = SLIDE_MS / 1000;
+  const panDirection = index % 2 === 0 ? -1 : 1;
+
   return (
     <div className="relative h-full w-full overflow-hidden">
-      <AnimatePresence mode="wait">
+      <AnimatePresence initial={false}>
         <motion.img
-          key={`${audience}-${slides[index]}`}
-          src={getTrendCoverUrl(slides[index])}
+          key={`${audience}-${slides[index]}-${index}`}
+          src={getAiStyleHeroUrl(slides[index])}
           alt=""
-          initial={{ opacity: 0, scale: 1.04 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 1.02 }}
-          transition={{ duration: 0.65, ease: "easeOut" }}
+          initial={{ opacity: 0, scale: 1.06, x: `${panDirection * -1.5}%` }}
+          animate={{ opacity: 1, scale: 1.12, x: `${panDirection * 1.5}%` }}
+          exit={{ opacity: 0 }}
+          transition={{
+            opacity: { duration: 0.9, ease: "easeInOut" },
+            scale: { duration: slideDuration, ease: "linear" },
+            x: { duration: slideDuration, ease: "linear" },
+          }}
           className="absolute inset-0 h-full w-full object-cover object-top"
         />
       </AnimatePresence>
