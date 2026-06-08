@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { AnimatePresence, animate, motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
+import { AnimatePresence, animate, motion, useMotionValue, type PanInfo } from "framer-motion";
 import { Check, ChevronLeft, ChevronsUp, X } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -19,8 +19,6 @@ const SLIDE_MS = 4500;
 const UPLOAD_PANEL_HEIGHT = 280;
 const UPLOAD_HISTORY_REVEAL_RATIO = 0.48;
 const HISTORY_HINT_MS = 6000;
-const HISTORY_HINT_NUDGE_MS = 1500;
-const HISTORY_HINT_NUDGE_OFFSET = -14;
 
 function getHistoryRevealHeight() {
   if (typeof window === "undefined") return 400;
@@ -233,11 +231,17 @@ function HistorySwipeHint({ visible }: { visible: boolean }) {
           key="history-swipe-hint"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
+          exit={{ opacity: 0, y: 6 }}
           transition={{ duration: 0.35, ease: "easeOut" }}
           className="pointer-events-none flex flex-col items-center gap-1.5"
         >
-          <ChevronsUp className="h-6 w-6 text-white drop-shadow-md" strokeWidth={2.25} />
+          <motion.div
+            initial={{ y: 0 }}
+            animate={{ y: [0, -8, 0] }}
+            transition={{ duration: 0.9, ease: "easeInOut", times: [0, 0.45, 1] }}
+          >
+            <ChevronsUp className="h-6 w-6 text-white drop-shadow-md" strokeWidth={2.25} />
+          </motion.div>
           <p className="max-w-[220px] text-center text-[11px] font-semibold text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.55)]">
             {t("aiStylePage.historySwipeHint")}
           </p>
@@ -249,13 +253,21 @@ function HistorySwipeHint({ visible }: { visible: boolean }) {
 
 function useHistorySwipeHint(isUploadStep: boolean, historyOpen: boolean) {
   const [showHint, setShowHint] = useState(false);
+  const hasPlayedRef = useRef(false);
 
   useEffect(() => {
-    if (!isUploadStep || historyOpen) {
+    if (!isUploadStep) {
+      hasPlayedRef.current = false;
       setShowHint(false);
       return;
     }
 
+    if (historyOpen || hasPlayedRef.current) {
+      setShowHint(false);
+      return;
+    }
+
+    hasPlayedRef.current = true;
     setShowHint(true);
     const hideTimer = window.setTimeout(() => setShowHint(false), HISTORY_HINT_MS);
     return () => window.clearTimeout(hideTimer);
@@ -335,8 +347,6 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const showHistoryHint = useHistorySwipeHint(isUploadStep, historyOpen);
   const panelY = useMotionValue(0);
   const panelHeight = useMotionValue(UPLOAD_PANEL_HEIGHT);
-  const nudgeY = useMotionValue(0);
-  const panelCombinedY = useTransform([panelY, nudgeY], ([p, n]) => (p as number) + (n as number));
   const openPanelHeight = UPLOAD_PANEL_HEIGHT + historyRevealHeight;
 
   useEffect(() => {
@@ -364,36 +374,8 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
     return () => controls.stop();
   }, [isUploadStep, panelY, panelHeight]);
 
-  useEffect(() => {
-    if (!isUploadStep || historyOpen || !showHistoryHint) {
-      nudgeY.set(0);
-      return;
-    }
-
-    let cancelled = false;
-    const runSyncedNudge = () => {
-      if (cancelled) return;
-      animate(nudgeY, HISTORY_HINT_NUDGE_OFFSET, {
-        duration: 0.45,
-        ease: "easeInOut",
-      }).then(() => {
-        if (cancelled) return;
-        animate(nudgeY, 0, { duration: 0.45, ease: "easeInOut" });
-      });
-    };
-
-    runSyncedNudge();
-    const id = window.setInterval(runSyncedNudge, HISTORY_HINT_NUDGE_MS);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-      nudgeY.set(0);
-    };
-  }, [isUploadStep, historyOpen, showHistoryHint, nudgeY]);
-
   const resetPanelPosition = () => {
     panelY.set(0);
-    nudgeY.set(0);
   };
 
   const snapPanel = (open: boolean) => {
@@ -483,13 +465,13 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
       {isUploadStep ? (
         <>
           <motion.div
-            style={{ y: panelCombinedY, bottom: UPLOAD_PANEL_HEIGHT }}
+            style={{ bottom: UPLOAD_PANEL_HEIGHT }}
             className="pointer-events-none absolute inset-x-0 z-[15] flex justify-center pb-3"
           >
             <HistorySwipeHint visible={showHistoryHint} />
           </motion.div>
 
-          <motion.div style={{ y: nudgeY }} className="absolute inset-x-0 bottom-0 z-10">
+          <div className="absolute inset-x-0 bottom-0 z-10">
             <motion.div
               onPan={!historyOpen ? onPanelPan : undefined}
               onPanEnd={!historyOpen ? onPanelPanEnd : undefined}
@@ -571,7 +553,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
               )}
             </AnimatePresence>
             </motion.div>
-          </motion.div>
+          </div>
         </>
       ) : (
         <motion.div
