@@ -387,10 +387,15 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
     };
   }, [isUploadStep, historyOpen, showHistoryHint, nudgeY]);
 
+  const resetPanelPosition = () => {
+    panelY.set(0);
+    nudgeY.set(0);
+  };
+
   const snapPanel = (open: boolean) => {
     historyOpenRef.current = open;
     setHistoryOpen(open);
-    panelY.set(0);
+    resetPanelPosition();
     animate(panelHeight, open ? openPanelHeight : UPLOAD_PANEL_HEIGHT, {
       type: "spring",
       stiffness: 420,
@@ -409,7 +414,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
     panelHeight.set(Math.max(UPLOAD_PANEL_HEIGHT, openPanelHeight - closeDrag));
   };
 
-  const onPanelDrag = (_: unknown, info: PanInfo) => {
+  const onPanelPan = (_: unknown, info: PanInfo) => {
     if (historyOpenRef.current) {
       setPanelHeightFromDrag(info.offset.y, false);
       return;
@@ -420,7 +425,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
     }
   };
 
-  const onPanelDragEnd = (_: unknown, info: PanInfo) => {
+  const onPanelPanEnd = (_: unknown, info: PanInfo) => {
     const offset = info.offset.y;
     const velocityY = info.velocity.y;
 
@@ -482,30 +487,20 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
 
           <motion.div style={{ y: nudgeY }} className="absolute inset-x-0 bottom-0 z-10">
             <motion.div
-              drag={historyOpen ? false : "y"}
-              dragListener={!historyOpen}
-              dragConstraints={{ top: 0, bottom: 0 }}
-              dragElastic={0.08}
-              dragMomentum={false}
-              onDrag={onPanelDrag}
-              onDragEnd={onPanelDragEnd}
-              style={{ y: 0, height: panelHeight }}
+              onPan={!historyOpen ? onPanelPan : undefined}
+              onPanEnd={!historyOpen ? onPanelPanEnd : undefined}
+              style={{ height: panelHeight }}
               className={cn(
                 "flex flex-col overflow-hidden rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-left text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]",
-                !historyOpen && "cursor-grab active:cursor-grabbing",
+                !historyOpen && "cursor-grab touch-none active:cursor-grabbing",
               )}
             >
             <motion.div
-              drag={historyOpen ? "y" : false}
-              dragListener={historyOpen}
-              dragConstraints={{ top: 0, bottom: 0 }}
-              dragElastic={0.08}
-              dragMomentum={false}
-              onDrag={historyOpen ? onPanelDrag : undefined}
-              onDragEnd={historyOpen ? onPanelDragEnd : undefined}
+              onPan={historyOpen ? onPanelPan : undefined}
+              onPanEnd={historyOpen ? onPanelPanEnd : undefined}
               className={cn(
                 "relative mb-2 flex w-full shrink-0 items-center",
-                historyOpen ? "h-11" : "justify-center py-2",
+                historyOpen ? "h-11 touch-none" : "justify-center py-2",
                 historyOpen && "cursor-grab active:cursor-grabbing",
               )}
             >
