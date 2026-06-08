@@ -139,13 +139,17 @@ function HeroCarousel({ audience }: { audience: Audience }) {
         />
       </AnimatePresence>
 
-      <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/45" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-transparent" />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black/85 via-black/55 to-transparent"
+      />
 
-      <div className="absolute inset-x-0 bottom-[5.5rem] flex flex-col items-center gap-2 px-6 text-center text-white">
-        <p className="text-lg font-bold drop-shadow-sm">{t("aiStylePage.uploadTitle")}</p>
-        <p className="max-w-[260px] text-xs text-white/85">{t("aiStylePage.uploadHint")}</p>
+      <div className="absolute inset-x-0 bottom-[5.5rem] z-[1] flex flex-col items-center gap-2 px-6 text-center text-white">
+        <p className="text-lg font-bold">{t("aiStylePage.uploadTitle")}</p>
+        <p className="max-w-[260px] text-xs text-white/90">{t("aiStylePage.uploadHint")}</p>
       </div>
-      <div className="absolute inset-x-0 bottom-[4.5rem] flex justify-center gap-1.5">
+      <div className="absolute inset-x-0 bottom-[4.5rem] z-[1] flex justify-center gap-1.5">
         {slides.map((seed, i) => (
           <span
             key={`${seed}-${i}`}
