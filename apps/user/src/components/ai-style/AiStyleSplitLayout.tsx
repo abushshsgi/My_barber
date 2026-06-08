@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { AnimatePresence, motion, useDragControls } from "framer-motion";
+import { AnimatePresence, animate, motion, useDragControls, useMotionValue, useTransform } from "framer-motion";
 import { Check, ChevronLeft } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -17,7 +17,7 @@ const HERO_SLIDES: Record<"men" | "women", readonly string[]> = {
 };
 const SLIDE_MS = 3800;
 const UPLOAD_PANEL_HEIGHT = 305;
-const UPLOAD_HISTORY_DRAG_RATIO = 0.48;
+const UPLOAD_PANEL_MAX_DRAG_UP = 72;
 
 export type AiStyleSplitLayoutProps = {
   audience: Audience;
@@ -268,16 +268,37 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const showResults = props.done && !!props.result;
   const isUploadStep = !props.photo && !showResults;
   const uploadDragControls = useDragControls();
-  const [maxDragUp, setMaxDragUp] = useState(400);
+  const panelY = useMotionValue(0);
+  const historyOpacity = useTransform(panelY, [0, -28, -UPLOAD_PANEL_MAX_DRAG_UP], [0, 0.4, 1]);
+  const historySlideY = useTransform(
+    panelY,
+    [0, -UPLOAD_PANEL_MAX_DRAG_UP],
+    [UPLOAD_PANEL_MAX_DRAG_UP * 0.55, 0],
+  );
+  const historyClip = useTransform(
+    panelY,
+    [0, -UPLOAD_PANEL_MAX_DRAG_UP],
+    ["inset(100% 0 0 0)", "inset(0% 0 0 0)"],
+  );
 
   useEffect(() => {
-    const updateMaxDragUp = () => {
-      setMaxDragUp(Math.round(window.innerHeight * UPLOAD_HISTORY_DRAG_RATIO));
-    };
-    updateMaxDragUp();
-    window.addEventListener("resize", updateMaxDragUp);
-    return () => window.removeEventListener("resize", updateMaxDragUp);
-  }, []);
+    if (!isUploadStep) {
+      panelY.set(0);
+      return;
+    }
+    panelY.set(UPLOAD_PANEL_HEIGHT);
+    const controls = animate(panelY, 0, {
+      type: "spring",
+      damping: 36,
+      stiffness: 170,
+      mass: 1.15,
+    });
+    return () => controls.stop();
+  }, [isUploadStep, panelY]);
+
+  const snapPanelClosed = () => {
+    animate(panelY, 0, { type: "spring", stiffness: 420, damping: 34, mass: 0.9 });
+  };
 
   return (
     <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-white">
@@ -310,93 +331,99 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
         </Link>
       </div>
 
-      <motion.div
-        initial={{ y: "100%" }}
-        animate={{ y: 0 }}
-        transition={{ type: "spring", damping: 36, stiffness: 170, mass: 1.15 }}
-        drag={isUploadStep ? "y" : false}
-        dragControls={isUploadStep ? uploadDragControls : undefined}
-        dragListener={false}
-        dragConstraints={
-          isUploadStep ? { top: -maxDragUp, bottom: 0 } : undefined
-        }
-        dragElastic={0.12}
-        dragMomentum={false}
-        className={cn(
-          "z-10 flex shrink-0 flex-col rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-left text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]",
-          isUploadStep && "relative",
-          !isUploadStep && "relative -mt-16",
-          showResults && "min-h-0 overflow-y-auto pb-6",
-        )}
-        style={isUploadStep ? { height: UPLOAD_PANEL_HEIGHT } : undefined}
-      >
-        {isUploadStep ? (
-          <div
-            aria-hidden
-            onPointerDown={(event) => uploadDragControls.start(event)}
-            className="-mt-2 mb-3 flex shrink-0 touch-none cursor-grab justify-center pb-0.5 pt-1 active:cursor-grabbing"
-          >
-            <div className="h-1 w-10 rounded-full bg-muted-foreground/25" />
-          </div>
-        ) : null}
-        <StepRail step={props.step} />
-
-        {!props.photo ? (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.28, duration: 0.5, ease: "easeOut" }}
-            className="mt-5 space-y-3"
-          >
-            <UploadActions
-              onOpenCamera={props.openCamera}
-              onOpenGallery={props.openFile}
-              validating={props.validating}
-            />
-            <p className="text-center text-[11px] text-muted-foreground">
-              {t("aiStylePage.privacyNote")}
-            </p>
-          </motion.div>
-        ) : props.done && props.result ? (
-          <div className="mt-5">
-            <AiStyleResultsBlock
-              result={props.result}
-              saved={props.saved}
-              onToggleSave={props.onToggleSave}
-              onReset={props.onReset}
-              layout="carousel"
-            />
-          </div>
-        ) : (
-          <div className="mt-5 space-y-3">
-            <p className="text-sm font-bold">{t("aiStylePage.photoReadyTitle")}</p>
-            <p className="text-xs text-muted-foreground">{t("aiStylePage.photoReadyDesc")}</p>
-            <button
-              type="button"
-              onClick={props.onReset}
-              className="rounded-full border border-border px-3 py-1.5 text-[10px] font-bold"
-            >
-              {t("aiStylePage.retake")}
-            </button>
-            <AiStyleAnalyzeCta
-              analyzing={props.analyzing}
-              validating={props.validating}
-              onAnalyze={props.onAnalyze}
-            />
-          </div>
-        )}
-      </motion.div>
-
       {isUploadStep ? (
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] overflow-hidden bg-white"
-          style={{ height: maxDragUp + UPLOAD_PANEL_HEIGHT }}
+        <>
+          <motion.div
+            drag="y"
+            dragControls={uploadDragControls}
+            dragListener={false}
+            dragConstraints={{ top: -UPLOAD_PANEL_MAX_DRAG_UP, bottom: 0 }}
+            dragElastic={0.14}
+            dragMomentum={false}
+            onDragEnd={snapPanelClosed}
+            style={{ y: panelY, height: UPLOAD_PANEL_HEIGHT }}
+            className="absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-left text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]"
+          >
+            <div
+              aria-hidden
+              onPointerDown={(event) => uploadDragControls.start(event)}
+              className="-mt-2 mb-3 flex shrink-0 touch-none cursor-grab justify-center pb-0.5 pt-1 active:cursor-grabbing"
+            >
+              <div className="h-1 w-10 rounded-full bg-muted-foreground/25" />
+            </div>
+            <StepRail step={props.step} />
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.28, duration: 0.5, ease: "easeOut" }}
+              className="mt-5 space-y-3"
+            >
+              <UploadActions
+                onOpenCamera={props.openCamera}
+                onOpenGallery={props.openFile}
+                validating={props.validating}
+              />
+              <p className="text-center text-[11px] text-muted-foreground">
+                {t("aiStylePage.privacyNote")}
+              </p>
+            </motion.div>
+          </motion.div>
+
+          <motion.div
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] overflow-hidden bg-white"
+            style={{
+              height: UPLOAD_PANEL_MAX_DRAG_UP,
+              clipPath: historyClip,
+              opacity: historyOpacity,
+            }}
+          >
+            <motion.div className="h-full" style={{ y: historySlideY }}>
+              <UploadHistorySheet />
+            </motion.div>
+          </motion.div>
+        </>
+      ) : (
+        <motion.div
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          transition={{ type: "spring", damping: 36, stiffness: 170, mass: 1.15 }}
+          className={cn(
+            "relative -mt-16 flex shrink-0 flex-col rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-left text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]",
+            showResults && "min-h-0 overflow-y-auto pb-6",
+          )}
         >
-          <div className="h-full overflow-hidden">
-            <UploadHistorySheet />
-          </div>
-        </div>
-      ) : null}
+          <StepRail step={props.step} />
+
+          {props.done && props.result ? (
+            <div className="mt-5">
+              <AiStyleResultsBlock
+                result={props.result}
+                saved={props.saved}
+                onToggleSave={props.onToggleSave}
+                onReset={props.onReset}
+                layout="carousel"
+              />
+            </div>
+          ) : (
+            <div className="mt-5 space-y-3">
+              <p className="text-sm font-bold">{t("aiStylePage.photoReadyTitle")}</p>
+              <p className="text-xs text-muted-foreground">{t("aiStylePage.photoReadyDesc")}</p>
+              <button
+                type="button"
+                onClick={props.onReset}
+                className="rounded-full border border-border px-3 py-1.5 text-[10px] font-bold"
+              >
+                {t("aiStylePage.retake")}
+              </button>
+              <AiStyleAnalyzeCta
+                analyzing={props.analyzing}
+                validating={props.validating}
+                onAnalyze={props.onAnalyze}
+              />
+            </div>
+          )}
+        </motion.div>
+      )}
     </div>
   );
 }
