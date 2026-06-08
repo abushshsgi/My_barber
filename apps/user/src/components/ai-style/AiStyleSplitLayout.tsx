@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, animate, motion, useDragControls, useMotionValue, useTransform, type PanInfo } from "framer-motion";
-import { Check, ChevronLeft, History } from "lucide-react";
+import { Check, ChevronLeft, ChevronsUp } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
@@ -16,7 +16,7 @@ const HERO_SLIDES: Record<"men" | "women", readonly string[]> = {
   women: ["tr2", "tr4", "tr6", "tr2", "tr4"],
 };
 const SLIDE_MS = 3800;
-const UPLOAD_PANEL_HEIGHT = 305;
+const UPLOAD_PANEL_HEIGHT = 328;
 const UPLOAD_PANEL_COMPACT_HEIGHT = 72;
 const UPLOAD_HISTORY_REVEAL_RATIO = 0.48;
 
@@ -205,6 +205,35 @@ function UploadActions({
         {t("aiStylePage.pickFromGallery")}
       </button>
     </div>
+  );
+}
+
+function HistorySwipeHint({ visible }: { visible: boolean }) {
+  const { t } = useTranslation();
+
+  return (
+    <AnimatePresence>
+      {visible ? (
+        <motion.div
+          key="history-swipe-hint"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 4 }}
+          transition={{ duration: 0.2 }}
+          className="pointer-events-none flex flex-col items-center gap-1 pb-1"
+        >
+          <motion.div
+            animate={{ y: [0, -7, 0] }}
+            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+          >
+            <ChevronsUp className="h-5 w-5 text-muted-foreground/75" strokeWidth={2.25} />
+          </motion.div>
+          <p className="text-[10px] font-semibold text-muted-foreground">
+            {t("aiStylePage.historySwipeHint")}
+          </p>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   );
 }
 
@@ -415,28 +444,12 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
             style={{ y: panelY, height: panelHeight }}
             className="absolute inset-x-0 bottom-0 z-10 flex flex-col overflow-hidden rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-left text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]"
           >
-            <div className="relative -mt-2 mb-3 flex shrink-0 items-center justify-center pb-0.5 pt-1">
-              <div
-                aria-hidden
-                onPointerDown={(event) => uploadDragControls.start(event)}
-                className="flex w-full touch-none cursor-grab justify-center active:cursor-grabbing"
-              >
-                <div className="h-1 w-10 rounded-full bg-muted-foreground/25" />
-              </div>
-              <button
-                type="button"
-                onClick={() => snapPanel(!historyOpen)}
-                aria-label={t("aiStylePage.historyButton")}
-                aria-expanded={historyOpen}
-                className={cn(
-                  "absolute right-0 grid h-8 w-8 place-items-center rounded-full border text-foreground transition-colors active:scale-95",
-                  historyOpen
-                    ? "border-foreground/20 bg-foreground text-white"
-                    : "border-border/70 bg-neutral-50 text-muted-foreground",
-                )}
-              >
-                <History className="h-3.5 w-3.5" strokeWidth={2.25} />
-              </button>
+            <div
+              onPointerDown={(event) => uploadDragControls.start(event)}
+              className="relative -mt-2 mb-3 flex shrink-0 touch-none cursor-grab flex-col items-center justify-center pb-0.5 pt-1 active:cursor-grabbing"
+            >
+              <HistorySwipeHint visible={!historyOpen} />
+              <div aria-hidden className="mt-1 h-1 w-10 rounded-full bg-muted-foreground/25" />
             </div>
 
             <AnimatePresence initial={false}>
