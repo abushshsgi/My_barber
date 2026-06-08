@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, animate, motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
-import { Check, ChevronLeft, ChevronsUp, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronsUp, ScanFace, X } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
@@ -16,7 +16,7 @@ const HERO_SLIDES: Record<"men" | "women", readonly string[]> = {
   women: ["hero-women", "hero-men"],
 };
 const SLIDE_MS = 4500;
-const UPLOAD_PANEL_HEIGHT = 255;
+const UPLOAD_PANEL_HEIGHT = 240;
 const UPLOAD_HISTORY_REVEAL_RATIO = 0.48;
 const HISTORY_HINT_MS = 6000;
 const HISTORY_HINT_NUDGE_MS = 1500;
@@ -146,43 +146,24 @@ function HeroCarousel({ audience, hintActive }: { audience: Audience; hintActive
         className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black/85 via-black/55 to-transparent"
       />
 
-      <motion.div
-        className="absolute inset-x-0 z-[1] flex flex-col items-center gap-2 px-6 text-center text-white"
-        animate={{ bottom: hintActive ? "5.5rem" : `${HERO_TEXT_ABOVE_PANEL}px` }}
-        transition={{ duration: 0.45, ease: "easeOut" }}
+      <div
+        className="absolute inset-x-0 z-[1] flex flex-col items-center gap-2 px-6 text-center text-white transition-[bottom] duration-[450ms] ease-out"
+        style={{ bottom: hintActive ? "5.5rem" : `${HERO_TEXT_ABOVE_PANEL}px` }}
       >
         <p className="text-lg font-bold">{t("aiStylePage.uploadTitle")}</p>
         <p className="max-w-[260px] text-xs text-white/90">{t("aiStylePage.uploadHint")}</p>
-      </motion.div>
-      <motion.div
-        className="absolute inset-x-0 z-[1] flex justify-center gap-1.5"
-        animate={{
-          bottom: hintActive ? "4.5rem" : `calc(${HERO_TEXT_ABOVE_PANEL}px + 3.25rem)`,
-        }}
-        transition={{ duration: 0.45, ease: "easeOut" }}
-      >
-        {slides.map((seed, i) => (
-          <span
-            key={`${seed}-${i}`}
-            className={cn(
-              "h-1.5 rounded-full transition-all duration-300",
-              i === index ? "w-5 bg-white" : "w-1.5 bg-white/40",
-            )}
-          />
-        ))}
-      </motion.div>
-    </div>
-  );
-}
-
-function SelfieFaceShape() {
-  return (
-    <div className="relative grid h-6 w-6 place-items-center rounded-lg border-2 border-white/70">
-      <div
-        className="h-3.5 w-2.5 border-2 border-white/80"
-        style={{ borderRadius: "50% 50% 42% 42%" }}
-      />
-      <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-white/90" />
+        <div className="mt-1 flex justify-center gap-1.5">
+          {slides.map((seed, i) => (
+            <span
+              key={`${seed}-${i}`}
+              className={cn(
+                "h-1.5 rounded-full transition-all duration-300",
+                i === index ? "w-5 bg-white" : "w-1.5 bg-white/40",
+              )}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -209,15 +190,15 @@ function UploadActions({
   const { t } = useTranslation();
 
   return (
-    <div className="grid grid-cols-2 gap-2.5">
+    <div className="flex justify-center gap-10">
       <button
         type="button"
         disabled={validating}
         onClick={onOpenCamera}
         onPointerDown={(event) => event.stopPropagation()}
-        className="inline-flex min-h-[50px] flex-col items-center justify-center gap-1 rounded-2xl bg-foreground px-2.5 py-3 text-[12px] font-bold leading-tight text-white shadow-[0_6px_20px_-6px_rgba(0,0,0,0.3)] active:scale-[0.98] disabled:opacity-60"
+        className="inline-flex w-[9.5rem] min-h-[50px] flex-col items-center justify-center gap-1 rounded-2xl bg-foreground px-2 py-3 text-[12px] font-bold leading-tight text-white shadow-[0_6px_20px_-6px_rgba(0,0,0,0.3)] active:scale-[0.98] disabled:opacity-60"
       >
-        <SelfieFaceShape />
+        <ScanFace className="h-6 w-6" strokeWidth={2} />
         {t("aiStylePage.openCamera")}
       </button>
       <button
@@ -225,7 +206,7 @@ function UploadActions({
         disabled={validating}
         onClick={onOpenGallery}
         onPointerDown={(event) => event.stopPropagation()}
-        className="inline-flex min-h-[50px] flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-foreground/20 bg-transparent px-2.5 py-3 text-[12px] font-bold leading-tight text-foreground active:scale-[0.98] disabled:opacity-60"
+        className="inline-flex w-[9.5rem] min-h-[50px] flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-foreground/20 bg-transparent px-2 py-3 text-[12px] font-bold leading-tight text-foreground active:scale-[0.98] disabled:opacity-60"
       >
         <GalleryStackShape />
         {t("aiStylePage.pickFromGallery")}
@@ -265,28 +246,25 @@ function HistorySwipeHint({ visible }: { visible: boolean }) {
 }
 
 function useHistorySwipeHint(isUploadStep: boolean, historyOpen: boolean) {
-  const [showHint, setShowHint] = useState(false);
-  const hasPlayedRef = useRef(false);
+  const [hintDismissed, setHintDismissed] = useState(false);
 
   useEffect(() => {
     if (!isUploadStep) {
-      hasPlayedRef.current = false;
-      setShowHint(false);
+      setHintDismissed(false);
       return;
     }
 
-    if (historyOpen || hasPlayedRef.current) {
-      setShowHint(false);
+    if (historyOpen) {
+      setHintDismissed(true);
       return;
     }
 
-    hasPlayedRef.current = true;
-    setShowHint(true);
-    const hideTimer = window.setTimeout(() => setShowHint(false), HISTORY_HINT_MS);
+    setHintDismissed(false);
+    const hideTimer = window.setTimeout(() => setHintDismissed(true), HISTORY_HINT_MS);
     return () => window.clearTimeout(hideTimer);
   }, [isUploadStep, historyOpen]);
 
-  return showHint;
+  return isUploadStep && !historyOpen && !hintDismissed;
 }
 
 function UploadHistorySheet() {
@@ -581,16 +559,13 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.28, duration: 0.5, ease: "easeOut" }}
-                    className="mt-5 space-y-3"
+                    className="mt-8 space-y-3"
                   >
                     <UploadActions
                       onOpenCamera={props.openCamera}
                       onOpenGallery={props.openFile}
                       validating={props.validating}
                     />
-                    <p className="text-center text-[11px] text-muted-foreground">
-                      {t("aiStylePage.privacyNote")}
-                    </p>
                   </motion.div>
                 </motion.div>
               )}
