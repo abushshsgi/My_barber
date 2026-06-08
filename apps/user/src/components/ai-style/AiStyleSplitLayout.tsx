@@ -16,7 +16,7 @@ const HERO_SLIDES: Record<"men" | "women", readonly string[]> = {
   women: ["hero-women", "hero-men"],
 };
 const SLIDE_MS = 4500;
-const UPLOAD_PANEL_HEIGHT = 280;
+const UPLOAD_PANEL_HEIGHT = 255;
 const UPLOAD_HISTORY_REVEAL_RATIO = 0.48;
 const HISTORY_HINT_MS = 6000;
 
