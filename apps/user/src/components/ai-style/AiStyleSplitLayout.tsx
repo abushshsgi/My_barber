@@ -16,7 +16,7 @@ const HERO_SLIDES: Record<"men" | "women", readonly string[]> = {
   women: ["hero-women", "hero-men"],
 };
 const SLIDE_MS = 4500;
-const UPLOAD_PANEL_HEIGHT = 305;
+const UPLOAD_PANEL_HEIGHT = 280;
 const UPLOAD_PANEL_COMPACT_HEIGHT = 72;
 const UPLOAD_HISTORY_REVEAL_RATIO = 0.48;
 const HISTORY_HINT_MS = 6000;
@@ -142,7 +142,7 @@ function HeroCarousel({ audience }: { audience: Audience }) {
 
       <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/45" />
 
-      <div className="absolute inset-x-0 bottom-[8rem] flex flex-col items-center gap-2 px-6 text-center text-white">
+      <div className="absolute inset-x-0 bottom-[5.5rem] flex flex-col items-center gap-2 px-6 text-center text-white">
         <p className="text-lg font-bold drop-shadow-sm">{t("aiStylePage.uploadTitle")}</p>
         <p className="max-w-[260px] text-xs text-white/85">{t("aiStylePage.uploadHint")}</p>
       </div>
