@@ -19,6 +19,8 @@ const SLIDE_MS = 4500;
 const UPLOAD_PANEL_HEIGHT = 255;
 const UPLOAD_HISTORY_REVEAL_RATIO = 0.48;
 const HISTORY_HINT_MS = 6000;
+const HISTORY_HINT_NUDGE_MS = 1500;
+const HISTORY_HINT_NUDGE_OFFSET = -14;
 
 function getHistoryRevealHeight() {
   if (typeof window === "undefined") return 400;
@@ -99,7 +101,7 @@ function StepRail({ step }: { step: 1 | 2 | 3 }) {
   );
 }
 
-function HeroCarousel({ audience }: { audience: Audience }) {
+function HeroCarousel({ audience, hintActive }: { audience: Audience; hintActive: boolean }) {
   const { t } = useTranslation();
   const slides = HERO_SLIDES[audience === "women" ? "women" : "men"];
   const [index, setIndex] = useState(0);
@@ -143,11 +145,19 @@ function HeroCarousel({ audience }: { audience: Audience }) {
         className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black/85 via-black/55 to-transparent"
       />
 
-      <div className="absolute inset-x-0 bottom-[5.5rem] z-[1] flex flex-col items-center gap-2 px-6 text-center text-white">
+      <motion.div
+        className="absolute inset-x-0 z-[1] flex flex-col items-center gap-2 px-6 text-center text-white"
+        animate={{ bottom: hintActive ? "5.5rem" : "3.75rem" }}
+        transition={{ duration: 0.45, ease: "easeOut" }}
+      >
         <p className="text-lg font-bold">{t("aiStylePage.uploadTitle")}</p>
         <p className="max-w-[260px] text-xs text-white/90">{t("aiStylePage.uploadHint")}</p>
-      </div>
-      <div className="absolute inset-x-0 bottom-[4.5rem] z-[1] flex justify-center gap-1.5">
+      </motion.div>
+      <motion.div
+        className="absolute inset-x-0 z-[1] flex justify-center gap-1.5"
+        animate={{ bottom: hintActive ? "4.5rem" : "2.75rem" }}
+        transition={{ duration: 0.45, ease: "easeOut" }}
+      >
         {slides.map((seed, i) => (
           <span
             key={`${seed}-${i}`}
@@ -157,7 +167,7 @@ function HeroCarousel({ audience }: { audience: Audience }) {
             )}
           />
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -346,8 +356,36 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const historyOpenRef = useRef(false);
   const showHistoryHint = useHistorySwipeHint(isUploadStep, historyOpen);
   const panelY = useMotionValue(0);
+  const nudgeY = useMotionValue(0);
   const panelHeight = useMotionValue(UPLOAD_PANEL_HEIGHT);
   const openPanelHeight = UPLOAD_PANEL_HEIGHT + historyRevealHeight;
+
+  useEffect(() => {
+    if (!isUploadStep || historyOpen || !showHistoryHint) {
+      nudgeY.set(0);
+      return;
+    }
+
+    let cancelled = false;
+    const runSyncedNudge = () => {
+      if (cancelled) return;
+      animate(nudgeY, HISTORY_HINT_NUDGE_OFFSET, {
+        duration: 0.45,
+        ease: "easeInOut",
+      }).then(() => {
+        if (cancelled) return;
+        animate(nudgeY, 0, { duration: 0.45, ease: "easeInOut" });
+      });
+    };
+
+    runSyncedNudge();
+    const id = window.setInterval(runSyncedNudge, HISTORY_HINT_NUDGE_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+      nudgeY.set(0);
+    };
+  }, [isUploadStep, historyOpen, showHistoryHint, nudgeY]);
 
   useEffect(() => {
     const onResize = () => setHistoryRevealHeight(getHistoryRevealHeight());
@@ -376,6 +414,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
 
   const resetPanelPosition = () => {
     panelY.set(0);
+    nudgeY.set(0);
   };
 
   const snapPanel = (open: boolean) => {
@@ -452,7 +491,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
             {busy ? <AiStyleScanLine /> : null}
           </>
         ) : (
-          <HeroCarousel audience={props.audience} />
+          <HeroCarousel audience={props.audience} hintActive={showHistoryHint} />
         )}
         <Link
           to="/profile"
@@ -465,13 +504,13 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
       {isUploadStep ? (
         <>
           <motion.div
-            style={{ bottom: UPLOAD_PANEL_HEIGHT }}
+            style={{ y: nudgeY, bottom: UPLOAD_PANEL_HEIGHT }}
             className="pointer-events-none absolute inset-x-0 z-[15] flex justify-center pb-3"
           >
             <HistorySwipeHint visible={showHistoryHint} />
           </motion.div>
 
-          <div className="absolute inset-x-0 bottom-0 z-10">
+          <motion.div style={{ y: nudgeY }} className="absolute inset-x-0 bottom-0 z-10">
             <motion.div
               onPan={!historyOpen ? onPanelPan : undefined}
               onPanEnd={!historyOpen ? onPanelPanEnd : undefined}
@@ -553,7 +592,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
               )}
             </AnimatePresence>
             </motion.div>
-          </div>
+          </motion.div>
         </>
       ) : (
         <motion.div
