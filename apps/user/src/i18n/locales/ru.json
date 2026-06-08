@@ -378,6 +378,8 @@
     "historyTitle": "История",
     "historyButton": "Открыть историю",
     "historySwipeHint": "Смахните вверх для истории",
+    "historySwipeCompact": "История",
+    "historyDragLabel": "Смахните вверх",
     "historySubtitle": "Прошлые анализы",
     "historyEmpty": "Истории анализов пока нет",
     "historyEmptyHint": "После первого анализа результаты появятся здесь.",

@@ -394,6 +394,8 @@
     "historyTitle": "Tarix",
     "historyButton": "Tarixni ko'rish",
     "historySwipeHint": "Tarix uchun yuqoriga siljiting",
+    "historySwipeCompact": "Tarix",
+    "historyDragLabel": "Yuqoriga siljiting",
     "historySubtitle": "Oldingi tahlillar",
     "historyEmpty": "Hali tahlil tarixi yo'q",
     "historyEmptyHint": "Birinchi selfi tahlilidan keyin bu yerda saqlanadi.",

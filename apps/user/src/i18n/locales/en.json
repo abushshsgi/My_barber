@@ -378,6 +378,8 @@
     "historyTitle": "History",
     "historyButton": "View history",
     "historySwipeHint": "Swipe up for history",
+    "historySwipeCompact": "History",
+    "historyDragLabel": "Swipe up",
     "historySubtitle": "Past analyses",
     "historyEmpty": "No analysis history yet",
     "historyEmptyHint": "Your scans will appear here after the first analysis.",
