@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { AnimatePresence, animate, motion, useDragControls, useMotionValue, useTransform } from "framer-motion";
+import { AnimatePresence, animate, motion, useDragControls, useMotionValue, useTransform, type PanInfo } from "framer-motion";
 import { Check, ChevronLeft } from "lucide-react";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
 import { AiStyleAnalyzeCta, AiStyleScanLine } from "@/components/ai-style/AiStyleUi";
@@ -17,7 +17,13 @@ const HERO_SLIDES: Record<"men" | "women", readonly string[]> = {
 };
 const SLIDE_MS = 3800;
 const UPLOAD_PANEL_HEIGHT = 305;
-const UPLOAD_PANEL_MAX_DRAG_UP = 72;
+const UPLOAD_PANEL_COMPACT_HEIGHT = 72;
+const UPLOAD_HISTORY_REVEAL_RATIO = 0.48;
+
+function getHistoryRevealHeight() {
+  if (typeof window === "undefined") return 400;
+  return Math.round(window.innerHeight * UPLOAD_HISTORY_REVEAL_RATIO);
+}
 
 export type AiStyleSplitLayoutProps = {
   audience: Audience;
@@ -268,25 +274,37 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const showResults = props.done && !!props.result;
   const isUploadStep = !props.photo && !showResults;
   const uploadDragControls = useDragControls();
+  const [historyRevealHeight, setHistoryRevealHeight] = useState(getHistoryRevealHeight);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const historyOpenRef = useRef(false);
   const panelY = useMotionValue(0);
-  const historyOpacity = useTransform(panelY, [0, -28, -UPLOAD_PANEL_MAX_DRAG_UP], [0, 0.4, 1]);
-  const historySlideY = useTransform(
-    panelY,
-    [0, -UPLOAD_PANEL_MAX_DRAG_UP],
-    [UPLOAD_PANEL_MAX_DRAG_UP * 0.55, 0],
-  );
-  const historyClip = useTransform(
-    panelY,
-    [0, -UPLOAD_PANEL_MAX_DRAG_UP],
-    ["inset(100% 0 0 0)", "inset(0% 0 0 0)"],
-  );
+  const panelHeight = useMotionValue(UPLOAD_PANEL_HEIGHT);
+
+  const historyOpacity = useTransform(panelY, (y) => {
+    const progress = Math.min(1, Math.max(0, -y / historyRevealHeight));
+    return progress;
+  });
+  const historySlideY = useTransform(panelY, (y) => {
+    const progress = Math.min(1, Math.max(0, -y / historyRevealHeight));
+    return (1 - progress) * historyRevealHeight * 0.35;
+  });
+
+  useEffect(() => {
+    const onResize = () => setHistoryRevealHeight(getHistoryRevealHeight());
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   useEffect(() => {
     if (!isUploadStep) {
       panelY.set(0);
+      panelHeight.set(UPLOAD_PANEL_HEIGHT);
+      historyOpenRef.current = false;
+      setHistoryOpen(false);
       return;
     }
     panelY.set(UPLOAD_PANEL_HEIGHT);
+    panelHeight.set(UPLOAD_PANEL_HEIGHT);
     const controls = animate(panelY, 0, {
       type: "spring",
       damping: 36,
@@ -294,10 +312,50 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
       mass: 1.15,
     });
     return () => controls.stop();
-  }, [isUploadStep, panelY]);
+  }, [isUploadStep, panelY, panelHeight]);
 
-  const snapPanelClosed = () => {
-    animate(panelY, 0, { type: "spring", stiffness: 420, damping: 34, mass: 0.9 });
+  const snapPanel = (open: boolean) => {
+    historyOpenRef.current = open;
+    setHistoryOpen(open);
+    animate(panelY, open ? -historyRevealHeight : 0, {
+      type: "spring",
+      stiffness: 420,
+      damping: 36,
+      mass: 0.9,
+    });
+    animate(panelHeight, open ? UPLOAD_PANEL_COMPACT_HEIGHT : UPLOAD_PANEL_HEIGHT, {
+      type: "spring",
+      stiffness: 420,
+      damping: 36,
+      mass: 0.9,
+    });
+  };
+
+  const onPanelDrag = (_: unknown, info: PanInfo) => {
+    if (historyOpenRef.current) return;
+    if (info.offset.y < -historyRevealHeight * 0.22) {
+      snapPanel(true);
+    }
+  };
+
+  const onPanelDragEnd = (_: unknown, info: PanInfo) => {
+    const offset = info.offset.y;
+    const velocityY = info.velocity.y;
+
+    if (historyOpenRef.current) {
+      if (velocityY > 180 || offset > historyRevealHeight * 0.1) {
+        snapPanel(false);
+      } else {
+        snapPanel(true);
+      }
+      return;
+    }
+
+    if (velocityY < -220 || offset < -historyRevealHeight * 0.18) {
+      snapPanel(true);
+    } else {
+      snapPanel(false);
+    }
   };
 
   return (
@@ -334,15 +392,28 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
       {isUploadStep ? (
         <>
           <motion.div
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] overflow-hidden bg-white"
+            style={{
+              height: historyRevealHeight,
+              opacity: historyOpacity,
+            }}
+          >
+            <motion.div className="h-full" style={{ y: historySlideY }}>
+              <UploadHistorySheet />
+            </motion.div>
+          </motion.div>
+
+          <motion.div
             drag="y"
             dragControls={uploadDragControls}
             dragListener={false}
-            dragConstraints={{ top: -UPLOAD_PANEL_MAX_DRAG_UP, bottom: 0 }}
-            dragElastic={0.14}
+            dragConstraints={{ top: -historyRevealHeight, bottom: 0 }}
+            dragElastic={0.1}
             dragMomentum={false}
-            onDragEnd={snapPanelClosed}
-            style={{ y: panelY, height: UPLOAD_PANEL_HEIGHT }}
-            className="absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-left text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]"
+            onDrag={onPanelDrag}
+            onDragEnd={onPanelDragEnd}
+            style={{ y: panelY, height: panelHeight }}
+            className="absolute inset-x-0 bottom-0 z-10 flex flex-col overflow-hidden rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-left text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]"
           >
             <div
               aria-hidden
@@ -351,35 +422,36 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
             >
               <div className="h-1 w-10 rounded-full bg-muted-foreground/25" />
             </div>
-            <StepRail step={props.step} />
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.28, duration: 0.5, ease: "easeOut" }}
-              className="mt-5 space-y-3"
-            >
-              <UploadActions
-                onOpenCamera={props.openCamera}
-                onOpenGallery={props.openFile}
-                validating={props.validating}
-              />
-              <p className="text-center text-[11px] text-muted-foreground">
-                {t("aiStylePage.privacyNote")}
-              </p>
-            </motion.div>
-          </motion.div>
 
-          <motion.div
-            className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] overflow-hidden bg-white"
-            style={{
-              height: UPLOAD_PANEL_MAX_DRAG_UP,
-              clipPath: historyClip,
-              opacity: historyOpacity,
-            }}
-          >
-            <motion.div className="h-full" style={{ y: historySlideY }}>
-              <UploadHistorySheet />
-            </motion.div>
+            <AnimatePresence initial={false}>
+              {!historyOpen ? (
+                <motion.div
+                  key="upload-panel-content"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.22, ease: "easeOut" }}
+                  className="overflow-hidden"
+                >
+                  <StepRail step={props.step} />
+                  <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.28, duration: 0.5, ease: "easeOut" }}
+                    className="mt-5 space-y-3"
+                  >
+                    <UploadActions
+                      onOpenCamera={props.openCamera}
+                      onOpenGallery={props.openFile}
+                      validating={props.validating}
+                    />
+                    <p className="text-center text-[11px] text-muted-foreground">
+                      {t("aiStylePage.privacyNote")}
+                    </p>
+                  </motion.div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
           </motion.div>
         </>
       ) : (
