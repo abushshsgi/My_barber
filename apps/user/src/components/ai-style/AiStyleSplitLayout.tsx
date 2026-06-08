@@ -7,7 +7,11 @@ import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
 import { AiStyleAnalyzeCta, AiStyleScanLine } from "@/components/ai-style/AiStyleUi";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { getAiStyleHeroUrl } from "@/lib/cover-images";
-import { loadFaceProfile } from "@/lib/face-profile";
+import {
+  FACE_HISTORY_UPDATED_EVENT,
+  loadFaceProfileHistory,
+  type FaceProfileHistoryEntry,
+} from "@/lib/face-profile";
 import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -267,31 +271,24 @@ function useHistorySwipeHint(isUploadStep: boolean, historyOpen: boolean) {
   return isUploadStep && !historyOpen && !hintDismissed;
 }
 
-function UploadHistorySheet() {
-  const { t, i18n } = useTranslation();
-  const [profile] = useState(() => loadFaceProfile());
+const HISTORY_GRID_SLOTS = 6;
 
-  const lastScan = profile
-    ? new Intl.DateTimeFormat(i18n.language, {
-        day: "numeric",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(new Date(profile.scannedAt))
-    : null;
+function UploadHistorySheet({ open }: { open: boolean }) {
+  const { t } = useTranslation();
+  const [entries, setEntries] = useState<FaceProfileHistoryEntry[]>([]);
 
-  const entries = profile
-    ? [
-        {
-          id: "latest",
-          title: t(`aiStylePage.faceShapes.${profile.faceShapeKey}`),
-          subtitle: profile.hairTypeKey
-            ? t(`aiStylePage.hairTypes.${profile.hairTypeKey}`)
-            : t("aiStylePage.steps.analyze"),
-          date: lastScan ?? "",
-        },
-      ]
-    : [];
+  useEffect(() => {
+    const refresh = () => setEntries(loadFaceProfileHistory());
+    refresh();
+    window.addEventListener(FACE_HISTORY_UPDATED_EVENT, refresh);
+    return () => window.removeEventListener(FACE_HISTORY_UPDATED_EVENT, refresh);
+  }, []);
+
+  useEffect(() => {
+    if (open) setEntries(loadFaceProfileHistory());
+  }, [open]);
+
+  const slots = Array.from({ length: HISTORY_GRID_SLOTS }, (_, index) => entries[index] ?? null);
 
   return (
     <div className="flex h-full flex-col pb-6 pt-1">
@@ -301,20 +298,26 @@ function UploadHistorySheet() {
       <p className="mt-1 text-base font-bold text-foreground">{t("aiStylePage.historySubtitle")}</p>
 
       {entries.length > 0 ? (
-        <ul className="mt-4 space-y-2.5">
-          {entries.map((entry) => (
-            <li
-              key={entry.id}
-              className="rounded-2xl border border-border/60 bg-neutral-50 px-4 py-3"
-            >
-              <p className="text-sm font-semibold text-foreground">{entry.title}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">{entry.subtitle}</p>
-              {entry.date ? (
-                <p className="mt-1 text-[10px] font-medium text-muted-foreground/80">{entry.date}</p>
-              ) : null}
-            </li>
+        <div className="mt-4 flex flex-col gap-2">
+          {[0, 1].map((row) => (
+            <div key={row} className="flex gap-2">
+              {slots.slice(row * 3, row * 3 + 3).map((entry, col) => (
+                <div
+                  key={entry?.id ?? `empty-${row}-${col}`}
+                  className="aspect-square min-w-0 flex-1 overflow-hidden rounded-2xl border border-border/60 bg-neutral-100"
+                >
+                  {entry ? (
+                    <img
+                      src={entry.photoDataUrl}
+                      alt=""
+                      className="h-full w-full object-cover object-top"
+                    />
+                  ) : null}
+                </div>
+              ))}
+            </div>
           ))}
-        </ul>
+        </div>
       ) : (
         <div className="mt-6 flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-border/70 bg-neutral-50/80 px-4 py-8 text-center">
           <p className="text-sm font-semibold text-foreground">{t("aiStylePage.historyEmpty")}</p>
@@ -543,7 +546,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
                   transition={{ duration: 0.2, ease: "easeOut" }}
                   className="min-h-0 flex-1 overflow-y-auto"
                 >
-                  <UploadHistorySheet />
+                  <UploadHistorySheet open={historyOpen} />
                 </motion.div>
               ) : (
                 <motion.div

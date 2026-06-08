@@ -2,7 +2,11 @@ import { useRef, useState } from "react";
 import { analyzeAiStyle, checkAiStyleFace } from "@/lib/api";
 import type { CameraCapturePayload } from "@/components/ai-style/AiStyleCamera";
 import { mapAiStyleResponse, type AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
-import { saveFaceProfile } from "@/lib/face-profile";
+import {
+  appendFaceProfileHistory,
+  enrichLatestFaceProfileHistory,
+  saveFaceProfile,
+} from "@/lib/face-profile";
 import type { Audience } from "@/lib/mock-data";
 import type { AiFaceHint } from "@/lib/api/ai";
 
@@ -35,6 +39,11 @@ export function useAiStyleFlow() {
         throw new Error(check.detail ?? "Iltimos, yuz shakli rasmini yuklang.");
       }
       setPhoto(dataUrl);
+      appendFaceProfileHistory({
+        photoDataUrl: dataUrl,
+        scannedAt: new Date().toISOString(),
+        source: "gallery",
+      });
       setFaceHint(null);
       setDone(false);
       setResult(null);
@@ -69,13 +78,20 @@ export function useAiStyleFlow() {
       jaw_to_forehead: payload.ratios.jawToForehead,
       source: "camera_scan",
     });
+    const scannedAt = new Date().toISOString();
     saveFaceProfile({
       faceShapeKey: payload.faceShapeKey,
       ratios: {
         widthToHeight: payload.ratios.widthToHeight,
         jawToForehead: payload.ratios.jawToForehead,
       },
-      scannedAt: new Date().toISOString(),
+      scannedAt,
+      source: "camera_scan",
+    });
+    appendFaceProfileHistory({
+      photoDataUrl: payload.dataUrl,
+      faceShapeKey: payload.faceShapeKey,
+      scannedAt,
       source: "camera_scan",
     });
     setPhoto(payload.dataUrl);
@@ -100,6 +116,8 @@ export function useAiStyleFlow() {
       if (faceHint) {
         mapped.faceShapeKey = faceHint.shape;
       }
+      const scannedAt = new Date().toISOString();
+      const source = faceHint ? "camera_scan" : "ai_analysis";
       saveFaceProfile({
         faceShapeKey: mapped.faceShapeKey,
         hairTypeKey: mapped.hairTypeKey,
@@ -107,8 +125,14 @@ export function useAiStyleFlow() {
           widthToHeight: faceHint?.width_to_height ?? 0,
           jawToForehead: faceHint?.jaw_to_forehead ?? 0,
         },
-        scannedAt: new Date().toISOString(),
-        source: faceHint ? "camera_scan" : "ai_analysis",
+        scannedAt,
+        source,
+      });
+      enrichLatestFaceProfileHistory(photo, {
+        faceShapeKey: mapped.faceShapeKey,
+        hairTypeKey: mapped.hairTypeKey,
+        scannedAt,
+        source,
       });
       setResult(mapped);
       setDone(true);
