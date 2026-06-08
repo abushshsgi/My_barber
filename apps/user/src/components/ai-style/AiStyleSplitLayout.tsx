@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { AnimatePresence, animate, motion, useMotionValue, type PanInfo } from "framer-motion";
+import { AnimatePresence, animate, motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
 import { Check, ChevronLeft, ChevronsUp, X } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -21,6 +21,7 @@ const UPLOAD_HISTORY_REVEAL_RATIO = 0.48;
 const HISTORY_HINT_MS = 6000;
 const HISTORY_HINT_NUDGE_MS = 1500;
 const HISTORY_HINT_NUDGE_OFFSET = -14;
+const HERO_TEXT_ABOVE_PANEL = 5;
 
 function getHistoryRevealHeight() {
   if (typeof window === "undefined") return 400;
@@ -147,7 +148,7 @@ function HeroCarousel({ audience, hintActive }: { audience: Audience; hintActive
 
       <motion.div
         className="absolute inset-x-0 z-[1] flex flex-col items-center gap-2 px-6 text-center text-white"
-        animate={{ bottom: hintActive ? "5.5rem" : "3.75rem" }}
+        animate={{ bottom: hintActive ? "5.5rem" : `${HERO_TEXT_ABOVE_PANEL}px` }}
         transition={{ duration: 0.45, ease: "easeOut" }}
       >
         <p className="text-lg font-bold">{t("aiStylePage.uploadTitle")}</p>
@@ -155,7 +156,9 @@ function HeroCarousel({ audience, hintActive }: { audience: Audience; hintActive
       </motion.div>
       <motion.div
         className="absolute inset-x-0 z-[1] flex justify-center gap-1.5"
-        animate={{ bottom: hintActive ? "4.5rem" : "2.75rem" }}
+        animate={{
+          bottom: hintActive ? "4.5rem" : `calc(${HERO_TEXT_ABOVE_PANEL}px + 3.25rem)`,
+        }}
         transition={{ duration: 0.45, ease: "easeOut" }}
       >
         {slides.map((seed, i) => (
@@ -355,8 +358,9 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const [historyOpen, setHistoryOpen] = useState(false);
   const historyOpenRef = useRef(false);
   const showHistoryHint = useHistorySwipeHint(isUploadStep, historyOpen);
-  const panelY = useMotionValue(0);
+  const panelY = useMotionValue(UPLOAD_PANEL_HEIGHT);
   const nudgeY = useMotionValue(0);
+  const panelCombinedY = useTransform([panelY, nudgeY], ([p, n]) => (p as number) + (n as number));
   const panelHeight = useMotionValue(UPLOAD_PANEL_HEIGHT);
   const openPanelHeight = UPLOAD_PANEL_HEIGHT + historyRevealHeight;
 
@@ -504,13 +508,13 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
       {isUploadStep ? (
         <>
           <motion.div
-            style={{ y: nudgeY, bottom: UPLOAD_PANEL_HEIGHT }}
+            style={{ y: panelCombinedY, bottom: UPLOAD_PANEL_HEIGHT }}
             className="pointer-events-none absolute inset-x-0 z-[15] flex justify-center pb-3"
           >
             <HistorySwipeHint visible={showHistoryHint} />
           </motion.div>
 
-          <motion.div style={{ y: nudgeY }} className="absolute inset-x-0 bottom-0 z-10">
+          <motion.div style={{ y: panelCombinedY }} className="absolute inset-x-0 bottom-0 z-10">
             <motion.div
               onPan={!historyOpen ? onPanelPan : undefined}
               onPanEnd={!historyOpen ? onPanelPanEnd : undefined}
