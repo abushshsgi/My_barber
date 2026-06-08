@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, animate, motion, useDragControls, useMotionValue, useTransform, type PanInfo } from "framer-motion";
-import { Check, ChevronLeft, History } from "lucide-react";
+import { Check, ChevronLeft } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
@@ -213,11 +213,34 @@ function UploadActions({
 
 function HistoryHintBadge() {
   return (
-    <div className="relative grid h-12 w-12 place-items-center rounded-2xl border border-white/40 bg-black/30 shadow-[0_10px_28px_rgba(0,0,0,0.35)] backdrop-blur-md">
-      <History className="h-5 w-5 text-white" strokeWidth={2.1} />
-      <span className="absolute -top-1.5 left-1/2 grid h-4 w-4 -translate-x-1/2 place-items-center rounded-full bg-white text-[9px] font-bold text-foreground shadow-sm">
-        ↑
-      </span>
+    <div className="relative flex h-[58px] w-[58px] flex-col items-center justify-center rounded-full border-2 border-white/45 bg-gradient-to-b from-white/30 to-white/10 shadow-[0_10px_28px_rgba(0,0,0,0.38)] backdrop-blur-md">
+      <svg
+        width="22"
+        height="18"
+        viewBox="0 0 22 18"
+        fill="none"
+        aria-hidden
+        className="mb-0.5"
+      >
+        <path
+          d="M11 16V8"
+          stroke="white"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+        />
+        <path
+          d="M7 11l4-4 4 4"
+          stroke="white"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <div className="flex flex-col items-center gap-[3px]">
+        <span className="h-[2.5px] w-[18px] rounded-full bg-white/95" />
+        <span className="h-[2.5px] w-[14px] rounded-full bg-white/75" />
+        <span className="h-[2.5px] w-[10px] rounded-full bg-white/55" />
+      </div>
     </div>
   );
 }
