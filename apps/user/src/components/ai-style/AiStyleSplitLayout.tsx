@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, animate, motion, useDragControls, useMotionValue, useTransform, type PanInfo } from "framer-motion";
-import { Check, ChevronLeft, ChevronsUp } from "lucide-react";
+import { Check, ChevronLeft, ChevronsUp, X } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
@@ -492,11 +492,23 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
               style={{ y: 0, height: panelHeight }}
               className="flex flex-col overflow-hidden rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-left text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]"
             >
-            <div
-              onPointerDown={(event) => uploadDragControls.start(event)}
-              className="relative -mt-2 mb-3 flex shrink-0 touch-none cursor-grab items-center justify-center pb-0.5 pt-1 active:cursor-grabbing"
-            >
-              <div aria-hidden className="h-1 w-10 rounded-full bg-muted-foreground/25" />
+            <div className="relative -mt-2 mb-3 flex shrink-0 items-center justify-center pb-0.5 pt-1">
+              <div
+                onPointerDown={(event) => uploadDragControls.start(event)}
+                className="flex w-full touch-none cursor-grab justify-center active:cursor-grabbing"
+              >
+                <div aria-hidden className="h-1 w-10 rounded-full bg-muted-foreground/25" />
+              </div>
+              {historyOpen ? (
+                <button
+                  type="button"
+                  onClick={() => snapPanel(false)}
+                  aria-label={t("common.close")}
+                  className="absolute right-0 grid h-8 w-8 place-items-center rounded-full bg-neutral-100 text-foreground active:opacity-80"
+                >
+                  <X className="h-4 w-4" strokeWidth={2.25} />
+                </button>
+              ) : null}
             </div>
 
             <AnimatePresence initial={false} mode="wait">
