@@ -135,20 +135,20 @@ function HeroCarousel({ audience }: { audience: Audience }) {
 
       <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/45" />
 
-      <div className="absolute inset-x-0 bottom-[4.5rem] flex flex-col items-center gap-2.5 px-6 text-center text-white">
+      <div className="absolute inset-x-0 bottom-[8rem] flex flex-col items-center gap-2 px-6 text-center text-white">
         <p className="text-lg font-bold drop-shadow-sm">{t("aiStylePage.uploadTitle")}</p>
         <p className="max-w-[260px] text-xs text-white/85">{t("aiStylePage.uploadHint")}</p>
-        <div className="flex gap-1.5">
-          {slides.map((seed, i) => (
-            <span
-              key={`${seed}-${i}`}
-              className={cn(
-                "h-1.5 rounded-full transition-all duration-300",
-                i === index ? "w-5 bg-white" : "w-1.5 bg-white/40",
-              )}
-            />
-          ))}
-        </div>
+      </div>
+      <div className="absolute inset-x-0 bottom-[4.5rem] flex justify-center gap-1.5">
+        {slides.map((seed, i) => (
+          <span
+            key={`${seed}-${i}`}
+            className={cn(
+              "h-1.5 rounded-full transition-all duration-300",
+              i === index ? "w-5 bg-white" : "w-1.5 bg-white/40",
+            )}
+          />
+        ))}
       </div>
     </div>
   );
