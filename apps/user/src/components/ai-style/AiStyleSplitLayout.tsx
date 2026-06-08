@@ -287,7 +287,7 @@ function UploadHistorySheet() {
     : [];
 
   return (
-    <div className="flex h-full flex-col px-5 pb-6 pt-4">
+    <div className="flex h-full flex-col pb-6 pt-1">
       <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
         {t("aiStylePage.historyTitle")}
       </p>
@@ -504,22 +504,31 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
               onDrag={historyOpen ? onPanelDrag : undefined}
               onDragEnd={historyOpen ? onPanelDragEnd : undefined}
               className={cn(
-                "relative -mt-2 mb-3 flex shrink-0 items-center justify-center py-2",
+                "relative mb-2 flex w-full shrink-0 items-center",
+                historyOpen ? "h-11" : "justify-center py-2",
                 historyOpen && "cursor-grab active:cursor-grabbing",
               )}
             >
-              <div aria-hidden className="h-1 w-10 rounded-full bg-muted-foreground/25" />
               {historyOpen ? (
-                <button
-                  type="button"
-                  onClick={() => snapPanel(false)}
-                  onPointerDown={(event) => event.stopPropagation()}
-                  aria-label={t("common.close")}
-                  className="absolute right-0 grid h-8 w-8 place-items-center rounded-full bg-neutral-100 text-foreground active:opacity-80"
-                >
-                  <X className="h-4 w-4" strokeWidth={2.25} />
-                </button>
-              ) : null}
+                <>
+                  <div className="pointer-events-none absolute inset-x-0 flex justify-center">
+                    <div aria-hidden className="h-1 w-10 rounded-full bg-muted-foreground/25" />
+                  </div>
+                  <div className="ml-auto">
+                    <button
+                      type="button"
+                      onClick={() => snapPanel(false)}
+                      onPointerDown={(event) => event.stopPropagation()}
+                      aria-label={t("common.close")}
+                      className="relative z-10 grid h-9 w-9 place-items-center rounded-full border border-border/70 bg-neutral-50 text-foreground active:opacity-80"
+                    >
+                      <X className="h-4 w-4" strokeWidth={2.25} />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div aria-hidden className="h-1 w-10 rounded-full bg-muted-foreground/25" />
+              )}
             </motion.div>
 
             <AnimatePresence initial={false} mode="wait">
