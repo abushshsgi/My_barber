@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { AnimatePresence, animate, motion, useDragControls, useMotionValue, useTransform, type PanInfo } from "framer-motion";
+import { AnimatePresence, animate, motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
 import { Check, ChevronLeft, ChevronsUp, X } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -199,6 +199,7 @@ function UploadActions({
         type="button"
         disabled={validating}
         onClick={onOpenCamera}
+        onPointerDown={(event) => event.stopPropagation()}
         className="inline-flex min-h-[50px] flex-col items-center justify-center gap-1 rounded-2xl bg-foreground px-2.5 py-3 text-[12px] font-bold leading-tight text-white shadow-[0_6px_20px_-6px_rgba(0,0,0,0.3)] active:scale-[0.98] disabled:opacity-60"
       >
         <SelfieFaceShape />
@@ -208,6 +209,7 @@ function UploadActions({
         type="button"
         disabled={validating}
         onClick={onOpenGallery}
+        onPointerDown={(event) => event.stopPropagation()}
         className="inline-flex min-h-[50px] flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-foreground/20 bg-transparent px-2.5 py-3 text-[12px] font-bold leading-tight text-foreground active:scale-[0.98] disabled:opacity-60"
       >
         <GalleryStackShape />
@@ -323,7 +325,6 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const busy = props.analyzing || props.validating;
   const showResults = props.done && !!props.result;
   const isUploadStep = !props.photo && !showResults;
-  const uploadDragControls = useDragControls();
   const [historyRevealHeight, setHistoryRevealHeight] = useState(getHistoryRevealHeight);
   const [historyOpen, setHistoryOpen] = useState(false);
   const historyOpenRef = useRef(false);
@@ -481,35 +482,45 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
 
           <motion.div style={{ y: nudgeY }} className="absolute inset-x-0 bottom-0 z-10">
             <motion.div
-              drag="y"
-              dragControls={uploadDragControls}
-              dragListener={false}
+              drag={historyOpen ? false : "y"}
+              dragListener={!historyOpen}
               dragConstraints={{ top: 0, bottom: 0 }}
               dragElastic={0.08}
               dragMomentum={false}
               onDrag={onPanelDrag}
               onDragEnd={onPanelDragEnd}
               style={{ y: 0, height: panelHeight }}
-              className="flex flex-col overflow-hidden rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-left text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]"
+              className={cn(
+                "flex flex-col overflow-hidden rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-left text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]",
+                !historyOpen && "cursor-grab active:cursor-grabbing",
+              )}
             >
-            <div className="relative -mt-2 mb-3 flex shrink-0 items-center justify-center pb-0.5 pt-1">
-              <div
-                onPointerDown={(event) => uploadDragControls.start(event)}
-                className="flex w-full touch-none cursor-grab justify-center active:cursor-grabbing"
-              >
-                <div aria-hidden className="h-1 w-10 rounded-full bg-muted-foreground/25" />
-              </div>
+            <motion.div
+              drag={historyOpen ? "y" : false}
+              dragListener={historyOpen}
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={0.08}
+              dragMomentum={false}
+              onDrag={historyOpen ? onPanelDrag : undefined}
+              onDragEnd={historyOpen ? onPanelDragEnd : undefined}
+              className={cn(
+                "relative -mt-2 mb-3 flex shrink-0 items-center justify-center py-2",
+                historyOpen && "cursor-grab active:cursor-grabbing",
+              )}
+            >
+              <div aria-hidden className="h-1 w-10 rounded-full bg-muted-foreground/25" />
               {historyOpen ? (
                 <button
                   type="button"
                   onClick={() => snapPanel(false)}
+                  onPointerDown={(event) => event.stopPropagation()}
                   aria-label={t("common.close")}
                   className="absolute right-0 grid h-8 w-8 place-items-center rounded-full bg-neutral-100 text-foreground active:opacity-80"
                 >
                   <X className="h-4 w-4" strokeWidth={2.25} />
                 </button>
               ) : null}
-            </div>
+            </motion.div>
 
             <AnimatePresence initial={false} mode="wait">
               {historyOpen ? (
