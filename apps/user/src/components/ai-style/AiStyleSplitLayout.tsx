@@ -21,7 +21,7 @@ const UPLOAD_HISTORY_REVEAL_RATIO = 0.48;
 const HISTORY_HINT_MS = 6000;
 const HISTORY_HINT_NUDGE_MS = 1500;
 const HISTORY_HINT_NUDGE_OFFSET = -14;
-const HERO_TEXT_ABOVE_PANEL = 5;
+const HERO_TEXT_ABOVE_PANEL = 22;
 
 function getHistoryRevealHeight() {
   if (typeof window === "undefined") return 400;
