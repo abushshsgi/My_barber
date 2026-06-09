@@ -582,14 +582,14 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
           animate={{ y: 0 }}
           transition={{ type: "spring", damping: 36, stiffness: 170, mass: 1.15 }}
           className={cn(
-            "relative -mt-16 flex shrink-0 flex-col rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-left text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]",
-            showResults && "min-h-0 overflow-y-auto pb-6",
+            "relative -mt-16 flex min-h-0 flex-1 flex-col rounded-t-[28px] bg-white px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]",
+            showResults && "overflow-y-auto",
           )}
         >
           <StepRail step={props.step} />
 
           {props.done && props.result ? (
-            <div className="mt-5">
+            <div className="mt-5 min-h-0 flex-1 overflow-y-auto text-left">
               <AiStyleResultsBlock
                 result={props.result}
                 saved={props.saved}
@@ -599,21 +599,26 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
               />
             </div>
           ) : (
-            <div className="mt-5 space-y-3">
-              <p className="text-sm font-bold">{t("aiStylePage.photoReadyTitle")}</p>
-              <p className="text-xs text-muted-foreground">{t("aiStylePage.photoReadyDesc")}</p>
+            <div className="mt-6 flex min-h-0 flex-1 flex-col items-center text-center">
+              <p className="text-[15px] font-bold tracking-tight">{t("aiStylePage.photoReadyTitle")}</p>
+              <p className="mt-2 max-w-[280px] text-xs leading-relaxed text-muted-foreground">
+                {t("aiStylePage.photoReadyDesc")}
+              </p>
               <button
                 type="button"
                 onClick={props.onReset}
-                className="rounded-full border border-border px-3 py-1.5 text-[10px] font-bold"
+                disabled={props.analyzing || props.validating}
+                className="mt-5 rounded-full border border-border bg-background px-4 py-2 text-[11px] font-bold text-foreground active:opacity-80 disabled:opacity-50"
               >
                 {t("aiStylePage.retake")}
               </button>
-              <AiStyleAnalyzeCta
-                analyzing={props.analyzing}
-                validating={props.validating}
-                onAnalyze={props.onAnalyze}
-              />
+              <div className="mt-auto w-full pt-8">
+                <AiStyleAnalyzeCta
+                  analyzing={props.analyzing}
+                  validating={props.validating}
+                  onAnalyze={props.onAnalyze}
+                />
+              </div>
             </div>
           )}
         </motion.div>
