@@ -8,10 +8,11 @@ import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/P
 import { AudienceSwitch } from "@/components/AudienceSwitch";
 import { setLang, type AppLang } from "@/i18n/config";
 import { cn } from "@/lib/utils";
-import { useAudience, PREFS_KEY, type AudienceFilter } from "@/hooks/use-audience";
+import { useAudience, getPrefsStorageKey, type AudienceFilter } from "@/hooks/use-audience";
 import { changePassword, setPassword } from "@/lib/api";
 import { setSession } from "@/lib/auth";
-import { meQueryKey, useDisplayUser, useMe, useUpdateMe } from "@/hooks/use-me";
+import { meQueryKeyFor, useDisplayUser, useMe, useUpdateMe } from "@/hooks/use-me";
+import { getAuthUserId } from "@/lib/auth-user";
 import { useProfileScreen } from "@/components/profile/useProfileScreen";
 
 export const Route = createFileRoute("/settings")({
@@ -50,6 +51,7 @@ function Settings() {
   const queryClient = useQueryClient();
   const user = useDisplayUser();
   const { data: me } = useMe();
+  const authUserId = me?.id ?? getAuthUserId();
   const updateMe = useUpdateMe();
   const { handleLogout } = useProfileScreen();
   const [prefs, setPrefs] = useState<Prefs>(DEFAULTS);
@@ -61,7 +63,7 @@ function Settings() {
     onSuccess: (res) => {
       toast.success(t("settings.passwordSaved"));
       setNewPassword("");
-      void queryClient.invalidateQueries({ queryKey: meQueryKey });
+      void queryClient.invalidateQueries({ queryKey: meQueryKeyFor(getAuthUserId()) });
       if (res.user) {
         const access = localStorage.getItem("mybarber_user_access");
         const refresh = localStorage.getItem("mybarber_user_refresh");
@@ -77,7 +79,7 @@ function Settings() {
       toast.success(t("settings.passwordChanged"));
       setOldPassword("");
       setNewPassword("");
-      void queryClient.invalidateQueries({ queryKey: meQueryKey });
+      void queryClient.invalidateQueries({ queryKey: meQueryKeyFor(getAuthUserId()) });
       if (res.user) {
         const access = localStorage.getItem("mybarber_user_access");
         const refresh = localStorage.getItem("mybarber_user_refresh");
@@ -89,16 +91,16 @@ function Settings() {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(PREFS_KEY);
+      const raw = localStorage.getItem(getPrefsStorageKey());
       if (raw) setPrefs({ ...DEFAULTS, ...JSON.parse(raw) });
     } catch {}
-  }, []);
+  }, [authUserId]);
 
   const update = (key: BoolPref, value: boolean) => {
     const next = { ...prefs, [key]: value };
     setPrefs(next);
     try {
-      localStorage.setItem(PREFS_KEY, JSON.stringify(next));
+      localStorage.setItem(getPrefsStorageKey(), JSON.stringify(next));
     } catch {}
     if (key === "reduceMotion") {
       document.documentElement.classList.toggle("reduce-motion", value);
@@ -265,7 +267,7 @@ function Settings() {
         onClick={() => {
           setPrefs(DEFAULTS);
           try {
-            localStorage.setItem(PREFS_KEY, JSON.stringify(DEFAULTS));
+            localStorage.setItem(getPrefsStorageKey(), JSON.stringify(DEFAULTS));
           } catch {}
           setAudience(DEFAULTS.preferredAudience);
           document.documentElement.classList.toggle("reduce-motion", DEFAULTS.reduceMotion);

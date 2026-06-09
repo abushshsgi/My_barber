@@ -10,6 +10,7 @@ from salons.join_service import attach_worker_membership
 from salons.models import Salon
 
 from .models import User
+from .phone_utils import normalize_phone_field
 from .uz_regions import UzRegion
 
 
@@ -106,7 +107,7 @@ class UserSerializer(serializers.ModelSerializer):
         return obj.role
 
     def validate_phone(self, value):
-        value = (value or "").strip()
+        value = normalize_phone_field(value)
         if not value:
             return None
         qs = User.objects.filter(phone=value)
@@ -175,7 +176,7 @@ class BarberSignupSerializer(serializers.Serializer):
         return v
 
     def validate_phone(self, value):
-        value = (value or "").strip()
+        value = normalize_phone_field(value)
         if not value:
             return ""
         if User.objects.filter(phone=value).exists():
@@ -263,7 +264,7 @@ class BarberRegisterJoinSalonSerializer(serializers.Serializer):
         return v
 
     def validate_phone(self, value):
-        value = (value or "").strip()
+        value = normalize_phone_field(value)
         if not value:
             return ""
         if User.objects.filter(phone=value).exists():

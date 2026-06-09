@@ -17,6 +17,7 @@ import {
   verifyPhoneCode,
 } from "@/lib/api";
 import { getLastPhone, setSession } from "@/lib/auth";
+import { clearQueryClientCache } from "@/lib/query-client";
 import { getStoredOtpCooldownSeconds, storeOtpCooldown } from "@/lib/otp-cooldown";
 import { formatUzLocalPhone, parseUzLocalPhone } from "@/lib/phone";
 import { needsOnboarding } from "@/lib/recommendations";
@@ -84,6 +85,7 @@ function Auth() {
 
   const finishLogin = (data: PhoneVerifyResponse) => {
     setSession(data.access, data.refresh, data.user);
+    clearQueryClientCache();
     toast.success(data.is_new_user ? t("auth.welcomeNew") : t("auth.welcomeBack"));
     void router
       .navigate({

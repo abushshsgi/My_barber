@@ -5,6 +5,7 @@ const FACE_HISTORY_KEY_PREFIX = "mysaloon.ai.faceHistory";
 const LEGACY_FACE_PROFILE_KEY = "mysaloon.ai.faceProfile";
 const LEGACY_FACE_HISTORY_KEY = "mysaloon.ai.faceHistory";
 const FACE_HISTORY_MAX = 6;
+const LEGACY_FACE_MIGRATED_FLAG = "mysaloon.ai.legacyMigrated";
 export const FACE_HISTORY_UPDATED_EVENT = "mysaloon:face-history-updated";
 
 const USER_KEY = "mysaloon.auth.user";
@@ -50,6 +51,8 @@ export function getActiveUserId(): number | null {
 
 function migrateLegacyStorage(userId: number) {
   try {
+    if (localStorage.getItem(LEGACY_FACE_MIGRATED_FLAG)) return;
+
     const scopedHistory = historyKey(userId);
     if (!localStorage.getItem(scopedHistory)) {
       const legacyHistory = localStorage.getItem(LEGACY_FACE_HISTORY_KEY);
@@ -62,6 +65,7 @@ function migrateLegacyStorage(userId: number) {
     }
     localStorage.removeItem(LEGACY_FACE_HISTORY_KEY);
     localStorage.removeItem(LEGACY_FACE_PROFILE_KEY);
+    localStorage.setItem(LEGACY_FACE_MIGRATED_FLAG, "1");
   } catch {
     /* noop */
   }

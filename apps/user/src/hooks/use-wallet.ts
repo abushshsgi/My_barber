@@ -10,16 +10,26 @@ import {
   type SendGiftPayload,
 } from "@/lib/api/wallet";
 import { authQueryEnabled } from "@/lib/auth-query";
+import { getAuthUserId } from "@/lib/auth-user";
+import { userQueryKey } from "@/lib/query-keys";
 import { mapLedgerEntries } from "@/lib/mappers/wallet";
 
-export const walletMeQueryKey = ["wallet", "me"] as const;
-export const walletTxQueryKey = (direction: string) => ["wallet", "transactions", direction] as const;
+export const walletMeQueryKeyBase = ["wallet", "me"] as const;
+
+export function walletMeQueryKeyFor(userId: number | null) {
+  return userQueryKey(walletMeQueryKeyBase, userId);
+}
+
+export function walletTxQueryKeyFor(userId: number | null, direction: string) {
+  return userQueryKey(["wallet", "transactions", direction] as const, userId);
+}
 
 export function useWalletMe() {
+  const userId = getAuthUserId();
   return useQuery({
-    queryKey: walletMeQueryKey,
+    queryKey: walletMeQueryKeyFor(userId),
     queryFn: fetchWalletMe,
-    enabled: authQueryEnabled(),
+    enabled: authQueryEnabled(!!userId),
     staleTime: 15_000,
   });
 }
@@ -36,22 +46,24 @@ export function useWalletBalance() {
 }
 
 export function useWalletTransactions(direction: "all" | "in" | "out" = "all", pageSize = 50) {
+  const userId = getAuthUserId();
   return useQuery({
-    queryKey: walletTxQueryKey(direction),
+    queryKey: walletTxQueryKeyFor(userId, direction),
     queryFn: async () => {
       const rows = await fetchWalletTransactionsList({ direction, page_size: pageSize });
       return mapLedgerEntries(rows);
     },
-    enabled: authQueryEnabled(),
+    enabled: authQueryEnabled(!!userId),
     staleTime: 10_000,
   });
 }
 
 export function useWalletRecipientSearch(q: string) {
+  const userId = getAuthUserId();
   return useQuery({
-    queryKey: ["wallet", "recipients", q],
+    queryKey: userQueryKey(["wallet", "recipients", q] as const, userId),
     queryFn: () => searchWalletRecipients(q),
-    enabled: authQueryEnabled(q.trim().length >= 2),
+    enabled: authQueryEnabled(!!userId && q.trim().length >= 2),
     staleTime: 30_000,
   });
 }

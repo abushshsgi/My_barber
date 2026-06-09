@@ -8,7 +8,8 @@ import { ClientOnly } from "@/components/ClientOnly";
 import { WalletEmptyTransactions } from "@/components/wallet/WalletEmptyTransactions";
 import { WalletPullRefresh } from "@/components/wallet/WalletPullRefresh";
 import { WalletTransactionList } from "@/components/wallet/WalletTransactionList";
-import { useWalletBalance, useWalletTransactions, walletMeQueryKey } from "@/hooks/use-wallet";
+import { useWalletBalance, useWalletTransactions, walletMeQueryKeyFor } from "@/hooks/use-wallet";
+import { getAuthUserId } from "@/lib/auth-user";
 import { filterWalletTransactions, type WalletTxTab } from "@/lib/wallet-transactions";
 import { cn } from "@/lib/utils";
 
@@ -51,7 +52,7 @@ function WalletPage() {
   };
 
   const refreshBalance = async () => {
-    await qc.invalidateQueries({ queryKey: walletMeQueryKey });
+    await qc.invalidateQueries({ queryKey: walletMeQueryKeyFor(getAuthUserId()) });
     await qc.invalidateQueries({ queryKey: ["wallet", "transactions"] });
   };
 

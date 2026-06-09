@@ -8,7 +8,7 @@ import { AiStyleAnalyzeCta, AiStyleScanLine, GalleryValidatingHero } from "@/com
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { getAiStyleHeroUrl } from "@/lib/cover-images";
 import { refreshAiStyleHistoryCache } from "@/lib/api";
-import { FACE_HISTORY_UPDATED_EVENT, type FaceProfileHistoryEntry } from "@/lib/face-profile";
+import { FACE_HISTORY_UPDATED_EVENT, getActiveUserId, type FaceProfileHistoryEntry } from "@/lib/face-profile";
 import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -274,6 +274,7 @@ const HISTORY_GRID_SLOTS = 6;
 function UploadHistorySheet({ open }: { open: boolean }) {
   const { t } = useTranslation();
   const [entries, setEntries] = useState<FaceProfileHistoryEntry[]>([]);
+  const userId = getActiveUserId();
 
   useEffect(() => {
     let cancelled = false;
@@ -290,7 +291,7 @@ function UploadHistorySheet({ open }: { open: boolean }) {
       cancelled = true;
       window.removeEventListener(FACE_HISTORY_UPDATED_EVENT, onCacheUpdate);
     };
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     if (!open) return;
@@ -301,7 +302,7 @@ function UploadHistorySheet({ open }: { open: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [open]);
+  }, [open, userId]);
 
   const slots = Array.from({ length: HISTORY_GRID_SLOTS }, (_, index) => entries[index] ?? null);
 

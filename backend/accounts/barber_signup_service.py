@@ -6,6 +6,8 @@ from typing import Any
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import transaction
 
+from accounts.phone_utils import normalize_phone_field
+
 from barbers.models import Barber, BarberProfile, BarberSignupSnapshot
 
 
@@ -64,7 +66,7 @@ def _persist(validated_data: dict[str, Any]) -> Barber:
 
     pwd = validated_data.pop("password")
     email = validated_data.pop("email")
-    phone = validated_data.pop("phone", "") or None
+    phone = normalize_phone_field(validated_data.pop("phone", "") or "")
     full_name = validated_data.pop("full_name")
     has_salon = bool(validated_data.pop("has_salon"))
     latitude = validated_data.pop("latitude")

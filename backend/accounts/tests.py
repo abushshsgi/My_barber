@@ -128,6 +128,53 @@ class PhoneAuthTests(TestCase):
         )
         self.assertEqual(res.status_code, 400)
 
+    def test_barber_only_phone_rejected_on_verify(self):
+        Barber.objects.create(
+            email="barber2@test.com",
+            username="barber2@test.com",
+            phone="+998909887766",
+            password="unused-hash",
+        )
+        store_otp("+998909887766", "9876")
+        verify = self.client.post(
+            "/api/v1/auth/phone/verify/",
+            {"phone": "909887766", "code": "9876", "intent": "login"},
+            format="json",
+        )
+        self.assertEqual(verify.status_code, 400)
+        self.assertIn("sartarosh", verify.json()["detail"].lower())
+        self.assertFalse(User.objects.filter(phone="+998909887766").exists())
+
+    def test_barber_phone_format_normalized_on_lookup(self):
+        Barber.objects.create(
+            email="barber3@test.com",
+            username="barber3@test.com",
+            phone="+998909776655",
+            password="unused-hash",
+        )
+        res = self.client.post(
+            "/api/v1/auth/phone/send-code/",
+            {"phone": "+998909776655"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 400)
+
+    def test_register_intent_race_returns_error_not_login(self):
+        User.objects.create_user(
+            username="901999000@phone.mysaloon.local",
+            email="901999000@phone.mysaloon.local",
+            phone="+998901999000",
+            password="unused",
+        )
+        store_otp("+998901999000", "8642")
+        verify = self.client.post(
+            "/api/v1/auth/phone/verify/",
+            {"phone": "901999000", "code": "8642", "intent": "register"},
+            format="json",
+        )
+        self.assertEqual(verify.status_code, 400)
+        self.assertIn("allaqachon", verify.json()["detail"].lower())
+
     def test_phone_check_and_password_login(self):
         User.objects.create_user(
             username="901334455@phone.mysaloon.local",

@@ -7,6 +7,7 @@ import {
 } from "@/lib/api";
 import { prepareFaceProfileStorageForUser } from "@/lib/face-profile";
 import { clearQueryClientCache, getQueryClient } from "@/lib/query-client";
+import { notifyAudienceReset, prepareUserPrefsStorageForUser } from "@/lib/user-prefs";
 
 const USER_KEY = "mysaloon.auth.user";
 const LAST_PHONE_KEY = "mysaloon.auth.lastPhone";
@@ -47,25 +48,18 @@ export function getToken(): string | null {
 }
 
 export function setSession(access: string, refresh: string, user: ApiUser) {
-  const previousUser = getAuthUser();
   setUserTokens(access, refresh);
   localStorage.setItem(USER_KEY, JSON.stringify(userFromApi(user)));
   if (user.phone) rememberPhone(user.phone);
 
   if (typeof user.id === "number") {
     prepareFaceProfileStorageForUser(user.id);
+    prepareUserPrefsStorageForUser(user.id);
+    notifyAudienceReset(user.id);
   }
 
-  const previousId = previousUser?.id;
-  const nextId = user.id;
-  if (
-    previousId != null &&
-    nextId != null &&
-    previousId !== nextId
-  ) {
-    clearQueryClientCache();
-    void getQueryClient()?.invalidateQueries();
-  }
+  clearQueryClientCache();
+  void getQueryClient()?.invalidateQueries();
 }
 
 export function getAuthUser(): AuthUser | null {
@@ -89,5 +83,6 @@ export function logout() {
   } catch {
     /* noop */
   }
+  notifyAudienceReset(null);
   /* LAST_PHONE_KEY saqlanadi — keyingi kirishda raqam tayyor bo'ladi */
 }

@@ -12,6 +12,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from barbers.models import Barber
 
 from .models import User
+from .phone_utils import (
+    PHONE_ALREADY_REGISTERED,
+    customer_has_account,
+    customer_signup_blocked_reason,
+)
 from .phone_auth import (
     OTP_RESEND_COOLDOWN_SECONDS,
     clear_password_failures,
@@ -57,18 +62,6 @@ def _expose_debug_code() -> bool:
 def _issue_tokens(user: User) -> tuple[str, str]:
     refresh = RefreshToken.for_user(user)
     return str(refresh.access_token), str(refresh)
-
-
-PHONE_ALREADY_REGISTERED = (
-    "Bu raqamdan allaqachon akkaunt ochilgan. Kirish uchun davom eting."
-)
-
-
-def _user_registered_for_phone(phone: str) -> bool:
-    if User.objects.filter(phone=phone, role=User.Role.USER).exists():
-        return True
-    email = phone_to_internal_email(phone)
-    return User.objects.filter(email__iexact=email, role=User.Role.USER).exists()
 
 
 def _parse_phone_auth_intent(raw: object) -> str:
@@ -128,9 +121,10 @@ class PhoneSendCodeView(APIView):
         if not phone:
             return Response({"detail": "Telefon raqami noto'g'ri."}, status=400)
 
-        registered = _user_registered_for_phone(phone)
-        if intent == "register" and registered:
-            return Response({"detail": PHONE_ALREADY_REGISTERED}, status=400)
+        registered = customer_has_account(phone)
+        block_reason = customer_signup_blocked_reason(phone, intent)
+        if block_reason:
+            return Response({"detail": block_reason}, status=400)
 
         if daily_send_blocked(phone):
             return Response(
@@ -139,16 +133,6 @@ class PhoneSendCodeView(APIView):
                     "retry_after": 3600,
                 },
                 status=429,
-            )
-
-        if Barber.objects.filter(phone=phone).exists() and not User.objects.filter(
-            phone=phone
-        ).exists():
-            return Response(
-                {
-                    "detail": "Bu raqam sartarosh akkauntiga biriktirilgan. Sartarosh ilovasidan kiring.",
-                },
-                status=400,
             )
 
         if resend_blocked(phone):
@@ -330,10 +314,13 @@ class PhoneVerifyView(APIView):
         if not ok:
             return Response({"detail": err}, status=400)
 
-        if intent == "register" and _user_registered_for_phone(phone):
-            return Response({"detail": PHONE_ALREADY_REGISTERED}, status=400)
+        block_reason = customer_signup_blocked_reason(phone, intent)
+        if block_reason:
+            return Response({"detail": block_reason}, status=400)
 
         user, is_new = _get_or_create_user_by_phone(phone)
+        if intent == "register" and not is_new:
+            return Response({"detail": PHONE_ALREADY_REGISTERED}, status=400)
         if not user.is_active:
             return Response({"detail": "Akkaunt faol emas."}, status=403)
 

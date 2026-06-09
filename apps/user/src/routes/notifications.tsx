@@ -21,6 +21,8 @@ import { ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout"
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
 import { getNotificationLinkProps } from "@/lib/notification-links";
+import { getAuthUserId } from "@/lib/auth-user";
+import { readScopedNotifPrefsRaw, writeScopedNotifPrefsRaw } from "@/lib/user-prefs";
 
 export const Route = createFileRoute("/notifications")({
   head: () => ({ meta: [{ title: "Bildirishnomalar — mysaloon.uz" }] }),
@@ -53,8 +55,6 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "review", label: "Sharh" },
 ];
 
-const PREFS_KEY = "mysaloon.notif.prefs";
-
 const defaultPrefs: Record<Channel, boolean> = {
   booking: true,
   chat_message: true,
@@ -65,24 +65,31 @@ const defaultPrefs: Record<Channel, boolean> = {
 function usePrefs() {
   const [prefs, setPrefs] = useState<Record<Channel, boolean>>(defaultPrefs);
   const [mounted, setMounted] = useState(false);
+  const userId = getAuthUserId();
 
   useEffect(() => {
     setMounted(true);
+    if (!userId) {
+      setPrefs(defaultPrefs);
+      return;
+    }
     try {
-      const raw = localStorage.getItem(PREFS_KEY);
+      const raw = readScopedNotifPrefsRaw(userId);
       if (raw) setPrefs({ ...defaultPrefs, ...JSON.parse(raw) });
     } catch {
       /* noop */
     }
-  }, []);
+  }, [userId]);
 
   const update = (key: Channel, value: boolean) => {
     setPrefs((prev) => {
       const next = { ...prev, [key]: value };
-      try {
-        localStorage.setItem(PREFS_KEY, JSON.stringify(next));
-      } catch {
-        /* noop */
+      if (userId != null) {
+        try {
+          writeScopedNotifPrefsRaw(userId, JSON.stringify(next));
+        } catch {
+          /* noop */
+        }
       }
       return next;
     });

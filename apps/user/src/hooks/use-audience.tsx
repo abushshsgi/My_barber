@@ -1,9 +1,19 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { type Audience, type Category } from "@/lib/mock-data";
+import { getAuthUserId } from "@/lib/auth-user";
+import {
+  AUDIENCE_RESET_EVENT,
+  audienceKey,
+  prefsKey,
+  readScopedAudience,
+  readScopedPrefsRaw,
+  writeScopedAudience,
+  writeScopedPrefsRaw,
+} from "@/lib/user-prefs";
 
 export type AudienceFilter = Audience | "all";
 
-const AUDIENCE_KEY = "mysaloon.audience";
+/** @deprecated Use prefsKey(userId) from user-prefs — kept for settings import compatibility */
 export const PREFS_KEY = "mysaloon.prefs";
 
 type AudienceContextValue = {
@@ -18,9 +28,9 @@ function isValidAudienceFilter(v: unknown): v is AudienceFilter {
   return v === "men" || v === "women" || v === "all";
 }
 
-function readPrefsPreferredAudience(): AudienceFilter | null {
+function readPrefsPreferredAudience(userId: number | null): AudienceFilter | null {
   try {
-    const raw = localStorage.getItem(PREFS_KEY);
+    const raw = userId != null ? readScopedPrefsRaw(userId) : localStorage.getItem(PREFS_KEY);
     if (!raw) return null;
     const v = JSON.parse(raw).preferredAudience;
     return isValidAudienceFilter(v) ? v : null;
@@ -29,8 +39,14 @@ function readPrefsPreferredAudience(): AudienceFilter | null {
   }
 }
 
-function writePrefsPreferredAudience(v: AudienceFilter) {
+function writePrefsPreferredAudience(userId: number | null, v: AudienceFilter) {
   try {
+    if (userId != null) {
+      const raw = readScopedPrefsRaw(userId);
+      const prefs = raw ? JSON.parse(raw) : {};
+      writeScopedPrefsRaw(userId, JSON.stringify({ ...prefs, preferredAudience: v }));
+      return;
+    }
     const raw = localStorage.getItem(PREFS_KEY);
     const prefs = raw ? JSON.parse(raw) : {};
     localStorage.setItem(PREFS_KEY, JSON.stringify({ ...prefs, preferredAudience: v }));
@@ -40,7 +56,7 @@ function writePrefsPreferredAudience(v: AudienceFilter) {
 }
 
 export function getProfileDefaultAudience(): AudienceFilter {
-  const fromPrefs = readPrefsPreferredAudience();
+  const fromPrefs = readPrefsPreferredAudience(getAuthUserId());
   if (fromPrefs) return fromPrefs;
   return "all";
 }
@@ -55,27 +71,52 @@ export function resolveAiStyleAudience(
   return "men";
 }
 
-function readInitialAudience(): AudienceFilter {
+function readInitialAudience(userId: number | null): AudienceFilter {
   try {
-    const stored = localStorage.getItem(AUDIENCE_KEY);
-    if (isValidAudienceFilter(stored)) return stored;
+    if (userId != null) {
+      const stored = readScopedAudience(userId);
+      if (isValidAudienceFilter(stored)) return stored;
+    } else {
+      const stored = localStorage.getItem("mysaloon.audience");
+      if (isValidAudienceFilter(stored)) return stored;
+    }
   } catch {
     /* noop */
   }
-  return getProfileDefaultAudience();
+  return readPrefsPreferredAudience(userId) ?? "all";
 }
 
 export function AudienceProvider({ children }: { children: ReactNode }) {
-  const [audience, setAudienceState] = useState<AudienceFilter>(readInitialAudience);
-  const profileDefault = getProfileDefaultAudience();
+  const [userId, setUserId] = useState<number | null>(() => getAuthUserId());
+  const [audience, setAudienceState] = useState<AudienceFilter>(() => readInitialAudience(userId));
+  const profileDefault = readPrefsPreferredAudience(userId) ?? "all";
 
-  useEffect(() => {
-    setAudienceState(readInitialAudience());
+  const reloadAudience = useCallback((uid: number | null) => {
+    setUserId(uid);
+    setAudienceState(readInitialAudience(uid));
   }, []);
 
   useEffect(() => {
+    reloadAudience(getAuthUserId());
+  }, [reloadAudience]);
+
+  useEffect(() => {
+    const onReset = (e: Event) => {
+      const detail = (e as CustomEvent<number | null>).detail;
+      if (typeof detail === "number") {
+        reloadAudience(detail);
+        return;
+      }
+      reloadAudience(getAuthUserId());
+    };
+    window.addEventListener(AUDIENCE_RESET_EVENT, onReset);
+    return () => window.removeEventListener(AUDIENCE_RESET_EVENT, onReset);
+  }, [reloadAudience]);
+
+  useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === AUDIENCE_KEY && isValidAudienceFilter(e.newValue)) {
+      const uid = getAuthUserId();
+      if (uid != null && e.key === audienceKey(uid) && isValidAudienceFilter(e.newValue)) {
         setAudienceState(e.newValue);
       }
     };
@@ -84,10 +125,15 @@ export function AudienceProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setAudience = useCallback((v: AudienceFilter) => {
+    const uid = getAuthUserId();
     setAudienceState(v);
     try {
-      localStorage.setItem(AUDIENCE_KEY, v);
-      writePrefsPreferredAudience(v);
+      if (uid != null) {
+        writeScopedAudience(uid, v);
+      } else {
+        localStorage.setItem("mysaloon.audience", v);
+      }
+      writePrefsPreferredAudience(uid, v);
     } catch {
       /* noop */
     }
@@ -124,4 +170,10 @@ export function categoriesForAudience(a: AudienceFilter): (Category | "all")[] {
   if (a === "men") return ["all", "barber"];
   if (a === "women") return ["all", "beauty", "nails", "spa"];
   return ["all", "barber", "beauty", "nails", "spa"];
+}
+
+/** Settings sahifasi uchun user-scoped prefs kaliti */
+export function getPrefsStorageKey(): string {
+  const uid = getAuthUserId();
+  return uid != null ? prefsKey(uid) : PREFS_KEY;
 }
