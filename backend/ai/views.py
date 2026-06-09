@@ -1,10 +1,15 @@
-from rest_framework.permissions import AllowAny
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.models import User
 from accounts.throttles import AiStyleThrottle, AuthIPThrottle
 
+from .history_storage import save_history_photo, trim_user_history
+from .models import HISTORY_MAX_PER_USER, AiStyleHistoryEntry
 from .salon_match import attach_salons_to_suggestions
+from .serializers import AiStyleHistoryCreateSerializer, AiStyleHistoryEntrySerializer
 from .services.gemini_style import (
     NO_FACE_MESSAGE,
     AiStyleError,
@@ -13,13 +18,24 @@ from .services.gemini_style import (
 )
 
 
+def _require_customer_user(request) -> User | Response:
+    user = request.user
+    if not isinstance(user, User):
+        return Response({"detail": "Faqat mijoz akkaunti uchun."}, status=403)
+    return user
+
+
 class AiStyleAnalyzeView(APIView):
     """POST { image: data-url, audience } — Gemini selfie tahlili."""
 
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     throttle_classes = [AiStyleThrottle, AuthIPThrottle]
 
     def post(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+
         image = request.data.get("image")
         audience = request.data.get("audience") or "unisex"
         face_hint = request.data.get("face_hint")
@@ -48,10 +64,14 @@ class AiStyleAnalyzeView(APIView):
 class AiFaceCheckView(APIView):
     """POST { image } — yuz bormi (yuklashdan oldin tekshirish)."""
 
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     throttle_classes = [AiStyleThrottle, AuthIPThrottle]
 
     def post(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+
         image = request.data.get("image")
         if not image:
             return Response({"detail": "Selfie rasmini yuboring."}, status=400)
@@ -62,3 +82,64 @@ class AiFaceCheckView(APIView):
             return Response({"has_face": True})
         except AiStyleError as exc:
             return Response({"has_face": False, "detail": exc.message}, status=exc.status)
+
+
+class AiStyleHistoryListCreateView(APIView):
+    """GET — oxirgi 6 ta selfie tarixi; POST — yangi yoki oxirgisini yangilash."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [AuthIPThrottle]
+
+    def get(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+
+        entries = AiStyleHistoryEntry.objects.filter(user=user).order_by("-created_at")[
+            :HISTORY_MAX_PER_USER
+        ]
+        serializer = AiStyleHistoryEntrySerializer(
+            entries,
+            many=True,
+            context={"request": request},
+        )
+        return Response(serializer.data)
+
+    def post(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+
+        serializer = AiStyleHistoryCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        image = (data.get("image") or "").strip()
+
+        if data.get("replace_latest"):
+            entry = AiStyleHistoryEntry.objects.filter(user=user).order_by("-created_at").first()
+            if entry is None:
+                return Response({"detail": "Yangilash uchun tarix topilmadi."}, status=400)
+            if image:
+                save_history_photo(entry, image)
+            entry.face_shape_key = data.get("face_shape_key") or entry.face_shape_key
+            entry.hair_type_key = data.get("hair_type_key") or entry.hair_type_key
+            entry.source = data["source"]
+            entry.save(
+                update_fields=["face_shape_key", "hair_type_key", "source"],
+            )
+            out = AiStyleHistoryEntrySerializer(entry, context={"request": request})
+            return Response(out.data)
+
+        if not image:
+            return Response({"detail": "Selfie rasmini yuboring."}, status=400)
+
+        entry = AiStyleHistoryEntry.objects.create(
+            user=user,
+            face_shape_key=data.get("face_shape_key") or "",
+            hair_type_key=data.get("hair_type_key") or "",
+            source=data["source"],
+        )
+        save_history_photo(entry, image)
+        trim_user_history(user)
+        out = AiStyleHistoryEntrySerializer(entry, context={"request": request})
+        return Response(out.data, status=status.HTTP_201_CREATED)

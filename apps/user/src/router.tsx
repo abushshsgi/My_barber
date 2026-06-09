@@ -1,6 +1,7 @@
 import { QueryClient, QueryCache, MutationCache } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import { handleAuthFailure } from "@/lib/api/client";
+import { registerQueryClient } from "@/lib/query-client";
 import { routeTree } from "./routeTree.gen";
 
 function isAuthQueryError(error: unknown): boolean {
@@ -29,6 +30,7 @@ export const getRouter = () => {
       },
     },
   });
+  registerQueryClient(queryClient);
 
   const router = createRouter({
     routeTree,

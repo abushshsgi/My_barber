@@ -18,6 +18,8 @@ export {
   changePassword,
   analyzeAiStyle,
   checkAiStyleFace,
+  persistAiStyleHistory,
+  refreshAiStyleHistoryCache,
   type AiStyleAnalyzeResponse,
   fetchWalletMe,
   topUpWallet,

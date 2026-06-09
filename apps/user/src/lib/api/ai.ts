@@ -1,3 +1,10 @@
+import type { FaceShapeKey, HairTypeKey } from "@/components/ai-style/ai-style-shared";
+import {
+  getActiveUserId,
+  loadFaceProfileHistory,
+  syncFaceProfileHistoryCache,
+  type FaceProfileHistoryEntry,
+} from "@/lib/face-profile";
 import { apiFetch, apiJson } from "./client";
 
 export type AiStyleSuggestionApi = {
@@ -60,4 +67,71 @@ export async function analyzeAiStyle(
       face_hint: faceHint ?? undefined,
     }),
   });
+}
+
+export type AiStyleHistoryEntryApi = {
+  id: number;
+  photo_url: string | null;
+  face_shape_key: string;
+  hair_type_key: string;
+  source: "camera_scan" | "gallery" | "ai_analysis";
+  scanned_at: string;
+};
+
+export type SaveAiStyleHistoryPayload = {
+  image?: string;
+  face_shape_key?: string;
+  hair_type_key?: string;
+  source: "camera_scan" | "gallery" | "ai_analysis";
+  replace_latest?: boolean;
+};
+
+export async function fetchAiStyleHistory(): Promise<AiStyleHistoryEntryApi[]> {
+  return apiJson<AiStyleHistoryEntryApi[]>("/api/v1/ai/style-history/");
+}
+
+export async function saveAiStyleHistory(
+  payload: SaveAiStyleHistoryPayload,
+): Promise<AiStyleHistoryEntryApi> {
+  return apiJson<AiStyleHistoryEntryApi>("/api/v1/ai/style-history/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+function mapApiHistoryEntry(entry: AiStyleHistoryEntryApi): FaceProfileHistoryEntry {
+  return {
+    id: String(entry.id),
+    photoDataUrl: entry.photo_url ?? "",
+    faceShapeKey: (entry.face_shape_key || undefined) as FaceShapeKey | undefined,
+    hairTypeKey: (entry.hair_type_key || undefined) as HairTypeKey | undefined,
+    scannedAt: entry.scanned_at,
+    source: entry.source,
+  };
+}
+
+export async function refreshAiStyleHistoryCache(): Promise<FaceProfileHistoryEntry[]> {
+  const userId = getActiveUserId();
+  if (!userId) return loadFaceProfileHistory();
+  try {
+    const entries = await fetchAiStyleHistory();
+    const mapped = entries.map(mapApiHistoryEntry);
+    syncFaceProfileHistoryCache(userId, mapped);
+    return mapped;
+  } catch {
+    return loadFaceProfileHistory(userId);
+  }
+}
+
+export async function persistAiStyleHistory(
+  payload: SaveAiStyleHistoryPayload,
+): Promise<void> {
+  const userId = getActiveUserId();
+  if (!userId) return;
+  try {
+    await saveAiStyleHistory(payload);
+    await refreshAiStyleHistoryCache();
+  } catch {
+    /* local cache already updated */
+  }
 }

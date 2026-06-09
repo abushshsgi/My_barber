@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { analyzeAiStyle, checkAiStyleFace } from "@/lib/api";
+import { analyzeAiStyle, checkAiStyleFace, persistAiStyleHistory } from "@/lib/api";
 import type { CameraCapturePayload } from "@/components/ai-style/AiStyleCamera";
 import { mapAiStyleResponse, type AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import {
@@ -41,9 +41,14 @@ export function useAiStyleFlow() {
         throw new Error(check.detail ?? "Iltimos, yuz shakli rasmini yuklang.");
       }
       setPhoto(dataUrl);
+      const scannedAt = new Date().toISOString();
       appendFaceProfileHistory({
         photoDataUrl: dataUrl,
-        scannedAt: new Date().toISOString(),
+        scannedAt,
+        source: "gallery",
+      });
+      void persistAiStyleHistory({
+        image: dataUrl,
         source: "gallery",
       });
       setFaceHint(null);
@@ -97,6 +102,11 @@ export function useAiStyleFlow() {
       scannedAt,
       source: "camera_scan",
     });
+    void persistAiStyleHistory({
+      image: payload.dataUrl,
+      face_shape_key: payload.faceShapeKey,
+      source: "camera_scan",
+    });
     setPhoto(payload.dataUrl);
     setDone(false);
     setResult(null);
@@ -136,6 +146,12 @@ export function useAiStyleFlow() {
         hairTypeKey: mapped.hairTypeKey,
         scannedAt,
         source,
+      });
+      void persistAiStyleHistory({
+        face_shape_key: mapped.faceShapeKey,
+        hair_type_key: mapped.hairTypeKey,
+        source,
+        replace_latest: true,
       });
       setResult(mapped);
       setDone(true);

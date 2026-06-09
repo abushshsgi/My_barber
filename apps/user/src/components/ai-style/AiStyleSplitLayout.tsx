@@ -7,11 +7,8 @@ import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
 import { AiStyleAnalyzeCta, AiStyleScanLine, GalleryValidatingHero } from "@/components/ai-style/AiStyleUi";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { getAiStyleHeroUrl } from "@/lib/cover-images";
-import {
-  FACE_HISTORY_UPDATED_EVENT,
-  loadFaceProfileHistory,
-  type FaceProfileHistoryEntry,
-} from "@/lib/face-profile";
+import { refreshAiStyleHistoryCache } from "@/lib/api";
+import { FACE_HISTORY_UPDATED_EVENT, type FaceProfileHistoryEntry } from "@/lib/face-profile";
 import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -279,14 +276,31 @@ function UploadHistorySheet({ open }: { open: boolean }) {
   const [entries, setEntries] = useState<FaceProfileHistoryEntry[]>([]);
 
   useEffect(() => {
-    const refresh = () => setEntries(loadFaceProfileHistory());
-    refresh();
-    window.addEventListener(FACE_HISTORY_UPDATED_EVENT, refresh);
-    return () => window.removeEventListener(FACE_HISTORY_UPDATED_EVENT, refresh);
+    let cancelled = false;
+    const refresh = async () => {
+      const list = await refreshAiStyleHistoryCache();
+      if (!cancelled) setEntries(list);
+    };
+    void refresh();
+    const onCacheUpdate = () => {
+      void refresh();
+    };
+    window.addEventListener(FACE_HISTORY_UPDATED_EVENT, onCacheUpdate);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(FACE_HISTORY_UPDATED_EVENT, onCacheUpdate);
+    };
   }, []);
 
   useEffect(() => {
-    if (open) setEntries(loadFaceProfileHistory());
+    if (!open) return;
+    let cancelled = false;
+    void refreshAiStyleHistoryCache().then((list) => {
+      if (!cancelled) setEntries(list);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [open]);
 
   const slots = Array.from({ length: HISTORY_GRID_SLOTS }, (_, index) => entries[index] ?? null);

@@ -79,6 +79,25 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"latitude": "latitude va longitude birga berilishi kerak."}
             )
+        if attrs.get("onboarding_completed") is True:
+            full_name = (
+                attrs.get("full_name")
+                if "full_name" in attrs
+                else getattr(self.instance, "full_name", "")
+            )
+            region = (
+                attrs.get("region")
+                if "region" in attrs
+                else getattr(self.instance, "region", "")
+            )
+            if not (full_name or "").strip() or not (region or "").strip():
+                raise serializers.ValidationError(
+                    {
+                        "onboarding_completed": (
+                            "Profil to'liq emas — ism va viloyat talab qilinadi."
+                        ),
+                    }
+                )
         return attrs
 
     def get_role(self, obj: User) -> str:

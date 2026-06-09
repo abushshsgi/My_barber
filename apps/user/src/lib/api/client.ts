@@ -1,3 +1,5 @@
+import { clearQueryClientCache } from "@/lib/query-client";
+
 const ENV_API_BASE =
   (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_API_URL ||
   (import.meta as unknown as { env?: Record<string, string | undefined> }).env
@@ -22,6 +24,7 @@ const TOKEN_KEY_USER = "mybarber_user_access";
 const REFRESH_KEY_USER = "mybarber_user_refresh";
 const TOKEN_KEY_LEGACY = "mybarber_access";
 const REFRESH_KEY_LEGACY = "mybarber_refresh";
+
 const USER_KEY = "mysaloon.auth.user";
 
 type JwtKind = "admin" | "barber" | "user";
@@ -145,6 +148,12 @@ function redirectToAuthIfNeeded() {
 
 export function handleAuthFailure() {
   clearUserTokens();
+  try {
+    localStorage.removeItem(USER_KEY);
+  } catch {
+    /* noop */
+  }
+  clearQueryClientCache();
   redirectToAuthIfNeeded();
 }
 
