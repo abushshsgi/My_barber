@@ -1,10 +1,9 @@
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowDown,
   ArrowLeft,
   ArrowRight,
   ArrowUp,
-  Camera,
   Loader2,
   ScanFace,
   X,
@@ -13,7 +12,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import {
-  canCapturePhoto,
   metricsFromLandmarks,
   mirrorX,
   nextPhase,
@@ -27,6 +25,7 @@ import { useFaceLandmarker } from "@/components/ai-style/useFaceLandmarker";
 import type { FaceShapeKey } from "@/components/ai-style/ai-style-shared";
 
 const PHASE_HOLD_MS = 1100;
+const COUNTDOWN_START = 3;
 const FACE_CAMERA_ATTR = "data-face-camera";
 
 export type CameraCapturePayload = {
@@ -82,6 +81,7 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
   const scanLineRef = useRef(0);
 
   const [phase, setPhase] = useState<ScanPhase>("loading");
+  const [countdown, setCountdown] = useState<number | null>(null);
   const [metrics, setMetrics] = useState<FaceFrameMetrics | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
@@ -105,7 +105,7 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
 
     if (!frame) return;
 
-    const locked = phaseSatisfied(currentPhase, frame);
+    const locked = phaseSatisfied(currentPhase, frame) || currentPhase === "countdown";
     drawFaceContour(ctx, frame, w, h, locked);
 
     if (locked && frame.contour.length > 0) {
@@ -125,32 +125,28 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
     }
   }, []);
 
-  const captureFrame = useCallback(
-    (skipGuard = false) => {
-      const video = videoRef.current;
-      const finalMetrics = stableMetricsRef.current;
-      if (!video || video.videoWidth <= 0 || !finalMetrics) return;
-      if (!skipGuard && !canCapturePhoto(phase, finalMetrics)) return;
+  const captureFrame = useCallback(() => {
+    const video = videoRef.current;
+    const finalMetrics = stableMetricsRef.current;
+    if (!video || video.videoWidth <= 0 || !finalMetrics) return;
 
-      const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-      ctx.translate(canvas.width, 0);
-      ctx.scale(-1, 1);
-      ctx.drawImage(video, 0, 0);
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0);
 
-      onCapture({
-        dataUrl: canvas.toDataURL("image/jpeg", 0.92),
-        faceShapeKey: finalMetrics.faceShapeKey,
-        ratios: finalMetrics.ratios,
-      });
-      onClose();
-    },
-    [onCapture, onClose, phase],
-  );
+    onCapture({
+      dataUrl: canvas.toDataURL("image/jpeg", 0.92),
+      faceShapeKey: finalMetrics.faceShapeKey,
+      ratios: finalMetrics.ratios,
+    });
+    onClose();
+  }, [onCapture, onClose]);
 
   useEffect(() => {
     if (!open) {
@@ -162,6 +158,7 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
     document.body.style.overflow = "hidden";
 
     setPhase("loading");
+    setCountdown(null);
     setMetrics(null);
     setCameraError(null);
     phaseSinceRef.current = 0;
@@ -204,12 +201,33 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
   }, [open, t]);
 
   useEffect(() => {
+    if (phase !== "countdown") return;
+    setCountdown(COUNTDOWN_START);
+  }, [phase]);
+
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown <= 0) {
+      setPhase("capture");
+      captureFrame();
+      return;
+    }
+    const id = window.setTimeout(() => setCountdown(countdown - 1), 1000);
+    return () => window.clearTimeout(id);
+  }, [countdown, captureFrame]);
+
+  useEffect(() => {
     if (!open || phase === "loading" || phase === "capture") return;
 
     const loop = () => {
       const video = videoRef.current;
       const landmarker = landmarkerRef.current;
       if (video && video.readyState >= 2) {
+        if (phase === "countdown") {
+          drawOverlay(stableMetricsRef.current, "center");
+          rafRef.current = requestAnimationFrame(loop);
+          return;
+        }
         let frame: FaceFrameMetrics | null = null;
         if (landmarker && landmarkerReady) {
           const result = landmarker.detectForVideo(video, performance.now());
@@ -238,9 +256,9 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
             stableMetricsRef.current = frame;
             if (now - phaseSinceRef.current >= PHASE_HOLD_MS) {
               const upcoming = nextPhase(phase);
-              if (upcoming === "capture") {
-                setPhase("capture");
-                captureFrame(true);
+              if (upcoming === "countdown") {
+                setPhase("countdown");
+                phaseSinceRef.current = 0;
               } else {
                 setPhase(upcoming);
                 phaseSinceRef.current = 0;
@@ -262,7 +280,7 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
     return () => {
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     };
-  }, [open, phase, landmarkerReady, landmarkerRef, drawOverlay, captureFrame]);
+  }, [open, phase, landmarkerReady, landmarkerRef, drawOverlay]);
 
   useEffect(() => {
     if (!open) return;
@@ -282,15 +300,14 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
     turn_up: t("aiStylePage.scanUp"),
     turn_down: t("aiStylePage.scanDown"),
     center: t("aiStylePage.scanCenter"),
+    countdown: t("aiStylePage.scanCountdown"),
     capture: t("aiStylePage.scanCapture"),
   }[phase];
 
   const progressIndex =
-    phase === "capture"
+    phase === "countdown" || phase === "capture"
       ? SCAN_SEQUENCE.length
       : SCAN_SEQUENCE.indexOf(phase as (typeof SCAN_SEQUENCE)[number]);
-
-  const readyToCapture = canCapturePhoto(phase, metrics);
 
   return createPortal(
     <div className="fixed inset-0 z-[200] flex flex-col bg-black text-white">
@@ -362,52 +379,57 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
               <motion.div
                 animate={{ y: [8, -8, 8] }}
                 transition={{ repeat: Infinity, duration: 1.2 }}
-                className="pointer-events-none absolute bottom-24 left-1/2 z-10 -translate-x-1/2 rounded-full bg-white/20 p-3"
+                className="pointer-events-none absolute bottom-28 left-1/2 z-10 -translate-x-1/2 rounded-full bg-white/20 p-3"
               >
                 <ArrowDown className="h-6 w-6" />
               </motion.div>
             ) : null}
 
-            {metrics && phase !== "loading" ? (
+            {metrics && phase !== "loading" && phase !== "countdown" ? (
               <div className="pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide">
                 {t(`aiStylePage.faceShapes.${metrics.faceShapeKey}`)}
               </div>
             ) : null}
+
+            <AnimatePresence>
+              {countdown !== null && countdown > 0 ? (
+                <motion.div
+                  key={countdown}
+                  initial={{ scale: 0.6, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 1.4, opacity: 0 }}
+                  transition={{ duration: 0.35, ease: "easeOut" }}
+                  className="pointer-events-none absolute inset-0 z-20 grid place-items-center bg-black/25"
+                >
+                  <span className="text-8xl font-black tabular-nums text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)]">
+                    {countdown}
+                  </span>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+
+            <div
+              className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 via-black/45 to-transparent px-6 pt-16 pb-[max(1.75rem,env(safe-area-inset-bottom))]"
+            >
+              <div className="flex justify-center gap-1.5">
+                {SCAN_SEQUENCE.map((step, i) => (
+                  <div
+                    key={step}
+                    className={`h-1.5 w-8 rounded-full transition-colors ${
+                      progressIndex > i ? "bg-white" : progressIndex === i ? "bg-white/60" : "bg-white/25"
+                    }`}
+                  />
+                ))}
+              </div>
+              <p className="mt-4 text-center text-sm font-bold drop-shadow-md">{phaseLabel}</p>
+              {phase === "loading" || !landmarkerReady ? (
+                <div className="mt-3 flex justify-center">
+                  <Loader2 className="h-5 w-5 animate-spin text-white/70" />
+                </div>
+              ) : null}
+            </div>
           </>
         )}
-      </div>
-
-      <div
-        className="space-y-4 px-6 pt-4"
-        style={{ paddingBottom: "max(2.5rem, env(safe-area-inset-bottom))" }}
-      >
-        <div className="flex justify-center gap-1.5">
-          {SCAN_SEQUENCE.map((step, i) => (
-            <div
-              key={step}
-              className={`h-1.5 w-8 rounded-full transition-colors ${
-                progressIndex > i ? "bg-white" : progressIndex === i ? "bg-white/60" : "bg-white/25"
-              }`}
-            />
-          ))}
-        </div>
-
-        <p className="text-center text-sm font-bold">{phaseLabel}</p>
-
-        <div className="flex items-center justify-center gap-3">
-          {phase === "loading" || !landmarkerReady ? (
-            <Loader2 className="h-5 w-5 animate-spin text-white/70" />
-          ) : null}
-          <button
-            type="button"
-            onClick={() => captureFrame()}
-            disabled={!readyToCapture}
-            className="grid h-16 w-16 place-items-center rounded-full border-4 border-white/70 bg-white text-black disabled:opacity-30 disabled:grayscale"
-            aria-label={t("aiStylePage.capturePhoto")}
-          >
-            <Camera className="h-6 w-6" />
-          </button>
-        </div>
       </div>
     </div>,
     document.body,

@@ -18,6 +18,7 @@ export function AiStyleFlow({ flow, audience }: Props) {
   const { t } = useTranslation();
   const {
     photo,
+    validatingPreview,
     validating,
     analyzing,
     done,
@@ -66,6 +67,7 @@ export function AiStyleFlow({ flow, audience }: Props) {
         audience={audience}
         step={step}
         photo={photo}
+        validatingPreview={validatingPreview}
         validating={validating}
         analyzing={analyzing}
         done={done}

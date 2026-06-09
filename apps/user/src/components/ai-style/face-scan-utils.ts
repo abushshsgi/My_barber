@@ -8,6 +8,7 @@ export type ScanPhase =
   | "turn_up"
   | "turn_down"
   | "center"
+  | "countdown"
   | "capture";
 
 export const SCAN_SEQUENCE: ScanPhase[] = [
@@ -166,7 +167,7 @@ export function nextPhase(phase: ScanPhase): ScanPhase {
   if (phase === "searching") return "turn_left";
   const idx = SCAN_SEQUENCE.indexOf(phase);
   if (idx >= 0 && idx < SCAN_SEQUENCE.length - 1) return SCAN_SEQUENCE[idx + 1];
-  if (phase === "center") return "capture";
+  if (phase === "center") return "countdown";
   return phase;
 }
 

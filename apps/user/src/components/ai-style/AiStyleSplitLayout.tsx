@@ -4,7 +4,7 @@ import { Check, ChevronLeft, ChevronsUp, ScanFace, X } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
-import { AiStyleAnalyzeCta, AiStyleScanLine } from "@/components/ai-style/AiStyleUi";
+import { AiStyleAnalyzeCta, AiStyleScanLine, GalleryValidatingHero } from "@/components/ai-style/AiStyleUi";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { getAiStyleHeroUrl } from "@/lib/cover-images";
 import {
@@ -36,6 +36,7 @@ export type AiStyleSplitLayoutProps = {
   audience: Audience;
   step: 1 | 2 | 3;
   photo: string | null;
+  validatingPreview: string | null;
   validating: boolean;
   analyzing: boolean;
   done: boolean;
@@ -334,11 +335,13 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const { t } = useTranslation();
   const busy = props.analyzing || props.validating;
   const showResults = props.done && !!props.result;
+  const isPhotoPreview = !!props.photo && !showResults;
   const isUploadStep = !props.photo && !showResults;
   const [historyRevealHeight, setHistoryRevealHeight] = useState(getHistoryRevealHeight);
   const [historyOpen, setHistoryOpen] = useState(false);
   const historyOpenRef = useRef(false);
-  const showHistoryHint = useHistorySwipeHint(isUploadStep, historyOpen);
+  const isGalleryValidating = props.validating && !!props.validatingPreview;
+  const showHistoryHint = useHistorySwipeHint(isUploadStep && !isGalleryValidating, historyOpen);
   const panelY = useMotionValue(UPLOAD_PANEL_HEIGHT);
   const nudgeY = useMotionValue(0);
   const panelCombinedY = useTransform([panelY, nudgeY], ([p, n]) => (p as number) + (n as number));
@@ -455,13 +458,54 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
     }
   };
 
+  if (isPhotoPreview) {
+    return (
+      <div className="relative h-[100dvh] overflow-hidden bg-black">
+        <img
+          src={props.photo!}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover object-top"
+        />
+        {busy ? <AiStyleScanLine /> : null}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[38%] bg-gradient-to-t from-black/75 via-black/35 to-transparent"
+        />
+        <Link
+          to="/profile"
+          className="absolute left-5 top-[calc(env(safe-area-inset-top)+12px)] z-10 grid h-10 w-10 place-items-center rounded-full bg-black/35 text-white backdrop-blur-md"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Link>
+        <div
+          className="absolute inset-x-0 bottom-0 z-10 space-y-3 px-5"
+          style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
+        >
+          {!busy ? (
+            <button
+              type="button"
+              onClick={props.onReset}
+              className="mx-auto block rounded-full border border-white/30 bg-black/25 px-4 py-2 text-[11px] font-bold text-white backdrop-blur-md active:opacity-80"
+            >
+              {t("aiStylePage.retake")}
+            </button>
+          ) : null}
+          <AiStyleAnalyzeCta
+            analyzing={props.analyzing}
+            validating={props.validating}
+            onAnalyze={props.onAnalyze}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-white">
       <div
         className={cn(
           "relative shrink-0 overflow-hidden",
           isUploadStep && "min-h-0",
-          props.photo && !showResults && "h-[44dvh]",
           showResults && "h-[24dvh]",
         )}
         style={
@@ -470,11 +514,8 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
             : undefined
         }
       >
-        {props.photo ? (
-          <>
-            <img src={props.photo} alt="" className="h-full w-full object-cover object-top" />
-            {busy ? <AiStyleScanLine /> : null}
-          </>
+        {isGalleryValidating ? (
+          <GalleryValidatingHero previewUrl={props.validatingPreview!} />
         ) : (
           <HeroCarousel audience={props.audience} hintActive={showHistoryHint} />
         )}
@@ -576,53 +617,25 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
             </motion.div>
           </motion.div>
         </>
-      ) : (
+      ) : showResults ? (
         <motion.div
           initial={{ y: "100%" }}
           animate={{ y: 0 }}
           transition={{ type: "spring", damping: 36, stiffness: 170, mass: 1.15 }}
-          className={cn(
-            "relative -mt-16 flex min-h-0 flex-1 flex-col rounded-t-[28px] bg-white px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]",
-            showResults && "overflow-y-auto",
-          )}
+          className="relative -mt-16 flex min-h-0 flex-1 flex-col overflow-y-auto rounded-t-[28px] bg-white px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]"
         >
           <StepRail step={props.step} />
-
-          {props.done && props.result ? (
-            <div className="mt-5 min-h-0 flex-1 overflow-y-auto text-left">
-              <AiStyleResultsBlock
-                result={props.result}
-                saved={props.saved}
-                onToggleSave={props.onToggleSave}
-                onReset={props.onReset}
-                layout="carousel"
-              />
-            </div>
-          ) : (
-            <div className="mt-6 flex min-h-0 flex-1 flex-col items-center text-center">
-              <p className="text-[15px] font-bold tracking-tight">{t("aiStylePage.photoReadyTitle")}</p>
-              <p className="mt-2 max-w-[280px] text-xs leading-relaxed text-muted-foreground">
-                {t("aiStylePage.photoReadyDesc")}
-              </p>
-              <button
-                type="button"
-                onClick={props.onReset}
-                disabled={props.analyzing || props.validating}
-                className="mt-5 rounded-full border border-border bg-background px-4 py-2 text-[11px] font-bold text-foreground active:opacity-80 disabled:opacity-50"
-              >
-                {t("aiStylePage.retake")}
-              </button>
-              <div className="mt-auto w-full pt-8">
-                <AiStyleAnalyzeCta
-                  analyzing={props.analyzing}
-                  validating={props.validating}
-                  onAnalyze={props.onAnalyze}
-                />
-              </div>
-            </div>
-          )}
+          <div className="mt-5 min-h-0 flex-1 overflow-y-auto text-left">
+            <AiStyleResultsBlock
+              result={props.result!}
+              saved={props.saved}
+              onToggleSave={props.onToggleSave}
+              onReset={props.onReset}
+              layout="carousel"
+            />
+          </div>
         </motion.div>
-      )}
+      ) : null}
     </div>
   );
 }

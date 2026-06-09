@@ -21,6 +21,7 @@ function readFileAsDataUrl(file: File): Promise<string> {
 
 export function useAiStyleFlow() {
   const [photo, setPhoto] = useState<string | null>(null);
+  const [validatingPreview, setValidatingPreview] = useState<string | null>(null);
   const [validating, setValidating] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [done, setDone] = useState(false);
@@ -31,6 +32,7 @@ export function useAiStyleFlow() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const applyPhoto = async (dataUrl: string) => {
+    setValidatingPreview(dataUrl);
     setValidating(true);
     setError(null);
     try {
@@ -55,6 +57,7 @@ export function useAiStyleFlow() {
       setResult(null);
     } finally {
       setValidating(false);
+      setValidatingPreview(null);
     }
   };
 
@@ -152,6 +155,7 @@ export function useAiStyleFlow() {
     setError(null);
     setAnalyzing(false);
     setValidating(false);
+    setValidatingPreview(null);
     setCameraOpen(false);
     setFaceHint(null);
     if (fileRef.current) fileRef.current.value = "";
@@ -159,6 +163,7 @@ export function useAiStyleFlow() {
 
   return {
     photo,
+    validatingPreview,
     validating,
     analyzing,
     done,
