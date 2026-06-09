@@ -61,6 +61,59 @@ class PhoneAuthTests(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertFalse(res.json()["is_new_user"])
 
+    def test_register_intent_blocks_existing_phone(self):
+        User.objects.create_user(
+            username="901888999@phone.mysaloon.local",
+            email="901888999@phone.mysaloon.local",
+            phone="+998901888999",
+            password="unused",
+        )
+        send = self.client.post(
+            "/api/v1/auth/phone/send-code/",
+            {"phone": "901888999", "intent": "register"},
+            format="json",
+        )
+        self.assertEqual(send.status_code, 400)
+        self.assertIn("allaqachon", send.json()["detail"].lower())
+
+        store_otp("+998901888999", "2468")
+        verify = self.client.post(
+            "/api/v1/auth/phone/verify/",
+            {"phone": "901888999", "code": "2468", "intent": "register"},
+            format="json",
+        )
+        self.assertEqual(verify.status_code, 400)
+
+    def test_only_one_user_per_phone_after_repeated_login(self):
+        send = self.client.post(
+            "/api/v1/auth/phone/send-code/",
+            {"phone": "901777888", "intent": "register"},
+            format="json",
+        )
+        self.assertEqual(send.status_code, 200)
+        code = send.json()["debug_code"]
+
+        first = self.client.post(
+            "/api/v1/auth/phone/verify/",
+            {"phone": "901777888", "code": code, "intent": "register"},
+            format="json",
+        )
+        self.assertEqual(first.status_code, 200)
+        self.assertTrue(first.json()["is_new_user"])
+
+        store_otp("+998901777888", "1357")
+        second = self.client.post(
+            "/api/v1/auth/phone/verify/",
+            {"phone": "901777888", "code": "1357", "intent": "login"},
+            format="json",
+        )
+        self.assertEqual(second.status_code, 200)
+        self.assertFalse(second.json()["is_new_user"])
+        self.assertEqual(
+            User.objects.filter(phone="+998901777888").count(),
+            1,
+        )
+
     def test_barber_only_phone_rejected(self):
         Barber.objects.create(
             email="barber@test.com",

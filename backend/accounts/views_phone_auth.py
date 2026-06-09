@@ -2,6 +2,7 @@ import os
 
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -58,28 +59,57 @@ def _issue_tokens(user: User) -> tuple[str, str]:
     return str(refresh.access_token), str(refresh)
 
 
+PHONE_ALREADY_REGISTERED = (
+    "Bu raqamdan allaqachon akkaunt ochilgan. Kirish uchun davom eting."
+)
+
+
+def _user_registered_for_phone(phone: str) -> bool:
+    if User.objects.filter(phone=phone, role=User.Role.USER).exists():
+        return True
+    email = phone_to_internal_email(phone)
+    return User.objects.filter(email__iexact=email, role=User.Role.USER).exists()
+
+
+def _parse_phone_auth_intent(raw: object) -> str:
+    intent = (raw or "login").strip().lower() if isinstance(raw, str) else "login"
+    return intent if intent in {"login", "register"} else "login"
+
+
 def _get_or_create_user_by_phone(phone: str) -> tuple[User, bool]:
     user = User.objects.filter(phone=phone).first()
     if user:
         return user, False
 
     email = phone_to_internal_email(phone)
-    if User.objects.filter(email__iexact=email).exists():
-        user = User.objects.get(email__iexact=email)
+    user = User.objects.filter(email__iexact=email).first()
+    if user:
         if not user.phone:
             user.phone = phone
             user.save(update_fields=["phone"])
         return user, False
 
-    user = User(
-        email=email,
-        username=email,
-        phone=phone,
-        role=User.Role.USER,
-        password=make_password(None),
-    )
-    user.save()
-    return user, True
+    try:
+        with transaction.atomic():
+            user = User.objects.create(
+                email=email,
+                username=email,
+                phone=phone,
+                role=User.Role.USER,
+                password=make_password(None),
+            )
+            return user, True
+    except IntegrityError:
+        user = User.objects.filter(phone=phone).first()
+        if user:
+            return user, False
+        user = User.objects.filter(email__iexact=email).first()
+        if user:
+            if not user.phone:
+                user.phone = phone
+                user.save(update_fields=["phone"])
+            return user, False
+        raise
 
 
 class PhoneSendCodeView(APIView):
@@ -94,8 +124,13 @@ class PhoneSendCodeView(APIView):
 
     def post(self, request):
         phone = normalize_uz_phone(request.data.get("phone"))
+        intent = _parse_phone_auth_intent(request.data.get("intent"))
         if not phone:
             return Response({"detail": "Telefon raqami noto'g'ri."}, status=400)
+
+        registered = _user_registered_for_phone(phone)
+        if intent == "register" and registered:
+            return Response({"detail": PHONE_ALREADY_REGISTERED}, status=400)
 
         if daily_send_blocked(phone):
             return Response(
@@ -132,13 +167,14 @@ class PhoneSendCodeView(APIView):
         mark_otp_sent(phone)
         increment_daily_send(phone)
 
-        body: dict[str, str | int] = {
+        body: dict[str, str | int | bool] = {
             "detail": (
                 "Tasdiq kodi yuborildi."
                 if is_sms_provider_configured()
                 else "Tasdiq kodi tayyor — quyidagi kodni kiriting (SMS hali ulanmagan)."
             ),
             "phone": phone,
+            "registered": registered,
             "delivery": "sms" if is_sms_provider_configured() else "app",
             "resend_after": OTP_RESEND_COOLDOWN_SECONDS,
         }
@@ -284,6 +320,7 @@ class PhoneVerifyView(APIView):
     def post(self, request):
         phone = normalize_uz_phone(request.data.get("phone"))
         code = (request.data.get("code") or "").strip()
+        intent = _parse_phone_auth_intent(request.data.get("intent"))
         if not phone:
             return Response({"detail": "Telefon raqami noto'g'ri."}, status=400)
         if len(code) != 4 or not code.isdigit():
@@ -292,6 +329,9 @@ class PhoneVerifyView(APIView):
         ok, err = verify_otp(phone, code)
         if not ok:
             return Response({"detail": err}, status=400)
+
+        if intent == "register" and _user_registered_for_phone(phone):
+            return Response({"detail": PHONE_ALREADY_REGISTERED}, status=400)
 
         user, is_new = _get_or_create_user_by_phone(phone)
         if not user.is_active:

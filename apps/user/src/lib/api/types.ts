@@ -27,9 +27,12 @@ export type PhoneVerifyResponse = {
   is_new_user: boolean;
 };
 
+export type PhoneAuthIntent = "login" | "register";
+
 export type PhoneSendCodeResponse = {
   detail: string;
   phone: string;
+  registered?: boolean;
   /** SMS ulanmaguncha — kod shu yerda keladi (keyin olib tashlanadi). */
   debug_code?: string;
   delivery?: "sms" | "app";

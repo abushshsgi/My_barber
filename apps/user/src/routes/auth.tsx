@@ -21,7 +21,7 @@ import { getStoredOtpCooldownSeconds, storeOtpCooldown } from "@/lib/otp-cooldow
 import { formatUzLocalPhone, parseUzLocalPhone } from "@/lib/phone";
 import { needsOnboarding } from "@/lib/recommendations";
 import { redirectIfAuthenticated } from "@/lib/require-auth";
-import type { PhoneVerifyResponse } from "@/lib/api/types";
+import type { PhoneAuthIntent, PhoneVerifyResponse } from "@/lib/api/types";
 
 export const Route = createFileRoute("/auth")({
   beforeLoad: async () => {
@@ -47,6 +47,7 @@ function Auth() {
   const [appDeliveryCode, setAppDeliveryCode] = useState<string | null>(null);
   const [deliveryMode, setDeliveryMode] = useState<"sms" | "app">("sms");
   const [pendingAuth, setPendingAuth] = useState<PhoneVerifyResponse | null>(null);
+  const [authIntent, setAuthIntent] = useState<PhoneAuthIntent>("register");
   const [resendSeconds, setResendSeconds] = useState(() => getStoredOtpCooldownSeconds(phone));
 
   useEffect(() => {
@@ -93,7 +94,7 @@ function Auth() {
   };
 
   const goToOtp = useMutation({
-    mutationFn: () => sendPhoneCode(phone),
+    mutationFn: () => sendPhoneCode(phone, authIntent),
     onSuccess: (data) => {
       setStep("code");
       setAppDeliveryCode(null);
@@ -118,6 +119,7 @@ function Auth() {
   const continuePhone = useMutation({
     mutationFn: () => checkPhone(phone),
     onSuccess: (data) => {
+      setAuthIntent(data.registered ? "login" : "register");
       if (data.has_password) {
         setStep("password");
         return;
@@ -147,7 +149,7 @@ function Auth() {
   });
 
   const verify = useMutation({
-    mutationFn: () => verifyPhoneCode(phone, code.join("")),
+    mutationFn: () => verifyPhoneCode(phone, code.join(""), authIntent),
     onSuccess: (data) => {
       if (!data?.access || !data?.refresh || !data?.user) {
         toast.error(t("auth.errBadResponse"));

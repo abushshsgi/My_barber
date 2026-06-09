@@ -1,5 +1,11 @@
 import { apiFetch, apiJson } from "./client";
-import type { ApiUser, PhoneCheckResponse, PhoneSendCodeResponse, PhoneVerifyResponse } from "./types";
+import type {
+  ApiUser,
+  PhoneAuthIntent,
+  PhoneCheckResponse,
+  PhoneSendCodeResponse,
+  PhoneVerifyResponse,
+} from "./types";
 
 export const OTP_RESEND_COOLDOWN_SECONDS = 60;
 
@@ -49,10 +55,13 @@ export async function checkPhone(phone: string): Promise<PhoneCheckResponse> {
   return body as PhoneCheckResponse;
 }
 
-export async function sendPhoneCode(phone: string): Promise<PhoneSendCodeResponse> {
+export async function sendPhoneCode(
+  phone: string,
+  intent: PhoneAuthIntent = "login",
+): Promise<PhoneSendCodeResponse> {
   const res = await apiFetch("/api/v1/auth/phone/send-code/", {
     method: "POST",
-    body: JSON.stringify({ phone }),
+    body: JSON.stringify({ phone, intent }),
   });
   const body = await res.json().catch(() => null);
   if (!res.ok) {
@@ -74,10 +83,11 @@ export async function sendPhoneCode(phone: string): Promise<PhoneSendCodeRespons
 export async function verifyPhoneCode(
   phone: string,
   code: string,
+  intent: PhoneAuthIntent = "login",
 ): Promise<PhoneVerifyResponse> {
   return apiJson<PhoneVerifyResponse>("/api/v1/auth/phone/verify/", {
     method: "POST",
-    body: JSON.stringify({ phone, code }),
+    body: JSON.stringify({ phone, code, intent }),
   });
 }
 
