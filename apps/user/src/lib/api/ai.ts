@@ -14,6 +14,7 @@ export type AiStyleSuggestionApi = {
   reason_uz: string;
   category: string;
   seed: string;
+  image_url: string;
   salon_id: number | null;
   salon_name: string | null;
   barber_name: string | null;
@@ -23,6 +24,7 @@ export type AiStyleAnalyzeResponse = {
   face_shape: "oval" | "round" | "square";
   hair_type: "short" | "medium" | "long";
   summary_uz: string;
+  detected_gender?: "male" | "female" | "unclear";
   suggestions: AiStyleSuggestionApi[];
 };
 

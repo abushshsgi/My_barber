@@ -10,6 +10,7 @@ from .history_storage import save_history_photo, trim_user_history
 from .models import HISTORY_MAX_PER_USER, AiStyleHistoryEntry
 from .salon_match import attach_salons_to_suggestions
 from .serializers import AiStyleHistoryCreateSerializer, AiStyleHistoryEntrySerializer
+from .style_recommend import build_suggestions_from_analysis, normalize_request_audience
 from .services.gemini_style import (
     NO_FACE_MESSAGE,
     AiStyleError,
@@ -37,7 +38,7 @@ class AiStyleAnalyzeView(APIView):
             return user
 
         image = request.data.get("image")
-        audience = request.data.get("audience") or "unisex"
+        request_audience = normalize_request_audience(request.data.get("audience"))
         face_hint = request.data.get("face_hint")
         if not image:
             return Response({"detail": "Selfie rasmini yuboring."}, status=400)
@@ -45,15 +46,20 @@ class AiStyleAnalyzeView(APIView):
         try:
             analysis = analyze_style_from_data_url(
                 str(image),
-                str(audience),
+                request_audience,
                 face_hint=face_hint if isinstance(face_hint, dict) else None,
             )
-            suggestions = attach_salons_to_suggestions(analysis["suggestions"])
+            _, suggestions = build_suggestions_from_analysis(
+                request_audience=request_audience,
+                analysis=analysis,
+            )
+            suggestions = attach_salons_to_suggestions(suggestions)
             return Response(
                 {
                     "face_shape": analysis["face_shape"],
                     "hair_type": analysis["hair_type"],
                     "summary_uz": analysis["summary_uz"],
+                    "detected_gender": analysis["detected_gender"],
                     "suggestions": suggestions,
                 }
             )

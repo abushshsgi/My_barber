@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Category } from "@/lib/mock-data";
-import { offers, trendingStyles } from "@/lib/mock-data";
+import { offers } from "@/lib/mock-data";
+import { listHairstyles, toTrendingStyle } from "@/lib/hairstyles/catalog";
 import {
   audienceToCategory,
   categoriesForAudience,
@@ -62,7 +63,7 @@ export function useHomeData() {
   );
 
   const trending = useMemo(
-    () => trendingStyles.filter((x) => matchAudience(x.audience, audience)),
+    () => listHairstyles(audience).slice(0, 6).map(toTrendingStyle),
     [audience],
   );
 

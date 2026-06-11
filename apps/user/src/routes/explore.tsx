@@ -1,8 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
-import { trendingStyles } from "@/lib/mock-data";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
-import { useAudience, matchAudience } from "@/hooks/use-audience";
+import { useAudience } from "@/hooks/use-audience";
+import { listHairstyles, getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
 
 export const Route = createFileRoute("/explore")({
   head: () => ({ meta: [{ title: "Trend uslublar — mysaloon.uz" }] }),
@@ -10,32 +11,46 @@ export const Route = createFileRoute("/explore")({
 });
 
 function ExplorePage() {
+  const { t } = useTranslation();
   const { audience } = useAudience();
-  const list = trendingStyles.filter((x) => matchAudience(x.audience, audience));
+  const list = listHairstyles(audience);
 
   return (
     <div className="pb-8">
-      <PageHeader showBack title="Trend uslublar" />
+      <PageHeader showBack title={t("explorePage.title")} />
       <div className="px-5">
         <AudienceSwitch />
+        <p className="mt-3 text-xs text-muted-foreground">{t("explorePage.subtitle")}</p>
       </div>
 
       <div className="mt-5 grid grid-cols-2 gap-3 px-5">
-        {list.map((s) => (
-          <div key={s.id} className="overflow-hidden">
-            <div
-              className="aspect-[3/4] rounded-2xl"
-              style={{
-                background: `linear-gradient(135deg, oklch(0.82 0.03 ${(s.id.charCodeAt(1) * 30) % 360}), oklch(0.35 0.02 ${(s.id.charCodeAt(1) * 30 + 80) % 360}))`,
-              }}
-            />
-            <p className="mt-2 text-sm font-bold leading-tight">{s.title}</p>
+        {list.map((entry) => (
+          <Link
+            key={entry.id}
+            to="/explore/$styleId"
+            params={{ styleId: entry.id }}
+            className="overflow-hidden active:opacity-90"
+          >
+            <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-surface">
+              <img
+                src={getHairstyleImageUrl(entry)}
+                alt={entry.titleUz}
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover object-top"
+              />
+            </div>
+            <p className="mt-2 text-sm font-bold leading-tight">{entry.titleUz}</p>
             <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-              {s.audience === "men" ? "Erkaklar" : s.audience === "women" ? "Ayollar" : "Universal"} · {s.category}
+              {t(`homePage.audience.${entry.audience}`)} · {entry.category}
             </p>
-          </div>
+          </Link>
         ))}
       </div>
+
+      {list.length === 0 ? (
+        <p className="mt-8 px-5 text-center text-sm text-muted-foreground">{t("explorePage.empty")}</p>
+      ) : null}
     </div>
   );
 }

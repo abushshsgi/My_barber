@@ -11,6 +11,7 @@ export interface AiSuggestion {
   title: string;
   match: number;
   seed: string;
+  imageUrl?: string;
   reason?: string;
   reasonKey?: string;
   barberName: string;
@@ -88,6 +89,7 @@ export function mapAiStyleResponse(data: AiStyleAnalyzeResponse): AiAnalysisResu
       title: s.title,
       match: s.match,
       seed: s.seed,
+      imageUrl: s.image_url,
       reason: s.reason_uz,
       barberName: s.barber_name ?? "—",
       salonId: s.salon_id != null ? String(s.salon_id) : "",

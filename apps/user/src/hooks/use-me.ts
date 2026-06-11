@@ -46,6 +46,21 @@ export function useDisplayUser() {
   return {
     name: me?.full_name || cached?.name || "Foydalanuvchi",
     phone: me?.phone || cached?.phone || "",
-    needsOnboarding: me ? needsOnboarding(me) : false,
+    avatar: me?.avatar || null,
+    id: me?.id ?? cached?.id,
+    region: me?.region || "",
+    birthYear: me?.birth_year ?? null,
   };
 }
+
+export function useOnboardingRequired() {
+  const { data: me, isLoading } = useMe();
+  return {
+    required: me ? needsOnboarding(me) : false,
+    isLoading,
+    user: me,
+  };
+}
+
+/** @deprecated Use meQueryKeyFor(getAuthUserId()) */
+export const meQueryKey = meQueryKeyBase;

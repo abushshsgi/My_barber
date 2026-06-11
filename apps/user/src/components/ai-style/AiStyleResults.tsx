@@ -8,6 +8,22 @@ import { cn } from "@/lib/utils";
 
 type Suggestion = AiAnalysisResult["suggestions"][number];
 
+function StylePreview({ suggestion }: { suggestion: Suggestion }) {
+  if (suggestion.imageUrl) {
+    return (
+      <img
+        src={suggestion.imageUrl}
+        alt=""
+        className="h-full w-full object-cover"
+        loading="lazy"
+      />
+    );
+  }
+  return (
+    <div className="h-full w-full" style={{ background: styleCoverGradient(suggestion.seed) }} />
+  );
+}
+
 export function AiStyleResultsSummary({
   result,
   tone = "light",
@@ -77,7 +93,7 @@ function SuggestionActions({
   const { t } = useTranslation();
 
   return (
-    <div className={cn("grid grid-cols-2 gap-1.5", compact ? "mt-2" : "mt-3")}>
+    <div className={cn("grid gap-1.5", compact ? "mt-2 grid-cols-3" : "mt-3 grid-cols-2 sm:grid-cols-3")}>
       <button
         type="button"
         onClick={() => onToggleSave(suggestion.id)}
@@ -89,6 +105,15 @@ function SuggestionActions({
         <Bookmark className="h-3 w-3" />
         {t("aiStylePage.save")}
       </button>
+      {suggestion.id.includes("-") ? (
+        <Link
+          to="/explore/$styleId"
+          params={{ styleId: suggestion.id }}
+          className="inline-flex items-center justify-center gap-1 rounded-lg border border-border bg-surface py-2 text-[10px] font-bold"
+        >
+          {t("aiStylePage.viewStyle")}
+        </Link>
+      ) : null}
       {suggestion.salonId ? (
         <Link
           to="/booking/$salonId"
@@ -130,10 +155,8 @@ export function AiStyleSuggestionsCarousel({
           className="w-[200px] shrink-0 snap-center"
         >
           <div className="overflow-hidden rounded-2xl border border-border bg-background">
-            <div
-              className="relative aspect-[3/4]"
-              style={{ background: styleCoverGradient(suggestion.seed) }}
-            >
+            <div className="relative aspect-[3/4] overflow-hidden">
+              <StylePreview suggestion={suggestion} />
               <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-1 text-[10px] font-bold backdrop-blur-sm">
                 {t("aiStylePage.matchPct", { value: suggestion.match })}
               </span>
@@ -180,7 +203,9 @@ export function AiStyleSuggestionsStack({
           transition={{ delay: index * 0.06 }}
           className="overflow-hidden rounded-[22px] border border-border bg-background"
         >
-          <div className="h-32" style={{ background: styleCoverGradient(suggestion.seed) }} />
+          <div className="relative h-32 overflow-hidden">
+            <StylePreview suggestion={suggestion} />
+          </div>
           <div className="p-4">
             <div className="flex items-start justify-between gap-2">
               <div>

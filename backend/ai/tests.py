@@ -50,32 +50,8 @@ class AiStyleAnalyzeTests(TestCase):
             "face_shape": "oval",
             "hair_type": "short",
             "summary_uz": "Oval yuzga qisqa kesim mos.",
-            "suggestions": [
-                {
-                    "id": "ai-1",
-                    "title": "Mid Fade",
-                    "match": 92,
-                    "reason_uz": "Yuz konturini yumshatadi.",
-                    "category": "barber",
-                    "seed": "ai1",
-                },
-                {
-                    "id": "ai-2",
-                    "title": "Crop",
-                    "match": 88,
-                    "reason_uz": "Zamonaviy ko'rinish.",
-                    "category": "barber",
-                    "seed": "ai2",
-                },
-                {
-                    "id": "ai-3",
-                    "title": "Buzz",
-                    "match": 84,
-                    "reason_uz": "Minimal parvarish.",
-                    "category": "barber",
-                    "seed": "ai3",
-                },
-            ],
+            "detected_gender": "male",
+            "gender_confidence": 0.92,
         }
         res = self.client.post(
             "/api/v1/ai/style-analyze/",
@@ -86,7 +62,26 @@ class AiStyleAnalyzeTests(TestCase):
         body = res.json()
         self.assertEqual(body["face_shape"], "oval")
         self.assertEqual(len(body["suggestions"]), 3)
+        self.assertTrue(body["suggestions"][0]["id"].startswith("men-"))
+        self.assertIn("image_url", body["suggestions"][0])
         self.assertEqual(body["suggestions"][0]["salon_name"], "Test Salon")
+
+    @patch("ai.views.analyze_style_from_data_url")
+    def test_style_analyze_blocks_gender_mismatch(self, mock_analyze):
+        mock_analyze.return_value = {
+            "face_shape": "oval",
+            "hair_type": "medium",
+            "summary_uz": "Ayol yuzi.",
+            "detected_gender": "female",
+            "gender_confidence": 0.95,
+        }
+        res = self.client.post(
+            "/api/v1/ai/style-analyze/",
+            {"image": self.tiny_png, "audience": "men"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 422)
+        self.assertIn("Erkak", res.json()["detail"])
 
     def test_style_analyze_requires_auth(self):
         client = APIClient()

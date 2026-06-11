@@ -18,7 +18,7 @@ MAX_IMAGE_BYTES = 5 * 1024 * 1024
 ALLOWED_MIME = frozenset({"image/jpeg", "image/png", "image/webp"})
 FACE_SHAPES = frozenset({"oval", "round", "square"})
 HAIR_TYPES = frozenset({"short", "medium", "long"})
-CATEGORIES = frozenset({"barber", "beauty", "nails", "spa"})
+DETECTED_GENDERS = frozenset({"male", "female", "unclear"})
 MODEL_FALLBACKS = ("gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash")
 NO_FACE_MESSAGE = "Iltimos, yuz shakli rasmini yuklang."
 
@@ -111,30 +111,25 @@ def _format_face_hint(face_hint: dict[str, Any] | None) -> str:
 def _build_prompt(audience: str, face_hint: dict[str, Any] | None = None) -> str:
     hint_block = _format_face_hint(face_hint)
     return f"""You are a professional hair and grooming stylist for mysaloon.uz (Uzbekistan).
-Analyze the selfie photo. Target audience preference: {audience} (men / women / unisex).
+Analyze the selfie photo. App profile audience hint: {audience} (men / women / unisex).
 {hint_block}
 
 Return ONLY valid JSON, no markdown, no extra text:
 {{
   "has_face": true | false,
+  "detected_gender": "male" | "female" | "unclear",
+  "gender_confidence": 0.0-1.0,
   "face_shape": "oval" | "round" | "square",
   "hair_type": "short" | "medium" | "long",
-  "summary_uz": "1-2 short sentences in Uzbek explaining the face/hair analysis",
-  "suggestions": [
-    {{
-      "title": "style name (Uzbek or common international name)",
-      "match": 75-98,
-      "reason_uz": "why this style fits, Uzbek, max 140 characters",
-      "category": "barber" | "beauty" | "nails" | "spa"
-    }}
-  ]
+  "summary_uz": "1-2 short sentences in Uzbek: yuz shakli, soch uzunligi/turi, soqol (agar ko'rinsa), soch rangi (agar aniq bo'lsa)"
 }}
 
 Rules:
 - If no clear single human face is visible, set has_face to false and leave other fields empty.
-- Exactly 3 suggestions when has_face is true, sorted by match descending.
-- Be realistic; if face is unclear, set has_face to false.
-- match must be integers between 75 and 98."""
+- detected_gender: perceived gender presentation of the person in the photo (not the app setting).
+- gender_confidence: how sure you are about detected_gender (0.0 = guess, 1.0 = very sure).
+- Do NOT recommend hairstyle names — analysis only.
+- Be realistic; if face is unclear, set has_face to false."""
 
 
 def _parse_has_face(data: dict[str, Any]) -> bool:
@@ -165,6 +160,25 @@ def _extract_json(text: str) -> dict[str, Any]:
     return data
 
 
+def _normalize_detected_gender(value: Any) -> str:
+    raw = str(value or "unclear").strip().lower()
+    if raw in {"male", "man", "men", "erkak", "m"}:
+        return "male"
+    if raw in {"female", "woman", "women", "ayol", "f"}:
+        return "female"
+    if raw in DETECTED_GENDERS:
+        return raw
+    return "unclear"
+
+
+def _normalize_gender_confidence(value: Any) -> float:
+    try:
+        confidence = float(value)
+    except (TypeError, ValueError):
+        return 0.0
+    return max(0.0, min(1.0, confidence))
+
+
 def _normalize_analysis(data: dict[str, Any]) -> dict[str, Any]:
     _ensure_has_face(data)
     face_shape = str(data.get("face_shape", "oval")).lower()
@@ -175,43 +189,15 @@ def _normalize_analysis(data: dict[str, Any]) -> dict[str, Any]:
         hair_type = "medium"
 
     summary_uz = str(data.get("summary_uz", "")).strip()[:400]
-    raw_suggestions = data.get("suggestions")
-    if not isinstance(raw_suggestions, list):
-        raise AiStyleError("AI tavsiyalari topilmadi.", 502)
-
-    suggestions: list[dict[str, Any]] = []
-    for idx, item in enumerate(raw_suggestions[:3]):
-        if not isinstance(item, dict):
-            continue
-        title = str(item.get("title", "")).strip()[:80] or f"Uslub {idx + 1}"
-        try:
-            match = int(item.get("match", 85 - idx * 4))
-        except (TypeError, ValueError):
-            match = 85 - idx * 4
-        match = max(75, min(98, match))
-        reason_uz = str(item.get("reason_uz", "")).strip()[:200]
-        category = str(item.get("category", "barber")).lower()
-        if category not in CATEGORIES:
-            category = "barber"
-        suggestions.append(
-            {
-                "id": f"ai-{idx + 1}",
-                "title": title,
-                "match": match,
-                "reason_uz": reason_uz or "Yuz shaklingizga mos keladi.",
-                "category": category,
-                "seed": f"ai{idx + 1}",
-            }
-        )
-
-    if len(suggestions) < 3:
-        raise AiStyleError("AI yetarli tavsiya qaytarmadi. Qayta urinib ko'ring.", 502)
+    detected_gender = _normalize_detected_gender(data.get("detected_gender"))
+    gender_confidence = _normalize_gender_confidence(data.get("gender_confidence"))
 
     return {
         "face_shape": face_shape,
         "hair_type": hair_type,
         "summary_uz": summary_uz,
-        "suggestions": suggestions,
+        "detected_gender": detected_gender,
+        "gender_confidence": gender_confidence,
     }
 
 

@@ -7,10 +7,10 @@ import {
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import type { HomeData } from "@/components/home/useHomeData";
-import { getTrendCoverUrl } from "@/lib/cover-images";
 import { SalonCard } from "@/components/SalonCard";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
-import type { Offer, TrendingStyle } from "@/lib/mock-data";
+import type { TrendingHairstyle } from "@/lib/hairstyles/catalog";
+import type { Offer } from "@/lib/mock-data";
 
 export function HomeAudience() {
   return (
@@ -89,7 +89,7 @@ export function HomeOfferBanner({ offer }: { offer: Offer }) {
   );
 }
 
-export function HomeTrendingStrip({ trending }: { trending: TrendingStyle[] }) {
+export function HomeTrendingStrip({ trending }: { trending: TrendingHairstyle[] }) {
   const { t } = useTranslation();
   if (trending.length === 0) return null;
 
@@ -103,21 +103,21 @@ export function HomeTrendingStrip({ trending }: { trending: TrendingStyle[] }) {
       </div>
       <div className="no-scrollbar flex gap-3 overflow-x-auto px-5">
         {trending.map((s) => (
-          <div key={s.id} className="w-[140px] shrink-0">
+          <Link key={s.id} to="/explore/$styleId" params={{ styleId: s.id }} className="w-[140px] shrink-0">
             <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-surface">
               <img
-                src={getTrendCoverUrl(s.seed)}
+                src={s.imageUrl}
                 alt=""
                 loading="lazy"
                 decoding="async"
-                className="absolute inset-0 h-full w-full object-cover"
+                className="absolute inset-0 h-full w-full object-cover object-top"
               />
             </div>
             <p className="mt-2 text-[13px] font-bold leading-tight">{s.title}</p>
             <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
               {t(`homePage.audience.${s.audience}`)}
             </p>
-          </div>
+          </Link>
         ))}
       </div>
     </section>

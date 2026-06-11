@@ -332,6 +332,14 @@
       "viral": "Viral"
     }
   },
+  "explorePage": {
+    "title": "Трендовые стили",
+    "subtitle": "24 причёски на едином студийном макете — AI-образец.",
+    "empty": "Нет стилей для этого фильтра.",
+    "sampleBadge": "AI образец",
+    "tryAiStyle": "Примерить в AI Style",
+    "findSalon": "Найти салон"
+  },
   "aiStylePage": {
     "title": "AI советник по стилю",
     "subtitle": "Селфи · персональные советы",
@@ -399,6 +407,7 @@
     "findStylist": "Найти мастера для этого стиля",
     "bookCta": "Забронировать",
     "bookShort": "Бронь",
+    "viewStyle": "Стиль",
     "save": "Сохранить",
     "matchPct": "{{value}}% совпадение",
     "tryAgain": "Новое фото",

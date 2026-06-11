@@ -348,6 +348,14 @@
       "viral": "Viral"
     }
   },
+  "explorePage": {
+    "title": "Trend uslublar",
+    "subtitle": "Bir xil studiya maketida 24 ta soch uslubi — AI namuna ko'rinish.",
+    "empty": "Bu filtr uchun uslub topilmadi.",
+    "sampleBadge": "AI namuna",
+    "tryAiStyle": "AI Style da sinash",
+    "findSalon": "Salon topish"
+  },
   "aiStylePage": {
     "title": "AI Stil maslahatchi",
     "subtitle": "Selfie · shaxsiy tavsiya",
@@ -415,6 +423,7 @@
     "findStylist": "Bu uslubni qiladigan ustani topish",
     "bookCta": "Bron qilish",
     "bookShort": "Bron",
+    "viewStyle": "Uslub",
     "save": "Saqlash",
     "matchPct": "{{value}}% mos",
     "tryAgain": "Yangi rasm",

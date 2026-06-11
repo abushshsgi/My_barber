@@ -332,6 +332,14 @@
       "viral": "Viral"
     }
   },
+  "explorePage": {
+    "title": "Trending styles",
+    "subtitle": "24 hairstyles on a consistent studio model — AI sample preview.",
+    "empty": "No styles for this filter.",
+    "sampleBadge": "AI sample",
+    "tryAiStyle": "Try in AI Style",
+    "findSalon": "Find a salon"
+  },
   "aiStylePage": {
     "title": "AI Style advisor",
     "subtitle": "Selfie · personal picks",
@@ -399,6 +407,7 @@
     "findStylist": "Find a stylist for this look",
     "bookCta": "Book now",
     "bookShort": "Book",
+    "viewStyle": "Style",
     "save": "Save",
     "matchPct": "{{value}}% match",
     "tryAgain": "New photo",
