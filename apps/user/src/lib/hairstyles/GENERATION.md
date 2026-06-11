@@ -101,4 +101,18 @@ only hairstyle changed to [STYLE NAME], professional barber/salon result, photor
 - [ ] 24 ta fayl to'g'ri nomlangan
 - [ ] WebP sifat ~85, hajm < 200 KB har biri
 
-Placeholder rasmlar `scripts/generate-hairstyle-placeholders.mjs` bilan yaratilgan — AI rasmlar tayyor bo'lganda ustiga yozing.
+Placeholder rasmlar:
+
+```bash
+python3 apps/user/scripts/generate-hairstyle-placeholders.py
+```
+
+AI rasmlar (GEMINI_API_KEY kerak):
+
+```bash
+pip install google-genai
+export GEMINI_API_KEY=your_key
+python3 apps/user/scripts/generate-hairstyle-images.py --all-men
+python3 apps/user/scripts/generate-hairstyle-images.py --audience men --age-group adult
+python3 apps/user/scripts/generate-hairstyle-images.py --dry-run --all-men
+```
