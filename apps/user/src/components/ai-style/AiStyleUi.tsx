@@ -24,54 +24,66 @@ export function GalleryValidatingHero({ previewUrl }: { previewUrl: string }) {
   const { t } = useTranslation();
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-black">
+    <div className="relative h-full w-full overflow-hidden bg-neutral-950">
       <motion.img
         src={previewUrl}
         alt=""
         className="absolute inset-0 h-full w-full object-cover object-top"
-        initial={{ scale: 1.08, opacity: 0.5 }}
-        animate={{ scale: 1, opacity: 0.55 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
+        initial={{ scale: 1.04, filter: "blur(8px)" }}
+        animate={{ scale: 1.08, filter: "blur(0px)" }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
       />
-      <div className="absolute inset-0 bg-black/45" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_28%,rgba(0,0,0,0.55)_100%)]" />
+      <div className="absolute inset-0 bg-black/25" />
+      <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
 
-      <motion.div
-        className="pointer-events-none absolute inset-x-8 h-px bg-gradient-to-r from-transparent via-white to-transparent shadow-[0_0_16px_rgba(255,255,255,0.85)]"
-        animate={{ top: ["18%", "78%", "18%"] }}
-        transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-      />
-
-      <div className="absolute inset-0 grid place-items-center">
+      <div className="absolute inset-x-5 bottom-[14%] z-[1]">
         <motion.div
-          className="relative h-[min(52vw,220px)] w-[min(40vw,170px)]"
-          animate={{ scale: [1, 1.03, 1] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: "easeOut" }}
+          className="overflow-hidden rounded-[22px] border border-white/12 bg-white/[0.08] shadow-[0_20px_60px_-12px_rgba(0,0,0,0.65)] backdrop-blur-2xl"
         >
-          <motion.div
-            className="absolute inset-0 rounded-[50%] border-2 border-dashed border-white/70"
-            animate={{ opacity: [0.45, 1, 0.45] }}
-            transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.div
-            className="absolute -inset-3 rounded-[50%] border border-white/25"
-            animate={{ scale: [1, 1.08, 1], opacity: [0.35, 0.7, 0.35] }}
-            transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <span className="absolute left-0 top-0 h-6 w-6 border-l-2 border-t-2 border-white" />
-          <span className="absolute right-0 top-0 h-6 w-6 border-r-2 border-t-2 border-white" />
-          <span className="absolute bottom-0 left-0 h-6 w-6 border-b-2 border-l-2 border-white" />
-          <span className="absolute bottom-0 right-0 h-6 w-6 border-b-2 border-r-2 border-white" />
-          <div className="absolute inset-0 grid place-items-center">
-            <ScanFace className="h-10 w-10 text-white/90" strokeWidth={1.5} />
+          <div className="flex items-center gap-4 px-5 py-4">
+            <div className="relative grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/12">
+              <ScanFace className="h-6 w-6 text-white" strokeWidth={1.75} />
+              <motion.span
+                className="absolute inset-0 rounded-2xl border border-white/35"
+                animate={{ scale: [1, 1.18, 1], opacity: [0.7, 0, 0.7] }}
+                transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}
+              />
+            </div>
+            <div className="min-w-0 flex-1 text-left">
+              <p className="text-[15px] font-bold leading-tight text-white">
+                {t("aiStylePage.faceChecking")}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-white/65">
+                {t("aiStylePage.galleryValidatingHint")}
+              </p>
+            </div>
+          </div>
+
+          <div className="h-px bg-white/10" />
+
+          <div className="px-5 py-3.5">
+            <div className="h-1 overflow-hidden rounded-full bg-white/12">
+              <motion.div
+                className="h-full w-[38%] rounded-full bg-white"
+                animate={{ x: ["-120%", "320%"] }}
+                transition={{ duration: 1.35, repeat: Infinity, ease: "easeInOut" }}
+              />
+            </div>
+            <div className="mt-3 flex items-center justify-center gap-1.5">
+              {[0, 1, 2].map((i) => (
+                <motion.span
+                  key={i}
+                  className="h-1.5 w-1.5 rounded-full bg-white/90"
+                  animate={{ opacity: [0.2, 1, 0.2], scale: [0.85, 1, 0.85] }}
+                  transition={{ duration: 1.1, repeat: Infinity, delay: i * 0.18, ease: "easeInOut" }}
+                />
+              ))}
+            </div>
           </div>
         </motion.div>
-      </div>
-
-      <div className="absolute inset-x-0 bottom-[28%] z-[1] flex flex-col items-center gap-3 px-6 text-center text-white">
-        <Loader2 className="h-6 w-6 animate-spin text-white/90" />
-        <p className="text-base font-bold drop-shadow-md">{t("aiStylePage.faceChecking")}</p>
-        <p className="max-w-[240px] text-xs text-white/80">{t("aiStylePage.galleryValidatingHint")}</p>
       </div>
     </div>
   );

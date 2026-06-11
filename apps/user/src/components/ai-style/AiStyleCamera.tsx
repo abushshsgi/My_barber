@@ -312,21 +312,43 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
   return createPortal(
     <div className="fixed inset-0 z-[200] flex flex-col bg-black text-white">
       <div
-        className="flex items-center justify-between px-4 py-3"
+        className="shrink-0 px-4 pb-3"
         style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
       >
-        <div className="flex items-center gap-2">
-          <ScanFace className="h-4 w-4" />
-          <p className="text-sm font-bold">{t("aiStylePage.cameraTitle")}</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ScanFace className="h-4 w-4" />
+            <p className="text-sm font-bold">{t("aiStylePage.cameraTitle")}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-9 w-9 place-items-center rounded-full bg-white/15"
+            aria-label={t("common.close")}
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="grid h-9 w-9 place-items-center rounded-full bg-white/15"
-          aria-label={t("common.close")}
-        >
-          <X className="h-4 w-4" />
-        </button>
+        {!cameraError ? (
+          <div className="mt-3 space-y-2">
+            <div className="flex justify-center gap-1.5">
+              {SCAN_SEQUENCE.map((step, i) => (
+                <div
+                  key={step}
+                  className={`h-1.5 w-8 rounded-full transition-colors ${
+                    progressIndex > i ? "bg-white" : progressIndex === i ? "bg-white/60" : "bg-white/25"
+                  }`}
+                />
+              ))}
+            </div>
+            <p className="text-center text-sm font-bold">{phaseLabel}</p>
+            {phase === "loading" || !landmarkerReady ? (
+              <div className="flex justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-white/70" />
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       <div className="relative min-h-0 flex-1 overflow-hidden">
@@ -379,7 +401,7 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
               <motion.div
                 animate={{ y: [8, -8, 8] }}
                 transition={{ repeat: Infinity, duration: 1.2 }}
-                className="pointer-events-none absolute bottom-28 left-1/2 z-10 -translate-x-1/2 rounded-full bg-white/20 p-3"
+                className="pointer-events-none absolute left-1/2 top-[58%] z-10 -translate-x-1/2 rounded-full bg-white/20 p-3"
               >
                 <ArrowDown className="h-6 w-6" />
               </motion.div>
@@ -407,27 +429,6 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
                 </motion.div>
               ) : null}
             </AnimatePresence>
-
-            <div
-              className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 via-black/45 to-transparent px-6 pt-16 pb-[max(1.75rem,env(safe-area-inset-bottom))]"
-            >
-              <div className="flex justify-center gap-1.5">
-                {SCAN_SEQUENCE.map((step, i) => (
-                  <div
-                    key={step}
-                    className={`h-1.5 w-8 rounded-full transition-colors ${
-                      progressIndex > i ? "bg-white" : progressIndex === i ? "bg-white/60" : "bg-white/25"
-                    }`}
-                  />
-                ))}
-              </div>
-              <p className="mt-4 text-center text-sm font-bold drop-shadow-md">{phaseLabel}</p>
-              {phase === "loading" || !landmarkerReady ? (
-                <div className="mt-3 flex justify-center">
-                  <Loader2 className="h-5 w-5 animate-spin text-white/70" />
-                </div>
-              ) : null}
-            </div>
           </>
         )}
       </div>
