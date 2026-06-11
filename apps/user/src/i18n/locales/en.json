@@ -24,6 +24,7 @@
     "edit": "Edit",
     "logout": "Log out",
     "loading": "Loading...",
+    "loadError": "Could not load data. Please try again.",
     "empty": "Nothing here yet"
   },
   "home": {

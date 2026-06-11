@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Category } from "@/lib/mock-data";
 import { offers } from "@/lib/mock-data";
-import { listHairstyles, toTrendingStyle } from "@/lib/hairstyles/catalog";
+import { toTrendingStyle } from "@/lib/hairstyles/catalog";
 import {
   audienceToCategory,
   categoriesForAudience,
   matchAudience,
   useAudience,
 } from "@/hooks/use-audience";
+import { useHairstyles } from "@/hooks/use-hairstyles";
 import { useMe } from "@/hooks/use-me";
 import { useSalonsList, useSalonsNearby } from "@/hooks/use-salons";
 import {
@@ -18,6 +19,7 @@ import {
 export function useHomeData() {
   const { audience } = useAudience();
   const { data: me } = useMe();
+  const { data: hairstyles = [] } = useHairstyles(audience);
   const ctx = useMemo(() => userRecommendContext(me), [me]);
 
   const hasCoords = ctx.lat != null && ctx.lng != null;
@@ -63,8 +65,8 @@ export function useHomeData() {
   );
 
   const trending = useMemo(
-    () => listHairstyles(audience).slice(0, 6).map(toTrendingStyle),
-    [audience],
+    () => hairstyles.slice(0, 6).map(toTrendingStyle),
+    [hairstyles],
   );
 
   const topOffer = useMemo(

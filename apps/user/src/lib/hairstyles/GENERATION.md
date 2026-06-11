@@ -1,7 +1,19 @@
 # Explore soch turmaklari — generatsiya qo'llanmasi
 
 Tashqarida (Midjourney / Leonardo) generatsiya qilish uchun promptlar.
-Natija: `apps/user/public/hairstyles/{men|women}/{slug}.webp` (768×1024, WebP ~85%).
+Natija: `apps/user/public/hairstyles/{men|women}/{age_group}/{slug}.webp` (768×1024, WebP ~85%).
+
+## Yosh guruhlari (age_group)
+
+| Guruh | Yosh | Papka |
+|-------|------|-------|
+| `kids` | 10–12 | `{audience}/kids/` |
+| `teen` | 13–17 | `{audience}/teen/` |
+| `young` | 18–29 | `{audience}/` (flat, mavjud) |
+| `adult` | 30–44 | `{audience}/adult/` |
+| `mature` | 45+ | `{audience}/mature/` |
+
+Har bir yosh guruhi uchun **bir xil fon, bir xil maket** — faqat model yoshi va soch turmaklari farq qiladi.
 
 ## Umumiy qoidalar
 
@@ -14,15 +26,22 @@ Natija: `apps/user/public/hairstyles/{men|women}/{slug}.webp` (768×1024, WebP ~
 
 ## 1. Bazaviy portrait (reference)
 
-### Erkak — `men/_reference.webp`
+### Erkak — `men/{age_group}/_reference.webp`
 
 ```
-Professional studio portrait, young Central Asian man, neutral light gray background #E8E8E8,
+Professional studio portrait, [AGE DESCRIPTION] Central Asian man, neutral light gray background #E8E8E8,
 front-facing, shoulders visible, neutral short hair, soft even lighting, photorealistic,
 no jewelry, clean skin, 3:4 aspect ratio
 ```
 
-### Ayol — `women/_reference.webp`
+**Yosh tavsiflari (AGE DESCRIPTION):**
+- `kids` — boy age 10-12
+- `teen` — teenage boy age 14-16
+- `young` — young man age 22-28
+- `adult` — man age 35-42
+- `mature` — mature man age 50-58
+
+### Ayol — `women/{age_group}/_reference.webp`
 
 ```
 Professional studio portrait, young Central Asian woman, neutral light gray background #E8E8E8,
@@ -44,7 +63,7 @@ only hairstyle changed to [STYLE NAME], professional barber/salon result, photor
 
 | Fayl | Prompt ichidagi STYLE NAME |
 |------|---------------------------|
-| `men/mid-fade.webp` | mid fade haircut, clean taper |
+| `men/{age_group}/mid-fade.webp` | mid fade haircut, clean taper |
 | `men/low-fade.webp` | low fade haircut |
 | `men/skin-fade.webp` | skin fade buzz cut sides |
 | `men/buzz-cut.webp` | buzz cut, uniform short |

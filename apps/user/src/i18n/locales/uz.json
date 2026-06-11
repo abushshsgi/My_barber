@@ -29,6 +29,7 @@
     "edit": "Tahrirlash",
     "logout": "Chiqish",
     "loading": "Yuklanmoqda...",
+    "loadError": "Ma'lumot yuklanmadi. Qayta urinib ko'ring.",
     "empty": "Hozircha bo'sh"
   },
   "home": {

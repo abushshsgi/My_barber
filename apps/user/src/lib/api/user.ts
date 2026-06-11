@@ -8,6 +8,8 @@ export async function fetchMe(): Promise<ApiUser> {
 export type UpdateMePayload = Partial<
   Pick<
     ApiUser,
+    | "first_name"
+    | "last_name"
     | "full_name"
     | "phone"
     | "region"

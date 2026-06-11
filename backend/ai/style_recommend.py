@@ -60,6 +60,7 @@ def build_suggestions_from_analysis(
     *,
     request_audience: str,
     analysis: dict[str, Any],
+    age_group: str | None = None,
 ) -> tuple[str, list[dict[str, Any]]]:
     audience = resolve_ai_style_audience(request_audience, analysis)
     assert_gender_matches_profile(
@@ -71,5 +72,6 @@ def build_suggestions_from_analysis(
         audience=audience,
         face_shape=str(analysis["face_shape"]),
         hair_type=str(analysis["hair_type"]),
+        age_group=age_group,
     )
     return audience, suggestions

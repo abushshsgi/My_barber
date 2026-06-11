@@ -101,7 +101,13 @@ from salons.views import (
     SalonMembershipViewSet,
     SalonViewSet,
 )
-from ai.views import AiFaceCheckView, AiStyleAnalyzeView, AiStyleHistoryListCreateView
+from ai.views import (
+    AiFaceCheckView,
+    AiStyleAnalyzeView,
+    AiStyleHistoryListCreateView,
+    HairstyleDetailView,
+    HairstyleListView,
+)
 from chat.views import ConversationListCreateView, ConversationMessagesView
 from notifications.push_views import BarberPushTokenView
 from wallet.views import (
@@ -178,6 +184,8 @@ api_routes = [
     path("ai/style-analyze/", AiStyleAnalyzeView.as_view()),
     path("ai/face-check/", AiFaceCheckView.as_view()),
     path("ai/style-history/", AiStyleHistoryListCreateView.as_view()),
+    path("hairstyles/", HairstyleListView.as_view()),
+    path("hairstyles/<str:style_id>/", HairstyleDetailView.as_view()),
     path("auth/barber-register/", BarberRegisterView.as_view()),
     path("auth/barber-register-join-salon/", BarberRegisterJoinSalonView.as_view()),
     path("auth/token/refresh/", TokenRefreshView.as_view()),

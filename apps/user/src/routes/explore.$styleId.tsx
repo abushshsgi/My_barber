@@ -2,25 +2,30 @@ import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 import { CalendarPlus, Wand2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
-import { getHairstyleById, getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
+import { useHairstyle } from "@/hooks/use-hairstyles";
+import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/explore/$styleId")({
-  head: ({ params }) => {
-    const style = getHairstyleById(params.styleId);
-    return {
-      meta: [{ title: style ? `${style.titleUz} — mysaloon.uz` : "Uslub — mysaloon.uz" }],
-    };
-  },
+  head: () => ({ meta: [{ title: "Uslub — mysaloon.uz" }] }),
   component: ExploreStyleDetailPage,
 });
 
 function ExploreStyleDetailPage() {
   const { t } = useTranslation();
   const { styleId } = Route.useParams();
-  const entry = getHairstyleById(styleId);
+  const { data: entry, isLoading, isError } = useHairstyle(styleId);
 
-  if (!entry) {
+  if (isLoading) {
+    return (
+      <div className="pb-10">
+        <PageHeader showBack title={t("explorePage.title")} />
+        <p className="mt-8 px-5 text-center text-sm text-muted-foreground">{t("common.loading")}</p>
+      </div>
+    );
+  }
+
+  if (isError || !entry) {
     throw notFound();
   }
 

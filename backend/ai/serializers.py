@@ -1,8 +1,42 @@
 from rest_framework import serializers
 
+from ai.age_groups import resolve_hairstyle_image_path
 from ai.services.gemini_style import FACE_SHAPES, HAIR_TYPES
 
-from .models import AiStyleHistoryEntry
+from .models import AiStyleHistoryEntry, Hairstyle
+
+
+class HairstyleSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(source="style_id", read_only=True)
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Hairstyle
+        fields = (
+            "id",
+            "slug",
+            "audience",
+            "category",
+            "title",
+            "title_uz",
+            "face_shapes",
+            "hair_length",
+            "image_url",
+            "description_uz",
+            "tags",
+            "age_groups",
+            "sort_order",
+        )
+        read_only_fields = fields
+
+    def get_image_url(self, obj: Hairstyle) -> str:
+        age_group = self.context.get("age_group")
+        return resolve_hairstyle_image_path(
+            image_path=obj.image_path,
+            slug=obj.slug,
+            audience=obj.audience,
+            age_group=age_group,
+        )
 
 
 class AiStyleHistoryEntrySerializer(serializers.ModelSerializer):

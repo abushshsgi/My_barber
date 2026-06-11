@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { fetchMe, updateMe, type UpdateMePayload } from "@/lib/api/user";
+import { birthYearToAgeGroup, type AgeGroup } from "@/lib/age-groups";
 import { getAuthUser, setSession } from "@/lib/auth";
 import { getAuthUserId } from "@/lib/auth-user";
 import { getUserAccessToken } from "@/lib/api/client";
@@ -43,14 +45,25 @@ export function useUpdateMe() {
 export function useDisplayUser() {
   const { data: me } = useMe();
   const cached = getAuthUser();
+  const firstName = me?.first_name?.trim() || "";
+  const lastName = me?.last_name?.trim() || "";
+  const fullName = me?.full_name || [firstName, lastName].filter(Boolean).join(" ") || cached?.name || "Foydalanuvchi";
   return {
-    name: me?.full_name || cached?.name || "Foydalanuvchi",
+    name: fullName,
+    firstName: firstName || fullName.split(" ")[0] || "",
+    lastName: lastName || fullName.split(" ").slice(1).join(" ") || "",
     phone: me?.phone || cached?.phone || "",
     avatar: me?.avatar || null,
     id: me?.id ?? cached?.id,
     region: me?.region || "",
     birthYear: me?.birth_year ?? null,
+    age: me?.age ?? null,
   };
+}
+
+export function useUserAgeGroup(): AgeGroup | null {
+  const { data: me } = useMe();
+  return useMemo(() => birthYearToAgeGroup(me?.birth_year ?? null), [me?.birth_year]);
 }
 
 export function useOnboardingRequired() {

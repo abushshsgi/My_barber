@@ -1,15 +1,22 @@
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
 
 from accounts.models import User
 from accounts.throttles import AiStyleThrottle, AuthIPThrottle
 
+from ai.age_groups import birth_year_to_group, normalize_age_group
+
 from .history_storage import save_history_photo, trim_user_history
-from .models import HISTORY_MAX_PER_USER, AiStyleHistoryEntry
+from .models import HISTORY_MAX_PER_USER, AiStyleHistoryEntry, Hairstyle
 from .salon_match import attach_salons_to_suggestions
-from .serializers import AiStyleHistoryCreateSerializer, AiStyleHistoryEntrySerializer
+from .serializers import (
+    AiStyleHistoryCreateSerializer,
+    AiStyleHistoryEntrySerializer,
+    HairstyleSerializer,
+)
 from .style_recommend import build_suggestions_from_analysis, normalize_request_audience
 from .services.gemini_style import (
     NO_FACE_MESSAGE,
@@ -24,6 +31,58 @@ def _require_customer_user(request) -> User | Response:
     if not isinstance(user, User):
         return Response({"detail": "Faqat mijoz akkaunti uchun."}, status=403)
     return user
+
+
+def _resolve_age_group(request) -> str | None:
+    explicit = normalize_age_group(request.query_params.get("age_group"))
+    if explicit:
+        return explicit
+    user = getattr(request, "user", None)
+    if isinstance(user, User) and user.is_authenticated:
+        return birth_year_to_group(user.birth_year)
+    return None
+
+
+class HairstyleListView(APIView):
+    """GET ?audience=men|women&age_group=kids|teen|young|adult|mature — Explore katalogi."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        audience = (request.query_params.get("audience") or "").strip().lower()
+        age_group = _resolve_age_group(request)
+        qs = Hairstyle.objects.filter(is_published=True)
+        if audience in {"men", "women"}:
+            qs = qs.filter(audience=audience)
+        styles = list(qs)
+        if age_group:
+            styles = [
+                style
+                for style in styles
+                if age_group in (style.age_groups or [])
+            ]
+        serializer = HairstyleSerializer(
+            styles,
+            many=True,
+            context={"age_group": age_group},
+        )
+        return Response(serializer.data)
+
+
+class HairstyleDetailView(APIView):
+    """GET /hairstyles/{style_id}/ — bitta uslub."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, style_id: str):
+        age_group = _resolve_age_group(request)
+        style = get_object_or_404(
+            Hairstyle,
+            style_id=style_id,
+            is_published=True,
+        )
+        serializer = HairstyleSerializer(style, context={"age_group": age_group})
+        return Response(serializer.data)
 
 
 class AiStyleAnalyzeView(APIView):
@@ -52,6 +111,7 @@ class AiStyleAnalyzeView(APIView):
             _, suggestions = build_suggestions_from_analysis(
                 request_audience=request_audience,
                 analysis=analysis,
+                age_group=birth_year_to_group(user.birth_year),
             )
             suggestions = attach_salons_to_suggestions(suggestions)
             return Response(

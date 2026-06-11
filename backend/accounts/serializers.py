@@ -17,6 +17,7 @@ from .uz_regions import UzRegion
 class UserSerializer(serializers.ModelSerializer):
     role = serializers.SerializerMethodField()
     has_password = serializers.SerializerMethodField()
+    age = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -24,10 +25,13 @@ class UserSerializer(serializers.ModelSerializer):
             "id",
             "email",
             "phone",
+            "first_name",
+            "last_name",
             "full_name",
             "role",
             "region",
             "birth_year",
+            "age",
             "latitude",
             "longitude",
             "onboarding_completed",
@@ -35,10 +39,20 @@ class UserSerializer(serializers.ModelSerializer):
             "has_password",
             "date_joined",
         )
-        read_only_fields = ("id", "role", "has_password", "date_joined")
+        read_only_fields = ("id", "role", "has_password", "date_joined", "age", "full_name")
 
     def get_has_password(self, obj: User) -> bool:
         return obj.has_usable_password()
+
+    def get_age(self, obj: User) -> int | None:
+        if obj.birth_year is None:
+            return None
+        from datetime import date
+
+        age = date.today().year - obj.birth_year
+        if age < 10 or age > 120:
+            return None
+        return age
 
     def validate_region(self, value):
         value = (value or "").strip()
@@ -86,20 +100,64 @@ class UserSerializer(serializers.ModelSerializer):
                 if "full_name" in attrs
                 else getattr(self.instance, "full_name", "")
             )
+            first_name = (
+                attrs.get("first_name")
+                if "first_name" in attrs
+                else getattr(self.instance, "first_name", "")
+            )
+            last_name = (
+                attrs.get("last_name")
+                if "last_name" in attrs
+                else getattr(self.instance, "last_name", "")
+            )
+            birth_year = (
+                attrs.get("birth_year")
+                if "birth_year" in attrs
+                else getattr(self.instance, "birth_year", None)
+            )
             region = (
                 attrs.get("region")
                 if "region" in attrs
                 else getattr(self.instance, "region", "")
             )
-            if not (full_name or "").strip() or not (region or "").strip():
+            has_name = bool((first_name or "").strip() and (last_name or "").strip()) or bool(
+                (full_name or "").strip()
+            )
+            if not has_name or not (region or "").strip():
                 raise serializers.ValidationError(
                     {
                         "onboarding_completed": (
-                            "Profil to'liq emas — ism va viloyat talab qilinadi."
+                            "Profil to'liq emas — ism, familiya va viloyat talab qilinadi."
                         ),
                     }
                 )
+            if birth_year is None:
+                raise serializers.ValidationError(
+                    {
+                        "onboarding_completed": "Profil to'liq emas — yosh talab qilinadi.",
+                    }
+                )
         return attrs
+
+    def _sync_full_name(self, attrs: dict) -> dict:
+        first = (attrs.get("first_name") or "").strip()
+        last = (attrs.get("last_name") or "").strip()
+        if first or last:
+            attrs["full_name"] = f"{first} {last}".strip()
+        return attrs
+
+    def create(self, validated_data):
+        validated_data = self._sync_full_name(validated_data)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        if "first_name" in validated_data or "last_name" in validated_data:
+            first = (validated_data.get("first_name", instance.first_name) or "").strip()
+            last = (validated_data.get("last_name", instance.last_name) or "").strip()
+            validated_data["first_name"] = first
+            validated_data["last_name"] = last
+            validated_data["full_name"] = f"{first} {last}".strip()
+        return super().update(instance, validated_data)
 
     def get_role(self, obj: User) -> str:
         if getattr(obj, "is_superuser", False) or getattr(obj, "is_staff", False):

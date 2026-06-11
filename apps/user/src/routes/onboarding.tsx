@@ -60,7 +60,8 @@ function OnboardingFlow() {
     const birthYear = new Date().getFullYear() - ageNum;
     try {
       await updateMe.mutateAsync({
-        full_name: `${firstName.trim()} ${lastName.trim()}`,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
         birth_year: birthYear,
         region,
         ...(lat != null && lng != null

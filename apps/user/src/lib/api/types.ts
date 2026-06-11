@@ -2,10 +2,13 @@ export type ApiUser = {
   id: number;
   email: string;
   phone: string | null;
+  first_name: string;
+  last_name: string;
   full_name: string;
   role: string;
   region: string;
   birth_year: number | null;
+  age: number | null;
   latitude: string | number | null;
   longitude: string | number | null;
   onboarding_completed: boolean;

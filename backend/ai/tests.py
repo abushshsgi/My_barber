@@ -126,6 +126,32 @@ class AiStyleAnalyzeTests(TestCase):
         self.assertTrue(res.json()["has_face"])
 
 
+class HairstyleApiTests(TestCase):
+    def test_hairstyles_list_returns_seed_catalog(self):
+        res = self.client.get("/api/v1/hairstyles/")
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertEqual(len(body), 24)
+        self.assertEqual(body[0]["id"], "men-mid-fade")
+        self.assertIn("image_url", body[0])
+
+    def test_hairstyles_list_filters_audience(self):
+        res = self.client.get("/api/v1/hairstyles/", {"audience": "women"})
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertEqual(len(body), 12)
+        self.assertTrue(all(item["audience"] == "women" for item in body))
+
+    def test_hairstyles_detail(self):
+        res = self.client.get("/api/v1/hairstyles/men-mid-fade/")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["slug"], "mid-fade")
+
+    def test_hairstyles_detail_not_found(self):
+        res = self.client.get("/api/v1/hairstyles/missing-style/")
+        self.assertEqual(res.status_code, 404)
+
+
 @override_settings(
     GEMINI_API_KEY="test-key",
     CACHES={
