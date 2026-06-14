@@ -55,8 +55,17 @@ def resolve_hairstyle_image_path(
     slug: str,
     audience: str,
     age_group: str | None,
+    persona_id: str | None = None,
 ) -> str:
-    """Yoshga mos rasm yo'li; `young` uchun mavjud flat path saqlanadi."""
+    if persona_id:
+        from ai.explore_personas import has_persona_style_asset, resolve_persona_style_image
+
+        if has_persona_style_asset(persona_id, slug):
+            return resolve_persona_style_image(
+                audience=audience,
+                persona_id=persona_id,
+                slug=slug,
+            )
     if not age_group or age_group == "young":
         return image_path
     return f"/hairstyles/{audience}/{age_group}/{slug}.webp"

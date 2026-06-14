@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { analyzeAiStyle, checkAiStyleFace, persistAiStyleHistory } from "@/lib/api";
+import { analyzeAiStyle, checkAiStyleFace, generateAiStyleTryOn, persistAiStyleHistory } from "@/lib/api";
 import type { CameraCapturePayload } from "@/components/ai-style/AiStyleCamera";
 import { mapAiStyleResponse, type AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import {
@@ -7,6 +7,7 @@ import {
   enrichLatestFaceProfileHistory,
   saveFaceProfile,
 } from "@/lib/face-profile";
+import type { ExplorePersonaId } from "@/lib/explore-personas";
 import type { Audience } from "@/lib/mock-data";
 import type { AiFaceHint } from "@/lib/api/ai";
 
@@ -19,7 +20,7 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
-export function useAiStyleFlow() {
+export function useAiStyleFlow(menPersonaId?: ExplorePersonaId | null) {
   const [photo, setPhoto] = useState<string | null>(null);
   const [validatingPreview, setValidatingPreview] = useState<string | null>(null);
   const [validating, setValidating] = useState(false);
@@ -29,6 +30,8 @@ export function useAiStyleFlow() {
   const [error, setError] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [faceHint, setFaceHint] = useState<AiFaceHint | null>(null);
+  const [tryOnByStyle, setTryOnByStyle] = useState<Record<string, string>>({});
+  const [tryOnLoadingId, setTryOnLoadingId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const applyPhoto = async (dataUrl: string) => {
@@ -124,7 +127,12 @@ export function useAiStyleFlow() {
     setDone(false);
     setError(null);
     try {
-      const data = await analyzeAiStyle(photo, audience, faceHint);
+      const data = await analyzeAiStyle(
+        photo,
+        audience,
+        faceHint,
+        audience === "men" ? (menPersonaId ?? undefined) : undefined,
+      );
       const mapped = mapAiStyleResponse(data);
       if (faceHint) {
         mapped.faceShapeKey = faceHint.shape;
@@ -164,6 +172,25 @@ export function useAiStyleFlow() {
     }
   };
 
+  const generateTryOn = async (styleId: string) => {
+    if (!photo) return;
+    if (tryOnByStyle[styleId]) return;
+    setTryOnLoadingId(styleId);
+    setError(null);
+    try {
+      const data = await generateAiStyleTryOn(
+        photo,
+        styleId,
+        menPersonaId ?? undefined,
+      );
+      setTryOnByStyle((prev) => ({ ...prev, [styleId]: data.preview_image }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Rasm yaratishda xatolik");
+    } finally {
+      setTryOnLoadingId(null);
+    }
+  };
+
   const reset = () => {
     setPhoto(null);
     setDone(false);
@@ -174,6 +201,8 @@ export function useAiStyleFlow() {
     setValidatingPreview(null);
     setCameraOpen(false);
     setFaceHint(null);
+    setTryOnByStyle({});
+    setTryOnLoadingId(null);
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -187,6 +216,8 @@ export function useAiStyleFlow() {
     error,
     cameraOpen,
     faceHint,
+    tryOnByStyle,
+    tryOnLoadingId,
     fileRef,
     onFile,
     onCameraCapture,
@@ -194,6 +225,7 @@ export function useAiStyleFlow() {
     openCamera,
     closeCamera,
     analyze,
+    generateTryOn,
     reset,
   };
 }

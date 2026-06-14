@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
 import { useAudience } from "@/hooks/use-audience";
+import { PersonaPicker } from "@/components/PersonaPicker";
+import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyles } from "@/hooks/use-hairstyles";
 import { useUserAgeGroup } from "@/hooks/use-me";
 import { AGE_GROUP_LABELS_UZ } from "@/lib/age-groups";
@@ -17,13 +19,16 @@ function ExplorePage() {
   const { t } = useTranslation();
   const { audience } = useAudience();
   const ageGroup = useUserAgeGroup();
-  const { data: list = [], isLoading, isError } = useHairstyles(audience);
+  const { personaId, setPersonaId } = useExplorePersona();
+  const menPersona = audience === "men" ? personaId : null;
+  const { data: list = [], isLoading, isError } = useHairstyles(audience, menPersona);
 
   return (
     <div className="pb-8">
       <PageHeader showBack title={t("explorePage.title")} />
       <div className="px-5">
         <AudienceSwitch />
+        {audience === "men" ? <PersonaPicker value={personaId} onChange={setPersonaId} /> : null}
         <p className="mt-3 text-xs text-muted-foreground">
           {ageGroup
             ? `${t("explorePage.subtitle")} · ${AGE_GROUP_LABELS_UZ[ageGroup]}`

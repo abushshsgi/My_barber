@@ -31,11 +31,13 @@ class HairstyleSerializer(serializers.ModelSerializer):
 
     def get_image_url(self, obj: Hairstyle) -> str:
         age_group = self.context.get("age_group")
+        persona_id = self.context.get("persona_id")
         return resolve_hairstyle_image_path(
             image_path=obj.image_path,
             slug=obj.slug,
             audience=obj.audience,
             age_group=age_group,
+            persona_id=persona_id,
         )
 
 

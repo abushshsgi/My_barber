@@ -7,7 +7,8 @@ from django.shortcuts import get_object_or_404
 from accounts.models import User
 from accounts.throttles import AiStyleThrottle, AuthIPThrottle
 
-from ai.age_groups import birth_year_to_group, normalize_age_group
+from ai.age_groups import birth_year_to_group, normalize_age_group, resolve_hairstyle_image_path
+from ai.explore_personas import list_explore_personas, normalize_persona_id
 
 from .history_storage import save_history_photo, trim_user_history
 from .models import HISTORY_MAX_PER_USER, AiStyleHistoryEntry, Hairstyle
@@ -17,7 +18,12 @@ from .serializers import (
     AiStyleHistoryEntrySerializer,
     HairstyleSerializer,
 )
-from .style_recommend import build_suggestions_from_analysis, normalize_request_audience
+from .style_recommend import (
+    build_suggestions_from_analysis,
+    normalize_request_audience,
+    resolve_ai_style_audience,
+)
+from .services.gemini_tryon import generate_tryon_preview
 from .services.gemini_style import (
     NO_FACE_MESSAGE,
     AiStyleError,
@@ -43,6 +49,27 @@ def _resolve_age_group(request) -> str | None:
     return None
 
 
+def _resolve_persona_id(request, audience: str | None) -> str | None:
+    if audience != "men":
+        return None
+    return normalize_persona_id(request.query_params.get("persona"))
+
+
+def _resolve_persona_from_body(request, audience: str | None) -> str | None:
+    if audience != "men":
+        return None
+    return normalize_persona_id(request.data.get("persona"))
+
+
+class ExplorePersonaListView(APIView):
+    """GET — erkak Explore personajlari ro'yxati."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response(list_explore_personas())
+
+
 class HairstyleListView(APIView):
     """GET ?audience=men|women&age_group=kids|teen|young|adult|mature — Explore katalogi."""
 
@@ -51,6 +78,7 @@ class HairstyleListView(APIView):
     def get(self, request):
         audience = (request.query_params.get("audience") or "").strip().lower()
         age_group = _resolve_age_group(request)
+        persona_id = _resolve_persona_id(request, audience if audience in {"men", "women"} else None)
         qs = Hairstyle.objects.filter(is_published=True)
         if audience in {"men", "women"}:
             qs = qs.filter(audience=audience)
@@ -64,7 +92,7 @@ class HairstyleListView(APIView):
         serializer = HairstyleSerializer(
             styles,
             many=True,
-            context={"age_group": age_group},
+            context={"age_group": age_group, "persona_id": persona_id},
         )
         return Response(serializer.data)
 
@@ -81,7 +109,11 @@ class HairstyleDetailView(APIView):
             style_id=style_id,
             is_published=True,
         )
-        serializer = HairstyleSerializer(style, context={"age_group": age_group})
+        persona_id = _resolve_persona_id(request, style.audience)
+        serializer = HairstyleSerializer(
+            style,
+            context={"age_group": age_group, "persona_id": persona_id},
+        )
         return Response(serializer.data)
 
 
@@ -108,10 +140,15 @@ class AiStyleAnalyzeView(APIView):
                 request_audience,
                 face_hint=face_hint if isinstance(face_hint, dict) else None,
             )
+            resolved_audience = resolve_ai_style_audience(
+                request_audience,
+                analysis,
+            )
             _, suggestions = build_suggestions_from_analysis(
                 request_audience=request_audience,
                 analysis=analysis,
                 age_group=birth_year_to_group(user.birth_year),
+                persona_id=_resolve_persona_from_body(request, resolved_audience),
             )
             suggestions = attach_salons_to_suggestions(suggestions)
             return Response(
@@ -121,6 +158,54 @@ class AiStyleAnalyzeView(APIView):
                     "summary_uz": analysis["summary_uz"],
                     "detected_gender": analysis["detected_gender"],
                     "suggestions": suggestions,
+                }
+            )
+        except AiStyleError as exc:
+            return Response({"detail": exc.message}, status=exc.status)
+
+
+class AiStyleTryOnView(APIView):
+    """POST { image, style_id } — selfie + uslub bo'yicha AI preview rasm."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [AiStyleThrottle, AuthIPThrottle]
+
+    def post(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+
+        image = request.data.get("image")
+        style_id = (request.data.get("style_id") or "").strip()
+        if not image:
+            return Response({"detail": "Selfie rasmini yuboring."}, status=400)
+        if not style_id:
+            return Response({"detail": "Uslub tanlang."}, status=400)
+
+        style = get_object_or_404(Hairstyle, style_id=style_id, is_published=True)
+        age_group = birth_year_to_group(user.birth_year)
+        persona_id = _resolve_persona_from_body(request, style.audience)
+        reference_url = resolve_hairstyle_image_path(
+            image_path=style.image_path,
+            slug=style.slug,
+            audience=style.audience,
+            age_group=age_group,
+            persona_id=persona_id,
+        )
+
+        try:
+            preview_image = generate_tryon_preview(
+                selfie_data_url=str(image),
+                audience=style.audience,
+                slug=style.slug,
+                title=style.title_uz,
+                reference_image_url=reference_url,
+            )
+            return Response(
+                {
+                    "preview_image": preview_image,
+                    "style_id": style.style_id,
+                    "style_title": style.title_uz,
                 }
             )
         except AiStyleError as exc:

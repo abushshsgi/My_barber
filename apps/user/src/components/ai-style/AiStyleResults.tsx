@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Bookmark, CalendarPlus } from "lucide-react";
+import { Bookmark, CalendarPlus, Loader2, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { styleCoverGradient } from "@/components/ai-style/ai-style-shared";
@@ -8,11 +8,18 @@ import { cn } from "@/lib/utils";
 
 type Suggestion = AiAnalysisResult["suggestions"][number];
 
-function StylePreview({ suggestion }: { suggestion: Suggestion }) {
-  if (suggestion.imageUrl) {
+function StylePreview({
+  suggestion,
+  tryOnPreview,
+}: {
+  suggestion: Suggestion;
+  tryOnPreview?: string;
+}) {
+  const src = tryOnPreview || suggestion.imageUrl;
+  if (src) {
     return (
       <img
-        src={suggestion.imageUrl}
+        src={src}
         alt=""
         className="h-full w-full object-cover"
         loading="lazy"
@@ -84,16 +91,43 @@ function SuggestionActions({
   saved,
   onToggleSave,
   compact,
+  tryOnPreview,
+  tryOnLoading,
+  onGenerateTryOn,
 }: {
   suggestion: Suggestion;
   saved: boolean;
   onToggleSave: (id: string) => void;
   compact?: boolean;
+  tryOnPreview?: string;
+  tryOnLoading?: boolean;
+  onGenerateTryOn?: (styleId: string) => void;
 }) {
   const { t } = useTranslation();
+  const canTryOn = Boolean(onGenerateTryOn && suggestion.id.includes("-"));
 
   return (
-    <div className={cn("grid gap-1.5", compact ? "mt-2 grid-cols-3" : "mt-3 grid-cols-2 sm:grid-cols-3")}>
+    <div className={cn("grid gap-1.5", compact ? "mt-2 grid-cols-2" : "mt-3 grid-cols-2")}>
+      {canTryOn ? (
+        <button
+          type="button"
+          disabled={tryOnLoading || Boolean(tryOnPreview)}
+          onClick={() => onGenerateTryOn?.(suggestion.id)}
+          className={cn(
+            "inline-flex items-center justify-center gap-1 rounded-lg border py-2 text-[10px] font-bold",
+            tryOnPreview
+              ? "border-foreground bg-foreground text-background"
+              : "border-border bg-surface",
+          )}
+        >
+          {tryOnLoading ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <Sparkles className="h-3 w-3" />
+          )}
+          {tryOnPreview ? t("aiStylePage.tryOnDone") : t("aiStylePage.tryOnMe")}
+        </button>
+      ) : null}
       <button
         type="button"
         onClick={() => onToggleSave(suggestion.id)}
@@ -137,10 +171,16 @@ export function AiStyleSuggestionsCarousel({
   suggestions,
   saved,
   onToggleSave,
+  tryOnByStyle,
+  tryOnLoadingId,
+  onGenerateTryOn,
 }: {
   suggestions: Suggestion[];
   saved: string[];
   onToggleSave: (id: string) => void;
+  tryOnByStyle?: Record<string, string>;
+  tryOnLoadingId?: string | null;
+  onGenerateTryOn?: (styleId: string) => void;
 }) {
   const { t } = useTranslation();
 
@@ -156,9 +196,14 @@ export function AiStyleSuggestionsCarousel({
         >
           <div className="overflow-hidden rounded-2xl border border-border bg-background">
             <div className="relative aspect-[3/4] overflow-hidden">
-              <StylePreview suggestion={suggestion} />
+              <StylePreview
+                suggestion={suggestion}
+                tryOnPreview={tryOnByStyle?.[suggestion.id]}
+              />
               <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-1 text-[10px] font-bold backdrop-blur-sm">
-                {t("aiStylePage.matchPct", { value: suggestion.match })}
+                {tryOnByStyle?.[suggestion.id]
+                  ? t("aiStylePage.tryOnBadge")
+                  : t("aiStylePage.matchPct", { value: suggestion.match })}
               </span>
             </div>
             <div className="p-3">
@@ -173,6 +218,9 @@ export function AiStyleSuggestionsCarousel({
                 suggestion={suggestion}
                 saved={saved.includes(suggestion.id)}
                 onToggleSave={onToggleSave}
+                tryOnPreview={tryOnByStyle?.[suggestion.id]}
+                tryOnLoading={tryOnLoadingId === suggestion.id}
+                onGenerateTryOn={onGenerateTryOn}
               />
             </div>
           </div>
@@ -186,10 +234,16 @@ export function AiStyleSuggestionsStack({
   suggestions,
   saved,
   onToggleSave,
+  tryOnByStyle,
+  tryOnLoadingId,
+  onGenerateTryOn,
 }: {
   suggestions: Suggestion[];
   saved: string[];
   onToggleSave: (id: string) => void;
+  tryOnByStyle?: Record<string, string>;
+  tryOnLoadingId?: string | null;
+  onGenerateTryOn?: (styleId: string) => void;
 }) {
   const { t } = useTranslation();
 
@@ -204,7 +258,10 @@ export function AiStyleSuggestionsStack({
           className="overflow-hidden rounded-[22px] border border-border bg-background"
         >
           <div className="relative h-32 overflow-hidden">
-            <StylePreview suggestion={suggestion} />
+            <StylePreview
+              suggestion={suggestion}
+              tryOnPreview={tryOnByStyle?.[suggestion.id]}
+            />
           </div>
           <div className="p-4">
             <div className="flex items-start justify-between gap-2">
@@ -228,6 +285,9 @@ export function AiStyleSuggestionsStack({
               suggestion={suggestion}
               saved={saved.includes(suggestion.id)}
               onToggleSave={onToggleSave}
+              tryOnPreview={tryOnByStyle?.[suggestion.id]}
+              tryOnLoading={tryOnLoadingId === suggestion.id}
+              onGenerateTryOn={onGenerateTryOn}
             />
           </div>
         </motion.article>
@@ -243,6 +303,9 @@ export function AiStyleResultsBlock({
   onReset,
   layout = "carousel",
   summaryTone = "light",
+  tryOnByStyle,
+  tryOnLoadingId,
+  onGenerateTryOn,
 }: {
   result: AiAnalysisResult;
   saved: string[];
@@ -250,6 +313,9 @@ export function AiStyleResultsBlock({
   onReset: () => void;
   layout?: "carousel" | "stack";
   summaryTone?: "light" | "dark";
+  tryOnByStyle?: Record<string, string>;
+  tryOnLoadingId?: string | null;
+  onGenerateTryOn?: (styleId: string) => void;
 }) {
   const { t } = useTranslation();
 
@@ -276,12 +342,18 @@ export function AiStyleResultsBlock({
           suggestions={result.suggestions}
           saved={saved}
           onToggleSave={onToggleSave}
+          tryOnByStyle={tryOnByStyle}
+          tryOnLoadingId={tryOnLoadingId}
+          onGenerateTryOn={onGenerateTryOn}
         />
       ) : (
         <AiStyleSuggestionsStack
           suggestions={result.suggestions}
           saved={saved}
           onToggleSave={onToggleSave}
+          tryOnByStyle={tryOnByStyle}
+          tryOnLoadingId={tryOnLoadingId}
+          onGenerateTryOn={onGenerateTryOn}
         />
       )}
     </div>

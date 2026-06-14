@@ -44,6 +44,9 @@ export type AiStyleSplitLayoutProps = {
   openFile: () => void;
   openCamera: () => void;
   onAnalyze: () => void;
+  tryOnByStyle: Record<string, string>;
+  tryOnLoadingId: string | null;
+  onGenerateTryOn: (styleId: string) => void;
 };
 
 function StepRail({ step }: { step: 1 | 2 | 3 }) {
@@ -647,6 +650,9 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
               onToggleSave={props.onToggleSave}
               onReset={props.onReset}
               layout="carousel"
+              tryOnByStyle={props.tryOnByStyle}
+              tryOnLoadingId={props.tryOnLoadingId}
+              onGenerateTryOn={props.onGenerateTryOn}
             />
           </div>
         </motion.div>

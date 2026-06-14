@@ -33,6 +33,7 @@ export function AiStyleFlow({ flow, audience }: Props) {
     openCamera,
     closeCamera,
     analyze,
+    generateTryOn,
     reset,
   } = flow;
   const [saved, setSaved] = useState<string[]>([]);
@@ -78,6 +79,9 @@ export function AiStyleFlow({ flow, audience }: Props) {
         openFile={openFile}
         openCamera={openCamera}
         onAnalyze={() => void analyze(audience)}
+        tryOnByStyle={flow.tryOnByStyle}
+        tryOnLoadingId={flow.tryOnLoadingId}
+        onGenerateTryOn={(styleId) => void generateTryOn(styleId)}
       />
 
       <AiStylePhotoInput fileRef={fileRef} onFile={onFile} />

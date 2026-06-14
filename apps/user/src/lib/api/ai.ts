@@ -5,6 +5,7 @@ import {
   syncFaceProfileHistoryCache,
   type FaceProfileHistoryEntry,
 } from "@/lib/face-profile";
+import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { apiFetch, apiJson } from "./client";
 
 export type AiStyleSuggestionApi = {
@@ -60,6 +61,7 @@ export async function analyzeAiStyle(
   image: string,
   audience: "men" | "women" | "unisex",
   faceHint?: AiFaceHint | null,
+  personaId?: ExplorePersonaId,
 ): Promise<AiStyleAnalyzeResponse> {
   return apiJson<AiStyleAnalyzeResponse>("/api/v1/ai/style-analyze/", {
     method: "POST",
@@ -67,7 +69,25 @@ export async function analyzeAiStyle(
       image,
       audience,
       face_hint: faceHint ?? undefined,
+      persona: personaId,
     }),
+  });
+}
+
+export type AiStyleTryOnResponse = {
+  preview_image: string;
+  style_id: string;
+  style_title: string;
+};
+
+export async function generateAiStyleTryOn(
+  image: string,
+  styleId: string,
+  personaId?: ExplorePersonaId,
+): Promise<AiStyleTryOnResponse> {
+  return apiJson<AiStyleTryOnResponse>("/api/v1/ai/style-tryon/", {
+    method: "POST",
+    body: JSON.stringify({ image, style_id: styleId, persona: personaId }),
   });
 }
 

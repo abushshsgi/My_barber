@@ -32,6 +32,26 @@ class AgeGroupTests(SimpleTestCase):
         )
         self.assertEqual(path, "/hairstyles/men/mid-fade.webp")
 
+    def test_persona_evro_ready_asset(self):
+        path = resolve_hairstyle_image_path(
+            image_path="/hairstyles/men/mid-fade.webp",
+            slug="mid-fade",
+            audience="men",
+            age_group="young",
+            persona_id="evro",
+        )
+        self.assertEqual(path, "/hairstyles/men/personas/evro/mid-fade.webp")
+
+    def test_persona_evro_missing_slug_falls_back(self):
+        path = resolve_hairstyle_image_path(
+            image_path="/hairstyles/men/low-fade.webp",
+            slug="low-fade",
+            audience="men",
+            age_group="young",
+            persona_id="evro",
+        )
+        self.assertEqual(path, "/hairstyles/men/low-fade.webp")
+
 
 class HairstyleCatalogTests(TestCase):
     def test_pick_men_short_oval_styles(self):

@@ -1,7 +1,37 @@
 # Explore soch turmaklari — generatsiya qo'llanmasi
 
-Tashqarida (Midjourney / Leonardo) generatsiya qilish uchun promptlar.
+Tashqarida (Midjourney / Leonardo / Imagen) generatsiya qilish uchun promptlar.
 Natija: `apps/user/public/hairstyles/{men|women}/{age_group}/{slug}.webp` (768×1024, WebP ~85%).
+
+## Explore erkak personajlari (5 ta)
+
+Har bir personaj uchun **bitta reference** + **12 ta uslub**. To'liq promptlar: [`PERSONA_PROMPTS.md`](./PERSONA_PROMPTS.md)
+
+| # | Laqab | Kod | Reference fayl |
+|---|-------|-----|----------------|
+| 1 | Britan | EU-3 | `men/personas/britan/reference.webp` |
+| 2 | Irland | EU-8 | `men/personas/irland/reference.webp` |
+| 3 | Slavyan | EU-6 | `men/personas/slavyan/reference.webp` |
+| 4 | Evro | EU-2 | `men/personas/evro/reference.webp` |
+| 5 | Fransuz | EU-4 | `men/personas/fransuz/reference.webp` |
+
+**12 ta uslub:** tanlangan personaj yuzi + `--cref reference.webp --cw 100` — faqat soch o'zgaradi.
+
+---
+
+```
+ROLE: Explore katalogi uchun professional salon/barber studiya rasmlari generatsiya qiluvchi AI.
+
+QOIDALAR (majburiy):
+1. HAR BIR RASM — BOSHQA ERKAK. Bir xil yuz, bir xil odam, Character Reference ishlatma.
+2. Milliyat/mamlakat ko‘rsatma shart emas — tabiiy xilma-xil yuzlar.
+3. POZA tabiiy: yengil 3/4 burchak (~15°), salon kreslosidan chiqqandek.
+   Qattiq to‘g‘ri old tomondan passport/ID suratiga O‘XSHAMASIN.
+4. Stok foto, oldindan tayyorlangan katalog, manken ifoda bo‘lmasin.
+5. Fon DOIM: solid flat #E8E8E8 (gradient yo‘q).
+6. Maket: bosh + yelkalar, 3:4, yumshoq studiya yorug‘ligi.
+7. Har safar yangi model + yangi soch — faqat fon va kadrlash uslubi bir xil.
+```
 
 ## Yosh guruhlari (age_group)
 
@@ -9,110 +39,86 @@ Natija: `apps/user/public/hairstyles/{men|women}/{age_group}/{slug}.webp` (768×
 |-------|------|-------|
 | `kids` | 10–12 | `{audience}/kids/` |
 | `teen` | 13–17 | `{audience}/teen/` |
-| `young` | 18–29 | `{audience}/` (flat, mavjud) |
+| `young` | 18–29 | `{audience}/` (flat) |
 | `adult` | 30–44 | `{audience}/adult/` |
 | `mature` | 45+ | `{audience}/mature/` |
-
-Har bir yosh guruhi uchun **bir xil fon, bir xil maket** — faqat model yoshi va soch turmaklari farq qiladi.
 
 ## Umumiy qoidalar
 
 | Parametr | Qiymat |
 |----------|--------|
-| Fon | `#E8E8E8` kulrang studiya |
-| Poza | Old tomondan, yelka darajasi, neytral ifoda |
-| Nisbat | 3:4 (768×1024 yoki 900×1200) |
-| Format | WebP |
+| Fon | `#E8E8E8` kulrang studiya, flat |
+| Poza | Yengil 3/4, tabiiy — **passport/ID emas** |
+| Model | **Har rasm = boshqa erkak** |
+| Nisbat | 3:4 (768×1024) |
+| Format | WebP ~85% |
+| Tiniqlik | Ultra sharp, 85mm portrait, 8K detail |
 
-## 1. Bazaviy portrait (reference)
+## 1. Bitta uslub uchun to‘liq prompt (namuna)
 
-### Erkak — `men/{age_group}/_reference.webp`
-
-```
-Professional studio portrait, [AGE DESCRIPTION] Central Asian man, neutral light gray background #E8E8E8,
-front-facing, shoulders visible, neutral short hair, soft even lighting, photorealistic,
-no jewelry, clean skin, 3:4 aspect ratio
-```
-
-**Yosh tavsiflari (AGE DESCRIPTION):**
-- `kids` — boy age 10-12
-- `teen` — teenage boy age 14-16
-- `young` — young man age 22-28
-- `adult` — man age 35-42
-- `mature` — mature man age 50-58
-
-### Ayol — `women/{age_group}/_reference.webp`
+**Fayl:** `men/adult/mid-fade.webp`
 
 ```
-Professional studio portrait, young Central Asian woman, neutral light gray background #E8E8E8,
-front-facing, shoulders visible, neutral medium length hair, soft even lighting, photorealistic,
-minimal makeup, clean skin, 3:4 aspect ratio
+ROLE: Explore katalog — har rasm alohida, boshqa erkak, tabiiy poza.
+
+Generate ONE standalone portrait.
+Model: man age 38, Mediterranean man, olive skin, dark wavy hair texture.
+Hairstyle: mid fade haircut, clean taper, short textured top 3-4cm, crisp barber line-up.
+
+Background: solid flat #E8E8E8 only, no gradient.
+Pose: natural relaxed posture, slight three-quarter angle about 15 degrees,
+candid fresh-from-barber moment, NOT passport photo, NOT stiff front-facing ID picture,
+NOT stock catalog mannequin.
+
+Plain dark t-shirt, soft even studio lighting, photorealistic,
+ultra sharp hair and skin detail, 3:4 vertical, 768x1024.
+This is a UNIQUE person — different from every other catalog image.
 ```
 
-## 2. Uslub variant prompt (har biri)
+### Negative prompt
 
 ```
-Same person as reference, identical face and pose, identical gray background #E8E8E8,
-only hairstyle changed to [STYLE NAME], professional barber/salon result, photorealistic, 3:4
+same person, identical face, character reference, clone,
+passport photo, ID photo, mugshot, visa photo, stiff front-facing,
+dead center stare, stock photo, pre-shot catalog, mannequin,
+cartoon, watermark, text, busy background, barber shop, gradient background
 ```
 
-**Midjourney:** `--cref [reference-url]` yoki Character Reference  
-**Leonardo:** Character Reference + Image Guidance
+## 2. Uslub variant (har biri ALOHIDA odam)
 
-## 3. Erkak uslublari (12)
+**Character Reference ishlatma.** Har fayl uchun yuqoridagi shablonni ishlat — faqat `[PERSONA]` va `[STYLE]` almashtir.
 
-| Fayl | Prompt ichidagi STYLE NAME |
-|------|---------------------------|
-| `men/{age_group}/mid-fade.webp` | mid fade haircut, clean taper |
-| `men/low-fade.webp` | low fade haircut |
-| `men/skin-fade.webp` | skin fade buzz cut sides |
-| `men/buzz-cut.webp` | buzz cut, uniform short |
-| `men/textured-crop.webp` | textured crop, modern short top |
-| `men/pompadour.webp` | pompadour, volume on top |
-| `men/undercut.webp` | undercut, short sides long top |
-| `men/side-part.webp` | classic side part, neat |
-| `men/french-crop.webp` | french crop, short fringe |
-| `men/slick-back.webp` | slick back, combed back hair |
-| `men/curly-top-fade.webp` | curly hair on top with fade sides |
-| `men/modern-mullet.webp` | modern mullet, short front longer back |
+| Fayl | STYLE |
+|------|-------|
+| `men/adult/mid-fade.webp` | mid fade, clean taper |
+| `men/adult/low-fade.webp` | low fade, natural taper |
+| ... | ... |
 
-## 4. Ayol uslublari (12)
+**Personaj misollari (har biri boshqa rasm):**
+- Mediterranean, olive skin
+- Black, deep brown skin
+- East Asian, light skin
+- Scandinavian, fair skin
+- Middle Eastern, tan skin
+- Latino, warm tan skin
 
-| Fayl | Prompt ichidagi STYLE NAME |
-|------|---------------------------|
-| `women/soft-bob.webp` | soft bob haircut |
-| `women/long-layers.webp` | long layered hair |
-| `women/balayage.webp` | balayage highlighted long hair |
-| `women/pixie-cut.webp` | pixie cut short |
-| `women/beach-waves.webp` | beach waves medium length |
-| `women/straight-lob.webp` | straight lob haircut |
-| `women/curtain-bangs.webp` | curtain bangs medium hair |
-| `women/shag-cut.webp` | shag cut layered |
-| `women/braids.webp` | braided hairstyle |
-| `women/updo-bun.webp` | elegant updo bun |
-| `women/blunt-cut.webp` | blunt cut straight |
-| `women/highlights.webp` | highlighted medium hair |
+## 3. Tekshiruv ro'yxati
 
-## 5. Tekshiruv ro'yxati
+- [ ] **Boshqa erkak** — oldingi rasmlardagi yuzga o‘xshamaydi
+- [ ] **Passport/ID emas** — tabiiy 3/4, jonli poza
+- [ ] Fon `#E8E8E8` bir xil
+- [ ] Soch tiniq, barber natijasi real
+- [ ] 768×1024 WebP, < 200 KB
 
-- [ ] Yuz ikkala reference bilan bir xil
-- [ ] Fon #E8E8E8 bir xil
-- [ ] Faqat soch o'zgargan
-- [ ] 24 ta fayl to'g'ri nomlangan
-- [ ] WebP sifat ~85, hajm < 200 KB har biri
-
-Placeholder rasmlar:
+## Skriptlar
 
 ```bash
 python3 apps/user/scripts/generate-hairstyle-placeholders.py
-```
 
-AI rasmlar (GEMINI_API_KEY kerak):
-
-```bash
 pip install google-genai
 export GEMINI_API_KEY=your_key
-python3 apps/user/scripts/generate-hairstyle-images.py --all-men
-python3 apps/user/scripts/generate-hairstyle-images.py --audience men --age-group adult
+python3 apps/user/scripts/generate-hairstyle-images.py --audience men --age-group adult --slug mid-fade
 python3 apps/user/scripts/generate-hairstyle-images.py --dry-run --all-men
 ```
+
+Prompt matnlari: `apps/user/scripts/hairstyle_prompts.py`

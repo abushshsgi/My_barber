@@ -96,6 +96,36 @@ class AiStyleAnalyzeTests(TestCase):
         res = self.client.post("/api/v1/ai/style-analyze/", {"audience": "men"}, format="json")
         self.assertEqual(res.status_code, 400)
 
+    @patch("ai.views.generate_tryon_preview")
+    def test_style_tryon_returns_preview(self, mock_tryon):
+        mock_tryon.return_value = "data:image/png;base64,abc"
+        res = self.client.post(
+            "/api/v1/ai/style-tryon/",
+            {"image": self.tiny_png, "style_id": "men-mid-fade"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertEqual(body["style_id"], "men-mid-fade")
+        self.assertTrue(body["preview_image"].startswith("data:image/"))
+
+    def test_style_tryon_requires_style_id(self):
+        res = self.client.post(
+            "/api/v1/ai/style-tryon/",
+            {"image": self.tiny_png},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 400)
+
+    def test_style_tryon_requires_auth(self):
+        client = APIClient()
+        res = client.post(
+            "/api/v1/ai/style-tryon/",
+            {"image": self.tiny_png, "style_id": "men-mid-fade"},
+            format="json",
+        )
+        self.assertIn(res.status_code, (401, 403))
+
     @override_settings(GEMINI_API_KEY="")
     def test_style_analyze_without_api_key(self):
         from ai.services.gemini_style import AiStyleError, analyze_style_from_data_url

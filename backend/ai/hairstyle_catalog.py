@@ -22,7 +22,11 @@ def _styles_for_age_group(styles: list[Hairstyle], age_group: str | None) -> lis
     return [style for style in styles if norm_group in (style.age_groups or [])]
 
 
-def style_to_entry(style: Hairstyle, age_group: str | None = None) -> StyleEntry:
+def style_to_entry(
+    style: Hairstyle,
+    age_group: str | None = None,
+    persona_id: str | None = None,
+) -> StyleEntry:
     groups = list(style.age_groups or [])
     return {
         "id": style.style_id,
@@ -39,6 +43,7 @@ def style_to_entry(style: Hairstyle, age_group: str | None = None) -> StyleEntry
             slug=style.slug,
             audience=style.audience,
             age_group=age_group,
+            persona_id=persona_id if style.audience == "men" else None,
         ),
     }
 
@@ -46,13 +51,15 @@ def style_to_entry(style: Hairstyle, age_group: str | None = None) -> StyleEntry
 def get_published_catalog(
     audience: str | None = None,
     age_group: str | None = None,
+    persona_id: str | None = None,
 ) -> list[StyleEntry]:
     qs = Hairstyle.objects.filter(is_published=True)
     if audience in {"men", "women"}:
         qs = qs.filter(audience=audience)
     norm_group = normalize_age_group(age_group)
     styles = _styles_for_age_group(list(qs), norm_group)
-    return [style_to_entry(style, norm_group) for style in styles]
+    men_persona = persona_id if audience == "men" else None
+    return [style_to_entry(style, norm_group, men_persona) for style in styles]
 
 
 def score_hairstyle(
@@ -85,6 +92,7 @@ def pick_catalog_suggestions(
     face_shape: str,
     hair_type: str,
     age_group: str | None = None,
+    persona_id: str | None = None,
     limit: int = 3,
 ) -> list[dict[str, Any]]:
     if face_shape not in FACE_SHAPES:
@@ -92,9 +100,10 @@ def pick_catalog_suggestions(
     if hair_type not in HAIR_LENGTHS:
         hair_type = "medium"
 
-    pool = get_published_catalog(audience, age_group)
+    men_persona = persona_id if audience == "men" else None
+    pool = get_published_catalog(audience, age_group, men_persona)
     if not pool and age_group:
-        pool = get_published_catalog(audience)
+        pool = get_published_catalog(audience, persona_id=men_persona)
     ranked = sorted(
         pool,
         key=lambda style: (

@@ -2,6 +2,7 @@ import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 import { CalendarPlus, Wand2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
+import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
 import { cn } from "@/lib/utils";
@@ -14,7 +15,8 @@ export const Route = createFileRoute("/explore/$styleId")({
 function ExploreStyleDetailPage() {
   const { t } = useTranslation();
   const { styleId } = Route.useParams();
-  const { data: entry, isLoading, isError } = useHairstyle(styleId);
+  const { personaId } = useExplorePersona();
+  const { data: entry, isLoading, isError } = useHairstyle(styleId, personaId);
 
   if (isLoading) {
     return (
@@ -79,6 +81,7 @@ function ExploreStyleDetailPage() {
         <div className="mt-6 grid grid-cols-2 gap-2">
           <Link
             to="/ai-style"
+            search={{ styleId: entry.id }}
             className="inline-flex items-center justify-center gap-2 rounded-2xl bg-foreground py-3.5 text-xs font-bold text-background"
           >
             <Wand2 className="h-4 w-4" />

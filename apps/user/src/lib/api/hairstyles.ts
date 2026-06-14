@@ -1,5 +1,6 @@
 import type { FaceShapeKey, HairTypeKey } from "@/components/ai-style/ai-style-shared";
 import type { AgeGroup } from "@/lib/age-groups";
+import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { apiJson } from "./client";
 
 export type ApiHairstyle = {
@@ -21,10 +22,12 @@ export type ApiHairstyle = {
 export async function fetchHairstyles(
   audience?: "men" | "women",
   ageGroup?: AgeGroup | null,
+  personaId?: ExplorePersonaId,
 ): Promise<ApiHairstyle[]> {
   const params = new URLSearchParams();
   if (audience) params.set("audience", audience);
   if (ageGroup) params.set("age_group", ageGroup);
+  if (personaId) params.set("persona", personaId);
   const query = params.toString();
   return apiJson<ApiHairstyle[]>(`/api/v1/hairstyles/${query ? `?${query}` : ""}`);
 }
@@ -32,7 +35,11 @@ export async function fetchHairstyles(
 export async function fetchHairstyleById(
   styleId: string,
   ageGroup?: AgeGroup | null,
+  personaId?: ExplorePersonaId,
 ): Promise<ApiHairstyle> {
-  const query = ageGroup ? `?age_group=${encodeURIComponent(ageGroup)}` : "";
-  return apiJson<ApiHairstyle>(`/api/v1/hairstyles/${encodeURIComponent(styleId)}/${query}`);
+  const params = new URLSearchParams();
+  if (ageGroup) params.set("age_group", ageGroup);
+  if (personaId) params.set("persona", personaId);
+  const query = params.toString();
+  return apiJson<ApiHairstyle>(`/api/v1/hairstyles/${encodeURIComponent(styleId)}/${query ? `?${query}` : ""}`);
 }
