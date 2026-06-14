@@ -7,7 +7,7 @@ import { useHairstyle } from "@/hooks/use-hairstyles";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/explore/$styleId")({
+export const Route = createFileRoute("/explore_/$styleId")({
   head: () => ({ meta: [{ title: "Uslub — mysaloon.uz" }] }),
   component: ExploreStyleDetailPage,
 });
