@@ -356,6 +356,7 @@
     "sampleBadge": "AI namuna",
     "personaLabel": "Model",
     "personaActive": "{{name}} ({{code}}) — uslub rasmlari shu modelda",
+    "personaMenHint": "Personaj rasmlari uchun yuqorida «Erkaklar» ni tanlang.",
     "tryAiStyle": "AI Style da sinash",
     "findSalon": "Salon topish"
   },

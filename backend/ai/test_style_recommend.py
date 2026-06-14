@@ -42,6 +42,16 @@ class AgeGroupTests(SimpleTestCase):
         )
         self.assertEqual(path, "/hairstyles/men/personas/evro/mid-fade.webp")
 
+    def test_persona_irland_ready_asset(self):
+        path = resolve_hairstyle_image_path(
+            image_path="/hairstyles/men/mid-fade.webp",
+            slug="mid-fade",
+            audience="men",
+            age_group="young",
+            persona_id="irland",
+        )
+        self.assertEqual(path, "/hairstyles/men/personas/irland/mid-fade.webp")
+
     def test_persona_evro_missing_slug_falls_back(self):
         path = resolve_hairstyle_image_path(
             image_path="/hairstyles/men/low-fade.webp",

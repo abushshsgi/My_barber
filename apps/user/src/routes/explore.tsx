@@ -29,6 +29,11 @@ function ExplorePage() {
       <div className="px-5">
         <AudienceSwitch />
         {audience === "men" ? <PersonaPicker value={personaId} onChange={setPersonaId} /> : null}
+        {audience !== "men" ? (
+          <p className="mt-3 text-[10px] font-semibold text-muted-foreground">
+            {t("explorePage.personaMenHint")}
+          </p>
+        ) : null}
         <p className="mt-3 text-xs text-muted-foreground">
           {ageGroup
             ? `${t("explorePage.subtitle")} · ${AGE_GROUP_LABELS_UZ[ageGroup]}`
@@ -47,13 +52,14 @@ function ExplorePage() {
       <div className="mt-5 grid grid-cols-2 gap-3 px-5">
         {list.map((entry) => (
           <Link
-            key={entry.id}
+            key={`${menPersona ?? "default"}-${entry.id}`}
             to="/explore/$styleId"
             params={{ styleId: entry.id }}
             className="overflow-hidden active:opacity-90"
           >
             <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-surface">
               <img
+                key={entry.imageUrl}
                 src={getHairstyleImageUrl(entry)}
                 alt={entry.titleUz}
                 loading="lazy"

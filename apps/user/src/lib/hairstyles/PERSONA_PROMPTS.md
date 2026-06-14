@@ -41,9 +41,20 @@ ultra sharp photorealistic, 3:4 vertical, 768x1024
 
 ---
 
-## 2 — Irland (EU-8)
+## 2 — Irland (EU-8) ✅ tayyor assetlar
 
-**Fayl:** `men/personas/irland/reference.webp`
+**Papka:** `men/personas/irland/`
+
+| Fayl | Holat |
+|------|--------|
+| `reference.webp` | ✅ |
+| `mid-fade.webp` | ✅ |
+| `skin-fade.webp` | ✅ |
+| `buzz-cut.webp` | ✅ |
+| `textured-crop.webp` | ✅ |
+| `low-fade.webp` | ⏳ fallback: `men/low-fade.webp` |
+
+**Reference prompt:**
 
 ```
 Professional barber studio portrait, young Irish European man age 24,

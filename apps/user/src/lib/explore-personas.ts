@@ -23,7 +23,10 @@ export const PERSONA_READY_ASSETS: Record<
   { reference: boolean; slugs: readonly string[] }
 > = {
   britan: { reference: false, slugs: [] },
-  irland: { reference: false, slugs: [] },
+  irland: {
+    reference: true,
+    slugs: ["mid-fade", "skin-fade", "buzz-cut", "textured-crop"],
+  },
   slavyan: { reference: false, slugs: [] },
   evro: {
     reference: true,

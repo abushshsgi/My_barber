@@ -110,6 +110,7 @@ DEFAULT_MEN_PERSONA = "evro"
 # Generatsiya qilingan assetlar — qolgan sluglar yosh/flat fallback ishlatadi.
 PERSONA_READY_ASSETS: dict[str, frozenset[str]] = {
     "evro": frozenset({"reference", "mid-fade", "skin-fade", "buzz-cut", "textured-crop"}),
+    "irland": frozenset({"reference", "mid-fade", "skin-fade", "buzz-cut", "textured-crop"}),
 }
 
 

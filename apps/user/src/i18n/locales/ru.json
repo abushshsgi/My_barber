@@ -340,6 +340,7 @@
     "sampleBadge": "AI образец",
     "personaLabel": "Модель",
     "personaActive": "{{name}} ({{code}}) — стили на этой модели",
+    "personaMenHint": "Выберите «Мужчины» выше, чтобы увидеть фото модели.",
     "tryAiStyle": "Примерить в AI Style",
     "findSalon": "Найти салон"
   },
