@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { AiStyleFlow } from "@/components/ai-style/AiStyleFlow";
 import { useAiStyleFlow } from "@/components/ai-style/useAiStyleFlow";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
@@ -12,6 +12,14 @@ export const Route = createFileRoute("/ai-style")({
       ? search.styleId.trim()
       : undefined,
   }),
+  beforeLoad: ({ search }) => {
+    if (search.styleId) {
+      throw redirect({
+        to: "/explore/$styleId/try",
+        params: { styleId: search.styleId },
+      });
+    }
+  },
   head: () => ({
     meta: [
       { title: "AI Stil maslahatchi — mysaloon.uz" },
@@ -26,14 +34,9 @@ export const Route = createFileRoute("/ai-style")({
 
 function AiStylePage() {
   const { audience, profileDefault } = useAudience();
-  const { styleId } = Route.useSearch();
   const { personaId } = useExplorePersona();
   const styleAudience = resolveAiStyleAudience(profileDefault, audience);
-  const flow = useAiStyleFlow({
-    menPersonaId: personaId,
-    focusStyleId: styleId,
-    audience: styleAudience,
-  });
+  const flow = useAiStyleFlow({ menPersonaId: personaId, audience: styleAudience });
 
-  return <AiStyleFlow flow={flow} audience={styleAudience} focusStyleId={styleId} />;
+  return <AiStyleFlow flow={flow} audience={styleAudience} />;
 }

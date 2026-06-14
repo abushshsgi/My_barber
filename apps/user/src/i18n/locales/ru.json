@@ -342,7 +342,28 @@
     "personaActive": "{{name}} ({{code}}) — стили на этой модели",
     "personaMenHint": "Выберите «Мужчины» выше, чтобы увидеть фото модели.",
     "tryAiStyle": "Примерить в AI Style",
+    "tryOnMe": "Примерить на себе",
     "findSalon": "Найти салон"
+  },
+  "styleTryOnPage": {
+    "loadingTitle": "Примерка стиля",
+    "title": "{{style}} — примерить на себе",
+    "headline": "Загрузите селфи",
+    "uploadHint": "AI применит выбранный стиль к вашему лицу и создаст новое изображение.",
+    "selectedStyle": "Выбранный стиль",
+    "generatingFaceCheck": "Проверка лица…",
+    "generating": "Создаём {{style}}…",
+    "generatingHint": "Это может занять 30–90 секунд.",
+    "resultTitle": "Готовый результат",
+    "retry": "Повторить",
+    "newPhoto": "Другое селфи",
+    "findSalon": "Найти салон",
+    "errorTitle": "Не удалось создать изображение",
+    "steps": {
+      "upload": "Селфи",
+      "generate": "Генерация",
+      "result": "Результат"
+    }
   },
   "aiStylePage": {
     "title": "AI советник по стилю",

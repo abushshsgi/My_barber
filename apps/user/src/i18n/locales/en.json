@@ -342,7 +342,28 @@
     "personaActive": "{{name}} ({{code}}) — styles shown on this model",
     "personaMenHint": "Select «Men» above to see persona-specific style photos.",
     "tryAiStyle": "Try in AI Style",
+    "tryOnMe": "See on yourself",
     "findSalon": "Find a salon"
+  },
+  "styleTryOnPage": {
+    "loadingTitle": "Try this style",
+    "title": "{{style}} — see on yourself",
+    "headline": "Upload a selfie",
+    "uploadHint": "AI will apply this style to your face and generate a new preview image.",
+    "selectedStyle": "Selected style",
+    "generatingFaceCheck": "Checking face…",
+    "generating": "Creating {{style}}…",
+    "generatingHint": "This may take 30–90 seconds.",
+    "resultTitle": "Your preview",
+    "retry": "Try again",
+    "newPhoto": "New selfie",
+    "findSalon": "Find a salon",
+    "errorTitle": "Generation failed",
+    "steps": {
+      "upload": "Selfie",
+      "generate": "Generate",
+      "result": "Result"
+    }
   },
   "aiStylePage": {
     "title": "AI Style advisor",

@@ -1,5 +1,5 @@
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
-import { CalendarPlus, Wand2 } from "lucide-react";
+import { CalendarPlus, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
@@ -80,12 +80,12 @@ function ExploreStyleDetailPage() {
 
         <div className="mt-6 grid grid-cols-2 gap-2">
           <Link
-            to="/ai-style"
-            search={{ styleId: entry.id }}
+            to="/explore/$styleId/try"
+            params={{ styleId: entry.id }}
             className="inline-flex items-center justify-center gap-2 rounded-2xl bg-foreground py-3.5 text-xs font-bold text-background"
           >
-            <Wand2 className="h-4 w-4" />
-            {t("explorePage.tryAiStyle")}
+            <Sparkles className="h-4 w-4" />
+            {t("explorePage.tryOnMe")}
           </Link>
           <Link
             to="/"

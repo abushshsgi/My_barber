@@ -48,6 +48,7 @@ import { Route as AccountPreferencesRouteImport } from './routes/account.prefere
 import { Route as AccountPaymentsRouteImport } from './routes/account.payments'
 import { Route as AccountHouseholdRouteImport } from './routes/account.household'
 import { Route as AccountActivityRouteImport } from './routes/account.activity'
+import { Route as ExploreStyleIdTryRouteImport } from './routes/explore_.$styleId.try'
 import { Route as BookingBarberBarberIdRouteImport } from './routes/booking.barber.$barberId'
 
 const WalletRoute = WalletRouteImport.update({
@@ -245,6 +246,11 @@ const AccountActivityRoute = AccountActivityRouteImport.update({
   path: '/account/activity',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ExploreStyleIdTryRoute = ExploreStyleIdTryRouteImport.update({
+  id: '/try',
+  path: '/try',
+  getParentRoute: () => ExploreStyleIdRoute,
+} as any)
 const BookingBarberBarberIdRoute = BookingBarberBarberIdRouteImport.update({
   id: '/booking/barber/$barberId',
   path: '/booking/barber/$barberId',
@@ -286,12 +292,13 @@ export interface FileRoutesByFullPath {
   '/account/preferences': typeof AccountPreferencesRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/chat/$id': typeof ChatIdRoute
-  '/explore/$styleId': typeof ExploreStyleIdRoute
+  '/explore/$styleId': typeof ExploreStyleIdRouteWithChildren
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
   '/wallet/history': typeof WalletHistoryRoute
   '/wallet/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
+  '/explore/$styleId/try': typeof ExploreStyleIdTryRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -328,12 +335,13 @@ export interface FileRoutesByTo {
   '/account/preferences': typeof AccountPreferencesRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/chat/$id': typeof ChatIdRoute
-  '/explore/$styleId': typeof ExploreStyleIdRoute
+  '/explore/$styleId': typeof ExploreStyleIdRouteWithChildren
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
   '/wallet/history': typeof WalletHistoryRoute
   '/wallet/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
+  '/explore/$styleId/try': typeof ExploreStyleIdTryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -371,12 +379,13 @@ export interface FileRoutesById {
   '/account/preferences': typeof AccountPreferencesRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/chat/$id': typeof ChatIdRoute
-  '/explore_/$styleId': typeof ExploreStyleIdRoute
+  '/explore_/$styleId': typeof ExploreStyleIdRouteWithChildren
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
   '/wallet_/history': typeof WalletHistoryRoute
   '/wallet_/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
+  '/explore_/$styleId/try': typeof ExploreStyleIdTryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -421,6 +430,7 @@ export interface FileRouteTypes {
     | '/wallet/history'
     | '/wallet/top-up'
     | '/booking/barber/$barberId'
+    | '/explore/$styleId/try'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -463,6 +473,7 @@ export interface FileRouteTypes {
     | '/wallet/history'
     | '/wallet/top-up'
     | '/booking/barber/$barberId'
+    | '/explore/$styleId/try'
   id:
     | '__root__'
     | '/'
@@ -505,6 +516,7 @@ export interface FileRouteTypes {
     | '/wallet_/history'
     | '/wallet_/top-up'
     | '/booking/barber/$barberId'
+    | '/explore_/$styleId/try'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -541,7 +553,7 @@ export interface RootRouteChildren {
   AccountPaymentsRoute: typeof AccountPaymentsRoute
   AccountPreferencesRoute: typeof AccountPreferencesRoute
   BookingSalonIdRoute: typeof BookingSalonIdRoute
-  ExploreStyleIdRoute: typeof ExploreStyleIdRoute
+  ExploreStyleIdRoute: typeof ExploreStyleIdRouteWithChildren
   SalonIdRoute: typeof SalonIdRoute
   WalletHistoryRoute: typeof WalletHistoryRoute
   WalletTopUpRoute: typeof WalletTopUpRoute
@@ -823,6 +835,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountActivityRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/explore_/$styleId/try': {
+      id: '/explore_/$styleId/try'
+      path: '/try'
+      fullPath: '/explore/$styleId/try'
+      preLoaderRoute: typeof ExploreStyleIdTryRouteImport
+      parentRoute: typeof ExploreStyleIdRoute
+    }
     '/booking/barber/$barberId': {
       id: '/booking/barber/$barberId'
       path: '/booking/barber/$barberId'
@@ -853,6 +872,18 @@ const StoriesRouteChildren: StoriesRouteChildren = {
 
 const StoriesRouteWithChildren =
   StoriesRoute._addFileChildren(StoriesRouteChildren)
+
+interface ExploreStyleIdRouteChildren {
+  ExploreStyleIdTryRoute: typeof ExploreStyleIdTryRoute
+}
+
+const ExploreStyleIdRouteChildren: ExploreStyleIdRouteChildren = {
+  ExploreStyleIdTryRoute: ExploreStyleIdTryRoute,
+}
+
+const ExploreStyleIdRouteWithChildren = ExploreStyleIdRoute._addFileChildren(
+  ExploreStyleIdRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -888,7 +919,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountPaymentsRoute: AccountPaymentsRoute,
   AccountPreferencesRoute: AccountPreferencesRoute,
   BookingSalonIdRoute: BookingSalonIdRoute,
-  ExploreStyleIdRoute: ExploreStyleIdRoute,
+  ExploreStyleIdRoute: ExploreStyleIdRouteWithChildren,
   SalonIdRoute: SalonIdRoute,
   WalletHistoryRoute: WalletHistoryRoute,
   WalletTopUpRoute: WalletTopUpRoute,

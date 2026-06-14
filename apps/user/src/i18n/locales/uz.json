@@ -358,7 +358,28 @@
     "personaActive": "{{name}} ({{code}}) — uslub rasmlari shu modelda",
     "personaMenHint": "Personaj rasmlari uchun yuqorida «Erkaklar» ni tanlang.",
     "tryAiStyle": "AI Style da sinash",
+    "tryOnMe": "O'zingizda ko'ring",
     "findSalon": "Salon topish"
+  },
+  "styleTryOnPage": {
+    "loadingTitle": "Uslubni sinash",
+    "title": "{{style}} — o'zingizda ko'ring",
+    "headline": "Selfie yuklang",
+    "uploadHint": "AI sizning yuzingizga tanlangan uslubni qo'llab yangi rasm yaratadi.",
+    "selectedStyle": "Tanlangan uslub",
+    "generatingFaceCheck": "Yuz tekshirilmoqda…",
+    "generating": "{{style}} yaratilmoqda…",
+    "generatingHint": "Bu 30–90 soniya davom etishi mumkin.",
+    "resultTitle": "Tayyor natija",
+    "retry": "Qayta urinish",
+    "newPhoto": "Boshqa selfie",
+    "findSalon": "Salon topish",
+    "errorTitle": "Generatsiya amalga oshmadi",
+    "steps": {
+      "upload": "Selfie",
+      "generate": "Generatsiya",
+      "result": "Natija"
+    }
   },
   "aiStylePage": {
     "title": "AI Stil maslahatchi",
