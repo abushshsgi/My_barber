@@ -1,4 +1,4 @@
-const DEV_API_TARGET = "https://api.mysaloon.uz";
+const DEV_API_TARGET = process.env.DEV_API_TARGET ?? "http://127.0.0.1:8000";
 
 /** TanStack Start dev serverida Vite proxy ishlamaydi — /api/v1 ni production API ga yo‘naltirish. */
 export async function maybeProxyDevApi(request: Request): Promise<Response | null> {

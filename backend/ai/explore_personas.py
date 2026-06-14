@@ -126,7 +126,8 @@ def normalize_persona_id(raw: str | None) -> str | None:
 
 
 def list_explore_personas() -> list[dict]:
-    return [EXPLORE_PERSONAS[pid] for pid in ("britan", "irland", "slavyan", "evro", "fransuz")]
+    order = ("britan", "irland", "slavyan", "evro", "fransuz")
+    return [EXPLORE_PERSONAS[pid] for pid in order if has_persona_reference(pid)]
 
 
 def resolve_persona_style_image(*, audience: str, persona_id: str, slug: str) -> str:

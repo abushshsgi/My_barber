@@ -6,7 +6,7 @@ export default defineConfig({
     host: true,
     proxy: {
       "/api/v1": {
-        target: "https://api.mysaloon.uz",
+        target: process.env.DEV_API_TARGET ?? "http://127.0.0.1:8000",
         changeOrigin: true,
         secure: true,
       },

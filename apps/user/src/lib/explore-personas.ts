@@ -42,6 +42,11 @@ export function hasPersonaReference(personaId: ExplorePersonaId): boolean {
   return PERSONA_READY_ASSETS[personaId].reference;
 }
 
+/** Explore UI — faqat reference rasmi tayyor personajlar */
+export function listReadyExplorePersonas(): ExplorePersona[] {
+  return EXPLORE_PERSONAS.filter((persona) => hasPersonaReference(persona.id));
+}
+
 export const EXPLORE_PERSONA_STORAGE_KEY = "mysaloon.explore.persona";
 
 export function isExplorePersonaId(value: string | null | undefined): value is ExplorePersonaId {
@@ -49,10 +54,18 @@ export function isExplorePersonaId(value: string | null | undefined): value is E
   return EXPLORE_PERSONAS.some((persona) => persona.id === value);
 }
 
+function defaultReadyExplorePersonaId(): ExplorePersonaId {
+  const ready = listReadyExplorePersonas();
+  if (ready.some((persona) => persona.id === DEFAULT_EXPLORE_PERSONA)) {
+    return DEFAULT_EXPLORE_PERSONA;
+  }
+  return ready[0]?.id ?? DEFAULT_EXPLORE_PERSONA;
+}
+
 export function normalizeExplorePersonaId(value: string | null | undefined): ExplorePersonaId {
-  if (isExplorePersonaId(value)) return value;
-  if (value === "skandinav") return "evro";
-  return DEFAULT_EXPLORE_PERSONA;
+  if (isExplorePersonaId(value) && hasPersonaReference(value)) return value;
+  if (value === "skandinav") return defaultReadyExplorePersonaId();
+  return defaultReadyExplorePersonaId();
 }
 
 export function getPersonaRefImageUrl(personaId: ExplorePersonaId): string {
