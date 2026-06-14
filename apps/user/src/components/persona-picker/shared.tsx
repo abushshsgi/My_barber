@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { getPersonaRefImageUrl, type ExplorePersona, type ExplorePersonaId } from "@/lib/explore-personas";
 
@@ -10,21 +9,6 @@ export type PersonaVariantProps = {
   label: string;
   activeCaption?: string;
 };
-
-export function useScrollActiveIntoView(active: boolean) {
-  const ref = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (!active) return;
-    ref.current?.scrollIntoView({
-      inline: "center",
-      block: "nearest",
-      behavior: "smooth",
-    });
-  }, [active]);
-
-  return ref;
-}
 
 export function PersonaPhoto({
   persona,
