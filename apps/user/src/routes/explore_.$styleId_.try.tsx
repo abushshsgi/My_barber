@@ -6,7 +6,7 @@ import { useStyleTryOnFlow } from "@/components/style-try-on/useStyleTryOnFlow";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
 
-export const Route = createFileRoute("/explore_/$styleId/try")({
+export const Route = createFileRoute("/explore_/$styleId_/try")({
   head: () => ({ meta: [{ title: "Uslubni sinash — mysaloon.uz" }] }),
   component: ExploreStyleTryPage,
 });
