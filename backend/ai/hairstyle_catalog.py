@@ -127,3 +127,92 @@ def pick_catalog_suggestions(
             }
         )
     return suggestions
+
+
+def _ordered_persona_ids(preferred_persona_id: str | None) -> list[str]:
+    from ai.explore_personas import list_explore_personas
+
+    ready = [p["id"] for p in list_explore_personas()]
+    norm = (preferred_persona_id or "").strip().lower()
+    if norm in ready:
+        return [norm] + [pid for pid in ready if pid != norm]
+    return ready
+
+
+def _pick_diverse_styles(ranked: list[StyleEntry], limit: int) -> list[StyleEntry]:
+    picked: list[StyleEntry] = []
+    used_categories: set[str] = set()
+
+    for style in ranked:
+        if len(picked) >= limit:
+            break
+        if style["category"] in used_categories:
+            continue
+        picked.append(style)
+        used_categories.add(style["category"])
+
+    for style in ranked:
+        if len(picked) >= limit:
+            break
+        if any(item["id"] == style["id"] for item in picked):
+            continue
+        picked.append(style)
+
+    return picked
+
+
+def pick_trending_styles(
+    *,
+    audience: str,
+    face_shape: str | None = None,
+    hair_type: str | None = None,
+    age_group: str | None = None,
+    preferred_persona_id: str | None = None,
+    limit: int = 6,
+) -> list[dict[str, Any]]:
+    """Home trending: content-based score + category diversity + persona rotation (men)."""
+    if face_shape not in FACE_SHAPES:
+        face_shape = "oval"
+    if hair_type not in HAIR_LENGTHS:
+        hair_type = "medium"
+
+    pool = get_published_catalog(audience, age_group)
+    if not pool and age_group:
+        pool = get_published_catalog(audience)
+
+    ranked = sorted(
+        pool,
+        key=lambda style: (
+            score_hairstyle(style, face_shape, hair_type, age_group),
+            style["slug"],
+        ),
+        reverse=True,
+    )
+    diverse = _pick_diverse_styles(ranked, limit)
+    personas = _ordered_persona_ids(preferred_persona_id) if audience == "men" else []
+
+    trending: list[dict[str, Any]] = []
+    for idx, style in enumerate(diverse):
+        persona_id = personas[idx % len(personas)] if personas else None
+        image_url = style["image_url"]
+        if persona_id:
+            from ai.explore_personas import has_persona_style_asset, resolve_persona_style_image
+
+            if has_persona_style_asset(persona_id, style["slug"]):
+                image_url = resolve_persona_style_image(
+                    audience=audience,
+                    persona_id=persona_id,
+                    slug=style["slug"],
+                )
+        trending.append(
+            {
+                "id": style["id"],
+                "title": style["title_uz"],
+                "audience": style["audience"],
+                "category": style["category"],
+                "seed": style["slug"],
+                "persona_id": persona_id,
+                "image_url": image_url,
+            }
+        )
+    return trending

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Category } from "@/lib/mock-data";
 import { offers } from "@/lib/mock-data";
-import { toTrendingStyle } from "@/lib/hairstyles/catalog";
+import { pickTrendingStyles, readTrendingFaceHints } from "@/lib/hairstyles/trending";
+import { useExplorePersona } from "@/hooks/use-explore-persona";
+import { useUserAgeGroup } from "@/hooks/use-me";
 import {
   audienceToCategory,
   categoriesForAudience,
@@ -19,6 +21,8 @@ import {
 export function useHomeData() {
   const { audience } = useAudience();
   const { data: me } = useMe();
+  const { personaId } = useExplorePersona();
+  const ageGroup = useUserAgeGroup();
   const { data: hairstyles = [] } = useHairstyles(audience);
   const ctx = useMemo(() => userRecommendContext(me), [me]);
 
@@ -64,10 +68,14 @@ export function useHomeData() {
     [salons, audience, effectiveCat, query],
   );
 
-  const trending = useMemo(
-    () => hairstyles.slice(0, 6).map(toTrendingStyle),
-    [hairstyles],
-  );
+  const trending = useMemo(() => {
+    const hints = readTrendingFaceHints();
+    return pickTrendingStyles(hairstyles, {
+      ...hints,
+      ageGroup,
+      preferredPersonaId: audience === "men" ? personaId : null,
+    });
+  }, [hairstyles, ageGroup, personaId, audience]);
 
   const topOffer = useMemo(
     () => offers.find((o) => matchAudience(o.audience, audience)),

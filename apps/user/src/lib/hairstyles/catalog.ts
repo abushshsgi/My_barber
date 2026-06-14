@@ -1,4 +1,5 @@
 import type { FaceShapeKey, HairTypeKey } from "@/components/ai-style/ai-style-shared";
+import type { ExplorePersonaId } from "@/lib/explore-personas";
 import type { ApiHairstyle } from "@/lib/api/hairstyles";
 import type { Audience, Category } from "@/lib/mock-data";
 import type { AudienceFilter } from "@/hooks/use-audience";
@@ -58,4 +59,6 @@ export function toTrendingStyle(entry: HairstyleEntry) {
   };
 }
 
-export type TrendingHairstyle = ReturnType<typeof toTrendingStyle>;
+export type TrendingHairstyle = ReturnType<typeof toTrendingStyle> & {
+  personaId?: ExplorePersonaId | null;
+};

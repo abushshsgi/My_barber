@@ -1,7 +1,7 @@
 from django.test import SimpleTestCase, TestCase
 
 from ai.age_groups import age_to_group, birth_year_to_group, resolve_hairstyle_image_path
-from ai.hairstyle_catalog import get_published_catalog, pick_catalog_suggestions, score_hairstyle
+from ai.hairstyle_catalog import get_published_catalog, pick_catalog_suggestions, pick_trending_styles, score_hairstyle
 from ai.services.gemini_style import AiStyleError
 from ai.style_recommend import assert_gender_matches_profile, build_suggestions_from_analysis
 
@@ -106,6 +106,44 @@ class HairstyleCatalogTests(TestCase):
         short_oval = score_hairstyle(mid_fade, "oval", "short")
         medium_oval = score_hairstyle(pompadour, "oval", "short")
         self.assertGreater(short_oval, medium_oval)
+
+
+class TrendingStylesTests(TestCase):
+    def test_trending_assigns_different_personas_for_men(self):
+        trending = pick_trending_styles(
+            audience="men",
+            face_shape="oval",
+            hair_type="short",
+            preferred_persona_id="evro",
+            limit=3,
+        )
+        self.assertGreaterEqual(len(trending), 2)
+        persona_ids = [item["persona_id"] for item in trending if item["persona_id"]]
+        self.assertGreater(len(set(persona_ids)), 1)
+
+    def test_trending_uses_persona_image_when_ready(self):
+        trending = pick_trending_styles(
+            audience="men",
+            face_shape="oval",
+            hair_type="short",
+            limit=6,
+        )
+        evro_mid = next(
+            (item for item in trending if item["seed"] == "mid-fade" and item["persona_id"] == "evro"),
+            None,
+        )
+        if evro_mid:
+            self.assertEqual(evro_mid["image_url"], "/hairstyles/men/personas/evro/mid-fade.webp")
+
+    def test_trending_returns_unique_styles(self):
+        trending = pick_trending_styles(
+            audience="men",
+            face_shape="oval",
+            hair_type="short",
+            limit=4,
+        )
+        slugs = [item["seed"] for item in trending]
+        self.assertEqual(len(slugs), len(set(slugs)))
 
 
 class GenderGuardTests(SimpleTestCase):
