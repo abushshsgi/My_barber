@@ -111,6 +111,7 @@ DEFAULT_MEN_PERSONA = "evro"
 PERSONA_READY_ASSETS: dict[str, frozenset[str]] = {
     "evro": frozenset({"reference", "mid-fade", "skin-fade", "buzz-cut", "textured-crop"}),
     "irland": frozenset({"reference", "mid-fade", "skin-fade", "buzz-cut", "textured-crop"}),
+    "slavyan": frozenset({"reference", "mid-fade", "skin-fade", "buzz-cut", "textured-crop"}),
 }
 
 

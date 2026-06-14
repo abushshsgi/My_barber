@@ -27,7 +27,10 @@ export const PERSONA_READY_ASSETS: Record<
     reference: true,
     slugs: ["mid-fade", "skin-fade", "buzz-cut", "textured-crop"],
   },
-  slavyan: { reference: false, slugs: [] },
+  slavyan: {
+    reference: true,
+    slugs: ["mid-fade", "skin-fade", "buzz-cut", "textured-crop"],
+  },
   evro: {
     reference: true,
     slugs: ["mid-fade", "skin-fade", "buzz-cut", "textured-crop"],
