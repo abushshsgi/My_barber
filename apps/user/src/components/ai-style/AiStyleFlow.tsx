@@ -1,10 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AiStyleCamera } from "@/components/ai-style/AiStyleCamera";
 import { AiStyleSplitLayout } from "@/components/ai-style/AiStyleSplitLayout";
 import { AiStylePhotoInput } from "@/components/ai-style/AiStyleUi";
+import type { AiAnalysisResult, AiSuggestion } from "@/components/ai-style/ai-style-shared";
 import type { useAiStyleFlow } from "@/components/ai-style/useAiStyleFlow";
+import { useExplorePersona } from "@/hooks/use-explore-persona";
+import { useHairstyle } from "@/hooks/use-hairstyles";
+import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
 import type { Audience } from "@/lib/mock-data";
 
 type Flow = ReturnType<typeof useAiStyleFlow>;
@@ -12,9 +16,37 @@ type Flow = ReturnType<typeof useAiStyleFlow>;
 type Props = {
   flow: Flow;
   audience: Audience;
+  focusStyleId?: string;
 };
 
-export function AiStyleFlow({ flow, audience }: Props) {
+function mergeFocusSuggestion(
+  result: AiAnalysisResult,
+  focusStyleId: string,
+  title: string,
+  imageUrl: string,
+  reason?: string,
+): AiAnalysisResult {
+  if (result.suggestions.some((s) => s.id === focusStyleId)) {
+    return result;
+  }
+  const focusSuggestion: AiSuggestion = {
+    id: focusStyleId,
+    title,
+    match: 100,
+    seed: focusStyleId,
+    imageUrl,
+    reason,
+    barberName: "—",
+    salonId: "",
+    salonName: "—",
+  };
+  return {
+    ...result,
+    suggestions: [focusSuggestion, ...result.suggestions.filter((s) => s.id !== focusStyleId)],
+  };
+}
+
+export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
   const { t } = useTranslation();
   const {
     photo,
@@ -36,7 +68,20 @@ export function AiStyleFlow({ flow, audience }: Props) {
     generateTryOn,
     reset,
   } = flow;
+  const { personaId } = useExplorePersona();
+  const { data: focusHairstyle } = useHairstyle(focusStyleId ?? "", personaId);
   const [saved, setSaved] = useState<string[]>([]);
+
+  const displayResult = useMemo(() => {
+    if (!result || !focusStyleId || !focusHairstyle) return result;
+    return mergeFocusSuggestion(
+      result,
+      focusStyleId,
+      focusHairstyle.titleUz,
+      getHairstyleImageUrl(focusHairstyle),
+      focusHairstyle.descriptionUz,
+    );
+  }, [result, focusStyleId, focusHairstyle]);
 
   useEffect(() => {
     const prev = document.documentElement.style.overflow;
@@ -72,7 +117,8 @@ export function AiStyleFlow({ flow, audience }: Props) {
         validating={validating}
         analyzing={analyzing}
         done={done}
-        result={result}
+        result={displayResult}
+        focusStyleId={focusStyleId}
         saved={saved}
         onToggleSave={toggleSave}
         onReset={reset}

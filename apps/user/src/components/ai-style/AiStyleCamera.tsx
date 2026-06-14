@@ -23,6 +23,7 @@ import {
 } from "@/components/ai-style/face-scan-utils";
 import { useFaceLandmarker } from "@/components/ai-style/useFaceLandmarker";
 import type { FaceShapeKey } from "@/components/ai-style/ai-style-shared";
+import { cn } from "@/lib/utils";
 
 const PHASE_HOLD_MS = 1100;
 const COUNTDOWN_START = 3;
@@ -40,6 +41,13 @@ type Props = {
   onCapture: (payload: CameraCapturePayload) => void;
 };
 
+const PHASE_ICONS = {
+  turn_left: ArrowLeft,
+  turn_right: ArrowRight,
+  turn_up: ArrowUp,
+  turn_down: ArrowDown,
+} as const;
+
 function drawFaceContour(
   ctx: CanvasRenderingContext2D,
   frame: FaceFrameMetrics,
@@ -51,11 +59,11 @@ function drawFaceContour(
   if (points.length < 8) return;
 
   ctx.save();
-  ctx.strokeStyle = locked ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.65)";
-  ctx.lineWidth = locked ? 3 : 2;
+  ctx.strokeStyle = locked ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.45)";
+  ctx.lineWidth = locked ? 2.5 : 1.5;
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
-  ctx.setLineDash(locked ? [] : [8, 6]);
+  ctx.setLineDash(locked ? [] : [6, 5]);
   ctx.beginPath();
   points.forEach((p, i) => {
     const x = p.x * width;
@@ -67,6 +75,54 @@ function drawFaceContour(
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.restore();
+}
+
+function ScanDirectionIcon({ phase }: { phase: ScanPhase }) {
+  const Icon = PHASE_ICONS[phase as keyof typeof PHASE_ICONS];
+  if (!Icon) return <ScanFace className="h-4 w-4 shrink-0" strokeWidth={2.25} />;
+
+  const motionProps =
+    phase === "turn_left"
+      ? { animate: { x: [-3, 3, -3] } }
+      : phase === "turn_right"
+        ? { animate: { x: [3, -3, 3] } }
+        : phase === "turn_up"
+          ? { animate: { y: [-3, 3, -3] } }
+          : { animate: { y: [3, -3, 3] } };
+
+  return (
+    <motion.span
+      className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/15"
+      {...motionProps}
+      transition={{ repeat: Infinity, duration: 1.1, ease: "easeInOut" }}
+    >
+      <Icon className="h-4 w-4" strokeWidth={2.25} />
+    </motion.span>
+  );
+}
+
+function ScanProgressRing({ progress, total }: { progress: number; total: number }) {
+  const pct = total > 0 ? Math.min(100, (progress / total) * 100) : 0;
+  const r = 46;
+  const c = 2 * Math.PI * r;
+
+  return (
+    <svg className="absolute -inset-3 h-[calc(100%+24px)] w-[calc(100%+24px)] -rotate-90" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="2.5" />
+      <circle
+        cx="50"
+        cy="50"
+        r={r}
+        fill="none"
+        stroke="white"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeDasharray={c}
+        strokeDashoffset={c - (c * pct) / 100}
+        className="transition-[stroke-dashoffset] duration-500 ease-out"
+      />
+    </svg>
+  );
 }
 
 export function AiStyleCamera({ open, onClose, onCapture }: Props) {
@@ -116,8 +172,8 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
 
       const boxLeft = (1 - frame.box.x - frame.box.width) * w;
       const boxRight = (1 - frame.box.x) * w;
-      ctx.strokeStyle = "rgba(255,255,255,0.8)";
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(255,255,255,0.65)";
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(boxLeft, y);
       ctx.lineTo(boxRight, y);
@@ -309,53 +365,25 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
       ? SCAN_SEQUENCE.length
       : SCAN_SEQUENCE.indexOf(phase as (typeof SCAN_SEQUENCE)[number]);
 
-  return createPortal(
-    <div className="fixed inset-0 z-[200] flex flex-col bg-black text-white">
-      <div
-        className="shrink-0 px-4 pb-3"
-        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ScanFace className="h-4 w-4" />
-            <p className="text-sm font-bold">{t("aiStylePage.cameraTitle")}</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="grid h-9 w-9 place-items-center rounded-full bg-white/15"
-            aria-label={t("common.close")}
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        {!cameraError ? (
-          <div className="mt-3 space-y-2">
-            <div className="flex justify-center gap-1.5">
-              {SCAN_SEQUENCE.map((step, i) => (
-                <div
-                  key={step}
-                  className={`h-1.5 w-8 rounded-full transition-colors ${
-                    progressIndex > i ? "bg-white" : progressIndex === i ? "bg-white/60" : "bg-white/25"
-                  }`}
-                />
-              ))}
-            </div>
-            <p className="text-center text-sm font-bold">{phaseLabel}</p>
-            {phase === "loading" || !landmarkerReady ? (
-              <div className="flex justify-center">
-                <Loader2 className="h-5 w-5 animate-spin text-white/70" />
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
+  const stepNumber = progressIndex >= 0 ? progressIndex + 1 : 0;
+  const phaseLocked = metrics !== null && phaseSatisfied(phase, metrics);
+  const showGuide = !cameraError && phase !== "loading";
 
-      <div className="relative min-h-0 flex-1 overflow-hidden">
+  return createPortal(
+    <div className="fixed inset-0 z-[200] bg-black text-white">
+      <div className="relative h-full w-full overflow-hidden">
         {cameraError ? (
-          <p className="flex h-full items-center justify-center px-6 text-center text-sm text-white/80">
-            {cameraError}
-          </p>
+          <div className="flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
+            <ScanFace className="h-10 w-10 text-white/50" strokeWidth={1.5} />
+            <p className="text-sm text-white/80">{cameraError}</p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-black"
+            >
+              {t("common.close")}
+            </button>
+          </div>
         ) : (
           <>
             <video
@@ -365,67 +393,129 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
               autoPlay
               className="h-full w-full scale-x-[-1] object-cover"
             />
-            <canvas
-              ref={overlayRef}
-              className="pointer-events-none absolute inset-0 h-full w-full"
-            />
+            <canvas ref={overlayRef} className="pointer-events-none absolute inset-0 h-full w-full" />
 
-            {phase === "turn_left" ? (
-              <motion.div
-                animate={{ x: [-8, 8, -8] }}
-                transition={{ repeat: Infinity, duration: 1.2 }}
-                className="pointer-events-none absolute left-6 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/20 p-3"
-              >
-                <ArrowLeft className="h-6 w-6" />
-              </motion.div>
+            {showGuide ? (
+              <div className="pointer-events-none absolute inset-0 z-[6]">
+                <div className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2">
+                  <div
+                    className="relative rounded-[50%]"
+                    style={{
+                      width: "min(74vw, 290px)",
+                      height: "min(96vw, 380px)",
+                      boxShadow: "0 0 0 9999px rgba(0,0,0,0.52)",
+                    }}
+                  >
+                    <ScanProgressRing progress={progressIndex} total={SCAN_SEQUENCE.length} />
+                    <div
+                      className={cn(
+                        "absolute inset-0 rounded-[50%] border-[2.5px] transition-all duration-300",
+                        phaseLocked || phase === "countdown"
+                          ? "border-white shadow-[0_0_24px_rgba(255,255,255,0.35)]"
+                          : "border-white/35 border-dashed",
+                      )}
+                    />
+                    {phaseLocked ? (
+                      <motion.div
+                        className="absolute inset-0 rounded-[50%] border-2 border-white/50"
+                        animate={{ scale: [1, 1.04, 1], opacity: [0.5, 0, 0.5] }}
+                        transition={{ duration: 1.4, repeat: Infinity, ease: "easeOut" }}
+                      />
+                    ) : null}
+                  </div>
+                </div>
+              </div>
             ) : null}
-            {phase === "turn_right" ? (
-              <motion.div
-                animate={{ x: [8, -8, 8] }}
-                transition={{ repeat: Infinity, duration: 1.2 }}
-                className="pointer-events-none absolute right-6 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/20 p-3"
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute right-4 z-20 grid h-10 w-10 place-items-center rounded-full bg-black/40 text-white backdrop-blur-md"
+              style={{ top: "max(0.75rem, env(safe-area-inset-top))" }}
+              aria-label={t("common.close")}
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            {!cameraError ? (
+              <div
+                className="absolute inset-x-4 z-20"
+                style={{ top: "max(3.25rem, calc(env(safe-area-inset-top) + 2.75rem))" }}
               >
-                <ArrowRight className="h-6 w-6" />
-              </motion.div>
-            ) : null}
-            {phase === "turn_up" ? (
-              <motion.div
-                animate={{ y: [-8, 8, -8] }}
-                transition={{ repeat: Infinity, duration: 1.2 }}
-                className="pointer-events-none absolute left-1/2 top-8 z-10 -translate-x-1/2 rounded-full bg-white/20 p-3"
-              >
-                <ArrowUp className="h-6 w-6" />
-              </motion.div>
-            ) : null}
-            {phase === "turn_down" ? (
-              <motion.div
-                animate={{ y: [8, -8, 8] }}
-                transition={{ repeat: Infinity, duration: 1.2 }}
-                className="pointer-events-none absolute left-1/2 top-[58%] z-10 -translate-x-1/2 rounded-full bg-white/20 p-3"
-              >
-                <ArrowDown className="h-6 w-6" />
-              </motion.div>
+                <div className="mx-auto flex max-w-sm items-center justify-center gap-1.5 rounded-full border border-white/12 bg-black/35 px-3 py-2 backdrop-blur-xl">
+                  {SCAN_SEQUENCE.map((step, i) => (
+                    <span
+                      key={step}
+                      className={cn(
+                        "h-1.5 rounded-full transition-all duration-300",
+                        progressIndex > i
+                          ? "w-5 bg-white"
+                          : progressIndex === i
+                            ? "w-5 bg-white/70"
+                            : "w-1.5 bg-white/25",
+                      )}
+                    />
+                  ))}
+                </div>
+              </div>
             ) : null}
 
             {metrics && phase !== "loading" && phase !== "countdown" ? (
-              <div className="pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide">
+              <div
+                className="absolute left-1/2 z-20 -translate-x-1/2 rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[10px] font-bold uppercase tracking-wider backdrop-blur-md"
+                style={{ top: "max(5.5rem, calc(env(safe-area-inset-top) + 4.75rem))" }}
+              >
                 {t(`aiStylePage.faceShapes.${metrics.faceShapeKey}`)}
               </div>
+            ) : null}
+
+            {showGuide && phase !== "countdown" ? (
+              <motion.div
+                key={phase}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="absolute inset-x-5 z-20"
+                style={{ bottom: "max(2rem, env(safe-area-inset-bottom))" }}
+              >
+                <div className="mx-auto flex max-w-sm items-center gap-3 rounded-2xl border border-white/12 bg-black/45 px-4 py-3.5 backdrop-blur-xl">
+                  {phase === "loading" || !landmarkerReady ? (
+                    <Loader2 className="h-5 w-5 shrink-0 animate-spin text-white/80" />
+                  ) : (
+                    <ScanDirectionIcon phase={phase} />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-white/55">
+                      {stepNumber > 0
+                        ? t("aiStylePage.scanStep", { current: stepNumber, total: SCAN_SEQUENCE.length })
+                        : t("aiStylePage.cameraTitle")}
+                    </p>
+                    <p className="mt-0.5 text-sm font-bold leading-snug text-white">{phaseLabel}</p>
+                  </div>
+                </div>
+              </motion.div>
             ) : null}
 
             <AnimatePresence>
               {countdown !== null && countdown > 0 ? (
                 <motion.div
                   key={countdown}
-                  initial={{ scale: 0.6, opacity: 0 }}
+                  initial={{ scale: 0.5, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 1.4, opacity: 0 }}
-                  transition={{ duration: 0.35, ease: "easeOut" }}
-                  className="pointer-events-none absolute inset-0 z-20 grid place-items-center bg-black/25"
+                  exit={{ scale: 1.3, opacity: 0 }}
+                  transition={{ duration: 0.32, ease: "easeOut" }}
+                  className="pointer-events-none absolute inset-0 z-30 grid place-items-center bg-black/40 backdrop-blur-[2px]"
                 >
-                  <span className="text-8xl font-black tabular-nums text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)]">
-                    {countdown}
-                  </span>
+                  <div className="relative grid place-items-center">
+                    <motion.span
+                      className="absolute h-28 w-28 rounded-full border-2 border-white/30"
+                      animate={{ scale: [1, 1.35], opacity: [0.6, 0] }}
+                      transition={{ duration: 0.9, ease: "easeOut" }}
+                    />
+                    <span className="text-[7rem] font-black leading-none tabular-nums text-white drop-shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+                      {countdown}
+                    </span>
+                  </div>
                 </motion.div>
               ) : null}
             </AnimatePresence>

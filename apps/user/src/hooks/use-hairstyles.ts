@@ -40,6 +40,7 @@ export function useHairstyle(styleId: string, personaId?: ExplorePersonaId | nul
     queryFn: async () =>
       mapApiHairstyle(await fetchHairstyleById(styleId, ageGroup, personaId ?? undefined)),
     staleTime: 10 * 60 * 1000,
+    enabled: Boolean(styleId),
   });
 }
 

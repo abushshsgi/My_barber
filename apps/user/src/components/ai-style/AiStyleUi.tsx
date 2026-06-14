@@ -103,9 +103,10 @@ type AnalyzeCtaProps = {
   analyzing: boolean;
   validating?: boolean;
   onAnalyze: () => void;
+  label?: string;
 };
 
-export function AiStyleAnalyzeCta({ analyzing, validating, onAnalyze }: AnalyzeCtaProps) {
+export function AiStyleAnalyzeCta({ analyzing, validating, onAnalyze, label }: AnalyzeCtaProps) {
   const { t } = useTranslation();
 
   return (
@@ -118,7 +119,9 @@ export function AiStyleAnalyzeCta({ analyzing, validating, onAnalyze }: AnalyzeC
       )}
     >
       {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-      {analyzing ? t("aiStylePage.analyzing") : t("aiStylePage.analyzeCta")}
+      {analyzing
+        ? (label ?? t("aiStylePage.analyzing"))
+        : t("aiStylePage.analyzeCta")}
     </button>
   );
 }

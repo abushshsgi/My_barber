@@ -4,7 +4,14 @@ import { useAiStyleFlow } from "@/components/ai-style/useAiStyleFlow";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { resolveAiStyleAudience, useAudience } from "@/hooks/use-audience";
 
+type AiStyleSearch = { styleId?: string };
+
 export const Route = createFileRoute("/ai-style")({
+  validateSearch: (search: Record<string, unknown>): AiStyleSearch => ({
+    styleId: typeof search.styleId === "string" && search.styleId.trim()
+      ? search.styleId.trim()
+      : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "AI Stil maslahatchi — mysaloon.uz" },
@@ -19,9 +26,14 @@ export const Route = createFileRoute("/ai-style")({
 
 function AiStylePage() {
   const { audience, profileDefault } = useAudience();
+  const { styleId } = Route.useSearch();
   const { personaId } = useExplorePersona();
-  const flow = useAiStyleFlow(personaId);
   const styleAudience = resolveAiStyleAudience(profileDefault, audience);
+  const flow = useAiStyleFlow({
+    menPersonaId: personaId,
+    focusStyleId: styleId,
+    audience: styleAudience,
+  });
 
-  return <AiStyleFlow flow={flow} audience={styleAudience} />;
+  return <AiStyleFlow flow={flow} audience={styleAudience} focusStyleId={styleId} />;
 }

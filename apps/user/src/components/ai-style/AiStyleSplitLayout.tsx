@@ -38,6 +38,7 @@ export type AiStyleSplitLayoutProps = {
   analyzing: boolean;
   done: boolean;
   result: AiAnalysisResult | null;
+  focusStyleId?: string;
   saved: string[];
   onToggleSave: (id: string) => void;
   onReset: () => void;
@@ -351,7 +352,9 @@ function UploadHistorySheet({ open }: { open: boolean }) {
 
 export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const { t } = useTranslation();
-  const busy = props.analyzing || props.validating;
+  const autoTryOn = Boolean(props.focusStyleId);
+  const tryOnBusy = autoTryOn && props.tryOnLoadingId === props.focusStyleId;
+  const busy = props.analyzing || props.validating || tryOnBusy;
   const showResults = props.done && !!props.result;
   const isPhotoPreview = !!props.photo && !showResults;
   const isUploadStep = !props.photo && !showResults;
@@ -509,9 +512,14 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
             </button>
           ) : null}
           <AiStyleAnalyzeCta
-            analyzing={props.analyzing}
+            analyzing={props.analyzing || tryOnBusy}
             validating={props.validating}
             onAnalyze={props.onAnalyze}
+            label={
+              autoTryOn && busy && !props.done
+                ? t("aiStylePage.tryOnAutoRunning")
+                : undefined
+            }
           />
         </div>
       </div>
@@ -650,6 +658,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
               onToggleSave={props.onToggleSave}
               onReset={props.onReset}
               layout="carousel"
+              focusStyleId={props.focusStyleId}
               tryOnByStyle={props.tryOnByStyle}
               tryOnLoadingId={props.tryOnLoadingId}
               onGenerateTryOn={props.onGenerateTryOn}

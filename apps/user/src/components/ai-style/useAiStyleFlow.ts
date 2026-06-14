@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { analyzeAiStyle, checkAiStyleFace, generateAiStyleTryOn, persistAiStyleHistory } from "@/lib/api";
 import type { CameraCapturePayload } from "@/components/ai-style/AiStyleCamera";
 import { mapAiStyleResponse, type AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
@@ -20,7 +20,14 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
-export function useAiStyleFlow(menPersonaId?: ExplorePersonaId | null) {
+type UseAiStyleFlowOptions = {
+  menPersonaId?: ExplorePersonaId | null;
+  focusStyleId?: string | null;
+  audience?: Audience;
+};
+
+export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
+  const { menPersonaId, focusStyleId, audience } = options;
   const [photo, setPhoto] = useState<string | null>(null);
   const [validatingPreview, setValidatingPreview] = useState<string | null>(null);
   const [validating, setValidating] = useState(false);
@@ -33,6 +40,11 @@ export function useAiStyleFlow(menPersonaId?: ExplorePersonaId | null) {
   const [tryOnByStyle, setTryOnByStyle] = useState<Record<string, string>>({});
   const [tryOnLoadingId, setTryOnLoadingId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const autoTriggeredRef = useRef(false);
+
+  useEffect(() => {
+    autoTriggeredRef.current = false;
+  }, [focusStyleId]);
 
   const applyPhoto = async (dataUrl: string) => {
     setValidatingPreview(dataUrl);
@@ -191,7 +203,17 @@ export function useAiStyleFlow(menPersonaId?: ExplorePersonaId | null) {
     }
   };
 
+  useEffect(() => {
+    if (!focusStyleId || !photo || validating || autoTriggeredRef.current) return;
+    autoTriggeredRef.current = true;
+    void generateTryOn(focusStyleId);
+    if (audience) {
+      void analyze(audience);
+    }
+  }, [focusStyleId, photo, validating, audience]);
+
   const reset = () => {
+    autoTriggeredRef.current = false;
     setPhoto(null);
     setDone(false);
     setResult(null);

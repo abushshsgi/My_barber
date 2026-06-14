@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Bookmark, CalendarPlus, Loader2, Sparkles } from "lucide-react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { styleCoverGradient } from "@/components/ai-style/ai-style-shared";
@@ -174,6 +175,7 @@ export function AiStyleSuggestionsCarousel({
   tryOnByStyle,
   tryOnLoadingId,
   onGenerateTryOn,
+  focusStyleId,
 }: {
   suggestions: Suggestion[];
   saved: string[];
@@ -181,18 +183,29 @@ export function AiStyleSuggestionsCarousel({
   tryOnByStyle?: Record<string, string>;
   tryOnLoadingId?: string | null;
   onGenerateTryOn?: (styleId: string) => void;
+  focusStyleId?: string;
 }) {
   const { t } = useTranslation();
+
+  useEffect(() => {
+    if (!focusStyleId) return;
+    const el = document.getElementById(`ai-style-suggestion-${focusStyleId}`);
+    el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [focusStyleId, suggestions]);
 
   return (
     <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2">
       {suggestions.map((suggestion, index) => (
         <motion.article
           key={suggestion.id}
+          id={`ai-style-suggestion-${suggestion.id}`}
           initial={{ opacity: 0, x: 16 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: index * 0.06 }}
-          className="w-[200px] shrink-0 snap-center"
+          className={cn(
+            "w-[200px] shrink-0 snap-center",
+            focusStyleId === suggestion.id && "ring-2 ring-foreground ring-offset-2 rounded-2xl",
+          )}
         >
           <div className="overflow-hidden rounded-2xl border border-border bg-background">
             <div className="relative aspect-[3/4] overflow-hidden">
@@ -306,6 +319,7 @@ export function AiStyleResultsBlock({
   tryOnByStyle,
   tryOnLoadingId,
   onGenerateTryOn,
+  focusStyleId,
 }: {
   result: AiAnalysisResult;
   saved: string[];
@@ -316,6 +330,7 @@ export function AiStyleResultsBlock({
   tryOnByStyle?: Record<string, string>;
   tryOnLoadingId?: string | null;
   onGenerateTryOn?: (styleId: string) => void;
+  focusStyleId?: string;
 }) {
   const { t } = useTranslation();
 
@@ -345,6 +360,7 @@ export function AiStyleResultsBlock({
           tryOnByStyle={tryOnByStyle}
           tryOnLoadingId={tryOnLoadingId}
           onGenerateTryOn={onGenerateTryOn}
+          focusStyleId={focusStyleId}
         />
       ) : (
         <AiStyleSuggestionsStack
