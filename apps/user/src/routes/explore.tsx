@@ -2,8 +2,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
-import { AudienceSwitch } from "@/components/AudienceSwitch";
-import { useAudience } from "@/hooks/use-audience";
+import { resolveAiStyleAudience, useAudience } from "@/hooks/use-audience";
 import { PersonaPicker } from "@/components/PersonaPicker";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyles } from "@/hooks/use-hairstyles";
@@ -19,7 +18,8 @@ export const Route = createFileRoute("/explore")({
 
 function ExplorePage() {
   const { t } = useTranslation();
-  const { audience } = useAudience();
+  const { profileDefault } = useAudience();
+  const audience = resolveAiStyleAudience(profileDefault, "all");
   const ageGroup = useUserAgeGroup();
   const { personaId, setPersonaId } = useExplorePersona();
   const menPersona = audience === "men" ? personaId : null;
@@ -36,13 +36,7 @@ function ExplorePage() {
     <div className="pb-8">
       <PageHeader showBack title={t("explorePage.title")} />
       <div className="px-5">
-        <AudienceSwitch />
         {audience === "men" ? <PersonaPicker value={personaId} onChange={setPersonaId} /> : null}
-        {audience !== "men" ? (
-          <p className="mt-3 text-[10px] font-semibold text-muted-foreground">
-            {t("explorePage.personaMenHint")}
-          </p>
-        ) : null}
         <p className="mt-3 text-xs text-muted-foreground">
           {ageGroup
             ? `${t("explorePage.subtitle")} · ${AGE_GROUP_LABELS_UZ[ageGroup]}`
