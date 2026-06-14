@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { listReadyExplorePersonas, type ExplorePersonaId } from "@/lib/explore-personas";
-import { PersonaVariantC } from "./persona-picker/variants";
+import { PersonaVariantA } from "./persona-picker/variants";
 
 type Props = {
   value: ExplorePersonaId;
@@ -16,7 +16,7 @@ export function PersonaPicker({ value, onChange }: Props) {
 
   return (
     <div className="mt-4">
-      <PersonaVariantC
+      <PersonaVariantA
         value={value}
         onChange={onChange}
         readyPersonas={readyPersonas}
