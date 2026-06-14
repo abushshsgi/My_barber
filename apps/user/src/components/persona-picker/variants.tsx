@@ -26,13 +26,20 @@ function VariantHeader({
   );
 }
 
-export function PersonaVariantE(props: PersonaVariantProps) {
+export function PersonaVariantC(props: PersonaVariantProps) {
   const { value, onChange, readyPersonas, label, activeCaption } = props;
 
   return (
     <section>
       <VariantHeader label={label} activeCaption={activeCaption} count={readyPersonas.length} />
-      <div role="radiogroup" aria-label={label} className="mt-3 flex flex-col gap-2">
+      <div
+        role="radiogroup"
+        aria-label={label}
+        className={cn(
+          "mt-3 grid gap-1.5 rounded-2xl border border-border bg-surface p-1",
+          readyPersonas.length === 3 ? "grid-cols-3" : "grid-cols-2",
+        )}
+      >
         {readyPersonas.map((persona) => {
           const active = persona.id === value;
           return (
@@ -43,32 +50,20 @@ export function PersonaVariantE(props: PersonaVariantProps) {
               aria-checked={active}
               onClick={() => onChange(persona.id)}
               className={cn(
-                "flex w-full items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-all active:scale-[0.99]",
-                active
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-border bg-background hover:bg-surface",
+                "relative flex flex-col items-center gap-1.5 rounded-xl px-1 py-2.5 transition-all active:scale-[0.98]",
+                active ? "bg-audience-men ring-2 ring-foreground" : "bg-background/80 hover:bg-background",
               )}
             >
-              <PersonaPhoto persona={persona} className="h-10 w-10 shrink-0 rounded-xl" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold">{persona.label}</p>
-                <p
-                  className={cn(
-                    "text-[10px] font-bold uppercase tracking-wide",
-                    active ? "text-background/70" : "text-muted-foreground",
-                  )}
-                >
-                  {persona.code}
-                </p>
-              </div>
-              <span
-                className={cn(
-                  "grid h-6 w-6 shrink-0 place-items-center rounded-full",
-                  active ? "bg-background/15" : "bg-surface",
-                )}
-              >
-                {active ? <Check className="h-3.5 w-3.5" /> : null}
+              <PersonaPhoto persona={persona} className="h-11 w-11 rounded-full ring-1 ring-border/60" />
+              <span className="text-[11px] font-bold leading-tight">{persona.label}</span>
+              <span className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
+                {persona.code}
               </span>
+              {active ? (
+                <span className="absolute right-1 top-1 grid h-4 w-4 place-items-center rounded-full bg-foreground text-background">
+                  <Check className="h-2.5 w-2.5" strokeWidth={3} />
+                </span>
+              ) : null}
             </button>
           );
         })}
