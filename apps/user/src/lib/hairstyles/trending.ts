@@ -1,14 +1,15 @@
 import type { FaceShapeKey, HairTypeKey } from "@/components/ai-style/ai-style-shared";
 import type { AgeGroup } from "@/lib/age-groups";
-import {
-  getPersonaStyleImageUrl,
-  hasPersonaStyleAsset,
-  listReadyExplorePersonas,
-  type ExplorePersonaId,
-} from "@/lib/explore-personas";
+import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { loadFaceProfile, loadFaceProfileHistory } from "@/lib/face-profile";
 import type { HairstyleEntry } from "@/lib/hairstyles/catalog";
-import { toTrendingStyle, type TrendingHairstyle } from "@/lib/hairstyles/catalog";
+import {
+  hasCatalogImageAsset,
+  pickCatalogPersonaForSlug,
+  resolveCatalogImageUrl,
+  toTrendingStyle,
+  type TrendingHairstyle,
+} from "@/lib/hairstyles/catalog";
 
 const HAIR_LENGTH_ORDER: Record<HairTypeKey, number> = { short: 0, medium: 1, long: 2 };
 const DEFAULT_FACE: FaceShapeKey = "oval";
@@ -44,22 +45,6 @@ export function scoreHairstyleForTrending(
   }
 
   return score;
-}
-
-function orderedPersonas(preferred?: ExplorePersonaId | null): ExplorePersonaId[] {
-  const ready = listReadyExplorePersonas().map((p) => p.id);
-  if (!preferred || !ready.includes(preferred)) return ready;
-  return [preferred, ...ready.filter((id) => id !== preferred)];
-}
-
-function resolveTrendingImageUrl(
-  entry: HairstyleEntry,
-  personaId: ExplorePersonaId | null,
-): string {
-  if (entry.audience === "men" && personaId && hasPersonaStyleAsset(personaId, entry.slug)) {
-    return getPersonaStyleImageUrl(personaId, entry.slug);
-  }
-  return entry.imageUrl;
 }
 
 /** Kategoriya xilma-xilligi: bir xil category ketma-ket takrorlanmasin. */
@@ -103,9 +88,10 @@ export function pickTrendingStyles(
   ctx: TrendingContext = {},
 ): TrendingHairstyle[] {
   const limit = ctx.limit ?? TRENDING_LIMIT;
-  if (!entries.length) return [];
+  const pool = entries.filter(hasCatalogImageAsset);
+  if (!pool.length) return [];
 
-  const ranked = [...entries].sort((a, b) => {
+  const ranked = [...pool].sort((a, b) => {
     const scoreA = scoreHairstyleForTrending(a, ctx);
     const scoreB = scoreHairstyleForTrending(b, ctx);
     if (scoreB !== scoreA) return scoreB - scoreA;
@@ -113,18 +99,14 @@ export function pickTrendingStyles(
   });
 
   const diverse = pickDiverseStyles(ranked, limit);
-  const personas = orderedPersonas(ctx.preferredPersonaId);
 
-  return diverse.map((entry, index) => {
+  return diverse.flatMap((entry, index) => {
     const personaId =
-      entry.audience === "men" && personas.length > 0
-        ? personas[index % personas.length]!
+      entry.audience === "men"
+        ? pickCatalogPersonaForSlug(entry.slug, index, ctx.preferredPersonaId)
         : null;
-    const base = toTrendingStyle(entry);
-    return {
-      ...base,
-      personaId,
-      imageUrl: resolveTrendingImageUrl(entry, personaId),
-    };
+    const imageUrl = resolveCatalogImageUrl(entry, personaId);
+    if (!imageUrl) return [];
+    return [{ ...toTrendingStyle(entry), personaId, imageUrl }];
   });
 }

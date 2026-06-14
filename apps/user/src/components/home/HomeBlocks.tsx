@@ -4,40 +4,38 @@ import {
   Search,
   Wand2,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import type { HomeData } from "@/components/home/useHomeData";
 import { SalonCard } from "@/components/SalonCard";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
-import {
-  getHairstyleImageUrl,
-  hairstyleImageFallbacks,
-  type TrendingHairstyle,
-} from "@/lib/hairstyles/catalog";
+import { getHairstyleImageUrl, type TrendingHairstyle } from "@/lib/hairstyles/catalog";
 import type { Offer } from "@/lib/mock-data";
 
-function TrendingStyleImage({ style }: { style: TrendingHairstyle }) {
-  const candidates = useMemo(() => {
-    const primary = getHairstyleImageUrl({ imageUrl: style.imageUrl });
-    const fallbacks = hairstyleImageFallbacks(style.imageUrl).filter((url) => url !== primary);
-    return [...new Set([primary, ...fallbacks])];
-  }, [style.imageUrl]);
-
-  const [index, setIndex] = useState(0);
-  const src = candidates[index] ?? getHairstyleImageUrl({ imageUrl: style.imageUrl });
+function TrendingStyleCard({ style }: { style: TrendingHairstyle }) {
+  const { t } = useTranslation();
+  const [hidden, setHidden] = useState(false);
+  const src = getHairstyleImageUrl({ imageUrl: style.imageUrl });
+  if (hidden || !src) return null;
 
   return (
-    <img
-      src={src}
-      alt=""
-      loading="lazy"
-      decoding="async"
-      onError={() => {
-        setIndex((current) => (current + 1 < candidates.length ? current + 1 : current));
-      }}
-      className="absolute inset-0 h-full w-full object-cover object-top"
-    />
+    <Link to="/explore/$styleId" params={{ styleId: style.id }} className="w-[140px] shrink-0">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-surface">
+        <img
+          src={src}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={() => setHidden(true)}
+          className="absolute inset-0 h-full w-full object-cover object-top"
+        />
+      </div>
+      <p className="mt-2 text-[13px] font-bold leading-tight">{style.title}</p>
+      <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+        {t(`homePage.audience.${style.audience}`)}
+      </p>
+    </Link>
   );
 }
 
@@ -132,15 +130,7 @@ export function HomeTrendingStrip({ trending }: { trending: TrendingHairstyle[] 
       </div>
       <div className="no-scrollbar flex gap-3 overflow-x-auto px-5">
         {trending.map((s) => (
-          <Link key={s.id} to="/explore/$styleId" params={{ styleId: s.id }} className="w-[140px] shrink-0">
-            <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-surface">
-              <TrendingStyleImage style={s} />
-            </div>
-            <p className="mt-2 text-[13px] font-bold leading-tight">{s.title}</p>
-            <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-              {t(`homePage.audience.${s.audience}`)}
-            </p>
-          </Link>
+          <TrendingStyleCard key={s.id} style={s} />
         ))}
       </div>
     </section>

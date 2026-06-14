@@ -1,5 +1,10 @@
 import type { FaceShapeKey, HairTypeKey } from "@/components/ai-style/ai-style-shared";
-import type { ExplorePersonaId } from "@/lib/explore-personas";
+import {
+  getPersonaStyleImageUrl,
+  hasPersonaStyleAsset,
+  listReadyExplorePersonas,
+  type ExplorePersonaId,
+} from "@/lib/explore-personas";
 import type { ApiHairstyle } from "@/lib/api/hairstyles";
 import type { Audience, Category } from "@/lib/mock-data";
 import type { AudienceFilter } from "@/hooks/use-audience";
@@ -55,6 +60,51 @@ export function hairstyleImageFallbacks(imageUrl: string): string[] {
   const file = parts[parts.length - 1];
   if (!file?.endsWith(".webp")) return [];
   return [`/hairstyles/${audience}/${file}`];
+}
+
+/** AI generatsiya qilingan ayol uslublari (kulrang placeholder emas). */
+const WOMEN_CATALOG_IMAGE_SLUGS = new Set<string>([]);
+
+/** Katalogda haqiqiy rasm fayli mavjud uslublar (home trending / explore strip). */
+export function hasCatalogImageAsset(entry: Pick<HairstyleEntry, "audience" | "slug">): boolean {
+  if (entry.audience === "men") {
+    return listReadyExplorePersonas().some((persona) =>
+      hasPersonaStyleAsset(persona.id, entry.slug),
+    );
+  }
+  return WOMEN_CATALOG_IMAGE_SLUGS.has(entry.slug);
+}
+
+export function pickCatalogPersonaForSlug(
+  slug: string,
+  index: number,
+  preferred?: ExplorePersonaId | null,
+): ExplorePersonaId | null {
+  const ready = listReadyExplorePersonas().map((persona) => persona.id);
+  const ordered =
+    preferred && ready.includes(preferred)
+      ? [preferred, ...ready.filter((id) => id !== preferred)]
+      : ready;
+  const withAsset = ordered.filter((personaId) => hasPersonaStyleAsset(personaId, slug));
+  if (!withAsset.length) return null;
+  return withAsset[index % withAsset.length]!;
+}
+
+/** Trending uchun yechilgan rasm yo‘li — asset bo‘lmasa null. */
+export function resolveCatalogImageUrl(
+  entry: Pick<HairstyleEntry, "audience" | "slug" | "imageUrl">,
+  personaId?: ExplorePersonaId | null,
+): string | null {
+  if (entry.audience === "men") {
+    if (personaId && hasPersonaStyleAsset(personaId, entry.slug)) {
+      return getPersonaStyleImageUrl(personaId, entry.slug);
+    }
+    return null;
+  }
+  if (WOMEN_CATALOG_IMAGE_SLUGS.has(entry.slug)) {
+    return getHairstyleImageUrl(entry);
+  }
+  return null;
 }
 
 export function getHairstyleImageUrl(entry: Pick<HairstyleEntry, "imageUrl">): string {

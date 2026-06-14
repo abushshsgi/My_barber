@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import type { Category } from "@/lib/mock-data";
 import { offers } from "@/lib/mock-data";
 import { pickTrendingStyles, readTrendingFaceHints } from "@/lib/hairstyles/trending";
-import { hasPersonaStyleAsset, listReadyExplorePersonas } from "@/lib/explore-personas";
-import type { HairstyleEntry } from "@/lib/hairstyles/catalog";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useUserAgeGroup } from "@/hooks/use-me";
 import {
@@ -19,16 +17,6 @@ import {
   rankSalonsForUser,
   userRecommendContext,
 } from "@/lib/recommendations";
-
-/** Explore katalogida ko‘rinadigan uslublar — erkaklar uchun faqat persona assetlari. */
-function filterExploreCatalog(entries: HairstyleEntry[]): HairstyleEntry[] {
-  return entries.filter((entry) => {
-    if (entry.audience !== "men") return true;
-    return listReadyExplorePersonas().some((persona) =>
-      hasPersonaStyleAsset(persona.id, entry.slug),
-    );
-  });
-}
 
 export function useHomeData() {
   const { audience } = useAudience();
@@ -83,8 +71,7 @@ export function useHomeData() {
 
   const trending = useMemo(() => {
     const hints = readTrendingFaceHints();
-    const catalog = filterExploreCatalog(hairstyles);
-    return pickTrendingStyles(catalog, {
+    return pickTrendingStyles(hairstyles, {
       ...hints,
       ageGroup,
       preferredPersonaId: audience === "men" ? personaId : null,
