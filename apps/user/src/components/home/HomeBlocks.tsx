@@ -15,25 +15,17 @@ import {
   hairstyleImageFallbacks,
   type TrendingHairstyle,
 } from "@/lib/hairstyles/catalog";
-import { getTrendCoverUrl } from "@/lib/cover-images";
 import type { Offer } from "@/lib/mock-data";
-
-function trendingPrimaryImageUrl(style: TrendingHairstyle): string {
-  const url = getHairstyleImageUrl({ imageUrl: style.imageUrl });
-  if (url.includes("/personas/")) return url;
-  return getTrendCoverUrl(style.seed);
-}
 
 function TrendingStyleImage({ style }: { style: TrendingHairstyle }) {
   const candidates = useMemo(() => {
-    const primary = trendingPrimaryImageUrl(style);
+    const primary = getHairstyleImageUrl({ imageUrl: style.imageUrl });
     const fallbacks = hairstyleImageFallbacks(style.imageUrl).filter((url) => url !== primary);
-    const unsplash = getTrendCoverUrl(style.seed);
-    return [...new Set([primary, ...fallbacks, unsplash])];
-  }, [style]);
+    return [...new Set([primary, ...fallbacks])];
+  }, [style.imageUrl]);
 
   const [index, setIndex] = useState(0);
-  const src = candidates[index] ?? getTrendCoverUrl(style.seed);
+  const src = candidates[index] ?? getHairstyleImageUrl({ imageUrl: style.imageUrl });
 
   return (
     <img
