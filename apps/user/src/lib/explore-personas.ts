@@ -42,6 +42,10 @@ export function hasPersonaReference(personaId: ExplorePersonaId): boolean {
   return PERSONA_READY_ASSETS[personaId].reference;
 }
 
+export function hasPersonaStyleAsset(personaId: ExplorePersonaId, slug: string): boolean {
+  return PERSONA_READY_ASSETS[personaId].slugs.includes(slug);
+}
+
 /** Explore UI — faqat reference rasmi tayyor personajlar */
 export function listReadyExplorePersonas(): ExplorePersona[] {
   return EXPLORE_PERSONAS.filter((persona) => hasPersonaReference(persona.id));

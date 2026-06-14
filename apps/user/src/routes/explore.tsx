@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
@@ -8,6 +9,7 @@ import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyles } from "@/hooks/use-hairstyles";
 import { useUserAgeGroup } from "@/hooks/use-me";
 import { AGE_GROUP_LABELS_UZ } from "@/lib/age-groups";
+import { hasPersonaStyleAsset } from "@/lib/explore-personas";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
 
 export const Route = createFileRoute("/explore")({
@@ -22,6 +24,13 @@ function ExplorePage() {
   const { personaId, setPersonaId } = useExplorePersona();
   const menPersona = audience === "men" ? personaId : null;
   const { data: list = [], isLoading, isError } = useHairstyles(audience, menPersona);
+
+  const visibleList = useMemo(() => {
+    return list.filter((entry) => {
+      if (entry.audience !== "men") return true;
+      return hasPersonaStyleAsset(personaId, entry.slug);
+    });
+  }, [list, personaId]);
 
   return (
     <div className="pb-8">
@@ -50,7 +59,7 @@ function ExplorePage() {
       ) : null}
 
       <div className="mt-5 grid grid-cols-2 gap-3 px-5">
-        {list.map((entry) => (
+        {visibleList.map((entry) => (
           <Link
             key={`${menPersona ?? "default"}-${entry.id}`}
             to="/explore/$styleId"
@@ -75,7 +84,7 @@ function ExplorePage() {
         ))}
       </div>
 
-      {!isLoading && !isError && list.length === 0 ? (
+      {!isLoading && !isError && visibleList.length === 0 ? (
         <p className="mt-8 px-5 text-center text-sm text-muted-foreground">{t("explorePage.empty")}</p>
       ) : null}
     </div>

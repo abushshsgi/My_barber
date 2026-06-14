@@ -8,7 +8,7 @@ from accounts.models import User
 from accounts.throttles import AiStyleThrottle, AuthIPThrottle
 
 from ai.age_groups import birth_year_to_group, normalize_age_group, resolve_hairstyle_image_path
-from ai.explore_personas import list_explore_personas, normalize_persona_id
+from ai.explore_personas import has_persona_style_asset, list_explore_personas, normalize_persona_id
 
 from .history_storage import save_history_photo, trim_user_history
 from .models import HISTORY_MAX_PER_USER, AiStyleHistoryEntry, Hairstyle
@@ -89,6 +89,12 @@ class HairstyleListView(APIView):
                 for style in styles
                 if age_group in (style.age_groups or [])
             ]
+        if persona_id:
+            styles = [
+                style
+                for style in styles
+                if has_persona_style_asset(persona_id, style.slug)
+            ]
         serializer = HairstyleSerializer(
             styles,
             many=True,
@@ -110,6 +116,8 @@ class HairstyleDetailView(APIView):
             is_published=True,
         )
         persona_id = _resolve_persona_id(request, style.audience)
+        if persona_id and not has_persona_style_asset(persona_id, style.slug):
+            return Response({"detail": "Uslub rasmi mavjud emas."}, status=404)
         serializer = HairstyleSerializer(
             style,
             context={"age_group": age_group, "persona_id": persona_id},

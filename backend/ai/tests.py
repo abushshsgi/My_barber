@@ -181,6 +181,23 @@ class HairstyleApiTests(TestCase):
         res = self.client.get("/api/v1/hairstyles/missing-style/")
         self.assertEqual(res.status_code, 404)
 
+    def test_hairstyles_list_with_persona_only_ready_assets(self):
+        res = self.client.get(
+            "/api/v1/hairstyles/",
+            {"audience": "men", "persona": "evro"},
+        )
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        slugs = {item["slug"] for item in body}
+        self.assertEqual(slugs, {"mid-fade", "skin-fade", "buzz-cut", "textured-crop"})
+
+    def test_hairstyles_detail_missing_persona_asset_returns_404(self):
+        res = self.client.get(
+            "/api/v1/hairstyles/men-low-fade/",
+            {"persona": "evro"},
+        )
+        self.assertEqual(res.status_code, 404)
+
 
 @override_settings(
     GEMINI_API_KEY="test-key",
