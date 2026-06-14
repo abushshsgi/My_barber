@@ -4,13 +4,50 @@ import {
   Search,
   Wand2,
 } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import type { HomeData } from "@/components/home/useHomeData";
 import { SalonCard } from "@/components/SalonCard";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
-import type { TrendingHairstyle } from "@/lib/hairstyles/catalog";
+import {
+  getHairstyleImageUrl,
+  hairstyleImageFallbacks,
+  type TrendingHairstyle,
+} from "@/lib/hairstyles/catalog";
+import { getTrendCoverUrl } from "@/lib/cover-images";
 import type { Offer } from "@/lib/mock-data";
+
+function trendingPrimaryImageUrl(style: TrendingHairstyle): string {
+  const url = getHairstyleImageUrl({ imageUrl: style.imageUrl });
+  if (url.includes("/personas/")) return url;
+  return getTrendCoverUrl(style.seed);
+}
+
+function TrendingStyleImage({ style }: { style: TrendingHairstyle }) {
+  const candidates = useMemo(() => {
+    const primary = trendingPrimaryImageUrl(style);
+    const fallbacks = hairstyleImageFallbacks(style.imageUrl).filter((url) => url !== primary);
+    const unsplash = getTrendCoverUrl(style.seed);
+    return [...new Set([primary, ...fallbacks, unsplash])];
+  }, [style]);
+
+  const [index, setIndex] = useState(0);
+  const src = candidates[index] ?? getTrendCoverUrl(style.seed);
+
+  return (
+    <img
+      src={src}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      onError={() => {
+        setIndex((current) => (current + 1 < candidates.length ? current + 1 : current));
+      }}
+      className="absolute inset-0 h-full w-full object-cover object-top"
+    />
+  );
+}
 
 export function HomeAudience() {
   return (
@@ -105,13 +142,7 @@ export function HomeTrendingStrip({ trending }: { trending: TrendingHairstyle[] 
         {trending.map((s) => (
           <Link key={s.id} to="/explore/$styleId" params={{ styleId: s.id }} className="w-[140px] shrink-0">
             <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-surface">
-              <img
-                src={s.imageUrl}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                className="absolute inset-0 h-full w-full object-cover object-top"
-              />
+              <TrendingStyleImage style={s} />
             </div>
             <p className="mt-2 text-[13px] font-bold leading-tight">{s.title}</p>
             <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">

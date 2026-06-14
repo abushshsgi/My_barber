@@ -23,7 +23,7 @@ export function useHomeData() {
   const { data: me } = useMe();
   const { personaId } = useExplorePersona();
   const ageGroup = useUserAgeGroup();
-  const { data: hairstyles = [] } = useHairstyles(audience);
+  const { data: hairstyles = [] } = useHairstyles(audience, null, { ignoreAgeGroup: true });
   const ctx = useMemo(() => userRecommendContext(me), [me]);
 
   const hasCoords = ctx.lat != null && ctx.lng != null;

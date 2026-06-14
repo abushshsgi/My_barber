@@ -22,6 +22,15 @@ const TREND_COVERS: Record<string, string> = {
   tr4: "https://images.unsplash.com/photo-1492106087820-71f1a00d2b11?auto=format&fit=crop&w=560&h=740&q=80",
   tr5: "https://images.unsplash.com/photo-1605497788041-7a4e6300984e?auto=format&fit=crop&w=560&h=740&q=80",
   tr6: "https://images.unsplash.com/photo-1632345031435-8727f6897c53?auto=format&fit=crop&w=560&h=740&q=80",
+  "mid-fade": "https://images.unsplash.com/photo-1622287163692-834b1f829c9e?auto=format&fit=crop&w=560&h=740&q=80",
+  "textured-crop": "https://images.unsplash.com/photo-1599356854054-f03d66e2e884?auto=format&fit=crop&w=560&h=740&q=80",
+  "curly-top-fade": "https://images.unsplash.com/photo-1605497788041-7a4e6300984e?auto=format&fit=crop&w=560&h=740&q=80",
+  "beach-waves": "https://images.unsplash.com/photo-1522337360788-8faa13fd3ef7?auto=format&fit=crop&w=560&h=740&q=80",
+  "blunt-cut": "https://images.unsplash.com/photo-1492106087820-71f1a00d2b11?auto=format&fit=crop&w=560&h=740&q=80",
+  "curtain-bangs": "https://images.unsplash.com/photo-1632345031435-8727f6897c53?auto=format&fit=crop&w=560&h=740&q=80",
+  highlights: "https://images.unsplash.com/photo-1522337360788-8faa13fd3ef7?auto=format&fit=crop&w=560&h=740&q=80",
+  "soft-bob": "https://images.unsplash.com/photo-1522337360788-8faa13fd3ef7?auto=format&fit=crop&w=560&h=740&q=80",
+  balayage: "https://images.unsplash.com/photo-1492106087820-71f1a00d2b11?auto=format&fit=crop&w=560&h=740&q=80",
 };
 
 export function getSalonCoverUrl(seed: string): string {

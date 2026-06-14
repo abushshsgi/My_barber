@@ -21,8 +21,18 @@ function audienceParam(audience?: AudienceFilter): "men" | "women" | undefined {
   return undefined;
 }
 
-export function useHairstyles(audience?: AudienceFilter, personaId?: ExplorePersonaId | null) {
-  const ageGroup = useUserAgeGroup();
+type UseHairstylesOptions = {
+  /** Home trending kabi joylarda barqaror /hairstyles/{audience}/{slug}.webp yo'llari */
+  ignoreAgeGroup?: boolean;
+};
+
+export function useHairstyles(
+  audience?: AudienceFilter,
+  personaId?: ExplorePersonaId | null,
+  options?: UseHairstylesOptions,
+) {
+  const profileAgeGroup = useUserAgeGroup();
+  const ageGroup = options?.ignoreAgeGroup ? null : profileAgeGroup;
   return useQuery({
     queryKey: hairstylesQueryKey(audience, ageGroup, personaId),
     queryFn: async () => {

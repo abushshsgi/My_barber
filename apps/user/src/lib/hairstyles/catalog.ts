@@ -43,8 +43,27 @@ export function filterHairstyles(
   return entries.filter((entry) => matchAudience(entry.audience, audience));
 }
 
+const AGE_GROUP_SEGMENT = /^(kids|teen|young|adult|mature)$/;
+
+/** Yosh guruhi bo'yicha yo'l 404 bo'lsa — asosiy katalog yo'liga qaytish. */
+export function hairstyleImageFallbacks(imageUrl: string): string[] {
+  const parts = imageUrl.split("/").filter(Boolean);
+  if (parts.length < 4 || parts[0] !== "hairstyles") return [];
+  const audience = parts[1];
+  if (audience !== "men" && audience !== "women") return [];
+  if (!AGE_GROUP_SEGMENT.test(parts[2] ?? "")) return [];
+  const file = parts[parts.length - 1];
+  if (!file?.endsWith(".webp")) return [];
+  return [`/hairstyles/${audience}/${file}`];
+}
+
 export function getHairstyleImageUrl(entry: Pick<HairstyleEntry, "imageUrl">): string {
-  return entry.imageUrl;
+  const url = entry.imageUrl?.trim();
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
+    return url;
+  }
+  return url.startsWith("/") ? url : `/${url}`;
 }
 
 /** Home / legacy mock-data bilan moslik */
