@@ -340,6 +340,8 @@
     "sampleBadge": "AI sample",
     "personaLabel": "Model",
     "personaActive": "{{name}} ({{code}}) — styles shown on this model",
+    "personaVariantLab": "Choose UI variant",
+    "personaVariantHint": "Tap A–E to compare. Your choice is saved.",
     "personaMenHint": "Select «Men» above to see persona-specific style photos.",
     "tryAiStyle": "Try in AI Style",
     "findSalon": "Find a salon"

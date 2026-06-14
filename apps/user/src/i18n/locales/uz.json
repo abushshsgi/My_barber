@@ -356,6 +356,8 @@
     "sampleBadge": "AI namuna",
     "personaLabel": "Model",
     "personaActive": "{{name}} ({{code}}) — uslub rasmlari shu modelda",
+    "personaVariantLab": "UI variant tanlang",
+    "personaVariantHint": "A–E ni bosib solishtiring. Yoqqan variant saqlanadi.",
     "personaMenHint": "Personaj rasmlari uchun yuqorida «Erkaklar» ni tanlang.",
     "tryAiStyle": "AI Style da sinash",
     "findSalon": "Salon topish"
