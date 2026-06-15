@@ -54,7 +54,10 @@ def _map_gemini_http_error(status: int, body: str) -> str:
             "aistudio.google.com/apikey dan yangi kalit oling (service account bog'lamang)."
         )
     if status == 429 or "quota" in lowered or "rate" in lowered:
-        return "AI limiti tugadi. Biroz kutib qayta urinib ko'ring."
+        return (
+            "AI limiti tugadi (Gemini kunlik/soatlik cheklov). "
+            "15–60 daqiqa kuting yoki keyinroq urinib ko'ring."
+        )
     if status == 404:
         return "AI model topilmadi. Backend GEMINI_MODEL sozlamasini tekshiring."
     return "AI tahlil vaqtincha ishlamayapti. Keyinroq urinib ko'ring."

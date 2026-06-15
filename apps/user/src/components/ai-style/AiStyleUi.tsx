@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Loader2, ScanFace, Sparkles } from "lucide-react";
+import { Loader2, ScanFace, Sparkles, Wand2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
@@ -122,6 +122,31 @@ export function AiStyleAnalyzeCta({ analyzing, validating, onAnalyze, label }: A
       {analyzing
         ? (label ?? t("aiStylePage.analyzing"))
         : t("aiStylePage.analyzeCta")}
+    </button>
+  );
+}
+
+type TryOnCtaProps = {
+  loading: boolean;
+  validating?: boolean;
+  disabled?: boolean;
+  onTryOn: () => void;
+};
+
+export function AiStyleTryOnCta({ loading, validating, disabled, onTryOn }: TryOnCtaProps) {
+  const { t } = useTranslation();
+
+  return (
+    <button
+      type="button"
+      onClick={onTryOn}
+      disabled={loading || validating || disabled}
+      className={cn(
+        "flex w-full items-center justify-center gap-2 rounded-2xl bg-foreground px-5 py-4 text-sm font-bold text-background active:scale-[0.98] disabled:opacity-60",
+      )}
+    >
+      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+      {loading ? t("aiStylePage.tryOnGenerating") : t("aiStylePage.tryOnMe")}
     </button>
   );
 }

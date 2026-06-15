@@ -56,7 +56,7 @@ class PhoneScopedVerifyThrottle(SimpleRateThrottle):
 
 
 class AiStyleThrottle(SimpleRateThrottle):
-    """AI selfie tahlili — qimmat API, IP limit."""
+    """AI selfie tahlili va yuz tekshiruvi."""
 
     scope = "ai_style"
 
@@ -66,6 +66,25 @@ class AiStyleThrottle(SimpleRateThrottle):
         else:
             ident = self.get_ident(request)
         return self.cache_format % {"scope": self.scope, "ident": ident}
+
+    def throttle_failure_message(self):
+        return "So'rov limiti tugadi (soatiga 30 ta). Biroz kutib qayta urinib ko'ring."
+
+
+class AiTryOnThrottle(SimpleRateThrottle):
+    """AI rasm generatsiya (try-on) — qimmat, alohida limit."""
+
+    scope = "ai_tryon"
+
+    def get_cache_key(self, request, view):
+        if request.user and request.user.is_authenticated:
+            ident = f"user-{request.user.pk}"
+        else:
+            ident = self.get_ident(request)
+        return self.cache_format % {"scope": self.scope, "ident": ident}
+
+    def throttle_failure_message(self):
+        return "Rasm generatsiya limiti tugadi (soatiga 12 ta). Biroz kutib qayta urinib ko'ring."
 
 
 class PhoneCheckThrottle(SimpleRateThrottle):

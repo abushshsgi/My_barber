@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 
 from accounts.models import User
-from accounts.throttles import AiStyleThrottle, AuthIPThrottle
+from accounts.throttles import AiStyleThrottle, AiTryOnThrottle, AuthIPThrottle
 
 from ai.age_groups import birth_year_to_group, normalize_age_group, resolve_hairstyle_image_path
 from ai.explore_personas import has_persona_style_asset, list_explore_personas, normalize_persona_id
@@ -176,7 +176,7 @@ class AiStyleTryOnView(APIView):
     """POST { image, style_id } — selfie + uslub bo'yicha AI preview rasm."""
 
     permission_classes = [IsAuthenticated]
-    throttle_classes = [AiStyleThrottle, AuthIPThrottle]
+    throttle_classes = [AiTryOnThrottle, AuthIPThrottle]
 
     def post(self, request):
         user = _require_customer_user(request)

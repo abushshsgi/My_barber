@@ -86,7 +86,7 @@ function StylePreviewCard({ entry }: { entry: HairstyleEntry }) {
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-      <div className="relative aspect-[4/3] overflow-hidden">
+      <div className="relative aspect-[3/4] max-h-[min(42vh,320px)] overflow-hidden bg-muted">
         <img
           src={getHairstyleImageUrl(entry)}
           alt={entry.titleUz}
@@ -96,11 +96,11 @@ function StylePreviewCard({ entry }: { entry: HairstyleEntry }) {
           {t("explorePage.sampleBadge")}
         </span>
       </div>
-      <div className="p-3">
+      <div className="border-t border-border/70 px-3 py-2.5">
         <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
           {t("styleTryOnPage.selectedStyle")}
         </p>
-        <p className="mt-0.5 text-base font-bold">{entry.titleUz}</p>
+        <p className="mt-0.5 text-base font-bold leading-tight">{entry.titleUz}</p>
       </div>
     </div>
   );
@@ -312,12 +312,9 @@ export function StyleTryOnFlow({ flow, entry }: Props) {
   }
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-background pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+    <div className="flex min-h-[100dvh] flex-col bg-background pb-[calc(68px+env(safe-area-inset-bottom)+1rem)] lg:pb-8">
       <div className="px-5 pt-2">
-        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-          {t("styleTryOnPage.title", { style: entry.titleUz })}
-        </p>
-        <h1 className="mt-1 text-xl font-bold leading-tight">{t("styleTryOnPage.headline")}</h1>
+        <h1 className="text-xl font-bold leading-tight">{t("styleTryOnPage.headline")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{t("styleTryOnPage.uploadHint")}</p>
       </div>
 

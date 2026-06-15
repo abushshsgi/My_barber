@@ -43,14 +43,18 @@ export function useHairstyles(
   });
 }
 
-export function useHairstyle(styleId: string, personaId?: ExplorePersonaId | null) {
+export function useHairstyle(
+  styleId: string,
+  personaId?: ExplorePersonaId | null,
+  options?: { enabled?: boolean },
+) {
   const ageGroup = useUserAgeGroup();
   return useQuery({
     queryKey: ["hairstyles", "detail", styleId, ageGroup ?? "any", personaId ?? "none"] as const,
     queryFn: async () =>
       mapApiHairstyle(await fetchHairstyleById(styleId, ageGroup, personaId ?? undefined)),
     staleTime: 10 * 60 * 1000,
-    enabled: Boolean(styleId),
+    enabled: options?.enabled ?? Boolean(styleId),
   });
 }
 

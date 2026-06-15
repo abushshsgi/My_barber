@@ -7,6 +7,9 @@ import { useHairstyle } from "@/hooks/use-hairstyles";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
 import { cn } from "@/lib/utils";
 
+const BOTTOM_NAV_OFFSET = "calc(68px + env(safe-area-inset-bottom))";
+const STICKY_ACTIONS_OFFSET = "calc(68px + env(safe-area-inset-bottom) + 4.25rem)";
+
 export const Route = createFileRoute("/explore_/$styleId")({
   head: () => ({ meta: [{ title: "Uslub — mysaloon.uz" }] }),
   component: ExploreStyleDetailPage,
@@ -32,19 +35,30 @@ function ExploreStyleDetailPage() {
   }
 
   return (
-    <div className="pb-10">
-      <PageHeader showBack title={entry.titleUz} />
+    <div className="pb-[var(--explore-style-actions-offset)] lg:pb-24" style={{ ["--explore-style-actions-offset" as string]: STICKY_ACTIONS_OFFSET }}>
+      <PageHeader showBack title={t("explorePage.tryOnTitle", { style: entry.titleUz })} />
 
       <div className="px-5">
-        <div className="relative aspect-[3/4] overflow-hidden rounded-3xl bg-surface">
-          <img
-            src={getHairstyleImageUrl(entry)}
-            alt={entry.titleUz}
-            className="absolute inset-0 h-full w-full object-cover object-top"
-          />
-          <span className="absolute left-3 top-3 rounded-full bg-background/90 px-2.5 py-1 text-[10px] font-bold backdrop-blur-sm">
-            {t("explorePage.sampleBadge")}
-          </span>
+        <h2 className="text-lg font-bold tracking-tight">{t("aiStylePage.uploadTitle")}</h2>
+        <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{t("explorePage.tryOnDesc")}</p>
+
+        <div className="mt-4 overflow-hidden rounded-3xl border border-border bg-surface shadow-sm">
+          <div className="relative aspect-[3/4] max-h-[min(48vh,360px)] w-full overflow-hidden bg-muted">
+            <img
+              src={getHairstyleImageUrl(entry)}
+              alt={entry.titleUz}
+              className="absolute inset-0 h-full w-full object-cover object-top"
+            />
+            <span className="absolute left-3 top-3 rounded-full bg-background/90 px-2.5 py-1 text-[10px] font-bold backdrop-blur-sm">
+              {t("explorePage.sampleBadge")}
+            </span>
+          </div>
+          <div className="border-t border-border/70 bg-surface px-4 py-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+              {t("aiStylePage.selectedStyleBadge")}
+            </p>
+            <p className="mt-0.5 text-base font-bold leading-tight">{entry.titleUz}</p>
+          </div>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -61,7 +75,7 @@ function ExploreStyleDetailPage() {
           </span>
         </div>
 
-        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{entry.descriptionUz}</p>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{entry.descriptionUz}</p>
 
         {entry.tags.length > 0 ? (
           <div className="mt-3 flex flex-wrap gap-1.5">
@@ -77,8 +91,16 @@ function ExploreStyleDetailPage() {
             ))}
           </div>
         ) : null}
+      </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-2">
+      <div
+        className="fixed inset-x-0 z-20 border-t border-border bg-background/95 px-5 pt-3 backdrop-blur-md bottom-[var(--explore-bottom-nav-offset)] lg:bottom-0 lg:left-[240px]"
+        style={{
+          ["--explore-bottom-nav-offset" as string]: BOTTOM_NAV_OFFSET,
+          paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
+        }}
+      >
+        <div className="mx-auto grid max-w-[480px] grid-cols-2 gap-2 lg:max-w-[720px]">
           <Link
             to="/explore/$styleId/try"
             params={{ styleId: entry.id }}
