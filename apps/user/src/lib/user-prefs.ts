@@ -4,7 +4,6 @@ const NOTIF_PREFS_PREFIX = "mysaloon.notif.prefs";
 const LEGACY_PREFS_KEY = "mysaloon.prefs";
 const LEGACY_AUDIENCE_KEY = "mysaloon.audience";
 const LEGACY_NOTIF_PREFS_KEY = "mysaloon.notif.prefs";
-const LEGACY_PREFS_MIGRATED_FLAG = "mysaloon.prefs.legacyMigrated";
 
 export function prefsKey(userId: number) {
   return `${PREFS_PREFIX}:${userId}`;
@@ -18,39 +17,69 @@ export function notifPrefsKey(userId: number) {
   return `${NOTIF_PREFS_PREFIX}:${userId}`;
 }
 
-function migrateLegacyPrefs(userId: number) {
+function clearLegacyPrefsStorage() {
+  localStorage.removeItem(LEGACY_PREFS_KEY);
+  localStorage.removeItem(LEGACY_AUDIENCE_KEY);
+  localStorage.removeItem(LEGACY_NOTIF_PREFS_KEY);
+}
+
+function hasLegacyPrefsStorage(): boolean {
+  return Boolean(
+    localStorage.getItem(LEGACY_PREFS_KEY) ||
+      localStorage.getItem(LEGACY_AUDIENCE_KEY) ||
+      localStorage.getItem(LEGACY_NOTIF_PREFS_KEY),
+  );
+}
+
+function migrateLegacyPrefsToScoped(userId: number) {
+  const scopedPrefs = prefsKey(userId);
+  if (!localStorage.getItem(scopedPrefs)) {
+    const legacyPrefs = localStorage.getItem(LEGACY_PREFS_KEY);
+    if (legacyPrefs) localStorage.setItem(scopedPrefs, legacyPrefs);
+  }
+
+  const scopedAudience = audienceKey(userId);
+  if (!localStorage.getItem(scopedAudience)) {
+    const legacyAudience = localStorage.getItem(LEGACY_AUDIENCE_KEY);
+    if (legacyAudience) localStorage.setItem(scopedAudience, legacyAudience);
+  }
+
+  const scopedNotif = notifPrefsKey(userId);
+  if (!localStorage.getItem(scopedNotif)) {
+    const legacyNotif = localStorage.getItem(LEGACY_NOTIF_PREFS_KEY);
+    if (legacyNotif) localStorage.setItem(scopedNotif, legacyNotif);
+  }
+
+  clearLegacyPrefsStorage();
+}
+
+export type PrepareUserPrefsOptions = {
+  allowLegacyClaim?: boolean;
+};
+
+export function prepareUserPrefsStorageForUser(
+  userId: number,
+  options: PrepareUserPrefsOptions = {},
+) {
   try {
-    if (localStorage.getItem(LEGACY_PREFS_MIGRATED_FLAG)) return;
-
-    const scopedPrefs = prefsKey(userId);
-    if (!localStorage.getItem(scopedPrefs)) {
-      const legacyPrefs = localStorage.getItem(LEGACY_PREFS_KEY);
-      if (legacyPrefs) localStorage.setItem(scopedPrefs, legacyPrefs);
+    if (!hasLegacyPrefsStorage()) return;
+    if (options.allowLegacyClaim) {
+      migrateLegacyPrefsToScoped(userId);
+      return;
     }
-
-    const scopedAudience = audienceKey(userId);
-    if (!localStorage.getItem(scopedAudience)) {
-      const legacyAudience = localStorage.getItem(LEGACY_AUDIENCE_KEY);
-      if (legacyAudience) localStorage.setItem(scopedAudience, legacyAudience);
-    }
-
-    const scopedNotif = notifPrefsKey(userId);
-    if (!localStorage.getItem(scopedNotif)) {
-      const legacyNotif = localStorage.getItem(LEGACY_NOTIF_PREFS_KEY);
-      if (legacyNotif) localStorage.setItem(scopedNotif, legacyNotif);
-    }
-
-    localStorage.removeItem(LEGACY_PREFS_KEY);
-    localStorage.removeItem(LEGACY_AUDIENCE_KEY);
-    localStorage.removeItem(LEGACY_NOTIF_PREFS_KEY);
-    localStorage.setItem(LEGACY_PREFS_MIGRATED_FLAG, "1");
+    clearLegacyPrefsStorage();
   } catch {
     /* noop */
   }
 }
 
-export function prepareUserPrefsStorageForUser(userId: number) {
-  migrateLegacyPrefs(userId);
+export function migrateUserPrefsOnLogout(userId: number) {
+  try {
+    if (!hasLegacyPrefsStorage()) return;
+    migrateLegacyPrefsToScoped(userId);
+  } catch {
+    /* noop */
+  }
 }
 
 export function readScopedPrefsRaw(userId: number): string | null {

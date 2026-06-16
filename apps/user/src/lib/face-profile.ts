@@ -5,7 +5,6 @@ const FACE_HISTORY_KEY_PREFIX = "mysaloon.ai.faceHistory";
 const LEGACY_FACE_PROFILE_KEY = "mysaloon.ai.faceProfile";
 const LEGACY_FACE_HISTORY_KEY = "mysaloon.ai.faceHistory";
 const FACE_HISTORY_MAX = 6;
-const LEGACY_FACE_MIGRATED_FLAG = "mysaloon.ai.legacyMigrated";
 export const FACE_HISTORY_UPDATED_EVENT = "mysaloon:face-history-updated";
 
 const USER_KEY = "mysaloon.auth.user";
@@ -49,30 +48,62 @@ export function getActiveUserId(): number | null {
   }
 }
 
-function migrateLegacyStorage(userId: number) {
-  try {
-    if (localStorage.getItem(LEGACY_FACE_MIGRATED_FLAG)) return;
+function clearLegacyFaceStorage() {
+  localStorage.removeItem(LEGACY_FACE_HISTORY_KEY);
+  localStorage.removeItem(LEGACY_FACE_PROFILE_KEY);
+}
 
-    const scopedHistory = historyKey(userId);
-    if (!localStorage.getItem(scopedHistory)) {
-      const legacyHistory = localStorage.getItem(LEGACY_FACE_HISTORY_KEY);
-      if (legacyHistory) localStorage.setItem(scopedHistory, legacyHistory);
+function hasLegacyFaceStorage(): boolean {
+  return Boolean(
+    localStorage.getItem(LEGACY_FACE_HISTORY_KEY) ||
+      localStorage.getItem(LEGACY_FACE_PROFILE_KEY),
+  );
+}
+
+function migrateLegacyToScoped(userId: number) {
+  const scopedHistory = historyKey(userId);
+  if (!localStorage.getItem(scopedHistory)) {
+    const legacyHistory = localStorage.getItem(LEGACY_FACE_HISTORY_KEY);
+    if (legacyHistory) localStorage.setItem(scopedHistory, legacyHistory);
+  }
+  const scopedProfile = profileKey(userId);
+  if (!localStorage.getItem(scopedProfile)) {
+    const legacyProfile = localStorage.getItem(LEGACY_FACE_PROFILE_KEY);
+    if (legacyProfile) localStorage.setItem(scopedProfile, legacyProfile);
+  }
+  clearLegacyFaceStorage();
+}
+
+export type PrepareFaceStorageOptions = {
+  /** Session restore — claim orphan legacy from a pre-isolation app version. */
+  allowLegacyClaim?: boolean;
+};
+
+export function prepareFaceProfileStorageForUser(
+  userId: number,
+  options: PrepareFaceStorageOptions = {},
+) {
+  try {
+    if (!hasLegacyFaceStorage()) return;
+    if (options.allowLegacyClaim) {
+      migrateLegacyToScoped(userId);
+      return;
     }
-    const scopedProfile = profileKey(userId);
-    if (!localStorage.getItem(scopedProfile)) {
-      const legacyProfile = localStorage.getItem(LEGACY_FACE_PROFILE_KEY);
-      if (legacyProfile) localStorage.setItem(scopedProfile, legacyProfile);
-    }
-    localStorage.removeItem(LEGACY_FACE_HISTORY_KEY);
-    localStorage.removeItem(LEGACY_FACE_PROFILE_KEY);
-    localStorage.setItem(LEGACY_FACE_MIGRATED_FLAG, "1");
+    // Fresh login: leftover legacy may belong to a previous account on this device.
+    clearLegacyFaceStorage();
   } catch {
     /* noop */
   }
 }
 
-export function prepareFaceProfileStorageForUser(userId: number) {
-  migrateLegacyStorage(userId);
+/** Call on logout while the active user id is still known. */
+export function migrateFaceProfileOnLogout(userId: number) {
+  try {
+    if (!hasLegacyFaceStorage()) return;
+    migrateLegacyToScoped(userId);
+  } catch {
+    /* noop */
+  }
 }
 
 export function saveFaceProfile(profile: SavedFaceProfile, userId?: number) {

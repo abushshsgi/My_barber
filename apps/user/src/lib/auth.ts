@@ -5,9 +5,12 @@ import {
   setUserTokens,
   type ApiUser,
 } from "@/lib/api";
-import { prepareFaceProfileStorageForUser } from "@/lib/face-profile";
+import {
+  migrateFaceProfileOnLogout,
+  prepareFaceProfileStorageForUser,
+} from "@/lib/face-profile";
 import { clearQueryClientCache, getQueryClient } from "@/lib/query-client";
-import { notifyAudienceReset, prepareUserPrefsStorageForUser } from "@/lib/user-prefs";
+import { notifyAudienceReset, migrateUserPrefsOnLogout, prepareUserPrefsStorageForUser } from "@/lib/user-prefs";
 
 const USER_KEY = "mysaloon.auth.user";
 const LAST_PHONE_KEY = "mysaloon.auth.lastPhone";
@@ -76,6 +79,11 @@ export function isAuthenticated(): boolean {
 }
 
 export function logout() {
+  const user = getAuthUser();
+  if (typeof user?.id === "number") {
+    migrateFaceProfileOnLogout(user.id);
+    migrateUserPrefsOnLogout(user.id);
+  }
   clearUserTokens();
   clearQueryClientCache();
   try {

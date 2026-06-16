@@ -1,6 +1,8 @@
 import { useEffect, type ReactNode } from "react";
 import { bootstrapUserSession, handleAuthFailure } from "@/lib/api/client";
+import { getActiveUserId, prepareFaceProfileStorageForUser } from "@/lib/face-profile";
 import { clearQueryClientCache } from "@/lib/query-client";
+import { prepareUserPrefsStorageForUser } from "@/lib/user-prefs";
 
 const AUTH_PATH = "/auth";
 const TOKEN_KEY = "mybarber_user_access";
@@ -18,7 +20,15 @@ export function AuthSessionGuard({ children }: { children: ReactNode }) {
     const verify = () => {
       if (isAuthRoute()) return;
       void bootstrapUserSession().then((ok) => {
-        if (!ok) handleAuthFailure();
+        if (!ok) {
+          handleAuthFailure();
+          return;
+        }
+        const uid = getActiveUserId();
+        if (uid) {
+          prepareFaceProfileStorageForUser(uid, { allowLegacyClaim: true });
+          prepareUserPrefsStorageForUser(uid, { allowLegacyClaim: true });
+        }
       });
     };
 
