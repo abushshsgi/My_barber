@@ -28,6 +28,18 @@ TanStack Start + Nitro **Build Output API** ishlatadi. Build `.vercel/output` ya
 
 Batafsil: yuqoridagi jadval va `scripts/prepare-vercel-output.mjs`.
 
+### Oq ekran (MIME / main.tsx xatosi)
+
+Agar brauzer `Failed to load module script … main.tsx` yoki `main.jsx` ko'rsatsa:
+
+1. **Root Directory** `apps/user` bo'lishi kerak (repo ildizi emas).
+2. **Output Directory** bo'sh — `dist` yoki `dist/static` qo'ymang (Build Output API ishlatiladi).
+3. **Framework Preset** — **Other**, Vite emas.
+4. Dashboard'dagi **SPA rewrites** (`/(.*) → /index.html`) o'chirilgan bo'lishi kerak — ular `/assets/*.js` ni ham HTML qaytaradi.
+5. `apps/user/index.html` bo'lmasligi kerak — faqat `mobile/index.html` (Capacitor). Dev HTML Vercel'da SSR o'rniga statik fayl sifatida chiqadi.
+
+Qayta deploy: `npm run build` (`.vercel/output` yaratiladi) → Vercel redeploy.
+
 ## Env
 
 | O'zgaruvchi | Qiymat |

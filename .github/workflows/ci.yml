@@ -34,3 +34,6 @@ jobs:
       - run: npm ci
       - run: npm run test
       - run: npm run lint
+      - run: npm run build
+        env:
+          VITE_API_URL: https://api.mysaloon.uz

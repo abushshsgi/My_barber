@@ -18,14 +18,19 @@ export default defineConfig(({ mode }) => {
     );
   }
 
+  const appDir = __dirname;
+  const mobileRoot = path.resolve(appDir, "mobile");
+
   return {
+    root: mobileRoot,
+    publicDir: path.resolve(appDir, "public"),
     define: {
       "import.meta.env.VITE_MOBILE_SPA": JSON.stringify("true"),
     },
     plugins: [
       TanStackRouterVite({
-        routesDirectory: "./src/routes",
-        generatedRouteTree: "./src/routeTree.gen.ts",
+        routesDirectory: path.resolve(appDir, "src/routes"),
+        generatedRouteTree: path.resolve(appDir, "src/routeTree.gen.ts"),
       }),
       react(),
       tailwindcss(),
@@ -66,11 +71,11 @@ export default defineConfig(({ mode }) => {
     ],
     resolve: {
       alias: {
-        "@mybarber/shared": path.resolve(__dirname, "../../packages/shared/src"),
+        "@mybarber/shared": path.resolve(appDir, "../../packages/shared/src"),
       },
     },
     build: {
-      outDir: "dist/client",
+      outDir: path.resolve(appDir, "dist/client"),
       emptyOutDir: true,
     },
   };

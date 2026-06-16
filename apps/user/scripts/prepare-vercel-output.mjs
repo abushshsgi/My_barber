@@ -4,6 +4,14 @@ import { fileURLToPath } from "node:url";
 
 const appDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const distDir = path.join(appDir, "dist");
+const devIndexHtml = path.join(appDir, "index.html");
+
+if (existsSync(devIndexHtml)) {
+  console.error(
+    "apps/user/index.html must not exist — it breaks Vercel SSR (white screen / main.tsx MIME error). Use mobile/index.html for Capacitor builds.",
+  );
+  process.exit(1);
+}
 const vercelOut = path.join(appDir, ".vercel", "output");
 const configPath = path.join(distDir, "config.json");
 const staticAssets = path.join(distDir, "static", "assets");
