@@ -5,6 +5,7 @@ TCP timeout bo‘lganda SMTP o‘rniga ishlatiladi — faqat 443 HTTPS.
 
 from __future__ import annotations
 
+import base64
 import json
 import logging
 import urllib.error
@@ -56,7 +57,18 @@ def _message_to_resend_payload(message: EmailMessage) -> dict[str, Any]:
     payload["text"] = body.strip() if body.strip() else (html[:10000] if html else " ")
 
     if message.attachments:
-        raise ValueError("Resend backend: attachments are not implemented; use SMTP or extend backend.")
+        payload["attachments"] = []
+        for attachment in message.attachments:
+            filename = attachment[0] if attachment else "attachment"
+            content = attachment[1] if len(attachment) > 1 else b""
+            if isinstance(content, str):
+                content = content.encode("utf-8")
+            payload["attachments"].append(
+                {
+                    "filename": filename,
+                    "content": base64.b64encode(content).decode("ascii"),
+                }
+            )
 
     return payload
 

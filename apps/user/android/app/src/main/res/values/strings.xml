@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MySaloon</string>
+    <string name="title_activity_main">MySaloon</string>
+    <string name="package_name">uz.mysaloon.app</string>
+    <string name="custom_url_scheme">uz.mysaloon.app</string>
+</resources>

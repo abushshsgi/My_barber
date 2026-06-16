@@ -1,4 +1,6 @@
+import { migrateFaceProfileOnLogout } from "@/lib/face-profile";
 import { clearQueryClientCache } from "@/lib/query-client";
+import { migrateUserPrefsOnLogout } from "@/lib/user-prefs";
 
 const ENV_API_BASE =
   (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_API_URL ||
@@ -146,7 +148,23 @@ function redirectToAuthIfNeeded() {
   window.location.assign("/auth");
 }
 
+function readActiveUserIdBeforeClear(): number | null {
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { id?: number };
+    return typeof parsed.id === "number" ? parsed.id : null;
+  } catch {
+    return null;
+  }
+}
+
 export function handleAuthFailure() {
+  const uid = readActiveUserIdBeforeClear();
+  if (uid) {
+    migrateFaceProfileOnLogout(uid);
+    migrateUserPrefsOnLogout(uid);
+  }
   clearUserTokens();
   try {
     localStorage.removeItem(USER_KEY);

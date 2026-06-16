@@ -1,7 +1,6 @@
 # User app (mijoz ilovasi)
 
-Mijoz ilovasi — barcha UI kodi shu papkada (`src/`).  
-Manba: [salon-connect](https://github.com/abushshsgi/salon-connect) (yangilash: repodan `src/` ni sync qiling).
+Mijoz ilovasi — barcha UI kodi shu papkada (`src/`).
 
 ## Ishga tushirish
 
@@ -13,42 +12,42 @@ npm run dev:user
 
 http://localhost:3000
 
+Lokal dev: `VITE_API_URL` odatda kerak emas — Vite `/api/v1` ni `127.0.0.1:8000` ga proxy qiladi.
+
 ## Vercel deploy (MUHIM)
 
 TanStack Start + Nitro **Build Output API** ishlatadi. Build `.vercel/output` yaratadi.
 
-| Sozlama | To‘g‘ri qiymat | Noto‘g‘ri |
+| Sozlama | To'g'ri qiymat | Noto'g'ri |
 |---------|----------------|-----------|
 | **Root Directory** | `apps/user` | `dist` ❌ |
-| **Output Directory** | **bo‘sh** (Override o‘chirilgan) | `dist` ❌ |
+| **Output Directory** | **bo'sh** (Override o'chirilgan) | `dist` ❌ |
 | **Framework Preset** | Other | Vite ❌ |
 | **Build Command** | `npm run build` | |
 | **Install Command** | `cd ../.. && npm install` | |
 
-### Nima uchun stilsiz sahifa chiqadi?
+Batafsil: yuqoridagi jadval va `scripts/prepare-vercel-output.mjs`.
 
-Agar Output Directory = `dist` qo‘ysangiz, Vercel faqat **server function** (HTML) deploy qiladi, **CSS/JS static fayllar CDN ga chiqmaydi** → barcha `/assets/*` **404**.
+## Env
 
-Belgilar:
-- Oq fon, stilsiz matn
-- `nav.home`, `nav.map` (JS yuklanmagan)
-- Console: `/assets/*.css` va `/assets/*.js` → 404
-
-### Deploy qadamlari
-
-1. Vercel → Settings → General → **Root Directory** = `apps/user`
-2. Settings → Build → **Output Directory override ni O‘CHIRING** (maydon bo‘sh!)
-3. Redeploy
-4. Tekshiruv: `https://YOUR-DOMAIN/assets/styles-D-UzSqGe.css` → **200**
-
-`vercel.json` da `outputDirectory` **bo‘lmasligi** kerak — build `.vercel/output` ni avtomatik ishlatadi.
-
-## Env (Vercel)
-
-| O‘zgaruvchi | Qiymat |
+| O'zgaruvchi | Qiymat |
 |-------------|--------|
-| `VITE_API_URL` | `https://api.mysaloon.uz` |
+| `VITE_API_URL` | `https://api.mysaloon.uz` (production / Capacitor) |
+| `NEXT_PUBLIC_BARBER_WEB_ORIGIN` | `https://partner.mysaloon.uz` (ixtiyoriy) |
 
-## Ma'lumot
+To'liq ro'yxat: `.env.example`
 
-Hozir: `src/lib/mock-data.ts`. Backend API — `API_STATUS_MATRIX.md`.
+## Ma'lumot manbalari
+
+- **REST API:** `src/lib/api/` — asosiy integratsiya (`API_STATUS_MATRIX.md`)
+- **Mock/demo:** offers, loyalty, reels va boshqalar hali `mock-data.ts` da
+- **WebSocket:** chat va bildirishnomalar (productionda `REDIS_URL` kerak)
+
+## Android (Capacitor)
+
+```bash
+npm run cap:android          # ildizdan
+npm run cap:open -w user-web
+```
+
+App ID: `uz.mysaloon.app` — batafsil: `apps/MOBILE_PRODUCTION.md`

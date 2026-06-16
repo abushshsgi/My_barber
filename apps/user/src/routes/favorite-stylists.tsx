@@ -1,9 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Award, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { favoriteStylists } from "@/lib/mock-data";
 import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { EmptyState } from "@/components/EmptyState";
+
+/** Backend favorite-barbers API hali yo'q. */
+const favoriteStylists: Array<{
+  id: string;
+  name: string;
+  role: string;
+  salonName: string;
+  salonId: string;
+  rating: number;
+}> = [];
 
 export const Route = createFileRoute("/favorite-stylists")({
   head: () => ({ meta: [{ title: "Sevimli ustalar — mysaloon.uz" }] }),

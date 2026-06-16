@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { fetchAdminBookings, PAGE_SIZE } from "@/lib/admin-api";
@@ -92,7 +92,15 @@ function BookingsPage() {
                 <tbody className="divide-y divide-border">
                   {data.map((b) => (
                     <tr key={b.id} className="hover:bg-background/50">
-                      <td className="px-6 py-4 font-mono text-xs text-muted-foreground">{b.id}</td>
+                      <td className="px-6 py-4 font-mono text-xs text-muted-foreground">
+                        <Link
+                          to="/admin/bookings/$bookingId"
+                          params={{ bookingId: b.id }}
+                          className="hover:text-foreground hover:underline"
+                        >
+                          {b.id}
+                        </Link>
+                      </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <img

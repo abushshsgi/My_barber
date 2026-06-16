@@ -141,6 +141,22 @@ else:
         },
     }
 
+# OTP throttles and phone_auth cache — productionda REDIS_URL bilan bir xil Redis ishlatiladi.
+if os.environ.get("REDIS_URL"):
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": os.environ["REDIS_URL"],
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "mysaloon-default",
+        }
+    }
+
 if os.environ.get("DATABASE_URL"):
     DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
 else:
@@ -179,6 +195,38 @@ else:
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# Optional cloud media (production). Default: local MEDIA_ROOT unchanged.
+USE_S3_MEDIA = os.environ.get("USE_S3_MEDIA", "").lower() in ("1", "true", "yes")
+if USE_S3_MEDIA:
+    INSTALLED_APPS.append("storages")
+    AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID", "")
+    AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
+    AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME", "")
+    AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME", "eu-central-1")
+    AWS_S3_CUSTOM_DOMAIN = os.environ.get("AWS_S3_CUSTOM_DOMAIN", "").strip() or None
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = False
+    AWS_S3_FILE_OVERWRITE = False
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        },
+        "staticfiles": {
+            "BACKEND": STATICFILES_STORAGE if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+    if AWS_S3_CUSTOM_DOMAIN:
+        MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
+    elif AWS_STORAGE_BUCKET_NAME:
+        MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/"
+
+# External payments (Click / Payme) — see wallet/payments.py
+CLICK_MERCHANT_ID = os.environ.get("CLICK_MERCHANT_ID", "").strip()
+CLICK_SERVICE_ID = os.environ.get("CLICK_SERVICE_ID", "").strip()
+CLICK_SECRET_KEY = os.environ.get("CLICK_SECRET_KEY", "").strip()
+PAYME_MERCHANT_ID = os.environ.get("PAYME_MERCHANT_ID", "").strip()
+PAYME_SECRET_KEY = os.environ.get("PAYME_SECRET_KEY", "").strip()
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

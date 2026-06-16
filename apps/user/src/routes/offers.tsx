@@ -15,8 +15,10 @@ import {
 import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { EmptyState } from "@/components/EmptyState";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
-import { offers } from "@/lib/mock-data";
 import { useAudience, matchAudience } from "@/hooks/use-audience";
+
+/** Backend offers API hali yo'q — bo'sh ro'yxat (mock olib tashlangan). */
+const offers: never[] = [];
 
 export const Route = createFileRoute("/offers")({
   head: () => ({ meta: [{ title: "Aksiyalar — mysaloon.uz" }] }),

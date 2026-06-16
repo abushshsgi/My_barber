@@ -100,8 +100,8 @@ function usePrefs() {
 
 function Notifications() {
   const { t } = useTranslation();
-  const { data: apiItems = [], isLoading } = useNotificationsApi();
-  const items = apiItems.length > 0 ? apiItems : initialFallback;
+  const { data: apiItems = [], isLoading, isError } = useNotificationsApi();
+  const items = apiItems.length > 0 || isLoading || isError ? apiItems : initialFallback;
   const markAllMutation = useMarkAllNotificationsRead();
   const markOneMutation = useMarkNotificationRead();
   const [filter, setFilter] = useState<FilterKey>("all");

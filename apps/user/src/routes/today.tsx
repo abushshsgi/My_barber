@@ -3,7 +3,9 @@ import { useMemo, useState } from "react";
 import { CalendarPlus, MapPin, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
-import { salons, shortPrice } from "@/lib/mock-data";
+import { EmptyState } from "@/components/EmptyState";
+import { useSalonsList } from "@/hooks/use-salons";
+import { shortPrice } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/today")({
@@ -47,24 +49,50 @@ function slotsForSalon(index: number) {
 
 function TodayDeals() {
   const { t } = useTranslation();
+  const { data: salons = [], isLoading } = useSalonsList();
   const [salonIdx, setSalonIdx] = useState(0);
   const [pickedSlot, setPickedSlot] = useState<string | null>(null);
 
   const salon = salons[salonIdx] ?? salons[0];
   const discount = discountFor(salonIdx);
   const slots = useMemo(() => slotsForSalon(salonIdx), [salonIdx]);
-  const salePrice = Math.round((salon.priceFrom * (100 - discount)) / 100);
+  const salePrice = salon ? Math.round((salon.priceFrom * (100 - discount)) / 100) : 0;
 
   const onPickSalon = (index: number) => {
     setSalonIdx(index);
     setPickedSlot(null);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex min-h-full flex-col bg-background pb-24">
+        <PageHeader showBack title={t("todayPage.title")} subtitle={t("todayPage.pickerSubtitle")} />
+        <p className="px-5 py-8 text-center text-sm text-muted-foreground">Yuklanmoqda…</p>
+      </div>
+    );
+  }
+
+  if (!salon) {
+    return (
+      <div className="flex min-h-full flex-col bg-background pb-24">
+        <PageHeader showBack title={t("todayPage.title")} subtitle={t("todayPage.pickerSubtitle")} />
+        <div className="px-5 pt-8">
+          <EmptyState
+            icon={<CalendarPlus className="h-7 w-7" />}
+            title={t("todayPage.empty", { defaultValue: "Salonlar topilmadi" })}
+            description={t("todayPage.emptyHint", {
+              defaultValue: "Bugungi aksiyalar salonlar ro'yxati bilan ishlaydi.",
+            })}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-full flex-col bg-background pb-[calc(68px+env(safe-area-inset-bottom)+88px)]">
       <PageHeader showBack title={t("todayPage.title")} subtitle={t("todayPage.pickerSubtitle")} />
 
-      {/* Salon carousel */}
       <div className="px-5">
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
           {t("todayPage.pickSalon")}
@@ -100,7 +128,6 @@ function TodayDeals() {
         </div>
       </div>
 
-      {/* Selected salon info */}
       <div className="mx-5 mt-4 rounded-[22px] border border-border bg-surface/50 p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -131,7 +158,6 @@ function TodayDeals() {
         </div>
       </div>
 
-      {/* Slot grid */}
       <div className="mt-5 flex-1 px-5">
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
           {t("todayPage.pickTime")}
@@ -166,7 +192,6 @@ function TodayDeals() {
         </Link>
       </div>
 
-      {/* Sticky CTA */}
       <div
         className="fixed inset-x-0 z-40 border-t border-border bg-background/95 px-5 py-4 backdrop-blur-md lg:pl-[calc(240px+1.25rem)]"
         style={{ bottom: "calc(68px + env(safe-area-inset-bottom))" }}

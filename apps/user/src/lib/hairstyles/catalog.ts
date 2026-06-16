@@ -62,8 +62,25 @@ export function hairstyleImageFallbacks(imageUrl: string): string[] {
   return [`/hairstyles/${audience}/${file}`];
 }
 
-/** AI generatsiya qilingan ayol uslublari (kulrang placeholder emas). */
-const WOMEN_CATALOG_IMAGE_SLUGS = new Set<string>([]);
+/** Asosiy katalogda mavjud ayol uslublari (`public/hairstyles/women/{slug}.webp`). */
+export const WOMEN_CATALOG_IMAGE_SLUGS = new Set<string>([
+  "soft-bob",
+  "long-layers",
+  "balayage",
+  "pixie-cut",
+  "beach-waves",
+  "straight-lob",
+  "curtain-bangs",
+  "shag-cut",
+  "braids",
+  "updo-bun",
+  "blunt-cut",
+  "highlights",
+]);
+
+export function resolveWomenCatalogImageUrl(slug: string): string {
+  return `/hairstyles/women/${slug}.webp`;
+}
 
 /** Katalogda haqiqiy rasm fayli mavjud uslublar (home trending / explore strip). */
 export function hasCatalogImageAsset(entry: Pick<HairstyleEntry, "audience" | "slug">): boolean {
@@ -102,7 +119,7 @@ export function resolveCatalogImageUrl(
     return null;
   }
   if (WOMEN_CATALOG_IMAGE_SLUGS.has(entry.slug)) {
-    return getHairstyleImageUrl(entry);
+    return resolveWomenCatalogImageUrl(entry.slug);
   }
   return null;
 }

@@ -2,6 +2,9 @@
 # Start: backend/Procfile → daphne (ASGI) — WebSocket uchun WSGI emas.
 # Redis: “New” → Redis → REDIS_URL env avtomatik; WebSocket bir nechta replikada ishlaydi.
 # Cron: “Cron Jobs” yoki alohida servis — remind_bookings (qarang .env.example).
+# Misol (Railway Cron Jobs):
+#   schedule: */10 * * * *
+#   command:  python manage.py remind_bookings
 # Production (mysaloon.uz) — Railway Variables:
 #   DJANGO_DEBUG=false
 #   DJANGO_ALLOWED_HOSTS=api.mysaloon.uz,.railway.app

@@ -5,6 +5,7 @@ import {
   setUserTokens,
   type ApiUser,
 } from "@/lib/api";
+import { refreshAiStyleHistoryCache } from "@/lib/api/ai";
 import {
   migrateFaceProfileOnLogout,
   prepareFaceProfileStorageForUser,
@@ -59,6 +60,7 @@ export function setSession(access: string, refresh: string, user: ApiUser) {
     prepareFaceProfileStorageForUser(user.id);
     prepareUserPrefsStorageForUser(user.id);
     notifyAudienceReset(user.id);
+    void refreshAiStyleHistoryCache();
   }
 
   clearQueryClientCache();

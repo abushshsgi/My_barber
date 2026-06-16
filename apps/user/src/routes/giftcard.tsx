@@ -4,8 +4,14 @@ import { Gift } from "lucide-react";
 import { toast } from "sonner";
 import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { useSendGift, useWalletBalance, useWalletRecipientSearch } from "@/hooks/use-wallet";
-import { formatPrice, giftCards } from "@/lib/mock-data";
+import { formatPrice } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+
+const GIFT_PRESETS = [
+  { id: "g1", amount: 200_000, label: "Mini" },
+  { id: "g2", amount: 500_000, label: "Standart" },
+  { id: "g3", amount: 1_000_000, label: "Premium" },
+] as const;
 
 export const Route = createFileRoute("/giftcard")({
   head: () => ({ meta: [{ title: "Sovg'a karta — mysaloon.uz" }] }),
@@ -14,7 +20,7 @@ export const Route = createFileRoute("/giftcard")({
 
 function GiftCardPage() {
   const navigate = useNavigate();
-  const [selectedId, setSelectedId] = useState(giftCards[1].id);
+  const [selectedId, setSelectedId] = useState(GIFT_PRESETS[1].id);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [recipientUserId, setRecipientUserId] = useState<number | null>(null);
@@ -30,7 +36,7 @@ function GiftCardPage() {
     return () => window.clearTimeout(t);
   }, [query]);
 
-  const amount = giftCards.find((g) => g.id === selectedId)?.amount ?? 0;
+  const amount = GIFT_PRESETS.find((g) => g.id === selectedId)?.amount ?? 0;
   const canAfford = balance >= amount;
   const canSend =
     (Boolean(recipientUserId) || query.trim().length >= 9) &&
@@ -105,7 +111,7 @@ function GiftCardPage() {
           Summani tanlang
         </h3>
         <div className="mt-3 grid grid-cols-3 gap-2">
-          {giftCards.map((g) => {
+          {GIFT_PRESETS.map((g) => {
             const active = selectedId === g.id;
             return (
               <button

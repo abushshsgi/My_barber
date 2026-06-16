@@ -12,6 +12,7 @@ from control_panel.views import (
     AdminBarberListView,
     AdminBarberSegmentStatsView,
     AdminBookingListView,
+    AdminBookingDetailView,
     AdminBroadcastListCreateView,
     AdminCategoryDetailView,
     AdminCategoryListCreateView,
@@ -36,6 +37,7 @@ from control_panel.views import (
     AdminStatsView,
     AdminUserDetailView,
     AdminUserListView,
+    UserSupportTicketListCreateView,
 )
 
 from accounts.views import (
@@ -112,6 +114,8 @@ from ai.views import (
 )
 from chat.views import ConversationListCreateView, ConversationMessagesView
 from notifications.push_views import BarberPushTokenView
+from wallet.payment_confirm import PaymentConfirmView
+from wallet.payment_views import PaymentCheckoutView, PaymentProvidersView
 from wallet.views import (
     AdminWalletTopUpView,
     WalletGiftSendView,
@@ -157,6 +161,7 @@ api_routes = [
     path("admin/barbers/segment-stats/", AdminBarberSegmentStatsView.as_view()),
     path("admin/barbers/<int:pk>/", AdminBarberDetailView.as_view()),
     path("admin/bookings/", AdminBookingListView.as_view()),
+    path("admin/bookings/<int:pk>/", AdminBookingDetailView.as_view()),
     path("admin/reviews/", AdminReviewListView.as_view()),
     path("admin/categories/", AdminCategoryListCreateView.as_view()),
     path("admin/categories/<int:pk>/", AdminCategoryDetailView.as_view()),
@@ -229,11 +234,15 @@ api_routes = [
         "chat/conversations/<uuid:conversation_id>/messages/",
         ConversationMessagesView.as_view(),
     ),
+    path("support/tickets/", UserSupportTicketListCreateView.as_view()),
     path("wallet/me/", WalletMeView.as_view()),
     path("wallet/transactions/", WalletTransactionsView.as_view()),
     path("wallet/top-up/", WalletTopUpView.as_view()),
     path("wallet/gift/send/", WalletGiftSendView.as_view()),
     path("wallet/recipients/search/", WalletRecipientSearchView.as_view()),
+    path("payments/providers/", PaymentProvidersView.as_view()),
+    path("payments/checkout/", PaymentCheckoutView.as_view()),
+    path("payments/confirm/", PaymentConfirmView.as_view()),
     path("admin/wallet/top-up/", AdminWalletTopUpView.as_view()),
     path("", include(router.urls)),
 ]

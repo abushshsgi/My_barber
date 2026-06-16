@@ -17,25 +17,32 @@ export const EXPLORE_PERSONAS: ExplorePersona[] = [
 
 export const DEFAULT_EXPLORE_PERSONA: ExplorePersonaId = "evro";
 
+/** Erkaklar katalogidagi barcha uslub sluglari. */
+export const MEN_CATALOG_STYLE_SLUGS = [
+  "mid-fade",
+  "low-fade",
+  "skin-fade",
+  "buzz-cut",
+  "textured-crop",
+  "pompadour",
+  "undercut",
+  "side-part",
+  "french-crop",
+  "slick-back",
+  "curly-top-fade",
+  "modern-mullet",
+] as const;
+
 /** Generatsiya qilingan persona assetlari */
 export const PERSONA_READY_ASSETS: Record<
   ExplorePersonaId,
   { reference: boolean; slugs: readonly string[] }
 > = {
-  britan: { reference: false, slugs: [] },
-  irland: {
-    reference: true,
-    slugs: ["mid-fade", "skin-fade", "buzz-cut", "textured-crop"],
-  },
-  slavyan: {
-    reference: true,
-    slugs: ["mid-fade", "skin-fade", "buzz-cut", "textured-crop"],
-  },
-  evro: {
-    reference: true,
-    slugs: ["mid-fade", "skin-fade", "buzz-cut", "textured-crop"],
-  },
-  fransuz: { reference: false, slugs: [] },
+  britan: { reference: true, slugs: MEN_CATALOG_STYLE_SLUGS },
+  irland: { reference: true, slugs: MEN_CATALOG_STYLE_SLUGS },
+  slavyan: { reference: true, slugs: MEN_CATALOG_STYLE_SLUGS },
+  evro: { reference: true, slugs: MEN_CATALOG_STYLE_SLUGS },
+  fransuz: { reference: true, slugs: MEN_CATALOG_STYLE_SLUGS },
 };
 
 export function hasPersonaReference(personaId: ExplorePersonaId): boolean {
@@ -77,5 +84,8 @@ export function getPersonaRefImageUrl(personaId: ExplorePersonaId): string {
 }
 
 export function getPersonaStyleImageUrl(personaId: ExplorePersonaId, slug: string): string {
-  return `/hairstyles/men/personas/${personaId}/${slug}.webp`;
+  if (hasPersonaStyleAsset(personaId, slug)) {
+    return `/hairstyles/men/personas/${personaId}/${slug}.webp`;
+  }
+  return `/hairstyles/men/${slug}.webp`;
 }

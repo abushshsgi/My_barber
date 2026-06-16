@@ -65,6 +65,27 @@ function EarningsPage() {
 
   const { bars, labels, weekSegmentTotal } = useLast7DaysCompletedSeries(bookings);
 
+  const exportCsv = () => {
+    const header = "Sana,Mijoz,Narx,Holat\n";
+    const rows = filteredBookings
+      .map((b) =>
+        [
+          b.start_at ?? "",
+          `"${(b.client ?? "").replace(/"/g, '""')}"`,
+          String(b.price),
+          b.status,
+        ].join(","),
+      )
+      .join("\n");
+    const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `daromad-${range.toLowerCase()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const rangeHint = range.toLowerCase();
   const showAllTimeNote = range === "Yil";
 
@@ -77,9 +98,9 @@ function EarningsPage() {
           <>
             <button
               type="button"
-              disabled
-              title="Tez orada"
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-card text-sm font-medium opacity-50 cursor-not-allowed"
+              onClick={exportCsv}
+              disabled={filteredBookings.length === 0}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-card text-sm font-medium disabled:opacity-50"
             >
               <Download className="size-4" />
               Eksport
@@ -87,7 +108,7 @@ function EarningsPage() {
             <button
               type="button"
               disabled
-              title="Tez orada"
+              title="Pul yechish API tez orada"
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-foreground text-background text-sm font-medium opacity-50 cursor-not-allowed"
             >
               <ArrowDownToLine className="size-4" />

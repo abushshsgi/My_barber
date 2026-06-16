@@ -1,65 +1,38 @@
 # Users App API Status Matrix
 
-**Eslatma (2026):** Mijoz ilovasi — `apps/user/src`.  
-Hozirgi ma'lumot: `src/lib/mock-data.ts`. Quyidagi Django endpointlar **keyin** ulanadi.
+**Eslatma (2026-06):** Mijoz ilovasi — `apps/user/src/lib/api/` (canonical REST client).  
+`packages/user-api-adapter` hali alohida paket emas — API shu papkada.
 
-Canonical prefix (MyBarber backend): `/api/v1`
+Canonical prefix: `/api/v1`
 
-## Rejadagi endpointlar (MyBarber backend)
+## Ulangan modullar (REST)
 
-- `POST /auth/phone/send-code/` — telefon OTP yuborish (login = signup)
-- `POST /auth/phone/verify/` — kod tasdiqlash → `{ access, refresh, user, is_new_user }`
-- `POST /auth/phone/check/` — `{ has_password, registered }`
-- `POST /auth/phone/password-login/` — telefon + parol
-- `POST /auth/phone/set-password/` — ixtiyoriy parol o'rnatish
-- `POST /auth/phone/change-password/` — parolni yangilash
-- `POST /auth/token/refresh/` — JWT yangilash
-- `GET /regions/` — viloyat tanlovi
-- `GET /users/me/` — profile
-- `PATCH /users/me/` — profil yangilash
-- `GET /salons/` — salon list
-- `GET /salons/?ids=1,2,3` — sevimli salonlar batch
-- `GET /salons/{id}/` — salon detail
-- `GET /salons/{id}/staff/` — salon barberlari
-- `GET /salons/{id}/portfolio/` — portfolio
-- `GET /salons/nearby/` — map discover
-- `GET /salons/search/?q=` — salon qidiruv
-- `GET /barbers/nearby/` — nearby barber
-- `GET /barbers/find/?q=` — barber qidiruv
-- `GET /barbers/by-barber-id/` — independent detail
-- `GET /barbers/availability/` — independent slotlar
-- `GET /bookings/availability/` — salon slotlar
-- `GET /bookings/` — booking history
-- `POST /bookings/` — booking create
-- `POST /bookings/{id}/cancel/` — bekor qilish
-- `GET /reviews/?salon={id}` — salon reviews
-- `GET /reviews/?mine=1` — user reviews
-- `POST /reviews/` — sharh yozish
-- `GET /favorites/salons/` — sevimlilar
-- `POST /favorites/salons/` — qo'shish
-- `DELETE /favorites/salons/{salon_id}/` — olib tashlash
-- `GET /notifications/` — notifications
-- `POST /notifications/{id}/read/` — o'qilgan
-- `POST /notifications/mark-all-read/` — hammasi
-- `GET /chat/conversations/` — chat list
-- `POST /chat/conversations/` — yangi chat
-- `GET /chat/conversations/{id}/messages/` — thread
-- `POST /chat/conversations/{id}/messages/` — xabar yuborish
+| Modul | Endpointlar | Frontend |
+|-------|-------------|----------|
+| Auth (telefon OTP) | `POST /auth/phone/*`, `POST /auth/token/refresh/` | `lib/api/auth.ts` |
+| Profil | `GET/PATCH /users/me/` | `lib/api/user.ts`, `hooks/use-me.ts` |
+| Salonlar | `GET /salons/`, nearby, search, staff, portfolio | `lib/api/salons.ts` |
+| Sartaroshlar | `GET /barbers/nearby/`, find, by-barber-id, availability | `lib/api/barbers.ts` |
+| Bronlar | `GET/POST /bookings/`, cancel, availability | `lib/api/bookings.ts` |
+| Sharhlar | `GET/POST /reviews/` | `lib/api/reviews.ts` |
+| Sevimlilar | `GET/POST/DELETE /favorites/salons/` | `lib/api/favorites.ts` |
+| Bildirishnomalar | `GET /notifications/`, read, mark-all-read | `lib/api/notifications.ts` + WS |
+| Chat | `GET/POST /chat/conversations/`, messages | `lib/api/chat.ts` + WS |
+| Hamyon | `GET /wallet/me/`, transactions, top-up, gift | `lib/api/wallet.ts` |
+| AI Stil | `POST /ai/style-analyze/`, try-on, face-check | `lib/api/ai.ts` |
+| Yordam | `GET/POST /support/tickets/` | `lib/api/support.ts` |
+| To'lov provayderlar | `GET /payments/providers/`, `POST /payments/checkout/` | `lib/api/payments.ts` |
 
-## Wallet (2026-06)
+## WebSocket (REDIS_URL production'da)
 
-- `GET /wallet/me/` — balans, hamyon raqami, virtual karta
-- `GET /wallet/transactions/` — hash-zanjir ledger
-- `POST /wallet/top-up/` — DEBUG test to'ldirish
-- `POST /wallet/gift/send/` — P2P sovg'a
-- `GET /wallet/recipients/search/?q=` — qabul qiluvchi qidiruv
-- `POST /admin/wallet/top-up/` — admin manual top-up
+- `WS /ws/chat/{conversationId}/?token=...` — `hooks/use-chat-websocket.ts`
+- `WS /ws/notifications/?token=...` — `hooks/use-notifications-websocket.ts`
 
+## Hali mock / demo (backend yo'q)
 
-- `WS /ws/chat/{conversationId}/?token=...`
-- `WS /ws/notifications/?token=...`
+`src/lib/mock-data.ts` dan foydalanadi: offers, loyalty, subscriptions, family, addresses, favorite-stylists, reels, stories, today (fake slotlar).
 
-## Contract risklar
+## Contract eslatmalari
 
-- Backendda `/api` va `/api/v1` parallel; frontendda faqat `/api/v1`.
-- API adapter: `packages/user-api-adapter` (hali yozilmagan).
+- Backend `/api` va `/api/v1` parallel; frontend faqat `/api/v1`.
+- SMS OTP provayderi hali ulanmagan — DEBUG rejimda kod ilovada ko'rinadi.

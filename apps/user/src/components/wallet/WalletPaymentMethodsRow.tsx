@@ -1,18 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, CreditCard, Plus, Smartphone } from "lucide-react";
+import { ChevronRight, CreditCard, Plus, Smartphone, Wallet as WalletIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { paymentMethods } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-
-const ICONS = {
-  card: CreditCard,
-  click: Smartphone,
-  payme: Smartphone,
-} as const;
+import { useWalletMe } from "@/hooks/use-wallet";
+import { parseWalletBalance } from "@/lib/api/wallet";
 
 export function WalletPaymentMethodsRow() {
   const { t } = useTranslation();
-  const primary = paymentMethods.find((pm) => pm.primary) ?? paymentMethods[0];
+  const { data: wallet } = useWalletMe();
+  const balance = wallet ? parseWalletBalance(wallet.balance) : 0;
 
   return (
     <section className="mx-5 mt-8">
@@ -33,36 +29,44 @@ export function WalletPaymentMethodsRow() {
       </div>
 
       <div className="no-scrollbar -mx-0.5 flex gap-1.5 overflow-x-auto overscroll-x-contain px-0.5 pb-0.5">
-        {paymentMethods.map((pm) => {
-          const Icon = ICONS[pm.type];
-          return (
-            <Link
-              key={pm.id}
-              to="/payment-methods"
-              className={cn(
-                "flex h-[54px] w-[98px] shrink-0 flex-col justify-between rounded-xl border px-2.5 py-2 active:scale-[0.98]",
-                pm.primary ? "border-foreground bg-surface" : "border-border bg-background",
-              )}
-            >
-              <div className="flex items-center justify-between gap-1">
-                <span className="grid h-6 w-6 place-items-center rounded-md bg-background">
-                  <Icon className="h-3 w-3" />
-                </span>
-                {pm.primary ? (
-                  <span className="rounded-full bg-foreground px-1.5 py-0.5 text-[7px] font-bold uppercase leading-none text-background">
-                    {t("paymentMethods.primary")}
-                  </span>
-                ) : (
-                  <span className="h-4 w-4" aria-hidden />
-                )}
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-[10px] font-bold leading-tight">{pm.label}</p>
-                <p className="truncate text-[9px] leading-tight text-muted-foreground">{pm.detail}</p>
-              </div>
-            </Link>
-          );
-        })}
+        {wallet ? (
+          <Link
+            to="/payment-methods"
+            className={cn(
+              "flex h-[54px] w-[120px] shrink-0 flex-col justify-between rounded-xl border px-2.5 py-2 active:scale-[0.98]",
+              "border-foreground bg-surface",
+            )}
+          >
+            <div className="flex items-center justify-between gap-1">
+              <span className="grid h-6 w-6 place-items-center rounded-md bg-background">
+                <WalletIcon className="h-3 w-3" />
+              </span>
+              <span className="rounded-full bg-foreground px-1.5 py-0.5 text-[7px] font-bold uppercase leading-none text-background">
+                {t("paymentMethods.primary")}
+              </span>
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-[10px] font-bold leading-tight">{wallet.card.card_display}</p>
+              <p className="truncate text-[9px] leading-tight text-muted-foreground">
+                {balance.toLocaleString("uz-UZ")} so'm
+              </p>
+            </div>
+          </Link>
+        ) : null}
+
+        {(["click", "payme"] as const).map((id) => (
+          <Link
+            key={id}
+            to="/payment-methods"
+            className="flex h-[54px] w-[98px] shrink-0 flex-col justify-between rounded-xl border border-border bg-background px-2.5 py-2 active:scale-[0.98]"
+          >
+            <span className="grid h-6 w-6 place-items-center rounded-md bg-surface">
+              <Smartphone className="h-3 w-3" />
+            </span>
+            <p className="truncate text-[10px] font-bold uppercase leading-tight">{id}</p>
+          </Link>
+        ))}
+
         <Link
           to="/payment-methods"
           className="flex h-[54px] w-[54px] shrink-0 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border bg-background active:scale-[0.98]"
@@ -73,9 +77,9 @@ export function WalletPaymentMethodsRow() {
         </Link>
       </div>
 
-      {primary ? (
+      {wallet ? (
         <p className="mt-1.5 text-[9px] text-muted-foreground">
-          {t("walletPage.defaultPayment", { method: primary.label })}
+          {t("walletPage.defaultPayment", { method: wallet.card.card_display })}
         </p>
       ) : null}
     </section>

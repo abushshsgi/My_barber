@@ -107,11 +107,27 @@ EXPLORE_PERSONAS: dict[str, dict] = {
 
 DEFAULT_MEN_PERSONA = "evro"
 
-# Generatsiya qilingan assetlar — qolgan sluglar yosh/flat fallback ishlatadi.
+MEN_CATALOG_STYLE_SLUGS = frozenset(
+    {
+        "mid-fade",
+        "low-fade",
+        "skin-fade",
+        "buzz-cut",
+        "textured-crop",
+        "pompadour",
+        "undercut",
+        "side-part",
+        "french-crop",
+        "slick-back",
+        "curly-top-fade",
+        "modern-mullet",
+    }
+)
+
+# Generatsiya qilingan assetlar — persona papkasida bo'lmasa flat katalog fallback.
 PERSONA_READY_ASSETS: dict[str, frozenset[str]] = {
-    "evro": frozenset({"reference", "mid-fade", "skin-fade", "buzz-cut", "textured-crop"}),
-    "irland": frozenset({"reference", "mid-fade", "skin-fade", "buzz-cut", "textured-crop"}),
-    "slavyan": frozenset({"reference", "mid-fade", "skin-fade", "buzz-cut", "textured-crop"}),
+    pid: frozenset({"reference", *MEN_CATALOG_STYLE_SLUGS})
+    for pid in ("britan", "irland", "slavyan", "evro", "fransuz")
 }
 
 

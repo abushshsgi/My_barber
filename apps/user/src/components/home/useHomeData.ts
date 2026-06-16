@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Category } from "@/lib/mock-data";
-import { offers } from "@/lib/mock-data";
+import type { Category, Offer } from "@/lib/mock-data";
 import { pickTrendingStyles, readTrendingFaceHints } from "@/lib/hairstyles/trending";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useUserAgeGroup } from "@/hooks/use-me";
@@ -24,7 +23,7 @@ export function useHomeData() {
   const { personaId } = useExplorePersona();
   const ageGroup = useUserAgeGroup();
   const menPersona = audience === "men" ? personaId : null;
-  const { data: hairstyles = [] } = useHairstyles(audience, menPersona);
+  const { data: hairstyles = [] } = useHairstyles(audience, menPersona, { ignoreAgeGroup: true });
   const ctx = useMemo(() => userRecommendContext(me), [me]);
 
   const hasCoords = ctx.lat != null && ctx.lng != null;
@@ -78,10 +77,7 @@ export function useHomeData() {
     });
   }, [hairstyles, ageGroup, personaId, audience]);
 
-  const topOffer = useMemo(
-    () => offers.find((o) => matchAudience(o.audience, audience)),
-    [audience],
-  );
+  const topOffer = useMemo((): Offer | undefined => undefined, []);
 
   const featuredSalons = useMemo(() => filtered.slice(0, 4), [filtered]);
   const personalized = hasCoords || Boolean(me?.region);

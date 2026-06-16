@@ -91,9 +91,10 @@ const SECTIONS: Section[] = [
     key: "catalog",
     label: "Katalog",
     icon: Tag,
-    matchPrefixes: ["/admin/services"],
+    matchPrefixes: ["/admin/services", "/admin/categories"],
     items: [
       { to: "/admin/services", label: "Xizmatlar", icon: Tag },
+      { to: "/admin/categories", label: "Kategoriyalar", icon: Tag },
       { to: "/admin/services/analytics", label: "Xizmat statistikasi", icon: BarChart3 },
     ],
   },

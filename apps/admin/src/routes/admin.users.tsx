@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -98,7 +98,13 @@ function UsersPage() {
                   {data.results.map((u) => (
                     <tr key={u.id} className="hover:bg-background/50">
                       <td className="px-6 py-4">
-                        <div className="font-medium text-foreground">{u.name}</div>
+                        <Link
+                          to="/admin/users/$userId"
+                          params={{ userId: u.id }}
+                          className="font-medium text-foreground hover:underline"
+                        >
+                          {u.name}
+                        </Link>
                         <div className="text-xs text-muted-foreground">{u.email}</div>
                       </td>
                       <td className="px-6 py-4 text-foreground tabular-nums">{u.phone}</td>

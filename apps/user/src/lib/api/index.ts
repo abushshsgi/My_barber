@@ -21,3 +21,5 @@ export * from "./notifications";
 export * from "./chat";
 export * from "./wallet";
 export * from "./ai";
+export * from "./support";
+export * from "./payments";

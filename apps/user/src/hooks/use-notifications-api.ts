@@ -15,8 +15,11 @@ export function notificationsQueryKeyFor(userId: number | null) {
   return userQueryKey(notificationsQueryKeyBase, userId);
 }
 
+import { useNotificationsWebSocket } from "@/hooks/use-notifications-websocket";
+
 export function useNotificationsApi() {
   const userId = getAuthUserId();
+  useNotificationsWebSocket();
   return useQuery({
     queryKey: notificationsQueryKeyFor(userId),
     queryFn: async () => (await fetchNotifications()).map(mapNotification),

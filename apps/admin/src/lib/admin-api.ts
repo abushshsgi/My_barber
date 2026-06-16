@@ -434,7 +434,7 @@ type BackendBookingRow = {
   start_at: string;
   status: string;
   total_price: string;
-  lines?: Array<{ service_name?: string }>;
+  lines?: Array<{ service_name?: string; price?: string | number }>;
 };
 
 type BackendReviewRow = {
@@ -731,6 +731,11 @@ export async function fetchAdminUsers(params?: {
   };
 }
 
+export async function fetchAdminUserDetail(id: string): Promise<AdminUser> {
+  const row = await apiJson<BackendUserRow>(`/api/v1/admin/users/${id}/`);
+  return mapUser(row);
+}
+
 export async function patchAdminUser(
   id: string,
   body: Partial<{ is_active: boolean; region: string }>,
@@ -912,6 +917,17 @@ export async function fetchAdminBookings(params?: {
   };
 }
 
+export async function fetchAdminBookingDetail(id: string): Promise<AdminBooking & { lines?: Array<{ service_name: string; price: number }> }> {
+  const b = await apiJson<BackendBookingRow>(`/api/v1/admin/bookings/${id}/`);
+  return {
+    ...mapAdminBookingRow(b),
+    lines: (b.lines ?? []).map((line) => ({
+      service_name: line.service_name ?? "—",
+      price: Math.max(0, toInt(line.price, 0)),
+    })),
+  };
+}
+
 export async function fetchAdminReviews(params?: {
   barber?: string;
   min_rating?: number;
@@ -1048,6 +1064,49 @@ export async function fetchCategories(): Promise<ServiceCategory[]> {
     order: Number(c.order || 0),
     services_count: Number(c.services_count || 0),
   }));
+}
+
+export async function createCategory(body: {
+  name: string;
+  icon?: string;
+  order?: number;
+}): Promise<ServiceCategory> {
+  const row = await apiJson<Record<string, unknown>>("/api/v1/admin/categories/", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  return {
+    id: String(row.id),
+    name: String(row.name || ""),
+    icon: String(row.icon || ""),
+    order: Number(row.order || 0),
+    services_count: Number(row.services_count || 0),
+  };
+}
+
+export async function updateCategory(
+  id: string,
+  body: Partial<{ name: string; icon: string; order: number; is_active: boolean }>,
+): Promise<ServiceCategory> {
+  const row = await apiJson<Record<string, unknown>>(`/api/v1/admin/categories/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+  return {
+    id: String(row.id),
+    name: String(row.name || ""),
+    icon: String(row.icon || ""),
+    order: Number(row.order || 0),
+    services_count: Number(row.services_count || 0),
+  };
+}
+
+export async function deleteCategory(id: string): Promise<void> {
+  const res = await apiFetch(`/api/v1/admin/categories/${id}/`, { method: "DELETE" });
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}));
+    throw new Error((j as { detail?: string }).detail || "Kategoriya o'chirilmadi");
+  }
 }
 
 export async function fetchServices(params?: {

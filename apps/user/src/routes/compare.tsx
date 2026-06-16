@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, type ReactNode } from "react";
 import { Check, Plus, X, Star, MapPin, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
-import { salons, shortPrice } from "@/lib/mock-data";
+import { useSalonsList } from "@/hooks/use-salons";
+import { shortPrice, type Salon } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/compare")({
@@ -13,7 +14,14 @@ export const Route = createFileRoute("/compare")({
 const MAX = 3;
 
 function ComparePage() {
-  const [selected, setSelected] = useState<string[]>([salons[0].id, salons[1].id]);
+  const { data: salons = [], isLoading } = useSalonsList();
+  const [selected, setSelected] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (selected.length === 0 && salons.length >= 2) {
+      setSelected([salons[0]!.id, salons[1]!.id]);
+    }
+  }, [salons, selected.length]);
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -24,8 +32,8 @@ function ComparePage() {
   };
 
   const chosen = useMemo(
-    () => selected.map((id) => salons.find((s) => s.id === id)!).filter(Boolean),
-    [selected],
+    () => selected.map((id) => salons.find((s) => s.id === id)).filter(Boolean) as Salon[],
+    [selected, salons],
   );
 
   // Collect all unique services across chosen salons (by name)
@@ -51,6 +59,14 @@ function ComparePage() {
     <div className="pb-12">
       <PageHeader title="Taqqoslash" subtitle={`Tanlangan ${chosen.length}/${MAX}`} />
 
+      {isLoading ? (
+        <p className="px-5 py-8 text-center text-sm text-muted-foreground">Yuklanmoqda…</p>
+      ) : salons.length < 2 ? (
+        <div className="mx-5 mt-8 rounded-2xl bg-surface p-8 text-center">
+          <p className="text-sm font-bold">Taqqoslash uchun kamida 2 ta salon kerak</p>
+        </div>
+      ) : (
+        <>
       {/* Picker */}
       <section className="px-5">
         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
@@ -146,6 +162,7 @@ function ComparePage() {
           </section>
 
           {/* Services matrix */}
+          {allServices.length > 0 ? (
           <section className="mt-8 px-5">
             <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
               Xizmatlar
@@ -173,6 +190,7 @@ function ComparePage() {
               ))}
             </div>
           </section>
+          ) : null}
 
           {/* CTAs */}
           <section className="mt-6 grid gap-2 px-5" style={{ gridTemplateColumns: `repeat(${chosen.length}, minmax(0, 1fr))` }}>
@@ -189,6 +207,8 @@ function ComparePage() {
           </section>
         </>
       )}
+        </>
+      )}
     </div>
   );
 }
@@ -200,8 +220,8 @@ function MetricRow({
   bestId,
 }: {
   label: string;
-  salons: { id: string }[];
-  render: (s: any) => React.ReactNode;
+  salons: Salon[];
+  render: (s: Salon) => ReactNode;
   bestId?: string;
 }) {
   return (

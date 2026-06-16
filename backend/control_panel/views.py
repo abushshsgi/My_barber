@@ -7,6 +7,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.exceptions import NotFound
+from rest_framework.permissions import IsAuthenticated
 
 from accounts.models import AdminAccount, User
 from accounts.uz_regions import UzRegion
@@ -411,6 +412,61 @@ class AdminBookingListView(generics.ListAPIView):
         if barber_raw.isdigit():
             qs = qs.filter(barber_id=int(barber_raw))
         return qs
+
+
+class AdminBookingDetailView(generics.RetrieveAPIView):
+    permission_classes = [IsAdmin]
+    serializer_class = BookingSerializer
+
+    def get_queryset(self):
+        return (
+            Booking.objects.select_related("customer", "salon", "barber")
+            .prefetch_related("lines")
+            .order_by("-created_at")
+        )
+
+
+class UserSupportTicketListCreateView(APIView):
+    """Mijoz yordam murojaatlari."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        qs = SupportTicket.objects.filter(created_by_user=request.user).order_by("-updated_at")[:50]
+        return Response(
+            [
+                {
+                    "id": t.id,
+                    "subject": t.subject,
+                    "body": t.body,
+                    "status": t.status,
+                    "created_at": t.created_at.isoformat(),
+                    "updated_at": t.updated_at.isoformat(),
+                }
+                for t in qs
+            ]
+        )
+
+    def post(self, request):
+        subject = str(request.data.get("subject", "")).strip()
+        body = str(request.data.get("body", "")).strip()
+        if not subject:
+            return Response({"detail": "subject is required."}, status=http_status.HTTP_400_BAD_REQUEST)
+        ticket = SupportTicket.objects.create(
+            subject=subject[:255],
+            body=body,
+            category="user_support",
+            created_by_user=request.user,
+        )
+        return Response(
+            {
+                "id": ticket.id,
+                "subject": ticket.subject,
+                "status": ticket.status,
+                "created_at": ticket.created_at.isoformat(),
+            },
+            status=http_status.HTTP_201_CREATED,
+        )
 
 
 class AdminReviewListView(generics.ListAPIView):

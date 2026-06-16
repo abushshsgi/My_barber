@@ -4,6 +4,7 @@ import { Send, Phone, MoreVertical, Image as ImageIcon, Smile, Check, CheckCheck
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useChatMessages, useConversations, useSendChatMessage } from "@/hooks/use-chat-api";
+import { useChatWebSocket } from "@/hooks/use-chat-websocket";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/chat/$id")({
@@ -32,6 +33,7 @@ function ChatThread() {
   const thread = threads.find((c) => c.id === id) ?? threads[0];
   const { data: apiMessages = [], isLoading } = useChatMessages(id);
   const sendMessage = useSendChatMessage(id);
+  useChatWebSocket(id);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);

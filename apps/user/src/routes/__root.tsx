@@ -25,6 +25,8 @@ import { AudienceProvider } from "../hooks/use-audience";
 import { AuthSessionGuard } from "../components/AuthSessionGuard";
 import { OnboardingGuard } from "../components/OnboardingGuard";
 
+const IS_MOBILE_SPA = import.meta.env.VITE_MOBILE_SPA === "true";
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-6">
@@ -98,37 +100,45 @@ function RoutePending() {
   );
 }
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  ssr: false,
-  pendingComponent: RoutePending,
-  beforeLoad: async ({ location }) => {
+const sharedRootOptions = {
+  beforeLoad: async ({ location }: { location: { pathname: string } }) => {
     await requireAuth(location.pathname);
   },
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { httpEquiv: "Cache-Control", content: "no-cache, no-store, must-revalidate" },
-      { httpEquiv: "Pragma", content: "no-cache" },
-      { httpEquiv: "Expires", content: "0" },
-      { name: "theme-color", content: "#faf8f5" },
-      { title: "mysaloon.uz — Online salon bron qilish" },
-      {
-        name: "description",
-        content:
-          "mysaloon.uz — O'zbekistondagi sartaroshlar va go'zallik salonlarini online bron qiluvchi platforma.",
-      },
-      { property: "og:title", content: "mysaloon.uz" },
-      { property: "og:description", content: "Online salon va sartaroshxona bron platforma." },
-      { property: "og:type", content: "website" },
-    ],
-    links: [{ rel: "stylesheet", href: appCss }],
-  }),
-  shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
-});
+};
+
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
+  IS_MOBILE_SPA
+    ? sharedRootOptions
+    : {
+        ...sharedRootOptions,
+        ssr: false,
+        pendingComponent: RoutePending,
+        head: () => ({
+          meta: [
+            { charSet: "utf-8" },
+            { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+            { httpEquiv: "Cache-Control", content: "no-cache, no-store, must-revalidate" },
+            { httpEquiv: "Pragma", content: "no-cache" },
+            { httpEquiv: "Expires", content: "0" },
+            { name: "theme-color", content: "#faf8f5" },
+            { title: "mysaloon.uz — Online salon bron qilish" },
+            {
+              name: "description",
+              content:
+                "mysaloon.uz — O'zbekistondagi sartaroshlar va go'zallik salonlarini online bron qiluvchi platforma.",
+            },
+            { property: "og:title", content: "mysaloon.uz" },
+            { property: "og:description", content: "Online salon va sartaroshxona bron platforma." },
+            { property: "og:type", content: "website" },
+          ],
+          links: [{ rel: "stylesheet", href: appCss }],
+        }),
+        shellComponent: RootShell,
+      },
+);
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (

@@ -1,6 +1,8 @@
 import { useEffect, type ReactNode } from "react";
+import { refreshAiStyleHistoryCache } from "@/lib/api/ai";
 import { bootstrapUserSession, handleAuthFailure } from "@/lib/api/client";
 import { getActiveUserId, prepareFaceProfileStorageForUser } from "@/lib/face-profile";
+import { useNotificationsWebSocket } from "@/hooks/use-notifications-websocket";
 import { clearQueryClientCache } from "@/lib/query-client";
 import { prepareUserPrefsStorageForUser } from "@/lib/user-prefs";
 
@@ -12,6 +14,11 @@ function isAuthRoute(): boolean {
   if (typeof window === "undefined") return false;
   const path = window.location.pathname;
   return path === AUTH_PATH || path.startsWith(`${AUTH_PATH}/`);
+}
+
+function NotificationsRealtimeBridge() {
+  useNotificationsWebSocket();
+  return null;
 }
 
 /** Tab qayta ochilganda refresh token orqali sessiyani tiklash. */
@@ -28,6 +35,7 @@ export function AuthSessionGuard({ children }: { children: ReactNode }) {
         if (uid) {
           prepareFaceProfileStorageForUser(uid, { allowLegacyClaim: true });
           prepareUserPrefsStorageForUser(uid, { allowLegacyClaim: true });
+          void refreshAiStyleHistoryCache();
         }
       });
     };
@@ -57,5 +65,10 @@ export function AuthSessionGuard({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  return children;
+  return (
+    <>
+      <NotificationsRealtimeBridge />
+      {children}
+    </>
+  );
 }

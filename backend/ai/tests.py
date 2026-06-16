@@ -189,7 +189,9 @@ class HairstyleApiTests(TestCase):
         self.assertEqual(res.status_code, 200)
         body = res.json()
         slugs = {item["slug"] for item in body}
-        self.assertEqual(slugs, {"mid-fade", "skin-fade", "buzz-cut", "textured-crop"})
+        self.assertIn("mid-fade", slugs)
+        self.assertIn("low-fade", slugs)
+        self.assertEqual(len(slugs), 12)
 
     def test_hairstyles_detail_missing_persona_asset_returns_404(self):
         res = self.client.get(

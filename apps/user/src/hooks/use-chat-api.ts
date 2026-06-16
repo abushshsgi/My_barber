@@ -32,7 +32,7 @@ export function useChatMessages(conversationId: string) {
     queryKey: userQueryKey(["chat", "messages", conversationId] as const, userId),
     queryFn: async () => (await fetchMessages(conversationId)).map((m) => mapMessage(m, "USER")),
     enabled: authQueryEnabled(!!userId && Boolean(conversationId)),
-    refetchInterval: 15_000,
+    refetchInterval: false,
   });
 }
 
