@@ -10,9 +10,10 @@ import { formatDistanceKm } from "@/lib/map-utils";
 import { cn } from "@/lib/utils";
 
 const GRID_COUNT = 6;
-const GRID_CELL_H = 72;
+const GRID_CELL_H = 88;
 const GRID_GAP = 8;
-const GRID_HEIGHT = GRID_CELL_H * 2 + GRID_GAP;
+const GRID_PADDING_Y = 16;
+const GRID_HEIGHT = GRID_CELL_H * 2 + GRID_GAP + GRID_PADDING_Y;
 const PEEK_HEIGHT = 112;
 const DETAIL_REVEAL_PX = 20;
 const SNAP_EXPAND_RATIO = 0.45;
@@ -78,9 +79,10 @@ function SalonGridCell({
       aria-pressed={isActive}
       aria-label={salon.name}
       className={cn(
-        "relative h-[72px] w-full overflow-hidden rounded-xl bg-[#E8E8E8] ring-1 ring-black/5 active:scale-[0.98]",
+        "relative w-full overflow-hidden rounded-xl bg-[#E8E8E8] ring-1 ring-black/5 active:scale-[0.98]",
         isActive && "ring-2 ring-foreground ring-offset-2 ring-offset-background",
       )}
+      style={{ height: GRID_CELL_H }}
     >
       <SalonCoverImage salon={salon} className="absolute inset-0" />
     </button>
