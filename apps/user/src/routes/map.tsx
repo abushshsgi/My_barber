@@ -5,7 +5,6 @@ import { Search, Locate } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { MapAirbnbCarousel } from "@/components/map/MapAirbnbCarousel";
-import { MapSalonListSheet } from "@/components/map/MapSalonListSheet";
 import { SalonMap, type SalonMapMarker } from "@/components/map/SalonMap";
 import { resolveMapAudienceFilter, useAudience } from "@/hooks/use-audience";
 import { useMe } from "@/hooks/use-me";
@@ -57,7 +56,6 @@ function MapView() {
   const [active, setActive] = useState("");
   const [query, setQuery] = useState("");
   const [flyToUser, setFlyToUser] = useState<{ lat: number; lng: number } | null>(null);
-  const [listOpen, setListOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -118,6 +116,17 @@ function MapView() {
     locateMe(true);
   }, [mounted]);
 
+  useEffect(() => {
+    const prevHtml = document.documentElement.style.overflow;
+    const prevBody = document.body.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.documentElement.style.overflow = prevHtml;
+      document.body.style.overflow = prevBody;
+    };
+  }, []);
+
   const isLoading = listLoading || (hasCoords && nearbyLoading);
   const emptyMessage = query.trim()
     ? t("map.emptySearch")
@@ -131,7 +140,7 @@ function MapView() {
     mapAudience === "men" ? "map.forMen" : mapAudience === "women" ? "map.forWomen" : null;
 
   return (
-    <div className="relative h-[calc(100dvh-68px-env(safe-area-inset-bottom,0px))] overflow-hidden bg-surface lg:h-[100dvh]">
+    <div className="relative h-full min-h-0 overflow-hidden bg-surface">
       <div className="absolute inset-0">
         {mounted ? (
           <SalonMap
@@ -176,7 +185,7 @@ function MapView() {
         type="button"
         onClick={() => locateMe()}
         className="absolute right-4 z-20 grid h-10 w-10 place-items-center rounded-full border border-border/50 bg-background/98 text-foreground shadow-lg backdrop-blur-md active:scale-95"
-        style={{ bottom: 188 }}
+        style={{ bottom: 200 }}
         aria-label={t("map.locate")}
       >
         <Locate className="h-4 w-4" />
@@ -199,17 +208,8 @@ function MapView() {
           salons={filtered}
           activeId={active}
           onActiveChange={focusSalon}
-          onListOpen={() => setListOpen(true)}
         />
       ) : null}
-
-      <MapSalonListSheet
-        open={listOpen}
-        salons={filtered}
-        activeId={active}
-        onClose={() => setListOpen(false)}
-        onSelect={focusSalon}
-      />
     </div>
   );
 }
