@@ -139,7 +139,7 @@ export function SalonMap({
       <FitMarkers markers={markers} />
       <FlyToActive activeId={activeId} markers={markers} />
 
-      {showUserLocation && userLocation ? (
+      {showUserLocation && userLocation && (
         <>
           <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon} />
           <Circle
