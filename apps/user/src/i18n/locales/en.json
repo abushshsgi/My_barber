@@ -7,7 +7,8 @@
     "notifications": "Inbox",
     "today": "Today",
     "profile": "Profile",
-    "wallet": "Wallet"
+    "wallet": "Wallet",
+    "more": "More"
   },
   "audience": { "all": "All", "men": "Men", "women": "Women", "profileHint": "Based on profile" },
   "common": {
@@ -26,6 +27,9 @@
     "loading": "Loading...",
     "loadError": "Could not load data. Please try again.",
     "empty": "Nothing here yet"
+  },
+  "footer": {
+    "tagline": "Salon and barber booking platform"
   },
   "home": {
     "title": "Refresh your look today",

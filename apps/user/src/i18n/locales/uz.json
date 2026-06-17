@@ -7,7 +7,8 @@
     "notifications": "Xabar",
     "today": "Bugun",
     "profile": "Profil",
-    "wallet": "Hamyon"
+    "wallet": "Hamyon",
+    "more": "Ko'proq"
   },
   "audience": {
     "all": "Hammasi",
@@ -31,6 +32,9 @@
     "loading": "Yuklanmoqda...",
     "loadError": "Ma'lumot yuklanmadi. Qayta urinib ko'ring.",
     "empty": "Hozircha bo'sh"
+  },
+  "footer": {
+    "tagline": "Salon va sartarosh bron platformasi"
   },
   "home": {
     "title": "Ko'rinishingizni bugun yangilang",
