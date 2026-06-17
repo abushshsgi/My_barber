@@ -94,6 +94,7 @@
     "bookNow": "Book now",
     "viewSalon": "View salon",
     "allSalons": "All salons",
+    "priceFromSuffix": "from",
     "reviews": "reviews"
   },
   "salon": {
