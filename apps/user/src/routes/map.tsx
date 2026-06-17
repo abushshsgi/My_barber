@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { MapSalonGrid } from "@/components/map/MapSalonGrid";
 import { MapErrorBoundary } from "@/components/map/MapErrorBoundary";
+import { MapSalonSheet } from "@/components/map/MapSalonSheet";
 import { SalonMap, type SalonMapMarker } from "@/components/map/SalonMap";
 import { resolveMapAudienceFilter, useAudience } from "@/hooks/use-audience";
 import { useMe } from "@/hooks/use-me";
@@ -52,6 +51,7 @@ function MapView() {
 
   const [active, setActive] = useState("");
   const [query, setQuery] = useState("");
+  const [sheetExpanded, setSheetExpanded] = useState(false);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -88,11 +88,6 @@ function MapView() {
     setActive(id);
   };
 
-  const activeSalon = useMemo(
-    () => filtered.find((s) => s.id === active) ?? filtered[0] ?? null,
-    [filtered, active],
-  );
-
   useEffect(() => {
     const prevHtml = document.documentElement.style.overflow;
     const prevBody = document.body.style.overflow;
@@ -121,7 +116,7 @@ function MapView() {
               markers={mapMarkers}
               activeId={active || null}
               onMarkerClick={focusSalon}
-              showUserLocation
+              showUserLocation={!sheetExpanded}
               userLocation={userLocation}
             />
           </MapErrorBoundary>
@@ -130,37 +125,28 @@ function MapView() {
         )}
       </div>
 
-      <div
-        className="absolute inset-x-0 top-0 z-40 flex justify-center px-4"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 10px)" }}
-      >
-        <div className="relative w-full max-w-md rounded-full border border-border/50 bg-background/98 py-2.5 pl-10 pr-4 shadow-[0_4px_20px_rgba(0,0,0,0.12)] backdrop-blur-md">
-          <Search
-            className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-            strokeWidth={2.4}
-          />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={mounted ? (t("map.search") as string) : "Salon yoki manzil"}
-            className="w-full bg-transparent text-[13px] font-semibold placeholder:text-muted-foreground focus:outline-none"
-          />
-        </div>
-      </div>
-
       {listLoading && filtered.length === 0 ? (
-        <div className="absolute inset-x-0 bottom-0 z-30 border-t border-border/50 bg-background p-4 text-center">
+        <div className="absolute inset-x-0 bottom-0 z-30 rounded-t-[22px] border-t border-border/50 bg-background p-4 text-center">
           <p className="text-sm font-medium text-muted-foreground">{t("map.loading")}</p>
         </div>
       ) : null}
 
       {!listLoading && filtered.length === 0 ? (
-        <div className="absolute inset-x-0 bottom-0 z-30 border-t border-border/50 bg-background p-4 text-center">
+        <div className="absolute inset-x-0 bottom-0 z-30 rounded-t-[22px] border-t border-border/50 bg-background p-4 text-center">
           <p className="text-sm font-medium text-muted-foreground">{emptyMessage}</p>
         </div>
       ) : null}
 
-      {activeSalon ? <MapSalonGrid salon={activeSalon} /> : null}
+      {filtered.length > 0 && active ? (
+        <MapSalonSheet
+          salons={filtered}
+          activeId={active}
+          onActiveChange={focusSalon}
+          query={query}
+          onQueryChange={setQuery}
+          onExpandedChange={setSheetExpanded}
+        />
+      ) : null}
     </div>
   );
 }
