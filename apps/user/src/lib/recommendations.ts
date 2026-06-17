@@ -37,6 +37,13 @@ function recommendScore(salon: Salon, ctx: RecommendContext): number {
     score += Math.max(0, 25 - salon.distanceKm * 2);
   }
 
+  if (ctx.region && salon.address) {
+    const region = ctx.region.trim().toLowerCase();
+    if (region.length > 1 && salon.address.toLowerCase().includes(region)) {
+      score += 28;
+    }
+  }
+
   return score;
 }
 

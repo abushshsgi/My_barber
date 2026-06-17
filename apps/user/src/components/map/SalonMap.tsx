@@ -98,28 +98,19 @@ function FitMarkers({ markers }: { markers: SalonMapMarker[] }) {
   return null;
 }
 
-function FlyToPoint({ point }: { point: { lat: number; lng: number } | null }) {
-  const map = useMap();
-  useEffect(() => {
-    if (!point) return;
-    map.flyTo([point.lat, point.lng], 15, { duration: 0.55 });
-  }, [map, point?.lat, point?.lng, point]);
-  return null;
-}
-
 export function SalonMap({
   markers,
   activeId,
   onMarkerClick,
-  userLocation,
-  flyToUser,
+  showUserLocation = false,
+  userLocation = null,
   onMapReady,
 }: {
   markers: SalonMapMarker[];
   activeId: string | null;
   onMarkerClick: (id: string) => void;
-  userLocation: { lat: number; lng: number } | null;
-  flyToUser: { lat: number; lng: number } | null;
+  showUserLocation?: boolean;
+  userLocation?: { lat: number; lng: number } | null;
   onMapReady?: (map: L.Map) => void;
 }) {
   const initRef = useRef<[number, number]>(TASHKENT);
@@ -147,9 +138,8 @@ export function SalonMap({
       />
       <FitMarkers markers={markers} />
       <FlyToActive activeId={activeId} markers={markers} />
-      <FlyToPoint point={flyToUser} />
 
-      {userLocation && (
+      {showUserLocation && userLocation ? (
         <>
           <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon} />
           <Circle

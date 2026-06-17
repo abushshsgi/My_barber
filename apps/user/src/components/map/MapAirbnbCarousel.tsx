@@ -28,6 +28,7 @@ type Props = {
   salons: Salon[];
   activeId: string;
   onActiveChange: (id: string) => void;
+  onAllSalonsOpenChange?: (open: boolean) => void;
 };
 
 function SalonCoverImage({
@@ -216,7 +217,12 @@ function DragHandle({ className }: { className?: string }) {
   );
 }
 
-export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
+export function MapAirbnbCarousel({
+  salons,
+  activeId,
+  onActiveChange,
+  onAllSalonsOpenChange,
+}: Props) {
   const { t } = useTranslation();
   const sheetRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -239,6 +245,10 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
   useMotionValueEvent(sheetHeight, "change", (height) => {
     setListRevealed(height >= listRevealHeight);
   });
+
+  useEffect(() => {
+    onAllSalonsOpenChange?.(expanded || listRevealed);
+  }, [expanded, listRevealed, onAllSalonsOpenChange]);
 
   const backdropOpacity = useTransform(sheetHeight, (height) => {
     const progress = (height - PEEK_SHEET_HEIGHT) / travel;
