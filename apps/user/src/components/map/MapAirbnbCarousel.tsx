@@ -205,11 +205,14 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
   const listScrollRef = useRef<HTMLDivElement>(null);
   const scrollRaf = useRef<number | null>(null);
   const peekY = useMotionValue(0);
+  const suppressClickRef = useRef(false);
   const peekGesture = useRef({
     active: false,
     axis: null as "x" | "y" | null,
     startX: 0,
     startY: 0,
+    scrollStart: 0,
+    moved: false,
   });
   const [expanded, setExpanded] = useState(false);
 
@@ -258,38 +261,58 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
     animate(peekY, 0, sheetSpring);
   };
 
-  const onCarouselPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+  const onPeekPointerDownCapture = (e: React.PointerEvent<HTMLDivElement>) => {
     peekGesture.current = {
       active: true,
       axis: null,
       startX: e.clientX,
       startY: e.clientY,
+      scrollStart: scrollRef.current?.scrollLeft ?? 0,
+      moved: false,
     };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
-  const onCarouselPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+  const onPeekPointerMoveCapture = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!peekGesture.current.active) return;
 
     const dx = e.clientX - peekGesture.current.startX;
     const dy = e.clientY - peekGesture.current.startY;
 
-    if (!peekGesture.current.axis && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
-      peekGesture.current.axis = Math.abs(dy) > Math.abs(dx) ? "y" : "x";
+    if (!peekGesture.current.axis && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+      peekGesture.current.axis = Math.abs(dy) > Math.abs(dx) * 1.15 ? "y" : "x";
     }
+
+    if (!peekGesture.current.axis) return;
+
+    peekGesture.current.moved = true;
+    e.preventDefault();
 
     if (peekGesture.current.axis === "y") {
-      e.preventDefault();
       peekY.set(Math.max(-PEEK_DRAG_UP_MAX, Math.min(PEEK_DRAG_DOWN_MAX, dy)));
+      return;
     }
+
+    const root = scrollRef.current;
+    if (root) root.scrollLeft = peekGesture.current.scrollStart - dx;
   };
 
-  const onCarouselPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+  const onPeekPointerUpCapture = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!peekGesture.current.active) return;
 
+    const { moved, axis: endedAxis } = peekGesture.current;
     peekGesture.current.active = false;
     peekGesture.current.axis = null;
     e.currentTarget.releasePointerCapture(e.pointerId);
+
+    if (moved && endedAxis === "x") syncActiveFromScroll();
+
+    if (moved) {
+      suppressClickRef.current = true;
+      window.setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 320);
+    }
 
     const offset = peekY.get();
     if (offset < -DRAG_UP_THRESHOLD) {
@@ -299,6 +322,13 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
     }
 
     resetPeekOffset();
+  };
+
+  const onPeekClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (suppressClickRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
   };
 
   const onListDragEnd = (_: unknown, info: PanInfo) => {
@@ -407,18 +437,20 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
             transition={{ duration: 0.22 }}
           >
             <motion.div style={{ y: peekY }}>
-              <div className="rounded-t-[18px] bg-background/95 pb-1 shadow-[0_-8px_32px_rgba(0,0,0,0.12)] ring-1 ring-border/30 backdrop-blur-sm">
+              <div
+                className="rounded-t-[18px] bg-background/95 pb-1 shadow-[0_-8px_32px_rgba(0,0,0,0.12)] ring-1 ring-border/30 backdrop-blur-sm touch-none select-none"
+                onPointerDownCapture={onPeekPointerDownCapture}
+                onPointerMoveCapture={onPeekPointerMoveCapture}
+                onPointerUpCapture={onPeekPointerUpCapture}
+                onPointerCancelCapture={onPeekPointerUpCapture}
+                onClickCapture={onPeekClickCapture}
+              >
                 <DragHandle />
 
                 <div
                   ref={scrollRef}
                   onScroll={onScroll}
-                  onPointerDown={onCarouselPointerDown}
-                  onPointerMove={onCarouselPointerMove}
-                  onPointerUp={onCarouselPointerUp}
-                  onPointerCancel={onCarouselPointerUp}
                   className="no-scrollbar flex cursor-grab gap-2.5 snap-x snap-mandatory overflow-x-auto px-3 pb-1 active:cursor-grabbing"
-                  style={{ touchAction: "pan-x" }}
                 >
                   {salons.map((s) => (
                     <div
