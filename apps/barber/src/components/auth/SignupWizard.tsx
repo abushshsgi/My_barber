@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { AuthErrorAlert } from "@/components/auth/AuthErrorAlert";
+import { AuthMobileStickyBar } from "@/components/auth/AuthMobileStickyBar";
 import { AuthStepIndicator } from "@/components/auth/AuthStepIndicator";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { SignupStepFlow } from "@/components/auth/SignupStepFlow";
@@ -66,7 +67,7 @@ function ActionBar({
           onClick={onBack}
           disabled={step === 0 || loading}
           className={cn(
-            "inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-border bg-background text-sm font-medium text-foreground transition-[var(--transition-smooth)] sm:w-auto sm:px-4",
+            "inline-flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border border-border bg-background text-sm font-medium text-foreground transition-[var(--transition-smooth)] md:h-11 md:w-auto md:rounded-xl md:px-4",
             step === 0 ? "cursor-not-allowed opacity-40" : "hover:bg-muted active:scale-[0.98]",
           )}
           aria-label="Orqaga"
@@ -79,17 +80,13 @@ function ActionBar({
           <AuthStepIndicator currentStep={step} />
         </div>
 
-        <div className="flex-1 sm:hidden">
-          <AuthStepIndicator currentStep={step} />
-        </div>
-
         <AuthSubmitButton
           type="button"
           onClick={onNext}
-          loading={loading || checkingAvailability}
+          loading={loading}
           disabled={!canNext}
           disabledTooltip={disabledTooltip}
-          className="w-auto min-w-[120px] flex-1 sm:min-w-[170px] sm:flex-none"
+          className="h-12 min-w-0 flex-1 rounded-full text-[15px] md:min-w-[170px] md:flex-none md:rounded-xl md:text-sm"
         >
           {nextLabel}
         </AuthSubmitButton>
@@ -168,7 +165,7 @@ export function SignupWizard({
   const nextLabel = step === 2 ? (loading ? "Kutilmoqda..." : "Davom etish") : "Keyingisi";
 
   return (
-    <div className="pb-24 md:pb-0">
+    <div className="md:pb-0">
       <div className="mb-4 hidden md:block">
         <AuthStepIndicator currentStep={step} />
       </div>
@@ -221,20 +218,18 @@ export function SignupWizard({
         </div>
       </div>
 
-      {/* Mobile sticky bottom bar */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-xl md:hidden">
-        <div className="mx-auto max-w-[960px] px-4 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
-          <ActionBar
-            step={step}
-            canNext={canNext}
-            loading={loading || checkingAvailability}
-            onBack={handleBack}
-            onNext={handleNext}
-            nextLabel={nextLabel}
-            disabledTooltip={step === 0 ? "Avval signup yo'lini tanlang" : undefined}
-          />
-        </div>
-      </div>
+      <AuthMobileStickyBar>
+        <ActionBar
+          step={step}
+          canNext={canNext}
+          loading={loading || checkingAvailability}
+          onBack={handleBack}
+          onNext={handleNext}
+          nextLabel={nextLabel}
+          disabledTooltip={step === 0 ? "Avval signup yo'lini tanlang" : undefined}
+          className="w-full"
+        />
+      </AuthMobileStickyBar>
     </div>
   );
 }

@@ -36,7 +36,7 @@ export function FloatingInput({
         required={required}
         aria-invalid={!!error}
         className={cn(
-          "peer h-14 w-full rounded-xl border bg-background px-3.5 pt-5 pb-1.5 text-sm text-foreground outline-none transition-[var(--transition-smooth)] placeholder-transparent focus:border-foreground",
+          "peer h-14 w-full rounded-xl border bg-background px-3.5 pt-5 pb-1.5 text-base text-foreground outline-none transition-[var(--transition-smooth)] placeholder-transparent focus:border-foreground md:text-sm",
           error ? "border-destructive" : "border-border",
         )}
         placeholder={label}

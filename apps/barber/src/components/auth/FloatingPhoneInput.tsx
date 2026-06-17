@@ -36,7 +36,7 @@ export function FloatingPhoneInput({ id, label, value, onChange, error, onBlur }
             onBlur={onBlur}
             autoComplete="tel"
             aria-invalid={!!error}
-            className="peer h-full w-full bg-transparent px-3 pt-5 pb-1.5 text-sm text-foreground outline-none placeholder-transparent"
+            className="peer h-full w-full bg-transparent px-3 pt-5 pb-1.5 text-base text-foreground outline-none placeholder-transparent md:text-sm"
             placeholder={label}
           />
           <label

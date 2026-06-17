@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Scissors } from "lucide-react";
 import type { ReactNode } from "react";
+import { AuthStepIndicator } from "@/components/auth/AuthStepIndicator";
 import type { SignupFlow } from "@/lib/auth-ui";
 import { FLOW_IDENTITY_META } from "@/lib/barber-flow-config";
 import { pageEnter } from "@/lib/motion-presets";
@@ -8,10 +9,12 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   flow: SignupFlow | null;
+  tab: "login" | "signup";
+  signupStep?: number;
   children: ReactNode;
 };
 
-function HeroContent({ flow }: { flow: SignupFlow | null }) {
+function DesktopHero({ flow }: { flow: SignupFlow | null }) {
   const meta = flow ? FLOW_IDENTITY_META[flow] : null;
 
   return (
@@ -27,7 +30,7 @@ function HeroContent({ flow }: { flow: SignupFlow | null }) {
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.25 }}
         >
-          <h1 className="mt-4 text-xl font-semibold leading-tight sm:mt-6 sm:text-3xl">
+          <h1 className="mt-6 text-3xl font-semibold leading-tight">
             {meta ? meta.heroTitle : "Barber kabineti"}
           </h1>
           <p className="mt-2 text-sm text-zinc-300 max-w-sm">
@@ -38,7 +41,7 @@ function HeroContent({ flow }: { flow: SignupFlow | null }) {
           {meta && (
             <div
               className={cn(
-                "mt-3 inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold sm:mt-4",
+                "mt-4 inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold",
                 meta.accentClass,
               )}
             >
@@ -51,27 +54,57 @@ function HeroContent({ flow }: { flow: SignupFlow | null }) {
   );
 }
 
-export function AuthShell({ flow, children }: Props) {
+export function AuthShell({ flow, tab, signupStep = 0, children }: Props) {
+  const meta = flow ? FLOW_IDENTITY_META[flow] : null;
+
   return (
-    <div className="min-h-screen bg-background text-foreground px-4 py-6 pt-safe pb-safe sm:py-10">
+    <div className="min-h-[100dvh] bg-background text-foreground md:min-h-screen md:px-4 md:py-10 md:pt-safe md:pb-safe">
+      {/* Mobile sticky header */}
+      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/90 backdrop-blur-xl md:hidden pt-[max(env(safe-area-inset-top),0px)]">
+        <div className="flex items-center justify-between gap-3 px-3.5 py-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-amber-100">
+              <Scissors className="size-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-[13px] font-semibold leading-tight tracking-tight">
+                {meta?.heroTitle ?? "Barber kabineti"}
+              </p>
+              <p className="truncate text-[11px] text-muted-foreground">
+                {tab === "login"
+                  ? "Kabinetga kirish"
+                  : meta?.badge ?? "Ro'yxatdan o'tish"}
+              </p>
+            </div>
+          </div>
+          {tab === "signup" && (
+            <span className="shrink-0 text-[11px] font-medium tabular-nums text-muted-foreground">
+              <span className="text-foreground">{signupStep + 1}</span>
+              <span className="opacity-50"> / 3</span>
+            </span>
+          )}
+        </div>
+        {tab === "signup" && (
+          <div className="border-t border-border/40 px-3.5 py-2.5">
+            <AuthStepIndicator currentStep={signupStep} />
+          </div>
+        )}
+      </header>
+
       <motion.div
         {...pageEnter}
-        className="mx-auto w-full max-w-[960px] rounded-3xl border border-border bg-card shadow-xl overflow-hidden grid md:grid-cols-[1.05fr_0.95fr]"
+        className="mx-auto w-full max-w-[960px] md:overflow-hidden md:rounded-3xl md:border md:border-border md:bg-card md:shadow-xl md:grid md:grid-cols-[1.05fr_0.95fr]"
       >
-        {/* Mobile hero strip */}
-        <div className="md:hidden bg-zinc-900 text-zinc-100 p-5">
-          <HeroContent flow={flow} />
-        </div>
-
-        {/* Desktop hero panel */}
-        <div className="hidden md:flex flex-col justify-between bg-zinc-900 text-zinc-100 p-8">
+        <div className="hidden flex-col justify-between bg-zinc-900 p-8 text-zinc-100 md:flex">
           <div>
-            <HeroContent flow={flow} />
+            <DesktopHero flow={flow} />
           </div>
           <div className="text-xs text-zinc-400">MyBarber · Auth Gateway</div>
         </div>
 
-        <div className="p-5 sm:p-8">{children}</div>
+        <div className="px-3.5 pt-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] md:p-8 md:pb-8">
+          {children}
+        </div>
       </motion.div>
     </div>
   );

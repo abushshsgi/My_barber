@@ -36,7 +36,7 @@ export function FlowOptionCard({
       transition={{ duration: 0.25 }}
       className={cn(
         "w-full cursor-pointer rounded-xl border p-3 text-left transition-[var(--transition-smooth)]",
-        compact && "min-w-[78%] shrink-0 snap-center sm:min-w-0",
+        compact && "min-w-[86vw] shrink-0 snap-center sm:min-w-0",
         selected
           ? "border-foreground bg-foreground text-background shadow-[var(--shadow-pop)]"
           : "border-border bg-card shadow-[var(--shadow-soft)] hover:border-foreground/40 hover:bg-muted/30",

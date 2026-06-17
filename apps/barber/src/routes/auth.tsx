@@ -1,8 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useState } from "react";
-import { AuthLoginForm } from "@/components/auth/AuthLoginForm";
+import { AuthLoginForm, AUTH_LOGIN_FORM_ID } from "@/components/auth/AuthLoginForm";
+import { AuthMobileStickyBar } from "@/components/auth/AuthMobileStickyBar";
 import { AuthShell } from "@/components/auth/AuthShell";
+import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { SignupWizard } from "@/components/auth/SignupWizard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -187,13 +189,19 @@ function AuthPage() {
 
   return (
     <TooltipProvider>
-      <AuthShell flow={tab === "signup" ? flow : null}>
+      <AuthShell flow={tab === "signup" ? flow : null} tab={tab} signupStep={signupStep}>
         <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 h-11 rounded-xl">
-            <TabsTrigger value="login" className="rounded-lg font-medium cursor-pointer">
+          <TabsList className="grid h-12 w-full grid-cols-2 rounded-xl md:h-11">
+            <TabsTrigger
+              value="login"
+              className="cursor-pointer rounded-lg text-sm font-medium md:text-sm"
+            >
               Kirish
             </TabsTrigger>
-            <TabsTrigger value="signup" className="rounded-lg font-medium cursor-pointer">
+            <TabsTrigger
+              value="signup"
+              className="cursor-pointer rounded-lg text-sm font-medium md:text-sm"
+            >
               Ro'yxatdan o'tish
             </TabsTrigger>
           </TabsList>
@@ -257,6 +265,20 @@ function AuthPage() {
             </AnimatePresence>
           </TabsContent>
         </Tabs>
+
+        {tab === "login" && (
+          <AuthMobileStickyBar>
+            <AuthSubmitButton
+              type="submit"
+              form={AUTH_LOGIN_FORM_ID}
+              loading={loadingLogin}
+              disabled={loadingLogin}
+              className="h-12 flex-1 rounded-full text-[15px]"
+            >
+              {loadingLogin ? "Kutilmoqda..." : "Kirish"}
+            </AuthSubmitButton>
+          </AuthMobileStickyBar>
+        )}
       </AuthShell>
     </TooltipProvider>
   );

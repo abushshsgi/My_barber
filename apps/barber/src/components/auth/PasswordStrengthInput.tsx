@@ -37,7 +37,7 @@ export function PasswordStrengthInput({
           onChange={(e) => onChange(e.target.value)}
           autoComplete={autoComplete}
           required={required}
-          className="peer h-14 w-full rounded-xl border border-border bg-background px-3.5 pt-5 pb-1.5 pr-10 text-sm text-foreground outline-none transition-[var(--transition-smooth)] placeholder-transparent focus:border-foreground"
+          className="peer h-14 w-full rounded-xl border border-border bg-background px-3.5 pt-5 pb-1.5 pr-10 text-base text-foreground outline-none transition-[var(--transition-smooth)] placeholder-transparent focus:border-foreground md:text-sm"
           placeholder={label}
         />
         <label

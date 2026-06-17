@@ -5,6 +5,8 @@ import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { FloatingInput } from "@/components/auth/FloatingInput";
 import { PasswordStrengthInput } from "@/components/auth/PasswordStrengthInput";
 
+export const AUTH_LOGIN_FORM_ID = "auth-login-form";
+
 type Props = {
   email: string;
   password: string;
@@ -29,7 +31,7 @@ export function AuthLoginForm({
   const userAuthUrl = userWebUrl("/auth");
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form id={AUTH_LOGIN_FORM_ID} onSubmit={onSubmit} className="space-y-4">
       <FloatingInput
         id="login-email"
         label="Email"
@@ -63,7 +65,7 @@ export function AuthLoginForm({
 
       <AuthErrorAlert error={error && !emailError ? error : null} />
 
-      <AuthSubmitButton loading={loading} disabled={loading}>
+      <AuthSubmitButton loading={loading} disabled={loading} className="hidden md:inline-flex">
         {loading ? "Kutilmoqda..." : "Kirish"}
       </AuthSubmitButton>
 

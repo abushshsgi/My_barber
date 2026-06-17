@@ -21,11 +21,11 @@ export function SignupStepFlow({ flow, onSelect }: Props) {
         </p>
       </div>
 
-      {/* Mobile: horizontal snap scroll */}
-      <div className="sm:hidden -mx-1">
+      {/* Mobile: horizontal snap scroll — full bleed */}
+      <div className="-mx-3.5 sm:hidden">
         <div
           ref={scrollRef}
-          className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2 scrollbar-none"
+          className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-3.5 pb-2 scrollbar-none touch-pan-x"
         >
           {FLOWS.map((f) => (
             <FlowOptionCard
