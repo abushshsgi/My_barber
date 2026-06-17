@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { motion, animate, useMotionValue, useTransform, type PanInfo } from "framer-motion";
+import { motion, animate, useMotionValue, useMotionValueEvent, useTransform, type PanInfo } from "framer-motion";
 import { Map as MapIcon, Star, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 const CARD_HEIGHT = 148;
 const IMAGE_WIDTH = 132;
 const PEEK_SHEET_HEIGHT = 196;
+const LIST_REVEAL_OFFSET = 28;
 const EXPANDED_HEIGHT_RATIO = 0.58;
 const SNAP_OPEN_RATIO = 0.5;
 const SNAP_EARLY_OPEN_RATIO = 0.22;
@@ -203,6 +204,11 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
     typeof window !== "undefined" ? getExpandedSheetHeight(window.innerHeight - 68) : 420,
   );
   const [expanded, setExpanded] = useState(false);
+  const [listRevealed, setListRevealed] = useState(false);
+
+  useMotionValueEvent(sheetHeight, "change", (height) => {
+    setListRevealed(height > PEEK_SHEET_HEIGHT + LIST_REVEAL_OFFSET);
+  });
 
   const backdropOpacity = useTransform(
     sheetHeight,
@@ -457,52 +463,53 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
           ) : null}
         </motion.div>
 
-        <div className="min-h-0 flex-1 overflow-hidden">
-          <div
-            ref={listScrollRef}
-            className="h-full overflow-y-auto overscroll-contain px-3 py-2 pb-16"
-          >
-            {salons.map((s) => (
-              <div key={s.id} data-list-id={s.id}>
-                <SalonListCard
-                  salon={s}
-                  isActive={s.id === activeId}
-                  onSelect={() => onActiveChange(s.id)}
-                />
-              </div>
-            ))}
+        {listRevealed ? (
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <div
+              ref={listScrollRef}
+              className="h-full overflow-y-auto overscroll-contain px-3 py-2 pb-16"
+            >
+              {salons.map((s) => (
+                <div key={s.id} data-list-id={s.id}>
+                  <SalonListCard
+                    salon={s}
+                    isActive={s.id === activeId}
+                    onSelect={() => onActiveChange(s.id)}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
 
-        <div
-          className={cn(
-            "shrink-0 touch-none select-none px-3 pb-1",
-            expanded && "hidden",
-          )}
-          onPointerDownCapture={onCarouselPointerDownCapture}
-          onPointerMoveCapture={onCarouselPointerMoveCapture}
-          onPointerUpCapture={onCarouselPointerUpCapture}
-          onPointerCancelCapture={onCarouselPointerUpCapture}
-          onClickCapture={onCarouselClickCapture}
-        >
-          <DragHandle />
-
+        {!expanded ? (
           <div
-            ref={scrollRef}
-            onScroll={onScroll}
-            className="no-scrollbar flex cursor-grab gap-2.5 snap-x snap-mandatory overflow-x-auto pb-1 active:cursor-grabbing"
+            className="shrink-0 touch-none select-none px-3 pb-1"
+            onPointerDownCapture={onCarouselPointerDownCapture}
+            onPointerMoveCapture={onCarouselPointerMoveCapture}
+            onPointerUpCapture={onCarouselPointerUpCapture}
+            onPointerCancelCapture={onCarouselPointerUpCapture}
+            onClickCapture={onCarouselClickCapture}
           >
-            {salons.map((s) => (
-              <div
-                key={s.id}
-                data-salon-id={s.id}
-                className="w-[calc(100%-2px)] shrink-0 snap-center sm:w-[94%]"
-              >
-                <SalonSlideCard salon={s} isActive={s.id === activeId} />
-              </div>
-            ))}
+            <DragHandle />
+
+            <div
+              ref={scrollRef}
+              onScroll={onScroll}
+              className="no-scrollbar flex cursor-grab gap-2.5 snap-x snap-mandatory overflow-x-auto pb-1 active:cursor-grabbing"
+            >
+              {salons.map((s) => (
+                <div
+                  key={s.id}
+                  data-salon-id={s.id}
+                  className="w-[calc(100%-2px)] shrink-0 snap-center sm:w-[94%]"
+                >
+                  <SalonSlideCard salon={s} isActive={s.id === activeId} />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
 
         {expanded ? (
           <motion.button
