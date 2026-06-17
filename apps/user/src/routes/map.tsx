@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { MapSalonCards } from "@/components/map/MapSalonCards";
+import { MapSalonGrid } from "@/components/map/MapSalonGrid";
 import { MapErrorBoundary } from "@/components/map/MapErrorBoundary";
 import { SalonMap, type SalonMapMarker } from "@/components/map/SalonMap";
 import { resolveMapAudienceFilter, useAudience } from "@/hooks/use-audience";
@@ -88,6 +88,11 @@ function MapView() {
     setActive(id);
   };
 
+  const activeSalon = useMemo(
+    () => filtered.find((s) => s.id === active) ?? filtered[0] ?? null,
+    [filtered, active],
+  );
+
   useEffect(() => {
     const prevHtml = document.documentElement.style.overflow;
     const prevBody = document.body.style.overflow;
@@ -155,9 +160,7 @@ function MapView() {
         </div>
       ) : null}
 
-      {filtered.length > 0 && active ? (
-        <MapSalonCards salons={filtered} activeId={active} onActiveChange={focusSalon} />
-      ) : null}
+      {activeSalon ? <MapSalonGrid salon={activeSalon} /> : null}
     </div>
   );
 }

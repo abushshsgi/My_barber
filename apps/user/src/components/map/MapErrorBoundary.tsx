@@ -3,7 +3,7 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
 type Props = { children: ReactNode };
 type State = { error: Error | null };
 
-/** Keeps /map carousel usable if MapGL throws during init. */
+/** Keeps /map usable if MapGL throws during init. */
 export class MapErrorBoundary extends Component<Props, State> {
   state: State = { error: null };
 
