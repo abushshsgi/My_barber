@@ -9,9 +9,7 @@ import { getSalonCoverUrl } from "@/lib/cover-images";
 import { formatDistanceKm } from "@/lib/map-utils";
 import { cn } from "@/lib/utils";
 
-const CARD_HEIGHT = 148;
-const IMAGE_WIDTH = 132;
-const PEEK_SHEET_HEIGHT = 196;
+const PEEK_SHEET_HEIGHT = 72;
 const LIST_REVEAL_RATIO = 0.38;
 const SNAP_OPEN_RATIO = 0.55;
 const VELOCITY_OPEN = -280;
@@ -65,61 +63,6 @@ function SalonCoverImage({
           imgClassName,
         )}
       />
-    </div>
-  );
-}
-
-function SalonSlideCard({ salon, isActive }: { salon: Salon; isActive: boolean }) {
-  const { t } = useTranslation();
-
-  return (
-    <div
-      className={cn(
-        "flex overflow-hidden rounded-2xl bg-background shadow-[0_10px_32px_rgba(0,0,0,0.18)] ring-1 transition-shadow",
-        isActive ? "ring-foreground/45" : "ring-black/5",
-      )}
-      style={{ height: CARD_HEIGHT }}
-    >
-      <Link
-        to="/salon/$id"
-        params={{ id: salon.id }}
-        className="active:opacity-95"
-        style={{ width: IMAGE_WIDTH }}
-      >
-        <SalonCoverImage salon={salon} className="h-full w-full" mode="cover" />
-      </Link>
-
-      <div className="flex min-w-0 flex-1 flex-col px-3 py-2.5">
-        <div className="min-w-0 flex-1">
-          <Link to="/salon/$id" params={{ id: salon.id }}>
-            <h3 className="line-clamp-2 text-[14px] font-bold leading-snug tracking-tight">{salon.name}</h3>
-          </Link>
-          <p className="mt-0.5 line-clamp-2 text-[11px] font-medium leading-snug text-muted-foreground">
-            {salon.address || "—"}
-          </p>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-semibold">
-            {salon.rating > 0 ? (
-              <span className="flex items-center gap-0.5">
-                <Star className="h-3 w-3 fill-foreground" strokeWidth={0} />
-                {salon.rating.toFixed(1)}
-                {salon.reviewCount > 0 ? (
-                  <span className="text-muted-foreground">({salon.reviewCount})</span>
-                ) : null}
-              </span>
-            ) : null}
-            <span className="text-muted-foreground">{formatDistanceKm(salon.distanceKm)}</span>
-            {salon.priceFrom > 0 ? <span>{shortPrice(salon.priceFrom)}+</span> : null}
-          </div>
-        </div>
-
-        <Link
-          to="/booking/$salonId"
-          params={{ salonId: salon.id }}
-          className="mt-1.5 flex w-full items-center justify-center rounded-xl bg-foreground py-2 text-[12px] font-bold text-background active:scale-[0.98]"
-        >
-          {t("map.bookNow")}
-        </Link>
-      </div>
     </div>
   );
 }
@@ -213,7 +156,7 @@ function SalonListCard({
 
 function DragHandle({ className }: { className?: string }) {
   return (
-    <div className={cn("flex justify-center py-1", className)}>
+    <div className={cn("flex justify-center py-1.5", className)}>
       <div className="h-1 w-8 rounded-full bg-border/80" />
     </div>
   );
@@ -229,11 +172,8 @@ export function MapAirbnbCarousel({
 }: Props) {
   const { t } = useTranslation();
   const sheetRef = useRef<HTMLDivElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
   const listScrollRef = useRef<HTMLDivElement>(null);
-  const scrollRaf = useRef<number | null>(null);
   const expandedRef = useRef(false);
-  const suppressClickRef = useRef(false);
   const panStartHeightRef = useRef(PEEK_SHEET_HEIGHT);
   const listDragActiveRef = useRef(false);
   const listDragStartYRef = useRef(0);
@@ -263,15 +203,6 @@ export function MapAirbnbCarousel({
     return 0.1 + (progress - LIST_REVEAL_RATIO) * 0.55;
   });
 
-  const peekGesture = useRef({
-    active: false,
-    axis: null as "x" | "y" | null,
-    startX: 0,
-    startY: 0,
-    scrollStart: 0,
-    moved: false,
-  });
-
   useEffect(() => {
     const parent = sheetRef.current?.parentElement;
     if (!parent) return;
@@ -282,15 +213,6 @@ export function MapAirbnbCarousel({
     observer.observe(parent);
     return () => observer.disconnect();
   }, []);
-
-  useEffect(() => {
-    if (!expanded) {
-      const root = scrollRef.current;
-      if (!root || !activeId) return;
-      const el = root.querySelector(`[data-salon-id="${activeId}"]`) as HTMLElement | null;
-      el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-    }
-  }, [activeId, expanded]);
 
   useEffect(() => {
     if (!expanded || !activeId) return;
@@ -371,100 +293,6 @@ export function MapAirbnbCarousel({
     finishSheetDrag(e.clientY - listDragStartYRef.current, 0);
   };
 
-  const syncActiveFromScroll = () => {
-    const root = scrollRef.current;
-    if (!root || salons.length === 0) return;
-    const center = root.scrollLeft + root.clientWidth / 2;
-    let closestId = salons[0].id;
-    let closestDist = Infinity;
-    root.querySelectorAll<HTMLElement>("[data-salon-id]").forEach((el) => {
-      const id = el.dataset.salonId;
-      if (!id) return;
-      const elCenter = el.offsetLeft + el.offsetWidth / 2;
-      const dist = Math.abs(elCenter - center);
-      if (dist < closestDist) {
-        closestDist = dist;
-        closestId = id;
-      }
-    });
-    if (closestId !== activeId) onActiveChange(closestId);
-  };
-
-  const onScroll = () => {
-    if (scrollRaf.current != null) return;
-    scrollRaf.current = window.requestAnimationFrame(() => {
-      scrollRaf.current = null;
-      syncActiveFromScroll();
-    });
-  };
-
-  const onCarouselPointerDownCapture = (e: React.PointerEvent<HTMLDivElement>) => {
-    panStartHeightRef.current = sheetHeight.get();
-    peekGesture.current = {
-      active: true,
-      axis: null,
-      startX: e.clientX,
-      startY: e.clientY,
-      scrollStart: scrollRef.current?.scrollLeft ?? 0,
-      moved: false,
-    };
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
-
-  const onCarouselPointerMoveCapture = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!peekGesture.current.active) return;
-
-    const dx = e.clientX - peekGesture.current.startX;
-    const dy = e.clientY - peekGesture.current.startY;
-
-    if (!peekGesture.current.axis && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
-      peekGesture.current.axis = Math.abs(dy) > Math.abs(dx) * 1.15 ? "y" : "x";
-    }
-
-    if (!peekGesture.current.axis) return;
-
-    peekGesture.current.moved = true;
-    e.preventDefault();
-
-    if (peekGesture.current.axis === "y") {
-      applyDragOffset(dy);
-      return;
-    }
-
-    const root = scrollRef.current;
-    if (root) root.scrollLeft = peekGesture.current.scrollStart - dx;
-  };
-
-  const onCarouselPointerUpCapture = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!peekGesture.current.active) return;
-
-    const { moved, axis: endedAxis } = peekGesture.current;
-    const dy = e.clientY - peekGesture.current.startY;
-    peekGesture.current.active = false;
-    peekGesture.current.axis = null;
-    e.currentTarget.releasePointerCapture(e.pointerId);
-
-    if (moved && endedAxis === "x") syncActiveFromScroll();
-
-    if (moved) {
-      suppressClickRef.current = true;
-      window.setTimeout(() => {
-        suppressClickRef.current = false;
-      }, 320);
-    }
-
-    if (!moved || endedAxis !== "y") return;
-
-    finishSheetDrag(dy, 0);
-  };
-
-  const onCarouselClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (suppressClickRef.current) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  };
-
   if (salons.length === 0) return null;
 
   return (
@@ -497,16 +325,28 @@ export function MapAirbnbCarousel({
           listRevealed ? "bg-background" : "bg-background/98 ring-1 ring-border/20",
         )}
       >
-        <motion.div
-          onPanStart={listRevealed ? onSheetPanStart : undefined}
-          onPan={listRevealed ? onSheetPan : undefined}
-          onPanEnd={listRevealed ? onSheetPanEnd : undefined}
-          className={cn(
-            "shrink-0",
-            listRevealed && "cursor-grab touch-none border-b border-border/40 active:cursor-grabbing",
-          )}
-        >
-          {listRevealed ? (
+        {!listRevealed ? (
+          <motion.div
+            onPanStart={onSheetPanStart}
+            onPan={onSheetPan}
+            onPanEnd={onSheetPanEnd}
+            className="shrink-0 cursor-grab touch-none active:cursor-grabbing"
+          >
+            <DragHandle />
+            <p className="px-4 pb-3 text-center text-[13px] font-bold tracking-tight">
+              {t("map.allSalons")}{" "}
+              <span className="text-muted-foreground">({salons.length})</span>
+            </p>
+          </motion.div>
+        ) : null}
+
+        {listRevealed ? (
+          <motion.div
+            onPanStart={onSheetPanStart}
+            onPan={onSheetPan}
+            onPanEnd={onSheetPanEnd}
+            className="shrink-0 cursor-grab touch-none border-b border-border/40 active:cursor-grabbing"
+          >
             <div className="px-4 pb-3 pt-2">
               <div className="pointer-events-none flex justify-center pb-2">
                 <div className="h-1 w-9 rounded-full bg-border/80" />
@@ -546,8 +386,8 @@ export function MapAirbnbCarousel({
                 />
               </div>
             </div>
-          ) : null}
-        </motion.div>
+          </motion.div>
+        ) : null}
 
         {listRevealed ? (
           <div className="min-h-0 flex-1 overflow-hidden">
@@ -566,38 +406,6 @@ export function MapAirbnbCarousel({
                     isActive={s.id === activeId}
                     onSelect={() => onActiveChange(s.id)}
                   />
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        {!expanded ? (
-          <div
-            className={cn(
-              "shrink-0 touch-none select-none px-3 pb-1",
-              listRevealed && "border-t border-border/30 pt-1",
-            )}
-            onPointerDownCapture={onCarouselPointerDownCapture}
-            onPointerMoveCapture={onCarouselPointerMoveCapture}
-            onPointerUpCapture={onCarouselPointerUpCapture}
-            onPointerCancelCapture={onCarouselPointerUpCapture}
-            onClickCapture={onCarouselClickCapture}
-          >
-            <DragHandle />
-
-            <div
-              ref={scrollRef}
-              onScroll={onScroll}
-              className="no-scrollbar flex cursor-grab gap-2.5 snap-x snap-mandatory overflow-x-auto pb-1 active:cursor-grabbing"
-            >
-              {salons.map((s) => (
-                <div
-                  key={s.id}
-                  data-salon-id={s.id}
-                  className="w-[calc(100%-2px)] shrink-0 snap-center sm:w-[94%]"
-                >
-                  <SalonSlideCard salon={s} isActive={s.id === activeId} />
                 </div>
               ))}
             </div>
