@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 const CARD_HEIGHT = 148;
 const IMAGE_WIDTH = 132;
-const LIST_TOP_OFFSET = 152;
+const LIST_TOP_OFFSET = 200;
 const PEEK_DRAG_UP_MAX = 110;
 const PEEK_DRAG_DOWN_MAX = 80;
 const DRAG_UP_THRESHOLD = 56;
@@ -21,18 +21,18 @@ const spring = { type: "spring" as const, stiffness: 420, damping: 38, mass: 0.9
 const sheetSpring = { type: "spring" as const, stiffness: 380, damping: 34, mass: 0.92 };
 
 const listCardVariants = {
-  hidden: { opacity: 0, y: 40, scale: 0.97 },
+  hidden: { opacity: 0, y: 24, scale: 0.98 },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { duration: 0.38, ease: [0.22, 1, 0.36, 1] as const },
+    transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] as const },
   },
 };
 
 const listStaggerVariants = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.07, delayChildren: 0.1 } },
+  visible: { transition: { staggerChildren: 0.05, delayChildren: 0.06 } },
 };
 
 type Props = {
@@ -146,55 +146,64 @@ function SalonVerticalCard({
   return (
     <article
       className={cn(
-        "mb-4 w-full text-left",
-        isActive && "rounded-2xl ring-2 ring-foreground/25 ring-offset-2 ring-offset-background",
+        "mb-2.5 w-full rounded-xl border border-border/50 bg-background p-2.5 text-left shadow-sm",
+        isActive && "ring-2 ring-foreground/20 ring-offset-1 ring-offset-background",
       )}
     >
-      <button type="button" onClick={onSelect} className="w-full text-left active:opacity-95">
-        <SalonCoverImage
-          salon={salon}
-          mode="cover"
-          className="aspect-[3/2] w-full rounded-xl"
-        />
-        <div className="mt-2 flex items-start justify-between gap-2">
-          <h3 className="line-clamp-2 text-[15px] font-bold leading-snug tracking-tight">{salon.name}</h3>
-          {salon.rating > 0 ? (
-            <span className="flex shrink-0 items-center gap-1 text-[12px] font-semibold">
-              <Star className="h-3 w-3 fill-foreground" strokeWidth={0} />
-              {salon.rating.toFixed(2)}
-              {salon.reviewCount > 0 ? (
-                <span className="text-muted-foreground">({salon.reviewCount})</span>
-              ) : null}
-            </span>
-          ) : null}
-        </div>
-        <p className="mt-0.5 text-[12px] font-medium text-muted-foreground">
-          {salon.address || "—"}
-          {salon.distanceKm > 0 ? ` · ${formatDistanceKm(salon.distanceKm)}` : ""}
-        </p>
-        {salon.priceFrom > 0 ? (
-          <p className="mt-0.5 text-[13px] font-bold">
-            {shortPrice(salon.priceFrom)}
-            <span className="text-[11px] font-semibold text-muted-foreground">+</span>
-          </p>
-        ) : null}
-      </button>
+      <div className="flex gap-2.5">
+        <button
+          type="button"
+          onClick={onSelect}
+          className="shrink-0 active:opacity-95"
+          aria-label={salon.name}
+        >
+          <SalonCoverImage
+            salon={salon}
+            mode="cover"
+            className="h-[72px] w-[72px] rounded-lg"
+          />
+        </button>
 
-      <Link
-        to="/booking/$salonId"
-        params={{ salonId: salon.id }}
-        className="mt-2 flex w-full items-center justify-center rounded-xl bg-foreground py-2.5 text-[12px] font-bold text-background active:scale-[0.98]"
-      >
-        {t("map.bookNow")}
-      </Link>
+        <div className="min-w-0 flex-1">
+          <button type="button" onClick={onSelect} className="w-full text-left active:opacity-95">
+            <h3 className="line-clamp-1 text-[13px] font-bold leading-tight tracking-tight">
+              {salon.name}
+            </h3>
+            <p className="mt-0.5 line-clamp-1 text-[11px] font-medium text-muted-foreground">
+              {salon.address || "—"}
+              {salon.distanceKm > 0 ? ` · ${formatDistanceKm(salon.distanceKm)}` : ""}
+            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] font-semibold">
+              {salon.rating > 0 ? (
+                <span className="flex items-center gap-0.5">
+                  <Star className="h-2.5 w-2.5 fill-foreground" strokeWidth={0} />
+                  {salon.rating.toFixed(1)}
+                  {salon.reviewCount > 0 ? (
+                    <span className="text-muted-foreground">({salon.reviewCount})</span>
+                  ) : null}
+                </span>
+              ) : null}
+              {salon.priceFrom > 0 ? <span>{shortPrice(salon.priceFrom)}+</span> : null}
+            </div>
+          </button>
+
+          <Link
+            to="/booking/$salonId"
+            params={{ salonId: salon.id }}
+            className="mt-1.5 flex w-full items-center justify-center rounded-lg bg-foreground py-1.5 text-[11px] font-bold text-background active:scale-[0.98]"
+          >
+            {t("map.bookNow")}
+          </Link>
+        </div>
+      </div>
     </article>
   );
 }
 
 function DragHandle({ className }: { className?: string }) {
   return (
-    <div className={cn("flex justify-center py-1.5", className)}>
-      <div className="h-1 w-9 rounded-full bg-border/80" />
+    <div className={cn("flex justify-center py-1", className)}>
+      <div className="h-1 w-8 rounded-full bg-border/80" />
     </div>
   );
 }
@@ -360,7 +369,7 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
         {expanded ? (
           <motion.div
             key="list-sheet"
-            className="absolute inset-x-0 bottom-0 z-40 flex flex-col overflow-hidden rounded-t-[18px] bg-background shadow-[0_-16px_48px_rgba(0,0,0,0.2)]"
+            className="absolute inset-x-0 bottom-0 z-40 flex flex-col overflow-hidden rounded-t-[16px] bg-background shadow-[0_-12px_40px_rgba(0,0,0,0.18)]"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -378,25 +387,25 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
               onDragEnd={onListDragEnd}
             >
               <DragHandle />
-              <div className="flex items-center justify-between gap-2 border-b border-border/40 px-4 pb-2.5">
-                <h2 className="text-[14px] font-bold tracking-tight">
+              <div className="flex items-center justify-between gap-2 border-b border-border/40 px-3 pb-2">
+                <h2 className="text-[13px] font-bold tracking-tight">
                   {t("map.allSalons")}{" "}
                   <span className="text-muted-foreground">({salons.length})</span>
                 </h2>
                 <button
                   type="button"
                   onClick={() => setExpanded(false)}
-                  className="grid h-8 w-8 place-items-center rounded-full bg-surface active:scale-95"
+                  className="grid h-7 w-7 place-items-center rounded-full bg-surface active:scale-95"
                   aria-label={t("common.close")}
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-3 w-3" />
                 </button>
               </div>
             </motion.div>
 
             <motion.div
               ref={listScrollRef}
-              className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3.5 py-3 pb-20"
+              className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-2 pb-16"
               initial="hidden"
               animate="visible"
               variants={listStaggerVariants}
@@ -419,7 +428,7 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 12 }}
               transition={{ delay: 0.12, ...spring }}
-              className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-foreground px-4 py-2.5 text-[13px] font-bold text-background shadow-[0_6px_24px_rgba(0,0,0,0.26)] active:scale-[0.97]"
+              className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-foreground px-3.5 py-2 text-[12px] font-bold text-background shadow-[0_4px_20px_rgba(0,0,0,0.24)] active:scale-[0.97]"
               style={{ marginBottom: "env(safe-area-inset-bottom)" }}
             >
               <MapIcon className="h-3.5 w-3.5" strokeWidth={2.5} />
