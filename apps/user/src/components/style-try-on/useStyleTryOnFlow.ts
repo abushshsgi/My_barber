@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { CameraCapturePayload } from "@/components/ai-style/AiStyleCamera";
-import { checkAiStyleFace, generateAiStyleTryOn } from "@/lib/api";
+import { generateAiStyleTryOn } from "@/lib/api";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -47,24 +47,9 @@ export function useStyleTryOnFlow({ styleId, personaId }: UseStyleTryOnFlowOptio
   };
 
   const applyPhoto = async (dataUrl: string) => {
-    setValidatingPreview(dataUrl);
-    setValidating(true);
     setError(null);
     setTryOnPreview(null);
-    try {
-      const check = await checkAiStyleFace(dataUrl);
-      if (!check.has_face) {
-        throw new Error(check.detail ?? "Iltimos, yuz shakli rasmini yuklang.");
-      }
-      setPhoto(dataUrl);
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "Yuz tekshirilmadi.";
-      setError(message);
-      setPhoto(null);
-    } finally {
-      setValidating(false);
-      setValidatingPreview(null);
-    }
+    setPhoto(dataUrl);
   };
 
   useEffect(() => {

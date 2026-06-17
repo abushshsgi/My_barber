@@ -16,11 +16,20 @@ from .gemini_style import AiStyleError, parse_data_url, _map_gemini_http_error, 
 logger = logging.getLogger(__name__)
 
 IMAGE_MODEL_FALLBACKS = (
-    "gemini-2.0-flash-preview-image-generation",
-    "gemini-2.5-flash-image-preview",
-    "gemini-2.0-flash-exp",
+    "gemini-2.5-flash-image",
+    "gemini-3.1-flash-image-preview",
+    "gemini-3-pro-image-preview",
 )
 PUBLIC_ROOT = Path(settings.BASE_DIR).parent / "apps" / "user" / "public"
+
+
+def _image_models() -> tuple[str, ...]:
+    preferred = (getattr(settings, "GEMINI_IMAGE_MODEL", None) or "").strip()
+    ordered: list[str] = []
+    for model in (preferred, *IMAGE_MODEL_FALLBACKS):
+        if model and model not in ordered:
+            ordered.append(model)
+    return tuple(ordered)
 
 
 def _build_tryon_prompt(*, title: str, style_detail: str, has_reference: bool) -> str:
@@ -171,16 +180,17 @@ def generate_tryon_preview(
     import urllib.error
 
     last_error: AiStyleError | None = None
-    for model in IMAGE_MODEL_FALLBACKS:
+    for model in _image_models():
         try:
             payload = _post_gemini_image(model, api_key, body)
         except urllib.error.HTTPError as exc:
             err_body = _read_http_error_body(exc)
             logger.warning("Gemini try-on HTTP %s (%s): %s", exc.code, model, err_body[:800])
-            message = _map_gemini_http_error(exc.code, err_body)
+            message = _map_gemini_http_error(exc.code, err_body, kind="image")
             last_error = AiStyleError(message, 502 if exc.code >= 500 else 400)
             if exc.code == 404:
                 continue
+            # Quota / overload — boshqa model sinash foydasiz, limit umumiy.
             raise last_error from exc
         except urllib.error.URLError as exc:
             logger.warning("Gemini try-on network error (%s): %s", model, exc)

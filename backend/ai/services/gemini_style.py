@@ -46,19 +46,32 @@ def _read_http_error_body(exc: urllib.error.HTTPError) -> str:
         return ""
 
 
-def _map_gemini_http_error(status: int, body: str) -> str:
+def _map_gemini_http_error(status: int, body: str, *, kind: str = "general") -> str:
     lowered = body.lower()
     if status in (401, 403) or "api key" in lowered or "permission" in lowered:
         return (
             "GEMINI API kaliti noto'g'ri yoki ruxsat yo'q. "
-            "aistudio.google.com/apikey dan yangi kalit oling (service account bog'lamang)."
+            "aistudio.google.com/apikey dan yangi kalit oling."
         )
-    if status == 429 or "quota" in lowered or "rate" in lowered:
+    if status == 429 or "quota" in lowered or "rate" in lowered or "exceeded" in lowered:
+        if kind == "image":
+            return (
+                "Rasm generatsiya limiti tugadi (Google AI). "
+                "Bepul rejada tez tugaydi — aistudio.google.com da billing yoqing "
+                "yoki 30–60 daqiqadan keyin qayta urinib ko'ring."
+            )
         return (
-            "AI limiti tugadi (Gemini kunlik/soatlik cheklov). "
-            "15–60 daqiqa kuting yoki keyinroq urinib ko'ring."
+            "AI so'rov limiti tugadi (Google). "
+            "Biroz kuting yoki aistudio.google.com da billing/limitni tekshiring."
         )
+    if status == 503 or "unavailable" in lowered or "high demand" in lowered:
+        return "AI hozir juda yuklangan. 1–2 daqiqadan keyin qayta urinib ko'ring."
     if status == 404:
+        if kind == "image":
+            return (
+                "Rasm generatsiya modeli topilmadi. "
+                "GEMINI_IMAGE_MODEL ni tekshiring (masalan: gemini-2.5-flash-image)."
+            )
         return "AI model topilmadi. Backend GEMINI_MODEL sozlamasini tekshiring."
     return "AI tahlil vaqtincha ishlamayapti. Keyinroq urinib ko'ring."
 
