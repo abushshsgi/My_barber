@@ -8,53 +8,40 @@ export type SalonMapMarker = {
   lat: number;
   lng: number;
   label: string;
-  coverUrl?: string;
+  priceLabel?: string;
 };
 
 const TASHKENT: [number, number] = [41.3111, 69.2797];
+const BOTTOM_PAD = 168;
 
 function escapeHtmlAttr(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-function makePinIcon(active: boolean, label: string, coverUrl?: string) {
-  const size = active ? 52 : 40;
-  const ring = active
-    ? "0 0 0 3px rgba(20,20,20,0.25), 0 4px 14px rgba(0,0,0,0.28)"
-    : "0 2px 8px rgba(0,0,0,0.22)";
-  const shortLabel =
-    active && label ? (label.length > 11 ? `${label.slice(0, 11)}…` : label) : "";
-  const bg = coverUrl
-    ? `url('${escapeHtmlAttr(coverUrl)}') center/cover no-repeat`
-    : "linear-gradient(145deg, #525252 0%, #141414 100%)";
-
-  const labelHtml = shortLabel
-    ? `<span style="
-        display:block;margin-top:5px;max-width:80px;padding:3px 8px;
-        border-radius:9999px;background:#141414;color:#faf8f5;
-        font-size:10px;font-weight:700;line-height:1.2;text-align:center;
-        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-        box-shadow:0 2px 8px rgba(0,0,0,0.25);
-      ">${escapeHtmlAttr(shortLabel)}</span>`
-    : "";
-
-  const totalHeight = shortLabel ? size + 24 : size;
+/** Airbnb-style narx pill pin. */
+function makePricePinIcon(active: boolean, priceLabel: string) {
+  const text = escapeHtmlAttr(priceLabel);
+  const bg = active ? "#141414" : "#faf8f5";
+  const color = active ? "#faf8f5" : "#141414";
+  const border = active ? "2px solid #141414" : "1px solid rgba(20,20,20,0.12)";
+  const shadow = active
+    ? "0 4px 14px rgba(0,0,0,0.28)"
+    : "0 2px 8px rgba(0,0,0,0.14)";
+  const scale = active ? 1.08 : 1;
 
   return L.divIcon({
     className: "",
-    html: `<div style="display:flex;flex-direction:column;align-items:center;width:${size}px;">
+    html: `<div style="transform:translate(-50%,-50%);">
       <div style="
-        width:${size}px;height:${size}px;border-radius:9999px;
-        background:${bg};
-        box-shadow:${ring};
-        border:${active ? "3px" : "2.5px"} solid #faf8f5;
-        transform:scale(${active ? 1.08 : 1});
-        transition:transform 0.2s ease;
-      "></div>
-      ${labelHtml}
+        padding:6px 11px;border-radius:9999px;background:${bg};color:${color};
+        border:${border};box-shadow:${shadow};
+        font-size:12px;font-weight:800;line-height:1;white-space:nowrap;
+        transform:scale(${scale});transition:transform 0.15s ease;
+        font-family:system-ui,-apple-system,sans-serif;
+      ">${text}</div>
     </div>`,
-    iconSize: [size, totalHeight],
-    iconAnchor: [size / 2, size / 2],
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
   });
 }
 
@@ -102,7 +89,11 @@ function FitMarkers({ markers }: { markers: SalonMapMarker[] }) {
       return;
     }
     const bounds = L.latLngBounds(markers.map((m) => [m.lat, m.lng] as [number, number]));
-    map.fitBounds(bounds, { padding: [96, 48], maxZoom: 14 });
+    map.fitBounds(bounds, {
+      paddingTopLeft: [48, 72],
+      paddingBottomRight: [48, BOTTOM_PAD],
+      maxZoom: 14,
+    });
   }, [map, markers]);
   return null;
 }
@@ -145,7 +136,12 @@ export function SalonMap({
       }}
     >
       <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png"
+        subdomains={["a", "b", "c", "d"]}
+        maxZoom={20}
+      />
+      <TileLayer
+        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png"
         subdomains={["a", "b", "c", "d"]}
         maxZoom={20}
       />
@@ -170,14 +166,17 @@ export function SalonMap({
         </>
       )}
 
-      {markers.map((m) => (
-        <Marker
-          key={m.id}
-          position={[m.lat, m.lng]}
-          icon={makePinIcon(activeId === m.id, m.label, m.coverUrl)}
-          eventHandlers={{ click: () => onMarkerClick(m.id) }}
-        />
-      ))}
+      {markers.map((m) => {
+        const pinLabel = m.priceLabel || m.label.slice(0, 8);
+        return (
+          <Marker
+            key={m.id}
+            position={[m.lat, m.lng]}
+            icon={makePricePinIcon(activeId === m.id, pinLabel)}
+            eventHandlers={{ click: () => onMarkerClick(m.id) }}
+          />
+        );
+      })}
     </MapContainer>
   );
 }
