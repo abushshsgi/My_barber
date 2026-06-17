@@ -9,7 +9,9 @@ import { getSalonCoverUrl } from "@/lib/cover-images";
 import { formatDistanceKm } from "@/lib/map-utils";
 import { cn } from "@/lib/utils";
 
-const PEEK_SHEET_HEIGHT = 72;
+const CARD_HEIGHT = 132;
+const IMAGE_WIDTH = 120;
+const PEEK_SHEET_HEIGHT = 168;
 const LIST_REVEAL_RATIO = 0.38;
 const SNAP_OPEN_RATIO = 0.55;
 const VELOCITY_OPEN = -280;
@@ -67,6 +69,64 @@ function SalonCoverImage({
   );
 }
 
+function SalonPeekCard({ salon }: { salon: Salon }) {
+  const { t } = useTranslation();
+
+  return (
+    <div
+      className="flex overflow-hidden rounded-2xl bg-background shadow-[0_10px_32px_rgba(0,0,0,0.18)] ring-1 ring-black/5"
+      style={{ height: CARD_HEIGHT }}
+    >
+      <Link
+        to="/salon/$id"
+        params={{ id: salon.id }}
+        className="active:opacity-95"
+        style={{ width: IMAGE_WIDTH }}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <SalonCoverImage salon={salon} className="h-full w-full" mode="cover" />
+      </Link>
+
+      <div className="flex min-w-0 flex-1 flex-col px-3 py-2.5">
+        <div className="min-w-0 flex-1">
+          <Link
+            to="/salon/$id"
+            params={{ id: salon.id }}
+            onPointerDown={(event) => event.stopPropagation()}
+          >
+            <h3 className="line-clamp-2 text-[14px] font-bold leading-snug tracking-tight">{salon.name}</h3>
+          </Link>
+          <p className="mt-0.5 line-clamp-2 text-[11px] font-medium leading-snug text-muted-foreground">
+            {salon.address || "—"}
+          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-semibold">
+            {salon.rating > 0 ? (
+              <span className="flex items-center gap-0.5">
+                <Star className="h-3 w-3 fill-foreground" strokeWidth={0} />
+                {salon.rating.toFixed(1)}
+                {salon.reviewCount > 0 ? (
+                  <span className="text-muted-foreground">({salon.reviewCount})</span>
+                ) : null}
+              </span>
+            ) : null}
+            <span className="text-muted-foreground">{formatDistanceKm(salon.distanceKm)}</span>
+            {salon.priceFrom > 0 ? <span>{shortPrice(salon.priceFrom)}+</span> : null}
+          </div>
+        </div>
+
+        <Link
+          to="/booking/$salonId"
+          params={{ salonId: salon.id }}
+          className="mt-1.5 flex w-full items-center justify-center rounded-xl bg-foreground py-2 text-[12px] font-bold text-background active:scale-[0.98]"
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          {t("map.bookNow")}
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 function SalonListCard({
   salon,
   isActive,
@@ -89,26 +149,14 @@ function SalonListCard({
       >
         <div
           className={cn(
-            "relative overflow-hidden rounded-2xl bg-[#E8E8E8] shadow-[0_2px_16px_rgba(0,0,0,0.1)]",
+            "relative mx-auto w-[88%] max-w-[280px] overflow-hidden rounded-2xl bg-[#E8E8E8] shadow-[0_8px_28px_rgba(0,0,0,0.16)]",
             isActive && "ring-2 ring-foreground/25 ring-offset-2 ring-offset-background",
           )}
         >
-          <SalonCoverImage salon={salon} mode="cover" className="aspect-[4/3] w-full" />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/25 to-transparent"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center gap-1.5"
-          >
-            <span className="h-[6px] w-[6px] rounded-full bg-white shadow-sm" />
-            <span className="h-[6px] w-[6px] rounded-full bg-white/50 shadow-sm" />
-            <span className="h-[6px] w-[6px] rounded-full bg-white/50 shadow-sm" />
-          </div>
+          <SalonCoverImage salon={salon} mode="cover" className="aspect-[5/3] w-full" />
         </div>
 
-        <div className="mt-3">
+        <div className="mt-3 px-1">
           <div className="flex items-start justify-between gap-3">
             <h3 className="line-clamp-2 text-[16px] font-semibold leading-snug tracking-tight text-foreground">
               {salon.name}
@@ -295,6 +343,8 @@ export function MapAirbnbCarousel({
 
   if (salons.length === 0) return null;
 
+  const activeSalon = salons.find((s) => s.id === activeId) ?? salons[0];
+
   return (
     <>
       <motion.div
@@ -330,13 +380,10 @@ export function MapAirbnbCarousel({
             onPanStart={onSheetPanStart}
             onPan={onSheetPan}
             onPanEnd={onSheetPanEnd}
-            className="shrink-0 cursor-grab touch-none active:cursor-grabbing"
+            className="shrink-0 cursor-grab touch-none px-3 pb-2 active:cursor-grabbing"
           >
             <DragHandle />
-            <p className="px-4 pb-3 text-center text-[13px] font-bold tracking-tight">
-              {t("map.allSalons")}{" "}
-              <span className="text-muted-foreground">({salons.length})</span>
-            </p>
+            <SalonPeekCard salon={activeSalon} />
           </motion.div>
         ) : null}
 
@@ -347,31 +394,23 @@ export function MapAirbnbCarousel({
             onPanEnd={onSheetPanEnd}
             className="shrink-0 cursor-grab touch-none border-b border-border/40 active:cursor-grabbing"
           >
-            <div className="px-4 pb-3 pt-2">
+            <div className="relative px-4 pb-3 pt-2">
               <div className="pointer-events-none flex justify-center pb-2">
                 <div className="h-1 w-9 rounded-full bg-border/80" />
               </div>
-              <div className="relative flex items-center justify-between gap-2">
-                <h2 className="text-[15px] font-bold tracking-tight">
-                  {t("map.allSalons")}{" "}
-                  <span className="text-muted-foreground">({salons.length})</span>
-                </h2>
-                {expanded ? (
-                  <button
-                    type="button"
-                    onClick={() => snapSheet(false)}
-                    onPointerDown={(event) => event.stopPropagation()}
-                    className="relative z-10 grid h-8 w-8 place-items-center rounded-full bg-surface active:scale-95"
-                    aria-label={t("common.close")}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                ) : (
-                  <span className="h-8 w-8" />
-                )}
-              </div>
+              {expanded ? (
+                <button
+                  type="button"
+                  onClick={() => snapSheet(false)}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  className="absolute right-4 top-2 z-10 grid h-8 w-8 place-items-center rounded-full bg-surface active:scale-95"
+                  aria-label={t("common.close")}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              ) : null}
               <div
-                className="relative mt-2.5 rounded-full border border-border/50 bg-surface py-2.5 pl-10 pr-4 touch-auto"
+                className="relative rounded-full border border-border/50 bg-surface py-2.5 pl-10 pr-4 touch-auto"
                 onPointerDown={(event) => event.stopPropagation()}
               >
                 <Search
