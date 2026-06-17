@@ -1,6 +1,6 @@
 /// <reference path="../../../node_modules/@2gis/mapgl/global.d.ts" />
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { load } from "@2gis/mapgl";
 import { getDgisApiKey } from "./api-key";
 import {
@@ -10,6 +10,7 @@ import {
   USER_RADIUS_M,
 } from "./constants";
 import { buildPricePillHtml, buildUserDotHtml } from "./markers";
+import { bindHtmlMarkerClick } from "./html-marker-events";
 import type { MapMarker } from "./types";
 
 const BOTTOM_PAD = 168;
@@ -46,7 +47,7 @@ export function Map2GIS({
   const markerRefs = useRef<Map<string, mapgl.HtmlMarker>>(new Map());
   const userMarkerRef = useRef<mapgl.HtmlMarker | null>(null);
   const userCircleRef = useRef<mapgl.Circle | null>(null);
-  const readyRef = useRef(false);
+  const [mapReady, setMapReady] = useState(false);
   const reactId = useId().replace(/:/g, "");
 
   useEffect(() => {
@@ -68,7 +69,7 @@ export function Map2GIS({
         disablePitchByUserInteraction: true,
       });
       mapRef.current = map;
-      readyRef.current = true;
+      setMapReady(true);
 
       const handle: MapHandle = {
         flyTo(lat, lng, zoom = 15) {
@@ -106,7 +107,7 @@ export function Map2GIS({
 
     return () => {
       destroyed = true;
-      readyRef.current = false;
+      setMapReady(false);
       markerRefs.current.forEach((m) => m.destroy());
       markerRefs.current.clear();
       userMarkerRef.current?.destroy();
@@ -122,7 +123,7 @@ export function Map2GIS({
   useEffect(() => {
     const map = mapRef.current;
     const mapglAPI = mapglRef.current;
-    if (!map || !mapglAPI || !readyRef.current) return;
+    if (!mapReady || !map || !mapglAPI) return;
 
     const nextIds = new Set(markers.map((m) => m.id));
 
@@ -140,21 +141,24 @@ export function Map2GIS({
       if (existing) {
         existing.setContent(html);
         existing.setCoordinates(toMapGlCoords(m.lat, m.lng));
+        bindHtmlMarkerClick(existing, () => onMarkerClick?.(m.id));
       } else {
         const marker = new mapglAPI.HtmlMarker(map, {
           coordinates: toMapGlCoords(m.lat, m.lng),
           html,
+          interactive: true,
+          preventMapInteractions: true,
         });
-        marker.on("click", () => onMarkerClick?.(m.id));
+        bindHtmlMarkerClick(marker, () => onMarkerClick?.(m.id));
         markerRefs.current.set(m.id, marker);
       }
     }
-  }, [markers, activeId, onMarkerClick]);
+  }, [markers, activeId, onMarkerClick, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
     const mapglAPI = mapglRef.current;
-    if (!map || !mapglAPI || !readyRef.current) return;
+    if (!mapReady || !map || !mapglAPI) return;
 
     userMarkerRef.current?.destroy();
     userMarkerRef.current = null;
@@ -176,7 +180,7 @@ export function Map2GIS({
       strokeDashArray: [4, 6],
       opacity: 0.05,
     });
-  }, [showUserLocation, userLocation]);
+  }, [showUserLocation, userLocation, mapReady]);
 
   useEffect(() => {
     if (!activeId || !mapRef.current) return;
@@ -191,7 +195,7 @@ export function Map2GIS({
   useEffect(() => {
     const map = mapRef.current;
     const mapglAPI = mapglRef.current;
-    if (!map || !mapglAPI || !readyRef.current) return;
+    if (!mapReady || !map || !mapglAPI) return;
 
     const key = markers.map((m) => m.id).join("|");
     if (!key) {
@@ -210,7 +214,7 @@ export function Map2GIS({
       padding: { top: 72, right: 48, bottom: BOTTOM_PAD, left: 48 },
       maxZoom: 14,
     });
-  }, [markers]);
+  }, [markers, mapReady]);
 
   return (
     <div

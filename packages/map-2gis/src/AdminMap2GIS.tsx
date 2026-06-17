@@ -1,10 +1,11 @@
 /// <reference path="../../../node_modules/@2gis/mapgl/global.d.ts" />
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { load } from "@2gis/mapgl";
 import { getDgisApiKey } from "./api-key";
 import { UZ_CENTER, toMapGlCoords } from "./constants";
 import { buildAdminPinHtml, buildPopupHtml } from "./markers";
+import { bindHtmlMarkerClick } from "./html-marker-events";
 import type { AdminMapPoint } from "./types";
 
 const SALON_SYMBOL = "M3 9.5L12 3l9 6.5V21H3V9.5z";
@@ -22,6 +23,7 @@ export function AdminMap2GIS({ salons, barbers, className, style }: AdminMap2GIS
   const mapRef = useRef<mapgl.Map | null>(null);
   const mapglRef = useRef<typeof mapgl | null>(null);
   const markerRefs = useRef<mapgl.HtmlMarker[]>([]);
+  const [mapReady, setMapReady] = useState(false);
 
   const points = [...salons, ...barbers].filter(
     (p) => Number.isFinite(p.lat) && Number.isFinite(p.lng),
@@ -44,10 +46,12 @@ export function AdminMap2GIS({ salons, barbers, className, style }: AdminMap2GIS
         zoomControl: true,
       });
       mapRef.current = map;
+      setMapReady(true);
     });
 
     return () => {
       destroyed = true;
+      setMapReady(false);
       markerRefs.current.forEach((m) => m.destroy());
       markerRefs.current = [];
       map?.destroy();
@@ -59,7 +63,7 @@ export function AdminMap2GIS({ salons, barbers, className, style }: AdminMap2GIS
   useEffect(() => {
     const map = mapRef.current;
     const mapglAPI = mapglRef.current;
-    if (!map || !mapglAPI) return;
+    if (!mapReady || !map || !mapglAPI) return;
 
     markerRefs.current.forEach((m) => m.destroy());
     markerRefs.current = [];
@@ -70,8 +74,10 @@ export function AdminMap2GIS({ salons, barbers, className, style }: AdminMap2GIS
       const marker = new mapglAPI.HtmlMarker(map, {
         coordinates: toMapGlCoords(p.lat, p.lng),
         html: pinHtml,
+        interactive: true,
+        preventMapInteractions: true,
       });
-      marker.on("click", () => {
+      bindHtmlMarkerClick(marker, () => {
         marker.setContent(
           buildPopupHtml(p.label, p.subtitle ?? "", isSalon ? "Salon" : "Sartarosh"),
         );
@@ -95,7 +101,7 @@ export function AdminMap2GIS({ salons, barbers, className, style }: AdminMap2GIS
     const bounds = new mapglAPI.LngLatBounds();
     for (const p of points) bounds.extend(toMapGlCoords(p.lat, p.lng));
     map.fitBounds(bounds, { padding: 40, maxZoom: 12 });
-  }, [salons, barbers, points]);
+  }, [salons, barbers, points, mapReady]);
 
   return (
     <div
