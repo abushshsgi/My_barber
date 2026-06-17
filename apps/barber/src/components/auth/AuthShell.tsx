@@ -56,6 +56,18 @@ function DesktopHero({ flow }: { flow: SignupFlow | null }) {
 
 export function AuthShell({ flow, tab, signupStep = 0, children }: Props) {
   const meta = flow ? FLOW_IDENTITY_META[flow] : null;
+  const mobileTitle =
+    tab === "login"
+      ? "Barber kabineti"
+      : signupStep === 0 && !flow
+        ? "Ro'yxatdan o'tish"
+        : meta?.signupTitle ?? "Ro'yxatdan o'tish";
+  const mobileSubtitle =
+    tab === "login"
+      ? "Kabinetga kirish"
+      : signupStep === 0 && !flow
+        ? "Avval yo'lingizni tanlang"
+        : meta?.badge ?? "Ma'lumotlarni kiriting";
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground md:min-h-screen md:px-4 md:py-10 md:pt-safe md:pb-safe">
@@ -68,13 +80,9 @@ export function AuthShell({ flow, tab, signupStep = 0, children }: Props) {
             </div>
             <div className="min-w-0">
               <p className="truncate text-[13px] font-semibold leading-tight tracking-tight">
-                {meta?.heroTitle ?? "Barber kabineti"}
+                {mobileTitle}
               </p>
-              <p className="truncate text-[11px] text-muted-foreground">
-                {tab === "login"
-                  ? "Kabinetga kirish"
-                  : meta?.badge ?? "Ro'yxatdan o'tish"}
-              </p>
+              <p className="truncate text-[11px] text-muted-foreground">{mobileSubtitle}</p>
             </div>
           </div>
           {tab === "signup" && (
@@ -85,8 +93,8 @@ export function AuthShell({ flow, tab, signupStep = 0, children }: Props) {
           )}
         </div>
         {tab === "signup" && (
-          <div className="border-t border-border/40 px-3.5 py-2.5">
-            <AuthStepIndicator currentStep={signupStep} />
+          <div className="border-t border-border/40 px-3.5 py-2">
+            <AuthStepIndicator currentStep={signupStep} compact />
           </div>
         )}
       </header>

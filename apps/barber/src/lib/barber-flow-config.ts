@@ -80,6 +80,12 @@ export const FLOW_IDENTITY_META: Record<
   SignupFlow,
   {
     title: string;
+    /** Signup kartada ko'rinadigan qisqa o'zbek sarlavha */
+    signupTitle: string;
+    /** Kim uchun — bir qator */
+    signupSubtitle: string;
+    /** Keyingi qadam qisqacha */
+    signupNextStep: string;
     desc: string;
     benefit: string;
     accent: Tone;
@@ -95,10 +101,13 @@ export const FLOW_IDENTITY_META: Record<
 > = {
   owner: {
     title: "Salon owner",
+    signupTitle: "Salon ochaman",
+    signupSubtitle: "O'z salonim bor — jamoa va xizmatlarni boshqaraman",
+    signupNextStep: "Salon nomi, manzil, xizmatlar va jadval (5–7 qadam)",
     desc: "Salonni boshqarish, jamoa va salon workspace bilan ishlash.",
     benefit: "Jamoa va xizmatlarni boshqaring",
     accent: "salon",
-    badge: "Boshqaruv",
+    badge: "Ega",
     accentClass: "border-amber-500/40 bg-amber-500/10 text-amber-700",
     heroTitle: "Salon boshqaruvini ishga tushiring",
     heroSubtitle: "Jamoa, xizmatlar va salon jarayonlarini owner sifatida boshqaring.",
@@ -109,10 +118,13 @@ export const FLOW_IDENTITY_META: Record<
   },
   employee: {
     title: "Salonga qo'shilish",
+    signupTitle: "Salonga qo'shilaman",
+    signupSubtitle: "Boshqaning salonida ishchi barber sifatida ishlayman",
+    signupNextStep: "Salon qidirish + GPS (salondan ~100 m ichida)",
     desc: "Mavjud salon jamoasiga ulanib, salon workspace'da ishlash.",
     benefit: "Mavjud salon jamoasiga qo'shiling",
     accent: "team",
-    badge: "Jamoa",
+    badge: "Ishchi",
     accentClass: "border-sky-500/40 bg-sky-500/10 text-sky-700",
     heroTitle: "Salon jamoasiga ulanish",
     heroSubtitle: "Join worker sifatida salon ichida mijozlar oqimi bilan ishlang.",
@@ -123,6 +135,9 @@ export const FLOW_IDENTITY_META: Record<
   },
   mybarber: {
     title: "MyBarber salon",
+    signupTitle: "MyBarber bilan ochaman",
+    signupSubtitle: "Tayyor brend shabloni — tez va oson salon ochish",
+    signupNextStep: "Qisqa profil, joy, xizmatlar (MyBarber uslubi)",
     desc: "MyBarber brendi ostida tezkor salon ochish va sozlash.",
     benefit: "MyBarber brendi ostida tez oching",
     accent: "brand",
@@ -137,6 +152,9 @@ export const FLOW_IDENTITY_META: Record<
   },
   independent: {
     title: "Mustaqil barber",
+    signupTitle: "Mustaqil ishlayman",
+    signupSubtitle: "Salonsiz — uydan, studiyadan yoki mobil barber",
+    signupNextStep: "Shaxsiy profil, joylashuv, xizmatlar va jadval",
     desc: "Salonsiz shaxsiy ish maydoni va mustaqil xizmatlar.",
     benefit: "Salonsiz shaxsiy ish maydoni",
     accent: "solo",
@@ -153,6 +171,9 @@ export const FLOW_IDENTITY_META: Record<
 
 export const UNKNOWN_FLOW_META = {
   title: "Barber workspace",
+  signupTitle: "Barber kabineti",
+  signupSubtitle: "Ro'yxatdan o'tish yo'lini tanlang",
+  signupNextStep: "4 ta variantdan birini tanlang",
   desc: "Flow aniqlanmagan holat, standart ish maydoni ishlatiladi.",
   benefit: "Standart barber ish maydoni",
   accent: "neutral" as const,

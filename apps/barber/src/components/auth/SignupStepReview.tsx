@@ -47,7 +47,7 @@ export function SignupStepReview({ name, phone, email, flow }: Props) {
 
       <div className="rounded-2xl border border-border bg-muted/20 p-4 shadow-[var(--shadow-soft)]">
         <div className="mb-3 flex items-center gap-2">
-          <span className="text-sm font-semibold">{meta.title}</span>
+          <span className="text-sm font-semibold">{meta.signupTitle}</span>
           <span
             className={cn(
               "inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold",
@@ -57,7 +57,7 @@ export function SignupStepReview({ name, phone, email, flow }: Props) {
             {meta.badge}
           </span>
         </div>
-        <p className="mb-4 text-xs text-muted-foreground">{meta.benefit}</p>
+        <p className="mb-4 text-xs text-muted-foreground">{meta.signupNextStep}</p>
         <ReviewRow label="Ism" value={name.trim()} />
         <ReviewRow label="Telefon" value={phoneDisplay} />
         <ReviewRow label="Email" value={email.trim()} />

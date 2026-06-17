@@ -162,7 +162,16 @@ export function SignupWizard({
   };
 
   const canNext = step === 0 ? canStep0 : step === 1 ? canStep1 : true;
-  const nextLabel = step === 2 ? (loading ? "Kutilmoqda..." : "Davom etish") : "Keyingisi";
+  const nextLabel =
+    step === 0
+      ? data.flow
+        ? "Keyingisi"
+        : "Yo'lni tanlang"
+      : step === 2
+        ? loading
+          ? "Kutilmoqda..."
+          : "Davom etish"
+        : "Keyingisi";
 
   return (
     <div className="md:pb-0">

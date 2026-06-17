@@ -7,9 +7,27 @@ const STEP_LABELS = ["Yo'l", "Ma'lumot", "Tekshirish"] as const;
 type Props = {
   currentStep: number;
   totalSteps?: number;
+  /** Mobile header: faqat nuqtalar */
+  compact?: boolean;
 };
 
-export function AuthStepIndicator({ currentStep, totalSteps = 3 }: Props) {
+export function AuthStepIndicator({ currentStep, totalSteps = 3, compact = false }: Props) {
+  if (compact) {
+    return (
+      <div className="flex items-center justify-center gap-1.5" aria-label={`Qadam ${currentStep + 1} / ${totalSteps}`}>
+        {Array.from({ length: totalSteps }, (_, i) => (
+          <span
+            key={i}
+            className={cn(
+              "h-1.5 rounded-full transition-all duration-300",
+              i === currentStep ? "w-6 bg-foreground" : i < currentStep ? "w-2 bg-foreground/50" : "w-2 bg-border",
+            )}
+          />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center justify-center gap-2">
       {Array.from({ length: totalSteps }, (_, i) => {
