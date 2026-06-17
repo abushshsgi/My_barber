@@ -335,7 +335,7 @@
   },
   "explorePage": {
     "title": "Trending styles",
-    "subtitle": "24 hairstyles on a consistent studio model — AI sample preview.",
+    "subtitle": "4 ready styles with AI persona previews — real sample photos.",
     "empty": "No styles for this filter.",
     "sampleBadge": "AI sample",
     "personaLabel": "Model",
@@ -343,7 +343,9 @@
     "personaMenHint": "Select «Men» above to see persona-specific style photos.",
     "tryAiStyle": "Try in AI Style",
     "tryOnMe": "See on yourself",
-    "findSalon": "Find a salon"
+    "findSalon": "Find a salon",
+    "tryOnTitle": "{{style}}",
+    "tryOnDesc": "Upload a selfie — AI will show this style on your face."
   },
   "styleTryOnPage": {
     "loadingTitle": "Try this style",

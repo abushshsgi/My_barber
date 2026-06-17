@@ -89,6 +89,13 @@ class HairstyleListView(APIView):
                 for style in styles
                 if age_group in (style.age_groups or [])
             ]
+        if audience == "men" and not persona_id:
+            ready_persona_ids = [p["id"] for p in list_explore_personas()]
+            styles = [
+                style
+                for style in styles
+                if any(has_persona_style_asset(pid, style.slug) for pid in ready_persona_ids)
+            ]
         if persona_id:
             styles = [
                 style

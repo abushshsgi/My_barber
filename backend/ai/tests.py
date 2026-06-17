@@ -161,7 +161,7 @@ class HairstyleApiTests(TestCase):
         res = self.client.get("/api/v1/hairstyles/")
         self.assertEqual(res.status_code, 200)
         body = res.json()
-        self.assertEqual(len(body), 24)
+        self.assertEqual(len(body), 4)
         self.assertEqual(body[0]["id"], "men-mid-fade")
         self.assertIn("image_url", body[0])
 
@@ -169,8 +169,13 @@ class HairstyleApiTests(TestCase):
         res = self.client.get("/api/v1/hairstyles/", {"audience": "women"})
         self.assertEqual(res.status_code, 200)
         body = res.json()
-        self.assertEqual(len(body), 12)
-        self.assertTrue(all(item["audience"] == "women" for item in body))
+        self.assertEqual(len(body), 0)
+
+    def test_hairstyles_list_men_catalog(self):
+        res = self.client.get("/api/v1/hairstyles/", {"audience": "men"})
+        self.assertEqual(res.status_code, 200)
+        slugs = {item["slug"] for item in res.json()}
+        self.assertEqual(slugs, {"mid-fade", "skin-fade", "buzz-cut", "textured-crop"})
 
     def test_hairstyles_detail(self):
         res = self.client.get("/api/v1/hairstyles/men-mid-fade/")
@@ -195,8 +200,8 @@ class HairstyleApiTests(TestCase):
 
     def test_hairstyles_detail_missing_persona_asset_returns_404(self):
         res = self.client.get(
-            "/api/v1/hairstyles/men-low-fade/",
-            {"persona": "evro"},
+            "/api/v1/hairstyles/men-mid-fade/",
+            {"persona": "britan"},
         )
         self.assertEqual(res.status_code, 404)
 

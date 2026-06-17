@@ -436,11 +436,9 @@ export const offers: Offer[] = [
 
 export const trendingStyles: TrendingStyle[] = [
   { id: "men-mid-fade", title: "Mid Fade", audience: "men", category: "barber", seed: "mid-fade" },
-  { id: "women-soft-bob", title: "Soft Bob", audience: "women", category: "beauty", seed: "soft-bob" },
+  { id: "men-skin-fade", title: "Skin Fade", audience: "men", category: "barber", seed: "skin-fade" },
   { id: "men-buzz-cut", title: "Buzz Cut", audience: "men", category: "barber", seed: "buzz-cut" },
-  { id: "women-balayage", title: "Balayage", audience: "women", category: "beauty", seed: "balayage" },
   { id: "men-textured-crop", title: "Textured Crop", audience: "men", category: "barber", seed: "textured-crop" },
-  { id: "women-pixie-cut", title: "Pixie Cut", audience: "women", category: "beauty", seed: "pixie-cut" },
 ];
 
 export const giftCards: GiftCard[] = [

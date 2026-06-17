@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AiStyleCamera } from "@/components/ai-style/AiStyleCamera";
 import { AiStylePhotoInput, AiStyleScanLine } from "@/components/ai-style/AiStyleUi";
+import { HairstylePreviewFrame, HairstylePreviewImage } from "@/components/hairstyles/HairstylePreviewImage";
 import type { useStyleTryOnFlow } from "@/components/style-try-on/useStyleTryOnFlow";
 import type { HairstyleEntry } from "@/lib/hairstyles/catalog";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
@@ -85,24 +86,26 @@ function StylePreviewCard({ entry }: { entry: HairstyleEntry }) {
   const { t } = useTranslation();
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-      <div className="relative aspect-[3/4] max-h-[min(42vh,320px)] overflow-hidden bg-muted">
-        <img
+    <HairstylePreviewFrame>
+      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+        <HairstylePreviewImage
           src={getHairstyleImageUrl(entry)}
           alt={entry.titleUz}
-          className="absolute inset-0 h-full w-full object-cover object-top"
+          variant="card"
+          badge={
+            <span className="rounded-full bg-background/90 px-2 py-1 text-[10px] font-bold backdrop-blur-sm">
+              {t("explorePage.sampleBadge")}
+            </span>
+          }
         />
-        <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-1 text-[10px] font-bold backdrop-blur-sm">
-          {t("explorePage.sampleBadge")}
-        </span>
+        <div className="border-t border-border/70 px-3 py-2.5">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+            {t("styleTryOnPage.selectedStyle")}
+          </p>
+          <p className="mt-0.5 text-base font-bold leading-tight">{entry.titleUz}</p>
+        </div>
       </div>
-      <div className="border-t border-border/70 px-3 py-2.5">
-        <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-          {t("styleTryOnPage.selectedStyle")}
-        </p>
-        <p className="mt-0.5 text-base font-bold leading-tight">{entry.titleUz}</p>
-      </div>
-    </div>
+    </HairstylePreviewFrame>
   );
 }
 

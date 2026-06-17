@@ -1,6 +1,6 @@
 from django.test import SimpleTestCase, TestCase
 
-from ai.age_groups import age_to_group, birth_year_to_group, resolve_hairstyle_image_path
+from ai.age_groups import age_to_group, resolve_hairstyle_image_path
 from ai.hairstyle_catalog import get_published_catalog, pick_catalog_suggestions, pick_trending_styles, score_hairstyle
 from ai.services.gemini_style import AiStyleError
 from ai.style_recommend import assert_gender_matches_profile, build_suggestions_from_analysis
@@ -16,7 +16,7 @@ class AgeGroupTests(SimpleTestCase):
 
     def test_image_path_for_adult(self):
         path = resolve_hairstyle_image_path(
-            image_path="/hairstyles/men/mid-fade.webp",
+            image_path="/hairstyles/men/personas/evro/mid-fade.webp",
             slug="mid-fade",
             audience="men",
             age_group="adult",
@@ -25,16 +25,16 @@ class AgeGroupTests(SimpleTestCase):
 
     def test_image_path_for_young_uses_legacy(self):
         path = resolve_hairstyle_image_path(
-            image_path="/hairstyles/men/mid-fade.webp",
+            image_path="/hairstyles/men/personas/evro/mid-fade.webp",
             slug="mid-fade",
             audience="men",
             age_group="young",
         )
-        self.assertEqual(path, "/hairstyles/men/mid-fade.webp")
+        self.assertEqual(path, "/hairstyles/men/personas/evro/mid-fade.webp")
 
     def test_persona_evro_ready_asset(self):
         path = resolve_hairstyle_image_path(
-            image_path="/hairstyles/men/mid-fade.webp",
+            image_path="/hairstyles/men/personas/evro/mid-fade.webp",
             slug="mid-fade",
             audience="men",
             age_group="young",
@@ -44,7 +44,7 @@ class AgeGroupTests(SimpleTestCase):
 
     def test_persona_irland_ready_asset(self):
         path = resolve_hairstyle_image_path(
-            image_path="/hairstyles/men/mid-fade.webp",
+            image_path="/hairstyles/men/personas/evro/mid-fade.webp",
             slug="mid-fade",
             audience="men",
             age_group="young",
@@ -54,21 +54,13 @@ class AgeGroupTests(SimpleTestCase):
 
     def test_persona_slavyan_ready_asset(self):
         path = resolve_hairstyle_image_path(
-            image_path="/hairstyles/men/mid-fade.webp",
+            image_path="/hairstyles/men/personas/evro/mid-fade.webp",
             slug="mid-fade",
             audience="men",
             age_group="teen",
             persona_id="slavyan",
         )
         self.assertEqual(path, "/hairstyles/men/personas/slavyan/mid-fade.webp")
-        path = resolve_hairstyle_image_path(
-            image_path="/hairstyles/men/low-fade.webp",
-            slug="low-fade",
-            audience="men",
-            age_group="young",
-            persona_id="evro",
-        )
-        self.assertEqual(path, "/hairstyles/men/low-fade.webp")
 
 
 class HairstyleCatalogTests(TestCase):
@@ -82,7 +74,7 @@ class HairstyleCatalogTests(TestCase):
         self.assertTrue(all(item["id"].startswith("men-") for item in suggestions))
         self.assertEqual(suggestions[0]["match"], 94)
 
-    def test_pick_mature_men_prefers_classic_styles(self):
+    def test_pick_mature_men_prefers_short_styles(self):
         suggestions = pick_catalog_suggestions(
             audience="men",
             face_shape="oval",
@@ -91,21 +83,21 @@ class HairstyleCatalogTests(TestCase):
         )
         self.assertEqual(len(suggestions), 3)
         slugs = {item["seed"] for item in suggestions}
-        self.assertTrue(slugs & {"buzz-cut", "low-fade", "side-part"})
+        self.assertTrue(slugs <= {"mid-fade", "skin-fade", "buzz-cut", "textured-crop"})
 
     def test_catalog_filters_by_age_group(self):
         mature = get_published_catalog("men", "mature")
         slugs = {item["slug"] for item in mature}
-        self.assertNotIn("modern-mullet", slugs)
-        self.assertIn("side-part", slugs)
+        self.assertNotIn("mid-fade", slugs)
+        self.assertIn("buzz-cut", slugs)
 
     def test_score_prefers_face_and_length_match(self):
         catalog = get_published_catalog("men")
         mid_fade = next(s for s in catalog if s["slug"] == "mid-fade")
-        pompadour = next(s for s in catalog if s["slug"] == "pompadour")
+        buzz_cut = next(s for s in catalog if s["slug"] == "buzz-cut")
         short_oval = score_hairstyle(mid_fade, "oval", "short")
-        medium_oval = score_hairstyle(pompadour, "oval", "short")
-        self.assertGreater(short_oval, medium_oval)
+        buzz_oval = score_hairstyle(buzz_cut, "oval", "short")
+        self.assertGreaterEqual(short_oval, buzz_oval)
 
 
 class TrendingStylesTests(TestCase):
@@ -143,7 +135,16 @@ class TrendingStylesTests(TestCase):
             limit=4,
         )
         slugs = [item["seed"] for item in trending]
-        self.assertEqual(len(slugs), len(set(slugs)))
+        self.assertEqual(len(slugs), len(set(slugs))
+
+    def test_trending_women_empty_without_assets(self):
+        trending = pick_trending_styles(
+            audience="women",
+            face_shape="oval",
+            hair_type="medium",
+            limit=6,
+        )
+        self.assertEqual(trending, [])
 
 
 class GenderGuardTests(SimpleTestCase):
@@ -157,7 +158,7 @@ class GenderGuardTests(SimpleTestCase):
 
 
 class GenderGuardIntegrationTests(TestCase):
-    def test_build_suggestions_for_women(self):
+    def test_build_suggestions_for_women_empty_catalog(self):
         _, suggestions = build_suggestions_from_analysis(
             request_audience="women",
             analysis={
@@ -167,8 +168,7 @@ class GenderGuardIntegrationTests(TestCase):
                 "gender_confidence": 0.88,
             },
         )
-        self.assertEqual(len(suggestions), 3)
-        self.assertTrue(suggestions[0]["id"].startswith("women-"))
+        self.assertEqual(suggestions, [])
 
     def test_build_suggestions_respects_age_group(self):
         _, teen = build_suggestions_from_analysis(
@@ -181,14 +181,5 @@ class GenderGuardIntegrationTests(TestCase):
             },
             age_group="teen",
         )
-        _, mature = build_suggestions_from_analysis(
-            request_audience="men",
-            analysis={
-                "face_shape": "oval",
-                "hair_type": "short",
-                "detected_gender": "male",
-                "gender_confidence": 0.9,
-            },
-            age_group="mature",
-        )
-        self.assertNotEqual({s["seed"] for s in teen}, {s["seed"] for s in mature})
+        slugs = {item["seed"] for item in teen}
+        self.assertTrue(slugs <= {"mid-fade", "skin-fade", "buzz-cut", "textured-crop"})

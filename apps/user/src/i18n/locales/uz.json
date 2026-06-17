@@ -351,7 +351,7 @@
   },
   "explorePage": {
     "title": "Trend uslublar",
-    "subtitle": "Bir xil studiya maketida 24 ta soch uslubi — AI namuna ko'rinish.",
+    "subtitle": "AI personajlar bilan 4 ta tayyor uslub — haqiqiy namuna rasmlar.",
     "empty": "Bu filtr uchun uslub topilmadi.",
     "sampleBadge": "AI namuna",
     "personaLabel": "Model",
@@ -359,7 +359,9 @@
     "personaMenHint": "Personaj rasmlari uchun yuqorida «Erkaklar» ni tanlang.",
     "tryAiStyle": "AI Style da sinash",
     "tryOnMe": "O'zingizda ko'ring",
-    "findSalon": "Salon topish"
+    "findSalon": "Salon topish",
+    "tryOnTitle": "{{style}}",
+    "tryOnDesc": "Selfie yuklang — AI tanlangan uslubni yuzingizda ko'rsatadi."
   },
   "styleTryOnPage": {
     "loadingTitle": "Uslubni sinash",

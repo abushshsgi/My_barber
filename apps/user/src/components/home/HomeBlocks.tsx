@@ -21,14 +21,14 @@ function TrendingStyleCard({ style }: { style: TrendingHairstyle }) {
 
   return (
     <Link to="/explore/$styleId" params={{ styleId: style.id }} className="w-[140px] shrink-0">
-      <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-surface">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-[#E8E8E8]">
         <img
           src={src}
           alt=""
           loading="lazy"
           decoding="async"
           onError={() => setHidden(true)}
-          className="absolute inset-0 h-full w-full object-cover object-top"
+          className="absolute inset-0 h-full w-full object-contain object-center"
         />
       </div>
       <p className="mt-2 text-[13px] font-bold leading-tight">{style.title}</p>

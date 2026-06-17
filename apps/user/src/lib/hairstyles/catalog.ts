@@ -62,34 +62,10 @@ export function hairstyleImageFallbacks(imageUrl: string): string[] {
   return [`/hairstyles/${audience}/${file}`];
 }
 
-/** Asosiy katalogda mavjud ayol uslublari (`public/hairstyles/women/{slug}.webp`). */
-export const WOMEN_CATALOG_IMAGE_SLUGS = new Set<string>([
-  "soft-bob",
-  "long-layers",
-  "balayage",
-  "pixie-cut",
-  "beach-waves",
-  "straight-lob",
-  "curtain-bangs",
-  "shag-cut",
-  "braids",
-  "updo-bun",
-  "blunt-cut",
-  "highlights",
-]);
-
-export function resolveWomenCatalogImageUrl(slug: string): string {
-  return `/hairstyles/women/${slug}.webp`;
-}
-
-/** Katalogda haqiqiy rasm fayli mavjud uslublar (home trending / explore strip). */
+/** Katalogda haqiqiy persona rasm fayli mavjud uslublar (home trending / explore strip). */
 export function hasCatalogImageAsset(entry: Pick<HairstyleEntry, "audience" | "slug">): boolean {
-  if (entry.audience === "men") {
-    return listReadyExplorePersonas().some((persona) =>
-      hasPersonaStyleAsset(persona.id, entry.slug),
-    );
-  }
-  return WOMEN_CATALOG_IMAGE_SLUGS.has(entry.slug);
+  if (entry.audience !== "men") return false;
+  return listReadyExplorePersonas().some((persona) => hasPersonaStyleAsset(persona.id, entry.slug));
 }
 
 export function pickCatalogPersonaForSlug(
@@ -112,14 +88,9 @@ export function resolveCatalogImageUrl(
   entry: Pick<HairstyleEntry, "audience" | "slug" | "imageUrl">,
   personaId?: ExplorePersonaId | null,
 ): string | null {
-  if (entry.audience === "men") {
-    if (personaId && hasPersonaStyleAsset(personaId, entry.slug)) {
-      return getPersonaStyleImageUrl(personaId, entry.slug);
-    }
-    return null;
-  }
-  if (WOMEN_CATALOG_IMAGE_SLUGS.has(entry.slug)) {
-    return resolveWomenCatalogImageUrl(entry.slug);
+  if (entry.audience !== "men") return null;
+  if (personaId && hasPersonaStyleAsset(personaId, entry.slug)) {
+    return getPersonaStyleImageUrl(personaId, entry.slug);
   }
   return null;
 }
