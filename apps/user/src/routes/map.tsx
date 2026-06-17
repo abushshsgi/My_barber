@@ -103,9 +103,6 @@ function MapView() {
         ? t("map.emptyWomen")
         : t("map.empty");
 
-  const audienceHintKey =
-    mapAudience === "men" ? "map.forMen" : mapAudience === "women" ? "map.forWomen" : null;
-
   return (
     <div className="relative h-full min-h-0 overflow-hidden bg-surface">
       <div className="absolute inset-0">
@@ -139,11 +136,6 @@ function MapView() {
             placeholder={mounted ? (t("map.search") as string) : "Salon yoki manzil"}
             className="w-full bg-transparent text-[13px] font-semibold placeholder:text-muted-foreground focus:outline-none"
           />
-          {audienceHintKey && mounted ? (
-            <p className="mt-0.5 truncate text-center text-[9px] font-bold text-muted-foreground">
-              {t(audienceHintKey)}
-            </p>
-          ) : null}
         </div>
       </div>
 
