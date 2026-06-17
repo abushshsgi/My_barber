@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { motion, animate, useMotionValue, useMotionValueEvent, useTransform, type PanInfo } from "framer-motion";
-import { Map as MapIcon, Star, X } from "lucide-react";
+import { Map as MapIcon, Search, Star, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
@@ -29,6 +29,8 @@ type Props = {
   activeId: string;
   onActiveChange: (id: string) => void;
   onAllSalonsOpenChange?: (open: boolean) => void;
+  query?: string;
+  onQueryChange?: (query: string) => void;
 };
 
 function SalonCoverImage({
@@ -222,6 +224,8 @@ export function MapAirbnbCarousel({
   activeId,
   onActiveChange,
   onAllSalonsOpenChange,
+  query = "",
+  onQueryChange,
 }: Props) {
   const { t } = useTranslation();
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -231,6 +235,8 @@ export function MapAirbnbCarousel({
   const expandedRef = useRef(false);
   const suppressClickRef = useRef(false);
   const panStartHeightRef = useRef(PEEK_SHEET_HEIGHT);
+  const listDragActiveRef = useRef(false);
+  const listDragStartYRef = useRef(0);
 
   const sheetHeight = useMotionValue(PEEK_SHEET_HEIGHT);
   const [expandedHeight, setExpandedHeight] = useState(() =>
@@ -311,13 +317,11 @@ export function MapAirbnbCarousel({
     applyDragOffset(info.offset.y);
   };
 
-  const onSheetPanEnd = (_: unknown, info: PanInfo) => {
-    const offset = info.offset.y;
-    const velocityY = info.velocity.y;
+  const finishSheetDrag = (offsetY: number, velocityY: number) => {
     const progress = (sheetHeight.get() - PEEK_SHEET_HEIGHT) / travel;
 
     if (expandedRef.current) {
-      if (velocityY > VELOCITY_CLOSE || offset > travel * SNAP_OPEN_RATIO) {
+      if (velocityY > VELOCITY_CLOSE || offsetY > travel * SNAP_OPEN_RATIO) {
         snapSheet(false);
       } else {
         snapSheet(true);
@@ -330,6 +334,41 @@ export function MapAirbnbCarousel({
     } else {
       snapSheet(false);
     }
+  };
+
+  const onSheetPanEnd = (_: unknown, info: PanInfo) => {
+    finishSheetDrag(info.offset.y, info.velocity.y);
+  };
+
+  const onListPointerDownCapture = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!listRevealed) return;
+    const el = listScrollRef.current;
+    if (!el || el.scrollTop > 1) return;
+    listDragActiveRef.current = true;
+    listDragStartYRef.current = e.clientY;
+    panStartHeightRef.current = sheetHeight.get();
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onListPointerMoveCapture = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!listDragActiveRef.current) return;
+    const dy = e.clientY - listDragStartYRef.current;
+    if (dy > 0) {
+      e.preventDefault();
+      applyDragOffset(dy);
+      return;
+    }
+    if (dy < -10) {
+      listDragActiveRef.current = false;
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+  };
+
+  const onListPointerUpCapture = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!listDragActiveRef.current) return;
+    listDragActiveRef.current = false;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    finishSheetDrag(e.clientY - listDragStartYRef.current, 0);
   };
 
   const syncActiveFromScroll = () => {
@@ -416,22 +455,7 @@ export function MapAirbnbCarousel({
 
     if (!moved || endedAxis !== "y") return;
 
-    const progress = (sheetHeight.get() - PEEK_SHEET_HEIGHT) / travel;
-
-    if (expandedRef.current) {
-      if (progress < SNAP_OPEN_RATIO || dy > travel * SNAP_OPEN_RATIO) {
-        snapSheet(false);
-      } else {
-        snapSheet(true);
-      }
-      return;
-    }
-
-    if (progress >= SNAP_OPEN_RATIO || -dy > travel * SNAP_OPEN_RATIO) {
-      snapSheet(true);
-    } else {
-      snapSheet(false);
-    }
+    finishSheetDrag(dy, 0);
   };
 
   const onCarouselClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -474,7 +498,7 @@ export function MapAirbnbCarousel({
         )}
       >
         <motion.div
-          onPanStart={onSheetPanStart}
+          onPanStart={listRevealed ? onSheetPanStart : undefined}
           onPan={listRevealed ? onSheetPan : undefined}
           onPanEnd={listRevealed ? onSheetPanEnd : undefined}
           className={cn(
@@ -483,27 +507,44 @@ export function MapAirbnbCarousel({
           )}
         >
           {listRevealed ? (
-            <div className="relative flex items-center justify-between gap-2 px-4 pb-2.5 pt-2">
-              <div className="pointer-events-none absolute inset-x-0 top-2 flex justify-center">
+            <div className="px-4 pb-3 pt-2">
+              <div className="pointer-events-none flex justify-center pb-2">
                 <div className="h-1 w-9 rounded-full bg-border/80" />
               </div>
-              <h2 className="text-[15px] font-bold tracking-tight">
-                {t("map.allSalons")}{" "}
-                <span className="text-muted-foreground">({salons.length})</span>
-              </h2>
-              {expanded ? (
-                <button
-                  type="button"
-                  onClick={() => snapSheet(false)}
-                  onPointerDown={(event) => event.stopPropagation()}
-                  className="relative z-10 grid h-8 w-8 place-items-center rounded-full bg-surface active:scale-95"
-                  aria-label={t("common.close")}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              ) : (
-                <span className="h-8 w-8" />
-              )}
+              <div className="relative flex items-center justify-between gap-2">
+                <h2 className="text-[15px] font-bold tracking-tight">
+                  {t("map.allSalons")}{" "}
+                  <span className="text-muted-foreground">({salons.length})</span>
+                </h2>
+                {expanded ? (
+                  <button
+                    type="button"
+                    onClick={() => snapSheet(false)}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    className="relative z-10 grid h-8 w-8 place-items-center rounded-full bg-surface active:scale-95"
+                    aria-label={t("common.close")}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                ) : (
+                  <span className="h-8 w-8" />
+                )}
+              </div>
+              <div
+                className="relative mt-2.5 rounded-full border border-border/50 bg-surface py-2.5 pl-10 pr-4 touch-auto"
+                onPointerDown={(event) => event.stopPropagation()}
+              >
+                <Search
+                  className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                  strokeWidth={2.4}
+                />
+                <input
+                  value={query}
+                  onChange={(e) => onQueryChange?.(e.target.value)}
+                  placeholder={t("map.search") as string}
+                  className="w-full bg-transparent text-[13px] font-semibold placeholder:text-muted-foreground focus:outline-none"
+                />
+              </div>
             </div>
           ) : null}
         </motion.div>
@@ -512,7 +553,11 @@ export function MapAirbnbCarousel({
           <div className="min-h-0 flex-1 overflow-hidden">
             <div
               ref={listScrollRef}
-              className="h-full overflow-y-auto overscroll-contain px-4 py-3 pb-20"
+              onPointerDownCapture={onListPointerDownCapture}
+              onPointerMoveCapture={onListPointerMoveCapture}
+              onPointerUpCapture={onListPointerUpCapture}
+              onPointerCancelCapture={onListPointerUpCapture}
+              className="h-full overflow-y-auto overscroll-contain px-4 py-3 pb-20 touch-pan-y"
             >
               {salons.map((s) => (
                 <div key={s.id} data-list-id={s.id}>
