@@ -11,6 +11,7 @@ import {
 } from "./constants";
 import { buildPricePillHtml, buildUserDotHtml } from "./markers";
 import { bindHtmlMarkerClick } from "./html-marker-events";
+import { fitMapToPoints } from "./bounds";
 import type { MapMarker } from "./types";
 
 const BOTTOM_PAD = 168;
@@ -48,6 +49,7 @@ export function Map2GIS({
   const userMarkerRef = useRef<mapgl.HtmlMarker | null>(null);
   const userCircleRef = useRef<mapgl.Circle | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
   const reactId = useId().replace(/:/g, "");
 
   useEffect(() => {
@@ -57,53 +59,57 @@ export function Map2GIS({
     let destroyed = false;
     let map: mapgl.Map | undefined;
 
-    void load().then((mapglAPI) => {
-      if (destroyed || !containerRef.current) return;
-      mapglRef.current = mapglAPI;
-      map = new mapglAPI.Map(containerRef.current, {
-        center: toMapGlCoords(TASHKENT_CENTER.lat, TASHKENT_CENTER.lng),
-        zoom: DEFAULT_ZOOM,
-        key: getDgisApiKey(),
-        zoomControl: false,
-        disableRotationByUserInteraction: true,
-        disablePitchByUserInteraction: true,
-      });
-      mapRef.current = map;
-      setMapReady(true);
+    void load()
+      .then((mapglAPI) => {
+        if (destroyed || !containerRef.current) return;
+        mapglRef.current = mapglAPI;
+        map = new mapglAPI.Map(containerRef.current, {
+          center: toMapGlCoords(TASHKENT_CENTER.lat, TASHKENT_CENTER.lng),
+          zoom: DEFAULT_ZOOM,
+          key: getDgisApiKey(),
+          zoomControl: false,
+          disableRotationByUserInteraction: true,
+          disablePitchByUserInteraction: true,
+        });
+        mapRef.current = map;
+        setMapReady(true);
+        setMapError(null);
 
-      const handle: MapHandle = {
-        flyTo(lat, lng, zoom = 15) {
-          map?.setCenter(toMapGlCoords(lat, lng), { animate: true, duration: 550 });
-          if (zoom && (map?.getZoom() ?? 0) < zoom) {
-            map?.setZoom(zoom, { animate: true, duration: 550 });
-          }
-        },
-        fitMarkers(items, padding) {
-          if (!map || items.length === 0) {
-            map?.setCenter(toMapGlCoords(TASHKENT_CENTER.lat, TASHKENT_CENTER.lng));
-            map?.setZoom(DEFAULT_ZOOM);
-            return;
-          }
-          if (items.length === 1) {
-            map.setCenter(toMapGlCoords(items[0].lat, items[0].lng));
-            map.setZoom(14);
-            return;
-          }
-          const bounds = new mapglAPI.LngLatBounds();
-          for (const m of items) bounds.extend(toMapGlCoords(m.lat, m.lng));
-          map.fitBounds(bounds, {
-            padding: {
-              top: 72,
-              right: 48,
-              bottom: padding?.bottom ?? BOTTOM_PAD,
-              left: 48,
-            },
-            maxZoom: 14,
-          });
-        },
-      };
-      onMapReady?.(handle);
-    });
+        const handle: MapHandle = {
+          flyTo(lat, lng, zoom = 15) {
+            map?.setCenter(toMapGlCoords(lat, lng), { animate: true, duration: 550 });
+            if (zoom && (map?.getZoom() ?? 0) < zoom) {
+              map?.setZoom(zoom, { animate: true, duration: 550 });
+            }
+          },
+          fitMarkers(items, padding) {
+            if (!map || items.length === 0) {
+              map?.setCenter(toMapGlCoords(TASHKENT_CENTER.lat, TASHKENT_CENTER.lng));
+              map?.setZoom(DEFAULT_ZOOM);
+              return;
+            }
+            fitMapToPoints(
+              map,
+              mapglAPI,
+              items.map((m) => toMapGlCoords(m.lat, m.lng)),
+              {
+                padding: {
+                  top: 72,
+                  right: 48,
+                  bottom: padding?.bottom ?? BOTTOM_PAD,
+                  left: 48,
+                },
+                maxZoom: 14,
+              },
+            );
+          },
+        };
+        onMapReady?.(handle);
+      })
+      .catch((err: unknown) => {
+        console.error("[Map2GIS] failed to load mapgl", err);
+        setMapError("Xarita yuklanmadi. Internet yoki 2GIS kalitini tekshiring.");
+      });
 
     return () => {
       destroyed = true;
@@ -135,22 +141,26 @@ export function Map2GIS({
     }
 
     for (const m of markers) {
-      const pinLabel = m.priceLabel || m.label.slice(0, 8);
-      const html = buildPricePillHtml(activeId === m.id, pinLabel);
-      const existing = markerRefs.current.get(m.id);
-      if (existing) {
-        existing.setContent(html);
-        existing.setCoordinates(toMapGlCoords(m.lat, m.lng));
-        bindHtmlMarkerClick(existing, () => onMarkerClick?.(m.id));
-      } else {
-        const marker = new mapglAPI.HtmlMarker(map, {
-          coordinates: toMapGlCoords(m.lat, m.lng),
-          html,
-          interactive: true,
-          preventMapInteractions: true,
-        });
-        bindHtmlMarkerClick(marker, () => onMarkerClick?.(m.id));
-        markerRefs.current.set(m.id, marker);
+      try {
+        const pinLabel = m.priceLabel || m.label.slice(0, 8);
+        const html = buildPricePillHtml(activeId === m.id, pinLabel);
+        const existing = markerRefs.current.get(m.id);
+        if (existing) {
+          existing.setContent(html);
+          existing.setCoordinates(toMapGlCoords(m.lat, m.lng));
+          bindHtmlMarkerClick(existing, () => onMarkerClick?.(m.id));
+        } else {
+          const marker = new mapglAPI.HtmlMarker(map, {
+            coordinates: toMapGlCoords(m.lat, m.lng),
+            html,
+            interactive: true,
+            preventMapInteractions: true,
+          });
+          bindHtmlMarkerClick(marker, () => onMarkerClick?.(m.id));
+          markerRefs.current.set(m.id, marker);
+        }
+      } catch (err) {
+        console.error("[Map2GIS] marker sync failed", m.id, err);
       }
     }
   }, [markers, activeId, onMarkerClick, mapReady]);
@@ -174,11 +184,9 @@ export function Map2GIS({
     userCircleRef.current = new mapglAPI.Circle(map, {
       coordinates: toMapGlCoords(userLocation.lat, userLocation.lng),
       radius: USER_RADIUS_M,
-      color: "#141414",
+      color: "#1414140D",
       strokeWidth: 1,
-      strokeColor: "#141414",
-      strokeDashArray: [4, 6],
-      opacity: 0.05,
+      strokeColor: "#14141433",
     });
   }, [showUserLocation, userLocation, mapReady]);
 
@@ -197,31 +205,35 @@ export function Map2GIS({
     const mapglAPI = mapglRef.current;
     if (!mapReady || !map || !mapglAPI) return;
 
-    const key = markers.map((m) => m.id).join("|");
-    if (!key) {
+    if (!markers.some((m) => m.id)) {
       map.setCenter(toMapGlCoords(TASHKENT_CENTER.lat, TASHKENT_CENTER.lng));
       map.setZoom(DEFAULT_ZOOM);
       return;
     }
-    if (markers.length === 1) {
-      map.setCenter(toMapGlCoords(markers[0].lat, markers[0].lng));
-      map.setZoom(14);
-      return;
+    try {
+      fitMapToPoints(
+        map,
+        mapglAPI,
+        markers.map((m) => toMapGlCoords(m.lat, m.lng)),
+        { padding: { top: 72, right: 48, bottom: BOTTOM_PAD, left: 48 }, maxZoom: 14 },
+      );
+    } catch (err) {
+      console.error("[Map2GIS] fitBounds failed", err);
     }
-    const bounds = new mapglAPI.LngLatBounds();
-    for (const m of markers) bounds.extend(toMapGlCoords(m.lat, m.lng));
-    map.fitBounds(bounds, {
-      padding: { top: 72, right: 48, bottom: BOTTOM_PAD, left: 48 },
-      maxZoom: 14,
-    });
   }, [markers, mapReady]);
 
   return (
-    <div
-      ref={containerRef}
-      id={`map2gis-${reactId}`}
-      className={className}
-      style={{ width: "100%", height: "100%", background: "oklch(0.94 0.012 85)", ...style }}
-    />
+    <div className={className} style={{ position: "relative", width: "100%", height: "100%", ...style }}>
+      <div
+        ref={containerRef}
+        id={`map2gis-${reactId}`}
+        style={{ width: "100%", height: "100%", background: "oklch(0.94 0.012 85)" }}
+      />
+      {mapError ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-surface/90 px-6 text-center text-sm text-muted-foreground">
+          {mapError}
+        </div>
+      ) : null}
+    </div>
   );
 }

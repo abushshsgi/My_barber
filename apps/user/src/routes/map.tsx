@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { MapAirbnbCarousel } from "@/components/map/MapAirbnbCarousel";
+import { MapErrorBoundary } from "@/components/map/MapErrorBoundary";
 import { SalonMap, type SalonMapMarker } from "@/components/map/SalonMap";
 import { resolveMapAudienceFilter, useAudience } from "@/hooks/use-audience";
 import { useMe } from "@/hooks/use-me";
@@ -111,13 +112,15 @@ function MapView() {
     <div className="relative h-full min-h-0 overflow-hidden bg-surface">
       <div className="absolute inset-0">
         {mounted ? (
-          <SalonMap
-            markers={mapMarkers}
-            activeId={active || null}
-            onMarkerClick={focusSalon}
-            showUserLocation={!allSalonsOpen}
-            userLocation={userLocation}
-          />
+          <MapErrorBoundary>
+            <SalonMap
+              markers={mapMarkers}
+              activeId={active || null}
+              onMarkerClick={focusSalon}
+              showUserLocation={!allSalonsOpen}
+              userLocation={userLocation}
+            />
+          </MapErrorBoundary>
         ) : (
           <div className="h-full w-full bg-surface" />
         )}

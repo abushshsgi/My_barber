@@ -6,6 +6,7 @@ import { getDgisApiKey } from "./api-key";
 import { UZ_CENTER, toMapGlCoords } from "./constants";
 import { buildAdminPinHtml, buildPopupHtml } from "./markers";
 import { bindHtmlMarkerClick } from "./html-marker-events";
+import { fitMapToPoints } from "./bounds";
 import type { AdminMapPoint } from "./types";
 
 const SALON_SYMBOL = "M3 9.5L12 3l9 6.5V21H3V9.5z";
@@ -98,9 +99,16 @@ export function AdminMap2GIS({ salons, barbers, className, style }: AdminMap2GIS
       map.setZoom(11);
       return;
     }
-    const bounds = new mapglAPI.LngLatBounds();
-    for (const p of points) bounds.extend(toMapGlCoords(p.lat, p.lng));
-    map.fitBounds(bounds, { padding: 40, maxZoom: 12 });
+    try {
+      fitMapToPoints(
+        map,
+        mapglAPI,
+        points.map((p) => toMapGlCoords(p.lat, p.lng)),
+        { padding: 40, maxZoom: 12 },
+      );
+    } catch (err) {
+      console.error("[AdminMap2GIS] fitBounds failed", err);
+    }
   }, [salons, barbers, points, mapReady]);
 
   return (
