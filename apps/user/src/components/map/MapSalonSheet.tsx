@@ -191,38 +191,42 @@ export function MapSalonSheet({
 }: Props) {
   const { t } = useTranslation();
   const sheetRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
   const expandedRef = useRef(false);
   const panStartRef = useRef(0);
 
-  const [halfHeight, setHalfHeight] = useState(360);
+  const [collapsedHeight, setCollapsedHeight] = useState(280);
   const [expandedHeight, setExpandedHeight] = useState(640);
   const [expanded, setExpanded] = useState(false);
   const [detailRevealed, setDetailRevealed] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const sheetHeight = useMotionValue(halfHeight);
-  const halfHeightRef = useRef(halfHeight);
+  const sheetHeight = useMotionValue(collapsedHeight);
+  const collapsedHeightRef = useRef(collapsedHeight);
 
   useEffect(() => {
-    halfHeightRef.current = halfHeight;
-  }, [halfHeight]);
+    collapsedHeightRef.current = collapsedHeight;
+  }, [collapsedHeight]);
 
   useEffect(() => {
     const parent = sheetRef.current?.parentElement;
     if (!parent) return;
 
     const measure = () => {
-      const h = parent.clientHeight;
-      const half = Math.round(h * 0.5);
-      setHalfHeight(half);
-      setExpandedHeight(Math.max(half + 40, h - 8));
+      const viewportH = parent.clientHeight;
+      const headerH = headerRef.current?.offsetHeight ?? 280;
+      const collapsed = Math.ceil(headerH);
+      setCollapsedHeight(collapsed);
+      setExpandedHeight(Math.max(collapsed + 40, viewportH - 8));
       if (!expandedRef.current) {
-        sheetHeight.set(half);
+        sheetHeight.set(collapsed);
       }
     };
 
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(parent);
+    if (headerRef.current) ro.observe(headerRef.current);
     return () => ro.disconnect();
   }, [sheetHeight]);
 
@@ -234,30 +238,32 @@ export function MapSalonSheet({
   const activeSalon = salons.find((s) => s.id === activeId) ?? gridSalons[0];
 
   const updateDetailReveal = (height: number) => {
-    setDetailRevealed(height > halfHeightRef.current + DETAIL_REVEAL_PX);
+    setDetailRevealed(height > collapsedHeightRef.current + DETAIL_REVEAL_PX);
   };
 
   const snapSheet = (open: boolean) => {
     expandedRef.current = open;
     setExpanded(open);
     setDetailRevealed(open);
-    animate(sheetHeight, open ? expandedHeight : halfHeight, sheetSpring);
+    animate(sheetHeight, open ? expandedHeight : collapsedHeight, sheetSpring);
   };
 
   const onPanStart = () => {
     panStartRef.current = sheetHeight.get();
+    setIsDragging(true);
   };
 
   const onPan = (_: unknown, info: PanInfo) => {
     const next = panStartRef.current - info.offset.y;
-    const clamped = Math.max(halfHeight, Math.min(expandedHeight, next));
+    const clamped = Math.max(collapsedHeight, Math.min(expandedHeight, next));
     sheetHeight.set(clamped);
     updateDetailReveal(clamped);
   };
 
   const onPanEnd = (_: unknown, info: PanInfo) => {
-    const travel = expandedHeight - halfHeight;
-    const progress = (sheetHeight.get() - halfHeight) / travel;
+    setIsDragging(false);
+    const travel = expandedHeight - collapsedHeight;
+    const progress = (sheetHeight.get() - collapsedHeight) / travel;
 
     if (expandedRef.current) {
       if (info.velocity.y > VELOCITY_COLLAPSE || info.offset.y > travel * SNAP_EXPAND_RATIO) {
@@ -293,6 +299,7 @@ export function MapSalonSheet({
         className="absolute inset-x-0 bottom-0 z-30 flex flex-col overflow-hidden rounded-t-[22px] bg-background pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-12px_48px_rgba(0,0,0,0.18)] ring-1 ring-border/30"
       >
         <motion.div
+          ref={headerRef}
           onPanStart={onPanStart}
           onPan={onPan}
           onPanEnd={onPanEnd}
@@ -318,36 +325,38 @@ export function MapSalonSheet({
           <SalonGrid salons={gridSalons} activeId={activeId} onActiveChange={onActiveChange} />
         </motion.div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          {detailRevealed && activeSalon ? (
-            <div className="shrink-0 px-4 pb-3 pt-1">
-              <SalonPeekCard salon={activeSalon} />
-            </div>
-          ) : null}
+        {detailRevealed || expanded || isDragging ? (
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            {detailRevealed && activeSalon ? (
+              <div className="shrink-0 px-4 pb-3 pt-1">
+                <SalonPeekCard salon={activeSalon} />
+              </div>
+            ) : null}
 
-          {expanded ? (
-            <div className="px-4 pb-4">
-              <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                {t("map.allSalons", { defaultValue: "Barcha salonlar" })}
-              </p>
-              <ul className="space-y-3">
-                {salons
-                  .filter((salon) => salon.id !== activeId)
-                  .map((salon) => (
-                    <li key={salon.id}>
-                      <button
-                        type="button"
-                        onClick={() => onActiveChange(salon.id)}
-                        className="w-full text-left"
-                      >
-                        <SalonPeekCard salon={salon} />
-                      </button>
-                    </li>
-                  ))}
-              </ul>
-            </div>
-          ) : null}
-        </div>
+            {expanded ? (
+              <div className="px-4 pb-4">
+                <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  {t("map.allSalons", { defaultValue: "Barcha salonlar" })}
+                </p>
+                <ul className="space-y-3">
+                  {salons
+                    .filter((salon) => salon.id !== activeId)
+                    .map((salon) => (
+                      <li key={salon.id}>
+                        <button
+                          type="button"
+                          onClick={() => onActiveChange(salon.id)}
+                          className="w-full text-left"
+                        >
+                          <SalonPeekCard salon={salon} />
+                        </button>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </motion.div>
     </>
   );
