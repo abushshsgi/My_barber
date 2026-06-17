@@ -159,7 +159,7 @@ function MapView() {
       </div>
 
       <div
-        className="absolute inset-x-0 top-0 z-20 flex justify-center px-4"
+        className="absolute inset-x-0 top-0 z-40 flex justify-center px-4"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 10px)" }}
       >
         <div className="relative w-full max-w-md rounded-full border border-border/50 bg-background/98 py-2.5 pl-10 pr-4 shadow-[0_4px_20px_rgba(0,0,0,0.12)] backdrop-blur-md">
@@ -184,7 +184,7 @@ function MapView() {
       <button
         type="button"
         onClick={() => locateMe()}
-        className="absolute right-4 z-20 grid h-10 w-10 place-items-center rounded-full border border-border/50 bg-background/98 text-foreground shadow-lg backdrop-blur-md active:scale-95"
+        className="absolute right-4 z-40 grid h-10 w-10 place-items-center rounded-full border border-border/50 bg-background/98 text-foreground shadow-lg backdrop-blur-md active:scale-95"
         style={{ bottom: 220 }}
         aria-label={t("map.locate")}
       >

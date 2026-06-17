@@ -13,16 +13,16 @@ const CARD_HEIGHT = 148;
 const IMAGE_WIDTH = 132;
 const PEEK_SHEET_HEIGHT = 196;
 const LIST_REVEAL_OFFSET = 28;
-const EXPANDED_HEIGHT_RATIO = 0.58;
 const SNAP_OPEN_RATIO = 0.5;
 const SNAP_EARLY_OPEN_RATIO = 0.22;
 const VELOCITY_OPEN = -220;
 const VELOCITY_CLOSE = 180;
+const EXPANDED_TOP_GAP = 8;
 
 const sheetSpring = { type: "spring" as const, stiffness: 420, damping: 36, mass: 0.9 };
 
 function getExpandedSheetHeight(containerHeight: number) {
-  return Math.max(PEEK_SHEET_HEIGHT + 120, Math.round(containerHeight * EXPANDED_HEIGHT_RATIO));
+  return Math.max(PEEK_SHEET_HEIGHT + 80, containerHeight - EXPANDED_TOP_GAP);
 }
 
 type Props = {
@@ -135,7 +135,7 @@ function SalonListCard({
   const distance = formatDistanceKm(salon.distanceKm);
 
   return (
-    <article className="mb-5 w-full text-left last:mb-2">
+    <article className="mb-6 w-full text-left last:mb-4">
       <button
         type="button"
         onClick={onSelect}
@@ -144,28 +144,32 @@ function SalonListCard({
       >
         <div
           className={cn(
-            "relative overflow-hidden rounded-2xl bg-[#E8E8E8]",
-            isActive && "ring-2 ring-foreground/30 ring-offset-2 ring-offset-background",
+            "relative overflow-hidden rounded-2xl bg-[#E8E8E8] shadow-[0_2px_16px_rgba(0,0,0,0.1)]",
+            isActive && "ring-2 ring-foreground/25 ring-offset-2 ring-offset-background",
           )}
         >
-          <SalonCoverImage salon={salon} mode="cover" className="aspect-[4/3] w-full rounded-2xl" />
+          <SalonCoverImage salon={salon} mode="cover" className="aspect-[4/3] w-full" />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/25 to-transparent"
+          />
           <div
             aria-hidden
             className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center gap-1.5"
           >
-            <span className="h-[5px] w-[5px] rounded-full bg-white shadow-sm" />
-            <span className="h-[5px] w-[5px] rounded-full bg-white/45 shadow-sm" />
-            <span className="h-[5px] w-[5px] rounded-full bg-white/45 shadow-sm" />
+            <span className="h-[6px] w-[6px] rounded-full bg-white shadow-sm" />
+            <span className="h-[6px] w-[6px] rounded-full bg-white/50 shadow-sm" />
+            <span className="h-[6px] w-[6px] rounded-full bg-white/50 shadow-sm" />
           </div>
         </div>
 
-        <div className="mt-2.5 px-0.5">
+        <div className="mt-3">
           <div className="flex items-start justify-between gap-3">
-            <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug tracking-tight text-foreground">
+            <h3 className="line-clamp-2 text-[16px] font-semibold leading-snug tracking-tight text-foreground">
               {salon.name}
             </h3>
             {salon.rating > 0 ? (
-              <span className="flex shrink-0 items-center gap-1 text-[13px] font-medium leading-none">
+              <span className="flex shrink-0 items-center gap-1 text-[14px] font-medium leading-none">
                 <Star className="h-3.5 w-3.5 fill-foreground" strokeWidth={0} />
                 {salon.rating.toFixed(2).replace(".", ",")}
                 {salon.reviewCount > 0 ? (
@@ -175,7 +179,7 @@ function SalonListCard({
             ) : null}
           </div>
 
-          <p className="mt-0.5 line-clamp-1 text-[14px] text-muted-foreground">
+          <p className="mt-1 line-clamp-1 text-[14px] text-muted-foreground">
             {salon.address || "—"}
           </p>
 
@@ -184,8 +188,8 @@ function SalonListCard({
           ) : null}
 
           {salon.priceFrom > 0 ? (
-            <p className="mt-1.5 text-[15px] leading-snug">
-              <span className="font-semibold underline decoration-foreground/35 underline-offset-2">
+            <p className="mt-2 text-[15px] leading-snug">
+              <span className="font-semibold underline decoration-foreground/40 underline-offset-2">
                 {shortPrice(salon.priceFrom)}
               </span>
               <span className="text-muted-foreground"> {t("map.priceFromSuffix")}</span>
@@ -194,22 +198,13 @@ function SalonListCard({
         </div>
       </button>
 
-      <div className="mt-2 px-0.5">
-        <Link
-          to="/booking/$salonId"
-          params={{ salonId: salon.id }}
-          className="inline-flex items-center justify-center rounded-lg bg-foreground px-4 py-2.5 text-[13px] font-semibold text-background active:scale-[0.98]"
-        >
-          {t("map.bookNow")}
-        </Link>
-        <Link
-          to="/salon/$id"
-          params={{ id: salon.id }}
-          className="ml-2 inline-flex items-center justify-center rounded-lg border border-border px-4 py-2.5 text-[13px] font-semibold text-foreground active:opacity-80"
-        >
-          {t("map.viewSalon")}
-        </Link>
-      </div>
+      <Link
+        to="/booking/$salonId"
+        params={{ salonId: salon.id }}
+        className="mt-3 flex w-full items-center justify-center rounded-xl bg-foreground py-3 text-[14px] font-semibold text-background shadow-sm active:scale-[0.98]"
+      >
+        {t("map.bookNow")}
+      </Link>
     </article>
   );
 }
@@ -303,6 +298,10 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
 
   const onSheetPan = (_: unknown, info: PanInfo) => {
     if (expandedRef.current) {
+      setSheetHeightFromDrag(info.offset.y, false);
+      return;
+    }
+    if (info.offset.y > 0) {
       setSheetHeightFromDrag(info.offset.y, false);
       return;
     }
@@ -463,34 +462,38 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
           height: sheetHeight,
           paddingBottom: "max(0px, env(safe-area-inset-bottom))",
         }}
-        className="absolute inset-x-0 bottom-0 z-30 flex flex-col overflow-hidden rounded-t-[18px] bg-background shadow-[0_-12px_40px_rgba(0,0,0,0.2)] ring-1 ring-border/30"
+        className="absolute inset-x-0 bottom-0 z-30 flex flex-col overflow-hidden rounded-t-[22px] bg-background shadow-[0_-16px_48px_rgba(0,0,0,0.22)]"
       >
         <motion.div
-          onPan={expanded ? onSheetPan : undefined}
-          onPanEnd={expanded ? onSheetPanEnd : undefined}
+          onPan={expanded || listRevealed ? onSheetPan : undefined}
+          onPanEnd={expanded || listRevealed ? onSheetPanEnd : undefined}
           className={cn(
-            "shrink-0 border-b border-border/40",
-            expanded && "cursor-grab touch-none active:cursor-grabbing",
+            "shrink-0",
+            (expanded || listRevealed) && "cursor-grab touch-none border-b border-border/40 active:cursor-grabbing",
           )}
         >
-          {expanded ? (
-            <div className="relative flex items-center justify-between gap-2 px-3 pb-2 pt-1">
-              <div className="pointer-events-none absolute inset-x-0 top-1 flex justify-center">
-                <div className="h-1 w-8 rounded-full bg-border/80" />
+          {(expanded || listRevealed) ? (
+            <div className="relative flex items-center justify-between gap-2 px-4 pb-2.5 pt-2">
+              <div className="pointer-events-none absolute inset-x-0 top-2 flex justify-center">
+                <div className="h-1 w-9 rounded-full bg-border/80" />
               </div>
-              <h2 className="text-[14px] font-bold tracking-tight">
+              <h2 className="text-[15px] font-bold tracking-tight">
                 {t("map.allSalons")}{" "}
                 <span className="text-muted-foreground">({salons.length})</span>
               </h2>
-              <button
-                type="button"
-                onClick={() => snapSheet(false)}
-                onPointerDown={(event) => event.stopPropagation()}
-                className="relative z-10 grid h-8 w-8 place-items-center rounded-full bg-surface active:scale-95"
-                aria-label={t("common.close")}
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
+              {expanded ? (
+                <button
+                  type="button"
+                  onClick={() => snapSheet(false)}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  className="relative z-10 grid h-8 w-8 place-items-center rounded-full bg-surface active:scale-95"
+                  aria-label={t("common.close")}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              ) : (
+                <span className="h-8 w-8" />
+              )}
             </div>
           ) : null}
         </motion.div>
