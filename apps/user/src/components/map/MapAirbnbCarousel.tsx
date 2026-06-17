@@ -12,11 +12,10 @@ import { cn } from "@/lib/utils";
 const CARD_HEIGHT = 148;
 const IMAGE_WIDTH = 132;
 const PEEK_SHEET_HEIGHT = 196;
-const LIST_REVEAL_OFFSET = 28;
-const SNAP_OPEN_RATIO = 0.5;
-const SNAP_EARLY_OPEN_RATIO = 0.22;
-const VELOCITY_OPEN = -220;
-const VELOCITY_CLOSE = 180;
+const LIST_REVEAL_RATIO = 0.38;
+const SNAP_OPEN_RATIO = 0.55;
+const VELOCITY_OPEN = -280;
+const VELOCITY_CLOSE = 200;
 const EXPANDED_TOP_GAP = 8;
 
 const sheetSpring = { type: "spring" as const, stiffness: 420, damping: 36, mass: 0.9 };
@@ -84,7 +83,7 @@ function SalonSlideCard({ salon, isActive }: { salon: Salon; isActive: boolean }
         className="active:opacity-95"
         style={{ width: IMAGE_WIDTH }}
       >
-        <SalonCoverImage salon={salon} className="h-full w-full" mode="contain" />
+        <SalonCoverImage salon={salon} className="h-full w-full" mode="cover" />
       </Link>
 
       <div className="flex min-w-0 flex-1 flex-col px-3 py-2.5">
@@ -225,6 +224,7 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
   const scrollRaf = useRef<number | null>(null);
   const expandedRef = useRef(false);
   const suppressClickRef = useRef(false);
+  const panStartHeightRef = useRef(PEEK_SHEET_HEIGHT);
 
   const sheetHeight = useMotionValue(PEEK_SHEET_HEIGHT);
   const [expandedHeight, setExpandedHeight] = useState(() =>
@@ -233,15 +233,19 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [listRevealed, setListRevealed] = useState(false);
 
+  const travel = expandedHeight - PEEK_SHEET_HEIGHT;
+  const listRevealHeight = PEEK_SHEET_HEIGHT + travel * LIST_REVEAL_RATIO;
+
   useMotionValueEvent(sheetHeight, "change", (height) => {
-    setListRevealed(height > PEEK_SHEET_HEIGHT + LIST_REVEAL_OFFSET);
+    setListRevealed(height >= listRevealHeight);
   });
 
-  const backdropOpacity = useTransform(
-    sheetHeight,
-    [PEEK_SHEET_HEIGHT, expandedHeight],
-    [0, 0.22],
-  );
+  const backdropOpacity = useTransform(sheetHeight, (height) => {
+    const progress = (height - PEEK_SHEET_HEIGHT) / travel;
+    if (progress <= 0.04) return 0;
+    if (progress < LIST_REVEAL_RATIO) return progress * 0.12;
+    return 0.1 + (progress - LIST_REVEAL_RATIO) * 0.55;
+  });
 
   const peekGesture = useRef({
     active: false,
@@ -278,42 +282,29 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
     el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [expanded, activeId]);
 
-  const travel = expandedHeight - PEEK_SHEET_HEIGHT;
-
   const snapSheet = (open: boolean) => {
     expandedRef.current = open;
     setExpanded(open);
     animate(sheetHeight, open ? expandedHeight : PEEK_SHEET_HEIGHT, sheetSpring);
   };
 
-  const setSheetHeightFromDrag = (offsetY: number, opening: boolean) => {
-    if (opening) {
-      const lift = Math.max(0, -offsetY);
-      sheetHeight.set(PEEK_SHEET_HEIGHT + Math.min(travel, lift));
-      return;
-    }
-    const closeDrag = Math.max(0, offsetY);
-    sheetHeight.set(Math.max(PEEK_SHEET_HEIGHT, expandedHeight - closeDrag));
+  const applyDragOffset = (offsetY: number) => {
+    const next = panStartHeightRef.current - offsetY;
+    sheetHeight.set(Math.max(PEEK_SHEET_HEIGHT, Math.min(expandedHeight, next)));
+  };
+
+  const onSheetPanStart = () => {
+    panStartHeightRef.current = sheetHeight.get();
   };
 
   const onSheetPan = (_: unknown, info: PanInfo) => {
-    if (expandedRef.current) {
-      setSheetHeightFromDrag(info.offset.y, false);
-      return;
-    }
-    if (info.offset.y > 0) {
-      setSheetHeightFromDrag(info.offset.y, false);
-      return;
-    }
-    setSheetHeightFromDrag(info.offset.y, true);
-    if (info.offset.y < -travel * SNAP_EARLY_OPEN_RATIO) {
-      snapSheet(true);
-    }
+    applyDragOffset(info.offset.y);
   };
 
   const onSheetPanEnd = (_: unknown, info: PanInfo) => {
     const offset = info.offset.y;
     const velocityY = info.velocity.y;
+    const progress = (sheetHeight.get() - PEEK_SHEET_HEIGHT) / travel;
 
     if (expandedRef.current) {
       if (velocityY > VELOCITY_CLOSE || offset > travel * SNAP_OPEN_RATIO) {
@@ -324,7 +315,7 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
       return;
     }
 
-    if (velocityY < VELOCITY_OPEN || offset < -travel * SNAP_OPEN_RATIO) {
+    if (velocityY < VELOCITY_OPEN || progress >= SNAP_OPEN_RATIO) {
       snapSheet(true);
     } else {
       snapSheet(false);
@@ -359,6 +350,7 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
   };
 
   const onCarouselPointerDownCapture = (e: React.PointerEvent<HTMLDivElement>) => {
+    panStartHeightRef.current = sheetHeight.get();
     peekGesture.current = {
       active: true,
       axis: null,
@@ -386,14 +378,7 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
     e.preventDefault();
 
     if (peekGesture.current.axis === "y") {
-      if (expandedRef.current) {
-        setSheetHeightFromDrag(dy, false);
-        return;
-      }
-      setSheetHeightFromDrag(dy, true);
-      if (-dy > travel * SNAP_EARLY_OPEN_RATIO) {
-        snapSheet(true);
-      }
+      applyDragOffset(dy);
       return;
     }
 
@@ -421,8 +406,7 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
 
     if (!moved || endedAxis !== "y") return;
 
-    const currentHeight = sheetHeight.get();
-    const progress = (currentHeight - PEEK_SHEET_HEIGHT) / travel;
+    const progress = (sheetHeight.get() - PEEK_SHEET_HEIGHT) / travel;
 
     if (expandedRef.current) {
       if (progress < SNAP_OPEN_RATIO || dy > travel * SNAP_OPEN_RATIO) {
@@ -433,7 +417,7 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
       return;
     }
 
-    if (progress > SNAP_OPEN_RATIO || -dy > travel * SNAP_OPEN_RATIO) {
+    if (progress >= SNAP_OPEN_RATIO || -dy > travel * SNAP_OPEN_RATIO) {
       snapSheet(true);
     } else {
       snapSheet(false);
@@ -452,9 +436,21 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
   return (
     <>
       <motion.div
-        className="pointer-events-none absolute inset-0 z-20 bg-black"
+        className={cn(
+          "pointer-events-none absolute inset-0 z-20",
+          listRevealed ? "bg-black" : "bg-black/80",
+        )}
         style={{ opacity: backdropOpacity }}
       />
+
+      {listRevealed ? (
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-[25] bg-background/20 backdrop-blur-[3px]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.25 }}
+        />
+      ) : null}
 
       <motion.div
         ref={sheetRef}
@@ -462,17 +458,21 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
           height: sheetHeight,
           paddingBottom: "max(0px, env(safe-area-inset-bottom))",
         }}
-        className="absolute inset-x-0 bottom-0 z-30 flex flex-col overflow-hidden rounded-t-[22px] bg-background shadow-[0_-16px_48px_rgba(0,0,0,0.22)]"
+        className={cn(
+          "absolute inset-x-0 bottom-0 z-30 flex flex-col overflow-hidden rounded-t-[22px] shadow-[0_-16px_48px_rgba(0,0,0,0.22)]",
+          listRevealed ? "bg-background" : "bg-background/98 ring-1 ring-border/20",
+        )}
       >
         <motion.div
-          onPan={expanded || listRevealed ? onSheetPan : undefined}
-          onPanEnd={expanded || listRevealed ? onSheetPanEnd : undefined}
+          onPanStart={onSheetPanStart}
+          onPan={listRevealed ? onSheetPan : undefined}
+          onPanEnd={listRevealed ? onSheetPanEnd : undefined}
           className={cn(
             "shrink-0",
-            (expanded || listRevealed) && "cursor-grab touch-none border-b border-border/40 active:cursor-grabbing",
+            listRevealed && "cursor-grab touch-none border-b border-border/40 active:cursor-grabbing",
           )}
         >
-          {(expanded || listRevealed) ? (
+          {listRevealed ? (
             <div className="relative flex items-center justify-between gap-2 px-4 pb-2.5 pt-2">
               <div className="pointer-events-none absolute inset-x-0 top-2 flex justify-center">
                 <div className="h-1 w-9 rounded-full bg-border/80" />
@@ -519,7 +519,10 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
 
         {!expanded ? (
           <div
-            className="shrink-0 touch-none select-none px-3 pb-1"
+            className={cn(
+              "shrink-0 touch-none select-none px-3 pb-1",
+              listRevealed && "border-t border-border/30 pt-1",
+            )}
             onPointerDownCapture={onCarouselPointerDownCapture}
             onPointerMoveCapture={onCarouselPointerMoveCapture}
             onPointerUpCapture={onCarouselPointerUpCapture}
