@@ -81,6 +81,7 @@ export const FLOW_IDENTITY_META: Record<
   {
     title: string;
     desc: string;
+    benefit: string;
     accent: Tone;
     badge: string;
     accentClass: string;
@@ -95,6 +96,7 @@ export const FLOW_IDENTITY_META: Record<
   owner: {
     title: "Salon owner",
     desc: "Salonni boshqarish, jamoa va salon workspace bilan ishlash.",
+    benefit: "Jamoa va xizmatlarni boshqaring",
     accent: "salon",
     badge: "Boshqaruv",
     accentClass: "border-amber-500/40 bg-amber-500/10 text-amber-700",
@@ -108,6 +110,7 @@ export const FLOW_IDENTITY_META: Record<
   employee: {
     title: "Salonga qo'shilish",
     desc: "Mavjud salon jamoasiga ulanib, salon workspace'da ishlash.",
+    benefit: "Mavjud salon jamoasiga qo'shiling",
     accent: "team",
     badge: "Jamoa",
     accentClass: "border-sky-500/40 bg-sky-500/10 text-sky-700",
@@ -121,6 +124,7 @@ export const FLOW_IDENTITY_META: Record<
   mybarber: {
     title: "MyBarber salon",
     desc: "MyBarber brendi ostida tezkor salon ochish va sozlash.",
+    benefit: "MyBarber brendi ostida tez oching",
     accent: "brand",
     badge: "MyBarber",
     accentClass: "border-violet-500/40 bg-violet-500/10 text-violet-700",
@@ -134,6 +138,7 @@ export const FLOW_IDENTITY_META: Record<
   independent: {
     title: "Mustaqil barber",
     desc: "Salonsiz shaxsiy ish maydoni va mustaqil xizmatlar.",
+    benefit: "Salonsiz shaxsiy ish maydoni",
     accent: "solo",
     badge: "Solo",
     accentClass: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700",
@@ -149,6 +154,7 @@ export const FLOW_IDENTITY_META: Record<
 export const UNKNOWN_FLOW_META = {
   title: "Barber workspace",
   desc: "Flow aniqlanmagan holat, standart ish maydoni ishlatiladi.",
+  benefit: "Standart barber ish maydoni",
   accent: "neutral" as const,
   badge: "Standart",
   accentClass: "border-zinc-500/30 bg-zinc-500/10 text-zinc-700",

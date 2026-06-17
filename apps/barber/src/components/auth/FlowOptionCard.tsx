@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { motion } from "framer-motion";
 import type { SignupFlow } from "@/lib/auth-ui";
 import { cn } from "@/lib/utils";
 import { Briefcase, Sparkles, Store, UserPlus } from "lucide-react";
@@ -15,38 +16,49 @@ export function FlowOptionCard({
   flow,
   selected,
   onSelect,
+  compact,
 }: {
   flow: SignupFlow;
   selected: boolean;
   onSelect: (flow: SignupFlow) => void;
+  compact?: boolean;
 }) {
   const meta = FLOW_IDENTITY_META[flow];
   return (
-    <button
+    <motion.button
       type="button"
       onClick={() => onSelect(flow)}
+      initial={false}
+      animate={{
+        scale: selected ? 1.02 : 1,
+      }}
+      whileTap={{ scale: selected ? 0.99 : 0.98 }}
+      transition={{ duration: 0.25 }}
       className={cn(
-        "w-full rounded-xl border p-3 text-left transition-colors",
+        "w-full cursor-pointer rounded-xl border p-3 text-left transition-[var(--transition-smooth)]",
+        compact && "min-w-[78%] shrink-0 snap-center sm:min-w-0",
         selected
-          ? "border-foreground bg-foreground text-background"
-          : "border-border hover:bg-muted/40",
+          ? "border-foreground bg-foreground text-background shadow-[var(--shadow-pop)]"
+          : "border-border bg-card shadow-[var(--shadow-soft)] hover:border-foreground/40 hover:bg-muted/30",
       )}
     >
       <div className="flex items-start gap-2.5">
-        <div
+        <motion.div
           className={cn(
             "mt-0.5 rounded-md p-1.5",
             selected ? "bg-background/20 text-background" : "bg-muted text-foreground",
           )}
+          animate={selected ? { rotate: [0, -5, 0] } : { rotate: 0 }}
+          transition={{ duration: 0.35 }}
         >
           {FLOW_ICON[flow]}
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
+        </motion.div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-semibold">{meta.title}</p>
             <span
               className={cn(
-                "inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold",
+                "inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold transition-colors duration-300",
                 selected ? "border-background/40 text-background/90" : meta.accentClass,
               )}
             >
@@ -55,14 +67,22 @@ export function FlowOptionCard({
           </div>
           <p
             className={cn(
-              "text-xs mt-1",
-              selected ? "text-background/80" : "text-muted-foreground",
+              "mt-0.5 text-xs font-medium",
+              selected ? "text-background/90" : "text-foreground",
+            )}
+          >
+            {meta.benefit}
+          </p>
+          <p
+            className={cn(
+              "mt-1 text-xs leading-snug",
+              selected ? "text-background/75" : "text-muted-foreground",
             )}
           >
             {meta.desc}
           </p>
         </div>
       </div>
-    </button>
+    </motion.button>
   );
 }

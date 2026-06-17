@@ -35,6 +35,76 @@ function looksLikeEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 }
 
+export type PasswordStrength = {
+  score: number;
+  label: string;
+  colorClass: string;
+  barClass: string;
+  percent: number;
+};
+
+export function validateEmailField(email: string): string | null {
+  if (!email.trim()) return "Email kiriting.";
+  if (!looksLikeEmail(email)) return "Email noto'g'ri.";
+  return null;
+}
+
+export function getPasswordStrength(password: string): PasswordStrength {
+  if (!password) {
+    return {
+      score: 0,
+      label: "",
+      colorClass: "text-muted-foreground",
+      barClass: "bg-muted",
+      percent: 0,
+    };
+  }
+
+  let score = 0;
+  if (password.length >= 8) score += 1;
+  if (password.length >= 12) score += 1;
+  if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score += 1;
+  if (/\d/.test(password)) score += 1;
+  if (/[^A-Za-z0-9]/.test(password)) score += 1;
+
+  const normalized = Math.min(4, Math.max(1, Math.ceil(score * 0.8)));
+
+  if (password.length < 8) {
+    return {
+      score: 1,
+      label: "Juda zaif",
+      colorClass: "text-destructive",
+      barClass: "bg-destructive",
+      percent: 25,
+    };
+  }
+  if (normalized <= 2) {
+    return {
+      score: 2,
+      label: "O'rtacha",
+      colorClass: "text-warning",
+      barClass: "bg-warning",
+      percent: 50,
+    };
+  }
+  if (normalized === 3) {
+    return {
+      score: 3,
+      label: "Yaxshi",
+      colorClass: "text-warning",
+      barClass: "bg-warning",
+      percent: 75,
+    };
+  }
+  return {
+    score: 4,
+    label: "Kuchli",
+    colorClass: "text-success",
+    barClass: "bg-success",
+    percent: 100,
+  };
+}
+
 export function normalizeEmail(raw: string): string {
   return raw.trim().toLowerCase();
 }
