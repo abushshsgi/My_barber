@@ -135,55 +135,47 @@ function SalonListCard({
   return (
     <article
       className={cn(
-        "mb-3 w-full rounded-xl border border-border/50 bg-background p-3 text-left shadow-sm",
+        "mb-3 w-full overflow-hidden rounded-xl border border-border/50 bg-background text-left shadow-sm",
         isActive && "ring-2 ring-foreground/20 ring-offset-1 ring-offset-background",
       )}
     >
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={onSelect}
-          className="shrink-0 active:opacity-95"
-          aria-label={salon.name}
-        >
-          <SalonCoverImage
-            salon={salon}
-            mode="cover"
-            className="h-[96px] w-[96px] rounded-xl"
-          />
-        </button>
-
-        <div className="min-w-0 flex-1">
-          <button type="button" onClick={onSelect} className="w-full text-left active:opacity-95">
-            <h3 className="line-clamp-2 text-[14px] font-bold leading-snug tracking-tight">
-              {salon.name}
-            </h3>
-            <p className="mt-1 line-clamp-2 text-[12px] font-medium leading-snug text-muted-foreground">
-              {salon.address || "—"}
-              {salon.distanceKm > 0 ? ` · ${formatDistanceKm(salon.distanceKm)}` : ""}
-            </p>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-semibold">
-              {salon.rating > 0 ? (
-                <span className="flex items-center gap-0.5">
-                  <Star className="h-3 w-3 fill-foreground" strokeWidth={0} />
-                  {salon.rating.toFixed(1)}
-                  {salon.reviewCount > 0 ? (
-                    <span className="text-muted-foreground">({salon.reviewCount})</span>
-                  ) : null}
-                </span>
-              ) : null}
-              {salon.priceFrom > 0 ? <span>{shortPrice(salon.priceFrom)}+</span> : null}
-            </div>
-          </button>
-
-          <Link
-            to="/booking/$salonId"
-            params={{ salonId: salon.id }}
-            className="mt-2 flex w-full items-center justify-center rounded-xl bg-foreground py-2.5 text-[12px] font-bold text-background active:scale-[0.98]"
-          >
-            {t("map.bookNow")}
-          </Link>
+      <button type="button" onClick={onSelect} className="w-full text-left active:opacity-95">
+        <SalonCoverImage
+          salon={salon}
+          mode="cover"
+          className="aspect-[3/2] w-full rounded-none"
+        />
+        <div className="px-3 pt-2.5">
+          <h3 className="line-clamp-2 text-[15px] font-bold leading-snug tracking-tight">
+            {salon.name}
+          </h3>
+          <p className="mt-1 line-clamp-2 text-[12px] font-medium leading-snug text-muted-foreground">
+            {salon.address || "—"}
+            {salon.distanceKm > 0 ? ` · ${formatDistanceKm(salon.distanceKm)}` : ""}
+          </p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-semibold">
+            {salon.rating > 0 ? (
+              <span className="flex items-center gap-0.5">
+                <Star className="h-3 w-3 fill-foreground" strokeWidth={0} />
+                {salon.rating.toFixed(1)}
+                {salon.reviewCount > 0 ? (
+                  <span className="text-muted-foreground">({salon.reviewCount})</span>
+                ) : null}
+              </span>
+            ) : null}
+            {salon.priceFrom > 0 ? <span>{shortPrice(salon.priceFrom)}+</span> : null}
+          </div>
         </div>
+      </button>
+
+      <div className="px-3 pb-3">
+        <Link
+          to="/booking/$salonId"
+          params={{ salonId: salon.id }}
+          className="flex w-full items-center justify-center rounded-xl bg-foreground py-2.5 text-[12px] font-bold text-background active:scale-[0.98]"
+        >
+          {t("map.bookNow")}
+        </Link>
       </div>
     </article>
   );
@@ -468,7 +460,7 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
         <div className="min-h-0 flex-1 overflow-hidden">
           <div
             ref={listScrollRef}
-            className="h-full overflow-y-auto overscroll-contain px-3 py-2 pb-2"
+            className="h-full overflow-y-auto overscroll-contain px-3 py-2 pb-16"
           >
             {salons.map((s) => (
               <div key={s.id} data-list-id={s.id}>
@@ -483,14 +475,17 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
         </div>
 
         <div
-          className="shrink-0 touch-none select-none px-3 pb-1"
+          className={cn(
+            "shrink-0 touch-none select-none px-3 pb-1",
+            expanded && "hidden",
+          )}
           onPointerDownCapture={onCarouselPointerDownCapture}
           onPointerMoveCapture={onCarouselPointerMoveCapture}
           onPointerUpCapture={onCarouselPointerUpCapture}
           onPointerCancelCapture={onCarouselPointerUpCapture}
           onClickCapture={onCarouselClickCapture}
         >
-          {!expanded ? <DragHandle /> : null}
+          <DragHandle />
 
           <div
             ref={scrollRef}
