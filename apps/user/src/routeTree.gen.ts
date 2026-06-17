@@ -41,6 +41,7 @@ import { Route as WalletTopUpRouteImport } from './routes/wallet_.top-up'
 import { Route as WalletHistoryRouteImport } from './routes/wallet_.history'
 import { Route as StoriesSalonIdRouteImport } from './routes/stories.$salonId'
 import { Route as SalonIdRouteImport } from './routes/salon.$id'
+import { Route as MapPeekVariantsRouteImport } from './routes/map.peek-variants'
 import { Route as ExploreStyleIdRouteImport } from './routes/explore_.$styleId'
 import { Route as ChatIdRouteImport } from './routes/chat.$id'
 import { Route as BookingSalonIdRouteImport } from './routes/booking.$salonId'
@@ -211,6 +212,11 @@ const SalonIdRoute = SalonIdRouteImport.update({
   path: '/salon/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MapPeekVariantsRoute = MapPeekVariantsRouteImport.update({
+  id: '/peek-variants',
+  path: '/peek-variants',
+  getParentRoute: () => MapRoute,
+} as any)
 const ExploreStyleIdRoute = ExploreStyleIdRouteImport.update({
   id: '/explore_/$styleId',
   path: '/explore/$styleId',
@@ -271,7 +277,7 @@ export interface FileRoutesByFullPath {
   '/favorites': typeof FavoritesRoute
   '/giftcard': typeof GiftcardRoute
   '/loyalty': typeof LoyaltyRoute
-  '/map': typeof MapRoute
+  '/map': typeof MapRouteWithChildren
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
@@ -293,6 +299,7 @@ export interface FileRoutesByFullPath {
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/explore/$styleId': typeof ExploreStyleIdRoute
+  '/map/peek-variants': typeof MapPeekVariantsRoute
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
   '/wallet/history': typeof WalletHistoryRoute
@@ -314,7 +321,7 @@ export interface FileRoutesByTo {
   '/favorites': typeof FavoritesRoute
   '/giftcard': typeof GiftcardRoute
   '/loyalty': typeof LoyaltyRoute
-  '/map': typeof MapRoute
+  '/map': typeof MapRouteWithChildren
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
@@ -336,6 +343,7 @@ export interface FileRoutesByTo {
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/explore/$styleId': typeof ExploreStyleIdRoute
+  '/map/peek-variants': typeof MapPeekVariantsRoute
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
   '/wallet/history': typeof WalletHistoryRoute
@@ -358,7 +366,7 @@ export interface FileRoutesById {
   '/favorites': typeof FavoritesRoute
   '/giftcard': typeof GiftcardRoute
   '/loyalty': typeof LoyaltyRoute
-  '/map': typeof MapRoute
+  '/map': typeof MapRouteWithChildren
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
@@ -380,6 +388,7 @@ export interface FileRoutesById {
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/explore_/$styleId': typeof ExploreStyleIdRoute
+  '/map/peek-variants': typeof MapPeekVariantsRoute
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
   '/wallet_/history': typeof WalletHistoryRoute
@@ -425,6 +434,7 @@ export interface FileRouteTypes {
     | '/booking/$salonId'
     | '/chat/$id'
     | '/explore/$styleId'
+    | '/map/peek-variants'
     | '/salon/$id'
     | '/stories/$salonId'
     | '/wallet/history'
@@ -468,6 +478,7 @@ export interface FileRouteTypes {
     | '/booking/$salonId'
     | '/chat/$id'
     | '/explore/$styleId'
+    | '/map/peek-variants'
     | '/salon/$id'
     | '/stories/$salonId'
     | '/wallet/history'
@@ -511,6 +522,7 @@ export interface FileRouteTypes {
     | '/booking/$salonId'
     | '/chat/$id'
     | '/explore_/$styleId'
+    | '/map/peek-variants'
     | '/salon/$id'
     | '/stories/$salonId'
     | '/wallet_/history'
@@ -533,7 +545,7 @@ export interface RootRouteChildren {
   FavoritesRoute: typeof FavoritesRoute
   GiftcardRoute: typeof GiftcardRoute
   LoyaltyRoute: typeof LoyaltyRoute
-  MapRoute: typeof MapRoute
+  MapRoute: typeof MapRouteWithChildren
   NotificationsRoute: typeof NotificationsRoute
   OffersRoute: typeof OffersRoute
   OnboardingRoute: typeof OnboardingRoute
@@ -787,6 +799,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SalonIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/map/peek-variants': {
+      id: '/map/peek-variants'
+      path: '/peek-variants'
+      fullPath: '/map/peek-variants'
+      preLoaderRoute: typeof MapPeekVariantsRouteImport
+      parentRoute: typeof MapRoute
+    }
     '/explore_/$styleId': {
       id: '/explore_/$styleId'
       path: '/explore/$styleId'
@@ -863,6 +882,16 @@ const ChatRouteChildren: ChatRouteChildren = {
 
 const ChatRouteWithChildren = ChatRoute._addFileChildren(ChatRouteChildren)
 
+interface MapRouteChildren {
+  MapPeekVariantsRoute: typeof MapPeekVariantsRoute
+}
+
+const MapRouteChildren: MapRouteChildren = {
+  MapPeekVariantsRoute: MapPeekVariantsRoute,
+}
+
+const MapRouteWithChildren = MapRoute._addFileChildren(MapRouteChildren)
+
 interface StoriesRouteChildren {
   StoriesSalonIdRoute: typeof StoriesSalonIdRoute
 }
@@ -888,7 +917,7 @@ const rootRouteChildren: RootRouteChildren = {
   FavoritesRoute: FavoritesRoute,
   GiftcardRoute: GiftcardRoute,
   LoyaltyRoute: LoyaltyRoute,
-  MapRoute: MapRoute,
+  MapRoute: MapRouteWithChildren,
   NotificationsRoute: NotificationsRoute,
   OffersRoute: OffersRoute,
   OnboardingRoute: OnboardingRoute,
