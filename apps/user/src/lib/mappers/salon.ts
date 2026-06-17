@@ -1,18 +1,6 @@
-import { API_BASE } from "@/lib/api/client";
 import type { ApiNearbySalon, ApiSalonDetail, ApiSalonList } from "@/lib/api/types";
+import { getSalonCoverUrl } from "@/lib/cover-images";
 import type { Audience, Category, Salon } from "@/lib/mock-data";
-
-function resolveSalonCoverUrl(raw: string | null | undefined): string | undefined {
-  const url = raw?.trim();
-  if (!url) return undefined;
-  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
-    return url;
-  }
-  if (url.startsWith("/media/") && API_BASE) {
-    return `${API_BASE}${url}`;
-  }
-  return url.startsWith("/") ? url : `/${url}`;
-}
 
 function toNum(v: string | number | null | undefined, fallback = 0): number {
   if (v == null) return fallback;
@@ -35,6 +23,7 @@ function priceRange(services: { price: number }[] | undefined): { from: number; 
 }
 
 export function mapSalonList(api: ApiSalonList, distanceKm = 0): Salon {
+  const coverSeed = api.slug || String(api.id);
   return {
     id: String(api.id),
     name: api.name,
@@ -46,8 +35,9 @@ export function mapSalonList(api: ApiSalonList, distanceKm = 0): Salon {
     distanceKm,
     priceFrom: 0,
     priceTo: 0,
-    coverSeed: api.slug || String(api.id),
-    coverUrl: resolveSalonCoverUrl(api.cover_image),
+    coverSeed,
+    // Hozircha API cover_image o‘rniga barqaror mock rasmlar
+    coverUrl: getSalonCoverUrl(coverSeed),
     about: "",
     services: [],
     staff: [],
@@ -60,12 +50,13 @@ export function mapSalonList(api: ApiSalonList, distanceKm = 0): Salon {
 
 export function mapSalonDetail(api: ApiSalonDetail, distanceKm = 0): Salon {
   const { from, to } = priceRange(api.services);
+  const base = mapSalonList(api, distanceKm);
   return {
-    ...mapSalonList(api, distanceKm),
+    ...base,
     about: api.description || "",
     priceFrom: from,
     priceTo: to,
-    coverUrl: resolveSalonCoverUrl(api.cover_image),
+    coverUrl: base.coverUrl,
     services: (api.services ?? []).map((s) => ({
       id: String(s.id),
       name: s.name,
