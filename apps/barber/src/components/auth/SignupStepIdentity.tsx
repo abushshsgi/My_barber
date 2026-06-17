@@ -1,3 +1,4 @@
+import { Loader2 } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { FloatingInput } from "@/components/auth/FloatingInput";
 import { FloatingPhoneInput } from "@/components/auth/FloatingPhoneInput";
@@ -10,11 +11,14 @@ type Props = {
   email: string;
   password: string;
   emailError: string | null;
+  phoneError: string | null;
+  checkingAvailability?: boolean;
   onNameChange: (v: string) => void;
   onPhoneChange: (v: string) => void;
   onEmailChange: (v: string) => void;
   onPasswordChange: (v: string) => void;
   onEmailBlur: () => void;
+  onPhoneBlur: () => void;
 };
 
 export function SignupStepIdentity({
@@ -23,11 +27,14 @@ export function SignupStepIdentity({
   email,
   password,
   emailError,
+  phoneError,
+  checkingAvailability,
   onNameChange,
   onPhoneChange,
   onEmailChange,
   onPasswordChange,
   onEmailBlur,
+  onPhoneBlur,
 }: Props) {
   const reduceMotion = useReducedMotion();
   const fields = [
@@ -51,6 +58,8 @@ export function SignupStepIdentity({
           label="Telefon (ixtiyoriy)"
           value={phone}
           onChange={onPhoneChange}
+          error={phoneError}
+          onBlur={onPhoneBlur}
         />
       ),
     },
@@ -93,6 +102,12 @@ export function SignupStepIdentity({
         <p className="mt-1 text-sm text-muted-foreground">
           Profil va kirish uchun asosiy ma'lumotlarni kiriting.
         </p>
+        {checkingAvailability && (
+          <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Loader2 className="size-3 animate-spin" />
+            Email va telefon tekshirilmoqda...
+          </p>
+        )}
       </div>
       <div className="space-y-3">
         {fields.map((field, index) => (

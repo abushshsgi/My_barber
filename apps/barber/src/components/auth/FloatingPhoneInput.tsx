@@ -7,9 +7,10 @@ type Props = {
   value: string;
   onChange: (v: string) => void;
   error?: string | null;
+  onBlur?: () => void;
 };
 
-export function FloatingPhoneInput({ id, label, value, onChange, error }: Props) {
+export function FloatingPhoneInput({ id, label, value, onChange, error, onBlur }: Props) {
   const digits = parseUzLocalPhone(value);
   const display = formatUzLocalPhone(digits);
   const has = display.length > 0;
@@ -32,6 +33,7 @@ export function FloatingPhoneInput({ id, label, value, onChange, error }: Props)
             inputMode="numeric"
             value={display}
             onChange={(e) => onChange(parseUzLocalPhone(e.target.value))}
+            onBlur={onBlur}
             autoComplete="tel"
             aria-invalid={!!error}
             className="peer h-full w-full bg-transparent px-3 pt-5 pb-1.5 text-sm text-foreground outline-none placeholder-transparent"

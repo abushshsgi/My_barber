@@ -34,6 +34,17 @@ export function SignupStepReview({ name, phone, email, flow }: Props) {
         </p>
       </div>
 
+      <div className="rounded-xl border border-info/30 bg-info/5 px-3 py-2.5 text-xs text-muted-foreground">
+        <p className="font-medium text-foreground">Xavfsizlik va keyingi qadamlar</p>
+        <ul className="mt-1.5 list-inside list-disc space-y-1">
+          <li>Parol brauzer xotirasida saqlanmaydi — faqat joriy sessiyada.</li>
+          <li>Email tasdiqlash profil sozlangach yuboriladi (5 xizmat + jadval).</li>
+          {flow === "employee" && (
+            <li>Salonga qo&apos;shilish uchun GPS va salon yaqinligi (100 m) talab qilinadi.</li>
+          )}
+        </ul>
+      </div>
+
       <div className="rounded-2xl border border-border bg-muted/20 p-4 shadow-[var(--shadow-soft)]">
         <div className="mb-3 flex items-center gap-2">
           <span className="text-sm font-semibold">{meta.title}</span>

@@ -115,9 +115,20 @@ export function validateLogin(values: { email: string; password: string }): stri
   return null;
 }
 
+export function validatePasswordPolicy(password: string): string | null {
+  if (password.length < 8) return "Parol kamida 8 ta belgi bo'lishi kerak.";
+  const hasDigit = /\d/.test(password);
+  const hasMixedCase = /[A-Z]/.test(password) && /[a-z]/.test(password);
+  if (!hasDigit && !hasMixedCase) {
+    return "Parol kamida bitta raqam yoki katta+kichik harf bo'lishi kerak.";
+  }
+  return null;
+}
+
 export function validateSignupIdentity(values: SignupIdentity): string | null {
   if (!values.fullName.trim()) return "Ism-familiya kiriting.";
   if (!looksLikeEmail(values.email)) return "Email noto'g'ri.";
-  if (values.password.length < 8) return "Parol kamida 8 ta belgi bo'lishi kerak.";
+  const pwdErr = validatePasswordPolicy(values.password);
+  if (pwdErr) return pwdErr;
   return null;
 }

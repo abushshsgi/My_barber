@@ -4,6 +4,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from accounts.barber_signup_service import create_barber_with_flow
+from accounts.password_policy import validate_barber_password
 from barbers.models import Barber
 from salons.geo_join import assert_join_distance_ok
 from salons.join_service import attach_worker_membership
@@ -195,9 +196,13 @@ class BarberSignupSerializer(serializers.Serializer):
         },
     )
     full_name = serializers.CharField()
-    has_salon = serializers.BooleanField(required=True)
-    latitude = serializers.DecimalField(max_digits=9, decimal_places=6)
-    longitude = serializers.DecimalField(max_digits=9, decimal_places=6)
+    has_salon = serializers.BooleanField(required=False)
+    latitude = serializers.DecimalField(
+        max_digits=9, decimal_places=6, required=False, allow_null=True
+    )
+    longitude = serializers.DecimalField(
+        max_digits=9, decimal_places=6, required=False, allow_null=True
+    )
     shop_name = serializers.CharField(required=False, allow_blank=True, default="")
     age = serializers.IntegerField(required=False, min_value=14, max_value=120, default=25)
     region = serializers.ChoiceField(
@@ -220,6 +225,12 @@ class BarberSignupSerializer(serializers.Serializer):
         allow_blank=True,
         default="",
     )
+
+    def validate_password(self, value):
+        err = validate_barber_password(value)
+        if err:
+            raise serializers.ValidationError(err)
+        return value
 
     def validate_email(self, value):
         v = (value or "").strip().lower()
@@ -244,16 +255,11 @@ class BarberSignupSerializer(serializers.Serializer):
         return value
 
     def validate(self, attrs):
-        lat = float(attrs["latitude"])
-        lng = float(attrs["longitude"])
-        if not (-90.0 <= lat <= 90.0) or not (-180.0 <= lng <= 180.0):
-            raise serializers.ValidationError(
-                {"detail": "latitude / longitude noto'g'ri diapazonda."}
-            )
-        wm = attrs.get("work_mode", Barber.WorkMode.SALON)
         flow = (attrs.get("onboarding_flow") or "").strip()
+        lat_raw = attrs.get("latitude")
+        lng_raw = attrs.get("longitude")
+
         if flow:
-            # Derive work_mode / has_salon from onboarding_flow to keep it consistent.
             if flow == Barber.OnboardingFlow.INDEPENDENT:
                 attrs["work_mode"] = Barber.WorkMode.INDEPENDENT
                 attrs["has_salon"] = False
@@ -263,6 +269,31 @@ class BarberSignupSerializer(serializers.Serializer):
                     attrs["has_salon"] = True
                 else:
                     attrs["has_salon"] = False
+        elif attrs.get("has_salon") is None:
+            raise serializers.ValidationError({"has_salon": "Majburiy maydon."})
+
+        if lat_raw is not None and lng_raw is not None:
+            lat = float(lat_raw)
+            lng = float(lng_raw)
+            if not (-90.0 <= lat <= 90.0) or not (-180.0 <= lng <= 180.0):
+                raise serializers.ValidationError(
+                    {"detail": "latitude / longitude noto'g'ri diapazonda."}
+                )
+        elif flow in (
+            Barber.OnboardingFlow.EMPLOYEE,
+        ) or (not flow and attrs.get("has_salon")):
+            raise serializers.ValidationError(
+                {"detail": "Employee ro'yxatdan o'tish uchun joylashuv majburiy."}
+            )
+        elif lat_raw is not None or lng_raw is not None:
+            raise serializers.ValidationError(
+                {"detail": "latitude va longitude birga berilishi kerak."}
+            )
+        else:
+            attrs["latitude"] = None
+            attrs["longitude"] = None
+
+        wm = attrs.get("work_mode", Barber.WorkMode.SALON)
         if wm == Barber.WorkMode.INDEPENDENT and attrs.get("has_salon"):
             raise serializers.ValidationError(
                 {
@@ -308,6 +339,12 @@ class BarberRegisterJoinSalonSerializer(serializers.Serializer):
     salon_id = serializers.IntegerField(min_value=1)
     latitude = serializers.DecimalField(max_digits=9, decimal_places=6)
     longitude = serializers.DecimalField(max_digits=9, decimal_places=6)
+
+    def validate_password(self, value):
+        err = validate_barber_password(value)
+        if err:
+            raise serializers.ValidationError(err)
+        return value
 
     def validate_email(self, value):
         v = (value or "").strip().lower()

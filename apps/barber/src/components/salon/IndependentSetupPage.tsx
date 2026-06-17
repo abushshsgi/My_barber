@@ -500,6 +500,7 @@ export function IndependentSetupPage() {
       for (const row of existingHours) {
         await apiFetch(`/api/v1/barber/working-hours/${row.id}/`, { method: "DELETE" });
       }
+      const hourPromises: Promise<Response>[] = [];
       for (const d of schedule) {
         const weekday = WEEKDAYS.indexOf(d.day);
         if (weekday < 0) continue;
@@ -516,22 +517,25 @@ export function IndependentSetupPage() {
               close_time: "00:00",
               is_day_off: true,
             };
-        const res = await apiFetch("/api/v1/barber/working-hours/", {
-          method: "POST",
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) {
-          const err = await parseJsonSafe(res);
-          setSubmitError(extractApiError(err, `${WEEKDAY_LABELS[d.day]} kun jadvali saqlanmadi.`));
-          return;
-        }
+        hourPromises.push(
+          apiFetch("/api/v1/barber/working-hours/", {
+            method: "POST",
+            body: JSON.stringify(payload),
+          }),
+        );
+      }
+      const hourResults = await Promise.all(hourPromises);
+      const failedHour = hourResults.find((r) => !r.ok);
+      if (failedHour) {
+        const err = await parseJsonSafe(failedHour);
+        setSubmitError(extractApiError(err, "Ish jadvalini saqlashda xatolik."));
+        return;
       }
 
       setSuccess(true);
       clearSignupDraft();
-      window.setTimeout(() => {
-        void navigate({ to: "/barber" });
-      }, 4000);
+      const goDashboard = () => void navigate({ to: "/barber" });
+      window.setTimeout(goDashboard, 2000);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Kutilmagan xatolik yuz berdi.");
     } finally {

@@ -1,5 +1,7 @@
+from django.db import IntegrityError
 from django.utils import timezone
 from rest_framework import generics, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -8,6 +10,7 @@ from barbers.barber_auth import encode_barber_tokens
 from barbers.models import Barber
 from salons.models import SalonMembership
 
+from .barber_availability import BarberCheckAvailabilityView
 from .models import User
 from .uz_regions import UzRegion
 from .serializers import (
@@ -17,6 +20,15 @@ from .serializers import (
     UserSerializer,
 )
 from .throttles import AuthIPThrottle
+
+__all__ = [
+    "BarberCheckAvailabilityView",
+    "BarberRegisterJoinSalonView",
+    "BarberRegisterView",
+    "MeView",
+    "UserSearchView",
+    "UzRegionsView",
+]
 
 
 class UzRegionsView(APIView):
@@ -30,6 +42,13 @@ class UzRegionsView(APIView):
         )
 
 
+def _conflict_response():
+    return Response(
+        {"detail": "Bu email yoki telefon allaqachon ro'yxatdan o'tgan."},
+        status=status.HTTP_409_CONFLICT,
+    )
+
+
 class BarberRegisterView(generics.CreateAPIView):
     permission_classes = [AllowAny]
     serializer_class = BarberSignupSerializer
@@ -38,7 +57,10 @@ class BarberRegisterView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        barber = serializer.save()
+        try:
+            barber = serializer.save()
+        except IntegrityError:
+            return _conflict_response()
         access, refresh = encode_barber_tokens(barber.id)
         Barber.objects.filter(pk=barber.pk).update(last_login=timezone.now())
         rep = BarberSignupSerializer().to_representation(barber)
@@ -62,7 +84,10 @@ class BarberRegisterJoinSalonView(APIView):
             salon_pk = int(raw_sid)
         except (TypeError, ValueError):
             salon_pk = None
-        barber = serializer.save()
+        try:
+            barber = serializer.save()
+        except IntegrityError:
+            return _conflict_response()
         access, refresh = encode_barber_tokens(barber.id)
         Barber.objects.filter(pk=barber.pk).update(last_login=timezone.now())
         rep = BarberSignupSerializer().to_representation(barber)

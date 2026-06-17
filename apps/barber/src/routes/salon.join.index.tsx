@@ -339,7 +339,7 @@ function SalonJoinPage() {
     if (!getBarberAccessToken()) return;
     const id = window.setTimeout(() => {
       void navigate({ to: "/salon/join/setup", replace: true });
-    }, 600);
+    }, 300);
     return () => window.clearTimeout(id);
   }, [joinStatus, navigate]);
 

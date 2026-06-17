@@ -1,12 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { AuthLoginForm } from "@/components/auth/AuthLoginForm";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { SignupWizard } from "@/components/auth/SignupWizard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { apiFetch, setBarberTokens } from "@/lib/api";
+import { submitEarlyFlowSignup } from "@/lib/barber-signup-flow";
+import { checkBarberAvailability, parseFieldErrors } from "@/lib/auth-errors";
 import {
   extractApiError,
   formatFetchError,
@@ -41,13 +43,17 @@ function AuthPage() {
   const [flow, setFlow] = useState<SignupFlow | null>(null);
 
   const [error, setError] = useState<string | null>(null);
+  const [loginEmailError, setLoginEmailError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [loadingLogin, setLoadingLogin] = useState(false);
   const [loadingSignup, setLoadingSignup] = useState(false);
 
   const onLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setLoginEmailError(null);
     const validation = validateLogin({ email: loginEmail, password: loginPassword });
     if (validation) {
       setError(validation);
@@ -61,7 +67,14 @@ function AuthPage() {
         body: JSON.stringify({ email, password: loginPassword }),
       });
       const body = await parseJsonSafe(res);
-      if (!res.ok) throw new Error(extractApiError(body, "Kirish amalga oshmadi.", res));
+      if (!res.ok) {
+        const fields = parseFieldErrors(body);
+        if (fields.email) {
+          setLoginEmailError(fields.email);
+          return;
+        }
+        throw new Error(extractApiError(body, "Kirish amalga oshmadi.", res));
+      }
       const data = body as { access?: string; refresh?: string };
       if (!data.access || !data.refresh) throw new Error("Token qaytmadi.");
       setBarberTokens(data.access, data.refresh);
@@ -72,6 +85,25 @@ function AuthPage() {
       setLoadingLogin(false);
     }
   };
+
+  const runAvailabilityCheck = useCallback(async (email: string, phone: string) => {
+    const formatErr = validateEmailField(email);
+    if (formatErr) {
+      setEmailError(formatErr);
+      return false;
+    }
+    setCheckingAvailability(true);
+    try {
+      const result = await checkBarberAvailability({ email, phone });
+      setEmailError(result.emailError);
+      setPhoneError(result.phoneError);
+      return !result.emailError && !result.phoneError;
+    } catch {
+      return true;
+    } finally {
+      setCheckingAvailability(false);
+    }
+  }, []);
 
   const onSignupSubmit = async () => {
     setError(null);
@@ -90,36 +122,64 @@ function AuthPage() {
       setError(validation);
       return;
     }
+
+    const available = await runAvailabilityCheck(signupEmail, signupPhone);
+    if (!available) return;
+
+    const phoneE164 = signupPhone ? formatUzPhoneE164(signupPhone) : undefined;
+    const draft = {
+      full_name: signupName.trim(),
+      phone: phoneE164 || undefined,
+      email: normalizeEmail(signupEmail),
+      password: signupPassword,
+      flow,
+    };
+
+    if (flow === "employee") {
+      saveSignupDraft(draft);
+      await navigate({ to: SIGNUP_FLOW_PATH[flow] });
+      return;
+    }
+
     setLoadingSignup(true);
     try {
-      const phoneE164 = signupPhone ? formatUzPhoneE164(signupPhone) : undefined;
-      saveSignupDraft({
-        full_name: signupName.trim(),
-        phone: phoneE164 || undefined,
-        email: normalizeEmail(signupEmail),
-        password: signupPassword,
-        flow,
-      });
+      saveSignupDraft(draft);
+      await submitEarlyFlowSignup(flow, draft);
       await navigate({ to: SIGNUP_FLOW_PATH[flow] });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
+      setError(formatFetchError(err, "Ro'yxatdan o'tish amalga oshmadi."));
     } finally {
       setLoadingSignup(false);
     }
   };
 
-  const handleEmailBlur = () => {
+  const handleEmailBlur = async () => {
     if (!signupEmail.trim()) {
       setEmailError(null);
       return;
     }
-    setEmailError(validateEmailField(signupEmail));
+    const formatErr = validateEmailField(signupEmail);
+    if (formatErr) {
+      setEmailError(formatErr);
+      return;
+    }
+    await runAvailabilityCheck(signupEmail, signupPhone);
+  };
+
+  const handlePhoneBlur = async () => {
+    if (!signupPhone.trim()) {
+      setPhoneError(null);
+      return;
+    }
+    await runAvailabilityCheck(signupEmail, signupPhone);
   };
 
   const handleTabChange = (v: string) => {
     setTab(v as "login" | "signup");
     setError(null);
+    setLoginEmailError(null);
     setEmailError(null);
+    setPhoneError(null);
   };
 
   const loginMotion = tabSlide("login");
@@ -146,6 +206,7 @@ function AuthPage() {
                     email={loginEmail}
                     password={loginPassword}
                     error={error}
+                    emailError={loginEmailError}
                     loading={loadingLogin}
                     onEmailChange={setLoginEmail}
                     onPasswordChange={setLoginPassword}
@@ -171,10 +232,15 @@ function AuthPage() {
                     }}
                     error={error}
                     loading={loadingSignup}
+                    checkingAvailability={checkingAvailability}
                     emailError={emailError}
+                    phoneError={phoneError}
                     onStepChange={setSignupStep}
                     onNameChange={setSignupName}
-                    onPhoneChange={setSignupPhone}
+                    onPhoneChange={(v) => {
+                      setSignupPhone(v);
+                      if (phoneError) setPhoneError(null);
+                    }}
                     onEmailChange={(v) => {
                       setSignupEmail(v);
                       if (emailError) setEmailError(null);
@@ -182,6 +248,7 @@ function AuthPage() {
                     onPasswordChange={setSignupPassword}
                     onFlowSelect={setFlow}
                     onEmailBlur={handleEmailBlur}
+                    onPhoneBlur={handlePhoneBlur}
                     onSubmit={onSignupSubmit}
                     onClearError={() => setError(null)}
                   />

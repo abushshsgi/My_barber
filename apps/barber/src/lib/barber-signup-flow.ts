@@ -1,4 +1,4 @@
-import { apiFetch, setBarberTokens } from "@/lib/api";
+import { apiFetch, getBarberAccessToken, setBarberTokens } from "@/lib/api";
 import {
   extractApiError,
   formatFetchError,
@@ -6,11 +6,11 @@ import {
   parseJsonSafe,
   type SignupFlow,
 } from "@/lib/auth-ui";
-import { clearSignupDraft, readSignupDraft } from "@/lib/signup-draft";
+import { clearSignupDraft, getSignupPassword, readSignupDraft, type SignupDraft } from "@/lib/signup-draft";
 
 export type FlowPayload = {
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   address?: string;
   region?: string;
   shop_name?: string;
@@ -44,33 +44,21 @@ export function validateCoordinates(latitude: string, longitude: string): string
   return null;
 }
 
-export async function submitFlowSignup(flow: SignupFlow, payload: FlowPayload): Promise<void> {
-  const draft = readSignupDraft();
-  if (!draft) throw new Error("Signup ma'lumoti topilmadi. Qaytadan boshlang.");
-
-  const flowFields = deriveFlowFields(flow);
-  const email = normalizeEmail(draft.email);
-
-  const { latitude, longitude, full_name, phone, ...payloadRest } = payload;
+async function registerAndStoreTokens(
+  body: Record<string, unknown>,
+  email: string,
+  password: string,
+): Promise<void> {
   const registerRes = await apiFetch("/api/v1/auth/barber-register/", {
     method: "POST",
-    body: JSON.stringify({
-      email,
-      password: draft.password,
-      full_name: full_name?.trim() || draft.full_name,
-      phone: phone?.trim() || draft.phone || undefined,
-      onboarding_flow: flow,
-      ...flowFields,
-      ...payloadRest,
-      latitude: roundCoord6(latitude),
-      longitude: roundCoord6(longitude),
-    }),
+    body: JSON.stringify(body),
   });
   const registerBody = await parseJsonSafe(registerRes);
-  if (!registerRes.ok)
+  if (!registerRes.ok) {
     throw new Error(
       extractApiError(registerBody, "Ro'yxatdan o'tish amalga oshmadi.", registerRes),
     );
+  }
 
   let access: string | undefined;
   let refresh: string | undefined;
@@ -82,11 +70,10 @@ export async function submitFlowSignup(flow: SignupFlow, payload: FlowPayload): 
   if (!access || !refresh) {
     const loginRes = await apiFetch("/api/v1/barber/auth/token/", {
       method: "POST",
-      body: JSON.stringify({ email, password: draft.password }),
+      body: JSON.stringify({ email, password }),
     });
     const loginBody = await parseJsonSafe(loginRes);
-    if (!loginRes.ok)
-      throw new Error(extractApiError(loginBody, "Login amalga oshmadi.", loginRes));
+    if (!loginRes.ok) throw new Error(extractApiError(loginBody, "Login amalga oshmadi.", loginRes));
     const tokens = loginBody as { access?: string; refresh?: string };
     access = tokens.access;
     refresh = tokens.refresh;
@@ -96,6 +83,58 @@ export async function submitFlowSignup(flow: SignupFlow, payload: FlowPayload): 
   clearSignupDraft();
 }
 
+/** Auth wizard oxirida — joylashuvsiz tez register (owner/mybarber/independent). */
+export async function submitEarlyFlowSignup(flow: SignupFlow, draft: SignupDraft): Promise<void> {
+  if (flow === "employee") {
+    throw new Error("Employee oqimi salonga qo'shilishda register qilinadi.");
+  }
+  const email = normalizeEmail(draft.email);
+  const flowFields = deriveFlowFields(flow);
+  await registerAndStoreTokens(
+    {
+      email,
+      password: draft.password,
+      full_name: draft.full_name.trim(),
+      phone: draft.phone?.trim() || undefined,
+      onboarding_flow: flow,
+      ...flowFields,
+    },
+    email,
+    draft.password,
+  );
+}
+
+export async function submitFlowSignup(flow: SignupFlow, payload: FlowPayload): Promise<void> {
+  if (getBarberAccessToken()) {
+    clearSignupDraft();
+    return;
+  }
+
+  const draft = readSignupDraft();
+  const password = draft?.password ?? getSignupPassword();
+  if (!draft || !password) throw new Error("Signup ma'lumoti topilmadi. Qaytadan boshlang.");
+
+  const flowFields = deriveFlowFields(flow);
+  const email = normalizeEmail(draft.email);
+
+  const { latitude, longitude, full_name, phone, ...payloadRest } = payload;
+  const registerBody: Record<string, unknown> = {
+    email,
+    password,
+    full_name: full_name?.trim() || draft.full_name,
+    phone: phone?.trim() || draft.phone || undefined,
+    onboarding_flow: flow,
+    ...flowFields,
+    ...payloadRest,
+  };
+  if (latitude != null && longitude != null) {
+    registerBody.latitude = roundCoord6(latitude);
+    registerBody.longitude = roundCoord6(longitude);
+  }
+
+  await registerAndStoreTokens(registerBody, email, password);
+}
+
 /** Employee: draft + salon tanlash + GPS — backendda register va join bitta tranzaksiya. */
 export async function submitEmployeeRegisterAndJoin(payload: {
   salon_id: number;
@@ -103,7 +142,8 @@ export async function submitEmployeeRegisterAndJoin(payload: {
   longitude: number;
 }): Promise<void> {
   const draft = readSignupDraft();
-  if (!draft || draft.flow !== "employee") {
+  const password = draft?.password ?? getSignupPassword();
+  if (!draft || !password || draft.flow !== "employee") {
     throw new Error("Signup ma'lumoti topilmadi yoki bu oqim employee uchun emas.");
   }
   const email = normalizeEmail(draft.email);
@@ -111,7 +151,7 @@ export async function submitEmployeeRegisterAndJoin(payload: {
     method: "POST",
     body: JSON.stringify({
       email,
-      password: draft.password,
+      password,
       full_name: draft.full_name,
       phone: draft.phone || "",
       salon_id: payload.salon_id,
@@ -129,4 +169,8 @@ export async function submitEmployeeRegisterAndJoin(payload: {
   if (!tokens.access || !tokens.refresh) throw new Error("Token qaytmadi.");
   setBarberTokens(tokens.access, tokens.refresh);
   clearSignupDraft();
+}
+
+export function formatSignupError(err: unknown, fallback: string): string {
+  return formatFetchError(err, fallback);
 }

@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+import uuid
+
 import jwt
 from django.conf import settings
+from django.core.cache import cache
 from django.utils import timezone
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
 from barbers.models import Barber
+
+REFRESH_JTI_CACHE_PREFIX = "barber_refresh_jti:"
+REFRESH_JTI_TTL_SECONDS = 7 * 24 * 60 * 60
 
 
 class BarberPrincipal:
@@ -56,6 +62,23 @@ class BarberJWTAuthentication(BaseAuthentication):
         return (BarberPrincipal(b), None)
 
 
+def _refresh_cache_key(barber_id: int) -> str:
+    return f"{REFRESH_JTI_CACHE_PREFIX}{barber_id}"
+
+
+def store_barber_refresh_jti(barber_id: int, jti: str) -> None:
+    cache.set(_refresh_cache_key(barber_id), jti, timeout=REFRESH_JTI_TTL_SECONDS)
+
+
+def validate_and_rotate_barber_refresh(
+    barber_id: int, jti: str | None
+) -> bool:
+    if not jti:
+        return False
+    cached = cache.get(_refresh_cache_key(barber_id))
+    return cached == jti
+
+
 def encode_barber_tokens(barber_id: int) -> tuple[str, str]:
     from datetime import timedelta
 
@@ -64,6 +87,7 @@ def encode_barber_tokens(barber_id: int) -> tuple[str, str]:
     refresh_delta = sj.get("REFRESH_TOKEN_LIFETIME") or timedelta(days=7)
 
     now = timezone.now()
+    refresh_jti = str(uuid.uuid4())
     access = jwt.encode(
         {
             "type": "barber_access",
@@ -78,6 +102,7 @@ def encode_barber_tokens(barber_id: int) -> tuple[str, str]:
         {
             "type": "barber_refresh",
             "barber_id": barber_id,
+            "jti": refresh_jti,
             "exp": now + refresh_delta,
             "iat": now,
         },
@@ -88,4 +113,5 @@ def encode_barber_tokens(barber_id: int) -> tuple[str, str]:
         access = access.decode("ascii")
     if isinstance(refresh, bytes):
         refresh = refresh.decode("ascii")
+    store_barber_refresh_jti(barber_id, refresh_jti)
     return access, refresh

@@ -439,27 +439,33 @@ export function MyBarberSetupPage() {
         setSubmitError("Owner membership topilmadi.");
         return;
       }
+      const schedulePromises: Promise<Response>[] = [];
       for (const row of hoursPayload) {
-        const schRes = await apiFetch("/api/v1/schedules/", {
-          method: "POST",
-          body: JSON.stringify({
-            membership: ownerMembership.id,
-            weekday: row.weekday,
-            open_time: row.open_time,
-            close_time: row.close_time,
-            is_day_off: false,
+        schedulePromises.push(
+          apiFetch("/api/v1/schedules/", {
+            method: "POST",
+            body: JSON.stringify({
+              membership: ownerMembership.id,
+              weekday: row.weekday,
+              open_time: row.open_time,
+              close_time: row.close_time,
+              is_day_off: false,
+            }),
           }),
-        });
-        if (!schRes.ok) {
-          const schErr = await parseJsonSafe(schRes);
-          setSubmitError(extractApiError(schErr, "Ish jadvalini saqlashda xatolik."));
-          return;
-        }
+        );
+      }
+      const scheduleResults = await Promise.all(schedulePromises);
+      const failedSchedule = scheduleResults.find((r) => !r.ok);
+      if (failedSchedule) {
+        const schErr = await parseJsonSafe(failedSchedule);
+        setSubmitError(extractApiError(schErr, "Ish jadvalini saqlashda xatolik."));
+        return;
       }
 
       setSuccess(true);
       clearSignupDraft();
-      window.setTimeout(() => void navigate({ to: "/barber" }), 5000);
+      const goDashboard = () => void navigate({ to: "/barber" });
+      window.setTimeout(goDashboard, 2000);
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : "Xatolik");
     } finally {
@@ -473,7 +479,12 @@ export function MyBarberSetupPage() {
   return (
     <div className="min-h-screen bg-background pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-foreground sm:pb-32">
       <AnimatePresence>
-        {success && <SuccessOverlay salonName={`MyBarber · ${firstName} ${lastName}`.trim()} />}
+        {success && (
+          <SuccessOverlay
+            salonName={`MyBarber · ${firstName} ${lastName}`.trim()}
+            onContinue={() => void navigate({ to: "/barber" })}
+          />
+        )}
       </AnimatePresence>
 
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
@@ -1319,7 +1330,13 @@ function LanguagesStep(props: { languages: string[]; toggleLanguage: (code: stri
   );
 }
 
-function SuccessOverlay({ salonName }: { salonName: string }) {
+function SuccessOverlay({
+  salonName,
+  onContinue,
+}: {
+  salonName: string;
+  onContinue: () => void;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -1334,7 +1351,14 @@ function SuccessOverlay({ salonName }: { salonName: string }) {
         <Check className="mx-auto mb-4 h-14 w-14 text-foreground" />
         <h2 className="text-2xl font-bold text-foreground">MyBarber salon tayyor</h2>
         <p className="mt-2 text-sm text-muted-foreground">{salonName}</p>
-        <p className="mt-3 text-xs text-muted-foreground">Barber panelga yo'naltirilmoqdasiz…</p>
+        <button
+          type="button"
+          onClick={onContinue}
+          className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-full bg-foreground text-sm font-semibold text-background transition-colors hover:opacity-90"
+        >
+          Dashboardga o'tish
+        </button>
+        <p className="mt-3 text-xs text-muted-foreground">Avtomatik yo'naltirish…</p>
       </motion.div>
     </motion.div>
   );

@@ -256,6 +256,7 @@ REST_FRAMEWORK = {
         "phone_verify": "15/minute",
         "phone_verify_per_number": "12/hour",
         "phone_check": "20/minute",
+        "barber_check": "15/minute",
         "ai_style": "30/hour",
         "ai_tryon": "12/hour",
         "salon_search": "60/minute",

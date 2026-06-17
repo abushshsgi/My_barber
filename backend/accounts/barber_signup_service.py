@@ -69,8 +69,8 @@ def _persist(validated_data: dict[str, Any]) -> Barber:
     phone = normalize_phone_field(validated_data.pop("phone", "") or "")
     full_name = validated_data.pop("full_name")
     has_salon = bool(validated_data.pop("has_salon"))
-    latitude = validated_data.pop("latitude")
-    longitude = validated_data.pop("longitude")
+    latitude = validated_data.pop("latitude", None)
+    longitude = validated_data.pop("longitude", None)
     shop_name = (validated_data.pop("shop_name", "") or "").strip()
     age = validated_data.pop("age", 25)
     region = validated_data.pop("region")
@@ -78,6 +78,8 @@ def _persist(validated_data: dict[str, Any]) -> Barber:
     staff_count = validated_data.pop("staff_count_at_signup", 1)
     work_mode = validated_data.pop("work_mode", Barber.WorkMode.SALON)
     onboarding_flow = (validated_data.pop("onboarding_flow", "") or "").strip()
+    if not onboarding_flow:
+        onboarding_flow = Barber.OnboardingFlow.OWNER
 
     with transaction.atomic():
         barber = Barber(

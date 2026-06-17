@@ -477,27 +477,32 @@ export function CreateSalonPage() {
         setSubmitError("Salon yaratildi, lekin owner membership topilmadi.");
         return;
       }
+      const schedulePromises: Promise<Response>[] = [];
       for (const row of hoursPayload) {
-        const scheduleRes = await apiFetch("/api/v1/schedules/", {
-          method: "POST",
-          body: JSON.stringify({
-            membership: ownerMembership.id,
-            weekday: row.weekday,
-            open_time: row.open_time,
-            close_time: row.close_time,
-            is_day_off: false,
+        schedulePromises.push(
+          apiFetch("/api/v1/schedules/", {
+            method: "POST",
+            body: JSON.stringify({
+              membership: ownerMembership.id,
+              weekday: row.weekday,
+              open_time: row.open_time,
+              close_time: row.close_time,
+              is_day_off: false,
+            }),
           }),
-        });
-        if (!scheduleRes.ok) {
-          const scheduleErr = await parseJsonSafe(scheduleRes);
-          setSubmitError(
-            extractApiError(
-              scheduleErr,
-              "Salon yaratildi, lekin ish jadvalini saqlashda xatolik bo'ldi.",
-            ),
-          );
-          return;
-        }
+        );
+      }
+      const scheduleResults = await Promise.all(schedulePromises);
+      const failedSchedule = scheduleResults.find((r) => !r.ok);
+      if (failedSchedule) {
+        const scheduleErr = await parseJsonSafe(failedSchedule);
+        setSubmitError(
+          extractApiError(
+            scheduleErr,
+            "Salon yaratildi, lekin ish jadvalini saqlashda xatolik bo'ldi.",
+          ),
+        );
+        return;
       }
 
       // 5) Optional cover upload as salon gallery image.
@@ -520,9 +525,8 @@ export function CreateSalonPage() {
 
       setSuccess(true);
       clearSignupDraft();
-      window.setTimeout(() => {
-        void navigate({ to: "/barber" });
-      }, 8000);
+      const goDashboard = () => void navigate({ to: "/barber" });
+      window.setTimeout(goDashboard, 2500);
     } finally {
       setSubmitting(false);
     }
@@ -539,7 +543,10 @@ export function CreateSalonPage() {
           <SuccessOverlay
             salonName={salonName}
             barberName={`${barberFirstName} ${barberLastName}`.trim()}
-            onClose={() => setSuccess(false)}
+            onClose={() => {
+              setSuccess(false);
+              void navigate({ to: "/barber" });
+            }}
           />
         )}
       </AnimatePresence>
@@ -2411,7 +2418,7 @@ function SuccessOverlay({
           whileTap={{ scale: 0.98 }}
           className="mt-7 inline-flex h-12 w-full items-center justify-center rounded-full bg-foreground text-sm font-semibold text-background transition-colors hover:opacity-90 sm:mt-8"
         >
-          Davom etish
+          Davom etish — Dashboardga o'tish
         </motion.button>
 
         {/* Secondary close */}

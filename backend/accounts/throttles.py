@@ -12,6 +12,23 @@ class AuthIPThrottle(SimpleRateThrottle):
     def get_cache_key(self, request, view):
         return self.cache_format % {"scope": self.scope, "ident": self.get_ident(request)}
 
+    def throttle_failure_message(self):
+        return (
+            "Juda ko'p urinish (daqiqada 12 ta). 1 daqiqa kutib qayta urinib ko'ring."
+        )
+
+
+class BarberCheckThrottle(SimpleRateThrottle):
+    """Email/telefon mavjudligini tekshirish — enumeration himoya."""
+
+    scope = "barber_check"
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {"scope": self.scope, "ident": self.get_ident(request)}
+
+    def throttle_failure_message(self):
+        return "Tekshiruv limiti tugadi. Biroz kutib qayta urinib ko'ring."
+
 
 class PhoneSendThrottle(SimpleRateThrottle):
     """OTP yuborish — IP bo'yicha qattiq limit (SMS spam / DDoS)."""

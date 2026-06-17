@@ -252,7 +252,7 @@ class SalonViewSet(viewsets.ModelViewSet):
         if not (-90.0 <= lat <= 90.0) or not (-180.0 <= lng <= 180.0):
             raise ValidationError({"detail": "latitude / longitude noto'g'ri."})
 
-        salon = get_object_or_404(Salon, pk=salon_id)
+        salon = get_object_or_404(Salon, pk=salon_id, is_published=True)
         try:
             assert_join_distance_ok(salon, lat, lng)
         except ValidationError as exc:

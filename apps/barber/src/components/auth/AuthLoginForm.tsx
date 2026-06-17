@@ -9,6 +9,7 @@ type Props = {
   email: string;
   password: string;
   error: string | null;
+  emailError?: string | null;
   loading: boolean;
   onEmailChange: (v: string) => void;
   onPasswordChange: (v: string) => void;
@@ -19,6 +20,7 @@ export function AuthLoginForm({
   email,
   password,
   error,
+  emailError = null,
   loading,
   onEmailChange,
   onPasswordChange,
@@ -36,6 +38,7 @@ export function AuthLoginForm({
         type="email"
         autoComplete="email"
         required
+        error={emailError ?? undefined}
       />
       <div className="space-y-2">
         <PasswordStrengthInput
@@ -58,7 +61,7 @@ export function AuthLoginForm({
         </div>
       </div>
 
-      <AuthErrorAlert error={error} />
+      <AuthErrorAlert error={error && !emailError ? error : null} />
 
       <AuthSubmitButton loading={loading} disabled={loading}>
         {loading ? "Kutilmoqda..." : "Kirish"}

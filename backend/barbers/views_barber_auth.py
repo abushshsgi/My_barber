@@ -7,8 +7,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import User
+from accounts.phone_utils import normalize_phone_field
 from accounts.throttles import AuthIPThrottle
-from barbers.barber_auth import encode_barber_tokens
+from barbers.barber_auth import encode_barber_tokens, validate_and_rotate_barber_refresh
 from barbers.barber_email import send_barber_email_verification_with_timeout
 from barbers.email_verification import unsign_barber_email_token
 from barbers.models import Barber
@@ -79,6 +80,9 @@ class BarberTokenRefreshView(APIView):
         if payload.get("type") != "barber_refresh":
             return Response({"detail": "Wrong token type."}, status=401)
         bid = payload.get("barber_id")
+        jti = payload.get("jti")
+        if not validate_and_rotate_barber_refresh(bid, jti):
+            return Response({"detail": "Refresh token invalid or expired."}, status=401)
         b = Barber.objects.filter(pk=bid, is_active=True).first()
         if not b:
             return Response({"detail": "Barber not found."}, status=401)
@@ -176,6 +180,9 @@ class BarberMeView(APIView):
         Barber panel: allow updating basic profile fields.
         Supports both JSON and multipart (avatar upload).
         """
+        from django.db import IntegrityError
+        from rest_framework.exceptions import ValidationError
+
         b = request.user.barber
         full_name = request.data.get("full_name")
         phone = request.data.get("phone")
@@ -183,7 +190,17 @@ class BarberMeView(APIView):
         if full_name is not None:
             b.full_name = str(full_name).strip()
         if phone is not None:
-            b.phone = str(phone).strip()
+            normalized = normalize_phone_field(str(phone).strip())
+            if normalized:
+                if User.objects.filter(phone=normalized).exists():
+                    raise ValidationError({"phone": "Bu telefon mijoz akkauntida band."})
+                if (
+                    Barber.objects.filter(phone=normalized)
+                    .exclude(pk=b.pk)
+                    .exists()
+                ):
+                    raise ValidationError({"phone": "Bu telefon sartarosh akkauntida band."})
+            b.phone = normalized or None
         if region is not None:
             b.region = str(region).strip()
         avatar = request.FILES.get("avatar")
@@ -191,8 +208,8 @@ class BarberMeView(APIView):
             b.avatar = avatar
         try:
             b.save()
-        except Exception as e:
-            return Response({"detail": str(e)}, status=400)
+        except IntegrityError:
+            raise ValidationError({"detail": "Telefon yoki email allaqachon band."}) from None
         owns_salon, active_salon_id = _barber_me_salon_fields(b)
         r = compute_barber_readiness(b)
         avatar_url = ""

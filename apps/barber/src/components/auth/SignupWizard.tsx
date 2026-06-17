@@ -24,7 +24,9 @@ type Props = {
   data: SignupWizardData;
   error: string | null;
   loading: boolean;
+  checkingAvailability?: boolean;
   emailError: string | null;
+  phoneError: string | null;
   onStepChange: (step: number) => void;
   onNameChange: (v: string) => void;
   onPhoneChange: (v: string) => void;
@@ -32,6 +34,7 @@ type Props = {
   onPasswordChange: (v: string) => void;
   onFlowSelect: (flow: SignupFlow) => void;
   onEmailBlur: () => void;
+  onPhoneBlur: () => void;
   onSubmit: () => void;
   onClearError: () => void;
 };
@@ -83,7 +86,7 @@ function ActionBar({
         <AuthSubmitButton
           type="button"
           onClick={onNext}
-          loading={loading}
+          loading={loading || checkingAvailability}
           disabled={!canNext}
           disabledTooltip={disabledTooltip}
           className="w-auto min-w-[120px] flex-1 sm:min-w-[170px] sm:flex-none"
@@ -100,7 +103,9 @@ export function SignupWizard({
   data,
   error,
   loading,
+  checkingAvailability = false,
   emailError,
+  phoneError,
   onStepChange,
   onNameChange,
   onPhoneChange,
@@ -108,6 +113,7 @@ export function SignupWizard({
   onPasswordChange,
   onFlowSelect,
   onEmailBlur,
+  onPhoneBlur,
   onSubmit,
   onClearError,
 }: Props) {
@@ -122,7 +128,10 @@ export function SignupWizard({
       email: data.email,
       password: data.password,
       flow: data.flow ?? "owner",
-    }) === null && !emailError;
+    }) === null &&
+    !emailError &&
+    !phoneError &&
+    !checkingAvailability;
 
   const handleNext = () => {
     onClearError();
@@ -174,11 +183,14 @@ export function SignupWizard({
               email={data.email}
               password={data.password}
               emailError={emailError}
+              phoneError={phoneError}
+              checkingAvailability={checkingAvailability}
               onNameChange={onNameChange}
               onPhoneChange={onPhoneChange}
               onEmailChange={onEmailChange}
               onPasswordChange={onPasswordChange}
               onEmailBlur={onEmailBlur}
+              onPhoneBlur={onPhoneBlur}
             />
           )}
           {step === 2 && data.flow && (
@@ -200,7 +212,7 @@ export function SignupWizard({
           <ActionBar
             step={step}
             canNext={canNext}
-            loading={loading}
+            loading={loading || checkingAvailability}
             onBack={handleBack}
             onNext={handleNext}
             nextLabel={nextLabel}
@@ -215,7 +227,7 @@ export function SignupWizard({
           <ActionBar
             step={step}
             canNext={canNext}
-            loading={loading}
+            loading={loading || checkingAvailability}
             onBack={handleBack}
             onNext={handleNext}
             nextLabel={nextLabel}

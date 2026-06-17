@@ -72,8 +72,18 @@ def compute_barber_readiness(barber: Barber) -> ReadinessBreakdown:
     from salons.models import BarberWorkingHours as SalonWorkingHours
     from salons.models import Salon, SalonMembership
 
-    flow = (barber.onboarding_flow or "").strip()
     wm = barber.work_mode
+    flow = (barber.onboarding_flow or "").strip()
+    if not flow:
+        from barbers.models import BarberSignupSnapshot
+
+        snap = BarberSignupSnapshot.objects.filter(barber=barber).first()
+        if wm == "independent":
+            flow = "independent"
+        elif snap and snap.has_salon:
+            flow = "employee"
+        else:
+            flow = "owner"
 
     prof = BarberProfile.objects.filter(barber=barber).first()
     has_location = bool(prof and prof.latitude is not None and prof.longitude is not None)
