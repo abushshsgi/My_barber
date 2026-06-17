@@ -94,6 +94,7 @@
     "bookNow": "Забронировать",
     "viewSalon": "Открыть салон",
     "allSalons": "Все салоны",
+    "desktopResults": "{{count}} салонов",
     "priceFromSuffix": "от",
     "reviews": "отзывов"
   },

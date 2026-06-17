@@ -29,10 +29,11 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
         <div
           className={cn(
             "mx-auto w-full max-w-[480px] lg:max-w-[720px]",
-            isViewportLocked &&
-              "fixed inset-x-0 top-0 z-10 overflow-hidden overscroll-none lg:static lg:z-auto lg:h-[100dvh]",
             isMap &&
-              "bottom-[calc(68px+env(safe-area-inset-bottom,0px))] lg:bottom-auto lg:left-[240px] lg:right-0",
+              "fixed inset-x-0 top-0 bottom-[calc(68px+env(safe-area-inset-bottom,0px))] z-10 max-w-none overflow-hidden overscroll-none lg:inset-y-0 lg:left-[240px] lg:right-0 lg:bottom-0 lg:mx-0 lg:h-[100dvh] lg:max-w-none",
+            isViewportLocked &&
+              !isMap &&
+              "fixed inset-x-0 top-0 z-10 overflow-hidden overscroll-none lg:static lg:z-auto lg:h-[100dvh]",
             isAiStyle && "h-[100dvh] bottom-0 lg:left-[240px] lg:right-0",
             isFullBleed && !isViewportLocked && "pb-0 lg:pb-12",
             !isFullBleed &&

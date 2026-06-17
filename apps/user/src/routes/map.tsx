@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { MapDesktopPanel } from "@/components/map/MapDesktopPanel";
 import { MapErrorBoundary } from "@/components/map/MapErrorBoundary";
 import { MapSalonSheet } from "@/components/map/MapSalonSheet";
 import { SalonMap, type SalonMapMarker } from "@/components/map/SalonMap";
@@ -107,46 +108,63 @@ function MapView() {
         ? t("map.emptyWomen")
         : t("map.empty");
 
+  const mapNode = mounted ? (
+    <MapErrorBoundary>
+      <SalonMap
+        markers={mapMarkers}
+        activeId={active || null}
+        onMarkerClick={focusSalon}
+        showUserLocation={!sheetExpanded}
+        userLocation={userLocation}
+      />
+    </MapErrorBoundary>
+  ) : (
+    <div className="h-full w-full bg-surface" />
+  );
+
   return (
-    <div className="relative h-full min-h-0 overflow-hidden bg-surface">
-      <div className="absolute inset-0">
-        {mounted ? (
-          <MapErrorBoundary>
-            <SalonMap
-              markers={mapMarkers}
-              activeId={active || null}
-              onMarkerClick={focusSalon}
-              showUserLocation={!sheetExpanded}
-              userLocation={userLocation}
-            />
-          </MapErrorBoundary>
-        ) : (
-          <div className="h-full w-full bg-surface" />
-        )}
+    <>
+      {/* Mobile: full-screen map + bottom sheet */}
+      <div className="relative h-full min-h-0 overflow-hidden bg-surface lg:hidden">
+        <div className="absolute inset-0">{mapNode}</div>
+
+        {listLoading && filtered.length === 0 ? (
+          <div className="absolute inset-x-0 bottom-0 z-30 rounded-t-[22px] border-t border-border/50 bg-background p-4 text-center">
+            <p className="text-sm font-medium text-muted-foreground">{t("map.loading")}</p>
+          </div>
+        ) : null}
+
+        {!listLoading && filtered.length === 0 ? (
+          <div className="absolute inset-x-0 bottom-0 z-30 rounded-t-[22px] border-t border-border/50 bg-background p-4 text-center">
+            <p className="text-sm font-medium text-muted-foreground">{emptyMessage}</p>
+          </div>
+        ) : null}
+
+        {filtered.length > 0 && active ? (
+          <MapSalonSheet
+            salons={filtered}
+            activeId={active}
+            onActiveChange={focusSalon}
+            query={query}
+            onQueryChange={setQuery}
+            onExpandedChange={setSheetExpanded}
+          />
+        ) : null}
       </div>
 
-      {listLoading && filtered.length === 0 ? (
-        <div className="absolute inset-x-0 bottom-0 z-30 rounded-t-[22px] border-t border-border/50 bg-background p-4 text-center">
-          <p className="text-sm font-medium text-muted-foreground">{t("map.loading")}</p>
-        </div>
-      ) : null}
-
-      {!listLoading && filtered.length === 0 ? (
-        <div className="absolute inset-x-0 bottom-0 z-30 rounded-t-[22px] border-t border-border/50 bg-background p-4 text-center">
-          <p className="text-sm font-medium text-muted-foreground">{emptyMessage}</p>
-        </div>
-      ) : null}
-
-      {filtered.length > 0 && active ? (
-        <MapSalonSheet
+      {/* Desktop: salon list panel + sticky map (Airbnb-inspired split, MyBarber styling) */}
+      <div className="hidden h-full min-h-0 lg:flex">
+        <MapDesktopPanel
           salons={filtered}
           activeId={active}
           onActiveChange={focusSalon}
           query={query}
           onQueryChange={setQuery}
-          onExpandedChange={setSheetExpanded}
+          loading={listLoading}
+          emptyMessage={emptyMessage}
         />
-      ) : null}
-    </div>
+        <div className="relative min-h-0 min-w-0 flex-1 bg-surface">{mapNode}</div>
+      </div>
+    </>
   );
 }

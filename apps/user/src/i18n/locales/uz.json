@@ -99,6 +99,7 @@
     "bookNow": "Hoziroq band qilish",
     "viewSalon": "Salonni ko'rish",
     "allSalons": "Barcha salonlar",
+    "desktopResults": "{{count}} ta salon",
     "priceFromSuffix": "dan",
     "reviews": "sharh"
   },
