@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchSalon, fetchSalons, fetchSalonsNearby, searchSalons } from "@/lib/api/salons";
+import { fetchSalon, fetchSalons, fetchSalonsNearby, fetchSalonStaff, searchSalons } from "@/lib/api/salons";
 import { authQueryEnabled } from "@/lib/auth-query";
-import { mapNearbySalon, mapSalonDetail, mapSalonList } from "@/lib/mappers/salon";
+import { mapNearbySalon, mapSalonDetail, mapSalonList, mapStaffToBarber } from "@/lib/mappers/salon";
 
 export const salonsQueryKey = ["salons"] as const;
 
@@ -59,5 +59,27 @@ export function useSalonsByIds(ids: string[]) {
       return data.map((s) => mapSalonList(s));
     },
     enabled: authQueryEnabled(ids.length > 0),
+  });
+}
+
+/** Xarita «Ustalar» tab — har salon uchun staff (limit bilan). */
+export function useSalonsStaffMap(salonIds: string[], enabled: boolean) {
+  const ids = salonIds.slice(0, 12);
+  return useQuery({
+    queryKey: [...salonsQueryKey, "staff-map", ids.join(",")],
+    queryFn: async () => {
+      const entries = await Promise.all(
+        ids.map(async (salonId) => {
+          const staff = await fetchSalonStaff(salonId);
+          return {
+            salonId,
+            staff: staff.map((row) => mapStaffToBarber(row, salonId)),
+          };
+        }),
+      );
+      return Object.fromEntries(entries.map((e) => [e.salonId, e.staff]));
+    },
+    enabled: authQueryEnabled(enabled && ids.length > 0),
+    staleTime: 60_000,
   });
 }

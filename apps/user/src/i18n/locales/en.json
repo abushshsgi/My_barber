@@ -81,7 +81,14 @@
     "fitAll": "Show all",
     "filters": "Filters",
     "locateError": "Could not get your location",
-    "locateUnsupported": "Geolocation is not supported"
+    "locateUnsupported": "Geolocation is not supported",
+    "loading": "Loading salons…",
+    "empty": "No salons found nearby",
+    "emptySearch": "No salons match your search",
+    "bookNow": "Book now",
+    "viewSalon": "View salon",
+    "allSalons": "All salons",
+    "reviews": "reviews"
   },
   "salon": {
     "tabs": {

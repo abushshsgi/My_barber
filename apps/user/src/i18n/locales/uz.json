@@ -86,7 +86,14 @@
     "fitAll": "Barchasini ko'rish",
     "filters": "Filterlar",
     "locateError": "Joylashuvni aniqlab bo'lmadi",
-    "locateUnsupported": "Brauzer joylashuvni qo'llab-quvvatlamaydi"
+    "locateUnsupported": "Brauzer joylashuvni qo'llab-quvvatlamaydi",
+    "loading": "Salonlar yuklanmoqda…",
+    "empty": "Yaqin atrofda salon topilmadi",
+    "emptySearch": "Qidiruv bo'yicha salon yo'q",
+    "bookNow": "Hoziroq band qilish",
+    "viewSalon": "Salonni ko'rish",
+    "allSalons": "Barcha salonlar",
+    "reviews": "sharh"
   },
   "salon": {
     "tabs": {

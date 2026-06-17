@@ -8,31 +8,50 @@ export type SalonMapMarker = {
   lat: number;
   lng: number;
   label: string;
-  kind: "salon" | "barber";
+  coverUrl?: string;
 };
 
 const TASHKENT: [number, number] = [41.3111, 69.2797];
 
-function makePinIcon(active: boolean, kind: "salon" | "barber") {
-  const size = active ? 44 : 34;
-  const bg = active ? "#141414" : kind === "salon" ? "#141414" : "#3d3d3d";
-  const ring = active ? "0 0 0 4px rgba(20,20,20,0.18)" : "0 2px 8px rgba(0,0,0,0.22)";
+function escapeHtmlAttr(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function makePinIcon(active: boolean, label: string, coverUrl?: string) {
+  const size = active ? 48 : 38;
+  const ring = active ? "0 0 0 4px rgba(20,20,20,0.2)" : "0 2px 10px rgba(0,0,0,0.25)";
+  const shortLabel =
+    active && label ? (label.length > 12 ? `${label.slice(0, 12)}…` : label) : "";
+  const bg = coverUrl
+    ? `url('${escapeHtmlAttr(coverUrl)}') center/cover no-repeat`
+    : "linear-gradient(145deg, #3d3d3d 0%, #141414 100%)";
+
+  const labelHtml = shortLabel
+    ? `<span style="
+        display:block;margin-top:4px;max-width:72px;padding:2px 6px;
+        border-radius:9999px;background:#141414;color:#faf8f5;
+        font-size:9px;font-weight:700;line-height:1.2;text-align:center;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+        box-shadow:0 2px 6px rgba(0,0,0,0.2);
+      ">${escapeHtmlAttr(shortLabel)}</span>`
+    : "";
+
+  const totalHeight = shortLabel ? size + 22 : size;
+
   return L.divIcon({
     className: "",
-    html: `<div style="
-      width:${size}px;height:${size}px;border-radius:9999px;
-      background:${bg};color:#faf8f5;
-      display:grid;place-items:center;
-      box-shadow:${ring};
-      border:2.5px solid #faf8f5;
-      transition:transform 0.2s ease;
-      transform:scale(${active ? 1.08 : 1});
-    ">
-      <svg width="${active ? 18 : 14}" height="${active ? 18 : 14}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/>
-      </svg>
+    html: `<div style="display:flex;flex-direction:column;align-items:center;width:${size}px;">
+      <div style="
+        width:${size}px;height:${size}px;border-radius:9999px;
+        background:${bg};
+        box-shadow:${ring};
+        border:2.5px solid #faf8f5;
+        transform:scale(${active ? 1.06 : 1});
+        transition:transform 0.2s ease;
+      "></div>
+      ${labelHtml}
     </div>`,
-    iconSize: [size, size],
+    iconSize: [size, totalHeight],
     iconAnchor: [size / 2, size / 2],
   });
 }
@@ -101,7 +120,6 @@ export function SalonMap({
   onMarkerClick,
   userLocation,
   flyToUser,
-  heatmap,
   onMapReady,
 }: {
   markers: SalonMapMarker[];
@@ -109,7 +127,6 @@ export function SalonMap({
   onMarkerClick: (id: string) => void;
   userLocation: { lat: number; lng: number } | null;
   flyToUser: { lat: number; lng: number } | null;
-  heatmap: boolean;
   onMapReady?: (map: L.Map) => void;
 }) {
   const initRef = useRef<[number, number]>(TASHKENT);
@@ -134,20 +151,6 @@ export function SalonMap({
       <FlyToActive activeId={activeId} markers={markers} />
       <FlyToPoint point={flyToUser} />
 
-      {heatmap &&
-        markers.map((m) => (
-          <Circle
-            key={`heat-${m.id}`}
-            center={[m.lat, m.lng]}
-            radius={650}
-            pathOptions={{
-              color: "transparent",
-              fillColor: "#141414",
-              fillOpacity: 0.12,
-            }}
-          />
-        ))}
-
       {userLocation && (
         <>
           <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon} />
@@ -169,23 +172,10 @@ export function SalonMap({
         <Marker
           key={m.id}
           position={[m.lat, m.lng]}
-          icon={makePinIcon(activeId === m.id, m.kind)}
+          icon={makePinIcon(activeId === m.id, m.label, m.coverUrl)}
           eventHandlers={{ click: () => onMarkerClick(m.id) }}
         />
       ))}
     </MapContainer>
   );
-}
-
-export function fitMapToMarkers(map: L.Map, markers: SalonMapMarker[]) {
-  if (markers.length === 0) {
-    map.setView(TASHKENT, 12);
-    return;
-  }
-  if (markers.length === 1) {
-    map.setView([markers[0].lat, markers[0].lng], 14);
-    return;
-  }
-  const bounds = L.latLngBounds(markers.map((m) => [m.lat, m.lng] as [number, number]));
-  map.fitBounds(bounds, { padding: [72, 72], maxZoom: 14 });
 }
