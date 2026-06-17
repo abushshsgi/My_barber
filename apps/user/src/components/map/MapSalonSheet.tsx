@@ -27,20 +27,31 @@ type Props = {
 
 function SalonCoverImage({ salon, className }: { salon: Salon; className?: string }) {
   const fallback = getSalonCoverUrl(salon.coverSeed);
-  const src = salon.coverUrl?.trim() || fallback;
+  const secondary = getSalonCoverUrl(`${salon.coverSeed}-alt`);
+  const primary = salon.coverUrl?.trim() || fallback;
+  const [src, setSrc] = useState(primary);
+  const stepRef = useRef(0);
+
+  useEffect(() => {
+    stepRef.current = 0;
+    setSrc(salon.coverUrl?.trim() || fallback);
+  }, [salon.coverUrl, salon.coverSeed, fallback]);
+
+  const onError = () => {
+    stepRef.current += 1;
+    if (stepRef.current === 1) setSrc(fallback);
+    else if (stepRef.current === 2) setSrc(secondary);
+  };
 
   return (
-    <div className={cn("overflow-hidden bg-[#E8E8E8]", className)}>
+    <div className={cn("h-full w-full overflow-hidden bg-[#E8E8E8]", className)}>
       <img
         src={src}
         alt=""
         loading="lazy"
         decoding="async"
         referrerPolicy="no-referrer"
-        onError={(e) => {
-          const img = e.currentTarget;
-          if (img.src !== fallback) img.src = fallback;
-        }}
+        onError={onError}
         className="h-full w-full object-cover object-center"
       />
     </div>
@@ -63,28 +74,37 @@ function SalonGridCell({
       aria-pressed={isActive}
       aria-label={salon.name}
       className={cn(
-        "min-w-0 flex-1 overflow-hidden rounded-xl bg-[#E8E8E8] ring-1 ring-black/5 active:scale-[0.98]",
+        "relative h-full min-h-[68px] w-full overflow-hidden rounded-xl bg-[#E8E8E8] ring-1 ring-black/5 active:scale-[0.98]",
         isActive && "ring-2 ring-foreground ring-offset-2 ring-offset-background",
       )}
     >
-      <SalonCoverImage salon={salon} className="h-[72px] w-full" />
+      <SalonCoverImage salon={salon} className="absolute inset-0" />
     </button>
   );
 }
 
-function SalonGridRow({
-  items,
+function EmptyGridCell() {
+  return (
+    <div
+      className="min-h-0 rounded-xl border border-dashed border-border/60 bg-surface/80"
+      aria-hidden
+    />
+  );
+}
+
+function SalonGrid({
+  salons,
   activeId,
   onActiveChange,
 }: {
-  items: Salon[];
+  salons: Salon[];
   activeId: string;
   onActiveChange: (id: string) => void;
 }) {
-  const slots = Array.from({ length: 3 }, (_, i) => items[i] ?? null);
+  const slots = Array.from({ length: GRID_COUNT }, (_, i) => salons[i] ?? null);
 
   return (
-    <div className="flex gap-2">
+    <div className="grid min-h-[148px] flex-1 grid-cols-3 grid-rows-2 gap-2 px-4 py-2">
       {slots.map((salon, i) =>
         salon ? (
           <SalonGridCell
@@ -94,7 +114,7 @@ function SalonGridRow({
             onSelect={() => onActiveChange(salon.id)}
           />
         ) : (
-          <div key={`empty-${i}`} className="min-w-0 flex-1" aria-hidden />
+          <EmptyGridCell key={`empty-${i}`} />
         ),
       )}
     </div>
@@ -112,7 +132,7 @@ function SalonPeekCard({ salon }: { salon: Salon }) {
     >
       <div className="h-full w-[108px] shrink-0 overflow-hidden">
         <Link to="/salon/$id" params={{ id: salon.id }} className="block h-full w-full">
-          <SalonCoverImage salon={salon} className="h-full w-full" />
+          <SalonCoverImage salon={salon} />
         </Link>
       </div>
       <div className="flex min-w-0 flex-1 flex-col justify-between px-3 py-2">
@@ -198,8 +218,6 @@ export function MapSalonSheet({
   }, [expanded, onExpandedChange]);
 
   const gridSalons = salons.slice(0, GRID_COUNT);
-  const topRow = gridSalons.slice(0, 3);
-  const bottomRow = gridSalons.slice(3, 6);
   const activeSalon = salons.find((s) => s.id === activeId) ?? gridSalons[0];
 
   const snapSheet = (open: boolean) => {
@@ -251,21 +269,21 @@ export function MapSalonSheet({
 
       <motion.div
         ref={sheetRef}
-        style={{
-          height: sheetHeight,
-          paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        }}
-        className="absolute inset-x-0 bottom-0 z-30 flex flex-col overflow-hidden rounded-t-[22px] bg-background shadow-[0_-12px_48px_rgba(0,0,0,0.18)] ring-1 ring-border/30"
+        style={{ height: sheetHeight }}
+        className="absolute inset-x-0 bottom-0 z-30 flex flex-col overflow-hidden rounded-t-[22px] bg-background pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-12px_48px_rgba(0,0,0,0.18)] ring-1 ring-border/30"
       >
         <motion.div
           onPanStart={onPanStart}
           onPan={onPan}
           onPanEnd={onPanEnd}
-          className="flex shrink-0 cursor-grab flex-col touch-none active:cursor-grabbing"
+          className={cn(
+            "flex cursor-grab flex-col touch-none active:cursor-grabbing",
+            expanded ? "shrink-0" : "min-h-0 flex-1",
+          )}
         >
           <SheetHandle />
 
-          <div className="px-4 pb-3" onPointerDown={(e) => e.stopPropagation()}>
+          <div className="shrink-0 px-4 pb-2" onPointerDown={(e) => e.stopPropagation()}>
             <div className="relative rounded-full border border-border/50 bg-surface py-2.5 pl-10 pr-4">
               <Search
                 className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -280,24 +298,17 @@ export function MapSalonSheet({
             </div>
           </div>
 
-          {gridSalons.length > 0 ? (
-            <div className="flex flex-col gap-2 px-4 pb-3">
-              <SalonGridRow items={topRow} activeId={activeId} onActiveChange={onActiveChange} />
-              {bottomRow.length > 0 ? (
-                <SalonGridRow items={bottomRow} activeId={activeId} onActiveChange={onActiveChange} />
-              ) : null}
-            </div>
-          ) : null}
+          <SalonGrid salons={gridSalons} activeId={activeId} onActiveChange={onActiveChange} />
 
           {activeSalon ? (
-            <div className="px-4 pb-3">
+            <div className="shrink-0 px-4 pb-3 pt-1">
               <SalonPeekCard salon={activeSalon} />
             </div>
           ) : null}
         </motion.div>
 
         {expanded ? (
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(16px,env(safe-area-inset-bottom))]">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
             <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               {t("map.allSalons", { defaultValue: "Barcha salonlar" })}
             </p>
