@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, List, Navigation, Star, X } from "lucide-react";
+import { List, Navigation, Star, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
@@ -9,14 +9,31 @@ import { getSalonCoverUrl } from "@/lib/cover-images";
 import { formatDistanceKm } from "@/lib/map-utils";
 import { cn } from "@/lib/utils";
 
-const CARD_HEIGHT = 148;
-const LIST_PANEL_MAX = 420;
+const CARD_HEIGHT = 172;
+const IMAGE_WIDTH = 158;
+const LIST_PANEL_MAX = 480;
+
+const spring = { type: "spring" as const, stiffness: 420, damping: 38, mass: 0.9 };
 
 type Props = {
   salons: Salon[];
   activeId: string;
   onActiveChange: (id: string) => void;
 };
+
+function SalonCoverThumb({ src, className }: { src: string; className?: string }) {
+  return (
+    <div className={cn("relative shrink-0 overflow-hidden bg-[#E8E8E8]", className)}>
+      <img
+        src={src}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        className="absolute inset-0 h-full w-full object-contain object-center p-1"
+      />
+    </div>
+  );
+}
 
 function SalonSlideCard({ salon, isActive }: { salon: Salon; isActive: boolean }) {
   const { t } = useTranslation();
@@ -25,37 +42,32 @@ function SalonSlideCard({ salon, isActive }: { salon: Salon; isActive: boolean }
   return (
     <div
       className={cn(
-        "flex overflow-hidden rounded-2xl bg-background shadow-[0_8px_28px_rgba(0,0,0,0.16)] ring-1 transition-shadow",
-        isActive ? "ring-foreground/40" : "ring-black/5",
+        "flex overflow-hidden rounded-2xl bg-background shadow-[0_10px_32px_rgba(0,0,0,0.18)] ring-1 transition-shadow",
+        isActive ? "ring-foreground/45" : "ring-black/5",
       )}
       style={{ height: CARD_HEIGHT }}
     >
       <Link
         to="/salon/$id"
         params={{ id: salon.id }}
-        className="relative w-[132px] shrink-0 bg-[#E8E8E8] active:opacity-95"
+        className="active:opacity-95"
+        style={{ width: IMAGE_WIDTH }}
       >
-        <img
-          src={coverSrc}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          className="absolute inset-0 h-full w-full object-contain object-center p-0.5"
-        />
+        <SalonCoverThumb src={coverSrc} className="h-full w-full rounded-none" />
       </Link>
 
-      <div className="flex min-w-0 flex-1 flex-col px-3 py-2.5">
+      <div className="flex min-w-0 flex-1 flex-col px-3 py-3">
         <div className="min-w-0 flex-1">
           <Link to="/salon/$id" params={{ id: salon.id }}>
-            <h3 className="line-clamp-2 text-[14px] font-bold leading-snug tracking-tight">{salon.name}</h3>
+            <h3 className="line-clamp-2 text-[15px] font-bold leading-snug tracking-tight">{salon.name}</h3>
           </Link>
-          <p className="mt-1 line-clamp-2 text-[11px] font-medium leading-snug text-muted-foreground">
+          <p className="mt-1 line-clamp-2 text-[12px] font-medium leading-snug text-muted-foreground">
             {salon.address || "—"}
           </p>
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-semibold">
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] font-semibold">
             {salon.rating > 0 ? (
               <span className="flex items-center gap-0.5">
-                <Star className="h-3 w-3 fill-foreground" strokeWidth={0} />
+                <Star className="h-3.5 w-3.5 fill-foreground" strokeWidth={0} />
                 {salon.rating.toFixed(1)}
                 {salon.reviewCount > 0 ? (
                   <span className="text-muted-foreground">({salon.reviewCount})</span>
@@ -70,7 +82,7 @@ function SalonSlideCard({ salon, isActive }: { salon: Salon; isActive: boolean }
         <Link
           to="/booking/$salonId"
           params={{ salonId: salon.id }}
-          className="mt-2 flex w-full items-center justify-center rounded-xl bg-foreground py-2 text-[12px] font-bold text-background active:scale-[0.98]"
+          className="mt-2 flex w-full items-center justify-center rounded-xl bg-foreground py-2.5 text-[13px] font-bold text-background active:scale-[0.98]"
         >
           {t("map.bookNow")}
         </Link>
@@ -83,52 +95,49 @@ function SalonListRow({
   salon,
   isActive,
   onSelect,
+  index,
 }: {
   salon: Salon;
   isActive: boolean;
   onSelect: () => void;
+  index: number;
 }) {
   const coverSrc = salon.coverUrl ?? getSalonCoverUrl(salon.coverSeed);
 
   return (
-    <button
+    <motion.button
       type="button"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.06, duration: 0.28, ease: "easeOut" }}
       onClick={onSelect}
       className={cn(
-        "mb-1.5 flex w-full items-center gap-2.5 rounded-xl border px-2 py-2 text-left transition-colors",
-        isActive ? "border-foreground/80 bg-surface" : "border-transparent active:bg-surface/80",
+        "mb-2 flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition-colors",
+        isActive ? "border-foreground/80 bg-surface shadow-sm" : "border-border/40 bg-background active:bg-surface/80",
       )}
     >
-      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-[#E8E8E8]">
-        <img
-          src={coverSrc}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          className="absolute inset-0 h-full w-full object-contain object-center p-0.5"
-        />
-      </div>
+      <SalonCoverThumb src={coverSrc} className="h-[88px] w-[88px] rounded-xl" />
       <div className="min-w-0 flex-1">
-        <h4 className="truncate text-[13px] font-bold leading-tight">{salon.name}</h4>
-        <p className="truncate text-[10px] text-muted-foreground">{salon.address || "—"}</p>
-        <div className="mt-0.5 flex items-center gap-1 text-[10px] font-semibold">
+        <h4 className="line-clamp-2 text-[15px] font-bold leading-snug">{salon.name}</h4>
+        <p className="mt-1 line-clamp-2 text-[12px] font-medium text-muted-foreground">{salon.address || "—"}</p>
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 text-[12px] font-semibold">
           <span className="flex items-center gap-0.5">
-            <Star className="h-2.5 w-2.5 fill-foreground" strokeWidth={0} />
+            <Star className="h-3.5 w-3.5 fill-foreground" strokeWidth={0} />
             {salon.rating > 0 ? salon.rating.toFixed(1) : "—"}
           </span>
-          <span className="text-muted-foreground">·</span>
-          <span>{formatDistanceKm(salon.distanceKm)}</span>
+          <span className="text-muted-foreground">{formatDistanceKm(salon.distanceKm)}</span>
+          {salon.priceFrom > 0 ? <span>{shortPrice(salon.priceFrom)}+</span> : null}
         </div>
       </div>
       <Link
         to="/salon/$id"
         params={{ id: salon.id }}
         onClick={(e) => e.stopPropagation()}
-        className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-foreground text-background active:scale-95"
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-foreground text-background active:scale-95"
       >
-        <Navigation className="h-3 w-3" />
+        <Navigation className="h-4 w-4" />
       </Link>
-    </button>
+    </motion.button>
   );
 }
 
@@ -176,77 +185,95 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
   if (salons.length === 0) return null;
 
   return (
-    <motion.div
-      className="absolute inset-x-0 bottom-0 z-30 overflow-hidden rounded-t-2xl border border-border/50 border-b-0 bg-background/98 shadow-[0_-12px_40px_rgba(0,0,0,0.14)] backdrop-blur-md"
-      initial={false}
-      animate={{ height: listOpen ? LIST_PANEL_MAX : CARD_HEIGHT + 56 }}
-      transition={{ type: "spring", stiffness: 400, damping: 38 }}
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-    >
-      <div className="flex shrink-0 items-center justify-center gap-2 border-b border-border/40 px-3 py-2">
-        <button
-          type="button"
-          onClick={() => setListOpen((v) => !v)}
-          className="flex items-center gap-1.5 rounded-full border border-border/60 bg-background px-4 py-2 text-[11px] font-bold shadow-sm active:scale-95"
-          aria-expanded={listOpen}
-        >
-          {listOpen ? <X className="h-3.5 w-3.5" /> : <List className="h-3.5 w-3.5" />}
-          {t("map.allSalons")} ({salons.length})
-          <ChevronDown
-            className={cn("h-3.5 w-3.5 transition-transform", listOpen && "rotate-180")}
-          />
-        </button>
-      </div>
-
-      <AnimatePresence mode="wait">
+    <>
+      <AnimatePresence>
         {listOpen ? (
-          <motion.div
-            key="list"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.2 }}
-            className="min-h-0 overflow-y-auto px-3 py-2"
-            style={{ maxHeight: LIST_PANEL_MAX - 52 }}
+          <>
+            <motion.button
+              type="button"
+              aria-label={t("common.close")}
+              className="absolute inset-0 z-30 bg-black/25"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setListOpen(false)}
+            />
+            <motion.div
+              className="absolute inset-x-0 bottom-0 z-40 flex flex-col overflow-hidden rounded-t-2xl border border-border/60 border-b-0 bg-background shadow-[0_-16px_48px_rgba(0,0,0,0.2)]"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={spring}
+              style={{
+                maxHeight: LIST_PANEL_MAX,
+                paddingBottom: "env(safe-area-inset-bottom)",
+              }}
+            >
+              <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/50 px-4 py-3">
+                <h2 className="text-sm font-bold">
+                  {t("map.allSalons")}{" "}
+                  <span className="text-muted-foreground">({salons.length})</span>
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setListOpen(false)}
+                  className="grid h-9 w-9 place-items-center rounded-full bg-surface active:scale-95"
+                  aria-label={t("common.close")}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+                {salons.map((s, i) => (
+                  <SalonListRow
+                    key={s.id}
+                    salon={s}
+                    isActive={s.id === activeId}
+                    index={i}
+                    onSelect={() => onActiveChange(s.id)}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          </>
+        ) : null}
+      </AnimatePresence>
+
+      {!listOpen ? (
+        <div
+          className="absolute inset-x-0 bottom-0 z-30 px-3"
+          style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom))" }}
+        >
+          <div className="mb-2 flex justify-center">
+            <motion.button
+              type="button"
+              onClick={() => setListOpen(true)}
+              whileTap={{ scale: 0.96 }}
+              className="flex items-center gap-1.5 rounded-full border border-border/70 bg-background px-4 py-2.5 text-[12px] font-bold shadow-[0_4px_20px_rgba(0,0,0,0.14)] active:opacity-90"
+            >
+              <List className="h-4 w-4" />
+              {t("map.allSalons")} ({salons.length})
+            </motion.button>
+          </div>
+
+          <div
+            ref={scrollRef}
+            onScroll={onScroll}
+            className="no-scrollbar flex gap-3 snap-x snap-mandatory overflow-x-auto pb-1"
           >
             {salons.map((s) => (
-              <SalonListRow
+              <motion.div
                 key={s.id}
-                salon={s}
-                isActive={s.id === activeId}
-                onSelect={() => {
-                  onActiveChange(s.id);
-                }}
-              />
+                data-salon-id={s.id}
+                className="w-[calc(100%-2px)] shrink-0 snap-center sm:w-[94%]"
+                layout
+              >
+                <SalonSlideCard salon={s} isActive={s.id === activeId} />
+              </motion.div>
             ))}
-          </motion.div>
-        ) : (
-          <motion.div
-            key="carousel"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="px-3 pb-2"
-          >
-            <div
-              ref={scrollRef}
-              onScroll={onScroll}
-              className="no-scrollbar flex gap-3 snap-x snap-mandatory overflow-x-auto"
-            >
-              {salons.map((s) => (
-                <div
-                  key={s.id}
-                  data-salon-id={s.id}
-                  className="w-[calc(100%-2px)] shrink-0 snap-center sm:w-[94%]"
-                >
-                  <SalonSlideCard salon={s} isActive={s.id === activeId} />
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }

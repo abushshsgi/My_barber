@@ -185,7 +185,7 @@ function MapView() {
         type="button"
         onClick={() => locateMe()}
         className="absolute right-4 z-20 grid h-10 w-10 place-items-center rounded-full border border-border/50 bg-background/98 text-foreground shadow-lg backdrop-blur-md active:scale-95"
-        style={{ bottom: 200 }}
+        style={{ bottom: 220 }}
         aria-label={t("map.locate")}
       >
         <Locate className="h-4 w-4" />
