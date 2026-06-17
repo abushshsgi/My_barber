@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { motion, AnimatePresence, type PanInfo } from "framer-motion";
-import { List, Map as MapIcon, Star, X } from "lucide-react";
+import { motion, AnimatePresence, animate, useMotionValue, type PanInfo } from "framer-motion";
+import { Map as MapIcon, Star, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 const CARD_HEIGHT = 148;
 const IMAGE_WIDTH = 132;
 const LIST_TOP_OFFSET = 152;
+const PEEK_DRAG_UP_MAX = 110;
+const PEEK_DRAG_DOWN_MAX = 80;
 const DRAG_UP_THRESHOLD = 56;
 const DRAG_DOWN_THRESHOLD = 72;
 
@@ -202,6 +204,13 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const listScrollRef = useRef<HTMLDivElement>(null);
   const scrollRaf = useRef<number | null>(null);
+  const peekY = useMotionValue(0);
+  const peekGesture = useRef({
+    active: false,
+    axis: null as "x" | "y" | null,
+    startX: 0,
+    startY: 0,
+  });
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
@@ -245,10 +254,51 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
     });
   };
 
-  const onPeekDragEnd = (_: unknown, info: PanInfo) => {
-    if (info.offset.y < -DRAG_UP_THRESHOLD || info.velocity.y < -450) {
-      setExpanded(true);
+  const resetPeekOffset = () => {
+    animate(peekY, 0, sheetSpring);
+  };
+
+  const onCarouselPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    peekGesture.current = {
+      active: true,
+      axis: null,
+      startX: e.clientX,
+      startY: e.clientY,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onCarouselPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!peekGesture.current.active) return;
+
+    const dx = e.clientX - peekGesture.current.startX;
+    const dy = e.clientY - peekGesture.current.startY;
+
+    if (!peekGesture.current.axis && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+      peekGesture.current.axis = Math.abs(dy) > Math.abs(dx) ? "y" : "x";
     }
+
+    if (peekGesture.current.axis === "y") {
+      e.preventDefault();
+      peekY.set(Math.max(-PEEK_DRAG_UP_MAX, Math.min(PEEK_DRAG_DOWN_MAX, dy)));
+    }
+  };
+
+  const onCarouselPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!peekGesture.current.active) return;
+
+    peekGesture.current.active = false;
+    peekGesture.current.axis = null;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+
+    const offset = peekY.get();
+    if (offset < -DRAG_UP_THRESHOLD) {
+      peekY.set(0);
+      setExpanded(true);
+      return;
+    }
+
+    resetPeekOffset();
   };
 
   const onListDragEnd = (_: unknown, info: PanInfo) => {
@@ -351,50 +401,35 @@ export function MapAirbnbCarousel({ salons, activeId, onActiveChange }: Props) {
             key="peek-sheet"
             className="absolute inset-x-0 bottom-0 z-30 px-3"
             style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom))" }}
-            initial={{ y: 48, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 40, opacity: 0 }}
-            transition={sheetSpring}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22 }}
           >
-            <motion.div
-              className="rounded-t-[18px] bg-background/95 pb-1 shadow-[0_-8px_32px_rgba(0,0,0,0.12)] ring-1 ring-border/30 backdrop-blur-sm"
-            >
-              <motion.div
-                className="cursor-grab active:cursor-grabbing"
-                drag="y"
-                dragConstraints={{ top: -88, bottom: 72 }}
-                dragElastic={{ top: 0.18, bottom: 0.28 }}
-                onDragEnd={onPeekDragEnd}
-              >
+            <motion.div style={{ y: peekY }}>
+              <div className="rounded-t-[18px] bg-background/95 pb-1 shadow-[0_-8px_32px_rgba(0,0,0,0.12)] ring-1 ring-border/30 backdrop-blur-sm">
                 <DragHandle />
 
-                <div className="mb-2 flex justify-center px-3">
-                  <motion.button
-                    type="button"
-                    onClick={() => setExpanded(true)}
-                    whileTap={{ scale: 0.96 }}
-                    className="flex items-center gap-1.5 rounded-full border border-border/70 bg-background px-3.5 py-2 text-[11px] font-bold shadow-[0_4px_16px_rgba(0,0,0,0.12)] active:opacity-90"
-                  >
-                    <List className="h-3.5 w-3.5" />
-                    {t("map.allSalons")} ({salons.length})
-                  </motion.button>
+                <div
+                  ref={scrollRef}
+                  onScroll={onScroll}
+                  onPointerDown={onCarouselPointerDown}
+                  onPointerMove={onCarouselPointerMove}
+                  onPointerUp={onCarouselPointerUp}
+                  onPointerCancel={onCarouselPointerUp}
+                  className="no-scrollbar flex cursor-grab gap-2.5 snap-x snap-mandatory overflow-x-auto px-3 pb-1 active:cursor-grabbing"
+                  style={{ touchAction: "pan-x" }}
+                >
+                  {salons.map((s) => (
+                    <div
+                      key={s.id}
+                      data-salon-id={s.id}
+                      className="w-[calc(100%-2px)] shrink-0 snap-center sm:w-[94%]"
+                    >
+                      <SalonSlideCard salon={s} isActive={s.id === activeId} />
+                    </div>
+                  ))}
                 </div>
-              </motion.div>
-
-              <div
-                ref={scrollRef}
-                onScroll={onScroll}
-                className="no-scrollbar flex gap-2.5 snap-x snap-mandatory overflow-x-auto px-3 pb-1"
-              >
-                {salons.map((s) => (
-                  <div
-                    key={s.id}
-                    data-salon-id={s.id}
-                    className="w-[calc(100%-2px)] shrink-0 snap-center sm:w-[94%]"
-                  >
-                    <SalonSlideCard salon={s} isActive={s.id === activeId} />
-                  </div>
-                ))}
               </div>
             </motion.div>
           </motion.div>
