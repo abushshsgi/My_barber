@@ -18,25 +18,27 @@ function escapeHtmlAttr(value: string): string {
 }
 
 function makePinIcon(active: boolean, label: string, coverUrl?: string) {
-  const size = active ? 48 : 38;
-  const ring = active ? "0 0 0 4px rgba(20,20,20,0.2)" : "0 2px 10px rgba(0,0,0,0.25)";
+  const size = active ? 52 : 40;
+  const ring = active
+    ? "0 0 0 3px rgba(20,20,20,0.25), 0 4px 14px rgba(0,0,0,0.28)"
+    : "0 2px 8px rgba(0,0,0,0.22)";
   const shortLabel =
-    active && label ? (label.length > 12 ? `${label.slice(0, 12)}…` : label) : "";
+    active && label ? (label.length > 11 ? `${label.slice(0, 11)}…` : label) : "";
   const bg = coverUrl
     ? `url('${escapeHtmlAttr(coverUrl)}') center/cover no-repeat`
-    : "linear-gradient(145deg, #3d3d3d 0%, #141414 100%)";
+    : "linear-gradient(145deg, #525252 0%, #141414 100%)";
 
   const labelHtml = shortLabel
     ? `<span style="
-        display:block;margin-top:4px;max-width:72px;padding:2px 6px;
+        display:block;margin-top:5px;max-width:80px;padding:3px 8px;
         border-radius:9999px;background:#141414;color:#faf8f5;
-        font-size:9px;font-weight:700;line-height:1.2;text-align:center;
+        font-size:10px;font-weight:700;line-height:1.2;text-align:center;
         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-        box-shadow:0 2px 6px rgba(0,0,0,0.2);
+        box-shadow:0 2px 8px rgba(0,0,0,0.25);
       ">${escapeHtmlAttr(shortLabel)}</span>`
     : "";
 
-  const totalHeight = shortLabel ? size + 22 : size;
+  const totalHeight = shortLabel ? size + 24 : size;
 
   return L.divIcon({
     className: "",
@@ -45,8 +47,8 @@ function makePinIcon(active: boolean, label: string, coverUrl?: string) {
         width:${size}px;height:${size}px;border-radius:9999px;
         background:${bg};
         box-shadow:${ring};
-        border:2.5px solid #faf8f5;
-        transform:scale(${active ? 1.06 : 1});
+        border:${active ? "3px" : "2.5px"} solid #faf8f5;
+        transform:scale(${active ? 1.08 : 1});
         transition:transform 0.2s ease;
       "></div>
       ${labelHtml}
@@ -59,12 +61,12 @@ function makePinIcon(active: boolean, label: string, coverUrl?: string) {
 const userIcon = L.divIcon({
   className: "",
   html: `<span style="
-    display:block;width:16px;height:16px;border-radius:9999px;
+    display:block;width:14px;height:14px;border-radius:9999px;
     background:#141414;border:3px solid #faf8f5;
-    box-shadow:0 0 0 6px rgba(20,20,20,0.15);
+    box-shadow:0 0 0 8px rgba(20,20,20,0.12);
   "></span>`,
-  iconSize: [16, 16],
-  iconAnchor: [8, 8],
+  iconSize: [14, 14],
+  iconAnchor: [7, 7],
 });
 
 function FlyToActive({
@@ -100,7 +102,7 @@ function FitMarkers({ markers }: { markers: SalonMapMarker[] }) {
       return;
     }
     const bounds = L.latLngBounds(markers.map((m) => [m.lat, m.lng] as [number, number]));
-    map.fitBounds(bounds, { padding: [72, 72], maxZoom: 14 });
+    map.fitBounds(bounds, { padding: [96, 48], maxZoom: 14 });
   }, [map, markers]);
   return null;
 }
@@ -137,15 +139,15 @@ export function SalonMap({
       zoom={12}
       zoomControl={false}
       attributionControl={false}
-      style={{ width: "100%", height: "100%", background: "oklch(0.945 0.014 85)" }}
+      style={{ width: "100%", height: "100%", background: "oklch(0.94 0.012 85)" }}
       ref={(instance) => {
         if (instance) onMapReady?.(instance);
       }}
     >
       <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         subdomains={["a", "b", "c", "d"]}
-        maxZoom={19}
+        maxZoom={20}
       />
       <FitMarkers markers={markers} />
       <FlyToActive activeId={activeId} markers={markers} />
@@ -156,13 +158,13 @@ export function SalonMap({
           <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon} />
           <Circle
             center={[userLocation.lat, userLocation.lng]}
-            radius={1200}
+            radius={900}
             pathOptions={{
               color: "#141414",
-              weight: 1.5,
+              weight: 1,
               fillColor: "#141414",
-              fillOpacity: 0.06,
-              dashArray: "5 8",
+              fillOpacity: 0.05,
+              dashArray: "4 6",
             }}
           />
         </>

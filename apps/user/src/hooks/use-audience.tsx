@@ -160,6 +160,12 @@ export function audienceToCategory(a: AudienceFilter): Category | "all" {
   return "all";
 }
 
+/** Xarita: profil (erkak/ayol) bo'yicha avtomatik filter — chip yo'q. */
+export function resolveMapAudienceFilter(profileDefault: AudienceFilter): AudienceFilter {
+  if (profileDefault === "men" || profileDefault === "women") return profileDefault;
+  return "all";
+}
+
 /** Erkak/Ayol tanlanganda faqat shu auditoriyaga mos kontent (unisex ham kirmaydi). */
 export function matchAudience(itemAudience: Audience, filter: AudienceFilter): boolean {
   if (filter === "all") return true;

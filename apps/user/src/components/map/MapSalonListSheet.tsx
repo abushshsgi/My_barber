@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Navigation, Star, X } from "lucide-react";
+import { Navigation, Star, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
 import { shortPrice } from "@/lib/mock-data";
@@ -117,26 +117,5 @@ export function MapSalonListSheet({ open, salons, activeId, onClose, onSelect }:
         </>
       ) : null}
     </AnimatePresence>
-  );
-}
-
-export function MapSalonListToggle({
-  count,
-  onClick,
-}: {
-  count: number;
-  onClick: () => void;
-}) {
-  const { t } = useTranslation();
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="mb-2 flex w-full items-center justify-center gap-1 rounded-full bg-background/95 py-2 text-[11px] font-bold shadow-sm backdrop-blur-sm active:scale-[0.98]"
-    >
-      {t("map.allSalons")} ({count})
-      <ChevronDown className="h-3.5 w-3.5" />
-    </button>
   );
 }
