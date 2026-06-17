@@ -10,7 +10,11 @@ import { formatDistanceKm } from "@/lib/map-utils";
 import { cn } from "@/lib/utils";
 
 const GRID_COUNT = 6;
+const GRID_CELL_H = 72;
+const GRID_GAP = 8;
+const GRID_HEIGHT = GRID_CELL_H * 2 + GRID_GAP;
 const PEEK_HEIGHT = 112;
+const DETAIL_REVEAL_PX = 20;
 const SNAP_EXPAND_RATIO = 0.45;
 const VELOCITY_EXPAND = -320;
 const VELOCITY_COLLAPSE = 280;
@@ -74,7 +78,7 @@ function SalonGridCell({
       aria-pressed={isActive}
       aria-label={salon.name}
       className={cn(
-        "relative h-full min-h-[68px] w-full overflow-hidden rounded-xl bg-[#E8E8E8] ring-1 ring-black/5 active:scale-[0.98]",
+        "relative h-[72px] w-full overflow-hidden rounded-xl bg-[#E8E8E8] ring-1 ring-black/5 active:scale-[0.98]",
         isActive && "ring-2 ring-foreground ring-offset-2 ring-offset-background",
       )}
     >
@@ -104,7 +108,10 @@ function SalonGrid({
   const slots = Array.from({ length: GRID_COUNT }, (_, i) => salons[i] ?? null);
 
   return (
-    <div className="grid min-h-[148px] flex-1 grid-cols-3 grid-rows-2 gap-2 px-4 py-2">
+    <div
+      className="grid shrink-0 grid-cols-3 gap-2 px-4 py-2"
+      style={{ height: GRID_HEIGHT, gridTemplateRows: `${GRID_CELL_H}px ${GRID_CELL_H}px` }}
+    >
       {slots.map((salon, i) =>
         salon ? (
           <SalonGridCell
@@ -190,8 +197,14 @@ export function MapSalonSheet({
   const [halfHeight, setHalfHeight] = useState(360);
   const [expandedHeight, setExpandedHeight] = useState(640);
   const [expanded, setExpanded] = useState(false);
+  const [detailRevealed, setDetailRevealed] = useState(false);
 
   const sheetHeight = useMotionValue(halfHeight);
+  const halfHeightRef = useRef(halfHeight);
+
+  useEffect(() => {
+    halfHeightRef.current = halfHeight;
+  }, [halfHeight]);
 
   useEffect(() => {
     const parent = sheetRef.current?.parentElement;
@@ -220,9 +233,14 @@ export function MapSalonSheet({
   const gridSalons = salons.slice(0, GRID_COUNT);
   const activeSalon = salons.find((s) => s.id === activeId) ?? gridSalons[0];
 
+  const updateDetailReveal = (height: number) => {
+    setDetailRevealed(height > halfHeightRef.current + DETAIL_REVEAL_PX);
+  };
+
   const snapSheet = (open: boolean) => {
     expandedRef.current = open;
     setExpanded(open);
+    setDetailRevealed(open);
     animate(sheetHeight, open ? expandedHeight : halfHeight, sheetSpring);
   };
 
@@ -232,7 +250,9 @@ export function MapSalonSheet({
 
   const onPan = (_: unknown, info: PanInfo) => {
     const next = panStartRef.current - info.offset.y;
-    sheetHeight.set(Math.max(halfHeight, Math.min(expandedHeight, next)));
+    const clamped = Math.max(halfHeight, Math.min(expandedHeight, next));
+    sheetHeight.set(clamped);
+    updateDetailReveal(clamped);
   };
 
   const onPanEnd = (_: unknown, info: PanInfo) => {
@@ -276,10 +296,7 @@ export function MapSalonSheet({
           onPanStart={onPanStart}
           onPan={onPan}
           onPanEnd={onPanEnd}
-          className={cn(
-            "flex cursor-grab flex-col touch-none active:cursor-grabbing",
-            expanded ? "shrink-0" : "min-h-0 flex-1",
-          )}
+          className="flex shrink-0 cursor-grab flex-col touch-none active:cursor-grabbing"
         >
           <SheetHandle />
 
@@ -299,37 +316,38 @@ export function MapSalonSheet({
           </div>
 
           <SalonGrid salons={gridSalons} activeId={activeId} onActiveChange={onActiveChange} />
+        </motion.div>
 
-          {activeSalon ? (
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          {detailRevealed && activeSalon ? (
             <div className="shrink-0 px-4 pb-3 pt-1">
               <SalonPeekCard salon={activeSalon} />
             </div>
           ) : null}
-        </motion.div>
 
-        {expanded ? (
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
-            <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              {t("map.allSalons", { defaultValue: "Barcha salonlar" })}
-            </p>
-            <ul className="space-y-3">
-              {salons.map((salon) => (
-                <li key={salon.id}>
-                  <button
-                    type="button"
-                    onClick={() => onActiveChange(salon.id)}
-                    className={cn(
-                      "w-full text-left",
-                      salon.id === activeId && "rounded-2xl ring-2 ring-foreground/20 ring-offset-2",
-                    )}
-                  >
-                    <SalonPeekCard salon={salon} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
+          {expanded ? (
+            <div className="px-4 pb-4">
+              <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                {t("map.allSalons", { defaultValue: "Barcha salonlar" })}
+              </p>
+              <ul className="space-y-3">
+                {salons
+                  .filter((salon) => salon.id !== activeId)
+                  .map((salon) => (
+                    <li key={salon.id}>
+                      <button
+                        type="button"
+                        onClick={() => onActiveChange(salon.id)}
+                        className="w-full text-left"
+                      >
+                        <SalonPeekCard salon={salon} />
+                      </button>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
       </motion.div>
     </>
   );
