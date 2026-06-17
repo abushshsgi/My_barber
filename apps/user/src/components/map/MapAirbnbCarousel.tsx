@@ -38,29 +38,46 @@ function SalonCoverImage({
   className,
   imgClassName,
   mode = "contain",
+  eager = false,
 }: {
   salon: Salon;
   className?: string;
   imgClassName?: string;
   mode?: "contain" | "cover";
+  eager?: boolean;
 }) {
   const fallback = getSalonCoverUrl(salon.coverSeed);
-  const [src, setSrc] = useState(salon.coverUrl ?? fallback);
+  const primary = salon.coverUrl?.trim() || fallback;
+  const [src, setSrc] = useState(primary);
+  const errorStepRef = useRef(0);
 
   useEffect(() => {
-    setSrc(salon.coverUrl ?? fallback);
+    errorStepRef.current = 0;
+    setSrc(salon.coverUrl?.trim() || fallback);
   }, [salon.coverUrl, salon.coverSeed, fallback]);
 
+  const handleError = () => {
+    errorStepRef.current += 1;
+    if (errorStepRef.current === 1) {
+      setSrc(fallback);
+      return;
+    }
+    if (errorStepRef.current === 2) {
+      setSrc(getSalonCoverUrl(`${salon.coverSeed}-fallback`));
+    }
+  };
+
   return (
-    <div className={cn("relative overflow-hidden bg-[#E8E8E8]", className)}>
+    <div className={cn("overflow-hidden bg-[#E8E8E8]", className)}>
       <img
         src={src}
         alt=""
-        loading="lazy"
+        loading={eager ? "eager" : "lazy"}
         decoding="async"
-        onError={() => setSrc(fallback)}
+        referrerPolicy="no-referrer"
+        onError={handleError}
         className={cn(
-          "absolute inset-0 h-full w-full",
+          "block h-full w-full",
           mode === "cover" ? "object-cover object-center" : "object-contain object-center p-1",
           imgClassName,
         )}
@@ -71,21 +88,24 @@ function SalonCoverImage({
 
 function SalonPeekCard({ salon }: { salon: Salon }) {
   const { t } = useTranslation();
+  const distance = formatDistanceKm(salon.distanceKm);
+  const hasMeta = salon.rating > 0 || distance !== "—" || salon.priceFrom > 0;
 
   return (
     <div
       className="flex overflow-hidden rounded-2xl bg-background shadow-[0_10px_32px_rgba(0,0,0,0.18)] ring-1 ring-black/5"
       style={{ height: CARD_HEIGHT }}
     >
-      <Link
-        to="/salon/$id"
-        params={{ id: salon.id }}
-        className="active:opacity-95"
-        style={{ width: IMAGE_WIDTH }}
-        onPointerDown={(event) => event.stopPropagation()}
-      >
-        <SalonCoverImage salon={salon} className="h-full w-full" mode="cover" />
-      </Link>
+      <div className="h-full shrink-0 overflow-hidden" style={{ width: IMAGE_WIDTH }}>
+        <Link
+          to="/salon/$id"
+          params={{ id: salon.id }}
+          className="block h-full w-full active:opacity-95"
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <SalonCoverImage salon={salon} className="h-full w-full" mode="cover" eager />
+        </Link>
+      </div>
 
       <div className="flex min-w-0 flex-1 flex-col px-3 py-2.5">
         <div className="min-w-0 flex-1">
@@ -96,22 +116,28 @@ function SalonPeekCard({ salon }: { salon: Salon }) {
           >
             <h3 className="line-clamp-2 text-[14px] font-bold leading-snug tracking-tight">{salon.name}</h3>
           </Link>
-          <p className="mt-0.5 line-clamp-2 text-[11px] font-medium leading-snug text-muted-foreground">
-            {salon.address || "—"}
-          </p>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-semibold">
-            {salon.rating > 0 ? (
-              <span className="flex items-center gap-0.5">
-                <Star className="h-3 w-3 fill-foreground" strokeWidth={0} />
-                {salon.rating.toFixed(1)}
-                {salon.reviewCount > 0 ? (
-                  <span className="text-muted-foreground">({salon.reviewCount})</span>
-                ) : null}
-              </span>
-            ) : null}
-            <span className="text-muted-foreground">{formatDistanceKm(salon.distanceKm)}</span>
-            {salon.priceFrom > 0 ? <span>{shortPrice(salon.priceFrom)}+</span> : null}
-          </div>
+          {salon.address ? (
+            <p className="mt-0.5 line-clamp-2 text-[11px] font-medium leading-snug text-muted-foreground">
+              {salon.address}
+            </p>
+          ) : null}
+          {hasMeta ? (
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-semibold">
+              {salon.rating > 0 ? (
+                <span className="flex items-center gap-0.5">
+                  <Star className="h-3 w-3 fill-foreground" strokeWidth={0} />
+                  {salon.rating.toFixed(1)}
+                  {salon.reviewCount > 0 ? (
+                    <span className="text-muted-foreground">({salon.reviewCount})</span>
+                  ) : null}
+                </span>
+              ) : null}
+              {distance !== "—" ? (
+                <span className="text-muted-foreground">{distance}</span>
+              ) : null}
+              {salon.priceFrom > 0 ? <span>{shortPrice(salon.priceFrom)}+</span> : null}
+            </div>
+          ) : null}
         </div>
 
         <Link
@@ -123,6 +149,174 @@ function SalonPeekCard({ salon }: { salon: Salon }) {
           {t("map.bookNow")}
         </Link>
       </div>
+    </div>
+  );
+}
+
+function getSalonGalleryUrls(salon: Salon, count = 6): string[] {
+  const urls: string[] = [];
+  if (salon.portfolio.length > 0) {
+    urls.push(...salon.portfolio.slice(0, count));
+  }
+  const cover = salon.coverUrl?.trim() || getSalonCoverUrl(salon.coverSeed);
+  for (let i = urls.length; i < count; i += 1) {
+    urls.push(i === 0 ? cover : getSalonCoverUrl(`${salon.coverSeed}-${i}`));
+  }
+  return urls.slice(0, count);
+}
+
+function SalonThumbGrid({ salon }: { salon: Salon }) {
+  const thumbs = getSalonGalleryUrls(salon);
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {thumbs.map((url, index) => (
+        <div
+          key={`${salon.id}-${index}`}
+          className="h-[72px] w-[calc((100%-12px)/3)] overflow-hidden rounded-xl bg-[#E8E8E8] shadow-[0_4px_14px_rgba(0,0,0,0.12)]"
+        >
+          <img
+            src={url}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            referrerPolicy="no-referrer"
+            className="block h-full w-full object-cover object-center"
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SalonSearchSlideCard({
+  salon,
+  isActive,
+  onSelect,
+}: {
+  salon: Salon;
+  isActive: boolean;
+  onSelect: () => void;
+}) {
+  const { t } = useTranslation();
+  const distance = formatDistanceKm(salon.distanceKm);
+
+  return (
+    <article className="w-full">
+      <button
+        type="button"
+        onClick={onSelect}
+        className="w-full text-left active:opacity-95"
+        aria-pressed={isActive}
+      >
+        <div
+          className={cn(
+            "overflow-hidden rounded-2xl bg-[#E8E8E8] shadow-[0_8px_28px_rgba(0,0,0,0.16)]",
+            isActive && "ring-2 ring-foreground/25 ring-offset-2 ring-offset-background",
+          )}
+        >
+          <SalonCoverImage salon={salon} mode="cover" className="aspect-[5/3] w-full" />
+        </div>
+
+        <div className="mt-3 px-1">
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="line-clamp-2 text-[16px] font-semibold leading-snug tracking-tight text-foreground">
+              {salon.name}
+            </h3>
+            {salon.rating > 0 ? (
+              <span className="flex shrink-0 items-center gap-1 text-[14px] font-medium leading-none">
+                <Star className="h-3.5 w-3.5 fill-foreground" strokeWidth={0} />
+                {salon.rating.toFixed(2).replace(".", ",")}
+              </span>
+            ) : null}
+          </div>
+
+          {salon.address ? (
+            <p className="mt-1 line-clamp-1 text-[14px] text-muted-foreground">{salon.address}</p>
+          ) : null}
+
+          {distance !== "—" ? (
+            <p className="mt-0.5 line-clamp-1 text-[14px] text-muted-foreground">{distance}</p>
+          ) : null}
+        </div>
+      </button>
+
+      <Link
+        to="/booking/$salonId"
+        params={{ salonId: salon.id }}
+        className="mt-3 flex w-full items-center justify-center rounded-xl bg-foreground py-3 text-[14px] font-semibold text-background shadow-sm active:scale-[0.98]"
+      >
+        {t("map.bookNow")}
+      </Link>
+    </article>
+  );
+}
+
+function SalonSearchCarousel({
+  salons,
+  activeId,
+  onActiveChange,
+}: {
+  salons: Salon[];
+  activeId: string;
+  onActiveChange: (id: string) => void;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollRaf = useRef<number | null>(null);
+
+  useEffect(() => {
+    const root = scrollRef.current;
+    if (!root || !activeId) return;
+    const el = root.querySelector(`[data-search-id="${activeId}"]`) as HTMLElement | null;
+    el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [activeId, salons]);
+
+  const syncActiveFromScroll = () => {
+    const root = scrollRef.current;
+    if (!root || salons.length === 0) return;
+    const center = root.scrollLeft + root.clientWidth / 2;
+    let closestId = salons[0].id;
+    let closestDist = Infinity;
+    root.querySelectorAll<HTMLElement>("[data-search-id]").forEach((el) => {
+      const id = el.dataset.searchId;
+      if (!id) return;
+      const elCenter = el.offsetLeft + el.offsetWidth / 2;
+      const dist = Math.abs(elCenter - center);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closestId = id;
+      }
+    });
+    if (closestId !== activeId) onActiveChange(closestId);
+  };
+
+  const onScroll = () => {
+    if (scrollRaf.current != null) return;
+    scrollRaf.current = window.requestAnimationFrame(() => {
+      scrollRaf.current = null;
+      syncActiveFromScroll();
+    });
+  };
+
+  return (
+    <div
+      ref={scrollRef}
+      onScroll={onScroll}
+      className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 touch-pan-x"
+    >
+      {salons.map((salon) => (
+        <div
+          key={salon.id}
+          data-search-id={salon.id}
+          className="w-[calc(100%-8px)] shrink-0 snap-center sm:w-[94%]"
+        >
+          <SalonSearchSlideCard
+            salon={salon}
+            isActive={salon.id === activeId}
+            onSelect={() => onActiveChange(salon.id)}
+          />
+        </div>
+      ))}
     </div>
   );
 }
@@ -149,11 +343,10 @@ function SalonListCard({
       >
         <div
           className={cn(
-            "relative mx-auto w-[88%] max-w-[280px] overflow-hidden rounded-2xl bg-[#E8E8E8] shadow-[0_8px_28px_rgba(0,0,0,0.16)]",
-            isActive && "ring-2 ring-foreground/25 ring-offset-2 ring-offset-background",
+            isActive && "rounded-2xl ring-2 ring-foreground/25 ring-offset-2 ring-offset-background",
           )}
         >
-          <SalonCoverImage salon={salon} mode="cover" className="aspect-[5/3] w-full" />
+          <SalonThumbGrid salon={salon} />
         </div>
 
         <div className="mt-3 px-1">
@@ -172,9 +365,11 @@ function SalonListCard({
             ) : null}
           </div>
 
-          <p className="mt-1 line-clamp-1 text-[14px] text-muted-foreground">
-            {salon.address || "—"}
-          </p>
+          {salon.address ? (
+            <p className="mt-1 line-clamp-1 text-[14px] text-muted-foreground">
+              {salon.address}
+            </p>
+          ) : null}
 
           {distance !== "—" ? (
             <p className="mt-0.5 line-clamp-1 text-[14px] text-muted-foreground">{distance}</p>
@@ -344,6 +539,7 @@ export function MapAirbnbCarousel({
   if (salons.length === 0) return null;
 
   const activeSalon = salons.find((s) => s.id === activeId) ?? salons[0];
+  const isSearching = query.trim().length > 0;
 
   return (
     <>
@@ -432,21 +628,32 @@ export function MapAirbnbCarousel({
           <div className="min-h-0 flex-1 overflow-hidden">
             <div
               ref={listScrollRef}
-              onPointerDownCapture={onListPointerDownCapture}
-              onPointerMoveCapture={onListPointerMoveCapture}
-              onPointerUpCapture={onListPointerUpCapture}
-              onPointerCancelCapture={onListPointerUpCapture}
-              className="h-full overflow-y-auto overscroll-contain px-4 py-3 pb-20 touch-pan-y"
+              onPointerDownCapture={isSearching ? undefined : onListPointerDownCapture}
+              onPointerMoveCapture={isSearching ? undefined : onListPointerMoveCapture}
+              onPointerUpCapture={isSearching ? undefined : onListPointerUpCapture}
+              onPointerCancelCapture={isSearching ? undefined : onListPointerUpCapture}
+              className={cn(
+                "h-full overscroll-contain px-4 py-3 pb-20",
+                isSearching ? "overflow-hidden touch-pan-x" : "overflow-y-auto touch-pan-y",
+              )}
             >
-              {salons.map((s) => (
-                <div key={s.id} data-list-id={s.id}>
-                  <SalonListCard
-                    salon={s}
-                    isActive={s.id === activeId}
-                    onSelect={() => onActiveChange(s.id)}
-                  />
-                </div>
-              ))}
+              {isSearching ? (
+                <SalonSearchCarousel
+                  salons={salons}
+                  activeId={activeId}
+                  onActiveChange={onActiveChange}
+                />
+              ) : (
+                salons.map((s) => (
+                  <div key={s.id} data-list-id={s.id}>
+                    <SalonListCard
+                      salon={s}
+                      isActive={s.id === activeId}
+                      onSelect={() => onActiveChange(s.id)}
+                    />
+                  </div>
+                ))
+              )}
             </div>
           </div>
         ) : null}
