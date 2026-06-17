@@ -10,9 +10,9 @@ import { formatDistanceKm } from "@/lib/map-utils";
 import { cn } from "@/lib/utils";
 
 const GRID_COUNT = 6;
-const GRID_CELL_H = 88;
-const GRID_GAP = 8;
-const GRID_PADDING_Y = 16;
+const GRID_CELL_H = 108;
+const GRID_GAP = 10;
+const GRID_PADDING_Y = 24;
 const GRID_HEIGHT = GRID_CELL_H * 2 + GRID_GAP + GRID_PADDING_Y;
 const PEEK_HEIGHT = 112;
 const DETAIL_REVEAL_PX = 20;
@@ -92,7 +92,8 @@ function SalonGridCell({
 function EmptyGridCell() {
   return (
     <div
-      className="min-h-0 rounded-xl border border-dashed border-border/60 bg-surface/80"
+      className="rounded-xl border border-dashed border-border/60 bg-surface/80"
+      style={{ height: GRID_CELL_H }}
       aria-hidden
     />
   );
@@ -111,7 +112,7 @@ function SalonGrid({
 
   return (
     <div
-      className="grid shrink-0 grid-cols-3 gap-2 px-4 py-2"
+      className="grid shrink-0 grid-cols-3 gap-2.5 px-4 py-3"
       style={{ height: GRID_HEIGHT, gridTemplateRows: `${GRID_CELL_H}px ${GRID_CELL_H}px` }}
     >
       {slots.map((salon, i) =>
