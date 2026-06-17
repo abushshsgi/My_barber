@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { MapAirbnbCarousel } from "@/components/map/MapAirbnbCarousel";
+import { MapSalonCards } from "@/components/map/MapSalonCards";
 import { MapErrorBoundary } from "@/components/map/MapErrorBoundary";
 import { SalonMap, type SalonMapMarker } from "@/components/map/SalonMap";
 import { resolveMapAudienceFilter, useAudience } from "@/hooks/use-audience";
@@ -31,7 +31,6 @@ function MapView() {
   useEffect(() => setMounted(true), []);
 
   const { data: listSalons = [], isLoading: listLoading } = useSalonsList();
-  const [allSalonsOpen, setAllSalonsOpen] = useState(false);
 
   const ctx = useMemo(() => userRecommendContext(me), [me]);
 
@@ -117,7 +116,7 @@ function MapView() {
               markers={mapMarkers}
               activeId={active || null}
               onMarkerClick={focusSalon}
-              showUserLocation={!allSalonsOpen}
+              showUserLocation
               userLocation={userLocation}
             />
           </MapErrorBoundary>
@@ -126,25 +125,23 @@ function MapView() {
         )}
       </div>
 
-      {!allSalonsOpen ? (
-        <div
-          className="absolute inset-x-0 top-0 z-40 flex justify-center px-4"
-          style={{ paddingTop: "calc(env(safe-area-inset-top) + 10px)" }}
-        >
-          <div className="relative w-full max-w-md rounded-full border border-border/50 bg-background/98 py-2.5 pl-10 pr-4 shadow-[0_4px_20px_rgba(0,0,0,0.12)] backdrop-blur-md">
-            <Search
-              className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-              strokeWidth={2.4}
-            />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={mounted ? (t("map.search") as string) : "Salon yoki manzil"}
-              className="w-full bg-transparent text-[13px] font-semibold placeholder:text-muted-foreground focus:outline-none"
-            />
-          </div>
+      <div
+        className="absolute inset-x-0 top-0 z-40 flex justify-center px-4"
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 10px)" }}
+      >
+        <div className="relative w-full max-w-md rounded-full border border-border/50 bg-background/98 py-2.5 pl-10 pr-4 shadow-[0_4px_20px_rgba(0,0,0,0.12)] backdrop-blur-md">
+          <Search
+            className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            strokeWidth={2.4}
+          />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={mounted ? (t("map.search") as string) : "Salon yoki manzil"}
+            className="w-full bg-transparent text-[13px] font-semibold placeholder:text-muted-foreground focus:outline-none"
+          />
         </div>
-      ) : null}
+      </div>
 
       {listLoading && filtered.length === 0 ? (
         <div className="absolute inset-x-0 bottom-0 z-30 border-t border-border/50 bg-background p-4 text-center">
@@ -159,14 +156,7 @@ function MapView() {
       ) : null}
 
       {filtered.length > 0 && active ? (
-        <MapAirbnbCarousel
-          salons={filtered}
-          activeId={active}
-          onActiveChange={focusSalon}
-          onAllSalonsOpenChange={setAllSalonsOpen}
-          query={query}
-          onQueryChange={setQuery}
-        />
+        <MapSalonCards salons={filtered} activeId={active} onActiveChange={focusSalon} />
       ) : null}
     </div>
   );
