@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { SalonLocationPicker } from "@/components/map/SalonLocationPicker";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -943,6 +944,9 @@ function BarberProfileStep(props: {
    ============================================================ */
 
 function LocationStep({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
+
   return (
     <Section
       icon={<MapPin className="h-4 w-4" />}
@@ -950,46 +954,14 @@ function LocationStep({ value, onChange }: { value: string; onChange: (v: string
       title="Joylashuv tavsifi"
       description="Salon yonida qaysi tuman/ko‘chada ishlaysiz — mijoz tanish uchun."
     >
-      {/* Map-style preview, mirrors CreateSalonPage location */}
-      <div className="relative h-32 overflow-hidden rounded-2xl border border-border bg-muted/30 sm:h-44">
-        <div
-          className="absolute inset-0 opacity-60"
-          style={{
-            backgroundImage:
-              "linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-          }}
-        />
-        <div className="absolute left-0 right-0 top-1/3 h-[3px] bg-foreground/10" />
-        <div className="absolute bottom-1/4 left-0 right-0 h-[3px] bg-foreground/10" />
-        <div className="absolute bottom-0 left-1/3 top-0 w-[3px] bg-foreground/10" />
-        <div className="absolute bottom-0 right-1/4 top-0 w-[3px] bg-foreground/10" />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(circle at center, transparent 30%, var(--background) 100%)",
-          }}
-        />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-2.5">
-            <div className="relative">
-              <div className="absolute -inset-1 rounded-full bg-foreground/20 blur-md" />
-              <div className="relative flex h-11 w-11 items-center justify-center rounded-full bg-foreground text-background shadow-[var(--shadow-pop)]">
-                <MapPin className="h-5 w-5" />
-              </div>
-            </div>
-            <div className="flex max-w-[280px] flex-col items-center gap-0.5 rounded-full border border-border bg-background/95 px-3 py-1 shadow-[var(--shadow-soft)] backdrop-blur">
-              <span className="max-w-[260px] truncate text-[11px] font-semibold text-foreground">
-                {value.trim() || "Tuman / manzil"}
-              </span>
-              <span className="text-[10px] text-muted-foreground">
-                Mijozlar shu yo‘nalish bo‘yicha topadi
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <SalonLocationPicker
+        address={value}
+        latitude={latitude}
+        longitude={longitude}
+        setLatitude={setLatitude}
+        setLongitude={setLongitude}
+        setAddress={onChange}
+      />
 
       <FloatingTextarea
         label="Joylashuv tavsifi"

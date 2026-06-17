@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
-import type L from "leaflet";
+import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { MapAirbnbCarousel } from "@/components/map/MapAirbnbCarousel";
@@ -30,11 +29,16 @@ function MapView() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const mapRef = useRef<L.Map | null>(null);
   const { data: listSalons = [], isLoading: listLoading } = useSalonsList();
   const [allSalonsOpen, setAllSalonsOpen] = useState(false);
 
   const ctx = useMemo(() => userRecommendContext(me), [me]);
+
+  const userLocation = useMemo(() => {
+    if (ctx.lat == null || ctx.lng == null) return null;
+    if (!hasValidMapCoords(ctx.lat, ctx.lng)) return null;
+    return { lat: ctx.lat, lng: ctx.lng };
+  }, [ctx.lat, ctx.lng]);
 
   const baseSalons = useMemo(
     () => rankSalonsForUser(listSalons, ctx),
@@ -112,9 +116,7 @@ function MapView() {
             activeId={active || null}
             onMarkerClick={focusSalon}
             showUserLocation={!allSalonsOpen}
-            onMapReady={(map) => {
-              mapRef.current = map;
-            }}
+            userLocation={userLocation}
           />
         ) : (
           <div className="h-full w-full bg-surface" />

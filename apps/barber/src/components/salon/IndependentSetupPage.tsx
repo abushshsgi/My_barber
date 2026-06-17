@@ -34,6 +34,7 @@ import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { roundCoord6, submitFlowSignup } from "@/lib/barber-signup-flow";
 import { clearSignupDraft, readSignupDraft } from "@/lib/signup-draft";
 import { UZ_REGIONS, uzRegionCodeFromLabel, uzRegionLabel } from "@/lib/uz-regions";
+import { SalonLocationPicker } from "@/components/map/SalonLocationPicker";
 import { cn } from "@/lib/utils";
 import { getFlowMeta } from "@/lib/barber-flow-config";
 
@@ -956,43 +957,15 @@ function LocationStep(props: {
       title="Joylashuvingiz"
       description="Mijozlar yaqinroq sartaroshlarni avval ko'radi — manzilni aniq kiriting."
     >
-      {/* Map preview */}
-      <div className="relative h-40 overflow-hidden rounded-2xl border border-border bg-muted/30 sm:h-56">
-        <div
-          className="absolute inset-0 opacity-60"
-          style={{
-            backgroundImage:
-              "linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-          }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(circle at center, transparent 30%, var(--background) 100%)",
-          }}
-        />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-2.5">
-            <div className="relative">
-              <div className="absolute -inset-3 animate-ping rounded-full bg-foreground/10" />
-              <div className="absolute -inset-1 rounded-full bg-foreground/20 blur-md" />
-              <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-foreground text-background shadow-[var(--shadow-pop)]">
-                <MapPin className="h-5 w-5" />
-              </div>
-            </div>
-            <div className="flex max-w-[280px] flex-col items-center gap-0.5 rounded-full border border-border bg-background/95 px-3 py-1 shadow-[var(--shadow-soft)] backdrop-blur">
-              <span className="truncate text-[11px] font-semibold text-foreground">
-                {uzRegionLabel(props.region) || "Viloyat tanlang"}
-              </span>
-              <span className="max-w-[260px] truncate text-[10px] text-muted-foreground">
-                {props.address.trim() || "Manzil yoki mo'ljal"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <SalonLocationPicker
+        city={uzRegionLabel(props.region)}
+        address={props.address}
+        latitude={props.latitude}
+        longitude={props.longitude}
+        setLatitude={props.setLatitude}
+        setLongitude={props.setLongitude}
+        setAddress={props.setAddress}
+      />
 
       {/* Region quick-pick */}
       <div>

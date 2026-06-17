@@ -302,8 +302,3 @@
   animation-duration: 0.01ms !important;
   transition-duration: 0.01ms !important;
 }
-
-/* Leaflet tile filter for premium dark mode */
-.dark .leaflet-tile-pane {
-  filter: invert(0.98) hue-rotate(180deg) brightness(0.8) contrast(1.15) saturate(0.75);
-}

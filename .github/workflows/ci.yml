@@ -17,7 +17,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: python manage.py test ai accounts wallet chat notifications salons control_panel --verbosity=1
+      - run: python manage.py test ai accounts wallet chat notifications salons control_panel geo --verbosity=1
 
   frontend-user:
     runs-on: ubuntu-latest

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { KPICard } from "@/components/admin/KPICard";
 
-const AdminMapLeaflet = lazy(() => import("@/components/admin/AdminMapLeaflet"));
+const AdminMap2GIS = lazy(() => import("@/components/admin/AdminMap2GIS"));
 
 export const Route = createFileRoute("/admin/map")({
   component: MapPage,
@@ -111,7 +111,7 @@ function MapPage() {
                 </div>
               }
             >
-              <AdminMapLeaflet salons={salons} barbers={barbers} />
+              <AdminMap2GIS salons={salons} barbers={barbers} />
             </Suspense>
           )}
         </div>

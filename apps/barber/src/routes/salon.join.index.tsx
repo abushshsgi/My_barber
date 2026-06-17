@@ -17,7 +17,7 @@ import {
   X,
   AlertCircle,
 } from "lucide-react";
-import { toast } from "sonner";
+import { GpsLocationPreviewMap } from "@/components/map/GpsLocationPreviewMap";
 
 import { submitEmployeeRegisterAndJoin, roundCoord6 } from "@/lib/barber-signup-flow";
 import { readSignupDraft } from "@/lib/signup-draft";
@@ -819,61 +819,13 @@ function LocationStep({
       title="Joriy joylashuv"
       description="GPS bilan joriy nuqtangizni oling — masofa server tomonidan tekshiriladi."
     >
-      {/* Map preview — same look as CreateSalonPage location step */}
-      <div className="relative h-40 overflow-hidden rounded-2xl border border-border bg-muted/30 sm:h-60">
-        <div
-          className="absolute inset-0 opacity-60"
-          style={{
-            backgroundImage:
-              "linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-          }}
-        />
-        <div className="absolute left-0 right-0 top-1/3 h-[3px] bg-foreground/10" />
-        <div className="absolute bottom-1/4 left-0 right-0 h-[3px] bg-foreground/10" />
-        <div className="absolute bottom-0 left-1/3 top-0 w-[3px] bg-foreground/10" />
-        <div className="absolute bottom-0 right-1/4 top-0 w-[3px] bg-foreground/10" />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(circle at center, transparent 30%, var(--background) 100%)",
-          }}
-        />
-
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-2.5">
-            <div className="relative">
-              <div
-                className={cn(
-                  "absolute -inset-3 rounded-full bg-foreground/10",
-                  status === "locating" && "animate-ping",
-                )}
-              />
-              <div className="absolute -inset-1 rounded-full bg-foreground/20 blur-md" />
-              <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-foreground text-background shadow-[var(--shadow-pop)]">
-                {status === "locating" ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : location ? (
-                  <Check className="h-5 w-5" />
-                ) : (
-                  <Navigation className="h-5 w-5" />
-                )}
-              </div>
-            </div>
-            <div className="flex max-w-[280px] flex-col items-center gap-0.5 rounded-full border border-border bg-background/95 px-3 py-1 shadow-[var(--shadow-soft)] backdrop-blur">
-              <span className="truncate text-[11px] font-semibold text-foreground">
-                {location ? "Joylashuv olindi" : "Joylashuv olinmagan"}
-              </span>
-              {location && (
-                <span className="max-w-[260px] truncate text-[10px] text-muted-foreground tabular-nums">
-                  {formatCoordinate(location.latitude)}, {formatCoordinate(location.longitude)}
-                </span>
-              )}
-            </div>
-          </div>
+      {location ? (
+        <GpsLocationPreviewMap latitude={location.latitude} longitude={location.longitude} />
+      ) : (
+        <div className="flex h-40 items-center justify-center rounded-2xl border border-border bg-muted/30 text-sm text-muted-foreground sm:h-60">
+          «Mening lokatsiyam» tugmasini bosing
         </div>
-      </div>
+      )}
 
       {/* CTA + accuracy hint */}
       <div className="flex flex-wrap items-center gap-2">

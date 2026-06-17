@@ -32,6 +32,7 @@ import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { roundCoord6, submitFlowSignup } from "@/lib/barber-signup-flow";
 import { clearSignupDraft, readSignupDraft } from "@/lib/signup-draft";
 import { cn } from "@/lib/utils";
+import { SalonLocationPicker } from "@/components/map/SalonLocationPicker";
 import { getFlowMeta } from "@/lib/barber-flow-config";
 
 type Service = { id: string; name: string; price: string; duration: string };
@@ -1085,42 +1086,16 @@ function LocationStep(props: {
       title="Salon manzili"
       description="Mijozlar sizni topa olishi uchun aniq manzil (Create salon sahifasidagi kabi)."
     >
-      <div className="relative h-40 overflow-hidden rounded-2xl border border-border bg-muted/30 sm:h-60">
-        <div
-          className="absolute inset-0 opacity-60"
-          style={{
-            backgroundImage:
-              "linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-          }}
-        />
-        <div className="absolute left-0 right-0 top-1/3 h-[3px] bg-foreground/10" />
-        <div className="absolute bottom-1/4 left-0 right-0 h-[3px] bg-foreground/10" />
-        <div className="absolute bottom-0 left-1/3 top-0 w-[3px] bg-foreground/10" />
-        <div className="absolute bottom-0 right-1/4 top-0 w-[3px] bg-foreground/10" />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(circle at center, transparent 30%, var(--background) 100%)",
-          }}
-        />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-2.5">
-            <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-foreground text-background shadow-[var(--shadow-pop)]">
-              <MapPin className="h-5 w-5" />
-            </div>
-            <div className="flex max-w-[280px] flex-col items-center gap-0.5 rounded-full border border-border bg-background/95 px-3 py-1 shadow-[var(--shadow-soft)] backdrop-blur">
-              <span className="truncate text-[11px] font-semibold text-foreground">
-                {props.salonCity.trim() || "Shahar"}
-              </span>
-              <span className="max-w-[260px] truncate text-[10px] text-muted-foreground">
-                {props.salonAddress.trim() || "Manzil"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <SalonLocationPicker
+        city={props.salonCity}
+        address={props.salonAddress}
+        latitude={props.salonLatitude}
+        longitude={props.salonLongitude}
+        setLatitude={props.setSalonLatitude}
+        setLongitude={props.setSalonLongitude}
+        setAddress={props.setSalonAddress}
+        setCity={props.setSalonCity}
+      />
       <div>
         <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Mashhur shaharlar

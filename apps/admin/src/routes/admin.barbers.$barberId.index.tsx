@@ -21,7 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { TableSkeleton } from "@/components/admin/Skeletons";
 
-const AdminMapLeaflet = lazy(() => import("@/components/admin/AdminMapLeaflet"));
+const AdminMap2GIS = lazy(() => import("@/components/admin/AdminMap2GIS"));
 
 export const Route = createFileRoute("/admin/barbers/$barberId/")({
   validateSearch: (raw: Record<string, unknown>) => barberDetailSearchFromRaw(raw),
@@ -113,9 +113,9 @@ function BarberOverviewPage() {
       }
     : null;
 
-  const osmHref =
+  const dgisHref =
     b && Number.isFinite(b.lat) && Number.isFinite(b.lng)
-      ? `https://www.openstreetmap.org/?mlat=${b.lat}&mlon=${b.lng}#map=15/${b.lat}/${b.lng}`
+      ? `https://2gis.uz/tashkent/geo/${b.lng},${b.lat}?m=${b.lng},${b.lat}/15`
       : null;
 
   if (q.isLoading) {
@@ -330,11 +330,11 @@ function BarberOverviewPage() {
                   : "—"
               }
             />
-            {osmHref ? (
+            {dgisHref ? (
               <Button variant="outline" size="sm" className="mt-2" asChild>
-                <a href={osmHref} target="_blank" rel="noreferrer">
+                <a href={dgisHref} target="_blank" rel="noreferrer">
                   <ExternalLink className="size-3.5 mr-1.5" />
-                  OpenStreetMap
+                  2GIS
                 </a>
               </Button>
             ) : null}
@@ -347,7 +347,7 @@ function BarberOverviewPage() {
                     </div>
                   }
                 >
-                  <AdminMapLeaflet salons={[]} barbers={[mapBarber]} />
+                  <AdminMap2GIS salons={[]} barbers={[mapBarber]} />
                 </Suspense>
               </div>
             ) : null}

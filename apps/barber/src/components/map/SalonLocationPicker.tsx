@@ -1,0 +1,99 @@
+import { lazy, Suspense, useEffect, useRef } from "react";
+import { geocodeAddress, reverseGeocodeAddress } from "@/lib/api/geo";
+import { cn } from "@/lib/utils";
+
+const MapPicker = lazy(() =>
+  import("@mybarber/map-2gis").then((m) => ({ default: m.MapPicker })),
+);
+
+function parseCoord(value: string): number | null {
+  const n = parseFloat(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+type Props = {
+  city?: string;
+  address?: string;
+  latitude: string;
+  longitude: string;
+  setLatitude: (value: string) => void;
+  setLongitude: (value: string) => void;
+  setAddress?: (value: string) => void;
+  setCity?: (value: string) => void;
+  className?: string;
+  mapClassName?: string;
+};
+
+export function SalonLocationPicker({
+  city = "",
+  address = "",
+  latitude,
+  longitude,
+  setLatitude,
+  setLongitude,
+  setAddress,
+  setCity,
+  className,
+  mapClassName,
+}: Props) {
+  const lat = parseCoord(latitude);
+  const lng = parseCoord(longitude);
+  const skipGeocodeRef = useRef(false);
+  const skipReverseRef = useRef(false);
+
+  useEffect(() => {
+    const q = [city.trim(), address.trim()].filter(Boolean).join(", ");
+    if (q.length < 4 || skipGeocodeRef.current) {
+      skipGeocodeRef.current = false;
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      void geocodeAddress(q).then((results) => {
+        const first = results[0];
+        if (!first) return;
+        skipReverseRef.current = true;
+        setLatitude(first.lat.toFixed(6));
+        setLongitude(first.lng.toFixed(6));
+        setAddress?.(first.address || address);
+        setCity?.(first.city || city);
+      });
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [city, address, setLatitude, setLongitude, setAddress, setCity]);
+
+  const handleCoordsChange = (nextLat: number, nextLng: number) => {
+    if (skipReverseRef.current) {
+      skipReverseRef.current = false;
+      setLatitude(nextLat.toFixed(6));
+      setLongitude(nextLng.toFixed(6));
+      return;
+    }
+    skipGeocodeRef.current = true;
+    setLatitude(nextLat.toFixed(6));
+    setLongitude(nextLng.toFixed(6));
+    void reverseGeocodeAddress(nextLat, nextLng).then((result) => {
+      if (!result) return;
+      setAddress?.(result.address);
+      if (result.city) setCity?.(result.city);
+    });
+  };
+
+  return (
+    <div className={cn("overflow-hidden rounded-2xl border border-border", className)}>
+      <Suspense
+        fallback={
+          <div className="flex h-40 items-center justify-center bg-muted/30 text-xs text-muted-foreground sm:h-60">
+            Xarita yuklanmoqda…
+          </div>
+        }
+      >
+        <MapPicker
+          lat={lat}
+          lng={lng}
+          onCoordsChange={handleCoordsChange}
+          className={cn("h-40 sm:h-60", mapClassName)}
+        />
+      </Suspense>
+    </div>
+  );
+}

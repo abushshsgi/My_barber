@@ -86,9 +86,11 @@ INSTALLED_APPS = [
     "chat",
     "wallet.apps.WalletConfig",
     "ai.apps.AiConfig",
+    "geo.apps.GeoConfig",
 ]
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
+DGIS_API_KEY = os.environ.get("DGIS_API_KEY", "").strip()
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash"
 GEMINI_IMAGE_MODEL = os.environ.get("GEMINI_IMAGE_MODEL", "gemini-2.5-flash-image").strip() or "gemini-2.5-flash-image"
 
