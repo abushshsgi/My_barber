@@ -24,6 +24,40 @@ export const Route = createFileRoute("/map")({
   component: MapView,
 });
 
+type SalonMapProps = {
+  markers: SalonMapMarker[];
+  activeId: string;
+  onMarkerClick: (id: string) => void;
+  showUserLocation: boolean;
+  userLocation: { lat: number; lng: number } | null;
+  onMapReady?: (handle: SalonMapHandle) => void;
+  autoFitMarkers?: boolean;
+};
+
+function MapCanvas({
+  markers,
+  activeId,
+  onMarkerClick,
+  showUserLocation,
+  userLocation,
+  onMapReady,
+  autoFitMarkers,
+}: SalonMapProps) {
+  return (
+    <MapErrorBoundary>
+      <SalonMap
+        markers={markers}
+        activeId={activeId || null}
+        onMarkerClick={onMarkerClick}
+        showUserLocation={showUserLocation}
+        userLocation={userLocation}
+        onMapReady={onMapReady}
+        autoFitMarkers={autoFitMarkers}
+      />
+    </MapErrorBoundary>
+  );
+}
+
 function MapView() {
   const { t } = useTranslation();
   const { profileDefault } = useAudience();
@@ -58,8 +92,10 @@ function MapView() {
   const [desktopMapExpanded, setDesktopMapExpanded] = useState(false);
   const [mapHandle, setMapHandle] = useState<SalonMapHandle | null>(null);
 
-  const onMapReady = useCallback((handle: SalonMapHandle) => {
+  const onDesktopMapReady = useCallback((handle: SalonMapHandle) => {
     setMapHandle(handle);
+    window.setTimeout(() => handle.resize(), 50);
+    window.setTimeout(() => handle.resize(), 300);
   }, []);
 
   const filtered = useMemo(() => {
@@ -98,24 +134,19 @@ function MapView() {
   };
 
   const fitDesktopMap = useCallback(() => {
-    mapHandle?.fitMarkers(mapMarkers, { bottom: 56 });
+    if (!mapHandle || mapMarkers.length === 0) return;
+    mapHandle.fitMarkers(mapMarkers, { bottom: 48 });
   }, [mapHandle, mapMarkers]);
 
   useEffect(() => {
-    if (!desktopMapExpanded) return;
+    if (!mapHandle || mapMarkers.length === 0) return;
     fitDesktopMap();
-    const id = window.setTimeout(() => mapHandle?.resize(), 80);
-    const id2 = window.setTimeout(() => mapHandle?.resize(), 320);
-    return () => {
-      window.clearTimeout(id);
-      window.clearTimeout(id2);
-    };
-  }, [desktopMapExpanded, fitDesktopMap, mapHandle]);
+  }, [mapHandle, mapMarkers, fitDesktopMap]);
 
   useEffect(() => {
-    if (desktopMapExpanded) return;
-    const id = window.setTimeout(() => mapHandle?.resize(), 80);
-    return () => window.clearTimeout(id);
+    if (!mapHandle) return;
+    const delays = [50, 200, 500].map((ms) => window.setTimeout(() => mapHandle.resize(), ms));
+    return () => delays.forEach((id) => window.clearTimeout(id));
   }, [desktopMapExpanded, mapHandle]);
 
   useEffect(() => {
@@ -137,26 +168,25 @@ function MapView() {
         ? t("map.emptyWomen")
         : t("map.empty");
 
-  const mapNode = mounted ? (
-    <MapErrorBoundary>
-      <SalonMap
-        markers={mapMarkers}
-        activeId={active || null}
-        onMarkerClick={focusSalon}
-        showUserLocation={!sheetExpanded}
-        userLocation={userLocation}
-        onMapReady={onMapReady}
-      />
-    </MapErrorBoundary>
-  ) : (
-    <div className="h-full w-full bg-surface" />
-  );
+  const sharedMapProps: SalonMapProps = {
+    markers: mapMarkers,
+    activeId: active,
+    onMarkerClick: focusSalon,
+    showUserLocation: !sheetExpanded,
+    userLocation,
+  };
 
   return (
     <>
       {/* Mobile: full-screen map + bottom sheet */}
       <div className="relative h-full min-h-0 overflow-hidden bg-surface lg:hidden">
-        <div className="absolute inset-0">{mapNode}</div>
+        <div className="absolute inset-0">
+          {mounted ? (
+            <MapCanvas {...sharedMapProps} autoFitMarkers />
+          ) : (
+            <div className="h-full w-full bg-surface" />
+          )}
+        </div>
 
         {listLoading && filtered.length === 0 ? (
           <div className="absolute inset-x-0 bottom-0 z-30 rounded-t-[22px] border-t border-border/50 bg-background p-4 text-center">
@@ -182,7 +212,7 @@ function MapView() {
         ) : null}
       </div>
 
-      {/* Desktop: salon list panel + map; expand toggles full-page map */}
+      {/* Desktop: alohida xarita instansi — mobil konteynerda yashirin qolmasin */}
       <div className="relative hidden h-full w-full min-h-0 lg:flex">
         {!desktopMapExpanded ? (
           <MapDesktopPanel
@@ -201,7 +231,17 @@ function MapView() {
           onExpand={() => setDesktopMapExpanded(true)}
           onCollapse={() => setDesktopMapExpanded(false)}
         />
-        <MapDesktopMapFrame expanded={desktopMapExpanded}>{mapNode}</MapDesktopMapFrame>
+        <MapDesktopMapFrame expanded={desktopMapExpanded}>
+          {mounted ? (
+            <MapCanvas
+              {...sharedMapProps}
+              onMapReady={onDesktopMapReady}
+              autoFitMarkers={false}
+            />
+          ) : (
+            <div className="h-full w-full bg-surface" />
+          )}
+        </MapDesktopMapFrame>
       </div>
     </>
   );

@@ -37,16 +37,37 @@ export function fitMapToPoints(
   options?: FitOptions,
 ): void {
   if (points.length === 0) return;
+
+  const padding = { ...DEFAULT_FIT.padding, ...options?.padding };
+  const maxZoom = options?.maxZoom ?? DEFAULT_FIT.maxZoom ?? 14;
+
   if (points.length === 1) {
     map.setCenter(points[0]);
-    map.setZoom(options?.maxZoom ?? 14);
+    map.setZoom(maxZoom);
     return;
   }
+
+  const allSame = points.every(
+    ([lng, lat]) =>
+      Math.abs(lng - points[0][0]) < 1e-6 && Math.abs(lat - points[0][1]) < 1e-6,
+  );
+  if (allSame) {
+    map.setCenter(points[0]);
+    map.setZoom(maxZoom);
+    return;
+  }
+
   const bounds = createLngLatBounds(mapglAPI, points);
   if (!bounds) {
     map.setCenter(points[0]);
     map.setZoom(12);
     return;
   }
-  map.fitBounds(bounds, { ...DEFAULT_FIT, ...options });
+
+  try {
+    map.fitBounds(bounds, { padding, maxZoom });
+  } catch {
+    map.setCenter(points[0]);
+    map.setZoom(12);
+  }
 }

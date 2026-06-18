@@ -15,6 +15,7 @@ import { fitMapToPoints } from "./bounds";
 import type { MapMarker } from "./types";
 
 const BOTTOM_PAD = 168;
+const DESKTOP_FIT_PAD = { top: 48, right: 72, bottom: 48, left: 48 };
 
 export type MapHandle = {
   flyTo: (lat: number, lng: number, zoom?: number) => void;
@@ -31,6 +32,7 @@ export type Map2GISProps = {
   showUserLocation?: boolean;
   userLocation?: { lat: number; lng: number } | null;
   onMapReady?: (handle: MapHandle) => void;
+  autoFitMarkers?: boolean;
   className?: string;
   style?: React.CSSProperties;
 };
@@ -42,6 +44,7 @@ export function Map2GIS({
   showUserLocation = false,
   userLocation = null,
   onMapReady,
+  autoFitMarkers = true,
   className,
   style,
 }: Map2GISProps) {
@@ -51,9 +54,14 @@ export function Map2GIS({
   const markerRefs = useRef<Map<string, mapgl.HtmlMarker>>(new Map());
   const userMarkerRef = useRef<mapgl.HtmlMarker | null>(null);
   const userCircleRef = useRef<mapgl.Circle | null>(null);
+  const onMapReadyRef = useRef(onMapReady);
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const reactId = useId().replace(/:/g, "");
+
+  useEffect(() => {
+    onMapReadyRef.current = onMapReady;
+  }, [onMapReady]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -61,6 +69,58 @@ export function Map2GIS({
 
     let destroyed = false;
     let map: mapgl.Map | undefined;
+
+    const notifyResize = () => {
+      window.dispatchEvent(new Event("resize"));
+      requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+    };
+
+    const buildHandle = (): MapHandle => ({
+      flyTo(lat, lng, zoom = 15) {
+        const m = mapRef.current;
+        if (!m) return;
+        m.setCenter(toMapGlCoords(lat, lng), { animate: true, duration: 550 });
+        if (zoom && (m.getZoom() ?? 0) < zoom) {
+          m.setZoom(zoom, { animate: true, duration: 550 });
+        }
+      },
+      fitMarkers(items, padding) {
+        const m = mapRef.current;
+        const api = mapglRef.current;
+        if (!m || !api) return;
+        if (items.length === 0) {
+          m.setCenter(toMapGlCoords(TASHKENT_CENTER.lat, TASHKENT_CENTER.lng));
+          m.setZoom(DEFAULT_ZOOM);
+          return;
+        }
+        fitMapToPoints(
+          m,
+          api,
+          items.map((item) => toMapGlCoords(item.lat, item.lng)),
+          {
+            padding: {
+              ...DESKTOP_FIT_PAD,
+              bottom: padding?.bottom ?? DESKTOP_FIT_PAD.bottom,
+            },
+            maxZoom: 14,
+          },
+        );
+        notifyResize();
+      },
+      zoomIn() {
+        const m = mapRef.current;
+        if (!m) return;
+        const next = Math.min((m.getZoom() ?? DEFAULT_ZOOM) + 1, 18);
+        m.setZoom(next, { animate: true, duration: 280 });
+      },
+      zoomOut() {
+        const m = mapRef.current;
+        if (!m) return;
+        const next = Math.max((m.getZoom() ?? DEFAULT_ZOOM) - 1, 10);
+        m.setZoom(next, { animate: true, duration: 280 });
+      },
+      resize: notifyResize,
+    });
 
     void load()
       .then((mapglAPI) => {
@@ -77,50 +137,8 @@ export function Map2GIS({
         mapRef.current = map;
         setMapReady(true);
         setMapError(null);
-
-        const notifyResize = () => {
-          window.dispatchEvent(new Event("resize"));
-        };
-
-        const handle: MapHandle = {
-          flyTo(lat, lng, zoom = 15) {
-            map?.setCenter(toMapGlCoords(lat, lng), { animate: true, duration: 550 });
-            if (zoom && (map?.getZoom() ?? 0) < zoom) {
-              map?.setZoom(zoom, { animate: true, duration: 550 });
-            }
-          },
-          fitMarkers(items, padding) {
-            if (!map || items.length === 0) {
-              map?.setCenter(toMapGlCoords(TASHKENT_CENTER.lat, TASHKENT_CENTER.lng));
-              map?.setZoom(DEFAULT_ZOOM);
-              return;
-            }
-            fitMapToPoints(
-              map,
-              mapglAPI,
-              items.map((m) => toMapGlCoords(m.lat, m.lng)),
-              {
-                padding: {
-                  top: 72,
-                  right: 48,
-                  bottom: padding?.bottom ?? BOTTOM_PAD,
-                  left: 48,
-                },
-                maxZoom: 14,
-              },
-            );
-          },
-          zoomIn() {
-            const next = Math.min((map?.getZoom() ?? DEFAULT_ZOOM) + 1, 18);
-            map?.setZoom(next, { animate: true, duration: 280 });
-          },
-          zoomOut() {
-            const next = Math.max((map?.getZoom() ?? DEFAULT_ZOOM) - 1, 10);
-            map?.setZoom(next, { animate: true, duration: 280 });
-          },
-          resize: notifyResize,
-        };
-        onMapReady?.(handle);
+        onMapReadyRef.current?.(buildHandle());
+        notifyResize();
       })
       .catch((err: unknown) => {
         console.error("[Map2GIS] failed to load mapgl", err);
@@ -140,7 +158,7 @@ export function Map2GIS({
       mapRef.current = null;
       mapglRef.current = null;
     };
-  }, [onMapReady]);
+  }, []);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -217,6 +235,7 @@ export function Map2GIS({
   }, [activeId, markers]);
 
   useEffect(() => {
+    if (!autoFitMarkers) return;
     const map = mapRef.current;
     const mapglAPI = mapglRef.current;
     if (!mapReady || !map || !mapglAPI) return;
@@ -226,24 +245,21 @@ export function Map2GIS({
       map.setZoom(DEFAULT_ZOOM);
       return;
     }
-    try {
-      fitMapToPoints(
-        map,
-        mapglAPI,
-        markers.map((m) => toMapGlCoords(m.lat, m.lng)),
-        { padding: { top: 72, right: 48, bottom: BOTTOM_PAD, left: 48 }, maxZoom: 14 },
-      );
-    } catch (err) {
-      console.error("[Map2GIS] fitBounds failed", err);
-    }
-  }, [markers, mapReady]);
+    fitMapToPoints(
+      map,
+      mapglAPI,
+      markers.map((m) => toMapGlCoords(m.lat, m.lng)),
+      { padding: { top: 72, right: 48, bottom: BOTTOM_PAD, left: 48 }, maxZoom: 14 },
+    );
+  }, [markers, mapReady, autoFitMarkers]);
 
   useEffect(() => {
     const el = containerRef.current;
     if (!el || !mapReady) return;
 
-    const onResize = () => window.dispatchEvent(new Event("resize"));
-    const ro = new ResizeObserver(onResize);
+    const ro = new ResizeObserver(() => {
+      window.dispatchEvent(new Event("resize"));
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, [mapReady]);
