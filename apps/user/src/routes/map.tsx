@@ -103,7 +103,19 @@ function MapView() {
   useEffect(() => {
     if (!desktopMapExpanded) return;
     fitDesktopMap();
-  }, [desktopMapExpanded, fitDesktopMap]);
+    const id = window.setTimeout(() => mapHandle?.resize(), 80);
+    const id2 = window.setTimeout(() => mapHandle?.resize(), 320);
+    return () => {
+      window.clearTimeout(id);
+      window.clearTimeout(id2);
+    };
+  }, [desktopMapExpanded, fitDesktopMap, mapHandle]);
+
+  useEffect(() => {
+    if (desktopMapExpanded) return;
+    const id = window.setTimeout(() => mapHandle?.resize(), 80);
+    return () => window.clearTimeout(id);
+  }, [desktopMapExpanded, mapHandle]);
 
   useEffect(() => {
     const prevHtml = document.documentElement.style.overflow;
@@ -170,7 +182,7 @@ function MapView() {
       </div>
 
       {/* Desktop: salon list panel + map; expand toggles full-page map */}
-      <div className="relative hidden h-full min-h-0 lg:flex">
+      <div className="relative hidden h-full w-full min-h-0 lg:flex">
         {!desktopMapExpanded ? (
           <MapDesktopPanel
             salons={filtered}
@@ -180,11 +192,11 @@ function MapView() {
             onQueryChange={setQuery}
             loading={listLoading}
             emptyMessage={emptyMessage}
-            onExpandMap={() => setDesktopMapExpanded(true)}
           />
         ) : null}
         <MapDesktopMapFrame
           expanded={desktopMapExpanded}
+          mapHandle={mapHandle}
           onExpand={() => setDesktopMapExpanded(true)}
           onCollapse={() => setDesktopMapExpanded(false)}
         >

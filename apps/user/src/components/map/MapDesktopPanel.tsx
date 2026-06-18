@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Maximize2, Search, Star } from "lucide-react";
+import { Search, Star } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
@@ -16,7 +16,6 @@ type Props = {
   onQueryChange: (query: string) => void;
   loading?: boolean;
   emptyMessage?: string;
-  onExpandMap?: () => void;
 };
 
 function SalonCoverImage({ salon, className }: { salon: Salon; className?: string }) {
@@ -104,7 +103,6 @@ export function MapDesktopPanel({
   onQueryChange,
   loading,
   emptyMessage,
-  onExpandMap,
 }: Props) {
   const { t } = useTranslation();
   const listRef = useRef<HTMLDivElement>(null);
@@ -118,31 +116,18 @@ export function MapDesktopPanel({
   return (
     <aside className="flex h-full w-[min(100%,520px)] shrink-0 flex-col border-r border-border/60 bg-surface/40">
       <div className="shrink-0 space-y-3 border-b border-border/50 px-5 pb-4 pt-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-              {t("nav.map")}
-            </p>
-            <h1 className="mt-1 text-[22px] font-bold tracking-tight">
-              {loading
-                ? t("map.loading")
-                : t("map.desktopResults", {
-                    count: salons.length,
-                    defaultValue: "{{count}} ta salon",
-                  })}
-            </h1>
-          </div>
-          {onExpandMap ? (
-            <button
-              type="button"
-              onClick={onExpandMap}
-              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-foreground px-3 py-2 text-[12px] font-bold text-background shadow-sm transition hover:opacity-90 active:scale-[0.98]"
-              aria-label={t("map.expandMap")}
-            >
-              <Maximize2 className="h-3.5 w-3.5" strokeWidth={2.4} />
-              {t("map.expandMap")}
-            </button>
-          ) : null}
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+            {t("nav.map")}
+          </p>
+          <h1 className="mt-1 text-[22px] font-bold tracking-tight">
+            {loading
+              ? t("map.loading")
+              : t("map.desktopResults", {
+                  count: salons.length,
+                  defaultValue: "{{count}} ta salon",
+                })}
+          </h1>
         </div>
         <div className="relative rounded-full border border-border/50 bg-background py-2.5 pl-10 pr-4 shadow-sm">
           <Search

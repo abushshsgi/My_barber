@@ -21,6 +21,7 @@ export type MapHandle = {
   fitMarkers: (markers: MapMarker[], padding?: { bottom?: number }) => void;
   zoomIn: () => void;
   zoomOut: () => void;
+  resize: () => void;
 };
 
 export type Map2GISProps = {
@@ -77,6 +78,10 @@ export function Map2GIS({
         setMapReady(true);
         setMapError(null);
 
+        const notifyResize = () => {
+          window.dispatchEvent(new Event("resize"));
+        };
+
         const handle: MapHandle = {
           flyTo(lat, lng, zoom = 15) {
             map?.setCenter(toMapGlCoords(lat, lng), { animate: true, duration: 550 });
@@ -113,6 +118,7 @@ export function Map2GIS({
             const next = Math.max((map?.getZoom() ?? DEFAULT_ZOOM) - 1, 10);
             map?.setZoom(next, { animate: true, duration: 280 });
           },
+          resize: notifyResize,
         };
         onMapReady?.(handle);
       })
@@ -231,6 +237,16 @@ export function Map2GIS({
       console.error("[Map2GIS] fitBounds failed", err);
     }
   }, [markers, mapReady]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || !mapReady) return;
+
+    const onResize = () => window.dispatchEvent(new Event("resize"));
+    const ro = new ResizeObserver(onResize);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [mapReady]);
 
   return (
     <div className={className} style={{ position: "relative", width: "100%", height: "100%", ...style }}>
