@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { MapDesktopMapControls } from "@/components/map/MapDesktopMapControls";
 import { MapDesktopMapFrame } from "@/components/map/MapDesktopMapFrame";
 import { MapDesktopPanel } from "@/components/map/MapDesktopPanel";
 import { MapErrorBoundary } from "@/components/map/MapErrorBoundary";
@@ -194,14 +195,13 @@ function MapView() {
             emptyMessage={emptyMessage}
           />
         ) : null}
-        <MapDesktopMapFrame
+        <MapDesktopMapControls
           expanded={desktopMapExpanded}
           mapHandle={mapHandle}
           onExpand={() => setDesktopMapExpanded(true)}
           onCollapse={() => setDesktopMapExpanded(false)}
-        >
-          {mapNode}
-        </MapDesktopMapFrame>
+        />
+        <MapDesktopMapFrame expanded={desktopMapExpanded}>{mapNode}</MapDesktopMapFrame>
       </div>
     </>
   );
