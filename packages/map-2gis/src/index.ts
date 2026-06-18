@@ -1,4 +1,4 @@
-export { Map2GIS, type Map2GISProps } from "./Map2GIS";
+export { Map2GIS, type Map2GISProps, type MapHandle } from "./Map2GIS";
 export { MapPicker, type MapPickerProps } from "./MapPicker";
 export { AdminMap2GIS, type AdminMap2GISProps } from "./AdminMap2GIS";
 export { getDgisApiKey } from "./api-key";

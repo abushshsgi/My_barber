@@ -83,6 +83,8 @@
     "heatmap": "Hot areas",
     "locate": "My location",
     "fitAll": "Show all",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
     "filters": "Filters",
     "locateError": "Could not get your location",
     "locateUnsupported": "Geolocation is not supported",

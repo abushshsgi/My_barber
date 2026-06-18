@@ -1,11 +1,7 @@
-import { Map2GIS, type MapMarker } from "@mybarber/map-2gis";
+import { Map2GIS, type MapHandle, type MapMarker } from "@mybarber/map-2gis";
 
 export type SalonMapMarker = MapMarker;
-
-export type SalonMapHandle = {
-  flyTo: (lat: number, lng: number, zoom?: number) => void;
-  fitMarkers: (markers: SalonMapMarker[], padding?: { bottom?: number }) => void;
-};
+export type SalonMapHandle = MapHandle;
 
 export function SalonMap({
   markers,

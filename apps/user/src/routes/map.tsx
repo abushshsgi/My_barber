@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { MapDesktopMapFrame } from "@/components/map/MapDesktopMapFrame";
 import { MapDesktopPanel } from "@/components/map/MapDesktopPanel";
 import { MapErrorBoundary } from "@/components/map/MapErrorBoundary";
 import { MapSalonSheet } from "@/components/map/MapSalonSheet";
-import { SalonMap, type SalonMapMarker } from "@/components/map/SalonMap";
+import { SalonMap, type SalonMapHandle, type SalonMapMarker } from "@/components/map/SalonMap";
 import { resolveMapAudienceFilter, useAudience } from "@/hooks/use-audience";
 import { useMe } from "@/hooks/use-me";
 import { useSalonsList } from "@/hooks/use-salons";
@@ -53,6 +54,11 @@ function MapView() {
   const [active, setActive] = useState("");
   const [query, setQuery] = useState("");
   const [sheetExpanded, setSheetExpanded] = useState(false);
+  const [mapHandle, setMapHandle] = useState<SalonMapHandle | null>(null);
+
+  const onMapReady = useCallback((handle: SalonMapHandle) => {
+    setMapHandle(handle);
+  }, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -89,6 +95,10 @@ function MapView() {
     setActive(id);
   };
 
+  const fitDesktopMap = useCallback(() => {
+    mapHandle?.fitMarkers(mapMarkers, { bottom: 56 });
+  }, [mapHandle, mapMarkers]);
+
   useEffect(() => {
     const prevHtml = document.documentElement.style.overflow;
     const prevBody = document.body.style.overflow;
@@ -116,6 +126,7 @@ function MapView() {
         onMarkerClick={focusSalon}
         showUserLocation={!sheetExpanded}
         userLocation={userLocation}
+        onMapReady={onMapReady}
       />
     </MapErrorBoundary>
   ) : (
@@ -163,7 +174,9 @@ function MapView() {
           loading={listLoading}
           emptyMessage={emptyMessage}
         />
-        <div className="relative min-h-0 min-w-0 flex-1 bg-surface">{mapNode}</div>
+        <MapDesktopMapFrame mapHandle={mapHandle} onFitAll={fitDesktopMap}>
+          {mapNode}
+        </MapDesktopMapFrame>
       </div>
     </>
   );

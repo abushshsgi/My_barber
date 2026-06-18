@@ -16,9 +16,11 @@ import type { MapMarker } from "./types";
 
 const BOTTOM_PAD = 168;
 
-type MapHandle = {
+export type MapHandle = {
   flyTo: (lat: number, lng: number, zoom?: number) => void;
   fitMarkers: (markers: MapMarker[], padding?: { bottom?: number }) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
 };
 
 export type Map2GISProps = {
@@ -102,6 +104,14 @@ export function Map2GIS({
                 maxZoom: 14,
               },
             );
+          },
+          zoomIn() {
+            const next = Math.min((map?.getZoom() ?? DEFAULT_ZOOM) + 1, 18);
+            map?.setZoom(next, { animate: true, duration: 280 });
+          },
+          zoomOut() {
+            const next = Math.max((map?.getZoom() ?? DEFAULT_ZOOM) - 1, 10);
+            map?.setZoom(next, { animate: true, duration: 280 });
           },
         };
         onMapReady?.(handle);
