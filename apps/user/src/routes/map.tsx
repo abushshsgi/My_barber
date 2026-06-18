@@ -180,6 +180,7 @@ function MapView() {
             onQueryChange={setQuery}
             loading={listLoading}
             emptyMessage={emptyMessage}
+            onExpandMap={() => setDesktopMapExpanded(true)}
           />
         ) : null}
         <MapDesktopMapFrame
