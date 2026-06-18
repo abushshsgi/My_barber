@@ -88,6 +88,8 @@
     "heatmap": "Issiq hudud",
     "locate": "Joylashuvim",
     "fitAll": "Barchasini ko'rish",
+    "expandMap": "Kattalashtir",
+    "collapseMap": "Kichiklashtir",
     "zoomIn": "Kattalashtir",
     "zoomOut": "Kichiklashtir",
     "filters": "Filterlar",

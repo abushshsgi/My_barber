@@ -54,6 +54,7 @@ function MapView() {
   const [active, setActive] = useState("");
   const [query, setQuery] = useState("");
   const [sheetExpanded, setSheetExpanded] = useState(false);
+  const [desktopMapExpanded, setDesktopMapExpanded] = useState(false);
   const [mapHandle, setMapHandle] = useState<SalonMapHandle | null>(null);
 
   const onMapReady = useCallback((handle: SalonMapHandle) => {
@@ -98,6 +99,11 @@ function MapView() {
   const fitDesktopMap = useCallback(() => {
     mapHandle?.fitMarkers(mapMarkers, { bottom: 56 });
   }, [mapHandle, mapMarkers]);
+
+  useEffect(() => {
+    if (!desktopMapExpanded) return;
+    fitDesktopMap();
+  }, [desktopMapExpanded, fitDesktopMap]);
 
   useEffect(() => {
     const prevHtml = document.documentElement.style.overflow;
@@ -163,18 +169,24 @@ function MapView() {
         ) : null}
       </div>
 
-      {/* Desktop: salon list panel + sticky map (Airbnb-inspired split, MyBarber styling) */}
-      <div className="hidden h-full min-h-0 lg:flex">
-        <MapDesktopPanel
-          salons={filtered}
-          activeId={active}
-          onActiveChange={focusSalon}
-          query={query}
-          onQueryChange={setQuery}
-          loading={listLoading}
-          emptyMessage={emptyMessage}
-        />
-        <MapDesktopMapFrame mapHandle={mapHandle} onFitAll={fitDesktopMap}>
+      {/* Desktop: salon list panel + map; expand toggles full-page map */}
+      <div className="relative hidden h-full min-h-0 lg:flex">
+        {!desktopMapExpanded ? (
+          <MapDesktopPanel
+            salons={filtered}
+            activeId={active}
+            onActiveChange={focusSalon}
+            query={query}
+            onQueryChange={setQuery}
+            loading={listLoading}
+            emptyMessage={emptyMessage}
+          />
+        ) : null}
+        <MapDesktopMapFrame
+          expanded={desktopMapExpanded}
+          onExpand={() => setDesktopMapExpanded(true)}
+          onCollapse={() => setDesktopMapExpanded(false)}
+        >
           {mapNode}
         </MapDesktopMapFrame>
       </div>
