@@ -14,29 +14,22 @@ import {
   Tag,
 } from "lucide-react";
 import { ProfileGoMenuGroup, ProfileGoQuickRow, ProfileWalletCard } from "@/components/profile/ProfileGroupedMenu";
-import { ACCOUNT_HUBS } from "@/lib/account-hubs";
 import { useAppTranslation } from "@/hooks/use-app-translation";
 import { useProfileScreen } from "@/components/profile/useProfileScreen";
 import { useNotificationsApi } from "@/hooks/use-notifications-api";
 import { useWalletBalance } from "@/hooks/use-wallet";
 import { formatBookingWhen } from "@/lib/bookings-utils";
 import { formatPrice } from "@/lib/mock-data";
-import { StickyAside } from "@/components/layout/StickyAside";
 
+/** Profil sahifasi — faqat mobil UI. Desktop: ProfileDesktopPage. */
 export function UserProfile() {
   const { t } = useAppTranslation();
   const { audience, nextBooking, user, stats, handleLogout } = useProfileScreen();
   const { balance, isLoading: walletLoading } = useWalletBalance();
   const { data: notifications = [] } = useNotificationsApi();
   const unreadCount = notifications.filter((n) => !n.read).length;
-
   const audienceLabel = t(`audience.${audience}`);
-  const initials = user.name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2);
-
+  const initials = user.name.split(" ").map((n) => n[0]).join("").slice(0, 2);
   const when = nextBooking ? formatBookingWhen(nextBooking.date) : null;
 
   const quickItems = [
@@ -46,25 +39,21 @@ export function UserProfile() {
     { icon: Settings, label: t("profile.settings"), to: "/settings" },
   ];
 
-  const profileSidebar = (
-    <>
-      <div className="flex items-center justify-between lg:flex-col lg:items-start lg:gap-3">
+  return (
+    <div className="min-h-[70vh] bg-background pb-4 pt-[calc(env(safe-area-inset-top)+6px)]">
+      <div className="flex items-center justify-between px-5">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1.5 text-[10px] font-bold text-muted-foreground">
-          <Sparkles className="h-3 w-3" strokeWidth={2.2} />
-          Bonus · tez orada
-        </span>
-        <span className="inline-flex max-w-[140px] items-center rounded-full bg-surface px-2.5 py-1.5 text-[10px] font-bold text-muted-foreground">
-          Obuna · tez orada
+          <Sparkles className="h-3 w-3" /> Bonus · tez orada
         </span>
       </div>
 
-      <div className="mt-2 flex flex-col items-center px-5 text-center lg:mt-4 lg:items-start lg:px-0 lg:text-left">
+      <div className="mt-2 flex flex-col items-center px-5 text-center">
         <div className="grid h-[104px] w-[104px] place-items-center rounded-full bg-surface">
           <span className="text-[36px] font-bold leading-none">{initials}</span>
         </div>
-        <Link to="/settings" className="mt-4 inline-flex max-w-full items-center gap-1 active:opacity-70">
+        <Link to="/settings" className="mt-4 inline-flex max-w-full items-center gap-1">
           <p className="truncate text-[22px] font-bold tracking-tight">{user.name}</p>
-          <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" strokeWidth={2} />
+          <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
         </Link>
         <p className="mt-1 text-[15px] font-medium text-muted-foreground">{user.phone}</p>
         <span className="mt-2 rounded-full bg-surface px-3 py-1 text-[11px] font-bold text-muted-foreground">
@@ -77,122 +66,62 @@ export function UserProfile() {
         ) : null}
       </div>
 
-      <div className="mt-7 px-3 lg:mt-6 lg:px-0">
+      <div className="mt-7 px-3">
         <ProfileGoQuickRow items={quickItems} />
       </div>
 
-      <div className="mt-6 px-4 lg:px-0">
-        <ProfileWalletCard
-          title={t("profile.wallet")}
-          balance={walletLoading ? "…" : formatPrice(balance)}
-        />
+      <div className="mt-6 px-4">
+        <ProfileWalletCard title={t("profile.wallet")} balance={walletLoading ? "…" : formatPrice(balance)} />
       </div>
-    </>
-  );
 
-  return (
-    <div className="min-h-[70vh] bg-background pb-4 pt-[calc(env(safe-area-inset-top)+6px)] lg:px-6 lg:pt-6">
-      <div className="lg:grid lg:grid-cols-[320px_1fr] lg:items-start lg:gap-8">
-        <StickyAside className="lg:top-20">{profileSidebar}</StickyAside>
-
-        <div className="mt-6 space-y-3 px-4 lg:mt-0 lg:px-0">
-          <div className="hidden lg:grid lg:grid-cols-2 lg:gap-3">
-            {ACCOUNT_HUBS.map((hub) => {
-              const Icon = hub.icon;
-              return (
-                <Link
-                  key={hub.key}
-                  to={hub.to}
-                  className="flex items-start gap-3 rounded-2xl border border-border bg-surface/30 p-4 transition-colors hover:bg-surface/60"
-                >
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-background">
-                    <Icon className="h-5 w-5" strokeWidth={2} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold">{t(hub.titleKey)}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{t(hub.descKey)}</p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-
-          <div className="lg:hidden">
-            <ProfileGoMenuGroup
-              items={[
-                {
-                  icon: CalendarCheck,
-                  title: t("account.hubs.activity.title"),
-                  subtitle: t("account.hubs.activity.desc"),
-                  to: "/account/activity",
-                },
-              ]}
-            />
-          </div>
-
+      <div className="mt-6 space-y-3 px-4">
+        <ProfileGoMenuGroup
+          items={[
+            {
+              icon: CalendarCheck,
+              title: t("account.hubs.activity.title"),
+              subtitle: t("account.hubs.activity.desc"),
+              to: "/account/activity",
+            },
+          ]}
+        />
+        <ProfileGoMenuGroup items={[{ icon: Tag, title: t("profile.offers"), subtitle: "Tez orada", to: "/offers" }]} />
+        {nextBooking && when ? (
           <ProfileGoMenuGroup
+            dark
             items={[
               {
-                icon: Tag,
-                title: t("profile.offers"),
-                subtitle: "Tez orada",
-                to: "/offers",
+                icon: Calendar,
+                title: t("profile.nextBooking.title"),
+                subtitle: `${nextBooking.salonName} · ${when.date} · ${when.time}`,
+                to: "/bookings",
+                search: { focus: nextBooking.id },
               },
             ]}
           />
-
-          {nextBooking && when ? (
-            <ProfileGoMenuGroup
-              dark
-              items={[
-                {
-                  icon: Calendar,
-                  title: t("profile.nextBooking.title"),
-                  subtitle: `${nextBooking.salonName} · ${when.date} · ${when.time}`,
-                  to: "/bookings",
-                  search: { focus: nextBooking.id },
-                  chevronClassName: "text-background/80",
-                },
-              ]}
-            />
-          ) : (
-            <ProfileGoMenuGroup
-              dark
-              items={[
-                {
-                  icon: Sparkles,
-                  title: t("profile.loyalty"),
-                  subtitle: "Tez orada",
-                  to: "/loyalty",
-                  chevronClassName: "text-background/80",
-                },
-              ]}
-            />
-          )}
-
-          <ProfileGoMenuGroup
-            items={[
-              { icon: Shield, title: t("profile.privacy"), to: "/privacy" },
-              {
-                icon: Bell,
-                title: t("notifications.title"),
-                to: "/notifications",
-                badge: unreadCount > 0 ? String(unreadCount > 9 ? "9+" : unreadCount) : undefined,
-              },
-            ]}
-          />
-
-          <ProfileGoMenuGroup items={[{ icon: Info, title: t("profile.info"), to: "/support" }]} />
-
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-border bg-background py-4 text-sm font-bold text-muted-foreground transition-colors duration-200 active:bg-surface lg:max-w-xs"
-          >
-            <LogOut className="h-4 w-4" strokeWidth={2.2} />
-            {t("common.logout")}
-          </button>
-        </div>
+        ) : (
+          <ProfileGoMenuGroup dark items={[{ icon: Sparkles, title: t("profile.loyalty"), subtitle: "Tez orada", to: "/loyalty" }]} />
+        )}
+        <ProfileGoMenuGroup
+          items={[
+            { icon: Shield, title: t("profile.privacy"), to: "/privacy" },
+            {
+              icon: Bell,
+              title: t("notifications.title"),
+              to: "/notifications",
+              badge: unreadCount > 0 ? String(unreadCount > 9 ? "9+" : unreadCount) : undefined,
+            },
+          ]}
+        />
+        <ProfileGoMenuGroup items={[{ icon: Info, title: t("profile.info"), to: "/support" }]} />
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-border bg-background py-4 text-sm font-bold text-muted-foreground"
+        >
+          <LogOut className="h-4 w-4" />
+          {t("common.logout")}
+        </button>
       </div>
     </div>
   );

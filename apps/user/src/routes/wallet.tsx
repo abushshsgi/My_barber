@@ -1,8 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Gift, Plus, ChevronLeft } from "lucide-react";
+import { ChevronLeft, Gift, Plus } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
+import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
+import { WalletDesktopPage } from "@/components/desktop/pages/WalletDesktopPage";
 import { PlasticCard } from "@/components/wallet/PlasticCard";
 import { ClientOnly } from "@/components/ClientOnly";
 import { WalletEmptyTransactions } from "@/components/wallet/WalletEmptyTransactions";
@@ -26,7 +29,7 @@ export const Route = createFileRoute("/wallet")({
 
 const RECENT_TX_LIMIT = 5;
 
-function WalletPage() {
+function WalletMobile() {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const [tab, setTab] = useState<WalletTxTab>("all");
@@ -39,7 +42,6 @@ function WalletPage() {
     [transactions, tab],
   );
   const hasAnyTransactions = transactions.length > 0;
-
   const inflowTotal = useMemo(
     () => transactions.filter((tx) => tx.kind === "in").reduce((sum, tx) => sum + tx.amount, 0),
     [transactions],
@@ -58,13 +60,9 @@ function WalletPage() {
 
   return (
     <WalletPullRefresh onRefresh={refreshBalance} onRefreshingChange={setRefreshing}>
-      <div className="overflow-x-hidden pb-6 lg:px-6">
-        <header className="flex items-center gap-3 px-5 pt-[calc(env(safe-area-inset-top)+12px)] lg:hidden">
-          <Link
-            to="/profile"
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface active:opacity-80"
-            aria-label={t("common.back")}
-          >
+      <div className="overflow-x-hidden pb-6">
+        <header className="flex items-center gap-3 px-5 pt-[calc(env(safe-area-inset-top)+12px)]">
+          <Link to="/profile" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface" aria-label={t("common.back")}>
             <ChevronLeft className="h-5 w-5" strokeWidth={2.4} />
           </Link>
           <div className="min-w-0 flex-1">
@@ -73,80 +71,51 @@ function WalletPage() {
           </div>
         </header>
 
-        <div className="lg:grid lg:grid-cols-[minmax(280px,360px)_1fr] lg:items-start lg:gap-8 lg:pt-6">
-          <div>
-        <div className="px-5 pt-2 lg:px-0">
-          <div className="relative mx-auto flex min-h-[210px] w-full max-w-[360px] items-center justify-center overflow-visible py-4">
-            <ClientOnly
-              fallback={
-                <div className="aspect-[1.586/1] w-full max-w-[340px] animate-pulse rounded-[26px] bg-surface" />
-              }
-            >
+        <div className="px-5 pt-2">
+          <div className="relative mx-auto flex min-h-[210px] w-full max-w-[360px] items-center justify-center py-4">
+            <ClientOnly fallback={<div className="aspect-[1.586/1] w-full max-w-[340px] animate-pulse rounded-[26px] bg-surface" />}>
               {isLoading ? (
                 <div className="aspect-[1.586/1] w-full max-w-[340px] animate-pulse rounded-[26px] bg-surface" />
               ) : (
-                <PlasticCard
-                  balance={balance}
-                  cardholderName={card?.cardholder_name}
-                  walletNumber={walletNumber}
-                  refreshing={refreshing}
-                  monthTrend={t("walletPage.monthTrend")}
-                />
+                <PlasticCard balance={balance} cardholderName={card?.cardholder_name} walletNumber={walletNumber} refreshing={refreshing} monthTrend={t("walletPage.monthTrend")} />
               )}
             </ClientOnly>
           </div>
         </div>
 
-        <div className="mt-6 flex justify-center gap-10 px-5 lg:justify-start lg:px-0">
-          <Link to="/wallet/top-up" className="flex flex-col items-center gap-2 active:scale-95">
+        <div className="mt-6 flex justify-center gap-10 px-5">
+          <Link to="/wallet/top-up" className="flex flex-col items-center gap-2">
             <span className="grid h-[60px] w-[60px] place-items-center rounded-full bg-foreground text-background shadow-lg">
-              <Plus className="h-7 w-7" strokeWidth={2.2} />
+              <Plus className="h-7 w-7" />
             </span>
             <span className="text-[11px] font-bold">{t("walletPage.topUp")}</span>
           </Link>
-          <Link to="/giftcard" className="flex flex-col items-center gap-2 active:scale-95">
+          <Link to="/giftcard" className="flex flex-col items-center gap-2">
             <span className="grid h-[60px] w-[60px] place-items-center rounded-full border-2 border-foreground bg-card">
-              <Gift className="h-7 w-7" strokeWidth={2} />
+              <Gift className="h-7 w-7" />
             </span>
             <span className="text-[11px] font-bold">{t("walletPage.gift")}</span>
           </Link>
         </div>
 
-        <div className="mx-5 mt-6 flex gap-3 lg:mx-0">
+        <div className="mx-5 mt-6 flex gap-3">
           <div className="flex-1 rounded-[24px] bg-surface px-4 py-3 text-center">
             <p className="text-lg font-bold tabular-nums">{Math.round(inflowTotal / 1000)}k</p>
-            <p className="text-[9px] font-bold uppercase text-muted-foreground">
-              {t("walletPage.stats.cashback")}
-            </p>
-          </div>
-          <div className="flex-1 rounded-[24px] bg-surface px-4 py-3 text-center opacity-60">
-            <p className="text-[10px] font-bold uppercase text-muted-foreground">Tez orada</p>
-            <p className="mt-1 text-[9px] font-medium text-muted-foreground">Bonus ball</p>
+            <p className="text-[9px] font-bold uppercase text-muted-foreground">{t("walletPage.stats.cashback")}</p>
           </div>
         </div>
-          </div>
 
-        <section className="mx-5 mt-8 lg:mx-0 lg:mt-0">
+        <section className="mx-5 mt-8">
           <h2 className="text-sm font-bold">{t("walletPage.recent")}</h2>
-
           {hasAnyTransactions && (
             <div className="mt-3 flex gap-2">
               {(["all", "in", "out"] as WalletTxTab[]).map((k) => (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => setTab(k)}
-                  className={cn(
-                    "rounded-full px-4 py-2 text-[12px] font-bold",
-                    tab === k ? "bg-foreground text-background" : "bg-surface text-muted-foreground",
-                  )}
-                >
+                <button key={k} type="button" onClick={() => setTab(k)} className={cn("rounded-full px-4 py-2 text-[12px] font-bold", tab === k ? "bg-foreground text-background" : "bg-surface text-muted-foreground")}>
                   {tabLabels[k]}
                 </button>
               ))}
             </div>
           )}
-
           {txLoading ? (
             <div className="mt-4 h-24 animate-pulse rounded-2xl bg-surface" />
           ) : !hasAnyTransactions ? (
@@ -158,18 +127,17 @@ function WalletPage() {
               <WalletTransactionList items={visible} />
             </div>
           )}
-
           {hasAnyTransactions && (
-            <Link
-              to="/wallet/history"
-              className="mt-4 flex w-full items-center justify-center rounded-full bg-surface py-3.5 text-[12px] font-bold active:opacity-80"
-            >
+            <Link to="/wallet/history" className="mt-4 flex w-full items-center justify-center rounded-full bg-surface py-3.5 text-[12px] font-bold">
               {t("walletPage.fullHistory")}
             </Link>
           )}
         </section>
-        </div>
       </div>
     </WalletPullRefresh>
   );
+}
+
+function WalletPage() {
+  return <DesktopPageSplit mobile={<WalletMobile />} desktop={<WalletDesktopPage />} />;
 }

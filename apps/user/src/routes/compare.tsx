@@ -56,8 +56,8 @@ function ComparePage() {
   }, [chosen]);
 
   return (
-    <div className="pb-12 lg:px-6">
-      <PageHeader title="Taqqoslash" subtitle={`Tanlangan ${chosen.length}/${MAX}`} className="lg:hidden" />
+    <div className="pb-12">
+      <PageHeader title="Taqqoslash" subtitle={`Tanlangan ${chosen.length}/${MAX}`} />
 
       {isLoading ? (
         <p className="px-5 py-8 text-center text-sm text-muted-foreground">Yuklanmoqda…</p>
@@ -72,7 +72,7 @@ function ComparePage() {
         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
           Salonlarni tanlang
         </p>
-        <div className="mt-3 no-scrollbar -mx-5 flex gap-3 overflow-x-auto px-5 pb-1 lg:mx-0 lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-visible lg:px-0">
+        <div className="mt-3 no-scrollbar -mx-5 flex gap-3 overflow-x-auto px-5 pb-1">
           {salons.map((s) => {
             const on = selected.includes(s.id);
             const disabled = !on && selected.length >= MAX;
@@ -118,8 +118,8 @@ function ComparePage() {
       ) : (
         <>
           {/* Top comparison cards */}
-          <section className="mt-6 px-5 lg:px-0">
-            <div className="grid gap-3 lg:grid-cols-3">
+          <section className="mt-6 px-5">
+            <div className="grid gap-3">
               {chosen.map((s) => (
                 <div key={s.id} className="rounded-2xl border border-border p-3">
                   <div className="flex items-start justify-between gap-1">

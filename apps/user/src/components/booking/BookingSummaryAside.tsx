@@ -1,11 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { formatPrice } from "@/lib/mock-data";
 import type { Salon } from "@/lib/mock-data";
-import { StickyAside } from "@/components/layout/StickyAside";
 
 type Service = { id: string; name: string; price: number };
 type Barber = { id: string; name: string };
-
 type DayItem = { date: number; day: string };
 
 type Props = {
@@ -33,7 +31,7 @@ export function BookingSummaryAside({
   const day = dayList[dayIdx];
 
   return (
-    <StickyAside className="hidden lg:block">
+    <aside className="sticky top-24">
       <div className="rounded-2xl border border-border bg-surface/30 p-5">
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
           {t("booking.summary", { defaultValue: "Buyurtma" })}
@@ -77,6 +75,6 @@ export function BookingSummaryAside({
           </div>
         ) : null}
       </div>
-    </StickyAside>
+    </aside>
   );
 }

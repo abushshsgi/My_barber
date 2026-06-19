@@ -3,13 +3,14 @@ import { useState } from "react";
 import { Check, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
+import { DesktopPageHeader } from "@/components/desktop/ui/DesktopPageHeader";
+import { BookingSummaryAside } from "@/components/booking/BookingSummaryAside";
 import { formatPrice } from "@/lib/mock-data";
 import { PageHeader } from "@/components/PageHeader";
 import { Stepper } from "@/components/Stepper";
-import { BookingSummaryAside } from "@/components/booking/BookingSummaryAside";
 import { useCreateBooking, useBookingAvailability } from "@/hooks/use-bookings-api";
 import { useSalonPage } from "@/hooks/use-salon-page";
-import { DESKTOP_SIDEBAR_LEFT_CLASS } from "@/lib/layout-constants";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/$salonId")({
@@ -24,20 +25,15 @@ const SLOTS = [
   "12:00", "12:15", "14:00", "14:15", "14:30", "14:45",
 ];
 
-function BookingFlow() {
-  const { t } = useTranslation();
-  const { salonId } = useParams({ from: "/booking/$salonId" });
+function useBookingSalonState(salonId: string) {
   const router = useRouter();
   const { salon, isLoading } = useSalonPage(salonId);
   const createBooking = useCreateBooking();
-
   const [step, setStep] = useState(1);
   const [barberId, setBarberId] = useState<string | null>(null);
   const [serviceIds, setServiceIds] = useState<string[]>([]);
   const [dayIdx, setDayIdx] = useState(0);
   const [slot, setSlot] = useState<string | null>(null);
-
-  const stepLabels = [t("booking.step1"), t("booking.step2"), t("booking.step3"), t("booking.step4")];
 
   const today = new Date();
   const dayList = Array.from({ length: 7 }).map((_, i) => {
@@ -46,9 +42,7 @@ function BookingFlow() {
     return { date: d.getDate(), day: DAYS[d.getDay() === 0 ? 6 : d.getDay() - 1], full: d };
   });
 
-  const dateIso = dayList[dayIdx]?.full
-    ? dayList[dayIdx].full.toISOString().slice(0, 10)
-    : "";
+  const dateIso = dayList[dayIdx]?.full ? dayList[dayIdx].full.toISOString().slice(0, 10) : "";
 
   const availability = useBookingAvailability({
     salon: parseInt(salonId, 10),
@@ -63,23 +57,14 @@ function BookingFlow() {
       new Date(s.start).toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }),
     ) ?? SLOTS;
 
-  if (isLoading || !salon) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
-      </div>
-    );
-  }
-
+  const selectedServices = salon?.services.filter((s) => serviceIds.includes(s.id)) ?? [];
+  const total = selectedServices.reduce((sum, s) => sum + s.price, 0);
+  const selectedBarber = salon?.staff.find((b) => b.id === barberId);
   const canAdvance =
     (step === 1 && barberId) ||
     (step === 2 && serviceIds.length > 0) ||
     (step === 3 && slot) ||
     step === 4;
-
-  const selectedServices = salon.services.filter((s) => serviceIds.includes(s.id));
-  const total = selectedServices.reduce((sum, s) => sum + s.price, 0);
-  const selectedBarber = salon.staff.find((b) => b.id === barberId);
 
   const handleSubmit = async () => {
     if (!salon || !barberId || !slot || serviceIds.length === 0) return;
@@ -93,298 +78,228 @@ function BookingFlow() {
         start_at: d.toISOString(),
         service_ids: serviceIds.map((id) => parseInt(id, 10)),
       });
-      toast.success("Buyurtma yuborildi!", {
-        description: `${salon.name} · ${slot}`,
-      });
+      toast.success("Buyurtma yuborildi!", { description: `${salon.name} · ${slot}` });
       setTimeout(() => router.navigate({ to: "/bookings" }), 700);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Xatolik");
     }
   };
 
-  return (
-    <div className="lg:px-6">
-      <PageHeader showBack title={t("booking.title")} className="lg:hidden" />
+  return {
+    salon,
+    isLoading,
+    step,
+    setStep,
+    barberId,
+    setBarberId,
+    serviceIds,
+    setServiceIds,
+    dayIdx,
+    setDayIdx,
+    slot,
+    setSlot,
+    dayList,
+    slotOptions,
+    selectedServices,
+    total,
+    selectedBarber,
+    canAdvance,
+    handleSubmit,
+  };
+}
 
-      <div className="px-5 pt-2 lg:px-0">
-        <Stepper steps={stepLabels} current={step} />
-      </div>
+function BookingStepContent({
+  state,
+  t,
+}: {
+  state: ReturnType<typeof useBookingSalonState>;
+  t: ReturnType<typeof useTranslation>["t"];
+}) {
+  const { salon, step, barberId, setBarberId, serviceIds, setServiceIds, dayIdx, setDayIdx, slot, setSlot, dayList, slotOptions, selectedServices, selectedBarber, total } = state;
+  if (!salon) return null;
 
-      <div className="lg:grid lg:grid-cols-[1fr_320px] lg:items-start lg:gap-8">
-        <div className="px-5 pt-8 pb-32 lg:px-0 lg:pb-8">
-        {step === 1 && (
-          <div>
-            <h2 className="text-xl font-bold tracking-tight">{t("booking.selectBarber")}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{salon.name}</p>
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              {salon.staff.map((b) => {
-                const sel = barberId === b.id;
-                return (
-                  <button
-                    key={b.id}
-                    onClick={() => setBarberId(b.id)}
-                    className={cn(
-                      "rounded-2xl border-2 p-4 text-left transition-all",
-                      sel
-                        ? "border-foreground bg-surface"
-                        : "border-transparent bg-surface",
-                    )}
-                  >
-                    <div className="grid h-14 w-14 place-items-center rounded-full bg-foreground text-base font-bold text-background">
-                      {b.name.split(" ").map((n) => n[0]).join("")}
-                    </div>
-                    <p className="mt-3 text-sm font-bold">{b.name}</p>
-                    <p className="text-xs text-muted-foreground">{b.role}</p>
-                    <p className="mt-1 flex items-center gap-1 text-[11px] font-bold">
-                      <Star className="h-3 w-3 fill-foreground" /> {b.rating}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div>
-            <h2 className="text-xl font-bold tracking-tight">{t("booking.selectService")}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {selectedBarber?.name}
-            </p>
-            <div className="mt-6 space-y-2">
-              {salon.services.map((s) => {
-                const sel = serviceIds.includes(s.id);
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() =>
-                      setServiceIds((prev) =>
-                        prev.includes(s.id) ? prev.filter((x) => x !== s.id) : [...prev, s.id],
-                      )
-                    }
-                    className={cn(
-                      "flex w-full items-center justify-between gap-3 rounded-2xl border-2 p-4 text-left transition-all",
-                      sel ? "border-foreground bg-surface" : "border-transparent bg-surface",
-                    )}
-                  >
-                    <div className="min-w-0">
-                      <h3 className="truncate text-sm font-bold">{s.name}</h3>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {s.duration} {t("salon.minutes")} · {formatPrice(s.price)}
-                      </p>
-                    </div>
-                    <div
-                      className={cn(
-                        "grid h-6 w-6 shrink-0 place-items-center rounded-md border-2",
-                        sel ? "border-foreground bg-foreground" : "border-border",
-                      )}
-                    >
-                      {sel && <Check className="h-3.5 w-3.5 text-background" strokeWidth={3} />}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div>
-            <h2 className="text-xl font-bold tracking-tight">{t("booking.selectTime")}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Sana va vaqtni tanlang</p>
-
-            <div className="no-scrollbar mt-6 flex gap-2 overflow-x-auto">
-              {dayList.map((d, i) => {
-                const sel = dayIdx === i;
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setDayIdx(i)}
-                    className={cn(
-                      "flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-xl transition-all",
-                      sel
-                        ? "bg-foreground text-background"
-                        : "bg-surface text-foreground",
-                    )}
-                  >
-                    <span className="text-[10px] font-bold uppercase opacity-70">
-                      {d.day}
-                    </span>
-                    <span className="text-lg font-bold">{d.date}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-6 grid grid-cols-3 gap-2">
-              {slotOptions.map((s) => {
-                const sel = slot === s;
-                return (
-                  <button
-                    key={s}
-                    onClick={() => setSlot(s)}
-                    className={cn(
-                      "rounded-xl border-2 py-3 text-sm font-bold transition-all",
-                      sel
-                        ? "border-foreground bg-foreground text-background"
-                        : "border-border bg-background text-foreground",
-                    )}
-                  >
-                    {s}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {step === 4 && (
-          <div>
-            <h2 className="text-xl font-bold tracking-tight">{t("booking.summary")}</h2>
-
-            <div className="mt-6 rounded-2xl bg-surface p-5">
-              <div className="flex items-center gap-3">
-                <div
-                  className="h-14 w-14 rounded-xl"
-                  style={{
-                    background: `linear-gradient(135deg, oklch(0.85 0.04 ${(Number(salon.id) * 80) % 360}), oklch(0.55 0.06 ${(Number(salon.id) * 80 + 50) % 360}))`,
-                  }}
-                />
-                <div>
-                  <p className="text-base font-bold">{salon.name}</p>
-                  <p className="text-xs text-muted-foreground">{salon.address}</p>
-                </div>
+  if (step === 1) {
+    return (
+      <div>
+        <h2 className="text-xl font-bold">{t("booking.selectBarber")}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{salon.name}</p>
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          {salon.staff.map((b) => (
+            <button
+              key={b.id}
+              type="button"
+              onClick={() => setBarberId(b.id)}
+              className={cn("rounded-2xl border-2 p-4 text-left", barberId === b.id ? "border-foreground bg-surface" : "border-transparent bg-surface")}
+            >
+              <div className="grid h-14 w-14 place-items-center rounded-full bg-foreground text-base font-bold text-background">
+                {b.name.split(" ").map((n) => n[0]).join("")}
               </div>
-
-              <div className="my-4 h-px bg-border" />
-
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="font-medium text-muted-foreground">Usta</span>
-                  <span className="font-bold">{selectedBarber?.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium text-muted-foreground">Sana</span>
-                  <span className="font-bold">
-                    {dayList[dayIdx].day} {dayList[dayIdx].date}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium text-muted-foreground">Vaqt</span>
-                  <span className="font-bold">{slot}</span>
-                </div>
-              </div>
-
-              <div className="my-4 h-px bg-border" />
-
-              <div className="space-y-2">
-                {selectedServices.map((s) => (
-                  <div key={s.id} className="flex justify-between text-sm">
-                    <span className="font-medium">{s.name}</span>
-                    <span className="font-bold">{formatPrice(s.price)}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="my-4 h-px bg-border" />
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold uppercase tracking-wide">
-                  {t("booking.total")}
-                </span>
-                <span className="text-xl font-bold">{formatPrice(total)}</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-          <div className="mt-8 hidden gap-2 lg:flex">
-            {step > 1 && (
-              <button
-                type="button"
-                onClick={() => setStep((s) => s - 1)}
-                className="flex-1 rounded-2xl border-2 border-foreground py-4 text-sm font-bold"
-              >
-                {t("common.back")}
-              </button>
-            )}
-            {step < 4 ? (
-              <button
-                type="button"
-                disabled={!canAdvance}
-                onClick={() => canAdvance && setStep((s) => s + 1)}
-                className={cn(
-                  "flex-[2] rounded-2xl py-4 text-sm font-bold tracking-wide transition-all",
-                  canAdvance
-                    ? "bg-foreground text-background active:scale-[0.99]"
-                    : "bg-surface-2 text-muted-foreground",
-                )}
-              >
-                {t("common.next")}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleSubmit}
-                className="flex-[2] rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background"
-              >
-                {t("booking.confirm")}
-              </button>
-            )}
-          </div>
+              <p className="mt-3 text-sm font-bold">{b.name}</p>
+              <p className="flex items-center gap-1 text-[11px] font-bold">
+                <Star className="h-3 w-3 fill-foreground" /> {b.rating}
+              </p>
+            </button>
+          ))}
         </div>
-
-        <BookingSummaryAside
-          salon={salon}
-          selectedBarber={selectedBarber}
-          selectedServices={selectedServices}
-          total={total}
-          dayList={dayList}
-          dayIdx={dayIdx}
-          slot={slot}
-          step={step}
-        />
       </div>
+    );
+  }
 
-      <div
-        className={cn(
-          "fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-5 pt-3 backdrop-blur-md lg:hidden",
-          DESKTOP_SIDEBAR_LEFT_CLASS,
-        )}
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 88px)" }}
-      >
-        <div className="mx-auto flex max-w-[480px] gap-2 lg:max-w-[720px]">
-          {step > 1 && (
-            <button
-              onClick={() => setStep((s) => s - 1)}
-              className="flex-1 rounded-2xl border-2 border-foreground py-4 text-sm font-bold"
-            >
-              {t("common.back")}
+  if (step === 2) {
+    return (
+      <div>
+        <h2 className="text-xl font-bold">{t("booking.selectService")}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{selectedBarber?.name}</p>
+        <div className="mt-6 space-y-2">
+          {salon.services.map((s) => {
+            const sel = serviceIds.includes(s.id);
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setServiceIds((prev) => (prev.includes(s.id) ? prev.filter((x) => x !== s.id) : [...prev, s.id]))}
+                className={cn("flex w-full items-center justify-between rounded-2xl border-2 p-4", sel ? "border-foreground bg-surface" : "border-transparent bg-surface")}
+              >
+                <div className="min-w-0 text-left">
+                  <h3 className="truncate text-sm font-bold">{s.name}</h3>
+                  <p className="text-xs text-muted-foreground">{s.duration} {t("salon.minutes")} · {formatPrice(s.price)}</p>
+                </div>
+                <div className={cn("grid h-6 w-6 place-items-center rounded-md border-2", sel ? "border-foreground bg-foreground" : "border-border")}>
+                  {sel ? <Check className="h-3.5 w-3.5 text-background" strokeWidth={3} /> : null}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 3) {
+    return (
+      <div>
+        <h2 className="text-xl font-bold">{t("booking.selectTime")}</h2>
+        <div className="no-scrollbar mt-6 flex gap-2 overflow-x-auto">
+          {dayList.map((d, i) => (
+            <button key={i} type="button" onClick={() => setDayIdx(i)} className={cn("flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-xl", dayIdx === i ? "bg-foreground text-background" : "bg-surface")}>
+              <span className="text-[10px] font-bold uppercase opacity-70">{d.day}</span>
+              <span className="text-lg font-bold">{d.date}</span>
             </button>
-          )}
-          {step < 4 ? (
-            <button
-              disabled={!canAdvance}
-              onClick={() => canAdvance && setStep((s) => s + 1)}
-              className={cn(
-                "flex-[2] rounded-2xl py-4 text-sm font-bold tracking-wide transition-all",
-                canAdvance
-                  ? "bg-foreground text-background active:scale-[0.99]"
-                  : "bg-surface-2 text-muted-foreground",
-              )}
-            >
-              {t("common.next")}
+          ))}
+        </div>
+        <div className="mt-6 grid grid-cols-3 gap-2">
+          {slotOptions.map((s) => (
+            <button key={s} type="button" onClick={() => setSlot(s)} className={cn("rounded-xl border-2 py-3 text-sm font-bold", slot === s ? "border-foreground bg-foreground text-background" : "border-border")}>
+              {s}
             </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              className="flex-[2] rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background"
-            >
-              {t("booking.confirm")}
-            </button>
-          )}
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h2 className="text-xl font-bold">{t("booking.summary")}</h2>
+      <div className="mt-6 rounded-2xl bg-surface p-5">
+        <p className="text-base font-bold">{salon.name}</p>
+        <div className="my-4 h-px bg-border" />
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between"><span className="text-muted-foreground">Usta</span><span className="font-bold">{selectedBarber?.name}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Vaqt</span><span className="font-bold">{dayList[dayIdx].day} {dayList[dayIdx].date} · {slot}</span></div>
+        </div>
+        <div className="my-4 h-px bg-border" />
+        {selectedServices.map((s) => (
+          <div key={s.id} className="flex justify-between text-sm"><span>{s.name}</span><span className="font-bold">{formatPrice(s.price)}</span></div>
+        ))}
+        <div className="mt-4 flex justify-between font-bold"><span>{t("booking.total")}</span><span className="text-xl">{formatPrice(total)}</span></div>
+      </div>
+    </div>
+  );
+}
+
+function BookingNavButtons({ state, t }: { state: ReturnType<typeof useBookingSalonState>; t: ReturnType<typeof useTranslation>["t"] }) {
+  const { step, setStep, canAdvance, handleSubmit } = state;
+  return (
+    <div className="mt-8 flex gap-2">
+      {step > 1 ? (
+        <button type="button" onClick={() => setStep((s) => s - 1)} className="flex-1 rounded-2xl border-2 border-foreground py-4 text-sm font-bold">
+          {t("common.back")}
+        </button>
+      ) : null}
+      {step < 4 ? (
+        <button type="button" disabled={!canAdvance} onClick={() => canAdvance && setStep((s) => s + 1)} className={cn("flex-[2] rounded-2xl py-4 text-sm font-bold", canAdvance ? "bg-foreground text-background" : "bg-surface-2 text-muted-foreground")}>
+          {t("common.next")}
+        </button>
+      ) : (
+        <button type="button" onClick={handleSubmit} className="flex-[2] rounded-2xl bg-foreground py-4 text-sm font-bold text-background">
+          {t("booking.confirm")}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function BookingMobile() {
+  const { t } = useTranslation();
+  const { salonId } = useParams({ from: "/booking/$salonId" });
+  const state = useBookingSalonState(salonId);
+  const stepLabels = [t("booking.step1"), t("booking.step2"), t("booking.step3"), t("booking.step4")];
+
+  if (state.isLoading || !state.salon) {
+    return <div className="flex min-h-[40vh] items-center justify-center"><p className="text-sm text-muted-foreground">{t("common.loading")}</p></div>;
+  }
+
+  return (
+    <div>
+      <PageHeader showBack title={t("booking.title")} />
+      <div className="px-5 pt-2"><Stepper steps={stepLabels} current={state.step} /></div>
+      <div className="px-5 pt-8 pb-32">
+        <BookingStepContent state={state} t={t} />
+      </div>
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-5 pt-3 backdrop-blur-md" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 88px)" }}>
+        <div className="mx-auto flex max-w-[480px] gap-2">
+          <BookingNavButtons state={state} t={t} />
         </div>
       </div>
     </div>
   );
+}
+
+function BookingDesktop() {
+  const { t } = useTranslation();
+  const { salonId } = useParams({ from: "/booking/$salonId" });
+  const state = useBookingSalonState(salonId);
+  const stepLabels = [t("booking.step1"), t("booking.step2"), t("booking.step3"), t("booking.step4")];
+
+  if (state.isLoading || !state.salon) {
+    return <div className="flex min-h-[40vh] items-center justify-center"><p className="text-sm text-muted-foreground">{t("common.loading")}</p></div>;
+  }
+
+  return (
+    <div>
+      <DesktopPageHeader title={t("booking.title")} description={state.salon.name} />
+      <div className="mt-6 max-w-xl"><Stepper steps={stepLabels} current={state.step} /></div>
+      <div className="mt-8 grid grid-cols-[1fr_320px] gap-8 items-start">
+        <div>
+          <BookingStepContent state={state} t={t} />
+          <BookingNavButtons state={state} t={t} />
+        </div>
+        <BookingSummaryAside
+          salon={state.salon}
+          selectedBarber={state.selectedBarber}
+          selectedServices={state.selectedServices}
+          total={state.total}
+          dayList={state.dayList}
+          dayIdx={state.dayIdx}
+          slot={state.slot}
+          step={state.step}
+        />
+      </div>
+    </div>
+  );
+}
+
+function BookingFlow() {
+  return <DesktopPageSplit mobile={<BookingMobile />} desktop={<BookingDesktop />} />;
 }
