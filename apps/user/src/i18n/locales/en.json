@@ -8,7 +8,11 @@
     "today": "Today",
     "profile": "Profile",
     "wallet": "Wallet",
-    "more": "More"
+    "more": "More",
+    "explore": "Trends",
+    "offers": "Offers",
+    "discovery": "Discover",
+    "account": "Account"
   },
   "audience": { "all": "All", "men": "Men", "women": "Women", "profileHint": "Based on profile" },
   "common": {

@@ -17,19 +17,24 @@ const ACTIVE_TONE: Record<AudienceFilter, string> = {
 
 type Props = {
   showProfileHint?: boolean;
+  variant?: "default" | "compact";
 };
 
-export function AudienceSwitch({ showProfileHint = true }: Props) {
+export function AudienceSwitch({ showProfileHint = true, variant = "default" }: Props) {
   const { t } = useTranslation();
   const { audience, setAudience, profileDefault } = useAudience();
-  const showHint = showProfileHint && audience === profileDefault && audience !== "all";
+  const showHint = variant === "default" && showProfileHint && audience === profileDefault && audience !== "all";
+  const compact = variant === "compact";
 
   return (
     <div>
       <div
         role="radiogroup"
         aria-label={t("settings.preferredAudience")}
-        className="grid grid-cols-3 gap-1.5 rounded-2xl border border-border bg-surface p-1"
+        className={cn(
+          "grid grid-cols-3 gap-1 border border-border bg-surface p-0.5",
+          compact ? "rounded-xl" : "gap-1.5 rounded-2xl p-1",
+        )}
       >
         {OPTIONS.map((opt) => {
           const active = audience === opt.key;
@@ -41,14 +46,18 @@ export function AudienceSwitch({ showProfileHint = true }: Props) {
               aria-checked={active}
               onClick={() => setAudience(opt.key)}
               className={cn(
-                "relative rounded-xl py-2.5 text-[12px] font-bold tracking-wide transition-all active:scale-[0.98]",
+                "relative font-bold tracking-wide transition-all active:scale-[0.98]",
+                compact ? "rounded-lg px-2 py-1.5 text-[10px]" : "rounded-xl py-2.5 text-[12px]",
                 active
-                  ? cn(ACTIVE_TONE[opt.key], "pr-5 text-foreground ring-2 ring-foreground")
+                  ? cn(
+                      ACTIVE_TONE[opt.key],
+                      compact ? "text-foreground ring-1 ring-foreground" : "pr-5 text-foreground ring-2 ring-foreground",
+                    )
                   : "bg-background/80 text-foreground/55 hover:bg-background hover:text-foreground/75",
               )}
             >
               {t(opt.tKey)}
-              {active && (
+              {active && !compact && (
                 <span className="absolute right-1 top-1 grid h-4 w-4 place-items-center rounded-full bg-foreground text-background">
                   <Check className="h-2.5 w-2.5" strokeWidth={3} />
                 </span>

@@ -8,7 +8,11 @@
     "today": "Сегодня",
     "profile": "Профиль",
     "wallet": "Кошелёк",
-    "more": "Ещё"
+    "more": "Ещё",
+    "explore": "Тренды",
+    "offers": "Акции",
+    "discovery": "Обзор",
+    "account": "Аккаунт"
   },
   "audience": { "all": "Все", "men": "Мужчины", "women": "Женщины", "profileHint": "По профилю" },
   "common": {

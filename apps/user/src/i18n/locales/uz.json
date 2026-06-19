@@ -8,7 +8,11 @@
     "today": "Bugun",
     "profile": "Profil",
     "wallet": "Hamyon",
-    "more": "Ko'proq"
+    "more": "Ko'proq",
+    "explore": "Trendlar",
+    "offers": "Aksiyalar",
+    "discovery": "Kashf etish",
+    "account": "Hisob"
   },
   "audience": {
     "all": "Hammasi",
