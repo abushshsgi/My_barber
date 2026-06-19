@@ -1,8 +1,9 @@
-import { Link } from "@tanstack/react-router";
-import { Calendar, Map, SlidersHorizontal, Sparkles } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { HomeData } from "@/components/home/useHomeData";
 import { cn } from "@/lib/utils";
+
+export { BazaarMapPanel } from "./BazaarMapPanel";
 
 type FilterProps = Pick<HomeData, "query" | "setQuery" | "effectiveCat" | "visibleCategoryKeys" | "setCat">;
 
@@ -41,43 +42,6 @@ export function BazaarFilterSidebar({ query, setQuery, effectiveCat, visibleCate
         </div>
       </div>
     </aside>
-  );
-}
-
-type MapProps = { tall?: boolean; className?: string };
-
-export function BazaarMapPanel({ tall, className }: MapProps) {
-  const { t } = useTranslation();
-  return (
-    <div className={cn("space-y-3", className)}>
-      <Link
-        to="/map"
-        className={cn(
-          "group flex flex-col items-center justify-center rounded-2xl border-2 border-border bg-surface p-5 text-center transition-all hover:border-foreground/30 hover:shadow-md",
-          tall ? "min-h-[320px]" : "min-h-[200px]",
-        )}
-      >
-        <div className="grid h-14 w-14 place-items-center rounded-2xl bg-foreground text-background">
-          <Map className="h-7 w-7" />
-        </div>
-        <p className="mt-4 text-base font-bold">{t("common.viewMap")}</p>
-        <p className="mt-1 text-xs text-muted-foreground">Yaqin salonlarni xaritada toping</p>
-      </Link>
-      <Link
-        to="/today"
-        className="flex items-center justify-center gap-2 rounded-2xl bg-foreground py-3.5 text-sm font-bold text-background shadow-sm transition-opacity hover:opacity-90"
-      >
-        <Calendar className="h-4 w-4" />
-        {t("homePage.quick.today")}
-      </Link>
-      <Link
-        to="/ai-style"
-        className="flex items-center justify-center gap-2 rounded-2xl border border-border py-3 text-sm font-semibold hover:bg-surface"
-      >
-        <Sparkles className="h-4 w-4 text-foreground" />
-        {t("homePage.quick.aiStyle")}
-      </Link>
-    </div>
   );
 }
 

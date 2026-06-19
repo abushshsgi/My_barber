@@ -49,6 +49,12 @@
       "beauty": "Go'zallik",
       "nails": "Manikyur",
       "spa": "Spa"
+    },
+    "mapPreview": {
+      "nearbyCount": "{{count}} ta salon yaqinda",
+      "explore": "Yaqin salonlarni toping",
+      "hint": "Masofa va yo'nalish bilan qulay qidiruv",
+      "openMap": "Xaritani ochish"
     }
   },
   "homePage": {
