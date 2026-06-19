@@ -1,10 +1,10 @@
 import type { DesktopUiVariant } from "@/lib/desktop-variant";
 import {
-  ShellAtelier,
-  ShellBazaar,
-  ShellHub,
-  ShellReserve,
-  ShellVoyage,
+  ShellBazaarAtlas,
+  ShellBazaarClassic,
+  ShellBazaarHorizon,
+  ShellBazaarLuxe,
+  ShellBazaarSpread,
 } from "./DesktopShellParts";
 
 type Props = {
@@ -19,16 +19,16 @@ export function DesktopShell({ variant, children, chatUnread, notificationsUnrea
   const shared = { chatUnread, notificationsUnread, fullBleed, children };
 
   switch (variant) {
-    case "reserve":
-      return <ShellReserve {...shared} />;
-    case "atelier":
-      return <ShellAtelier {...shared} />;
-    case "hub":
-      return <ShellHub {...shared} />;
-    case "bazaar":
-      return <ShellBazaar {...shared} />;
-    case "voyage":
+    case "spread":
+      return <ShellBazaarSpread {...shared} />;
+    case "horizon":
+      return <ShellBazaarHorizon {...shared} />;
+    case "atlas":
+      return <ShellBazaarAtlas {...shared} />;
+    case "luxe":
+      return <ShellBazaarLuxe {...shared} />;
+    case "classic":
     default:
-      return <ShellVoyage {...shared} />;
+      return <ShellBazaarClassic {...shared} />;
   }
 }

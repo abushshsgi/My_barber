@@ -1,65 +1,68 @@
-export type DesktopUiVariant = "voyage" | "reserve" | "atelier" | "hub" | "bazaar";
+export type DesktopUiVariant = "classic" | "spread" | "horizon" | "atlas" | "luxe";
 
 export const DESKTOP_UI_VARIANTS: DesktopUiVariant[] = [
-  "voyage",
-  "reserve",
-  "atelier",
-  "hub",
-  "bazaar",
+  "classic",
+  "spread",
+  "horizon",
+  "atlas",
+  "luxe",
 ];
 
-export const DESKTOP_VARIANT_STORAGE = "mysaloon.desktop.ui.variant.v2";
+export const DESKTOP_VARIANT_STORAGE = "mysaloon.desktop.ui.variant.v3";
 
 const LEGACY: Record<string, DesktopUiVariant> = {
-  marketplace: "voyage",
-  dashboard: "hub",
-  editorial: "atelier",
+  bazaar: "classic",
+  voyage: "classic",
+  reserve: "spread",
+  atelier: "luxe",
+  hub: "atlas",
+  marketplace: "classic",
+  dashboard: "atlas",
+  editorial: "luxe",
 };
+
+export const BAZAAR_GREEN = "#059669";
 
 export const desktopVariantMeta: Record<
   DesktopUiVariant,
-  { label: string; hint: string; accent: string }
+  { label: string; hint: string }
 > = {
-  voyage: {
-    label: "Voyage",
-    hint: "Airbnb — qidiruv pill, scroll qatorlar",
-    accent: "#E61E4D",
+  classic: {
+    label: "Classic",
+    hint: "Filter chap · 3 ustun grid · xarita o'ng",
   },
-  reserve: {
-    label: "Reserve",
-    hint: "Booking.com — ko'k header, grid",
-    accent: "#003580",
+  spread: {
+    label: "Spread",
+    hint: "Yuqori filter · 4 ustun to'liq kenglik",
   },
-  atelier: {
-    label: "Atelier",
-    hint: "Magazine — katta hero, asymmetrik",
-    accent: "#1a1a1a",
+  horizon: {
+    label: "Horizon",
+    hint: "Xarita strip yuqorida · grid pastda",
   },
-  hub: {
-    label: "Hub",
-    hint: "Linear — qora rail, jadval, KPI",
-    accent: "#171717",
+  atlas: {
+    label: "Atlas",
+    hint: "Xarita chap 40% · ro'yxat o'ng",
   },
-  bazaar: {
-    label: "Bazaar",
-    hint: "Filter + grid + xarita panel",
-    accent: "#059669",
+  luxe: {
+    label: "Luxe",
+    hint: "Featured qator · katta 2 ustun kartalar",
   },
 };
 
 export function readDesktopVariant(): DesktopUiVariant {
-  if (typeof window === "undefined") return "voyage";
+  if (typeof window === "undefined") return "classic";
   try {
-    const stored = localStorage.getItem(DESKTOP_VARIANT_STORAGE);
-    if (stored && DESKTOP_UI_VARIANTS.includes(stored as DesktopUiVariant)) {
-      return stored as DesktopUiVariant;
+    for (const key of [DESKTOP_VARIANT_STORAGE, "mysaloon.desktop.ui.variant.v2", "mysaloon.desktop.ui.variant"]) {
+      const stored = localStorage.getItem(key);
+      if (stored && DESKTOP_UI_VARIANTS.includes(stored as DesktopUiVariant)) {
+        return stored as DesktopUiVariant;
+      }
+      if (stored && LEGACY[stored]) return LEGACY[stored];
     }
-    const legacy = localStorage.getItem("mysaloon.desktop.ui.variant");
-    if (legacy && LEGACY[legacy]) return LEGACY[legacy];
   } catch {
     /* noop */
   }
-  return "voyage";
+  return "classic";
 }
 
 export function saveDesktopVariant(variant: DesktopUiVariant) {
