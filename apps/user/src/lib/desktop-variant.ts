@@ -1,38 +1,65 @@
-export type DesktopUiVariant = "marketplace" | "dashboard" | "editorial";
+export type DesktopUiVariant = "voyage" | "reserve" | "atelier" | "hub" | "bazaar";
 
-export const DESKTOP_UI_VARIANTS: DesktopUiVariant[] = ["marketplace", "dashboard", "editorial"];
+export const DESKTOP_UI_VARIANTS: DesktopUiVariant[] = [
+  "voyage",
+  "reserve",
+  "atelier",
+  "hub",
+  "bazaar",
+];
 
-export const DESKTOP_VARIANT_STORAGE = "mysaloon.desktop.ui.variant";
+export const DESKTOP_VARIANT_STORAGE = "mysaloon.desktop.ui.variant.v2";
+
+const LEGACY: Record<string, DesktopUiVariant> = {
+  marketplace: "voyage",
+  dashboard: "hub",
+  editorial: "atelier",
+};
 
 export const desktopVariantMeta: Record<
   DesktopUiVariant,
-  { label: string; hint: string }
+  { label: string; hint: string; accent: string }
 > = {
-  marketplace: {
-    label: "Marketplace",
-    hint: "Airbnb/Booking — katta qidiruv, grid, filter",
+  voyage: {
+    label: "Voyage",
+    hint: "Airbnb — qidiruv pill, scroll qatorlar",
+    accent: "#E61E4D",
   },
-  dashboard: {
-    label: "Dashboard",
-    hint: "Notion/Linear — sidebar rail, jadval, KPI",
+  reserve: {
+    label: "Reserve",
+    hint: "Booking.com — ko'k header, grid",
+    accent: "#003580",
   },
-  editorial: {
-    label: "Editorial",
-    hint: "Magazine — katta fotolar, premium",
+  atelier: {
+    label: "Atelier",
+    hint: "Magazine — katta hero, asymmetrik",
+    accent: "#1a1a1a",
+  },
+  hub: {
+    label: "Hub",
+    hint: "Linear — qora rail, jadval, KPI",
+    accent: "#171717",
+  },
+  bazaar: {
+    label: "Bazaar",
+    hint: "Filter + grid + xarita panel",
+    accent: "#059669",
   },
 };
 
 export function readDesktopVariant(): DesktopUiVariant {
-  if (typeof window === "undefined") return "marketplace";
+  if (typeof window === "undefined") return "voyage";
   try {
     const stored = localStorage.getItem(DESKTOP_VARIANT_STORAGE);
     if (stored && DESKTOP_UI_VARIANTS.includes(stored as DesktopUiVariant)) {
       return stored as DesktopUiVariant;
     }
+    const legacy = localStorage.getItem("mysaloon.desktop.ui.variant");
+    if (legacy && LEGACY[legacy]) return LEGACY[legacy];
   } catch {
     /* noop */
   }
-  return "marketplace";
+  return "voyage";
 }
 
 export function saveDesktopVariant(variant: DesktopUiVariant) {

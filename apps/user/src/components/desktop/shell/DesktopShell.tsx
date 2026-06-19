@@ -1,5 +1,11 @@
 import type { DesktopUiVariant } from "@/lib/desktop-variant";
-import { ShellDashboard, ShellEditorial, ShellMarketplace } from "./DesktopShellParts";
+import {
+  ShellAtelier,
+  ShellBazaar,
+  ShellHub,
+  ShellReserve,
+  ShellVoyage,
+} from "./DesktopShellParts";
 
 type Props = {
   variant: DesktopUiVariant;
@@ -13,12 +19,16 @@ export function DesktopShell({ variant, children, chatUnread, notificationsUnrea
   const shared = { chatUnread, notificationsUnread, fullBleed, children };
 
   switch (variant) {
-    case "dashboard":
-      return <ShellDashboard {...shared} />;
-    case "editorial":
-      return <ShellEditorial {...shared} />;
-    case "marketplace":
+    case "reserve":
+      return <ShellReserve {...shared} />;
+    case "atelier":
+      return <ShellAtelier {...shared} />;
+    case "hub":
+      return <ShellHub {...shared} />;
+    case "bazaar":
+      return <ShellBazaar {...shared} />;
+    case "voyage":
     default:
-      return <ShellMarketplace {...shared} />;
+      return <ShellVoyage {...shared} />;
   }
 }
