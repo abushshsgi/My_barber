@@ -93,7 +93,8 @@ function GiftCardPage() {
 
   return (
     <ProfileSubpageLayout title="Sovg'a karta" backTo="/wallet">
-      <ProfileSubpageCard className="border-foreground bg-foreground text-background">
+      <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
+        <ProfileSubpageCard className="border-foreground bg-foreground text-background lg:sticky lg:top-20">
         <div className="flex items-center justify-between">
           <Gift className="h-5 w-5" />
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-background/60">
@@ -106,11 +107,12 @@ function GiftCardPage() {
         </p>
       </ProfileSubpageCard>
 
-      <section className="mt-6">
+        <div>
+      <section className="mt-6 lg:mt-0">
         <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
           Summani tanlang
         </h3>
-        <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="mt-3 grid grid-cols-3 gap-2 lg:grid-cols-3">
           {GIFT_PRESETS.map((g) => {
             const active = selectedId === g.id;
             return (
@@ -200,6 +202,8 @@ function GiftCardPage() {
       >
         {sendGift.isPending ? "Yuborilmoqda…" : "Sovg'ani yuborish"}
       </button>
+        </div>
+      </div>
     </ProfileSubpageLayout>
   );
 }

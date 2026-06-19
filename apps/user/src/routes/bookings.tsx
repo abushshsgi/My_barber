@@ -43,11 +43,10 @@ function MyBookings() {
   }, [focus, now, bookings]);
 
   return (
-    <div>
-      <PageHeader title={t("bookings.title")} />
+    <div className="lg:px-6">
+      <PageHeader title={t("bookings.title")} className="lg:hidden" />
 
-      {/* Tabs */}
-      <div className="px-5">
+      <div className="sticky top-14 z-10 bg-background/95 px-5 backdrop-blur-md lg:top-14">
         <div className="flex gap-1 rounded-2xl bg-surface p-1">
           {(["upcoming", "history"] as const).map((k) => (
             <button
@@ -82,7 +81,7 @@ function MyBookings() {
             }
           />
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
             {list.map((b) => (
               <BookingCard key={b.id} booking={b} focused={focus === b.id} />
             ))}
@@ -120,9 +119,9 @@ function BookingCard({
         focused && "ring-2 ring-foreground",
       )}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-3 lg:flex-row">
         <div
-          className="h-16 w-16 shrink-0 rounded-xl"
+          className="h-16 w-16 shrink-0 rounded-xl lg:h-20 lg:w-20"
           style={{
             background: `linear-gradient(135deg, oklch(0.85 0.04 ${(Number(b.salonId) * 80) % 360}), oklch(0.55 0.06 ${(Number(b.salonId) * 80 + 50) % 360}))`,
           }}

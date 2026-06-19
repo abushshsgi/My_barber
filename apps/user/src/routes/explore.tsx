@@ -33,11 +33,11 @@ function ExplorePage() {
   }, [list, personaId]);
 
   return (
-    <div className="pb-8">
-      <PageHeader showBack title={t("explorePage.title")} />
-      <div className="px-5">
+    <div className="pb-8 lg:px-6">
+      <PageHeader showBack title={t("explorePage.title")} className="lg:hidden" />
+      <div className="px-5 lg:px-0">
         {audience === "men" ? <PersonaPicker value={personaId} onChange={setPersonaId} /> : null}
-        <p className="mt-3 text-xs text-muted-foreground">
+        <p className="mt-3 text-xs text-muted-foreground lg:mt-4 lg:text-sm">
           {ageGroup
             ? `${t("explorePage.subtitle")} · ${AGE_GROUP_LABELS_UZ[ageGroup]}`
             : t("explorePage.subtitle")}
@@ -45,14 +45,14 @@ function ExplorePage() {
       </div>
 
       {isLoading ? (
-        <p className="mt-8 px-5 text-center text-sm text-muted-foreground">{t("common.loading")}</p>
+        <p className="mt-8 px-5 text-center text-sm text-muted-foreground lg:px-0">{t("common.loading")}</p>
       ) : null}
 
       {isError ? (
-        <p className="mt-8 px-5 text-center text-sm text-destructive">{t("common.loadError")}</p>
+        <p className="mt-8 px-5 text-center text-sm text-destructive lg:px-0">{t("common.loadError")}</p>
       ) : null}
 
-      <div className="mt-5 grid grid-cols-2 gap-3 px-5">
+      <div className="mt-5 grid grid-cols-2 gap-3 px-5 lg:mt-6 lg:grid-cols-4 lg:gap-4 lg:px-0 xl:grid-cols-5">
         {visibleList.map((entry) => (
           <Link
             key={`${menPersona ?? "default"}-${entry.id}`}

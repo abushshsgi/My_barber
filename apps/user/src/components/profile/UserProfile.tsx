@@ -14,12 +14,14 @@ import {
   Tag,
 } from "lucide-react";
 import { ProfileGoMenuGroup, ProfileGoQuickRow, ProfileWalletCard } from "@/components/profile/ProfileGroupedMenu";
+import { ACCOUNT_HUBS } from "@/lib/account-hubs";
 import { useAppTranslation } from "@/hooks/use-app-translation";
 import { useProfileScreen } from "@/components/profile/useProfileScreen";
 import { useNotificationsApi } from "@/hooks/use-notifications-api";
 import { useWalletBalance } from "@/hooks/use-wallet";
 import { formatBookingWhen } from "@/lib/bookings-utils";
 import { formatPrice } from "@/lib/mock-data";
+import { StickyAside } from "@/components/layout/StickyAside";
 
 export function UserProfile() {
   const { t } = useAppTranslation();
@@ -44,9 +46,9 @@ export function UserProfile() {
     { icon: Settings, label: t("profile.settings"), to: "/settings" },
   ];
 
-  return (
-    <div className="min-h-[70vh] bg-background pb-4 pt-[calc(env(safe-area-inset-top)+6px)]">
-      <div className="flex items-center justify-between px-5">
+  const profileSidebar = (
+    <>
+      <div className="flex items-center justify-between lg:flex-col lg:items-start lg:gap-3">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1.5 text-[10px] font-bold text-muted-foreground">
           <Sparkles className="h-3 w-3" strokeWidth={2.2} />
           Bonus · tez orada
@@ -56,7 +58,7 @@ export function UserProfile() {
         </span>
       </div>
 
-      <div className="mt-2 flex flex-col items-center px-5 text-center">
+      <div className="mt-2 flex flex-col items-center px-5 text-center lg:mt-4 lg:items-start lg:px-0 lg:text-left">
         <div className="grid h-[104px] w-[104px] place-items-center rounded-full bg-surface">
           <span className="text-[36px] font-bold leading-none">{initials}</span>
         </div>
@@ -75,91 +77,122 @@ export function UserProfile() {
         ) : null}
       </div>
 
-      <div className="mt-7 px-3">
+      <div className="mt-7 px-3 lg:mt-6 lg:px-0">
         <ProfileGoQuickRow items={quickItems} />
       </div>
 
-      <div className="mt-6 space-y-3 px-4">
+      <div className="mt-6 px-4 lg:px-0">
         <ProfileWalletCard
           title={t("profile.wallet")}
           balance={walletLoading ? "…" : formatPrice(balance)}
         />
+      </div>
+    </>
+  );
 
-        <ProfileGoMenuGroup
-          items={[
-            {
-              icon: CalendarCheck,
-              title: t("account.hubs.activity.title"),
-              subtitle: t("account.hubs.activity.desc"),
-              to: "/account/activity",
-            },
-          ]}
-        />
+  return (
+    <div className="min-h-[70vh] bg-background pb-4 pt-[calc(env(safe-area-inset-top)+6px)] lg:px-6 lg:pt-6">
+      <div className="lg:grid lg:grid-cols-[320px_1fr] lg:items-start lg:gap-8">
+        <StickyAside className="lg:top-20">{profileSidebar}</StickyAside>
 
-        <ProfileGoMenuGroup
-          items={[
-            {
-              icon: Tag,
-              title: t("profile.offers"),
-              subtitle: "Tez orada",
-              to: "/offers",
-            },
-          ]}
-        />
+        <div className="mt-6 space-y-3 px-4 lg:mt-0 lg:px-0">
+          <div className="hidden lg:grid lg:grid-cols-2 lg:gap-3">
+            {ACCOUNT_HUBS.map((hub) => {
+              const Icon = hub.icon;
+              return (
+                <Link
+                  key={hub.key}
+                  to={hub.to}
+                  className="flex items-start gap-3 rounded-2xl border border-border bg-surface/30 p-4 transition-colors hover:bg-surface/60"
+                >
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-background">
+                    <Icon className="h-5 w-5" strokeWidth={2} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold">{t(hub.titleKey)}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{t(hub.descKey)}</p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
 
-        {nextBooking && when ? (
+          <div className="lg:hidden">
+            <ProfileGoMenuGroup
+              items={[
+                {
+                  icon: CalendarCheck,
+                  title: t("account.hubs.activity.title"),
+                  subtitle: t("account.hubs.activity.desc"),
+                  to: "/account/activity",
+                },
+              ]}
+            />
+          </div>
+
           <ProfileGoMenuGroup
-            dark
             items={[
               {
-                icon: Calendar,
-                title: t("profile.nextBooking.title"),
-                subtitle: `${nextBooking.salonName} · ${when.date} · ${when.time}`,
-                to: "/bookings",
-                search: { focus: nextBooking.id },
-                chevronClassName: "text-background/80",
-              },
-            ]}
-          />
-        ) : (
-          <ProfileGoMenuGroup
-            dark
-            items={[
-              {
-                icon: Sparkles,
-                title: t("profile.loyalty"),
+                icon: Tag,
+                title: t("profile.offers"),
                 subtitle: "Tez orada",
-                to: "/loyalty",
-                chevronClassName: "text-background/80",
+                to: "/offers",
               },
             ]}
           />
-        )}
 
-        <ProfileGoMenuGroup
-          items={[
-            { icon: Shield, title: t("profile.privacy"), to: "/privacy" },
-            {
-              icon: Bell,
-              title: t("notifications.title"),
-              to: "/notifications",
-              badge: unreadCount > 0 ? String(unreadCount > 9 ? "9+" : unreadCount) : undefined,
-            },
-          ]}
-        />
+          {nextBooking && when ? (
+            <ProfileGoMenuGroup
+              dark
+              items={[
+                {
+                  icon: Calendar,
+                  title: t("profile.nextBooking.title"),
+                  subtitle: `${nextBooking.salonName} · ${when.date} · ${when.time}`,
+                  to: "/bookings",
+                  search: { focus: nextBooking.id },
+                  chevronClassName: "text-background/80",
+                },
+              ]}
+            />
+          ) : (
+            <ProfileGoMenuGroup
+              dark
+              items={[
+                {
+                  icon: Sparkles,
+                  title: t("profile.loyalty"),
+                  subtitle: "Tez orada",
+                  to: "/loyalty",
+                  chevronClassName: "text-background/80",
+                },
+              ]}
+            />
+          )}
 
-        <ProfileGoMenuGroup
-          items={[{ icon: Info, title: t("profile.info"), to: "/support" }]}
-        />
+          <ProfileGoMenuGroup
+            items={[
+              { icon: Shield, title: t("profile.privacy"), to: "/privacy" },
+              {
+                icon: Bell,
+                title: t("notifications.title"),
+                to: "/notifications",
+                badge: unreadCount > 0 ? String(unreadCount > 9 ? "9+" : unreadCount) : undefined,
+              },
+            ]}
+          />
 
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-border bg-background py-4 text-sm font-bold text-muted-foreground transition-colors duration-200 active:bg-surface"
-        >
-          <LogOut className="h-4 w-4" strokeWidth={2.2} />
-          {t("common.logout")}
-        </button>
+          <ProfileGoMenuGroup items={[{ icon: Info, title: t("profile.info"), to: "/support" }]} />
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-border bg-background py-4 text-sm font-bold text-muted-foreground transition-colors duration-200 active:bg-surface lg:max-w-xs"
+          >
+            <LogOut className="h-4 w-4" strokeWidth={2.2} />
+            {t("common.logout")}
+          </button>
+        </div>
       </div>
     </div>
   );

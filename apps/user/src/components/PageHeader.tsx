@@ -9,9 +9,10 @@ interface Props {
   right?: React.ReactNode;
   sticky?: boolean;
   transparent?: boolean;
+  className?: string;
 }
 
-export function PageHeader({ title, subtitle, showBack, right, sticky, transparent }: Props) {
+export function PageHeader({ title, subtitle, showBack, right, sticky, transparent, className }: Props) {
   const router = useRouter();
   return (
     <header
@@ -19,6 +20,7 @@ export function PageHeader({ title, subtitle, showBack, right, sticky, transpare
         "z-30 flex items-center justify-between px-5 py-4",
         sticky && "sticky top-0 backdrop-blur-md",
         transparent ? "bg-transparent" : "bg-background/95",
+        className,
       )}
       style={{ paddingTop: "calc(env(safe-area-inset-top) + 16px)" }}
     >

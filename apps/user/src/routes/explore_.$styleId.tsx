@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
+import { DESKTOP_SIDEBAR_LEFT_CLASS } from "@/lib/layout-constants";
 import { cn } from "@/lib/utils";
 
 const BOTTOM_NAV_OFFSET = "calc(68px + env(safe-area-inset-bottom))";
@@ -42,12 +43,13 @@ function ExploreStyleDetailPage() {
 
   return (
     <div
-      className="pb-[var(--explore-style-actions-offset)] lg:pb-24"
+      className="pb-[var(--explore-style-actions-offset)] lg:px-6 lg:pb-8"
       style={{ ["--explore-style-actions-offset" as string]: STICKY_ACTIONS_OFFSET }}
     >
-      <PageHeader showBack title={t("explorePage.tryOnTitle", { style: entry.titleUz })} />
+      <PageHeader showBack title={t("explorePage.tryOnTitle", { style: entry.titleUz })} className="lg:hidden" />
 
-      <div className="px-5">
+      <div className="lg:grid lg:grid-cols-[1fr_320px] lg:items-start lg:gap-8 lg:pt-4">
+        <div className="px-5 lg:px-0">
         <h2 className="text-lg font-bold tracking-tight">{t("aiStylePage.uploadTitle")}</h2>
         <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{t("explorePage.tryOnDesc")}</p>
 
@@ -102,10 +104,36 @@ function ExploreStyleDetailPage() {
             ))}
           </div>
         ) : null}
+        </div>
+
+        <div className="hidden px-5 lg:sticky lg:top-20 lg:block lg:px-0 lg:self-start">
+          <h2 className="text-xl font-bold tracking-tight">{entry.titleUz}</h2>
+          <p className="mt-2 text-sm text-muted-foreground">{entry.descriptionUz}</p>
+          <div className="mt-6 grid grid-cols-2 gap-2">
+            <Link
+              to="/explore/$styleId/try"
+              params={{ styleId: entry.id }}
+              className="col-span-2 inline-flex items-center justify-center gap-2 rounded-2xl bg-foreground py-3.5 text-xs font-bold text-background"
+            >
+              <Sparkles className="h-4 w-4" />
+              {t("explorePage.tryOnMe")}
+            </Link>
+            <Link
+              to="/"
+              className="col-span-2 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-border bg-background py-3.5 text-xs font-bold text-foreground"
+            >
+              <CalendarPlus className="h-4 w-4" />
+              {t("explorePage.findSalon")}
+            </Link>
+          </div>
+        </div>
       </div>
 
       <div
-        className="fixed inset-x-0 z-20 border-t border-border bg-background/95 px-5 pt-3 backdrop-blur-md bottom-[var(--explore-bottom-nav-offset)] lg:bottom-0 lg:left-[240px]"
+        className={cn(
+          "fixed inset-x-0 z-20 border-t border-border bg-background/95 px-5 pt-3 backdrop-blur-md bottom-[var(--explore-bottom-nav-offset)] lg:hidden",
+          DESKTOP_SIDEBAR_LEFT_CLASS,
+        )}
         style={{
           ["--explore-bottom-nav-offset" as string]: BOTTOM_NAV_OFFSET,
           paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",

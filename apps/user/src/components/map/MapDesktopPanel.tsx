@@ -6,7 +6,7 @@ import { getSalonCoverUrl } from "@/lib/cover-images";
 import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
 
-const PANEL_WIDTH = 380;
+const PANEL_WIDTH = 420;
 
 type Props = {
   salons: Salon[];

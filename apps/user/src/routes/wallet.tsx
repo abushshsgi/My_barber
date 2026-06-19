@@ -58,8 +58,8 @@ function WalletPage() {
 
   return (
     <WalletPullRefresh onRefresh={refreshBalance} onRefreshingChange={setRefreshing}>
-      <div className="overflow-x-hidden pb-6">
-        <header className="flex items-center gap-3 px-5 pt-[calc(env(safe-area-inset-top)+12px)]">
+      <div className="overflow-x-hidden pb-6 lg:px-6">
+        <header className="flex items-center gap-3 px-5 pt-[calc(env(safe-area-inset-top)+12px)] lg:hidden">
           <Link
             to="/profile"
             className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface active:opacity-80"
@@ -73,7 +73,9 @@ function WalletPage() {
           </div>
         </header>
 
-        <div className="px-5 pt-2">
+        <div className="lg:grid lg:grid-cols-[minmax(280px,360px)_1fr] lg:items-start lg:gap-8 lg:pt-6">
+          <div>
+        <div className="px-5 pt-2 lg:px-0">
           <div className="relative mx-auto flex min-h-[210px] w-full max-w-[360px] items-center justify-center overflow-visible py-4">
             <ClientOnly
               fallback={
@@ -95,7 +97,7 @@ function WalletPage() {
           </div>
         </div>
 
-        <div className="mt-6 flex justify-center gap-10 px-5">
+        <div className="mt-6 flex justify-center gap-10 px-5 lg:justify-start lg:px-0">
           <Link to="/wallet/top-up" className="flex flex-col items-center gap-2 active:scale-95">
             <span className="grid h-[60px] w-[60px] place-items-center rounded-full bg-foreground text-background shadow-lg">
               <Plus className="h-7 w-7" strokeWidth={2.2} />
@@ -110,7 +112,7 @@ function WalletPage() {
           </Link>
         </div>
 
-        <div className="mx-5 mt-6 flex gap-3">
+        <div className="mx-5 mt-6 flex gap-3 lg:mx-0">
           <div className="flex-1 rounded-[24px] bg-surface px-4 py-3 text-center">
             <p className="text-lg font-bold tabular-nums">{Math.round(inflowTotal / 1000)}k</p>
             <p className="text-[9px] font-bold uppercase text-muted-foreground">
@@ -122,8 +124,9 @@ function WalletPage() {
             <p className="mt-1 text-[9px] font-medium text-muted-foreground">Bonus ball</p>
           </div>
         </div>
+          </div>
 
-        <section className="mx-5 mt-8">
+        <section className="mx-5 mt-8 lg:mx-0 lg:mt-0">
           <h2 className="text-sm font-bold">{t("walletPage.recent")}</h2>
 
           {hasAnyTransactions && (
@@ -165,6 +168,7 @@ function WalletPage() {
             </Link>
           )}
         </section>
+        </div>
       </div>
     </WalletPullRefresh>
   );

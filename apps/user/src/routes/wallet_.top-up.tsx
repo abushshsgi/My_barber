@@ -155,7 +155,7 @@ function TopUpPage() {
         <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
           To'lov usuli
         </h3>
-        <div className="mt-3 grid grid-cols-2 gap-2">
+        <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
           {(providersQ.data ?? [{ id: "click" }, { id: "payme" }] as PaymentProvider[]).map((p) => {
             const id = p.id as "click" | "payme";
             const active = provider === id;
@@ -185,7 +185,7 @@ function TopUpPage() {
         <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
           {t("topUpPage.chooseAmount")}
         </h3>
-        <div className="mt-3 grid grid-cols-2 gap-2">
+        <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
           {PRESETS.map((value) => {
             const active = activePreset && amount === value;
             return (

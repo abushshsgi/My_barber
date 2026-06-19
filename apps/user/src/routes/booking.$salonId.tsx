@@ -6,8 +6,10 @@ import { toast } from "sonner";
 import { formatPrice } from "@/lib/mock-data";
 import { PageHeader } from "@/components/PageHeader";
 import { Stepper } from "@/components/Stepper";
+import { BookingSummaryAside } from "@/components/booking/BookingSummaryAside";
 import { useCreateBooking, useBookingAvailability } from "@/hooks/use-bookings-api";
 import { useSalonPage } from "@/hooks/use-salon-page";
+import { DESKTOP_SIDEBAR_LEFT_CLASS } from "@/lib/layout-constants";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/$salonId")({
@@ -101,14 +103,15 @@ function BookingFlow() {
   };
 
   return (
-    <div>
-      <PageHeader showBack title={t("booking.title")} />
+    <div className="lg:px-6">
+      <PageHeader showBack title={t("booking.title")} className="lg:hidden" />
 
-      <div className="px-5 pt-2">
+      <div className="px-5 pt-2 lg:px-0">
         <Stepper steps={stepLabels} current={step} />
       </div>
 
-      <div className="px-5 pt-8 pb-32">
+      <div className="lg:grid lg:grid-cols-[1fr_320px] lg:items-start lg:gap-8">
+        <div className="px-5 pt-8 pb-32 lg:px-0 lg:pb-8">
         {step === 1 && (
           <div>
             <h2 className="text-xl font-bold tracking-tight">{t("booking.selectBarber")}</h2>
@@ -294,11 +297,60 @@ function BookingFlow() {
             </div>
           </div>
         )}
+
+          <div className="mt-8 hidden gap-2 lg:flex">
+            {step > 1 && (
+              <button
+                type="button"
+                onClick={() => setStep((s) => s - 1)}
+                className="flex-1 rounded-2xl border-2 border-foreground py-4 text-sm font-bold"
+              >
+                {t("common.back")}
+              </button>
+            )}
+            {step < 4 ? (
+              <button
+                type="button"
+                disabled={!canAdvance}
+                onClick={() => canAdvance && setStep((s) => s + 1)}
+                className={cn(
+                  "flex-[2] rounded-2xl py-4 text-sm font-bold tracking-wide transition-all",
+                  canAdvance
+                    ? "bg-foreground text-background active:scale-[0.99]"
+                    : "bg-surface-2 text-muted-foreground",
+                )}
+              >
+                {t("common.next")}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                className="flex-[2] rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background"
+              >
+                {t("booking.confirm")}
+              </button>
+            )}
+          </div>
+        </div>
+
+        <BookingSummaryAside
+          salon={salon}
+          selectedBarber={selectedBarber}
+          selectedServices={selectedServices}
+          total={total}
+          dayList={dayList}
+          dayIdx={dayIdx}
+          slot={slot}
+          step={step}
+        />
       </div>
 
-      {/* Bottom CTA */}
       <div
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-5 pt-3 backdrop-blur-md lg:left-[240px]"
+        className={cn(
+          "fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-5 pt-3 backdrop-blur-md lg:hidden",
+          DESKTOP_SIDEBAR_LEFT_CLASS,
+        )}
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 88px)" }}
       >
         <div className="mx-auto flex max-w-[480px] gap-2 lg:max-w-[720px]">

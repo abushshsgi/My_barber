@@ -1,8 +1,7 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Bell,
   CalendarCheck,
-  ChevronDown,
   Film,
   Flame,
   Gift,
@@ -11,15 +10,18 @@ import {
   Home,
   Map,
   MessageSquare,
+  Search,
   Settings,
   Sparkles,
   Tag,
   User,
+  Users,
   Wallet,
   Wand2,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useDisplayUser } from "@/hooks/use-me";
 import { cn } from "@/lib/utils";
 import { isNavTabActive } from "@/lib/navigation";
 
@@ -32,16 +34,21 @@ const tabs = [
   { to: "/profile", icon: User, key: "profile" },
 ] as const;
 
-const moreLinks = [
+const discoveryLinks = [
   { to: "/today", icon: Flame, labelKey: "home.quick.today" },
-  { to: "/reels", icon: Film, labelKey: "home.quick.reels" },
-  { to: "/ai-style", icon: Wand2, labelKey: "home.quick.aiStyle" },
-  { to: "/wallet", icon: Wallet, labelKey: "nav.wallet" },
-  { to: "/compare", icon: GitCompareArrows, labelKey: "home.quick.compare" },
   { to: "/explore", icon: Sparkles, labelKey: "home.quick.trends" },
   { to: "/offers", icon: Tag, labelKey: "home.quick.offers" },
-  { to: "/loyalty", icon: Sparkles, labelKey: "profile.loyalty" },
+  { to: "/compare", icon: GitCompareArrows, labelKey: "home.quick.compare" },
+  { to: "/ai-style", icon: Wand2, labelKey: "home.quick.aiStyle" },
+  { to: "/reels", icon: Film, labelKey: "home.quick.reels" },
+] as const;
+
+const accountLinks = [
+  { to: "/wallet", icon: Wallet, labelKey: "nav.wallet" },
   { to: "/giftcard", icon: Gift, labelKey: "profile.giftcard" },
+  { to: "/loyalty", icon: Sparkles, labelKey: "profile.loyalty" },
+  { to: "/favorites", icon: Heart, labelKey: "profile.favorites" },
+  { to: "/account/household", icon: Users, labelKey: "settings.sections.household" },
 ] as const;
 
 type Props = {
@@ -63,16 +70,44 @@ function NavBadge({ count, active }: { count: number; active?: boolean }) {
   );
 }
 
+function SidebarLink({
+  to,
+  icon: Icon,
+  label,
+  active,
+  indent,
+}: {
+  to: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  label: string;
+  active: boolean;
+  indent?: boolean;
+}) {
+  return (
+    <Link
+      to={to}
+      preload="intent"
+      className={cn(
+        "flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-semibold transition-colors",
+        indent && "pl-6",
+        active ? "bg-surface text-foreground" : "text-muted-foreground hover:bg-surface hover:text-foreground",
+      )}
+    >
+      <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
+      <span className="min-w-0 truncate" suppressHydrationWarning>
+        {label}
+      </span>
+    </Link>
+  );
+}
+
 export function DesktopSidebar({ chatUnread = 0, notificationsUnread = 0 }: Props) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const user = useDisplayUser();
+  const [searchQuery, setSearchQuery] = useState("");
   const isActive = (to: string) => isNavTabActive(pathname, to);
-  const moreActive = moreLinks.some((link) => isActive(link.to));
-  const [moreOpen, setMoreOpen] = useState(moreActive);
-
-  useEffect(() => {
-    if (moreActive) setMoreOpen(true);
-  }, [moreActive]);
 
   const badgeFor = (key?: "chat" | "notifications") => {
     if (key === "chat") return chatUnread;
@@ -80,14 +115,43 @@ export function DesktopSidebar({ chatUnread = 0, notificationsUnread = 0 }: Prop
     return 0;
   };
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    if (q) {
+      void navigate({ to: "/map", search: { q } });
+    } else {
+      void navigate({ to: "/" });
+    }
+  };
+
+  const initials = user.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2);
+
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[240px] flex-col border-r border-border bg-background px-6 py-8 lg:flex">
-      <Link to="/" className="mb-8 flex items-baseline gap-1">
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[260px] flex-col border-r border-border bg-background px-4 py-6 lg:flex">
+      <Link to="/" className="mb-5 flex items-baseline gap-1 px-2">
         <span className="text-2xl font-bold tracking-tight">mysaloon</span>
         <span className="text-sm font-bold text-muted-foreground">.uz</span>
       </Link>
 
-      <nav className="flex flex-col gap-1">
+      <form onSubmit={handleSearch} className="mb-5 px-1">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t("common.search")}
+            className="w-full rounded-xl border border-border bg-surface py-2.5 pl-9 pr-3 text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground"
+          />
+        </div>
+      </form>
+
+      <nav className="flex flex-col gap-0.5 overflow-y-auto px-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active = isActive(tab.to);
@@ -98,13 +162,13 @@ export function DesktopSidebar({ chatUnread = 0, notificationsUnread = 0 }: Prop
               to={tab.to}
               preload="intent"
               className={cn(
-                "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition-colors",
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition-colors",
                 active
                   ? "bg-foreground text-background"
                   : "text-foreground hover:bg-surface",
               )}
             >
-              <Icon className="h-5 w-5 shrink-0" strokeWidth={active ? 2.4 : 2} />
+              <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={active ? 2.4 : 2} />
               <span className="min-w-0 flex-1 truncate" suppressHydrationWarning>
                 {t(`nav.${tab.key}`)}
               </span>
@@ -112,70 +176,53 @@ export function DesktopSidebar({ chatUnread = 0, notificationsUnread = 0 }: Prop
             </Link>
           );
         })}
+
+        <p className="mb-1 mt-4 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+          {t("nav.discovery", { defaultValue: "Kashf etish" })}
+        </p>
+        {discoveryLinks.map((link) => (
+          <SidebarLink
+            key={link.to}
+            to={link.to}
+            icon={link.icon}
+            label={t(link.labelKey)}
+            active={isActive(link.to)}
+          />
+        ))}
+
+        <p className="mb-1 mt-4 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+          {t("nav.account", { defaultValue: "Hisob" })}
+        </p>
+        {accountLinks.map((link) => (
+          <SidebarLink
+            key={link.to}
+            to={link.to}
+            icon={link.icon}
+            label={t(link.labelKey)}
+            active={isActive(link.to)}
+          />
+        ))}
       </nav>
 
-      <div className="mt-4 border-t border-border pt-4">
-        <button
-          type="button"
-          onClick={() => setMoreOpen((open) => !open)}
-          className={cn(
-            "flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition-colors",
-            moreActive ? "bg-surface text-foreground" : "text-foreground hover:bg-surface",
-          )}
-          aria-expanded={moreOpen}
-        >
-          <ChevronDown
-            className={cn("h-5 w-5 shrink-0 transition-transform", moreOpen && "rotate-180")}
-            strokeWidth={2.2}
-          />
-          <span suppressHydrationWarning>{t("nav.more", { defaultValue: "Ko'proq" })}</span>
-        </button>
-
-        {moreOpen ? (
-          <div className="mt-1 flex flex-col gap-0.5">
-            {moreLinks.map((link) => {
-              const Icon = link.icon;
-              const active = isActive(link.to);
-              return (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  preload="intent"
-                  className={cn(
-                    "flex items-center gap-3 rounded-2xl px-4 py-2.5 pl-8 text-sm font-semibold transition-colors",
-                    active ? "bg-surface text-foreground" : "text-muted-foreground hover:bg-surface hover:text-foreground",
-                  )}
-                >
-                  <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
-                  <span suppressHydrationWarning>{t(link.labelKey)}</span>
-                </Link>
-              );
-            })}
-          </div>
-        ) : null}
-      </div>
-
-      <div className="mt-auto flex flex-col gap-1 border-t border-border pt-4">
-        <Link
-          to="/favorites"
-          className={cn(
-            "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition-colors",
-            isActive("/favorites") ? "bg-surface text-foreground" : "text-foreground hover:bg-surface",
-          )}
-        >
-          <Heart className="h-5 w-5" strokeWidth={2} />
-          <span suppressHydrationWarning>{t("profile.favorites")}</span>
-        </Link>
-        <Link
-          to="/settings"
-          className={cn(
-            "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition-colors",
-            isActive("/settings") ? "bg-surface text-foreground" : "text-foreground hover:bg-surface",
-          )}
-        >
-          <Settings className="h-5 w-5" strokeWidth={2} />
-          <span suppressHydrationWarning>{t("profile.settings")}</span>
-        </Link>
+      <div className="mt-auto border-t border-border pt-4">
+        <div className="flex items-center gap-3 rounded-xl px-2 py-2">
+          <Link to="/profile" className="flex min-w-0 flex-1 items-center gap-3 transition-colors hover:opacity-80">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-xs font-bold">
+              {initials}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold">{user.name}</p>
+              <p className="truncate text-[11px] text-muted-foreground">{user.phone}</p>
+            </div>
+          </Link>
+          <Link
+            to="/settings"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border bg-background transition-colors hover:bg-surface"
+            aria-label={t("profile.settings")}
+          >
+            <Settings className="h-4 w-4" strokeWidth={2} />
+          </Link>
+        </div>
       </div>
     </aside>
   );

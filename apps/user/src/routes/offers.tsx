@@ -38,20 +38,26 @@ function OffersPage() {
 
   return (
     <ProfileSubpageLayout title={t("offersPage.title")} subtitle={t(offersVariantMeta[variant].hintKey)}>
-      <OffersVariantPicker value={variant} onChange={onVariantChange} />
+      <div className="lg:hidden">
+        <OffersVariantPicker value={variant} onChange={onVariantChange} />
+      </div>
 
-      <ProfileSubpageCard className="mb-4">
+      <ProfileSubpageCard className="mb-4 lg:mb-6">
         <AudienceSwitch />
       </ProfileSubpageCard>
 
       {list.length === 0 ? (
         <EmptyState icon={<Tag className="h-7 w-7" />} title={t("offersPage.empty")} />
-      ) : variant === "v01" ? (
-        <OffersVariantFeatured list={list} />
-      ) : variant === "v02" ? (
-        <OffersVariantPromo list={list} />
       ) : (
-        <OffersVariantSwipe list={list} />
+        <div className="lg:grid lg:grid-cols-2 lg:gap-4">
+          {variant === "v01" ? (
+            <OffersVariantFeatured list={list} />
+          ) : variant === "v02" ? (
+            <OffersVariantPromo list={list} />
+          ) : (
+            <OffersVariantSwipe list={list} />
+          )}
+        </div>
       )}
     </ProfileSubpageLayout>
   );

@@ -36,9 +36,9 @@ function Favorites() {
           }
         />
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-5 lg:grid lg:grid-cols-2 lg:gap-5 lg:space-y-0">
           {favs.map((s) => (
-            <SalonCard key={s.id} salon={s} />
+            <SalonCard key={s.id} salon={s} horizontal="lg" />
           ))}
         </div>
       )}

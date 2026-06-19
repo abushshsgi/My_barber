@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { useSalonsList } from "@/hooks/use-salons";
 import { shortPrice } from "@/lib/mock-data";
+import { DESKTOP_SIDEBAR_LEFT_CLASS } from "@/lib/layout-constants";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/today")({
@@ -66,7 +67,7 @@ function TodayDeals() {
   if (isLoading) {
     return (
       <div className="flex min-h-full flex-col bg-background pb-24">
-        <PageHeader showBack title={t("todayPage.title")} subtitle={t("todayPage.pickerSubtitle")} />
+        <PageHeader showBack title={t("todayPage.title")} subtitle={t("todayPage.pickerSubtitle")} className="lg:hidden" />
         <p className="px-5 py-8 text-center text-sm text-muted-foreground">Yuklanmoqda…</p>
       </div>
     );
@@ -75,7 +76,7 @@ function TodayDeals() {
   if (!salon) {
     return (
       <div className="flex min-h-full flex-col bg-background pb-24">
-        <PageHeader showBack title={t("todayPage.title")} subtitle={t("todayPage.pickerSubtitle")} />
+        <PageHeader showBack title={t("todayPage.title")} subtitle={t("todayPage.pickerSubtitle")} className="lg:hidden" />
         <div className="px-5 pt-8">
           <EmptyState
             icon={<CalendarPlus className="h-7 w-7" />}
@@ -91,13 +92,13 @@ function TodayDeals() {
 
   return (
     <div className="flex min-h-full flex-col bg-background pb-[calc(68px+env(safe-area-inset-bottom)+88px)]">
-      <PageHeader showBack title={t("todayPage.title")} subtitle={t("todayPage.pickerSubtitle")} />
+      <PageHeader showBack title={t("todayPage.title")} subtitle={t("todayPage.pickerSubtitle")} className="lg:hidden" />
 
-      <div className="px-5">
+      <div className="px-5 lg:px-6">
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
           {t("todayPage.pickSalon")}
         </p>
-        <div className="no-scrollbar mt-2 flex gap-2 overflow-x-auto pb-1">
+        <div className="no-scrollbar mt-2 flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:overflow-visible">
           {salons.map((s, i) => {
             const active = i === salonIdx;
             const d = discountFor(i);
@@ -162,7 +163,7 @@ function TodayDeals() {
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
           {t("todayPage.pickTime")}
         </p>
-        <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+        <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
           {slots.map((slot) => {
             const selected = pickedSlot === slot;
             return (
@@ -193,11 +194,15 @@ function TodayDeals() {
       </div>
 
       <div
-        className="fixed inset-x-0 z-40 border-t border-border bg-background/95 px-5 py-4 backdrop-blur-md lg:pl-[calc(240px+1.25rem)]"
+        className={cn(
+          "fixed inset-x-0 z-40 border-t border-border bg-background/95 px-5 py-4 backdrop-blur-md",
+          "lg:static lg:mx-6 lg:mt-6 lg:max-w-md lg:rounded-2xl lg:border lg:px-5",
+          DESKTOP_SIDEBAR_LEFT_CLASS,
+        )}
         style={{ bottom: "calc(68px + env(safe-area-inset-bottom))" }}
       >
         {pickedSlot ? (
-          <div className="mx-auto flex max-w-[480px] items-center gap-3">
+          <div className="mx-auto flex max-w-[480px] items-center gap-3 lg:mx-0 lg:max-w-none">
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
                 {t("todayPage.selectedSlot")}

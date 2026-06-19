@@ -257,8 +257,22 @@ function Auth() {
   }[step];
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-background px-6 py-10">
-      <div className="flex items-baseline gap-1">
+    <div className="flex min-h-[100dvh] flex-col bg-background lg:grid lg:grid-cols-2">
+      <div className="hidden flex-col justify-between bg-surface p-10 lg:flex">
+        <div className="flex items-baseline gap-1">
+          <span className="text-3xl font-bold tracking-tight">mysaloon</span>
+          <span className="text-lg font-bold text-muted-foreground">.uz</span>
+        </div>
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">{header.desc}</p>
+          <p className="mt-6 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+            Salon va sartarosh bron platformasi
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-col px-6 py-10 lg:justify-center lg:px-12">
+      <div className="flex items-baseline gap-1 lg:hidden">
         <span className="text-2xl font-bold tracking-tight">mysaloon</span>
         <span className="text-base font-bold text-muted-foreground">.uz</span>
       </div>
@@ -461,6 +475,7 @@ function Auth() {
           {t("auth.privacyLink")}
         </a>
       </p>
+      </div>
     </div>
   );
 }
