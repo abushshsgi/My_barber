@@ -91,18 +91,18 @@ function MapView() {
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [desktopMapExpanded, setDesktopMapExpanded] = useState(false);
   const [mapHandle, setMapHandle] = useState<SalonMapHandle | null>(null);
-  const [mapLoading, setMapLoading] = useState(true);
+  const [mapReady, setMapReady] = useState(false);
   const mapHandleRef = useRef<SalonMapHandle | null>(null);
+
+  const getMapHandle = useCallback(() => mapHandleRef.current, []);
 
   const onDesktopMapReady = useCallback((handle: SalonMapHandle) => {
     mapHandleRef.current = handle;
     setMapHandle(handle);
-    setMapLoading(false);
+    setMapReady(true);
     const resize = () => handle.resize();
     resize();
-    window.setTimeout(resize, 50);
-    window.setTimeout(resize, 200);
-    window.setTimeout(resize, 500);
+    [50, 200, 500].forEach((ms) => window.setTimeout(resize, ms));
   }, []);
 
   const expandDesktopMap = useCallback(() => {
@@ -225,7 +225,7 @@ function MapView() {
         ) : null}
       </div>
 
-      {/* Desktop: alohida xarita instansi — mobil konteynerda yashirin qolmasin */}
+      {/* Desktop */}
       <div className="relative hidden h-full w-full min-h-0 lg:flex">
         {!desktopMapExpanded ? (
           <MapDesktopPanel
@@ -238,18 +238,14 @@ function MapView() {
             emptyMessage={emptyMessage}
           />
         ) : null}
-        <MapDesktopMapFrame
+        <MapDesktopMapControls
           expanded={desktopMapExpanded}
-          controls={
-            <MapDesktopMapControls
-              expanded={desktopMapExpanded}
-              mapHandle={mapHandle}
-              mapLoading={mapLoading}
-              onExpand={expandDesktopMap}
-              onCollapse={collapseDesktopMap}
-            />
-          }
-        >
+          getMapHandle={getMapHandle}
+          mapReady={mapReady}
+          onExpand={expandDesktopMap}
+          onCollapse={collapseDesktopMap}
+        />
+        <MapDesktopMapFrame expanded={desktopMapExpanded}>
           {mounted ? (
             <MapCanvas
               {...sharedMapProps}
