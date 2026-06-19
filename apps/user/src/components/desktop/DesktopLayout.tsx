@@ -1,10 +1,6 @@
 import { useRouterState } from "@tanstack/react-router";
-import { useState } from "react";
-import { DesktopVariantProvider } from "@/components/desktop/DesktopVariantContext";
 import { DesktopShell } from "@/components/desktop/shell/DesktopShell";
-import { DesktopVariantPicker } from "@/components/desktop/DesktopVariantPicker";
 import { SiteFooter } from "@/components/SiteFooter";
-import { readDesktopVariant, saveDesktopVariant, type DesktopUiVariant } from "@/lib/desktop-variant";
 import { showsSiteFooter } from "@/lib/layout-routes";
 import { cn } from "@/lib/utils";
 
@@ -18,7 +14,6 @@ type Props = {
 
 export function DesktopLayout({ children, chatUnread = 0, notificationsUnread = 0 }: Props) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const [variant, setVariant] = useState<DesktopUiVariant>(() => readDesktopVariant());
   const isMap = pathname === "/map";
   const isAiStyle = pathname === "/ai-style";
   const isFullBleed =
@@ -26,18 +21,10 @@ export function DesktopLayout({ children, chatUnread = 0, notificationsUnread = 
     isMap ||
     FULL_BLEED_PREFIX.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
   const showFooter = showsSiteFooter(pathname) && !isFullBleed;
-  const showPicker = !isMap && !isAiStyle;
-
-  const onVariantChange = (next: DesktopUiVariant) => {
-    setVariant(next);
-    saveDesktopVariant(next);
-  };
 
   return (
-    <DesktopVariantProvider value={variant}>
-      <div className="min-h-screen bg-background text-foreground">
-        <DesktopShell
-        variant={variant}
+    <div className="min-h-screen bg-background text-foreground">
+      <DesktopShell
         chatUnread={chatUnread}
         notificationsUnread={notificationsUnread}
         fullBleed={isFullBleed}
@@ -58,8 +45,6 @@ export function DesktopLayout({ children, chatUnread = 0, notificationsUnread = 
           </>
         )}
       </DesktopShell>
-      {showPicker ? <DesktopVariantPicker value={variant} onChange={onVariantChange} /> : null}
-      </div>
-    </DesktopVariantProvider>
+    </div>
   );
 }

@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { Heart, Search } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -11,7 +12,6 @@ const PANEL_WIDTH = 420;
 type Props = {
   salons: Salon[];
   activeId: string;
-  onActiveChange: (id: string) => void;
   query: string;
   onQueryChange: (query: string) => void;
   loading?: boolean;
@@ -39,11 +39,9 @@ function SalonCoverImage({ salon, className }: { salon: Salon; className?: strin
 function MapDesktopSalonCard({
   salon,
   isActive,
-  onSelect,
 }: {
   salon: Salon;
   isActive: boolean;
-  onSelect: () => void;
 }) {
   const { isFav, toggle } = useFavorites();
   const fav = isFav(salon.id);
@@ -62,14 +60,23 @@ function MapDesktopSalonCard({
           isActive ? "border-foreground/40" : "border-border/50",
         )}
       >
-        <button type="button" onClick={onSelect} className="block w-full active:opacity-95">
+        <Link
+          to="/salon/$id"
+          params={{ id: salon.id }}
+          preload="intent"
+          className="block w-full active:opacity-95"
+        >
           <div className="aspect-[4/3] w-full overflow-hidden">
             <SalonCoverImage salon={salon} className="h-full w-full" />
           </div>
-        </button>
+        </Link>
         <button
           type="button"
-          onClick={() => toggle(salon.id)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggle(salon.id);
+          }}
           aria-label="Sevimli"
           className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/95 shadow-sm transition active:scale-90"
         >
@@ -79,9 +86,11 @@ function MapDesktopSalonCard({
           />
         </button>
       </div>
-      <h3 className="mt-2 line-clamp-2 px-0.5 text-[13px] font-bold leading-snug tracking-tight">
-        {salon.name}
-      </h3>
+      <Link to="/salon/$id" params={{ id: salon.id }} preload="intent">
+        <h3 className="mt-2 line-clamp-2 px-0.5 text-[13px] font-bold leading-snug tracking-tight">
+          {salon.name}
+        </h3>
+      </Link>
     </article>
   );
 }
@@ -89,7 +98,6 @@ function MapDesktopSalonCard({
 export function MapDesktopPanel({
   salons,
   activeId,
-  onActiveChange,
   query,
   onQueryChange,
   loading,
@@ -155,7 +163,6 @@ export function MapDesktopPanel({
                 key={salon.id}
                 salon={salon}
                 isActive={salon.id === activeId}
-                onSelect={() => onActiveChange(salon.id)}
               />
             ))}
           </div>

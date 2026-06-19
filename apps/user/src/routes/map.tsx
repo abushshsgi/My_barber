@@ -231,7 +231,6 @@ function MapView() {
           <MapDesktopPanel
             salons={filtered}
             activeId={active}
-            onActiveChange={focusSalon}
             query={query}
             onQueryChange={setQuery}
             loading={listLoading}

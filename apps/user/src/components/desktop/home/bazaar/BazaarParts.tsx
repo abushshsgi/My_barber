@@ -7,10 +7,10 @@ import { cn } from "@/lib/utils";
 
 type FilterProps = Pick<HomeData, "query" | "setQuery" | "effectiveCat" | "visibleCategoryKeys" | "setCat">;
 
-export function BazaarFilterSidebar({ query, setQuery, effectiveCat, visibleCategoryKeys, setCat, compact }: FilterProps & { compact?: boolean }) {
+export function BazaarFilterSidebar({ query, setQuery, effectiveCat, visibleCategoryKeys, setCat }: FilterProps) {
   const { t } = useTranslation();
   return (
-    <aside className={cn("space-y-3", compact ? "w-full" : "sticky top-28")}>
+    <aside className="sticky top-28 space-y-3">
       <div className="rounded-2xl border border-border bg-background p-4 shadow-sm">
         <p className="flex items-center gap-2 text-sm font-bold">
           <SlidersHorizontal className="h-4 w-4" style={{ color: BAZAAR_GREEN }} />
@@ -40,39 +40,10 @@ export function BazaarFilterSidebar({ query, setQuery, effectiveCat, visibleCate
           ))}
         </div>
       </div>
-      {!compact ? (
-        <div className="rounded-2xl border border-dashed border-[#059669]/30 bg-[#059669]/5 p-4 text-center text-xs text-muted-foreground">
-          Narx · masofa · reyting — tez orada
-        </div>
-      ) : null}
-    </aside>
-  );
-}
-
-export function BazaarTopFilters({ effectiveCat, visibleCategoryKeys, setCat, count }: FilterProps & { count: number }) {
-  const { t } = useTranslation();
-  return (
-    <div className="flex flex-wrap items-center gap-3 border-b border-border pb-4">
-      <span className="text-sm font-bold" style={{ color: BAZAAR_GREEN }}>
-        {count} ta salon
-      </span>
-      <div className="flex flex-wrap gap-2">
-        {visibleCategoryKeys.map((key) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setCat(key)}
-            className={cn(
-              "rounded-full px-4 py-2 text-sm font-semibold transition-colors",
-              effectiveCat === key ? "text-white" : "bg-surface text-foreground hover:bg-surface/80",
-            )}
-            style={effectiveCat === key ? { backgroundColor: BAZAAR_GREEN } : undefined}
-          >
-            {t(`home.categories.${key}`)}
-          </button>
-        ))}
+      <div className="rounded-2xl border border-dashed border-[#059669]/30 bg-[#059669]/5 p-4 text-center text-xs text-muted-foreground">
+        Narx · masofa · reyting — tez orada
       </div>
-    </div>
+    </aside>
   );
 }
 
@@ -112,24 +83,6 @@ export function BazaarMapPanel({ tall, className }: MapProps) {
         {t("homePage.quick.aiStyle")}
       </Link>
     </div>
-  );
-}
-
-export function BazaarMapStrip() {
-  const { t } = useTranslation();
-  return (
-    <Link
-      to="/map"
-      className="relative mb-8 flex h-52 items-end overflow-hidden rounded-2xl p-6 text-white"
-      style={{ background: `linear-gradient(135deg, ${BAZAAR_GREEN} 0%, #047857 50%, #065f46 100%)` }}
-    >
-      <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
-      <div className="relative">
-        <Map className="mb-2 h-8 w-8 opacity-80" />
-        <p className="text-xl font-bold">{t("common.viewMap")}</p>
-        <p className="text-sm text-white/80">Barcha salonlar bir xaritada</p>
-      </div>
-    </Link>
   );
 }
 
