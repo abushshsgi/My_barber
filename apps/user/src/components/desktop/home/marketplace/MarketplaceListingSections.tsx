@@ -49,7 +49,7 @@ export function MarketplaceListingRow({ title, subtitle, salons, viewAllTo, clas
             aria-label="Keyingi"
             className="grid h-8 w-8 place-items-center rounded-full border border-border bg-background hover:shadow-sm"
           >
-            <ChevRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4" />
           </button>
         </div>
       </div>
