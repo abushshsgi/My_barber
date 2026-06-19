@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
@@ -8,17 +9,29 @@ type Props = {
 };
 
 export function MapDesktopMapFrame({ children, expanded, className }: Props) {
+  const inner = (
+    <div className="relative isolate z-0 h-full min-h-0 w-full overflow-hidden bg-background">
+      <div className="absolute inset-0">{children}</div>
+    </div>
+  );
+
+  if (expanded && typeof document !== "undefined") {
+    return createPortal(
+      <div
+        className={cn(
+          "fixed inset-0 z-[70] h-[100dvh] w-screen bg-background",
+          className,
+        )}
+      >
+        {inner}
+      </div>,
+      document.body,
+    );
+  }
+
   return (
-    <div
-      className={cn(
-        "relative flex min-h-0 min-w-0 flex-1 flex-col",
-        expanded ? "fixed inset-0 z-[70] bg-background" : "h-full w-full",
-        className,
-      )}
-    >
-      <div className="relative isolate z-0 h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
-        <div className="absolute inset-0 z-0">{children}</div>
-      </div>
+    <div className={cn("relative h-full min-h-0 min-w-0 flex-1 flex-col", className)}>
+      {inner}
     </div>
   );
 }

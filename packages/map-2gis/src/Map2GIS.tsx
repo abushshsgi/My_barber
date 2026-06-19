@@ -71,8 +71,13 @@ export function Map2GIS({
     let map: mapgl.Map | undefined;
 
     const notifyResize = () => {
+      const m = mapRef.current as (mapgl.Map & { invalidateSize?: () => void }) | null;
+      m?.invalidateSize?.();
       window.dispatchEvent(new Event("resize"));
-      requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+      requestAnimationFrame(() => {
+        m?.invalidateSize?.();
+        window.dispatchEvent(new Event("resize"));
+      });
     };
 
     const buildHandle = (): MapHandle => ({
@@ -131,6 +136,7 @@ export function Map2GIS({
           zoom: DEFAULT_ZOOM,
           key: getDgisApiKey(),
           zoomControl: false,
+          enableTrackResize: true,
           disableRotationByUserInteraction: true,
           disablePitchByUserInteraction: true,
         });
@@ -258,7 +264,8 @@ export function Map2GIS({
     if (!el || !mapReady) return;
 
     const ro = new ResizeObserver(() => {
-      window.dispatchEvent(new Event("resize"));
+      const m = mapRef.current as (mapgl.Map & { invalidateSize?: () => void }) | null;
+      m?.invalidateSize?.();
     });
     ro.observe(el);
     return () => ro.disconnect();

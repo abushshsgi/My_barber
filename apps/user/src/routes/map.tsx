@@ -94,8 +94,19 @@ function MapView() {
 
   const onDesktopMapReady = useCallback((handle: SalonMapHandle) => {
     setMapHandle(handle);
-    window.setTimeout(() => handle.resize(), 50);
-    window.setTimeout(() => handle.resize(), 300);
+    window.setTimeout(() => handle.resize(), 0);
+    window.setTimeout(() => handle.resize(), 100);
+    window.setTimeout(() => handle.resize(), 400);
+  }, []);
+
+  const expandDesktopMap = useCallback(() => {
+    setMapHandle(null);
+    setDesktopMapExpanded(true);
+  }, []);
+
+  const collapseDesktopMap = useCallback(() => {
+    setMapHandle(null);
+    setDesktopMapExpanded(false);
   }, []);
 
   const filtered = useMemo(() => {
@@ -228,12 +239,13 @@ function MapView() {
         <MapDesktopMapControls
           expanded={desktopMapExpanded}
           mapHandle={mapHandle}
-          onExpand={() => setDesktopMapExpanded(true)}
-          onCollapse={() => setDesktopMapExpanded(false)}
+          onExpand={expandDesktopMap}
+          onCollapse={collapseDesktopMap}
         />
         <MapDesktopMapFrame expanded={desktopMapExpanded}>
           {mounted ? (
             <MapCanvas
+              key={desktopMapExpanded ? "desktop-map-full" : "desktop-map-split"}
               {...sharedMapProps}
               onMapReady={onDesktopMapReady}
               autoFitMarkers={false}
