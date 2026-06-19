@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MapDesktopMapControls } from "@/components/map/MapDesktopMapControls";
 import { MapDesktopMapFrame } from "@/components/map/MapDesktopMapFrame";
@@ -91,21 +91,25 @@ function MapView() {
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [desktopMapExpanded, setDesktopMapExpanded] = useState(false);
   const [mapHandle, setMapHandle] = useState<SalonMapHandle | null>(null);
+  const [mapLoading, setMapLoading] = useState(true);
+  const mapHandleRef = useRef<SalonMapHandle | null>(null);
 
   const onDesktopMapReady = useCallback((handle: SalonMapHandle) => {
+    mapHandleRef.current = handle;
     setMapHandle(handle);
-    window.setTimeout(() => handle.resize(), 0);
-    window.setTimeout(() => handle.resize(), 100);
-    window.setTimeout(() => handle.resize(), 400);
+    setMapLoading(false);
+    const resize = () => handle.resize();
+    resize();
+    window.setTimeout(resize, 50);
+    window.setTimeout(resize, 200);
+    window.setTimeout(resize, 500);
   }, []);
 
   const expandDesktopMap = useCallback(() => {
-    setMapHandle(null);
     setDesktopMapExpanded(true);
   }, []);
 
   const collapseDesktopMap = useCallback(() => {
-    setMapHandle(null);
     setDesktopMapExpanded(false);
   }, []);
 
@@ -144,21 +148,19 @@ function MapView() {
     setActive(id);
   };
 
-  const fitDesktopMap = useCallback(() => {
-    if (!mapHandle || mapMarkers.length === 0) return;
-    mapHandle.fitMarkers(mapMarkers, { bottom: 48 });
+  useEffect(() => {
+    if (!mapHandleRef.current || mapMarkers.length === 0) return;
+    mapHandleRef.current.fitMarkers(mapMarkers, { bottom: 48 });
   }, [mapHandle, mapMarkers]);
 
   useEffect(() => {
-    if (!mapHandle || mapMarkers.length === 0) return;
-    fitDesktopMap();
-  }, [mapHandle, mapMarkers, fitDesktopMap]);
-
-  useEffect(() => {
-    if (!mapHandle) return;
-    const delays = [50, 200, 500].map((ms) => window.setTimeout(() => mapHandle.resize(), ms));
+    const handle = mapHandleRef.current;
+    if (!handle) return;
+    const resize = () => handle.resize();
+    resize();
+    const delays = [50, 150, 350, 600].map((ms) => window.setTimeout(resize, ms));
     return () => delays.forEach((id) => window.clearTimeout(id));
-  }, [desktopMapExpanded, mapHandle]);
+  }, [desktopMapExpanded]);
 
   useEffect(() => {
     const prevHtml = document.documentElement.style.overflow;
@@ -236,16 +238,20 @@ function MapView() {
             emptyMessage={emptyMessage}
           />
         ) : null}
-        <MapDesktopMapControls
+        <MapDesktopMapFrame
           expanded={desktopMapExpanded}
-          mapHandle={mapHandle}
-          onExpand={expandDesktopMap}
-          onCollapse={collapseDesktopMap}
-        />
-        <MapDesktopMapFrame expanded={desktopMapExpanded}>
+          controls={
+            <MapDesktopMapControls
+              expanded={desktopMapExpanded}
+              mapHandle={mapHandle}
+              mapLoading={mapLoading}
+              onExpand={expandDesktopMap}
+              onCollapse={collapseDesktopMap}
+            />
+          }
+        >
           {mounted ? (
             <MapCanvas
-              key={desktopMapExpanded ? "desktop-map-full" : "desktop-map-split"}
               {...sharedMapProps}
               onMapReady={onDesktopMapReady}
               autoFitMarkers={false}
