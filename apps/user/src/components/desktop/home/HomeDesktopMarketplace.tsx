@@ -1,117 +1,129 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, Map as MapIcon, Wand2 } from "lucide-react";
+import { Map, Wand2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
 import type { HomeData } from "@/components/home/useHomeData";
-import { DesktopSalonCard } from "@/components/desktop/ui/DesktopSalonCard";
-import { DesktopSearchBar } from "@/components/desktop/ui/DesktopSearchBar";
-import { getHairstyleImageUrl, type TrendingHairstyle } from "@/lib/hairstyles/catalog";
-import { cn } from "@/lib/utils";
+import { MarketplaceHeroSearch } from "./marketplace/MarketplaceHeroSearch";
+import { MarketplaceCategoryBar } from "./marketplace/MarketplaceCategoryBar";
+import { MarketplaceListingGrid, MarketplaceListingRow } from "./marketplace/MarketplaceListingSections";
 
 type Props = { data: HomeData };
 
-function FilterPanel({ data }: Props) {
-  const { t } = useTranslation();
-  return (
-    <aside className="space-y-4 rounded-2xl border border-border bg-surface/40 p-4">
-      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-        {t("home.categories.all", { defaultValue: "Filter" })}
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {data.visibleCategoryKeys.map((key) => {
-          const active = data.effectiveCat === key;
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => data.setCat(key)}
-              className={cn(
-                "rounded-full px-3 py-1.5 text-xs font-bold",
-                active ? "bg-foreground text-background" : "bg-background text-foreground",
-              )}
-            >
-              {t(`home.categories.${key}`)}
-            </button>
-          );
-        })}
-      </div>
-    </aside>
-  );
-}
-
-function TrendingGrid({ trending }: { trending: TrendingHairstyle[] }) {
-  const { t } = useTranslation();
-  if (trending.length === 0) return null;
-  return (
-    <section className="mt-10">
-      <div className="mb-4 flex items-end justify-between">
-        <h2 className="text-lg font-bold">{t("homePage.quick.trends")}</h2>
-        <Link to="/explore" className="flex items-center text-sm font-bold">
-          {t("common.viewAll")} <ChevronRight className="h-4 w-4" />
-        </Link>
-      </div>
-      <div className="grid grid-cols-5 gap-4">
-        {trending.slice(0, 5).map((s) => (
-          <Link key={s.id} to="/explore/$styleId" params={{ styleId: s.id }}>
-            <div className="aspect-[3/4] overflow-hidden rounded-2xl bg-surface">
-              <img src={getHairstyleImageUrl({ imageUrl: s.imageUrl })} alt="" className="h-full w-full object-cover" />
-            </div>
-            <p className="mt-2 text-sm font-bold">{s.title}</p>
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 export function HomeDesktopMarketplace({ data }: Props) {
   const { t } = useTranslation();
+  const { filtered, featuredSalons, trending, personalized, loading } = data;
+
+  const topRated = [...filtered].sort((a, b) => b.rating - a.rating).slice(0, 12);
+  const nearby = filtered.slice(0, 12);
+  const budget = [...filtered].sort((a, b) => a.priceFrom - b.priceFrom).slice(0, 10);
 
   return (
-    <div>
-      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("home.title")}</h1>
-          <p className="mt-1 text-muted-foreground">{t("homePage.editorialTagline")}</p>
+    <div className="-mx-2">
+      {/* Booking.com / Airbnb hero */}
+      <section className="pb-6 pt-2">
+        <h1 className="text-center text-[32px] font-semibold leading-tight tracking-tight md:text-[36px]">
+          {t("home.title")}
+        </h1>
+        <p className="mx-auto mt-2 max-w-lg text-center text-base text-muted-foreground">
+          {t("homePage.editorialTagline")}
+        </p>
+        <div className="mt-8">
+          <MarketplaceHeroSearch {...data} />
         </div>
-        <DesktopSearchBar value={data.query} onChange={data.setQuery} className="max-w-md" large />
-      </div>
+      </section>
 
-      <div className="grid grid-cols-[280px_1fr_320px] gap-6">
-        <FilterPanel data={data} />
-        <div>
-          <h2 className="mb-4 text-lg font-bold">
-            {t(data.personalized ? "homePage.nearYou" : "homePage.pickedForYou")}
-          </h2>
-          {data.loading ? (
-            <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
-          ) : (
-            <div className="grid grid-cols-3 gap-5">
-              {data.filtered.slice(0, 9).map((s) => (
-                <DesktopSalonCard key={s.id} salon={s} variant="grid" />
-              ))}
-            </div>
-          )}
-        </div>
-        <aside className="space-y-4">
+      <MarketplaceCategoryBar {...data} />
+
+      <div className="mt-8 space-y-10">
+        <MarketplaceListingRow
+          title={t(personalized ? "homePage.nearYou" : "homePage.pickedForYou")}
+          subtitle={t("homePage.sectionNearHint", { defaultValue: "Yaqin atrofdagi eng yaxshi salonlar" })}
+          salons={featuredSalons.length > 0 ? featuredSalons : nearby.slice(0, 8)}
+          viewAllTo="/map"
+        />
+
+        <MarketplaceListingRow
+          title={t("homePage.quick.today", { defaultValue: "Bugun bo'sh vaqtlar" })}
+          subtitle={t("homePage.sectionTodayHint", { defaultValue: "Hozir bron qilish mumkin" })}
+          salons={nearby.slice(0, 10)}
+          viewAllTo="/today"
+        />
+
+        {topRated.length > 0 ? (
+          <MarketplaceListingRow
+            title={t("homePage.sectionTopRated", { defaultValue: "Eng yuqori reytingli" })}
+            subtitle={t("homePage.sectionTopRatedHint", { defaultValue: "4.8+ reytingli salonlar" })}
+            salons={topRated}
+          />
+        ) : null}
+
+        {budget.length > 0 ? (
+          <MarketplaceListingRow
+            title={t("homePage.sectionBudget", { defaultValue: "Arzon narxlarda" })}
+            subtitle={t("homePage.sectionBudgetHint", { defaultValue: "Byudjet do'stona variantlar" })}
+            salons={budget}
+          />
+        ) : null}
+
+        {/* Map + AI promos — Airbnb-style wide cards */}
+        <div className="grid grid-cols-2 gap-4">
           <Link
             to="/map"
-            className="flex h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface/50 p-4 text-center transition-colors hover:bg-surface"
+            className="group relative flex h-44 items-end overflow-hidden rounded-2xl bg-[#1a1a2e] p-6 text-white"
           >
-            <MapIcon className="h-8 w-8 text-muted-foreground" />
-            <p className="mt-2 text-sm font-bold">{t("common.viewMap")}</p>
+            <div className="absolute inset-0 bg-gradient-to-br from-[#2563eb]/40 to-[#1a1a2e]" />
+            <Map className="absolute right-6 top-6 h-10 w-10 opacity-40" />
+            <div className="relative">
+              <p className="text-lg font-semibold">{t("common.viewMap")}</p>
+              <p className="mt-1 text-sm text-white/70">Xaritada qidiring</p>
+            </div>
           </Link>
           <Link
             to="/ai-style"
-            className="block rounded-2xl border border-border bg-foreground p-5 text-background"
+            className="group relative flex h-44 items-end overflow-hidden rounded-2xl bg-foreground p-6 text-background"
           >
-            <Wand2 className="h-5 w-5" />
-            <p className="mt-3 text-sm font-bold">{t("homePage.aiPromoTitle")}</p>
-            <p className="mt-1 text-xs text-background/70">{t("homePage.aiPromoHint")}</p>
+            <Wand2 className="absolute right-6 top-6 h-10 w-10 opacity-30" />
+            <div className="relative">
+              <p className="text-lg font-semibold">{t("homePage.aiPromoTitle")}</p>
+              <p className="mt-1 text-sm text-background/70">{t("homePage.aiPromoHint")}</p>
+            </div>
           </Link>
-        </aside>
-      </div>
+        </div>
 
-      <TrendingGrid trending={data.trending} />
+        {trending.length > 0 ? (
+          <section>
+            <h2 className="text-[22px] font-semibold tracking-tight">{t("homePage.quick.trends")}</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">Mashhur uslublarni sinab ko'ring</p>
+            <div className="no-scrollbar mt-4 flex gap-4 overflow-x-auto pb-2">
+              {trending.slice(0, 8).map((style) => (
+                <Link
+                  key={style.id}
+                  to="/explore/$styleId"
+                  params={{ styleId: style.id }}
+                  className="w-[160px] shrink-0"
+                >
+                  <div className="aspect-[3/4] overflow-hidden rounded-xl bg-surface">
+                    <img
+                      src={getHairstyleImageUrl({ imageUrl: style.imageUrl })}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <p className="mt-2 truncate text-sm font-semibold">{style.title}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        <MarketplaceListingGrid
+          title={t("home.nearby")}
+          subtitle={`${filtered.length} ta salon topildi`}
+          salons={filtered}
+          loading={loading}
+          emptyHint={t("homePage.emptyHint")}
+        />
+      </div>
     </div>
   );
 }

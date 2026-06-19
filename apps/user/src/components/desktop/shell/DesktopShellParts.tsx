@@ -34,50 +34,63 @@ type ShellProps = {
 export function ShellMarketplace({ children, chatUnread = 0, notificationsUnread = 0, fullBleed }: ShellProps) {
   const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isHome = pathname === "/";
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-6 px-8">
-          <Link to="/" className="shrink-0 text-lg font-bold tracking-tight">
-            mysaloon
+      <header
+        className={cn(
+          "sticky top-0 z-40 border-b border-border bg-background",
+          isHome ? "shadow-sm" : "bg-background/95 backdrop-blur-md",
+        )}
+      >
+        <div className="mx-auto flex h-[72px] max-w-[1440px] items-center gap-4 px-8">
+          <Link to="/" className="shrink-0 text-[#E61E4D]">
+            <span className="text-xl font-bold tracking-tight">mysaloon</span>
           </Link>
-          <nav className="hidden items-center gap-1 xl:flex">
-            {MAIN_NAV.map(({ to, labelKey, icon: Icon }) => {
+
+          <nav className="hidden flex-1 items-center justify-center gap-6 md:flex">
+            {MAIN_NAV.map(({ to, labelKey }) => {
               const active = pathname === to || pathname.startsWith(`${to}/`);
               return (
                 <Link
                   key={to}
                   to={to}
                   className={cn(
-                    "flex items-center gap-2 rounded-full px-3 py-2 text-sm font-bold transition-colors",
-                    active ? "bg-surface text-foreground" : "text-muted-foreground hover:text-foreground",
+                    "border-b-2 pb-5 pt-6 text-sm font-semibold transition-colors",
+                    active ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  <Icon className="h-4 w-4" />
                   {t(labelKey, { defaultValue: labelKey })}
                 </Link>
               );
             })}
           </nav>
-          <div className="mx-auto hidden max-w-xl flex-1 lg:block">
-            <DesktopSearchBar value="" onChange={() => {}} />
-          </div>
-          <div className="flex shrink-0 items-center gap-3">
+
+          <div className="ml-auto flex shrink-0 items-center gap-3">
+            <Link
+              to="/today"
+              className="hidden rounded-full px-4 py-2.5 text-sm font-semibold hover:bg-surface lg:block"
+            >
+              {t("salon.bookNow", { defaultValue: "Salon ochish" })}
+            </Link>
             <AudienceSwitch />
-            <Link to="/notifications" className="relative grid h-10 w-10 place-items-center rounded-full bg-surface">
-              <Bell className="h-4 w-4" />
+            <Link to="/notifications" className="relative grid h-10 w-10 place-items-center rounded-full hover:bg-surface">
+              <Bell className="h-5 w-5" />
               {notificationsUnread > 0 ? (
-                <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-foreground" />
+                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#E61E4D]" />
               ) : null}
             </Link>
-            <Link to="/profile" className="grid h-10 w-10 place-items-center rounded-full bg-foreground text-background">
-              <User className="h-4 w-4" />
+            <Link
+              to="/profile"
+              className="grid h-10 w-10 place-items-center rounded-full border border-border bg-surface"
+            >
+              <User className="h-5 w-5" />
             </Link>
           </div>
         </div>
       </header>
-      <main className={cn("flex-1", !fullBleed && "mx-auto w-full max-w-[1440px] px-8 pb-24 pt-6")}>
+      <main className={cn("flex-1", !fullBleed && "mx-auto w-full max-w-[1440px] px-8 pb-24 pt-8")}>
         {children}
       </main>
     </div>

@@ -1,12 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { Heart, MapPin, Star } from "lucide-react";
+import { Heart, Star } from "lucide-react";
 import type { Salon } from "@/lib/mock-data";
 import { shortPrice } from "@/lib/mock-data";
 import { getSalonCoverUrl } from "@/lib/cover-images";
 import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
 
-export type DesktopSalonCardVariant = "grid" | "row" | "editorial";
+export type DesktopSalonCardVariant = "grid" | "row" | "editorial" | "marketplace";
 
 type Props = {
   salon: Salon;
@@ -17,6 +17,57 @@ export function DesktopSalonCard({ salon, variant = "grid" }: Props) {
   const { isFav, toggle } = useFavorites();
   const fav = isFav(salon.id);
   const cover = salon.coverUrl ?? getSalonCoverUrl(salon.coverSeed);
+  const isGuestFavorite = salon.rating >= 4.8;
+
+  if (variant === "marketplace") {
+    return (
+      <Link to="/salon/$id" params={{ id: salon.id }} className="group block">
+        <div className="relative aspect-square overflow-hidden rounded-xl bg-[#f0f0f0]">
+          <img
+            src={cover}
+            alt=""
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggle(salon.id);
+            }}
+            className="absolute right-3 top-3 text-white drop-shadow-md transition-transform hover:scale-110"
+            aria-label="Sevimli"
+          >
+            <Heart
+              className={cn("h-6 w-6", fav ? "fill-white" : "fill-black/20 stroke-white stroke-[2px]")}
+            />
+          </button>
+          {isGuestFavorite ? (
+            <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold shadow-sm">
+              Top tanlov
+            </span>
+          ) : null}
+        </div>
+        <div className="mt-3 space-y-0.5">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="truncate text-[15px] font-semibold leading-snug">{salon.name}</h3>
+            <span className="flex shrink-0 items-center gap-0.5 text-[15px] font-normal">
+              <Star className="h-3.5 w-3.5 fill-foreground" />
+              {salon.rating.toFixed(1)}
+            </span>
+          </div>
+          <p className="truncate text-[15px] text-muted-foreground">
+            {salon.category} · {salon.distanceKm} km
+          </p>
+          <p className="text-[15px]">
+            <span className="font-semibold">{shortPrice(salon.priceFrom)}</span>
+            <span className="font-normal text-muted-foreground"> dan</span>
+          </p>
+        </div>
+      </Link>
+    );
+  }
 
   if (variant === "row") {
     return (
@@ -40,10 +91,6 @@ export function DesktopSalonCard({ salon, variant = "grid" }: Props) {
             </span>
             <span className="text-muted-foreground">·</span>
             <span>{shortPrice(salon.priceFrom)}+</span>
-            <span className="text-muted-foreground">·</span>
-            <span className="flex items-center gap-1 text-muted-foreground">
-              <MapPin className="h-3 w-3" /> {salon.distanceKm} km
-            </span>
           </div>
         </div>
         <Link
@@ -105,8 +152,6 @@ export function DesktopSalonCard({ salon, variant = "grid" }: Props) {
             </span>
             <span>·</span>
             <span>{shortPrice(salon.priceFrom)}+</span>
-            <span>·</span>
-            <span>{salon.distanceKm} km</span>
           </div>
         </div>
       </Link>
