@@ -8,8 +8,12 @@ import { cn } from "@/lib/utils";
 import { createSupportTicket, fetchSupportTickets } from "@/lib/api/support";
 import { authQueryEnabled } from "@/lib/auth-query";
 import { getAuthUserId } from "@/lib/auth-user";
+import { parseSubpageBackTo } from "@/lib/subpage-back";
 
 export const Route = createFileRoute("/support")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    backTo: typeof search.backTo === "string" ? search.backTo : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Yordam — mysaloon.uz" },
@@ -39,6 +43,8 @@ const FAQ = [
 ];
 
 function Support() {
+  const { backTo: backToParam } = Route.useSearch();
+  const backTo = parseSubpageBackTo({ backTo: backToParam }, "/settings?section=help");
   const [open, setOpen] = useState<number | null>(0);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -63,7 +69,7 @@ function Support() {
   });
 
   return (
-    <ProfileSubpageLayout title="Yordam">
+    <ProfileSubpageLayout title="Yordam" backTo={backTo}>
       <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
         <div className="space-y-2">
           {FAQ.map((item, i) => {

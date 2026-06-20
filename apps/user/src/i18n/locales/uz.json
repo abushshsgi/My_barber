@@ -439,6 +439,8 @@
     "pageLead": "Shaxsiy ma'lumotlar, xavfsizlik, manzillar va ilova afzalliklari.",
     "manageDetails": "Batafsil sozlamalar",
     "done": "Tayyor",
+    "saved": "Saqlandi",
+    "resetDone": "Standart sozlamalar tiklandi",
     "bookingReminders": "Buyurtma eslatmalari",
     "chatAlerts": "Chat bildirishnomalari",
     "reduceMotion": "Animatsiyani kamaytirish",
@@ -475,7 +477,11 @@
       "add": "Qo'shish",
       "manage": "Boshqarish",
       "view": "Ko'rish",
-      "contact": "Bog'lanish"
+      "contact": "Bog'lanish",
+      "contactSupport": "Yordam markaziga yozish"
+    },
+    "errors": {
+      "nameRequired": "Ism bo'sh bo'lmasligi kerak"
     },
     "row": {
       "notProvided": "Ko'rsatilmagan",

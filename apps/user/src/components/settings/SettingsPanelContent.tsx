@@ -1,11 +1,21 @@
 import { Link } from "@tanstack/react-router";
+import { ChevronLeft } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { LogOut } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
-import { SettingsFieldRow } from "@/components/settings/SettingsFieldRow";
+import { SettingsEditActions, SettingsFieldRow } from "@/components/settings/SettingsFieldRow";
 import type { SettingsPageState } from "@/components/settings/useSettingsPage";
 import { SETTINGS_LANGS } from "@/components/settings/useSettingsPage";
 import { setLang } from "@/i18n/config";
+import type { SettingsEditField } from "@/lib/settings-nav";
 import type { SettingsSection } from "@/lib/settings-nav";
 import { SETTINGS_SECTION_TITLE_KEYS } from "@/lib/settings-nav";
 import { cn } from "@/lib/utils";
@@ -41,9 +51,11 @@ function Toggle({
 type Props = {
   section: SettingsSection;
   state: SettingsPageState;
+  initialEdit?: SettingsEditField;
+  showBack?: boolean;
 };
 
-export function SettingsPanelContent({ section, state }: Props) {
+export function SettingsPanelContent({ section, state, initialEdit, showBack }: Props) {
   const {
     t,
     activeLang,
@@ -63,23 +75,77 @@ export function SettingsPanelContent({ section, state }: Props) {
     notificationItems,
     addresses,
     defaultAddressLabel,
+    defaultAddressId,
     langLabel,
     securityMeta,
   } = state;
 
   const titleMeta = SETTINGS_SECTION_TITLE_KEYS[section];
-  const [editName, setEditName] = useState(false);
-  const [editPassword, setEditPassword] = useState(false);
-  const [editLang, setEditLang] = useState(false);
+  const [editName, setEditName] = useState(initialEdit === "name");
+  const [editPassword, setEditPassword] = useState(initialEdit === "password");
+  const [editLang, setEditLang] = useState(initialEdit === "language");
+  const [editAudience, setEditAudience] = useState(initialEdit === "audience");
+  const [phoneDialogOpen, setPhoneDialogOpen] = useState(false);
   const [nameDraft, setNameDraft] = useState(user.name);
+
+  useEffect(() => {
+    setNameDraft(user.name);
+  }, [user.name]);
+
+  useEffect(() => {
+    if (changePw.isSuccess || setPw.isSuccess) {
+      setEditPassword(false);
+      setOldPassword("");
+      setNewPassword("");
+    }
+  }, [changePw.isSuccess, setPw.isSuccess, setNewPassword, setOldPassword]);
 
   const onOff = (on: boolean) =>
     on
       ? t("settings.row.on", { defaultValue: "Yoqilgan" })
       : t("settings.row.off", { defaultValue: "O'chirilgan" });
 
+  const cancelLabel = t("common.cancel", { defaultValue: "Bekor" });
+  const saveLabel = t("common.save", { defaultValue: "Saqlash" });
+
+  const saveName = () => {
+    const next = nameDraft.trim();
+    if (!next) {
+      toast.error(t("settings.errors.nameRequired", { defaultValue: "Ism bo'sh bo'lmasligi kerak" }));
+      return;
+    }
+    if (next === user.name) {
+      setEditName(false);
+      return;
+    }
+    updateMe.mutate(
+      { full_name: next },
+      {
+        onSuccess: () => {
+          toast.success(t("settings.saved", { defaultValue: "Saqlandi" }));
+          setEditName(false);
+        },
+        onError: (error: Error) => toast.error(error.message),
+      },
+    );
+  };
+
+  const addressEditTo = defaultAddressId
+    ? `/addresses?backTo=${encodeURIComponent("/settings?section=addresses")}`
+    : `/addresses?backTo=${encodeURIComponent("/settings?section=addresses")}`;
+
   return (
     <div>
+      {showBack ? (
+        <Link
+          to="/profile"
+          className="mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-foreground transition-opacity hover:opacity-80 lg:hidden"
+        >
+          <ChevronLeft className="h-4 w-4" strokeWidth={2.2} />
+          {t("common.back", { defaultValue: "Orqaga" })}
+        </Link>
+      ) : null}
+
       <h2 className="text-[22px] font-semibold tracking-tight text-foreground">
         {t(titleMeta.titleKey, { defaultValue: titleMeta.defaultTitle })}
       </h2>
@@ -91,37 +157,37 @@ export function SettingsPanelContent({ section, state }: Props) {
               label={t("settings.fields.legalName", { defaultValue: "Rasmiy ism" })}
               value={user.name}
               actionLabel={t("settings.actions.edit", { defaultValue: "Tahrirlash" })}
-              onAction={() => {
-                setNameDraft(user.name);
-                setEditName((v) => !v);
-              }}
+              cancelLabel={cancelLabel}
               expanded={editName}
+              onAction={() => {
+                if (editName) {
+                  setEditName(false);
+                  setNameDraft(user.name);
+                } else {
+                  setNameDraft(user.name);
+                  setEditName(true);
+                }
+              }}
             >
               <input
                 type="text"
                 value={nameDraft}
                 onChange={(e) => setNameDraft(e.target.value)}
+                autoFocus
                 className="w-full rounded-lg border border-border px-3 py-2.5 text-sm font-medium outline-none focus:border-foreground"
               />
-              <div className="mt-3 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const next = nameDraft.trim();
-                    if (next && next !== user.name) updateMe.mutate({ full_name: next });
+              <div className="mt-3">
+                <SettingsEditActions
+                  saveLabel={saveLabel}
+                  cancelLabel={cancelLabel}
+                  saving={updateMe.isPending}
+                  saveDisabled={!nameDraft.trim()}
+                  onSave={saveName}
+                  onCancel={() => {
                     setEditName(false);
+                    setNameDraft(user.name);
                   }}
-                  className="rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-background"
-                >
-                  {t("common.save", { defaultValue: "Saqlash" })}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditName(false)}
-                  className="rounded-lg border border-border px-4 py-2 text-sm font-semibold"
-                >
-                  {t("common.cancel", { defaultValue: "Bekor" })}
-                </button>
+                />
               </div>
             </SettingsFieldRow>
             <SettingsFieldRow
@@ -130,7 +196,7 @@ export function SettingsPanelContent({ section, state }: Props) {
               emptyLabel={t("settings.row.notProvided", { defaultValue: "Ko'rsatilmagan" })}
               hint={t("settings.fields.phoneHint")}
               actionLabel={t("settings.actions.edit", { defaultValue: "Tahrirlash" })}
-              actionTo="/support"
+              onAction={() => setPhoneDialogOpen(true)}
             />
             <SettingsFieldRow
               label={t("settings.fields.address", { defaultValue: "Manzil" })}
@@ -141,7 +207,7 @@ export function SettingsPanelContent({ section, state }: Props) {
                   ? t("settings.actions.edit", { defaultValue: "Tahrirlash" })
                   : t("settings.actions.add", { defaultValue: "Qo'shish" })
               }
-              actionTo="/addresses"
+              actionTo={addressEditTo}
             />
           </>
         )}
@@ -156,8 +222,17 @@ export function SettingsPanelContent({ section, state }: Props) {
                   ? t("settings.actions.edit", { defaultValue: "Tahrirlash" })
                   : t("settings.actions.add", { defaultValue: "Qo'shish" })
               }
-              onAction={() => setEditPassword((v) => !v)}
+              cancelLabel={cancelLabel}
               expanded={editPassword}
+              onAction={() => {
+                if (editPassword) {
+                  setEditPassword(false);
+                  setOldPassword("");
+                  setNewPassword("");
+                } else {
+                  setEditPassword(true);
+                }
+              }}
             >
               <div className="space-y-3">
                 {me.has_password ? (
@@ -166,6 +241,7 @@ export function SettingsPanelContent({ section, state }: Props) {
                     placeholder={t("settings.currentPassword")}
                     value={oldPassword}
                     onChange={(e) => setOldPassword(e.target.value)}
+                    autoFocus
                     className="w-full rounded-lg border border-border px-3 py-2.5 text-sm outline-none focus:border-foreground"
                   />
                 ) : (
@@ -178,18 +254,22 @@ export function SettingsPanelContent({ section, state }: Props) {
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="w-full rounded-lg border border-border px-3 py-2.5 text-sm outline-none focus:border-foreground"
                 />
-                <button
-                  type="button"
-                  disabled={
+                <SettingsEditActions
+                  saveLabel={me.has_password ? t("settings.changePassword") : t("settings.setPassword")}
+                  cancelLabel={cancelLabel}
+                  saving={me.has_password ? changePw.isPending : setPw.isPending}
+                  saveDisabled={
                     me.has_password
-                      ? changePw.isPending || newPassword.length < 8 || !oldPassword
-                      : setPw.isPending || newPassword.length < 8
+                      ? newPassword.length < 8 || !oldPassword
+                      : newPassword.length < 8
                   }
-                  onClick={() => (me.has_password ? changePw.mutate() : setPw.mutate())}
-                  className="rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-background disabled:opacity-60"
-                >
-                  {me.has_password ? t("settings.changePassword") : t("settings.setPassword")}
-                </button>
+                  onSave={() => (me.has_password ? changePw.mutate() : setPw.mutate())}
+                  onCancel={() => {
+                    setEditPassword(false);
+                    setOldPassword("");
+                    setNewPassword("");
+                  }}
+                />
               </div>
             </SettingsFieldRow>
             <SettingsFieldRow
@@ -208,15 +288,13 @@ export function SettingsPanelContent({ section, state }: Props) {
               label={t("settings.fields.dataPrivacy", { defaultValue: "Ma'lumotlar va maxfiylik" })}
               value={t("settings.hubs.privacy.meta", { defaultValue: "Ma'lumot va ruxsatlar" })}
               actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
-              actionTo="/privacy"
+              actionTo={`/privacy?backTo=${encodeURIComponent("/settings?section=privacy")}`}
             />
             <SettingsFieldRow
               label={t("settings.fields.accountData", { defaultValue: "Hisob ma'lumotlari" })}
-              hint={t("settings.fields.accountDataHint", {
-                defaultValue: "Ma'lumotlaringizni ko'rish yoki yuklab olish uchun maxfiylik sahifasiga o'ting.",
-              })}
+              hint={t("settings.fields.accountDataHint")}
               actionLabel={t("settings.actions.view", { defaultValue: "Ko'rish" })}
-              actionTo="/privacy"
+              actionTo={`/privacy?backTo=${encodeURIComponent("/settings?section=privacy")}`}
             />
           </>
         )}
@@ -227,7 +305,15 @@ export function SettingsPanelContent({ section, state }: Props) {
               key={item.key}
               label={item.label}
               value={onOff(prefs[item.key])}
-              trailing={<Toggle value={prefs[item.key]} onChange={(v) => updatePref(item.key, v)} />}
+              trailing={
+                <Toggle
+                  value={prefs[item.key]}
+                  onChange={(v) => {
+                    updatePref(item.key, v);
+                    toast.success(t("settings.saved", { defaultValue: "Saqlandi" }));
+                  }}
+                />
+              }
             />
           ))}
 
@@ -237,8 +323,9 @@ export function SettingsPanelContent({ section, state }: Props) {
               label={t("settings.language")}
               value={langLabel}
               actionLabel={t("settings.actions.edit", { defaultValue: "Tahrirlash" })}
-              onAction={() => setEditLang((v) => !v)}
+              cancelLabel={cancelLabel}
               expanded={editLang}
+              onAction={() => setEditLang((v) => !v)}
             >
               <div className="divide-y divide-border rounded-lg border border-border">
                 {SETTINGS_LANGS.map((lang) => (
@@ -248,6 +335,7 @@ export function SettingsPanelContent({ section, state }: Props) {
                     onClick={() => {
                       void setLang(lang.code);
                       setEditLang(false);
+                      toast.success(t("settings.saved", { defaultValue: "Saqlandi" }));
                     }}
                     className={cn(
                       "flex w-full px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-surface/60",
@@ -259,13 +347,28 @@ export function SettingsPanelContent({ section, state }: Props) {
                 ))}
               </div>
             </SettingsFieldRow>
-            <SettingsFieldRow label={t("settings.preferredAudience")} expanded>
+            <SettingsFieldRow
+              label={t("settings.preferredAudience")}
+              value={t(`audience.${prefs.preferredAudience}`, { defaultValue: prefs.preferredAudience })}
+              actionLabel={t("settings.actions.edit", { defaultValue: "Tahrirlash" })}
+              cancelLabel={cancelLabel}
+              expanded={editAudience}
+              onAction={() => setEditAudience((v) => !v)}
+            >
               <AudienceSwitch showProfileHint={false} />
             </SettingsFieldRow>
             <SettingsFieldRow
               label={t("settings.reduceMotion")}
               value={onOff(prefs.reduceMotion)}
-              trailing={<Toggle value={prefs.reduceMotion} onChange={(v) => updatePref("reduceMotion", v)} />}
+              trailing={
+                <Toggle
+                  value={prefs.reduceMotion}
+                  onChange={(v) => {
+                    updatePref("reduceMotion", v);
+                    toast.success(t("settings.saved", { defaultValue: "Saqlandi" }));
+                  }}
+                />
+              }
             />
           </>
         )}
@@ -279,7 +382,7 @@ export function SettingsPanelContent({ section, state }: Props) {
                 defaultValue: "{{count}} ta manzil",
               })}
               actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
-              actionTo="/addresses"
+              actionTo={`/addresses?backTo=${encodeURIComponent("/settings?section=addresses")}`}
             />
             <SettingsFieldRow
               label={t("settings.fields.defaultAddress", { defaultValue: "Asosiy manzil" })}
@@ -290,7 +393,7 @@ export function SettingsPanelContent({ section, state }: Props) {
                   ? t("settings.actions.edit", { defaultValue: "Tahrirlash" })
                   : t("settings.actions.add", { defaultValue: "Qo'shish" })
               }
-              actionTo="/addresses"
+              actionTo={addressEditTo}
             />
           </>
         )}
@@ -301,7 +404,7 @@ export function SettingsPanelContent({ section, state }: Props) {
             value={t("settings.hubs.family.meta", { defaultValue: "Oila a'zolarini boshqaring" })}
             hint={t("settings.hubs.family.desc")}
             actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
-            actionTo="/family"
+            actionTo={`/family?backTo=${encodeURIComponent("/settings?section=family")}`}
           />
         )}
 
@@ -312,12 +415,12 @@ export function SettingsPanelContent({ section, state }: Props) {
               value={t("settings.hubs.help.meta", { defaultValue: "Biz bilan bog'laning" })}
               hint={t("settings.hubs.help.desc")}
               actionLabel={t("settings.actions.contact", { defaultValue: "Bog'lanish" })}
-              actionTo="/support"
+              actionTo={`/support?backTo=${encodeURIComponent("/settings?section=help")}`}
             />
             <SettingsFieldRow
               label={t("settings.fields.faq", { defaultValue: "Ko'p so'raladigan savollar" })}
               actionLabel={t("settings.actions.view", { defaultValue: "Ko'rish" })}
-              actionTo="/support"
+              actionTo={`/support?backTo=${encodeURIComponent("/settings?section=help")}`}
             />
           </>
         )}
@@ -327,7 +430,10 @@ export function SettingsPanelContent({ section, state }: Props) {
         <div className="mt-8 flex flex-wrap gap-3 border-t border-border pt-8">
           <button
             type="button"
-            onClick={resetPrefs}
+            onClick={() => {
+              resetPrefs();
+              toast.success(t("settings.resetDone", { defaultValue: "Standart sozlamalar tiklandi" }));
+            }}
             className="text-sm font-semibold text-muted-foreground underline underline-offset-2 hover:text-foreground"
           >
             {t("settings.reset")}
@@ -345,17 +451,34 @@ export function SettingsPanelContent({ section, state }: Props) {
 
       {section === "personal" ? (
         <div className="mt-10 rounded-xl border border-border bg-surface/40 p-5">
-          <p className="text-sm font-semibold">{t("settings.privacyNote.title", { defaultValue: "Nima uchun ba'zi ma'lumotlar ko'rinmaydi?" })}</p>
+          <p className="text-sm font-semibold">{t("settings.privacyNote.title")}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {t("settings.privacyNote.body", {
-              defaultValue: "Ba'zi ma'lumotlar faqat tegishli bo'limda ko'rsatiladi. To'liq boshqarish uchun maxfiylik sahifasiga o'ting.",
-            })}{" "}
+            {t("settings.privacyNote.body")}{" "}
             <Link to="/privacy" className="font-semibold text-foreground underline underline-offset-2">
               {t("profile.privacy")}
             </Link>
           </p>
         </div>
       ) : null}
+
+      <Dialog open={phoneDialogOpen} onOpenChange={setPhoneDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("settings.fields.phone", { defaultValue: "Telefon" })}</DialogTitle>
+            <DialogDescription>{t("settings.fields.phoneHint")}</DialogDescription>
+          </DialogHeader>
+          {user.phone ? (
+            <p className="text-sm font-medium text-foreground">{user.phone}</p>
+          ) : null}
+          <Link
+            to="/support"
+            className="inline-flex w-fit rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background"
+            onClick={() => setPhoneDialogOpen(false)}
+          >
+            {t("settings.actions.contactSupport", { defaultValue: "Yordam markaziga yozish" })}
+          </Link>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

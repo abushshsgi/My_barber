@@ -21,9 +21,13 @@ import {
 import { useMe } from "@/hooks/use-me";
 import { useRegions } from "@/hooks/use-regions";
 import type { ApiUserAddress } from "@/lib/api/addresses";
+import { parseSubpageBackTo } from "@/lib/subpage-back";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/addresses")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    backTo: typeof search.backTo === "string" ? search.backTo : undefined,
+  }),
   head: () => ({ meta: [{ title: "Manzillarim — mysaloon.uz" }] }),
   component: AddressesPage,
 });
@@ -110,6 +114,8 @@ function AddressCard({
 
 function AddressesPage() {
   const { t } = useTranslation();
+  const { backTo: backToParam } = Route.useSearch();
+  const backTo = parseSubpageBackTo({ backTo: backToParam });
   const { data: me } = useMe();
   const { data: regions = [] } = useRegions();
   const { data: addresses = [], isLoading } = useUserAddresses();
@@ -159,7 +165,7 @@ function AddressesPage() {
   };
 
   return (
-    <ProfileSubpageLayout title={t("addresses.title")} subtitle={t("addresses.hint")}>
+    <ProfileSubpageLayout title={t("addresses.title")} subtitle={t("addresses.hint")} backTo={backTo}>
       {editor ? (
         <ProfileSubpageCard>
           <h2 className="mb-4 text-base font-bold">

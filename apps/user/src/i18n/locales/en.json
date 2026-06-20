@@ -422,6 +422,8 @@
     "pageLead": "Personal info, security, addresses, and app preferences.",
     "manageDetails": "Manage details",
     "done": "Done",
+    "saved": "Saved",
+    "resetDone": "Default settings restored",
     "bookingReminders": "Booking reminders",
     "chatAlerts": "Chat alerts",
     "reduceMotion": "Reduce motion",
@@ -458,7 +460,11 @@
       "add": "Add",
       "manage": "Manage",
       "view": "View",
-      "contact": "Contact"
+      "contact": "Contact",
+      "contactSupport": "Contact support"
+    },
+    "errors": {
+      "nameRequired": "Name cannot be empty"
     },
     "row": {
       "notProvided": "Not provided",

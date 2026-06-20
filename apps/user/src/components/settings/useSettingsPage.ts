@@ -48,6 +48,7 @@ export function useSettingsPage() {
   const { data: addresses = [] } = useUserAddresses();
   const defaultAddress = addresses.find((a) => a.is_default) ?? addresses[0];
   const defaultAddressLabel = defaultAddress?.address_line?.trim() || undefined;
+  const defaultAddressId = defaultAddress?.id;
   const [prefs, setPrefs] = useState<SettingsPrefs>(SETTINGS_DEFAULTS);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -143,6 +144,7 @@ export function useSettingsPage() {
     notificationItems,
     addresses,
     defaultAddressLabel,
+    defaultAddressId,
     langLabel,
     securityMeta,
   };

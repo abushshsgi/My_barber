@@ -23,11 +23,21 @@ export const SETTINGS_SECTIONS = [
 
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 
+export const SETTINGS_EDIT_FIELDS = ["name", "password", "language", "audience"] as const;
+export type SettingsEditField = (typeof SETTINGS_EDIT_FIELDS)[number];
+
 export function parseSettingsSection(value: unknown): SettingsSection {
   if (typeof value === "string" && SETTINGS_SECTIONS.includes(value as SettingsSection)) {
     return value as SettingsSection;
   }
   return "personal";
+}
+
+export function parseSettingsEdit(value: unknown): SettingsEditField | undefined {
+  if (typeof value === "string" && SETTINGS_EDIT_FIELDS.includes(value as SettingsEditField)) {
+    return value as SettingsEditField;
+  }
+  return undefined;
 }
 
 export type SettingsNavItem = {

@@ -1,7 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 
+import { parseSubpageBackTo } from "@/lib/subpage-back";
+
 export const Route = createFileRoute("/privacy")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    backTo: typeof search.backTo === "string" ? search.backTo : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Maxfiylik — mysaloon.uz" },
@@ -12,8 +17,11 @@ export const Route = createFileRoute("/privacy")({
 });
 
 function Privacy() {
+  const { backTo: backToParam } = Route.useSearch();
+  const backTo = parseSubpageBackTo({ backTo: backToParam }, "/settings?section=privacy");
+
   return (
-    <ProfileSubpageLayout title="Maxfiylik">
+    <ProfileSubpageLayout title="Maxfiylik" backTo={backTo}>
       <div className="space-y-4">
         <ProfileSubpageCard>
           <h2 className="text-base font-bold tracking-tight">Ma'lumotlaringiz</h2>
