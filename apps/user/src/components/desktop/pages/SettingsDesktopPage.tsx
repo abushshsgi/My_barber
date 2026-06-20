@@ -28,16 +28,16 @@ export function SettingsDesktopPage({
   const { t } = state;
 
   return (
-    <div className={cn("mx-auto w-full max-w-6xl px-4 lg:px-0", DESKTOP_ACCOUNT_BG)}>
+    <div className={cn("w-full", DESKTOP_ACCOUNT_BG)}>
       <SettingsTopBar
         className="mb-6 border-b border-border/70 pb-4"
         backLabel={t("common.back", { defaultValue: "Orqaga" })}
         doneLabel={t("settings.done", { defaultValue: "Tayyor" })}
       />
 
-      <div className="flex flex-col gap-10 lg:flex-row lg:gap-16 lg:pb-12">
-        <aside className="lg:w-[280px] lg:shrink-0">
-          <h1 className="text-[32px] font-semibold tracking-tight text-foreground">
+      <div className="flex flex-col gap-10 lg:flex-row lg:gap-12 xl:gap-16 lg:pb-12">
+        <aside className="lg:w-[min(280px,22%)] lg:shrink-0">
+          <h1 className="text-[32px] font-semibold tracking-tight text-foreground xl:text-[36px]">
             {t("settings.pageTitle", { defaultValue: "Hisob sozlamalari" })}
           </h1>
           <div className="mt-6">
@@ -45,7 +45,7 @@ export function SettingsDesktopPage({
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1 lg:max-w-[720px] lg:pt-1">
+        <main className="min-w-0 flex-1 lg:pt-1">
           <SettingsPanelContent
             section={section}
             state={state}
