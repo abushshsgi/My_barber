@@ -23,8 +23,10 @@ export const WALLET_TRANSACTIONS: WalletTransaction[] = [
   { id: "t11", kind: "in", title: "Cashback · Glow Spa", date: "15 dek", group: "Dekabr", amount: 14000 },
 ];
 
+import { formatPrice } from "@/lib/price-display";
+
 export function formatWalletTxAmount(n: number) {
-  return new Intl.NumberFormat("uz-UZ").format(Math.abs(n)) + " so'm";
+  return formatPrice(Math.abs(n));
 }
 
 export type WalletTxTab = "all" | "in" | "out";

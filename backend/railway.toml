@@ -1,10 +1,9 @@
 # Railway: Root Directory = backend bo‘lsa, bu fayl avtomatik o‘qiladi.
 # Start: backend/Procfile → bin/start.sh (migrate + daphne ASGI)
 # Redis: “New” → Redis → REDIS_URL env avtomatik; WebSocket bir nechta replikada ishlaydi.
-# Cron: “Cron Jobs” yoki alohida servis — remind_bookings (qarang .env.example).
-# Misol (Railway Cron Jobs):
-#   schedule: */10 * * * *
-#   command:  python manage.py remind_bookings
+# Cron: “Cron Jobs” yoki alohida servis — remind_bookings, sync_exchange_rates:
+#   schedule: 0 6 * * *
+#   command:  python manage.py sync_exchange_rates --if-stale
 # Production (mysaloon.uz) — Railway Variables:
 #   DJANGO_DEBUG=false
 #   DJANGO_ALLOWED_HOSTS=api.mysaloon.uz,.railway.app

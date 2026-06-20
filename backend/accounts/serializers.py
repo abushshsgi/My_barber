@@ -12,6 +12,7 @@ from salons.models import Salon
 
 from .models import User
 from .email_utils import is_internal_email
+from .name_validation import validate_display_name
 from .phone_utils import normalize_phone_field
 from .uz_regions import UzRegion
 from geo.region_resolver import REGION_MISMATCH_MSG, region_matches_gps
@@ -111,8 +112,24 @@ class UserSerializer(serializers.ModelSerializer):
     def validate_longitude(self, value):
         return self._quantize_coord(value)
 
+    def validate_full_name(self, value):
+        exclude = self.instance.pk if self.instance is not None else None
+        return validate_display_name(value, exclude_user_id=exclude)
+
     def validate(self, attrs):
         attrs = super().validate(attrs)
+        if ("first_name" in attrs or "last_name" in attrs) and "full_name" not in attrs:
+            inst = self.instance
+            first = (
+                attrs.get("first_name", getattr(inst, "first_name", "") if inst else "") or ""
+            ).strip()
+            last = (
+                attrs.get("last_name", getattr(inst, "last_name", "") if inst else "") or ""
+            ).strip()
+            combined = f"{first} {last}".strip()
+            if combined:
+                exclude = inst.pk if inst is not None else None
+                validate_display_name(combined, exclude_user_id=exclude)
         lat = attrs.get("latitude", getattr(self.instance, "latitude", None))
         lng = attrs.get("longitude", getattr(self.instance, "longitude", None))
         if (lat is None) ^ (lng is None):
@@ -168,12 +185,6 @@ class UserSerializer(serializers.ModelSerializer):
                         {"region": REGION_MISMATCH_MSG},
                     )
         return attrs
-
-    def validate_full_name(self, value):
-        value = (value or "").strip()
-        if not value:
-            raise serializers.ValidationError("Ism bo'sh bo'lmasligi kerak.")
-        return value
 
     def _apply_name_fields(self, validated_data: dict, instance: User | None = None) -> dict:
         inst = instance

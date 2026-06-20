@@ -130,7 +130,7 @@ from ai.views import (
     HairstyleListView,
 )
 from chat.views import ConversationListCreateView, ConversationMessagesView
-from geo.views import GeocodeView, ReverseGeocodeView, ValidateLocationView
+from geo.views import CurrencyRatesView, GeocodeView, ReverseGeocodeView, ValidateLocationView
 from notifications.push_views import BarberPushTokenView
 from wallet.payment_confirm import PaymentConfirmView
 from wallet.payment_views import PaymentCheckoutView, PaymentProvidersView
@@ -203,6 +203,7 @@ api_routes = [
     path("geo/geocode/", GeocodeView.as_view()),
     path("geo/reverse/", ReverseGeocodeView.as_view()),
     path("geo/validate/", ValidateLocationView.as_view()),
+    path("currencies/", CurrencyRatesView.as_view()),
     path("launch-interest/", LaunchInterestCreateView.as_view()),
     path("auth/phone/send-code/", PhoneSendCodeView.as_view()),
     path("auth/phone/verify/", PhoneVerifyView.as_view()),

@@ -3,6 +3,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from geo.coverage import published_salon_count
+from geo.currency import (
+    BASE_CURRENCY,
+    CURRENCY_LABELS,
+    CURRENCY_SYMBOLS,
+    SUPPORTED_CURRENCIES,
+    _parse_rates_json,
+    get_latest_exchange_rates,
+)
 from geo.region_resolver import resolve_region_from_coords
 from geo.services.dgis import DgisGeocoderError, geocode_query, reverse_geocode
 
@@ -97,5 +105,31 @@ class ValidateLocationView(APIView):
                 "in_uzbekistan": resolved.in_uzbekistan,
                 "salons_published": salon_count,
                 "has_coverage": salon_count > 0,
+            }
+        )
+
+
+class CurrencyRatesView(APIView):
+    """Valyuta ro'yxati va UZS ga nisbatan kurslar (ko'rsatish uchun)."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        snapshot = get_latest_exchange_rates(auto_sync=True)
+        rates = _parse_rates_json(snapshot.rates)
+        return Response(
+            {
+                "base": BASE_CURRENCY,
+                "updated_at": snapshot.fetched_at.isoformat(),
+                "source": snapshot.source,
+                "currencies": [
+                    {
+                        "code": code,
+                        "label": CURRENCY_LABELS.get(code, code),
+                        "symbol": CURRENCY_SYMBOLS.get(code, code),
+                        "uzs_per_unit": str(rates.get(code, "1")),
+                    }
+                    for code in SUPPORTED_CURRENCIES
+                ],
             }
         )

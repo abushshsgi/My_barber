@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import {
@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { LogOut } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
 import { SettingsEditActions, SettingsFieldRow } from "@/components/settings/SettingsFieldRow";
@@ -25,6 +25,10 @@ import { meQueryKeyFor } from "@/hooks/use-me";
 import { getAuthUserId } from "@/lib/auth-user";
 import { getUserAccessToken, getUserRefreshToken } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
+import { sanitizeDisplayNameInput, validateDisplayName } from "@/lib/validate-display-name";
+import { useCurrency } from "@/hooks/use-currency";
+import { fetchCurrencyRates } from "@/lib/api/currency";
+import { SUPPORTED_CURRENCY_CODES, type CurrencyCode } from "@mybarber/shared/currency";
 
 function Toggle({
   value,
@@ -88,6 +92,18 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
     sessionsCount,
   } = state;
 
+  const { currency, setCurrency, ratesUpdatedAt, ratesSource } = useCurrency();
+  const { data: currencyRates } = useQuery({
+    queryKey: ["currencies", "rates"],
+    queryFn: fetchCurrencyRates,
+    staleTime: 60 * 60 * 1000,
+  });
+
+  const currencyLabel =
+    t(`currency.codes.${currency}`, {
+      defaultValue: currencyRates?.currencies.find((c) => c.code === currency)?.label ?? currency,
+    }) ?? currency;
+
   const queryClient = useQueryClient();
   const [editEmail, setEditEmail] = useState(initialEdit === "email");
   const [emailStep, setEmailStep] = useState<"input" | "code">("input");
@@ -99,12 +115,18 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
   const [editPassword, setEditPassword] = useState(initialEdit === "password");
   const [editLang, setEditLang] = useState(initialEdit === "language");
   const [editAudience, setEditAudience] = useState(initialEdit === "audience");
+  const [editCurrency, setEditCurrency] = useState(false);
   const [phoneDialogOpen, setPhoneDialogOpen] = useState(false);
   const [nameDraft, setNameDraft] = useState(user.name);
 
   useEffect(() => {
     setNameDraft(user.name);
   }, [user.name]);
+
+  const nameValidation = useMemo(
+    () => validateDisplayName(nameDraft, user.name),
+    [nameDraft, user.name],
+  );
 
   useEffect(() => {
     if (changePw.isSuccess || setPw.isSuccess) {
@@ -161,17 +183,27 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
     : undefined;
 
   const saveName = () => {
-    const next = nameDraft.trim();
-    if (!next) {
-      toast.error(t("settings.errors.nameRequired", { defaultValue: "Ism bo'sh bo'lmasligi kerak" }));
+    const checked = validateDisplayName(nameDraft, user.name);
+    if (!checked.ok) {
+      toast.error(
+        t(`settings.errors.${checked.errorKey}`, {
+          defaultValue: "Ism noto'g'ri kiritilgan",
+        }),
+      );
       return;
     }
-    if (next === user.name) {
+    const next = checked.value;
+    if (next === user.name.trim()) {
       setEditName(false);
       return;
     }
+    const parts = next.split(/\s+/);
     updateMe.mutate(
-      { full_name: next, first_name: next.split(/\s+/)[0] ?? next, last_name: next.split(/\s+/).slice(1).join(" ") },
+      {
+        full_name: next,
+        first_name: parts[0] ?? next,
+        last_name: parts.slice(1).join(" "),
+      },
       {
         onSuccess: () => {
           toast.success(t("settings.saved", { defaultValue: "Saqlandi" }));
@@ -182,9 +214,11 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
     );
   };
 
+  const settingsAddressesBack = "/settings?section=addresses";
+  const addressManageTo = `/addresses?backTo=${encodeURIComponent(settingsAddressesBack)}`;
   const addressEditTo = defaultAddressId
-    ? `/addresses?backTo=${encodeURIComponent("/settings?section=addresses")}`
-    : `/addresses?backTo=${encodeURIComponent("/settings?section=addresses")}`;
+    ? `/addresses?edit=${defaultAddressId}&backTo=${encodeURIComponent(settingsAddressesBack)}`
+    : `/addresses?add=1&backTo=${encodeURIComponent(settingsAddressesBack)}`;
 
   return (
     <div>
@@ -224,16 +258,35 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
               <input
                 type="text"
                 value={nameDraft}
-                onChange={(e) => setNameDraft(e.target.value)}
+                onChange={(e) => setNameDraft(sanitizeDisplayNameInput(e.target.value))}
                 autoFocus
-                className="w-full rounded-lg border border-border px-3 py-2.5 text-sm font-medium outline-none focus:border-foreground"
+                autoComplete="name"
+                spellCheck={false}
+                maxLength={255}
+                aria-invalid={!nameValidation.ok}
+                className={cn(
+                  "w-full rounded-lg border px-3 py-2.5 text-sm font-medium outline-none focus:border-foreground",
+                  !nameValidation.ok ? "border-destructive" : "border-border",
+                )}
               />
+              <p className="mt-2 text-xs text-muted-foreground">
+                {t("settings.errors.nameHint", {
+                  defaultValue: "Ism va familiya. Faqat harflar — raqam va belgilar yo'q",
+                })}
+              </p>
+              {!nameValidation.ok ? (
+                <p className="mt-1 text-xs text-destructive">
+                  {t(`settings.errors.${nameValidation.errorKey}`, {
+                    defaultValue: "Ism noto'g'ri kiritilgan",
+                  })}
+                </p>
+              ) : null}
               <div className="mt-3">
                 <SettingsEditActions
                   saveLabel={saveLabel}
                   cancelLabel={cancelLabel}
                   saving={updateMe.isPending}
-                  saveDisabled={!nameDraft.trim()}
+                  saveDisabled={!nameValidation.ok || nameValidation.value === user.name.trim()}
                   onSave={saveName}
                   onCancel={() => {
                     setEditName(false);
@@ -503,6 +556,53 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
               </div>
             </SettingsFieldRow>
             <SettingsFieldRow
+              label={t("currency.title", { defaultValue: "Valyuta" })}
+              value={currencyLabel}
+              hint={
+                ratesUpdatedAt
+                  ? t("currency.ratesHint", {
+                      defaultValue:
+                        "Narxlar {{currency}} da ko'rsatiladi. Kurs: {{source}}, yangilangan {{date}}.",
+                      currency,
+                      source: ratesSource ?? "—",
+                      date: new Date(ratesUpdatedAt).toLocaleDateString(),
+                    })
+                  : t("currency.hint", {
+                      defaultValue: "Narxlar tanlangan valyutada ko'rsatiladi (bazada so'm).",
+                    })
+              }
+              actionLabel={t("settings.actions.edit", { defaultValue: "Tahrirlash" })}
+              cancelLabel={cancelLabel}
+              expanded={editCurrency}
+              onAction={() => setEditCurrency((v) => !v)}
+            >
+              <div className="divide-y divide-border rounded-lg border border-border">
+                {SUPPORTED_CURRENCY_CODES.map((code) => (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => {
+                      setCurrency(code as CurrencyCode);
+                      setEditCurrency(false);
+                      toast.success(t("settings.saved", { defaultValue: "Saqlandi" }));
+                    }}
+                    className={cn(
+                      "flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-surface/60",
+                      currency === code && "bg-surface font-semibold",
+                    )}
+                  >
+                    <span>
+                      {t(`currency.codes.${code}`, {
+                        defaultValue:
+                          currencyRates?.currencies.find((c) => c.code === code)?.label ?? code,
+                      })}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{code}</span>
+                  </button>
+                ))}
+              </div>
+            </SettingsFieldRow>
+            <SettingsFieldRow
               label={t("settings.preferredAudience")}
               value={t(`audience.${prefs.preferredAudience}`, { defaultValue: prefs.preferredAudience })}
               actionLabel={t("settings.actions.edit", { defaultValue: "Tahrirlash" })}
@@ -537,7 +637,7 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
                 defaultValue: "{{count}} ta manzil",
               })}
               actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
-              actionTo={`/addresses?backTo=${encodeURIComponent("/settings?section=addresses")}`}
+              actionTo={addressManageTo}
             />
             <SettingsFieldRow
               label={t("settings.fields.defaultAddress", { defaultValue: "Asosiy manzil" })}
@@ -594,6 +694,7 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
             type="button"
             onClick={() => {
               resetPrefs();
+              setCurrency("UZS");
               toast.success(t("settings.resetDone", { defaultValue: "Standart sozlamalar tiklandi" }));
             }}
             className="text-sm font-semibold text-muted-foreground underline underline-offset-2 hover:text-foreground"

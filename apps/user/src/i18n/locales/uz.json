@@ -480,6 +480,23 @@
     "checking": "Tasdiqlanmoqda…",
     "debugCode": "Dev kod"
   },
+  "currency": {
+    "title": "Valyuta",
+    "hint": "Narxlar tanlangan valyutada ko'rsatiladi (bazada so'm saqlanadi).",
+    "ratesHint": "Narxlar {{currency}} da. Kurs manbasi: {{source}}, yangilangan: {{date}}.",
+    "codes": {
+      "UZS": "O'zbek so'mi",
+      "USD": "AQSH dollari",
+      "EUR": "Yevro",
+      "RUB": "Rossiya rubli",
+      "KZT": "Qozog'iston tengesi",
+      "KGS": "Qirg'iz somi",
+      "TJS": "Tojik somonisi",
+      "TRY": "Turk lirasi",
+      "CNY": "Xitoy yuani",
+      "AED": "BAA dirhami"
+    }
+  },
   "settings": {
     "title": "Sozlamalar",
     "pageTitle": "Hisob sozlamalari",
@@ -538,7 +555,13 @@
       "contactSupport": "Yordam markaziga yozish"
     },
     "errors": {
-      "nameRequired": "Ism bo'sh bo'lmasligi kerak"
+      "nameRequired": "Ism bo'sh bo'lmasligi kerak",
+      "nameInvalidChars": "Faqat harflar, bo'sh joy, defis va apostrof ruxsat etiladi",
+      "nameNeedsFull": "Ism va familiyani to'liq kiriting (kamida 2 so'z)",
+      "namePartTooShort": "Har bir qism kamida 2 ta harfdan iborat bo'lishi kerak",
+      "nameTooLong": "Ism juda uzun",
+      "nameTooManyParts": "Ismda juda ko'p so'z",
+      "nameHint": "Ism va familiya. Faqat harflar — raqam va belgilar yo'q"
     },
     "row": {
       "notProvided": "Ko'rsatilmagan",

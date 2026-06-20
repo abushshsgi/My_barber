@@ -593,10 +593,4 @@ export const familyMembers: FamilyMember[] = [
   { id: "f3", name: "Amir K.", relation: "O'g'il", audience: "men", phone: "+998 91 000 12 34" },
 ];
 
-export const formatPrice = (uzs: number): string =>
-  new Intl.NumberFormat("uz-UZ").format(uzs) + " UZS";
-
-export const shortPrice = (uzs: number): string => {
-  if (uzs >= 1000) return `${Math.round(uzs / 1000)}k`;
-  return String(uzs);
-};
+export { formatPrice, shortPrice } from "@/lib/price-display";

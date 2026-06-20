@@ -456,6 +456,23 @@
     "checking": "Verifying…",
     "debugCode": "Dev code"
   },
+  "currency": {
+    "title": "Currency",
+    "hint": "Prices are shown in your selected currency (stored in UZS).",
+    "ratesHint": "Prices in {{currency}}. Rate source: {{source}}, updated: {{date}}.",
+    "codes": {
+      "UZS": "Uzbek som",
+      "USD": "US dollar",
+      "EUR": "Euro",
+      "RUB": "Russian ruble",
+      "KZT": "Kazakhstani tenge",
+      "KGS": "Kyrgyz som",
+      "TJS": "Tajik somoni",
+      "TRY": "Turkish lira",
+      "CNY": "Chinese yuan",
+      "AED": "UAE dirham"
+    }
+  },
   "settings": {
     "title": "Settings",
     "pageTitle": "Account settings",
@@ -514,7 +531,13 @@
       "contactSupport": "Contact support"
     },
     "errors": {
-      "nameRequired": "Name cannot be empty"
+      "nameRequired": "Name cannot be empty",
+      "nameInvalidChars": "Only letters, spaces, hyphens, and apostrophes are allowed",
+      "nameNeedsFull": "Enter first and last name (at least 2 words)",
+      "namePartTooShort": "Each part of the name must be at least 2 letters",
+      "nameTooLong": "Name is too long",
+      "nameTooManyParts": "Too many words in the name",
+      "nameHint": "First and last name. Letters only — no digits or symbols"
     },
     "row": {
       "notProvided": "Not provided",

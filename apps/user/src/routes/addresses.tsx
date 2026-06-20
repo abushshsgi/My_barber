@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, MapPin, Pencil, Plus, Star, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -27,6 +27,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/addresses")({
   validateSearch: (search: Record<string, unknown>) => ({
     backTo: typeof search.backTo === "string" ? search.backTo : undefined,
+    edit:
+      typeof search.edit === "number"
+        ? search.edit
+        : typeof search.edit === "string" && /^\d+$/.test(search.edit)
+          ? Number(search.edit)
+          : undefined,
+    add: search.add === true || search.add === "1" || search.add === 1,
   }),
   head: () => ({ meta: [{ title: "Manzillarim — mysaloon.uz" }] }),
   component: AddressesPage,
@@ -114,7 +121,8 @@ function AddressCard({
 
 function AddressesPage() {
   const { t } = useTranslation();
-  const { backTo: backToParam } = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const { backTo: backToParam, edit: editParam, add: addParam } = Route.useSearch();
   const backTo = parseSubpageBackTo({ backTo: backToParam });
   const { data: me } = useMe();
   const { data: regions = [] } = useRegions();
@@ -125,6 +133,28 @@ function AddressesPage() {
   const setDefault = useSetDefaultAddress();
 
   const [editor, setEditor] = useState<EditorMode | null>(null);
+
+  const closeEditor = () => {
+    setEditor(null);
+    if (editParam != null || addParam) {
+      void navigate({
+        to: "/addresses",
+        search: { backTo: backToParam },
+        replace: true,
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (editor !== null || isLoading) return;
+    if (editParam != null && addresses.some((a) => a.id === editParam)) {
+      setEditor({ type: "edit", id: editParam });
+      return;
+    }
+    if (addParam) {
+      setEditor({ type: "add" });
+    }
+  }, [addParam, addresses, editParam, editor, isLoading]);
 
   const regionMap = useMemo(
     () => Object.fromEntries(regions.map((r) => [r.value, r.label])),
@@ -159,6 +189,13 @@ function AddressesPage() {
         toast.success(t("addresses.saved", { defaultValue: "Manzil saqlandi" }));
       }
       setEditor(null);
+      if (editParam != null || addParam) {
+        void navigate({
+          to: "/addresses",
+          search: { backTo: backToParam },
+          replace: true,
+        });
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Xatolik");
     }
@@ -178,7 +215,7 @@ function AddressesPage() {
             initial={editorInitial}
             busy={busy}
             regionSyncMode="fill-empty"
-            onCancel={() => setEditor(null)}
+            onCancel={closeEditor}
             onSubmit={handleSubmit}
           />
         </ProfileSubpageCard>
