@@ -9,6 +9,7 @@ import { WalletDesktopPage } from "@/components/desktop/pages/WalletDesktopPage"
 import { PlasticCard } from "@/components/wallet/PlasticCard";
 import { ClientOnly } from "@/components/ClientOnly";
 import { WalletEmptyTransactions } from "@/components/wallet/WalletEmptyTransactions";
+import { WalletTransactionList } from "@/components/wallet/WalletTransactionList";
 import { WalletPullRefresh } from "@/components/wallet/WalletPullRefresh";
 import { WalletHubLinks } from "@/components/wallet/WalletHubLinks";
 import { WalletPaymentMethodsRow } from "@/components/wallet/WalletPaymentMethodsRow";
