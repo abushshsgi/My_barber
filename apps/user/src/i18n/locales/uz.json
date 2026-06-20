@@ -210,6 +210,17 @@
       "browse": "Salonlarni ko'rish",
       "details": "Batafsil"
     },
+    "desktop": {
+      "eyebrow": "Hisob markazi",
+      "greeting": "Salom, {{name}}",
+      "subtitle": "Buyurtmalar, to'lovlar va shaxsiy sozlamalarni bir joydan boshqaring.",
+      "primaryNav": "Asosiy",
+      "hubsHint": "Faoliyat, to'lov, oila va ilova sozlamalari.",
+      "comingSoon": "Tez orada",
+      "unreadCount": "{{count}} ta o'qilmagan",
+      "allRead": "Hammasi o'qilgan"
+    },
+    "editProfile": "Profilni tahrirlash",
     "variant1": {
       "hint": "Hamyon, oila va boshqa bo'limlar Sozlamalar ichida."
     },

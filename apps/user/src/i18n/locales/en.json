@@ -197,6 +197,17 @@
       "browse": "Browse salons",
       "details": "Details"
     },
+    "desktop": {
+      "eyebrow": "Account center",
+      "greeting": "Hello, {{name}}",
+      "subtitle": "Manage bookings, payments, and personal settings in one place.",
+      "primaryNav": "Essentials",
+      "hubsHint": "Activity, payments, household, and app preferences.",
+      "comingSoon": "Coming soon",
+      "unreadCount": "{{count}} unread",
+      "allRead": "All caught up"
+    },
+    "editProfile": "Edit profile",
     "variant1": {
       "hint": "Wallet, family and more are inside Settings."
     },

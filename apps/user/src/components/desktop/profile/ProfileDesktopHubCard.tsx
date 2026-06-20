@@ -10,38 +10,42 @@ type Props = {
 
 export function ProfileDesktopHubCard({ hub, t }: Props) {
   const Icon = hub.icon;
-  const subItems = resolveHubItems(hub, t).slice(0, 3);
+  const subItems = resolveHubItems(hub, t).slice(0, 4);
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-border bg-surface/30 p-5 transition-colors hover:bg-surface/50">
-      <Link to={hub.to as never} className="group flex flex-1 flex-col">
-        <div className="flex items-start gap-4">
-          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-background">
-            <Icon className="h-6 w-6" strokeWidth={1.8} />
+    <article className="overflow-hidden rounded-2xl border border-border bg-background transition-shadow hover:shadow-md">
+      <Link to={hub.to as never} className="group flex items-start gap-4 p-5 hover:bg-surface/30">
+        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-surface">
+          <Icon className="h-5 w-5" strokeWidth={1.9} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-bold">{t(hub.titleKey)}</h3>
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
           </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1">
-              <p className="text-sm font-bold">{t(hub.titleKey)}</p>
-              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-            </div>
-            <p className="mt-1 text-xs leading-snug text-muted-foreground">{t(hub.descKey)}</p>
-          </div>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t(hub.descKey)}</p>
         </div>
       </Link>
 
       {subItems.length > 0 ? (
-        <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
-          {subItems.map((item) => (
-            <Link
-              key={item.to + item.label}
-              to={item.to as never}
-              className="rounded-full bg-background px-3 py-1.5 text-[11px] font-bold text-muted-foreground hover:bg-surface hover:text-foreground"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
+        <ul className="divide-y divide-border border-t border-border">
+          {subItems.map((item) => {
+            const SubIcon = item.icon;
+            return (
+              <li key={item.to + item.label}>
+                <Link
+                  to={item.to as never}
+                  className="flex items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-surface/40"
+                >
+                  <SubIcon className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.9} />
+                  <span className="min-w-0 flex-1 font-semibold">{item.label}</span>
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       ) : null}
-    </div>
+    </article>
   );
 }
