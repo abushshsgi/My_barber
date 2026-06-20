@@ -459,7 +459,7 @@
   "currency": {
     "title": "Currency",
     "hint": "Prices are shown in your selected currency (stored in UZS).",
-    "ratesHint": "Prices in {{currency}}. Rate source: {{source}}, updated: {{date}}.",
+    "ratesHint": "Prices in {{currency}}. Source: Central Bank of Uzbekistan ({{source}}), rate date: {{date}}.",
     "codes": {
       "UZS": "Uzbek som",
       "USD": "US dollar",

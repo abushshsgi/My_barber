@@ -1,4 +1,4 @@
-"""Valyuta kurslari — bazaviy UZS, open.er-api.com (ECB ma'lumotlari) orqali."""
+"""Valyuta kurslari — bazaviy UZS, O'zbekiston Markaziy banki (cbu.uz) rasmiy API."""
 
 from __future__ import annotations
 
@@ -18,8 +18,10 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 BASE_CURRENCY = "UZS"
-RATES_API_URL = "https://open.er-api.com/v6/latest/USD"
+CBU_RATES_URL = "https://cbu.uz/uz/arkhiv-kursov-valyut/json/"
+ER_API_URL = "https://open.er-api.com/v6/latest/USD"
 RATES_MAX_AGE = timedelta(hours=24)
+CBU_META_DATE_KEY = "_cbu_date"
 
 SUPPORTED_CURRENCIES: tuple[str, ...] = (
     "UZS",
@@ -60,18 +62,17 @@ CURRENCY_SYMBOLS: dict[str, str] = {
     "AED": "د.إ",
 }
 
-# API ishlamasa — taxminiy kurslar (1 birlik = N so'm)
 FALLBACK_UZS_PER_UNIT: dict[str, Decimal] = {
     "UZS": Decimal("1"),
-    "USD": Decimal("12650"),
-    "EUR": Decimal("13750"),
-    "RUB": Decimal("140"),
-    "KZT": Decimal("25"),
-    "KGS": Decimal("145"),
-    "TJS": Decimal("1150"),
-    "TRY": Decimal("365"),
-    "CNY": Decimal("1750"),
-    "AED": Decimal("3440"),
+    "USD": Decimal("12085.56"),
+    "EUR": Decimal("13870.60"),
+    "RUB": Decimal("164.52"),
+    "KZT": Decimal("24.76"),
+    "KGS": Decimal("138.16"),
+    "TJS": Decimal("1302.32"),
+    "TRY": Decimal("260.21"),
+    "CNY": Decimal("1785.74"),
+    "AED": Decimal("3290.65"),
 }
 
 
@@ -79,8 +80,11 @@ def _quantize_rate(value: Decimal) -> str:
     return str(value.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP))
 
 
-def _rates_to_json(rates: dict[str, Decimal]) -> dict[str, str]:
-    return {code: _quantize_rate(amount) for code, amount in rates.items()}
+def _rates_to_json(rates: dict[str, Decimal], *, rate_date: str = "") -> dict[str, str]:
+    payload = {code: _quantize_rate(amount) for code, amount in rates.items()}
+    if rate_date:
+        payload[CBU_META_DATE_KEY] = rate_date
+    return payload
 
 
 def _parse_rates_json(raw: dict[str, Any]) -> dict[str, Decimal]:
@@ -95,29 +99,60 @@ def _parse_rates_json(raw: dict[str, Any]) -> dict[str, Decimal]:
     return out
 
 
-def fetch_live_uzs_per_unit() -> tuple[dict[str, Decimal], str]:
-    """
-    open.er-api.com — bepul, API kalitsiz.
-    Manba: ECB va boshqa markaziy banklar agregati; kuniga bir necha marta yangilanadi.
-    """
+def get_rate_date_from_snapshot(raw: dict[str, Any]) -> str | None:
+    value = raw.get(CBU_META_DATE_KEY)
+    return str(value) if value else None
+
+
+def _http_get_json(url: str) -> Any:
     req = urllib.request.Request(
-        RATES_API_URL,
+        url,
         headers={"Accept": "application/json", "User-Agent": "MySaloon/1.0"},
     )
-    try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
-            payload = json.loads(resp.read().decode("utf-8"))
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, KeyError) as exc:
-        logger.warning("Exchange rate API failed: %s", exc)
-        return dict(FALLBACK_UZS_PER_UNIT), "fallback"
+    with urllib.request.urlopen(req, timeout=20) as resp:
+        return json.loads(resp.read().decode("utf-8"))
 
+
+def fetch_from_cbu() -> tuple[dict[str, Decimal], str, str]:
+    """
+    O'zbekiston Markaziy banki rasmiy kurslari.
+    https://cbu.uz/uz/arkhiv-kursov-valyut/json/
+    Ish kunlarida kuniga yangilanadi.
+    """
+    payload = _http_get_json(CBU_RATES_URL)
+    if not isinstance(payload, list) or not payload:
+        raise ValueError("CBU returned empty payload")
+
+    by_code = {str(row.get("Ccy", "")).upper(): row for row in payload if row.get("Ccy")}
+    computed: dict[str, Decimal] = {"UZS": Decimal("1")}
+    rate_date = str((payload[0] or {}).get("Date") or "")
+
+    for code in SUPPORTED_CURRENCIES:
+        if code == "UZS":
+            continue
+        row = by_code.get(code)
+        if not row:
+            computed[code] = FALLBACK_UZS_PER_UNIT[code]
+            continue
+        nominal = Decimal(str(row.get("Nominal") or "1"))
+        rate = Decimal(str(row.get("Rate") or "0"))
+        if nominal <= 0 or rate <= 0:
+            computed[code] = FALLBACK_UZS_PER_UNIT[code]
+            continue
+        computed[code] = (rate / nominal).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+
+    return computed, "cbu.uz", rate_date
+
+
+def fetch_from_er_api() -> dict[str, Decimal]:
+    payload = _http_get_json(ER_API_URL)
     if payload.get("result") != "success":
-        return dict(FALLBACK_UZS_PER_UNIT), "fallback"
+        raise ValueError("ER API unsuccessful")
 
     api_rates = payload.get("rates") or {}
     uzs_per_usd = api_rates.get("UZS")
     if not uzs_per_usd:
-        return dict(FALLBACK_UZS_PER_UNIT), "fallback"
+        raise ValueError("ER API missing UZS")
 
     uzs_per_usd_dec = Decimal(str(uzs_per_usd))
     computed: dict[str, Decimal] = {"UZS": Decimal("1")}
@@ -129,13 +164,25 @@ def fetch_live_uzs_per_unit() -> tuple[dict[str, Decimal], str]:
         if not foreign_per_usd:
             computed[code] = FALLBACK_UZS_PER_UNIT[code]
             continue
-        # 1 USD = uzs_per_usd UZS va 1 USD = foreign_per_usd CODE
-        # => 1 CODE = uzs_per_usd / foreign_per_usd UZS
         computed[code] = (uzs_per_usd_dec / Decimal(str(foreign_per_usd))).quantize(
             Decimal("0.0001"), rounding=ROUND_HALF_UP
         )
+    return computed
 
-    return computed, "open.er-api.com"
+
+def fetch_live_uzs_per_unit() -> tuple[dict[str, Decimal], str, str]:
+    try:
+        return fetch_from_cbu()
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, ValueError) as exc:
+        logger.warning("CBU exchange rate API failed: %s", exc)
+
+    try:
+        rates = fetch_from_er_api()
+        return rates, "open.er-api.com", ""
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, ValueError) as exc:
+        logger.warning("Fallback exchange rate API failed: %s", exc)
+
+    return dict(FALLBACK_UZS_PER_UNIT), "fallback", ""
 
 
 def sync_exchange_rates(*, force: bool = False) -> ExchangeRateSnapshot:
@@ -149,10 +196,10 @@ def sync_exchange_rates(*, force: bool = False) -> ExchangeRateSnapshot:
     ):
         return latest
 
-    rates, source = fetch_live_uzs_per_unit()
+    rates, source, rate_date = fetch_live_uzs_per_unit()
     return ExchangeRateSnapshot.objects.create(
         base_currency=BASE_CURRENCY,
-        rates=_rates_to_json(rates),
+        rates=_rates_to_json(rates, rate_date=rate_date),
         source=source,
         fetched_at=timezone.now(),
     )

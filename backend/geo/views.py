@@ -10,6 +10,7 @@ from geo.currency import (
     SUPPORTED_CURRENCIES,
     _parse_rates_json,
     get_latest_exchange_rates,
+    get_rate_date_from_snapshot,
 )
 from geo.region_resolver import resolve_region_from_coords
 from geo.services.dgis import DgisGeocoderError, geocode_query, reverse_geocode
@@ -117,10 +118,12 @@ class CurrencyRatesView(APIView):
     def get(self, request):
         snapshot = get_latest_exchange_rates(auto_sync=True)
         rates = _parse_rates_json(snapshot.rates)
+        rate_date = get_rate_date_from_snapshot(snapshot.rates)
         return Response(
             {
                 "base": BASE_CURRENCY,
                 "updated_at": snapshot.fetched_at.isoformat(),
+                "rate_date": rate_date,
                 "source": snapshot.source,
                 "currencies": [
                     {

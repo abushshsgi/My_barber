@@ -10,6 +10,7 @@ export type ApiCurrency = {
 export type ApiCurrencyRates = {
   base: string;
   updated_at: string;
+  rate_date?: string | null;
   source: string;
   currencies: ApiCurrency[];
 };

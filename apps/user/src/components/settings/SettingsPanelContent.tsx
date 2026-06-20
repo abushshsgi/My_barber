@@ -562,10 +562,12 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
                 ratesUpdatedAt
                   ? t("currency.ratesHint", {
                       defaultValue:
-                        "Narxlar {{currency}} da ko'rsatiladi. Kurs: {{source}}, yangilangan {{date}}.",
+                        "Narxlar {{currency}} da. Manba: Markaziy bank ({{source}}), kurs sanasi: {{date}}.",
                       currency,
-                      source: ratesSource ?? "—",
-                      date: new Date(ratesUpdatedAt).toLocaleDateString(),
+                      source: ratesSource ?? "cbu.uz",
+                      date:
+                        currencyRates?.rate_date ??
+                        new Date(ratesUpdatedAt).toLocaleDateString(),
                     })
                   : t("currency.hint", {
                       defaultValue: "Narxlar tanlangan valyutada ko'rsatiladi (bazada so'm).",

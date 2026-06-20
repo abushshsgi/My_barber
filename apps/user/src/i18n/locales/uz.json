@@ -483,7 +483,7 @@
   "currency": {
     "title": "Valyuta",
     "hint": "Narxlar tanlangan valyutada ko'rsatiladi (bazada so'm saqlanadi).",
-    "ratesHint": "Narxlar {{currency}} da. Kurs manbasi: {{source}}, yangilangan: {{date}}.",
+    "ratesHint": "Narxlar {{currency}} da. Manba: O'zbekiston Markaziy banki ({{source}}), kurs sanasi: {{date}}.",
     "codes": {
       "UZS": "O'zbek so'mi",
       "USD": "AQSH dollari",
