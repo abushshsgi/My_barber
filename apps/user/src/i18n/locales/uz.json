@@ -438,6 +438,7 @@
     "pageTitle": "Hisob sozlamalari",
     "pageLead": "Shaxsiy ma'lumotlar, xavfsizlik, manzillar va ilova afzalliklari.",
     "manageDetails": "Batafsil sozlamalar",
+    "done": "Tayyor",
     "bookingReminders": "Buyurtma eslatmalari",
     "chatAlerts": "Chat bildirishnomalari",
     "reduceMotion": "Animatsiyani kamaytirish",
@@ -455,8 +456,35 @@
     "passwordNotSet": "Parol o'rnatilmagan — OTP bilan kirasiz",
     "fields": {
       "name": "To'liq ism",
+      "legalName": "Rasmiy ism",
       "phone": "Telefon",
-      "phoneHint": "Telefon raqamini o'zgartirish uchun yordam markaziga murojaat qiling."
+      "phoneHint": "Telefon raqamini o'zgartirish uchun yordam markaziga murojaat qiling.",
+      "address": "Manzil",
+      "password": "Parol",
+      "loginMethod": "Kirish usuli",
+      "loginMethodHint": "Hisobingiz telefon raqami orqali tasdiqlangan.",
+      "dataPrivacy": "Ma'lumotlar va maxfiylik",
+      "accountData": "Hisob ma'lumotlari",
+      "accountDataHint": "Ma'lumotlaringizni ko'rish yoki yuklab olish uchun maxfiylik sahifasiga o'ting.",
+      "savedAddresses": "Saqlangan manzillar",
+      "defaultAddress": "Asosiy manzil",
+      "faq": "Ko'p so'raladigan savollar"
+    },
+    "actions": {
+      "edit": "Tahrirlash",
+      "add": "Qo'shish",
+      "manage": "Boshqarish",
+      "view": "Ko'rish",
+      "contact": "Bog'lanish"
+    },
+    "row": {
+      "notProvided": "Ko'rsatilmagan",
+      "on": "Yoqilgan",
+      "off": "O'chirilgan"
+    },
+    "privacyNote": {
+      "title": "Nima uchun ba'zi ma'lumotlar ko'rinmaydi?",
+      "body": "Ba'zi ma'lumotlar faqat tegishli bo'limda ko'rsatiladi. To'liq boshqarish uchun maxfiylik sahifasiga o'ting."
     },
     "hubs": {
       "personal": {

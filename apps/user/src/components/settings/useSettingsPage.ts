@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import type { AccountHubTile } from "@/components/desktop/profile/ProfileAccountHubGrid";
 import { useAudience, getPrefsStorageKey, type AudienceFilter } from "@/hooks/use-audience";
 import { useUserAddresses } from "@/hooks/use-addresses";
 import { changePassword, setPassword } from "@/lib/api";
@@ -47,6 +46,8 @@ export function useSettingsPage() {
   const updateMe = useUpdateMe();
   const { handleLogout } = useProfileScreen();
   const { data: addresses = [] } = useUserAddresses();
+  const defaultAddress = addresses.find((a) => a.is_default) ?? addresses[0];
+  const defaultAddressLabel = defaultAddress?.address_line?.trim() || undefined;
   const [prefs, setPrefs] = useState<SettingsPrefs>(SETTINGS_DEFAULTS);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -123,82 +124,6 @@ export function useSettingsPage() {
         ? t("settings.hubs.security.metaSms", { defaultValue: "SMS orqali kirish" })
         : t("settings.hubs.security.metaDefault", { defaultValue: "Kirish usuli" });
 
-  const hubTiles: AccountHubTile[] = [
-    {
-      title: t("settings.hubs.personal.title", { defaultValue: "Shaxsiy ma'lumotlar" }),
-      description: t("settings.hubs.personal.desc", {
-        defaultValue: "Ism, telefon va profil ma'lumotlari.",
-      }),
-      to: "/settings",
-      hash: "personal",
-      meta: user.name,
-    },
-    {
-      title: t("settings.hubs.security.title", { defaultValue: "Kirish va xavfsizlik" }),
-      description: t("settings.hubs.security.desc", {
-        defaultValue: "Parolni yangilang va hisobingizni himoya qiling.",
-      }),
-      to: "/settings",
-      hash: "security",
-      meta: securityMeta,
-    },
-    {
-      title: t("settings.hubs.addresses.title", { defaultValue: "Manzillar" }),
-      description: t("settings.hubs.addresses.desc", {
-        defaultValue: "Uy, ish va boshqa saqlangan manzillar.",
-      }),
-      to: "/addresses",
-      meta: t("settings.hubs.addresses.meta", {
-        count: addresses.length,
-        defaultValue: "{{count}} ta manzil",
-      }),
-    },
-    {
-      title: t("settings.hubs.family.title", { defaultValue: "Oilaviy profil" }),
-      description: t("settings.hubs.family.desc", {
-        defaultValue: "Oila a'zolari uchun tez bron qilish.",
-      }),
-      to: "/family",
-      meta: t("settings.hubs.family.meta", { defaultValue: "Oila a'zolarini boshqaring" }),
-    },
-    {
-      title: t("settings.hubs.notifications.title", { defaultValue: "Bildirishnoma afzalliklari" }),
-      description: t("settings.hubs.notifications.desc", {
-        defaultValue: "Eslatmalar va chat xabarlari.",
-      }),
-      to: "/settings",
-      hash: "notifications",
-      meta: prefs.bookingReminders
-        ? t("settings.hubs.notifications.metaOn", { defaultValue: "Eslatmalar yoqilgan" })
-        : t("settings.hubs.notifications.metaOff", { defaultValue: "Eslatmalar o'chirilgan" }),
-    },
-    {
-      title: t("settings.hubs.preferences.title", { defaultValue: "Til va afzalliklar" }),
-      description: t("settings.hubs.preferences.desc", {
-        defaultValue: "Til, salon turi va ko'rinish sozlamalari.",
-      }),
-      to: "/settings",
-      hash: "preferences",
-      meta: langLabel,
-    },
-    {
-      title: t("settings.hubs.privacy.title", { defaultValue: "Maxfiylik" }),
-      description: t("settings.hubs.privacy.desc", {
-        defaultValue: "Ma'lumotlaringizni boshqaring va yuklab oling.",
-      }),
-      to: "/privacy",
-      meta: t("settings.hubs.privacy.meta", { defaultValue: "Ma'lumot va ruxsatlar" }),
-    },
-    {
-      title: t("settings.hubs.help.title", { defaultValue: "Yordam markazi" }),
-      description: t("settings.hubs.help.desc", {
-        defaultValue: "Savollar, shikoyatlar va aloqa.",
-      }),
-      to: "/support",
-      meta: t("settings.hubs.help.meta", { defaultValue: "Biz bilan bog'laning" }),
-    },
-  ];
-
   return {
     t,
     activeLang,
@@ -216,7 +141,10 @@ export function useSettingsPage() {
     setPw,
     changePw,
     notificationItems,
-    hubTiles,
+    addresses,
+    defaultAddressLabel,
+    langLabel,
+    securityMeta,
   };
 }
 

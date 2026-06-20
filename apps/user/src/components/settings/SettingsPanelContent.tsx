@@ -1,0 +1,361 @@
+import { Link } from "@tanstack/react-router";
+import { LogOut } from "lucide-react";
+import { useState } from "react";
+import { AudienceSwitch } from "@/components/AudienceSwitch";
+import { SettingsFieldRow } from "@/components/settings/SettingsFieldRow";
+import type { SettingsPageState } from "@/components/settings/useSettingsPage";
+import { SETTINGS_LANGS } from "@/components/settings/useSettingsPage";
+import { setLang } from "@/i18n/config";
+import type { SettingsSection } from "@/lib/settings-nav";
+import { SETTINGS_SECTION_TITLE_KEYS } from "@/lib/settings-nav";
+import { cn } from "@/lib/utils";
+
+function Toggle({
+  value,
+  onChange,
+}: {
+  value: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={value}
+      onClick={() => onChange(!value)}
+      className={cn(
+        "relative h-7 w-12 shrink-0 rounded-full transition-colors",
+        value ? "bg-foreground" : "bg-surface-2",
+      )}
+    >
+      <span
+        className={cn(
+          "absolute top-1 h-5 w-5 rounded-full bg-background transition-transform",
+          value ? "translate-x-6" : "translate-x-1",
+        )}
+      />
+    </button>
+  );
+}
+
+type Props = {
+  section: SettingsSection;
+  state: SettingsPageState;
+};
+
+export function SettingsPanelContent({ section, state }: Props) {
+  const {
+    t,
+    activeLang,
+    user,
+    me,
+    prefs,
+    oldPassword,
+    setOldPassword,
+    newPassword,
+    setNewPassword,
+    updatePref,
+    resetPrefs,
+    handleLogout,
+    updateMe,
+    setPw,
+    changePw,
+    notificationItems,
+    addresses,
+    defaultAddressLabel,
+    langLabel,
+    securityMeta,
+  } = state;
+
+  const titleMeta = SETTINGS_SECTION_TITLE_KEYS[section];
+  const [editName, setEditName] = useState(false);
+  const [editPassword, setEditPassword] = useState(false);
+  const [editLang, setEditLang] = useState(false);
+  const [nameDraft, setNameDraft] = useState(user.name);
+
+  const onOff = (on: boolean) =>
+    on
+      ? t("settings.row.on", { defaultValue: "Yoqilgan" })
+      : t("settings.row.off", { defaultValue: "O'chirilgan" });
+
+  return (
+    <div>
+      <h2 className="text-[22px] font-semibold tracking-tight text-foreground">
+        {t(titleMeta.titleKey, { defaultValue: titleMeta.defaultTitle })}
+      </h2>
+
+      <div className="mt-2">
+        {section === "personal" && (
+          <>
+            <SettingsFieldRow
+              label={t("settings.fields.legalName", { defaultValue: "Rasmiy ism" })}
+              value={user.name}
+              actionLabel={t("settings.actions.edit", { defaultValue: "Tahrirlash" })}
+              onAction={() => {
+                setNameDraft(user.name);
+                setEditName((v) => !v);
+              }}
+              expanded={editName}
+            >
+              <input
+                type="text"
+                value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+                className="w-full rounded-lg border border-border px-3 py-2.5 text-sm font-medium outline-none focus:border-foreground"
+              />
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = nameDraft.trim();
+                    if (next && next !== user.name) updateMe.mutate({ full_name: next });
+                    setEditName(false);
+                  }}
+                  className="rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-background"
+                >
+                  {t("common.save", { defaultValue: "Saqlash" })}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditName(false)}
+                  className="rounded-lg border border-border px-4 py-2 text-sm font-semibold"
+                >
+                  {t("common.cancel", { defaultValue: "Bekor" })}
+                </button>
+              </div>
+            </SettingsFieldRow>
+            <SettingsFieldRow
+              label={t("settings.fields.phone", { defaultValue: "Telefon" })}
+              value={user.phone || undefined}
+              emptyLabel={t("settings.row.notProvided", { defaultValue: "Ko'rsatilmagan" })}
+              hint={t("settings.fields.phoneHint")}
+              actionLabel={t("settings.actions.edit", { defaultValue: "Tahrirlash" })}
+              actionTo="/support"
+            />
+            <SettingsFieldRow
+              label={t("settings.fields.address", { defaultValue: "Manzil" })}
+              value={defaultAddressLabel}
+              emptyLabel={t("settings.row.notProvided", { defaultValue: "Ko'rsatilmagan" })}
+              actionLabel={
+                defaultAddressLabel
+                  ? t("settings.actions.edit", { defaultValue: "Tahrirlash" })
+                  : t("settings.actions.add", { defaultValue: "Qo'shish" })
+              }
+              actionTo="/addresses"
+            />
+          </>
+        )}
+
+        {section === "security" && me?.has_password !== undefined && (
+          <>
+            <SettingsFieldRow
+              label={t("settings.fields.password", { defaultValue: "Parol" })}
+              value={securityMeta}
+              actionLabel={
+                me.has_password
+                  ? t("settings.actions.edit", { defaultValue: "Tahrirlash" })
+                  : t("settings.actions.add", { defaultValue: "Qo'shish" })
+              }
+              onAction={() => setEditPassword((v) => !v)}
+              expanded={editPassword}
+            >
+              <div className="space-y-3">
+                {me.has_password ? (
+                  <input
+                    type="password"
+                    placeholder={t("settings.currentPassword")}
+                    value={oldPassword}
+                    onChange={(e) => setOldPassword(e.target.value)}
+                    className="w-full rounded-lg border border-border px-3 py-2.5 text-sm outline-none focus:border-foreground"
+                  />
+                ) : (
+                  <p className="text-xs text-muted-foreground">{t("settings.passwordNotSet")}</p>
+                )}
+                <input
+                  type="password"
+                  placeholder={t("settings.newPassword")}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full rounded-lg border border-border px-3 py-2.5 text-sm outline-none focus:border-foreground"
+                />
+                <button
+                  type="button"
+                  disabled={
+                    me.has_password
+                      ? changePw.isPending || newPassword.length < 8 || !oldPassword
+                      : setPw.isPending || newPassword.length < 8
+                  }
+                  onClick={() => (me.has_password ? changePw.mutate() : setPw.mutate())}
+                  className="rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-background disabled:opacity-60"
+                >
+                  {me.has_password ? t("settings.changePassword") : t("settings.setPassword")}
+                </button>
+              </div>
+            </SettingsFieldRow>
+            <SettingsFieldRow
+              label={t("settings.fields.loginMethod", { defaultValue: "Kirish usuli" })}
+              value={user.phone}
+              hint={t("settings.fields.loginMethodHint", {
+                defaultValue: "Hisobingiz telefon raqami orqali tasdiqlangan.",
+              })}
+            />
+          </>
+        )}
+
+        {section === "privacy" && (
+          <>
+            <SettingsFieldRow
+              label={t("settings.fields.dataPrivacy", { defaultValue: "Ma'lumotlar va maxfiylik" })}
+              value={t("settings.hubs.privacy.meta", { defaultValue: "Ma'lumot va ruxsatlar" })}
+              actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
+              actionTo="/privacy"
+            />
+            <SettingsFieldRow
+              label={t("settings.fields.accountData", { defaultValue: "Hisob ma'lumotlari" })}
+              hint={t("settings.fields.accountDataHint", {
+                defaultValue: "Ma'lumotlaringizni ko'rish yoki yuklab olish uchun maxfiylik sahifasiga o'ting.",
+              })}
+              actionLabel={t("settings.actions.view", { defaultValue: "Ko'rish" })}
+              actionTo="/privacy"
+            />
+          </>
+        )}
+
+        {section === "notifications" &&
+          notificationItems.map((item) => (
+            <SettingsFieldRow
+              key={item.key}
+              label={item.label}
+              value={onOff(prefs[item.key])}
+              trailing={<Toggle value={prefs[item.key]} onChange={(v) => updatePref(item.key, v)} />}
+            />
+          ))}
+
+        {section === "preferences" && (
+          <>
+            <SettingsFieldRow
+              label={t("settings.language")}
+              value={langLabel}
+              actionLabel={t("settings.actions.edit", { defaultValue: "Tahrirlash" })}
+              onAction={() => setEditLang((v) => !v)}
+              expanded={editLang}
+            >
+              <div className="divide-y divide-border rounded-lg border border-border">
+                {SETTINGS_LANGS.map((lang) => (
+                  <button
+                    key={lang.code}
+                    type="button"
+                    onClick={() => {
+                      void setLang(lang.code);
+                      setEditLang(false);
+                    }}
+                    className={cn(
+                      "flex w-full px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-surface/60",
+                      activeLang === lang.code && "bg-surface font-semibold",
+                    )}
+                  >
+                    {lang.label}
+                  </button>
+                ))}
+              </div>
+            </SettingsFieldRow>
+            <SettingsFieldRow label={t("settings.preferredAudience")} expanded>
+              <AudienceSwitch showProfileHint={false} />
+            </SettingsFieldRow>
+            <SettingsFieldRow
+              label={t("settings.reduceMotion")}
+              value={onOff(prefs.reduceMotion)}
+              trailing={<Toggle value={prefs.reduceMotion} onChange={(v) => updatePref("reduceMotion", v)} />}
+            />
+          </>
+        )}
+
+        {section === "addresses" && (
+          <>
+            <SettingsFieldRow
+              label={t("settings.fields.savedAddresses", { defaultValue: "Saqlangan manzillar" })}
+              value={t("settings.hubs.addresses.meta", {
+                count: addresses.length,
+                defaultValue: "{{count}} ta manzil",
+              })}
+              actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
+              actionTo="/addresses"
+            />
+            <SettingsFieldRow
+              label={t("settings.fields.defaultAddress", { defaultValue: "Asosiy manzil" })}
+              value={defaultAddressLabel}
+              emptyLabel={t("settings.row.notProvided", { defaultValue: "Ko'rsatilmagan" })}
+              actionLabel={
+                defaultAddressLabel
+                  ? t("settings.actions.edit", { defaultValue: "Tahrirlash" })
+                  : t("settings.actions.add", { defaultValue: "Qo'shish" })
+              }
+              actionTo="/addresses"
+            />
+          </>
+        )}
+
+        {section === "family" && (
+          <SettingsFieldRow
+            label={t("settings.hubs.family.title", { defaultValue: "Oilaviy profil" })}
+            value={t("settings.hubs.family.meta", { defaultValue: "Oila a'zolarini boshqaring" })}
+            hint={t("settings.hubs.family.desc")}
+            actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
+            actionTo="/family"
+          />
+        )}
+
+        {section === "help" && (
+          <>
+            <SettingsFieldRow
+              label={t("settings.hubs.help.title", { defaultValue: "Yordam markazi" })}
+              value={t("settings.hubs.help.meta", { defaultValue: "Biz bilan bog'laning" })}
+              hint={t("settings.hubs.help.desc")}
+              actionLabel={t("settings.actions.contact", { defaultValue: "Bog'lanish" })}
+              actionTo="/support"
+            />
+            <SettingsFieldRow
+              label={t("settings.fields.faq", { defaultValue: "Ko'p so'raladigan savollar" })}
+              actionLabel={t("settings.actions.view", { defaultValue: "Ko'rish" })}
+              actionTo="/support"
+            />
+          </>
+        )}
+      </div>
+
+      {section === "preferences" ? (
+        <div className="mt-8 flex flex-wrap gap-3 border-t border-border pt-8">
+          <button
+            type="button"
+            onClick={resetPrefs}
+            className="text-sm font-semibold text-muted-foreground underline underline-offset-2 hover:text-foreground"
+          >
+            {t("settings.reset")}
+          </button>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground underline underline-offset-2 hover:text-foreground"
+          >
+            <LogOut className="h-4 w-4" />
+            {t("common.logout")}
+          </button>
+        </div>
+      ) : null}
+
+      {section === "personal" ? (
+        <div className="mt-10 rounded-xl border border-border bg-surface/40 p-5">
+          <p className="text-sm font-semibold">{t("settings.privacyNote.title", { defaultValue: "Nima uchun ba'zi ma'lumotlar ko'rinmaydi?" })}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t("settings.privacyNote.body", {
+              defaultValue: "Ba'zi ma'lumotlar faqat tegishli bo'limda ko'rsatiladi. To'liq boshqarish uchun maxfiylik sahifasiga o'ting.",
+            })}{" "}
+            <Link to="/privacy" className="font-semibold text-foreground underline underline-offset-2">
+              {t("profile.privacy")}
+            </Link>
+          </p>
+        </div>
+      ) : null}
+    </div>
+  );
+}

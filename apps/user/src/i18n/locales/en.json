@@ -421,6 +421,7 @@
     "pageTitle": "Account settings",
     "pageLead": "Personal info, security, addresses, and app preferences.",
     "manageDetails": "Manage details",
+    "done": "Done",
     "bookingReminders": "Booking reminders",
     "chatAlerts": "Chat alerts",
     "reduceMotion": "Reduce motion",
@@ -438,8 +439,35 @@
     "passwordNotSet": "No password — you sign in with SMS",
     "fields": {
       "name": "Full name",
+      "legalName": "Legal name",
       "phone": "Phone",
-      "phoneHint": "Contact support to change your phone number."
+      "phoneHint": "Contact support to change your phone number.",
+      "address": "Address",
+      "password": "Password",
+      "loginMethod": "Sign-in method",
+      "loginMethodHint": "Your account is verified with your phone number.",
+      "dataPrivacy": "Data & privacy",
+      "accountData": "Account data",
+      "accountDataHint": "Visit the privacy page to view or download your data.",
+      "savedAddresses": "Saved addresses",
+      "defaultAddress": "Default address",
+      "faq": "FAQ"
+    },
+    "actions": {
+      "edit": "Edit",
+      "add": "Add",
+      "manage": "Manage",
+      "view": "View",
+      "contact": "Contact"
+    },
+    "row": {
+      "notProvided": "Not provided",
+      "on": "On",
+      "off": "Off"
+    },
+    "privacyNote": {
+      "title": "Why isn't my info shown here?",
+      "body": "Some details only appear in their related section. For full control, go to the privacy page."
     },
     "hubs": {
       "personal": { "title": "Personal information", "desc": "Name, phone, and profile details." },
