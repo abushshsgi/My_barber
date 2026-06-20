@@ -52,7 +52,6 @@ class UserSerializer(serializers.ModelSerializer):
             "has_password",
             "date_joined",
             "age",
-            "full_name",
             "display_email",
             "email_verified",
         )
@@ -170,24 +169,34 @@ class UserSerializer(serializers.ModelSerializer):
                     )
         return attrs
 
-    def _sync_full_name(self, attrs: dict) -> dict:
-        first = (attrs.get("first_name") or "").strip()
-        last = (attrs.get("last_name") or "").strip()
-        if first or last:
-            attrs["full_name"] = f"{first} {last}".strip()
-        return attrs
+    def validate_full_name(self, value):
+        value = (value or "").strip()
+        if not value:
+            raise serializers.ValidationError("Ism bo'sh bo'lmasligi kerak.")
+        return value
 
-    def create(self, validated_data):
-        validated_data = self._sync_full_name(validated_data)
-        return super().create(validated_data)
-
-    def update(self, instance, validated_data):
-        if "first_name" in validated_data or "last_name" in validated_data:
-            first = (validated_data.get("first_name", instance.first_name) or "").strip()
-            last = (validated_data.get("last_name", instance.last_name) or "").strip()
+    def _apply_name_fields(self, validated_data: dict, instance: User | None = None) -> dict:
+        inst = instance
+        if "full_name" in validated_data and "first_name" not in validated_data:
+            full = (validated_data.get("full_name") or "").strip()
+            parts = full.split(None, 1)
+            validated_data["first_name"] = parts[0] if parts else ""
+            validated_data["last_name"] = parts[1] if len(parts) > 1 else ""
+            validated_data["full_name"] = full
+        elif "first_name" in validated_data or "last_name" in validated_data:
+            first = (validated_data.get("first_name", getattr(inst, "first_name", "") if inst else "") or "").strip()
+            last = (validated_data.get("last_name", getattr(inst, "last_name", "") if inst else "") or "").strip()
             validated_data["first_name"] = first
             validated_data["last_name"] = last
             validated_data["full_name"] = f"{first} {last}".strip()
+        return validated_data
+
+    def create(self, validated_data):
+        validated_data = self._apply_name_fields(validated_data)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        validated_data = self._apply_name_fields(validated_data, instance)
         user = super().update(instance, validated_data)
         if validated_data.get("onboarding_completed") is True:
             from accounts.address_sync import ensure_home_address_from_profile

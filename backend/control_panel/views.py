@@ -191,7 +191,14 @@ class AdminUserListView(generics.ListAPIView):
     pagination_class = AdminPageNumberPagination
 
     def get_queryset(self):
-        qs = User.objects.annotate(bookings_count=Count("customer_bookings")).all().order_by("-date_joined")
+        qs = (
+            User.objects.annotate(
+                bookings_count=Count("customer_bookings"),
+                family_members_count=Count("family_members"),
+            )
+            .all()
+            .order_by("-date_joined")
+        )
         roles_param = self.request.query_params.get("roles")
         if roles_param:
             parts = [r.strip() for r in roles_param.split(",") if r.strip()]
@@ -216,7 +223,10 @@ class AdminUserListView(generics.ListAPIView):
 
 class AdminUserDetailView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAdmin]
-    queryset = User.objects.all()
+    queryset = User.objects.annotate(
+        bookings_count=Count("customer_bookings"),
+        family_members_count=Count("family_members"),
+    )
     serializer_class = AdminUserSerializer
 
     def get_serializer_class(self):

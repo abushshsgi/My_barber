@@ -72,24 +72,75 @@ def salon_schedule_summary(obj: Salon) -> str:
 class AdminUserSerializer(serializers.ModelSerializer):
     region_label = serializers.SerializerMethodField()
     bookings_count = serializers.SerializerMethodField()
+    display_email = serializers.SerializerMethodField()
+    email_verified = serializers.SerializerMethodField()
+    default_address = serializers.SerializerMethodField()
+    family_members_count = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = (
             "id",
             "email",
+            "display_email",
+            "email_verified",
+            "email_verified_at",
             "username",
+            "first_name",
+            "last_name",
             "full_name",
             "phone",
             "role",
             "region",
             "region_label",
+            "birth_year",
             "is_active",
             "is_staff",
             "date_joined",
             "bookings_count",
+            "default_address",
+            "family_members_count",
         )
-        read_only_fields = ("id", "date_joined", "username", "region_label")
+        read_only_fields = (
+            "id",
+            "date_joined",
+            "username",
+            "region_label",
+            "display_email",
+            "email_verified",
+            "email_verified_at",
+            "default_address",
+            "family_members_count",
+        )
+
+    def get_display_email(self, obj: User) -> str | None:
+        from accounts.email_utils import is_internal_email
+
+        if is_internal_email(obj.email):
+            return None
+        return obj.email
+
+    def get_email_verified(self, obj: User) -> bool:
+        from accounts.email_utils import is_internal_email
+
+        if is_internal_email(obj.email):
+            return False
+        return obj.email_verified_at is not None
+
+    def get_default_address(self, obj: User) -> str:
+        from accounts.models import UserAddress
+
+        addr = (
+            UserAddress.objects.filter(user=obj, is_default=True)
+            .order_by("-updated_at")
+            .first()
+        )
+        if addr is None:
+            addr = UserAddress.objects.filter(user=obj).order_by("-updated_at").first()
+        return (addr.address_line if addr else "") or ""
+
+    def get_family_members_count(self, obj: User) -> int:
+        return int(getattr(obj, "family_members_count", obj.family_members.count()))
 
     def get_region_label(self, obj: User) -> str:
         if not obj.region:

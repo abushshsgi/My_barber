@@ -26,9 +26,17 @@ export type RegionCode = string;
 export type AdminUser = {
   id: string;
   name: string;
+  firstName: string;
+  lastName: string;
   phone: string;
   email: string;
+  displayEmail: string | null;
+  emailVerified: boolean;
+  emailVerifiedAt: string | null;
   region: RegionCode;
+  birthYear: number | null;
+  defaultAddress: string;
+  familyMembersCount: number;
   is_active: boolean;
   created_at: string;
   bookings_count: number;
@@ -265,10 +273,18 @@ function avatarFor(seed: string): string {
 type BackendUserRow = {
   id: number;
   email: string;
+  display_email?: string | null;
+  email_verified?: boolean;
+  email_verified_at?: string | null;
+  first_name?: string;
+  last_name?: string;
   full_name: string;
   phone: string | null;
   region: string;
   region_label?: string;
+  birth_year?: number | null;
+  default_address?: string;
+  family_members_count?: number;
   is_active: boolean;
   date_joined: string;
   bookings_count?: number;
@@ -466,10 +482,18 @@ type BackendStats = {
 function mapUser(u: BackendUserRow): AdminUser {
   return {
     id: String(u.id),
-    name: u.full_name || u.email,
+    name: u.full_name || u.display_email || u.email,
+    firstName: u.first_name?.trim() || "",
+    lastName: u.last_name?.trim() || "",
     phone: u.phone ?? "—",
     email: u.email,
+    displayEmail: u.display_email ?? null,
+    emailVerified: Boolean(u.email_verified),
+    emailVerifiedAt: u.email_verified_at ?? null,
     region: u.region,
+    birthYear: u.birth_year ?? null,
+    defaultAddress: u.default_address?.trim() || "",
+    familyMembersCount: toInt(u.family_members_count, 0),
     is_active: !!u.is_active,
     created_at: u.date_joined,
     bookings_count: toInt(u.bookings_count, 0),

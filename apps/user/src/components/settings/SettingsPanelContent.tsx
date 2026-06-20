@@ -171,7 +171,7 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
       return;
     }
     updateMe.mutate(
-      { full_name: next },
+      { full_name: next, first_name: next.split(/\s+/)[0] ?? next, last_name: next.split(/\s+/).slice(1).join(" ") },
       {
         onSuccess: () => {
           toast.success(t("settings.saved", { defaultValue: "Saqlandi" }));

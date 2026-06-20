@@ -105,7 +105,9 @@ function UsersPage() {
                         >
                           {u.name}
                         </Link>
-                        <div className="text-xs text-muted-foreground">{u.email}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {u.displayEmail || u.phone || "Email qo'shilmagan"}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-foreground tabular-nums">{u.phone}</td>
                       <td className="px-6 py-4">

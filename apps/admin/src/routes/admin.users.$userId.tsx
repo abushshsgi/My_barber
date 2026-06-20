@@ -59,7 +59,18 @@ function UserDetailPage() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="font-heading text-2xl font-semibold">{u.name}</h1>
-              <p className="mt-1 text-sm text-muted-foreground">{u.email || "Email yo'q"}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {u.displayEmail || "Email qo'shilmagan"}
+                {u.emailVerified ? (
+                  <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-800">
+                    Tasdiqlangan
+                  </span>
+                ) : u.displayEmail ? (
+                  <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-900">
+                    Tasdiqlanmagan
+                  </span>
+                ) : null}
+              </p>
               <p className="mt-1 font-mono text-xs text-muted-foreground">ID {u.id}</p>
             </div>
             <StatusBadge status={u.is_active ? "active" : "inactive"} />
@@ -67,8 +78,26 @@ function UserDetailPage() {
 
           <dl className="mt-6 grid gap-4 sm:grid-cols-2">
             <div>
+              <dt className="text-xs uppercase tracking-wide text-muted-foreground">Ism / Familiya</dt>
+              <dd className="mt-1 font-medium">
+                {[u.firstName, u.lastName].filter(Boolean).join(" ") || "—"}
+              </dd>
+            </div>
+            <div>
               <dt className="text-xs uppercase tracking-wide text-muted-foreground">Telefon</dt>
               <dd className="mt-1 font-medium tabular-nums">{u.phone || "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase tracking-wide text-muted-foreground">Asosiy manzil</dt>
+              <dd className="mt-1 text-sm">{u.defaultAddress || "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase tracking-wide text-muted-foreground">Oila a'zolari</dt>
+              <dd className="mt-1 font-medium tabular-nums">{u.familyMembersCount}</dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase tracking-wide text-muted-foreground">Tug'ilgan yil</dt>
+              <dd className="mt-1 font-medium tabular-nums">{u.birthYear ?? "—"}</dd>
             </div>
             <div>
               <dt className="text-xs uppercase tracking-wide text-muted-foreground">Bronlar</dt>
