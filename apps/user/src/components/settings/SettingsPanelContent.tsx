@@ -33,7 +33,9 @@ import { cn } from "@/lib/utils";
 import { sanitizeDisplayNameInput, validateDisplayName } from "@/lib/validate-display-name";
 import { useCurrency } from "@/hooks/use-currency";
 import { fetchCurrencyRates } from "@/lib/api/currency";
+import { CURRENCY_VISUAL, LANG_FLAGS } from "@/lib/locale-display";
 import { SUPPORTED_CURRENCY_CODES, type CurrencyCode } from "@mybarber/shared/currency";
+import type { AppLang } from "@/i18n/config";
 
 function Toggle({
   value,
@@ -59,6 +61,49 @@ function Toggle({
           value ? "translate-x-6" : "translate-x-1",
         )}
       />
+    </button>
+  );
+}
+
+function LocaleIcon({ emoji, className }: { emoji: string; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface text-[1.125rem] leading-none ring-1 ring-border/70",
+        className,
+      )}
+      aria-hidden
+    >
+      {emoji}
+    </span>
+  );
+}
+
+function SettingsPickerOption({
+  selected,
+  onClick,
+  leading,
+  title,
+  trailing,
+}: {
+  selected?: boolean;
+  onClick: () => void;
+  leading: React.ReactNode;
+  title: React.ReactNode;
+  trailing?: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-surface/60",
+        selected && "bg-surface font-semibold",
+      )}
+    >
+      {leading}
+      <span className="min-w-0 flex-1">{title}</span>
+      {trailing ? <span className="shrink-0 text-xs text-muted-foreground">{trailing}</span> : null}
     </button>
   );
 }
@@ -578,7 +623,12 @@ export function SettingsPanelContent({
           <>
             <SettingsFieldRow
               label={t("settings.language")}
-              value={langLabel}
+              value={
+                <span className="inline-flex items-center gap-2.5">
+                  <LocaleIcon emoji={LANG_FLAGS[activeLang as AppLang]} className="h-7 w-7 text-base" />
+                  {langLabel}
+                </span>
+              }
               actionLabel={t("settings.actions.edit", { defaultValue: "Tahrirlash" })}
               cancelLabel={cancelLabel}
               expanded={editLang}
@@ -586,27 +636,31 @@ export function SettingsPanelContent({
             >
               <div className="divide-y divide-border rounded-lg border border-border">
                 {SETTINGS_LANGS.map((lang) => (
-                  <button
+                  <SettingsPickerOption
                     key={lang.code}
-                    type="button"
+                    selected={activeLang === lang.code}
+                    leading={<LocaleIcon emoji={LANG_FLAGS[lang.code]} />}
+                    title={lang.label}
                     onClick={() => {
                       void setLang(lang.code);
                       setEditLang(false);
                       toast.success(t("settings.saved", { defaultValue: "Saqlandi" }));
                     }}
-                    className={cn(
-                      "flex w-full px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-surface/60",
-                      activeLang === lang.code && "bg-surface font-semibold",
-                    )}
-                  >
-                    {lang.label}
-                  </button>
+                  />
                 ))}
               </div>
             </SettingsFieldRow>
             <SettingsFieldRow
               label={t("currency.title", { defaultValue: "Valyuta" })}
-              value={currencyLabel}
+              value={
+                <span className="inline-flex items-center gap-2.5">
+                  <LocaleIcon emoji={CURRENCY_VISUAL[currency].flag} className="h-7 w-7 text-base" />
+                  <span>{currencyLabel}</span>
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    {CURRENCY_VISUAL[currency].symbol}
+                  </span>
+                </span>
+              }
               hint={
                 ratesUpdatedAt
                   ? t("currency.ratesHint", {
@@ -628,29 +682,35 @@ export function SettingsPanelContent({
               onAction={() => setEditCurrency((v) => !v)}
             >
               <div className="divide-y divide-border rounded-lg border border-border">
-                {SUPPORTED_CURRENCY_CODES.map((code) => (
-                  <button
-                    key={code}
-                    type="button"
-                    onClick={() => {
-                      setCurrency(code as CurrencyCode);
-                      setEditCurrency(false);
-                      toast.success(t("settings.saved", { defaultValue: "Saqlandi" }));
-                    }}
-                    className={cn(
-                      "flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-surface/60",
-                      currency === code && "bg-surface font-semibold",
-                    )}
-                  >
-                    <span>
-                      {t(`currency.codes.${code}`, {
-                        defaultValue:
-                          currencyRates?.currencies.find((c) => c.code === code)?.label ?? code,
-                      })}
-                    </span>
-                    <span className="text-xs text-muted-foreground">{code}</span>
-                  </button>
-                ))}
+                {SUPPORTED_CURRENCY_CODES.map((code) => {
+                  const visual = CURRENCY_VISUAL[code];
+                  const label =
+                    t(`currency.codes.${code}`, {
+                      defaultValue:
+                        currencyRates?.currencies.find((c) => c.code === code)?.label ?? code,
+                    }) ?? code;
+                  return (
+                    <SettingsPickerOption
+                      key={code}
+                      selected={currency === code}
+                      leading={<LocaleIcon emoji={visual.flag} />}
+                      title={
+                        <span className="flex items-center gap-2">
+                          <span>{label}</span>
+                          <span className="rounded-md bg-surface px-1.5 py-0.5 text-[11px] font-bold text-muted-foreground">
+                            {visual.symbol}
+                          </span>
+                        </span>
+                      }
+                      trailing={code}
+                      onClick={() => {
+                        setCurrency(code as CurrencyCode);
+                        setEditCurrency(false);
+                        toast.success(t("settings.saved", { defaultValue: "Saqlandi" }));
+                      }}
+                    />
+                  );
+                })}
               </div>
             </SettingsFieldRow>
             <SettingsFieldRow
