@@ -856,10 +856,17 @@
     "txMetaEmpty": "Hali tranzaksiya yo'q",
     "txHint": "Kirim va chiqimlar tarixi.",
     "topUpHint": "Balansni to'ldiring.",
+    "nav": {
+      "overview": "Umumiy ko'rinish",
+      "transactions": "Tranzaksiyalar",
+      "services": "Xizmatlar"
+    },
+    "servicesHint": "Bonus, sovg'a kartalar va aksiyalar.",
     "stats": {
       "cashback": "Cashback",
       "bonus": "Ball",
-      "history": "Tranzaksiya"
+      "history": "Tranzaksiya",
+      "spent": "Chiqim"
     },
     "transactions": "Tranzaksiyalar",
     "recent": "Oxirgi harakatlar",

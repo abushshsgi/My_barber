@@ -813,10 +813,17 @@
     "txMetaEmpty": "Операций пока нет",
     "txHint": "История поступлений и расходов.",
     "topUpHint": "Пополните баланс.",
+    "nav": {
+      "overview": "Обзор",
+      "transactions": "Операции",
+      "services": "Сервисы"
+    },
+    "servicesHint": "Бонусы, подарочные карты и акции.",
     "stats": {
       "cashback": "Кэшбэк",
       "bonus": "Баллы",
-      "history": "Операции"
+      "history": "Операции",
+      "spent": "Расход"
     },
     "transactions": "Транзакции",
     "recent": "Недавние операции",

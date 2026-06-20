@@ -806,10 +806,17 @@
     "txMetaEmpty": "No transactions yet",
     "txHint": "Income and spending history.",
     "topUpHint": "Add funds to your balance.",
+    "nav": {
+      "overview": "Overview",
+      "transactions": "Transactions",
+      "services": "Services"
+    },
+    "servicesHint": "Rewards, gift cards, and offers.",
     "stats": {
       "cashback": "Cashback",
       "bonus": "Points",
-      "history": "Transactions"
+      "history": "Transactions",
+      "spent": "Spent"
     },
     "transactions": "Transactions",
     "recent": "Recent activity",
