@@ -9,6 +9,7 @@ from geo.currency import (
     FALLBACK_UZS_PER_UNIT,
     convert_uzs,
     fetch_from_cbu,
+    fetch_live_uzs_per_unit,
     get_latest_exchange_rates,
     sync_exchange_rates,
 )
@@ -56,6 +57,14 @@ class CurrencyServiceTests(TestCase):
         self.assertEqual(source, "cbu.uz")
         self.assertEqual(rate_date, "19.06.2026")
         self.assertEqual(rates["USD"], Decimal("12085.5600"))
+
+    @patch("geo.currency.fetch_from_cbu")
+    def test_fetch_live_falls_back_when_cbu_fails(self, mock_cbu):
+        mock_cbu.side_effect = ValueError("CBU down")
+        rates, source, rate_date = fetch_live_uzs_per_unit()
+        self.assertEqual(source, "fallback")
+        self.assertEqual(rate_date, "")
+        self.assertEqual(rates["USD"], FALLBACK_UZS_PER_UNIT["USD"])
 
     @patch("geo.currency.fetch_live_uzs_per_unit")
     def test_get_latest_auto_sync_when_empty(self, mock_fetch):

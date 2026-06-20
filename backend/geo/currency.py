@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 BASE_CURRENCY = "UZS"
 CBU_RATES_URL = "https://cbu.uz/uz/arkhiv-kursov-valyut/json/"
-ER_API_URL = "https://open.er-api.com/v6/latest/USD"
 RATES_MAX_AGE = timedelta(hours=24)
 CBU_META_DATE_KEY = "_cbu_date"
 
@@ -144,43 +143,11 @@ def fetch_from_cbu() -> tuple[dict[str, Decimal], str, str]:
     return computed, "cbu.uz", rate_date
 
 
-def fetch_from_er_api() -> dict[str, Decimal]:
-    payload = _http_get_json(ER_API_URL)
-    if payload.get("result") != "success":
-        raise ValueError("ER API unsuccessful")
-
-    api_rates = payload.get("rates") or {}
-    uzs_per_usd = api_rates.get("UZS")
-    if not uzs_per_usd:
-        raise ValueError("ER API missing UZS")
-
-    uzs_per_usd_dec = Decimal(str(uzs_per_usd))
-    computed: dict[str, Decimal] = {"UZS": Decimal("1")}
-
-    for code in SUPPORTED_CURRENCIES:
-        if code == "UZS":
-            continue
-        foreign_per_usd = api_rates.get(code)
-        if not foreign_per_usd:
-            computed[code] = FALLBACK_UZS_PER_UNIT[code]
-            continue
-        computed[code] = (uzs_per_usd_dec / Decimal(str(foreign_per_usd))).quantize(
-            Decimal("0.0001"), rounding=ROUND_HALF_UP
-        )
-    return computed
-
-
 def fetch_live_uzs_per_unit() -> tuple[dict[str, Decimal], str, str]:
     try:
         return fetch_from_cbu()
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, ValueError) as exc:
-        logger.warning("CBU exchange rate API failed: %s", exc)
-
-    try:
-        rates = fetch_from_er_api()
-        return rates, "open.er-api.com", ""
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, ValueError) as exc:
-        logger.warning("Fallback exchange rate API failed: %s", exc)
+        logger.warning("CBU exchange rate API failed, using static fallback: %s", exc)
 
     return dict(FALLBACK_UZS_PER_UNIT), "fallback", ""
 

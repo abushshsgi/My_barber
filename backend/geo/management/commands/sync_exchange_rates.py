@@ -4,7 +4,7 @@ from geo.currency import RATES_MAX_AGE, sync_exchange_rates
 
 
 class Command(BaseCommand):
-    help = "Valyuta kurslarini cbu.uz (Markaziy bank) dan yangilash; zaxira — open.er-api.com."
+    help = "Valyuta kurslarini cbu.uz (Markaziy bank) dan yangilash."
 
     def add_arguments(self, parser):
         parser.add_argument(
