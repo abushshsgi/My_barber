@@ -19,7 +19,7 @@ type Props = {
 /** Airbnb-style account hub — uniform bordered tiles in a grid. */
 export function ProfileAccountHubGrid({ tiles }: Props) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {tiles.map((tile) => (
         <Link
           key={`${tile.to}${tile.hash ?? ""}`}
@@ -27,7 +27,7 @@ export function ProfileAccountHubGrid({ tiles }: Props) {
           hash={tile.hash}
           search={tile.search as never}
           className={cn(
-            "group flex min-h-[148px] flex-col rounded-xl border border-border bg-background p-6",
+            "group flex min-h-[140px] flex-col rounded-xl border border-border bg-background p-5 lg:min-h-[148px] lg:p-6",
             "shadow-[0_1px_2px_rgba(15,15,15,0.04)] transition-all duration-200",
             "hover:border-foreground/20 hover:shadow-[0_8px_24px_-12px_rgba(15,15,15,0.12)]",
           )}
