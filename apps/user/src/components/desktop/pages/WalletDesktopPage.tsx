@@ -9,6 +9,7 @@ import { WalletEmptyTransactions } from "@/components/wallet/WalletEmptyTransact
 import { WalletTransactionList } from "@/components/wallet/WalletTransactionList";
 import { WalletHubLinks } from "@/components/wallet/WalletHubLinks";
 import { WalletPaymentMethodsRow } from "@/components/wallet/WalletPaymentMethodsRow";
+import { DesktopPageHeader } from "@/components/desktop/ui/DesktopPageHeader";
 import { useWalletBalance, useWalletTransactions, walletMeQueryKeyFor } from "@/hooks/use-wallet";
 import { getAuthUserId } from "@/lib/auth-user";
 import { filterWalletTransactions, type WalletTxTab } from "@/lib/wallet-transactions";
