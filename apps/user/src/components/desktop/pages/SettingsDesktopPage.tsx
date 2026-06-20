@@ -29,34 +29,36 @@ export function SettingsDesktopPage({
 
   return (
     <div className={cn("w-full", DESKTOP_ACCOUNT_BG)}>
-      <SettingsTopBar
-        className="mb-6 border-b border-border/70 pb-4"
-        backLabel={t("common.back", { defaultValue: "Orqaga" })}
-        doneLabel={t("settings.done", { defaultValue: "Tayyor" })}
-      />
+      <div className="lg:pl-8 xl:pl-14">
+        <SettingsTopBar
+          className="mb-6 border-b border-border/70 pb-4"
+          backLabel={t("common.back", { defaultValue: "Orqaga" })}
+          doneLabel={t("settings.done", { defaultValue: "Tayyor" })}
+        />
 
-      <div className="flex flex-col gap-10 lg:flex-row lg:gap-10 xl:gap-14 lg:pb-12">
-        <aside className="lg:w-[400px] xl:w-[440px] lg:shrink-0">
-          <h1 className="text-[36px] font-semibold tracking-tight text-foreground xl:text-[42px]">
-            {t("settings.pageTitle", { defaultValue: "Hisob sozlamalari" })}
-          </h1>
-          <div className="mt-8">
-            <SettingsAirbnbSidebar active={section} t={t} large />
-          </div>
-        </aside>
+        <div className="flex flex-col gap-10 lg:flex-row lg:gap-10 xl:gap-14 lg:pb-12">
+          <aside className="lg:w-[380px] xl:w-[420px] lg:shrink-0">
+            <h1 className="text-[32px] font-semibold tracking-tight text-foreground xl:text-[36px]">
+              {t("settings.pageTitle", { defaultValue: "Hisob sozlamalari" })}
+            </h1>
+            <div className="mt-7">
+              <SettingsAirbnbSidebar active={section} t={t} large />
+            </div>
+          </aside>
 
-        <main className="min-w-0 flex-1 lg:max-w-[680px] xl:max-w-[720px] lg:pt-1">
-          <SettingsPanelContent
-            section={section}
-            state={state}
-            initialEdit={initialEdit}
-            addressEditId={addressEditId}
-            addressAdd={addressAdd}
-            manage={manage}
-            onAddressEditorClose={onAddressEditorClose}
-            showBack
-          />
-        </main>
+          <main className="min-w-0 flex-1 lg:max-w-[680px] xl:max-w-[720px] lg:pt-1">
+            <SettingsPanelContent
+              section={section}
+              state={state}
+              initialEdit={initialEdit}
+              addressEditId={addressEditId}
+              addressAdd={addressAdd}
+              manage={manage}
+              onAddressEditorClose={onAddressEditorClose}
+              showBack
+            />
+          </main>
+        </div>
       </div>
     </div>
   );
