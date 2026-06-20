@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
+import { DESKTOP_GLASS_CARD } from "@/components/desktop/ui/desktop-glass";
 import { formatPrice } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -24,8 +25,8 @@ export function ProfileDesktopStatGrid({ tiles }: Props) {
           <>
             <div
               className={cn(
-                "grid h-10 w-10 place-items-center rounded-xl",
-                tile.highlight ? "bg-background/15" : "bg-surface",
+                "grid h-10 w-10 place-items-center rounded-xl backdrop-blur-sm",
+                tile.highlight ? "bg-background/20" : "bg-background/70",
               )}
             >
               <Icon
@@ -55,10 +56,10 @@ export function ProfileDesktopStatGrid({ tiles }: Props) {
         );
 
         const className = cn(
-          "flex items-center gap-4 rounded-2xl border p-4 transition-all",
+          "flex items-center gap-4 p-4",
           tile.highlight
-            ? "border-foreground bg-foreground text-background shadow-sm hover:opacity-95"
-            : "border-border bg-background hover:border-foreground/15 hover:shadow-sm",
+            ? "rounded-2xl border border-foreground/10 bg-foreground/92 text-background shadow-[0_12px_40px_-12px_rgba(15,15,15,0.3)] backdrop-blur-sm hover:opacity-95"
+            : DESKTOP_GLASS_CARD,
         );
 
         if (tile.to) {

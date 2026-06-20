@@ -67,7 +67,7 @@ export function getDesktopMaxWidthClass(profile: DesktopContentProfile): string 
     case "compact":
       return "lg:max-w-[560px]";
     default:
-      return "lg:max-w-[720px]";
+      return "lg:max-w-[960px]";
   }
 }
 

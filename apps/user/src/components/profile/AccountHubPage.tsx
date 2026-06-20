@@ -1,7 +1,9 @@
-import { Link } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
+import { useIsLgUp } from "@/hooks/use-mobile";
 import {
   getHubByKey,
   resolveHubItems,
@@ -12,14 +14,25 @@ type Props = {
   hubKey: AccountHubKey;
 };
 
+/** Desktopda `/account/*` hub index kerak emas — sidebar barcha linklarni beradi. */
 export function AccountHubPage({ hubKey }: Props) {
+  const isLgUp = useIsLgUp();
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const hub = getHubByKey(hubKey);
   const items = resolveHubItems(hub, t);
 
+  useEffect(() => {
+    if (isLgUp) {
+      void navigate({ to: "/profile", replace: true });
+    }
+  }, [isLgUp, navigate]);
+
+  if (isLgUp) return null;
+
   return (
     <ProfileSubpageLayout title={t(hub.pageTitleKey)} subtitle={t(hub.descKey)}>
-      <ul className="divide-y divide-border rounded-2xl border border-border bg-background overflow-hidden">
+      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-background">
         {items.map((item) => {
           const Icon = item.icon;
           return (
@@ -28,7 +41,7 @@ export function AccountHubPage({ hubKey }: Props) {
                 to={item.to as never}
                 params={item.params as never}
                 search={item.search as never}
-                className="flex items-center gap-4 px-4 py-4 active:bg-surface/80 transition-colors"
+                className="flex items-center gap-4 px-4 py-4 transition-colors active:bg-surface/80"
               >
                 <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface">
                   <Icon className="h-[18px] w-[18px]" strokeWidth={2.2} />

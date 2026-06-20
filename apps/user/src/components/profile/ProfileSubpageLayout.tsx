@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AccountDesktopShell } from "@/components/desktop/pages/AccountDesktopShell";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
-import { AccountDesktopPage } from "@/components/desktop/pages/AccountDesktopPage";
 
 type Props = {
   title: string;
@@ -39,7 +39,7 @@ function ProfileSubpageMobile({ title, subtitle, children, className, right, bac
   );
 }
 
-/** Ichki sahifalar — mobil krem fon; desktop alohida AccountDesktopPage. */
+/** Ichki sahifalar — mobil krem fon; desktop: sidebar + glass panel. */
 export function ProfileSubpageLayout({ title, subtitle, children, className, right, backTo = "/profile" }: Props) {
   return (
     <DesktopPageSplit
@@ -49,9 +49,9 @@ export function ProfileSubpageLayout({ title, subtitle, children, className, rig
         </ProfileSubpageMobile>
       }
       desktop={
-        <AccountDesktopPage title={title} subtitle={subtitle} backTo={backTo}>
+        <AccountDesktopShell title={title} subtitle={subtitle}>
           {children}
-        </AccountDesktopPage>
+        </AccountDesktopShell>
       }
     />
   );
@@ -67,7 +67,14 @@ export function ProfileSubpageCard({
   id?: string;
 }) {
   return (
-    <div id={id} className={cn("rounded-2xl border border-border bg-surface/30 p-4", className)}>
+    <div
+      id={id}
+      className={cn(
+        "rounded-2xl border border-border bg-surface/30 p-4",
+        "lg:border-border/45 lg:bg-background/55 lg:backdrop-blur-md",
+        className,
+      )}
+    >
       {children}
     </div>
   );
