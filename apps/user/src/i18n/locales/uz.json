@@ -223,7 +223,41 @@
       "hubsHint": "Faoliyat, to'lov, oila va ilova sozlamalari.",
       "comingSoon": "Tez orada",
       "unreadCount": "{{count}} ta o'qilmagan",
-      "allRead": "Hammasi o'qilgan"
+      "allRead": "Hammasi o'qilgan",
+      "pageTitle": "Mening hisobim",
+      "pageLead": "Salom, {{name}} — barcha sozlamalarni shu yerdan boshqaring.",
+      "hubs": {
+        "bookings": {
+          "title": "Buyurtmalar",
+          "desc": "Kelgusi va o'tgan uchrashuvlaringizni ko'ring va boshqaring.",
+          "metaCount": "{{count}} ta buyurtma",
+          "metaEmpty": "Hali buyurtma yo'q"
+        },
+        "wallet": {
+          "title": "Hamyon va to'lov",
+          "desc": "Balans, to'lov usullari, bonus va sovg'a kartalar.",
+          "meta": "{{balance}} balans"
+        },
+        "favorites": {
+          "title": "Sevimlilar",
+          "desc": "Saqlangan salonlar va sevimli ustalaringiz.",
+          "meta": "{{count}} ta salon"
+        },
+        "reviews": {
+          "title": "Sharhlar",
+          "desc": "Salonlarga qoldirgan fikr-mulohazalaringiz.",
+          "meta": "{{count}} ta sharh"
+        },
+        "notifications": {
+          "title": "Bildirishnomalar",
+          "desc": "Buyurtma eslatmalari va chat xabarlari sozlamalari."
+        },
+        "settings": {
+          "title": "Hisob sozlamalari",
+          "desc": "Shaxsiy ma'lumotlar, manzillar, til va maxfiylik.",
+          "meta": "Profil, manzil va xavfsizlik"
+        }
+      }
     },
     "editProfile": "Profilni tahrirlash",
     "variant1": {

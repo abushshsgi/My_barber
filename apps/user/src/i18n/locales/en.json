@@ -210,7 +210,41 @@
       "hubsHint": "Activity, payments, household, and app preferences.",
       "comingSoon": "Coming soon",
       "unreadCount": "{{count}} unread",
-      "allRead": "All caught up"
+      "allRead": "All caught up",
+      "pageTitle": "Account",
+      "pageLead": "Hi {{name}} — manage everything about your account here.",
+      "hubs": {
+        "bookings": {
+          "title": "Bookings",
+          "desc": "View and manage upcoming and past appointments.",
+          "metaCount": "{{count}} bookings",
+          "metaEmpty": "No bookings yet"
+        },
+        "wallet": {
+          "title": "Wallet & payments",
+          "desc": "Balance, payment methods, rewards, and gift cards.",
+          "meta": "{{balance}} balance"
+        },
+        "favorites": {
+          "title": "Saved",
+          "desc": "Your favorite salons and stylists.",
+          "meta": "{{count}} salons"
+        },
+        "reviews": {
+          "title": "Reviews",
+          "desc": "Feedback you've shared with salons.",
+          "meta": "{{count}} reviews"
+        },
+        "notifications": {
+          "title": "Notifications",
+          "desc": "Booking reminders and message preferences."
+        },
+        "settings": {
+          "title": "Account settings",
+          "desc": "Personal info, addresses, language, and privacy.",
+          "meta": "Profile, address & security"
+        }
+      }
     },
     "editProfile": "Edit profile",
     "variant1": {
