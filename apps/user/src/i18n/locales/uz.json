@@ -315,6 +315,7 @@
     "city": "Shahar / viloyat",
     "selectCity": "Tanlang…",
     "cityHint": "Shahar o'zgarganda yaqin salonlar va tavsiyalar yangilanadi",
+    "regionUpdatedFromGps": "Shahar GPS bo'yicha yangilandi: {{label}}",
     "line": "Manzil",
     "linePlaceholder": "Ko'cha, uy, mo'ljal…",
     "labelType": "Manzil turi",

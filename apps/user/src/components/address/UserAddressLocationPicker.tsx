@@ -23,6 +23,8 @@ type Props = {
   setLongitude: (value: string) => void;
   setAddress?: (value: string) => void;
   onRegionSuggestion?: (regionCode: string) => void;
+  /** fill-empty: faqat region bo'sh bo'lsa (onboarding). always: manzil sahifasi. */
+  regionSyncMode?: "fill-empty" | "always";
   className?: string;
   mapClassName?: string;
 };
@@ -37,6 +39,7 @@ export function UserAddressLocationPicker({
   setLongitude,
   setAddress,
   onRegionSuggestion,
+  regionSyncMode = "fill-empty",
   className,
   mapClassName,
 }: Props) {
@@ -45,6 +48,13 @@ export function UserAddressLocationPicker({
   const skipGeocodeRef = useRef(false);
   const skipReverseRef = useRef(false);
   const [locating, setLocating] = useState(false);
+
+  const suggestRegionFromGps = (code: string) => {
+    if (!code || !onRegionSuggestion) return;
+    if (regionSyncMode === "always" || !region) {
+      onRegionSuggestion(code);
+    }
+  };
 
   useEffect(() => {
     const q = [regionLabel.trim(), address.trim()].filter(Boolean).join(", ");
@@ -80,7 +90,7 @@ export function UserAddressLocationPicker({
       setAddress?.(result.full_name || result.address);
     });
     void validateLocation(nextLat, nextLng, region || undefined).then((v) => {
-      if (v.region_from_gps) onRegionSuggestion?.(v.region_from_gps);
+      if (v.region_from_gps) suggestRegionFromGps(v.region_from_gps);
     });
   };
 
@@ -96,7 +106,7 @@ export function UserAddressLocationPicker({
       }
       const validation = await validateLocation(pos.lat, pos.lng, region || undefined);
       if (validation.region_from_gps) {
-        onRegionSuggestion?.(validation.region_from_gps);
+        suggestRegionFromGps(validation.region_from_gps);
       }
       toast.success("Joylashuv aniqlandi");
     } catch (e) {

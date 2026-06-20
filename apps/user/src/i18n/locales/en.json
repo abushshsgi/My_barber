@@ -302,6 +302,7 @@
     "city": "City / region",
     "selectCity": "Select…",
     "cityHint": "Changing city refreshes nearby salons and recommendations",
+    "regionUpdatedFromGps": "City updated from GPS: {{label}}",
     "line": "Address",
     "linePlaceholder": "Street, building, landmark…",
     "labelType": "Address type",

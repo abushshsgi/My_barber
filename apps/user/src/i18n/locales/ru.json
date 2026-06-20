@@ -302,6 +302,7 @@
     "city": "Город / регион",
     "selectCity": "Выберите…",
     "cityHint": "При смене города обновятся салоны и рекомендации",
+    "regionUpdatedFromGps": "Город обновлён по GPS: {{label}}",
     "line": "Адрес",
     "linePlaceholder": "Улица, дом, ориентир…",
     "labelType": "Тип адреса",

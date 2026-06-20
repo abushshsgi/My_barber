@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type { ApiUserAddress, UserAddressPayload } from "@/lib/api/addresses";
@@ -71,6 +71,19 @@ export function AddressForm({ initial, submitLabel, busy, onSubmit, onCancel }: 
   const regionLabel = useMemo(
     () => regions.find((r) => r.value === form.region)?.label ?? "",
     [regions, form.region],
+  );
+
+  const applyRegionFromGps = useCallback(
+    (code: string) => {
+      setForm((f) => {
+        if (f.region === code) return f;
+        setInterestSubmitted(false);
+        const label = regions.find((r) => r.value === code)?.label ?? code;
+        toast.success(t("addresses.regionUpdatedFromGps", { label }));
+        return { ...f, region: code };
+      });
+    },
+    [regions, t],
   );
 
   const lat = form.latitude.trim() ? parseFloat(form.latitude) : null;
@@ -224,12 +237,11 @@ export function AddressForm({ initial, submitLabel, busy, onSubmit, onCancel }: 
         address={form.address_line}
         latitude={form.latitude}
         longitude={form.longitude}
+        regionSyncMode="always"
         setLatitude={(v) => setForm((f) => ({ ...f, latitude: v }))}
         setLongitude={(v) => setForm((f) => ({ ...f, longitude: v }))}
         setAddress={(v) => setForm((f) => ({ ...f, address_line: v }))}
-        onRegionSuggestion={(code) => {
-          if (!form.region) setForm((f) => ({ ...f, region: code }));
-        }}
+        onRegionSuggestion={applyRegionFromGps}
       />
 
       {noCoverage && !interestSubmitted ? (

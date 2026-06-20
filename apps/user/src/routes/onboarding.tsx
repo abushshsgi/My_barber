@@ -252,6 +252,7 @@ function OnboardingFlow() {
             <UserAddressLocationPicker
               region={region}
               regionLabel={regionLabel}
+              regionSyncMode="fill-empty"
               latitude={lat != null ? String(lat) : ""}
               longitude={lng != null ? String(lng) : ""}
               setLatitude={(v) => {
