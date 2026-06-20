@@ -5,13 +5,13 @@ import { cn } from "@/lib/utils";
 import { useWalletMe } from "@/hooks/use-wallet";
 import { parseWalletBalance } from "@/lib/api/wallet";
 
-export function WalletPaymentMethodsRow() {
+export function WalletPaymentMethodsRow({ className }: { className?: string }) {
   const { t } = useTranslation();
   const { data: wallet } = useWalletMe();
   const balance = wallet ? parseWalletBalance(wallet.balance) : 0;
 
   return (
-    <section className="mx-5 mt-8">
+    <section className={cn("mx-5 mt-8", className)}>
       <div className="mb-2.5 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-[13px] font-bold">{t("walletPage.savedCards")}</h2>

@@ -400,13 +400,20 @@
     "passwordChanged": "Password updated",
     "passwordNotSet": "No password — you sign in with SMS",
     "sections": {
+      "account": "Account",
       "activity": "Activity",
       "payments": "Payments & rewards",
       "household": "Family & address",
       "chat": "Messages"
     }
   },
-  "favorites": { "title": "Favorite salons", "empty": "No favorites yet" },
+  "favorites": {
+    "title": "Favorite salons",
+    "hubTitle": "Saved",
+    "tabs": { "salons": "Salons", "stylists": "Stylists" },
+    "browseSalons": "Find salons",
+    "empty": "No favorites yet"
+  },
   "reelsPage": {
     "title": "Reels",
     "subtitle": "Trending styles from salons",
@@ -605,6 +612,7 @@
   },
   "walletPage": {
     "title": "Wallet",
+    "moreServices": "Wallet & payments",
     "subtitle": "Cashback, gift cards & history",
     "available": "Available",
     "balanceCaption": "{{value}} UZS cashback",

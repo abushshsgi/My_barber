@@ -1,62 +1,22 @@
 import {
-  Award,
-  CreditCard,
-  Gift,
-  Heart,
+  HelpCircle,
   MapPin,
-  MessageSquare,
-  Repeat,
-  Sparkles,
-  Star,
-  Tag,
+  Shield,
   Users,
-  Wallet,
 } from "lucide-react";
 import type { ProfileMenuItem } from "@/components/profile/ProfileMenuSection";
 
-export const SETTINGS_ACCOUNT_SECTIONS: {
-  titleKey: string;
-  labelKeys: string[];
-  items: Omit<ProfileMenuItem, "label">[];
-}[] = [
-  {
-    titleKey: "settings.sections.activity",
-    labelKeys: ["reviews.title", "favorites.title", "favoriteStylists.title", "profile.giftcard"],
-    items: [
-      { icon: Star, to: "/reviews" },
-      { icon: Heart, to: "/favorites" },
-      { icon: Award, to: "/favorite-stylists" },
-      { icon: Gift, to: "/giftcard" },
-    ],
-  },
-  {
-    titleKey: "settings.sections.payments",
-    labelKeys: [
-      "profile.wallet",
-      "profile.loyalty",
-      "paymentMethods.title",
-      "profile.offers",
-      "subscriptions.title",
-    ],
-    items: [
-      { icon: Wallet, to: "/wallet" },
-      { icon: Sparkles, to: "/loyalty" },
-      { icon: CreditCard, to: "/payment-methods" },
-      { icon: Tag, to: "/offers" },
-      { icon: Repeat, to: "/subscriptions" },
-    ],
-  },
-  {
-    titleKey: "settings.sections.household",
-    labelKeys: ["family.title", "addresses.title"],
-    items: [
-      { icon: Users, to: "/family" },
-      { icon: MapPin, to: "/addresses" },
-    ],
-  },
-  {
-    titleKey: "settings.sections.chat",
-    labelKeys: ["chat.title"],
-    items: [{ icon: MessageSquare, to: "/chat" }],
-  },
+/** Sozlamalar sahifasidagi ichki havolalar — dropdownda alohida ko'rinmaydi. */
+export const SETTINGS_ACCOUNT_LINKS: Omit<ProfileMenuItem, "label">[] = [
+  { icon: MapPin, to: "/addresses" },
+  { icon: Users, to: "/family" },
+  { icon: Shield, to: "/privacy" },
+  { icon: HelpCircle, to: "/support" },
 ];
+
+export const SETTINGS_ACCOUNT_LABEL_KEYS = [
+  "profile.addresses",
+  "family.title",
+  "profile.privacy",
+  "profile.desktop.helpCenter",
+] as const;

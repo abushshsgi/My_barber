@@ -400,13 +400,20 @@
     "passwordChanged": "Пароль обновлён",
     "passwordNotSet": "Пароль не установлен — вход по SMS",
     "sections": {
+      "account": "Аккаунт",
       "activity": "Активность",
       "payments": "Оплата и бонусы",
       "household": "Семья и адрес",
       "chat": "Сообщения"
     }
   },
-  "favorites": { "title": "Избранные салоны", "empty": "Избранных салонов пока нет" },
+  "favorites": {
+    "title": "Избранные салоны",
+    "hubTitle": "Сохранённое",
+    "tabs": { "salons": "Салоны", "stylists": "Мастера" },
+    "browseSalons": "Найти салоны",
+    "empty": "Избранных салонов пока нет"
+  },
   "reelsPage": {
     "title": "Reels",
     "subtitle": "Трендовые стили из салонов",
@@ -605,6 +612,7 @@
   },
   "walletPage": {
     "title": "Кошелёк",
+    "moreServices": "Кошелёк и оплата",
     "subtitle": "Кэшбэк, подарочные карты и история",
     "available": "Доступно",
     "balanceCaption": "{{value}} сум кэшбэк",

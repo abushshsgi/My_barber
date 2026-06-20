@@ -10,6 +10,7 @@ import {
 import { useProfileScreen } from "@/components/profile/useProfileScreen";
 import { useNotificationsApi } from "@/hooks/use-notifications-api";
 import { useDisplayUser } from "@/hooks/use-me";
+import { isAccountNavActive, ACCOUNT_NAV_SECTIONS } from "@/lib/account-nav";
 import { cn } from "@/lib/utils";
 import { AccountNavList } from "./AccountNavList";
 
@@ -36,27 +37,10 @@ export function ProfileAccountDropdown({ notificationsUnread: notificationsUnrea
     .toUpperCase();
 
   const profileActive =
-    pathname === "/profile" ||
-    pathname.startsWith("/profile/") ||
     pathname.startsWith("/account/") ||
-    [
-      "/settings",
-      "/bookings",
-      "/wallet",
-      "/addresses",
-      "/favorites",
-      "/reviews",
-      "/loyalty",
-      "/notifications",
-      "/payment-methods",
-      "/offers",
-      "/subscriptions",
-      "/giftcard",
-      "/family",
-      "/favorite-stylists",
-      "/support",
-      "/privacy",
-    ].some((path) => pathname === path || pathname.startsWith(`${path}/`));
+    ACCOUNT_NAV_SECTIONS.some((section) =>
+      section.items.some((item) => isAccountNavActive(pathname, item.to)),
+    );
 
   const triggerClass = cn(
     "relative inline-flex h-9 min-w-9 items-center justify-center rounded-full px-2 font-bold transition-colors",

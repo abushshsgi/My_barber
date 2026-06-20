@@ -1,47 +1,37 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Heart } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { z } from "zod";
+import {
+  FavoriteSalonsPanel,
+  FavoriteStylistsPanel,
+  FavoritesTabs,
+  type FavoritesTab,
+} from "@/components/favorites/FavoritesPageContent";
 import { ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
-import { SalonCard } from "@/components/SalonCard";
-import { EmptyState } from "@/components/EmptyState";
-import { useFavorites } from "@/hooks/use-favorites";
-import { useSalonsByIds } from "@/hooks/use-salons";
+
+const favoritesSearchSchema = z.object({
+  tab: z.enum(["salons", "stylists"]).optional().catch("salons"),
+});
 
 export const Route = createFileRoute("/favorites")({
+  validateSearch: favoritesSearchSchema,
   head: () => ({ meta: [{ title: "Sevimlilar — mysaloon.uz" }] }),
   component: Favorites,
 });
 
 function Favorites() {
   const { t } = useTranslation();
-  const { ids, loading: favLoading } = useFavorites();
-  const { data: favs = [], isLoading } = useSalonsByIds(ids);
-  const loading = favLoading || isLoading;
+  const navigate = useNavigate({ from: Route.fullPath });
+  const { tab = "salons" } = Route.useSearch();
+
+  const setTab = (next: FavoritesTab) => {
+    void navigate({ search: { tab: next }, replace: true });
+  };
 
   return (
-    <ProfileSubpageLayout title={t("favorites.title")}>
-      {loading ? (
-        <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
-      ) : favs.length === 0 ? (
-        <EmptyState
-          icon={<Heart className="h-7 w-7" />}
-          title={t("favorites.empty")}
-          action={
-            <Link
-              to="/"
-              className="rounded-2xl bg-foreground px-5 py-3 text-sm font-bold text-background"
-            >
-              Salonlarni topish
-            </Link>
-          }
-        />
-      ) : (
-        <div className="space-y-5">
-          {favs.map((s) => (
-            <SalonCard key={s.id} salon={s} />
-          ))}
-        </div>
-      )}
+    <ProfileSubpageLayout title={t("favorites.hubTitle", { defaultValue: "Sevimlilar" })}>
+      <FavoritesTabs tab={tab} onTabChange={setTab} />
+      {tab === "salons" ? <FavoriteSalonsPanel /> : <FavoriteStylistsPanel />}
     </ProfileSubpageLayout>
   );
 }

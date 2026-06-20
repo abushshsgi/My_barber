@@ -10,7 +10,8 @@ import { PlasticCard } from "@/components/wallet/PlasticCard";
 import { ClientOnly } from "@/components/ClientOnly";
 import { WalletEmptyTransactions } from "@/components/wallet/WalletEmptyTransactions";
 import { WalletPullRefresh } from "@/components/wallet/WalletPullRefresh";
-import { WalletTransactionList } from "@/components/wallet/WalletTransactionList";
+import { WalletHubLinks } from "@/components/wallet/WalletHubLinks";
+import { WalletPaymentMethodsRow } from "@/components/wallet/WalletPaymentMethodsRow";
 import { useWalletBalance, useWalletTransactions, walletMeQueryKeyFor } from "@/hooks/use-wallet";
 import { getAuthUserId } from "@/lib/auth-user";
 import { filterWalletTransactions, type WalletTxTab } from "@/lib/wallet-transactions";
@@ -104,6 +105,13 @@ function WalletMobile() {
             <p className="text-[9px] font-bold uppercase text-muted-foreground">{t("walletPage.stats.cashback")}</p>
           </div>
         </div>
+
+        <WalletPaymentMethodsRow />
+
+        <section className="mx-5 mt-6">
+          <h2 className="mb-2 text-[13px] font-bold">{t("walletPage.moreServices", { defaultValue: "Hamyon va to'lov" })}</h2>
+          <WalletHubLinks compact />
+        </section>
 
         <section className="mx-5 mt-8">
           <h2 className="text-sm font-bold">{t("walletPage.recent")}</h2>

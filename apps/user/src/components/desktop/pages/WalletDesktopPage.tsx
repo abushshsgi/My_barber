@@ -1,13 +1,14 @@
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Gift, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { PlasticCard } from "@/components/wallet/PlasticCard";
 import { ClientOnly } from "@/components/ClientOnly";
 import { WalletEmptyTransactions } from "@/components/wallet/WalletEmptyTransactions";
 import { WalletTransactionList } from "@/components/wallet/WalletTransactionList";
-import { DesktopPageHeader } from "@/components/desktop/ui/DesktopPageHeader";
+import { WalletHubLinks } from "@/components/wallet/WalletHubLinks";
+import { WalletPaymentMethodsRow } from "@/components/wallet/WalletPaymentMethodsRow";
 import { useWalletBalance, useWalletTransactions, walletMeQueryKeyFor } from "@/hooks/use-wallet";
 import { getAuthUserId } from "@/lib/auth-user";
 import { filterWalletTransactions, type WalletTxTab } from "@/lib/wallet-transactions";
@@ -65,12 +66,13 @@ export function WalletDesktopPage() {
               </span>
               <span className="text-xs font-bold">{t("walletPage.topUp")}</span>
             </Link>
-            <Link to="/giftcard" className="flex flex-col items-center gap-2">
-              <span className="grid h-14 w-14 place-items-center rounded-full border-2 border-foreground">
-                <Gift className="h-6 w-6" />
-              </span>
-              <span className="text-xs font-bold">{t("walletPage.gift")}</span>
-            </Link>
+          </div>
+          <WalletPaymentMethodsRow className="mx-0 mt-0" />
+          <div>
+            <h3 className="mb-2 text-sm font-bold">
+              {t("walletPage.moreServices", { defaultValue: "Hamyon va to'lov" })}
+            </h3>
+            <WalletHubLinks compact />
           </div>
         </aside>
 

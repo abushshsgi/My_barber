@@ -417,6 +417,7 @@
     "passwordChanged": "Parol yangilandi",
     "passwordNotSet": "Parol o'rnatilmagan — OTP bilan kirasiz",
     "sections": {
+      "account": "Hisob",
       "activity": "Faoliyat",
       "payments": "To'lov va bonus",
       "household": "Oila va manzil",
@@ -425,6 +426,12 @@
   },
   "favorites": {
     "title": "Sevimli salonlar",
+    "hubTitle": "Sevimlilar",
+    "tabs": {
+      "salons": "Salonlar",
+      "stylists": "Ustalar"
+    },
+    "browseSalons": "Salonlarni topish",
     "empty": "Hali sevimli salon yo'q"
   },
   "reelsPage": {
@@ -625,6 +632,7 @@
   },
   "walletPage": {
     "title": "Hamyon",
+    "moreServices": "Hamyon va to'lov",
     "subtitle": "Cashback, sovg'a karta va tarix",
     "available": "Mavjud",
     "balanceCaption": "{{value}} so'm cashback",

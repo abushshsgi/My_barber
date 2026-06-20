@@ -5,6 +5,7 @@ import { LogOut } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
+import { ProfileMenuSection } from "@/components/profile/ProfileMenuSection";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
 import { setLang, type AppLang } from "@/i18n/config";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,10 @@ import { setSession } from "@/lib/auth";
 import { meQueryKeyFor, useDisplayUser, useMe, useUpdateMe } from "@/hooks/use-me";
 import { getAuthUserId } from "@/lib/auth-user";
 import { useProfileScreen } from "@/components/profile/useProfileScreen";
+import {
+  SETTINGS_ACCOUNT_LABEL_KEYS,
+  SETTINGS_ACCOUNT_LINKS,
+} from "@/lib/settings-account-links";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Sozlamalar — mysaloon.uz" }] }),
@@ -113,9 +118,22 @@ function Settings() {
     { key: "reduceMotion", label: t("settings.reduceMotion") },
   ];
 
+  const accountLinks = SETTINGS_ACCOUNT_LINKS.map((item, index) => ({
+    ...item,
+    label: t(SETTINGS_ACCOUNT_LABEL_KEYS[index], {
+      defaultValue: ["Manzillar", "Oilaviy profil", "Maxfiylik", "Yordam markazi"][index],
+    }),
+  }));
+
   return (
     <ProfileSubpageLayout title={t("settings.title")}>
-      <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+      <ProfileMenuSection
+        title={t("settings.sections.account", { defaultValue: "Hisob" })}
+        items={accountLinks}
+        inset
+      />
+
+      <p className="mb-3 mt-6 px-5 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground lg:px-0">
         Profil
       </p>
       <ProfileSubpageCard className="space-y-3">
