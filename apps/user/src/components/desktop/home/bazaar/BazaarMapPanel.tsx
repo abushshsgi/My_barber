@@ -1,50 +1,54 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowUpRight, MapPin } from "lucide-react";
-import { useMemo } from "react";
+import { ArrowUpRight } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { MapErrorBoundary } from "@/components/map/MapErrorBoundary";
+import { SalonMap, type SalonMapMarker } from "@/components/map/SalonMap";
+import { useRecommendContext } from "@/hooks/use-recommend-context";
 import type { Salon } from "@/lib/mock-data";
+import { shortPrice } from "@/lib/mock-data";
 import { hasValidMapCoords } from "@/lib/map-utils";
 import { cn } from "@/lib/utils";
 
-type Pin = { x: number; y: number; active?: boolean };
+type MapSalon = Pick<Salon, "id" | "lat" | "lng" | "name" | "priceFrom" | "rating">;
 
-function buildPins(salons: Pick<Salon, "lat" | "lng">[]): Pin[] {
-  const valid = salons.filter((s) => hasValidMapCoords(s.lat, s.lng));
-  if (valid.length === 0) {
-    return [
-      { x: 28, y: 34 },
-      { x: 58, y: 22 },
-      { x: 72, y: 48 },
-      { x: 42, y: 62 },
-      { x: 66, y: 70 },
-    ];
-  }
-
-  const lats = valid.map((s) => s.lat);
-  const lngs = valid.map((s) => s.lng);
-  const minLat = Math.min(...lats);
-  const maxLat = Math.max(...lats);
-  const minLng = Math.min(...lngs);
-  const maxLng = Math.max(...lngs);
-  const latSpan = maxLat - minLat || 0.01;
-  const lngSpan = maxLng - minLng || 0.01;
-
-  return valid.slice(0, 14).map((s, i) => ({
-    x: 14 + ((s.lng - minLng) / lngSpan) * 72,
-    y: 14 + (1 - (s.lat - minLat) / latSpan) * 68,
-    active: i === 0,
-  }));
+function toMarkers(salons: MapSalon[]): SalonMapMarker[] {
+  return salons
+    .filter((s) => hasValidMapCoords(s.lat, s.lng))
+    .slice(0, 14)
+    .map((s) => ({
+      id: s.id,
+      lat: s.lat,
+      lng: s.lng,
+      label: s.name,
+      priceLabel:
+        s.priceFrom > 0
+          ? shortPrice(s.priceFrom)
+          : s.rating > 0
+            ? `★ ${s.rating.toFixed(1)}`
+            : s.name.split(" ")[0].slice(0, 10),
+    }));
 }
 
 type Props = {
-  salons?: Pick<Salon, "lat" | "lng">[];
+  salons?: MapSalon[];
   salonCount?: number;
   className?: string;
 };
 
 export function BazaarMapPanel({ salons = [], salonCount = 0, className }: Props) {
   const { t } = useTranslation();
-  const pins = useMemo(() => buildPins(salons), [salons]);
+  const ctx = useRecommendContext();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const markers = useMemo(() => toMarkers(salons), [salons]);
+
+  const userLocation = useMemo(() => {
+    if (ctx.lat == null || ctx.lng == null) return null;
+    if (!hasValidMapCoords(ctx.lat, ctx.lng)) return null;
+    return { lat: ctx.lat, lng: ctx.lng };
+  }, [ctx.lat, ctx.lng]);
 
   return (
     <aside className={cn("sticky top-28", className)}>
@@ -52,55 +56,27 @@ export function BazaarMapPanel({ salons = [], salonCount = 0, className }: Props
         to="/map"
         className="group relative block overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
       >
-        <div className="relative aspect-[5/4] min-h-[260px] w-full overflow-hidden bg-[#ebe4d8]">
-          <div
-            className="absolute inset-0 opacity-90"
-            style={{
-              backgroundImage: `
-                linear-gradient(rgba(10,10,10,0.04) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(10,10,10,0.04) 1px, transparent 1px),
-                linear-gradient(rgba(10,10,10,0.07) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(10,10,10,0.07) 1px, transparent 1px)
-              `,
-              backgroundSize: "28px 28px, 28px 28px, 112px 112px, 112px 112px",
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-br from-background/10 via-transparent to-surface-2/40" />
+        <div className="relative aspect-[5/4] min-h-[260px] w-full overflow-hidden bg-surface">
+          {mounted ? (
+            <div className="pointer-events-none absolute inset-0">
+              <MapErrorBoundary>
+                <SalonMap
+                  markers={markers}
+                  activeId={null}
+                  onMarkerClick={() => {}}
+                  showUserLocation={Boolean(userLocation)}
+                  userLocation={userLocation}
+                  autoFitMarkers
+                />
+              </MapErrorBoundary>
+            </div>
+          ) : (
+            <div className="absolute inset-0 animate-pulse bg-surface-2" />
+          )}
 
-          <svg className="absolute inset-0 h-full w-full text-foreground/10" aria-hidden>
-            <path d="M-10 120 Q 80 90, 160 110 T 360 95" fill="none" stroke="currentColor" strokeWidth="8" />
-            <path d="M40 -10 Q 120 60, 100 180 T 140 360" fill="none" stroke="currentColor" strokeWidth="6" />
-            <path d="M200 0 L 220 360" fill="none" stroke="currentColor" strokeWidth="5" />
-          </svg>
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background via-background/85 to-background/10" />
 
-          {pins.map((pin, i) => (
-            <span
-              key={i}
-              className={cn(
-                "absolute -translate-x-1/2 -translate-y-full",
-                pin.active && "z-10",
-              )}
-              style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
-            >
-              <span
-                className={cn(
-                  "block h-3 w-3 rounded-full border-2 border-background shadow-md",
-                  pin.active ? "bg-foreground" : "bg-foreground/75",
-                )}
-              />
-              {pin.active ? (
-                <span className="absolute left-1/2 top-0 h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/10 animate-ping" />
-              ) : null}
-            </span>
-          ))}
-
-          <span className="absolute left-1/2 top-[58%] z-10 -translate-x-1/2 -translate-y-1/2">
-            <span className="relative grid h-9 w-9 place-items-center rounded-full border-2 border-background bg-foreground text-background shadow-lg">
-              <MapPin className="h-4 w-4" strokeWidth={2.4} />
-            </span>
-          </span>
-
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background via-background/95 to-transparent px-4 pb-4 pt-16">
+          <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-14">
             <p className="text-lg font-bold tracking-tight">
               {salonCount > 0
                 ? t("home.mapPreview.nearbyCount", {
