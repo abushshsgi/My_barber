@@ -8,11 +8,11 @@ import { MapErrorBoundary } from "@/components/map/MapErrorBoundary";
 import { MapSalonSheet } from "@/components/map/MapSalonSheet";
 import { SalonMap, type SalonMapHandle, type SalonMapMarker } from "@/components/map/SalonMap";
 import { resolveMapAudienceFilter, useAudience } from "@/hooks/use-audience";
-import { useMe } from "@/hooks/use-me";
-import { useSalonsList } from "@/hooks/use-salons";
+import { useRecommendContext } from "@/hooks/use-recommend-context";
+import { useSalonsList, useSalonsNearby } from "@/hooks/use-salons";
 import { shortPrice } from "@/lib/mock-data";
 import { hasValidMapCoords, salonMatchesMapAudience } from "@/lib/map-utils";
-import { rankSalonsForUser, userRecommendContext } from "@/lib/recommendations";
+import { rankSalonsForUser } from "@/lib/recommendations";
 
 export const Route = createFileRoute("/map")({
   head: () => ({
@@ -65,29 +65,34 @@ function MapView() {
     if (audience !== "all") return audience;
     return resolveMapAudienceFilter(profileDefault);
   }, [audience, profileDefault]);
-  const { data: me } = useMe();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  const ctx = useRecommendContext();
+  const hasCoords = ctx.lat != null && ctx.lng != null;
+  const { data: nearbySalons = [], isLoading: nearbyLoading } = useSalonsNearby(
+    hasCoords ? ctx.lat! : undefined,
+    hasCoords ? ctx.lng! : undefined,
+    25,
+  );
   const { data: listSalons = [], isLoading: listLoading } = useSalonsList();
+  const listLoadingAny = listLoading || nearbyLoading;
 
-  const ctx = useMemo(() => userRecommendContext(me), [me]);
+  const baseSalons = useMemo(() => {
+    const base = hasCoords && nearbySalons.length > 0 ? nearbySalons : listSalons;
+    return rankSalonsForUser(base, ctx);
+  }, [hasCoords, nearbySalons, listSalons, ctx]);
+
+  const salonsWithCoords = useMemo(
+    () => baseSalons.filter((s) => hasValidMapCoords(s.lat, s.lng)),
+    [baseSalons],
+  );
 
   const userLocation = useMemo(() => {
     if (ctx.lat == null || ctx.lng == null) return null;
     if (!hasValidMapCoords(ctx.lat, ctx.lng)) return null;
     return { lat: ctx.lat, lng: ctx.lng };
   }, [ctx.lat, ctx.lng]);
-
-  const baseSalons = useMemo(
-    () => rankSalonsForUser(listSalons, ctx),
-    [listSalons, ctx],
-  );
-
-  const salonsWithCoords = useMemo(
-    () => baseSalons.filter((s) => hasValidMapCoords(s.lat, s.lng)),
-    [baseSalons],
-  );
 
   const [active, setActive] = useState("");
   const [query, setQuery] = useState("");
@@ -211,13 +216,13 @@ function MapView() {
           )}
         </div>
 
-        {listLoading && filtered.length === 0 ? (
+        {listLoadingAny && filtered.length === 0 ? (
           <div className="absolute inset-x-0 bottom-0 z-30 rounded-t-[22px] border-t border-border/50 bg-background p-4 text-center">
             <p className="text-sm font-medium text-muted-foreground">{t("map.loading")}</p>
           </div>
         ) : null}
 
-        {!listLoading && filtered.length === 0 ? (
+        {!listLoadingAny && filtered.length === 0 ? (
           <div className="absolute inset-x-0 bottom-0 z-30 rounded-t-[22px] border-t border-border/50 bg-background p-4 text-center">
             <p className="text-sm font-medium text-muted-foreground">{emptyMessage}</p>
           </div>
@@ -243,7 +248,7 @@ function MapView() {
             activeId={active}
             query={query}
             onQueryChange={setQuery}
-            loading={listLoading}
+            loading={listLoadingAny}
             emptyMessage={emptyMessage}
           />
         ) : null}

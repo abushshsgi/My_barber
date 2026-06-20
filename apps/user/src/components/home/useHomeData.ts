@@ -11,12 +11,10 @@ import {
 } from "@/hooks/use-audience";
 import { useHairstyles } from "@/hooks/use-hairstyles";
 import { useMe } from "@/hooks/use-me";
+import { useRecommendContext } from "@/hooks/use-recommend-context";
 import { useSalonsList, useSalonsNearby } from "@/hooks/use-salons";
 import { hasValidMapCoords } from "@/lib/map-utils";
-import {
-  rankSalonsForUser,
-  userRecommendContext,
-} from "@/lib/recommendations";
+import { rankSalonsForUser } from "@/lib/recommendations";
 
 export function useHomeData() {
   const { audience } = useAudience();
@@ -25,17 +23,20 @@ export function useHomeData() {
   const ageGroup = useUserAgeGroup();
   const menPersona = audience === "men" ? personaId : null;
   const { data: hairstyles = [] } = useHairstyles(audience, menPersona, { ignoreAgeGroup: true });
-  const ctx = useMemo(() => userRecommendContext(me), [me]);
-
+  const ctx = useRecommendContext();
   const hasCoords = ctx.lat != null && ctx.lng != null;
   const { data: nearbySalons = [], isLoading: nearbyLoading } = useSalonsNearby(
     hasCoords ? ctx.lat! : undefined,
     hasCoords ? ctx.lng! : undefined,
+    25,
   );
   const { data: listSalons = [], isLoading: listLoading, error } = useSalonsList();
 
   const salons = useMemo(() => {
-    const base = hasCoords && nearbySalons.length > 0 ? nearbySalons : listSalons;
+    const base =
+      hasCoords && nearbySalons.length > 0
+        ? nearbySalons
+        : listSalons;
     return rankSalonsForUser(base, ctx);
   }, [hasCoords, nearbySalons, listSalons, ctx]);
 

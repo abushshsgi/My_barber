@@ -38,6 +38,32 @@ class User(AbstractUser):
         return self.email
 
 
+class UserAddress(models.Model):
+    """Mijoz saqlangan manzillari — asosiy manzil profil region/GPS bilan sinxron."""
+
+    class Label(models.TextChoices):
+        HOME = "home", "Uy"
+        WORK = "work", "Ofis"
+        OTHER = "other", "Boshqa"
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="addresses")
+    label = models.CharField(max_length=16, choices=Label.choices, default=Label.HOME)
+    custom_label = models.CharField(max_length=64, blank=True, default="")
+    address_line = models.CharField(max_length=512)
+    region = models.CharField(max_length=32, choices=UzRegion.choices, db_index=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    is_default = models.BooleanField(default=False, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-is_default", "-updated_at"]
+
+    def __str__(self) -> str:
+        return f"{self.user_id}: {self.address_line[:40]}"
+
+
 class AdminAccount(models.Model):
     """Platform admin login — alohida jadval; User jadvalidagi mijoz/sartarosh bilan aralashmaydi."""
 

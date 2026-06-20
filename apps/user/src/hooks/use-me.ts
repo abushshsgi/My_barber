@@ -8,6 +8,7 @@ import { getUserAccessToken } from "@/lib/api/client";
 import { authQueryEnabled } from "@/lib/auth-query";
 import { userQueryKey } from "@/lib/query-keys";
 import { needsOnboarding } from "@/lib/recommendations";
+import { salonsQueryKey } from "@/hooks/use-salons";
 
 export const meQueryKeyBase = ["users", "me"] as const;
 
@@ -30,7 +31,7 @@ export function useUpdateMe() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: UpdateMePayload) => updateMe(data),
-    onSuccess: (user) => {
+    onSuccess: (user, variables) => {
       const cached = getAuthUser();
       const refresh = localStorage.getItem("mybarber_user_refresh");
       const access = getUserAccessToken();
@@ -38,6 +39,13 @@ export function useUpdateMe() {
         setSession(access, refresh, user);
       }
       void qc.invalidateQueries({ queryKey: meQueryKeyFor(user.id) });
+      const locationChanged =
+        "region" in variables ||
+        "latitude" in variables ||
+        "longitude" in variables;
+      if (locationChanged) {
+        void qc.invalidateQueries({ queryKey: salonsQueryKey });
+      }
     },
   });
 }

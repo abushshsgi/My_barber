@@ -30,7 +30,7 @@ export async function fetchSalonsNearby(
   radiusKm = 15,
 ): Promise<ApiNearbySalon[]> {
   return apiJson<ApiNearbySalon[]>(
-    `/api/v1/salons/nearby/${qs({ lat, lng, radius: radiusKm })}`,
+    `/api/v1/salons/nearby/${qs({ lat, lng, radius_km: radiusKm })}`,
   );
 }
 

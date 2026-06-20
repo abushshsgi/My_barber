@@ -23,7 +23,7 @@ export async function fetchBarbersNearby(
   lng: number,
   radiusKm = 15,
 ): Promise<unknown[]> {
-  return apiJson(`/api/v1/barbers/nearby/${qs({ lat, lng, radius: radiusKm })}`);
+  return apiJson(`/api/v1/barbers/nearby/${qs({ lat, lng, radius_km: radiusKm })}`);
 }
 
 export async function findBarbers(q: string): Promise<unknown[]> {

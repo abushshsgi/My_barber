@@ -25,12 +25,12 @@ export function useSalonDetail(id: string) {
   });
 }
 
-export function useSalonsNearby(lat?: number, lng?: number) {
+export function useSalonsNearby(lat?: number, lng?: number, radiusKm = 25) {
   return useQuery({
-    queryKey: [...salonsQueryKey, "nearby", lat, lng],
+    queryKey: [...salonsQueryKey, "nearby", lat, lng, radiusKm],
     queryFn: async () => {
       if (lat == null || lng == null) return [];
-      const data = await fetchSalonsNearby(lat, lng);
+      const data = await fetchSalonsNearby(lat, lng, radiusKm);
       return data.map(mapNearbySalon);
     },
     enabled: authQueryEnabled(lat != null && lng != null),

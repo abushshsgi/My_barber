@@ -40,6 +40,11 @@ from control_panel.views import (
     UserSupportTicketListCreateView,
 )
 
+from accounts.address_views import (
+    UserAddressDetailView,
+    UserAddressListCreateView,
+    UserAddressSetDefaultView,
+)
 from accounts.views import (
     BarberCheckAvailabilityView,
     BarberRegisterJoinSalonView,
@@ -207,6 +212,9 @@ api_routes = [
     path("admin/auth/token/refresh/", AdminTokenRefreshView.as_view()),
     path("admin/auth/me/", AdminMeView.as_view()),
     path("users/me/", MeView.as_view()),
+    path("users/addresses/", UserAddressListCreateView.as_view()),
+    path("users/addresses/<int:pk>/", UserAddressDetailView.as_view()),
+    path("users/addresses/<int:pk>/set-default/", UserAddressSetDefaultView.as_view()),
     path("users/search/", UserSearchView.as_view()),
     path("barbers/search/", BarberSearchView.as_view()),
     path("barber/auth/token/", BarberTokenView.as_view()),
