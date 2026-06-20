@@ -18,6 +18,7 @@ from barbers.activation_permissions import IsAuthenticatedBarberAware
 from barbers.barber_auth import BarberPrincipal
 from barbers.models import Barber
 from bookings.availability import build_available_slots, get_salon_services_for_barber, parse_id_list
+from bookings.db_compat import bookings_has_family_member_column
 from bookings.models import Booking, BookingCompletion, BookingLine, Review
 from notifications.serializers import NotificationSerializer
 from notifications.utils import notify_barber, notify_user
@@ -42,9 +43,10 @@ class BookingViewSet(viewsets.ModelViewSet):
         )
 
     def get_queryset(self):
-        base = Booking.objects.select_related("customer", "salon", "barber", "family_member").prefetch_related(
-            "lines"
-        )
+        related = ["customer", "salon", "barber"]
+        if bookings_has_family_member_column():
+            related.append("family_member")
+        base = Booking.objects.select_related(*related).prefetch_related("lines")
         st = self.request.query_params.get("status")
         if st:
             base = base.filter(status=st)

@@ -10,6 +10,7 @@ from bookings.availability import (
     get_independent_services_for_barber,
     get_salon_services_for_barber,
 )
+from bookings.db_compat import bookings_has_family_member_column
 from bookings.models import Booking, BookingCompletion, BookingLine, Review
 from accounts.models import FamilyMember
 from barbers.models import Barber, BarberProfile
@@ -33,7 +34,7 @@ class BookingSerializer(serializers.ModelSerializer):
     barber_name = serializers.CharField(source="barber.full_name", read_only=True)
     has_review = serializers.SerializerMethodField()
     review_id = serializers.SerializerMethodField()
-    family_member = serializers.PrimaryKeyRelatedField(read_only=True)
+    family_member = serializers.SerializerMethodField()
     booked_for_name = serializers.SerializerMethodField()
 
     class Meta:
@@ -90,8 +91,13 @@ class BookingSerializer(serializers.ModelSerializer):
         review = getattr(obj, "review", None)
         return review.id if review else None
 
+    def get_family_member(self, obj: Booking):
+        if not bookings_has_family_member_column():
+            return None
+        return obj.family_member_id
+
     def get_booked_for_name(self, obj):
-        if obj.family_member_id and obj.family_member:
+        if bookings_has_family_member_column() and obj.family_member_id and obj.family_member:
             return obj.family_member.name
         return (obj.customer.full_name or "").strip() or obj.customer.get_username()
 
@@ -241,6 +247,19 @@ class BookingCreateSerializer(serializers.Serializer):
         phone_snap = (getattr(customer, "phone", None) or "").strip()
         family_member = validated_data.pop("family_member", None)
 
+        create_kwargs = {
+            "customer": customer,
+            "salon": salon,
+            "barber": barber,
+            "start_at": start_at,
+            "end_at": end_at,
+            "status": Booking.Status.PENDING,
+            "total_price": total_price,
+            "customer_phone": phone_snap,
+        }
+        if bookings_has_family_member_column():
+            create_kwargs["family_member"] = family_member
+
         with booking_slot_lock(barber.id, start_at, end_at) as acquired:
             if not acquired:
                 raise serializers.ValidationError(
@@ -263,17 +282,7 @@ class BookingCreateSerializer(serializers.Serializer):
                     {"detail": "Tanlangan vaqt boshqa bron bilan ustma-ust tushdi."}
                 )
 
-            booking = Booking.objects.create(
-                customer=customer,
-                salon=salon,
-                barber=barber,
-                family_member=family_member,
-                start_at=start_at,
-                end_at=end_at,
-                status=Booking.Status.PENDING,
-                total_price=total_price,
-                customer_phone=phone_snap,
-            )
+            booking = Booking.objects.create(**create_kwargs)
             for s in services:
                 if is_salon_flow:
                     BookingLine.objects.create(
