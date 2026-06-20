@@ -22,7 +22,7 @@ export function DesktopSalonCard({ salon, variant = "grid" }: Props) {
   if (variant === "marketplace") {
     return (
       <Link to="/salon/$id" params={{ id: salon.id }} className="group block">
-        <div className="relative aspect-square overflow-hidden rounded-xl bg-surface">
+        <div className="relative aspect-[5/4] overflow-hidden rounded-xl bg-surface">
           <img
             src={cover}
             alt=""

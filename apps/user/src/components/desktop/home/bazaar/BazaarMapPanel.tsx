@@ -52,7 +52,7 @@ export function BazaarMapPanel({ salons = [], salonCount = 0, className }: Props
         to="/map"
         className="group relative block overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
       >
-        <div className="relative aspect-[4/5] min-h-[340px] w-full overflow-hidden bg-[#ebe4d8]">
+        <div className="relative aspect-[5/4] min-h-[260px] w-full overflow-hidden bg-[#ebe4d8]">
           <div
             className="absolute inset-0 opacity-90"
             style={{

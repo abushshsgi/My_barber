@@ -50,7 +50,7 @@ export function BazaarGridSkeleton({ cols }: { cols: number }) {
     <div className={cn("grid gap-5", cols === 2 && "grid-cols-2", cols === 3 && "grid-cols-3", cols === 4 && "grid-cols-4", cols === 5 && "grid-cols-5")}>
       {Array.from({ length: cols * 3 }).map((_, i) => (
         <div key={i} className="animate-pulse">
-          <div className="aspect-square rounded-2xl bg-surface" />
+          <div className="aspect-[5/4] rounded-2xl bg-surface" />
           <div className="mt-3 h-4 w-2/3 rounded bg-surface" />
         </div>
       ))}
