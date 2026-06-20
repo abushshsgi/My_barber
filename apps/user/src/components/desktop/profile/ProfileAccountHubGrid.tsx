@@ -6,6 +6,7 @@ export type AccountHubTile = {
   title: string;
   description: string;
   to: string;
+  hash?: string;
   meta?: string;
   search?: Record<string, string>;
   badge?: string;
@@ -21,8 +22,9 @@ export function ProfileAccountHubGrid({ tiles }: Props) {
     <div className="grid gap-4 sm:grid-cols-2">
       {tiles.map((tile) => (
         <Link
-          key={tile.to}
+          key={`${tile.to}${tile.hash ?? ""}`}
           to={tile.to as never}
+          hash={tile.hash}
           search={tile.search as never}
           className={cn(
             "group flex min-h-[148px] flex-col rounded-xl border border-border bg-background p-6",

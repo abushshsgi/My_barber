@@ -435,6 +435,9 @@
   },
   "settings": {
     "title": "Sozlamalar",
+    "pageTitle": "Hisob sozlamalari",
+    "pageLead": "Shaxsiy ma'lumotlar, xavfsizlik, manzillar va ilova afzalliklari.",
+    "manageDetails": "Batafsil sozlamalar",
     "bookingReminders": "Buyurtma eslatmalari",
     "chatAlerts": "Chat bildirishnomalari",
     "reduceMotion": "Animatsiyani kamaytirish",
@@ -450,6 +453,54 @@
     "passwordSaved": "Parol saqlandi",
     "passwordChanged": "Parol yangilandi",
     "passwordNotSet": "Parol o'rnatilmagan — OTP bilan kirasiz",
+    "fields": {
+      "name": "To'liq ism",
+      "phone": "Telefon",
+      "phoneHint": "Telefon raqamini o'zgartirish uchun yordam markaziga murojaat qiling."
+    },
+    "hubs": {
+      "personal": {
+        "title": "Shaxsiy ma'lumotlar",
+        "desc": "Ism, telefon va profil ma'lumotlari."
+      },
+      "security": {
+        "title": "Kirish va xavfsizlik",
+        "desc": "Parolni yangilang va hisobingizni himoya qiling.",
+        "metaSet": "Parol o'rnatilgan",
+        "metaSms": "SMS orqali kirish",
+        "metaDefault": "Kirish usuli"
+      },
+      "addresses": {
+        "title": "Manzillar",
+        "desc": "Uy, ish va boshqa saqlangan manzillar.",
+        "meta": "{{count}} ta manzil"
+      },
+      "family": {
+        "title": "Oilaviy profil",
+        "desc": "Oila a'zolari uchun tez bron qilish.",
+        "meta": "Oila a'zolarini boshqaring"
+      },
+      "notifications": {
+        "title": "Bildirishnoma afzalliklari",
+        "desc": "Eslatmalar va chat xabarlari.",
+        "metaOn": "Eslatmalar yoqilgan",
+        "metaOff": "Eslatmalar o'chirilgan"
+      },
+      "preferences": {
+        "title": "Til va afzalliklar",
+        "desc": "Til, salon turi va ko'rinish sozlamalari."
+      },
+      "privacy": {
+        "title": "Maxfiylik",
+        "desc": "Ma'lumotlaringizni boshqaring va yuklab oling.",
+        "meta": "Ma'lumot va ruxsatlar"
+      },
+      "help": {
+        "title": "Yordam markazi",
+        "desc": "Savollar, shikoyatlar va aloqa.",
+        "meta": "Biz bilan bog'laning"
+      }
+    },
     "sections": {
       "account": "Hisob",
       "activity": "Faoliyat",

@@ -418,6 +418,9 @@
   },
   "settings": {
     "title": "Settings",
+    "pageTitle": "Account settings",
+    "pageLead": "Personal info, security, addresses, and app preferences.",
+    "manageDetails": "Manage details",
     "bookingReminders": "Booking reminders",
     "chatAlerts": "Chat alerts",
     "reduceMotion": "Reduce motion",
@@ -433,6 +436,32 @@
     "passwordSaved": "Password saved",
     "passwordChanged": "Password updated",
     "passwordNotSet": "No password — you sign in with SMS",
+    "fields": {
+      "name": "Full name",
+      "phone": "Phone",
+      "phoneHint": "Contact support to change your phone number."
+    },
+    "hubs": {
+      "personal": { "title": "Personal information", "desc": "Name, phone, and profile details." },
+      "security": {
+        "title": "Login & security",
+        "desc": "Update your password and secure your account.",
+        "metaSet": "Password set",
+        "metaSms": "Sign in with SMS",
+        "metaDefault": "Sign-in method"
+      },
+      "addresses": { "title": "Addresses", "desc": "Home, work, and other saved locations.", "meta": "{{count}} addresses" },
+      "family": { "title": "Family profile", "desc": "Book quickly for family members.", "meta": "Manage family members" },
+      "notifications": {
+        "title": "Notification preferences",
+        "desc": "Reminders and chat alerts.",
+        "metaOn": "Reminders on",
+        "metaOff": "Reminders off"
+      },
+      "preferences": { "title": "Language & preferences", "desc": "Language, salon type, and display options." },
+      "privacy": { "title": "Privacy", "desc": "Manage and download your data.", "meta": "Data & permissions" },
+      "help": { "title": "Help center", "desc": "Questions, issues, and contact.", "meta": "Get in touch" }
+    },
     "sections": {
       "account": "Account",
       "activity": "Activity",
