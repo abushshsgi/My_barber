@@ -67,7 +67,7 @@ export const PROFILE_MENU_SECTIONS: {
       "profile.privacy",
     ],
     items: [
-      { icon: Bell, to: "/notifications", badge: "2" },
+      { icon: Bell, to: "/notifications" },
       { icon: Settings, to: "/settings" },
       { icon: HelpCircle, to: "/support" },
       { icon: Shield, to: "/privacy" },

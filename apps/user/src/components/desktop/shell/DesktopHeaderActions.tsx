@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Bell, MessageCircle, User } from "lucide-react";
+import { Bell, MessageCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useDisplayUser } from "@/hooks/use-me";
+import { ProfileAccountDropdown } from "@/components/desktop/profile/ProfileAccountDropdown";
 import { isNavTabActive } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -22,20 +22,6 @@ function Badge({ count }: { count: number }) {
 export function DesktopHeaderActions({ notificationsUnread = 0, chatUnread = 0 }: Props) {
   const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const user = useDisplayUser();
-  const initials = user.name
-    .split(" ")
-    .filter(Boolean)
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-
-  const profileActive =
-    pathname === "/profile" ||
-    pathname.startsWith("/profile/") ||
-    pathname.startsWith("/account/") ||
-    pathname === "/settings";
 
   const notificationsActive = isNavTabActive(pathname, "/notifications");
   const chatActive = isNavTabActive(pathname, "/chat");
@@ -76,25 +62,7 @@ export function DesktopHeaderActions({ notificationsUnread = 0, chatUnread = 0 }
         <Badge count={chatUnread} />
       </Link>
 
-      <Link
-        to="/profile"
-        className={cn(itemClass(profileActive), "px-2")}
-        aria-label={t("nav.profile")}
-        title={t("nav.profile")}
-      >
-        {initials ? (
-          <span
-            className={cn(
-              "grid h-6 w-6 place-items-center rounded-full text-[10px] font-bold leading-none",
-              profileActive ? "bg-background text-foreground" : "bg-foreground/10 text-foreground",
-            )}
-          >
-            {initials}
-          </span>
-        ) : (
-          <User className="h-4 w-4 shrink-0" strokeWidth={2.2} />
-        )}
-      </Link>
+      <ProfileAccountDropdown notificationsUnread={notificationsUnread} />
     </div>
   );
 }
