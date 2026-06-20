@@ -8,6 +8,7 @@ import { getUserAccessToken } from "@/lib/api/client";
 import { authQueryEnabled } from "@/lib/auth-query";
 import { userQueryKey } from "@/lib/query-keys";
 import { needsOnboarding } from "@/lib/recommendations";
+import { addressesQueryKey } from "@/hooks/use-addresses";
 import { salonsQueryKey } from "@/hooks/use-salons";
 
 export const meQueryKeyBase = ["users", "me"] as const;
@@ -45,6 +46,9 @@ export function useUpdateMe() {
         "longitude" in variables;
       if (locationChanged) {
         void qc.invalidateQueries({ queryKey: salonsQueryKey });
+      }
+      if (variables.onboarding_completed) {
+        void qc.invalidateQueries({ queryKey: userQueryKey(addressesQueryKey, user.id) });
       }
     },
   });

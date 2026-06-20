@@ -164,7 +164,12 @@ class UserSerializer(serializers.ModelSerializer):
             validated_data["first_name"] = first
             validated_data["last_name"] = last
             validated_data["full_name"] = f"{first} {last}".strip()
-        return super().update(instance, validated_data)
+        user = super().update(instance, validated_data)
+        if validated_data.get("onboarding_completed") is True:
+            from accounts.address_sync import ensure_home_address_from_profile
+
+            ensure_home_address_from_profile(user)
+        return user
 
     def get_role(self, obj: User) -> str:
         if getattr(obj, "is_superuser", False) or getattr(obj, "is_staff", False):

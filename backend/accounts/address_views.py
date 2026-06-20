@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.address_serializers import UserAddressSerializer
-from accounts.address_sync import set_default_address
+from accounts.address_sync import ensure_home_address_from_profile, set_default_address
 from accounts.models import UserAddress
 
 
@@ -14,6 +14,9 @@ class UserAddressListCreateView(APIView):
 
     def get(self, request):
         qs = UserAddress.objects.filter(user=request.user)
+        if not qs.exists():
+            ensure_home_address_from_profile(request.user)
+            qs = UserAddress.objects.filter(user=request.user)
         data = UserAddressSerializer(qs, many=True, context={"request": request}).data
         return Response(data)
 

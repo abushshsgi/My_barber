@@ -9,7 +9,6 @@ import {
   emptyAddressForm,
   type AddressFormValues,
 } from "@/components/address/AddressForm";
-import { RegionCitySelect } from "@/components/address/RegionCitySelect";
 import { EmptyState } from "@/components/EmptyState";
 import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import {
@@ -120,17 +119,6 @@ function AddressesPage() {
   const setDefault = useSetDefaultAddress();
 
   const [editor, setEditor] = useState<EditorMode | null>(null);
-  const [cityFilter, setCityFilter] = useState("");
-
-  const defaultRegion = useMemo(() => {
-    const defaultAddr = addresses.find((a) => a.is_default);
-    return defaultAddr?.region || me?.region || "";
-  }, [addresses, me?.region]);
-
-  const filteredAddresses = useMemo(() => {
-    if (!cityFilter) return addresses;
-    return addresses.filter((a) => a.region === cityFilter);
-  }, [addresses, cityFilter]);
 
   const regionMap = useMemo(
     () => Object.fromEntries(regions.map((r) => [r.value, r.label])),
@@ -140,11 +128,12 @@ function AddressesPage() {
   const editorInitial: Partial<AddressFormValues> | undefined = useMemo(() => {
     if (!editor) return undefined;
     if (editor.type === "add") {
-      return emptyAddressForm(cityFilter || defaultRegion);
+      const defaultAddr = addresses.find((a) => a.is_default);
+      return emptyAddressForm(defaultAddr?.region || me?.region || "");
     }
     const addr = addresses.find((a) => a.id === editor.id);
     return addr ? addressToForm(addr) : undefined;
-  }, [editor, addresses, cityFilter, defaultRegion]);
+  }, [editor, addresses, me?.region]);
 
   const busy =
     createAddress.isPending ||
@@ -189,51 +178,19 @@ function AddressesPage() {
         </ProfileSubpageCard>
       ) : (
         <>
-          <ProfileSubpageCard className="mb-4">
-            <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              {t("addresses.filterCity", { defaultValue: "Shahar bo'yicha" })}
-            </label>
-            <RegionCitySelect
-              value={cityFilter}
-              onChange={setCityFilter}
-              showAllOption
-              disabled={busy}
-            />
-            {cityFilter ? (
-              <p className="mt-2 text-[11px] font-medium text-muted-foreground">
-                {t("addresses.filterCityHint", {
-                  count: filteredAddresses.length,
-                  defaultValue: "{{count}} ta manzil — yangi manzil shu shaharda saqlanadi",
-                })}
-              </p>
-            ) : null}
-          </ProfileSubpageCard>
-
           {isLoading ? (
             <p className="py-8 text-center text-sm text-muted-foreground">{t("common.loading")}</p>
-          ) : filteredAddresses.length === 0 ? (
+          ) : addresses.length === 0 ? (
             <EmptyState
               icon={<MapPin className="h-7 w-7" />}
-              title={
-                cityFilter
-                  ? t("addresses.emptyCity", {
-                      defaultValue: "Bu shaharda saqlangan manzillar yo'q",
-                    })
-                  : t("addresses.empty", { defaultValue: "Saqlangan manzillar yo'q" })
-              }
-              description={
-                cityFilter
-                  ? t("addresses.emptyCityHint", {
-                      defaultValue: "Tanlangan shahar uchun manzil qo'shing.",
-                    })
-                  : t("addresses.emptyHint", {
-                      defaultValue: "Yaqin salonlarni aniqroq topish uchun manzil qo'shing.",
-                    })
-              }
+              title={t("addresses.empty", { defaultValue: "Saqlangan manzillar yo'q" })}
+              description={t("addresses.emptyHint", {
+                defaultValue: "Yaqin salonlarni aniqroq topish uchun manzil qo'shing.",
+              })}
             />
           ) : (
             <div className="space-y-3">
-              {filteredAddresses.map((addr) => (
+              {addresses.map((addr) => (
                 <AddressCard
                   key={addr.id}
                   addr={addr}
