@@ -42,21 +42,24 @@ export function SalonLocationPicker({
   const skipReverseRef = useRef(false);
 
   useEffect(() => {
-    const q = [city.trim(), address.trim()].filter(Boolean).join(", ");
-    if (q.length < 4 || skipGeocodeRef.current) {
+    const addressPart = address.trim();
+    if (addressPart.length < 5 || skipGeocodeRef.current) {
       skipGeocodeRef.current = false;
       return;
     }
+    const q = [city.trim(), addressPart].filter(Boolean).join(", ");
     const timer = window.setTimeout(() => {
-      void geocodeAddress(q).then((results) => {
-        const first = results[0];
-        if (!first) return;
-        skipReverseRef.current = true;
-        setLatitude(first.lat.toFixed(6));
-        setLongitude(first.lng.toFixed(6));
-        setAddress?.(first.address || address);
-        setCity?.(first.city || city);
-      });
+      void geocodeAddress(q)
+        .then((results) => {
+          const first = results[0];
+          if (!first) return;
+          skipReverseRef.current = true;
+          setLatitude(first.lat.toFixed(6));
+          setLongitude(first.lng.toFixed(6));
+          setAddress?.(first.address || address);
+          setCity?.(first.city || city);
+        })
+        .catch(() => undefined);
     }, 500);
     return () => window.clearTimeout(timer);
   }, [city, address, setLatitude, setLongitude, setAddress, setCity]);

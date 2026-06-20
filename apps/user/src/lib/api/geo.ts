@@ -27,11 +27,25 @@ export type LaunchInterestPayload = {
   source?: "onboarding" | "address" | "home";
 };
 
+const GEO_UNAVAILABLE: LocationValidation = {
+  region_from_gps: "",
+  region_from_gps_label: "",
+  city_label: "",
+  matches_selected: null,
+  in_uzbekistan: true,
+  salons_published: 0,
+  has_coverage: false,
+};
+
 export async function geocodeAddress(q: string): Promise<GeocodeResult[]> {
-  const data = await apiJson<{ results: GeocodeResult[] }>(
-    `/api/v1/geo/geocode/?q=${encodeURIComponent(q)}`,
-  );
-  return data.results ?? [];
+  try {
+    const data = await apiJson<{ results: GeocodeResult[] }>(
+      `/api/v1/geo/geocode/?q=${encodeURIComponent(q)}`,
+    );
+    return data.results ?? [];
+  } catch {
+    return [];
+  }
 }
 
 export async function reverseGeocodeAddress(
@@ -57,7 +71,11 @@ export async function validateLocation(
     lng: String(lng),
   });
   if (region) params.set("region", region);
-  return apiJson<LocationValidation>(`/api/v1/geo/validate/?${params.toString()}`);
+  try {
+    return await apiJson<LocationValidation>(`/api/v1/geo/validate/?${params.toString()}`);
+  } catch {
+    return GEO_UNAVAILABLE;
+  }
 }
 
 export async function submitLaunchInterest(payload: LaunchInterestPayload): Promise<void> {

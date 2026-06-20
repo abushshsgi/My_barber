@@ -4,12 +4,51 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import math
+
 from accounts.uz_regions import UzRegion
 from geo.services.dgis import DgisGeocoderError, reverse_geocode
 
 # O'zbekiston taxminiy chegarasi (bbox).
 UZ_LAT_MIN, UZ_LAT_MAX = 37.0, 46.5
 UZ_LNG_MIN, UZ_LNG_MAX = 55.9, 73.5
+
+# 2GIS ishlamasa — viloyat markaziga yaqinlik bo'yicha taxmin.
+_REGION_CENTERS: list[tuple[str, float, float]] = [
+    (UzRegion.ANDIJON, 40.7821, 72.3442),
+    (UzRegion.BUXORO, 39.7747, 64.4286),
+    (UzRegion.FARGONA, 40.3864, 71.7864),
+    (UzRegion.JIZZAX, 40.1158, 67.8422),
+    (UzRegion.QASHQADARYO, 38.8606, 65.7891),
+    (UzRegion.NAVOIY, 40.0844, 65.3792),
+    (UzRegion.NAMANGAN, 40.9983, 71.6726),
+    (UzRegion.SAMARQAND, 39.6542, 66.9597),
+    (UzRegion.SURXONDARYO, 37.9409, 67.5708),
+    (UzRegion.SIRDARYO, 40.8433, 68.6617),
+    (UzRegion.TOSHKENT_SH, 41.2995, 69.2401),
+    (UzRegion.TOSHKENT_V, 41.0212, 69.5584),
+    (UzRegion.XORAZM, 41.5500, 60.6333),
+]
+
+
+def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    r = 6371.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dlat = math.radians(lat2 - lat1)
+    dlng = math.radians(lng2 - lng1)
+    a = math.sin(dlat / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dlng / 2) ** 2
+    return 2 * r * math.asin(min(1.0, math.sqrt(a)))
+
+
+def _region_from_nearest_center(lat: float, lng: float) -> str | None:
+    best_code: str | None = None
+    best_km = float("inf")
+    for code, clat, clng in _REGION_CENTERS:
+        km = _haversine_km(lat, lng, clat, clng)
+        if km < best_km:
+            best_km = km
+            best_code = code
+    return best_code if best_km <= 120 else None
 
 # Kalit-so'z → viloyat kodi (uz/ru/en, kichik harf).
 _REGION_KEYWORDS: list[tuple[str, str]] = [
@@ -100,9 +139,10 @@ def resolve_region_from_coords(lat: float, lng: float) -> ResolvedLocation:
     except DgisGeocoderError:
         result = None
     if result is None:
+        fallback = _region_from_nearest_center(lat, lng)
         return ResolvedLocation(
-            region_code=None,
-            region_label="",
+            region_code=fallback,
+            region_label=_region_label(fallback),
             city_label="",
             in_uzbekistan=True,
         )

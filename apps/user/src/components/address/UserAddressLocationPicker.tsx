@@ -9,6 +9,9 @@ const MapPicker = lazy(() =>
   import("@mybarber/map-2gis").then((m) => ({ default: m.MapPicker })),
 );
 
+const MIN_ADDRESS_FOR_GEOCODE = 5;
+const MAP_DEBOUNCE_MS = 500;
+
 function parseCoord(value: string): number | null {
   const n = parseFloat(value);
   return Number.isFinite(n) ? n : null;
@@ -52,6 +55,7 @@ export function UserAddressLocationPicker({
   const lng = parseCoord(longitude);
   const skipGeocodeRef = useRef(false);
   const skipReverseRef = useRef(false);
+  const mapSyncTimerRef = useRef<number | null>(null);
   const [locating, setLocating] = useState(false);
 
   const suggestRegionFromGps = (code: string) => {
@@ -62,23 +66,54 @@ export function UserAddressLocationPicker({
   };
 
   useEffect(() => {
-    const q = [regionLabel.trim(), address.trim()].filter(Boolean).join(", ");
-    if (q.length < 4 || skipGeocodeRef.current) {
+    const addressPart = address.trim();
+    if (addressPart.length < MIN_ADDRESS_FOR_GEOCODE || skipGeocodeRef.current) {
       skipGeocodeRef.current = false;
       return;
     }
+    const q = [regionLabel.trim(), addressPart].filter(Boolean).join(", ");
     const timer = window.setTimeout(() => {
-      void geocodeAddress(q).then((results) => {
-        const first = results[0];
-        if (!first) return;
-        skipReverseRef.current = true;
-        setLatitude(first.lat.toFixed(6));
-        setLongitude(first.lng.toFixed(6));
-        setAddress?.(first.full_name || first.address || address);
-      });
+      void geocodeAddress(q)
+        .then((results) => {
+          const first = results[0];
+          if (!first) return;
+          skipReverseRef.current = true;
+          setLatitude(first.lat.toFixed(6));
+          setLongitude(first.lng.toFixed(6));
+          setAddress?.(first.full_name || first.address || address);
+        })
+        .catch(() => undefined);
     }, 600);
     return () => window.clearTimeout(timer);
   }, [regionLabel, address, setLatitude, setLongitude, setAddress]);
+
+  useEffect(
+    () => () => {
+      if (mapSyncTimerRef.current != null) {
+        window.clearTimeout(mapSyncTimerRef.current);
+      }
+    },
+    [],
+  );
+
+  const syncMapCoords = (nextLat: number, nextLng: number) => {
+    if (mapSyncTimerRef.current != null) {
+      window.clearTimeout(mapSyncTimerRef.current);
+    }
+    mapSyncTimerRef.current = window.setTimeout(() => {
+      void reverseGeocodeAddress(nextLat, nextLng)
+        .then((result) => {
+          if (!result) return;
+          setAddress?.(result.full_name || result.address);
+        })
+        .catch(() => undefined);
+      void validateLocation(nextLat, nextLng, region || undefined)
+        .then((v) => {
+          if (v.region_from_gps) suggestRegionFromGps(v.region_from_gps);
+        })
+        .catch(() => undefined);
+    }, MAP_DEBOUNCE_MS);
+  };
 
   const handleCoordsChange = (nextLat: number, nextLng: number) => {
     if (skipReverseRef.current) {
@@ -90,13 +125,7 @@ export function UserAddressLocationPicker({
     skipGeocodeRef.current = true;
     setLatitude(nextLat.toFixed(6));
     setLongitude(nextLng.toFixed(6));
-    void reverseGeocodeAddress(nextLat, nextLng).then((result) => {
-      if (!result) return;
-      setAddress?.(result.full_name || result.address);
-    });
-    void validateLocation(nextLat, nextLng, region || undefined).then((v) => {
-      if (v.region_from_gps) suggestRegionFromGps(v.region_from_gps);
-    });
+    syncMapCoords(nextLat, nextLng);
   };
 
   const detectGps = async () => {
@@ -117,14 +146,14 @@ export function UserAddressLocationPicker({
       if (validation.region_from_gps) {
         suggestRegionFromGps(validation.region_from_gps);
       }
-      toast.success("Joylashuv aniqlandi");
+      toast.success(t("addresses.gpsDetected", { defaultValue: "Joylashuv aniqlandi" }));
     } catch (e) {
       const msg =
         e instanceof GeolocationError
           ? e.message
           : e instanceof Error
             ? e.message
-            : "Joylashuvni aniqlab bo'lmadi";
+            : t("addresses.gpsFailed", { defaultValue: "Joylashuvni aniqlab bo'lmadi" });
       toast.error(msg);
     } finally {
       setLocating(false);
@@ -151,7 +180,7 @@ export function UserAddressLocationPicker({
         <Suspense
           fallback={
             <div className="flex h-44 items-center justify-center bg-muted/30 text-xs text-muted-foreground">
-              Xarita yuklanmoqda…
+              {t("addresses.mapLoading", { defaultValue: "Xarita yuklanmoqda…" })}
             </div>
           }
         >

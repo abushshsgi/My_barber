@@ -50,6 +50,13 @@ class RegionResolverTests(SimpleTestCase):
         self.assertTrue(region_matches_gps(UzRegion.TOSHKENT_SH, 41.31, 69.27))
         self.assertFalse(region_matches_gps(UzRegion.BUXORO, 41.31, 69.27))
 
+    @patch("geo.region_resolver.reverse_geocode")
+    def test_resolve_fallback_when_dgis_unavailable(self, mock_reverse):
+        mock_reverse.return_value = None
+        resolved = resolve_region_from_coords(39.77, 64.43)
+        self.assertEqual(resolved.region_code, UzRegion.BUXORO)
+        self.assertTrue(resolved.in_uzbekistan)
+
 
 class DgisServiceTests(SimpleTestCase):
     @override_settings(DGIS_API_KEY="test-key")
@@ -109,6 +116,18 @@ class GeocodeViewTests(SimpleTestCase):
         response = GeocodeView.as_view()(request)
         self.assertEqual(response.status_code, 200)
         self.assertIn("results", response.data)
+
+    @override_settings(DGIS_API_KEY="test-key")
+    @patch("geo.views.geocode_query")
+    def test_geocode_view_dgis_error_returns_empty(self, mock_geocode):
+        from geo.services.dgis import DgisGeocoderError
+
+        mock_geocode.side_effect = DgisGeocoderError("2GIS geocoder returned an error.")
+        factory = APIRequestFactory()
+        request = factory.get("/api/v1/geo/geocode/", {"q": "Buxoro viloyati"})
+        response = GeocodeView.as_view()(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["results"], [])
 
     @override_settings(DGIS_API_KEY="test-key")
     @patch("geo.views.reverse_geocode")
