@@ -55,6 +55,7 @@ export function Map2GIS({
   const userMarkerRef = useRef<mapgl.HtmlMarker | null>(null);
   const userCircleRef = useRef<mapgl.Circle | null>(null);
   const onMapReadyRef = useRef(onMapReady);
+  const prevActiveIdRef = useRef<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const reactId = useId().replace(/:/g, "");
@@ -234,6 +235,13 @@ export function Map2GIS({
     if (!activeId || !mapRef.current) return;
     const m = markers.find((x) => x.id === activeId);
     if (!m) return;
+    // Birinchi yuklanishda fitMarkers barcha pinlarni ko‘rsatadi — faqat foydalanuvchi tanlaganda uchish.
+    if (prevActiveIdRef.current === null) {
+      prevActiveIdRef.current = activeId;
+      return;
+    }
+    if (prevActiveIdRef.current === activeId) return;
+    prevActiveIdRef.current = activeId;
     mapRef.current.setCenter(toMapGlCoords(m.lat, m.lng), { animate: true, duration: 550 });
     if ((mapRef.current.getZoom() ?? 0) < 15) {
       mapRef.current.setZoom(15, { animate: true, duration: 550 });

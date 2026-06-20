@@ -22,7 +22,7 @@ function SalonGrid({ salons }: { salons: HomeData["filtered"] }) {
 
 export function HomeBazaarClassic({ data }: Props) {
   const { t } = useTranslation();
-  const { filtered, loading } = data;
+  const { filtered, mapSalons, loading } = data;
 
   return (
     <div className="w-full">
@@ -32,7 +32,7 @@ export function HomeBazaarClassic({ data }: Props) {
         <section className="min-w-0">
           {loading ? <BazaarGridSkeleton cols={4} /> : <SalonGrid salons={filtered} />}
         </section>
-        <BazaarMapPanel salons={filtered} salonCount={filtered.length} />
+        <BazaarMapPanel salons={mapSalons} salonCount={filtered.length} />
       </div>
     </div>
   );

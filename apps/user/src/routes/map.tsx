@@ -60,8 +60,11 @@ function MapCanvas({
 
 function MapView() {
   const { t } = useTranslation();
-  const { profileDefault } = useAudience();
-  const mapAudience = useMemo(() => resolveMapAudienceFilter(profileDefault), [profileDefault]);
+  const { audience, profileDefault } = useAudience();
+  const mapAudience = useMemo(() => {
+    if (audience !== "all") return audience;
+    return resolveMapAudienceFilter(profileDefault);
+  }, [audience, profileDefault]);
   const { data: me } = useMe();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -149,8 +152,11 @@ function MapView() {
   };
 
   useEffect(() => {
-    if (!mapHandleRef.current || mapMarkers.length === 0) return;
-    mapHandleRef.current.fitMarkers(mapMarkers, { bottom: 48 });
+    if (mapMarkers.length === 0) return;
+    const fit = () => mapHandleRef.current?.fitMarkers(mapMarkers, { bottom: 48 });
+    fit();
+    const delays = [120, 400, 800].map((ms) => window.setTimeout(fit, ms));
+    return () => delays.forEach((id) => window.clearTimeout(id));
   }, [mapHandle, mapMarkers]);
 
   useEffect(() => {
@@ -249,7 +255,7 @@ function MapView() {
             <MapCanvas
               {...sharedMapProps}
               onMapReady={onDesktopMapReady}
-              autoFitMarkers={false}
+              autoFitMarkers
             />
           ) : (
             <div className="h-full w-full bg-surface" />

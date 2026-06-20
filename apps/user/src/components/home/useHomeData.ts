@@ -12,6 +12,7 @@ import {
 import { useHairstyles } from "@/hooks/use-hairstyles";
 import { useMe } from "@/hooks/use-me";
 import { useSalonsList, useSalonsNearby } from "@/hooks/use-salons";
+import { hasValidMapCoords } from "@/lib/map-utils";
 import {
   rankSalonsForUser,
   userRecommendContext,
@@ -80,6 +81,10 @@ export function useHomeData() {
   const topOffer = useMemo((): Offer | undefined => undefined, []);
 
   const featuredSalons = useMemo(() => filtered.slice(0, 4), [filtered]);
+  const mapSalons = useMemo(
+    () => salons.filter((s) => hasValidMapCoords(s.lat, s.lng)),
+    [salons],
+  );
   const personalized = hasCoords || Boolean(me?.region);
 
   return {
@@ -91,6 +96,7 @@ export function useHomeData() {
     effectiveCat,
     visibleCategoryKeys,
     filtered,
+    mapSalons,
     trending,
     topOffer,
     featuredSalons,

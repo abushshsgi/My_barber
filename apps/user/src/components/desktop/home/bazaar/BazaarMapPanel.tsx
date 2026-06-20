@@ -3,12 +3,13 @@ import { ArrowUpRight, Calendar, MapPin, Sparkles } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
+import { hasValidMapCoords } from "@/lib/map-utils";
 import { cn } from "@/lib/utils";
 
 type Pin = { x: number; y: number; active?: boolean };
 
 function buildPins(salons: Pick<Salon, "lat" | "lng">[]): Pin[] {
-  const valid = salons.filter((s) => s.lat && s.lng);
+  const valid = salons.filter((s) => hasValidMapCoords(s.lat, s.lng));
   if (valid.length === 0) {
     return [
       { x: 28, y: 34 },
