@@ -17,7 +17,8 @@ import { SettingsAddressesPanel } from "@/components/settings/panels/SettingsAdd
 import { SettingsFamilyPanel } from "@/components/settings/panels/SettingsFamilyPanel";
 import { SettingsPrivacyPanel } from "@/components/settings/panels/SettingsPrivacyPanel";
 import { SettingsSessionsPanel } from "@/components/settings/panels/SettingsSessionsPanel";
-import { SettingsSupportPanel } from "@/components/settings/panels/SettingsSupportPanel";
+import { SettingsPaymentMethodsPanel } from "@/components/settings/panels/SettingsPaymentMethodsPanel";
+import { SettingsSubscriptionsPanel } from "@/components/settings/panels/SettingsSubscriptionsPanel";
 import type { SettingsPageState } from "@/components/settings/useSettingsPage";
 import { SETTINGS_LANGS } from "@/components/settings/useSettingsPage";
 import { setLang } from "@/i18n/config";
@@ -32,6 +33,7 @@ import { getUserAccessToken, getUserRefreshToken } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { sanitizeDisplayNameInput, validateDisplayName } from "@/lib/validate-display-name";
 import { useCurrency } from "@/hooks/use-currency";
+import { useWalletMe } from "@/hooks/use-wallet";
 import { fetchCurrencyRates } from "@/lib/api/currency";
 import { CURRENCY_VISUAL, LANG_FLAGS } from "@/lib/locale-display";
 import { SUPPORTED_CURRENCY_CODES, type CurrencyCode } from "@mybarber/shared/currency";
@@ -156,6 +158,7 @@ export function SettingsPanelContent({
   } = state;
 
   const { currency, setCurrency, ratesUpdatedAt, ratesSource } = useCurrency();
+  const { data: walletMe } = useWalletMe();
   const { data: currencyRates } = useQuery({
     queryKey: ["currencies", "rates"],
     queryFn: fetchCurrencyRates,
@@ -738,6 +741,49 @@ export function SettingsPanelContent({
             />
           </>
         )}
+
+        {section === "payments" && !showManageDetail ? (
+          <SettingsFieldRow
+            label={t("settings.hubs.payments.title", { defaultValue: "To'lov usullari" })}
+            value={
+              walletMe?.card.card_display
+                ? t("settings.hubs.payments.meta", {
+                    method: walletMe.card.card_display,
+                    defaultValue: "{{method}} · asosiy",
+                  })
+                : t("settings.hubs.payments.metaEmpty", { defaultValue: "Click, Payme va hamyon" })
+            }
+            hint={t("settings.hubs.payments.desc")}
+            actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
+            actionTo="/settings"
+            actionSearch={manageSearch}
+          />
+        ) : null}
+
+        {section === "payments" && showManageDetail ? (
+          <>
+            <ManageBack />
+            <SettingsPaymentMethodsPanel />
+          </>
+        ) : null}
+
+        {section === "subscriptions" && !showManageDetail ? (
+          <SettingsFieldRow
+            label={t("settings.hubs.subscriptions.title", { defaultValue: "Obunalar" })}
+            value={t("settings.hubs.subscriptions.meta", { defaultValue: "Obuna rejalar tez orada" })}
+            hint={t("settings.hubs.subscriptions.desc")}
+            actionLabel={t("settings.actions.view", { defaultValue: "Ko'rish" })}
+            actionTo="/settings"
+            actionSearch={manageSearch}
+          />
+        ) : null}
+
+        {section === "subscriptions" && showManageDetail ? (
+          <>
+            <ManageBack />
+            <SettingsSubscriptionsPanel />
+          </>
+        ) : null}
 
         {section === "addresses" && !showManageDetail ? (
           <>

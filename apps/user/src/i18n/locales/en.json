@@ -566,6 +566,17 @@
         "metaOff": "Reminders off"
       },
       "preferences": { "title": "Language & preferences", "desc": "Language, salon type, and display options." },
+      "payments": {
+        "title": "Payment methods",
+        "desc": "Click, Payme, and mysaloon wallet.",
+        "meta": "{{method}} · primary",
+        "metaEmpty": "Click, Payme & wallet"
+      },
+      "subscriptions": {
+        "title": "Subscriptions",
+        "desc": "Plans and recurring payments.",
+        "meta": "Subscription plans coming soon"
+      },
       "privacy": { "title": "Privacy", "desc": "Manage and download your data.", "meta": "Data & permissions" },
       "help": { "title": "Help center", "desc": "Questions, issues, and contact.", "meta": "Get in touch" }
     },
@@ -790,6 +801,11 @@
     "monthTrend": "+12% this month",
     "topUp": "Top up",
     "gift": "Gift",
+    "overview": "Wallet",
+    "txMetaCount": "{{count}} transactions",
+    "txMetaEmpty": "No transactions yet",
+    "txHint": "Income and spending history.",
+    "topUpHint": "Add funds to your balance.",
     "stats": {
       "cashback": "Cashback",
       "bonus": "Points",

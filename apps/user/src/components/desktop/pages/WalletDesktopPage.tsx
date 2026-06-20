@@ -1,51 +1,31 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft, Gift, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQueryClient } from "@tanstack/react-query";
 import { ClientOnly } from "@/components/ClientOnly";
 import { PlasticCard } from "@/components/wallet/PlasticCard";
-import { WalletEmptyTransactions } from "@/components/wallet/WalletEmptyTransactions";
 import { WalletHubLinks } from "@/components/wallet/WalletHubLinks";
-import { WalletPaymentMethodsRow } from "@/components/wallet/WalletPaymentMethodsRow";
-import { WalletTransactionList } from "@/components/wallet/WalletTransactionList";
+import { WalletTransactionsPanel } from "@/components/wallet/WalletTransactionsPanel";
+import { SettingsFieldRow } from "@/components/settings/SettingsFieldRow";
 import { DESKTOP_ACCOUNT_BG, DESKTOP_GLASS_PANEL } from "@/components/desktop/ui/desktop-glass";
 import { useCurrency } from "@/hooks/use-currency";
-import { useWalletBalance, useWalletTransactions, walletMeQueryKeyFor } from "@/hooks/use-wallet";
-import { getAuthUserId } from "@/lib/auth-user";
-import { filterWalletTransactions, type WalletTxTab } from "@/lib/wallet-transactions";
+import { useWalletBalance, useWalletTransactions } from "@/hooks/use-wallet";
 import { cn } from "@/lib/utils";
 
-const RECENT_TX_LIMIT = 20;
+type Props = {
+  manage?: boolean;
+};
 
-export function WalletDesktopPage() {
+export function WalletDesktopPage({ manage }: Props) {
   const { t } = useTranslation();
-  const qc = useQueryClient();
   const { formatPrice } = useCurrency();
-  const [tab, setTab] = useState<WalletTxTab>("all");
   const { balance, walletNumber, card, isLoading } = useWalletBalance();
-  const { data: transactions = [], isLoading: txLoading } = useWalletTransactions(tab, 50);
+  const { data: transactions = [] } = useWalletTransactions("all", 50);
 
-  const visible = useMemo(
-    () => filterWalletTransactions(transactions, tab).slice(0, RECENT_TX_LIMIT),
-    [transactions, tab],
-  );
-  const hasAnyTransactions = transactions.length > 0;
-  const inflowTotal = useMemo(
-    () => transactions.filter((tx) => tx.kind === "in").reduce((sum, tx) => sum + tx.amount, 0),
-    [transactions],
-  );
-
-  const tabLabels: Record<WalletTxTab, string> = {
-    all: t("walletPage.tabs.all"),
-    in: t("walletPage.tabs.in"),
-    out: t("walletPage.tabs.out"),
-  };
-
-  const refreshBalance = async () => {
-    await qc.invalidateQueries({ queryKey: walletMeQueryKeyFor(getAuthUserId()) });
-    await qc.invalidateQueries({ queryKey: ["wallet", "transactions"] });
-  };
+  const inflowTotal = transactions
+    .filter((tx) => tx.kind === "in")
+    .reduce((sum, tx) => sum + tx.amount, 0);
+  const txCount = transactions.length;
+  const manageSearch = { manage: true as const };
 
   return (
     <div className={cn("w-full", DESKTOP_ACCOUNT_BG)}>
@@ -69,9 +49,7 @@ export function WalletDesktopPage() {
         <h1 className="text-[32px] font-semibold tracking-tight text-foreground xl:text-[36px]">
           {t("walletPage.title")}
         </h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          {t("walletPage.pullHint")}
-        </p>
+        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{t("walletPage.pullHint")}</p>
       </header>
 
       <div className="grid gap-10 pt-8 lg:grid-cols-[minmax(320px,380px)_minmax(0,1fr)] xl:gap-14 lg:pb-12">
@@ -113,66 +91,64 @@ export function WalletDesktopPage() {
             </p>
           </div>
 
-          <WalletPaymentMethodsRow className="mx-0 mt-0" variant="desktop" />
-
           <div>
             <h2 className="mb-3 text-sm font-bold">
-              {t("walletPage.moreServices", { defaultValue: "Hamyon va to'lov" })}
+              {t("walletPage.moreServices", { defaultValue: "Qo'shimcha xizmatlar" })}
             </h2>
             <WalletHubLinks compact />
           </div>
         </aside>
 
         <section className={cn(DESKTOP_GLASS_PANEL, "p-5 lg:p-6")}>
-          <div className="flex items-center justify-between gap-4 border-b border-border/60 pb-4">
-            <h2 className="text-lg font-bold">{t("walletPage.recent")}</h2>
-            <button
-              type="button"
-              onClick={() => void refreshBalance()}
-              className="text-xs font-semibold text-muted-foreground underline underline-offset-2 hover:text-foreground"
-            >
-              {t("common.refresh", { defaultValue: "Yangilash" })}
-            </button>
-          </div>
-
-          {hasAnyTransactions ? (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {(["all", "in", "out"] as WalletTxTab[]).map((k) => (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => setTab(k)}
-                  className={cn(
-                    "rounded-full px-4 py-2 text-xs font-bold transition-colors",
-                    tab === k ? "bg-foreground text-background" : "bg-surface text-muted-foreground",
-                  )}
-                >
-                  {tabLabels[k]}
-                </button>
-              ))}
-            </div>
-          ) : null}
-
-          {txLoading ? (
-            <div className="mt-5 h-32 animate-pulse rounded-2xl bg-surface" />
-          ) : !hasAnyTransactions ? (
-            <WalletEmptyTransactions filteredEmpty={false} />
-          ) : visible.length === 0 ? (
-            <WalletEmptyTransactions filteredEmpty />
+          {!manage ? (
+            <>
+              <h2 className="text-[22px] font-semibold tracking-tight text-foreground">
+                {t("walletPage.overview", { defaultValue: "Hamyon" })}
+              </h2>
+              <div className="mt-2">
+                <SettingsFieldRow
+                  label={t("walletPage.recent")}
+                  value={
+                    txCount > 0
+                      ? t("walletPage.txMetaCount", {
+                          count: txCount,
+                          defaultValue: "{{count}} ta tranzaksiya",
+                        })
+                      : t("walletPage.txMetaEmpty", { defaultValue: "Hali tranzaksiya yo'q" })
+                  }
+                  hint={t("walletPage.txHint", { defaultValue: "Kirim va chiqimlar tarixi." })}
+                  actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
+                  actionTo="/wallet"
+                  actionSearch={manageSearch}
+                />
+                <SettingsFieldRow
+                  label={t("walletPage.topUp")}
+                  value={formatPrice(balance)}
+                  hint={t("walletPage.topUpHint", { defaultValue: "Balansni to'ldiring." })}
+                  actionLabel={t("settings.actions.add", { defaultValue: "Qo'shish" })}
+                  actionTo="/wallet/top-up"
+                />
+                <SettingsFieldRow
+                  label={t("settings.hubs.payments.title", { defaultValue: "To'lov usullari" })}
+                  value={t("settings.hubs.payments.metaEmpty", { defaultValue: "Click, Payme va hamyon" })}
+                  actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
+                  actionTo="/settings"
+                  actionSearch={{ section: "payments", manage: true }}
+                />
+              </div>
+            </>
           ) : (
-            <div className="mt-5 overflow-hidden rounded-xl border border-border/60">
-              <WalletTransactionList items={visible} />
-            </div>
+            <>
+              <Link
+                to="/wallet"
+                className="mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-foreground transition-opacity hover:opacity-80"
+              >
+                <ChevronLeft className="h-4 w-4" strokeWidth={2.2} />
+                {t("common.back", { defaultValue: "Orqaga" })}
+              </Link>
+              <WalletTransactionsPanel />
+            </>
           )}
-
-          {hasAnyTransactions ? (
-            <Link
-              to="/wallet/history"
-              className="mt-5 inline-flex rounded-full bg-surface px-5 py-2.5 text-xs font-bold transition-colors hover:bg-surface/80"
-            >
-              {t("walletPage.fullHistory")}
-            </Link>
-          ) : null}
         </section>
       </div>
     </div>

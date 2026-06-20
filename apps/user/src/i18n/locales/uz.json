@@ -605,6 +605,17 @@
         "title": "Til va afzalliklar",
         "desc": "Til, salon turi va ko'rinish sozlamalari."
       },
+      "payments": {
+        "title": "To'lov usullari",
+        "desc": "Click, Payme va mysaloon hamyoni.",
+        "meta": "{{method}} · asosiy",
+        "metaEmpty": "Click, Payme va hamyon"
+      },
+      "subscriptions": {
+        "title": "Obunalar",
+        "desc": "Obuna rejalar va avtomatik to'lovlar.",
+        "meta": "Obuna rejalar tez orada"
+      },
       "privacy": {
         "title": "Maxfiylik",
         "desc": "Ma'lumotlaringizni boshqaring va yuklab oling.",
@@ -840,6 +851,11 @@
     "monthTrend": "+12% bu oy",
     "topUp": "To'ldirish",
     "gift": "Sovg'a",
+    "overview": "Hamyon",
+    "txMetaCount": "{{count}} ta tranzaksiya",
+    "txMetaEmpty": "Hali tranzaksiya yo'q",
+    "txHint": "Kirim va chiqimlar tarixi.",
+    "topUpHint": "Balansni to'ldiring.",
     "stats": {
       "cashback": "Cashback",
       "bonus": "Ball",

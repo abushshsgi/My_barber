@@ -1,15 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, CreditCard, Gift, Repeat, Sparkles, Tag } from "lucide-react";
+import { ChevronRight, Gift, Sparkles, Tag } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ProfileSubpageCard } from "@/components/profile/ProfileSubpageLayout";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
-  { to: "/payment-methods", icon: CreditCard, labelKey: "paymentMethods.title", defaultLabel: "To'lov usullari" },
   { to: "/loyalty", icon: Sparkles, labelKey: "profile.loyalty", defaultLabel: "Bonus dasturi" },
   { to: "/giftcard", icon: Gift, labelKey: "profile.giftcard", defaultLabel: "Sovg'a karta" },
   { to: "/offers", icon: Tag, labelKey: "profile.offers", defaultLabel: "Aksiyalar" },
-  { to: "/subscriptions", icon: Repeat, labelKey: "subscriptions.title", defaultLabel: "Obunalar" },
 ] as const;
 
 type Props = {
