@@ -35,8 +35,8 @@ export function SettingsDesktopPage({
         doneLabel={t("settings.done", { defaultValue: "Tayyor" })}
       />
 
-      <div className="flex flex-col gap-10 lg:flex-row lg:gap-12 xl:gap-16 lg:pb-12">
-        <aside className="lg:w-[min(280px,22%)] lg:shrink-0">
+      <div className="flex flex-col gap-10 lg:flex-row lg:gap-10 xl:gap-14 lg:pb-12">
+        <aside className="lg:w-[340px] xl:w-[380px] lg:shrink-0">
           <h1 className="text-[32px] font-semibold tracking-tight text-foreground xl:text-[36px]">
             {t("settings.pageTitle", { defaultValue: "Hisob sozlamalari" })}
           </h1>
@@ -45,7 +45,7 @@ export function SettingsDesktopPage({
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1 lg:pt-1">
+        <main className="min-w-0 flex-1 lg:max-w-[680px] xl:max-w-[720px] lg:pt-1">
           <SettingsPanelContent
             section={section}
             state={state}
