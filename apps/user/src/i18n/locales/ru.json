@@ -816,9 +816,10 @@
     "nav": {
       "overview": "Обзор",
       "transactions": "Операции",
-      "services": "Сервисы"
+      "gift": "Подарочная карта",
+      "loyalty": "Бонусы",
+      "offers": "Акции"
     },
-    "servicesHint": "Бонусы, подарочные карты и акции.",
     "stats": {
       "cashback": "Кэшбэк",
       "bonus": "Баллы",

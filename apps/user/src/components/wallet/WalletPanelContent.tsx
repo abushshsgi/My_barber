@@ -3,7 +3,9 @@ import { ArrowUpRight, Gift, Plus, TrendingUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ClientOnly } from "@/components/ClientOnly";
 import { PlasticCard } from "@/components/wallet/PlasticCard";
-import { WalletHubLinks } from "@/components/wallet/WalletHubLinks";
+import { WalletGiftPanel } from "@/components/wallet/panels/WalletGiftPanel";
+import { WalletLoyaltyPanel } from "@/components/wallet/panels/WalletLoyaltyPanel";
+import { WalletOffersPanel } from "@/components/wallet/panels/WalletOffersPanel";
 import { WalletTransactionsPanel } from "@/components/wallet/WalletTransactionsPanel";
 import { DESKTOP_GLASS_PANEL } from "@/components/desktop/ui/desktop-glass";
 import { useCurrency } from "@/hooks/use-currency";
@@ -13,9 +15,11 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   section: WalletSection;
+  /** Desktop fintech shell — hero already shows balance & card */
+  desktopShell?: boolean;
 };
 
-export function WalletPanelContent({ section }: Props) {
+export function WalletPanelContent({ section, desktopShell }: Props) {
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
   const { balance, walletNumber, card, isLoading } = useWalletBalance();
@@ -29,15 +33,45 @@ export function WalletPanelContent({ section }: Props) {
     .reduce((sum, tx) => sum + tx.amount, 0);
 
   const titleMeta = WALLET_SECTION_TITLE_KEYS[section];
+  const showSectionTitle = !desktopShell || section !== "overview";
+
+  const stats = [
+    { label: t("walletPage.stats.cashback"), value: formatPrice(inflowTotal) },
+    { label: t("walletPage.stats.history"), value: String(transactions.length) },
+    { label: t("walletPage.stats.spent", { defaultValue: "Chiqim" }), value: formatPrice(outflowTotal) },
+  ];
 
   return (
     <div>
-      <h2 className="text-[22px] font-semibold tracking-tight text-foreground">
-        {t(titleMeta.titleKey, { defaultValue: titleMeta.defaultTitle })}
-      </h2>
+      {showSectionTitle ? (
+        <h2 className="text-[22px] font-semibold tracking-tight text-foreground">
+          {t(titleMeta.titleKey, { defaultValue: titleMeta.defaultTitle })}
+        </h2>
+      ) : null}
 
-      <div className="mt-4">
-        {section === "overview" && (
+      <div className={cn(showSectionTitle && "mt-4")}>
+        {section === "overview" && desktopShell && (
+          <div className="space-y-8">
+            <div className="grid divide-y overflow-hidden rounded-2xl border border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+              {stats.map((stat) => (
+                <div key={stat.label} className="bg-surface/40 px-5 py-5 text-center sm:text-left">
+                  <p className="text-2xl font-bold tabular-nums">{stat.value}</p>
+                  <p className="mt-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <WalletTransactionsPanel
+              limit={8}
+              showFullHistoryLink
+              fullHistoryTo={{ to: "/wallet", search: { section: "transactions" } }}
+            />
+          </div>
+        )}
+
+        {section === "overview" && !desktopShell && (
           <div className="space-y-6">
             <div className={cn(DESKTOP_GLASS_PANEL, "flex flex-wrap items-end justify-between gap-4 p-6")}>
               <div>
@@ -61,7 +95,8 @@ export function WalletPanelContent({ section }: Props) {
                   {t("walletPage.topUp")}
                 </Link>
                 <Link
-                  to="/giftcard"
+                  to="/wallet"
+                  search={{ section: "gift" }}
                   className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-bold transition-colors hover:bg-surface"
                 >
                   <Gift className="h-4 w-4" />
@@ -86,14 +121,7 @@ export function WalletPanelContent({ section }: Props) {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
-              {[
-                { label: t("walletPage.stats.cashback"), value: formatPrice(inflowTotal) },
-                { label: t("walletPage.stats.history"), value: String(transactions.length) },
-                {
-                  label: t("walletPage.stats.spent", { defaultValue: "Chiqim" }),
-                  value: formatPrice(outflowTotal),
-                },
-              ].map((stat) => (
+              {stats.map((stat) => (
                 <div key={stat.label} className={cn(DESKTOP_GLASS_PANEL, "px-4 py-4")}>
                   <p className="text-lg font-bold tabular-nums">{stat.value}</p>
                   <p className="mt-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
@@ -127,29 +155,13 @@ export function WalletPanelContent({ section }: Props) {
           </div>
         )}
 
-        {section === "transactions" && <WalletTransactionsPanel limit={30} />}
+        {section === "transactions" && <WalletTransactionsPanel limit={30} showFullHistoryLink={false} />}
 
-        {section === "services" && (
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              {t("walletPage.servicesHint", {
-                defaultValue: "Bonus, sovg'a kartalar va aksiyalar.",
-              })}
-            </p>
-            <WalletHubLinks compact />
-            <Link
-              to="/settings"
-              search={{ section: "payments", manage: true }}
-              className={cn(
-                DESKTOP_GLASS_PANEL,
-                "flex items-center justify-between gap-3 p-5 text-sm font-bold transition-colors hover:bg-surface/40",
-              )}
-            >
-              <span>{t("settings.hubs.payments.title", { defaultValue: "To'lov usullari" })}</span>
-              <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
-            </Link>
-          </div>
-        )}
+        {section === "gift" && <WalletGiftPanel />}
+
+        {section === "loyalty" && <WalletLoyaltyPanel />}
+
+        {section === "offers" && <WalletOffersPanel />}
       </div>
     </div>
   );

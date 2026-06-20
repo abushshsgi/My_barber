@@ -859,9 +859,10 @@
     "nav": {
       "overview": "Umumiy ko'rinish",
       "transactions": "Tranzaksiyalar",
-      "services": "Xizmatlar"
+      "gift": "Sovg'a karta",
+      "loyalty": "Bonus dasturi",
+      "offers": "Aksiyalar"
     },
-    "servicesHint": "Bonus, sovg'a kartalar va aksiyalar.",
     "stats": {
       "cashback": "Cashback",
       "bonus": "Ball",

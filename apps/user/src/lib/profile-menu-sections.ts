@@ -30,7 +30,7 @@ export const PROFILE_MENU_SECTIONS: {
       { icon: Star, to: "/reviews" },
       { icon: Heart, to: "/favorites" },
       { icon: Award, to: "/favorite-stylists" },
-      { icon: Gift, to: "/giftcard" },
+      { icon: Gift, to: "/wallet", search: { section: "gift" } },
     ],
   },
   {
@@ -44,9 +44,9 @@ export const PROFILE_MENU_SECTIONS: {
     ],
     items: [
       { icon: Wallet, to: "/wallet" },
-      { icon: Sparkles, to: "/loyalty" },
+      { icon: Sparkles, to: "/wallet", search: { section: "loyalty" } },
       { icon: CreditCard, to: "/payment-methods" },
-      { icon: Tag, to: "/offers" },
+      { icon: Tag, to: "/wallet", search: { section: "offers" } },
       { icon: Repeat, to: "/subscriptions" },
     ],
   },

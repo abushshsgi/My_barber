@@ -12,9 +12,14 @@ import { cn } from "@/lib/utils";
 type Props = {
   limit?: number;
   showFullHistoryLink?: boolean;
+  fullHistoryTo?: { to: string; search?: Record<string, string> };
 };
 
-export function WalletTransactionsPanel({ limit = 20, showFullHistoryLink = true }: Props) {
+export function WalletTransactionsPanel({
+  limit = 20,
+  showFullHistoryLink = true,
+  fullHistoryTo,
+}: Props) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const [tab, setTab] = useState<WalletTxTab>("all");
@@ -82,7 +87,8 @@ export function WalletTransactionsPanel({ limit = 20, showFullHistoryLink = true
 
       {showFullHistoryLink && hasAnyTransactions ? (
         <Link
-          to="/wallet/history"
+          to={fullHistoryTo?.to ?? "/wallet/history"}
+          search={fullHistoryTo?.search as never}
           className="mt-5 inline-flex rounded-full bg-surface px-5 py-2.5 text-xs font-bold transition-colors hover:bg-surface/80"
         >
           {t("walletPage.fullHistory")}

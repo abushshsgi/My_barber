@@ -43,7 +43,7 @@ export const ACCOUNT_HUBS: AccountHubMeta[] = [
       { icon: Star, label: "", to: "/reviews" },
       { icon: Heart, label: "", to: "/favorites" },
       { icon: Award, label: "", to: "/favorite-stylists" },
-      { icon: Gift, label: "", to: "/giftcard" },
+      { icon: Gift, label: "", to: "/wallet", search: { section: "gift" } },
     ],
   },
   {
@@ -55,9 +55,9 @@ export const ACCOUNT_HUBS: AccountHubMeta[] = [
     pageTitleKey: "account.hubs.payments.pageTitle",
     items: [
       { icon: Wallet, label: "", to: "/wallet" },
-      { icon: Sparkles, label: "", to: "/loyalty" },
+      { icon: Sparkles, label: "", to: "/wallet", search: { section: "loyalty" } },
       { icon: CreditCard, label: "", to: "/payment-methods" },
-      { icon: Tag, label: "", to: "/offers" },
+      { icon: Tag, label: "", to: "/wallet", search: { section: "offers" } },
       { icon: Repeat, label: "", to: "/subscriptions" },
     ],
   },

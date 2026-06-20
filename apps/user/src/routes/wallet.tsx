@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { WalletDesktopPage } from "@/components/desktop/pages/WalletDesktopPage";
-import { WalletAirbnbSidebar } from "@/components/wallet/WalletAirbnbSidebar";
+import { WalletSectionNav } from "@/components/wallet/WalletSectionNav";
 import { WalletPanelContent } from "@/components/wallet/WalletPanelContent";
 import { WalletPullRefresh } from "@/components/wallet/WalletPullRefresh";
 import { parseWalletSection, type WalletSection } from "@/lib/wallet-nav";
@@ -51,7 +51,7 @@ function WalletMobile({ section }: { section: WalletSection }) {
         </div>
 
         <div className="px-3 py-4">
-          <WalletAirbnbSidebar active={section} t={t} compact />
+          <WalletSectionNav active={section} t={t} compact />
         </div>
 
         <div className="border-t border-border px-5 py-6">

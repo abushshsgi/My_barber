@@ -37,7 +37,7 @@ const tabs = [
 const discoveryLinks = [
   { to: "/today", icon: Flame, labelKey: "home.quick.today" },
   { to: "/explore", icon: Sparkles, labelKey: "home.quick.trends" },
-  { to: "/offers", icon: Tag, labelKey: "home.quick.offers" },
+  { to: "/wallet", icon: Tag, labelKey: "home.quick.offers", search: { section: "offers" } },
   { to: "/compare", icon: GitCompareArrows, labelKey: "home.quick.compare" },
   { to: "/ai-style", icon: Wand2, labelKey: "home.quick.aiStyle" },
   { to: "/reels", icon: Film, labelKey: "home.quick.reels" },
@@ -45,8 +45,8 @@ const discoveryLinks = [
 
 const accountLinks = [
   { to: "/wallet", icon: Wallet, labelKey: "nav.wallet" },
-  { to: "/giftcard", icon: Gift, labelKey: "profile.giftcard" },
-  { to: "/loyalty", icon: Sparkles, labelKey: "profile.loyalty" },
+  { to: "/wallet", icon: Gift, labelKey: "profile.giftcard", search: { section: "gift" } },
+  { to: "/wallet", icon: Sparkles, labelKey: "profile.loyalty", search: { section: "loyalty" } },
   { to: "/favorites", icon: Heart, labelKey: "profile.favorites" },
   { to: "/account/household", icon: Users, labelKey: "settings.sections.household" },
 ] as const;
@@ -72,12 +72,14 @@ function NavBadge({ count, active }: { count: number; active?: boolean }) {
 
 function SidebarLink({
   to,
+  search,
   icon: Icon,
   label,
   active,
   indent,
 }: {
   to: string;
+  search?: Record<string, string>;
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   label: string;
   active: boolean;
@@ -86,6 +88,7 @@ function SidebarLink({
   return (
     <Link
       to={to}
+      search={search as never}
       preload="intent"
       className={cn(
         "flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-semibold transition-colors",
@@ -182,8 +185,9 @@ export function DesktopSidebar({ chatUnread = 0, notificationsUnread = 0 }: Prop
         </p>
         {discoveryLinks.map((link) => (
           <SidebarLink
-            key={link.to}
+            key={link.labelKey}
             to={link.to}
+            search={"search" in link ? link.search : undefined}
             icon={link.icon}
             label={t(link.labelKey)}
             active={isActive(link.to)}
@@ -195,8 +199,9 @@ export function DesktopSidebar({ chatUnread = 0, notificationsUnread = 0 }: Prop
         </p>
         {accountLinks.map((link) => (
           <SidebarLink
-            key={link.to}
+            key={link.labelKey}
             to={link.to}
+            search={"search" in link ? link.search : undefined}
             icon={link.icon}
             label={t(link.labelKey)}
             active={isActive(link.to)}

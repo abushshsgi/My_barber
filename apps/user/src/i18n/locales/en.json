@@ -809,9 +809,10 @@
     "nav": {
       "overview": "Overview",
       "transactions": "Transactions",
-      "services": "Services"
+      "gift": "Gift card",
+      "loyalty": "Rewards",
+      "offers": "Offers"
     },
-    "servicesHint": "Rewards, gift cards, and offers.",
     "stats": {
       "cashback": "Cashback",
       "bonus": "Points",
