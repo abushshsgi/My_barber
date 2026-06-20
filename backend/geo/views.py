@@ -2,7 +2,18 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from geo.coverage import published_salon_count
+from geo.region_resolver import resolve_region_from_coords
 from geo.services.dgis import DgisGeocoderError, geocode_query, reverse_geocode
+
+
+def _parse_coords(request):
+    try:
+        lat = float(request.query_params["lat"])
+        lng = float(request.query_params["lng"])
+    except (KeyError, TypeError, ValueError):
+        return None, None
+    return lat, lng
 
 
 class GeocodeView(APIView):
@@ -54,5 +65,36 @@ class ReverseGeocodeView(APIView):
                 "address": result.address,
                 "city": result.city,
                 "full_name": result.full_name,
+            }
+        )
+
+
+class ValidateLocationView(APIView):
+    """GPS va tanlangan viloyat mosligi + viloyatda salon mavjudligi."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        lat, lng = _parse_coords(request)
+        if lat is None:
+            return Response({"detail": "lat and lng are required."}, status=400)
+        selected = (request.query_params.get("region") or "").strip()
+        resolved = resolve_region_from_coords(lat, lng)
+        matches = bool(
+            selected
+            and resolved.region_code
+            and resolved.region_code == selected
+        )
+        region_for_coverage = selected or resolved.region_code or ""
+        salon_count = published_salon_count(region_for_coverage) if region_for_coverage else 0
+        return Response(
+            {
+                "region_from_gps": resolved.region_code or "",
+                "region_from_gps_label": resolved.region_label,
+                "city_label": resolved.city_label,
+                "matches_selected": matches if selected else None,
+                "in_uzbekistan": resolved.in_uzbekistan,
+                "salons_published": salon_count,
+                "has_coverage": salon_count > 0,
             }
         )

@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "exports": {
+    "./geolocation": "./src/geolocation.ts",
     "./http-errors": "./src/http-errors.ts",
     "./ws-url": "./src/ws-url.ts"
   },

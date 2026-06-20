@@ -1,16 +1,15 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  Bell,
   Calendar,
   CalendarCheck,
   Compass,
   Home,
   Map,
   Tag,
-  User,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
+import { DesktopHeaderActions } from "@/components/desktop/shell/DesktopHeaderActions";
 import { isNavTabActive } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -85,40 +84,14 @@ export function ShellBazaarClassic({
             })}
           </nav>
 
-          <div className="ml-auto flex shrink-0 items-center gap-2.5">
+          <div className="ml-auto flex shrink-0 items-center gap-3">
             <div className="hidden xl:block">
-              <AudienceSwitch variant="compact" showProfileHint={false} />
+              <AudienceSwitch variant="header" showProfileHint={false} />
             </div>
-            <Link
-              to="/notifications"
-              className="relative grid h-9 w-9 place-items-center rounded-full border border-border bg-surface transition-colors hover:bg-surface/80"
-              aria-label={t("nav.notifications")}
-            >
-              <Bell className="h-4 w-4" strokeWidth={2.2} />
-              {notificationsUnread > 0 ? (
-                <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-foreground px-1 text-[9px] font-bold text-background">
-                  {notificationsUnread > 9 ? "9+" : notificationsUnread}
-                </span>
-              ) : null}
-            </Link>
-            <Link
-              to="/chat"
-              className="relative hidden h-9 items-center justify-center rounded-full border border-border bg-surface px-3 text-[12px] font-bold text-foreground transition-colors hover:bg-surface/80 sm:flex"
-            >
-              {t("nav.chat")}
-              {chatUnread > 0 ? (
-                <span className="ml-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-foreground px-1 text-[9px] font-bold text-background">
-                  {chatUnread > 9 ? "9+" : chatUnread}
-                </span>
-              ) : null}
-            </Link>
-            <Link
-              to="/profile"
-              className="grid h-9 w-9 place-items-center rounded-full border border-border bg-surface text-foreground transition-colors hover:bg-surface/80"
-              aria-label={t("nav.profile")}
-            >
-              <User className="h-4 w-4" strokeWidth={2.2} />
-            </Link>
+            <DesktopHeaderActions
+              notificationsUnread={notificationsUnread}
+              chatUnread={chatUnread}
+            />
           </div>
         </div>
 

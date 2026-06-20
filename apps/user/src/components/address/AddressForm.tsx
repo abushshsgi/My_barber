@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type { ApiUserAddress, UserAddressPayload } from "@/lib/api/addresses";
+import { validateLocation, type LocationValidation } from "@/lib/api/geo";
 import { roundCoord } from "@/lib/api/list-utils";
 import { useRegions } from "@/hooks/use-regions";
+import { CoverageWaitlistCard } from "@/components/coverage/CoverageWaitlistCard";
 import { UserAddressLocationPicker } from "./UserAddressLocationPicker";
 import { cn } from "@/lib/utils";
 
@@ -58,6 +60,9 @@ export function AddressForm({ initial, submitLabel, busy, onSubmit, onCancel }: 
     ...emptyAddressForm(),
     ...initial,
   }));
+  const [validation, setValidation] = useState<LocationValidation | null>(null);
+  const [validating, setValidating] = useState(false);
+  const [interestSubmitted, setInterestSubmitted] = useState(false);
 
   useEffect(() => {
     setForm({ ...emptyAddressForm(), ...initial });
@@ -68,19 +73,57 @@ export function AddressForm({ initial, submitLabel, busy, onSubmit, onCancel }: 
     [regions, form.region],
   );
 
-  const canSave = form.address_line.trim().length >= 3 && form.region.length > 0;
+  const lat = form.latitude.trim() ? parseFloat(form.latitude) : null;
+  const lng = form.longitude.trim() ? parseFloat(form.longitude) : null;
+  const hasGps = lat != null && lng != null;
+  const regionMismatch =
+    hasGps && validation?.matches_selected === false && form.region.length > 0;
+  const noCoverage =
+    hasGps && form.region.length > 0 && validation?.has_coverage === false;
+
+  useEffect(() => {
+    if (!hasGps || !form.region) {
+      setValidation(null);
+      return;
+    }
+    setValidating(true);
+    const timer = window.setTimeout(() => {
+      void validateLocation(lat!, lng!, form.region)
+        .then(setValidation)
+        .catch(() => setValidation(null))
+        .finally(() => setValidating(false));
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [hasGps, lat, lng, form.region]);
+
+  const canSave =
+    form.address_line.trim().length >= 3 &&
+    form.region.length > 0 &&
+    hasGps &&
+    !regionMismatch &&
+    !validating &&
+    (!noCoverage || interestSubmitted);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSave) {
-      toast.error(t("addresses.validation", { defaultValue: "Manzil va shahar to'ldirilishi shart" }));
+      if (regionMismatch) {
+        toast.error(t("geo.regionMismatch"));
+        return;
+      }
+      if (!hasGps) {
+        toast.error(t("onboarding.gpsRequired"));
+        return;
+      }
+      toast.error(t("addresses.validation"));
       return;
     }
-    const lat = form.latitude.trim() ? parseFloat(form.latitude) : null;
-    const lng = form.longitude.trim() ? parseFloat(form.longitude) : null;
-    if ((lat == null) !== (lng == null)) {
-      toast.error(t("addresses.coordsPair", { defaultValue: "GPS ikkala koordinat bilan beriladi" }));
-      return;
+    if (hasGps) {
+      const v = await validateLocation(lat!, lng!, form.region);
+      if (v.matches_selected === false) {
+        toast.error(t("geo.regionMismatch"));
+        return;
+      }
     }
     const payload: UserAddressPayload = {
       label: form.label,
@@ -88,9 +131,8 @@ export function AddressForm({ initial, submitLabel, busy, onSubmit, onCancel }: 
       address_line: form.address_line.trim(),
       region: form.region,
       is_default: form.is_default,
-      ...(lat != null && lng != null
-        ? { latitude: roundCoord(lat), longitude: roundCoord(lng) }
-        : { latitude: null, longitude: null }),
+      latitude: roundCoord(lat!),
+      longitude: roundCoord(lng!),
     };
     await onSubmit(payload);
   };
@@ -146,11 +188,19 @@ export function AddressForm({ initial, submitLabel, busy, onSubmit, onCancel }: 
             </option>
           ))}
         </select>
-        <p className="mt-1.5 text-[11px] text-muted-foreground">
-          {t("addresses.cityHint", {
-            defaultValue: "Shahar o'zgarganda yaqin salonlar va tavsiyalar yangilanadi",
-          })}
-        </p>
+        {regionMismatch ? (
+          <p className="mt-2 text-xs font-semibold text-destructive">{t("geo.regionMismatch")}</p>
+        ) : validation?.region_from_gps_label && form.region && validation.matches_selected ? (
+          <p className="mt-1.5 text-[11px] text-muted-foreground">
+            GPS: {validation.city_label || validation.region_from_gps_label}
+          </p>
+        ) : (
+          <p className="mt-1.5 text-[11px] text-muted-foreground">
+            {t("addresses.cityHint", {
+              defaultValue: "Shahar o'zgarganda yaqin salonlar va tavsiyalar yangilanadi",
+            })}
+          </p>
+        )}
       </div>
 
       <div>
@@ -169,6 +219,7 @@ export function AddressForm({ initial, submitLabel, busy, onSubmit, onCancel }: 
       </div>
 
       <UserAddressLocationPicker
+        region={form.region}
         regionLabel={regionLabel}
         address={form.address_line}
         latitude={form.latitude}
@@ -176,7 +227,21 @@ export function AddressForm({ initial, submitLabel, busy, onSubmit, onCancel }: 
         setLatitude={(v) => setForm((f) => ({ ...f, latitude: v }))}
         setLongitude={(v) => setForm((f) => ({ ...f, longitude: v }))}
         setAddress={(v) => setForm((f) => ({ ...f, address_line: v }))}
+        onRegionSuggestion={(code) => {
+          if (!form.region) setForm((f) => ({ ...f, region: code }));
+        }}
       />
+
+      {noCoverage && !interestSubmitted ? (
+        <CoverageWaitlistCard
+          region={form.region}
+          lat={lat}
+          lng={lng}
+          cityLabel={validation?.city_label}
+          source="address"
+          onSubmitted={() => setInterestSubmitted(true)}
+        />
+      ) : null}
 
       <label className="flex items-center gap-2 text-sm font-semibold">
         <input

@@ -1,5 +1,7 @@
-import { lazy, Suspense, useEffect, useRef } from "react";
-import { geocodeAddress, reverseGeocodeAddress } from "@/lib/api/geo";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { GeolocationError, getCurrentPosition } from "@mybarber/shared/geolocation";
+import { geocodeAddress, reverseGeocodeAddress, validateLocation } from "@/lib/api/geo";
 import { cn } from "@/lib/utils";
 
 const MapPicker = lazy(() =>
@@ -12,6 +14,7 @@ function parseCoord(value: string): number | null {
 }
 
 type Props = {
+  region?: string;
   regionLabel?: string;
   address?: string;
   latitude: string;
@@ -19,11 +22,13 @@ type Props = {
   setLatitude: (value: string) => void;
   setLongitude: (value: string) => void;
   setAddress?: (value: string) => void;
+  onRegionSuggestion?: (regionCode: string) => void;
   className?: string;
   mapClassName?: string;
 };
 
 export function UserAddressLocationPicker({
+  region = "",
   regionLabel = "",
   address = "",
   latitude,
@@ -31,6 +36,7 @@ export function UserAddressLocationPicker({
   setLatitude,
   setLongitude,
   setAddress,
+  onRegionSuggestion,
   className,
   mapClassName,
 }: Props) {
@@ -38,6 +44,7 @@ export function UserAddressLocationPicker({
   const lng = parseCoord(longitude);
   const skipGeocodeRef = useRef(false);
   const skipReverseRef = useRef(false);
+  const [locating, setLocating] = useState(false);
 
   useEffect(() => {
     const q = [regionLabel.trim(), address.trim()].filter(Boolean).join(", ");
@@ -72,18 +79,37 @@ export function UserAddressLocationPicker({
       if (!result) return;
       setAddress?.(result.full_name || result.address);
     });
+    void validateLocation(nextLat, nextLng, region || undefined).then((v) => {
+      if (v.region_from_gps) onRegionSuggestion?.(v.region_from_gps);
+    });
   };
 
-  const detectGps = () => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        skipReverseRef.current = true;
-        handleCoordsChange(pos.coords.latitude, pos.coords.longitude);
-      },
-      () => undefined,
-      { enableHighAccuracy: true, timeout: 15000 },
-    );
+  const detectGps = async () => {
+    setLocating(true);
+    try {
+      const pos = await getCurrentPosition();
+      setLatitude(pos.lat.toFixed(6));
+      setLongitude(pos.lng.toFixed(6));
+      const result = await reverseGeocodeAddress(pos.lat, pos.lng);
+      if (result) {
+        setAddress?.(result.full_name || result.address);
+      }
+      const validation = await validateLocation(pos.lat, pos.lng, region || undefined);
+      if (validation.region_from_gps) {
+        onRegionSuggestion?.(validation.region_from_gps);
+      }
+      toast.success("Joylashuv aniqlandi");
+    } catch (e) {
+      const msg =
+        e instanceof GeolocationError
+          ? e.message
+          : e instanceof Error
+            ? e.message
+            : "Joylashuvni aniqlab bo'lmadi";
+      toast.error(msg);
+    } finally {
+      setLocating(false);
+    }
   };
 
   return (
@@ -106,10 +132,11 @@ export function UserAddressLocationPicker({
       </div>
       <button
         type="button"
-        onClick={detectGps}
-        className="w-full rounded-xl border border-border bg-surface py-2.5 text-xs font-bold"
+        disabled={locating}
+        onClick={() => void detectGps()}
+        className="w-full rounded-xl border border-border bg-surface py-2.5 text-xs font-bold disabled:opacity-60"
       >
-        GPS orqali aniqlash
+        {locating ? "Aniqlanmoqda…" : "GPS orqali aniqlash"}
       </button>
     </div>
   );

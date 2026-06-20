@@ -142,30 +142,6 @@ function AddressesPage() {
 
   const openAdd = () => setEditor({ type: "add" });
 
-  const saveFromProfile = async () => {
-    if (!me?.region) {
-      toast.error(t("addresses.noProfileRegion", { defaultValue: "Profilda viloyat yo'q" }));
-      return;
-    }
-    try {
-      await createAddress.mutateAsync({
-        label: "home",
-        address_line: t("addresses.profileLocation", {
-          defaultValue: "Profil manzili",
-        }),
-        region: me.region,
-        latitude:
-          me.latitude != null && me.latitude !== "" ? Number(me.latitude) : null,
-        longitude:
-          me.longitude != null && me.longitude !== "" ? Number(me.longitude) : null,
-        is_default: addresses.length === 0,
-      });
-      toast.success(t("addresses.saved", { defaultValue: "Manzil saqlandi" }));
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Xatolik");
-    }
-  };
-
   const handleSubmit = async (payload: Parameters<typeof createAddress.mutateAsync>[0]) => {
     try {
       if (editor?.type === "edit") {
@@ -249,18 +225,6 @@ function AddressesPage() {
               <Plus className="h-4 w-4" />
               {t("addresses.add")}
             </button>
-            {addresses.length === 0 && me?.region ? (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void saveFromProfile()}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border py-3 text-sm font-bold"
-              >
-                {t("addresses.importProfile", {
-                  defaultValue: "Profil joylashuvini saqlash",
-                })}
-              </button>
-            ) : null}
           </ProfileSubpageCard>
         </>
       )}

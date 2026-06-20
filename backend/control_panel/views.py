@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from rest_framework.exceptions import NotFound
 from rest_framework.permissions import IsAuthenticated
 
-from accounts.models import AdminAccount, User
+from accounts.models import AdminAccount, LaunchInterest, User
 from accounts.uz_regions import UzRegion
 from accounts.permissions import IsAdmin
 from barbers.models import Barber, BarberService, BarberSupportTicket
@@ -115,12 +115,14 @@ def _admin_region_breakdown():
     for code, label in UzRegion.choices:
         bqs = Barber.objects.filter(region=code)
         sqs = Salon.objects.filter(owner_barber__region=code)
+        interest_count = LaunchInterest.objects.filter(region=code).count()
         regions_payload.append(
             {
                 "region": code,
                 "label": label,
                 "barbers_count": bqs.count(),
                 "salons_count": sqs.count(),
+                "launch_interest_count": interest_count,
                 "barbers": barber_rows(bqs),
                 "salons": salon_rows(sqs),
             }
@@ -171,6 +173,7 @@ class AdminStatsView(APIView):
                 "bookings_total": bookings_total,
                 "reviews_total": reviews_total,
                 "reviews_avg": str(reviews_avg) if reviews_avg is not None else "0",
+                "launch_interest_total": LaunchInterest.objects.count(),
                 "regions": _admin_region_breakdown(),
             }
         )

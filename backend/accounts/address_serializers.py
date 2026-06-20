@@ -5,6 +5,7 @@ from rest_framework import serializers
 from accounts.address_sync import quantize_coord, set_default_address, sync_user_active_location
 from accounts.models import UserAddress
 from accounts.uz_regions import UzRegion
+from geo.region_resolver import REGION_MISMATCH_MSG, region_matches_gps
 
 
 class UserAddressSerializer(serializers.ModelSerializer):
@@ -51,6 +52,10 @@ class UserAddressSerializer(serializers.ModelSerializer):
             attrs["latitude"] = quantize_coord(lat)
         if lng is not None:
             attrs["longitude"] = quantize_coord(lng)
+        region = attrs.get("region", getattr(self.instance, "region", ""))
+        if lat is not None and lng is not None and region:
+            if not region_matches_gps(region, float(lat), float(lng)):
+                raise serializers.ValidationError({"region": REGION_MISMATCH_MSG})
         return attrs
 
     def create(self, validated_data):

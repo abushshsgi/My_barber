@@ -1,12 +1,12 @@
 import { useTranslation } from "react-i18next";
-import { Check } from "lucide-react";
+import { Check, User, UserRound, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAudience, type AudienceFilter } from "@/hooks/use-audience";
 
-const OPTIONS: { key: AudienceFilter; tKey: string }[] = [
-  { key: "all", tKey: "audience.all" },
-  { key: "men", tKey: "audience.men" },
-  { key: "women", tKey: "audience.women" },
+const OPTIONS: { key: AudienceFilter; tKey: string; Icon: typeof Users }[] = [
+  { key: "all", tKey: "audience.all", Icon: Users },
+  { key: "men", tKey: "audience.men", Icon: User },
+  { key: "women", tKey: "audience.women", Icon: UserRound },
 ];
 
 const ACTIVE_TONE: Record<AudienceFilter, string> = {
@@ -17,7 +17,7 @@ const ACTIVE_TONE: Record<AudienceFilter, string> = {
 
 type Props = {
   showProfileHint?: boolean;
-  variant?: "default" | "compact";
+  variant?: "default" | "compact" | "header";
 };
 
 export function AudienceSwitch({ showProfileHint = true, variant = "default" }: Props) {
@@ -25,6 +25,40 @@ export function AudienceSwitch({ showProfileHint = true, variant = "default" }: 
   const { audience, setAudience, profileDefault } = useAudience();
   const showHint = variant === "default" && showProfileHint && audience === profileDefault && audience !== "all";
   const compact = variant === "compact";
+  const header = variant === "header";
+
+  if (header) {
+    return (
+      <div
+        role="radiogroup"
+        aria-label={t("settings.preferredAudience")}
+        className="flex items-center gap-0.5 rounded-full border border-border bg-surface p-1"
+      >
+        {OPTIONS.map((opt) => {
+          const active = audience === opt.key;
+          const Icon = opt.Icon;
+          return (
+            <button
+              key={opt.key}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => setAudience(opt.key)}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[12px] font-bold transition-colors",
+                active
+                  ? "bg-foreground text-background shadow-sm"
+                  : "text-muted-foreground hover:bg-background hover:text-foreground",
+              )}
+            >
+              <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2.2} />
+              <span>{t(opt.tKey)}</span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div>

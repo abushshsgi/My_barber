@@ -331,10 +331,23 @@
     "deleted": "Manzil o'chirildi",
     "defaultChanged": "Asosiy manzil yangilandi — tavsiyalar yangilandi",
     "deleteConfirm": "Manzil o'chirilsinmi?",
-    "delete": "O'chirish",
-    "importProfile": "Profil joylashuvini saqlash",
-    "profileLocation": "Profil manzili",
-    "noProfileRegion": "Profilda viloyat yo'q"
+    "delete": "O'chirish"
+  },
+  "geo": {
+    "permissionDenied": "Joylashuvga ruxsat bering yoki brauzer sozlamalaridan yoqing.",
+    "timeout": "Joylashuvni aniqlash vaqti tugadi. Qayta urinib ko'ring.",
+    "regionMismatch": "Joylashuvingiz tanlangan viloyatga mos emas."
+  },
+  "coverage": {
+    "comingSoon": "Shahringizda tez orada Mysaloon bo'ladi",
+    "comingSoonHint": "Xizmat ochilganda xabar olish uchun ma'lumotingizni qoldiring.",
+    "notify": "Xabar berish",
+    "notifySuccess": "Rahmat! Sizni xabardor qilamiz.",
+    "thanks": "So'rovingiz qabul qilindi — tez orada xabar beramiz.",
+    "messagePlaceholder": "Izoh (ixtiyoriy)…"
+  },
+  "onboarding": {
+    "gpsRequired": "Davom etish uchun GPS orqali joylashuv talab qilinadi."
   },
   "favoriteStylists": {
     "title": "Sevimli ustalar",

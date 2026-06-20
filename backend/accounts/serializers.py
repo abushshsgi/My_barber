@@ -13,6 +13,7 @@ from salons.models import Salon
 from .models import User
 from .phone_utils import normalize_phone_field
 from .uz_regions import UzRegion
+from geo.region_resolver import REGION_MISMATCH_MSG, region_matches_gps
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -138,6 +139,11 @@ class UserSerializer(serializers.ModelSerializer):
                         "onboarding_completed": "Profil to'liq emas — yosh talab qilinadi.",
                     }
                 )
+            if lat is not None and lng is not None and region:
+                if not region_matches_gps(region, float(lat), float(lng)):
+                    raise serializers.ValidationError(
+                        {"region": REGION_MISMATCH_MSG},
+                    )
         return attrs
 
     def _sync_full_name(self, attrs: dict) -> dict:

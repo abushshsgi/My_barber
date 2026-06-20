@@ -64,6 +64,33 @@ class UserAddress(models.Model):
         return f"{self.user_id}: {self.address_line[:40]}"
 
 
+class LaunchInterest(models.Model):
+    """Viloyatda salon yo'q — foydalanuvchi talabi (tez orada Mysaloon)."""
+
+    class Source(models.TextChoices):
+        ONBOARDING = "onboarding", "Onboarding"
+        ADDRESS = "address", "Manzil"
+        HOME = "home", "Bosh sahifa"
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="launch_interests")
+    region = models.CharField(max_length=32, choices=UzRegion.choices, db_index=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    city_label = models.CharField(max_length=128, blank=True, default="")
+    message = models.TextField(blank=True, default="")
+    source = models.CharField(max_length=16, choices=Source.choices, default=Source.ONBOARDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["user", "region"], name="uniq_launch_interest_user_region"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user_id} @ {self.region}"
+
+
 class AdminAccount(models.Model):
     """Platform admin login — alohida jadval; User jadvalidagi mijoz/sartarosh bilan aralashmaydi."""
 

@@ -1,10 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { MapPin, User, Calendar } from "lucide-react";
 import { toast } from "sonner";
+import { GeolocationError, getCurrentPosition } from "@mybarber/shared/geolocation";
 import { Stepper } from "@/components/Stepper";
+import { CoverageWaitlistCard } from "@/components/coverage/CoverageWaitlistCard";
+import { UserAddressLocationPicker } from "@/components/address/UserAddressLocationPicker";
 import { useRegions } from "@/hooks/use-regions";
 import { useUpdateMe } from "@/hooks/use-me";
+import { validateLocation, type LocationValidation } from "@/lib/api/geo";
 import { roundCoord } from "@/lib/api/list-utils";
 import { cn } from "@/lib/utils";
 
@@ -28,34 +32,104 @@ function OnboardingFlow() {
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const [locating, setLocating] = useState(false);
+  const [validation, setValidation] = useState<LocationValidation | null>(null);
+  const [validating, setValidating] = useState(false);
+  const [interestSubmitted, setInterestSubmitted] = useState(false);
+  const [gpsAttempted, setGpsAttempted] = useState(false);
+
+  const regionLabel = regions.find((r) => r.value === region)?.label ?? "";
+  const regionMismatch =
+    lat != null && lng != null && region.length > 0 && validation?.matches_selected === false;
+  const noCoverage =
+    lat != null && lng != null && region.length > 0 && validation?.has_coverage === false;
+
+  const runValidation = useCallback(async (nextLat: number, nextLng: number, nextRegion: string) => {
+    if (!nextRegion) {
+      setValidation(null);
+      return;
+    }
+    setValidating(true);
+    try {
+      const v = await validateLocation(nextLat, nextLng, nextRegion);
+      setValidation(v);
+    } catch {
+      setValidation(null);
+    } finally {
+      setValidating(false);
+    }
+  }, []);
+
+  const detectLocation = useCallback(async () => {
+    setLocating(true);
+    setGpsAttempted(true);
+    try {
+      const pos = await getCurrentPosition();
+      setLat(pos.lat);
+      setLng(pos.lng);
+      const v = await validateLocation(pos.lat, pos.lng, region || undefined);
+      setValidation(v);
+      if (v.region_from_gps) {
+        setRegion((prev) => prev || v.region_from_gps);
+        if (region && v.region_from_gps !== region) {
+          toast.error("Joylashuvingiz tanlangan viloyatga mos emas");
+        } else {
+          toast.success("Joylashuv aniqlandi");
+        }
+      } else if (!v.in_uzbekistan) {
+        toast.error("Joylashuv O'zbekiston chegarasida emas");
+      } else {
+        toast.success("Joylashuv aniqlandi — viloyatni tanlang");
+      }
+    } catch (e) {
+      const msg =
+        e instanceof GeolocationError
+          ? e.message
+          : e instanceof Error
+            ? e.message
+            : "Joylashuvni aniqlab bo'lmadi";
+      toast.error(msg);
+    } finally {
+      setLocating(false);
+    }
+  }, [region]);
+
+  useEffect(() => {
+    if (step !== 3 || gpsAttempted) return;
+    void detectLocation();
+  }, [step, gpsAttempted, detectLocation]);
+
+  useEffect(() => {
+    if (lat == null || lng == null || !region) {
+      setValidation(null);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      void runValidation(lat, lng, region);
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [lat, lng, region, runValidation]);
 
   const canNext =
     (step === 1 && firstName.trim().length >= 2 && lastName.trim().length >= 2) ||
     (step === 2 && parseInt(age, 10) >= 10 && parseInt(age, 10) <= 100) ||
-    (step === 3 && region.length > 0);
-
-  const detectLocation = () => {
-    if (!navigator.geolocation) {
-      toast.error("Brauzeringiz joylashuvni qo'llab-quvvatlamaydi");
-      return;
-    }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLat(pos.coords.latitude);
-        setLng(pos.coords.longitude);
-        setLocating(false);
-        toast.success("Joylashuv aniqlandi — yaqin salonlar ko'rsatiladi");
-      },
-      () => {
-        setLocating(false);
-        toast.error("Joylashuvga ruxsat bering yoki viloyatni tanlang");
-      },
-      { enableHighAccuracy: true, timeout: 15000 },
-    );
-  };
+    (step === 3 &&
+      region.length > 0 &&
+      lat != null &&
+      lng != null &&
+      !regionMismatch &&
+      !validating &&
+      (!noCoverage || interestSubmitted));
 
   const finish = async () => {
+    if (lat == null || lng == null) {
+      toast.error("GPS orqali joylashuvni aniqlang");
+      return;
+    }
+    const v = await validateLocation(lat, lng, region);
+    if (v.matches_selected === false) {
+      toast.error("Joylashuvingiz tanlangan viloyatga mos emas");
+      return;
+    }
     const ageNum = parseInt(age, 10);
     const birthYear = new Date().getFullYear() - ageNum;
     try {
@@ -64,9 +138,8 @@ function OnboardingFlow() {
         last_name: lastName.trim(),
         birth_year: birthYear,
         region,
-        ...(lat != null && lng != null
-          ? { latitude: roundCoord(lat), longitude: roundCoord(lng) }
-          : {}),
+        latitude: roundCoord(lat),
+        longitude: roundCoord(lng),
         onboarding_completed: true,
       });
       toast.success("Profil tayyor!");
@@ -84,7 +157,7 @@ function OnboardingFlow() {
     if (canNext) void finish();
   };
 
-  const busy = updateMe.isPending || locating;
+  const busy = updateMe.isPending || locating || validating;
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-background px-6 py-8">
@@ -155,7 +228,7 @@ function OnboardingFlow() {
             </label>
             <select
               value={region}
-              disabled={regionsLoading}
+              disabled={regionsLoading || locating}
               onChange={(e) => setRegion(e.target.value)}
               className="w-full rounded-2xl border-2 border-border bg-background px-4 py-3.5 text-sm font-bold focus:border-foreground focus:outline-none"
             >
@@ -166,24 +239,62 @@ function OnboardingFlow() {
                 </option>
               ))}
             </select>
+            {regionMismatch ? (
+              <p className="text-xs font-semibold text-destructive">
+                Joylashuvingiz tanlangan viloyatga mos emas
+              </p>
+            ) : validation?.region_from_gps_label && region ? (
+              <p className="text-[11px] text-muted-foreground">
+                GPS: {validation.city_label || validation.region_from_gps_label}
+              </p>
+            ) : null}
+
+            <UserAddressLocationPicker
+              region={region}
+              regionLabel={regionLabel}
+              latitude={lat != null ? String(lat) : ""}
+              longitude={lng != null ? String(lng) : ""}
+              setLatitude={(v) => {
+                const n = parseFloat(v);
+                if (Number.isFinite(n)) setLat(n);
+              }}
+              setLongitude={(v) => {
+                const n = parseFloat(v);
+                if (Number.isFinite(n)) setLng(n);
+              }}
+              onRegionSuggestion={(code) => setRegion((prev) => prev || code)}
+            />
+
             <button
               type="button"
               disabled={busy}
-              onClick={detectLocation}
+              onClick={() => void detectLocation()}
               className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-foreground/40 py-3.5 text-sm font-bold"
             >
               <MapPin className="h-4 w-4" />
-              {lat != null ? "Joylashuv aniqlandi ✓" : "GPS orqali aniqlash"}
+              {locating
+                ? "Aniqlanmoqda…"
+                : lat != null
+                  ? "Joylashuvni qayta aniqlash"
+                  : "GPS orqali aniqlash"}
             </button>
-            {lat != null && lng != null ? (
+
+            {noCoverage && !interestSubmitted ? (
+              <CoverageWaitlistCard
+                region={region}
+                lat={lat}
+                lng={lng}
+                cityLabel={validation?.city_label}
+                source="onboarding"
+                onSubmitted={() => setInterestSubmitted(true)}
+              />
+            ) : null}
+
+            {lat == null || lng == null ? (
               <p className="text-center text-[11px] text-muted-foreground">
-                Aniq joylashuv saqlandi — eng yaqin salonlar birinchi ko‘rsatiladi.
+                Davom etish uchun GPS orqali joylashuv talab qilinadi.
               </p>
-            ) : (
-              <p className="text-center text-[11px] text-muted-foreground">
-                GPS bo‘lmasa ham viloyat bo‘yicha tavsiya ishlaydi.
-              </p>
-            )}
+            ) : null}
           </div>
         )}
       </div>
