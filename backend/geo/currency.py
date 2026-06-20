@@ -147,9 +147,33 @@ def fetch_live_uzs_per_unit() -> tuple[dict[str, Decimal], str, str]:
     try:
         return fetch_from_cbu()
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, ValueError) as exc:
-        logger.warning("CBU exchange rate API failed, using static fallback: %s", exc)
+        logger.warning("CBU exchange rate API failed: %s", exc)
 
+    cached = _load_last_cbu_snapshot()
+    if cached is not None:
+        return cached
+
+    logger.warning("No CBU cache available, using static fallback rates")
     return dict(FALLBACK_UZS_PER_UNIT), "fallback", ""
+
+
+def _load_last_cbu_snapshot() -> tuple[dict[str, Decimal], str, str] | None:
+    from geo.models import ExchangeRateSnapshot
+
+    last_cbu = (
+        ExchangeRateSnapshot.objects.filter(source="cbu.uz")
+        .order_by("-fetched_at")
+        .first()
+    )
+    if last_cbu is None:
+        return None
+
+    rates = _parse_rates_json(last_cbu.rates)
+    if len(rates) <= 1:
+        return None
+
+    rate_date = get_rate_date_from_snapshot(last_cbu.rates) or ""
+    return rates, "cbu.uz (cached)", rate_date
 
 
 def sync_exchange_rates(*, force: bool = False) -> ExchangeRateSnapshot:

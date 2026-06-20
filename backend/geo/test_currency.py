@@ -59,6 +59,20 @@ class CurrencyServiceTests(TestCase):
         self.assertEqual(rates["USD"], Decimal("12085.5600"))
 
     @patch("geo.currency.fetch_from_cbu")
+    def test_fetch_live_uses_last_cbu_snapshot_when_api_down(self, mock_cbu):
+        ExchangeRateSnapshot.objects.create(
+            base_currency="UZS",
+            rates={"UZS": "1", "USD": "12085.56", CBU_META_DATE_KEY: "19.06.2026"},
+            source="cbu.uz",
+            fetched_at=timezone.now(),
+        )
+        mock_cbu.side_effect = ValueError("CBU down")
+        rates, source, rate_date = fetch_live_uzs_per_unit()
+        self.assertEqual(source, "cbu.uz (cached)")
+        self.assertEqual(rate_date, "19.06.2026")
+        self.assertEqual(rates["USD"], Decimal("12085.56"))
+
+    @patch("geo.currency.fetch_from_cbu")
     def test_fetch_live_falls_back_when_cbu_fails(self, mock_cbu):
         mock_cbu.side_effect = ValueError("CBU down")
         rates, source, rate_date = fetch_live_uzs_per_unit()
