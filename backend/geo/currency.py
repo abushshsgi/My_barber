@@ -215,3 +215,33 @@ def convert_uzs(amount_uzs: Decimal | float | int, target: str, rates: dict[str,
     if not uzs_per_unit or uzs_per_unit <= 0:
         uzs_per_unit = FALLBACK_UZS_PER_UNIT.get(code, Decimal("1"))
     return (Decimal(str(amount_uzs)) / uzs_per_unit).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def build_currency_rates_payload() -> dict[str, Any]:
+    """API javobi — DB xatoligida ham 200 qaytarish uchun."""
+    try:
+        snapshot = get_latest_exchange_rates(auto_sync=True)
+        rates = _parse_rates_json(snapshot.rates)
+        rate_date = get_rate_date_from_snapshot(snapshot.rates)
+        source = snapshot.source
+        updated_at = snapshot.fetched_at.isoformat()
+    except Exception as exc:
+        logger.warning("Currency snapshot unavailable, using live/static fallback: %s", exc)
+        rates, source, rate_date = fetch_live_uzs_per_unit()
+        updated_at = timezone.now().isoformat()
+
+    return {
+        "base": BASE_CURRENCY,
+        "updated_at": updated_at,
+        "rate_date": rate_date or None,
+        "source": source,
+        "currencies": [
+            {
+                "code": code,
+                "label": CURRENCY_LABELS.get(code, code),
+                "symbol": CURRENCY_SYMBOLS.get(code, code),
+                "uzs_per_unit": str(rates.get(code, FALLBACK_UZS_PER_UNIT.get(code, Decimal("1")))),
+            }
+            for code in SUPPORTED_CURRENCIES
+        ],
+    }

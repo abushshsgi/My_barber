@@ -12,6 +12,7 @@ import {
   DEFAULT_CURRENCY,
   formatMoneyFromUzs,
   isCurrencyCode,
+  resolveUzsPerUnit,
   shortMoneyFromUzs,
   type CurrencyCode,
   type CurrencyRatesMap,
@@ -62,14 +63,17 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [currency, setCurrencyState] = useState<CurrencyCode>(DEFAULT_CURRENCY);
 
   useEffect(() => {
-    setCurrencyState(readStoredCurrency());
+    const stored = readStoredCurrency();
+    setCurrencyState(stored);
+    configurePriceDisplay(stored, resolveUzsPerUnit(stored, {}));
   }, []);
 
   const { data, isLoading } = useQuery({
     queryKey: ["currencies", "rates"],
     queryFn: fetchCurrencyRates,
     staleTime: 60 * 60 * 1000,
-    retry: 2,
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 
   const rates = useMemo(() => {
@@ -86,11 +90,11 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     writeStoredCurrency(code);
   }, []);
 
-  const uzsPerUnit = rates[currency] ?? 1;
+  const uzsPerUnit = resolveUzsPerUnit(currency, rates);
 
   useEffect(() => {
-    configurePriceDisplay(currency, uzsPerUnit);
-  }, [currency, uzsPerUnit]);
+    configurePriceDisplay(currency, uzsPerUnit, rates);
+  }, [currency, rates, uzsPerUnit]);
 
   const formatPrice = useCallback(
     (amountUzs: number) => formatMoneyFromUzs(amountUzs, currency, uzsPerUnit),

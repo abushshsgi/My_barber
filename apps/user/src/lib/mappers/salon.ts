@@ -40,7 +40,7 @@ function resolveCategoryAndAudience(api: ApiSalonList): { category: Category; au
 
 function priceRange(services: { price: number }[] | undefined): { from: number; to: number } {
   if (!services?.length) return { from: 0, to: 0 };
-  const prices = services.map((s) => s.price);
+  const prices = services.map((s) => toNum(s.price));
   return { from: Math.min(...prices), to: Math.max(...prices) };
 }
 
@@ -83,7 +83,7 @@ export function mapSalonDetail(api: ApiSalonDetail, distanceKm = 0): Salon {
       id: String(s.id),
       name: s.name,
       duration: s.duration_minutes,
-      price: s.price,
+      price: toNum(s.price),
     })),
     portfolio: (api.images ?? []).map((img) => img.image),
   };

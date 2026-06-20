@@ -40,6 +40,27 @@ const LOCALE_BY_CURRENCY: Partial<Record<CurrencyCode, string>> = {
 
 export type CurrencyRatesMap = Record<string, number>;
 
+/** CBU dan olinmagan paytda klient/server zaxira kurslari (1 birlik = N so'm). */
+export const FALLBACK_UZS_PER_UNIT: Record<CurrencyCode, number> = {
+  UZS: 1,
+  USD: 12085.56,
+  EUR: 13870.6,
+  RUB: 164.52,
+  KZT: 24.76,
+  KGS: 138.16,
+  TJS: 1302.32,
+  TRY: 260.21,
+  CNY: 1785.74,
+  AED: 3290.65,
+};
+
+export function resolveUzsPerUnit(code: CurrencyCode, rates: CurrencyRatesMap): number {
+  if (code === "UZS") return 1;
+  const live = rates[code];
+  if (Number.isFinite(live) && live > 0) return live;
+  return FALLBACK_UZS_PER_UNIT[code] ?? 1;
+}
+
 export function isCurrencyCode(value: string): value is CurrencyCode {
   return SUPPORTED_CURRENCY_CODES.includes(value as CurrencyCode);
 }
@@ -50,9 +71,11 @@ export function convertFromUzs(
   code: CurrencyCode,
   uzsPerUnit: number,
 ): number {
-  if (!Number.isFinite(amountUzs)) return 0;
-  if (code === "UZS" || !uzsPerUnit) return Math.round(amountUzs);
-  return Math.round((amountUzs / uzsPerUnit) * 100) / 100;
+  const amount = typeof amountUzs === "number" ? amountUzs : Number(amountUzs);
+  if (!Number.isFinite(amount)) return 0;
+  if (code === "UZS") return Math.round(amount);
+  const rate = Number.isFinite(uzsPerUnit) && uzsPerUnit > 0 ? uzsPerUnit : FALLBACK_UZS_PER_UNIT[code] ?? 1;
+  return Math.round((amount / rate) * 100) / 100;
 }
 
 export function formatMoneyFromUzs(

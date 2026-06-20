@@ -3,15 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from geo.coverage import published_salon_count
-from geo.currency import (
-    BASE_CURRENCY,
-    CURRENCY_LABELS,
-    CURRENCY_SYMBOLS,
-    SUPPORTED_CURRENCIES,
-    _parse_rates_json,
-    get_latest_exchange_rates,
-    get_rate_date_from_snapshot,
-)
+from geo.currency import build_currency_rates_payload
 from geo.region_resolver import resolve_region_from_coords
 from geo.services.dgis import DgisGeocoderError, geocode_query, reverse_geocode
 
@@ -116,23 +108,4 @@ class CurrencyRatesView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        snapshot = get_latest_exchange_rates(auto_sync=True)
-        rates = _parse_rates_json(snapshot.rates)
-        rate_date = get_rate_date_from_snapshot(snapshot.rates)
-        return Response(
-            {
-                "base": BASE_CURRENCY,
-                "updated_at": snapshot.fetched_at.isoformat(),
-                "rate_date": rate_date,
-                "source": snapshot.source,
-                "currencies": [
-                    {
-                        "code": code,
-                        "label": CURRENCY_LABELS.get(code, code),
-                        "symbol": CURRENCY_SYMBOLS.get(code, code),
-                        "uzs_per_unit": str(rates.get(code, "1")),
-                    }
-                    for code in SUPPORTED_CURRENCIES
-                ],
-            }
-        )
+        return Response(build_currency_rates_payload())

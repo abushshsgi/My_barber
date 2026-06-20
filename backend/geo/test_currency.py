@@ -105,3 +105,22 @@ class CurrencyServiceTests(TestCase):
         )
         fresh = sync_exchange_rates(force=False)
         self.assertNotEqual(stale.pk, fresh.pk)
+
+
+class CurrencyApiPayloadTests(TestCase):
+    @patch("geo.currency.get_latest_exchange_rates")
+    def test_build_payload_when_db_unavailable(self, mock_latest):
+        mock_latest.side_effect = Exception("no such table")
+        with patch("geo.currency.fetch_live_uzs_per_unit") as mock_live:
+            mock_live.return_value = (
+                {"UZS": Decimal("1"), "USD": Decimal("12085.56")},
+                "cbu.uz",
+                "19.06.2026",
+            )
+            from geo.currency import build_currency_rates_payload
+
+            payload = build_currency_rates_payload()
+        self.assertEqual(payload["source"], "cbu.uz")
+        self.assertEqual(len(payload["currencies"]), 10)
+        usd = next(c for c in payload["currencies"] if c["code"] == "USD")
+        self.assertEqual(usd["uzs_per_unit"], "12085.56")
