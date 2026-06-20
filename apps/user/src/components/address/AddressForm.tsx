@@ -6,6 +6,7 @@ import { validateLocation, type LocationValidation } from "@/lib/api/geo";
 import { roundCoord } from "@/lib/api/list-utils";
 import { useRegions } from "@/hooks/use-regions";
 import { CoverageWaitlistCard } from "@/components/coverage/CoverageWaitlistCard";
+import { RegionCitySelect } from "./RegionCitySelect";
 import { UserAddressLocationPicker } from "./UserAddressLocationPicker";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,8 @@ type Props = {
   initial?: Partial<AddressFormValues>;
   submitLabel?: string;
   busy?: boolean;
+  /** fill-empty: GPS faqat shahar bo'sh bo'lsa. always: GPS shahar bilan mos kelmasa yangilaydi. */
+  regionSyncMode?: "fill-empty" | "always";
   onSubmit: (payload: UserAddressPayload) => Promise<void>;
   onCancel?: () => void;
 };
@@ -53,7 +56,14 @@ export function addressToForm(addr: ApiUserAddress): AddressFormValues {
   };
 }
 
-export function AddressForm({ initial, submitLabel, busy, onSubmit, onCancel }: Props) {
+export function AddressForm({
+  initial,
+  submitLabel,
+  busy,
+  regionSyncMode = "fill-empty",
+  onSubmit,
+  onCancel,
+}: Props) {
   const { t } = useTranslation();
   const { data: regions = [], isLoading: regionsLoading } = useRegions();
   const [form, setForm] = useState<AddressFormValues>(() => ({
@@ -78,6 +88,7 @@ export function AddressForm({ initial, submitLabel, busy, onSubmit, onCancel }: 
   const applyRegionFromGps = useCallback(
     (code: string) => {
       setForm((f) => {
+        if (regionSyncMode !== "always" && f.region) return f;
         if (f.region === code) return f;
         setInterestSubmitted(false);
         const label = regions.find((r) => r.value === code)?.label ?? code;
@@ -85,7 +96,7 @@ export function AddressForm({ initial, submitLabel, busy, onSubmit, onCancel }: 
         return { ...f, region: code };
       });
     },
-    [regions, t],
+    [regions, t, regionSyncMode],
   );
 
   const lat = form.latitude.trim() ? parseFloat(form.latitude) : null;
@@ -133,6 +144,10 @@ export function AddressForm({ initial, submitLabel, busy, onSubmit, onCancel }: 
         toast.error(t("onboarding.gpsRequired"));
         return;
       }
+      if (!form.region) {
+        toast.error(t("addresses.selectCityFirst"));
+        return;
+      }
       toast.error(t("addresses.validation"));
       return;
     }
@@ -165,9 +180,34 @@ export function AddressForm({ initial, submitLabel, busy, onSubmit, onCancel }: 
     }
   };
 
+  const handleRegionChange = (code: string) => {
+    setForm((f) => ({ ...f, region: code }));
+    setInterestSubmitted(false);
+  };
+
   return (
     <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4" aria-busy={locked}>
       <fieldset disabled={locked} className="space-y-4 border-0 p-0 m-0 min-w-0">
+      <div>
+        <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-muted-foreground">
+          {t("addresses.city", { defaultValue: "Shahar / viloyat" })}
+        </label>
+        <RegionCitySelect value={form.region} onChange={handleRegionChange} disabled={regionsLoading} />
+        {regionMismatch ? (
+          <p className="mt-2 text-xs font-semibold text-destructive">{t("geo.regionMismatch")}</p>
+        ) : validation?.region_from_gps_label && form.region && validation.matches_selected ? (
+          <p className="mt-1.5 text-[11px] text-muted-foreground">
+            GPS: {validation.city_label || validation.region_from_gps_label}
+          </p>
+        ) : (
+          <p className="mt-1.5 text-[11px] text-muted-foreground">
+            {t("addresses.cityHint", {
+              defaultValue: "Shahar o'zgarganda yaqin salonlar va tavsiyalar yangilanadi",
+            })}
+          </p>
+        )}
+      </div>
+
       <div>
         <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
           {t("addresses.labelType", { defaultValue: "Manzil turi" })}
@@ -202,38 +242,6 @@ export function AddressForm({ initial, submitLabel, busy, onSubmit, onCancel }: 
 
       <div>
         <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-muted-foreground">
-          {t("addresses.city", { defaultValue: "Shahar / viloyat" })}
-        </label>
-        <select
-          value={form.region}
-          onChange={(e) => setForm((f) => ({ ...f, region: e.target.value }))}
-          disabled={regionsLoading}
-          className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold focus:border-foreground focus:outline-none"
-        >
-          <option value="">{t("addresses.selectCity", { defaultValue: "Tanlang…" })}</option>
-          {regions.map((r) => (
-            <option key={r.value} value={r.value}>
-              {r.label}
-            </option>
-          ))}
-        </select>
-        {regionMismatch ? (
-          <p className="mt-2 text-xs font-semibold text-destructive">{t("geo.regionMismatch")}</p>
-        ) : validation?.region_from_gps_label && form.region && validation.matches_selected ? (
-          <p className="mt-1.5 text-[11px] text-muted-foreground">
-            GPS: {validation.city_label || validation.region_from_gps_label}
-          </p>
-        ) : (
-          <p className="mt-1.5 text-[11px] text-muted-foreground">
-            {t("addresses.cityHint", {
-              defaultValue: "Shahar o'zgarganda yaqin salonlar va tavsiyalar yangilanadi",
-            })}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-muted-foreground">
           {t("addresses.line", { defaultValue: "Manzil" })}
         </label>
         <textarea
@@ -253,7 +261,8 @@ export function AddressForm({ initial, submitLabel, busy, onSubmit, onCancel }: 
         address={form.address_line}
         latitude={form.latitude}
         longitude={form.longitude}
-        regionSyncMode="always"
+        regionSyncMode={regionSyncMode}
+        requireRegion
         setLatitude={(v) => setForm((f) => ({ ...f, latitude: v }))}
         setLongitude={(v) => setForm((f) => ({ ...f, longitude: v }))}
         setAddress={(v) => setForm((f) => ({ ...f, address_line: v }))}

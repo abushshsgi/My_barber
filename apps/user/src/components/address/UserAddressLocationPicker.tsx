@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { GeolocationError, getCurrentPosition } from "@mybarber/shared/geolocation";
 import { geocodeAddress, reverseGeocodeAddress, validateLocation } from "@/lib/api/geo";
@@ -25,6 +26,8 @@ type Props = {
   onRegionSuggestion?: (regionCode: string) => void;
   /** fill-empty: faqat region bo'sh bo'lsa (onboarding). always: manzil sahifasi. */
   regionSyncMode?: "fill-empty" | "always";
+  /** Shahar tanlanmaguncha GPS va xarita bloklanadi. */
+  requireRegion?: boolean;
   className?: string;
   mapClassName?: string;
 };
@@ -40,9 +43,11 @@ export function UserAddressLocationPicker({
   setAddress,
   onRegionSuggestion,
   regionSyncMode = "fill-empty",
+  requireRegion = false,
   className,
   mapClassName,
 }: Props) {
+  const { t } = useTranslation();
   const lat = parseCoord(latitude);
   const lng = parseCoord(longitude);
   const skipGeocodeRef = useRef(false);
@@ -95,6 +100,10 @@ export function UserAddressLocationPicker({
   };
 
   const detectGps = async () => {
+    if (requireRegion && !region) {
+      toast.error(t("addresses.selectCityFirst", { defaultValue: "Avval shahar / viloyatni tanlang" }));
+      return;
+    }
     setLocating(true);
     try {
       const pos = await getCurrentPosition();
@@ -122,9 +131,23 @@ export function UserAddressLocationPicker({
     }
   };
 
+  const regionMissing = requireRegion && !region;
+
   return (
     <div className={cn("space-y-2", className)}>
-      <div className="overflow-hidden rounded-2xl border border-border">
+      {regionMissing ? (
+        <p className="rounded-xl border border-dashed border-border bg-surface/50 px-3 py-2.5 text-xs font-semibold text-muted-foreground">
+          {t("addresses.mapNeedsCity", {
+            defaultValue: "Xarita va GPS ishlashi uchun yuqorida shahar tanlang",
+          })}
+        </p>
+      ) : null}
+      <div
+        className={cn(
+          "overflow-hidden rounded-2xl border border-border",
+          regionMissing && "pointer-events-none opacity-50",
+        )}
+      >
         <Suspense
           fallback={
             <div className="flex h-44 items-center justify-center bg-muted/30 text-xs text-muted-foreground">
@@ -142,11 +165,13 @@ export function UserAddressLocationPicker({
       </div>
       <button
         type="button"
-        disabled={locating}
+        disabled={locating || regionMissing}
         onClick={() => void detectGps()}
         className="w-full rounded-xl border border-border bg-surface py-2.5 text-xs font-bold disabled:opacity-60"
       >
-        {locating ? "Aniqlanmoqda…" : "GPS orqali aniqlash"}
+        {locating
+          ? t("addresses.locating", { defaultValue: "Aniqlanmoqda…" })
+          : t("addresses.detectGps", { defaultValue: "GPS orqali aniqlash" })}
       </button>
     </div>
   );
