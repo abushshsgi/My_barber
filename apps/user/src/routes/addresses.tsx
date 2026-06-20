@@ -219,8 +219,9 @@ function AddressesPage() {
           <ProfileSubpageCard className="mt-4 space-y-2">
             <button
               type="button"
+              disabled={busy}
               onClick={openAdd}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-foreground py-3.5 text-sm font-bold text-background"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-foreground py-3.5 text-sm font-bold text-background disabled:opacity-50"
             >
               <Plus className="h-4 w-4" />
               {t("addresses.add")}

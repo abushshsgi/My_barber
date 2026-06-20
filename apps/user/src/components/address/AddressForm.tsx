@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type { ApiUserAddress, UserAddressPayload } from "@/lib/api/addresses";
@@ -63,6 +63,8 @@ export function AddressForm({ initial, submitLabel, busy, onSubmit, onCancel }: 
   const [validation, setValidation] = useState<LocationValidation | null>(null);
   const [validating, setValidating] = useState(false);
   const [interestSubmitted, setInterestSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const submitLock = useRef(false);
 
   useEffect(() => {
     setForm({ ...emptyAddressForm(), ...initial });
@@ -117,8 +119,11 @@ export function AddressForm({ initial, submitLabel, busy, onSubmit, onCancel }: 
     !validating &&
     (!noCoverage || interestSubmitted);
 
+  const locked = submitting || busy;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitLock.current || locked) return;
     if (!canSave) {
       if (regionMismatch) {
         toast.error(t("geo.regionMismatch"));
@@ -131,27 +136,38 @@ export function AddressForm({ initial, submitLabel, busy, onSubmit, onCancel }: 
       toast.error(t("addresses.validation"));
       return;
     }
-    if (hasGps) {
-      const v = await validateLocation(lat!, lng!, form.region);
-      if (v.matches_selected === false) {
-        toast.error(t("geo.regionMismatch"));
-        return;
+
+    submitLock.current = true;
+    setSubmitting(true);
+    try {
+      if (hasGps && validation?.matches_selected !== true) {
+        const v = await validateLocation(lat!, lng!, form.region);
+        if (v.matches_selected === false) {
+          toast.error(t("geo.regionMismatch"));
+          return;
+        }
+        setValidation(v);
       }
+
+      const payload: UserAddressPayload = {
+        label: form.label,
+        custom_label: form.label === "other" ? form.custom_label.trim() : "",
+        address_line: form.address_line.trim(),
+        region: form.region,
+        is_default: form.is_default,
+        latitude: roundCoord(lat!),
+        longitude: roundCoord(lng!),
+      };
+      await onSubmit(payload);
+    } finally {
+      submitLock.current = false;
+      setSubmitting(false);
     }
-    const payload: UserAddressPayload = {
-      label: form.label,
-      custom_label: form.label === "other" ? form.custom_label.trim() : "",
-      address_line: form.address_line.trim(),
-      region: form.region,
-      is_default: form.is_default,
-      latitude: roundCoord(lat!),
-      longitude: roundCoord(lng!),
-    };
-    await onSubmit(payload);
   };
 
   return (
-    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4" aria-busy={locked}>
+      <fieldset disabled={locked} className="space-y-4 border-0 p-0 m-0 min-w-0">
       <div>
         <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
           {t("addresses.labelType", { defaultValue: "Manzil turi" })}
@@ -265,22 +281,27 @@ export function AddressForm({ initial, submitLabel, busy, onSubmit, onCancel }: 
         {t("addresses.makeDefault", { defaultValue: "Asosiy manzil sifatida ishlatish" })}
       </label>
 
+      </fieldset>
+
       <div className="flex gap-2 pt-1">
         {onCancel ? (
           <button
             type="button"
+            disabled={locked}
             onClick={onCancel}
-            className="flex-1 rounded-2xl border border-border py-3 text-sm font-bold"
+            className="flex-1 rounded-2xl border border-border py-3 text-sm font-bold disabled:opacity-50"
           >
             {t("common.cancel", { defaultValue: "Bekor" })}
           </button>
         ) : null}
         <button
           type="submit"
-          disabled={!canSave || busy}
+          disabled={!canSave || locked}
           className="flex-1 rounded-2xl bg-foreground py-3 text-sm font-bold text-background disabled:opacity-50"
         >
-          {submitLabel ?? t("common.save", { defaultValue: "Saqlash" })}
+          {locked
+            ? t("common.saving", { defaultValue: "Saqlanmoqda…" })
+            : (submitLabel ?? t("common.save", { defaultValue: "Saqlash" }))}
         </button>
       </div>
     </form>
