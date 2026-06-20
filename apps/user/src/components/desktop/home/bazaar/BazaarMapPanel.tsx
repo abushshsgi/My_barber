@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowUpRight, Calendar, MapPin, Sparkles } from "lucide-react";
+import { ArrowUpRight, MapPin } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
@@ -47,7 +47,7 @@ export function BazaarMapPanel({ salons = [], salonCount = 0, className }: Props
   const pins = useMemo(() => buildPins(salons), [salons]);
 
   return (
-    <aside className={cn("sticky top-28 space-y-3", className)}>
+    <aside className={cn("sticky top-28", className)}>
       <Link
         to="/map"
         className="group relative block overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
@@ -101,10 +101,7 @@ export function BazaarMapPanel({ salons = [], salonCount = 0, className }: Props
           </span>
 
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background via-background/95 to-transparent px-4 pb-4 pt-16">
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-              {t("nav.map")}
-            </p>
-            <p className="mt-1 text-lg font-bold tracking-tight">
+            <p className="text-lg font-bold tracking-tight">
               {salonCount > 0
                 ? t("home.mapPreview.nearbyCount", {
                     count: salonCount,
@@ -112,30 +109,12 @@ export function BazaarMapPanel({ salons = [], salonCount = 0, className }: Props
                   })
                 : t("home.mapPreview.explore", { defaultValue: "Yaqin salonlarni toping" })}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {t("home.mapPreview.hint", { defaultValue: "Masofa va yo'nalish bilan qulay qidiruv" })}
-            </p>
             <span className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-sm font-bold text-background transition group-hover:opacity-95">
               {t("home.mapPreview.openMap", { defaultValue: "Xaritani ochish" })}
               <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </span>
           </div>
         </div>
-      </Link>
-
-      <Link
-        to="/today"
-        className="flex items-center justify-center gap-2 rounded-2xl bg-foreground py-3.5 text-sm font-bold text-background shadow-sm transition-opacity hover:opacity-90"
-      >
-        <Calendar className="h-4 w-4" />
-        {t("homePage.quick.today")}
-      </Link>
-      <Link
-        to="/ai-style"
-        className="flex items-center justify-center gap-2 rounded-2xl border border-border py-3 text-sm font-semibold hover:bg-surface"
-      >
-        <Sparkles className="h-4 w-4 text-foreground" />
-        {t("homePage.quick.aiStyle")}
       </Link>
     </aside>
   );
