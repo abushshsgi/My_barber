@@ -36,12 +36,12 @@ export function SettingsDesktopPage({
       />
 
       <div className="flex flex-col gap-10 lg:flex-row lg:gap-10 xl:gap-14 lg:pb-12">
-        <aside className="lg:w-[340px] xl:w-[380px] lg:shrink-0">
-          <h1 className="text-[32px] font-semibold tracking-tight text-foreground xl:text-[36px]">
+        <aside className="lg:w-[400px] xl:w-[440px] lg:shrink-0">
+          <h1 className="text-[36px] font-semibold tracking-tight text-foreground xl:text-[42px]">
             {t("settings.pageTitle", { defaultValue: "Hisob sozlamalari" })}
           </h1>
-          <div className="mt-6">
-            <SettingsAirbnbSidebar active={section} t={t} />
+          <div className="mt-8">
+            <SettingsAirbnbSidebar active={section} t={t} large />
           </div>
         </aside>
 
