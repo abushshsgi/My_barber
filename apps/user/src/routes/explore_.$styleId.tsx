@@ -8,7 +8,7 @@ import {
 import { PageHeader } from "@/components/PageHeader";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
-import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
+import { getHairstyleDisplayUrl } from "@/lib/hairstyles/catalog";
 import { DESKTOP_SIDEBAR_LEFT_CLASS } from "@/lib/layout-constants";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +39,7 @@ function ExploreStyleDetailPage() {
     throw notFound();
   }
 
-  const imageUrl = getHairstyleImageUrl(entry);
+  const imageUrl = getHairstyleDisplayUrl(entry);
 
   return (
     <div

@@ -1,5 +1,6 @@
 import type { ApiNearbySalon, ApiSalonDetail, ApiSalonList } from "@/lib/api/types";
 import { getSalonCoverUrl } from "@/lib/cover-images";
+import { resolveMediaUrl } from "@/lib/media-url";
 import type { Audience, Category, Salon } from "@/lib/mock-data";
 
 function toNum(v: string | number | null | undefined, fallback = 0): number {
@@ -58,8 +59,7 @@ export function mapSalonList(api: ApiSalonList, distanceKm = 0): Salon {
     priceFrom: 0,
     priceTo: 0,
     coverSeed,
-    // Hozircha API cover_image o‘rniga barqaror mock rasmlar
-    coverUrl: getSalonCoverUrl(coverSeed),
+    coverUrl: resolveMediaUrl(api.cover_image) ?? getSalonCoverUrl(coverSeed),
     about: "",
     services: [],
     staff: [],

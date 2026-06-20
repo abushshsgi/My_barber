@@ -4,7 +4,7 @@ import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { loadFaceProfile, loadFaceProfileHistory } from "@/lib/face-profile";
 import type { HairstyleEntry } from "@/lib/hairstyles/catalog";
 import {
-  hasCatalogImageAsset,
+  hasDisplayableHairstyleImage,
   pickCatalogPersonaForSlug,
   resolveCatalogImageUrl,
   toTrendingStyle,
@@ -88,7 +88,7 @@ export function pickTrendingStyles(
   ctx: TrendingContext = {},
 ): TrendingHairstyle[] {
   const limit = ctx.limit ?? TRENDING_LIMIT;
-  const pool = entries.filter(hasCatalogImageAsset);
+  const pool = entries.filter(hasDisplayableHairstyleImage);
   if (!pool.length) return [];
 
   const ranked = [...pool].sort((a, b) => {

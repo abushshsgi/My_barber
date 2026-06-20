@@ -30,7 +30,7 @@ function SalonCoverImage({ salon, className }: { salon: Salon; className?: strin
         loading="lazy"
         decoding="async"
         referrerPolicy="no-referrer"
-        className="max-h-full max-w-full object-contain object-center"
+        className="max-h-full max-w-full object-cover object-center"
       />
     </div>
   );

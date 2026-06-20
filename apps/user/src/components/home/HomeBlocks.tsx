@@ -10,14 +10,16 @@ import { cn } from "@/lib/utils";
 import type { HomeData } from "@/components/home/useHomeData";
 import { SalonCard } from "@/components/SalonCard";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
-import { getHairstyleImageUrl, type TrendingHairstyle } from "@/lib/hairstyles/catalog";
+import { getTrendCoverUrl } from "@/lib/cover-images";
+import { getHairstyleDisplayUrl, type TrendingHairstyle } from "@/lib/hairstyles/catalog";
 import type { Offer } from "@/lib/mock-data";
 
 function TrendingStyleCard({ style }: { style: TrendingHairstyle }) {
   const { t } = useTranslation();
-  const [hidden, setHidden] = useState(false);
-  const src = getHairstyleImageUrl({ imageUrl: style.imageUrl });
-  if (hidden || !src) return null;
+  const [src, setSrc] = useState(() =>
+    getHairstyleDisplayUrl({ imageUrl: style.imageUrl, slug: style.seed }),
+  );
+  if (!src) return null;
 
   return (
     <Link to="/explore/$styleId" params={{ styleId: style.id }} className="w-[140px] shrink-0">
@@ -27,8 +29,8 @@ function TrendingStyleCard({ style }: { style: TrendingHairstyle }) {
           alt=""
           loading="lazy"
           decoding="async"
-          onError={() => setHidden(true)}
-          className="absolute inset-0 h-full w-full object-contain object-center"
+          onError={() => setSrc(getTrendCoverUrl(style.seed))}
+          className="absolute inset-0 h-full w-full object-cover object-center"
         />
       </div>
       <p className="mt-2 text-[13px] font-bold leading-tight">{style.title}</p>

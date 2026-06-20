@@ -11,7 +11,7 @@ import { useHairstyles } from "@/hooks/use-hairstyles";
 import { useUserAgeGroup } from "@/hooks/use-me";
 import { AGE_GROUP_LABELS_UZ } from "@/lib/age-groups";
 import { hasPersonaStyleAsset } from "@/lib/explore-personas";
-import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
+import { getHairstyleDisplayUrl } from "@/lib/hairstyles/catalog";
 
 export const Route = createFileRoute("/explore")({
   head: () => ({ meta: [{ title: "Trend uslublar — mysaloon.uz" }] }),
@@ -63,7 +63,7 @@ function ExploreMobile() {
           >
             <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-[#E8E8E8]">
               <img
-                src={getHairstyleImageUrl(entry)}
+                src={getHairstyleDisplayUrl(entry)}
                 alt={entry.titleUz}
                 loading="lazy"
                 className="absolute inset-0 h-full w-full object-contain object-center"

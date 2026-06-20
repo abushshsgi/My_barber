@@ -5,6 +5,7 @@ import {
   listReadyExplorePersonas,
   type ExplorePersonaId,
 } from "@/lib/explore-personas";
+import { getTrendCoverUrl } from "@/lib/cover-images";
 import type { ApiHairstyle } from "@/lib/api/hairstyles";
 import type { Audience, Category } from "@/lib/mock-data";
 import type { AudienceFilter } from "@/hooks/use-audience";
@@ -83,16 +84,30 @@ export function pickCatalogPersonaForSlug(
   return withAsset[index % withAsset.length]!;
 }
 
-/** Trending uchun yechilgan rasm yo‘li — asset bo‘lmasa null. */
+/** Trending / explore uchun ko‘rsatiladigan rasm. */
 export function resolveCatalogImageUrl(
   entry: Pick<HairstyleEntry, "audience" | "slug" | "imageUrl">,
   personaId?: ExplorePersonaId | null,
 ): string | null {
-  if (entry.audience !== "men") return null;
-  if (personaId && hasPersonaStyleAsset(personaId, entry.slug)) {
-    return getPersonaStyleImageUrl(personaId, entry.slug);
+  if (entry.audience === "men") {
+    if (personaId && hasPersonaStyleAsset(personaId, entry.slug)) {
+      return getPersonaStyleImageUrl(personaId, entry.slug);
+    }
+    const persona = pickCatalogPersonaForSlug(entry.slug, 0, personaId);
+    if (persona && hasPersonaStyleAsset(persona, entry.slug)) {
+      return getPersonaStyleImageUrl(persona, entry.slug);
+    }
+    return null;
   }
-  return null;
+  const primary = getHairstyleImageUrl(entry);
+  return primary || getTrendCoverUrl(entry.slug);
+}
+
+export function hasDisplayableHairstyleImage(
+  entry: Pick<HairstyleEntry, "audience" | "slug" | "imageUrl">,
+): boolean {
+  if (entry.audience === "men") return hasCatalogImageAsset(entry);
+  return Boolean(getHairstyleImageUrl(entry)) || Boolean(entry.slug);
 }
 
 export function getHairstyleImageUrl(entry: Pick<HairstyleEntry, "imageUrl">): string {
@@ -102,6 +117,14 @@ export function getHairstyleImageUrl(entry: Pick<HairstyleEntry, "imageUrl">): s
     return url;
   }
   return url.startsWith("/") ? url : `/${url}`;
+}
+
+/** Explore / kartochkalar — yo‘q yoki 404 bo‘lsa barqaror fallback. */
+export function getHairstyleDisplayUrl(
+  entry: Pick<HairstyleEntry, "imageUrl" | "slug">,
+): string {
+  const primary = getHairstyleImageUrl(entry);
+  return primary || getTrendCoverUrl(entry.slug);
 }
 
 /** Home / legacy mock-data bilan moslik */
