@@ -15,11 +15,9 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   section: WalletSection;
-  /** Desktop fintech shell — hero already shows balance & card */
-  desktopShell?: boolean;
 };
 
-export function WalletPanelContent({ section, desktopShell }: Props) {
+export function WalletPanelContent({ section }: Props) {
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
   const { balance, walletNumber, card, isLoading } = useWalletBalance();
@@ -33,7 +31,6 @@ export function WalletPanelContent({ section, desktopShell }: Props) {
     .reduce((sum, tx) => sum + tx.amount, 0);
 
   const titleMeta = WALLET_SECTION_TITLE_KEYS[section];
-  const showSectionTitle = !desktopShell || section !== "overview";
 
   const stats = [
     { label: t("walletPage.stats.cashback"), value: formatPrice(inflowTotal) },
@@ -43,35 +40,12 @@ export function WalletPanelContent({ section, desktopShell }: Props) {
 
   return (
     <div>
-      {showSectionTitle ? (
-        <h2 className="text-[22px] font-semibold tracking-tight text-foreground">
-          {t(titleMeta.titleKey, { defaultValue: titleMeta.defaultTitle })}
-        </h2>
-      ) : null}
+      <h2 className="text-[22px] font-semibold tracking-tight text-foreground">
+        {t(titleMeta.titleKey, { defaultValue: titleMeta.defaultTitle })}
+      </h2>
 
-      <div className={cn(showSectionTitle && "mt-4")}>
-        {section === "overview" && desktopShell && (
-          <div className="space-y-8">
-            <div className="grid divide-y overflow-hidden rounded-2xl border border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-              {stats.map((stat) => (
-                <div key={stat.label} className="bg-surface/40 px-5 py-5 text-center sm:text-left">
-                  <p className="text-2xl font-bold tabular-nums">{stat.value}</p>
-                  <p className="mt-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                    {stat.label}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            <WalletTransactionsPanel
-              limit={8}
-              showFullHistoryLink
-              fullHistoryTo={{ to: "/wallet", search: { section: "transactions" } }}
-            />
-          </div>
-        )}
-
-        {section === "overview" && !desktopShell && (
+      <div className="mt-4">
+        {section === "overview" && (
           <div className="space-y-6">
             <div className={cn(DESKTOP_GLASS_PANEL, "flex flex-wrap items-end justify-between gap-4 p-6")}>
               <div>

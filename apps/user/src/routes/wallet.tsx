@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { WalletDesktopPage } from "@/components/desktop/pages/WalletDesktopPage";
+import { SettingsTopBar } from "@/components/settings/SettingsTopBar";
 import { WalletSectionNav } from "@/components/wallet/WalletSectionNav";
 import { WalletPanelContent } from "@/components/wallet/WalletPanelContent";
 import { WalletPullRefresh } from "@/components/wallet/WalletPullRefresh";
@@ -46,7 +47,11 @@ function WalletMobile({ section }: { section: WalletSection }) {
     <WalletPullRefresh onRefresh={refreshBalance} onRefreshingChange={setRefreshing}>
       <div className="min-h-full bg-background pb-[calc(68px+env(safe-area-inset-bottom)+12px)]">
         <div className="border-b border-border px-5 pb-4 pt-[calc(env(safe-area-inset-top)+12px)]">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("walletPage.title")}</h1>
+          <SettingsTopBar
+            backLabel={t("common.back", { defaultValue: "Orqaga" })}
+            doneLabel={t("settings.done", { defaultValue: "Tayyor" })}
+          />
+          <h1 className="mt-4 text-2xl font-semibold tracking-tight">{t("walletPage.title")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t("walletPage.pullHint")}</p>
         </div>
 
