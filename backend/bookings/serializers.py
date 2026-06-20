@@ -11,6 +11,7 @@ from bookings.availability import (
     get_salon_services_for_barber,
 )
 from bookings.models import Booking, BookingCompletion, BookingLine, Review
+from accounts.models import FamilyMember
 from barbers.models import Barber, BarberProfile
 from salons.models import Salon, SalonMembership
 
@@ -32,6 +33,8 @@ class BookingSerializer(serializers.ModelSerializer):
     barber_name = serializers.CharField(source="barber.full_name", read_only=True)
     has_review = serializers.SerializerMethodField()
     review_id = serializers.SerializerMethodField()
+    family_member = serializers.PrimaryKeyRelatedField(read_only=True)
+    booked_for_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
@@ -41,6 +44,8 @@ class BookingSerializer(serializers.ModelSerializer):
             "customer_name",
             "customer_phone",
             "customer_avatar",
+            "family_member",
+            "booked_for_name",
             "salon",
             "salon_name",
             "barber",
@@ -85,6 +90,11 @@ class BookingSerializer(serializers.ModelSerializer):
         review = getattr(obj, "review", None)
         return review.id if review else None
 
+    def get_booked_for_name(self, obj):
+        if obj.family_member_id and obj.family_member:
+            return obj.family_member.name
+        return (obj.customer.full_name or "").strip() or obj.customer.get_username()
+
 
 class BookingCreateSerializer(serializers.Serializer):
     salon = serializers.PrimaryKeyRelatedField(
@@ -98,6 +108,20 @@ class BookingCreateSerializer(serializers.Serializer):
     barber_service_ids = serializers.ListField(
         child=serializers.IntegerField(), min_length=1, required=False
     )
+    family_member_id = serializers.PrimaryKeyRelatedField(
+        queryset=FamilyMember.objects.all(),
+        source="family_member",
+        required=False,
+        allow_null=True,
+    )
+
+    def validate_family_member(self, value):
+        if value is None:
+            return value
+        request = self.context.get("request")
+        if request and request.user.is_authenticated and value.user_id != request.user.id:
+            raise serializers.ValidationError("Bu oila a'zosi sizga tegishli emas.")
+        return value
 
     def validate(self, attrs):
         request = self.context.get("request")
@@ -215,6 +239,7 @@ class BookingCreateSerializer(serializers.Serializer):
         total_price = validated_data.pop("_total_price")
 
         phone_snap = (getattr(customer, "phone", None) or "").strip()
+        family_member = validated_data.pop("family_member", None)
 
         with booking_slot_lock(barber.id, start_at, end_at) as acquired:
             if not acquired:
@@ -242,6 +267,7 @@ class BookingCreateSerializer(serializers.Serializer):
                 customer=customer,
                 salon=salon,
                 barber=barber,
+                family_member=family_member,
                 start_at=start_at,
                 end_at=end_at,
                 status=Booking.Status.PENDING,

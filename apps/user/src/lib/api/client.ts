@@ -82,7 +82,7 @@ export function getUserAccessToken(): string | null {
   return readStoredUserAccess();
 }
 
-function getUserRefreshToken(): string | null {
+export function getUserRefreshToken(): string | null {
   if (typeof window === "undefined") return null;
   return readStoredUserRefresh();
 }

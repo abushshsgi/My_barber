@@ -42,7 +42,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         )
 
     def get_queryset(self):
-        base = Booking.objects.select_related("customer", "salon", "barber").prefetch_related(
+        base = Booking.objects.select_related("customer", "salon", "barber", "family_member").prefetch_related(
             "lines"
         )
         st = self.request.query_params.get("status")

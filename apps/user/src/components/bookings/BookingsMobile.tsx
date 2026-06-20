@@ -110,6 +110,11 @@ function BookingCard({ booking: b, focused }: { booking: BookingItem; focused?: 
           <p className="mt-1 text-xs text-muted-foreground">
             {b.serviceName} · {b.barberName}
           </p>
+          {b.bookedForName ? (
+            <p className="mt-1 text-xs font-semibold text-foreground">
+              {t("family.bookFor", { name: b.bookedForName, defaultValue: "{{name}} uchun" })}
+            </p>
+          ) : null}
           <div className="mt-2 flex items-center gap-3 text-xs">
             <span className="font-bold">{dateStr}</span>
             <span className="text-muted-foreground">·</span>

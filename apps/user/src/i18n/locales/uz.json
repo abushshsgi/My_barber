@@ -144,6 +144,10 @@
     "selectService": "Xizmatlarni tanlang",
     "selectTime": "Vaqtni tanlang",
     "summary": "Buyurtma tafsiloti",
+    "forWhom": "Kim uchun?",
+    "forWhomHint": "O'zingiz yoki oila a'zosi uchun bron qiling.",
+    "forSelf": "O'zim uchun",
+    "addFamilyHint": "Oila a'zolarini Sozlamalar → Oilaviy profil bo'limidan qo'shishingiz mumkin.",
     "total": "Jami",
     "confirm": "Buyurtmani tasdiqlash"
   },

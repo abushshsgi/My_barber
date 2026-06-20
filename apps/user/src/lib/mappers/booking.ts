@@ -22,6 +22,8 @@ export function mapBooking(api: ApiBooking): BookingItem {
     price: api.total_price,
     status: mapStatus(api.status),
     coverSeed: api.salon ? String(api.salon) : String(api.barber),
+    bookedForName:
+      api.family_member != null && api.booked_for_name ? api.booked_for_name : undefined,
   };
 }
 

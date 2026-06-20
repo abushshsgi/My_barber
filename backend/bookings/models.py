@@ -40,6 +40,13 @@ class Booking(models.Model):
     customer_phone = models.CharField(max_length=32, blank=True, default="")
     reminder_1h_sent = models.BooleanField(default=False)
     appointment_reminder_sent = models.BooleanField(default=False)
+    family_member = models.ForeignKey(
+        "accounts.FamilyMember",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="bookings",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     started_at = models.DateTimeField(

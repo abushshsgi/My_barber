@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Check, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { BookingForPicker } from "@/components/booking/BookingForPicker";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { DesktopPageHeader } from "@/components/desktop/ui/DesktopPageHeader";
 import { BookingSummaryAside } from "@/components/booking/BookingSummaryAside";
@@ -10,6 +11,8 @@ import { formatPrice } from "@/lib/mock-data";
 import { PageHeader } from "@/components/PageHeader";
 import { Stepper } from "@/components/Stepper";
 import { useCreateBooking, useBookingAvailability } from "@/hooks/use-bookings-api";
+import { useFamilyMembers } from "@/hooks/use-family";
+import { useDisplayUser } from "@/hooks/use-me";
 import { useSalonPage } from "@/hooks/use-salon-page";
 import { cn } from "@/lib/utils";
 
@@ -27,8 +30,12 @@ const SLOTS = [
 
 function useBookingSalonState(salonId: string) {
   const router = useRouter();
+  const { t } = useTranslation();
+  const user = useDisplayUser();
+  const { data: familyMembers = [] } = useFamilyMembers();
   const { salon, isLoading } = useSalonPage(salonId);
   const createBooking = useCreateBooking();
+  const [familyMemberId, setFamilyMemberId] = useState<number | null>(null);
   const [step, setStep] = useState(1);
   const [barberId, setBarberId] = useState<string | null>(null);
   const [serviceIds, setServiceIds] = useState<string[]>([]);
@@ -60,6 +67,10 @@ function useBookingSalonState(salonId: string) {
   const selectedServices = salon?.services.filter((s) => serviceIds.includes(s.id)) ?? [];
   const total = selectedServices.reduce((sum, s) => sum + s.price, 0);
   const selectedBarber = salon?.staff.find((b) => b.id === barberId);
+  const bookedForLabel =
+    familyMemberId != null
+      ? familyMembers.find((m) => m.id === familyMemberId)?.name ?? ""
+      : user.name || t("booking.forSelf", { defaultValue: "O'zim uchun" });
   const canAdvance =
     (step === 1 && barberId) ||
     (step === 2 && serviceIds.length > 0) ||
@@ -77,6 +88,7 @@ function useBookingSalonState(salonId: string) {
         barber: parseInt(barberId, 10),
         start_at: d.toISOString(),
         service_ids: serviceIds.map((id) => parseInt(id, 10)),
+        family_member_id: familyMemberId,
       });
       toast.success("Buyurtma yuborildi!", { description: `${salon.name} · ${slot}` });
       setTimeout(() => router.navigate({ to: "/bookings" }), 700);
@@ -86,6 +98,8 @@ function useBookingSalonState(salonId: string) {
   };
 
   return {
+    familyMemberId,
+    setFamilyMemberId,
     salon,
     isLoading,
     step,
@@ -103,6 +117,7 @@ function useBookingSalonState(salonId: string) {
     selectedServices,
     total,
     selectedBarber,
+    bookedForLabel,
     canAdvance,
     handleSubmit,
   };
@@ -115,13 +130,15 @@ function BookingStepContent({
   state: ReturnType<typeof useBookingSalonState>;
   t: ReturnType<typeof useTranslation>["t"];
 }) {
-  const { salon, step, barberId, setBarberId, serviceIds, setServiceIds, dayIdx, setDayIdx, slot, setSlot, dayList, slotOptions, selectedServices, selectedBarber, total } = state;
+  const { salon, step, familyMemberId, setFamilyMemberId, barberId, setBarberId, serviceIds, setServiceIds, dayIdx, setDayIdx, slot, setSlot, dayList, slotOptions, selectedServices, selectedBarber, bookedForLabel, total } = state;
   if (!salon) return null;
 
   if (step === 1) {
     return (
-      <div>
-        <h2 className="text-xl font-bold">{t("booking.selectBarber")}</h2>
+      <div className="space-y-8">
+        <BookingForPicker value={familyMemberId} onChange={setFamilyMemberId} />
+        <div>
+          <h2 className="text-xl font-bold">{t("booking.selectBarber")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{salon.name}</p>
         <div className="mt-6 grid grid-cols-2 gap-3">
           {salon.staff.map((b) => (
@@ -140,6 +157,7 @@ function BookingStepContent({
               </p>
             </button>
           ))}
+        </div>
         </div>
       </div>
     );
@@ -205,6 +223,10 @@ function BookingStepContent({
         <p className="text-base font-bold">{salon.name}</p>
         <div className="my-4 h-px bg-border" />
         <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">{t("booking.forWhom", { defaultValue: "Kim uchun" })}</span>
+            <span className="font-bold">{bookedForLabel}</span>
+          </div>
           <div className="flex justify-between"><span className="text-muted-foreground">Usta</span><span className="font-bold">{selectedBarber?.name}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Vaqt</span><span className="font-bold">{dayList[dayIdx].day} {dayList[dayIdx].date} · {slot}</span></div>
         </div>

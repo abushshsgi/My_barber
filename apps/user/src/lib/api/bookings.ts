@@ -21,6 +21,7 @@ export type CreateBookingPayload = {
   start_at: string;
   service_ids?: number[];
   barber_service_ids?: number[];
+  family_member_id?: number | null;
 };
 
 export async function createBooking(data: CreateBookingPayload): Promise<ApiBooking> {

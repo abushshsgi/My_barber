@@ -110,6 +110,8 @@ export type ApiBooking = {
   customer_name: string;
   customer_phone: string;
   customer_avatar: string;
+  family_member: number | null;
+  booked_for_name: string;
   salon: number | null;
   salon_name: string | null;
   barber: number;

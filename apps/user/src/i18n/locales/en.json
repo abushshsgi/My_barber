@@ -139,6 +139,10 @@
     "selectService": "Select services",
     "selectTime": "Pick a time",
     "summary": "Order summary",
+    "forWhom": "Who is this for?",
+    "forWhomHint": "Book for yourself or a family member.",
+    "forSelf": "For myself",
+    "addFamilyHint": "Add family members in Settings → Family profile.",
     "total": "Total",
     "confirm": "Confirm booking"
   },

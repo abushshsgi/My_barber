@@ -4,6 +4,7 @@ export {
   apiJson,
   clearUserTokens,
   getUserAccessToken,
+  getUserRefreshToken,
   hasValidUserSession,
   bootstrapUserSession,
   handleAuthFailure,

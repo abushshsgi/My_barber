@@ -63,6 +63,7 @@ export interface BookingItem {
   price: number;
   status: "pending" | "accepted" | "done" | "cancelled";
   coverSeed: string;
+  bookedForName?: string;
 }
 
 export interface ChatThread {

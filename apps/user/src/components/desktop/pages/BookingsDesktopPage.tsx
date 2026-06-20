@@ -95,7 +95,14 @@ function BookingRow({ booking: b, focused }: { booking: BookingItem; focused?: b
   return (
     <tr id={`booking-${b.id}`} className={cn("border-b border-border last:border-0", focused && "bg-surface/60")}>
       <td className="px-4 py-3 font-bold">{b.salonName}</td>
-      <td className="px-4 py-3 text-muted-foreground">{b.serviceName}</td>
+      <td className="px-4 py-3 text-muted-foreground">
+        <div>{b.serviceName}</div>
+        {b.bookedForName ? (
+          <div className="mt-0.5 text-[11px] font-semibold text-foreground">
+            {t("family.bookFor", { name: b.bookedForName, defaultValue: "{{name}} uchun" })}
+          </div>
+        ) : null}
+      </td>
       <td className="px-4 py-3">
         {dateStr} · {timeStr}
       </td>

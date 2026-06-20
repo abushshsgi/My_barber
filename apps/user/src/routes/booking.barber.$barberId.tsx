@@ -6,9 +6,12 @@ import { toast } from "sonner";
 import { formatPrice } from "@/lib/mock-data";
 import { PageHeader } from "@/components/PageHeader";
 import { Stepper } from "@/components/Stepper";
+import { BookingForPicker } from "@/components/booking/BookingForPicker";
 import { BookingSummaryAside } from "@/components/booking/BookingSummaryAside";
 import { useBarberByBarberId, useIndependentAvailability } from "@/hooks/use-barber";
 import { useCreateBooking } from "@/hooks/use-bookings-api";
+import { useFamilyMembers } from "@/hooks/use-family";
+import { useDisplayUser } from "@/hooks/use-me";
 import { DESKTOP_SIDEBAR_LEFT_CLASS } from "@/lib/layout-constants";
 import { cn } from "@/lib/utils";
 
@@ -24,9 +27,12 @@ function IndependentBookingFlow() {
   const { t } = useTranslation();
   const { barberId } = useParams({ from: "/booking/barber/$barberId" });
   const router = useRouter();
+  const user = useDisplayUser();
+  const { data: familyMembers = [] } = useFamilyMembers();
   const { data: barber, isLoading } = useBarberByBarberId(barberId);
   const createBooking = useCreateBooking();
 
+  const [familyMemberId, setFamilyMemberId] = useState<number | null>(null);
   const [step, setStep] = useState(1);
   const [serviceIds, setServiceIds] = useState<string[]>([]);
   const [dayIdx, setDayIdx] = useState(0);
@@ -71,6 +77,10 @@ function IndependentBookingFlow() {
   const selected = services.filter((s) => serviceIds.includes(String(s.id)));
   const total = selected.reduce((sum, s) => sum + s.price, 0);
   const rating = barber.avg_rating ?? 0;
+  const bookedForLabel =
+    familyMemberId != null
+      ? familyMembers.find((m) => m.id === familyMemberId)?.name ?? ""
+      : user.name || t("booking.forSelf", { defaultValue: "O'zim uchun" });
 
   const handleSubmit = async () => {
     if (!slot || serviceIds.length === 0) return;
@@ -82,6 +92,7 @@ function IndependentBookingFlow() {
         barber: barber.barber_id,
         start_at: d.toISOString(),
         barber_service_ids: serviceIds.map((id) => parseInt(id, 10)),
+        family_member_id: familyMemberId,
       });
       toast.success("Buyurtma yuborildi!", {
         description: `${barber.name} · ${slot}`,
@@ -116,7 +127,9 @@ function IndependentBookingFlow() {
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:items-start lg:gap-8">
         <div className="px-5 pt-6 pb-32 lg:px-0 lg:pb-8">
         {step === 1 && (
-          <div>
+          <div className="space-y-8">
+            <BookingForPicker value={familyMemberId} onChange={setFamilyMemberId} />
+            <div>
             <h2 className="text-xl font-bold tracking-tight">{t("booking.selectService")}</h2>
             <div className="mt-6 space-y-2">
               {services.map((s) => {
@@ -152,6 +165,7 @@ function IndependentBookingFlow() {
                   </button>
                 );
               })}
+            </div>
             </div>
           </div>
         )}
@@ -201,6 +215,7 @@ function IndependentBookingFlow() {
             <h2 className="text-xl font-bold tracking-tight">{t("booking.summary")}</h2>
             <div className="mt-6 rounded-2xl bg-surface p-5">
               <div className="space-y-2 text-sm">
+                <Row label={t("booking.forWhom", { defaultValue: "Kim uchun" })} value={bookedForLabel} />
                 <Row label="Usta" value={barber.name} />
                 <Row label="Sana" value={`${days[dayIdx].day} ${days[dayIdx].date}`} />
                 <Row label="Vaqt" value={slot ?? ""} />
