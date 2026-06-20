@@ -10,9 +10,19 @@ type Props = {
   state: SettingsPageState;
   section: SettingsSection;
   initialEdit?: SettingsEditField;
+  addressEditId?: number;
+  addressAdd?: boolean;
+  onAddressEditorClose: () => void;
 };
 
-export function SettingsDesktopPage({ state, section, initialEdit }: Props) {
+export function SettingsDesktopPage({
+  state,
+  section,
+  initialEdit,
+  addressEditId,
+  addressAdd,
+  onAddressEditorClose,
+}: Props) {
   const { t } = state;
 
   return (
@@ -38,6 +48,9 @@ export function SettingsDesktopPage({ state, section, initialEdit }: Props) {
             section={section}
             state={state}
             initialEdit={initialEdit}
+            addressEditId={addressEditId}
+            addressAdd={addressAdd}
+            onAddressEditorClose={onAddressEditorClose}
             showBack
           />
         </main>

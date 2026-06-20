@@ -10,6 +10,7 @@ type Props = {
   cancelLabel?: string;
   onAction?: () => void;
   actionTo?: string;
+  actionSearch?: Record<string, unknown>;
   trailing?: React.ReactNode;
   expanded?: boolean;
   editing?: boolean;
@@ -26,6 +27,7 @@ export function SettingsFieldRow({
   cancelLabel,
   onAction,
   actionTo,
+  actionSearch,
   trailing,
   expanded,
   editing,
@@ -56,7 +58,7 @@ export function SettingsFieldRow({
         </div>
         {trailing}
         {!trailing && actionLabel && actionTo && !isEditing ? (
-          <Link to={actionTo} className={actionClass}>
+          <Link to={actionTo} search={actionSearch} className={actionClass}>
             {actionLabel}
           </Link>
         ) : !trailing && resolvedActionLabel && onAction ? (

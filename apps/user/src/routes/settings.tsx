@@ -11,6 +11,11 @@ import { parseSettingsEdit, parseSettingsSection, type SettingsSection } from "@
 const settingsSearchSchema = z.object({
   section: z.string().optional(),
   edit: z.string().optional(),
+  addressEdit: z.coerce.number().optional(),
+  addressAdd: z
+    .union([z.boolean(), z.literal("1"), z.literal(1)])
+    .optional()
+    .transform((v) => v === true || v === "1" || v === 1),
 });
 
 export const Route = createFileRoute("/settings")({
@@ -23,10 +28,16 @@ function SettingsMobile({
   state,
   section,
   initialEdit,
+  addressEditId,
+  addressAdd,
+  onAddressEditorClose,
 }: {
   state: ReturnType<typeof useSettingsPage>;
   section: SettingsSection;
   initialEdit?: ReturnType<typeof parseSettingsEdit>;
+  addressEditId?: number;
+  addressAdd?: boolean;
+  onAddressEditorClose: () => void;
 }) {
   const { t } = state;
 
@@ -51,6 +62,9 @@ function SettingsMobile({
           section={section}
           state={state}
           initialEdit={initialEdit}
+          addressEditId={addressEditId}
+          addressAdd={addressAdd}
+          onAddressEditorClose={onAddressEditorClose}
           showBack
         />
       </div>
@@ -61,13 +75,33 @@ function SettingsMobile({
 function Settings() {
   const state = useSettingsPage();
   const search = Route.useSearch();
+  const navigate = Route.useNavigate();
   const section = parseSettingsSection(search.section);
   const initialEdit = parseSettingsEdit(search.edit);
+  const addressEditId = search.addressEdit;
+  const addressAdd = search.addressAdd;
+
+  const onAddressEditorClose = () => {
+    void navigate({
+      to: "/settings",
+      search: { section: "addresses" },
+      replace: true,
+    });
+  };
+
+  const panelProps = {
+    state,
+    section,
+    initialEdit,
+    addressEditId,
+    addressAdd,
+    onAddressEditorClose,
+  };
 
   return (
     <DesktopPageSplit
-      mobile={<SettingsMobile state={state} section={section} initialEdit={initialEdit} />}
-      desktop={<SettingsDesktopPage state={state} section={section} initialEdit={initialEdit} />}
+      mobile={<SettingsMobile {...panelProps} />}
+      desktop={<SettingsDesktopPage {...panelProps} />}
     />
   );
 }

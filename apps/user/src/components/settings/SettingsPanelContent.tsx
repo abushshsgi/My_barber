@@ -13,6 +13,11 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
 import { SettingsEditActions, SettingsFieldRow } from "@/components/settings/SettingsFieldRow";
+import { SettingsAddressesPanel } from "@/components/settings/panels/SettingsAddressesPanel";
+import { SettingsFamilyPanel } from "@/components/settings/panels/SettingsFamilyPanel";
+import { SettingsPrivacyPanel } from "@/components/settings/panels/SettingsPrivacyPanel";
+import { SettingsSessionsPanel } from "@/components/settings/panels/SettingsSessionsPanel";
+import { SettingsSupportPanel } from "@/components/settings/panels/SettingsSupportPanel";
 import type { SettingsPageState } from "@/components/settings/useSettingsPage";
 import { SETTINGS_LANGS } from "@/components/settings/useSettingsPage";
 import { setLang } from "@/i18n/config";
@@ -62,10 +67,21 @@ type Props = {
   section: SettingsSection;
   state: SettingsPageState;
   initialEdit?: SettingsEditField;
+  addressEditId?: number;
+  addressAdd?: boolean;
+  onAddressEditorClose: () => void;
   showBack?: boolean;
 };
 
-export function SettingsPanelContent({ section, state, initialEdit, showBack }: Props) {
+export function SettingsPanelContent({
+  section,
+  state,
+  initialEdit,
+  addressEditId,
+  addressAdd,
+  onAddressEditorClose,
+  showBack,
+}: Props) {
   const {
     t,
     activeLang,
@@ -83,13 +99,10 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
     setPw,
     changePw,
     notificationItems,
-    addresses,
     defaultAddressLabel,
     defaultAddressId,
     langLabel,
     securityMeta,
-    familyCount,
-    sessionsCount,
   } = state;
 
   const { currency, setCurrency, ratesUpdatedAt, ratesSource } = useCurrency();
@@ -214,11 +227,9 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
     );
   };
 
-  const settingsAddressesBack = "/settings?section=addresses";
-  const addressManageTo = `/addresses?backTo=${encodeURIComponent(settingsAddressesBack)}`;
-  const addressEditTo = defaultAddressId
-    ? `/addresses?edit=${defaultAddressId}&backTo=${encodeURIComponent(settingsAddressesBack)}`
-    : `/addresses?add=1&backTo=${encodeURIComponent(settingsAddressesBack)}`;
+  const addressEditSearch = defaultAddressId
+    ? { section: "addresses" as const, addressEdit: defaultAddressId }
+    : { section: "addresses" as const, addressAdd: true as const };
 
   return (
     <div>
@@ -403,7 +414,8 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
                   ? t("settings.actions.edit", { defaultValue: "Tahrirlash" })
                   : t("settings.actions.add", { defaultValue: "Qo'shish" })
               }
-              actionTo={addressEditTo}
+              actionTo="/settings"
+              actionSearch={addressEditSearch}
             />
           </>
         )}
@@ -475,37 +487,11 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
                 defaultValue: "Hisobingiz telefon raqami orqali tasdiqlangan.",
               })}
             />
-            <SettingsFieldRow
-              label={t("settings.fields.sessions", { defaultValue: "Faol sessiyalar" })}
-              value={t("settings.fields.sessionsMeta", {
-                count: sessionsCount,
-                defaultValue: "{{count}} ta qurilma",
-              })}
-              hint={t("settings.fields.sessionsHint", {
-                defaultValue: "Hisobingiz ochiq bo'lgan qurilmalarni ko'ring va bekor qiling.",
-              })}
-              actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
-              actionTo={`/sessions?backTo=${encodeURIComponent("/settings?section=security")}`}
-            />
+            <SettingsSessionsPanel embedded />
           </>
         )}
 
-        {section === "privacy" && (
-          <>
-            <SettingsFieldRow
-              label={t("settings.fields.dataPrivacy", { defaultValue: "Ma'lumotlar va maxfiylik" })}
-              value={t("settings.hubs.privacy.meta", { defaultValue: "Ma'lumot va ruxsatlar" })}
-              actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
-              actionTo={`/privacy?backTo=${encodeURIComponent("/settings?section=privacy")}`}
-            />
-            <SettingsFieldRow
-              label={t("settings.fields.accountData", { defaultValue: "Hisob ma'lumotlari" })}
-              hint={t("settings.fields.accountDataHint")}
-              actionLabel={t("settings.actions.view", { defaultValue: "Ko'rish" })}
-              actionTo={`/privacy?backTo=${encodeURIComponent("/settings?section=privacy")}`}
-            />
-          </>
-        )}
+        {section === "privacy" && <SettingsPrivacyPanel embedded />}
 
         {section === "notifications" &&
           notificationItems.map((item) => (
@@ -631,63 +617,17 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
         )}
 
         {section === "addresses" && (
-          <>
-            <SettingsFieldRow
-              label={t("settings.fields.savedAddresses", { defaultValue: "Saqlangan manzillar" })}
-              value={t("settings.hubs.addresses.meta", {
-                count: addresses.length,
-                defaultValue: "{{count}} ta manzil",
-              })}
-              actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
-              actionTo={addressManageTo}
-            />
-            <SettingsFieldRow
-              label={t("settings.fields.defaultAddress", { defaultValue: "Asosiy manzil" })}
-              value={defaultAddressLabel}
-              emptyLabel={t("settings.row.notProvided", { defaultValue: "Ko'rsatilmagan" })}
-              actionLabel={
-                defaultAddressLabel
-                  ? t("settings.actions.edit", { defaultValue: "Tahrirlash" })
-                  : t("settings.actions.add", { defaultValue: "Qo'shish" })
-              }
-              actionTo={addressEditTo}
-            />
-          </>
-        )}
-
-        {section === "family" && (
-          <SettingsFieldRow
-            label={t("settings.hubs.family.title", { defaultValue: "Oilaviy profil" })}
-            value={
-              familyCount > 0
-                ? t("settings.hubs.family.metaCount", {
-                    count: familyCount,
-                    defaultValue: "{{count}} ta a'zo",
-                  })
-                : t("settings.hubs.family.meta", { defaultValue: "Oila a'zolarini boshqaring" })
-            }
-            hint={t("settings.hubs.family.desc")}
-            actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
-            actionTo={`/family?backTo=${encodeURIComponent("/settings?section=family")}`}
+          <SettingsAddressesPanel
+            embedded
+            initialEditId={addressEditId}
+            initialAdd={addressAdd}
+            onEditorClose={onAddressEditorClose}
           />
         )}
 
-        {section === "help" && (
-          <>
-            <SettingsFieldRow
-              label={t("settings.hubs.help.title", { defaultValue: "Yordam markazi" })}
-              value={t("settings.hubs.help.meta", { defaultValue: "Biz bilan bog'laning" })}
-              hint={t("settings.hubs.help.desc")}
-              actionLabel={t("settings.actions.contact", { defaultValue: "Bog'lanish" })}
-              actionTo={`/support?backTo=${encodeURIComponent("/settings?section=help")}`}
-            />
-            <SettingsFieldRow
-              label={t("settings.fields.faq", { defaultValue: "Ko'p so'raladigan savollar" })}
-              actionLabel={t("settings.actions.view", { defaultValue: "Ko'rish" })}
-              actionTo={`/support?backTo=${encodeURIComponent("/settings?section=help")}`}
-            />
-          </>
-        )}
+        {section === "family" && <SettingsFamilyPanel embedded />}
+
+        {section === "help" && <SettingsSupportPanel embedded />}
       </div>
 
       {section === "preferences" ? (
@@ -719,7 +659,11 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
           <p className="text-sm font-semibold">{t("settings.privacyNote.title")}</p>
           <p className="mt-1 text-sm text-muted-foreground">
             {t("settings.privacyNote.body")}{" "}
-            <Link to="/privacy" className="font-semibold text-foreground underline underline-offset-2">
+            <Link
+              to="/settings"
+              search={{ section: "privacy" }}
+              className="font-semibold text-foreground underline underline-offset-2"
+            >
               {t("profile.privacy")}
             </Link>
           </p>
@@ -736,7 +680,8 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
             <p className="text-sm font-medium text-foreground">{user.phone}</p>
           ) : null}
           <Link
-            to="/support"
+            to="/settings"
+            search={{ section: "help" }}
             className="inline-flex w-fit rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background"
             onClick={() => setPhoneDialogOpen(false)}
           >
