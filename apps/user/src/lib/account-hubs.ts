@@ -81,7 +81,7 @@ export const ACCOUNT_HUBS: AccountHubMeta[] = [
     descKey: "account.hubs.preferences.desc",
     pageTitleKey: "account.hubs.preferences.pageTitle",
     items: [
-      { icon: Bell, label: "", to: "/notifications", badge: "2" },
+      { icon: Bell, label: "", to: "/notifications" },
       { icon: Settings, label: "", to: "/settings" },
       { icon: HelpCircle, label: "", to: "/support" },
       { icon: Shield, label: "", to: "/privacy" },

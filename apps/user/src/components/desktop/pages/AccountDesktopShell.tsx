@@ -1,4 +1,3 @@
-import { useRouterState } from "@tanstack/react-router";
 import { ProfileDesktopSidebar } from "@/components/desktop/profile/ProfileDesktopSidebar";
 import { DESKTOP_ACCOUNT_BG, DESKTOP_GLASS_PANEL } from "@/components/desktop/ui/desktop-glass";
 import { useProfileScreen } from "@/components/profile/useProfileScreen";
@@ -11,7 +10,6 @@ type Props = {
   title?: string;
   subtitle?: string;
   children: React.ReactNode;
-  /** Profil dashboard — qo'shimcha glass panel kerak emas */
   bare?: boolean;
 };
 
@@ -20,7 +18,6 @@ export function AccountDesktopShell({ title, subtitle, children, bare }: Props) 
   const { audience, user, handleLogout } = useProfileScreen();
   const { data: notifications = [] } = useNotificationsApi();
   const { data: regions = [] } = useRegions();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const unreadCount = notifications.filter((n) => !n.read).length;
   const audienceLabel = t(`audience.${audience}`);
   const regionLabel = regions.find((r) => r.value === user.region)?.label;
@@ -32,8 +29,8 @@ export function AccountDesktopShell({ title, subtitle, children, bare }: Props) 
     .toUpperCase();
 
   return (
-    <div className={cn("mx-auto w-full max-w-6xl", DESKTOP_ACCOUNT_BG)}>
-      <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
+    <div className={cn("mx-auto w-full max-w-5xl", DESKTOP_ACCOUNT_BG)}>
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
         <ProfileDesktopSidebar
           name={user.name}
           phone={user.phone}
@@ -47,18 +44,17 @@ export function AccountDesktopShell({ title, subtitle, children, bare }: Props) 
 
         <div className="min-w-0 flex-1">
           {title ? (
-            <header className="mb-6">
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                {pathname === "/profile"
-                  ? t("profile.desktop.eyebrow", { defaultValue: "Hisob markazi" })
-                  : t("profile.title", { defaultValue: "Profil" })}
-              </p>
-              <h1 className="mt-1 text-2xl font-bold tracking-tight lg:text-3xl">{title}</h1>
-              {subtitle ? <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{subtitle}</p> : null}
+            <header className="mb-5">
+              <h1 className="text-xl font-bold tracking-tight lg:text-2xl">{title}</h1>
+              {subtitle ? <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">{subtitle}</p> : null}
             </header>
           ) : null}
 
-          {bare ? children : <div className={cn(DESKTOP_GLASS_PANEL, "p-6 lg:p-8")}>{children}</div>}
+          {bare ? (
+            children
+          ) : (
+            <div className={cn(DESKTOP_GLASS_PANEL, "p-5 lg:p-6")}>{children}</div>
+          )}
         </div>
       </div>
     </div>

@@ -1,7 +1,28 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { CalendarCheck, LayoutGrid, LogOut, MapPin, Pencil, Wallet, type LucideIcon } from "lucide-react";
-import { DESKTOP_GLASS_CARD, DESKTOP_GLASS_PANEL } from "@/components/desktop/ui/desktop-glass";
-import { ACCOUNT_HUBS, resolveHubItems } from "@/lib/account-hubs";
+import {
+  Award,
+  Bell,
+  CalendarCheck,
+  ChevronDown,
+  CreditCard,
+  Gift,
+  Heart,
+  HelpCircle,
+  LayoutGrid,
+  LogOut,
+  MapPin,
+  Repeat,
+  Settings,
+  Shield,
+  Sparkles,
+  Star,
+  Tag,
+  Users,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { DESKTOP_GLASS_PANEL } from "@/components/desktop/ui/desktop-glass";
 import { cn } from "@/lib/utils";
 
 export type ProfileNavItem = {
@@ -10,6 +31,43 @@ export type ProfileNavItem = {
   icon: LucideIcon;
   badge?: number;
 };
+
+type NavDef = {
+  to: string;
+  icon: LucideIcon;
+  labelKey: string;
+  defaultLabel: string;
+  badgeFromNotifications?: boolean;
+};
+
+const MAIN_NAV: NavDef[] = [
+  { to: "/profile", icon: LayoutGrid, labelKey: "profile.desktop.overview", defaultLabel: "Umumiy" },
+  { to: "/bookings", icon: CalendarCheck, labelKey: "profile.bookings", defaultLabel: "Buyurtmalar" },
+  { to: "/wallet", icon: Wallet, labelKey: "profile.wallet", defaultLabel: "Hamyon" },
+  { to: "/addresses", icon: MapPin, labelKey: "profile.addresses", defaultLabel: "Manzillar" },
+  { to: "/favorites", icon: Heart, labelKey: "favorites.title", defaultLabel: "Sevimlilar" },
+  {
+    to: "/notifications",
+    icon: Bell,
+    labelKey: "notifications.title",
+    defaultLabel: "Bildirishnomalar",
+    badgeFromNotifications: true,
+  },
+  { to: "/settings", icon: Settings, labelKey: "profile.settings", defaultLabel: "Sozlamalar" },
+];
+
+const MORE_NAV: NavDef[] = [
+  { to: "/reviews", icon: Star, labelKey: "reviews.title", defaultLabel: "Sharhlar" },
+  { to: "/favorite-stylists", icon: Award, labelKey: "favoriteStylists.title", defaultLabel: "Ustalar" },
+  { to: "/giftcard", icon: Gift, labelKey: "profile.giftcard", defaultLabel: "Sovg'a karta" },
+  { to: "/loyalty", icon: Sparkles, labelKey: "profile.loyalty", defaultLabel: "Bonus" },
+  { to: "/payment-methods", icon: CreditCard, labelKey: "paymentMethods.title", defaultLabel: "To'lov" },
+  { to: "/offers", icon: Tag, labelKey: "profile.offers", defaultLabel: "Aksiyalar" },
+  { to: "/subscriptions", icon: Repeat, labelKey: "subscriptions.title", defaultLabel: "Obuna" },
+  { to: "/family", icon: Users, labelKey: "family.title", defaultLabel: "Oila" },
+  { to: "/support", icon: HelpCircle, labelKey: "profile.support", defaultLabel: "Yordam" },
+  { to: "/privacy", icon: Shield, labelKey: "profile.privacy", defaultLabel: "Maxfiylik" },
+];
 
 type Props = {
   name: string;
@@ -22,6 +80,11 @@ type Props = {
   t: (key: string, opts?: { defaultValue?: string }) => string;
 };
 
+function isActive(pathname: string, to: string) {
+  if (to === "/profile") return pathname === "/profile";
+  return pathname === to || pathname.startsWith(`${to}/`);
+}
+
 export function ProfileDesktopSidebar({
   name,
   phone,
@@ -33,120 +96,139 @@ export function ProfileDesktopSidebar({
   t,
 }: Props) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const moreActive = useMemo(() => MORE_NAV.some((item) => isActive(pathname, item.to)), [pathname]);
+  const [moreOpen, setMoreOpen] = useState(moreActive);
 
-  const primaryNav: ProfileNavItem[] = [
-    { to: "/profile", label: t("profile.desktop.overview", { defaultValue: "Umumiy" }), icon: LayoutGrid },
-    { to: "/bookings", label: t("profile.bookings"), icon: CalendarCheck },
-    { to: "/wallet", label: t("profile.wallet"), icon: Wallet },
-    { to: "/addresses", label: t("profile.addresses"), icon: MapPin },
-  ];
+  useEffect(() => {
+    if (moreActive) setMoreOpen(true);
+  }, [moreActive]);
+
+  const toItem = (def: NavDef): ProfileNavItem => ({
+    to: def.to,
+    icon: def.icon,
+    label: t(def.labelKey, { defaultValue: def.defaultLabel }),
+    badge: def.badgeFromNotifications && unreadNotifications > 0 ? unreadNotifications : undefined,
+  });
 
   return (
-    <aside className="sticky top-24 w-full shrink-0 lg:w-[268px]">
-      <div className={cn(DESKTOP_GLASS_PANEL, "p-5")}>
-        <div className="flex flex-col items-center text-center">
-          <div className="grid h-20 w-20 place-items-center rounded-full bg-background/80 ring-2 ring-border/40 backdrop-blur-sm">
-            <span className="text-2xl font-bold tracking-tight">{initials}</span>
+    <aside className="sticky top-24 w-full shrink-0 lg:w-[240px]">
+      <div className={cn(DESKTOP_GLASS_PANEL, "overflow-hidden")}>
+        <div className="flex items-center gap-3 border-b border-border/40 p-4">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-background/80 text-sm font-bold ring-1 ring-border/50">
+            {initials}
           </div>
-          <p className="mt-4 max-w-full truncate text-base font-bold tracking-tight">{name}</p>
-          <p className="mt-0.5 max-w-full truncate text-sm text-muted-foreground">{phone}</p>
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-            <span className="rounded-full bg-background/70 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground backdrop-blur-sm">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-bold leading-tight">{name}</p>
+            <p className="truncate text-xs text-muted-foreground">{phone}</p>
+          </div>
+          <Link
+            to="/settings"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-background/70 hover:text-foreground"
+            title={t("profile.editProfile", { defaultValue: "Profilni tahrirlash" })}
+          >
+            <Settings className="h-4 w-4" />
+          </Link>
+        </div>
+
+        {(audienceLabel || regionLabel) && (
+          <div className="flex flex-wrap gap-1.5 border-b border-border/40 px-4 py-2.5">
+            <span className="rounded-md bg-background/60 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
               {audienceLabel}
             </span>
             {regionLabel ? (
-              <span className="rounded-full border border-border/50 bg-background/50 px-2.5 py-1 text-[10px] font-bold text-muted-foreground backdrop-blur-sm">
+              <span className="rounded-md bg-background/60 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
                 {regionLabel}
               </span>
             ) : null}
           </div>
-          <Link
-            to="/settings"
-            className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-background/60 px-3.5 py-1.5 text-xs font-bold backdrop-blur-sm transition-colors hover:bg-background/90"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-            {t("profile.editProfile", { defaultValue: "Profilni tahrirlash" })}
-          </Link>
-        </div>
-      </div>
+        )}
 
-      <nav className="mt-5 space-y-5" aria-label={t("profile.title", { defaultValue: "Profil" })}>
-        <div>
-          <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-            {t("profile.desktop.primaryNav", { defaultValue: "Asosiy" })}
-          </p>
+        <nav className="p-2" aria-label={t("profile.title", { defaultValue: "Profil" })}>
           <ul className="space-y-0.5">
-            {primaryNav.map((item) => (
+            {MAIN_NAV.map((def) => (
               <SidebarLink
-                key={item.to}
-                item={item}
-                active={item.to === "/profile" ? pathname === "/profile" : pathname === item.to || pathname.startsWith(`${item.to}/`)}
+                key={def.to}
+                item={toItem(def)}
+                active={isActive(pathname, def.to)}
               />
             ))}
           </ul>
-        </div>
 
-        {ACCOUNT_HUBS.map((hub) => {
-          const items = resolveHubItems(hub, t);
-          return (
-            <div key={hub.key}>
-              <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                {t(hub.titleKey)}
-              </p>
-              <ul className="space-y-0.5">
-                {items.map((item) => {
-                  const badge =
-                    item.to === "/notifications" && unreadNotifications > 0
-                      ? unreadNotifications
-                      : item.badge
-                        ? Number(item.badge)
-                        : undefined;
-                  return (
-                    <SidebarLink
-                      key={item.to}
-                      item={{ to: item.to, label: item.label, icon: item.icon, badge }}
-                      active={pathname === item.to || pathname.startsWith(`${item.to}/`)}
-                    />
-                  );
-                })}
+          <div className="mt-1 border-t border-border/40 pt-1">
+            <button
+              type="button"
+              onClick={() => setMoreOpen((v) => !v)}
+              className={cn(
+                "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold transition-colors",
+                moreActive ? "text-foreground" : "text-muted-foreground hover:bg-background/55 hover:text-foreground",
+              )}
+            >
+              <ChevronDown
+                className={cn("h-4 w-4 shrink-0 transition-transform", moreOpen && "rotate-180")}
+              />
+              <span>{t("profile.desktop.moreNav", { defaultValue: "Yana" })}</span>
+            </button>
+            {moreOpen ? (
+              <ul className="mt-0.5 space-y-0.5 pb-1">
+                {MORE_NAV.map((def) => (
+                  <SidebarLink
+                    key={def.to}
+                    item={toItem(def)}
+                    active={isActive(pathname, def.to)}
+                    compact
+                  />
+                ))}
               </ul>
-            </div>
-          );
-        })}
-      </nav>
+            ) : null}
+          </div>
+        </nav>
 
-      <button
-        type="button"
-        onClick={onLogout}
-        className={cn(
-          DESKTOP_GLASS_CARD,
-          "mt-5 flex w-full items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-muted-foreground hover:text-foreground",
-        )}
-      >
-        <LogOut className="h-4 w-4" />
-        {t("common.logout")}
-      </button>
+        <div className="border-t border-border/40 p-2">
+          <button
+            type="button"
+            onClick={onLogout}
+            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-background/55 hover:text-foreground"
+          >
+            <LogOut className="h-4 w-4 shrink-0" />
+            {t("common.logout")}
+          </button>
+        </div>
+      </div>
     </aside>
   );
 }
 
-function SidebarLink({ item, active }: { item: ProfileNavItem; active?: boolean }) {
+function SidebarLink({
+  item,
+  active,
+  compact,
+}: {
+  item: ProfileNavItem;
+  active?: boolean;
+  compact?: boolean;
+}) {
   const Icon = item.icon;
   return (
     <li>
       <Link
         to={item.to as never}
         className={cn(
-          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all",
+          "flex items-center gap-2.5 rounded-lg text-sm font-semibold transition-colors",
+          compact ? "py-1.5 pl-9 pr-3" : "px-3 py-2",
           active
-            ? "border border-border/50 bg-background/85 text-foreground shadow-sm backdrop-blur-md"
+            ? "bg-foreground text-background"
             : "text-muted-foreground hover:bg-background/55 hover:text-foreground",
         )}
       >
-        <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.9} />
+        <Icon className="h-4 w-4 shrink-0" strokeWidth={active ? 2.1 : 1.9} />
         <span className="min-w-0 flex-1 truncate">{item.label}</span>
         {item.badge ? (
-          <span className="rounded-full bg-foreground px-2 py-0.5 text-[10px] font-bold text-background">
+          <span
+            className={cn(
+              "rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
+              active ? "bg-background text-foreground" : "bg-foreground text-background",
+            )}
+          >
             {item.badge > 9 ? "9+" : item.badge}
           </span>
         ) : null}

@@ -213,6 +213,7 @@
     "desktop": {
       "eyebrow": "Hisob markazi",
       "overview": "Umumiy",
+      "moreNav": "Yana",
       "greeting": "Salom, {{name}}",
       "subtitle": "Buyurtmalar, to'lovlar va shaxsiy sozlamalarni bir joydan boshqaring.",
       "primaryNav": "Asosiy",

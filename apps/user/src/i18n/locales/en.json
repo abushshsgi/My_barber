@@ -200,6 +200,7 @@
     "desktop": {
       "eyebrow": "Account center",
       "overview": "Overview",
+      "moreNav": "More",
       "greeting": "Hello, {{name}}",
       "subtitle": "Manage bookings, payments, and personal settings in one place.",
       "primaryNav": "Essentials",
