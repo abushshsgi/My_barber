@@ -12,6 +12,7 @@ type Props = {
   initialEdit?: SettingsEditField;
   addressEditId?: number;
   addressAdd?: boolean;
+  manage?: boolean;
   onAddressEditorClose: () => void;
 };
 
@@ -21,6 +22,7 @@ export function SettingsDesktopPage({
   initialEdit,
   addressEditId,
   addressAdd,
+  manage,
   onAddressEditorClose,
 }: Props) {
   const { t } = state;
@@ -50,6 +52,7 @@ export function SettingsDesktopPage({
             initialEdit={initialEdit}
             addressEditId={addressEditId}
             addressAdd={addressAdd}
+            manage={manage}
             onAddressEditorClose={onAddressEditorClose}
             showBack
           />

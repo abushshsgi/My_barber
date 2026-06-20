@@ -11,6 +11,10 @@ import { parseSettingsEdit, parseSettingsSection, type SettingsSection } from "@
 const settingsSearchSchema = z.object({
   section: z.string().optional(),
   edit: z.string().optional(),
+  manage: z
+    .union([z.boolean(), z.literal("1"), z.literal(1)])
+    .optional()
+    .transform((v) => v === true || v === "1" || v === 1),
   addressEdit: z.coerce.number().optional(),
   addressAdd: z
     .union([z.boolean(), z.literal("1"), z.literal(1)])
@@ -30,6 +34,7 @@ function SettingsMobile({
   initialEdit,
   addressEditId,
   addressAdd,
+  manage,
   onAddressEditorClose,
 }: {
   state: ReturnType<typeof useSettingsPage>;
@@ -37,6 +42,7 @@ function SettingsMobile({
   initialEdit?: ReturnType<typeof parseSettingsEdit>;
   addressEditId?: number;
   addressAdd?: boolean;
+  manage?: boolean;
   onAddressEditorClose: () => void;
 }) {
   const { t } = state;
@@ -64,6 +70,7 @@ function SettingsMobile({
           initialEdit={initialEdit}
           addressEditId={addressEditId}
           addressAdd={addressAdd}
+          manage={manage}
           onAddressEditorClose={onAddressEditorClose}
           showBack
         />
@@ -80,11 +87,12 @@ function Settings() {
   const initialEdit = parseSettingsEdit(search.edit);
   const addressEditId = search.addressEdit;
   const addressAdd = search.addressAdd;
+  const manage = search.manage;
 
   const onAddressEditorClose = () => {
     void navigate({
       to: "/settings",
-      search: { section: "addresses" },
+      search: { section: "addresses", manage: true },
       replace: true,
     });
   };
@@ -95,6 +103,7 @@ function Settings() {
     initialEdit,
     addressEditId,
     addressAdd,
+    manage,
     onAddressEditorClose,
   };
 

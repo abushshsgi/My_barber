@@ -69,6 +69,7 @@ type Props = {
   initialEdit?: SettingsEditField;
   addressEditId?: number;
   addressAdd?: boolean;
+  manage?: boolean;
   onAddressEditorClose: () => void;
   showBack?: boolean;
 };
@@ -79,6 +80,7 @@ export function SettingsPanelContent({
   initialEdit,
   addressEditId,
   addressAdd,
+  manage,
   onAddressEditorClose,
   showBack,
 }: Props) {
@@ -99,10 +101,13 @@ export function SettingsPanelContent({
     setPw,
     changePw,
     notificationItems,
+    addresses,
     defaultAddressLabel,
     defaultAddressId,
     langLabel,
     securityMeta,
+    familyCount,
+    sessionsCount,
   } = state;
 
   const { currency, setCurrency, ratesUpdatedAt, ratesSource } = useCurrency();
@@ -228,8 +233,23 @@ export function SettingsPanelContent({
   };
 
   const addressEditSearch = defaultAddressId
-    ? { section: "addresses" as const, addressEdit: defaultAddressId }
-    : { section: "addresses" as const, addressAdd: true as const };
+    ? { section: "addresses" as const, manage: true as const, addressEdit: defaultAddressId }
+    : { section: "addresses" as const, manage: true as const, addressAdd: true as const };
+
+  const manageSearch = { section, manage: true as const };
+  const showManageDetail =
+    manage === true || (section === "addresses" && (addressEditId != null || addressAdd === true));
+
+  const ManageBack = () => (
+    <Link
+      to="/settings"
+      search={{ section }}
+      className="mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-foreground transition-opacity hover:opacity-80"
+    >
+      <ChevronLeft className="h-4 w-4" strokeWidth={2.2} />
+      {t("common.back", { defaultValue: "Orqaga" })}
+    </Link>
+  );
 
   return (
     <div>
@@ -420,7 +440,7 @@ export function SettingsPanelContent({
           </>
         )}
 
-        {section === "security" && me?.has_password !== undefined && (
+        {section === "security" && me?.has_password !== undefined && !showManageDetail && (
           <>
             <SettingsFieldRow
               label={t("settings.fields.password", { defaultValue: "Parol" })}
@@ -487,11 +507,54 @@ export function SettingsPanelContent({
                 defaultValue: "Hisobingiz telefon raqami orqali tasdiqlangan.",
               })}
             />
-            <SettingsSessionsPanel embedded />
+            <SettingsFieldRow
+              label={t("settings.fields.sessions", { defaultValue: "Faol sessiyalar" })}
+              value={t("settings.fields.sessionsMeta", {
+                count: sessionsCount,
+                defaultValue: "{{count}} ta qurilma",
+              })}
+              hint={t("settings.fields.sessionsHint", {
+                defaultValue: "Hisobingiz ochiq bo'lgan qurilmalarni ko'ring va bekor qiling.",
+              })}
+              actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
+              actionTo="/settings"
+              actionSearch={manageSearch}
+            />
           </>
         )}
 
-        {section === "privacy" && <SettingsPrivacyPanel embedded />}
+        {section === "security" && showManageDetail ? (
+          <>
+            <ManageBack />
+            <SettingsSessionsPanel />
+          </>
+        ) : null}
+
+        {section === "privacy" && !showManageDetail ? (
+          <>
+            <SettingsFieldRow
+              label={t("settings.fields.dataPrivacy", { defaultValue: "Ma'lumotlar va maxfiylik" })}
+              value={t("settings.hubs.privacy.meta", { defaultValue: "Ma'lumot va ruxsatlar" })}
+              actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
+              actionTo="/settings"
+              actionSearch={manageSearch}
+            />
+            <SettingsFieldRow
+              label={t("settings.fields.accountData", { defaultValue: "Hisob ma'lumotlari" })}
+              hint={t("settings.fields.accountDataHint")}
+              actionLabel={t("settings.actions.view", { defaultValue: "Ko'rish" })}
+              actionTo="/settings"
+              actionSearch={manageSearch}
+            />
+          </>
+        ) : null}
+
+        {section === "privacy" && showManageDetail ? (
+          <>
+            <ManageBack />
+            <SettingsPrivacyPanel />
+          </>
+        ) : null}
 
         {section === "notifications" &&
           notificationItems.map((item) => (
@@ -616,18 +679,94 @@ export function SettingsPanelContent({
           </>
         )}
 
-        {section === "addresses" && (
-          <SettingsAddressesPanel
-            embedded
-            initialEditId={addressEditId}
-            initialAdd={addressAdd}
-            onEditorClose={onAddressEditorClose}
+        {section === "addresses" && !showManageDetail ? (
+          <>
+            <SettingsFieldRow
+              label={t("settings.fields.savedAddresses", { defaultValue: "Saqlangan manzillar" })}
+              value={t("settings.hubs.addresses.meta", {
+                count: addresses.length,
+                defaultValue: "{{count}} ta manzil",
+              })}
+              actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
+              actionTo="/settings"
+              actionSearch={manageSearch}
+            />
+            <SettingsFieldRow
+              label={t("settings.fields.defaultAddress", { defaultValue: "Asosiy manzil" })}
+              value={defaultAddressLabel}
+              emptyLabel={t("settings.row.notProvided", { defaultValue: "Ko'rsatilmagan" })}
+              actionLabel={
+                defaultAddressLabel
+                  ? t("settings.actions.edit", { defaultValue: "Tahrirlash" })
+                  : t("settings.actions.add", { defaultValue: "Qo'shish" })
+              }
+              actionTo="/settings"
+              actionSearch={addressEditSearch}
+            />
+          </>
+        ) : null}
+
+        {section === "addresses" && showManageDetail ? (
+          <>
+            <ManageBack />
+            <SettingsAddressesPanel
+              initialEditId={addressEditId}
+              initialAdd={addressAdd}
+              onEditorClose={onAddressEditorClose}
+            />
+          </>
+        ) : null}
+
+        {section === "family" && !showManageDetail ? (
+          <SettingsFieldRow
+            label={t("settings.hubs.family.title", { defaultValue: "Oilaviy profil" })}
+            value={
+              familyCount > 0
+                ? t("settings.hubs.family.metaCount", {
+                    count: familyCount,
+                    defaultValue: "{{count}} ta a'zo",
+                  })
+                : t("settings.hubs.family.meta", { defaultValue: "Oila a'zolarini boshqaring" })
+            }
+            hint={t("settings.hubs.family.desc")}
+            actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
+            actionTo="/settings"
+            actionSearch={manageSearch}
           />
-        )}
+        ) : null}
 
-        {section === "family" && <SettingsFamilyPanel embedded />}
+        {section === "family" && showManageDetail ? (
+          <>
+            <ManageBack />
+            <SettingsFamilyPanel />
+          </>
+        ) : null}
 
-        {section === "help" && <SettingsSupportPanel embedded />}
+        {section === "help" && !showManageDetail ? (
+          <>
+            <SettingsFieldRow
+              label={t("settings.hubs.help.title", { defaultValue: "Yordam markazi" })}
+              value={t("settings.hubs.help.meta", { defaultValue: "Biz bilan bog'laning" })}
+              hint={t("settings.hubs.help.desc")}
+              actionLabel={t("settings.actions.contact", { defaultValue: "Bog'lanish" })}
+              actionTo="/settings"
+              actionSearch={manageSearch}
+            />
+            <SettingsFieldRow
+              label={t("settings.fields.faq", { defaultValue: "Ko'p so'raladigan savollar" })}
+              actionLabel={t("settings.actions.view", { defaultValue: "Ko'rish" })}
+              actionTo="/settings"
+              actionSearch={manageSearch}
+            />
+          </>
+        ) : null}
+
+        {section === "help" && showManageDetail ? (
+          <>
+            <ManageBack />
+            <SettingsSupportPanel />
+          </>
+        ) : null}
       </div>
 
       {section === "preferences" ? (
@@ -681,7 +820,7 @@ export function SettingsPanelContent({
           ) : null}
           <Link
             to="/settings"
-            search={{ section: "help" }}
+            search={{ section: "help", manage: true }}
             className="inline-flex w-fit rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background"
             onClick={() => setPhoneDialogOpen(false)}
           >
