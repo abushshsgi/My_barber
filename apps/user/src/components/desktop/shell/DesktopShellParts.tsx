@@ -35,6 +35,7 @@ function Main({ children, fullBleed, className }: ShellProps & { className?: str
     <main
       className={cn(
         "flex-1",
+        fullBleed && "flex min-h-0 flex-col",
         !fullBleed && "w-full px-6 pb-12 pt-6 xl:px-10 2xl:px-12",
         className,
       )}

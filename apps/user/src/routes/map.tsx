@@ -168,7 +168,11 @@ function MapView() {
     return () => delays.forEach((id) => window.clearTimeout(id));
   }, [desktopMapExpanded]);
 
+  // Faqat mobil: to‘liq ekran xarita. Desktop scroll panel ichida qoladi.
   useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    if (mq.matches) return;
+
     const prevHtml = document.documentElement.style.overflow;
     const prevBody = document.body.style.overflow;
     document.documentElement.style.overflow = "hidden";
@@ -232,7 +236,7 @@ function MapView() {
       </div>
 
       {/* Desktop */}
-      <div className="relative hidden h-full w-full min-h-0 lg:flex">
+      <div className="relative hidden h-full min-h-0 w-full overflow-hidden lg:flex">
         {!desktopMapExpanded ? (
           <MapDesktopPanel
             salons={filtered}
