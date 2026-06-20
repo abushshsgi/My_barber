@@ -8,12 +8,33 @@ function toNum(v: string | number | null | undefined, fallback = 0): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function defaultCategory(_salon: ApiSalonList): Category {
+function mockKindFromSlug(slug: string): Category | null {
+  const match = /^mock-tashkent-(\d{3})$/.exec(slug);
+  if (!match) return null;
+  const kinds: Category[] = ["barber", "barber", "barber", "beauty", "nails", "spa"];
+  const idx = parseInt(match[1], 10) - 1;
+  return kinds[idx % kinds.length] ?? "barber";
+}
+
+function audienceForCategory(category: Category): Audience {
+  if (category === "barber") return "men";
+  if (category === "beauty" || category === "nails" || category === "spa") return "women";
+  return "unisex";
+}
+
+function resolveCategory(api: ApiSalonList): Category {
+  const fromSlug = mockKindFromSlug(api.slug || "");
+  if (fromSlug) return fromSlug;
+  const name = api.name.toLowerCase();
+  if (/nail|gel pro|manicure|polish/i.test(name)) return "nails";
+  if (/spa|wellness|harmony|zen|oasis|serenity|retreat|calm|hammom|massaj/i.test(name)) return "spa";
+  if (/glow|beauty|silk|luxe|chic|rose|elite|viva|pearl|femme|studio/i.test(name)) return "beauty";
   return "barber";
 }
 
-function defaultAudience(_salon: ApiSalonList): Audience {
-  return "unisex";
+function resolveCategoryAndAudience(api: ApiSalonList): { category: Category; audience: Audience } {
+  const category = resolveCategory(api);
+  return { category, audience: audienceForCategory(category) };
 }
 
 function priceRange(services: { price: number }[] | undefined): { from: number; to: number } {
@@ -24,11 +45,12 @@ function priceRange(services: { price: number }[] | undefined): { from: number; 
 
 export function mapSalonList(api: ApiSalonList, distanceKm = 0): Salon {
   const coverSeed = api.slug || String(api.id);
+  const { category, audience } = resolveCategoryAndAudience(api);
   return {
     id: String(api.id),
     name: api.name,
-    category: defaultCategory(api),
-    audience: defaultAudience(api),
+    category,
+    audience,
     rating: api.rating_avg ?? 0,
     reviewCount: api.review_count ?? 0,
     address: api.address || "",
