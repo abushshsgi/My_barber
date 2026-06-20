@@ -263,7 +263,12 @@ export async function apiJson<T>(path: string, options: RequestInit = {}): Promi
     throw new Error(message);
   }
 
-  if (body == null || typeof body !== "object") {
+  // DELETE va boshqa 204/empty body — muvaffaqiyatli, JSON talab qilinmaydi.
+  if (res.status === 204 || body == null) {
+    return undefined as T;
+  }
+
+  if (typeof body !== "object") {
     throw new Error("Server noto'g'ri javob qaytardi. Sahifani yangilab qayta urinib ko'ring.");
   }
 
