@@ -1,6 +1,8 @@
 export type ApiUser = {
   id: number;
   email: string;
+  display_email: string | null;
+  email_verified: boolean;
   phone: string | null;
   first_name: string;
   last_name: string;
@@ -28,6 +30,7 @@ export type PhoneVerifyResponse = {
   refresh: string;
   user: ApiUser;
   is_new_user: boolean;
+  session_id?: number;
 };
 
 export type PhoneAuthIntent = "login" | "register";

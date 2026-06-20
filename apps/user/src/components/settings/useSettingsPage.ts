@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useAudience, getPrefsStorageKey, type AudienceFilter } from "@/hooks/use-audience";
 import { useUserAddresses } from "@/hooks/use-addresses";
+import { useFamilyMembers } from "@/hooks/use-family";
+import { useUserSessions } from "@/hooks/use-sessions";
 import { changePassword, setPassword } from "@/lib/api";
 import { setSession } from "@/lib/auth";
 import { meQueryKeyFor, useDisplayUser, useMe, useUpdateMe } from "@/hooks/use-me";
@@ -46,6 +48,8 @@ export function useSettingsPage() {
   const updateMe = useUpdateMe();
   const { handleLogout } = useProfileScreen();
   const { data: addresses = [] } = useUserAddresses();
+  const { data: familyMembers = [] } = useFamilyMembers();
+  const { data: sessions = [] } = useUserSessions();
   const defaultAddress = addresses.find((a) => a.is_default) ?? addresses[0];
   const defaultAddressLabel = defaultAddress?.address_line?.trim() || undefined;
   const defaultAddressId = defaultAddress?.id;
@@ -147,6 +151,8 @@ export function useSettingsPage() {
     defaultAddressId,
     langLabel,
     securityMeta,
+    familyCount: familyMembers.length,
+    sessionsCount: sessions.length,
   };
 }
 

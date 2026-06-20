@@ -30,6 +30,7 @@ class User(AbstractUser):
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     onboarding_completed = models.BooleanField(default=False, db_index=True)
+    email_verified_at = models.DateTimeField(null=True, blank=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
@@ -89,6 +90,57 @@ class LaunchInterest(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user_id} @ {self.region}"
+
+
+class FamilyMember(models.Model):
+    """Oilaviy profil — tez bron qilish uchun yaqinlar."""
+
+    class Relation(models.TextChoices):
+        SPOUSE = "spouse", "Turmush o'rtog'i"
+        CHILD = "child", "Farzand"
+        PARENT = "parent", "Ota-ona"
+        SIBLING = "sibling", "Aka/uka"
+        OTHER = "other", "Boshqa"
+
+    class Audience(models.TextChoices):
+        MEN = "men", "Erkaklar"
+        WOMEN = "women", "Ayollar"
+        UNISEX = "unisex", "Hammasi"
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="family_members")
+    name = models.CharField(max_length=128)
+    relation = models.CharField(max_length=16, choices=Relation.choices, default=Relation.OTHER)
+    audience = models.CharField(max_length=16, choices=Audience.choices, default=Audience.UNISEX)
+    phone = models.CharField(max_length=32, blank=True, default="")
+    sort_order = models.PositiveSmallIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["sort_order", "name", "id"]
+
+    def __str__(self) -> str:
+        return f"{self.user_id}: {self.name}"
+
+
+class UserSession(models.Model):
+    """Mijoz kirish sessiyasi — qurilma va refresh token jti."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sessions")
+    refresh_jti = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    device_name = models.CharField(max_length=128, blank=True, default="")
+    platform = models.CharField(max_length=32, blank=True, default="")
+    user_agent = models.CharField(max_length=512, blank=True, default="")
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    last_seen_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    revoked_at = models.DateTimeField(null=True, blank=True, db_index=True)
+
+    class Meta:
+        ordering = ["-last_seen_at", "-id"]
+
+    def __str__(self) -> str:
+        return f"{self.user_id}: {self.device_name or self.platform}"
 
 
 class AdminAccount(models.Model):

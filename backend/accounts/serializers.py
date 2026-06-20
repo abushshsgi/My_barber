@@ -11,6 +11,7 @@ from salons.join_service import attach_worker_membership
 from salons.models import Salon
 
 from .models import User
+from .email_utils import is_internal_email
 from .phone_utils import normalize_phone_field
 from .uz_regions import UzRegion
 from geo.region_resolver import REGION_MISMATCH_MSG, region_matches_gps
@@ -20,12 +21,16 @@ class UserSerializer(serializers.ModelSerializer):
     role = serializers.SerializerMethodField()
     has_password = serializers.SerializerMethodField()
     age = serializers.SerializerMethodField()
+    display_email = serializers.SerializerMethodField()
+    email_verified = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = (
             "id",
             "email",
+            "display_email",
+            "email_verified",
             "phone",
             "first_name",
             "last_name",
@@ -41,7 +46,26 @@ class UserSerializer(serializers.ModelSerializer):
             "has_password",
             "date_joined",
         )
-        read_only_fields = ("id", "role", "has_password", "date_joined", "age", "full_name")
+        read_only_fields = (
+            "id",
+            "role",
+            "has_password",
+            "date_joined",
+            "age",
+            "full_name",
+            "display_email",
+            "email_verified",
+        )
+
+    def get_display_email(self, obj: User) -> str | None:
+        if is_internal_email(obj.email):
+            return None
+        return obj.email
+
+    def get_email_verified(self, obj: User) -> bool:
+        if is_internal_email(obj.email):
+            return False
+        return obj.email_verified_at is not None
 
     def get_has_password(self, obj: User) -> bool:
         return obj.has_usable_password()

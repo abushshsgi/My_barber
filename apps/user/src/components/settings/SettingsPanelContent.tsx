@@ -1,3 +1,4 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import {
@@ -18,6 +19,11 @@ import { setLang } from "@/i18n/config";
 import type { SettingsEditField } from "@/lib/settings-nav";
 import type { SettingsSection } from "@/lib/settings-nav";
 import { SETTINGS_SECTION_TITLE_KEYS } from "@/lib/settings-nav";
+import { setSession } from "@/lib/auth";
+import { sendEmailVerificationCode, verifyEmailCode } from "@/lib/api/email";
+import { meQueryKeyFor } from "@/hooks/use-me";
+import { getAuthUserId } from "@/lib/auth-user";
+import { getUserAccessToken, getUserRefreshToken } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
 function Toggle({
@@ -78,7 +84,15 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
     defaultAddressId,
     langLabel,
     securityMeta,
+    familyCount,
+    sessionsCount,
   } = state;
+
+  const queryClient = useQueryClient();
+  const [editEmail, setEditEmail] = useState(initialEdit === "email");
+  const [emailStep, setEmailStep] = useState<"input" | "code">("input");
+  const [emailDraft, setEmailDraft] = useState("");
+  const [emailCode, setEmailCode] = useState("");
 
   const titleMeta = SETTINGS_SECTION_TITLE_KEYS[section];
   const [editName, setEditName] = useState(initialEdit === "name");
@@ -107,6 +121,44 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
 
   const cancelLabel = t("common.cancel", { defaultValue: "Bekor" });
   const saveLabel = t("common.save", { defaultValue: "Saqlash" });
+
+  const sendEmailCode = useMutation({
+    mutationFn: () => sendEmailVerificationCode(emailDraft.trim()),
+    onSuccess: (res) => {
+      setEmailStep("code");
+      toast.success(res.detail);
+      if (res.debug_code) {
+        toast.message(t("emailVerify.debugCode", { defaultValue: "Dev kod" }), {
+          description: res.debug_code,
+        });
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const verifyEmail = useMutation({
+    mutationFn: () => verifyEmailCode(emailCode.trim()),
+    onSuccess: (res) => {
+      toast.success(t("emailVerify.success", { defaultValue: "Email tasdiqlandi" }));
+      const access = getUserAccessToken();
+      const refresh = getUserRefreshToken();
+      if (access && refresh) setSession(access, refresh, res.user);
+      void queryClient.invalidateQueries({ queryKey: meQueryKeyFor(getAuthUserId()) });
+      setEditEmail(false);
+      setEmailStep("input");
+      setEmailDraft("");
+      setEmailCode("");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const displayEmail = me?.display_email ?? null;
+  const emailVerified = me?.email_verified === true;
+  const emailMeta = displayEmail
+    ? emailVerified
+      ? t("settings.fields.emailVerified", { defaultValue: "Tasdiqlangan" })
+      : t("settings.fields.emailUnverified", { defaultValue: "Tasdiqlanmagan" })
+    : undefined;
 
   const saveName = () => {
     const next = nameDraft.trim();
@@ -189,6 +241,97 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
                   }}
                 />
               </div>
+            </SettingsFieldRow>
+            <SettingsFieldRow
+              label={t("settings.fields.email", { defaultValue: "Email" })}
+              value={
+                displayEmail
+                  ? `${displayEmail}${emailMeta ? ` · ${emailMeta}` : ""}`
+                  : undefined
+              }
+              emptyLabel={t("settings.fields.emailNotSet", { defaultValue: "Qo'shilmagan" })}
+              hint={
+                displayEmail
+                  ? emailVerified
+                    ? t("settings.fields.emailVerifiedHint", { defaultValue: "Email tasdiqlangan." })
+                    : t("settings.fields.emailUnverifiedHint", {
+                        defaultValue: "Email tasdiqlanmagan — kod yoki havola orqali tasdiqlang.",
+                      })
+                  : t("settings.fields.emailHint", {
+                      defaultValue: "Email qo'shing — tasdiqlash kodi va havola yuboriladi.",
+                    })
+              }
+              actionLabel={
+                displayEmail
+                  ? t("settings.actions.edit", { defaultValue: "Tahrirlash" })
+                  : t("settings.actions.add", { defaultValue: "Qo'shish" })
+              }
+              cancelLabel={cancelLabel}
+              expanded={editEmail}
+              onAction={() => {
+                if (editEmail) {
+                  setEditEmail(false);
+                  setEmailStep("input");
+                  setEmailDraft(displayEmail || "");
+                  setEmailCode("");
+                } else {
+                  setEmailDraft(displayEmail || "");
+                  setEmailStep("input");
+                  setEditEmail(true);
+                }
+              }}
+            >
+              {emailStep === "input" ? (
+                <div className="space-y-3">
+                  <input
+                    type="email"
+                    value={emailDraft}
+                    onChange={(e) => setEmailDraft(e.target.value)}
+                    autoFocus
+                    placeholder="name@example.com"
+                    className="w-full rounded-lg border border-border px-3 py-2.5 text-sm font-medium outline-none focus:border-foreground"
+                  />
+                  <SettingsEditActions
+                    saveLabel={t("emailVerify.sendCode", { defaultValue: "Kod yuborish" })}
+                    cancelLabel={cancelLabel}
+                    saving={sendEmailCode.isPending}
+                    saveDisabled={!emailDraft.includes("@")}
+                    onSave={() => sendEmailCode.mutate()}
+                    onCancel={() => {
+                      setEditEmail(false);
+                      setEmailStep("input");
+                      setEmailDraft("");
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-xs text-muted-foreground">
+                    {t("emailVerify.codeSent", {
+                      defaultValue: "{{email}} manziliga kod yuborildi.",
+                      email: emailDraft,
+                    })}
+                  </p>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={emailCode}
+                    onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    autoFocus
+                    placeholder="000000"
+                    className="w-full rounded-lg border border-border px-3 py-2.5 text-sm font-medium tracking-[0.3em] outline-none focus:border-foreground"
+                  />
+                  <SettingsEditActions
+                    saveLabel={t("emailVerify.confirm", { defaultValue: "Tasdiqlash" })}
+                    cancelLabel={t("emailVerify.changeEmail", { defaultValue: "Emailni o'zgartirish" })}
+                    saving={verifyEmail.isPending}
+                    saveDisabled={emailCode.length !== 6}
+                    onSave={() => verifyEmail.mutate()}
+                    onCancel={() => setEmailStep("input")}
+                  />
+                </div>
+              )}
             </SettingsFieldRow>
             <SettingsFieldRow
               label={t("settings.fields.phone", { defaultValue: "Telefon" })}
@@ -278,6 +421,18 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
               hint={t("settings.fields.loginMethodHint", {
                 defaultValue: "Hisobingiz telefon raqami orqali tasdiqlangan.",
               })}
+            />
+            <SettingsFieldRow
+              label={t("settings.fields.sessions", { defaultValue: "Faol sessiyalar" })}
+              value={t("settings.fields.sessionsMeta", {
+                count: sessionsCount,
+                defaultValue: "{{count}} ta qurilma",
+              })}
+              hint={t("settings.fields.sessionsHint", {
+                defaultValue: "Hisobingiz ochiq bo'lgan qurilmalarni ko'ring va bekor qiling.",
+              })}
+              actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
+              actionTo={`/sessions?backTo=${encodeURIComponent("/settings?section=security")}`}
             />
           </>
         )}
@@ -401,7 +556,14 @@ export function SettingsPanelContent({ section, state, initialEdit, showBack }: 
         {section === "family" && (
           <SettingsFieldRow
             label={t("settings.hubs.family.title", { defaultValue: "Oilaviy profil" })}
-            value={t("settings.hubs.family.meta", { defaultValue: "Oila a'zolarini boshqaring" })}
+            value={
+              familyCount > 0
+                ? t("settings.hubs.family.metaCount", {
+                    count: familyCount,
+                    defaultValue: "{{count}} ta a'zo",
+                  })
+                : t("settings.hubs.family.meta", { defaultValue: "Oila a'zolarini boshqaring" })
+            }
             hint={t("settings.hubs.family.desc")}
             actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
             actionTo={`/family?backTo=${encodeURIComponent("/settings?section=family")}`}

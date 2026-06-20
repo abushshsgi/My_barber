@@ -5,8 +5,6 @@ from django.http import JsonResponse
 from django.urls import include, path, re_path
 from django.views.static import serve
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import TokenRefreshView
-
 from control_panel.views import (
     AdminBarberDetailView,
     AdminBarberListView,
@@ -44,6 +42,18 @@ from accounts.address_views import (
     UserAddressDetailView,
     UserAddressListCreateView,
     UserAddressSetDefaultView,
+)
+from accounts.email_views import (
+    UserEmailSendCodeView,
+    UserEmailVerifyLinkView,
+    UserEmailVerifyView,
+)
+from accounts.family_views import FamilyMemberDetailView, FamilyMemberListCreateView
+from accounts.session_views import (
+    UserSessionListView,
+    UserSessionRevokeOthersView,
+    UserSessionRevokeView,
+    UserTokenRefreshView,
 )
 from accounts.launch_interest_views import LaunchInterestCreateView
 from accounts.views import (
@@ -210,10 +220,18 @@ api_routes = [
     path("auth/barber-register/", BarberRegisterView.as_view()),
     path("auth/barber-register-join-salon/", BarberRegisterJoinSalonView.as_view()),
     path("auth/barber-check-availability/", BarberCheckAvailabilityView.as_view()),
-    path("auth/token/refresh/", TokenRefreshView.as_view()),
+    path("auth/token/refresh/", UserTokenRefreshView.as_view()),
     path("admin/auth/token/", AdminTokenView.as_view()),
     path("admin/auth/token/refresh/", AdminTokenRefreshView.as_view()),
     path("admin/auth/me/", AdminMeView.as_view()),
+    path("auth/email/verify-link/", UserEmailVerifyLinkView.as_view()),
+    path("users/me/email/send-code/", UserEmailSendCodeView.as_view()),
+    path("users/me/email/verify/", UserEmailVerifyView.as_view()),
+    path("users/me/sessions/", UserSessionListView.as_view()),
+    path("users/me/sessions/revoke-others/", UserSessionRevokeOthersView.as_view()),
+    path("users/me/sessions/<int:pk>/", UserSessionRevokeView.as_view()),
+    path("users/family/", FamilyMemberListCreateView.as_view()),
+    path("users/family/<int:pk>/", FamilyMemberDetailView.as_view()),
     path("users/me/", MeView.as_view()),
     path("users/addresses/", UserAddressListCreateView.as_view()),
     path("users/addresses/<int:pk>/", UserAddressDetailView.as_view()),

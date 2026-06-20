@@ -59,9 +59,15 @@ def _expose_debug_code() -> bool:
     )
 
 
-def _issue_tokens(user: User) -> tuple[str, str]:
+def _issue_tokens(user: User, request=None) -> tuple[str, str, int | None]:
+    from accounts.session_service import record_user_session
+
     refresh = RefreshToken.for_user(user)
-    return str(refresh.access_token), str(refresh)
+    session_id = None
+    if request is not None:
+        session = record_user_session(user, refresh, request)
+        session_id = session.pk
+    return str(refresh.access_token), str(refresh), session_id
 
 
 def _parse_phone_auth_intent(raw: object) -> str:
@@ -167,14 +173,17 @@ class PhoneSendCodeView(APIView):
         return Response(body)
 
 
-def _auth_success_body(user: User, is_new: bool = False) -> dict:
-    access, refresh = _issue_tokens(user)
-    return {
+def _auth_success_body(user: User, is_new: bool = False, request=None) -> dict:
+    access, refresh, session_id = _issue_tokens(user, request)
+    body: dict = {
         "access": access,
         "refresh": refresh,
         "user": UserSerializer(user).data,
         "is_new_user": is_new,
     }
+    if session_id is not None:
+        body["session_id"] = session_id
+    return body
 
 
 class PhoneCheckView(APIView):
@@ -237,7 +246,7 @@ class PhonePasswordLoginView(APIView):
         from wallet.services.wallet_service import WalletService
 
         WalletService.ensure_wallet(user)
-        return Response(_auth_success_body(user, is_new=False))
+        return Response(_auth_success_body(user, is_new=False, request=request))
 
 
 class PhoneSetPasswordView(APIView):
@@ -328,4 +337,4 @@ class PhoneVerifyView(APIView):
         from wallet.services.wallet_service import WalletService
 
         WalletService.ensure_wallet(user)
-        return Response(_auth_success_body(user, is_new=is_new))
+        return Response(_auth_success_body(user, is_new=is_new, request=request))

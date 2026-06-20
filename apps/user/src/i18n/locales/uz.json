@@ -431,7 +431,50 @@
     "title": "Oilaviy profil",
     "subtitle": "Oila a'zolari uchun alohida bron",
     "bookFor": "{{name}} uchun bron",
-    "addMember": "A'zo qo'shish"
+    "addMember": "A'zo qo'shish",
+    "empty": "Oilaviy a'zolar yo'q",
+    "emptyHint": "Oila a'zolarini qo'shing — ular uchun tezroq bron qiling.",
+    "deleted": "O'chirildi",
+    "form": {
+      "name": "Ism",
+      "phoneOptional": "Telefon (ixtiyoriy)"
+    },
+    "relations": {
+      "spouse": "Turmush o'rtog'i",
+      "child": "Farzand",
+      "parent": "Ota-ona",
+      "sibling": "Aka/uka",
+      "other": "Boshqa"
+    },
+    "audiences": {
+      "men": "Erkaklar",
+      "women": "Ayollar",
+      "unisex": "Hammasi"
+    }
+  },
+  "sessions": {
+    "title": "Faol sessiyalar",
+    "subtitle": "Hisobingiz qaysi qurilmalardan ochilganini ko'ring va boshqaring.",
+    "current": "Joriy",
+    "lastSeen": "Oxirgi faollik",
+    "revoke": "Bekor qilish",
+    "revoked": "Sessiya bekor qilindi",
+    "revokeOthers": "Boshqa barcha sessiyalarni bekor qilish",
+    "revokedOthers": "{{count}} ta boshqa sessiya bekor qilindi",
+    "empty": "Faol sessiyalar yo'q",
+    "emptyHint": "Keyingi kirishdan so'ng qurilmalar shu yerda ko'rinadi."
+  },
+  "emailVerify": {
+    "sendCode": "Kod yuborish",
+    "confirm": "Tasdiqlash",
+    "changeEmail": "Emailni o'zgartirish",
+    "codeSent": "{{email}} manziliga kod yuborildi.",
+    "success": "Email tasdiqlandi",
+    "failed": "Tasdiqlanmadi",
+    "invalid": "Havola noto'g'ri",
+    "invalidHint": "Email xabaringizdagi havolani qayta oching.",
+    "checking": "Tasdiqlanmoqda…",
+    "debugCode": "Dev kod"
   },
   "settings": {
     "title": "Sozlamalar",
@@ -461,6 +504,16 @@
       "legalName": "Rasmiy ism",
       "phone": "Telefon",
       "phoneHint": "Telefon raqamini o'zgartirish uchun yordam markaziga murojaat qiling.",
+      "email": "Email",
+      "emailNotSet": "Qo'shilmagan",
+      "emailHint": "Email qo'shing — tasdiqlash kodi va havola yuboriladi.",
+      "emailVerified": "Tasdiqlangan",
+      "emailUnverified": "Tasdiqlanmagan",
+      "emailVerifiedHint": "Email tasdiqlangan.",
+      "emailUnverifiedHint": "Email tasdiqlanmagan — kod yoki havola orqali tasdiqlang.",
+      "sessions": "Faol sessiyalar",
+      "sessionsMeta": "{{count}} ta qurilma",
+      "sessionsHint": "Hisobingiz ochiq bo'lgan qurilmalarni ko'ring va bekor qiling.",
       "address": "Manzil",
       "password": "Parol",
       "loginMethod": "Kirish usuli",
@@ -512,7 +565,8 @@
       "family": {
         "title": "Oilaviy profil",
         "desc": "Oila a'zolari uchun tez bron qilish.",
-        "meta": "Oila a'zolarini boshqaring"
+        "meta": "Oila a'zolarini boshqaring",
+        "metaCount": "{{count}} ta a'zo"
       },
       "notifications": {
         "title": "Bildirishnoma afzalliklari",

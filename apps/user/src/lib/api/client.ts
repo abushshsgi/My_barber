@@ -24,6 +24,7 @@ export const API_BASE = (ENV_API_BASE.trim() ? ENV_API_BASE : FALLBACK_DEV_BASE)
 
 const TOKEN_KEY_USER = "mybarber_user_access";
 const REFRESH_KEY_USER = "mybarber_user_refresh";
+const SESSION_KEY_USER = "mybarber_user_session_id";
 const TOKEN_KEY_LEGACY = "mybarber_access";
 const REFRESH_KEY_LEGACY = "mybarber_refresh";
 
@@ -94,7 +95,28 @@ export function resetSessionBootstrap() {
   bootstrapInFlight = null;
 }
 
-export function setUserTokens(access: string, refresh: string) {
+export function getUserSessionId(): number | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(SESSION_KEY_USER);
+    if (!raw) return null;
+    const id = Number(raw);
+    return Number.isFinite(id) ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setUserSessionId(sessionId: number | null) {
+  if (typeof window === "undefined") return;
+  if (sessionId == null) {
+    localStorage.removeItem(SESSION_KEY_USER);
+    return;
+  }
+  localStorage.setItem(SESSION_KEY_USER, String(sessionId));
+}
+
+export function setUserTokens(access: string, refresh: string, sessionId?: number | null) {
   const accessKind = jwtPayloadType(access);
   const refreshKind = jwtPayloadType(refresh);
   if ((accessKind && accessKind !== "user") || (refreshKind && refreshKind !== "user")) {
@@ -104,6 +126,9 @@ export function setUserTokens(access: string, refresh: string) {
   localStorage.setItem(REFRESH_KEY_USER, refresh);
   localStorage.setItem(TOKEN_KEY_LEGACY, access);
   localStorage.setItem(REFRESH_KEY_LEGACY, refresh);
+  if (sessionId !== undefined) {
+    setUserSessionId(sessionId);
+  }
   resetSessionBootstrap();
 }
 
@@ -112,6 +137,7 @@ export function clearUserTokens() {
   localStorage.removeItem(REFRESH_KEY_USER);
   localStorage.removeItem(TOKEN_KEY_LEGACY);
   localStorage.removeItem(REFRESH_KEY_LEGACY);
+  localStorage.removeItem(SESSION_KEY_USER);
   try {
     localStorage.removeItem(USER_KEY);
   } catch {
@@ -231,6 +257,10 @@ export async function apiFetch(
 
   if (token && !shouldOmitBearerForPath(path)) {
     headers.set("Authorization", `Bearer ${token}`);
+    const sessionId = getUserSessionId();
+    if (sessionId != null) {
+      headers.set("X-Session-Id", String(sessionId));
+    }
   }
   if (!headers.has("Content-Type") && options.body && !(options.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");

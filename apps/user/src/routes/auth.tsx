@@ -84,7 +84,7 @@ function Auth() {
   };
 
   const finishLogin = (data: PhoneVerifyResponse) => {
-    setSession(data.access, data.refresh, data.user);
+    setSession(data.access, data.refresh, data.user, data.session_id);
     clearQueryClientCache();
     toast.success(data.is_new_user ? t("auth.welcomeNew") : t("auth.welcomeBack"));
     void router
@@ -157,7 +157,7 @@ function Auth() {
         toast.error(t("auth.errBadResponse"));
         return;
       }
-      setSession(data.access, data.refresh, data.user);
+      setSession(data.access, data.refresh, data.user, data.session_id);
       if (data.user.has_password === false) {
         setPendingAuth(data);
         setStep("set-password");

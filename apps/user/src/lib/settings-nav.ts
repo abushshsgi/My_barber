@@ -23,7 +23,7 @@ export const SETTINGS_SECTIONS = [
 
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 
-export const SETTINGS_EDIT_FIELDS = ["name", "password", "language", "audience"] as const;
+export const SETTINGS_EDIT_FIELDS = ["name", "email", "password", "language", "audience"] as const;
 export type SettingsEditField = (typeof SETTINGS_EDIT_FIELDS)[number];
 
 export function parseSettingsSection(value: unknown): SettingsSection {

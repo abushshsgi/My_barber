@@ -10,11 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WalletRouteImport } from './routes/wallet'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as TodayRouteImport } from './routes/today'
 import { Route as SupportRouteImport } from './routes/support'
 import { Route as SubscriptionsRouteImport } from './routes/subscriptions'
 import { Route as StoriesRouteImport } from './routes/stories'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SessionsRouteImport } from './routes/sessions'
 import { Route as ReviewsRouteImport } from './routes/reviews'
 import { Route as ReelsRouteImport } from './routes/reels'
 import { Route as ProfileRouteImport } from './routes/profile'
@@ -57,6 +59,11 @@ const WalletRoute = WalletRouteImport.update({
   path: '/wallet',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TodayRoute = TodayRouteImport.update({
   id: '/today',
   path: '/today',
@@ -80,6 +87,11 @@ const StoriesRoute = StoriesRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SessionsRoute = SessionsRouteImport.update({
+  id: '/sessions',
+  path: '/sessions',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReviewsRoute = ReviewsRouteImport.update({
@@ -286,11 +298,13 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
   '/reviews': typeof ReviewsRoute
+  '/sessions': typeof SessionsRoute
   '/settings': typeof SettingsRoute
   '/stories': typeof StoriesRouteWithChildren
   '/subscriptions': typeof SubscriptionsRoute
   '/support': typeof SupportRoute
   '/today': typeof TodayRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/wallet': typeof WalletRoute
   '/account/activity': typeof AccountActivityRoute
   '/account/household': typeof AccountHouseholdRoute
@@ -330,11 +344,13 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
   '/reviews': typeof ReviewsRoute
+  '/sessions': typeof SessionsRoute
   '/settings': typeof SettingsRoute
   '/stories': typeof StoriesRouteWithChildren
   '/subscriptions': typeof SubscriptionsRoute
   '/support': typeof SupportRoute
   '/today': typeof TodayRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/wallet': typeof WalletRoute
   '/account/activity': typeof AccountActivityRoute
   '/account/household': typeof AccountHouseholdRoute
@@ -375,11 +391,13 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
   '/reviews': typeof ReviewsRoute
+  '/sessions': typeof SessionsRoute
   '/settings': typeof SettingsRoute
   '/stories': typeof StoriesRouteWithChildren
   '/subscriptions': typeof SubscriptionsRoute
   '/support': typeof SupportRoute
   '/today': typeof TodayRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/wallet': typeof WalletRoute
   '/account/activity': typeof AccountActivityRoute
   '/account/household': typeof AccountHouseholdRoute
@@ -421,11 +439,13 @@ export interface FileRouteTypes {
     | '/profile'
     | '/reels'
     | '/reviews'
+    | '/sessions'
     | '/settings'
     | '/stories'
     | '/subscriptions'
     | '/support'
     | '/today'
+    | '/verify-email'
     | '/wallet'
     | '/account/activity'
     | '/account/household'
@@ -465,11 +485,13 @@ export interface FileRouteTypes {
     | '/profile'
     | '/reels'
     | '/reviews'
+    | '/sessions'
     | '/settings'
     | '/stories'
     | '/subscriptions'
     | '/support'
     | '/today'
+    | '/verify-email'
     | '/wallet'
     | '/account/activity'
     | '/account/household'
@@ -509,11 +531,13 @@ export interface FileRouteTypes {
     | '/profile'
     | '/reels'
     | '/reviews'
+    | '/sessions'
     | '/settings'
     | '/stories'
     | '/subscriptions'
     | '/support'
     | '/today'
+    | '/verify-email'
     | '/wallet'
     | '/account/activity'
     | '/account/household'
@@ -554,11 +578,13 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   ReelsRoute: typeof ReelsRoute
   ReviewsRoute: typeof ReviewsRoute
+  SessionsRoute: typeof SessionsRoute
   SettingsRoute: typeof SettingsRoute
   StoriesRoute: typeof StoriesRouteWithChildren
   SubscriptionsRoute: typeof SubscriptionsRoute
   SupportRoute: typeof SupportRoute
   TodayRoute: typeof TodayRoute
+  VerifyEmailRoute: typeof VerifyEmailRoute
   WalletRoute: typeof WalletRoute
   AccountActivityRoute: typeof AccountActivityRoute
   AccountHouseholdRoute: typeof AccountHouseholdRoute
@@ -580,6 +606,13 @@ declare module '@tanstack/react-router' {
       path: '/wallet'
       fullPath: '/wallet'
       preLoaderRoute: typeof WalletRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/today': {
@@ -615,6 +648,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sessions': {
+      id: '/sessions'
+      path: '/sessions'
+      fullPath: '/sessions'
+      preLoaderRoute: typeof SessionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reviews': {
@@ -926,11 +966,13 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   ReelsRoute: ReelsRoute,
   ReviewsRoute: ReviewsRoute,
+  SessionsRoute: SessionsRoute,
   SettingsRoute: SettingsRoute,
   StoriesRoute: StoriesRouteWithChildren,
   SubscriptionsRoute: SubscriptionsRoute,
   SupportRoute: SupportRoute,
   TodayRoute: TodayRoute,
+  VerifyEmailRoute: VerifyEmailRoute,
   WalletRoute: WalletRoute,
   AccountActivityRoute: AccountActivityRoute,
   AccountHouseholdRoute: AccountHouseholdRoute,

@@ -414,7 +414,43 @@
     "title": "Family profile",
     "subtitle": "Book separately for family members",
     "bookFor": "Book for {{name}}",
-    "addMember": "Add member"
+    "addMember": "Add member",
+    "empty": "No family members yet",
+    "emptyHint": "Add family members to book faster for them.",
+    "deleted": "Removed",
+    "form": { "name": "Name", "phoneOptional": "Phone (optional)" },
+    "relations": {
+      "spouse": "Spouse",
+      "child": "Child",
+      "parent": "Parent",
+      "sibling": "Sibling",
+      "other": "Other"
+    },
+    "audiences": { "men": "Men", "women": "Women", "unisex": "Everyone" }
+  },
+  "sessions": {
+    "title": "Active sessions",
+    "subtitle": "See and manage devices where your account is signed in.",
+    "current": "Current",
+    "lastSeen": "Last active",
+    "revoke": "Sign out",
+    "revoked": "Session signed out",
+    "revokeOthers": "Sign out all other sessions",
+    "revokedOthers": "{{count}} other sessions signed out",
+    "empty": "No active sessions",
+    "emptyHint": "Devices will appear here after your next sign-in."
+  },
+  "emailVerify": {
+    "sendCode": "Send code",
+    "confirm": "Verify",
+    "changeEmail": "Change email",
+    "codeSent": "A code was sent to {{email}}.",
+    "success": "Email verified",
+    "failed": "Verification failed",
+    "invalid": "Invalid link",
+    "invalidHint": "Open the link from your email again.",
+    "checking": "Verifying…",
+    "debugCode": "Dev code"
   },
   "settings": {
     "title": "Settings",
@@ -444,6 +480,16 @@
       "legalName": "Legal name",
       "phone": "Phone",
       "phoneHint": "Contact support to change your phone number.",
+      "email": "Email",
+      "emailNotSet": "Not added",
+      "emailHint": "Add an email — we'll send a verification code and link.",
+      "emailVerified": "Verified",
+      "emailUnverified": "Unverified",
+      "emailVerifiedHint": "Your email is verified.",
+      "emailUnverifiedHint": "Email not verified — confirm with code or link.",
+      "sessions": "Active sessions",
+      "sessionsMeta": "{{count}} devices",
+      "sessionsHint": "View and sign out devices where your account is open.",
       "address": "Address",
       "password": "Password",
       "loginMethod": "Sign-in method",
@@ -485,7 +531,7 @@
         "metaDefault": "Sign-in method"
       },
       "addresses": { "title": "Addresses", "desc": "Home, work, and other saved locations.", "meta": "{{count}} addresses" },
-      "family": { "title": "Family profile", "desc": "Book quickly for family members.", "meta": "Manage family members" },
+      "family": { "title": "Family profile", "desc": "Book quickly for family members.", "meta": "Manage family members", "metaCount": "{{count}} members" },
       "notifications": {
         "title": "Notification preferences",
         "desc": "Reminders and chat alerts.",

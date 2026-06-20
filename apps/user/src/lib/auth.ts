@@ -51,8 +51,13 @@ export function getToken(): string | null {
   return getUserAccessToken();
 }
 
-export function setSession(access: string, refresh: string, user: ApiUser) {
-  setUserTokens(access, refresh);
+export function setSession(
+  access: string,
+  refresh: string,
+  user: ApiUser,
+  sessionId?: number,
+) {
+  setUserTokens(access, refresh, sessionId ?? null);
   localStorage.setItem(USER_KEY, JSON.stringify(userFromApi(user)));
   if (user.phone) rememberPhone(user.phone);
 
