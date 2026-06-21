@@ -12,10 +12,12 @@ export function SalonMobilePage({
   salon,
   fav,
   onToggleFav,
+  reviewsAreMock = false,
 }: {
   salon: Salon;
   fav: boolean;
   onToggleFav: () => void;
+  reviewsAreMock?: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -33,7 +35,7 @@ export function SalonMobilePage({
       </div>
 
       <div className="mt-6 px-4">
-        <SalonPageSections salon={salon} calendarMonths={1} showCalendar />
+        <SalonPageSections salon={salon} calendarMonths={1} showCalendar reviewsAreMock={reviewsAreMock} />
       </div>
 
       <div

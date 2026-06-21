@@ -11,3 +11,4 @@ export {
   toMapGlCoords,
 } from "./constants";
 export type { AdminMapPoint, MapCoords, MapMarker } from "./types";
+export { readMapViewport, type MapBounds, type MapViewport } from "./viewport";

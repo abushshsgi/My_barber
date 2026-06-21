@@ -274,6 +274,11 @@ class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticatedBarberAware]
 
+    def get_permissions(self):
+        if self.action in ("list", "retrieve"):
+            return [AllowAny()]
+        return super().get_permissions()
+
     def get_queryset(self):
         if self.request.query_params.get("mine") == "1":
             if not self.request.user.is_authenticated:

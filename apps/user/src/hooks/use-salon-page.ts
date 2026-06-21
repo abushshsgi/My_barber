@@ -4,6 +4,7 @@ import { fetchSalonReviews } from "@/lib/api/reviews";
 import { mapReview } from "@/lib/mappers/review";
 import { authQueryEnabled } from "@/lib/auth-query";
 import { mapRatingSummary, mapStaffToBarber } from "@/lib/mappers/salon";
+import { mockSalonReviews, mergeRatingSummary } from "@/lib/mock-salon-reviews";
 import { useSalonDetail } from "@/hooks/use-salons";
 import i18n from "@/i18n/config";
 
@@ -24,7 +25,9 @@ export function useSalonPage(id: string) {
   const reviews = useQuery({
     queryKey: ["reviews", "salon", id],
     queryFn: async () => (await fetchSalonReviews(id)).map(mapReview),
-    enabled: authQueryEnabled(Boolean(id)),
+    enabled: Boolean(id),
+    retry: 1,
+    staleTime: 60_000,
   });
 
   const portfolio = useQuery({
@@ -39,21 +42,34 @@ export function useSalonPage(id: string) {
   const ratingSummary = useQuery({
     queryKey: ["salons", id, "rating-summary", lang],
     queryFn: async () => mapRatingSummary(await fetchSalonRatingSummary(id, lang)),
-    enabled: authQueryEnabled(Boolean(id)),
+    enabled: Boolean(id),
+    retry: 1,
+    staleTime: 60_000,
   });
 
-  const salon = detail.data
+  const apiReviews = reviews.data ?? [];
+  const base = detail.data;
+  const usingMockReviews = apiReviews.length === 0 && Boolean(base) && !reviews.isLoading;
+  const resolvedReviews =
+    apiReviews.length > 0 ? apiReviews : base ? mockSalonReviews(base, lang) : [];
+
+  const resolvedSummary = base
+    ? mergeRatingSummary(ratingSummary.data, resolvedReviews, base.rating, lang)
+    : null;
+
+  const salon = base
     ? {
-        ...detail.data,
+        ...base,
         staff: staff.data ?? [],
-        reviews: reviews.data ?? [],
-        portfolio: portfolio.data?.length ? portfolio.data : detail.data.portfolio,
-        ratingSummary: ratingSummary.data ?? null,
+        reviews: resolvedReviews,
+        portfolio: portfolio.data?.length ? portfolio.data : base.portfolio,
+        ratingSummary: resolvedSummary,
       }
     : null;
 
   return {
     salon,
+    reviewsAreMock: usingMockReviews && resolvedReviews.length > 0,
     isLoading: detail.isLoading,
     error: detail.error,
   };

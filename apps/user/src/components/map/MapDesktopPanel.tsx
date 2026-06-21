@@ -7,13 +7,15 @@ import { getSalonCoverUrl } from "@/lib/cover-images";
 import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
 
-const PANEL_WIDTH = 420;
+const PANEL_WIDTH = 520;
 
 type Props = {
   salons: Salon[];
   activeId: string;
   query: string;
   onQueryChange: (query: string) => void;
+  onSalonHover?: (id: string | null) => void;
+  onSalonFocus?: (id: string) => void;
   loading?: boolean;
   emptyMessage?: string;
 };
@@ -23,14 +25,18 @@ function SalonCoverImage({ salon, className }: { salon: Salon; className?: strin
   const src = salon.coverUrl?.trim() || fallback;
 
   return (
-    <div className={cn("flex h-full w-full items-center justify-center bg-[#E8E8E8]", className)}>
+    <div className={cn("relative h-full w-full overflow-hidden bg-[#E8E8E8]", className)}>
       <img
         src={src}
         alt=""
         loading="lazy"
         decoding="async"
         referrerPolicy="no-referrer"
-        className="max-h-full max-w-full object-cover object-center"
+        className="absolute inset-0 h-full w-full object-cover object-center"
+        onError={(e) => {
+          const img = e.currentTarget;
+          if (img.src !== fallback) img.src = fallback;
+        }}
       />
     </div>
   );
@@ -39,9 +45,13 @@ function SalonCoverImage({ salon, className }: { salon: Salon; className?: strin
 function MapDesktopSalonCard({
   salon,
   isActive,
+  onHover,
+  onFocus,
 }: {
   salon: Salon;
   isActive: boolean;
+  onHover?: (id: string | null) => void;
+  onFocus?: (id: string) => void;
 }) {
   const { isFav, toggle } = useFavorites();
   const fav = isFav(salon.id);
@@ -53,6 +63,9 @@ function MapDesktopSalonCard({
         "flex flex-col",
         isActive && "rounded-2xl ring-2 ring-foreground/15",
       )}
+      onMouseEnter={() => onHover?.(salon.id)}
+      onMouseLeave={() => onHover?.(null)}
+      onFocus={() => onFocus?.(salon.id)}
     >
       <div
         className={cn(
@@ -100,6 +113,8 @@ export function MapDesktopPanel({
   activeId,
   query,
   onQueryChange,
+  onSalonHover,
+  onSalonFocus,
   loading,
   emptyMessage,
 }: Props) {
@@ -157,12 +172,14 @@ export function MapDesktopPanel({
         ) : null}
 
         {salons.length > 0 ? (
-          <div className="grid grid-cols-2 gap-2.5 pb-5">
+          <div className="grid grid-cols-2 gap-3 pb-5">
             {salons.map((salon) => (
               <MapDesktopSalonCard
                 key={salon.id}
                 salon={salon}
                 isActive={salon.id === activeId}
+                onHover={onSalonHover}
+                onFocus={onSalonFocus}
               />
             ))}
           </div>

@@ -4,6 +4,7 @@ export type MapMarker = {
   lng: number;
   label: string;
   priceLabel?: string;
+  coverUrl?: string;
 };
 
 export type MapCoords = {

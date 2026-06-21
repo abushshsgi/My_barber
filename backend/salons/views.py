@@ -209,7 +209,7 @@ class SalonViewSet(viewsets.ModelViewSet):
     @action(
         detail=True,
         methods=["get"],
-        permission_classes=[IsAuthenticatedBarberAware],
+        permission_classes=[AllowAny],
         url_path="rating-summary",
     )
     def rating_summary(self, request, pk=None):

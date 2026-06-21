@@ -139,7 +139,12 @@
     },
     "reviews": {
       "guestFavorite": "Выбор гостей",
+      "guestFavoriteDesc": "Этот салон очень любят гости. Оценка основана на рейтингах, отзывах и показателях надёжности.",
       "showAll": "Все оценки",
+      "showAllRatings": "Показать все оценки",
+      "showAllReviews": "Показать все отзывы ({{count}})",
+      "allRatingsTitle": "Детали рейтинга",
+      "ratingTitle": "Оценка гостей",
       "count": "{{count}} отзывов"
     },
     "location": {

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MapDesktopMapControls } from "@/components/map/MapDesktopMapControls";
@@ -6,12 +6,13 @@ import { MapDesktopMapFrame } from "@/components/map/MapDesktopMapFrame";
 import { MapDesktopPanel } from "@/components/map/MapDesktopPanel";
 import { MapErrorBoundary } from "@/components/map/MapErrorBoundary";
 import { MapSalonSheet } from "@/components/map/MapSalonSheet";
-import { SalonMap, type SalonMapHandle, type SalonMapMarker } from "@/components/map/SalonMap";
+import { SalonMap, type SalonMapHandle, type SalonMapMarker, type SalonMapViewport } from "@/components/map/SalonMap";
 import { resolveMapAudienceFilter, useAudience } from "@/hooks/use-audience";
 import { useRecommendContext } from "@/hooks/use-recommend-context";
 import { useSalonsList, useSalonsNearby } from "@/hooks/use-salons";
-import { shortPrice } from "@/lib/mock-data";
+import { shortPrice, type Salon } from "@/lib/mock-data";
 import { hasValidMapCoords, salonMatchesMapAudience } from "@/lib/map-utils";
+import { filterSalonsByViewport, normalizeMapCoords } from "@/lib/map-viewport";
 import { rankSalonsForUser } from "@/lib/recommendations";
 
 export const Route = createFileRoute("/map")({
@@ -27,17 +28,29 @@ export const Route = createFileRoute("/map")({
 type SalonMapProps = {
   markers: SalonMapMarker[];
   activeId: string;
+  hoveredId: string | null;
   onMarkerClick: (id: string) => void;
+  onMarkerHover: (id: string | null) => void;
+  onViewportChange: (viewport: SalonMapViewport) => void;
   showUserLocation: boolean;
   userLocation: { lat: number; lng: number } | null;
   onMapReady?: (handle: SalonMapHandle) => void;
   autoFitMarkers?: boolean;
 };
 
+function withNormalizedCoords(salon: Salon): Salon {
+  const { lat, lng } = normalizeMapCoords(salon.lat, salon.lng);
+  if (lat === salon.lat && lng === salon.lng) return salon;
+  return { ...salon, lat, lng };
+}
+
 function MapCanvas({
   markers,
   activeId,
+  hoveredId,
   onMarkerClick,
+  onMarkerHover,
+  onViewportChange,
   showUserLocation,
   userLocation,
   onMapReady,
@@ -48,7 +61,10 @@ function MapCanvas({
       <SalonMap
         markers={markers}
         activeId={activeId || null}
+        hoveredId={hoveredId}
         onMarkerClick={onMarkerClick}
+        onMarkerHover={onMarkerHover}
+        onViewportChange={onViewportChange}
         showUserLocation={showUserLocation}
         userLocation={userLocation}
         onMapReady={onMapReady}
@@ -60,6 +76,7 @@ function MapCanvas({
 
 function MapView() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { audience, profileDefault } = useAudience();
   const mapAudience = useMemo(() => {
     if (audience !== "all") return audience;
@@ -80,7 +97,7 @@ function MapView() {
 
   const baseSalons = useMemo(() => {
     const base = hasCoords && nearbySalons.length > 0 ? nearbySalons : listSalons;
-    return rankSalonsForUser(base, ctx);
+    return rankSalonsForUser(base, ctx).map(withNormalizedCoords);
   }, [hasCoords, nearbySalons, listSalons, ctx]);
 
   const salonsWithCoords = useMemo(
@@ -90,27 +107,36 @@ function MapView() {
 
   const userLocation = useMemo(() => {
     if (ctx.lat == null || ctx.lng == null) return null;
-    if (!hasValidMapCoords(ctx.lat, ctx.lng)) return null;
-    return { lat: ctx.lat, lng: ctx.lng };
+    const { lat, lng } = normalizeMapCoords(ctx.lat, ctx.lng);
+    if (!hasValidMapCoords(lat, lng)) return null;
+    return { lat, lng };
   }, [ctx.lat, ctx.lng]);
 
   const [active, setActive] = useState("");
+  const [hovered, setHovered] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [desktopMapExpanded, setDesktopMapExpanded] = useState(false);
   const [mapHandle, setMapHandle] = useState<SalonMapHandle | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [viewport, setViewport] = useState<SalonMapViewport | null>(null);
   const mapHandleRef = useRef<SalonMapHandle | null>(null);
 
   const getMapHandle = useCallback(() => mapHandleRef.current, []);
 
-  const onDesktopMapReady = useCallback((handle: SalonMapHandle) => {
+  const onMapReady = useCallback((handle: SalonMapHandle) => {
     mapHandleRef.current = handle;
     setMapHandle(handle);
     setMapReady(true);
+    const vp = handle.getViewport();
+    if (vp) setViewport(vp);
     const resize = () => handle.resize();
     resize();
     [50, 200, 500].forEach((ms) => window.setTimeout(resize, ms));
+  }, []);
+
+  const onViewportChange = useCallback((vp: SalonMapViewport) => {
+    setViewport(vp);
   }, []);
 
   const expandDesktopMap = useCallback(() => {
@@ -130,19 +156,62 @@ function MapView() {
     });
   }, [query, salonsWithCoords, mapAudience]);
 
+  const visibleSalons = useMemo(() => {
+    if (!viewport) return filtered;
+    return filterSalonsByViewport(filtered, viewport);
+  }, [filtered, viewport]);
+
   useEffect(() => {
-    if (!active && filtered[0]) setActive(filtered[0].id);
-    if (active && !filtered.some((s) => s.id === active)) {
-      setActive(filtered[0]?.id ?? "");
+    if (!active && visibleSalons[0]) setActive(visibleSalons[0].id);
+    if (active && !visibleSalons.some((s) => s.id === active)) {
+      setActive(visibleSalons[0]?.id ?? "");
     }
-  }, [filtered, active]);
+  }, [visibleSalons, active]);
 
   const mapMarkers = useMemo((): SalonMapMarker[] => {
+    return visibleSalons.map((s) => ({
+      id: s.id,
+      lat: s.lat,
+      lng: s.lng,
+      label: s.name,
+      coverUrl: s.coverUrl,
+      priceLabel:
+        s.priceFrom > 0
+          ? shortPrice(s.priceFrom)
+          : s.rating > 0
+            ? `★ ${s.rating.toFixed(1)}`
+            : s.name.split(" ")[0].slice(0, 10),
+    }));
+  }, [visibleSalons]);
+
+  const goToSalon = useCallback(
+    (id: string) => {
+      void navigate({ to: "/salon/$id", params: { id } });
+    },
+    [navigate],
+  );
+
+  const focusSalon = useCallback((id: string) => {
+    setActive(id);
+  }, []);
+
+  const onMarkerHover = useCallback((id: string | null) => {
+    setHovered(id);
+    if (id) setActive(id);
+  }, []);
+
+  const fitKey = useMemo(
+    () => `${query}|${mapAudience}|${filtered.map((s) => s.id).join(",")}`,
+    [query, mapAudience, filtered],
+  );
+
+  const fitMarkers = useMemo((): SalonMapMarker[] => {
     return filtered.map((s) => ({
       id: s.id,
       lat: s.lat,
       lng: s.lng,
       label: s.name,
+      coverUrl: s.coverUrl,
       priceLabel:
         s.priceFrom > 0
           ? shortPrice(s.priceFrom)
@@ -152,17 +221,14 @@ function MapView() {
     }));
   }, [filtered]);
 
-  const focusSalon = (id: string) => {
-    setActive(id);
-  };
-
   useEffect(() => {
-    if (mapMarkers.length === 0) return;
-    const fit = () => mapHandleRef.current?.fitMarkers(mapMarkers, { bottom: 48 });
+    if (fitMarkers.length === 0) return;
+    if (!mapHandleRef.current) return;
+    const fit = () => mapHandleRef.current?.fitMarkers(fitMarkers, { bottom: 48 });
     fit();
-    const delays = [120, 400, 800].map((ms) => window.setTimeout(fit, ms));
+    const delays = [120, 400].map((ms) => window.setTimeout(fit, ms));
     return () => delays.forEach((id) => window.clearTimeout(id));
-  }, [mapHandle, mapMarkers]);
+  }, [fitKey, fitMarkers, mapReady]);
 
   useEffect(() => {
     const handle = mapHandleRef.current;
@@ -173,7 +239,6 @@ function MapView() {
     return () => delays.forEach((id) => window.clearTimeout(id));
   }, [desktopMapExpanded]);
 
-  // Faqat mobil: to‘liq ekran xarita. Desktop scroll panel ichida qoladi.
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");
     if (mq.matches) return;
@@ -199,18 +264,20 @@ function MapView() {
   const sharedMapProps: SalonMapProps = {
     markers: mapMarkers,
     activeId: active,
-    onMarkerClick: focusSalon,
+    hoveredId: hovered,
+    onMarkerClick: goToSalon,
+    onMarkerHover,
+    onViewportChange,
     showUserLocation: !sheetExpanded,
     userLocation,
   };
 
   return (
     <>
-      {/* Mobile: full-screen map + bottom sheet */}
       <div className="relative h-full min-h-0 overflow-hidden bg-surface lg:hidden">
         <div className="absolute inset-0">
           {mounted ? (
-            <MapCanvas {...sharedMapProps} autoFitMarkers />
+            <MapCanvas {...sharedMapProps} onMapReady={onMapReady} autoFitMarkers={false} />
           ) : (
             <div className="h-full w-full bg-surface" />
           )}
@@ -230,7 +297,7 @@ function MapView() {
 
         {filtered.length > 0 && active ? (
           <MapSalonSheet
-            salons={filtered}
+            salons={visibleSalons}
             activeId={active}
             onActiveChange={focusSalon}
             query={query}
@@ -240,14 +307,15 @@ function MapView() {
         ) : null}
       </div>
 
-      {/* Desktop */}
       <div className="relative hidden h-full min-h-0 w-full overflow-hidden lg:flex">
         {!desktopMapExpanded ? (
           <MapDesktopPanel
-            salons={filtered}
+            salons={visibleSalons}
             activeId={active}
             query={query}
             onQueryChange={setQuery}
+            onSalonHover={onMarkerHover}
+            onSalonFocus={focusSalon}
             loading={listLoadingAny}
             emptyMessage={emptyMessage}
           />
@@ -263,8 +331,8 @@ function MapView() {
           {mounted ? (
             <MapCanvas
               {...sharedMapProps}
-              onMapReady={onDesktopMapReady}
-              autoFitMarkers
+              onMapReady={onMapReady}
+              autoFitMarkers={false}
             />
           ) : (
             <div className="h-full w-full bg-surface" />

@@ -14,7 +14,7 @@ export const Route = createFileRoute("/salon/$id")({
 function SalonPage() {
   const { t } = useTranslation();
   const { id } = useParams({ from: "/salon/$id" });
-  const { salon, isLoading } = useSalonPage(id);
+  const { salon, isLoading, reviewsAreMock } = useSalonPage(id);
   const { isFav, toggle } = useFavorites();
 
   if (isLoading || !salon) {
@@ -30,8 +30,8 @@ function SalonPage() {
 
   return (
     <DesktopPageSplit
-      mobile={<SalonMobilePage salon={salon} fav={fav} onToggleFav={toggleFav} />}
-      desktop={<SalonDesktopPage salon={salon} fav={fav} onToggleFav={toggleFav} />}
+      mobile={<SalonMobilePage salon={salon} fav={fav} onToggleFav={toggleFav} reviewsAreMock={reviewsAreMock} />}
+      desktop={<SalonDesktopPage salon={salon} fav={fav} onToggleFav={toggleFav} reviewsAreMock={reviewsAreMock} />}
     />
   );
 }

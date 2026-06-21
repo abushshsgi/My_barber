@@ -144,7 +144,12 @@
     },
     "reviews": {
       "guestFavorite": "Mehmonlar tanlovi",
+      "guestFavoriteDesc": "Bu salon mehmonlar orasida juda sevimli. Baholash sharhlar, reyting va ishonchlilik ko'rsatkichlari asosida shakllantiriladi.",
       "showAll": "Barcha baholar",
+      "showAllRatings": "Barcha baholarni ko'rsatish",
+      "showAllReviews": "Barcha sharhlarni ko'rsatish ({{count}})",
+      "allRatingsTitle": "Reyting tafsilotlari",
+      "ratingTitle": "Mehmonlar bahosi",
       "count": "{{count}} ta sharh"
     },
     "location": {

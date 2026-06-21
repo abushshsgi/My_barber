@@ -9,8 +9,7 @@ import { SalonBookingCalendar } from "@/components/salon/SalonBookingCalendar";
 import { SalonHoursSection } from "@/components/salon/SalonHoursSection";
 import { SalonLocationSection } from "@/components/salon/SalonLocationSection";
 import { SalonPortfolioGallery } from "@/components/salon/SalonPortfolioGallery";
-import { SalonReviewsList } from "@/components/salon/SalonReviewsList";
-import { SalonReviewsSummary } from "@/components/salon/SalonReviewsSummary";
+import { SalonReviewsSection } from "@/components/salon/SalonReviewsSection";
 import { cn } from "@/lib/utils";
 
 function SectionBlock({
@@ -36,10 +35,12 @@ export function SalonPageSections({
   salon,
   calendarMonths = 1,
   showCalendar = true,
+  reviewsAreMock = false,
 }: {
   salon: Salon;
   calendarMonths?: 1 | 2;
   showCalendar?: boolean;
+  reviewsAreMock?: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -106,8 +107,11 @@ export function SalonPageSections({
       ) : null}
 
       <SectionBlock id="salon-reviews" title={t("salon.tabs.reviews")}>
-        <SalonReviewsSummary summary={salon.ratingSummary} />
-        <SalonReviewsList reviews={salon.reviews} />
+        <SalonReviewsSection
+          summary={salon.ratingSummary}
+          reviews={salon.reviews}
+          isMock={reviewsAreMock}
+        />
       </SectionBlock>
 
       <div id="salon-location" className="scroll-mt-36 border-b border-border pb-10">

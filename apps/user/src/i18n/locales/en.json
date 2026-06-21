@@ -139,7 +139,12 @@
     },
     "reviews": {
       "guestFavorite": "Guest favorite",
+      "guestFavoriteDesc": "Guests love this salon. The rating is based on reviews, scores, and reliability indicators.",
       "showAll": "All ratings",
+      "showAllRatings": "Show all ratings",
+      "showAllReviews": "Show all reviews ({{count}})",
+      "allRatingsTitle": "Rating breakdown",
+      "ratingTitle": "Guest rating",
       "count": "{{count}} reviews"
     },
     "location": {
