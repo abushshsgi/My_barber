@@ -22,34 +22,25 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
   return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function inBounds(lat: number, lng: number, bounds: MapBounds, padFactor: number): boolean {
-  const latSpan = bounds.northEast.lat - bounds.southWest.lat;
-  const lngSpan = bounds.northEast.lng - bounds.southWest.lng;
-  const latPad = latSpan * padFactor;
-  const lngPad = lngSpan * padFactor;
-
+function inBounds(lat: number, lng: number, bounds: MapBounds): boolean {
   return (
-    lat >= bounds.southWest.lat - latPad &&
-    lat <= bounds.northEast.lat + latPad &&
-    lng >= bounds.southWest.lng - lngPad &&
-    lng <= bounds.northEast.lng + lngPad
+    lat >= bounds.southWest.lat &&
+    lat <= bounds.northEast.lat &&
+    lng >= bounds.southWest.lng &&
+    lng <= bounds.northEast.lng
   );
 }
 
-/** Zoom qanchalik katta bo'lsa, shunchalik kam marker (yaqin atrofdagilar). */
-export function maxMarkersForZoom(zoom: number): number {
-  if (zoom >= 16) return 8;
-  if (zoom >= 14) return 14;
-  if (zoom >= 12) return 24;
-  if (zoom >= 10) return 40;
-  return 60;
-}
-
-export function boundsPadForZoom(zoom: number): number {
-  if (zoom >= 16) return 0.05;
-  if (zoom >= 14) return 0.12;
-  if (zoom >= 12) return 0.2;
-  return 0.35;
+/**
+ * Airbnb/Booking uslubi: zoom kattalashganda (+) ko'rinadigan maydon kichrayadi → kam salon;
+ * zoom kichiklashganda (-) maydon kengayadi → ko'p salon.
+ * Juda past zoomda o'qilishi uchun yuqori limit qo'llaniladi.
+ */
+function hardCapForZoom(zoom: number): number {
+  if (zoom >= 15) return Number.POSITIVE_INFINITY;
+  if (zoom >= 13) return 80;
+  if (zoom >= 11) return 45;
+  return 25;
 }
 
 export type ViewportSalon = {
@@ -64,25 +55,36 @@ export function filterSalonsByViewport<T extends ViewportSalon>(
 ): T[] {
   if (!viewport || salons.length === 0) return salons;
 
-  const pad = boundsPadForZoom(viewport.zoom);
-  const inView = salons.filter((s) => {
+  const inView: T[] = [];
+  const indexById = new Map<string, number>();
+
+  salons.forEach((s, idx) => {
+    indexById.set(s.id, idx);
     const { lat, lng } = normalizeMapCoords(s.lat, s.lng);
-    return inBounds(lat, lng, viewport.bounds, pad);
+    if (inBounds(lat, lng, viewport.bounds)) inView.push(s);
   });
 
-  const pool = inView.length > 0 ? inView : salons;
-  const limit = maxMarkersForZoom(viewport.zoom);
+  if (inView.length === 0) return [];
 
-  return [...pool]
+  const cap = hardCapForZoom(viewport.zoom);
+  if (inView.length <= cap) {
+    return inView.sort(
+      (a, b) => (indexById.get(a.id) ?? 0) - (indexById.get(b.id) ?? 0),
+    );
+  }
+
+  const { centerLat, centerLng } = viewport;
+  return inView
     .map((s) => {
       const { lat, lng } = normalizeMapCoords(s.lat, s.lng);
       return {
         salon: s,
-        dist: haversineKm(viewport.centerLat, viewport.centerLng, lat, lng),
+        dist: haversineKm(centerLat, centerLng, lat, lng),
+        idx: indexById.get(s.id) ?? 0,
       };
     })
-    .sort((a, b) => a.dist - b.dist)
-    .slice(0, limit)
+    .sort((a, b) => a.dist - b.dist || a.idx - b.idx)
+    .slice(0, cap)
+    .sort((a, b) => a.idx - b.idx)
     .map(({ salon }) => salon);
 }
-

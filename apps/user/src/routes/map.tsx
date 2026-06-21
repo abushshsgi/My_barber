@@ -121,6 +121,7 @@ function MapView() {
   const [mapReady, setMapReady] = useState(false);
   const [viewport, setViewport] = useState<SalonMapViewport | null>(null);
   const mapHandleRef = useRef<SalonMapHandle | null>(null);
+  const viewportTimerRef = useRef<number | null>(null);
 
   const getMapHandle = useCallback(() => mapHandleRef.current, []);
 
@@ -136,7 +137,21 @@ function MapView() {
   }, []);
 
   const onViewportChange = useCallback((vp: SalonMapViewport) => {
-    setViewport(vp);
+    if (viewportTimerRef.current != null) {
+      window.clearTimeout(viewportTimerRef.current);
+    }
+    viewportTimerRef.current = window.setTimeout(() => {
+      setViewport(vp);
+      viewportTimerRef.current = null;
+    }, 150);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (viewportTimerRef.current != null) {
+        window.clearTimeout(viewportTimerRef.current);
+      }
+    };
   }, []);
 
   const expandDesktopMap = useCallback(() => {
@@ -162,11 +177,18 @@ function MapView() {
   }, [filtered, viewport]);
 
   useEffect(() => {
-    if (!active && visibleSalons[0]) setActive(visibleSalons[0].id);
+    if (visibleSalons.length === 0) {
+      setActive("");
+      return;
+    }
+    if (!active && visibleSalons[0]) {
+      setActive(visibleSalons[0].id);
+      return;
+    }
     if (active && !visibleSalons.some((s) => s.id === active)) {
       setActive(visibleSalons[0]?.id ?? "");
     }
-  }, [visibleSalons, active]);
+  }, [visibleSalons]);
 
   const mapMarkers = useMemo((): SalonMapMarker[] => {
     return visibleSalons.map((s) => ({
@@ -197,7 +219,6 @@ function MapView() {
 
   const onMarkerHover = useCallback((id: string | null) => {
     setHovered(id);
-    if (id) setActive(id);
   }, []);
 
   const fitKey = useMemo(
@@ -263,7 +284,7 @@ function MapView() {
 
   const sharedMapProps: SalonMapProps = {
     markers: mapMarkers,
-    activeId: active,
+    activeId: hovered || active,
     hoveredId: hovered,
     onMarkerClick: goToSalon,
     onMarkerHover,
@@ -311,11 +332,11 @@ function MapView() {
         {!desktopMapExpanded ? (
           <MapDesktopPanel
             salons={visibleSalons}
-            activeId={active}
+            highlightedId={hovered || active}
+            scrollToId={active}
             query={query}
             onQueryChange={setQuery}
             onSalonHover={onMarkerHover}
-            onSalonFocus={focusSalon}
             loading={listLoadingAny}
             emptyMessage={emptyMessage}
           />

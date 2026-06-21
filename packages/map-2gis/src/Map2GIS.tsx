@@ -142,7 +142,6 @@ export function Map2GIS({
       requestAnimationFrame(() => {
         m?.invalidateSize?.();
         window.dispatchEvent(new Event("resize"));
-        emitViewport();
       });
     };
 
@@ -271,7 +270,7 @@ export function Map2GIS({
         const pinLabel = m.priceLabel || m.label.slice(0, 8);
         const isActive = activeId === m.id;
         const isHovered = hoverId === m.id;
-        const html = buildPricePillHtml(isActive, pinLabel, isHovered && !isActive);
+        const html = buildPricePillHtml(isHovered || isActive, pinLabel, isHovered && !isActive);
         const existing = markerRefs.current.get(m.id);
 
         const bindMarker = (marker: mapgl.HtmlMarker) => {
@@ -346,24 +345,10 @@ export function Map2GIS({
 
   useEffect(() => {
     if (!activeId || !mapRef.current) return;
-    const m = markers.find((x) => x.id === activeId);
-    if (!m) return;
     if (prevActiveIdRef.current === null) {
       prevActiveIdRef.current = activeId;
-      return;
     }
-    if (prevActiveIdRef.current === activeId) return;
-    prevActiveIdRef.current = activeId;
-    skipViewportEmitRef.current = true;
-    mapRef.current.setCenter(toMapGlCoords(m.lat, m.lng), { animate: true, duration: 550 });
-    if ((mapRef.current.getZoom() ?? 0) < 15) {
-      mapRef.current.setZoom(15, { animate: true, duration: 550 });
-    }
-    window.setTimeout(() => {
-      skipViewportEmitRef.current = false;
-      emitViewport();
-    }, 600);
-  }, [activeId, markers]);
+  }, [activeId]);
 
   useEffect(() => {
     if (!autoFitMarkers) return;
@@ -400,7 +385,6 @@ export function Map2GIS({
     const ro = new ResizeObserver(() => {
       const m = mapRef.current as (mapgl.Map & { invalidateSize?: () => void }) | null;
       m?.invalidateSize?.();
-      emitViewport();
     });
     ro.observe(el);
     return () => ro.disconnect();

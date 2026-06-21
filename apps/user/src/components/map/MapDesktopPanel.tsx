@@ -11,11 +11,11 @@ const PANEL_WIDTH = 520;
 
 type Props = {
   salons: Salon[];
-  activeId: string;
+  highlightedId: string;
+  scrollToId?: string;
   query: string;
   onQueryChange: (query: string) => void;
   onSalonHover?: (id: string | null) => void;
-  onSalonFocus?: (id: string) => void;
   loading?: boolean;
   emptyMessage?: string;
 };
@@ -46,12 +46,10 @@ function MapDesktopSalonCard({
   salon,
   isActive,
   onHover,
-  onFocus,
 }: {
   salon: Salon;
   isActive: boolean;
   onHover?: (id: string | null) => void;
-  onFocus?: (id: string) => void;
 }) {
   const { isFav, toggle } = useFavorites();
   const fav = isFav(salon.id);
@@ -65,7 +63,6 @@ function MapDesktopSalonCard({
       )}
       onMouseEnter={() => onHover?.(salon.id)}
       onMouseLeave={() => onHover?.(null)}
-      onFocus={() => onFocus?.(salon.id)}
     >
       <div
         className={cn(
@@ -110,11 +107,11 @@ function MapDesktopSalonCard({
 
 export function MapDesktopPanel({
   salons,
-  activeId,
+  highlightedId,
+  scrollToId,
   query,
   onQueryChange,
   onSalonHover,
-  onSalonFocus,
   loading,
   emptyMessage,
 }: Props) {
@@ -122,10 +119,10 @@ export function MapDesktopPanel({
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!activeId) return;
-    const el = listRef.current?.querySelector(`[data-desktop-salon-id="${activeId}"]`);
+    if (!scrollToId) return;
+    const el = listRef.current?.querySelector(`[data-desktop-salon-id="${scrollToId}"]`);
     el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, [activeId]);
+  }, [scrollToId]);
 
   return (
     <aside
@@ -177,9 +174,8 @@ export function MapDesktopPanel({
               <MapDesktopSalonCard
                 key={salon.id}
                 salon={salon}
-                isActive={salon.id === activeId}
+                isActive={salon.id === highlightedId}
                 onHover={onSalonHover}
-                onFocus={onSalonFocus}
               />
             ))}
           </div>
