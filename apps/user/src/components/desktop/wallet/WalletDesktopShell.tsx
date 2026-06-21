@@ -27,7 +27,7 @@ export function WalletDesktopShell({ section, t }: Props) {
             </div>
           </aside>
 
-          <main className="min-w-0 flex-1 lg:max-w-[680px] xl:max-w-[720px] lg:pt-1">
+          <main className="min-w-0 flex-1 lg:max-w-[760px] xl:max-w-[820px] lg:pt-1">
             <WalletPanelContent section={section} />
           </main>
         </div>

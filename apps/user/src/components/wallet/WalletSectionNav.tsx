@@ -31,7 +31,7 @@ export function WalletSectionNav({ active, t, compact, large }: Props) {
                 ? "gap-3.5 px-3.5 py-3 text-[15px] leading-snug xl:text-base"
                 : "gap-3 px-3 py-3 text-sm",
               isActive
-                ? "bg-surface font-semibold text-foreground"
+                ? "bg-surface font-semibold text-foreground ring-1 ring-border/60"
                 : "text-muted-foreground hover:bg-surface/60 hover:text-foreground",
             )}
           >
