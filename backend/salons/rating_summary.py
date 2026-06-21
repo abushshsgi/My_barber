@@ -43,11 +43,19 @@ def build_rating_summary(salon, request=None) -> dict:
     is_guest_favorite = rating_avg >= GUEST_FAVORITE_MIN_RATING and review_count >= GUEST_FAVORITE_MIN_REVIEWS
 
     service_scores: dict[str, list[int]] = defaultdict(list)
-    for rev in qs.select_related("booking").prefetch_related("booking__lines"):
-        for line in rev.booking.lines.all():
-            name = (line.service_name or "").strip()
-            if name:
-                service_scores[name].append(rev.rating)
+    ratings_by_booking = {
+        bid: rating for bid, rating in qs.values_list("booking_id", "rating") if bid
+    }
+    if ratings_by_booking:
+        from bookings.models import BookingLine
+
+        for line in BookingLine.objects.filter(booking_id__in=ratings_by_booking).values(
+            "booking_id", "service_name"
+        ):
+            rating = ratings_by_booking.get(line["booking_id"])
+            name = (line["service_name"] or "").strip()
+            if rating and name:
+                service_scores[name].append(rating)
 
     service_highlights = []
     for name, ratings in service_scores.items():

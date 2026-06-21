@@ -48,5 +48,7 @@ export async function fetchSalonRatingSummary(
   id: string | number,
   lang?: string,
 ): Promise<ApiSalonRatingSummary> {
-  return apiJson<ApiSalonRatingSummary>(`/api/v1/salons/${id}/rating-summary${qs({ lang })}`);
+  const q = qs({ lang });
+  const suffix = q ? q.replace(/^\?/, "/?") : "/";
+  return apiJson<ApiSalonRatingSummary>(`/api/v1/salons/${id}/rating-summary${suffix}`);
 }

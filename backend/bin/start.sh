@@ -2,7 +2,13 @@
 set -euo pipefail
 
 echo "[start] Running database migrations..."
-python manage.py migrate --noinput
+python manage.py migrate --noinput -v 1
+
+if python manage.py showmigrations --plan 2>/dev/null | grep -q '^\[ \]'; then
+  echo "[start] ERROR: Unapplied migrations remain after migrate:" >&2
+  python manage.py showmigrations --plan >&2 || true
+  exit 1
+fi
 
 echo "[start] Syncing exchange rates (if stale)..."
 python manage.py sync_exchange_rates --if-stale

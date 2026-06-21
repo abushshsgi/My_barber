@@ -249,17 +249,24 @@ class SalonPortfolioView(APIView):
             ob = salon.owner_barber
             if ob is not None and (ob.region or "").strip() != reg:
                 raise Http404()
-        comps = BookingCompletion.objects.filter(
-            booking__salon=salon,
-            portfolio_allowed=True,
-            result_image__isnull=False,
-        ).select_related("booking")
+        comps = (
+            BookingCompletion.objects.filter(
+                booking__salon_id=salon_id,
+                portfolio_allowed=True,
+            )
+            .exclude(result_image__isnull=True)
+            .exclude(result_image="")
+            .values("booking_id", "result_image")
+        )
         out = []
         for c in comps:
+            path = c.get("result_image") or ""
             url = None
-            if c.result_image:
-                url = request.build_absolute_uri(c.result_image.url)
-            out.append({"image": url, "booking_id": c.booking_id})
+            if path:
+                from django.core.files.storage import default_storage
+
+                url = request.build_absolute_uri(default_storage.url(path))
+            out.append({"image": url, "booking_id": c["booking_id"]})
         return Response(out)
 
 
