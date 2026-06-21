@@ -9,6 +9,7 @@ import { MapSalonSheet } from "@/components/map/MapSalonSheet";
 import { MapAreaSkeleton, MapMobileSheetSkeleton } from "@/components/map/MapLoadingSkeleton";
 import { SalonMap, type SalonMapHandle, type SalonMapMarker, type SalonMapViewport } from "@/components/map/SalonMap";
 import { resolveMapAudienceFilter, useAudience } from "@/hooks/use-audience";
+import { useIsLgUp } from "@/hooks/use-mobile";
 import { useRecommendContext } from "@/hooks/use-recommend-context";
 import { useSalonsList, useSalonsNearby } from "@/hooks/use-salons";
 import { shortPrice, type Salon } from "@/lib/mock-data";
@@ -113,6 +114,7 @@ function MapView() {
     return resolveMapAudienceFilter(profileDefault);
   }, [audience, profileDefault]);
   const [mounted, setMounted] = useState(false);
+  const isLgUp = useIsLgUp();
   useEffect(() => setMounted(true), []);
 
   const ctx = useRecommendContext();
@@ -153,7 +155,6 @@ function MapView() {
   const [mapReady, setMapReady] = useState(false);
   const [viewport, setViewport] = useState<SalonMapViewport | null>(null);
   const mapHandleRef = useRef<SalonMapHandle | null>(null);
-  const viewportTimerRef = useRef<number | null>(null);
 
   const getMapHandle = useCallback(() => mapHandleRef.current, []);
 
@@ -169,21 +170,7 @@ function MapView() {
   }, []);
 
   const onViewportChange = useCallback((vp: SalonMapViewport) => {
-    if (viewportTimerRef.current != null) {
-      window.clearTimeout(viewportTimerRef.current);
-    }
-    viewportTimerRef.current = window.setTimeout(() => {
-      setViewport(vp);
-      viewportTimerRef.current = null;
-    }, 80);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (viewportTimerRef.current != null) {
-        window.clearTimeout(viewportTimerRef.current);
-      }
-    };
+    setViewport(vp);
   }, []);
 
   const expandDesktopMap = useCallback(() => {
@@ -325,22 +312,25 @@ function MapView() {
   const showMapSkeleton = listLoadingAny && salonsWithCoords.length === 0;
   const showMapBootOverlay = mounted && !mapReady && !showMapSkeleton;
 
+  const mapCanvas = mounted ? (
+    <>
+      <MapCanvas {...sharedMapProps} onMapReady={onMapReady} autoFitMarkers={false} />
+      {showMapSkeleton || showMapBootOverlay ? (
+        <div className="absolute inset-0 z-20 transition-opacity duration-500 pointer-events-none">
+          <MapAreaSkeleton className="h-full w-full" />
+        </div>
+      ) : null}
+    </>
+  ) : (
+    <MapAreaSkeleton className="h-full w-full" />
+  );
+
   return (
     <>
-      <div className="relative h-full min-h-0 overflow-hidden bg-surface lg:hidden">
+      {!isLgUp ? (
+      <div className="relative h-full min-h-0 overflow-hidden bg-surface">
         <div className="absolute inset-0">
-          {mounted ? (
-            <>
-              <MapCanvas {...sharedMapProps} onMapReady={onMapReady} autoFitMarkers={false} />
-              {showMapSkeleton || showMapBootOverlay ? (
-                <div className="absolute inset-0 z-20 transition-opacity duration-500 pointer-events-none">
-                  <MapAreaSkeleton className="h-full w-full" />
-                </div>
-              ) : null}
-            </>
-          ) : (
-            <MapAreaSkeleton className="h-full w-full" />
-          )}
+          {mapCanvas}
         </div>
 
         {!listLoadingAny && filtered.length === 0 ? (
@@ -365,8 +355,8 @@ function MapView() {
           />
         )}
       </div>
-
-      <div className="relative hidden h-full min-h-0 w-full overflow-hidden lg:flex">
+      ) : (
+      <div className="relative flex h-full min-h-0 w-full overflow-hidden">
         {!desktopMapExpanded ? (
           <MapDesktopPanel
             salons={filtered}
@@ -391,24 +381,12 @@ function MapView() {
           onCollapse={collapseDesktopMap}
         />
         <MapDesktopMapFrame expanded={desktopMapExpanded}>
-          {mounted ? (
-            <div className="relative h-full w-full">
-              <MapCanvas
-                {...sharedMapProps}
-                onMapReady={onMapReady}
-                autoFitMarkers={false}
-              />
-              {showMapSkeleton || showMapBootOverlay ? (
-                <div className="absolute inset-0 z-10 transition-opacity duration-500 pointer-events-none">
-                  <MapAreaSkeleton className="h-full w-full" />
-                </div>
-              ) : null}
-            </div>
-          ) : (
-            <MapAreaSkeleton className="h-full w-full" />
-          )}
+          <div className="relative h-full w-full">
+            {mapCanvas}
+          </div>
         </MapDesktopMapFrame>
       </div>
+      )}
     </>
   );
 }

@@ -248,12 +248,14 @@ export function Map2GIS({
         if (!m) return;
         const next = Math.min((m.getZoom() ?? DEFAULT_ZOOM) + 1, 18);
         m.setZoom(next, { animate: true, duration: 280 });
+        window.setTimeout(() => emitViewport(), 320);
       },
       zoomOut() {
         const m = mapRef.current;
         if (!m) return;
         const next = Math.max((m.getZoom() ?? DEFAULT_ZOOM) - 1, 10);
         m.setZoom(next, { animate: true, duration: 280 });
+        window.setTimeout(() => emitViewport(), 320);
       },
       resize: notifyResize,
       getViewport() {
@@ -287,6 +289,10 @@ export function Map2GIS({
         });
 
         map.on("zoomend", () => {
+          if (!skipViewportEmitRef.current) emitViewport();
+        });
+
+        map.on("idle", () => {
           if (!skipViewportEmitRef.current) emitViewport();
         });
 

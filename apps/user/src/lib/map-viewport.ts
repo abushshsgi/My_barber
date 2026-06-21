@@ -55,6 +55,30 @@ function hardCapForZoom(zoom: number): number {
   return 25;
 }
 
+function capSalonsByCenter<T extends ViewportSalon>(
+  salons: T[],
+  centerLat: number,
+  centerLng: number,
+  cap: number,
+  indexById: Map<string, number>,
+): T[] {
+  if (salons.length <= cap) return salons;
+
+  return salons
+    .map((s) => {
+      const { lat, lng } = normalizeMapCoords(s.lat, s.lng);
+      return {
+        salon: s,
+        dist: haversineKm(centerLat, centerLng, lat, lng),
+        idx: indexById.get(s.id) ?? 0,
+      };
+    })
+    .sort((a, b) => a.dist - b.dist || a.idx - b.idx)
+    .slice(0, cap)
+    .sort((a, b) => a.idx - b.idx)
+    .map(({ salon }) => salon);
+}
+
 export type ViewportSalon = {
   id: string;
   lat: number;
@@ -77,9 +101,12 @@ export function filterSalonsByViewport<T extends ViewportSalon>(
     if (inBounds(lat, lng, bounds)) inView.push(s);
   });
 
-  if (inView.length === 0) return [];
-
   const cap = hardCapForZoom(viewport.zoom);
+
+  if (inView.length === 0) {
+    return capSalonsByCenter(salons, viewport.centerLat, viewport.centerLng, cap, indexById);
+  }
+
   if (inView.length <= cap) {
     return inView.sort(
       (a, b) => (indexById.get(a.id) ?? 0) - (indexById.get(b.id) ?? 0),
