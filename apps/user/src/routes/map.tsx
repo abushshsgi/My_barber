@@ -6,6 +6,7 @@ import { MapDesktopMapFrame } from "@/components/map/MapDesktopMapFrame";
 import { MapDesktopPanel } from "@/components/map/MapDesktopPanel";
 import { MapErrorBoundary } from "@/components/map/MapErrorBoundary";
 import { MapSalonSheet } from "@/components/map/MapSalonSheet";
+import { MapAreaSkeleton, MapMobileSheetSkeleton } from "@/components/map/MapLoadingSkeleton";
 import { SalonMap, type SalonMapHandle, type SalonMapMarker, type SalonMapViewport } from "@/components/map/SalonMap";
 import { resolveMapAudienceFilter, useAudience } from "@/hooks/use-audience";
 import { useRecommendContext } from "@/hooks/use-recommend-context";
@@ -319,22 +320,26 @@ function MapView() {
     userLocation,
   };
 
+  const showMapSkeleton = listLoadingAny && salonsWithCoords.length === 0;
+  const showMapBootOverlay = mounted && !mapReady && !showMapSkeleton;
+
   return (
     <>
       <div className="relative h-full min-h-0 overflow-hidden bg-surface lg:hidden">
         <div className="absolute inset-0">
           {mounted ? (
-            <MapCanvas {...sharedMapProps} onMapReady={onMapReady} autoFitMarkers={false} />
+            <>
+              <MapCanvas {...sharedMapProps} onMapReady={onMapReady} autoFitMarkers={false} />
+              {showMapSkeleton || showMapBootOverlay ? (
+                <div className="absolute inset-0 z-20 transition-opacity duration-500 pointer-events-none">
+                  <MapAreaSkeleton className="h-full w-full" />
+                </div>
+              ) : null}
+            </>
           ) : (
-            <div className="h-full w-full bg-surface" />
+            <MapAreaSkeleton className="h-full w-full" />
           )}
         </div>
-
-        {listLoadingAny && filtered.length === 0 ? (
-          <div className="absolute inset-x-0 bottom-0 z-30 rounded-t-[22px] border-t border-border/50 bg-background p-4 text-center">
-            <p className="text-sm font-medium text-muted-foreground">{t("map.loading")}</p>
-          </div>
-        ) : null}
 
         {!listLoadingAny && filtered.length === 0 ? (
           <div className="absolute inset-x-0 bottom-0 z-30 rounded-t-[22px] border-t border-border/50 bg-background p-4 text-center">
@@ -342,7 +347,9 @@ function MapView() {
           </div>
         ) : null}
 
-        {!listLoadingAny ? (
+        {listLoadingAny ? (
+          <MapMobileSheetSkeleton />
+        ) : (
           <MapSalonSheet
             salons={visibleSalons}
             activeId={active || visibleSalons[0]?.id || ""}
@@ -354,7 +361,7 @@ function MapView() {
             mapAudience={mapAudience}
             onExpandedChange={setSheetExpanded}
           />
-        ) : null}
+        )}
       </div>
 
       <div className="relative hidden h-full min-h-0 w-full overflow-hidden lg:flex">
@@ -382,13 +389,20 @@ function MapView() {
         />
         <MapDesktopMapFrame expanded={desktopMapExpanded}>
           {mounted ? (
-            <MapCanvas
-              {...sharedMapProps}
-              onMapReady={onMapReady}
-              autoFitMarkers={false}
-            />
+            <div className="relative h-full w-full">
+              <MapCanvas
+                {...sharedMapProps}
+                onMapReady={onMapReady}
+                autoFitMarkers={false}
+              />
+              {showMapSkeleton || showMapBootOverlay ? (
+                <div className="absolute inset-0 z-10 transition-opacity duration-500 pointer-events-none">
+                  <MapAreaSkeleton className="h-full w-full" />
+                </div>
+              ) : null}
+            </div>
           ) : (
-            <div className="h-full w-full bg-surface" />
+            <MapAreaSkeleton className="h-full w-full" />
           )}
         </MapDesktopMapFrame>
       </div>
