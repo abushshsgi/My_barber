@@ -62,6 +62,8 @@ export function Map2GIS({
   const mapRef = useRef<mapgl.Map | null>(null);
   const mapglRef = useRef<typeof mapgl | null>(null);
   const markerRefs = useRef<Map<string, mapgl.HtmlMarker>>(new Map());
+  const markerDataRef = useRef<Map<string, MapMarker>>(new Map());
+  const exitingIdsRef = useRef<Set<string>>(new Set());
   const previewRef = useRef<mapgl.HtmlMarker | null>(null);
   const userMarkerRef = useRef<mapgl.HtmlMarker | null>(null);
   const userCircleRef = useRef<mapgl.Circle | null>(null);
@@ -284,21 +286,35 @@ export function Map2GIS({
     const nextIds = new Set(markers.map((m) => m.id));
     const hoverId = hoveredIdRef.current;
     const selected = selectedIdRef.current;
+    const MARKER_EXIT_MS = 280;
 
     for (const [id, marker] of markerRefs.current) {
-      if (!nextIds.has(id)) {
+      if (nextIds.has(id) || exitingIdsRef.current.has(id)) continue;
+
+      exitingIdsRef.current.add(id);
+      const stored = markerDataRef.current.get(id);
+      const pinLabel = stored?.priceLabel || stored?.label.slice(0, 8) || "—";
+      marker.setContent(buildPricePillHtml(false, pinLabel, false, "exit"));
+
+      window.setTimeout(() => {
         marker.destroy();
         markerRefs.current.delete(id);
-      }
+        markerDataRef.current.delete(id);
+        exitingIdsRef.current.delete(id);
+      }, MARKER_EXIT_MS);
     }
 
     for (const m of markers) {
       try {
+        markerDataRef.current.set(m.id, m);
+        if (exitingIdsRef.current.has(m.id)) continue;
+
         const pinLabel = m.priceLabel || m.label.slice(0, 8);
         const isSelected = selected === m.id;
         const isHovered = hoverId === m.id;
-        const html = buildPricePillHtml(isSelected, pinLabel, isHovered && !isSelected);
         const existing = markerRefs.current.get(m.id);
+        const motion = existing ? "none" : "enter";
+        const html = buildPricePillHtml(isSelected, pinLabel, isHovered && !isSelected, motion);
 
         const bindMarker = (marker: mapgl.HtmlMarker) => {
           bindHtmlMarkerClick(marker, () => {

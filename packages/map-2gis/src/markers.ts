@@ -2,17 +2,26 @@ function escapeHtmlAttr(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
+type PricePillMotion = "enter" | "exit" | "none";
+
 /** Airbnb-style price pill for salon discovery map. */
-export function buildPricePillHtml(active: boolean, priceLabel: string, hovered = false): string {
+export function buildPricePillHtml(
+  active: boolean,
+  priceLabel: string,
+  hovered = false,
+  motion: PricePillMotion = "none",
+): string {
   const text = escapeHtmlAttr(priceLabel);
   const bg = active ? "#141414" : hovered ? "#ffffff" : "#faf8f5";
   const color = active ? "#faf8f5" : "#141414";
   const border = active ? "2px solid #141414" : hovered ? "2px solid #141414" : "1px solid rgba(20,20,20,0.12)";
   const shadow = active || hovered ? "0 4px 14px rgba(0,0,0,0.28)" : "0 2px 8px rgba(0,0,0,0.14)";
   const scale = active ? 1.1 : hovered ? 1.06 : 1;
+  const motionClass =
+    motion === "enter" ? "map-marker-pill-enter" : motion === "exit" ? "map-marker-pill-exit" : "";
 
   return `<div data-map-pill style="transform:translate(-50%,-50%);cursor:pointer;">
-    <div style="
+    <div class="${motionClass}" style="
       padding:6px 11px;border-radius:9999px;background:${bg};color:${color};
       border:${border};box-shadow:${shadow};
       font-size:12px;font-weight:800;line-height:1;white-space:nowrap;

@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Heart, Search, Star } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MapFilters } from "@/components/map/MapFilters";
 import {
@@ -20,6 +20,7 @@ const PANEL_WIDTH = 640;
 
 type Props = {
   salons: Salon[];
+  visibleSalonIds?: ReadonlySet<string>;
   highlightedId: string;
   scrollToId?: string;
   query: string;
@@ -63,10 +64,14 @@ function SalonCoverImage({ salon, className }: { salon: Salon; className?: strin
 function MapDesktopSalonCard({
   salon,
   isActive,
+  isOnMap,
+  isEntering,
   onHover,
 }: {
   salon: Salon;
   isActive: boolean;
+  isOnMap: boolean;
+  isEntering: boolean;
   onHover?: (id: string | null) => void;
 }) {
   const { t } = useTranslation();
@@ -79,11 +84,14 @@ function MapDesktopSalonCard({
     <article
       data-desktop-salon-id={salon.id}
       className={cn(
-        "group flex min-w-0 flex-col overflow-hidden rounded-2xl border bg-background transition-all",
+        "group flex min-w-0 flex-col overflow-hidden rounded-2xl border bg-background transition-all duration-300",
         "shadow-[0_2px_14px_rgba(0,0,0,0.07)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.11)]",
+        isEntering && "map-sidebar-card-enter",
         isActive
-          ? "border-foreground/35 ring-2 ring-foreground/12 shadow-[0_6px_22px_rgba(0,0,0,0.12)]"
-          : "border-border/50",
+          ? "border-foreground/35 ring-2 ring-foreground/12 shadow-[0_6px_22px_rgba(0,0,0,0.12)] opacity-100"
+          : isOnMap
+            ? "border-border/50 opacity-100"
+            : "border-border/40 opacity-55",
       )}
       onMouseEnter={() => onHover?.(salon.id)}
       onMouseLeave={() => onHover?.(null)}
@@ -163,6 +171,7 @@ function MapDesktopSalonCard({
 
 export function MapDesktopPanel({
   salons,
+  visibleSalonIds,
   highlightedId,
   scrollToId,
   query,
@@ -176,11 +185,26 @@ export function MapDesktopPanel({
 }: Props) {
   const { t } = useTranslation();
   const listRef = useRef<HTMLDivElement>(null);
+  const prevVisibleRef = useRef<ReadonlySet<string>>(new Set());
+  const [enteringIds, setEnteringIds] = useState<ReadonlySet<string>>(() => new Set());
+
+  useEffect(() => {
+    const current = visibleSalonIds ?? new Set(salons.map((s) => s.id));
+    const entered = new Set<string>();
+    for (const id of current) {
+      if (!prevVisibleRef.current.has(id)) entered.add(id);
+    }
+    prevVisibleRef.current = current;
+    if (entered.size === 0) return;
+    setEnteringIds(entered);
+    const timer = window.setTimeout(() => setEnteringIds(new Set()), 400);
+    return () => window.clearTimeout(timer);
+  }, [visibleSalonIds, salons]);
 
   useEffect(() => {
     if (!scrollToId) return;
     const el = listRef.current?.querySelector(`[data-desktop-salon-id="${scrollToId}"]`);
-    el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    el?.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
   }, [scrollToId]);
 
   return (
@@ -251,6 +275,8 @@ export function MapDesktopPanel({
                 key={salon.id}
                 salon={salon}
                 isActive={salon.id === highlightedId}
+                isOnMap={visibleSalonIds?.has(salon.id) ?? true}
+                isEntering={enteringIds.has(salon.id)}
                 onHover={onSalonHover}
               />
             ))}

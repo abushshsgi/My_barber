@@ -210,30 +210,32 @@ function MapView() {
   }, [filtered, viewport]);
 
   useEffect(() => {
-    if (visibleSalons.length === 0) {
+    if (filtered.length === 0) {
       setActive("");
       return;
     }
-    if (!active && visibleSalons[0]) {
-      setActive(visibleSalons[0].id);
-      return;
+    if (!active || !filtered.some((s) => s.id === active)) {
+      setActive(filtered[0].id);
     }
-    if (active && !visibleSalons.some((s) => s.id === active)) {
-      setActive(visibleSalons[0]?.id ?? "");
-    }
-  }, [visibleSalons]);
+  }, [filtered]);
 
-  useEffect(() => {
-    if (selected && !visibleSalons.some((s) => s.id === selected)) {
-      setSelected(null);
-    }
-  }, [visibleSalons, selected]);
+  const visibleSalonIdSet = useMemo(
+    () => new Set(visibleSalons.map((s) => s.id)),
+    [visibleSalons],
+  );
+
+  const mapSalons = useMemo(() => {
+    if (!selected) return visibleSalons;
+    if (visibleSalons.some((s) => s.id === selected)) return visibleSalons;
+    const pinned = filtered.find((s) => s.id === selected);
+    return pinned ? [...visibleSalons, pinned] : visibleSalons;
+  }, [visibleSalons, selected, filtered]);
 
   const ctaLabel = t("map.viewSalon");
 
   const mapMarkers = useMemo(
-    (): SalonMapMarker[] => visibleSalons.map((s) => toMapMarker(s, ctaLabel)),
-    [visibleSalons, ctaLabel],
+    (): SalonMapMarker[] => mapSalons.map((s) => toMapMarker(s, ctaLabel)),
+    [mapSalons, ctaLabel],
   );
 
   const goToSalon = useCallback(
@@ -367,9 +369,10 @@ function MapView() {
       <div className="relative hidden h-full min-h-0 w-full overflow-hidden lg:flex">
         {!desktopMapExpanded ? (
           <MapDesktopPanel
-            salons={visibleSalons}
+            salons={filtered}
+            visibleSalonIds={visibleSalonIdSet}
             highlightedId={selected || hovered || active}
-            scrollToId={active}
+            scrollToId={selected ?? undefined}
             query={query}
             onQueryChange={setQuery}
             filters={filters}
