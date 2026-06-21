@@ -32,7 +32,7 @@ export function SalonAmenitiesSection({ amenities }: { amenities: SalonAmenity[]
   const hasMore = amenities.length > PREVIEW_COUNT;
 
   return (
-    <section className="space-y-6 border-b border-border pb-10">
+    <section className="space-y-6">
       <h2 className="text-[22px] font-semibold tracking-tight">{t("salon.amenities.title")}</h2>
 
       <div className="grid grid-cols-1 gap-x-12 sm:grid-cols-2">

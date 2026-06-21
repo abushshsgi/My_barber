@@ -128,6 +128,11 @@
     "bookNow": "Book now",
     "select": "Select",
     "minutes": "min",
+    "fromPrice": "From {{price}}",
+    "nav": {
+      "amenities": "Amenities",
+      "location": "Location"
+    },
     "amenities": {
       "title": "What amenities await you",
       "showAll": "Show all amenities: {{count}}"

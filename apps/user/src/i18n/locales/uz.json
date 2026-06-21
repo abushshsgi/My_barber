@@ -133,6 +133,11 @@
     "bookNow": "Hoziroq band qilish",
     "select": "Tanlash",
     "minutes": "daqiqa",
+    "fromPrice": "{{price}} dan",
+    "nav": {
+      "amenities": "Qulayliklar",
+      "location": "Manzil"
+    },
     "amenities": {
       "title": "Qanday qulayliklar sizni kutmoqda",
       "showAll": "Barcha qulayliklar: {{count}}"

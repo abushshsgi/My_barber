@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -10,38 +11,65 @@ import { SalonLocationSection } from "@/components/salon/SalonLocationSection";
 import { SalonPortfolioGallery } from "@/components/salon/SalonPortfolioGallery";
 import { SalonReviewsList } from "@/components/salon/SalonReviewsList";
 import { SalonReviewsSummary } from "@/components/salon/SalonReviewsSummary";
+import { cn } from "@/lib/utils";
+
+function SectionBlock({
+  id,
+  title,
+  children,
+  className,
+}: {
+  id: string;
+  title?: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section id={id} className={cn("scroll-mt-36 space-y-5 border-b border-border pb-10", className)}>
+      {title ? <h2 className="text-[22px] font-semibold tracking-tight">{title}</h2> : null}
+      {children}
+    </section>
+  );
+}
 
 export function SalonPageSections({
   salon,
   calendarMonths = 1,
+  showCalendar = true,
 }: {
   salon: Salon;
   calendarMonths?: 1 | 2;
+  showCalendar?: boolean;
 }) {
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-10">
-      <section className="space-y-4">
-        <h2 className="text-xl font-bold tracking-tight">{t("salon.tabs.about")}</h2>
-        <p className="text-sm leading-relaxed sm:text-base">{salon.about}</p>
-      </section>
+    <div className="space-y-0">
+      <SectionBlock id="salon-about" title={t("salon.tabs.about")}>
+        <p className="max-w-2xl text-base leading-relaxed text-muted-foreground">{salon.about}</p>
+      </SectionBlock>
 
-      <SalonAmenitiesSection amenities={salon.amenities} />
+      {salon.amenities.length > 0 ? (
+        <div id="salon-amenities" className="scroll-mt-36 border-b border-border pb-10">
+          <SalonAmenitiesSection amenities={salon.amenities} />
+        </div>
+      ) : null}
 
-      <section className="space-y-4">
-        <h2 className="text-xl font-bold tracking-tight">{t("salon.tabs.services")}</h2>
-        <div className="divide-y divide-border">
+      <SectionBlock id="salon-services" title={t("salon.tabs.services")}>
+        <div className="grid gap-3 sm:grid-cols-2">
           {salon.services.map((s) => (
-            <div key={s.id} className="flex items-center justify-between gap-3 py-4">
+            <div
+              key={s.id}
+              className="flex items-center justify-between gap-3 rounded-xl border border-border p-4 transition-colors hover:bg-muted/30"
+            >
               <div className="min-w-0">
-                <h3 className="truncate text-sm font-bold">{s.name}</h3>
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <h3 className="truncate font-semibold">{s.name}</h3>
+                <p className="mt-0.5 text-sm text-muted-foreground">
                   {s.duration} {t("salon.minutes")}
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-sm font-bold">{formatPrice(s.price)}</span>
+                <span className="text-sm font-bold tabular-nums">{formatPrice(s.price)}</span>
                 <Link
                   to="/booking/$salonId"
                   params={{ salonId: salon.id }}
@@ -53,50 +81,60 @@ export function SalonPageSections({
             </div>
           ))}
         </div>
-      </section>
+      </SectionBlock>
 
       {salon.staff.length > 0 ? (
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold tracking-tight">{t("salon.tabs.staff")}</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <SectionBlock id="salon-staff" title={t("salon.tabs.staff")}>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {salon.staff.map((b) => (
-              <div key={b.id} className="rounded-2xl bg-surface p-4 text-center">
-                <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-foreground text-lg font-bold text-background">
+              <div
+                key={b.id}
+                className="rounded-xl border border-border p-4 text-center transition-colors hover:bg-muted/30"
+              >
+                <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-muted text-base font-bold">
                   {b.name
                     .split(" ")
                     .map((n) => n[0])
                     .join("")}
                 </div>
-                <p className="mt-3 text-sm font-bold">{b.name}</p>
+                <p className="mt-3 text-sm font-semibold">{b.name}</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">{b.role}</p>
               </div>
             ))}
           </div>
-        </section>
+        </SectionBlock>
       ) : null}
 
-      <section className="space-y-6">
-        <h2 className="text-xl font-bold tracking-tight">{t("salon.tabs.reviews")}</h2>
+      <SectionBlock id="salon-reviews" title={t("salon.tabs.reviews")}>
         <SalonReviewsSummary summary={salon.ratingSummary} />
         <SalonReviewsList reviews={salon.reviews} />
-      </section>
+      </SectionBlock>
 
-      <SalonLocationSection
-        address={salon.address}
-        lat={salon.lat}
-        lng={salon.lng}
-        salonId={salon.id}
-      />
+      <div id="salon-location" className="scroll-mt-36 border-b border-border pb-10">
+        <SalonLocationSection
+          address={salon.address}
+          lat={salon.lat}
+          lng={salon.lng}
+          salonId={salon.id}
+        />
+      </div>
 
-      <SalonHoursSection hours={salon.hours} closedWeekdays={salon.closedWeekdays} />
+      {(salon.hours.length > 0 || salon.closedWeekdays.length > 0) ? (
+        <div id="salon-hours" className="scroll-mt-36 border-b border-border pb-10">
+          <SalonHoursSection hours={salon.hours} closedWeekdays={salon.closedWeekdays} />
+        </div>
+      ) : null}
 
-      <SalonBookingCalendar salonId={salon.id} months={calendarMonths} />
+      {showCalendar ? (
+        <div id="salon-booking" className="scroll-mt-36 border-b border-border pb-10">
+          <SalonBookingCalendar salonId={salon.id} months={calendarMonths} />
+        </div>
+      ) : null}
 
       {salon.portfolio.length > 0 ? (
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold tracking-tight">{t("salon.tabs.portfolio")}</h2>
+        <SectionBlock id="salon-portfolio" title={t("salon.tabs.portfolio")} className="border-b-0">
           <SalonPortfolioGallery images={salon.portfolio} />
-        </section>
+        </SectionBlock>
       ) : null}
     </div>
   );

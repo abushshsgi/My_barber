@@ -128,6 +128,11 @@
     "bookNow": "Забронировать",
     "select": "Выбрать",
     "minutes": "мин",
+    "fromPrice": "От {{price}}",
+    "nav": {
+      "amenities": "Удобства",
+      "location": "Местоположение"
+    },
     "amenities": {
       "title": "Какие удобства вас ждут",
       "showAll": "Показать все удобства: {{count}}"
