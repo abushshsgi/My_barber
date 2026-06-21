@@ -19,13 +19,14 @@ export function buildPricePillHtml(
   const scale = active ? 1.1 : hovered ? 1.06 : 1;
   const motionClass =
     motion === "enter" ? "map-marker-pill-enter" : motion === "exit" ? "map-marker-pill-exit" : "";
+  const scaleStyle = motion === "none" ? `transform:scale(${scale});` : "";
 
   return `<div data-map-pill style="transform:translate(-50%,-50%);cursor:pointer;">
     <div class="${motionClass}" style="
       padding:6px 11px;border-radius:9999px;background:${bg};color:${color};
       border:${border};box-shadow:${shadow};
       font-size:12px;font-weight:800;line-height:1;white-space:nowrap;
-      transform:scale(${scale});transition:transform 0.15s ease, background 0.15s ease;
+      ${scaleStyle}transition:transform 0.15s ease, background 0.15s ease;
       font-family:system-ui,-apple-system,sans-serif;
     ">${text}</div>
   </div>`;

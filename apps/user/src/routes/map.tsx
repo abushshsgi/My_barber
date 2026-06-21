@@ -175,7 +175,7 @@ function MapView() {
     viewportTimerRef.current = window.setTimeout(() => {
       setViewport(vp);
       viewportTimerRef.current = null;
-    }, 150);
+    }, 80);
   }, []);
 
   useEffect(() => {

@@ -23,12 +23,24 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 }
 
 function inBounds(lat: number, lng: number, bounds: MapBounds): boolean {
-  return (
-    lat >= bounds.southWest.lat &&
-    lat <= bounds.northEast.lat &&
-    lng >= bounds.southWest.lng &&
-    lng <= bounds.northEast.lng
-  );
+  const minLat = Math.min(bounds.southWest.lat, bounds.northEast.lat);
+  const maxLat = Math.max(bounds.southWest.lat, bounds.northEast.lat);
+  const minLng = Math.min(bounds.southWest.lng, bounds.northEast.lng);
+  const maxLng = Math.max(bounds.southWest.lng, bounds.northEast.lng);
+  return lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng;
+}
+
+function expandBounds(bounds: MapBounds, factor = 0.06): MapBounds {
+  const minLat = Math.min(bounds.southWest.lat, bounds.northEast.lat);
+  const maxLat = Math.max(bounds.southWest.lat, bounds.northEast.lat);
+  const minLng = Math.min(bounds.southWest.lng, bounds.northEast.lng);
+  const maxLng = Math.max(bounds.southWest.lng, bounds.northEast.lng);
+  const latPad = (maxLat - minLat) * factor;
+  const lngPad = (maxLng - minLng) * factor;
+  return {
+    southWest: { lat: minLat - latPad, lng: minLng - lngPad },
+    northEast: { lat: maxLat + latPad, lng: maxLng + lngPad },
+  };
 }
 
 /**
@@ -55,13 +67,14 @@ export function filterSalonsByViewport<T extends ViewportSalon>(
 ): T[] {
   if (!viewport || salons.length === 0) return salons;
 
+  const bounds = expandBounds(viewport.bounds);
   const inView: T[] = [];
   const indexById = new Map<string, number>();
 
   salons.forEach((s, idx) => {
     indexById.set(s.id, idx);
     const { lat, lng } = normalizeMapCoords(s.lat, s.lng);
-    if (inBounds(lat, lng, viewport.bounds)) inView.push(s);
+    if (inBounds(lat, lng, bounds)) inView.push(s);
   });
 
   if (inView.length === 0) return [];

@@ -15,7 +15,33 @@ import { fitMapToPoints } from "./bounds";
 import { readMapViewport, type MapViewport } from "./viewport";
 import type { MapMarker } from "./types";
 
-const BOTTOM_PAD = 168;
+const MARKER_EXIT_MS = 280;
+const MARKER_STYLES_ID = "map2gis-marker-keyframes";
+
+function ensureMarkerStyles() {
+  if (typeof document === "undefined" || document.getElementById(MARKER_STYLES_ID)) return;
+  const style = document.createElement("style");
+  style.id = MARKER_STYLES_ID;
+  style.textContent = `
+    @keyframes map-marker-pop-in {
+      0% { opacity: 0; transform: scale(0.45); }
+      70% { opacity: 1; transform: scale(1.08); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    @keyframes map-marker-pop-out {
+      0% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(0.45); }
+    }
+    .map-marker-pill-enter {
+      animation: map-marker-pop-in 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    .map-marker-pill-exit {
+      animation: map-marker-pop-out 0.28s ease-in both;
+      pointer-events: none;
+    }
+  `;
+  document.head.appendChild(style);
+}
 const DESKTOP_FIT_PAD = { top: 48, right: 72, bottom: 48, left: 48 };
 
 export type MapHandle = {
@@ -64,6 +90,7 @@ export function Map2GIS({
   const markerRefs = useRef<Map<string, mapgl.HtmlMarker>>(new Map());
   const markerDataRef = useRef<Map<string, MapMarker>>(new Map());
   const exitingIdsRef = useRef<Set<string>>(new Set());
+  const exitTimersRef = useRef<Map<string, number>>(new Map());
   const previewRef = useRef<mapgl.HtmlMarker | null>(null);
   const userMarkerRef = useRef<mapgl.HtmlMarker | null>(null);
   const userCircleRef = useRef<mapgl.Circle | null>(null);
@@ -114,6 +141,17 @@ export function Map2GIS({
     if (!map || skipViewportEmitRef.current) return;
     const vp = readMapViewport(map);
     if (vp) onViewportChangeRef.current?.(vp);
+  };
+
+  const cancelMarkerExit = (id: string): boolean => {
+    const wasExiting = exitingIdsRef.current.has(id);
+    const timer = exitTimersRef.current.get(id);
+    if (timer != null) {
+      window.clearTimeout(timer);
+      exitTimersRef.current.delete(id);
+    }
+    exitingIdsRef.current.delete(id);
+    return wasExiting;
   };
 
   const hidePreview = () => {
@@ -236,12 +274,17 @@ export function Map2GIS({
           disablePitchByUserInteraction: true,
         });
         mapRef.current = map;
+        ensureMarkerStyles();
         setMapReady(true);
         setMapError(null);
         onMapReadyRef.current?.(buildHandle());
         notifyResize();
 
         map.on("moveend", () => {
+          if (!skipViewportEmitRef.current) emitViewport();
+        });
+
+        map.on("zoomend", () => {
           if (!skipViewportEmitRef.current) emitViewport();
         });
 
@@ -266,6 +309,9 @@ export function Map2GIS({
       destroyed = true;
       setMapReady(false);
       hidePreview();
+      exitTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+      exitTimersRef.current.clear();
+      exitingIdsRef.current.clear();
       markerRefs.current.forEach((m) => m.destroy());
       markerRefs.current.clear();
       userMarkerRef.current?.destroy();
@@ -286,7 +332,6 @@ export function Map2GIS({
     const nextIds = new Set(markers.map((m) => m.id));
     const hoverId = hoveredIdRef.current;
     const selected = selectedIdRef.current;
-    const MARKER_EXIT_MS = 280;
 
     for (const [id, marker] of markerRefs.current) {
       if (nextIds.has(id) || exitingIdsRef.current.has(id)) continue;
@@ -296,24 +341,26 @@ export function Map2GIS({
       const pinLabel = stored?.priceLabel || stored?.label.slice(0, 8) || "—";
       marker.setContent(buildPricePillHtml(false, pinLabel, false, "exit"));
 
-      window.setTimeout(() => {
+      const timer = window.setTimeout(() => {
         marker.destroy();
         markerRefs.current.delete(id);
         markerDataRef.current.delete(id);
         exitingIdsRef.current.delete(id);
+        exitTimersRef.current.delete(id);
       }, MARKER_EXIT_MS);
+      exitTimersRef.current.set(id, timer);
     }
 
     for (const m of markers) {
       try {
         markerDataRef.current.set(m.id, m);
-        if (exitingIdsRef.current.has(m.id)) continue;
+        const reEntering = cancelMarkerExit(m.id);
 
         const pinLabel = m.priceLabel || m.label.slice(0, 8);
         const isSelected = selected === m.id;
         const isHovered = hoverId === m.id;
         const existing = markerRefs.current.get(m.id);
-        const motion = existing ? "none" : "enter";
+        const motion = existing && !reEntering ? "none" : "enter";
         const html = buildPricePillHtml(isSelected, pinLabel, isHovered && !isSelected, motion);
 
         const bindMarker = (marker: mapgl.HtmlMarker) => {
