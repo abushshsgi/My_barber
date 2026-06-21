@@ -1,12 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import {
   ChevronRight,
-  CreditCard,
   Gift,
   Plus,
-  Repeat,
-  Sparkles,
-  Tag,
   Wallet as WalletIcon,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -14,15 +10,8 @@ import { DESKTOP_GLASS_PANEL } from "@/components/desktop/ui/desktop-glass";
 import { useWalletMe } from "@/hooks/use-wallet";
 import { parseWalletBalance } from "@/lib/api/wallet";
 import { formatPrice } from "@/lib/price-display";
+import { WALLET_HUB_LINKS } from "@/lib/wallet-nav";
 import { cn } from "@/lib/utils";
-
-const SERVICE_LINKS = [
-  { to: "/payment-methods", icon: CreditCard, labelKey: "paymentMethods.title", defaultLabel: "To'lov usullari" },
-  { to: "/loyalty", icon: Sparkles, labelKey: "profile.loyalty", defaultLabel: "Bonus dasturi" },
-  { to: "/giftcard", icon: Gift, labelKey: "profile.giftcard", defaultLabel: "Sovg'a karta" },
-  { to: "/offers", icon: Tag, labelKey: "profile.offers", defaultLabel: "Aksiyalar" },
-  { to: "/subscriptions", icon: Repeat, labelKey: "subscriptions.title", defaultLabel: "Obunalar" },
-] as const;
 
 export function WalletDesktopAside() {
   const { t } = useTranslation();
@@ -38,7 +27,8 @@ export function WalletDesktopAside() {
             <p className="mt-1 text-xs text-muted-foreground">{t("walletPage.savedCardsHint")}</p>
           </div>
           <Link
-            to="/payment-methods"
+            to="/wallet"
+            search={{ section: "payments" }}
             className="shrink-0 text-xs font-semibold text-foreground underline-offset-4 hover:underline"
           >
             {t("walletPage.manageCards")}
@@ -47,7 +37,8 @@ export function WalletDesktopAside() {
 
         {wallet ? (
           <Link
-            to="/payment-methods"
+            to="/wallet"
+            search={{ section: "payments" }}
             className="mt-4 flex items-center gap-3 rounded-xl border border-foreground/15 bg-surface/80 p-4 transition-colors hover:bg-surface"
           >
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-background ring-1 ring-border/60">
@@ -68,7 +59,8 @@ export function WalletDesktopAside() {
         )}
 
         <Link
-          to="/payment-methods"
+          to="/wallet"
+          search={{ section: "payments" }}
           className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-border py-2.5 text-sm font-semibold transition-colors hover:bg-surface/80"
         >
           <Plus className="h-4 w-4" strokeWidth={2} />
@@ -81,12 +73,13 @@ export function WalletDesktopAside() {
           {t("walletPage.moreServices", { defaultValue: "Hamyon va to'lov" })}
         </h3>
         <ul className="mt-3 divide-y divide-border/60">
-          {SERVICE_LINKS.map((item) => {
+          {WALLET_HUB_LINKS.map((item) => {
             const Icon = item.icon;
             return (
-              <li key={item.to}>
+              <li key={item.section}>
                 <Link
-                  to={item.to}
+                  to="/wallet"
+                  search={{ section: item.section }}
                   className="group flex items-center gap-3 py-3 transition-colors hover:text-foreground"
                 >
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface ring-1 ring-border/50">

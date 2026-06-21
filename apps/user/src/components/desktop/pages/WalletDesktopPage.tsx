@@ -4,18 +4,33 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { WalletDesktopAside } from "@/components/desktop/wallet/WalletDesktopAside";
+import { WalletDesktopShell } from "@/components/desktop/wallet/WalletDesktopShell";
 import { WalletDesktopTransactionTable } from "@/components/desktop/wallet/WalletDesktopTransactionTable";
 import { DESKTOP_ACCOUNT_BG, DESKTOP_GLASS_PANEL } from "@/components/desktop/ui/desktop-glass";
 import { useWalletBalance, useWalletTransactions, walletMeQueryKeyFor } from "@/hooks/use-wallet";
 import { getAuthUserId } from "@/lib/auth-user";
 import { formatPrice } from "@/lib/price-display";
 import { filterWalletTransactions, type WalletTxTab } from "@/lib/wallet-transactions";
+import type { WalletSection } from "@/lib/wallet-nav";
 import { cn } from "@/lib/utils";
 
 const RECENT_TX_LIMIT = 12;
 
-export function WalletDesktopPage() {
+type Props = {
+  section: WalletSection;
+};
+
+export function WalletDesktopPage({ section }: Props) {
   const { t } = useTranslation();
+
+  if (section !== "overview") {
+    return <WalletDesktopShell section={section} t={t} />;
+  }
+
+  return <WalletDesktopOverview t={t} />;
+}
+
+function WalletDesktopOverview({ t }: { t: ReturnType<typeof useTranslation>["t"] }) {
   const qc = useQueryClient();
   const [tab, setTab] = useState<WalletTxTab>("all");
   const [refreshing, setRefreshing] = useState(false);
@@ -108,7 +123,8 @@ export function WalletDesktopPage() {
                 {t("walletPage.refresh", { defaultValue: "Yangilash" })}
               </button>
               <Link
-                to="/giftcard"
+                to="/wallet"
+                search={{ section: "gift" }}
                 className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-surface"
               >
                 <Gift className="h-4 w-4" strokeWidth={2} />

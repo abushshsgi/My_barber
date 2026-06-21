@@ -7,6 +7,8 @@ import { WalletGiftPanel } from "@/components/wallet/panels/WalletGiftPanel";
 import { WalletLoyaltyPanel } from "@/components/wallet/panels/WalletLoyaltyPanel";
 import { WalletOffersPanel } from "@/components/wallet/panels/WalletOffersPanel";
 import { WalletTransactionsPanel } from "@/components/wallet/WalletTransactionsPanel";
+import { SettingsPaymentMethodsPanel } from "@/components/settings/panels/SettingsPaymentMethodsPanel";
+import { SettingsSubscriptionsPanel } from "@/components/settings/panels/SettingsSubscriptionsPanel";
 import { DESKTOP_GLASS_PANEL } from "@/components/desktop/ui/desktop-glass";
 import { useCurrency } from "@/hooks/use-currency";
 import { useWalletBalance, useWalletTransactions } from "@/hooks/use-wallet";
@@ -15,9 +17,10 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   section: WalletSection;
+  hideTitle?: boolean;
 };
 
-export function WalletPanelContent({ section }: Props) {
+export function WalletPanelContent({ section, hideTitle }: Props) {
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
   const { balance, walletNumber, card, isLoading } = useWalletBalance();
@@ -40,11 +43,13 @@ export function WalletPanelContent({ section }: Props) {
 
   return (
     <div>
-      <h2 className="text-[22px] font-semibold tracking-tight text-foreground">
-        {t(titleMeta.titleKey, { defaultValue: titleMeta.defaultTitle })}
-      </h2>
+      {!hideTitle ? (
+        <h2 className="text-[22px] font-semibold tracking-tight text-foreground">
+          {t(titleMeta.titleKey, { defaultValue: titleMeta.defaultTitle })}
+        </h2>
+      ) : null}
 
-      <div className="mt-4">
+      <div className={hideTitle ? undefined : "mt-4"}>
         {section === "overview" && (
           <div className="space-y-6">
             <div className={cn(DESKTOP_GLASS_PANEL, "flex flex-wrap items-end justify-between gap-4 p-6")}>
@@ -131,11 +136,15 @@ export function WalletPanelContent({ section }: Props) {
 
         {section === "transactions" && <WalletTransactionsPanel limit={30} showFullHistoryLink={false} />}
 
+        {section === "payments" && <SettingsPaymentMethodsPanel />}
+
         {section === "gift" && <WalletGiftPanel />}
 
         {section === "loyalty" && <WalletLoyaltyPanel />}
 
         {section === "offers" && <WalletOffersPanel />}
+
+        {section === "subscriptions" && <SettingsSubscriptionsPanel />}
       </div>
     </div>
   );

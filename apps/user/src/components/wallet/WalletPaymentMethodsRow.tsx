@@ -29,7 +29,8 @@ export function WalletPaymentMethodsRow({
           </p>
         </div>
         <Link
-          to="/payment-methods"
+          to="/wallet"
+          search={{ section: "payments" }}
           className={cn(
             "inline-flex shrink-0 items-center gap-0.5 font-bold text-foreground",
             isDesktop ? "text-xs" : "text-[10px]",
@@ -49,7 +50,8 @@ export function WalletPaymentMethodsRow({
       >
         {wallet ? (
           <Link
-            to="/payment-methods"
+            to="/wallet"
+          search={{ section: "payments" }}
             className={cn(
               "flex flex-col justify-between rounded-xl border active:scale-[0.98]",
               "border-foreground bg-surface",
@@ -78,7 +80,8 @@ export function WalletPaymentMethodsRow({
         {(["click", "payme"] as const).map((id) => (
           <Link
             key={id}
-            to="/payment-methods"
+            to="/wallet"
+          search={{ section: "payments" }}
             className={cn(
               "flex flex-col justify-between rounded-xl border border-border bg-background active:scale-[0.98]",
               isDesktop ? "min-h-[88px] px-4 py-3" : "h-[54px] w-[98px] shrink-0 px-2.5 py-2",
@@ -94,7 +97,8 @@ export function WalletPaymentMethodsRow({
         ))}
 
         <Link
-          to="/payment-methods"
+          to="/wallet"
+          search={{ section: "payments" }}
           className={cn(
             "flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border bg-background active:scale-[0.98]",
             isDesktop ? "min-h-[88px]" : "h-[54px] w-[54px] shrink-0",

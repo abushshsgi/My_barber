@@ -117,7 +117,8 @@ export function WalletDesktopTransactionTable({
       {hasAny && showViewAll ? (
         <div className="border-t border-border/60 px-5 py-4">
           <Link
-            to="/wallet/history"
+            to="/wallet"
+            search={{ section: "transactions" }}
             className="inline-flex text-sm font-semibold text-foreground underline-offset-4 hover:underline"
           >
             {t("walletPage.fullHistory")}

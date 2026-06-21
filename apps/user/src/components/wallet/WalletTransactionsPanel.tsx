@@ -87,8 +87,8 @@ export function WalletTransactionsPanel({
 
       {showFullHistoryLink && hasAnyTransactions ? (
         <Link
-          to={fullHistoryTo?.to ?? "/wallet/history"}
-          search={fullHistoryTo?.search as never}
+          to={fullHistoryTo?.to ?? "/wallet"}
+          search={(fullHistoryTo?.search ?? { section: "transactions" }) as never}
           className="mt-5 inline-flex rounded-full bg-surface px-5 py-2.5 text-xs font-bold transition-colors hover:bg-surface/80"
         >
           {t("walletPage.fullHistory")}
