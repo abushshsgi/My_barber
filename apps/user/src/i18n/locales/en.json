@@ -127,7 +127,34 @@
     },
     "bookNow": "Book now",
     "select": "Select",
-    "minutes": "min"
+    "minutes": "min",
+    "amenities": {
+      "title": "What amenities await you",
+      "showAll": "Show all: {{count}}"
+    },
+    "reviews": {
+      "guestFavorite": "Guest favorite",
+      "showAll": "All ratings",
+      "count": "{{count}} reviews"
+    },
+    "location": {
+      "title": "Where you'll be"
+    },
+    "booking": {
+      "selectDate": "Select a date",
+      "clearDates": "Clear dates"
+    },
+    "hours": {
+      "title": "Opening hours",
+      "closed": "Closed",
+      "mon": "Monday",
+      "tue": "Tuesday",
+      "wed": "Wednesday",
+      "thu": "Thursday",
+      "fri": "Friday",
+      "sat": "Saturday",
+      "sun": "Sunday"
+    }
   },
   "booking": {
     "title": "Booking",

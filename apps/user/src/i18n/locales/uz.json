@@ -132,7 +132,34 @@
     },
     "bookNow": "Hoziroq band qilish",
     "select": "Tanlash",
-    "minutes": "daqiqa"
+    "minutes": "daqiqa",
+    "amenities": {
+      "title": "Qanday qulayliklar sizni kutmoqda",
+      "showAll": "Barchasi: {{count}}"
+    },
+    "reviews": {
+      "guestFavorite": "Mehmonlar tanlovi",
+      "showAll": "Barcha baholar",
+      "count": "{{count}} ta sharh"
+    },
+    "location": {
+      "title": "Qayerda bo'lasiz"
+    },
+    "booking": {
+      "selectDate": "Sanani tanlang",
+      "clearDates": "Sanani tozalash"
+    },
+    "hours": {
+      "title": "Ish vaqti",
+      "closed": "Yopiq",
+      "mon": "Dushanba",
+      "tue": "Seshanba",
+      "wed": "Chorshanba",
+      "thu": "Payshanba",
+      "fri": "Juma",
+      "sat": "Shanba",
+      "sun": "Yakshanba"
+    }
   },
   "booking": {
     "title": "Band qilish",

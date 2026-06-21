@@ -17,7 +17,13 @@ from accounts.models import User
 from barbers.activation_permissions import IsAuthenticatedBarberAware
 from barbers.barber_auth import BarberPrincipal
 from barbers.models import Barber
-from bookings.availability import build_available_slots, get_salon_services_for_barber, parse_id_list
+from bookings.availability import (
+    build_available_slots,
+    build_month_availability,
+    default_salon_barber_and_service,
+    get_salon_services_for_barber,
+    parse_id_list,
+)
 from bookings.db_compat import bookings_has_family_member_column
 from bookings.models import Booking, BookingCompletion, BookingLine, Review
 from notifications.serializers import NotificationSerializer
@@ -508,6 +514,70 @@ class BookingAvailabilityView(APIView):
                 target_date=target_date,
             )
         )
+
+
+class BookingAvailabilityMonthView(APIView):
+    """
+    Oylik bandlik kalendari: har bir kun uchun available + slot_count.
+    barber yoki service_ids berilmasa — birinchi faol staff va eng qisqa xizmat.
+    """
+
+    permission_classes = [IsAuthenticatedBarberAware]
+
+    def get(self, request):
+        salon_id = request.query_params.get("salon")
+        year_s = request.query_params.get("year")
+        month_s = request.query_params.get("month")
+        barber_id = request.query_params.get("barber")
+        service_ids_raw = request.query_params.get("service_ids", "")
+
+        if not all([salon_id, year_s, month_s]):
+            return Response(
+                {"detail": "salon, year, and month are required."},
+                status=400,
+            )
+        try:
+            year = int(year_s)
+            month = int(month_s)
+            if month < 1 or month > 12:
+                raise ValueError
+        except (TypeError, ValueError):
+            return Response({"detail": "Invalid year or month."}, status=400)
+
+        salon = get_object_or_404(Salon, pk=salon_id, is_published=True)
+
+        id_list = parse_id_list(service_ids_raw)
+        barber = None
+        if barber_id:
+            barber = get_object_or_404(Barber, pk=barber_id)
+            from barbers.readiness import barber_is_publicly_visible
+
+            if not barber_is_publicly_visible(barber):
+                return Response({"days": []})
+            if not SalonMembership.objects.filter(
+                barber=barber,
+                salon=salon,
+                invite_state=SalonMembership.InviteState.ACTIVE,
+            ).exists():
+                return Response({"days": []})
+            if not id_list:
+                return Response({"detail": "service_ids required when barber is set."}, status=400)
+        else:
+            barber, _svc, default_ids = default_salon_barber_and_service(salon)
+            if barber is None or not default_ids:
+                return Response({"year": year, "month": month, "days": []})
+            id_list = default_ids
+
+        payload = build_month_availability(
+            salon=salon,
+            barber=barber,
+            service_ids=id_list,
+            year=year,
+            month=month,
+        )
+        if payload is None:
+            return Response({"detail": "Invalid or inactive services."}, status=400)
+        return Response(payload)
 
 
 class AnalyticsView(APIView):

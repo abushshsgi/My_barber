@@ -127,7 +127,34 @@
     },
     "bookNow": "Забронировать",
     "select": "Выбрать",
-    "minutes": "мин"
+    "minutes": "мин",
+    "amenities": {
+      "title": "Какие удобства вас ждут",
+      "showAll": "Все: {{count}}"
+    },
+    "reviews": {
+      "guestFavorite": "Выбор гостей",
+      "showAll": "Все оценки",
+      "count": "{{count}} отзывов"
+    },
+    "location": {
+      "title": "Где вы будете"
+    },
+    "booking": {
+      "selectDate": "Выберите дату",
+      "clearDates": "Сбросить даты"
+    },
+    "hours": {
+      "title": "Часы работы",
+      "closed": "Закрыто",
+      "mon": "Понедельник",
+      "tue": "Вторник",
+      "wed": "Среда",
+      "thu": "Четверг",
+      "fri": "Пятница",
+      "sat": "Суббота",
+      "sun": "Воскресенье"
+    }
   },
   "booking": {
     "title": "Бронирование",

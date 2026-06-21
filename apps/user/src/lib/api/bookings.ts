@@ -1,6 +1,6 @@
 import { apiJson } from "./client";
 import { apiList } from "./list-utils";
-import type { ApiAvailabilitySlot, ApiBooking } from "./types";
+import type { ApiAvailabilityMonth, ApiAvailabilitySlot, ApiBooking } from "./types";
 
 function qs(params: Record<string, string | number | undefined>): string {
   const sp = new URLSearchParams();
@@ -40,6 +40,16 @@ export async function fetchBookingAvailability(params: {
   barber: number;
   date: string;
   service_ids: string;
-}): Promise<{ slots: ApiAvailabilitySlot[] }> {
+}): Promise<{ slots: ApiAvailabilitySlot[] | string[] }> {
   return apiJson(`/api/v1/bookings/availability/${qs(params)}`);
+}
+
+export async function fetchAvailabilityMonth(params: {
+  salon: number;
+  year: number;
+  month: number;
+  barber?: number;
+  service_ids?: string;
+}): Promise<ApiAvailabilityMonth> {
+  return apiJson(`/api/v1/bookings/availability/month/${qs(params)}`);
 }

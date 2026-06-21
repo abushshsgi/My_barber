@@ -182,6 +182,65 @@ def build_available_slots(*, barber: Barber, services, target_date, salon: Salon
     return {"slots": slots, "total_minutes": total_minutes}
 
 
+def default_salon_barber_and_service(salon: Salon):
+    """Salon uchun default barber (birinchi faol a'zo) va eng qisqa xizmat."""
+    mem = (
+        SalonMembership.objects.filter(
+            salon=salon,
+            invite_state=SalonMembership.InviteState.ACTIVE,
+            barber__isnull=False,
+        )
+        .select_related("barber")
+        .order_by("id")
+        .first()
+    )
+    if not mem or not mem.barber_id:
+        return None, None, []
+    barber = mem.barber
+    svc = (
+        Service.objects.filter(
+            Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True),
+            salon=salon,
+            is_active=True,
+        )
+        .order_by("duration_minutes", "id")
+        .first()
+    )
+    if not svc:
+        return barber, None, []
+    return barber, svc, [svc.id]
+
+
+def build_month_availability(*, salon: Salon, barber: Barber, service_ids: list[int], year: int, month: int):
+    import calendar
+    from datetime import date
+
+    ids = list(dict.fromkeys(service_ids))
+    services = get_salon_services_for_barber(salon, barber, ids)
+    if len(services) != len(set(ids)):
+        return None
+
+    _, last_day = calendar.monthrange(year, month)
+    days = []
+    for day_num in range(1, last_day + 1):
+        target = date(year, month, day_num)
+        payload = build_available_slots(
+            barber=barber,
+            salon=salon,
+            services=services,
+            target_date=target,
+        )
+        slots = payload.get("slots") or []
+        days.append(
+            {
+                "date": target.isoformat(),
+                "available": len(slots) > 0,
+                "slot_count": len(slots),
+            }
+        )
+    return {"year": year, "month": month, "days": days}
+
+
 def assert_booking_slot_available(*, barber: Barber, services, start_at, salon: Salon | None = None):
     start_local = timezone.localtime(start_at)
     if start_at < timezone.now():

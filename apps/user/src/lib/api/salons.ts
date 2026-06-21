@@ -1,6 +1,6 @@
 import { apiJson } from "./client";
 import { apiList } from "./list-utils";
-import type { ApiSalonDetail, ApiSalonList, ApiSalonStaff } from "./types";
+import type { ApiSalonDetail, ApiSalonList, ApiSalonRatingSummary, ApiSalonStaff } from "./types";
 import type { ApiNearbySalon } from "./types";
 
 function qs(params: Record<string, string | number | undefined>): string {
@@ -42,4 +42,11 @@ export async function fetchSalonPortfolio(
   salonId: string | number,
 ): Promise<{ image: string | null; booking_id: number }[]> {
   return apiJson(`/api/v1/salons/${salonId}/portfolio/`);
+}
+
+export async function fetchSalonRatingSummary(
+  id: string | number,
+  lang?: string,
+): Promise<ApiSalonRatingSummary> {
+  return apiJson<ApiSalonRatingSummary>(`/api/v1/salons/${id}/rating-summary${qs({ lang })}`);
 }

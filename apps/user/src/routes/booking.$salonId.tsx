@@ -18,6 +18,9 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/$salonId")({
   head: () => ({ meta: [{ title: "Band qilish — mysaloon.uz" }] }),
+  validateSearch: (search: Record<string, unknown>): { date?: string } => ({
+    date: typeof search.date === "string" ? search.date : undefined,
+  }),
   component: BookingFlow,
 });
 
@@ -28,7 +31,24 @@ const SLOTS = [
   "12:00", "12:15", "14:00", "14:15", "14:30", "14:45",
 ];
 
-function useBookingSalonState(salonId: string) {
+function buildDayList(initialDate?: string) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let start = new Date(today);
+  if (initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate)) {
+    const parsed = new Date(`${initialDate}T12:00:00`);
+    if (!Number.isNaN(parsed.getTime()) && parsed >= today) {
+      start = parsed;
+    }
+  }
+  return Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    return { date: d.getDate(), day: DAYS[d.getDay() === 0 ? 6 : d.getDay() - 1], full: d };
+  });
+}
+
+function useBookingSalonState(salonId: string, initialDate?: string) {
   const router = useRouter();
   const { t } = useTranslation();
   const user = useDisplayUser();
@@ -42,12 +62,7 @@ function useBookingSalonState(salonId: string) {
   const [dayIdx, setDayIdx] = useState(0);
   const [slot, setSlot] = useState<string | null>(null);
 
-  const today = new Date();
-  const dayList = Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    return { date: d.getDate(), day: DAYS[d.getDay() === 0 ? 6 : d.getDay() - 1], full: d };
-  });
+  const dayList = buildDayList(initialDate);
 
   const dateIso = dayList[dayIdx]?.full ? dayList[dayIdx].full.toISOString().slice(0, 10) : "";
 
@@ -60,9 +75,10 @@ function useBookingSalonState(salonId: string) {
   });
 
   const slotOptions =
-    availability.data?.slots?.map((s) =>
-      new Date(s.start).toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }),
-    ) ?? SLOTS;
+    availability.data?.slots?.map((s) => {
+      if (typeof s === "string") return s;
+      return new Date(s.start).toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
+    }) ?? SLOTS;
 
   const selectedServices = salon?.services.filter((s) => serviceIds.includes(s.id)) ?? [];
   const total = selectedServices.reduce((sum, s) => sum + s.price, 0);
@@ -265,7 +281,8 @@ function BookingNavButtons({ state, t }: { state: ReturnType<typeof useBookingSa
 function BookingMobile() {
   const { t } = useTranslation();
   const { salonId } = useParams({ from: "/booking/$salonId" });
-  const state = useBookingSalonState(salonId);
+  const { date: initialDate } = Route.useSearch();
+  const state = useBookingSalonState(salonId, initialDate);
   const stepLabels = [t("booking.step1"), t("booking.step2"), t("booking.step3"), t("booking.step4")];
 
   if (state.isLoading || !state.salon) {
@@ -291,7 +308,8 @@ function BookingMobile() {
 function BookingDesktop() {
   const { t } = useTranslation();
   const { salonId } = useParams({ from: "/booking/$salonId" });
-  const state = useBookingSalonState(salonId);
+  const { date: initialDate } = Route.useSearch();
+  const state = useBookingSalonState(salonId, initialDate);
   const stepLabels = [t("booking.step1"), t("booking.step2"), t("booking.step3"), t("booking.step4")];
 
   if (state.isLoading || !state.salon) {

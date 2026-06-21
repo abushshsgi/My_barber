@@ -234,3 +234,27 @@ class BarberWorkingHours(models.Model):
 
     class Meta:
         unique_together = [["membership", "weekday"]]
+
+
+class Amenity(models.Model):
+    """Salon qulayliklari katalogi (Wi‑Fi, parking, ...)."""
+
+    code = models.SlugField(max_length=64, unique=True)
+    icon = models.CharField(max_length=64, help_text="Lucide icon nomi")
+    labels = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["code"]
+        verbose_name_plural = "amenities"
+
+    def __str__(self):
+        return self.code
+
+
+class SalonAmenity(models.Model):
+    salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name="salon_amenities")
+    amenity = models.ForeignKey(Amenity, on_delete=models.CASCADE, related_name="salon_links")
+
+    class Meta:
+        unique_together = [["salon", "amenity"]]
+        ordering = ["amenity__code"]

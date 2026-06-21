@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   cancelBooking,
   createBooking,
+  fetchAvailabilityMonth,
   fetchBookingAvailability,
   fetchBookings,
   type CreateBookingPayload,
@@ -69,5 +70,31 @@ export function useBookingAvailability(params: {
           params.date.length > 0 &&
           params.serviceIds.length > 0,
       ),
+  });
+}
+
+export function useAvailabilityMonth(params: {
+  salon: number;
+  year: number;
+  month: number;
+  barber?: number;
+  serviceIds?: number[];
+  enabled?: boolean;
+}) {
+  const userId = getAuthUserId();
+  return useQuery({
+    queryKey: userQueryKey(
+      ["bookings", "availability-month", JSON.stringify(params)] as const,
+      userId,
+    ),
+    queryFn: () =>
+      fetchAvailabilityMonth({
+        salon: params.salon,
+        year: params.year,
+        month: params.month,
+        barber: params.barber,
+        service_ids: params.serviceIds?.length ? params.serviceIds.join(",") : undefined,
+      }),
+    enabled: authQueryEnabled(!!userId && (params.enabled ?? true) && params.salon > 0),
   });
 }

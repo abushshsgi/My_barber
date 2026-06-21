@@ -13,4 +13,4 @@
 #   FRONTEND_BARBER_ORIGIN=https://partner.mysaloon.uz
 
 [deploy]
-releaseCommand = "python manage.py migrate --noinput && python manage.py collectstatic --noinput"
+releaseCommand = "python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py seed_amenities"

@@ -73,7 +73,13 @@ class SalonViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = Salon.objects.select_related("owner", "owner_barber")
         if self.action == "retrieve":
-            qs = qs.prefetch_related("images", "hours", "services", "services__catalog_service")
+            qs = qs.prefetch_related(
+                "images",
+                "hours",
+                "services",
+                "services__catalog_service",
+                "salon_amenities__amenity",
+            )
 
         if self.action == "list":
             qs = self._apply_public_salon_region(self._salon_public_list_qs())
@@ -199,6 +205,18 @@ class SalonViewSet(viewsets.ModelViewSet):
         if not allowed and not is_platform_admin(request):
             return Response(status=403)
         return Response(BarberSalonViewSerializer(salon, context={"request": request}).data)
+
+    @action(
+        detail=True,
+        methods=["get"],
+        permission_classes=[IsAuthenticatedBarberAware],
+        url_path="rating-summary",
+    )
+    def rating_summary(self, request, pk=None):
+        from salons.rating_summary import build_rating_summary
+
+        salon = self.get_object()
+        return Response(build_rating_summary(salon, request))
 
     @action(
         detail=False,

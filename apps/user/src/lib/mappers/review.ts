@@ -1,5 +1,6 @@
 import type { ApiReview } from "@/lib/api/types";
 import type { Review } from "@/lib/mock-data";
+import { resolveMediaUrl } from "@/lib/media-url";
 
 export function mapReview(api: ApiReview): Review {
   return {
@@ -8,6 +9,7 @@ export function mapReview(api: ApiReview): Review {
     rating: api.rating,
     text: api.text,
     date: new Date(api.created_at).toLocaleDateString("uz-UZ"),
+    photo: resolveMediaUrl(api.photo) ?? undefined,
   };
 }
 

@@ -75,6 +75,7 @@ from accounts.views_phone_auth import (
 from accounts.views_admin_auth import AdminMeView, AdminTokenRefreshView, AdminTokenView
 from bookings.views import (
     AnalyticsView,
+    BookingAvailabilityMonthView,
     BookingAvailabilityView,
     BookingViewSet,
     IndependentClientsView,
@@ -261,6 +262,7 @@ api_routes = [
     path("analytics/clients/", SalonClientsView.as_view()),
     path("analytics/clients/independent/", IndependentClientsView.as_view()),
     path("bookings/availability/", BookingAvailabilityView.as_view()),
+    path("bookings/availability/month/", BookingAvailabilityMonthView.as_view()),
     path("barbers/availability/", IndependentAvailabilityView.as_view()),
     path("salons/<int:salon_id>/portfolio/", SalonPortfolioView.as_view()),
     # Chat (text-only): barber ↔ user

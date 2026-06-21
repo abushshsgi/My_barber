@@ -69,7 +69,34 @@ export type ApiSalonDetail = ApiSalonList & {
   hours: { weekday: number; open_time: string; close_time: string }[];
   images: { id: number; image: string; sort_order: number }[];
   services: ApiService[];
+  amenities: ApiSalonAmenity[];
   created_at: string;
+};
+
+export type ApiSalonAmenity = {
+  code: string;
+  icon: string;
+  label: string;
+};
+
+export type ApiSalonRatingSummary = {
+  rating_avg: number;
+  review_count: number;
+  is_guest_favorite: boolean;
+  distribution: Record<string, number>;
+  highlights: { code: string; label: string; score: number; count: number }[];
+};
+
+export type ApiAvailabilityMonthDay = {
+  date: string;
+  available: boolean;
+  slot_count?: number;
+};
+
+export type ApiAvailabilityMonth = {
+  year: number;
+  month: number;
+  days: ApiAvailabilityMonthDay[];
 };
 
 export type ApiService = {

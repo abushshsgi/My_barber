@@ -1,7 +1,7 @@
-import type { ApiNearbySalon, ApiSalonDetail, ApiSalonList } from "@/lib/api/types";
+import type { ApiNearbySalon, ApiSalonDetail, ApiSalonList, ApiSalonRatingSummary } from "@/lib/api/types";
 import { getSalonCoverUrl } from "@/lib/cover-images";
 import { resolveMediaUrl } from "@/lib/media-url";
-import type { Audience, Category, Salon } from "@/lib/mock-data";
+import type { Audience, Category, Salon, SalonRatingSummary } from "@/lib/mock-data";
 
 function toNum(v: string | number | null | undefined, fallback = 0): number {
   if (v == null) return fallback;
@@ -67,6 +67,10 @@ export function mapSalonList(api: ApiSalonList, distanceKm = 0): Salon {
     portfolio: [],
     lat: toNum(api.latitude),
     lng: toNum(api.longitude),
+    amenities: [],
+    hours: [],
+    closedWeekdays: [],
+    ratingSummary: null,
   };
 }
 
@@ -86,6 +90,28 @@ export function mapSalonDetail(api: ApiSalonDetail, distanceKm = 0): Salon {
       price: toNum(s.price),
     })),
     portfolio: (api.images ?? []).map((img) => img.image),
+    amenities: (api.amenities ?? []).map((a) => ({
+      code: a.code,
+      icon: a.icon,
+      label: a.label,
+    })),
+    hours: (api.hours ?? []).map((h) => ({
+      weekday: h.weekday,
+      openTime: h.open_time?.slice(0, 5) ?? "",
+      closeTime: h.close_time?.slice(0, 5) ?? "",
+    })),
+    closedWeekdays: api.closed_weekdays ?? [],
+    ratingSummary: null,
+  };
+}
+
+export function mapRatingSummary(api: ApiSalonRatingSummary): SalonRatingSummary {
+  return {
+    ratingAvg: api.rating_avg ?? 0,
+    reviewCount: api.review_count ?? 0,
+    isGuestFavorite: api.is_guest_favorite ?? false,
+    distribution: api.distribution ?? {},
+    highlights: api.highlights ?? [],
   };
 }
 

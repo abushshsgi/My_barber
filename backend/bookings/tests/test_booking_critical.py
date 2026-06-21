@@ -407,3 +407,61 @@ class BookingCriticalTests(TestCase):
             format="json",
         )
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_month_availability_returns_days(self):
+        self.barber.work_mode = Barber.WorkMode.SALON
+        self.barber.onboarding_flow = Barber.OnboardingFlow.OWNER
+        self.barber.save()
+        salon = Salon.objects.create(
+            owner_barber=self.barber,
+            name="Month Salon",
+            latitude=41.31,
+            longitude=69.28,
+            address="Toshkent",
+            is_published=True,
+        )
+        membership = SalonMembership.objects.create(
+            barber=self.barber,
+            salon=salon,
+            role=SalonMembership.Role.OWNER,
+            invite_state=SalonMembership.InviteState.ACTIVE,
+        )
+        for weekday in range(7):
+            SalonHours.objects.create(
+                salon=salon,
+                weekday=weekday,
+                open_time=time(9, 0),
+                close_time=time(18, 0),
+            )
+            SalonBarberWorkingHours.objects.create(
+                membership=membership,
+                weekday=weekday,
+                open_time=time(9, 0),
+                close_time=time(18, 0),
+                is_day_off=False,
+                breaks=[],
+            )
+        Service.objects.create(
+            salon=salon,
+            barber=self.barber,
+            name="Quick cut",
+            price=50_000,
+            duration_minutes=30,
+            is_active=True,
+        )
+        target = timezone.now() + timedelta(days=10)
+        self.client.force_authenticate(user=self.user)
+        res = self.client.get(
+            "/api/v1/bookings/availability/month/",
+            {
+                "salon": salon.id,
+                "year": target.year,
+                "month": target.month,
+            },
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        body = res.json()
+        self.assertEqual(body["year"], target.year)
+        self.assertEqual(body["month"], target.month)
+        self.assertGreater(len(body["days"]), 27)
+        self.assertTrue(any(d.get("available") for d in body["days"]))

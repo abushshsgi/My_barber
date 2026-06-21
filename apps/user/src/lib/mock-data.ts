@@ -28,6 +28,27 @@ export interface Review {
   rating: number;
   text: string;
   date: string;
+  photo?: string;
+}
+
+export interface SalonAmenity {
+  code: string;
+  icon: string;
+  label: string;
+}
+
+export interface SalonHour {
+  weekday: number;
+  openTime: string;
+  closeTime: string;
+}
+
+export interface SalonRatingSummary {
+  ratingAvg: number;
+  reviewCount: number;
+  isGuestFavorite: boolean;
+  distribution: Record<string, number>;
+  highlights: { code: string; label: string; score: number; count: number }[];
 }
 
 export interface Salon {
@@ -50,6 +71,10 @@ export interface Salon {
   portfolio: string[];
   lat: number;
   lng: number;
+  amenities: SalonAmenity[];
+  hours: SalonHour[];
+  closedWeekdays: number[];
+  ratingSummary: SalonRatingSummary | null;
 }
 
 export interface BookingItem {
@@ -195,8 +220,21 @@ const barbers = (salonId: string): Barber[] => [
   { id: `${salonId}-b3`, name: "Timur V.", role: "Barber", rating: 4.7, avatarSeed: "timur", serviceIds: ["s1", "s2", "s4"], salonId },
 ];
 
+function mockSalon(
+  seed: Omit<Salon, "amenities" | "hours" | "closedWeekdays" | "ratingSummary"> &
+    Partial<Pick<Salon, "amenities" | "hours" | "closedWeekdays" | "ratingSummary">>,
+): Salon {
+  return {
+    amenities: [],
+    hours: [],
+    closedWeekdays: [],
+    ratingSummary: null,
+    ...seed,
+  };
+}
+
 export const salons: Salon[] = [
-  {
+  mockSalon({
     id: "1",
     name: "Legacy Barbershop",
     category: "barber",
@@ -215,8 +253,8 @@ export const salons: Salon[] = [
     portfolio: ["p1", "p2", "p3", "p4", "p5", "p6"],
     lat: 41.3111,
     lng: 69.2797,
-  },
-  {
+  }),
+  mockSalon({
     id: "2",
     name: "Atelier Beauty",
     category: "beauty",
@@ -235,8 +273,8 @@ export const salons: Salon[] = [
     portfolio: ["p1", "p2", "p3"],
     lat: 41.3201,
     lng: 69.2401,
-  },
-  {
+  }),
+  mockSalon({
     id: "3",
     name: "Studio M",
     category: "barber",
@@ -255,8 +293,8 @@ export const salons: Salon[] = [
     portfolio: ["p1", "p2"],
     lat: 41.2995,
     lng: 69.2885,
-  },
-  {
+  }),
+  mockSalon({
     id: "4",
     name: "Nail House",
     category: "nails",
@@ -275,8 +313,8 @@ export const salons: Salon[] = [
     portfolio: ["p1", "p2", "p3", "p4"],
     lat: 41.3477,
     lng: 69.2879,
-  },
-  {
+  }),
+  mockSalon({
     id: "5",
     name: "Noir Studio",
     category: "beauty",
@@ -295,8 +333,8 @@ export const salons: Salon[] = [
     portfolio: ["p1", "p2", "p3"],
     lat: 41.2755,
     lng: 69.2030,
-  },
-  {
+  }),
+  mockSalon({
     id: "6",
     name: "Glow Spa",
     category: "spa",
@@ -315,7 +353,7 @@ export const salons: Salon[] = [
     portfolio: ["p1", "p2"],
     lat: 41.3300,
     lng: 69.3400,
-  },
+  }),
 ];
 
 export const bookings: BookingItem[] = [

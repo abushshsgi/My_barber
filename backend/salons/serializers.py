@@ -8,9 +8,11 @@ from rest_framework import serializers
 from accounts.auth_utils import is_platform_admin
 from accounts.models import User
 from .models import (
+    Amenity,
     BarberWorkingHours,
     CatalogService,
     Salon,
+    SalonAmenity,
     SalonHours,
     SalonImage,
     SalonMembership,
@@ -148,6 +150,7 @@ class SalonDetailSerializer(serializers.ModelSerializer):
     hours = SalonHoursSerializer(many=True, read_only=True)
     images = SalonImageSerializer(many=True, read_only=True)
     services = serializers.SerializerMethodField()
+    amenities = serializers.SerializerMethodField()
     owner_id = serializers.SerializerMethodField()
     rating_avg = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
@@ -172,10 +175,32 @@ class SalonDetailSerializer(serializers.ModelSerializer):
             "hours",
             "images",
             "services",
+            "amenities",
             "rating_avg",
             "review_count",
             "created_at",
         )
+
+    def _amenity_lang(self) -> str:
+        request = self.context.get("request")
+        if request is None:
+            return "uz"
+        raw = (request.query_params.get("lang") or request.headers.get("Accept-Language") or "uz").split(",")[0]
+        code = raw.strip().lower().split("-")[0]
+        return code if code in ("uz", "ru", "en") else "uz"
+
+    def get_amenities(self, obj):
+        lang = self._amenity_lang()
+        links = getattr(obj, "_prefetched_objects_cache", {}).get("salon_amenities")
+        if links is None:
+            links = obj.salon_amenities.select_related("amenity").all()
+        out = []
+        for link in links:
+            amenity = link.amenity
+            labels = amenity.labels or {}
+            label = labels.get(lang) or labels.get("uz") or amenity.code
+            out.append({"code": amenity.code, "icon": amenity.icon, "label": label})
+        return out
 
     def get_owner_id(self, obj):
         return obj.owner_barber_id or obj.owner_id
@@ -283,6 +308,11 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
         required=False,
         write_only=True,
     )
+    amenity_codes = serializers.ListField(
+        child=serializers.SlugField(),
+        required=False,
+        write_only=True,
+    )
 
     class Meta:
         model = Salon
@@ -301,6 +331,7 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
             "is_published",
             "hours",
             "services",
+            "amenity_codes",
         )
 
     def validate(self, attrs):
@@ -338,9 +369,35 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
                 attrs["services"] = []
         return attrs
 
+    def _sync_amenities(self, salon, codes: list[str] | None):
+        if codes is None:
+            return
+        normalized = []
+        for code in codes:
+            c = (code or "").strip()
+            if c and c not in normalized:
+                normalized.append(c)
+        amenities = list(Amenity.objects.filter(code__in=normalized))
+        found = {a.code for a in amenities}
+        missing = [c for c in normalized if c not in found]
+        if missing:
+            raise serializers.ValidationError(
+                {"amenity_codes": f"Unknown amenity codes: {', '.join(missing)}"}
+            )
+        SalonAmenity.objects.filter(salon=salon).exclude(amenity__code__in=normalized).delete()
+        existing = set(
+            SalonAmenity.objects.filter(salon=salon, amenity__code__in=normalized).values_list(
+                "amenity__code", flat=True
+            )
+        )
+        for amenity in amenities:
+            if amenity.code not in existing:
+                SalonAmenity.objects.create(salon=salon, amenity=amenity)
+
     def create(self, validated_data):
         hours_data = validated_data.pop("hours", [])
         services_data = validated_data.pop("services", [])
+        amenity_codes = validated_data.pop("amenity_codes", None)
         request = self.context.get("request")
         # perform_create already passes owner_barber via serializer.save(owner_barber=bp).
         # Only set it here if not already provided (e.g. admin creates on behalf of a barber).
@@ -362,10 +419,13 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
                     duration_minutes=s["duration_minutes"],
                     is_active=True,
                 )
+            if amenity_codes is not None:
+                self._sync_amenities(salon, amenity_codes)
         return salon
 
     def update(self, instance, validated_data):
         validated_data.pop("services", None)
+        amenity_codes = validated_data.pop("amenity_codes", None)
         hours_data = validated_data.pop("hours", None)
         for attr, val in validated_data.items():
             setattr(instance, attr, val)
@@ -374,6 +434,8 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
             instance.hours.all().delete()
             for h in hours_data:
                 SalonHours.objects.create(salon=instance, **h)
+        if amenity_codes is not None:
+            self._sync_amenities(instance, amenity_codes)
         return instance
 
 

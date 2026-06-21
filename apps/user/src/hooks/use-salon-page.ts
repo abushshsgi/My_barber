@@ -1,13 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchSalonPortfolio, fetchSalonStaff } from "@/lib/api/salons";
+import { fetchSalonPortfolio, fetchSalonRatingSummary, fetchSalonStaff } from "@/lib/api/salons";
 import { fetchSalonReviews } from "@/lib/api/reviews";
 import { mapReview } from "@/lib/mappers/review";
 import { authQueryEnabled } from "@/lib/auth-query";
-import { mapStaffToBarber } from "@/lib/mappers/salon";
+import { mapRatingSummary, mapStaffToBarber } from "@/lib/mappers/salon";
 import { useSalonDetail } from "@/hooks/use-salons";
+import i18n from "@/i18n/config";
 
 export function useSalonPage(id: string) {
   const detail = useSalonDetail(id);
+  const lang = i18n.language?.split("-")[0] ?? "uz";
 
   const staff = useQuery({
     queryKey: ["salons", id, "staff"],
@@ -34,12 +36,19 @@ export function useSalonPage(id: string) {
     enabled: authQueryEnabled(Boolean(id)),
   });
 
+  const ratingSummary = useQuery({
+    queryKey: ["salons", id, "rating-summary", lang],
+    queryFn: async () => mapRatingSummary(await fetchSalonRatingSummary(id, lang)),
+    enabled: authQueryEnabled(Boolean(id)),
+  });
+
   const salon = detail.data
     ? {
         ...detail.data,
         staff: staff.data ?? [],
         reviews: reviews.data ?? [],
         portfolio: portfolio.data?.length ? portfolio.data : detail.data.portfolio,
+        ratingSummary: ratingSummary.data ?? null,
       }
     : null;
 
