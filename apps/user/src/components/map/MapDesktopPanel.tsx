@@ -157,7 +157,10 @@ export function MapDesktopPanel({
         </div>
       </div>
 
-      <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3">
+      <div
+        ref={listRef}
+        className="thin-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain py-3 pl-4 pr-2.5"
+      >
         {loading && salons.length === 0 ? (
           <p className="py-8 text-center text-sm font-medium text-muted-foreground">{t("map.loading")}</p>
         ) : null}
