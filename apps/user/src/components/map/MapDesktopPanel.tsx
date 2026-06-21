@@ -83,20 +83,21 @@ function MapDesktopSalonCard({
   return (
     <article
       data-desktop-salon-id={salon.id}
-      className={cn(
-        "group flex min-w-0 flex-col overflow-hidden rounded-2xl border bg-background transition-all duration-300",
-        "shadow-[0_2px_14px_rgba(0,0,0,0.07)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.11)]",
-        isEntering && "map-sidebar-card-enter",
-        isActive
-          ? "border-foreground/35 ring-2 ring-foreground/12 shadow-[0_6px_22px_rgba(0,0,0,0.12)] opacity-100"
-          : isOnMap
-            ? "border-border/50 opacity-100"
-            : "border-border/40 opacity-55",
-      )}
+      className="group flex min-w-0 flex-col"
       onMouseEnter={() => onHover?.(salon.id)}
       onMouseLeave={() => onHover?.(null)}
     >
-      <div className="relative">
+      <div
+        className={cn(
+          "relative overflow-hidden rounded-2xl border transition-all duration-300",
+          "shadow-[0_2px_14px_rgba(0,0,0,0.07)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.11)]",
+          isEntering && "map-sidebar-card-enter",
+          isActive
+            ? "border-foreground/35 ring-2 ring-foreground/12 shadow-[0_6px_22px_rgba(0,0,0,0.12)]"
+            : "border-border/50",
+          !isOnMap && !isActive && "opacity-55",
+        )}
+      >
         <Link
           to="/salon/$id"
           params={{ id: salon.id }}
@@ -124,15 +125,15 @@ function MapDesktopSalonCard({
         </button>
       </div>
 
-      <div className="px-2.5 pb-2.5 pt-2">
+      <div className="px-0.5 pb-1 pt-2">
         <div className="flex items-start justify-between gap-2">
           <Link to="/salon/$id" params={{ id: salon.id }} preload="intent" className="min-w-0 flex-1">
-            <h3 className="line-clamp-1 text-[13px] font-bold leading-snug tracking-tight">
+            <h3 className="line-clamp-1 text-[13px] font-bold leading-snug tracking-tight text-foreground">
               {salon.name}
             </h3>
           </Link>
           {salon.rating > 0 ? (
-            <div className="flex shrink-0 items-center gap-0.5 text-[12px] font-bold">
+            <div className="flex shrink-0 items-center gap-0.5 text-[12px] font-bold text-foreground">
               <Star className="h-3 w-3 fill-foreground" strokeWidth={0} />
               <span>{salon.rating.toFixed(1)}</span>
             </div>
@@ -140,13 +141,13 @@ function MapDesktopSalonCard({
         </div>
 
         {description ? (
-          <p className="mt-1 line-clamp-1 text-[11px] leading-snug text-muted-foreground">
+          <p className="mt-1 line-clamp-1 text-[11px] leading-snug text-foreground/70">
             {description}
           </p>
         ) : null}
 
         <div className="mt-1.5 flex items-end justify-between gap-2">
-          <div className="min-w-0 truncate text-[11px] font-medium text-muted-foreground">
+          <div className="min-w-0 truncate text-[11px] font-medium text-foreground/60">
             {salon.reviewCount > 0 ? (
               <span>
                 {salon.reviewCount} {t("map.reviews")}
@@ -157,8 +158,8 @@ function MapDesktopSalonCard({
           </div>
           {salon.priceFrom > 0 ? (
             <p className="shrink-0 text-right">
-              <span className="text-[13px] font-bold tabular-nums">{shortPrice(salon.priceFrom)}</span>
-              <span className="ml-0.5 text-[10px] font-medium text-muted-foreground">
+              <span className="text-[13px] font-bold tabular-nums text-foreground">{shortPrice(salon.priceFrom)}</span>
+              <span className="ml-0.5 text-[10px] font-medium text-foreground/60">
                 {t("map.priceFromSuffix")}
               </span>
             </p>
