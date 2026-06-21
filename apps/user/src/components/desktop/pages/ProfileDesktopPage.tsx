@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Settings } from "lucide-react";
+import { Bell, CalendarCheck, Heart, MessageSquare, Settings, Wallet } from "lucide-react";
 import { AccountDesktopShell } from "@/components/desktop/pages/AccountDesktopShell";
 import { ProfileAccountHubGrid, type AccountHubTile } from "@/components/desktop/profile/ProfileAccountHubGrid";
 import { useProfileScreen } from "@/components/profile/useProfileScreen";
@@ -37,6 +37,7 @@ export function ProfileDesktopPage() {
 
   const hubTiles: AccountHubTile[] = [
     {
+      icon: CalendarCheck,
       title: t("profile.desktop.hubs.bookings.title", { defaultValue: "Buyurtmalar" }),
       description: t("profile.desktop.hubs.bookings.desc", {
         defaultValue: "Kelgusi va o'tgan uchrashuvlaringizni ko'ring va boshqaring.",
@@ -46,6 +47,7 @@ export function ProfileDesktopPage() {
       search: nextBooking ? { focus: nextBooking.id } : undefined,
     },
     {
+      icon: Wallet,
       title: t("profile.desktop.hubs.wallet.title", { defaultValue: "Hamyon va to'lov" }),
       description: t("profile.desktop.hubs.wallet.desc", {
         defaultValue: "Balans, to'lov usullari, bonus va sovg'a kartalar.",
@@ -59,6 +61,7 @@ export function ProfileDesktopPage() {
           }),
     },
     {
+      icon: Heart,
       title: t("profile.desktop.hubs.favorites.title", { defaultValue: "Sevimlilar" }),
       description: t("profile.desktop.hubs.favorites.desc", {
         defaultValue: "Saqlangan salonlar va sevimli ustalaringiz.",
@@ -70,6 +73,7 @@ export function ProfileDesktopPage() {
       }),
     },
     {
+      icon: MessageSquare,
       title: t("profile.desktop.hubs.reviews.title", { defaultValue: "Sharhlar" }),
       description: t("profile.desktop.hubs.reviews.desc", {
         defaultValue: "Salonlarga qoldirgan fikr-mulohazalaringiz.",
@@ -81,6 +85,7 @@ export function ProfileDesktopPage() {
       }),
     },
     {
+      icon: Bell,
       title: t("profile.desktop.hubs.notifications.title", { defaultValue: "Bildirishnomalar" }),
       description: t("profile.desktop.hubs.notifications.desc", {
         defaultValue: "Buyurtma eslatmalari va chat xabarlari sozlamalari.",
@@ -96,6 +101,7 @@ export function ProfileDesktopPage() {
       badge: unreadCount > 0 ? (unreadCount > 9 ? "9+" : String(unreadCount)) : undefined,
     },
     {
+      icon: Settings,
       title: t("profile.desktop.hubs.settings.title", { defaultValue: "Hisob sozlamalari" }),
       description: t("profile.desktop.hubs.settings.desc", {
         defaultValue: "Shaxsiy ma'lumotlar, manzillar, til va maxfiylik.",

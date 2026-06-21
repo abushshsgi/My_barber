@@ -71,7 +71,7 @@ function LocaleIcon({ emoji, className }: { emoji: string; className?: string })
   return (
     <span
       className={cn(
-        "grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface text-[1.125rem] leading-none ring-1 ring-border/70",
+        "grid h-7 w-7 shrink-0 place-items-center text-base opacity-40 saturate-[0.85]",
         className,
       )}
       aria-hidden
@@ -157,7 +157,7 @@ export function SettingsPanelContent({
     sessionsCount,
   } = state;
 
-  const { currency, setCurrency, ratesUpdatedAt, ratesSource } = useCurrency();
+  const { currency, setCurrency } = useCurrency();
   const { data: walletMe } = useWalletMe();
   const { data: currencyRates } = useQuery({
     queryKey: ["currencies", "rates"],
@@ -628,7 +628,7 @@ export function SettingsPanelContent({
               label={t("settings.language")}
               value={
                 <span className="inline-flex items-center gap-2.5">
-                  <LocaleIcon emoji={LANG_FLAGS[activeLang as AppLang]} className="h-7 w-7 text-base" />
+                  <LocaleIcon emoji={LANG_FLAGS[activeLang as AppLang]} />
                   {langLabel}
                 </span>
               }
@@ -657,27 +657,12 @@ export function SettingsPanelContent({
               label={t("currency.title", { defaultValue: "Valyuta" })}
               value={
                 <span className="inline-flex items-center gap-2.5">
-                  <LocaleIcon emoji={CURRENCY_VISUAL[currency].flag} className="h-7 w-7 text-base" />
+                  <LocaleIcon emoji={CURRENCY_VISUAL[currency].flag} />
                   <span>{currencyLabel}</span>
                   <span className="text-xs font-semibold text-muted-foreground">
                     {CURRENCY_VISUAL[currency].symbol}
                   </span>
                 </span>
-              }
-              hint={
-                ratesUpdatedAt
-                  ? t("currency.ratesHint", {
-                      defaultValue:
-                        "Narxlar {{currency}} da. Manba: Markaziy bank ({{source}}), kurs sanasi: {{date}}.",
-                      currency,
-                      source: ratesSource ?? "cbu.uz",
-                      date:
-                        currencyRates?.rate_date ??
-                        new Date(ratesUpdatedAt).toLocaleDateString(),
-                    })
-                  : t("currency.hint", {
-                      defaultValue: "Narxlar tanlangan valyutada ko'rsatiladi (bazada so'm).",
-                    })
               }
               actionLabel={t("settings.actions.edit", { defaultValue: "Tahrirlash" })}
               cancelLabel={cancelLabel}
