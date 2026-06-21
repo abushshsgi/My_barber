@@ -42,6 +42,8 @@ function ensureMarkerStyles() {
   `;
   document.head.appendChild(style);
 }
+
+const BOTTOM_PAD = 168;
 const DESKTOP_FIT_PAD = { top: 48, right: 72, bottom: 48, left: 48 };
 
 export type MapHandle = {
