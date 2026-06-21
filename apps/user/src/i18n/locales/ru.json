@@ -130,7 +130,7 @@
     "minutes": "мин",
     "amenities": {
       "title": "Какие удобства вас ждут",
-      "showAll": "Все: {{count}}"
+      "showAll": "Показать все удобства: {{count}}"
     },
     "reviews": {
       "guestFavorite": "Выбор гостей",

@@ -130,7 +130,7 @@
     "minutes": "min",
     "amenities": {
       "title": "What amenities await you",
-      "showAll": "Show all: {{count}}"
+      "showAll": "Show all amenities: {{count}}"
     },
     "reviews": {
       "guestFavorite": "Guest favorite",

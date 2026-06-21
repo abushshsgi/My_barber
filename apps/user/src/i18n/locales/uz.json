@@ -135,7 +135,7 @@
     "minutes": "daqiqa",
     "amenities": {
       "title": "Qanday qulayliklar sizni kutmoqda",
-      "showAll": "Barchasi: {{count}}"
+      "showAll": "Barcha qulayliklar: {{count}}"
     },
     "reviews": {
       "guestFavorite": "Mehmonlar tanlovi",
