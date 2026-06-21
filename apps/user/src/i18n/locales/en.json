@@ -98,7 +98,49 @@
     "collapseMap": "Minimize",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
-    "filters": "Filters",
+    "filters": {
+      "title": "Filters",
+      "clear": "Clear all",
+      "priceTitle": "Price",
+      "ratingTitle": "Rating",
+      "categoryTitle": "Category",
+      "amenitiesTitle": "Amenities",
+      "distanceTitle": "Distance",
+      "moreTitle": "More",
+      "guestFavorite": "Guest favorite",
+      "price": {
+        "any": "Any",
+        "under100": "Up to 100k",
+        "100-200": "100–200k",
+        "200-500": "200–500k",
+        "500plus": "500k+"
+      },
+      "rating": {
+        "any": "Any",
+        "4_5": "4.5+",
+        "4_0": "4.0+",
+        "3_5": "3.5+"
+      },
+      "distance": {
+        "any": "Any",
+        "1km": "1 km",
+        "3km": "3 km",
+        "5km": "5 km",
+        "10km": "10 km"
+      },
+      "amenity": {
+        "wifi": "Wi‑Fi",
+        "parking": "Parking",
+        "card_payment": "Card payment",
+        "air_conditioning": "Air conditioning",
+        "waiting_area": "Waiting area",
+        "coffee_tea": "Coffee & tea",
+        "online_booking": "Online booking",
+        "sanitized_tools": "Sanitized tools",
+        "kids_friendly": "Kids friendly"
+      }
+    },
+    "emptyFilters": "No salons match your filters",
     "locateError": "Could not get your location",
     "locateUnsupported": "Geolocation is not supported",
     "loading": "Loading salons…",

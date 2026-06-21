@@ -22,25 +22,43 @@ export function buildPricePillHtml(active: boolean, priceLabel: string, hovered 
   </div>`;
 }
 
-/** Hover preview card — salon rasmi va nomi. */
-export function buildSalonPreviewHtml(coverUrl: string, name: string): string {
-  const safeName = escapeHtmlAttr(name);
-  const safeCover = escapeHtmlAttr(coverUrl);
+/** Marker bosilganda ochiladigan salon kartochkasi. */
+export function buildSalonPreviewHtml(options: {
+  coverUrl?: string;
+  name: string;
+  address?: string;
+  ctaLabel: string;
+}): string {
+  const safeName = escapeHtmlAttr(options.name);
+  const safeAddress = escapeHtmlAttr(options.address?.trim() || "");
+  const safeCover = options.coverUrl?.trim() ? escapeHtmlAttr(options.coverUrl.trim()) : "";
+  const safeCta = escapeHtmlAttr(options.ctaLabel);
+
+  const imageBlock = safeCover
+    ? `<img src="${safeCover}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy" />`
+    : `<div style="width:100%;height:100%;background:linear-gradient(145deg,#ececec,#d8d8d8);"></div>`;
+
   return `<div data-map-preview style="
-    transform:translate(-50%,calc(-100% - 18px));cursor:pointer;pointer-events:auto;
+    transform:translate(-50%,calc(-100% - 20px));pointer-events:auto;
     font-family:system-ui,-apple-system,sans-serif;
   ">
     <div style="
-      width:168px;border-radius:14px;overflow:hidden;background:#faf8f5;
-      border:1px solid rgba(20,20,20,0.1);box-shadow:0 10px 32px rgba(0,0,0,0.22);
+      width:200px;border-radius:16px;overflow:hidden;background:#faf8f5;
+      border:1px solid rgba(20,20,20,0.1);box-shadow:0 12px 36px rgba(0,0,0,0.24);
     ">
       <div style="width:100%;aspect-ratio:4/3;background:#E8E8E8;overflow:hidden;">
-        <img src="${safeCover}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy" />
+        ${imageBlock}
       </div>
-      <div style="padding:8px 10px 10px;">
-        <div style="font-size:13px;font-weight:800;line-height:1.25;color:#141414;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+      <div style="padding:10px 12px 12px;">
+        <div style="font-size:14px;font-weight:800;line-height:1.25;color:#141414;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
           ${safeName}
         </div>
+        ${safeAddress ? `<div style="margin-top:4px;font-size:11px;line-height:1.35;color:rgba(20,20,20,0.55);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${safeAddress}</div>` : ""}
+        <button type="button" data-map-preview-go style="
+          margin-top:10px;width:100%;padding:9px 12px;border:none;border-radius:10px;
+          background:#141414;color:#faf8f5;font-size:12px;font-weight:800;line-height:1;
+          cursor:pointer;font-family:inherit;
+        ">${safeCta}</button>
       </div>
     </div>
     <div style="

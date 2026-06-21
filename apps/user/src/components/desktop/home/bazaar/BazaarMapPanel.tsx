@@ -62,8 +62,9 @@ export function BazaarMapPanel({ salons = [], salonCount = 0, className }: Props
               <MapErrorBoundary>
                 <SalonMap
                   markers={markers}
-                  activeId={null}
-                  onMarkerClick={() => {}}
+                  selectedId={null}
+                  onMarkerSelect={() => {}}
+                  onMarkerNavigate={() => {}}
                   showUserLocation={Boolean(userLocation)}
                   userLocation={userLocation}
                   autoFitMarkers

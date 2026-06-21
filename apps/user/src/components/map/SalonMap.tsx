@@ -6,9 +6,10 @@ export type SalonMapViewport = MapViewport;
 
 export function SalonMap({
   markers,
-  activeId,
+  selectedId,
   hoveredId,
-  onMarkerClick,
+  onMarkerSelect,
+  onMarkerNavigate,
   onMarkerHover,
   onViewportChange,
   showUserLocation = false,
@@ -17,9 +18,10 @@ export function SalonMap({
   autoFitMarkers = true,
 }: {
   markers: SalonMapMarker[];
-  activeId: string | null;
+  selectedId?: string | null;
   hoveredId?: string | null;
-  onMarkerClick: (id: string) => void;
+  onMarkerSelect?: (id: string | null) => void;
+  onMarkerNavigate?: (id: string) => void;
   onMarkerHover?: (id: string | null) => void;
   onViewportChange?: (viewport: MapViewport) => void;
   showUserLocation?: boolean;
@@ -30,9 +32,10 @@ export function SalonMap({
   return (
     <Map2GIS
       markers={markers}
-      activeId={activeId}
+      selectedId={selectedId}
       hoveredId={hoveredId}
-      onMarkerClick={onMarkerClick}
+      onMarkerSelect={onMarkerSelect}
+      onMarkerNavigate={onMarkerNavigate}
       onMarkerHover={onMarkerHover}
       onViewportChange={onViewportChange}
       showUserLocation={showUserLocation}

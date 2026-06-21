@@ -11,6 +11,13 @@ import { resolveMapAudienceFilter, useAudience } from "@/hooks/use-audience";
 import { useRecommendContext } from "@/hooks/use-recommend-context";
 import { useSalonsList, useSalonsNearby } from "@/hooks/use-salons";
 import { shortPrice, type Salon } from "@/lib/mock-data";
+import {
+  DEFAULT_MAP_FILTERS,
+  applyMapSalonFilters,
+  countActiveMapFilters,
+  serializeMapFilters,
+  type MapFiltersState,
+} from "@/lib/map-filters";
 import { hasValidMapCoords, salonMatchesMapAudience } from "@/lib/map-utils";
 import { filterSalonsByViewport, normalizeMapCoords } from "@/lib/map-viewport";
 import { rankSalonsForUser } from "@/lib/recommendations";
@@ -25,11 +32,37 @@ export const Route = createFileRoute("/map")({
   component: MapView,
 });
 
+function withNormalizedCoords(salon: Salon): Salon {
+  const { lat, lng } = normalizeMapCoords(salon.lat, salon.lng);
+  if (lat === salon.lat && lng === salon.lng) return salon;
+  return { ...salon, lat, lng };
+}
+
+function mapPinLabel(salon: Salon): string {
+  if (salon.priceFrom > 0) return shortPrice(salon.priceFrom);
+  if (salon.rating > 0) return `★ ${salon.rating.toFixed(1)}`;
+  return "—";
+}
+
+function toMapMarker(salon: Salon, ctaLabel: string): SalonMapMarker {
+  return {
+    id: salon.id,
+    lat: salon.lat,
+    lng: salon.lng,
+    label: salon.name,
+    coverUrl: salon.coverUrl,
+    address: salon.address,
+    ctaLabel,
+    priceLabel: mapPinLabel(salon),
+  };
+}
+
 type SalonMapProps = {
   markers: SalonMapMarker[];
-  activeId: string;
+  selectedId: string | null;
   hoveredId: string | null;
-  onMarkerClick: (id: string) => void;
+  onMarkerSelect: (id: string | null) => void;
+  onMarkerNavigate: (id: string) => void;
   onMarkerHover: (id: string | null) => void;
   onViewportChange: (viewport: SalonMapViewport) => void;
   showUserLocation: boolean;
@@ -38,17 +71,12 @@ type SalonMapProps = {
   autoFitMarkers?: boolean;
 };
 
-function withNormalizedCoords(salon: Salon): Salon {
-  const { lat, lng } = normalizeMapCoords(salon.lat, salon.lng);
-  if (lat === salon.lat && lng === salon.lng) return salon;
-  return { ...salon, lat, lng };
-}
-
 function MapCanvas({
   markers,
-  activeId,
+  selectedId,
   hoveredId,
-  onMarkerClick,
+  onMarkerSelect,
+  onMarkerNavigate,
   onMarkerHover,
   onViewportChange,
   showUserLocation,
@@ -60,9 +88,10 @@ function MapCanvas({
     <MapErrorBoundary>
       <SalonMap
         markers={markers}
-        activeId={activeId || null}
+        selectedId={selectedId}
         hoveredId={hoveredId}
-        onMarkerClick={onMarkerClick}
+        onMarkerSelect={onMarkerSelect}
+        onMarkerNavigate={onMarkerNavigate}
         onMarkerHover={onMarkerHover}
         onViewportChange={onViewportChange}
         showUserLocation={showUserLocation}
@@ -113,8 +142,10 @@ function MapView() {
   }, [ctx.lat, ctx.lng]);
 
   const [active, setActive] = useState("");
+  const [selected, setSelected] = useState<string | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState<MapFiltersState>(DEFAULT_MAP_FILTERS);
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [desktopMapExpanded, setDesktopMapExpanded] = useState(false);
   const [mapHandle, setMapHandle] = useState<SalonMapHandle | null>(null);
@@ -164,12 +195,13 @@ function MapView() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return salonsWithCoords.filter((s) => {
-      if (!salonMatchesMapAudience(s, mapAudience)) return false;
+    const audienceFiltered = salonsWithCoords.filter((s) => salonMatchesMapAudience(s, mapAudience));
+    const searchFiltered = audienceFiltered.filter((s) => {
       if (!q) return true;
       return s.name.toLowerCase().includes(q) || s.address.toLowerCase().includes(q);
     });
-  }, [query, salonsWithCoords, mapAudience]);
+    return applyMapSalonFilters(searchFiltered, filters);
+  }, [query, salonsWithCoords, mapAudience, filters]);
 
   const visibleSalons = useMemo(() => {
     if (!viewport) return filtered;
@@ -190,21 +222,18 @@ function MapView() {
     }
   }, [visibleSalons]);
 
-  const mapMarkers = useMemo((): SalonMapMarker[] => {
-    return visibleSalons.map((s) => ({
-      id: s.id,
-      lat: s.lat,
-      lng: s.lng,
-      label: s.name,
-      coverUrl: s.coverUrl,
-      priceLabel:
-        s.priceFrom > 0
-          ? shortPrice(s.priceFrom)
-          : s.rating > 0
-            ? `★ ${s.rating.toFixed(1)}`
-            : s.name.split(" ")[0].slice(0, 10),
-    }));
-  }, [visibleSalons]);
+  useEffect(() => {
+    if (selected && !visibleSalons.some((s) => s.id === selected)) {
+      setSelected(null);
+    }
+  }, [visibleSalons, selected]);
+
+  const ctaLabel = t("map.viewSalon");
+
+  const mapMarkers = useMemo(
+    (): SalonMapMarker[] => visibleSalons.map((s) => toMapMarker(s, ctaLabel)),
+    [visibleSalons, ctaLabel],
+  );
 
   const goToSalon = useCallback(
     (id: string) => {
@@ -217,30 +246,24 @@ function MapView() {
     setActive(id);
   }, []);
 
+  const onMarkerSelect = useCallback((id: string | null) => {
+    setSelected(id);
+    if (id) setActive(id);
+  }, []);
+
   const onMarkerHover = useCallback((id: string | null) => {
     setHovered(id);
   }, []);
 
   const fitKey = useMemo(
-    () => `${query}|${mapAudience}|${filtered.map((s) => s.id).join(",")}`,
-    [query, mapAudience, filtered],
+    () => `${query}|${mapAudience}|${serializeMapFilters(filters)}`,
+    [query, mapAudience, filters],
   );
 
-  const fitMarkers = useMemo((): SalonMapMarker[] => {
-    return filtered.map((s) => ({
-      id: s.id,
-      lat: s.lat,
-      lng: s.lng,
-      label: s.name,
-      coverUrl: s.coverUrl,
-      priceLabel:
-        s.priceFrom > 0
-          ? shortPrice(s.priceFrom)
-          : s.rating > 0
-            ? `★ ${s.rating.toFixed(1)}`
-            : s.name.split(" ")[0].slice(0, 10),
-    }));
-  }, [filtered]);
+  const fitMarkers = useMemo(
+    (): SalonMapMarker[] => filtered.map((s) => toMapMarker(s, ctaLabel)),
+    [filtered, ctaLabel],
+  );
 
   useEffect(() => {
     if (fitMarkers.length === 0) return;
@@ -276,17 +299,20 @@ function MapView() {
 
   const emptyMessage = query.trim()
     ? t("map.emptySearch")
-    : mapAudience === "men"
-      ? t("map.emptyMen")
-      : mapAudience === "women"
-        ? t("map.emptyWomen")
-        : t("map.empty");
+    : countActiveMapFilters(filters) > 0
+      ? t("map.emptyFilters")
+      : mapAudience === "men"
+        ? t("map.emptyMen")
+        : mapAudience === "women"
+          ? t("map.emptyWomen")
+          : t("map.empty");
 
   const sharedMapProps: SalonMapProps = {
     markers: mapMarkers,
-    activeId: hovered || active,
+    selectedId: selected,
     hoveredId: hovered,
-    onMarkerClick: goToSalon,
+    onMarkerSelect,
+    onMarkerNavigate: goToSalon,
     onMarkerHover,
     onViewportChange,
     showUserLocation: !sheetExpanded,
@@ -316,13 +342,16 @@ function MapView() {
           </div>
         ) : null}
 
-        {filtered.length > 0 && active ? (
+        {!listLoadingAny ? (
           <MapSalonSheet
             salons={visibleSalons}
-            activeId={active}
+            activeId={active || visibleSalons[0]?.id || ""}
             onActiveChange={focusSalon}
             query={query}
             onQueryChange={setQuery}
+            filters={filters}
+            onFiltersChange={setFilters}
+            mapAudience={mapAudience}
             onExpandedChange={setSheetExpanded}
           />
         ) : null}
@@ -332,10 +361,13 @@ function MapView() {
         {!desktopMapExpanded ? (
           <MapDesktopPanel
             salons={visibleSalons}
-            highlightedId={hovered || active}
+            highlightedId={selected || hovered || active}
             scrollToId={active}
             query={query}
             onQueryChange={setQuery}
+            filters={filters}
+            onFiltersChange={setFilters}
+            mapAudience={mapAudience}
             onSalonHover={onMarkerHover}
             loading={listLoadingAny}
             emptyMessage={emptyMessage}

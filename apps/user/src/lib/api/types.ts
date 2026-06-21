@@ -58,6 +58,8 @@ export type ApiSalonList = {
   is_published: boolean;
   rating_avg: number;
   review_count: number;
+  price_from?: number;
+  amenities?: ApiSalonAmenity[];
 };
 
 export type ApiSalonDetail = ApiSalonList & {

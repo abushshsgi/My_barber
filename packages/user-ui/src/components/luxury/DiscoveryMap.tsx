@@ -18,6 +18,7 @@ export function DiscoveryMap({
   const mapMarkers: MapMarker[] = markers.map((m) => ({
     ...m,
     priceLabel: m.label.slice(0, 10),
+    ctaLabel: "View",
   }));
 
   const userLocation =
@@ -26,8 +27,11 @@ export function DiscoveryMap({
   return (
     <Map2GIS
       markers={mapMarkers}
-      activeId={activeId}
-      onMarkerClick={onMarkerClick}
+      selectedId={activeId}
+      onMarkerSelect={(id) => {
+        if (id) onMarkerClick(id);
+      }}
+      onMarkerNavigate={onMarkerClick}
       showUserLocation={Boolean(userLocation)}
       userLocation={userLocation}
     />

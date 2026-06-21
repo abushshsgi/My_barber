@@ -118,6 +118,8 @@ class SalonListSerializer(serializers.ModelSerializer):
     # get_queryset annotate bilan beriladi (N+1 oldini olish)
     rating_avg = serializers.FloatField(read_only=True)
     review_count = serializers.IntegerField(read_only=True)
+    price_from = serializers.SerializerMethodField()
+    amenities = serializers.SerializerMethodField()
 
     class Meta:
         model = Salon
@@ -133,7 +135,39 @@ class SalonListSerializer(serializers.ModelSerializer):
             "is_published",
             "rating_avg",
             "review_count",
+            "price_from",
+            "amenities",
         )
+
+    def _amenity_lang(self) -> str:
+        request = self.context.get("request")
+        if request is None:
+            return "uz"
+        raw = (request.query_params.get("lang") or request.headers.get("Accept-Language") or "uz").split(",")[0]
+        code = raw.strip().lower().split("-")[0]
+        return code if code in ("uz", "ru", "en") else "uz"
+
+    def get_price_from(self, obj):
+        pf = getattr(obj, "price_from", None)
+        if pf is None:
+            return 0
+        try:
+            return float(pf)
+        except (TypeError, ValueError):
+            return 0
+
+    def get_amenities(self, obj):
+        lang = self._amenity_lang()
+        links = getattr(obj, "_prefetched_objects_cache", {}).get("salon_amenities")
+        if links is None:
+            links = obj.salon_amenities.select_related("amenity").all()
+        out = []
+        for link in links:
+            amenity = link.amenity
+            labels = amenity.labels or {}
+            label = labels.get(lang) or labels.get("uz") or amenity.code
+            out.append({"code": amenity.code, "icon": amenity.icon, "label": label})
+        return out
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

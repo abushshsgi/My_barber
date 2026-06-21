@@ -23,8 +23,9 @@ export function SalonLocationSection({
         <div className="h-64 overflow-hidden rounded-2xl border border-border">
           <SalonMap
             markers={[{ id: salonId, lat, lng, label: address }]}
-            activeId={salonId}
-            onMarkerClick={() => {}}
+            selectedId={null}
+            onMarkerSelect={() => {}}
+            onMarkerNavigate={() => {}}
             autoFitMarkers
           />
         </div>

@@ -28,3 +28,13 @@ export function bindHtmlMarkerHover(
     onLeave();
   }) as unknown as GlobalEventHandlers["onmouseleave"];
 }
+
+export function bindSalonPreviewNavigate(marker: mapgl.HtmlMarker, onNavigate: () => void): void {
+  const root = marker.getContent();
+  root.style.pointerEvents = "auto";
+  const btn = root.querySelector("[data-map-preview-go]");
+  btn?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    onNavigate();
+  });
+}

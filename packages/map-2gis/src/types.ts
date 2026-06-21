@@ -5,6 +5,8 @@ export type MapMarker = {
   label: string;
   priceLabel?: string;
   coverUrl?: string;
+  address?: string;
+  ctaLabel?: string;
 };
 
 export type MapCoords = {

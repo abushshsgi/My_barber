@@ -103,7 +103,49 @@
     "collapseMap": "Kichiklashtir",
     "zoomIn": "Kattalashtir",
     "zoomOut": "Kichiklashtir",
-    "filters": "Filterlar",
+    "filters": {
+      "title": "Filtrlar",
+      "clear": "Tozalash",
+      "priceTitle": "Narx",
+      "ratingTitle": "Reyting",
+      "categoryTitle": "Kategoriya",
+      "amenitiesTitle": "Qulayliklar",
+      "distanceTitle": "Masofa",
+      "moreTitle": "Boshqalar",
+      "guestFavorite": "Mehmonlar tanlovi",
+      "price": {
+        "any": "Hammasi",
+        "under100": "100 minggacha",
+        "100-200": "100–200 ming",
+        "200-500": "200–500 ming",
+        "500plus": "500 ming+"
+      },
+      "rating": {
+        "any": "Hammasi",
+        "4_5": "4.5+",
+        "4_0": "4.0+",
+        "3_5": "3.5+"
+      },
+      "distance": {
+        "any": "Cheksiz",
+        "1km": "1 km",
+        "3km": "3 km",
+        "5km": "5 km",
+        "10km": "10 km"
+      },
+      "amenity": {
+        "wifi": "Wi‑Fi",
+        "parking": "Avtoturargoh",
+        "card_payment": "Karta",
+        "air_conditioning": "Konditsioner",
+        "waiting_area": "Kutish zonasi",
+        "coffee_tea": "Choy va kofe",
+        "online_booking": "Onlayn bron",
+        "sanitized_tools": "Dezinfeksiya",
+        "kids_friendly": "Bolalar uchun"
+      }
+    },
+    "emptyFilters": "Filtr bo'yicha salon topilmadi",
     "locateError": "Joylashuvni aniqlab bo'lmadi",
     "locateUnsupported": "Brauzer joylashuvni qo'llab-quvvatlamaydi",
     "loading": "Salonlar yuklanmoqda…",

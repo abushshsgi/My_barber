@@ -3,10 +3,13 @@ import { motion, animate, useMotionValue, type PanInfo } from "framer-motion";
 import { Search, Star } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { MapFilters } from "@/components/map/MapFilters";
+import type { AudienceFilter } from "@/hooks/use-audience";
 import type { Salon } from "@/lib/mock-data";
 import { shortPrice } from "@/lib/mock-data";
 import { getSalonCoverUrl } from "@/lib/cover-images";
 import { formatDistanceKm } from "@/lib/map-utils";
+import type { MapFiltersState } from "@/lib/map-filters";
 import { cn } from "@/lib/utils";
 
 const GRID_COUNT = 6;
@@ -27,6 +30,9 @@ type Props = {
   onActiveChange: (id: string) => void;
   query: string;
   onQueryChange: (query: string) => void;
+  filters: MapFiltersState;
+  onFiltersChange: (next: MapFiltersState) => void;
+  mapAudience: AudienceFilter;
   onExpandedChange?: (expanded: boolean) => void;
 };
 
@@ -190,6 +196,9 @@ export function MapSalonSheet({
   onActiveChange,
   query,
   onQueryChange,
+  filters,
+  onFiltersChange,
+  mapAudience,
   onExpandedChange,
 }: Props) {
   const { t } = useTranslation();
@@ -311,16 +320,24 @@ export function MapSalonSheet({
           <SheetHandle />
 
           <div className="shrink-0 px-4 pb-2" onPointerDown={(e) => e.stopPropagation()}>
-            <div className="relative rounded-full border border-border/50 bg-surface py-2.5 pl-10 pr-4">
-              <Search
-                className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-                strokeWidth={2.4}
-              />
-              <input
-                value={query}
-                onChange={(e) => onQueryChange(e.target.value)}
-                placeholder={t("map.search") as string}
-                className="w-full bg-transparent text-[13px] font-semibold placeholder:text-muted-foreground focus:outline-none"
+            <div className="flex items-center gap-2">
+              <div className="relative min-w-0 flex-1 rounded-full border border-border/50 bg-surface py-2.5 pl-10 pr-4">
+                <Search
+                  className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                  strokeWidth={2.4}
+                />
+                <input
+                  value={query}
+                  onChange={(e) => onQueryChange(e.target.value)}
+                  placeholder={t("map.search") as string}
+                  className="w-full bg-transparent text-[13px] font-semibold placeholder:text-muted-foreground focus:outline-none"
+                />
+              </div>
+              <MapFilters
+                filters={filters}
+                onChange={onFiltersChange}
+                mapAudience={mapAudience}
+                variant="dialog"
               />
             </div>
           </div>

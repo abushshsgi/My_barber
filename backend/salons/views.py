@@ -1,6 +1,6 @@
 from django.core.files.base import File
 from django.db import transaction
-from django.db.models import Avg, Count, FloatField, Q, Value
+from django.db.models import Avg, Count, FloatField, Min, Q, Value
 from django.db.models.functions import Cast, Coalesce
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
@@ -48,12 +48,17 @@ class SalonViewSet(viewsets.ModelViewSet):
         return (
             Salon.objects.filter(is_published=True)
             .select_related("owner", "owner_barber")
+            .prefetch_related("salon_amenities__amenity")
             .annotate(
                 review_count=Count("reviews", distinct=True),
                 rating_avg=Coalesce(
                     Cast(Avg("reviews__rating"), FloatField()),
                     Value(0.0),
                     output_field=FloatField(),
+                ),
+                price_from=Min(
+                    "services__price",
+                    filter=Q(services__is_active=True),
                 ),
             )
             .order_by("-created_at", "-id")

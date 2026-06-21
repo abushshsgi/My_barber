@@ -47,6 +47,7 @@ function priceRange(services: { price: number }[] | undefined): { from: number; 
 export function mapSalonList(api: ApiSalonList, distanceKm = 0): Salon {
   const coverSeed = api.slug || String(api.id);
   const { category, audience } = resolveCategoryAndAudience(api);
+  const priceFrom = toNum(api.price_from);
   return {
     id: String(api.id),
     name: api.name,
@@ -56,8 +57,8 @@ export function mapSalonList(api: ApiSalonList, distanceKm = 0): Salon {
     reviewCount: api.review_count ?? 0,
     address: api.address || "",
     distanceKm,
-    priceFrom: 0,
-    priceTo: 0,
+    priceFrom,
+    priceTo: priceFrom,
     coverSeed,
     coverUrl: resolveMediaUrl(api.cover_image) ?? getSalonCoverUrl(coverSeed),
     about: "",
@@ -67,7 +68,11 @@ export function mapSalonList(api: ApiSalonList, distanceKm = 0): Salon {
     portfolio: [],
     lat: toNum(api.latitude),
     lng: toNum(api.longitude),
-    amenities: [],
+    amenities: (api.amenities ?? []).map((a) => ({
+      code: a.code,
+      icon: a.icon,
+      label: a.label,
+    })),
     hours: [],
     closedWeekdays: [],
     ratingSummary: null,

@@ -98,7 +98,49 @@
     "collapseMap": "Свернуть",
     "zoomIn": "Увеличить",
     "zoomOut": "Уменьшить",
-    "filters": "Фильтры",
+    "filters": {
+      "title": "Фильтры",
+      "clear": "Сбросить",
+      "priceTitle": "Цена",
+      "ratingTitle": "Рейтинг",
+      "categoryTitle": "Категория",
+      "amenitiesTitle": "Удобства",
+      "distanceTitle": "Расстояние",
+      "moreTitle": "Ещё",
+      "guestFavorite": "Выбор гостей",
+      "price": {
+        "any": "Любая",
+        "under100": "До 100 тыс",
+        "100-200": "100–200 тыс",
+        "200-500": "200–500 тыс",
+        "500plus": "500 тыс+"
+      },
+      "rating": {
+        "any": "Любой",
+        "4_5": "4.5+",
+        "4_0": "4.0+",
+        "3_5": "3.5+"
+      },
+      "distance": {
+        "any": "Любое",
+        "1km": "1 км",
+        "3km": "3 км",
+        "5km": "5 км",
+        "10km": "10 км"
+      },
+      "amenity": {
+        "wifi": "Wi‑Fi",
+        "parking": "Парковка",
+        "card_payment": "Оплата картой",
+        "air_conditioning": "Кондиционер",
+        "waiting_area": "Зона ожидания",
+        "coffee_tea": "Чай и кофе",
+        "online_booking": "Онлайн-запись",
+        "sanitized_tools": "Стерильность",
+        "kids_friendly": "Для детей"
+      }
+    },
+    "emptyFilters": "По фильтрам салонов не найдено",
     "locateError": "Не удалось определить местоположение",
     "locateUnsupported": "Геолокация не поддерживается",
     "loading": "Загрузка салонов…",

@@ -10,7 +10,7 @@ import {
   USER_RADIUS_M,
 } from "./constants";
 import { buildPricePillHtml, buildSalonPreviewHtml, buildUserDotHtml } from "./markers";
-import { bindHtmlMarkerClick, bindHtmlMarkerHover } from "./html-marker-events";
+import { bindHtmlMarkerClick, bindHtmlMarkerHover, bindSalonPreviewNavigate } from "./html-marker-events";
 import { fitMapToPoints } from "./bounds";
 import { readMapViewport, type MapViewport } from "./viewport";
 import type { MapMarker } from "./types";
@@ -29,9 +29,10 @@ export type MapHandle = {
 
 export type Map2GISProps = {
   markers: MapMarker[];
-  activeId?: string | null;
+  selectedId?: string | null;
   hoveredId?: string | null;
-  onMarkerClick?: (id: string) => void;
+  onMarkerSelect?: (id: string | null) => void;
+  onMarkerNavigate?: (id: string) => void;
   onMarkerHover?: (id: string | null) => void;
   onViewportChange?: (viewport: MapViewport) => void;
   showUserLocation?: boolean;
@@ -44,9 +45,10 @@ export type Map2GISProps = {
 
 export function Map2GIS({
   markers,
-  activeId = null,
+  selectedId = null,
   hoveredId = null,
-  onMarkerClick,
+  onMarkerSelect,
+  onMarkerNavigate,
   onMarkerHover,
   onViewportChange,
   showUserLocation = false,
@@ -66,9 +68,11 @@ export function Map2GIS({
   const onMapReadyRef = useRef(onMapReady);
   const onViewportChangeRef = useRef(onViewportChange);
   const onMarkerHoverRef = useRef(onMarkerHover);
-  const onMarkerClickRef = useRef(onMarkerClick);
+  const onMarkerSelectRef = useRef(onMarkerSelect);
+  const onMarkerNavigateRef = useRef(onMarkerNavigate);
   const hoveredIdRef = useRef<string | null>(null);
-  const prevActiveIdRef = useRef<string | null>(null);
+  const selectedIdRef = useRef<string | null>(null);
+  const suppressMapClickRef = useRef(false);
   const initialFitDoneRef = useRef(false);
   const skipViewportEmitRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
@@ -88,12 +92,20 @@ export function Map2GIS({
   }, [onMarkerHover]);
 
   useEffect(() => {
-    onMarkerClickRef.current = onMarkerClick;
-  }, [onMarkerClick]);
+    onMarkerSelectRef.current = onMarkerSelect;
+  }, [onMarkerSelect]);
+
+  useEffect(() => {
+    onMarkerNavigateRef.current = onMarkerNavigate;
+  }, [onMarkerNavigate]);
 
   useEffect(() => {
     hoveredIdRef.current = hoveredId ?? null;
   }, [hoveredId]);
+
+  useEffect(() => {
+    selectedIdRef.current = selectedId ?? null;
+  }, [selectedId]);
 
   const emitViewport = () => {
     const map = mapRef.current;
@@ -113,10 +125,12 @@ export function Map2GIS({
     if (!map || !mapglAPI) return;
 
     hidePreview();
-    const cover = m.coverUrl?.trim() || "";
-    if (!cover) return;
-
-    const html = buildSalonPreviewHtml(cover, m.label);
+    const html = buildSalonPreviewHtml({
+      coverUrl: m.coverUrl,
+      name: m.label,
+      address: m.address,
+      ctaLabel: m.ctaLabel ?? "Salonni ko'rish",
+    });
     const preview = new mapglAPI.HtmlMarker(map, {
       coordinates: toMapGlCoords(m.lat, m.lng),
       html,
@@ -124,7 +138,7 @@ export function Map2GIS({
       preventMapInteractions: true,
       zIndex: 20,
     });
-    bindHtmlMarkerClick(preview, () => onMarkerClickRef.current?.(m.id));
+    bindSalonPreviewNavigate(preview, () => onMarkerNavigateRef.current?.(m.id));
     previewRef.current = preview;
   };
 
@@ -228,6 +242,18 @@ export function Map2GIS({
         map.on("moveend", () => {
           if (!skipViewportEmitRef.current) emitViewport();
         });
+
+        map.on("click", () => {
+          window.requestAnimationFrame(() => {
+            if (suppressMapClickRef.current) {
+              suppressMapClickRef.current = false;
+              return;
+            }
+            if (selectedIdRef.current) {
+              onMarkerSelectRef.current?.(null);
+            }
+          });
+        });
       })
       .catch((err: unknown) => {
         console.error("[Map2GIS] failed to load mapgl", err);
@@ -257,6 +283,7 @@ export function Map2GIS({
 
     const nextIds = new Set(markers.map((m) => m.id));
     const hoverId = hoveredIdRef.current;
+    const selected = selectedIdRef.current;
 
     for (const [id, marker] of markerRefs.current) {
       if (!nextIds.has(id)) {
@@ -268,23 +295,21 @@ export function Map2GIS({
     for (const m of markers) {
       try {
         const pinLabel = m.priceLabel || m.label.slice(0, 8);
-        const isActive = activeId === m.id;
+        const isSelected = selected === m.id;
         const isHovered = hoverId === m.id;
-        const html = buildPricePillHtml(isHovered || isActive, pinLabel, isHovered && !isActive);
+        const html = buildPricePillHtml(isSelected, pinLabel, isHovered && !isSelected);
         const existing = markerRefs.current.get(m.id);
 
         const bindMarker = (marker: mapgl.HtmlMarker) => {
-          bindHtmlMarkerClick(marker, () => onMarkerClickRef.current?.(m.id));
+          bindHtmlMarkerClick(marker, () => {
+            suppressMapClickRef.current = true;
+            const current = selectedIdRef.current;
+            onMarkerSelectRef.current?.(current === m.id ? null : m.id);
+          });
           bindHtmlMarkerHover(
             marker,
-            () => {
-              onMarkerHoverRef.current?.(m.id);
-              showPreview(m);
-            },
-            () => {
-              onMarkerHoverRef.current?.(null);
-              hidePreview();
-            },
+            () => onMarkerHoverRef.current?.(m.id),
+            () => onMarkerHoverRef.current?.(null),
           );
         };
 
@@ -298,7 +323,7 @@ export function Map2GIS({
             html,
             interactive: true,
             preventMapInteractions: true,
-            zIndex: isActive ? 12 : 10,
+            zIndex: isSelected ? 12 : 10,
           });
           bindMarker(marker);
           markerRefs.current.set(m.id, marker);
@@ -307,16 +332,16 @@ export function Map2GIS({
         console.error("[Map2GIS] marker sync failed", m.id, err);
       }
     }
-  }, [markers, activeId, hoveredId, mapReady]);
+  }, [markers, selectedId, hoveredId, mapReady]);
 
   useEffect(() => {
-    if (!hoveredId) {
+    if (!selectedId) {
       hidePreview();
       return;
     }
-    const m = markers.find((x) => x.id === hoveredId);
-    if (m?.coverUrl) showPreview(m);
-  }, [hoveredId, markers]);
+    const m = markers.find((x) => x.id === selectedId);
+    if (m) showPreview(m);
+  }, [selectedId, markers]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -342,13 +367,6 @@ export function Map2GIS({
       strokeColor: "#14141433",
     });
   }, [showUserLocation, userLocation, mapReady]);
-
-  useEffect(() => {
-    if (!activeId || !mapRef.current) return;
-    if (prevActiveIdRef.current === null) {
-      prevActiveIdRef.current = activeId;
-    }
-  }, [activeId]);
 
   useEffect(() => {
     if (!autoFitMarkers) return;
