@@ -1,22 +1,27 @@
-"""Toshkent bo'ylab 50 ta bookable mock salon yaratish yoki o'chirish."""
+"""Toshkent bo'ylab 250 ta mock salon + Pexels rasmlar + soxta sharhlar."""
 
+from __future__ import annotations
+
+import random
 from datetime import time
 from decimal import Decimal
-
+from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
 from accounts.uz_regions import UzRegion
 from barbers.models import Barber, BarberProfile
-from salons.mock.tashkent_salons import MOCK_MARKER, SERVICE_TEMPLATES, TASHKENT_MOCK_SALONS
-from salons.models import BarberWorkingHours, Salon, SalonHours, SalonMembership, Service
+from salons.mock.mock_reviews import _ensure_mock_customers, purge_mock_review_users, seed_reviews_for_salon
+from salons.mock.pexels import download_image, fetch_kind_pool
+from salons.mock.tashkent_salons import MOCK_MARKER, MOCK_SALON_COUNT, SERVICE_TEMPLATES, TASHKENT_MOCK_SALONS
+from salons.models import BarberWorkingHours, Salon, SalonHours, SalonImage, SalonMembership, Service
 
 
 class Command(BaseCommand):
     help = (
-        "Toshkent bo'ylab 50 ta mock salon + egasi-barber + xizmatlar + ish vaqti. "
-        "Keyin `--purge` bilan o'chirish mumkin."
+        f"Toshkent bo'ylab {MOCK_SALON_COUNT} ta mock salon + egasi-barber + xizmatlar + "
+        "Pexels rasmlar + soxta sharhlar. Keyin `--purge` bilan o'chirish mumkin."
     )
 
     def add_arguments(self, parser):
@@ -25,12 +30,25 @@ class Command(BaseCommand):
             action="store_true",
             help="Mock salonlar va ularning egasi-barberlarini o'chirish.",
         )
+        parser.add_argument(
+            "--skip-images",
+            action="store_true",
+            help="Cover/gallery rasmlarini yuklamaslik.",
+        )
+        parser.add_argument(
+            "--skip-reviews",
+            action="store_true",
+            help="Soxta sharhlarni yaratmaslik.",
+        )
 
     def handle(self, *args, **options):
         if options["purge"]:
             self._purge()
             return
-        self._seed()
+        self._seed(
+            skip_images=options["skip_images"],
+            skip_reviews=options["skip_reviews"],
+        )
 
     @transaction.atomic
     def _purge(self):
@@ -44,23 +62,66 @@ class Command(BaseCommand):
             email__startswith="mock-tashkent-",
             email__endswith="@mybarber.test",
         ).delete()[0]
+        deleted_review_users = purge_mock_review_users()
         self.stdout.write(
             self.style.SUCCESS(
-                f"O'chirildi: {count} mock salon, {deleted_barbers} mock barber "
-                f"(owner ids: {len(barber_ids)})."
+                f"O'chirildi: {count} mock salon, {deleted_barbers} mock barber, "
+                f"{deleted_review_users} mock mijoz (owner ids: {len(barber_ids)})."
             )
         )
 
+    def _load_image_pools(self) -> dict[str, list[str]]:
+        kind_counts = {"barber": 0, "beauty": 0, "nails": 0, "spa": 0}
+        for entry in TASHKENT_MOCK_SALONS:
+            kind_counts[entry["kind"]] += 1
+
+        pools: dict[str, list[str]] = {}
+        for kind, count in kind_counts.items():
+            # cover + 2 gallery = 3 rasm / salon
+            need = count * 3 + 10
+            self.stdout.write(f"Pexels: {kind} uchun {need} ta rasm yuklanmoqda…")
+            pools[kind] = fetch_kind_pool(kind, need)
+            self.stdout.write(f"  → {len(pools[kind])} ta URL tayyor")
+        return pools
+
+    def _save_cover(self, salon: Salon, url: str, slug: str) -> None:
+        if salon.cover_image:
+            return
+        data = download_image(url)
+        salon.cover_image.save(f"{slug}-cover.jpg", ContentFile(data), save=True)
+
+    def _save_gallery(self, salon: Salon, urls: list[str], slug: str) -> None:
+        existing = salon.images.count()
+        if existing >= 2:
+            return
+        for i, url in enumerate(urls[:2]):
+            if salon.images.filter(sort_order=i).exists():
+                continue
+            data = download_image(url)
+            img = SalonImage(salon=salon, sort_order=existing + i)
+            img.image.save(f"{slug}-gallery-{i + 1}.jpg", ContentFile(data), save=True)
+
     @transaction.atomic
-    def _seed(self):
+    def _seed(self, *, skip_images: bool, skip_reviews: bool):
         now = timezone.now()
         created = 0
         updated = 0
+        reviews_created = 0
+        images_set = 0
+
+        pools: dict[str, list[str]] = {}
+        kind_idx: dict[str, int] = {"barber": 0, "beauty": 0, "nails": 0, "spa": 0}
+        if not skip_images:
+            pools = self._load_image_pools()
+
+        customers = _ensure_mock_customers(30) if not skip_reviews else []
+        rng = random.Random(42)
 
         for entry in TASHKENT_MOCK_SALONS:
             slug = entry["slug"]
             email = f"{slug}@mybarber.test"
             username = slug.replace("-", "_")
+            kind = entry["kind"]
 
             barber, barber_created = Barber.objects.get_or_create(
                 email=email,
@@ -102,7 +163,7 @@ class Command(BaseCommand):
                     "latitude": Decimal(str(entry["lat"])),
                     "longitude": Decimal(str(entry["lng"])),
                     "address": entry["address"],
-                    "description": f"{MOCK_MARKER}: {entry['kind']} demo salon — Toshkent mock.",
+                    "description": f"{MOCK_MARKER}: {kind} demo salon — Toshkent mock.",
                     "is_published": True,
                     "owner_barber": barber,
                     "phone": f"+99871{2000000 + int(slug.split('-')[-1]):07d}"[:13],
@@ -140,7 +201,7 @@ class Command(BaseCommand):
                     },
                 )
 
-            services = SERVICE_TEMPLATES[entry["kind"]]
+            services = SERVICE_TEMPLATES[kind]
             for svc_name, price, duration in services:
                 Service.objects.update_or_create(
                     salon=salon,
@@ -153,6 +214,23 @@ class Command(BaseCommand):
                     },
                 )
 
+            if not skip_images and pools:
+                pool = pools[kind]
+                base_i = kind_idx[kind]
+                kind_idx[kind] = base_i + 3
+                cover_url = pool[base_i % len(pool)]
+                gallery_urls = [pool[(base_i + 1) % len(pool)], pool[(base_i + 2) % len(pool)]]
+                try:
+                    if not salon.cover_image:
+                        self._save_cover(salon, cover_url, slug)
+                        images_set += 1
+                    self._save_gallery(salon, gallery_urls, slug)
+                except Exception as exc:
+                    self.stdout.write(self.style.WARNING(f"  Rasm xato ({slug}): {exc}"))
+
+            if not skip_reviews and customers:
+                reviews_created += seed_reviews_for_salon(salon, barber, kind, customers, rng)
+
             if salon_created:
                 created += 1
             else:
@@ -162,6 +240,9 @@ class Command(BaseCommand):
             self.style.SUCCESS(
                 f"Tayyor: {created} yangi, {updated} yangilangan mock salon "
                 f"(jami {len(TASHKENT_MOCK_SALONS)} ta).\n"
+                f"  Cover rasmlar: {images_set} ta yangi.\n"
+                f"  Soxta sharhlar: {reviews_created} ta yaratildi.\n"
+                "  PEXELS_API_KEY — aniq kategoriya rasmlari uchun (ixtiyoriy).\n"
                 "  Bron qilish: mijoz TOSHKENT_SH regionida login qilgan bo'lsin.\n"
                 "  O'chirish: python manage.py seed_tashkent_mock_salons --purge"
             )
