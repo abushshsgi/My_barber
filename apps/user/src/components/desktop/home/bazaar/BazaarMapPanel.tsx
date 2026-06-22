@@ -78,9 +78,9 @@ export function BazaarMapPanel({ salons = [], salonCount = 0, sidebarSalon, clas
               <div className="absolute inset-0 animate-pulse bg-surface-2" />
             )}
 
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background/90 via-background/45 to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-background/75 via-background/30 to-transparent" />
 
-            <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-10">
+            <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-6">
               <p className="text-lg font-bold tracking-tight">
                 {salonCount > 0
                   ? t("home.mapPreview.nearbyCount", {
