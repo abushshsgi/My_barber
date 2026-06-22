@@ -112,6 +112,27 @@ _NAME_PREFIXES = {
 
 _KINDS = ["barber", "barber", "barber", "beauty", "nails", "spa"]
 
+# 250 ta salon — tuman+prefix takrorida unique nom uchun (salon_name_unique_ci_trim).
+_NAME_SUFFIXES = [
+    "",
+    " Plus",
+    " Pro",
+    " Studio",
+    " Express",
+    " Elite",
+    " Grand",
+    " Prime",
+    " Neo",
+    " Lux",
+    " One",
+    " City",
+    " Central",
+    " Metro",
+    " Park",
+    " West",
+    " East",
+]
+
 
 def _build_entries() -> list[dict]:
     entries: list[dict] = []
@@ -147,3 +168,5 @@ TASHKENT_MOCK_SALONS: list[dict] = _build_entries()
 assert len(TASHKENT_MOCK_SALONS) == MOCK_SALON_COUNT, (
     f"Expected {MOCK_SALON_COUNT} salons, got {len(TASHKENT_MOCK_SALONS)}"
 )
+_names = [s["name"] for s in TASHKENT_MOCK_SALONS]
+assert len(_names) == len(set(_names)), "Duplicate mock salon names — fix _NAME_SUFFIXES"

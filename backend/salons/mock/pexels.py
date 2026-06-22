@@ -120,7 +120,7 @@ def fetch_kind_pool(kind: str, min_count: int, api_key: str | None = None) -> li
     return urls[:min_count]
 
 
-def download_image(url: str, filename: str) -> bytes:
+def download_image(url: str) -> bytes:
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     with urllib.request.urlopen(req, timeout=60) as resp:
         return resp.read()
