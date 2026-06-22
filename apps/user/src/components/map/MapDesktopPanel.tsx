@@ -16,7 +16,7 @@ import { formatDistanceKm } from "@/lib/map-utils";
 import type { MapFiltersState } from "@/lib/map-filters";
 import { cn } from "@/lib/utils";
 
-const PANEL_WIDTH = 640;
+const PANEL_WIDTH = 780;
 
 type Props = {
   salons: Salon[];
@@ -82,7 +82,7 @@ function MapDesktopSalonCard({
   return (
     <article
       data-desktop-salon-id={salon.id}
-      className="group flex min-w-0 flex-col gap-3.5"
+      className="group flex min-w-0 flex-col gap-4"
       onMouseEnter={() => onHover?.(salon.id)}
       onMouseLeave={() => onHover?.(null)}
     >
@@ -100,7 +100,7 @@ function MapDesktopSalonCard({
           preload="intent"
           className="block w-full active:opacity-95"
         >
-          <div className="aspect-[4/3] w-full overflow-hidden">
+          <div className="aspect-[4/3] w-full min-h-[200px] overflow-hidden">
             <SalonCoverImage salon={salon} className="h-full w-full" />
           </div>
         </Link>
@@ -127,26 +127,26 @@ function MapDesktopSalonCard({
       <div className="px-0.5 pb-1.5 pt-0.5">
         <div className="flex items-start justify-between gap-2.5">
           <Link to="/salon/$id" params={{ id: salon.id }} preload="intent" className="min-w-0 flex-1">
-            <h3 className="line-clamp-2 text-[14px] font-bold leading-snug tracking-tight text-foreground">
+            <h3 className="line-clamp-2 text-[15px] font-bold leading-snug tracking-tight text-foreground">
               {salon.name}
             </h3>
           </Link>
           {salon.rating > 0 ? (
-            <div className="flex shrink-0 items-center gap-1 text-[13px] font-bold text-foreground">
-              <Star className="h-3.5 w-3.5 fill-foreground" strokeWidth={0} />
+            <div className="flex shrink-0 items-center gap-1 text-[14px] font-bold text-foreground">
+              <Star className="h-4 w-4 fill-foreground" strokeWidth={0} />
               <span>{salon.rating.toFixed(1)}</span>
             </div>
           ) : null}
         </div>
 
         {description ? (
-          <p className="mt-1.5 line-clamp-2 text-[12px] leading-snug text-foreground/80">
+          <p className="mt-1.5 line-clamp-2 text-[13px] leading-snug text-foreground/80">
             {description}
           </p>
         ) : null}
 
         <div className="mt-2 flex items-end justify-between gap-2">
-          <div className="min-w-0 text-[12px] font-medium leading-snug text-foreground/65">
+          <div className="min-w-0 text-[13px] font-medium leading-snug text-foreground/65">
             {salon.reviewCount > 0 ? (
               <span>
                 {salon.reviewCount} {t("map.reviews")}
@@ -157,8 +157,8 @@ function MapDesktopSalonCard({
           </div>
           {salon.priceFrom > 0 ? (
             <p className="shrink-0 text-right leading-none">
-              <span className="text-[14px] font-bold tabular-nums text-foreground">{shortPrice(salon.priceFrom)}</span>
-              <span className="ml-1 text-[11px] font-semibold text-foreground/65">
+              <span className="text-[15px] font-bold tabular-nums text-foreground">{shortPrice(salon.priceFrom)}</span>
+              <span className="ml-1 text-[12px] font-semibold text-foreground/65">
                 {t("map.priceFromSuffix")}
               </span>
             </p>
@@ -268,7 +268,7 @@ export function MapDesktopPanel({
         ) : null}
 
         {salons.length > 0 ? (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-8 pb-6">
+          <div className="grid grid-cols-2 gap-x-5 gap-y-10 pb-6">
             {salons.map((salon) => (
               <MapDesktopSalonCard
                 key={salon.id}
