@@ -20,7 +20,6 @@ const PANEL_WIDTH = 640;
 
 type Props = {
   salons: Salon[];
-  visibleSalonIds?: ReadonlySet<string>;
   highlightedId: string;
   scrollToId?: string;
   query: string;
@@ -31,6 +30,7 @@ type Props = {
   onSalonHover?: (id: string | null) => void;
   loading?: boolean;
   emptyMessage?: string;
+  viewportEmpty?: boolean;
 };
 
 function salonDescription(salon: Salon): string {
@@ -64,13 +64,11 @@ function SalonCoverImage({ salon, className }: { salon: Salon; className?: strin
 function MapDesktopSalonCard({
   salon,
   isActive,
-  isOnMap,
   isEntering,
   onHover,
 }: {
   salon: Salon;
   isActive: boolean;
-  isOnMap: boolean;
   isEntering: boolean;
   onHover?: (id: string | null) => void;
 }) {
@@ -83,19 +81,16 @@ function MapDesktopSalonCard({
   return (
     <article
       data-desktop-salon-id={salon.id}
-      className="group flex min-w-0 flex-col"
+      className="group flex min-w-0 flex-col gap-3"
       onMouseEnter={() => onHover?.(salon.id)}
       onMouseLeave={() => onHover?.(null)}
     >
       <div
         className={cn(
-          "relative overflow-hidden rounded-2xl border transition-all duration-300",
+          "relative overflow-hidden rounded-2xl transition-all duration-300",
           "shadow-[0_2px_14px_rgba(0,0,0,0.07)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.11)]",
           isEntering && "map-sidebar-card-enter",
-          isActive
-            ? "border-foreground/35 ring-2 ring-foreground/12 shadow-[0_6px_22px_rgba(0,0,0,0.12)]"
-            : "border-border/50",
-          !isOnMap && !isActive && "opacity-55",
+          isActive && "shadow-[0_6px_22px_rgba(0,0,0,0.12)]",
         )}
       >
         <Link
@@ -116,16 +111,19 @@ function MapDesktopSalonCard({
             toggle(salon.id);
           }}
           aria-label="Sevimli"
-          className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-full bg-background/95 shadow-sm transition active:scale-90"
+          className="absolute right-2 top-2 z-10 p-0.5 transition active:scale-90"
         >
           <Heart
-            className={cn("h-3.5 w-3.5", fav && "fill-foreground")}
+            className={cn(
+              "h-4 w-4 drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]",
+              fav ? "fill-foreground text-foreground" : "text-foreground",
+            )}
             strokeWidth={2.2}
           />
         </button>
       </div>
 
-      <div className="px-0.5 pb-1 pt-2">
+      <div className="px-0.5 pb-1">
         <div className="flex items-start justify-between gap-2">
           <Link to="/salon/$id" params={{ id: salon.id }} preload="intent" className="min-w-0 flex-1">
             <h3 className="line-clamp-1 text-[13px] font-bold leading-snug tracking-tight text-foreground">
@@ -172,7 +170,6 @@ function MapDesktopSalonCard({
 
 export function MapDesktopPanel({
   salons,
-  visibleSalonIds,
   highlightedId,
   scrollToId,
   query,
@@ -183,24 +180,25 @@ export function MapDesktopPanel({
   onSalonHover,
   loading,
   emptyMessage,
+  viewportEmpty,
 }: Props) {
   const { t } = useTranslation();
   const listRef = useRef<HTMLDivElement>(null);
-  const prevVisibleRef = useRef<ReadonlySet<string>>(new Set());
+  const prevSalonIdsRef = useRef<ReadonlySet<string>>(new Set());
   const [enteringIds, setEnteringIds] = useState<ReadonlySet<string>>(() => new Set());
 
   useEffect(() => {
-    const current = visibleSalonIds ?? new Set(salons.map((s) => s.id));
+    const current = new Set(salons.map((s) => s.id));
     const entered = new Set<string>();
     for (const id of current) {
-      if (!prevVisibleRef.current.has(id)) entered.add(id);
+      if (!prevSalonIdsRef.current.has(id)) entered.add(id);
     }
-    prevVisibleRef.current = current;
+    prevSalonIdsRef.current = current;
     if (entered.size === 0) return;
     setEnteringIds(entered);
     const timer = window.setTimeout(() => setEnteringIds(new Set()), 400);
     return () => window.clearTimeout(timer);
-  }, [visibleSalonIds, salons]);
+  }, [salons]);
 
   useEffect(() => {
     if (!scrollToId) return;
@@ -208,27 +206,26 @@ export function MapDesktopPanel({
     el?.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
   }, [scrollToId]);
 
+  const listEmptyMessage = viewportEmpty
+    ? t("map.emptyViewport", { defaultValue: "Bu hududda salon topilmadi. Xaritani siljiting yoki zoom qiling." })
+    : (emptyMessage ?? t("map.empty"));
+
   return (
     <aside
       className="flex h-full shrink-0 flex-col border-r border-border/60 bg-surface/40"
       style={{ width: PANEL_WIDTH, maxWidth: "100%" }}
     >
       <div className="shrink-0 space-y-3 border-b border-border/50 px-5 pb-3.5 pt-4">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-            {t("nav.map")}
-          </p>
-          <h1 className="mt-1 text-[20px] font-bold tracking-tight">
-            {loading && salons.length === 0 ? (
-              <MapLoadingIndicator label={t("map.loading")} />
-            ) : (
-              t("map.desktopResults", {
-                count: salons.length,
-                defaultValue: "{{count}} ta salon",
-              })
-            )}
-          </h1>
-        </div>
+        <h1 className="text-[20px] font-bold tracking-tight">
+          {loading && salons.length === 0 ? (
+            <MapLoadingIndicator label={t("map.loading")} />
+          ) : (
+            t("map.desktopResults", {
+              count: salons.length,
+              defaultValue: "{{count}} ta salon",
+            })
+          )}
+        </h1>
         <div className="flex items-center gap-2">
           <div className="relative min-w-0 flex-1 rounded-full border border-border/50 bg-background py-2 pl-9 pr-3 shadow-sm">
             <Search
@@ -265,18 +262,17 @@ export function MapDesktopPanel({
 
         {!loading && salons.length === 0 ? (
           <p className="py-8 text-center text-sm font-medium text-muted-foreground">
-            {emptyMessage ?? t("map.empty")}
+            {listEmptyMessage}
           </p>
         ) : null}
 
         {salons.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3 pb-5">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-6 pb-5">
             {salons.map((salon) => (
               <MapDesktopSalonCard
                 key={salon.id}
                 salon={salon}
                 isActive={salon.id === highlightedId}
-                isOnMap={visibleSalonIds?.has(salon.id) ?? true}
                 isEntering={enteringIds.has(salon.id)}
                 onHover={onSalonHover}
               />

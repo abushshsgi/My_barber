@@ -201,22 +201,21 @@ function MapView() {
       setActive("");
       return;
     }
-    if (!active || !filtered.some((s) => s.id === active)) {
-      setActive(filtered[0].id);
-    }
-  }, [filtered]);
+    if (visibleSalons.length === 0) return;
+    setActive((prev) => {
+      if (prev && visibleSalons.some((s) => s.id === prev)) return prev;
+      return visibleSalons[0].id;
+    });
+  }, [filtered, visibleSalons]);
 
-  const visibleSalonIdSet = useMemo(
-    () => new Set(visibleSalons.map((s) => s.id)),
-    [visibleSalons],
-  );
-
-  const mapSalons = useMemo(() => {
+  const sidebarSalons = useMemo(() => {
     if (!selected) return visibleSalons;
     if (visibleSalons.some((s) => s.id === selected)) return visibleSalons;
     const pinned = filtered.find((s) => s.id === selected);
     return pinned ? [...visibleSalons, pinned] : visibleSalons;
   }, [visibleSalons, selected, filtered]);
+
+  const mapSalons = sidebarSalons;
 
   const ctaLabel = t("map.viewSalon");
 
@@ -359,8 +358,7 @@ function MapView() {
       <div className="relative flex h-full min-h-0 w-full overflow-hidden">
         {!desktopMapExpanded ? (
           <MapDesktopPanel
-            salons={filtered}
-            visibleSalonIds={visibleSalonIdSet}
+            salons={sidebarSalons}
             highlightedId={selected || hovered || active}
             scrollToId={selected ?? undefined}
             query={query}
@@ -371,6 +369,7 @@ function MapView() {
             onSalonHover={onMarkerHover}
             loading={listLoadingAny}
             emptyMessage={emptyMessage}
+            viewportEmpty={!listLoadingAny && filtered.length > 0 && visibleSalons.length === 0}
           />
         ) : null}
         <MapDesktopMapControls

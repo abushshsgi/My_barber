@@ -22,61 +22,24 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
   return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function inBounds(lat: number, lng: number, bounds: MapBounds): boolean {
-  const minLat = Math.min(bounds.southWest.lat, bounds.northEast.lat);
-  const maxLat = Math.max(bounds.southWest.lat, bounds.northEast.lat);
-  const minLng = Math.min(bounds.southWest.lng, bounds.northEast.lng);
-  const maxLng = Math.max(bounds.southWest.lng, bounds.northEast.lng);
-  return lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng;
+/** Zoom + → kichik radius, zoom - → katta radius. */
+function visibleRadiusKm(zoom: number): number {
+  if (zoom >= 17) return 1.2;
+  if (zoom >= 16) return 2;
+  if (zoom >= 15) return 3.5;
+  if (zoom >= 14) return 6;
+  if (zoom >= 13) return 11;
+  if (zoom >= 12) return 20;
+  if (zoom >= 11) return 35;
+  if (zoom >= 10) return 60;
+  return 100;
 }
 
-function expandBounds(bounds: MapBounds, factor = 0.06): MapBounds {
-  const minLat = Math.min(bounds.southWest.lat, bounds.northEast.lat);
-  const maxLat = Math.max(bounds.southWest.lat, bounds.northEast.lat);
-  const minLng = Math.min(bounds.southWest.lng, bounds.northEast.lng);
-  const maxLng = Math.max(bounds.southWest.lng, bounds.northEast.lng);
-  const latPad = (maxLat - minLat) * factor;
-  const lngPad = (maxLng - minLng) * factor;
-  return {
-    southWest: { lat: minLat - latPad, lng: minLng - lngPad },
-    northEast: { lat: maxLat + latPad, lng: maxLng + lngPad },
-  };
-}
-
-/**
- * Airbnb/Booking uslubi: zoom kattalashganda (+) ko'rinadigan maydon kichrayadi → kam salon;
- * zoom kichiklashganda (-) maydon kengayadi → ko'p salon.
- * Juda past zoomda o'qilishi uchun yuqori limit qo'llaniladi.
- */
 function hardCapForZoom(zoom: number): number {
   if (zoom >= 15) return Number.POSITIVE_INFINITY;
   if (zoom >= 13) return 80;
   if (zoom >= 11) return 45;
   return 25;
-}
-
-function capSalonsByCenter<T extends ViewportSalon>(
-  salons: T[],
-  centerLat: number,
-  centerLng: number,
-  cap: number,
-  indexById: Map<string, number>,
-): T[] {
-  if (salons.length <= cap) return salons;
-
-  return salons
-    .map((s) => {
-      const { lat, lng } = normalizeMapCoords(s.lat, s.lng);
-      return {
-        salon: s,
-        dist: haversineKm(centerLat, centerLng, lat, lng),
-        idx: indexById.get(s.id) ?? 0,
-      };
-    })
-    .sort((a, b) => a.dist - b.dist || a.idx - b.idx)
-    .slice(0, cap)
-    .sort((a, b) => a.idx - b.idx)
-    .map(({ salon }) => salon);
 }
 
 export type ViewportSalon = {
@@ -91,30 +54,28 @@ export function filterSalonsByViewport<T extends ViewportSalon>(
 ): T[] {
   if (!viewport || salons.length === 0) return salons;
 
-  const bounds = expandBounds(viewport.bounds);
-  const inView: T[] = [];
+  const { centerLat, centerLng, zoom } = viewport;
+  const radiusKm = visibleRadiusKm(zoom);
+  const cap = hardCapForZoom(zoom);
   const indexById = new Map<string, number>();
 
+  const inRange: T[] = [];
   salons.forEach((s, idx) => {
     indexById.set(s.id, idx);
     const { lat, lng } = normalizeMapCoords(s.lat, s.lng);
-    if (inBounds(lat, lng, bounds)) inView.push(s);
+    const dist = haversineKm(centerLat, centerLng, lat, lng);
+    if (dist <= radiusKm) inRange.push(s);
   });
 
-  const cap = hardCapForZoom(viewport.zoom);
+  if (inRange.length === 0) return [];
 
-  if (inView.length === 0) {
-    return capSalonsByCenter(salons, viewport.centerLat, viewport.centerLng, cap, indexById);
-  }
-
-  if (inView.length <= cap) {
-    return inView.sort(
+  if (inRange.length <= cap) {
+    return inRange.sort(
       (a, b) => (indexById.get(a.id) ?? 0) - (indexById.get(b.id) ?? 0),
     );
   }
 
-  const { centerLat, centerLng } = viewport;
-  return inView
+  return inRange
     .map((s) => {
       const { lat, lng } = normalizeMapCoords(s.lat, s.lng);
       return {

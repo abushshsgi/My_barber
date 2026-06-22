@@ -296,6 +296,26 @@ export function Map2GIS({
           if (!skipViewportEmitRef.current) emitViewport();
         });
 
+        let zoomFrame = 0;
+        map.on("zoom", () => {
+          if (skipViewportEmitRef.current) return;
+          if (zoomFrame) cancelAnimationFrame(zoomFrame);
+          zoomFrame = requestAnimationFrame(() => {
+            emitViewport();
+            zoomFrame = 0;
+          });
+        });
+
+        let moveFrame = 0;
+        map.on("move", () => {
+          if (skipViewportEmitRef.current) return;
+          if (moveFrame) cancelAnimationFrame(moveFrame);
+          moveFrame = requestAnimationFrame(() => {
+            emitViewport();
+            moveFrame = 0;
+          });
+        });
+
         map.on("click", () => {
           window.requestAnimationFrame(() => {
             if (suppressMapClickRef.current) {
