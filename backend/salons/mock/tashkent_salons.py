@@ -112,27 +112,6 @@ _NAME_PREFIXES = {
 
 _KINDS = ["barber", "barber", "barber", "beauty", "nails", "spa"]
 
-# 250 ta salon — tuman+prefix takrorida unique nom uchun (salon_name_unique_ci_trim).
-_NAME_SUFFIXES = [
-    "",
-    " Plus",
-    " Pro",
-    " Studio",
-    " Express",
-    " Elite",
-    " Grand",
-    " Prime",
-    " Neo",
-    " Lux",
-    " One",
-    " City",
-    " Central",
-    " Metro",
-    " Park",
-    " West",
-    " East",
-]
-
 
 def _build_entries() -> list[dict]:
     entries: list[dict] = []
@@ -147,12 +126,13 @@ def _build_entries() -> list[dict]:
             kind = _KINDS[idx % len(_KINDS)]
             prefix = _NAME_PREFIXES[kind][idx % len(_NAME_PREFIXES[kind])]
             slug = f"mock-tashkent-{idx + 1:03d}"
+            salon_no = slug.split("-")[-1]
             jitter_lat = base_lat + ((idx % 11) - 5) * 0.0016
             jitter_lng = base_lng + ((idx % 9) - 4) * 0.0019
             entries.append(
                 {
                     "slug": slug,
-                    "name": f"{prefix} — {district}",
+                    "name": f"{prefix} — {district} · {salon_no}",
                     "kind": kind,
                     "address": f"{street}, {district} tumani, Toshkent",
                     "lat": round(jitter_lat, 6),
@@ -169,4 +149,4 @@ assert len(TASHKENT_MOCK_SALONS) == MOCK_SALON_COUNT, (
     f"Expected {MOCK_SALON_COUNT} salons, got {len(TASHKENT_MOCK_SALONS)}"
 )
 _names = [s["name"] for s in TASHKENT_MOCK_SALONS]
-assert len(_names) == len(set(_names)), "Duplicate mock salon names — fix _NAME_SUFFIXES"
+assert len(_names) == len(set(_names)), "Duplicate mock salon names"
