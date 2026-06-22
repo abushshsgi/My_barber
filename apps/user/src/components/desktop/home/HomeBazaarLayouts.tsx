@@ -29,7 +29,7 @@ export function HomeBazaarClassic({ data }: Props) {
   return (
     <div className="w-full">
       <BazaarPageTitle title={t("home.nearby")} count={filtered.length} />
-      <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-[minmax(240px,280px)_minmax(0,1fr)_minmax(320px,400px)] xl:gap-8">
+      <div className="grid w-full grid-cols-1 items-stretch gap-6 xl:grid-cols-[minmax(240px,280px)_minmax(0,1fr)_minmax(320px,400px)] xl:gap-8">
         <BazaarFilterSidebar {...data} sidebarSalon={sidebarSalonLeft} />
         <section className="min-w-0">
           {loading ? <BazaarGridSkeleton cols={3} /> : <SalonGrid salons={filtered} />}

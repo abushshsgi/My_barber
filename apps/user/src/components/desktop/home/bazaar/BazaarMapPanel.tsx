@@ -11,6 +11,9 @@ import { hasValidMapCoords } from "@/lib/map-utils";
 import { cn } from "@/lib/utils";
 import { BazaarSidebarSalonCard } from "./BazaarSidebarSalonCard";
 
+/** Desktop header balandligi — sticky xarita shu chiziqdan pastda qotadi. */
+const MAP_STICKY_TOP = "top-[4.25rem]";
+
 type MapSalon = Pick<Salon, "id" | "lat" | "lng" | "name" | "priceFrom" | "rating">;
 
 function toMarkers(salons: MapSalon[]): SalonMapMarker[] {
@@ -53,11 +56,11 @@ export function BazaarMapPanel({ salons = [], salonCount = 0, sidebarSalon, clas
   }, [ctx.lat, ctx.lng]);
 
   return (
-    <aside className={cn("flex flex-col gap-4", className)}>
-      <div className="sticky top-28 z-10">
+    <div className={cn("flex h-full min-h-0 flex-col", className)}>
+      <aside className={cn("sticky z-20 w-full shrink-0", MAP_STICKY_TOP)}>
         <Link
           to="/map"
-          className="group relative block overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
+          className="group relative block overflow-hidden rounded-2xl border border-border bg-card shadow-[0_10px_36px_rgba(15,15,15,0.08)] transition-all hover:shadow-[0_14px_44px_rgba(15,15,15,0.12)]"
         >
           <div className="relative aspect-[5/4] min-h-[260px] w-full overflow-hidden bg-surface">
             {mounted ? (
@@ -78,9 +81,9 @@ export function BazaarMapPanel({ salons = [], salonCount = 0, sidebarSalon, clas
               <div className="absolute inset-0 animate-pulse bg-surface-2" />
             )}
 
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-background/75 via-background/30 to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-background/85 via-background/35 to-transparent" />
 
-            <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-6">
+            <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-8">
               <p className="text-lg font-bold tracking-tight">
                 {salonCount > 0
                   ? t("home.mapPreview.nearbyCount", {
@@ -96,9 +99,13 @@ export function BazaarMapPanel({ salons = [], salonCount = 0, sidebarSalon, clas
             </div>
           </div>
         </Link>
-      </div>
+      </aside>
 
-      {sidebarSalon ? <BazaarSidebarSalonCard salon={sidebarSalon} /> : null}
-    </aside>
+      {sidebarSalon ? (
+        <div className="mt-4 shrink-0">
+          <BazaarSidebarSalonCard salon={sidebarSalon} />
+        </div>
+      ) : null}
+    </div>
   );
 }
