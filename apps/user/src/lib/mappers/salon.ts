@@ -60,7 +60,7 @@ export function mapSalonList(api: ApiSalonList, distanceKm = 0): Salon {
     priceFrom,
     priceTo: priceFrom,
     coverSeed,
-    coverUrl: resolveMediaUrl(api.cover_image) ?? getSalonCoverUrl(coverSeed),
+    coverUrl: resolveMediaUrl(api.cover_image) ?? getSalonCoverUrl(coverSeed, category),
     about: "",
     services: [],
     staff: [],

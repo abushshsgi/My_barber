@@ -29,7 +29,7 @@ export function SalonCard({ salon }: Props) {
       >
         <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-surface">
           <img
-            src={salon.coverUrl ?? getSalonCoverUrl(salon.coverSeed)}
+            src={salon.coverUrl ?? getSalonCoverUrl(salon.coverSeed, salon.category)}
             alt=""
             loading="lazy"
             decoding="async"

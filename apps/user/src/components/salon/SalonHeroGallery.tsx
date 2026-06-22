@@ -1,5 +1,5 @@
 import type { Salon } from "@/lib/mock-data";
-import { getSalonCoverUrl, picsumCoverUrl } from "@/lib/cover-images";
+import { getSalonCoverUrl } from "@/lib/cover-images";
 import { resolveMediaUrl } from "@/lib/media-url";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +12,7 @@ function galleryImages(salon: Salon): string[] {
   const out = [...raw];
   let i = 0;
   while (out.length < 3) {
-    out.push(getSalonCoverUrl(`${salon.coverSeed}-${i}`) ?? picsumCoverUrl(`${salon.coverSeed}-${i}`));
+    out.push(getSalonCoverUrl(`${salon.coverSeed}-${i}`, salon.category));
     i += 1;
   }
   return out.slice(0, 3);

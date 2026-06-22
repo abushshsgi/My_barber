@@ -24,8 +24,8 @@ export const SALON_PEEK_VARIANT_LABELS: Record<
 type LayoutProps = { salon: Salon };
 
 function SalonPeekCover({ salon, className }: { salon: Salon; className?: string }) {
-  const fallback = getSalonCoverUrl(salon.coverSeed);
-  const secondary = getSalonCoverUrl(`${salon.coverSeed}-alt`);
+  const fallback = getSalonCoverUrl(salon.coverSeed, salon.category);
+  const secondary = getSalonCoverUrl(`${salon.coverSeed}-alt`, salon.category);
   const primary = salon.coverUrl?.trim() || fallback;
   const [src, setSrc] = useState(primary);
   const stepRef = useRef(0);

@@ -40,7 +40,7 @@ function salonDescription(salon: Salon): string {
 }
 
 function SalonCoverImage({ salon, className }: { salon: Salon; className?: string }) {
-  const fallback = getSalonCoverUrl(salon.coverSeed);
+  const fallback = getSalonCoverUrl(salon.coverSeed, salon.category);
   const src = salon.coverUrl?.trim() || fallback;
 
   return (

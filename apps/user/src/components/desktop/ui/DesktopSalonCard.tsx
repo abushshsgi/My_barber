@@ -16,7 +16,7 @@ type Props = {
 export function DesktopSalonCard({ salon, variant = "grid" }: Props) {
   const { isFav, toggle } = useFavorites();
   const fav = isFav(salon.id);
-  const cover = salon.coverUrl ?? getSalonCoverUrl(salon.coverSeed);
+  const cover = salon.coverUrl ?? getSalonCoverUrl(salon.coverSeed, salon.category);
   const isGuestFavorite = salon.rating >= 4.8;
 
   if (variant === "marketplace") {
