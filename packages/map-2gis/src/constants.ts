@@ -1,6 +1,7 @@
 export const TASHKENT_CENTER = { lat: 41.3111, lng: 69.2797 } as const;
 export const UZ_CENTER = { lat: 41.3, lng: 64.5 } as const;
-export const DEFAULT_ZOOM = 12;
+export const DEFAULT_ZOOM = 13;
+export const FIT_MAX_ZOOM = 15.5;
 export const USER_RADIUS_M = 900;
 
 /** MapGL uses [lng, lat]; our apps use lat/lng. */

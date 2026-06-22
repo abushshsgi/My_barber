@@ -23,9 +23,10 @@ export function buildPricePillHtml(
 
   return `<div data-map-pill style="transform: translate(-50%, -50%); cursor: pointer;">
     <div class="${motionClass}" style="
-      padding: 6px 11px; border-radius: 9999px; background: ${bg}; color: ${color};
+      padding: 8px 14px; border-radius: 9999px; background: ${bg}; color: ${color};
       border: ${border}; box-shadow: ${shadow};
-      font-size: 12px; font-weight: 800; line-height: 1; white-space: nowrap;
+      font-size: 14px; font-weight: 800; line-height: 1.1; white-space: nowrap;
+      letter-spacing: -0.01em;
       ${scaleStyle}${scaleStyle ? " " : ""}transition: transform 0.15s ease, background 0.15s ease;
       font-family: system-ui, -apple-system, sans-serif;
     ">${text}</div>

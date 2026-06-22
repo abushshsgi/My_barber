@@ -1,4 +1,3 @@
-import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { Maximize2, Minimize2, Minus, Plus } from "lucide-react";
@@ -33,8 +32,9 @@ function ControlBtn({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
+      title={label}
       className={cn(
-        "flex items-center justify-center bg-foreground text-background shadow-[0_8px_28px_rgba(0,0,0,0.35)] transition hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40",
+        "pointer-events-auto flex items-center justify-center border border-border/40 bg-background/95 text-foreground shadow-[0_4px_18px_rgba(0,0,0,0.14)] backdrop-blur-sm transition hover:bg-background active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40",
         className,
       )}
     >
@@ -55,7 +55,7 @@ function useIsDesktopMap() {
   return isDesktop;
 }
 
-/** Portal — 2GIS canvas ustida, har doim ko'rinadi */
+/** Xarita panelining past-o'ng burchagi — Airbnb/Booking uslubi */
 export function MapDesktopMapControls({
   expanded,
   getMapHandle,
@@ -66,34 +66,31 @@ export function MapDesktopMapControls({
   const { t } = useTranslation();
   const isDesktop = useIsDesktopMap();
 
-  if (!isDesktop || typeof document === "undefined") return null;
+  if (!isDesktop) return null;
 
-  const ui = (
+  return (
     <div
-      className="fixed right-5 top-[5.25rem] z-[9999] flex flex-col items-end gap-2"
+      className="pointer-events-none absolute bottom-5 right-5 z-20 flex flex-col items-end gap-2"
       data-map-controls
     >
       <ControlBtn
         onClick={expanded ? onCollapse : onExpand}
         label={expanded ? t("map.collapseMap") : t("map.expandMap")}
-        className="h-11 gap-2 rounded-xl px-3.5"
+        className="h-10 w-10 rounded-full"
       >
         {expanded ? (
-          <Minimize2 className="h-4 w-4 shrink-0" strokeWidth={2.4} />
+          <Minimize2 className="h-4 w-4" strokeWidth={2.4} />
         ) : (
-          <Maximize2 className="h-4 w-4 shrink-0" strokeWidth={2.4} />
+          <Maximize2 className="h-4 w-4" strokeWidth={2.4} />
         )}
-        <span className="text-[12px] font-bold">
-          {expanded ? t("map.collapseMap") : t("map.expandMap")}
-        </span>
       </ControlBtn>
 
-      <div className="flex flex-col overflow-hidden rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.35)]">
+      <div className="flex flex-col overflow-hidden rounded-xl border border-border/40 bg-background/95 shadow-[0_4px_18px_rgba(0,0,0,0.14)] backdrop-blur-sm">
         <ControlBtn
           onClick={() => getMapHandle()?.zoomIn()}
           disabled={!mapReady}
           label={t("map.zoomIn")}
-          className="h-11 w-11 rounded-none border-b border-background/20"
+          className="h-10 w-10 rounded-none border-0 border-b border-border/30 bg-transparent shadow-none"
         >
           <Plus className="h-4 w-4" strokeWidth={2.8} />
         </ControlBtn>
@@ -101,13 +98,11 @@ export function MapDesktopMapControls({
           onClick={() => getMapHandle()?.zoomOut()}
           disabled={!mapReady}
           label={t("map.zoomOut")}
-          className="h-11 w-11 rounded-none"
+          className="h-10 w-10 rounded-none border-0 bg-transparent shadow-none"
         >
           <Minus className="h-4 w-4" strokeWidth={2.8} />
         </ControlBtn>
       </div>
     </div>
   );
-
-  return createPortal(ui, document.body);
 }

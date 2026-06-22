@@ -372,16 +372,16 @@ function MapView() {
             viewportEmpty={!listLoadingAny && filtered.length > 0 && visibleSalons.length === 0}
           />
         ) : null}
-        <MapDesktopMapControls
-          expanded={desktopMapExpanded}
-          getMapHandle={getMapHandle}
-          mapReady={mapReady}
-          onExpand={expandDesktopMap}
-          onCollapse={collapseDesktopMap}
-        />
         <MapDesktopMapFrame expanded={desktopMapExpanded}>
           <div className="relative h-full w-full">
             {mapCanvas}
+            <MapDesktopMapControls
+              expanded={desktopMapExpanded}
+              getMapHandle={getMapHandle}
+              mapReady={mapReady}
+              onExpand={expandDesktopMap}
+              onCollapse={collapseDesktopMap}
+            />
           </div>
         </MapDesktopMapFrame>
       </div>

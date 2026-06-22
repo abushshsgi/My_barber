@@ -5,6 +5,7 @@ import { load } from "@2gis/mapgl";
 import { getDgisApiKey } from "./api-key";
 import {
   DEFAULT_ZOOM,
+  FIT_MAX_ZOOM,
   TASHKENT_CENTER,
   toMapGlCoords,
   USER_RADIUS_M,
@@ -233,9 +234,11 @@ export function Map2GIS({
                 ...DESKTOP_FIT_PAD,
                 bottom: padding?.bottom ?? DESKTOP_FIT_PAD.bottom,
               },
-              maxZoom: 14,
+              maxZoom: FIT_MAX_ZOOM,
             },
           );
+          const boosted = Math.min((m.getZoom() ?? DEFAULT_ZOOM) + 0.8, FIT_MAX_ZOOM);
+          m.setZoom(boosted);
         }
         notifyResize();
         window.setTimeout(() => {
@@ -479,7 +482,7 @@ export function Map2GIS({
       map,
       mapglAPI,
       markers.map((m) => toMapGlCoords(m.lat, m.lng)),
-      { padding: { top: 72, right: 48, bottom: BOTTOM_PAD, left: 48 }, maxZoom: 14 },
+      { padding: { top: 72, right: 48, bottom: BOTTOM_PAD, left: 48 }, maxZoom: FIT_MAX_ZOOM },
     );
     window.setTimeout(() => {
       skipViewportEmitRef.current = false;
