@@ -1,65 +1,71 @@
 import type { Category } from "@/lib/mock-data";
 
-/** Unsplash — barber / salon / beauty (picsum ko‘p muhitda bloklanadi). */
-export function unsplashCoverUrl(photoId: string, width = 900, height = 675): string {
-  return `https://images.unsplash.com/photo-${photoId}?auto=format&fit=crop&w=${width}&h=${height}&q=80`;
+/** Pixabay CDN — sartarosh, go'zallik, tirnoq, spa (Unsplash/picsum o'rniga). */
+export function pixabayCoverUrl(baseUrl: string, width = 900): string {
+  const size = width >= 800 ? 1280 : 640;
+  return baseUrl.replace(/_\d+\.jpg$/i, `_${size}.jpg`);
 }
 
-/** @deprecated Unsplash fallback ishlatiladi */
+/** @deprecated Pixabay fallback ishlatiladi */
+export function unsplashCoverUrl(_photoId: string, width = 900, _height = 675): string {
+  return pixabayCoverUrl(BARBER_COVERS[0]!, width);
+}
+
+/** @deprecated Pixabay fallback ishlatiladi */
 export function picsumCoverUrl(seed: string, width = 900, height = 675): string {
   return getSalonCoverUrl(seed, "barber", width, height);
 }
 
-const BARBER_PHOTO_IDS = [
-  "1503957904860-b89353870476",
-  "1492106087820-71f1a00d2b11",
-  "1522337360788-8faa13fd3ef7",
-  "1585747860715-2ba37e788f70",
-  "1621605815971-fbc98d665033",
-  "1599356854054-f03d66e2e884",
-  "1521590832167-b7c1110bb605",
-  "1605497788041-7a4e6300984e",
-  "1560066984-138dadb4c035",
-  "1633681926022-84c23e8c1109",
+const BARBER_COVERS = [
+  "https://cdn.pixabay.com/photo/2021/11/15/11/00/barber-shop-6797761_640.jpg",
+  "https://cdn.pixabay.com/photo/2017/05/26/10/25/barber-2345701_640.jpg",
+  "https://cdn.pixabay.com/photo/2022/05/28/02/25/barber-shop-7226341_640.jpg",
+  "https://cdn.pixabay.com/photo/2017/05/07/11/46/barber-2292168_640.jpg",
+  "https://cdn.pixabay.com/photo/2015/11/01/19/43/barber-1017457_640.jpg",
+  "https://cdn.pixabay.com/photo/2021/11/15/11/50/electric-shaver-6797899_640.jpg",
+  "https://cdn.pixabay.com/photo/2015/10/26/20/41/haircut-1007882_640.jpg",
+  "https://cdn.pixabay.com/photo/2021/11/23/13/40/barber-6818702_640.jpg",
+  "https://cdn.pixabay.com/photo/2021/11/15/11/55/haircut-6797912_640.jpg",
+  "https://cdn.pixabay.com/photo/2021/11/23/13/39/barber-6818690_640.jpg",
 ] as const;
 
-const BEAUTY_PHOTO_IDS = [
-  "1562322140-8baeececf3df",
-  "1522336572450-63b25221c137",
-  "1515886657611-9f3525b086c9",
-  "1487412720507-e7ab37603c6f",
-  "1519341450188-fa7adf056118",
-  "1524502764237-884916a1e7d3",
-  "1517841905240-472988babdf9",
-  "1527792820354-dcf1d99a6b1d",
+const BEAUTY_COVERS = [
+  "https://cdn.pixabay.com/photo/2017/08/24/11/12/makeup-2676392_640.jpg",
+  "https://cdn.pixabay.com/photo/2019/12/01/18/04/hairdresser-4666064_640.jpg",
+  "https://cdn.pixabay.com/photo/2019/03/08/20/17/beauty-salon-4043096_640.jpg",
+  "https://cdn.pixabay.com/photo/2017/07/25/10/37/woman-2537564_640.jpg",
+  "https://cdn.pixabay.com/photo/2015/07/07/11/36/haircut-834280_640.jpg",
+  "https://cdn.pixabay.com/photo/2017/07/20/10/51/beauty-salon-2521943_640.jpg",
+  "https://cdn.pixabay.com/photo/2015/11/27/02/24/solarium-1064815_640.jpg",
+  "https://cdn.pixabay.com/photo/2014/12/15/14/00/beauty-saloon-569111_640.jpg",
 ] as const;
 
-const NAILS_PHOTO_IDS = [
-  "1604654894617-8170df178cd9",
-  "1632345031435-8727f6897c53",
-  "1622287163692-834b1f829c9e",
-  "1519014819055-aa7182682e75",
+const NAILS_COVERS = [
+  "https://cdn.pixabay.com/photo/2020/08/30/14/57/beautician-5529805_640.jpg",
+  "https://cdn.pixabay.com/photo/2017/08/06/00/41/people-2587157_640.jpg",
+  "https://cdn.pixabay.com/photo/2015/07/28/22/00/nails-865082_640.jpg",
+  "https://cdn.pixabay.com/photo/2016/09/18/09/02/nail-polish-1677561_640.jpg",
 ] as const;
 
-const SPA_PHOTO_IDS = [
-  "1540555700478-4be289fbe638",
-  "1519823551278-64d453c4b1e3",
-  "1595476104070-2ab726f5a7b5",
-  "1582095135526-94af777716df",
+const SPA_COVERS = [
+  "https://cdn.pixabay.com/photo/2014/05/02/12/41/candle-335965_640.jpg",
+  "https://cdn.pixabay.com/photo/2016/12/05/15/46/salt-1884166_640.jpg",
+  "https://cdn.pixabay.com/photo/2018/02/09/15/00/woman-3141766_640.jpg",
+  "https://cdn.pixabay.com/photo/2014/12/13/18/27/woman-567021_640.jpg",
 ] as const;
 
-const ALL_SALON_PHOTO_IDS = [
-  ...BARBER_PHOTO_IDS,
-  ...BEAUTY_PHOTO_IDS,
-  ...NAILS_PHOTO_IDS,
-  ...SPA_PHOTO_IDS,
+const ALL_SALON_COVERS = [
+  ...BARBER_COVERS,
+  ...BEAUTY_COVERS,
+  ...NAILS_COVERS,
+  ...SPA_COVERS,
 ] as const;
 
 function poolForCategory(category?: Category): readonly string[] {
-  if (category === "beauty") return BEAUTY_PHOTO_IDS;
-  if (category === "nails") return NAILS_PHOTO_IDS;
-  if (category === "spa") return SPA_PHOTO_IDS;
-  return BARBER_PHOTO_IDS;
+  if (category === "beauty") return BEAUTY_COVERS;
+  if (category === "nails") return NAILS_COVERS;
+  if (category === "spa") return SPA_COVERS;
+  return BARBER_COVERS;
 }
 
 function hashSeed(seed: string): number {
@@ -70,26 +76,26 @@ function hashSeed(seed: string): number {
   return Math.abs(hash);
 }
 
-/** Toshkent mock salonlari — slug bo‘yicha barqaror rasm. */
+/** Toshkent mock salonlari — slug bo'yicha barqaror rasm. */
 const MOCK_TASHKENT_COVERS: Record<string, string> = Object.fromEntries(
   Array.from({ length: 50 }, (_, i) => {
     const slug = `mock-tashkent-${String(i + 1).padStart(3, "0")}`;
-    const photoId = ALL_SALON_PHOTO_IDS[i % ALL_SALON_PHOTO_IDS.length]!;
-    return [slug, unsplashCoverUrl(photoId)];
+    const base = ALL_SALON_COVERS[i % ALL_SALON_COVERS.length]!;
+    return [slug, pixabayCoverUrl(base)];
   }),
 );
 
 const SALON_COVERS: Record<string, string> = {
   ...MOCK_TASHKENT_COVERS,
-  legacy: unsplashCoverUrl(BARBER_PHOTO_IDS[0]),
-  atelier: unsplashCoverUrl(BEAUTY_PHOTO_IDS[0]),
-  studiom: unsplashCoverUrl(BARBER_PHOTO_IDS[1]),
-  nailhouse: unsplashCoverUrl(NAILS_PHOTO_IDS[0]),
-  noir: unsplashCoverUrl(BARBER_PHOTO_IDS[2]),
-  glow: unsplashCoverUrl(BEAUTY_PHOTO_IDS[1]),
-  abdubarber: unsplashCoverUrl(BARBER_PHOTO_IDS[0]),
-  "abdubarber-1": unsplashCoverUrl(BARBER_PHOTO_IDS[1]),
-  "abdubarber-2": unsplashCoverUrl(BARBER_PHOTO_IDS[2]),
+  legacy: pixabayCoverUrl(BARBER_COVERS[0]),
+  atelier: pixabayCoverUrl(BEAUTY_COVERS[0]),
+  studiom: pixabayCoverUrl(BARBER_COVERS[1]),
+  nailhouse: pixabayCoverUrl(NAILS_COVERS[0]),
+  noir: pixabayCoverUrl(BARBER_COVERS[2]),
+  glow: pixabayCoverUrl(BEAUTY_COVERS[1]),
+  abdubarber: pixabayCoverUrl(BARBER_COVERS[0]),
+  "abdubarber-1": pixabayCoverUrl(BARBER_COVERS[1]),
+  "abdubarber-2": pixabayCoverUrl(BARBER_COVERS[2]),
 };
 
 const TREND_SEEDS = [
@@ -113,7 +119,7 @@ const TREND_SEEDS = [
 const TREND_COVERS: Record<string, string> = Object.fromEntries(
   TREND_SEEDS.map((key, i) => [
     key,
-    unsplashCoverUrl(ALL_SALON_PHOTO_IDS[i % ALL_SALON_PHOTO_IDS.length]!, 560, 740),
+    pixabayCoverUrl(ALL_SALON_COVERS[i % ALL_SALON_COVERS.length]!, 560),
   ]),
 );
 
@@ -121,14 +127,14 @@ export function getSalonCoverUrl(
   seed: string,
   category: Category = "barber",
   width = 900,
-  height = 675,
+  _height = 675,
 ): string {
   const known = SALON_COVERS[seed];
   if (known) return known;
 
   const pool = poolForCategory(category);
-  const photoId = pool[hashSeed(seed) % pool.length]!;
-  return unsplashCoverUrl(photoId, width, height);
+  const base = pool[hashSeed(seed) % pool.length]!;
+  return pixabayCoverUrl(base, width);
 }
 
 export function getTrendCoverUrl(seed: string): string {

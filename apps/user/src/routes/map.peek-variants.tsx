@@ -5,6 +5,7 @@ import {
   SALON_PEEK_VARIANTS,
   type SalonPeekVariant,
 } from "@/components/map/SalonPeekCardLayouts";
+import { getSalonCoverUrl } from "@/lib/cover-images";
 import type { Salon } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/map/peek-variants")({
@@ -25,8 +26,7 @@ const PREVIEW_SALONS: Salon[] = [
     priceFrom: 45000,
     priceTo: 120000,
     coverSeed: "abdubarber-2",
-    coverUrl:
-      "https://images.unsplash.com/photo-1522337360788-8faa13fd3ef7?auto=format&fit=crop&w=900&h=675&q=80",
+    coverUrl: getSalonCoverUrl("abdubarber-2", "barber"),
     about: "",
     services: [],
     staff: [],
@@ -47,8 +47,7 @@ const PREVIEW_SALONS: Salon[] = [
     priceFrom: 35000,
     priceTo: 90000,
     coverSeed: "abdubarber-1",
-    coverUrl:
-      "https://images.unsplash.com/photo-1492106087820-71f1a00d2b11?auto=format&fit=crop&w=900&h=675&q=80",
+    coverUrl: getSalonCoverUrl("abdubarber-1", "barber"),
     about: "",
     services: [],
     staff: [],
@@ -69,8 +68,7 @@ const PREVIEW_SALONS: Salon[] = [
     priceFrom: 0,
     priceTo: 0,
     coverSeed: "abdubarber",
-    coverUrl:
-      "https://images.unsplash.com/photo-1503957904860-b89353870476?auto=format&fit=crop&w=900&h=675&q=80",
+    coverUrl: getSalonCoverUrl("abdubarber", "barber"),
     about: "",
     services: [],
     staff: [],
