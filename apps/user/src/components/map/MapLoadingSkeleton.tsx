@@ -72,7 +72,7 @@ function MapCardSkeleton() {
 
 export function MapPanelSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-3 pb-5">
+    <div className="grid grid-cols-2 gap-x-4 gap-y-8 pb-6">
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}

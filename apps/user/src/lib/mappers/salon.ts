@@ -48,6 +48,11 @@ export function mapSalonList(api: ApiSalonList, distanceKm = 0): Salon {
   const coverSeed = api.slug || String(api.id);
   const { category, audience } = resolveCategoryAndAudience(api);
   const priceFrom = toNum(api.price_from);
+  const resolvedCover = resolveMediaUrl(api.cover_image);
+  const coverUrl =
+    resolvedCover && !resolvedCover.includes("picsum.photos")
+      ? resolvedCover
+      : getSalonCoverUrl(coverSeed, category);
   return {
     id: String(api.id),
     name: api.name,
@@ -60,7 +65,7 @@ export function mapSalonList(api: ApiSalonList, distanceKm = 0): Salon {
     priceFrom,
     priceTo: priceFrom,
     coverSeed,
-    coverUrl: resolveMediaUrl(api.cover_image) ?? getSalonCoverUrl(coverSeed, category),
+    coverUrl,
     about: "",
     services: [],
     staff: [],

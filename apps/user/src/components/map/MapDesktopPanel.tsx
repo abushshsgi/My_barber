@@ -41,7 +41,8 @@ function salonDescription(salon: Salon): string {
 
 function SalonCoverImage({ salon, className }: { salon: Salon; className?: string }) {
   const fallback = getSalonCoverUrl(salon.coverSeed, salon.category);
-  const src = salon.coverUrl?.trim() || fallback;
+  const raw = salon.coverUrl?.trim();
+  const src = raw && !raw.includes("picsum.photos") ? raw : fallback;
 
   return (
     <div className={cn("relative h-full w-full overflow-hidden bg-[#E8E8E8]", className)}>
@@ -81,7 +82,7 @@ function MapDesktopSalonCard({
   return (
     <article
       data-desktop-salon-id={salon.id}
-      className="group flex min-w-0 flex-col gap-3"
+      className="group flex min-w-0 flex-col gap-3.5"
       onMouseEnter={() => onHover?.(salon.id)}
       onMouseLeave={() => onHover?.(null)}
     >
@@ -123,29 +124,29 @@ function MapDesktopSalonCard({
         </button>
       </div>
 
-      <div className="px-0.5 pb-1">
-        <div className="flex items-start justify-between gap-2">
+      <div className="px-0.5 pb-1.5 pt-0.5">
+        <div className="flex items-start justify-between gap-2.5">
           <Link to="/salon/$id" params={{ id: salon.id }} preload="intent" className="min-w-0 flex-1">
-            <h3 className="line-clamp-1 text-[13px] font-bold leading-snug tracking-tight text-foreground">
+            <h3 className="line-clamp-2 text-[14px] font-bold leading-snug tracking-tight text-foreground">
               {salon.name}
             </h3>
           </Link>
           {salon.rating > 0 ? (
-            <div className="flex shrink-0 items-center gap-0.5 text-[12px] font-bold text-foreground">
-              <Star className="h-3 w-3 fill-foreground" strokeWidth={0} />
+            <div className="flex shrink-0 items-center gap-1 text-[13px] font-bold text-foreground">
+              <Star className="h-3.5 w-3.5 fill-foreground" strokeWidth={0} />
               <span>{salon.rating.toFixed(1)}</span>
             </div>
           ) : null}
         </div>
 
         {description ? (
-          <p className="mt-1 line-clamp-1 text-[11px] leading-snug text-foreground/70">
+          <p className="mt-1.5 line-clamp-2 text-[12px] leading-snug text-foreground/80">
             {description}
           </p>
         ) : null}
 
-        <div className="mt-1.5 flex items-end justify-between gap-2">
-          <div className="min-w-0 truncate text-[11px] font-medium text-foreground/60">
+        <div className="mt-2 flex items-end justify-between gap-2">
+          <div className="min-w-0 text-[12px] font-medium leading-snug text-foreground/65">
             {salon.reviewCount > 0 ? (
               <span>
                 {salon.reviewCount} {t("map.reviews")}
@@ -155,9 +156,9 @@ function MapDesktopSalonCard({
             {distance !== "—" ? <span>{distance}</span> : null}
           </div>
           {salon.priceFrom > 0 ? (
-            <p className="shrink-0 text-right">
-              <span className="text-[13px] font-bold tabular-nums text-foreground">{shortPrice(salon.priceFrom)}</span>
-              <span className="ml-0.5 text-[10px] font-medium text-foreground/60">
+            <p className="shrink-0 text-right leading-none">
+              <span className="text-[14px] font-bold tabular-nums text-foreground">{shortPrice(salon.priceFrom)}</span>
+              <span className="ml-1 text-[11px] font-semibold text-foreground/65">
                 {t("map.priceFromSuffix")}
               </span>
             </p>
@@ -267,7 +268,7 @@ export function MapDesktopPanel({
         ) : null}
 
         {salons.length > 0 ? (
-          <div className="grid grid-cols-2 gap-x-3 gap-y-6 pb-5">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 pb-6">
             {salons.map((salon) => (
               <MapDesktopSalonCard
                 key={salon.id}
