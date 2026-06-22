@@ -32,7 +32,7 @@ export function HomeBazaarClassic({ data }: Props) {
         <section className="min-w-0">
           {loading ? <BazaarGridSkeleton cols={3} /> : <SalonGrid salons={filtered} />}
         </section>
-        <BazaarMapPanel salons={mapSalons} salonCount={filtered.length} />
+        <BazaarMapPanel salons={filtered} salonCount={filtered.length} />
       </div>
     </div>
   );

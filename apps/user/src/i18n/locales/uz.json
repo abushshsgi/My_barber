@@ -55,7 +55,8 @@
       "nearbyCount": "{{count}} ta salon yaqinda",
       "explore": "Yaqin salonlarni toping",
       "hint": "Masofa va yo'nalish bilan qulay qidiruv",
-      "openMap": "Xaritani ochish"
+      "openMap": "Xaritani ochish",
+      "seeMore": "Ko'proq"
     }
   },
   "homePage": {

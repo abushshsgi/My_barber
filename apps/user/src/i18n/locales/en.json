@@ -50,7 +50,8 @@
       "nearbyCount": "{{count}} salons nearby",
       "explore": "Find salons near you",
       "hint": "Search by distance and direction",
-      "openMap": "Open map"
+      "openMap": "Open map",
+      "seeMore": "More"
     }
   },
   "homePage": {
