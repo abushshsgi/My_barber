@@ -9,10 +9,6 @@ import type { Salon } from "@/lib/mock-data";
 import { shortPrice } from "@/lib/mock-data";
 import { hasValidMapCoords } from "@/lib/map-utils";
 import { cn } from "@/lib/utils";
-import { BazaarSidebarSalonCard } from "./BazaarSidebarSalonCard";
-
-/** Desktop header balandligi — sticky xarita shu chiziqdan pastda qotadi. */
-const MAP_STICKY_TOP = "top-[4.25rem]";
 
 type MapSalon = Pick<Salon, "id" | "lat" | "lng" | "name" | "priceFrom" | "rating">;
 
@@ -37,11 +33,10 @@ function toMarkers(salons: MapSalon[]): SalonMapMarker[] {
 type Props = {
   salons?: MapSalon[];
   salonCount?: number;
-  sidebarSalon?: Salon;
   className?: string;
 };
 
-export function BazaarMapPanel({ salons = [], salonCount = 0, sidebarSalon, className }: Props) {
+export function BazaarMapPanel({ salons = [], salonCount = 0, className }: Props) {
   const { t } = useTranslation();
   const ctx = useRecommendContext();
   const [mounted, setMounted] = useState(false);
@@ -56,56 +51,50 @@ export function BazaarMapPanel({ salons = [], salonCount = 0, sidebarSalon, clas
   }, [ctx.lat, ctx.lng]);
 
   return (
-    <div className={cn("flex h-full min-h-0 flex-col", className)}>
-      <aside className={cn("sticky z-20 w-full shrink-0", MAP_STICKY_TOP)}>
-        <Link
-          to="/map"
-          className="group relative block overflow-hidden rounded-2xl border border-border bg-card shadow-[0_10px_36px_rgba(15,15,15,0.08)] transition-all hover:shadow-[0_14px_44px_rgba(15,15,15,0.12)]"
-        >
-          <div className="relative aspect-[5/4] min-h-[260px] w-full overflow-hidden bg-surface">
-            {mounted ? (
-              <div className="pointer-events-none absolute inset-0">
-                <MapErrorBoundary>
-                  <SalonMap
-                    markers={markers}
-                    selectedId={null}
-                    onMarkerSelect={() => {}}
-                    onMarkerNavigate={() => {}}
-                    showUserLocation={Boolean(userLocation)}
-                    userLocation={userLocation}
-                    autoFitMarkers
-                  />
-                </MapErrorBoundary>
-              </div>
-            ) : (
-              <div className="absolute inset-0 animate-pulse bg-surface-2" />
-            )}
-
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-background/85 via-background/35 to-transparent" />
-
-            <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-8">
-              <p className="text-lg font-bold tracking-tight">
-                {salonCount > 0
-                  ? t("home.mapPreview.nearbyCount", {
-                      count: salonCount,
-                      defaultValue: "{{count}} ta salon yaqinda",
-                    })
-                  : t("home.mapPreview.explore", { defaultValue: "Yaqin salonlarni toping" })}
-              </p>
-              <span className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-sm font-bold text-background transition group-hover:opacity-95">
-                {t("home.mapPreview.openMap", { defaultValue: "Xaritani ochish" })}
-                <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </span>
-            </div>
+    <Link
+      to="/map"
+      className={cn(
+        "group relative block w-full overflow-hidden rounded-2xl border border-border bg-card",
+        "shadow-[0_10px_36px_rgba(15,15,15,0.08)] transition-all hover:shadow-[0_14px_44px_rgba(15,15,15,0.12)]",
+        className,
+      )}
+    >
+      <div className="relative aspect-[5/4] w-full overflow-hidden bg-surface">
+        {mounted ? (
+          <div className="pointer-events-none absolute inset-0">
+            <MapErrorBoundary>
+              <SalonMap
+                markers={markers}
+                selectedId={null}
+                onMarkerSelect={() => {}}
+                onMarkerNavigate={() => {}}
+                showUserLocation={Boolean(userLocation)}
+                userLocation={userLocation}
+                autoFitMarkers
+              />
+            </MapErrorBoundary>
           </div>
-        </Link>
-      </aside>
+        ) : (
+          <div className="absolute inset-0 animate-pulse bg-surface-2" />
+        )}
 
-      {sidebarSalon ? (
-        <div className="mt-4 shrink-0">
-          <BazaarSidebarSalonCard salon={sidebarSalon} />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-background/85 via-background/35 to-transparent" />
+
+        <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-8">
+          <p className="text-lg font-bold tracking-tight">
+            {salonCount > 0
+              ? t("home.mapPreview.nearbyCount", {
+                  count: salonCount,
+                  defaultValue: "{{count}} ta salon yaqinda",
+                })
+              : t("home.mapPreview.explore", { defaultValue: "Yaqin salonlarni toping" })}
+          </p>
+          <span className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-sm font-bold text-background transition group-hover:opacity-95">
+            {t("home.mapPreview.openMap", { defaultValue: "Xaritani ochish" })}
+            <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </span>
         </div>
-      ) : null}
-    </div>
+      </div>
+    </Link>
   );
 }
