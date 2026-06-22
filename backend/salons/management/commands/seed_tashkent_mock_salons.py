@@ -1,10 +1,12 @@
-"""Toshkent bo'ylab 250 ta mock salon + Pexels rasmlar + soxta sharhlar."""
+"""Toshkent bo'ylab 250 ta mock salon + ixtiyoriy Pexels fayl yuklash."""
 
 from __future__ import annotations
 
 import random
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import time
 from decimal import Decimal
+
 from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -12,50 +14,57 @@ from django.utils import timezone
 
 from accounts.uz_regions import UzRegion
 from barbers.models import Barber, BarberProfile
+from salons.mock.cover_urls import mock_cover_cdn_url, mock_gallery_urls
 from salons.mock.mock_reviews import _ensure_mock_customers, purge_mock_review_users, seed_reviews_for_salon
 from salons.mock.pexels import download_image, fetch_kind_pool
 from salons.mock.tashkent_salons import MOCK_MARKER, MOCK_SALON_COUNT, SERVICE_TEMPLATES, TASHKENT_MOCK_SALONS
 from salons.models import BarberWorkingHours, Salon, SalonHours, SalonImage, SalonMembership, Service
 
+_UPLOAD_WORKERS = 12
+_COVER_WIDTH = 640
+
 
 class Command(BaseCommand):
     help = (
-        f"Toshkent bo'ylab {MOCK_SALON_COUNT} ta mock salon + egasi-barber + xizmatlar + "
-        "Pexels rasmlar + soxta sharhlar. Keyin `--purge` bilan o'chirish mumkin."
+        f"Toshkent bo'ylab {MOCK_SALON_COUNT} ta mock salon. "
+        "Rasmlar API orqali Pexels CDN (tez deploy). "
+        "Fayl yuklash uchun --upload-images (sekin)."
     )
 
     def add_arguments(self, parser):
+        parser.add_argument("--purge", action="store_true", help="Mock salonlarni o'chirish.")
         parser.add_argument(
-            "--purge",
+            "--upload-images",
             action="store_true",
-            help="Mock salonlar va ularning egasi-barberlarini o'chirish.",
+            help="Cover fayllarini storage ga yuklash (sekin; odatda shart emas).",
         )
         parser.add_argument(
-            "--skip-images",
+            "--with-gallery",
             action="store_true",
-            help="Cover/gallery rasmlarini yuklamaslik.",
+            help="--upload-images bilan: gallery rasmlarini ham yuklash.",
         )
         parser.add_argument(
-            "--skip-reviews",
+            "--pexels-api",
             action="store_true",
-            help="Soxta sharhlarni yaratmaslik.",
+            help="--upload-images bilan: Pexels API qidiruv.",
         )
+        parser.add_argument("--skip-reviews", action="store_true", help="Sharhlarni o'tkazib yuborish.")
 
     def handle(self, *args, **options):
         if options["purge"]:
             self._purge()
             return
-        self._seed(
-            skip_images=options["skip_images"],
-            skip_reviews=options["skip_reviews"],
-        )
+        salon_ids = self._seed_core(skip_reviews=options["skip_reviews"])
+        if options["upload_images"] and salon_ids:
+            self._upload_images(
+                salon_ids,
+                with_gallery=options["with_gallery"],
+                use_pexels_api=options["pexels_api"],
+            )
 
     @transaction.atomic
     def _purge(self):
         mock_salons = Salon.objects.filter(description__startswith=MOCK_MARKER)
-        barber_ids = list(
-            mock_salons.exclude(owner_barber_id__isnull=True).values_list("owner_barber_id", flat=True)
-        )
         count = mock_salons.count()
         mock_salons.delete()
         deleted_barbers = Barber.objects.filter(
@@ -65,63 +74,26 @@ class Command(BaseCommand):
         deleted_review_users = purge_mock_review_users()
         self.stdout.write(
             self.style.SUCCESS(
-                f"O'chirildi: {count} mock salon, {deleted_barbers} mock barber, "
-                f"{deleted_review_users} mock mijoz (owner ids: {len(barber_ids)})."
+                f"O'chirildi: {count} mock salon, {deleted_barbers} barber, {deleted_review_users} mijoz."
             )
         )
 
-    def _load_image_pools(self) -> dict[str, list[str]]:
-        kind_counts = {"barber": 0, "beauty": 0, "nails": 0, "spa": 0}
-        for entry in TASHKENT_MOCK_SALONS:
-            kind_counts[entry["kind"]] += 1
-
-        pools: dict[str, list[str]] = {}
-        for kind, count in kind_counts.items():
-            # cover + 2 gallery = 3 rasm / salon
-            need = count * 3 + 10
-            self.stdout.write(f"Pexels: {kind} uchun {need} ta rasm yuklanmoqda…")
-            pools[kind] = fetch_kind_pool(kind, need)
-            self.stdout.write(f"  → {len(pools[kind])} ta URL tayyor")
-        return pools
-
-    def _save_cover(self, salon: Salon, url: str, slug: str) -> None:
-        if salon.cover_image:
-            return
-        data = download_image(url)
-        salon.cover_image.save(f"{slug}-cover.jpg", ContentFile(data), save=True)
-
-    def _save_gallery(self, salon: Salon, urls: list[str], slug: str) -> None:
-        existing = salon.images.count()
-        if existing >= 2:
-            return
-        for i, url in enumerate(urls[:2]):
-            if salon.images.filter(sort_order=i).exists():
-                continue
-            data = download_image(url)
-            img = SalonImage(salon=salon, sort_order=existing + i)
-            img.image.save(f"{slug}-gallery-{i + 1}.jpg", ContentFile(data), save=True)
-
     @transaction.atomic
-    def _seed(self, *, skip_images: bool, skip_reviews: bool):
+    def _seed_core(self, *, skip_reviews: bool) -> list[tuple[int, str, str]]:
+        """Salon/barber/xizmatlar — rasmsiz, tez."""
         now = timezone.now()
         created = 0
         updated = 0
         reviews_created = 0
-        images_set = 0
-
-        pools: dict[str, list[str]] = {}
-        kind_idx: dict[str, int] = {"barber": 0, "beauty": 0, "nails": 0, "spa": 0}
-        if not skip_images:
-            pools = self._load_image_pools()
-
         customers = _ensure_mock_customers(30) if not skip_reviews else []
         rng = random.Random(42)
+        pending_images: list[tuple[int, str, str]] = []
 
         for entry in TASHKENT_MOCK_SALONS:
             slug = entry["slug"]
+            kind = entry["kind"]
             email = f"{slug}@mybarber.test"
             username = slug.replace("-", "_")
-            kind = entry["kind"]
 
             barber, barber_created = Barber.objects.get_or_create(
                 email=email,
@@ -185,10 +157,7 @@ class Command(BaseCommand):
                 SalonHours.objects.update_or_create(
                     salon=salon,
                     weekday=weekday,
-                    defaults={
-                        "open_time": time(9, 0),
-                        "close_time": time(20, 0),
-                    },
+                    defaults={"open_time": time(9, 0), "close_time": time(20, 0)},
                 )
                 BarberWorkingHours.objects.update_or_create(
                     membership=membership,
@@ -201,8 +170,7 @@ class Command(BaseCommand):
                     },
                 )
 
-            services = SERVICE_TEMPLATES[kind]
-            for svc_name, price, duration in services:
+            for svc_name, price, duration in SERVICE_TEMPLATES[kind]:
                 Service.objects.update_or_create(
                     salon=salon,
                     barber=None,
@@ -214,23 +182,10 @@ class Command(BaseCommand):
                     },
                 )
 
-            if not skip_images and pools:
-                pool = pools[kind]
-                base_i = kind_idx[kind]
-                kind_idx[kind] = base_i + 3
-                cover_url = pool[base_i % len(pool)]
-                gallery_urls = [pool[(base_i + 1) % len(pool)], pool[(base_i + 2) % len(pool)]]
-                try:
-                    if not salon.cover_image:
-                        self._save_cover(salon, cover_url, slug)
-                        images_set += 1
-                    self._save_gallery(salon, gallery_urls, slug)
-                except Exception as exc:
-                    self.stdout.write(self.style.WARNING(f"  Rasm xato ({slug}): {exc}"))
-
             if not skip_reviews and customers:
                 reviews_created += seed_reviews_for_salon(salon, barber, kind, customers, rng)
 
+            pending_images.append((salon.pk, slug, kind))
             if salon_created:
                 created += 1
             else:
@@ -238,12 +193,75 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Tayyor: {created} yangi, {updated} yangilangan mock salon "
-                f"(jami {len(TASHKENT_MOCK_SALONS)} ta).\n"
-                f"  Cover rasmlar: {images_set} ta yangi.\n"
-                f"  Soxta sharhlar: {reviews_created} ta yaratildi.\n"
-                "  PEXELS_API_KEY — aniq kategoriya rasmlari uchun (ixtiyoriy).\n"
-                "  Bron qilish: mijoz TOSHKENT_SH regionida login qilgan bo'lsin.\n"
+                f"Tayyor: {created} yangi, {updated} yangilangan (jami {len(TASHKENT_MOCK_SALONS)}).\n"
+                f"  Sharhlar: {reviews_created} ta.\n"
+                "  Rasmlar: API Pexels CDN (cover_image URL) — fayl yuklash shart emas.\n"
                 "  O'chirish: python manage.py seed_tashkent_mock_salons --purge"
             )
         )
+        return pending_images
+
+    def _upload_images(
+        self,
+        pending: list[tuple[int, str, str]],
+        *,
+        with_gallery: bool,
+        use_pexels_api: bool,
+    ) -> None:
+        """Ixtiyoriy: cover (+ gallery) fayllarini parallel yuklash."""
+        self.stdout.write("Cover rasmlar yuklanmoqda (parallel)…")
+        cache: dict[str, bytes] = {}
+        kind_idx: dict[str, int] = {"barber": 0, "beauty": 0, "nails": 0, "spa": 0}
+        pools: dict[str, list[str]] = {}
+
+        if use_pexels_api:
+            kind_counts: dict[str, int] = {}
+            for _, _, kind in pending:
+                kind_counts[kind] = kind_counts.get(kind, 0) + 1
+            per = 3 if with_gallery else 1
+            for kind, count in kind_counts.items():
+                pools[kind] = fetch_kind_pool(kind, count * per + 5)
+
+        def cover_url_for(slug: str, kind: str) -> str:
+            if use_pexels_api and pools.get(kind):
+                i = kind_idx[kind]
+                kind_idx[kind] = i + 1
+                return pools[kind][i % len(pools[kind])]
+            return mock_cover_cdn_url(slug, width=_COVER_WIDTH)
+
+        def fetch_bytes(url: str) -> bytes:
+            if url in cache:
+                return cache[url]
+            data = download_image(url)
+            cache[url] = data
+            return data
+
+        def upload_one(item: tuple[int, str, str]) -> str | None:
+            salon_id, slug, kind = item
+            salon = Salon.objects.filter(pk=salon_id).first()
+            if not salon or salon.cover_image:
+                return None
+            try:
+                data = fetch_bytes(cover_url_for(slug, kind))
+                salon.cover_image.save(f"{slug}-cover.jpg", ContentFile(data), save=True)
+                if with_gallery and not salon.images.exists():
+                    for i, gurl in enumerate(mock_gallery_urls(slug)):
+                        gdata = fetch_bytes(gurl)
+                        img = SalonImage(salon=salon, sort_order=i)
+                        img.image.save(f"{slug}-g{i}.jpg", ContentFile(gdata), save=False)
+                        img.save()
+                return slug
+            except Exception as exc:
+                return f"ERR:{slug}:{exc}"
+
+        uploaded = 0
+        with ThreadPoolExecutor(max_workers=_UPLOAD_WORKERS) as pool:
+            futures = [pool.submit(upload_one, item) for item in pending if item]
+            for fut in as_completed(futures):
+                result = fut.result()
+                if result and not str(result).startswith("ERR:"):
+                    uploaded += 1
+                elif result and str(result).startswith("ERR:"):
+                    self.stdout.write(self.style.WARNING(f"  {result}"))
+
+        self.stdout.write(self.style.SUCCESS(f"  Yuklandi: {uploaded} ta cover."))

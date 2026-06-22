@@ -114,7 +114,7 @@ class PublicServiceSerializer(serializers.ModelSerializer):
 
 
 class SalonListSerializer(serializers.ModelSerializer):
-    cover_image = serializers.ImageField(read_only=True)
+    cover_image = serializers.SerializerMethodField()
     # get_queryset annotate bilan beriladi (N+1 oldini olish)
     rating_avg = serializers.FloatField(read_only=True)
     review_count = serializers.IntegerField(read_only=True)
@@ -169,6 +169,11 @@ class SalonListSerializer(serializers.ModelSerializer):
             out.append({"code": amenity.code, "icon": amenity.icon, "label": label})
         return out
 
+    def get_cover_image(self, obj):
+        from salons.mock.cover_urls import resolve_salon_cover_url
+
+        return resolve_salon_cover_url(obj, self.context)
+
     def to_representation(self, instance):
         data = super().to_representation(instance)
         ra = data.get("rating_avg")
@@ -182,7 +187,8 @@ class SalonListSerializer(serializers.ModelSerializer):
 
 class SalonDetailSerializer(serializers.ModelSerializer):
     hours = SalonHoursSerializer(many=True, read_only=True)
-    images = SalonImageSerializer(many=True, read_only=True)
+    images = serializers.SerializerMethodField()
+    cover_image = serializers.SerializerMethodField()
     services = serializers.SerializerMethodField()
     amenities = serializers.SerializerMethodField()
     owner_id = serializers.SerializerMethodField()
@@ -247,6 +253,19 @@ class SalonDetailSerializer(serializers.ModelSerializer):
 
     def get_review_count(self, obj):
         return obj.reviews.count()
+
+    def get_cover_image(self, obj):
+        from salons.mock.cover_urls import resolve_salon_cover_url
+
+        return resolve_salon_cover_url(obj, self.context)
+
+    def get_images(self, obj):
+        real = SalonImageSerializer(obj.images.all(), many=True, context=self.context).data
+        if real:
+            return real
+        from salons.mock.serialization import serialize_mock_gallery_images
+
+        return serialize_mock_gallery_images(obj)
 
     def get_services(self, obj):
         from barbers.salon_service_sync import sync_all_barber_services_for_barber
