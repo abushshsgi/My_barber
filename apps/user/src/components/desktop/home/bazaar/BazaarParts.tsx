@@ -1,16 +1,27 @@
 import { SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { HomeData } from "@/components/home/useHomeData";
+import type { Salon } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { BazaarSidebarSalonCard } from "./BazaarSidebarSalonCard";
 
 export { BazaarMapPanel } from "./BazaarMapPanel";
 
-type FilterProps = Pick<HomeData, "query" | "setQuery" | "effectiveCat" | "visibleCategoryKeys" | "setCat">;
+type FilterProps = Pick<HomeData, "query" | "setQuery" | "effectiveCat" | "visibleCategoryKeys" | "setCat"> & {
+  sidebarSalon?: Salon;
+};
 
-export function BazaarFilterSidebar({ query, setQuery, effectiveCat, visibleCategoryKeys, setCat }: FilterProps) {
+export function BazaarFilterSidebar({
+  query,
+  setQuery,
+  effectiveCat,
+  visibleCategoryKeys,
+  setCat,
+  sidebarSalon,
+}: FilterProps) {
   const { t } = useTranslation();
   return (
-    <aside className="sticky top-28">
+    <aside className="flex flex-col gap-4">
       <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
         <p className="flex items-center gap-2 text-sm font-bold">
           <SlidersHorizontal className="h-4 w-4 text-foreground" />
@@ -41,6 +52,8 @@ export function BazaarFilterSidebar({ query, setQuery, effectiveCat, visibleCate
           ))}
         </div>
       </div>
+
+      {sidebarSalon ? <BazaarSidebarSalonCard salon={sidebarSalon} /> : null}
     </aside>
   );
 }
