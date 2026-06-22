@@ -51,12 +51,12 @@ export function BazaarMapPanel({ salons = [], salonCount = 0, className }: Props
   }, [ctx.lat, ctx.lng]);
 
   return (
-    <aside className={cn("sticky top-28", className)}>
+    <aside className={cn("sticky top-28 self-start", className)}>
       <Link
         to="/map"
-        className="group relative block overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
+        className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
       >
-        <div className="relative aspect-[5/4] min-h-[260px] w-full overflow-hidden bg-surface">
+        <div className="relative h-[200px] w-full shrink-0 overflow-hidden bg-surface">
           {mounted ? (
             <div className="pointer-events-none absolute inset-0">
               <MapErrorBoundary>
@@ -74,23 +74,21 @@ export function BazaarMapPanel({ salons = [], salonCount = 0, className }: Props
           ) : (
             <div className="absolute inset-0 animate-pulse bg-surface-2" />
           )}
+        </div>
 
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background via-background/85 to-background/10" />
-
-          <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-14">
-            <p className="text-lg font-bold tracking-tight">
-              {salonCount > 0
-                ? t("home.mapPreview.nearbyCount", {
-                    count: salonCount,
-                    defaultValue: "{{count}} ta salon yaqinda",
-                  })
-                : t("home.mapPreview.explore", { defaultValue: "Yaqin salonlarni toping" })}
-            </p>
-            <span className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-sm font-bold text-background transition group-hover:opacity-95">
-              {t("home.mapPreview.openMap", { defaultValue: "Xaritani ochish" })}
-              <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-            </span>
-          </div>
+        <div className="border-t border-border/50 px-4 py-3.5">
+          <p className="text-[15px] font-bold leading-snug tracking-tight">
+            {salonCount > 0
+              ? t("home.mapPreview.nearbyCount", {
+                  count: salonCount,
+                  defaultValue: "{{count}} ta salon yaqinda",
+                })
+              : t("home.mapPreview.explore", { defaultValue: "Yaqin salonlarni toping" })}
+          </p>
+          <span className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl bg-foreground py-2.5 text-sm font-bold text-background transition group-hover:opacity-95">
+            {t("home.mapPreview.openMap", { defaultValue: "Xaritani ochish" })}
+            <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </span>
         </div>
       </Link>
     </aside>
