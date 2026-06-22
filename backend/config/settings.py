@@ -8,6 +8,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import dj_database_url
+from corsheaders.defaults import default_headers
 from django.core.management.utils import get_random_secret_key
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -340,6 +341,8 @@ def _cors_allowed_origins():
 
 CORS_ALLOWED_ORIGINS = _cors_allowed_origins()
 CORS_ALLOW_CREDENTIALS = True
+# Frontend JWT so'rovlarida X-Session-Id yuboradi — preflight uchun ruxsat kerak.
+CORS_ALLOW_HEADERS = (*default_headers, "x-session-id")
 # Devda (lokal) Vite/Next preview portlari tez-tez o'zgaradi — CORS bilan blok bo'lmasin.
 # Productionda esa yuqoridagi allowlist (FRONTEND_* / CORS_ALLOWED_ORIGINS) ishlaydi.
 CORS_ALLOW_ALL_ORIGINS = DEBUG
