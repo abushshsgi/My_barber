@@ -15,9 +15,10 @@ type Props = {
   variant?: DesktopSalonCardVariant;
   /** Home bazaar top row — larger card with bottom depth shadow */
   elevated?: boolean;
+  className?: string;
 };
 
-export function DesktopSalonCard({ salon, variant = "grid", elevated = false }: Props) {
+export function DesktopSalonCard({ salon, variant = "grid", elevated = false, className }: Props) {
   const { isFav, toggle } = useFavorites();
   const fav = isFav(salon.id);
   const fallbackCover = getSalonCoverUrl(salon.coverSeed, salon.category);
@@ -33,6 +34,7 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false }: 
         className={cn(
           "group block",
           elevated && "transition-all duration-300 hover:-translate-y-1",
+          className,
         )}
       >
         <div
