@@ -70,7 +70,6 @@ export function HomeBazaarClassic({ data }: Props) {
         </div>
 
         <div className={BAZAAR_ROW_CLASS}>
-          <div className="hidden lg:block lg:col-start-1" aria-hidden />
           {loading ? (
             <BazaarTopSalonsSectionSkeleton />
           ) : (

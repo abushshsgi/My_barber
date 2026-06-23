@@ -1,10 +1,9 @@
-import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { DesktopSalonCard } from "@/components/desktop/ui/DesktopSalonCard";
 import type { Salon } from "@/lib/mock-data";
 import { BazaarSectionHeader } from "./BazaarParts";
 
-const PREVIEW_COUNT = 4;
+const PREVIEW_COUNT = 5;
 
 type Props = {
   salons: Salon[];
@@ -17,14 +16,14 @@ export function BazaarTopSalonsSection({ salons }: Props) {
   if (preview.length === 0) return null;
 
   return (
-    <section className="min-w-0 lg:col-span-4 lg:col-start-2">
+    <section className="min-w-0 lg:col-span-5 lg:col-start-1">
       <BazaarSectionHeader
         title={t("home.topSalons.title")}
         count={salons.length}
         viewAllTo="/top"
         className="mb-4"
       />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {preview.map((salon) => (
           <DesktopSalonCard key={salon.id} salon={salon} variant="marketplace" />
         ))}
@@ -35,9 +34,9 @@ export function BazaarTopSalonsSection({ salons }: Props) {
 
 export function BazaarTopSalonsSectionSkeleton() {
   return (
-    <div className="min-w-0 lg:col-span-4 lg:col-start-2">
+    <div className="min-w-0 lg:col-span-5 lg:col-start-1">
       <div className="mb-4 h-8 w-48 animate-pulse rounded-lg bg-surface" />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {Array.from({ length: PREVIEW_COUNT }).map((_, i) => (
           <div key={i} className="animate-pulse">
             <div className="aspect-[5/4] rounded-xl bg-surface" />
