@@ -4,12 +4,11 @@ import {
   HomeAudience,
   HomeEditorialHero,
   HomeOfferBanner,
-  HomeSalonCarousel,
-  HomeSalonList,
   HomeSearchAndCategories,
   HomeTrendingStrip,
   HomeTrustStrip,
 } from "@/components/home/HomeBlocks";
+import { HomeDiscoverySections } from "@/components/home/HomeDiscoverySections";
 
 type Props = { data: HomeData };
 
@@ -24,14 +23,10 @@ export function HomeVariantEditorial({ data }: Props) {
       <HomeEditorialHero />
       <HomeAudience />
       {data.topOffer ? <HomeOfferBanner offer={data.topOffer} /> : null}
-      <HomeSalonCarousel
-        salons={data.featuredSalons}
-        titleKey={data.personalized ? "homePage.nearYou" : "homePage.pickedForYou"}
-      />
+      <HomeDiscoverySections filtered={data.filtered} />
       <HomeTrendingStrip trending={data.trending} />
       <HomeAiPromo />
       <HomeSearchAndCategories {...data} />
-      <HomeSalonList salons={data.filtered} />
       <HomeTrustStrip />
     </>
   );

@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { HomeData } from "@/components/home/useHomeData";
 import { DesktopSalonCard } from "@/components/desktop/ui/DesktopSalonCard";
-import { filterTopSalons } from "@/lib/salon-top";
 import { cn } from "@/lib/utils";
 import {
   BazaarFilterSidebar,
@@ -11,7 +10,12 @@ import {
   BazaarMapPanel,
   BazaarPageTitle,
 } from "./bazaar/BazaarParts";
-import { BazaarTopSalonsSection, BazaarTopSalonsSectionSkeleton } from "./bazaar/BazaarTopSalonsSection";
+import { BazaarCategoryStrip } from "./bazaar/BazaarCategoryStrip";
+import { BazaarSalonRowSection, BazaarSalonRowSectionSkeleton } from "./bazaar/BazaarSalonRowSection";
+import {
+  HOME_CATEGORY_ROW_AFTER,
+  buildHomeSalonSections,
+} from "@/lib/home-sections";
 
 type Props = { data: HomeData };
 type Salon = HomeData["filtered"][number];
@@ -36,7 +40,7 @@ export function HomeBazaarClassic({ data }: Props) {
   const { t } = useTranslation();
   const { filtered, mapSalons, loading } = data;
   const topRowSalons = filtered.slice(0, 3);
-  const topSalons = useMemo(() => filterTopSalons(filtered), [filtered]);
+  const salonSections = useMemo(() => buildHomeSalonSections(filtered), [filtered]);
 
   return (
     <div className="flex w-full flex-col gap-6 px-[150px]">
@@ -69,13 +73,26 @@ export function HomeBazaarClassic({ data }: Props) {
           </div>
         </div>
 
-        <div className={BAZAAR_ROW_CLASS}>
-          {loading ? (
-            <BazaarTopSalonsSectionSkeleton />
-          ) : (
-            <BazaarTopSalonsSection salons={topSalons} />
-          )}
-        </div>
+        {salonSections.map((section, index) => (
+          <div key={section.id}>
+            <div className={BAZAAR_ROW_CLASS}>
+              {loading ? (
+                <BazaarSalonRowSectionSkeleton />
+              ) : (
+                <BazaarSalonRowSection
+                  titleKey={section.titleKey}
+                  salons={section.salons}
+                  viewAllTo={section.viewAllTo}
+                />
+              )}
+            </div>
+            {!loading && index === HOME_CATEGORY_ROW_AFTER - 1 ? (
+              <div className={cn(BAZAAR_ROW_CLASS, "mt-4")}>
+                <BazaarCategoryStrip />
+              </div>
+            ) : null}
+          </div>
+        ))}
       </div>
     </div>
   );

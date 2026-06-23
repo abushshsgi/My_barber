@@ -81,7 +81,15 @@
     },
     "topSalons": {
       "title": "Top salonlar"
+    },
+    "sections": {
+      "browseCategories": "Kategoriya bo'yicha ko'ring",
+      "moreSalons": "Yana salonlar"
     }
+  },
+  "categorySalonsPage": {
+    "subtitle": "Tanlangan kategoriyadagi salonlar",
+    "empty": "Bu kategoriyada salon topilmadi"
   },
   "topSalonsPage": {
     "title": "Top salonlar",

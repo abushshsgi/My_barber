@@ -47,6 +47,7 @@ import { Route as SalonIdRouteImport } from './routes/salon.$id'
 import { Route as MapPeekVariantsRouteImport } from './routes/map.peek-variants'
 import { Route as ExploreStyleIdRouteImport } from './routes/explore_.$styleId'
 import { Route as ChatIdRouteImport } from './routes/chat.$id'
+import { Route as CategoryCategoryRouteImport } from './routes/category.$category'
 import { Route as BookingSalonIdRouteImport } from './routes/booking.$salonId'
 import { Route as AccountPreferencesRouteImport } from './routes/account.preferences'
 import { Route as AccountPaymentsRouteImport } from './routes/account.payments'
@@ -245,6 +246,11 @@ const ChatIdRoute = ChatIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ChatRoute,
 } as any)
+const CategoryCategoryRoute = CategoryCategoryRouteImport.update({
+  id: '/category/$category',
+  path: '/category/$category',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BookingSalonIdRoute = BookingSalonIdRouteImport.update({
   id: '/booking/$salonId',
   path: '/booking/$salonId',
@@ -318,6 +324,7 @@ export interface FileRoutesByFullPath {
   '/account/payments': typeof AccountPaymentsRoute
   '/account/preferences': typeof AccountPreferencesRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
+  '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
   '/explore/$styleId': typeof ExploreStyleIdRoute
   '/map/peek-variants': typeof MapPeekVariantsRoute
@@ -365,6 +372,7 @@ export interface FileRoutesByTo {
   '/account/payments': typeof AccountPaymentsRoute
   '/account/preferences': typeof AccountPreferencesRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
+  '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
   '/explore/$styleId': typeof ExploreStyleIdRoute
   '/map/peek-variants': typeof MapPeekVariantsRoute
@@ -413,6 +421,7 @@ export interface FileRoutesById {
   '/account/payments': typeof AccountPaymentsRoute
   '/account/preferences': typeof AccountPreferencesRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
+  '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
   '/explore_/$styleId': typeof ExploreStyleIdRoute
   '/map/peek-variants': typeof MapPeekVariantsRoute
@@ -462,6 +471,7 @@ export interface FileRouteTypes {
     | '/account/payments'
     | '/account/preferences'
     | '/booking/$salonId'
+    | '/category/$category'
     | '/chat/$id'
     | '/explore/$styleId'
     | '/map/peek-variants'
@@ -509,6 +519,7 @@ export interface FileRouteTypes {
     | '/account/payments'
     | '/account/preferences'
     | '/booking/$salonId'
+    | '/category/$category'
     | '/chat/$id'
     | '/explore/$styleId'
     | '/map/peek-variants'
@@ -556,6 +567,7 @@ export interface FileRouteTypes {
     | '/account/payments'
     | '/account/preferences'
     | '/booking/$salonId'
+    | '/category/$category'
     | '/chat/$id'
     | '/explore_/$styleId'
     | '/map/peek-variants'
@@ -604,6 +616,7 @@ export interface RootRouteChildren {
   AccountPaymentsRoute: typeof AccountPaymentsRoute
   AccountPreferencesRoute: typeof AccountPreferencesRoute
   BookingSalonIdRoute: typeof BookingSalonIdRoute
+  CategoryCategoryRoute: typeof CategoryCategoryRoute
   ExploreStyleIdRoute: typeof ExploreStyleIdRoute
   SalonIdRoute: typeof SalonIdRoute
   WalletHistoryRoute: typeof WalletHistoryRoute
@@ -880,6 +893,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatIdRouteImport
       parentRoute: typeof ChatRoute
     }
+    '/category/$category': {
+      id: '/category/$category'
+      path: '/category/$category'
+      fullPath: '/category/$category'
+      preLoaderRoute: typeof CategoryCategoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/booking/$salonId': {
       id: '/booking/$salonId'
       path: '/booking/$salonId'
@@ -1000,6 +1020,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountPaymentsRoute: AccountPaymentsRoute,
   AccountPreferencesRoute: AccountPreferencesRoute,
   BookingSalonIdRoute: BookingSalonIdRoute,
+  CategoryCategoryRoute: CategoryCategoryRoute,
   ExploreStyleIdRoute: ExploreStyleIdRoute,
   SalonIdRoute: SalonIdRoute,
   WalletHistoryRoute: WalletHistoryRoute,

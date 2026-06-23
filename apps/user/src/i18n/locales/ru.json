@@ -76,7 +76,15 @@
     },
     "topSalons": {
       "title": "Топ салоны"
+    },
+    "sections": {
+      "browseCategories": "Смотреть по категориям",
+      "moreSalons": "Ещё салоны"
     }
+  },
+  "categorySalonsPage": {
+    "subtitle": "Салоны выбранной категории",
+    "empty": "В этой категории салонов нет"
   },
   "topSalonsPage": {
     "title": "Топ салоны",

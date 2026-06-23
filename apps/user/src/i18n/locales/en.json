@@ -76,7 +76,15 @@
     },
     "topSalons": {
       "title": "Top salons"
+    },
+    "sections": {
+      "browseCategories": "Browse by category",
+      "moreSalons": "More salons"
     }
+  },
+  "categorySalonsPage": {
+    "subtitle": "Salons in this category",
+    "empty": "No salons found in this category"
   },
   "topSalonsPage": {
     "title": "Top salons",
