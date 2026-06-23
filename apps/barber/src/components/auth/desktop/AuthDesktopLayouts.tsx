@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { AuthDesktopFormChrome } from "@/components/auth/desktop/AuthDesktopFormChrome";
 import { AuthDesktopHeader, AuthDesktopLogo } from "@/components/auth/desktop/AuthDesktopHeader";
 import { AuthDesktopOnboardingAside } from "@/components/auth/desktop/AuthDesktopOnboardingAside";
+import { GlowOrb, VariantVisual } from "@/components/auth/desktop/AuthDesktopVisuals";
 import type { SignupFlow } from "@/lib/auth-ui";
 import {
   DARK_FORM_SKIN,
@@ -34,7 +35,6 @@ function Form({
   dark = false,
   titleSize = "title" as const,
   showProgress = true,
-  showLegal = true,
   skin,
 }: {
   accent: AuthAccent;
@@ -45,7 +45,6 @@ function Form({
   dark?: boolean;
   titleSize?: "title" | "hero" | "compact";
   showProgress?: boolean;
-  showLegal?: boolean;
   skin?: string;
 }) {
   return (
@@ -58,7 +57,6 @@ function Form({
         dark={dark}
         titleSize={titleSize}
         showProgress={showProgress}
-        showLegal={showLegal}
       >
         {children}
       </AuthDesktopFormChrome>
@@ -66,80 +64,133 @@ function Form({
   );
 }
 
-/* ─── 01 Linear — qorong'u minimal ─── */
-function LinearLayout({ flow, tab, signupStep, onTabChange, children }: ShellProps) {
-  const accent = VARIANT_ACCENT.linear;
+/* ═══ LINEAR family ═══ */
+
+function LinearIndigoLayout({ flow, tab, signupStep, onTabChange, children }: ShellProps) {
+  const accent = VARIANT_ACCENT["linear-indigo"];
   return (
-    <div className="relative min-h-screen bg-[#09090b]">
+    <div className="relative min-h-screen overflow-hidden bg-[#09090b]">
+      <VariantVisual variant="linear-indigo" />
+      <GlowOrb color="rgba(99,102,241,0.2)" size={400} className="-right-32 top-1/3" />
       <AuthDesktopHeader tab={tab} onTabChange={onTabChange} accent={accent} mode="dark" />
       <div className="relative mx-auto grid min-h-[calc(100vh-72px)] max-w-6xl grid-cols-1 items-center gap-12 px-8 pb-16 lg:grid-cols-2">
         <motion.div {...pageEnter} className={cn("max-w-md", DARK_FORM_SKIN)}>
-          <Form accent={accent} tab={tab} signupStep={signupStep} flow={flow} dark showLegal>
+          <Form accent={accent} tab={tab} signupStep={signupStep} flow={flow} dark>
             {children}
           </Form>
         </motion.div>
-        <div className="pointer-events-none hidden lg:block">
-          <p className="text-[120px] font-bold leading-none tracking-tighter text-zinc-800/80">Partner</p>
-          <p className="mt-4 max-w-sm text-zinc-500">
-            Issue tracking dan ko'ra oson — salon boshqaruvi uchun zamonaviy vosita.
+        <motion.div
+          initial={{ opacity: 0, x: 40 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8 }}
+          className="pointer-events-none hidden lg:block"
+        >
+          <p className="bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-[100px] font-bold leading-none tracking-tighter text-transparent">
+            Partner
           </p>
-        </div>
+          <p className="mt-4 max-w-sm text-zinc-500">Zamonaviy salon boshqaruvi — tez, aniq, professional.</p>
+        </motion.div>
       </div>
     </div>
   );
 }
 
-/* ─── 02 Stripe — 50/50 split gradient ─── */
-function StripeLayout({ flow, tab, signupStep, onTabChange, children }: ShellProps) {
-  const accent = VARIANT_ACCENT.stripe;
+function LinearCrimsonLayout({ flow, tab, signupStep, onTabChange, children }: ShellProps) {
+  const accent = VARIANT_ACCENT["linear-crimson"];
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
-      <div className="flex flex-col justify-center px-8 py-12 lg:px-14">
-        <AuthDesktopLogo accent={accent} className="mb-10" />
-        <motion.div {...pageEnter} className={cn("max-w-[420px]", LIGHT_FORM_SKIN)}>
+    <div className="relative min-h-screen overflow-hidden bg-[#0c0a0a]">
+      <VariantVisual variant="linear-crimson" />
+      <GlowOrb color="rgba(244,63,94,0.35)" size={450} className="left-1/2 top-0 -translate-x-1/2" />
+      <GlowOrb color="rgba(251,113,133,0.2)" size={300} className="bottom-10 right-10" delay={2} />
+      <AuthDesktopHeader tab={tab} onTabChange={onTabChange} accent={accent} mode="dark" />
+      <div className="relative flex min-h-[calc(100vh-72px)] items-center justify-center px-8 pb-16">
+        <motion.div
+          {...pageEnter}
+          className={cn("w-full max-w-md rounded-2xl border border-rose-500/20 bg-zinc-950/80 p-8 backdrop-blur-sm", DARK_FORM_SKIN)}
+        >
+          <Form accent={accent} tab={tab} signupStep={signupStep} flow={flow} dark>
+            {children}
+          </Form>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══ FIGMA family ═══ */
+
+function FigmaMeshLayout({
+  variant,
+  bg,
+  flow,
+  tab,
+  signupStep,
+  onTabChange,
+  children,
+}: ShellProps & { variant: AuthDesktopVariant; bg: string }) {
+  const accent = VARIANT_ACCENT[variant];
+  return (
+    <div className="relative min-h-screen overflow-hidden" style={{ background: bg }}>
+      <VariantVisual variant={variant} />
+      <AuthDesktopHeader tab={tab} onTabChange={onTabChange} accent={accent} mode="dark" className="relative z-10" />
+      <div className="relative z-10 flex min-h-[calc(100vh-72px)] items-center justify-center px-6 pb-16">
+        <motion.div
+          {...pageEnter}
+          className={cn(
+            "w-full max-w-[460px] rounded-3xl border border-white/20 bg-white/85 p-8 shadow-2xl backdrop-blur-xl",
+            LIGHT_FORM_SKIN,
+          )}
+        >
           <Form accent={accent} tab={tab} signupStep={signupStep} flow={flow}>
             {children}
           </Form>
         </motion.div>
-        <button
-          type="button"
-          onClick={() => onTabChange(tab === "login" ? "signup" : "login")}
-          className="mt-6 text-left text-sm text-muted-foreground hover:text-foreground"
-        >
-          {tab === "login" ? "Hisobingiz yo'qmi? Ro'yxatdan o'ting" : "Allaqachon hisobingiz bormi? Kirish"}
-        </button>
-      </div>
-      <div
-        className="relative hidden flex-col justify-between overflow-hidden p-12 lg:flex"
-        style={{
-          background: "linear-gradient(135deg, #635bff 0%, #7a73ff 35%, #00d4ff 100%)",
-        }}
-      >
-        <div />
-        <AuthDesktopOnboardingAside
-          flow={flow}
-          tab={tab}
-          signupStep={signupStep}
-          theme="gradient"
-          accent={accent}
-          presentation="quote"
-        />
       </div>
     </div>
   );
 }
 
-/* ─── 03 Notion — issiq, yumshoq ─── */
-function NotionLayout({ flow, tab, signupStep, onTabChange, children }: ShellProps) {
-  const accent = VARIANT_ACCENT.notion;
+/* ═══ FRAMER family ═══ */
+
+function FramerSplitLayout({
+  accentKey,
+  headline,
+  highlight,
+  highlightClass,
+  bgLeft,
+  flow,
+  tab,
+  signupStep,
+  onTabChange,
+  children,
+}: ShellProps & {
+  accentKey: "framer-ember" | "framer-violet";
+  headline: string;
+  highlight: string;
+  highlightClass: string;
+  bgLeft: string;
+}) {
+  const accent = VARIANT_ACCENT[accentKey];
   return (
-    <div className="min-h-screen bg-[#f7f6f3]">
-      <AuthDesktopHeader tab={tab} onTabChange={onTabChange} accent={accent} />
-      <div className="flex min-h-[calc(100vh-72px)] items-center justify-center px-6 pb-16">
+    <div className="grid min-h-screen lg:grid-cols-2">
+      <div className={cn("relative flex flex-col justify-center overflow-hidden px-10 py-12 lg:px-16", bgLeft)}>
         <motion.div
-          {...pageEnter}
-          className={cn("w-full max-w-[420px] rounded-lg border border-stone-200/80 bg-white p-8 shadow-sm", LIGHT_FORM_SKIN)}
-        >
+          className="pointer-events-none absolute -right-20 top-1/4 size-64 rounded-full opacity-40 blur-3xl"
+          style={{ background: accentKey === "framer-ember" ? "#fb923c" : "#a78bfa" }}
+          animate={{ scale: [1, 1.2, 1] }}
+          transition={{ duration: 6, repeat: Infinity }}
+        />
+        <motion.div {...pageEnter} className="relative z-10">
+          <p className={cn("text-sm font-bold uppercase tracking-widest", highlightClass)}>MySaloon</p>
+          <h2 className="mt-4 text-5xl font-bold leading-[1.05] tracking-tight text-zinc-900 lg:text-6xl dark:text-white">
+            {headline}
+            <span className={highlightClass}> {highlight}</span>
+          </h2>
+        </motion.div>
+      </div>
+      <div className="flex flex-col justify-center bg-white px-10 py-12 lg:px-16">
+        <AuthDesktopHeader tab={tab} onTabChange={onTabChange} accent={accent} className="mb-6 !px-0 !py-0" />
+        <motion.div {...pageEnter} className={cn("max-w-[400px]", LIGHT_FORM_SKIN)}>
           <Form accent={accent} tab={tab} signupStep={signupStep} flow={flow} titleSize="compact">
             {children}
           </Form>
@@ -149,213 +200,26 @@ function NotionLayout({ flow, tab, signupStep, onTabChange, children }: ShellPro
   );
 }
 
-/* ─── 04 Vercel — qora geometrik ─── */
-function VercelLayout({ flow, tab, signupStep, onTabChange, children }: ShellProps) {
-  const accent = VARIANT_ACCENT.vercel;
-  return (
-    <div className="relative min-h-screen bg-black">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-20"
-        style={{
-          backgroundImage:
-            "linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px)",
-          backgroundSize: "64px 64px",
-        }}
-      />
-      <AuthDesktopHeader tab={tab} onTabChange={onTabChange} accent={accent} mode="dark" />
-      <div className="relative flex min-h-[calc(100vh-72px)] items-center justify-center px-6 pb-16">
-        <motion.div
-          {...pageEnter}
-          className={cn("w-full max-w-[440px] rounded-xl border border-zinc-800 bg-zinc-950 p-8", DARK_FORM_SKIN)}
-        >
-          <Form accent={accent} tab={tab} signupStep={signupStep} flow={flow} dark>
-            {children}
-          </Form>
-        </motion.div>
-      </div>
-    </div>
-  );
-}
+/* ═══ SUPABASE family ═══ */
 
-/* ─── 05 Intercom — ko'k panel chapda ─── */
-function IntercomLayout({ flow, tab, signupStep, onTabChange, children }: ShellProps) {
-  const accent = VARIANT_ACCENT.intercom;
+function SupabaseDarkLayout({
+  variant,
+  bg,
+  asideTheme,
+  flow,
+  tab,
+  signupStep,
+  onTabChange,
+  children,
+}: ShellProps & { variant: AuthDesktopVariant; bg: string; asideTheme: "emerald" | "dark" }) {
+  const accent = VARIANT_ACCENT[variant];
   return (
-    <div className="grid min-h-screen lg:grid-cols-[42%_1fr]">
-      <div className="flex flex-col justify-between bg-[#286efa] p-10 lg:p-14">
-        <AuthDesktopLogo accent={accent} dark />
-        <AuthDesktopOnboardingAside
-          flow={flow}
-          tab={tab}
-          signupStep={signupStep}
-          theme="intercom"
-          accent={accent}
-          presentation={tab === "signup" ? "steps" : "stats"}
-        />
-      </div>
-      <div className="flex flex-col justify-center bg-white px-8 py-12 lg:px-16">
-        <motion.div {...pageEnter} className={cn("mx-auto w-full max-w-[420px]", LIGHT_FORM_SKIN)}>
-          <Form accent={accent} tab={tab} signupStep={signupStep} flow={flow}>
-            {children}
-          </Form>
-        </motion.div>
-        <button
-          type="button"
-          onClick={() => onTabChange(tab === "login" ? "signup" : "login")}
-          className="mx-auto mt-6 block text-sm text-[#286efa] hover:underline"
-        >
-          {tab === "login" ? "Ro'yxatdan o'tish" : "Kirish"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ─── 06 Slack — binafsha sidebar ─── */
-function SlackLayout({ flow, tab, signupStep, onTabChange, children }: ShellProps) {
-  const accent = VARIANT_ACCENT.slack;
-  return (
-    <div className="flex min-h-screen">
-      <aside className="hidden w-[280px] shrink-0 flex-col bg-[#4a154b] p-8 lg:flex">
-        <AuthDesktopLogo accent={accent} dark className="mb-12" />
-        <AuthDesktopOnboardingAside
-          flow={flow}
-          tab={tab}
-          signupStep={signupStep}
-          theme="slack"
-          accent={accent}
-          presentation="steps"
-        />
-      </aside>
-      <div className="flex flex-1 flex-col bg-[#f8f8f8]">
-        <AuthDesktopHeader tab={tab} onTabChange={onTabChange} accent={accent} className="lg:hidden" />
-        <div className="flex flex-1 items-center justify-center px-6 py-12">
-          <motion.div {...pageEnter} className={cn("w-full max-w-[440px] rounded-lg bg-white p-8 shadow-sm", LIGHT_FORM_SKIN)}>
-            <Form accent={accent} tab={tab} signupStep={signupStep} flow={flow} showProgress={tab === "signup"}>
-              {children}
-            </Form>
-          </motion.div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── 07 Figma — rangli mesh ─── */
-function FigmaLayout({ flow, tab, signupStep, onTabChange, children }: ShellProps) {
-  const accent = VARIANT_ACCENT.figma;
-  return (
-    <div
-      className="relative min-h-screen"
-      style={{
-        background:
-          "radial-gradient(circle at 10% 20%, #ff7262 0%, transparent 40%), radial-gradient(circle at 90% 10%, #a259ff 0%, transparent 35%), radial-gradient(circle at 50% 90%, #0acf83 0%, transparent 40%), #f0f0f0",
-      }}
-    >
-      <AuthDesktopHeader tab={tab} onTabChange={onTabChange} accent={accent} mode="dark" className="!text-white" />
-      <div className="flex min-h-[calc(100vh-72px)] items-center justify-center px-6 pb-16">
-        <motion.div
-          {...pageEnter}
-          className={cn("w-full max-w-[460px] rounded-3xl bg-white/90 p-8 shadow-2xl backdrop-blur-xl", LIGHT_FORM_SKIN)}
-        >
-          <Form accent={accent} tab={tab} signupStep={signupStep} flow={flow}>
-            {children}
-          </Form>
-        </motion.div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── 08 Raycast — glass qorong'u ─── */
-function RaycastLayout({ flow, tab, signupStep, onTabChange, children }: ShellProps) {
-  const accent = VARIANT_ACCENT.raycast;
-  return (
-    <div className="relative min-h-screen overflow-hidden bg-[#1a1a1c]">
-      <div className="absolute -left-32 top-20 size-96 rounded-full bg-violet-600/30 blur-[100px]" />
-      <div className="absolute -right-20 bottom-10 size-80 rounded-full bg-blue-500/20 blur-[80px]" />
-      <AuthDesktopHeader tab={tab} onTabChange={onTabChange} accent={accent} mode="dark" />
-      <div className="relative flex min-h-[calc(100vh-72px)] items-center justify-center px-6 pb-16">
-        <motion.div
-          {...pageEnter}
-          className={cn(
-            "w-full max-w-[440px] rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-2xl",
-            DARK_FORM_SKIN,
-          )}
-        >
-          <Form accent={accent} tab={tab} signupStep={signupStep} flow={flow} dark>
-            {children}
-          </Form>
-        </motion.div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── 09 Attio — grid + mock kartalar ─── */
-function AttioLayout({ flow, tab, signupStep, onTabChange, children }: ShellProps) {
-  const accent = VARIANT_ACCENT.attio;
-  return (
-    <div className="grid min-h-screen bg-white lg:grid-cols-2">
-      <div className="flex flex-col justify-center px-10 py-12 lg:px-16">
-        <AuthDesktopLogo accent={accent} className="mb-8" />
-        <motion.div {...pageEnter} className={cn("max-w-[420px]", LIGHT_FORM_SKIN)}>
-          <Form accent={accent} tab={tab} signupStep={signupStep} flow={flow}>
-            {children}
-          </Form>
-        </motion.div>
-      </div>
-      <div
-        className="relative hidden items-center justify-center overflow-hidden bg-zinc-50 lg:flex"
-        style={{
-          backgroundImage: "radial-gradient(#d4d4d8 1px, transparent 1px)",
-          backgroundSize: "24px 24px",
-        }}
-      >
-        <div className="relative w-full max-w-sm space-y-3 p-8">
-          {[1, 2, 3].map((i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm"
-            >
-              <div className="h-2 w-24 rounded bg-blue-100" />
-              <div className="mt-3 h-2 w-full rounded bg-zinc-100" />
-              <div className="mt-2 h-2 w-3/4 rounded bg-zinc-100" />
-            </motion.div>
-          ))}
-        </div>
-        <div className="absolute bottom-10 left-10 right-10 hidden max-w-xs lg:block">
-          <AuthDesktopOnboardingAside
-            flow={flow}
-            tab={tab}
-            signupStep={signupStep}
-            theme="light"
-            accent={accent}
-            presentation="stats"
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── 10 Supabase — emerald dark ─── */
-function SupabaseLayout({ flow, tab, signupStep, onTabChange, children }: ShellProps) {
-  const accent = VARIANT_ACCENT.supabase;
-  return (
-    <div className="relative min-h-screen bg-[#1c1c1c]">
-      <div className="absolute right-0 top-0 h-full w-1/2 opacity-10">
-        <svg viewBox="0 0 400 400" className="h-full w-full" fill="none">
-          <path d="M0 200 Q100 100 200 200 T400 200" stroke="#34d399" strokeWidth="2" />
-          <path d="M0 250 Q150 150 300 250" stroke="#34d399" strokeWidth="1" opacity="0.5" />
-        </svg>
-      </div>
+    <div className="relative min-h-screen overflow-hidden" style={{ background: bg }}>
+      <VariantVisual variant={variant} />
       <AuthDesktopHeader tab={tab} onTabChange={onTabChange} accent={accent} mode="dark" />
       <div className="relative mx-auto grid max-w-5xl grid-cols-1 items-center gap-12 px-8 py-12 lg:grid-cols-2">
         <motion.div {...pageEnter} className={cn("max-w-md", DARK_FORM_SKIN)}>
+          <AuthDesktopLogo accent={accent} dark className="mb-8" />
           <Form accent={accent} tab={tab} signupStep={signupStep} flow={flow} dark>
             {children}
           </Form>
@@ -365,7 +229,7 @@ function SupabaseLayout({ flow, tab, signupStep, onTabChange, children }: ShellP
             flow={flow}
             tab={tab}
             signupStep={signupStep}
-            theme="emerald"
+            theme={asideTheme}
             accent={accent}
             presentation={tab === "signup" ? "steps" : "stats"}
           />
@@ -375,177 +239,53 @@ function SupabaseLayout({ flow, tab, signupStep, onTabChange, children }: ShellP
   );
 }
 
-/* ─── 11 Clerk — nuqtali fon, markaziy kartochka ─── */
-function ClerkLayout({ flow, tab, signupStep, onTabChange, children }: ShellProps) {
-  const accent = VARIANT_ACCENT.clerk;
-  return (
-    <div
-      className="min-h-screen bg-zinc-100"
-      style={{
-        backgroundImage: "radial-gradient(#a1a1aa 1px, transparent 1px)",
-        backgroundSize: "20px 20px",
-      }}
-    >
-      <AuthDesktopHeader tab={tab} onTabChange={onTabChange} accent={accent} />
-      <div className="flex min-h-[calc(100vh-72px)] items-center justify-center px-6 pb-16">
-        <motion.div
-          {...pageEnter}
-          className={cn("w-full max-w-[420px] rounded-2xl border border-zinc-200 bg-white p-8 shadow-lg", LIGHT_FORM_SKIN)}
-        >
-          <Form accent={accent} tab={tab} signupStep={signupStep} flow={flow}>
-            {children}
-          </Form>
-        </motion.div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── 12 Framer — katta tipografiya split ─── */
-function FramerLayout({ flow, tab, signupStep, onTabChange, children }: ShellProps) {
-  const accent = VARIANT_ACCENT.framer;
-  return (
-    <div className="grid min-h-screen bg-[#fafafa] lg:grid-cols-2">
-      <div className="flex flex-col justify-center px-10 py-12 lg:px-16">
-        <motion.div {...pageEnter}>
-          <p className="text-sm font-semibold uppercase tracking-widest text-orange-500">MySaloon</p>
-          <h2 className="mt-4 text-5xl font-bold leading-[1.05] tracking-tight text-zinc-900 lg:text-6xl">
-            Saloningizni boshqaring.
-            <span className="text-orange-500"> Tezroq.</span>
-          </h2>
-        </motion.div>
-      </div>
-      <div className="flex flex-col justify-center border-t border-zinc-200 bg-white px-10 py-12 lg:border-l lg:border-t-0 lg:px-16">
-        <AuthDesktopHeader tab={tab} onTabChange={onTabChange} accent={accent} className="mb-6 !px-0 !py-0" />
-        <motion.div {...pageEnter} className={cn("max-w-[400px]", LIGHT_FORM_SKIN)}>
-          <Form accent={accent} tab={tab} signupStep={signupStep} flow={flow} titleSize="compact" showLegal>
-            {children}
-          </Form>
-        </motion.div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── 13 Loom — coral gradient overlap ─── */
-function LoomLayout({ flow, tab, signupStep, onTabChange, children }: ShellProps) {
-  const accent = VARIANT_ACCENT.loom;
-  return (
-    <div className="relative min-h-screen overflow-hidden bg-white">
-      <div
-        className="absolute inset-y-0 right-0 w-full lg:w-[55%]"
-        style={{
-          background: "linear-gradient(160deg, #ff6b4a 0%, #ff8f6b 40%, #ffb199 100%)",
-        }}
-      />
-      <div className="relative grid min-h-screen lg:grid-cols-2">
-        <div className="flex items-center px-8 py-12 lg:px-14">
-          <motion.div
-            {...pageEnter}
-            className={cn("w-full max-w-[440px] rounded-2xl bg-white p-8 shadow-2xl lg:-mr-16", LIGHT_FORM_SKIN)}
-          >
-            <AuthDesktopLogo accent={accent} className="mb-6" />
-            <Form accent={accent} tab={tab} signupStep={signupStep} flow={flow}>
-              {children}
-            </Form>
-            <button
-              type="button"
-              onClick={() => onTabChange(tab === "login" ? "signup" : "login")}
-              className="mt-4 text-sm text-[#ff6b4a] hover:underline"
-            >
-              {tab === "login" ? "Ro'yxatdan o'tish" : "Kirish"}
-            </button>
-          </motion.div>
-        </div>
-        <div className="hidden items-center p-14 lg:flex">
-          <AuthDesktopOnboardingAside
-            flow={flow}
-            tab={tab}
-            signupStep={signupStep}
-            theme="coral"
-            accent={accent}
-            presentation={tab === "signup" ? "steps" : "quote"}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── 14 Miro — sariq playful ─── */
-function MiroLayout({ flow, tab, signupStep, onTabChange, children }: ShellProps) {
-  const accent = VARIANT_ACCENT.miro;
-  return (
-    <div className="min-h-screen bg-[#f5f5f5]">
-      <div className="border-b-4 border-[#ffd02f] bg-white">
-        <AuthDesktopHeader tab={tab} onTabChange={onTabChange} accent={accent} />
-      </div>
-      <div className="flex min-h-[calc(100vh-76px)] items-center justify-center px-6 pb-16">
-        <motion.div
-          {...pageEnter}
-          className={cn("w-full max-w-[480px] rounded-3xl border-2 border-[#ffd02f] bg-white p-8 shadow-[8px_8px_0_#050038]", LIGHT_FORM_SKIN)}
-        >
-          <Form accent={accent} tab={tab} signupStep={signupStep} flow={flow}>
-            {children}
-          </Form>
-        </motion.div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── 15 Cal — ultra minimal oq-qora ─── */
-function CalLayout({ flow, tab, signupStep, onTabChange, children }: ShellProps) {
-  const accent = VARIANT_ACCENT.cal;
-  return (
-    <div className="min-h-screen bg-white">
-      <div className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-6 py-16">
-        <AuthDesktopLogo accent={accent} className="mb-12" />
-        <motion.div {...pageEnter}>
-          <Form
-            accent={accent}
-            tab={tab}
-            signupStep={signupStep}
-            flow={flow}
-            titleSize="compact"
-            showProgress={false}
-          >
-            {children}
-          </Form>
-        </motion.div>
-        <div className="mt-8 flex items-center justify-between border-t border-zinc-100 pt-6 text-sm">
-          <button
-            type="button"
-            onClick={() => onTabChange(tab === "login" ? "signup" : "login")}
-            className="font-medium text-zinc-600 hover:text-zinc-900"
-          >
-            {tab === "login" ? "Ro'yxatdan o'tish" : "Kirish"}
-          </button>
-          <a href="mailto:support@mysaloon.uz" className="text-zinc-400 hover:text-zinc-600">
-            Yordam
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 const LAYOUTS: Record<AuthDesktopVariant, (p: ShellProps) => ReactNode> = {
-  linear: LinearLayout,
-  stripe: StripeLayout,
-  notion: NotionLayout,
-  vercel: VercelLayout,
-  intercom: IntercomLayout,
-  slack: SlackLayout,
-  figma: FigmaLayout,
-  raycast: RaycastLayout,
-  attio: AttioLayout,
-  supabase: SupabaseLayout,
-  clerk: ClerkLayout,
-  framer: FramerLayout,
-  loom: LoomLayout,
-  miro: MiroLayout,
-  cal: CalLayout,
+  "linear-indigo": LinearIndigoLayout,
+  "linear-crimson": LinearCrimsonLayout,
+  "figma-sunset": (p) => (
+    <FigmaMeshLayout
+      {...p}
+      variant="figma-sunset"
+      bg="radial-gradient(circle at 20% 30%, #fff7ed 0%, transparent 50%), radial-gradient(circle at 80% 20%, #ffe4e6 0%, transparent 45%), #fafafa"
+    />
+  ),
+  "figma-ocean": (p) => (
+    <FigmaMeshLayout
+      {...p}
+      variant="figma-ocean"
+      bg="radial-gradient(circle at 10% 80%, #cffafe 0%, transparent 40%), radial-gradient(circle at 90% 10%, #dbeafe 0%, transparent 45%), #f0f9ff"
+    />
+  ),
+  "figma-nova": (p) => (
+    <FigmaMeshLayout
+      {...p}
+      variant="figma-nova"
+      bg="radial-gradient(circle at 30% 40%, #fae8ff 0%, transparent 45%), radial-gradient(circle at 70% 60%, #dcfce7 0%, transparent 40%), #0f0f12"
+    />
+  ),
+  "framer-ember": (p) => (
+    <FramerSplitLayout
+      {...p}
+      accentKey="framer-ember"
+      headline="Saloningizni boshqaring."
+      highlight="Tezroq."
+      highlightClass="text-orange-500"
+      bgLeft="bg-[#fff7ed]"
+    />
+  ),
+  "framer-violet": (p) => (
+    <FramerSplitLayout
+      {...p}
+      accentKey="framer-violet"
+      headline="Partner kabineti."
+      highlight="Kuchliroq."
+      highlightClass="text-violet-500"
+      bgLeft="bg-[#f5f3ff]"
+    />
+  ),
+  "supabase-grove": (p) => <SupabaseDarkLayout {...p} variant="supabase-grove" bg="#141414" asideTheme="emerald" />,
+  "supabase-abyss": (p) => <SupabaseDarkLayout {...p} variant="supabase-abyss" bg="#0a1014" asideTheme="dark" />,
+  "supabase-pulse": (p) => <SupabaseDarkLayout {...p} variant="supabase-pulse" bg="#101018" asideTheme="dark" />,
 };
 
 export function AuthDesktopLayout({ variant, ...props }: AuthDesktopLayoutProps) {
