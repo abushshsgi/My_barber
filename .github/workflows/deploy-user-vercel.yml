@@ -1,0 +1,44 @@
+name: Deploy user app
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/user/**"
+      - "packages/**"
+      - "package-lock.json"
+      - ".github/workflows/deploy-user-vercel.yml"
+
+concurrency:
+  group: deploy-user-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build user app
+        run: npm run build -w user-web
+        env:
+          VITE_API_URL: https://api.mysaloon.uz
+
+  trigger-vercel:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Trigger Vercel deploy hook
+        if: ${{ secrets.VERCEL_USER_DEPLOY_HOOK != '' }}
+        env:
+          VERCEL_USER_DEPLOY_HOOK: ${{ secrets.VERCEL_USER_DEPLOY_HOOK }}
+        run: curl -fsS -X POST "$VERCEL_USER_DEPLOY_HOOK"
