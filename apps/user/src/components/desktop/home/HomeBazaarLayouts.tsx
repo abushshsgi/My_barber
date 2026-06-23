@@ -15,7 +15,6 @@ import {
   buildHomeSalonSections,
 } from "@/lib/home-sections";
 import { BAZAAR_ELEVATED_TILE_H, DESKTOP_BAZAAR_INSET } from "@/lib/desktop-bazaar-layout";
-import { hasValidMapCoords } from "@/lib/map-utils";
 
 type Props = { data: HomeData };
 type Salon = HomeData["filtered"][number];
@@ -41,12 +40,8 @@ function SalonGridCells({ salons }: { salons: Salon[] }) {
 }
 
 export function HomeBazaarClassic({ data }: Props) {
-  const { filtered, loading } = data;
+  const { filtered, mapSalons, loading } = data;
   const topRowSalons = filtered.slice(0, 3);
-  const mapPreviewSalons = useMemo(
-    () => filtered.filter((s) => hasValidMapCoords(s.lat, s.lng)),
-    [filtered],
-  );
   const salonSections = useMemo(() => buildHomeSalonSections(filtered), [filtered]);
 
   return (
@@ -67,8 +62,8 @@ export function HomeBazaarClassic({ data }: Props) {
             <SalonGridCells salons={topRowSalons} />
           )}
 
-          <div className="pb-3 lg:col-start-5">
-            <BazaarMapPanel salons={mapPreviewSalons} className={cn("w-full", BAZAAR_ELEVATED_TILE_H)} />
+          <div className="min-w-0 pb-3 lg:col-start-5">
+            <BazaarMapPanel salons={mapSalons} className={cn("w-full", BAZAAR_ELEVATED_TILE_H)} />
           </div>
         </div>
 

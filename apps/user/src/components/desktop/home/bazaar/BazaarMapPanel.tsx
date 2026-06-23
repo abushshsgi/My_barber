@@ -53,12 +53,12 @@ export function BazaarMapPanel({ salons = [], className }: Props) {
     <Link
       to="/map"
       className={cn(
-        "group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card",
+        "group relative block overflow-hidden rounded-2xl border border-border bg-card",
         "shadow-[0_10px_36px_rgba(15,15,15,0.08)] transition-all hover:shadow-[0_14px_44px_rgba(15,15,15,0.12)]",
         className,
       )}
     >
-      <div className="map-home-preview relative min-h-0 w-full flex-1 overflow-hidden bg-surface">
+      <div className="map-home-preview relative h-full w-full overflow-hidden bg-surface">
         {mounted ? (
           <div className="pointer-events-none absolute inset-0">
             <MapErrorBoundary>
