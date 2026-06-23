@@ -14,7 +14,6 @@ import { useMe } from "@/hooks/use-me";
 import { useRecommendContext } from "@/hooks/use-recommend-context";
 import { useSalonsList, useSalonsNearby } from "@/hooks/use-salons";
 import { hasValidMapCoords } from "@/lib/map-utils";
-import { applyHomeSidebarFilters, DEFAULT_HOME_SIDEBAR_FILTERS } from "@/lib/home-filters";
 import { rankSalonsForUser } from "@/lib/recommendations";
 
 export function useHomeData() {
@@ -43,7 +42,6 @@ export function useHomeData() {
 
   const [cat, setCat] = useState<Category | "all">("all");
   const [query, setQuery] = useState("");
-  const [sidebarFilters, setSidebarFilters] = useState(DEFAULT_HOME_SIDEBAR_FILTERS);
 
   useEffect(() => {
     setCat(audienceToCategory(audience));
@@ -61,15 +59,16 @@ export function useHomeData() {
     [audience],
   );
 
-  const filtered = useMemo(() => {
-    const base = salons.filter(
-      (s) =>
-        matchAudience(s.audience, audience) &&
-        (effectiveCat === "all" || s.category === effectiveCat) &&
-        (query === "" || s.name.toLowerCase().includes(query.toLowerCase())),
-    );
-    return applyHomeSidebarFilters(base, sidebarFilters);
-  }, [salons, audience, effectiveCat, query, sidebarFilters]);
+  const filtered = useMemo(
+    () =>
+      salons.filter(
+        (s) =>
+          matchAudience(s.audience, audience) &&
+          (effectiveCat === "all" || s.category === effectiveCat) &&
+          (query === "" || s.name.toLowerCase().includes(query.toLowerCase())),
+      ),
+    [salons, audience, effectiveCat, query],
+  );
 
   const trending = useMemo(() => {
     const hints = readTrendingFaceHints();
@@ -105,8 +104,6 @@ export function useHomeData() {
     personalized,
     loading: nearbyLoading || listLoading,
     error,
-    sidebarFilters,
-    setSidebarFilters,
   };
 }
 

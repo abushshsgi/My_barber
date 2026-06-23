@@ -23,6 +23,7 @@ import {
 import { hasValidMapCoords, salonMatchesMapAudience } from "@/lib/map-utils";
 import { filterSalonsByViewport, normalizeMapCoords } from "@/lib/map-viewport";
 import { rankSalonsForUser } from "@/lib/recommendations";
+import { parseMapRouteSearch } from "@/lib/map-route-search";
 
 export const Route = createFileRoute("/map")({
   head: () => ({
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/map")({
       { name: "description", content: "Yaqin atrofdagi salonlar va ustalarni xaritada toping." },
     ],
   }),
+  validateSearch: parseMapRouteSearch,
   component: MapView,
 });
 
@@ -108,6 +110,7 @@ function MapCanvas({
 function MapView() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { q: routeQ, category: routeCategory } = Route.useSearch();
   const { audience, profileDefault } = useAudience();
   const mapAudience = useMemo(() => {
     if (audience !== "all") return audience;
@@ -147,14 +150,25 @@ function MapView() {
   const [active, setActive] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
-  const [filters, setFilters] = useState<MapFiltersState>(DEFAULT_MAP_FILTERS);
+  const [query, setQuery] = useState(routeQ);
+  const [filters, setFilters] = useState<MapFiltersState>(() => ({
+    ...DEFAULT_MAP_FILTERS,
+    category: routeCategory,
+  }));
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [desktopMapExpanded, setDesktopMapExpanded] = useState(false);
   const [mapHandle, setMapHandle] = useState<SalonMapHandle | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [viewport, setViewport] = useState<SalonMapViewport | null>(null);
   const mapHandleRef = useRef<SalonMapHandle | null>(null);
+
+  useEffect(() => {
+    setQuery(routeQ);
+  }, [routeQ]);
+
+  useEffect(() => {
+    setFilters((prev) => ({ ...prev, category: routeCategory }));
+  }, [routeCategory]);
 
   const getMapHandle = useCallback(() => mapHandleRef.current, []);
 
