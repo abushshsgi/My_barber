@@ -2,8 +2,10 @@ import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { AuthStepIndicator } from "@/components/auth/AuthStepIndicator";
 import { AuthDesktopLayout } from "@/components/auth/desktop/AuthDesktopLayouts";
+import { AuthImageLayoutVariantPicker } from "@/components/auth/desktop/AuthImageLayoutVariantPicker";
 import { Scissors } from "lucide-react";
 import type { SignupFlow } from "@/lib/auth-ui";
+import type { AuthImageLayoutVariant } from "@/lib/auth-image-layout-variant";
 import { FLOW_IDENTITY_META } from "@/lib/barber-flow-config";
 import { pageEnter } from "@/lib/motion-presets";
 
@@ -12,10 +14,20 @@ type Props = {
   tab: "login" | "signup";
   signupStep?: number;
   onTabChange: (tab: "login" | "signup") => void;
+  imageLayout: AuthImageLayoutVariant;
+  onImageLayoutChange: (layout: AuthImageLayoutVariant) => void;
   children: ReactNode;
 };
 
-export function AuthShell({ flow, tab, signupStep = 0, onTabChange, children }: Props) {
+export function AuthShell({
+  flow,
+  tab,
+  signupStep = 0,
+  onTabChange,
+  imageLayout,
+  onImageLayoutChange,
+  children,
+}: Props) {
   const meta = flow ? FLOW_IDENTITY_META[flow] : null;
   const mobileTitle =
     tab === "login"
@@ -55,9 +67,18 @@ export function AuthShell({ flow, tab, signupStep = 0, onTabChange, children }: 
       </motion.div>
 
       <div className="hidden md:block">
-        <AuthDesktopLayout flow={flow} tab={tab} signupStep={signupStep} onTabChange={onTabChange}>
+        <AuthDesktopLayout
+          flow={flow}
+          tab={tab}
+          signupStep={signupStep}
+          imageLayout={imageLayout}
+          onTabChange={onTabChange}
+        >
           {children}
         </AuthDesktopLayout>
+        {tab === "signup" && flow ? (
+          <AuthImageLayoutVariantPicker value={imageLayout} onChange={onImageLayoutChange} />
+        ) : null}
       </div>
     </div>
   );

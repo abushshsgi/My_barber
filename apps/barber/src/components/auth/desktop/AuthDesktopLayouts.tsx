@@ -5,6 +5,7 @@ import { AuthDesktopTabSwitcher } from "@/components/auth/desktop/AuthDesktopTab
 import { AuthMarketingPanel } from "@/components/auth/desktop/AuthMarketingPanel";
 import type { SignupFlow } from "@/lib/auth-ui";
 import { ACCENT_STYLES, AUTH_ACCENT, LIGHT_FORM_SKIN } from "@/lib/auth-desktop-variant";
+import type { AuthImageLayoutVariant } from "@/lib/auth-image-layout-variant";
 import { pageEnter } from "@/lib/motion-presets";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -13,6 +14,7 @@ export type AuthDesktopLayoutProps = {
   flow: SignupFlow | null;
   tab: "login" | "signup";
   signupStep: number;
+  imageLayout: AuthImageLayoutVariant;
   onTabChange: (tab: "login" | "signup") => void;
   children: ReactNode;
 };
@@ -67,11 +69,11 @@ function FormPanel({ tab, signupStep, flow, onTabChange, children }: AuthDesktop
   );
 }
 
-export function AuthDesktopLayout({ tab, flow, ...props }: AuthDesktopLayoutProps) {
+export function AuthDesktopLayout({ tab, flow, imageLayout, ...props }: AuthDesktopLayoutProps) {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
-      <AuthMarketingPanel tab={tab} flow={flow} />
-      <FormPanel tab={tab} flow={flow} {...props} />
+      <AuthMarketingPanel tab={tab} flow={flow} imageLayout={imageLayout} />
+      <FormPanel tab={tab} flow={flow} imageLayout={imageLayout} {...props} />
     </div>
   );
 }
