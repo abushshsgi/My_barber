@@ -22,15 +22,16 @@ type Salon = HomeData["filtered"][number];
 const BAZAAR_ROW_CLASS =
   "grid w-full grid-cols-1 gap-4 lg:grid-cols-[minmax(200px,240px)_repeat(3,minmax(0,1fr))_minmax(300px,380px)] lg:items-start lg:gap-x-4 lg:[--bazaar-card-w:calc((100%-240px-380px-4*1rem)/3)]";
 
-const BAZAAR_TOP_ROW_CLASS = cn(BAZAAR_ROW_CLASS, "lg:items-stretch");
+const BAZAAR_TOP_ROW_CLASS =
+  "grid w-full grid-cols-1 gap-4 lg:grid-cols-[minmax(200px,220px)_repeat(3,minmax(0,1fr))_minmax(280px,340px)] lg:items-stretch lg:gap-x-3 lg:[--bazaar-card-w:calc((100%-220px-340px-3*0.75rem)/3)]";
 const CENTER_COLS = ["lg:col-start-2", "lg:col-start-3", "lg:col-start-4"] as const;
 
 function SalonGridCells({ salons }: { salons: Salon[] }) {
   return (
     <>
       {salons.map((salon, index) => (
-        <div key={salon.id} className={cn("min-w-0", CENTER_COLS[index])}>
-          <DesktopSalonCard salon={salon} variant="marketplace" />
+        <div key={salon.id} className={cn("min-w-0 pb-3", CENTER_COLS[index])}>
+          <DesktopSalonCard salon={salon} variant="marketplace" elevated />
         </div>
       ))}
     </>

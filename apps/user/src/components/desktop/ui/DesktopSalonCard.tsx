@@ -13,9 +13,11 @@ export type DesktopSalonCardVariant = "grid" | "row" | "editorial" | "marketplac
 type Props = {
   salon: Salon;
   variant?: DesktopSalonCardVariant;
+  /** Home bazaar top row — larger card with bottom depth shadow */
+  elevated?: boolean;
 };
 
-export function DesktopSalonCard({ salon, variant = "grid" }: Props) {
+export function DesktopSalonCard({ salon, variant = "grid", elevated = false }: Props) {
   const { isFav, toggle } = useFavorites();
   const fav = isFav(salon.id);
   const fallbackCover = getSalonCoverUrl(salon.coverSeed, salon.category);
@@ -25,8 +27,21 @@ export function DesktopSalonCard({ salon, variant = "grid" }: Props) {
 
   if (variant === "marketplace") {
     return (
-      <Link to="/salon/$id" params={{ id: salon.id }} className="group block">
-        <div className="relative aspect-[5/4] w-full overflow-hidden rounded-xl bg-surface">
+      <Link
+        to="/salon/$id"
+        params={{ id: salon.id }}
+        className={cn(
+          "group block",
+          elevated &&
+            "overflow-hidden rounded-2xl bg-card shadow-[0_22px_46px_-16px_rgba(0,0,0,0.55),0_10px_20px_-10px_rgba(0,0,0,0.35)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_54px_-14px_rgba(0,0,0,0.62),0_14px_24px_-10px_rgba(0,0,0,0.4)]",
+        )}
+      >
+        <div
+          className={cn(
+            "relative w-full overflow-hidden bg-surface",
+            elevated ? "aspect-[4/3] rounded-t-2xl" : "aspect-[5/4] rounded-xl",
+          )}
+        >
           <img
             src={cover}
             alt=""
@@ -57,18 +72,30 @@ export function DesktopSalonCard({ salon, variant = "grid" }: Props) {
             </span>
           ) : null}
         </div>
-        <div className="mt-3 min-h-[4.75rem] space-y-0.5">
+        <div className={cn("space-y-0.5", elevated ? "px-3.5 pb-4 pt-3.5 min-h-[5rem]" : "mt-3 min-h-[4.75rem]")}>
           <div className="flex items-start justify-between gap-2">
-            <h3 className="truncate text-[15px] font-semibold leading-snug">{salon.name}</h3>
-            <span className="flex shrink-0 items-center gap-0.5 text-[15px] font-normal">
-              <Star className="h-3.5 w-3.5 fill-foreground" />
+            <h3
+              className={cn(
+                "truncate font-semibold leading-snug",
+                elevated ? "text-base" : "text-[15px]",
+              )}
+            >
+              {salon.name}
+            </h3>
+            <span
+              className={cn(
+                "flex shrink-0 items-center gap-0.5 font-normal",
+                elevated ? "text-base" : "text-[15px]",
+              )}
+            >
+              <Star className={cn("fill-foreground", elevated ? "h-4 w-4" : "h-3.5 w-3.5")} />
               {salon.rating.toFixed(1)}
             </span>
           </div>
-          <p className="truncate text-[15px] text-muted-foreground">
+          <p className={cn("truncate text-muted-foreground", elevated ? "text-base" : "text-[15px]")}>
             {salon.category} · {salon.distanceKm} km
           </p>
-          <p className="text-[15px]">
+          <p className={elevated ? "text-base" : "text-[15px]"}>
             <span className="font-semibold">{shortPrice(salon.priceFrom)}</span>
             <span className="font-normal text-muted-foreground"> dan</span>
           </p>
