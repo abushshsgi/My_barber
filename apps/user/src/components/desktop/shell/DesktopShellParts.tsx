@@ -35,8 +35,8 @@ function Main({ children, fullBleed, className }: ShellProps & { className?: str
       className={cn(
         "flex-1",
         fullBleed && "flex min-h-0 flex-col",
-        !fullBleed &&
-          (className ?? "w-full px-6 pb-12 pt-6 xl:px-10 2xl:px-12"),
+        !fullBleed && "w-full px-6 pb-12 pt-6 xl:px-10 2xl:px-12",
+        className,
       )}
     >
       {children}
@@ -52,13 +52,11 @@ export function ShellBazaarClassic({
 }: ShellProps) {
   const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isHome = pathname === "/";
-  const pageInset = isHome ? "px-[50px]" : "px-6 xl:px-10 2xl:px-12";
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md">
-        <div className={cn("flex h-[4.25rem] w-full items-center gap-4", pageInset)}>
+        <div className="flex h-[4.25rem] w-full items-center gap-4 px-6 xl:px-10 2xl:px-12">
           <Link to="/" className="flex shrink-0 items-baseline gap-0.5">
             <span className="text-xl font-bold tracking-tight text-foreground">mysaloon</span>
             <span className="text-sm font-bold text-muted-foreground">.uz</span>
@@ -97,7 +95,7 @@ export function ShellBazaarClassic({
           </div>
         </div>
 
-        <nav className={cn("flex gap-1 overflow-x-auto border-t border-border/60 py-2 lg:hidden", pageInset)}>
+        <nav className="flex gap-1 overflow-x-auto border-t border-border/60 px-6 py-2 lg:hidden xl:px-10 2xl:px-12">
           {MAIN_NAV.map(({ to, key, icon: Icon }) => {
             const active = isNavTabActive(pathname, to);
             return (
@@ -116,12 +114,7 @@ export function ShellBazaarClassic({
           })}
         </nav>
       </header>
-      <Main
-        fullBleed={fullBleed}
-        className={isHome ? "w-full px-[50px] pb-12 pt-6" : undefined}
-      >
-        {children}
-      </Main>
+      <Main fullBleed={fullBleed}>{children}</Main>
     </div>
   );
 }

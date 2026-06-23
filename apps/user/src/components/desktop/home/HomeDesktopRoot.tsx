@@ -1,8 +1,8 @@
 import type { HomeData } from "@/components/home/useHomeData";
-import { HomeBazaarLayout } from "./HomeBazaarLayout";
+import { HomeBazaarClassic } from "./HomeBazaarLayouts";
 
 type Props = { data: HomeData };
 
 export function HomeDesktopRoot({ data }: Props) {
-  return <HomeBazaarLayout data={data} />;
+  return <HomeBazaarClassic data={data} />;
 }

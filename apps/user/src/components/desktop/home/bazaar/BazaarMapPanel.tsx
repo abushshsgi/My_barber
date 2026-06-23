@@ -12,60 +12,37 @@ import { cn } from "@/lib/utils";
 
 type MapSalon = Pick<Salon, "id" | "lat" | "lng" | "name" | "priceFrom" | "rating">;
 
-const PREVIEW_MARKER_LIMIT = 5;
-const PREVIEW_FIT_PADDING = { top: 16, right: 16, bottom: 72, left: 16 };
-const PREVIEW_FIT_MAX_ZOOM = 12;
-
-function buildMarker(s: MapSalon): SalonMapMarker {
-  return {
-    id: s.id,
-    lat: s.lat,
-    lng: s.lng,
-    label: s.name,
-    priceLabel:
-      s.priceFrom > 0
-        ? shortPrice(s.priceFrom)
-        : s.rating > 0
-          ? `★ ${s.rating.toFixed(1)}`
-          : s.name.split(" ")[0].slice(0, 10),
-  };
-}
-
-function toMarkers(salons: MapSalon[], preview: boolean): SalonMapMarker[] {
-  const valid = salons.filter((s) => hasValidMapCoords(s.lat, s.lng));
-  if (!preview) {
-    return valid.slice(0, 14).map(buildMarker);
-  }
-  if (valid.length <= PREVIEW_MARKER_LIMIT) {
-    return valid.map(buildMarker);
-  }
-  const step = Math.max(1, Math.floor(valid.length / PREVIEW_MARKER_LIMIT));
-  return valid
-    .filter((_, i) => i % step === 0)
-    .slice(0, PREVIEW_MARKER_LIMIT)
-    .map(buildMarker);
+function toMarkers(salons: MapSalon[]): SalonMapMarker[] {
+  return salons
+    .filter((s) => hasValidMapCoords(s.lat, s.lng))
+    .slice(0, 14)
+    .map((s) => ({
+      id: s.id,
+      lat: s.lat,
+      lng: s.lng,
+      label: s.name,
+      priceLabel:
+        s.priceFrom > 0
+          ? shortPrice(s.priceFrom)
+          : s.rating > 0
+            ? `★ ${s.rating.toFixed(1)}`
+            : s.name.split(" ")[0].slice(0, 10),
+    }));
 }
 
 type Props = {
   salons?: MapSalon[];
   salonCount?: number;
   className?: string;
-  variant?: "default" | "preview";
 };
 
-export function BazaarMapPanel({
-  salons = [],
-  salonCount = 0,
-  className,
-  variant = "default",
-}: Props) {
+export function BazaarMapPanel({ salons = [], salonCount = 0, className }: Props) {
   const { t } = useTranslation();
   const ctx = useRecommendContext();
   const [mounted, setMounted] = useState(false);
-  const isPreview = variant === "preview";
   useEffect(() => setMounted(true), []);
 
-  const markers = useMemo(() => (isPreview ? [] : toMarkers(salons, false)), [salons, isPreview]);
+  const markers = useMemo(() => toMarkers(salons), [salons]);
 
   const userLocation = useMemo(() => {
     if (ctx.lat == null || ctx.lng == null) return null;
@@ -77,25 +54,23 @@ export function BazaarMapPanel({
     <Link
       to="/map"
       className={cn(
-        "group relative block h-full overflow-hidden rounded-2xl border border-border bg-card",
+        "group relative block w-full overflow-hidden rounded-2xl border border-border bg-card",
         "shadow-[0_10px_36px_rgba(15,15,15,0.08)] transition-all hover:shadow-[0_14px_44px_rgba(15,15,15,0.12)]",
         className,
       )}
     >
-      <div className="relative h-full min-h-0 w-full overflow-hidden bg-surface">
+      <div className="relative aspect-[5/4] w-full overflow-hidden bg-surface">
         {mounted ? (
-          <div className="map-home-preview pointer-events-none absolute inset-0">
+          <div className="pointer-events-none absolute inset-0">
             <MapErrorBoundary>
               <SalonMap
                 markers={markers}
                 selectedId={null}
                 onMarkerSelect={() => {}}
                 onMarkerNavigate={() => {}}
-                showUserLocation={Boolean(userLocation) && !isPreview}
+                showUserLocation={Boolean(userLocation)}
                 userLocation={userLocation}
                 autoFitMarkers
-                fitPadding={isPreview ? PREVIEW_FIT_PADDING : undefined}
-                fitMaxZoom={isPreview ? PREVIEW_FIT_MAX_ZOOM : undefined}
               />
             </MapErrorBoundary>
           </div>
@@ -103,45 +78,22 @@ export function BazaarMapPanel({
           <div className="absolute inset-0 animate-pulse bg-surface-2" />
         )}
 
-        {isPreview ? (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t border-border/60 bg-background px-3 py-2.5 shadow-[0_-6px_20px_rgba(15,15,15,0.06)]">
-            <p className="min-w-0 truncate text-sm font-bold tracking-tight">
-              {salonCount > 0
-                ? t("home.mapPreview.nearbyCount", {
-                    count: salonCount,
-                    defaultValue: "{{count}} ta salon yaqinda",
-                  })
-                : t("home.mapPreview.explore", { defaultValue: "Yaqin salonlarni toping" })}
-            </p>
-            <span className="flex shrink-0 items-center gap-1.5 rounded-lg bg-foreground px-3 py-2 text-xs font-bold text-background">
-              {t("home.mapPreview.openMap", { defaultValue: "Xaritani ochish" })}
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </span>
-          </div>
-        ) : (
-          <>
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-32 bg-gradient-to-t from-background from-15% via-background/75 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 z-[2] px-4 pb-4 pt-2">
-              <p className="text-lg font-bold tracking-tight">
-                {salonCount > 0
-                  ? t("home.mapPreview.nearbyCount", {
-                      count: salonCount,
-                      defaultValue: "{{count}} ta salon yaqinda",
-                    })
-                  : t("home.mapPreview.explore", { defaultValue: "Yaqin salonlarni toping" })}
-              </p>
-              <span className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-sm font-bold text-background transition group-hover:opacity-95">
-                {t("home.mapPreview.openMap", { defaultValue: "Xaritani ochish" })}
-                <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </span>
-            </div>
-          </>
-        )}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-background/85 via-background/35 to-transparent" />
 
-        <div
-          className="pointer-events-none absolute bottom-0 right-0 z-[21] h-7 w-[4.75rem] bg-background"
-          aria-hidden
-        />
+        <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-8">
+          <p className="text-lg font-bold tracking-tight">
+            {salonCount > 0
+              ? t("home.mapPreview.nearbyCount", {
+                  count: salonCount,
+                  defaultValue: "{{count}} ta salon yaqinda",
+                })
+              : t("home.mapPreview.explore", { defaultValue: "Yaqin salonlarni toping" })}
+          </p>
+          <span className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-sm font-bold text-background transition group-hover:opacity-95">
+            {t("home.mapPreview.openMap", { defaultValue: "Xaritani ochish" })}
+            <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </span>
+        </div>
       </div>
     </Link>
   );

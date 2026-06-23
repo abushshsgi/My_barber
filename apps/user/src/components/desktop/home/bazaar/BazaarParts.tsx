@@ -4,17 +4,8 @@ import type { HomeData } from "@/components/home/useHomeData";
 import { cn } from "@/lib/utils";
 
 export { BazaarMapPanel } from "./BazaarMapPanel";
-export { BazaarMapCard } from "./BazaarMapCard";
-export { BazaarHeroBanner } from "./BazaarHeroBanner";
-export {
-  BazaarWeekendDeals,
-  BazaarCategoryBrowse,
-  BazaarMapRail,
-} from "./BazaarDiscoveryRails";
 
-type FilterProps = Pick<HomeData, "query" | "setQuery" | "effectiveCat" | "visibleCategoryKeys" | "setCat"> & {
-  className?: string;
-};
+type FilterProps = Pick<HomeData, "query" | "setQuery" | "effectiveCat" | "visibleCategoryKeys" | "setCat">;
 
 export function BazaarFilterSidebar({
   query,
@@ -22,11 +13,10 @@ export function BazaarFilterSidebar({
   effectiveCat,
   visibleCategoryKeys,
   setCat,
-  className,
 }: FilterProps) {
   const { t } = useTranslation();
   return (
-    <div className={cn("flex h-full flex-col rounded-2xl border border-border bg-card p-4 shadow-sm", className)}>
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
       <p className="flex items-center gap-2 text-sm font-bold">
         <SlidersHorizontal className="h-4 w-4 text-foreground" />
         {t("common.search", { defaultValue: "Filter" })}
@@ -38,7 +28,7 @@ export function BazaarFilterSidebar({
         placeholder={t("common.search")}
         className="mt-3 w-full rounded-xl border border-border bg-surface/50 px-3 py-2.5 text-sm focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
       />
-      <div className="mt-4 min-h-0 flex-1 space-y-1 overflow-y-auto">
+      <div className="mt-4 space-y-1">
         {visibleCategoryKeys.map((key) => (
           <button
             key={key}
@@ -59,13 +49,10 @@ export function BazaarFilterSidebar({
   );
 }
 
-export const SALON_GRID_CLASS =
-  "grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] 2xl:grid-cols-5 2xl:gap-7";
-
-export function BazaarGridSkeleton() {
+export function BazaarGridSkeleton({ cols }: { cols: number }) {
   return (
-    <div className={SALON_GRID_CLASS}>
-      {Array.from({ length: 12 }).map((_, i) => (
+    <div className={cn("grid gap-5", cols === 2 && "grid-cols-2", cols === 3 && "grid-cols-3", cols === 4 && "grid-cols-4", cols === 5 && "grid-cols-5")}>
+      {Array.from({ length: cols * 3 }).map((_, i) => (
         <div key={i} className="animate-pulse">
           <div className="aspect-[5/4] rounded-xl bg-surface" />
           <div className="mt-3 h-4 w-2/3 rounded bg-surface" />

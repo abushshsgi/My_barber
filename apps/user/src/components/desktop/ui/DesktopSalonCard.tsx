@@ -6,7 +6,7 @@ import { getSalonCoverUrl } from "@/lib/cover-images";
 import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
 
-export type DesktopSalonCardVariant = "grid" | "row" | "editorial" | "marketplace" | "bazaar";
+export type DesktopSalonCardVariant = "grid" | "row" | "editorial" | "marketplace";
 
 type Props = {
   salon: Salon;
@@ -18,55 +18,6 @@ export function DesktopSalonCard({ salon, variant = "grid" }: Props) {
   const fav = isFav(salon.id);
   const cover = salon.coverUrl ?? getSalonCoverUrl(salon.coverSeed, salon.category);
   const isGuestFavorite = salon.rating >= 4.8;
-
-  if (variant === "bazaar") {
-    return (
-      <Link
-        to="/salon/$id"
-        params={{ id: salon.id }}
-        className="group flex w-full flex-col"
-      >
-        <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl bg-surface">
-          <img
-            src={cover}
-            alt=""
-            loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              toggle(salon.id);
-            }}
-            className="absolute right-2.5 top-2.5 text-white drop-shadow-md transition-transform hover:scale-110"
-            aria-label="Sevimli"
-          >
-            <Heart
-              className={cn("h-5 w-5", fav ? "fill-white" : "fill-black/20 stroke-white stroke-[2px]")}
-            />
-          </button>
-        </div>
-        <div className="mt-2.5 shrink-0 space-y-1">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="line-clamp-1 text-sm font-semibold leading-snug">{salon.name}</h3>
-            <span className="flex shrink-0 items-center gap-0.5 text-sm font-medium">
-              <Star className="h-3.5 w-3.5 fill-foreground" />
-              {salon.rating.toFixed(1)}
-            </span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {salon.category} · {salon.distanceKm} km
-          </p>
-          <p className="text-sm">
-            <span className="font-bold">{shortPrice(salon.priceFrom)}</span>
-            <span className="text-muted-foreground"> dan</span>
-          </p>
-        </div>
-      </Link>
-    );
-  }
 
   if (variant === "marketplace") {
     return (
