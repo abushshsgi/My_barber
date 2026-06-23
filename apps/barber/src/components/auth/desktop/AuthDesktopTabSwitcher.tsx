@@ -12,7 +12,7 @@ export function AuthDesktopTabSwitcher({ tab, onTabChange, accent }: Props) {
   const a = ACCENT_STYLES[accent];
 
   return (
-    <div className="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-zinc-100 p-1">
+    <div className="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
       {(["login", "signup"] as const).map((t) => {
         const active = tab === t;
         return (
@@ -22,7 +22,7 @@ export function AuthDesktopTabSwitcher({ tab, onTabChange, accent }: Props) {
             onClick={() => onTabChange(t)}
             className={cn(
               "cursor-pointer rounded-lg py-2.5 text-sm font-semibold transition-all active:scale-[0.98]",
-              active ? cn(a.btn, "text-white shadow-sm") : "text-muted-foreground hover:bg-white/60 hover:text-foreground",
+              active ? cn(a.btn, "text-primary-foreground shadow-sm") : "text-muted-foreground hover:bg-card hover:text-foreground",
             )}
           >
             {t === "login" ? "Kirish" : "Ro'yxatdan o'tish"}

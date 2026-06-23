@@ -66,7 +66,7 @@ export function AuthLoginForm({
 
       <AuthErrorAlert error={error && !emailError ? error : null} />
 
-      <AuthSubmitButton variant="brand" loading={loading} disabled={loading}>
+      <AuthSubmitButton variant="brand" loading={loading} disabled={loading} className="w-full">
         {loading ? "Kutilmoqda..." : "Kabinetga kirish"}
       </AuthSubmitButton>
 

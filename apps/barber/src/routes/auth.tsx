@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useState } from "react";
-import { z } from "zod";
 import { AuthLoginForm, AUTH_LOGIN_FORM_ID } from "@/components/auth/AuthLoginForm";
 import { AuthMobileStickyBar } from "@/components/auth/AuthMobileStickyBar";
 import { AuthShell } from "@/components/auth/AuthShell";
@@ -11,12 +10,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { apiFetch, setBarberTokens } from "@/lib/api";
 import { submitEarlyFlowSignup } from "@/lib/barber-signup-flow";
 import { checkBarberAvailability, parseFieldErrors } from "@/lib/auth-errors";
-import {
-  AUTH_DESKTOP_VARIANT_IDS,
-  DEFAULT_AUTH_DESKTOP_VARIANT,
-  parseAuthDesktopVariant,
-  type AuthDesktopVariant,
-} from "@/lib/auth-desktop-variant";
 import {
   extractApiError,
   formatFetchError,
@@ -33,23 +26,12 @@ import { formatUzPhoneE164 } from "@/lib/phone";
 import { saveSignupDraft } from "@/lib/signup-draft";
 import { cn } from "@/lib/utils";
 
-const authSearchSchema = z.object({
-  desktop: z.enum(AUTH_DESKTOP_VARIANT_IDS).optional().catch(DEFAULT_AUTH_DESKTOP_VARIANT),
-});
-
 export const Route = createFileRoute("/auth")({
-  validateSearch: authSearchSchema,
   component: AuthPage,
 });
 
 function AuthPage() {
   const navigate = useNavigate({ from: Route.fullPath });
-  const { desktop = DEFAULT_AUTH_DESKTOP_VARIANT } = Route.useSearch();
-  const desktopVariant = parseAuthDesktopVariant(desktop);
-
-  const setDesktopVariant = (variant: AuthDesktopVariant) => {
-    void navigate({ search: (prev) => ({ ...prev, desktop: variant }), replace: true });
-  };
   const [tab, setTab] = useState<"login" | "signup">("login");
   const [signupStep, setSignupStep] = useState(0);
 
@@ -213,8 +195,6 @@ function AuthPage() {
         tab={tab}
         signupStep={signupStep}
         onTabChange={handleTabChange}
-        desktopVariant={desktopVariant}
-        onDesktopVariantChange={setDesktopVariant}
       >
         {/* Mobile tab switcher */}
         <div className="mb-5 grid h-12 grid-cols-2 rounded-xl bg-zinc-100 p-1 md:hidden">

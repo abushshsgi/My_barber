@@ -1,17 +1,13 @@
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Check, Scissors } from "lucide-react";
 import type { ReactNode } from "react";
 import { AuthAccentProvider } from "@/components/auth/AuthAccentContext";
 import { AuthDesktopFormChrome } from "@/components/auth/desktop/AuthDesktopFormChrome";
 import { AuthDesktopTabSwitcher } from "@/components/auth/desktop/AuthDesktopTabSwitcher";
 import type { SignupFlow } from "@/lib/auth-ui";
-import { FRAMER_VARIANT_CONFIG } from "@/lib/auth-framer-variants";
-import {
-  ACCENT_STYLES,
-  LIGHT_FORM_SKIN,
-  VARIANT_ACCENT,
-  type AuthDesktopVariant,
-} from "@/lib/auth-desktop-variant";
+import { AUTH_FRAMER_CONFIG } from "@/lib/auth-framer-variants";
+import { ACCENT_STYLES, AUTH_ACCENT, LIGHT_FORM_SKIN } from "@/lib/auth-desktop-variant";
+import { AUTH_FLOW_MARKETING } from "@/lib/barber-flow-config";
 import { pageEnter } from "@/lib/motion-presets";
 import { cn } from "@/lib/utils";
 
@@ -21,134 +17,134 @@ export type AuthDesktopLayoutProps = {
   signupStep: number;
   onTabChange: (tab: "login" | "signup") => void;
   children: ReactNode;
-  variant: AuthDesktopVariant;
 };
 
-type ShellProps = Omit<AuthDesktopLayoutProps, "variant">;
+const c = AUTH_FRAMER_CONFIG;
+const accent = AUTH_ACCENT;
+const a = ACCENT_STYLES[accent];
 
-/** Chap panel — marketing matn (forma alohida). */
-function MarketingPanel({ variant }: { variant: AuthDesktopVariant }) {
-  const c = FRAMER_VARIANT_CONFIG[variant];
-  const isDark = c.textMain.includes("white");
+type MarketingContent = {
+  key: string;
+  badge: string;
+  headline: string;
+  highlight: string;
+  subline: string;
+  bullets: readonly string[];
+  stat: { value: string; label: string };
+};
+
+function resolveMarketing(tab: "login" | "signup", flow: SignupFlow | null): MarketingContent {
+  if (tab === "signup" && flow) {
+    const m = AUTH_FLOW_MARKETING[flow];
+    return { key: flow, ...m };
+  }
+  return {
+    key: "default",
+    badge: c.badge,
+    headline: c.headline,
+    highlight: c.highlight,
+    subline: c.subline,
+    bullets: c.bullets,
+    stat: c.stat,
+  };
+}
+
+function MarketingPanel({ tab, flow }: { tab: "login" | "signup"; flow: SignupFlow | null }) {
+  const content = resolveMarketing(tab, flow);
 
   return (
     <div className={cn("relative flex flex-col justify-center overflow-hidden px-10 py-14 lg:px-16 lg:py-16", c.bgLeft)}>
       <motion.div
-        className={cn(
-          "pointer-events-none absolute -right-16 top-1/4 size-80 rounded-full opacity-40 blur-3xl",
-          c.orbPosition,
-        )}
+        className="pointer-events-none absolute -right-16 top-1/4 size-80 rounded-full opacity-40 blur-3xl"
         style={{ background: c.glowColor }}
         animate={{ scale: [1, 1.2, 1], opacity: [0.35, 0.55, 0.35] }}
         transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
       />
-      <motion.div
-        className="pointer-events-none absolute bottom-0 left-0 h-px w-full"
-        style={{ background: `linear-gradient(90deg, transparent, ${c.glowColor}66, transparent)` }}
-        animate={{ opacity: [0.2, 0.5, 0.2] }}
-        transition={{ duration: 4, repeat: Infinity }}
-      />
 
-      <motion.div {...pageEnter} className="relative z-10 max-w-xl">
+      <div className="relative z-10 max-w-xl">
         <div className="flex items-center gap-2.5">
-          <div
-            className={cn(
-              "flex size-10 items-center justify-center rounded-xl text-white shadow-sm",
-              ACCENT_STYLES[c.accent].logo,
-            )}
-          >
+          <div className={cn("flex size-10 items-center justify-center rounded-xl text-primary-foreground shadow-sm", a.logo)}>
             <Scissors className="size-4" />
           </div>
-          <span className={cn("text-sm font-bold", isDark ? "text-white" : "text-foreground")}>MySaloon Partner</span>
+          <span className="text-sm font-bold text-foreground">MySaloon Partner</span>
         </div>
 
-        <span
-          className={cn(
-            "mt-8 inline-flex rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider",
-            isDark ? "bg-white/10 text-white/90" : "bg-black/5 text-zinc-600",
-          )}
-        >
-          {c.badge}
-        </span>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={content.key}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <span className="mt-8 inline-flex rounded-full bg-black/5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-zinc-600">
+              {content.badge}
+            </span>
 
-        <h1
-          className={cn(
-            "mt-5 text-4xl font-bold leading-[1.08] tracking-tight lg:text-[3.25rem]",
-            c.textMain,
-          )}
-        >
-          {c.headline}
-          <br />
-          <span className={c.highlightClass}>{c.highlight}</span>
-        </h1>
+            <h1 className="mt-5 text-4xl font-bold leading-[1.08] tracking-tight text-zinc-900 lg:text-[3.25rem]">
+              {content.headline}
+              <br />
+              <span className={c.highlightClass}>{content.highlight}</span>
+            </h1>
 
-        <p className={cn("mt-5 max-w-md text-base leading-relaxed lg:text-[17px]", isDark ? "text-zinc-400" : "text-zinc-600")}>
-          {c.subline}
-        </p>
+            <p className="mt-5 max-w-md text-base leading-relaxed text-zinc-600 lg:text-[17px]">{content.subline}</p>
 
-        <ul className="mt-9 space-y-3">
-          {c.bullets.map((b, i) => (
-            <motion.li
-              key={b}
-              initial={{ opacity: 0, x: -14 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.12 + i * 0.08 }}
-              className={cn("flex items-center gap-3 text-sm font-medium", isDark ? "text-zinc-300" : "text-zinc-700")}
+            <ul className="mt-9 space-y-3">
+              {content.bullets.map((b, i) => (
+                <motion.li
+                  key={b}
+                  initial={{ opacity: 0, x: -14 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.08 + i * 0.07 }}
+                  className="flex items-center gap-3 text-sm font-medium text-zinc-700"
+                >
+                  <span
+                    className="flex size-6 shrink-0 items-center justify-center rounded-full"
+                    style={{ backgroundColor: `${c.glowColor}33`, color: c.glowColor }}
+                  >
+                    <Check className="size-3.5" strokeWidth={3} />
+                  </span>
+                  {b}
+                </motion.li>
+              ))}
+            </ul>
+
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.28 }}
+              className="mt-11 inline-flex items-baseline gap-2.5 rounded-2xl border border-black/5 bg-white/70 px-5 py-3.5 shadow-sm"
             >
-              <span
-                className="flex size-6 shrink-0 items-center justify-center rounded-full"
-                style={{ backgroundColor: `${c.glowColor}33`, color: c.glowColor }}
-              >
-                <Check className="size-3.5" strokeWidth={3} />
-              </span>
-              {b}
-            </motion.li>
-          ))}
-        </ul>
-
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45 }}
-          className={cn(
-            "mt-11 inline-flex items-baseline gap-2.5 rounded-2xl border px-5 py-3.5",
-            isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white/70 shadow-sm",
-          )}
-        >
-          <span className={cn("text-3xl font-bold tabular-nums", c.highlightClass)}>{c.stat.value}</span>
-          <span className={cn("text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>{c.stat.label}</span>
-        </motion.div>
-      </motion.div>
+              <span className={cn("text-3xl font-bold tabular-nums", c.highlightClass)}>{content.stat.value}</span>
+              <span className="text-sm text-zinc-500">{content.stat.label}</span>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
 
-/** O'ng panel — faqat forma. */
-function FormPanel({
-  variant,
-  tab,
-  signupStep,
-  flow,
-  onTabChange,
-  children,
-}: ShellProps & { variant: AuthDesktopVariant }) {
-  const accent = VARIANT_ACCENT[variant];
-  const a = ACCENT_STYLES[accent];
+function FormPanel({ tab, signupStep, flow, onTabChange, children }: AuthDesktopLayoutProps) {
+  const isSignup = tab === "signup";
 
   return (
     <div className="flex flex-col justify-center bg-white px-8 py-12 lg:px-14 lg:py-16">
       <AuthAccentProvider accent={accent}>
-        <motion.div {...pageEnter} className="mx-auto w-full max-w-[440px]">
+        <motion.div
+          {...pageEnter}
+          className={cn("mx-auto w-full", isSignup ? "max-w-[34rem]" : "max-w-[27.5rem]")}
+        >
           <AuthDesktopTabSwitcher tab={tab} onTabChange={onTabChange} accent={accent} />
 
-          <div className={cn("mt-4 rounded-2xl border border-zinc-100 bg-zinc-50/50 p-5 shadow-sm", LIGHT_FORM_SKIN)}>
-            <AuthDesktopFormChrome
-              tab={tab}
-              signupStep={signupStep}
-              flow={flow}
-              accent={accent}
-              showMarketingTitle={false}
-            >
+          <div
+            className={cn(
+              "mt-4 rounded-2xl border border-border bg-card shadow-card",
+              isSignup ? "p-6 lg:p-7" : "p-5",
+              LIGHT_FORM_SKIN,
+            )}
+          >
+            <AuthDesktopFormChrome tab={tab} signupStep={signupStep} flow={flow} accent={accent} showMarketingTitle={false}>
               {children}
             </AuthDesktopFormChrome>
           </div>
@@ -176,11 +172,11 @@ function FormPanel({
   );
 }
 
-export function AuthDesktopLayout({ variant, ...props }: AuthDesktopLayoutProps) {
+export function AuthDesktopLayout({ tab, flow, ...props }: AuthDesktopLayoutProps) {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
-      <MarketingPanel variant={variant} />
-      <FormPanel variant={variant} {...props} />
+      <MarketingPanel tab={tab} flow={flow} />
+      <FormPanel tab={tab} flow={flow} {...props} />
     </div>
   );
 }

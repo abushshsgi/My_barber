@@ -169,6 +169,56 @@ export const FLOW_IDENTITY_META: Record<
   },
 };
 
+/** Auth chap panel — tanlangan signup yo'li bo'yicha marketing. */
+export const AUTH_FLOW_MARKETING: Record<
+  SignupFlow,
+  {
+    badge: string;
+    headline: string;
+    highlight: string;
+    subline: string;
+    bullets: readonly [string, string, string];
+    stat: { value: string; label: string };
+  }
+> = {
+  owner: {
+    badge: "Salon egasi",
+    headline: "Salonni",
+    highlight: "boshqaring",
+    subline:
+      "Jamoa, xizmatlar va bronlarni bitta joydan boshqaring. Owner sifatida salon natijalari ustidan to'liq nazorat sizda.",
+    bullets: ["Jamoa va xizmatlar boshqaruvi", "Salon jadvali va bronlar", "Daromad va statistika"],
+    stat: { value: "5–7", label: "qadam sozlash" },
+  },
+  employee: {
+    badge: "Salon ishchisi",
+    headline: "Jamoa bilan",
+    highlight: "ishlang",
+    subline:
+      "Mavjud salonga qo'shiling va salon workspace'da mijozlar, bronlar va chat orqali ish olib boring.",
+    bullets: ["Salon jamoasiga ulanish", "GPS orqali joy tasdiqlash", "Bronlar va mijozlar bilan ishlash"],
+    stat: { value: "~100 m", label: "salondan yaqinlik" },
+  },
+  mybarber: {
+    badge: "MyBarber",
+    headline: "Tez oching,",
+    highlight: "brend bilan",
+    subline:
+      "MyBarber shabloni bilan salonni qisqa vaqt ichida ishga tushiring — tayyor brend ko'rinishi va tez sozlash.",
+    bullets: ["Tayyor MyBarber uslubi", "Tez profil va xizmatlar", "Mijoz oqimini yoqish"],
+    stat: { value: "3–5", label: "qadam sozlash" },
+  },
+  independent: {
+    badge: "Mustaqil barber",
+    headline: "O'zingiz",
+    highlight: "boshqaring",
+    subline:
+      "Salonsiz shaxsiy workspace — uydan, studiyadan yoki mobil xizmat. Jadval, xizmatlar va daromad sizniki.",
+    bullets: ["Shaxsiy jadval va bronlar", "O'z xizmatlaringiz", "To'liq mustaqil ish maydoni"],
+    stat: { value: "Solo", label: "ish maydoni" },
+  },
+};
+
 export const UNKNOWN_FLOW_META = {
   title: "Barber workspace",
   signupTitle: "Barber kabineti",

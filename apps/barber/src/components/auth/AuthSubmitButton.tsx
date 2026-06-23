@@ -43,11 +43,11 @@ export function AuthSubmitButton({
       onClick={onClick}
       disabled={isDisabled}
       className={cn(
-        "inline-flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-4 text-base font-semibold shadow-sm transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:active:scale-100 md:h-11 md:text-sm",
+        "inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-xl px-4 text-base font-semibold shadow-sm transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:active:scale-100 md:h-11 md:text-sm",
         variant === "brand"
-          ? cn(a.btn, a.btnHover, "text-white")
+          ? cn(a.btn, a.btnHover, "text-primary-foreground")
           : variant === "primary"
-            ? "bg-zinc-900 text-white hover:bg-zinc-800"
+            ? "bg-primary text-primary-foreground hover:bg-primary/90"
             : "border border-border bg-background text-foreground hover:bg-muted",
         className,
       )}
@@ -61,7 +61,7 @@ export function AuthSubmitButton({
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="block w-full">{button}</span>
+          <span className="inline-flex">{button}</span>
         </TooltipTrigger>
         <TooltipContent>{disabledTooltip}</TooltipContent>
       </Tooltip>

@@ -72,13 +72,13 @@ function ActionBar({
 }) {
   return (
     <div className={className}>
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={onBack}
           disabled={step === 0 || loading}
           className={cn(
-            "inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 bg-white text-sm font-medium text-foreground shadow-sm transition-all md:w-auto md:px-4",
+            "inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-medium text-foreground shadow-sm transition-all",
             step === 0 ? "cursor-not-allowed opacity-40" : "hover:bg-muted active:scale-[0.98]",
           )}
           aria-label="Orqaga"
@@ -87,7 +87,7 @@ function ActionBar({
           <span className="hidden sm:inline">Orqaga</span>
         </button>
 
-        <div className="hidden flex-1 sm:flex sm:justify-center md:hidden">
+        <div className="hidden flex-1 justify-center sm:flex md:hidden">
           <AuthStepIndicator currentStep={step} />
         </div>
 
@@ -98,7 +98,7 @@ function ActionBar({
           loading={loading}
           disabled={!canNext}
           disabledTooltip={disabledTooltip}
-          className="h-11 min-w-0 flex-1 rounded-xl text-sm md:min-w-[160px] md:flex-none"
+          className="h-11 w-auto min-w-[9.5rem] shrink-0 rounded-xl px-6 text-sm max-md:min-w-0 max-md:flex-1"
         >
           {nextLabel}
         </AuthSubmitButton>
@@ -187,7 +187,7 @@ export function SignupWizard({
   return (
     <div className="md:pb-0">
       <AnimatePresence mode="wait" custom={step}>
-        <motion.div key={step} {...stepMotion(!!reduceMotion, "forward")} className="min-h-[200px] md:min-h-[220px]">
+        <motion.div key={step} {...stepMotion(!!reduceMotion, "forward")} className="min-h-[200px] md:min-h-[280px]">
           {step === 0 && <SignupStepFlow flow={data.flow} onSelect={onFlowSelect} />}
           {step === 1 && (
             <SignupStepIdentity
@@ -220,7 +220,7 @@ export function SignupWizard({
       <div className="mt-4 space-y-4">
         <AuthErrorAlert error={error} />
 
-        <div className="hidden md:block">
+        <div className="hidden md:block border-t border-border/60 pt-5">
           <ActionBar
             step={step}
             canNext={canNext}
