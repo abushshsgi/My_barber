@@ -33,7 +33,7 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false }: 
         className={cn(
           "group block",
           elevated &&
-            "overflow-hidden rounded-2xl bg-background shadow-[0_22px_46px_-16px_rgba(0,0,0,0.55),0_10px_20px_-10px_rgba(0,0,0,0.35)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_54px_-14px_rgba(0,0,0,0.62),0_14px_24px_-10px_rgba(0,0,0,0.4)]",
+            "overflow-hidden rounded-2xl bg-surface/30 shadow-[0_22px_46px_-16px_rgba(0,0,0,0.55),0_10px_20px_-10px_rgba(0,0,0,0.35)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_54px_-14px_rgba(0,0,0,0.62),0_14px_24px_-10px_rgba(0,0,0,0.4)]",
         )}
       >
         <div
@@ -72,7 +72,14 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false }: 
             </span>
           ) : null}
         </div>
-        <div className={cn("space-y-0.5", elevated ? "px-3.5 pb-4 pt-3.5 min-h-[5rem]" : "mt-3 min-h-[4.75rem]")}>
+        <div
+          className={cn(
+            "space-y-0.5",
+            elevated
+              ? "bg-surface/20 px-3.5 pb-4 pt-3.5 min-h-[5rem]"
+              : "mt-3 min-h-[4.75rem]",
+          )}
+        >
           <div className="flex items-start justify-between gap-2">
             <h3
               className={cn(
