@@ -32,11 +32,10 @@ function toMarkers(salons: MapSalon[]): SalonMapMarker[] {
 
 type Props = {
   salons?: MapSalon[];
-  salonCount?: number;
   className?: string;
 };
 
-export function BazaarMapPanel({ salons = [], salonCount = 0, className }: Props) {
+export function BazaarMapPanel({ salons = [], className }: Props) {
   const { t } = useTranslation();
   const ctx = useRecommendContext();
   const [mounted, setMounted] = useState(false);
@@ -80,16 +79,8 @@ export function BazaarMapPanel({ salons = [], salonCount = 0, className }: Props
 
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background via-background/90 to-transparent shadow-[0_-16px_40px_rgba(255,255,255,0.92)]" />
 
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background via-background/95 to-background/40 px-4 pb-4 pt-8 shadow-[0_-12px_36px_rgba(255,255,255,0.88)]">
-          <p className="text-lg font-bold tracking-tight">
-            {salonCount > 0
-              ? t("home.mapPreview.nearbyCount", {
-                  count: salonCount,
-                  defaultValue: "{{count}} ta salon yaqinda",
-                })
-              : t("home.mapPreview.explore", { defaultValue: "Yaqin salonlarni toping" })}
-          </p>
-          <span className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-sm font-bold text-background transition group-hover:opacity-95">
+        <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-10">
+          <span className="flex w-full items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-sm font-bold text-background shadow-lg transition group-hover:opacity-95">
             {t("home.mapPreview.openMap", { defaultValue: "Xaritani ochish" })}
             <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </span>

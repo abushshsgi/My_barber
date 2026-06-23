@@ -63,10 +63,18 @@ export function BazaarGridSkeleton({ cols }: { cols: number }) {
   );
 }
 
-export function BazaarPageTitle({ title, count }: { title: string; count: number }) {
+export function BazaarPageTitle({
+  title,
+  count,
+  className,
+}: {
+  title: string;
+  count: number;
+  className?: string;
+}) {
   return (
-    <div className="mb-6 flex items-baseline gap-3">
-      <h1 className="text-2xl font-bold tracking-tight xl:text-3xl">{title}</h1>
+    <div className={cn("mb-6 flex items-baseline gap-3", className)}>
+      <h2 className="text-xl font-bold tracking-tight xl:text-2xl">{title}</h2>
       <span className="rounded-full bg-foreground px-3 py-1 text-sm font-bold text-background">
         {count}
       </span>

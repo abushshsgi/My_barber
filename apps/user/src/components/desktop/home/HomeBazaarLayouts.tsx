@@ -13,122 +13,108 @@ import {
 type Props = { data: HomeData };
 type Salon = HomeData["filtered"][number];
 
-const BAZAAR_ROW_CLASS =
-  "grid w-full grid-cols-1 gap-4 lg:grid-cols-[minmax(240px,280px)_repeat(3,minmax(0,1fr))_minmax(320px,400px)] lg:items-start lg:gap-x-4 lg:[--bazaar-card-w:calc((100%-280px-400px-4*1rem)/3)]";
-const CENTER_COLS = ["lg:col-start-2", "lg:col-start-3", "lg:col-start-4"] as const;
-const SIDE_CARD_W = "lg:w-[var(--bazaar-card-w)] lg:max-w-full lg:min-w-0";
+const BAZAAR_LAYOUT_CLASS =
+  "grid w-full grid-cols-1 gap-6 lg:grid-cols-[minmax(240px,280px)_minmax(0,1fr)_minmax(320px,400px)] lg:items-start lg:gap-x-4 lg:[--bazaar-card-w:calc((100%-280px-400px-2*1rem)/3)]";
+const CENTER_ROW_CLASS = "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3";
+const SIDE_CARD_W = "w-full lg:w-[var(--bazaar-card-w)] lg:max-w-full lg:min-w-0";
 
-function BazaarCardSlot({
-  salon,
-  side,
-}: {
-  salon: Salon;
-  side?: "left" | "right";
-}) {
+function BazaarSideCard({ salon, align }: { salon: Salon; align: "left" | "right" }) {
   return (
     <div
       className={cn(
         "min-w-0",
-        side === "left" && "lg:flex lg:justify-end",
-        side === "right" && "lg:flex lg:justify-start",
+        align === "left" && "lg:flex lg:justify-end",
+        align === "right" && "lg:flex lg:justify-start",
       )}
     >
-      <div className={cn("w-full", side && SIDE_CARD_W)}>
+      <div className={SIDE_CARD_W}>
         <DesktopSalonCard salon={salon} variant="marketplace" />
       </div>
     </div>
   );
 }
 
-type BazaarSalonRow = {
-  left: Salon | null;
-  center: Salon[];
-  right: Salon | null;
-};
+function CenterSalonRow({ salons }: { salons: Salon[] }) {
+  if (salons.length === 0) return null;
 
-/** 1-qator markazda 3 ta; keyingi qatorlarda chap | 3 markaz | o‘ng tartibida taqsimlanadi. */
-function splitBazaarSalonRows(filtered: Salon[]): BazaarSalonRow[] {
-  const rows: BazaarSalonRow[] = [];
+  return (
+    <div className={CENTER_ROW_CLASS}>
+      {salons.map((salon) => (
+        <div key={salon.id} className="min-w-0">
+          <DesktopSalonCard salon={salon} variant="marketplace" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** 1-qator markazda 3 ta; keyin chap ustun | 3 markaz | o‘ng ustun tartibida taqsimlanadi. */
+function splitBazaarSalons(filtered: Salon[]) {
+  const topRow = filtered.slice(0, 3);
+  const leftStack: Salon[] = [];
+  const rightStack: Salon[] = [];
+  const centerRows: Salon[][] = [];
+
   let rest = filtered.slice(3);
-
   while (rest.length > 0) {
     if (rest.length >= 5) {
-      rows.push({ left: rest[0], center: rest.slice(1, 4), right: rest[4] });
+      leftStack.push(rest[0]!);
+      centerRows.push(rest.slice(1, 4));
+      rightStack.push(rest[4]!);
       rest = rest.slice(5);
       continue;
     }
 
-    rows.push({ left: rest[0] ?? null, center: rest.slice(1, 4), right: null });
+    leftStack.push(rest[0]!);
+    const center = rest.slice(1);
+    if (center.length) centerRows.push(center);
     break;
   }
 
-  return rows;
-}
-
-function SalonGridCells({ salons }: { salons: Salon[] }) {
-  return (
-    <>
-      {salons.map((salon, index) => (
-        <div key={salon.id} className={cn("min-w-0", CENTER_COLS[index])}>
-          <BazaarCardSlot salon={salon} />
-        </div>
-      ))}
-    </>
-  );
-}
-
-function BazaarSalonRow({ row }: { row: BazaarSalonRow }) {
-  return (
-    <div className={BAZAAR_ROW_CLASS}>
-      <div className="lg:col-start-1">
-        {row.left ? <BazaarCardSlot salon={row.left} side="left" /> : null}
-      </div>
-      <SalonGridCells salons={row.center} />
-      <div className="lg:col-start-5">
-        {row.right ? <BazaarCardSlot salon={row.right} side="right" /> : null}
-      </div>
-    </div>
-  );
+  return { topRow, leftStack, rightStack, centerRows };
 }
 
 export function HomeBazaarClassic({ data }: Props) {
   const { t } = useTranslation();
   const { filtered, mapSalons, loading } = data;
-  const topRowSalons = filtered.slice(0, 3);
-  const salonRows = splitBazaarSalonRows(filtered);
+  const { topRow, leftStack, rightStack, centerRows } = splitBazaarSalons(filtered);
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <BazaarPageTitle title={t("home.nearby")} count={filtered.length} />
-
-      <BazaarHeroBanner className="aspect-[21/9] max-h-[400px]" />
+      <BazaarHeroBanner />
 
       {/*
-        Har bir qator — 5 ustunli grid: filter/map yoki kartochka | 3 markaz | kartochka.
-        2-qator va keyingilari bir chiziqda: filter va map ostida ham kartochkalar.
+        3 ustun: filter + kartochkalar | markaz grid | map + kartochkalar.
+        "Салоны рядом" markaz ustunda, filter/map ostida salon kartochkalari.
       */}
-      <div className="flex w-full flex-col gap-6">
-        <div className={BAZAAR_ROW_CLASS}>
-          <div className="lg:col-start-1">
-            <BazaarFilterSidebar {...data} />
-          </div>
+      <div className={BAZAAR_LAYOUT_CLASS}>
+        <aside className="flex flex-col gap-4">
+          <BazaarFilterSidebar {...data} />
+          {!loading
+            ? leftStack.map((salon) => <BazaarSideCard key={salon.id} salon={salon} align="left" />)
+            : null}
+        </aside>
 
+        <section className="flex min-w-0 flex-col gap-4">
+          <BazaarPageTitle title={t("home.nearby")} count={filtered.length} className="mb-0" />
           {loading ? (
-            <div className="min-w-0 lg:col-span-3 lg:col-start-2">
-              <BazaarGridSkeleton cols={3} />
-            </div>
+            <BazaarGridSkeleton cols={3} />
           ) : (
-            <SalonGridCells salons={topRowSalons} />
+            <>
+              <CenterSalonRow salons={topRow} />
+              {centerRows.map((row, index) => (
+                <CenterSalonRow key={index} salons={row} />
+              ))}
+            </>
           )}
+        </section>
 
-          <div className="lg:col-start-5">
-            <BazaarMapPanel salons={mapSalons} salonCount={filtered.length} />
-          </div>
-        </div>
-
-        {!loading
-          ? salonRows.map((row, index) => <BazaarSalonRow key={index} row={row} />)
-          : null}
+        <aside className="flex flex-col gap-4">
+          <BazaarMapPanel salons={mapSalons} />
+          {!loading
+            ? rightStack.map((salon) => <BazaarSideCard key={salon.id} salon={salon} align="right" />)
+            : null}
+        </aside>
       </div>
     </div>
   );
