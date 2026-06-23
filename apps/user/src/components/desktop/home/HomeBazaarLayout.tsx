@@ -22,7 +22,6 @@ const GRID_SLOTS = [
   "lg:col-start-2 lg:row-start-1",
   "lg:col-start-3 lg:row-start-1",
   "lg:col-start-4 lg:row-start-1",
-  "lg:col-start-5 lg:row-start-1",
   "lg:col-start-2 lg:row-start-2",
   "lg:col-start-3 lg:row-start-2",
   "lg:col-start-4 lg:row-start-2",
@@ -30,6 +29,7 @@ const GRID_SLOTS = [
   "lg:col-start-2 lg:row-start-3",
   "lg:col-start-3 lg:row-start-3",
   "lg:col-start-4 lg:row-start-3",
+  "lg:col-start-5 lg:row-start-3",
 ] as const;
 
 function SalonGrid({ salons }: { salons: HomeData["filtered"] }) {
@@ -43,7 +43,7 @@ function SalonGrid({ salons }: { salons: HomeData["filtered"] }) {
 }
 
 /**
- * Banner → chapda filter (2 qator) + o'ngda 11 kartochka + pastki o'ng burchakda xarita.
+ * Banner → chapda filter (2 qator) + o'ngda kartochkalar + yuqori o'ngda xarita.
  */
 export function HomeBazaarLayout({ data }: Props) {
   const { t } = useTranslation();
@@ -55,7 +55,7 @@ export function HomeBazaarLayout({ data }: Props) {
   return (
     <div className="flex w-full flex-col gap-10">
       <div className="flex w-full justify-center">
-        <BazaarHeroBanner className="aspect-[4/1] max-h-[240px] w-full max-w-4xl" />
+        <BazaarHeroBanner className="aspect-[4/1] max-h-[280px] w-full max-w-5xl" />
       </div>
 
       <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5 lg:grid-rows-3 lg:items-stretch">
@@ -69,7 +69,7 @@ export function HomeBazaarLayout({ data }: Props) {
           </div>
         ))}
 
-        <div className="min-w-0 lg:col-start-5 lg:row-start-3">
+        <div className="min-w-0 lg:col-start-5 lg:row-start-1">
           <BazaarMapCard salons={mapSalons} salonCount={filtered.length} className="max-w-none" />
         </div>
       </div>
