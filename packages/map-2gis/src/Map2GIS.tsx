@@ -68,6 +68,8 @@ export type Map2GISProps = {
   userLocation?: { lat: number; lng: number } | null;
   onMapReady?: (handle: MapHandle) => void;
   autoFitMarkers?: boolean;
+  fitPadding?: { top?: number; right?: number; bottom?: number; left?: number };
+  fitMaxZoom?: number;
   className?: string;
   style?: React.CSSProperties;
 };
@@ -84,6 +86,8 @@ export function Map2GIS({
   userLocation = null,
   onMapReady,
   autoFitMarkers = true,
+  fitPadding,
+  fitMaxZoom,
   className,
   style,
 }: Map2GISProps) {
@@ -482,13 +486,16 @@ export function Map2GIS({
       map,
       mapglAPI,
       markers.map((m) => toMapGlCoords(m.lat, m.lng)),
-      { padding: { top: 72, right: 48, bottom: BOTTOM_PAD, left: 48 }, maxZoom: FIT_MAX_ZOOM },
+      {
+        padding: { top: 72, right: 48, bottom: BOTTOM_PAD, left: 48, ...fitPadding },
+        maxZoom: fitMaxZoom ?? FIT_MAX_ZOOM,
+      },
     );
     window.setTimeout(() => {
       skipViewportEmitRef.current = false;
       emitViewport();
     }, 450);
-  }, [markers, mapReady, autoFitMarkers]);
+  }, [markers, mapReady, autoFitMarkers, fitPadding, fitMaxZoom]);
 
   useEffect(() => {
     const el = containerRef.current;

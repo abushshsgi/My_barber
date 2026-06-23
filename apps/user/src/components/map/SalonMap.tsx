@@ -16,6 +16,8 @@ export function SalonMap({
   userLocation = null,
   onMapReady,
   autoFitMarkers = true,
+  fitPadding,
+  fitMaxZoom,
 }: {
   markers: SalonMapMarker[];
   selectedId?: string | null;
@@ -28,6 +30,8 @@ export function SalonMap({
   userLocation?: { lat: number; lng: number } | null;
   onMapReady?: (handle: SalonMapHandle) => void;
   autoFitMarkers?: boolean;
+  fitPadding?: { top?: number; right?: number; bottom?: number; left?: number };
+  fitMaxZoom?: number;
 }) {
   return (
     <Map2GIS
@@ -42,6 +46,8 @@ export function SalonMap({
       userLocation={userLocation}
       onMapReady={onMapReady}
       autoFitMarkers={autoFitMarkers}
+      fitPadding={fitPadding}
+      fitMaxZoom={fitMaxZoom}
     />
   );
 }

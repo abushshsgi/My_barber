@@ -7,7 +7,7 @@ import {
   BazaarFilterSidebar,
   BazaarGridSkeleton,
   BazaarHeroBanner,
-  BazaarMapCard,
+  BazaarMapPanel,
   BazaarPageTitle,
   BazaarWeekendDeals,
   SALON_GRID_CLASS,
@@ -16,7 +16,7 @@ import { useBazaarSections } from "./bazaar/useBazaarSections";
 
 type Props = { data: HomeData };
 
-const GRID_CARD_COUNT = 11;
+const GRID_CARD_COUNT = 10;
 
 const GRID_SLOTS = [
   "lg:col-start-2 lg:row-start-1",
@@ -25,7 +25,6 @@ const GRID_SLOTS = [
   "lg:col-start-2 lg:row-start-2",
   "lg:col-start-3 lg:row-start-2",
   "lg:col-start-4 lg:row-start-2",
-  "lg:col-start-5 lg:row-start-2",
   "lg:col-start-2 lg:row-start-3",
   "lg:col-start-3 lg:row-start-3",
   "lg:col-start-4 lg:row-start-3",
@@ -68,8 +67,13 @@ export function HomeBazaarLayout({ data }: Props) {
             </div>
           ))}
 
-          <div className="min-w-0 lg:col-start-5 lg:row-start-1">
-            <BazaarMapCard salons={mapSalons} salonCount={filtered.length} className="max-w-none" />
+          <div className="min-w-0 lg:col-start-5 lg:row-span-2 lg:row-start-1">
+            <BazaarMapPanel
+              variant="preview"
+              salons={mapSalons}
+              salonCount={filtered.length}
+              className="h-full min-h-[32rem] w-full"
+            />
           </div>
         </div>
 
