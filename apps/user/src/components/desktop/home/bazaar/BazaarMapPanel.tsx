@@ -77,10 +77,13 @@ export function BazaarMapPanel({ salons = [], className }: Props) {
           <div className="absolute inset-0 animate-pulse bg-surface-2" />
         )}
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background via-background/90 to-transparent shadow-[0_-16px_40px_rgba(255,255,255,0.92)]" />
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-[linear-gradient(to_top,#fff_0%,#fff_32%,rgba(255,255,255,0.96)_44%,rgba(255,255,255,0.55)_56%,rgba(255,255,255,0.12)_68%,transparent_80%)]"
+          aria-hidden
+        />
 
-        <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-10">
-          <span className="flex w-full items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-sm font-bold text-background shadow-lg transition group-hover:opacity-95">
+        <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-12">
+          <span className="relative z-10 flex w-full items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-sm font-bold text-background shadow-lg transition group-hover:opacity-95">
             {t("home.mapPreview.openMap", { defaultValue: "Xaritani ochish" })}
             <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </span>
