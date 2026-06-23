@@ -43,12 +43,12 @@ export function HomeBazaarLayout({ data }: Props) {
       <div className="flex w-full flex-col gap-8">
         <BazaarHeroBanner className="w-full rounded-2xl aspect-[21/9] max-h-[400px]" />
 
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[240px_minmax(0,1fr)_240px] lg:items-stretch">
-          <aside className="h-[420px]">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[300px_minmax(0,1fr)_340px] lg:items-stretch">
+          <aside className="h-[310px]">
             <BazaarFilterSidebar {...data} className="h-full" />
           </aside>
 
-          <section className="min-w-0 lg:h-[420px]">
+          <section className="min-w-0 lg:h-[310px]">
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:h-full lg:grid-rows-2">
               {gridSalons.map((salon) => (
                 <div key={salon.id} className="min-h-0 min-w-0 lg:h-full">
@@ -58,7 +58,7 @@ export function HomeBazaarLayout({ data }: Props) {
             </div>
           </section>
 
-          <aside className="h-[420px]">
+          <aside className="h-[310px]">
             <BazaarMapPanel
               variant="preview"
               salons={mapSalons}
