@@ -56,7 +56,7 @@ export function HomeBazaarLayout({ data }: Props) {
             </div>
           </section>
 
-          <aside className="h-[220px]">
+          <aside className="h-[380px]">
             <BazaarMapPanel
               variant="preview"
               salons={mapSalons}
