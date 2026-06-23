@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useState } from "react";
+import { z } from "zod";
 import { AuthLoginForm, AUTH_LOGIN_FORM_ID } from "@/components/auth/AuthLoginForm";
 import { AuthMobileStickyBar } from "@/components/auth/AuthMobileStickyBar";
 import { AuthShell } from "@/components/auth/AuthShell";
@@ -11,6 +12,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { apiFetch, setBarberTokens } from "@/lib/api";
 import { submitEarlyFlowSignup } from "@/lib/barber-signup-flow";
 import { checkBarberAvailability, parseFieldErrors } from "@/lib/auth-errors";
+import {
+  DEFAULT_AUTH_DESKTOP_VARIANT,
+  parseAuthDesktopVariant,
+  type AuthDesktopVariant,
+} from "@/lib/auth-desktop-variant";
 import {
   extractApiError,
   formatFetchError,
@@ -26,12 +32,26 @@ import { tabSlide } from "@/lib/motion-presets";
 import { formatUzPhoneE164 } from "@/lib/phone";
 import { saveSignupDraft } from "@/lib/signup-draft";
 
+const authSearchSchema = z.object({
+  desktop: z
+    .enum(["split", "glass", "editorial", "minimal", "studio"])
+    .optional()
+    .catch(DEFAULT_AUTH_DESKTOP_VARIANT),
+});
+
 export const Route = createFileRoute("/auth")({
+  validateSearch: authSearchSchema,
   component: AuthPage,
 });
 
 function AuthPage() {
-  const navigate = useNavigate();
+  const navigate = useNavigate({ from: Route.fullPath });
+  const { desktop = DEFAULT_AUTH_DESKTOP_VARIANT } = Route.useSearch();
+  const desktopVariant = parseAuthDesktopVariant(desktop);
+
+  const setDesktopVariant = (variant: AuthDesktopVariant) => {
+    void navigate({ search: (prev) => ({ ...prev, desktop: variant }), replace: true });
+  };
   const [tab, setTab] = useState<"login" | "signup">("login");
   const [signupStep, setSignupStep] = useState(0);
 
@@ -189,7 +209,13 @@ function AuthPage() {
 
   return (
     <TooltipProvider>
-      <AuthShell flow={tab === "signup" ? flow : null} tab={tab} signupStep={signupStep}>
+      <AuthShell
+        flow={tab === "signup" ? flow : null}
+        tab={tab}
+        signupStep={signupStep}
+        desktopVariant={desktopVariant}
+        onDesktopVariantChange={setDesktopVariant}
+      >
         <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid h-12 w-full grid-cols-2 rounded-xl md:h-11">
             <TabsTrigger
