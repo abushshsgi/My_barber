@@ -1,6 +1,8 @@
 import type { FaceShapeKey, HairTypeKey } from "@/components/ai-style/ai-style-shared";
+import type { AudienceFilter } from "@/hooks/use-audience";
 import type { AgeGroup } from "@/lib/age-groups";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
+import { HOME_SALON_ROW_PREVIEW } from "@/lib/home-sections";
 import { loadFaceProfile, loadFaceProfileHistory } from "@/lib/face-profile";
 import type { HairstyleEntry } from "@/lib/hairstyles/catalog";
 import {
@@ -83,6 +85,37 @@ export function readTrendingFaceHints(): Pick<TrendingContext, "faceShape" | "ha
  * 2) Kategoriya bo‘yicha xilma-xillik
  * 3) Erkaklar uchun har slot — boshqa persona (turli odamlar, turli uslublar)
  */
+/** Home explore qatori — audience bo'yicha erkak/ayol personaj rasmlari; «all» da aralash. */
+export function pickHomeExploreRowStyles(
+  entries: HairstyleEntry[],
+  ctx: TrendingContext & { audience: AudienceFilter },
+  limit = HOME_SALON_ROW_PREVIEW,
+): TrendingHairstyle[] {
+  if (ctx.audience === "men" || ctx.audience === "women") {
+    const pool = entries.filter((entry) => entry.audience === ctx.audience);
+    return pickTrendingStyles(pool, { ...ctx, limit });
+  }
+
+  const menCount = Math.ceil(limit / 2);
+  const womenCount = limit - menCount;
+  const menStyles = pickTrendingStyles(
+    entries.filter((entry) => entry.audience === "men"),
+    { ...ctx, limit: menCount },
+  );
+  const womenStyles = pickTrendingStyles(
+    entries.filter((entry) => entry.audience === "women"),
+    { ...ctx, limit: womenCount },
+  );
+
+  const merged: TrendingHairstyle[] = [];
+  const max = Math.max(menStyles.length, womenStyles.length);
+  for (let i = 0; i < max && merged.length < limit; i++) {
+    if (menStyles[i] && merged.length < limit) merged.push(menStyles[i]!);
+    if (womenStyles[i] && merged.length < limit) merged.push(womenStyles[i]!);
+  }
+  return merged;
+}
+
 export function pickTrendingStyles(
   entries: HairstyleEntry[],
   ctx: TrendingContext = {},

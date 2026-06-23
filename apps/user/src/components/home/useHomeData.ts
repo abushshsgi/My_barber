@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Category, Offer } from "@/lib/mock-data";
-import { pickTrendingStyles, readTrendingFaceHints } from "@/lib/hairstyles/trending";
+import {
+  pickHomeExploreRowStyles,
+  pickTrendingStyles,
+  readTrendingFaceHints,
+} from "@/lib/hairstyles/trending";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useUserAgeGroup } from "@/hooks/use-me";
 import {
@@ -79,6 +83,16 @@ export function useHomeData() {
     });
   }, [hairstyles, ageGroup, personaId, audience]);
 
+  const exploreRow = useMemo(() => {
+    const hints = readTrendingFaceHints();
+    return pickHomeExploreRowStyles(hairstyles, {
+      ...hints,
+      ageGroup,
+      audience,
+      preferredPersonaId: audience === "men" ? personaId : null,
+    });
+  }, [hairstyles, ageGroup, personaId, audience]);
+
   const topOffer = useMemo((): Offer | undefined => undefined, []);
 
   const featuredSalons = useMemo(() => filtered.slice(0, 4), [filtered]);
@@ -99,6 +113,7 @@ export function useHomeData() {
     filtered,
     mapSalons,
     trending,
+    exploreRow,
     topOffer,
     featuredSalons,
     personalized,

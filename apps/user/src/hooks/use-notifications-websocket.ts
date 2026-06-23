@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { notificationWebSocketUrl } from "@mybarber/shared/ws-url";
 import { getUserAccessToken } from "@/lib/api/client";
 import { notificationsQueryKeyBase } from "@/hooks/use-notifications-api";
@@ -7,6 +7,76 @@ import { notificationsQueryKeyBase } from "@/hooks/use-notifications-api";
 type WsPayload = {
   type?: string;
 };
+
+/**
+ * Shared singleton socket so multiple consumers (and React StrictMode's
+ * mount/unmount/mount cycle in dev) reuse a single connection instead of
+ * opening/closing sockets mid-handshake — which produced the noisy
+ * "WebSocket is closed before the connection is established" console errors.
+ */
+let socket: WebSocket | null = null;
+let activeToken: string | null = null;
+let refCount = 0;
+let closeTimer: ReturnType<typeof setTimeout> | null = null;
+const clients = new Set<QueryClient>();
+
+function invalidateAll() {
+  for (const qc of clients) {
+    void qc.invalidateQueries({ queryKey: notificationsQueryKeyBase });
+  }
+}
+
+function openSocket(token: string) {
+  if (socket && activeToken === token) return;
+  if (socket) {
+    try {
+      socket.close();
+    } catch {
+      /* noop */
+    }
+    socket = null;
+  }
+
+  activeToken = token;
+  try {
+    socket = new WebSocket(notificationWebSocketUrl(token));
+  } catch {
+    socket = null;
+    return;
+  }
+
+  socket.onmessage = (evt) => {
+    try {
+      const payload = JSON.parse(evt.data) as WsPayload;
+      if (payload.type === "notification" || payload.type === "notifications") {
+        invalidateAll();
+      }
+    } catch {
+      invalidateAll();
+    }
+  };
+
+  socket.onclose = () => {
+    if (socket && socket.readyState === WebSocket.CLOSED) {
+      socket = null;
+      activeToken = null;
+    }
+  };
+}
+
+function teardownSocket() {
+  const current = socket;
+  socket = null;
+  activeToken = null;
+  if (!current) return;
+  current.onmessage = null;
+  current.onclose = null;
+  try {
+    current.close();
+  } catch {
+    /* noop */
+  }
+}
 
 /** Real-time notification refresh when Django Channels + REDIS_URL are enabled. */
 export function useNotificationsWebSocket() {
@@ -16,26 +86,26 @@ export function useNotificationsWebSocket() {
     const token = getUserAccessToken();
     if (!token) return;
 
-    let ws: WebSocket | null = null;
-    try {
-      ws = new WebSocket(notificationWebSocketUrl(token));
-    } catch {
-      return;
+    if (closeTimer) {
+      clearTimeout(closeTimer);
+      closeTimer = null;
     }
 
-    ws.onmessage = (evt) => {
-      try {
-        const payload = JSON.parse(evt.data) as WsPayload;
-        if (payload.type === "notification" || payload.type === "notifications") {
-          void qc.invalidateQueries({ queryKey: notificationsQueryKeyBase });
-        }
-      } catch {
-        void qc.invalidateQueries({ queryKey: notificationsQueryKeyBase });
-      }
-    };
+    clients.add(qc);
+    refCount += 1;
+    openSocket(token);
 
     return () => {
-      ws?.close();
+      clients.delete(qc);
+      refCount = Math.max(0, refCount - 1);
+      if (refCount === 0) {
+        // Defer teardown so StrictMode's immediate remount reuses the socket
+        // instead of closing it before the handshake completes.
+        closeTimer = setTimeout(() => {
+          if (refCount === 0) teardownSocket();
+          closeTimer = null;
+        }, 1000);
+      }
     };
   }, [qc]);
 }

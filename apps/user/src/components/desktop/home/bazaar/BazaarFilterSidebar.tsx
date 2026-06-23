@@ -24,7 +24,12 @@ export function BazaarFilterSidebar({
   };
 
   return (
-    <div className={cn("flex h-full flex-col rounded-2xl border border-border bg-card p-4 shadow-sm", className)}>
+    <div
+      className={cn(
+        "flex h-full flex-col rounded-2xl border border-[#d5dde8] bg-[#e9eef6] p-4 shadow-sm",
+        className,
+      )}
+    >
       <p className="flex shrink-0 items-center gap-2 text-sm font-bold">
         <SlidersHorizontal className="h-4 w-4 text-foreground" />
         {t("home.filters.title")}
@@ -34,7 +39,7 @@ export function BazaarFilterSidebar({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder={t("common.search")}
-        className="mt-3 w-full shrink-0 rounded-xl border border-border bg-surface/50 px-3 py-2.5 text-sm focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
+        className="mt-3 w-full shrink-0 rounded-xl border border-[#cfd8e6] bg-white/80 px-3 py-2.5 text-sm focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
       />
       <div className="mt-4 min-h-0 flex-1 space-y-1 overflow-y-auto">
         {visibleCategoryKeys.map((key) => (
@@ -46,7 +51,7 @@ export function BazaarFilterSidebar({
               "flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors",
               effectiveCat === key
                 ? "bg-foreground text-background shadow-sm"
-                : "text-foreground hover:bg-surface",
+                : "text-foreground hover:bg-white/60",
             )}
           >
             {t(`home.categories.${key}`)}
@@ -56,7 +61,7 @@ export function BazaarFilterSidebar({
       <Link
         to="/map"
         search={mapSearch}
-        className="mt-4 flex w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-border bg-surface/50 px-3 py-2.5 text-sm font-bold transition-colors hover:border-foreground/30 hover:bg-surface"
+        className="mt-4 flex w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-[#cfd8e6] bg-white/70 px-3 py-2.5 text-sm font-bold transition-colors hover:border-foreground/30 hover:bg-white"
       >
         {t("nav.more")}
         <ArrowRight className="h-4 w-4" />

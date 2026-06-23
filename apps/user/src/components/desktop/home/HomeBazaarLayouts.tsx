@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import type { HomeData } from "@/components/home/useHomeData";
 import { DesktopSalonCard } from "@/components/desktop/ui/DesktopSalonCard";
 import { cn } from "@/lib/utils";
@@ -7,8 +8,10 @@ import {
   BazaarGridSkeleton,
   BazaarHeroBanner,
   BazaarMapPanel,
+  BazaarPageTitle,
 } from "./bazaar/BazaarParts";
 import { BazaarCategoryStrip } from "./bazaar/BazaarCategoryStrip";
+import { BazaarExploreRowSection, BazaarExploreRowSectionSkeleton } from "./bazaar/BazaarExploreRowSection";
 import { BazaarSalonRowSection, BazaarSalonRowSectionSkeleton } from "./bazaar/BazaarSalonRowSection";
 import {
   HOME_CATEGORY_ROW_AFTER,
@@ -31,7 +34,7 @@ function SalonGridCells({ salons }: { salons: Salon[] }) {
   return (
     <>
       {salons.map((salon, index) => (
-        <div key={salon.id} className={cn("min-w-0 pb-3", CENTER_COLS[index])}>
+        <div key={salon.id} className={cn("min-w-0", CENTER_COLS[index])}>
           <div className={BAZAAR_ELEVATED_TILE_H}>
             <DesktopSalonCard salon={salon} variant="marketplace" elevated className="h-full" />
           </div>
@@ -42,7 +45,8 @@ function SalonGridCells({ salons }: { salons: Salon[] }) {
 }
 
 export function HomeBazaarClassic({ data }: Props) {
-  const { filtered, mapSalons, loading } = data;
+  const { t } = useTranslation();
+  const { filtered, mapSalons, loading, exploreRow } = data;
   const topRowSalons = filtered.slice(0, 3);
   const salonSections = useMemo(() => buildHomeSalonSections(filtered), [filtered]);
 
@@ -51,6 +55,8 @@ export function HomeBazaarClassic({ data }: Props) {
       <BazaarHeroBanner />
 
       <div className="flex w-full flex-col gap-4">
+        <BazaarPageTitle title={t("home.nearby")} count={filtered.length} className="mb-0" />
+
         <div className={BAZAAR_TOP_ROW_CLASS}>
           <div className="lg:sticky lg:top-[5.75rem] lg:col-start-1">
             <BazaarFilterSidebar {...data} className={cn("w-full", BAZAAR_ELEVATED_TILE_H)} />
@@ -64,9 +70,13 @@ export function HomeBazaarClassic({ data }: Props) {
             <SalonGridCells salons={topRowSalons} />
           )}
 
-          <div className="min-w-0 pb-3 lg:col-start-5">
+          <div className="min-w-0 lg:col-start-5">
             <div className={BAZAAR_ELEVATED_TILE_H}>
-              <BazaarMapPanel salons={mapSalons} className="h-full w-full" />
+              <BazaarMapPanel
+                salons={mapSalons}
+                nearbyCount={filtered.length}
+                className="h-full w-full"
+              />
             </div>
           </div>
         </div>
@@ -75,7 +85,17 @@ export function HomeBazaarClassic({ data }: Props) {
           <div key={section.id}>
             <div className={BAZAAR_ROW_CLASS}>
               {loading ? (
-                <BazaarSalonRowSectionSkeleton />
+                section.variant === "explore" ? (
+                  <BazaarExploreRowSectionSkeleton />
+                ) : (
+                  <BazaarSalonRowSectionSkeleton />
+                )
+              ) : section.variant === "explore" ? (
+                <BazaarExploreRowSection
+                  titleKey={section.titleKey}
+                  styles={exploreRow}
+                  viewAllTo={section.viewAllTo}
+                />
               ) : (
                 <BazaarSalonRowSection
                   titleKey={section.titleKey}

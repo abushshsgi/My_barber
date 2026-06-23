@@ -41,7 +41,7 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false, cl
           className={cn(
             "relative w-full shrink-0 overflow-hidden bg-surface",
             elevated
-              ? "aspect-[4/3] rounded-2xl shadow-[0_22px_46px_-16px_rgba(0,0,0,0.55),0_10px_20px_-10px_rgba(0,0,0,0.35)] transition-shadow group-hover:shadow-[0_28px_54px_-14px_rgba(0,0,0,0.62),0_14px_24px_-10px_rgba(0,0,0,0.4)]"
+              ? "aspect-[4/3] rounded-2xl shadow-[0_18px_40px_-14px_rgba(0,0,0,0.45),0_8px_18px_-10px_rgba(0,0,0,0.3)] transition-shadow group-hover:shadow-[0_22px_46px_-12px_rgba(0,0,0,0.5),0_10px_22px_-10px_rgba(0,0,0,0.35)]"
               : "aspect-[5/4] rounded-xl",
           )}
         >
@@ -79,7 +79,7 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false, cl
           className={cn(
             "space-y-0.5",
             elevated
-              ? "flex min-h-0 flex-1 flex-col justify-start px-0.5 pb-1 pt-3"
+              ? "flex min-h-0 flex-1 flex-col justify-start px-0.5 pb-0 pt-3"
               : "mt-3 min-h-[4.75rem]",
           )}
         >

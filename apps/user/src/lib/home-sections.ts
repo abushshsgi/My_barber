@@ -7,6 +7,7 @@ export type HomeSalonSection = {
   titleKey: string;
   salons: Salon[];
   viewAllTo: string;
+  variant?: "salons" | "explore";
 };
 
 export const HOME_CATEGORY_KEYS: Category[] = ["barber", "beauty", "nails", "spa"];
@@ -27,10 +28,11 @@ export function buildHomeSalonSections(filtered: Salon[]): HomeSalonSection[] {
       viewAllTo: "/top",
     },
     {
-      id: "nearby",
-      titleKey: "home.nearby",
-      salons: rest,
-      viewAllTo: "/map",
+      id: "explore",
+      titleKey: "nav.explore",
+      salons: [],
+      viewAllTo: "/explore",
+      variant: "explore",
     },
     {
       id: "picked",
@@ -46,7 +48,9 @@ export function buildHomeSalonSections(filtered: Salon[]): HomeSalonSection[] {
     },
   ];
 
-  return sections.filter((section) => section.salons.length > 0);
+  return sections.filter(
+    (section) => section.variant === "explore" || section.salons.length > 0,
+  );
 }
 
 export type HomeDataSlice = Pick<HomeData, "filtered">;

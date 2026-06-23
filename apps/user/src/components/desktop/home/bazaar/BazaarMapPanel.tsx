@@ -32,16 +32,18 @@ function toMarkers(salons: MapSalon[]): SalonMapMarker[] {
 
 type Props = {
   salons?: MapSalon[];
+  nearbyCount?: number;
   className?: string;
 };
 
-export function BazaarMapPanel({ salons = [], className }: Props) {
+export function BazaarMapPanel({ salons = [], nearbyCount, className }: Props) {
   const { t } = useTranslation();
   const ctx = useRecommendContext();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   const markers = useMemo(() => toMarkers(salons), [salons]);
+  const count = nearbyCount ?? salons.length;
 
   const userLocation = useMemo(() => {
     if (ctx.lat == null || ctx.lng == null) return null;
@@ -84,7 +86,7 @@ export function BazaarMapPanel({ salons = [], className }: Props) {
 
         <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-10">
           <p className="relative z-10 mb-2.5 text-center text-sm font-bold text-foreground">
-            {t("home.mapPreview.nearbyCount", { count: salons.length })}
+            {t("home.mapPreview.nearbyCount", { count })}
           </p>
           <span className="relative z-10 flex w-full items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-sm font-bold text-background shadow-lg transition group-hover:opacity-95">
             {t("home.mapPreview.openMap", { defaultValue: "Xaritani ochish" })}
