@@ -36,7 +36,7 @@ export function BazaarFilterSidebar({
         placeholder={t("common.search")}
         className="mt-3 w-full shrink-0 rounded-xl border border-border bg-surface/50 px-3 py-2.5 text-sm focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
       />
-      <div className="mt-4 min-h-0 flex-1 space-y-1">
+      <div className="mt-4 min-h-0 flex-1 space-y-1 overflow-y-auto">
         {visibleCategoryKeys.map((key) => (
           <button
             key={key}

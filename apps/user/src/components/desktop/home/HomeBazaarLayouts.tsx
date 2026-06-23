@@ -24,7 +24,11 @@ const BAZAAR_ROW_CLASS =
   "grid w-full grid-cols-1 gap-4 lg:grid-cols-[minmax(200px,240px)_repeat(3,minmax(0,1fr))_minmax(300px,380px)] lg:items-start lg:gap-x-4 lg:[--bazaar-card-w:calc((100%-240px-380px-4*1rem)/3)]";
 
 const BAZAAR_TOP_ROW_CLASS =
-  "grid w-full grid-cols-1 gap-4 lg:grid-cols-[minmax(200px,220px)_repeat(3,minmax(0,1fr))_minmax(280px,340px)] lg:items-stretch lg:gap-x-3 lg:[--bazaar-card-w:calc((100%-220px-340px-3*0.75rem)/3)]";
+  "grid w-full grid-cols-1 gap-4 lg:grid-cols-[minmax(200px,220px)_repeat(3,minmax(0,1fr))_minmax(280px,340px)] lg:items-start lg:gap-x-3 lg:[--bazaar-card-w:calc((100%-220px-340px-3*0.75rem)/3)]";
+
+/** Matches elevated marketplace card: 4:3 image + text block + shadow gap */
+const BAZAAR_TOP_ROW_HEIGHT =
+  "lg:h-[calc(var(--bazaar-card-w)*0.75+5.75rem+0.75rem)]";
 const CENTER_COLS = ["lg:col-start-2", "lg:col-start-3", "lg:col-start-4"] as const;
 
 function SalonGridCells({ salons }: { salons: Salon[] }) {
@@ -54,20 +58,25 @@ export function HomeBazaarClassic({ data }: Props) {
 
       <div className="flex w-full flex-col gap-4">
         <div className={BAZAAR_TOP_ROW_CLASS}>
-          <div className="h-full min-h-0 lg:sticky lg:top-[5.75rem] lg:col-start-1 lg:self-stretch">
+          <div
+            className={cn(
+              "lg:sticky lg:top-[5.75rem] lg:col-start-1",
+              BAZAAR_TOP_ROW_HEIGHT,
+            )}
+          >
             <BazaarFilterSidebar {...data} className="h-full" />
           </div>
 
           {loading ? (
-            <div className="min-w-0 lg:col-span-3 lg:col-start-2 lg:self-stretch">
+            <div className="min-w-0 lg:col-span-3 lg:col-start-2">
               <BazaarGridSkeleton cols={3} />
             </div>
           ) : (
             <SalonGridCells salons={topRowSalons} />
           )}
 
-          <div className="flex min-h-0 flex-col lg:col-start-5 lg:self-stretch">
-            <BazaarMapPanel salons={mapPreviewSalons} className="h-full min-h-[300px] flex-1" />
+          <div className={cn("lg:col-start-5", BAZAAR_TOP_ROW_HEIGHT)}>
+            <BazaarMapPanel salons={mapPreviewSalons} className="h-full" />
           </div>
         </div>
 

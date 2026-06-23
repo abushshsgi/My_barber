@@ -53,7 +53,7 @@ export function BazaarMapPanel({ salons = [], className }: Props) {
     <Link
       to="/map"
       className={cn(
-        "group relative flex h-full min-h-[300px] flex-col overflow-hidden rounded-2xl border border-border bg-card",
+        "group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card",
         "shadow-[0_10px_36px_rgba(15,15,15,0.08)] transition-all hover:shadow-[0_14px_44px_rgba(15,15,15,0.12)]",
         className,
       )}
