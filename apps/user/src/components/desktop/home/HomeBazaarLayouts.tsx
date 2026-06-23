@@ -24,10 +24,10 @@ function SalonGrid({ salons }: { salons: HomeData["filtered"] }) {
 export function HomeBazaarClassic({ data }: Props) {
   const { t } = useTranslation();
   const { filtered, mapSalons, loading } = data;
-  const topSalon = filtered[0];
-  const sideSalonLeft = filtered.length > 1 ? filtered[1] : undefined;
-  const sideSalonRight = filtered.length > 2 ? filtered[2] : undefined;
-  const gridSalons = filtered.length > 3 ? filtered.slice(3) : [];
+  const topRowSalons = filtered.slice(0, 3);
+  const sideSalonLeft = filtered.length > 3 ? filtered[3] : undefined;
+  const sideSalonRight = filtered.length > 4 ? filtered[4] : undefined;
+  const gridSalons = filtered.length > 5 ? filtered.slice(5) : [];
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -36,7 +36,7 @@ export function HomeBazaarClassic({ data }: Props) {
       <BazaarHeroBanner className="aspect-[21/9] max-h-[400px]" />
 
       {/*
-        1-qator: filter (chap) + top kartochka (o'rta) + xarita (o'ng).
+        1-qator: filter (chap) + 3 ta kartochka (o'rta) + xarita (o'ng).
         2-qator: chap kartochka | markaz grid | o'ng kartochka.
       */}
       <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-[minmax(240px,280px)_minmax(0,1fr)_minmax(320px,400px)] xl:grid-rows-[auto_auto] xl:items-start xl:gap-x-8 xl:gap-y-6">
@@ -44,9 +44,13 @@ export function HomeBazaarClassic({ data }: Props) {
           <BazaarFilterSidebar {...data} />
         </div>
 
-        {topSalon ? (
+        {topRowSalons.length > 0 ? (
           <div className="min-w-0 xl:col-start-2 xl:row-start-1">
-            <DesktopSalonCard salon={topSalon} variant="marketplace" />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {topRowSalons.map((salon) => (
+                <DesktopSalonCard key={salon.id} salon={salon} variant="marketplace" />
+              ))}
+            </div>
           </div>
         ) : null}
 
