@@ -13,6 +13,7 @@ import { apiFetch, setBarberTokens } from "@/lib/api";
 import { submitEarlyFlowSignup } from "@/lib/barber-signup-flow";
 import { checkBarberAvailability, parseFieldErrors } from "@/lib/auth-errors";
 import {
+  AUTH_DESKTOP_VARIANT_IDS,
   DEFAULT_AUTH_DESKTOP_VARIANT,
   parseAuthDesktopVariant,
   type AuthDesktopVariant,
@@ -33,10 +34,7 @@ import { formatUzPhoneE164 } from "@/lib/phone";
 import { saveSignupDraft } from "@/lib/signup-draft";
 
 const authSearchSchema = z.object({
-  desktop: z
-    .enum(["split", "glass", "editorial", "minimal", "studio"])
-    .optional()
-    .catch(DEFAULT_AUTH_DESKTOP_VARIANT),
+  desktop: z.enum(AUTH_DESKTOP_VARIANT_IDS).optional().catch(DEFAULT_AUTH_DESKTOP_VARIANT),
 });
 
 export const Route = createFileRoute("/auth")({

@@ -80,8 +80,13 @@ export function AuthShell({
       </div>
 
       {/* Desktop — 5 layout variant */}
-      <div className="hidden md:block md:pb-28">
-        <AuthDesktopLayout variant={desktopVariant} flow={flow}>
+      <div className="hidden md:block md:pb-36">
+        <AuthDesktopLayout
+          variant={desktopVariant}
+          flow={flow}
+          tab={tab}
+          signupStep={signupStep}
+        >
           {children}
         </AuthDesktopLayout>
         <AuthDesktopVariantPicker value={desktopVariant} onChange={onDesktopVariantChange} />

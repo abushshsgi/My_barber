@@ -7,45 +7,60 @@ type Props = {
   onChange: (variant: AuthDesktopVariant) => void;
 };
 
-/** Desktop /auth — layout tanlash (vaqtinchalik preview). */
+/** Desktop /auth — 15 ta layout preview (faqat md+). */
 export function AuthDesktopVariantPicker({ value, onChange }: Props) {
-  return (
-    <div
-      className="pointer-events-none fixed inset-x-0 bottom-6 z-[60] hidden justify-center px-4 md:flex"
-      aria-label="Desktop auth layout preview"
-    >
-      <div className="pointer-events-auto flex max-w-full flex-col items-center gap-2">
-        <p className="rounded-full bg-zinc-900/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-300 backdrop-blur-md">
-          Desktop layout preview — yoqqanini tanlang
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-1.5 rounded-2xl border border-white/10 bg-zinc-950/90 p-1.5 shadow-2xl backdrop-blur-xl">
-          {AUTH_DESKTOP_VARIANTS.map((variant) => {
-            const active = value === variant.id;
-            return (
-              <button
-                key={variant.id}
-                type="button"
-                title={variant.desc}
-                onClick={() => onChange(variant.id)}
+  const editorial = AUTH_DESKTOP_VARIANTS.filter((v) => v.family === "editorial");
+  const studio = AUTH_DESKTOP_VARIANTS.filter((v) => v.family === "studio");
+  const classic = AUTH_DESKTOP_VARIANTS.filter((v) => v.family === "classic");
+
+  const renderGroup = (title: string, items: typeof AUTH_DESKTOP_VARIANTS) => (
+    <div className="flex flex-col gap-1">
+      <p className="px-1 text-[9px] font-bold uppercase tracking-[0.14em] text-zinc-500">{title}</p>
+      <div className="flex flex-wrap gap-1">
+        {items.map((variant) => {
+          const active = value === variant.id;
+          return (
+            <button
+              key={variant.id}
+              type="button"
+              title={variant.desc}
+              onClick={() => onChange(variant.id)}
+              className={cn(
+                "rounded-lg px-2.5 py-1.5 text-left transition-colors",
+                active
+                  ? "bg-amber-400 text-zinc-950"
+                  : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white",
+              )}
+            >
+              <span className="block text-[10px] font-bold leading-none">{variant.label}</span>
+              <span
                 className={cn(
-                  "rounded-xl px-3 py-2 text-left transition-colors",
-                  active
-                    ? "bg-amber-400 text-zinc-950"
-                    : "text-zinc-300 hover:bg-white/10 hover:text-white",
+                  "mt-0.5 block max-w-[88px] truncate text-[8px] font-medium",
+                  active ? "text-zinc-800" : "text-zinc-500",
                 )}
               >
-                <span className="block text-[11px] font-bold leading-none">{variant.label}</span>
-                <span
-                  className={cn(
-                    "mt-0.5 block text-[9px] font-medium leading-tight",
-                    active ? "text-zinc-800/80" : "text-zinc-500",
-                  )}
-                >
-                  {variant.desc}
-                </span>
-              </button>
-            );
-          })}
+                {variant.desc}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  return (
+    <div
+      className="pointer-events-none fixed inset-x-0 bottom-4 z-[60] hidden justify-center px-3 md:flex"
+      aria-label="Desktop auth layout preview"
+    >
+      <div className="pointer-events-auto max-h-[38vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-white/10 bg-zinc-950/95 p-3 shadow-2xl backdrop-blur-xl">
+        <p className="mb-2 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-400">
+          Desktop layout · 15 variant · onboarding bilan
+        </p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {renderGroup("Editorial (03 yoqgan)", editorial)}
+          {renderGroup("Studio (05 yoqgan)", studio)}
+          {renderGroup("Boshqa", classic)}
         </div>
       </div>
     </div>
