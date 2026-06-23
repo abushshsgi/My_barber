@@ -21,8 +21,8 @@ export function DesktopSalonCard({ salon, variant = "grid" }: Props) {
 
   if (variant === "marketplace") {
     return (
-      <Link to="/salon/$id" params={{ id: salon.id }} className="group block">
-        <div className="relative aspect-[5/4] overflow-hidden rounded-xl bg-surface">
+      <Link to="/salon/$id" params={{ id: salon.id }} className="group block h-full">
+        <div className="relative aspect-[5/4] w-full overflow-hidden rounded-xl bg-surface">
           <img
             src={cover}
             alt=""
@@ -49,7 +49,7 @@ export function DesktopSalonCard({ salon, variant = "grid" }: Props) {
             </span>
           ) : null}
         </div>
-        <div className="mt-3 space-y-0.5">
+        <div className="mt-3 min-h-[4.75rem] space-y-0.5">
           <div className="flex items-start justify-between gap-2">
             <h3 className="truncate text-[15px] font-semibold leading-snug">{salon.name}</h3>
             <span className="flex shrink-0 items-center gap-0.5 text-[15px] font-normal">

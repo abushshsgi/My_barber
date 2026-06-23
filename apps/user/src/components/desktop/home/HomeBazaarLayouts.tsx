@@ -14,8 +14,31 @@ type Props = { data: HomeData };
 type Salon = HomeData["filtered"][number];
 
 const BAZAAR_ROW_CLASS =
-  "grid w-full grid-cols-1 gap-4 lg:grid-cols-[minmax(240px,280px)_repeat(3,minmax(0,1fr))_minmax(320px,400px)] lg:items-start lg:gap-x-4";
+  "grid w-full grid-cols-1 gap-4 lg:grid-cols-[minmax(240px,280px)_repeat(3,minmax(0,1fr))_minmax(320px,400px)] lg:items-start lg:gap-x-4 lg:[--bazaar-card-w:calc((100%-280px-400px-4*1rem)/3)]";
 const CENTER_COLS = ["lg:col-start-2", "lg:col-start-3", "lg:col-start-4"] as const;
+const SIDE_CARD_W = "lg:w-[var(--bazaar-card-w)] lg:max-w-full lg:min-w-0";
+
+function BazaarCardSlot({
+  salon,
+  side,
+}: {
+  salon: Salon;
+  side?: "left" | "right";
+}) {
+  return (
+    <div
+      className={cn(
+        "min-w-0",
+        side === "left" && "lg:flex lg:justify-end",
+        side === "right" && "lg:flex lg:justify-start",
+      )}
+    >
+      <div className={cn("w-full", side && SIDE_CARD_W)}>
+        <DesktopSalonCard salon={salon} variant="marketplace" />
+      </div>
+    </div>
+  );
+}
 
 type BazaarSalonRow = {
   left: Salon | null;
@@ -47,7 +70,7 @@ function SalonGridCells({ salons }: { salons: Salon[] }) {
     <>
       {salons.map((salon, index) => (
         <div key={salon.id} className={cn("min-w-0", CENTER_COLS[index])}>
-          <DesktopSalonCard salon={salon} variant="marketplace" />
+          <BazaarCardSlot salon={salon} />
         </div>
       ))}
     </>
@@ -57,12 +80,12 @@ function SalonGridCells({ salons }: { salons: Salon[] }) {
 function BazaarSalonRow({ row }: { row: BazaarSalonRow }) {
   return (
     <div className={BAZAAR_ROW_CLASS}>
-      <div className="min-w-0 lg:col-start-1">
-        {row.left ? <DesktopSalonCard salon={row.left} variant="marketplace" /> : null}
+      <div className="lg:col-start-1">
+        {row.left ? <BazaarCardSlot salon={row.left} side="left" /> : null}
       </div>
       <SalonGridCells salons={row.center} />
-      <div className="min-w-0 lg:col-start-5">
-        {row.right ? <DesktopSalonCard salon={row.right} variant="marketplace" /> : null}
+      <div className="lg:col-start-5">
+        {row.right ? <BazaarCardSlot salon={row.right} side="right" /> : null}
       </div>
     </div>
   );
