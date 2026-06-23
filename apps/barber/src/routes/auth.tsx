@@ -25,31 +25,13 @@ import { tabSlide } from "@/lib/motion-presets";
 import { formatUzPhoneE164 } from "@/lib/phone";
 import { saveSignupDraft } from "@/lib/signup-draft";
 import { cn } from "@/lib/utils";
-import { z } from "zod";
-import {
-  AUTH_MARKETING_VARIANT_IDS,
-  DEFAULT_AUTH_MARKETING_VARIANT,
-  parseAuthMarketingVariant,
-  type AuthMarketingVariant,
-} from "@/lib/auth-marketing-variant";
-
-const authSearchSchema = z.object({
-  m: z.enum(AUTH_MARKETING_VARIANT_IDS).optional().catch(DEFAULT_AUTH_MARKETING_VARIANT),
-});
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: authSearchSchema,
   component: AuthPage,
 });
 
 function AuthPage() {
   const navigate = useNavigate({ from: Route.fullPath });
-  const { m = DEFAULT_AUTH_MARKETING_VARIANT } = Route.useSearch();
-  const marketingVariant = parseAuthMarketingVariant(m);
-
-  const setMarketingVariant = (variant: AuthMarketingVariant) => {
-    void navigate({ search: (prev) => ({ ...prev, m: variant }), replace: true });
-  };
   const [tab, setTab] = useState<"login" | "signup">("login");
   const [signupStep, setSignupStep] = useState(0);
 
@@ -213,8 +195,6 @@ function AuthPage() {
         tab={tab}
         signupStep={signupStep}
         onTabChange={handleTabChange}
-        marketingVariant={marketingVariant}
-        onMarketingVariantChange={setMarketingVariant}
       >
         {/* Mobile tab switcher */}
         <div className="mb-5 grid h-12 grid-cols-2 rounded-xl bg-zinc-100 p-1 md:hidden">

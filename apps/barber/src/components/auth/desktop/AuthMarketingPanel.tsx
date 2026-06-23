@@ -18,12 +18,7 @@ import {
 import type { SignupFlow } from "@/lib/auth-ui";
 import { AUTH_FRAMER_CONFIG } from "@/lib/auth-framer-variants";
 import { ACCENT_STYLES, AUTH_ACCENT } from "@/lib/auth-desktop-variant";
-import {
-  AUTH_FLOW_MARKETING,
-  type AuthFlowMarketingContent,
-  type AuthMarketingFeature,
-} from "@/lib/barber-flow-config";
-import type { AuthMarketingVariant } from "@/lib/auth-marketing-variant";
+import { AUTH_FLOW_MARKETING, type AuthFlowMarketingContent } from "@/lib/barber-flow-config";
 import { cn } from "@/lib/utils";
 
 const c = AUTH_FRAMER_CONFIG;
@@ -55,7 +50,7 @@ const DEFAULT_CONTENT: ResolvedContent = {
   shortTitle: "Murakkab emas. Ishlaydi.",
   subline: c.subline,
   longText:
-    "Ortiqcha bezak yo'q — faqat kerakli funksiyalar. Yangi xodim 10 daqiqada tizimga kiradi va bron qabul qila boshlaydi. Sodda interfeys, o'zbek tilida va doimiy yordam.",
+    "Ortiqcha bezak yo'q — faqat kerakli funksiyalar. Yangi xodim 10 daqiqada tizimga kiradi va bron qabul qila boshlaydi.",
   bullets: c.bullets as ResolvedContent["bullets"],
   features: [
     { icon: "Scissors", title: "Sodda interfeys", desc: "Tez o'rganish va ishlatish" },
@@ -63,7 +58,7 @@ const DEFAULT_CONTENT: ResolvedContent = {
     { icon: "MessageSquare", title: "Yordam 24/7", desc: "Har qanday savolga javob" },
   ],
   stat: c.stat,
-  visual: { gradient: "from-zinc-200 via-zinc-100 to-[#f4f4f5]", icon: "Scissors", ring: "ring-zinc-300/60" },
+  visual: { gradient: "from-zinc-200 via-zinc-100 to-zinc-50", icon: "Scissors", ring: "ring-zinc-300/60" },
 };
 
 function resolveContent(tab: "login" | "signup", flow: SignupFlow | null): ResolvedContent {
@@ -89,40 +84,26 @@ function BrandRow() {
   );
 }
 
-function HeroVisual({ content, size = "md" }: { content: ResolvedContent; size?: "md" | "lg" }) {
-  const box = size === "lg" ? "h-52" : "h-40";
-  const iconBox = size === "lg" ? "size-20" : "size-16";
-  const iconSize = size === "lg" ? "size-10" : "size-8";
-
+function SideVisual({ content }: { content: ResolvedContent }) {
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl bg-gradient-to-br shadow-inner",
-        box,
+        "relative h-full min-h-[220px] overflow-hidden rounded-2xl bg-gradient-to-br shadow-inner ring-1 ring-inset",
         content.visual.gradient,
         content.visual.ring,
-        "ring-1 ring-inset",
       )}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.7),transparent_55%)]" />
-      <div className="absolute -right-6 -top-6 size-32 rounded-full bg-white/30 blur-2xl" />
-      <div className="absolute bottom-4 left-4 flex items-end gap-3">
-        <div className={cn("flex items-center justify-center rounded-2xl bg-white/80 shadow-sm backdrop-blur-sm", iconBox)}>
-          <FlowIcon name={content.visual.icon} className={cn(iconSize, "text-foreground")} />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_15%,rgba(255,255,255,0.75),transparent_50%)]" />
+      <div className="absolute -right-8 -top-8 size-36 rounded-full bg-white/35 blur-2xl" />
+      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/10 to-transparent" />
+      <div className="absolute inset-0 flex flex-col items-center justify-center p-5">
+        <div className="flex size-20 items-center justify-center rounded-2xl bg-white/85 shadow-md backdrop-blur-sm">
+          <FlowIcon name={content.visual.icon} className="size-10 text-foreground" />
         </div>
-        <span className="mb-1 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-600 shadow-sm">
+        <span className="mt-4 rounded-full bg-white/90 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-600 shadow-sm">
           {content.badge}
         </span>
       </div>
-    </div>
-  );
-}
-
-function StatPill({ content, className }: { content: ResolvedContent; className?: string }) {
-  return (
-    <div className={cn("inline-flex items-baseline gap-2.5 rounded-2xl border border-black/5 bg-white/70 px-5 py-3.5 shadow-sm", className)}>
-      <span className={cn("text-3xl font-bold tabular-nums", c.highlightClass)}>{content.stat.value}</span>
-      <span className="text-sm text-zinc-500">{content.stat.label}</span>
     </div>
   );
 }
@@ -139,7 +120,7 @@ function BulletList({ content }: { content: ResolvedContent }) {
           className="flex items-center gap-3 text-sm font-medium text-zinc-700"
         >
           <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white/80 shadow-sm ring-1 ring-black/5">
-            <FlowIcon name={content.features[i]?.icon ?? "Check"} className="size-3.5 text-foreground" />
+            <FlowIcon name={content.features[i]?.icon ?? "Scissors"} className="size-3.5 text-foreground" />
           </span>
           {b}
         </motion.li>
@@ -148,142 +129,44 @@ function BulletList({ content }: { content: ResolvedContent }) {
   );
 }
 
-function FeatureCards({ features }: { features: readonly AuthMarketingFeature[] }) {
-  return (
-    <div className="space-y-2.5">
-      {features.map((f, i) => (
-        <motion.div
-          key={f.title}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.08 + i * 0.07 }}
-          className="flex gap-3 rounded-xl border border-black/5 bg-white/70 p-3.5 shadow-sm"
-        >
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100">
-            <FlowIcon name={f.icon} className="size-5 text-foreground" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-foreground">{f.title}</p>
-            <p className="mt-0.5 text-xs leading-relaxed text-zinc-600">{f.desc}</p>
-          </div>
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-function VariantIconShort({ content }: { content: ResolvedContent }) {
-  return (
-    <div className="flex flex-col items-start">
-      <div className="flex size-24 items-center justify-center rounded-3xl bg-white shadow-md ring-1 ring-black/5">
-        <FlowIcon name={content.visual.icon} className="size-12 text-foreground" />
-      </div>
-      <span className="mt-6 rounded-full bg-black/5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-zinc-600">
-        {content.badge}
-      </span>
-      <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight text-zinc-900 lg:text-4xl">{content.shortTitle}</h1>
-      <p className="mt-3 max-w-sm text-sm text-zinc-600">{content.subline}</p>
-      <StatPill content={content} className="mt-8" />
-    </div>
-  );
-}
-
-function VariantIconBullets({ content }: { content: ResolvedContent }) {
+function MarketingBody({ content }: { content: ResolvedContent }) {
   return (
     <>
-      <span className="mt-8 inline-flex rounded-full bg-black/5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-zinc-600">
-        {content.badge}
-      </span>
-      <h1 className="mt-5 text-4xl font-bold leading-[1.08] tracking-tight text-zinc-900 lg:text-[3.25rem]">
-        {content.headline}
-        <br />
-        <span className={c.highlightClass}>{content.highlight}</span>
-      </h1>
-      <p className="mt-5 max-w-md text-base leading-relaxed text-zinc-600 lg:text-[17px]">{content.subline}</p>
-      <div className="mt-9">
-        <BulletList content={content} />
-      </div>
-      <StatPill content={content} className="mt-11" />
-    </>
-  );
-}
+      <div className="mt-8 grid grid-cols-1 items-stretch gap-5 sm:grid-cols-[minmax(0,11.5rem)_1fr] lg:gap-6">
+        <SideVisual content={content} />
 
-function VariantImageLong({ content }: { content: ResolvedContent }) {
-  return (
-    <>
+        <div className="flex flex-col justify-center">
+          <span className="inline-flex w-fit rounded-full bg-black/5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-zinc-600">
+            {content.badge}
+          </span>
+          <h1 className="mt-4 text-3xl font-bold leading-[1.08] tracking-tight text-zinc-900 lg:text-[2.35rem]">
+            {content.headline}
+            <br />
+            <span className={c.highlightClass}>{content.highlight}</span>
+          </h1>
+          <p className="mt-4 text-sm leading-relaxed text-zinc-600 lg:text-base">{content.subline}</p>
+        </div>
+      </div>
+
       <div className="mt-8">
-        <HeroVisual content={content} size="lg" />
-      </div>
-      <h1 className="mt-6 text-2xl font-bold leading-snug tracking-tight text-zinc-900 lg:text-3xl">{content.shortTitle}</h1>
-      <p className="mt-4 text-base leading-[1.75] text-zinc-600 lg:text-[17px]">{content.longText}</p>
-      <StatPill content={content} className="mt-8" />
-    </>
-  );
-}
-
-function VariantCardsGrid({ content }: { content: ResolvedContent }) {
-  return (
-    <>
-      <span className="mt-8 inline-flex rounded-full bg-black/5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-zinc-600">
-        {content.badge}
-      </span>
-      <h1 className="mt-4 text-3xl font-bold leading-tight text-zinc-900">{content.shortTitle}</h1>
-      <p className="mt-2 text-sm text-zinc-600">{content.subline}</p>
-      <div className="mt-6">
-        <FeatureCards features={content.features} />
-      </div>
-      <StatPill content={content} className="mt-6" />
-    </>
-  );
-}
-
-function VariantFullMix({ content }: { content: ResolvedContent }) {
-  return (
-    <>
-      <div className="mt-6">
-        <HeroVisual content={content} size="md" />
-      </div>
-      <h1 className="mt-5 text-3xl font-bold leading-tight tracking-tight text-zinc-900 lg:text-[2.5rem]">
-        {content.headline}{" "}
-        <span className={c.highlightClass}>{content.highlight}</span>
-      </h1>
-      <p className="mt-3 text-sm leading-relaxed text-zinc-600">{content.subline}</p>
-      <div className="mt-5">
         <BulletList content={content} />
       </div>
-      <blockquote className="mt-5 border-l-2 border-zinc-300 pl-4 text-sm italic leading-relaxed text-zinc-600">
-        {content.longText}
-      </blockquote>
-      <StatPill content={content} className="mt-6" />
+
+      <div className="mt-10 inline-flex items-baseline gap-2.5 rounded-2xl border border-black/5 bg-white/70 px-5 py-3.5 shadow-sm">
+        <span className={cn("text-3xl font-bold tabular-nums", c.highlightClass)}>{content.stat.value}</span>
+        <span className="text-sm text-zinc-500">{content.stat.label}</span>
+      </div>
     </>
   );
-}
-
-function MarketingBody({ variant, content }: { variant: AuthMarketingVariant; content: ResolvedContent }) {
-  switch (variant) {
-    case "icon-short":
-      return <VariantIconShort content={content} />;
-    case "image-long":
-      return <VariantImageLong content={content} />;
-    case "cards-grid":
-      return <VariantCardsGrid content={content} />;
-    case "full-mix":
-      return <VariantFullMix content={content} />;
-    case "icon-bullets":
-    default:
-      return <VariantIconBullets content={content} />;
-  }
 }
 
 type Props = {
   tab: "login" | "signup";
   flow: SignupFlow | null;
-  variant: AuthMarketingVariant;
 };
 
-export function AuthMarketingPanel({ tab, flow, variant }: Props) {
+export function AuthMarketingPanel({ tab, flow }: Props) {
   const content = resolveContent(tab, flow);
-  const showFlowLayout = tab === "signup" && flow !== null;
 
   return (
     <div className={cn("relative flex flex-col justify-center overflow-hidden px-10 py-14 lg:px-16 lg:py-16", c.bgLeft)}>
@@ -294,22 +177,18 @@ export function AuthMarketingPanel({ tab, flow, variant }: Props) {
         transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
       />
 
-      <div className="relative z-10 max-w-xl">
+      <div className="relative z-10 max-w-2xl">
         <BrandRow />
 
         <AnimatePresence mode="wait">
           <motion.div
-            key={`${content.key}-${variant}`}
+            key={content.key}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           >
-            {showFlowLayout ? (
-              <MarketingBody variant={variant} content={content} />
-            ) : (
-              <VariantIconBullets content={content} />
-            )}
+            <MarketingBody content={content} />
           </motion.div>
         </AnimatePresence>
       </div>
