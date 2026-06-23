@@ -180,6 +180,32 @@ export type AuthFlowMarketingContent = {
   stat: { value: string; label: string };
 };
 
+/** Auth split layout — chap va o'ng panel foni (bir xil ton). */
+export type AuthPanelTone = {
+  bg: string;
+  glow: string;
+};
+
+export const AUTH_DEFAULT_PANEL_TONE: AuthPanelTone = {
+  bg: "bg-[#f4f4f5]",
+  glow: "#a1a1aa",
+};
+
+export const AUTH_FLOW_PANEL_TONE: Record<SignupFlow, AuthPanelTone> = {
+  owner: { bg: "bg-[#f4f4f5]", glow: "#fdba74" },
+  employee: { bg: "bg-[#f4f4f5]", glow: "#7dd3fc" },
+  mybarber: { bg: "bg-[#f4f4f5]", glow: "#c4b5fd" },
+  independent: { bg: "bg-[#f4f4f5]", glow: "#6ee7b7" },
+};
+
+export function resolveAuthPanelTone(
+  tab: "login" | "signup",
+  flow: SignupFlow | null,
+): AuthPanelTone {
+  if (tab === "signup" && flow) return AUTH_FLOW_PANEL_TONE[flow];
+  return AUTH_DEFAULT_PANEL_TONE;
+}
+
 export const AUTH_FLOW_MARKETING: Record<SignupFlow, AuthFlowMarketingContent> = {
   owner: {
     badge: "Salon egasi",

@@ -5,6 +5,7 @@ import { AuthDesktopTabSwitcher } from "@/components/auth/desktop/AuthDesktopTab
 import { AuthMarketingPanel } from "@/components/auth/desktop/AuthMarketingPanel";
 import type { SignupFlow } from "@/lib/auth-ui";
 import { ACCENT_STYLES, AUTH_ACCENT, LIGHT_FORM_SKIN } from "@/lib/auth-desktop-variant";
+import { resolveAuthPanelTone } from "@/lib/barber-flow-config";
 import { pageEnter } from "@/lib/motion-presets";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -22,19 +23,28 @@ const a = ACCENT_STYLES[accent];
 
 function FormPanel({ tab, signupStep, flow, onTabChange, children }: AuthDesktopLayoutProps) {
   const isSignup = tab === "signup";
+  const tone = resolveAuthPanelTone(tab, flow);
 
   return (
-    <div className="flex flex-col justify-center bg-white px-8 py-12 lg:px-14 lg:py-16">
+    <div className={cn("relative flex flex-col justify-center overflow-hidden px-8 py-12 lg:px-14 lg:py-16", tone.bg)}>
+      <motion.div
+        key={tone.glow}
+        className="pointer-events-none absolute -left-20 top-1/3 size-72 rounded-full opacity-35 blur-3xl"
+        style={{ background: tone.glow }}
+        animate={{ scale: [1, 1.15, 1], opacity: [0.28, 0.45, 0.28] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+      />
+
       <AuthAccentProvider accent={accent}>
         <motion.div
           {...pageEnter}
-          className={cn("mx-auto w-full", isSignup ? "max-w-[34rem]" : "max-w-[27.5rem]")}
+          className={cn("relative z-10 mx-auto w-full", isSignup ? "max-w-[34rem]" : "max-w-[27.5rem]")}
         >
           <AuthDesktopTabSwitcher tab={tab} onTabChange={onTabChange} accent={accent} />
 
           <div
             className={cn(
-              "mt-4 rounded-2xl border border-border bg-card shadow-card",
+              "mt-4 rounded-2xl border border-border/40 bg-white shadow-sm",
               isSignup ? "p-6 lg:p-7" : "p-5",
               LIGHT_FORM_SKIN,
             )}
