@@ -1,20 +1,25 @@
 import { Scissors } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { AuthAccent } from "@/lib/auth-desktop-variant";
+import { ACCENT_STYLES } from "@/lib/auth-desktop-variant";
 
 type Props = {
   tab: "login" | "signup";
   onTabChange: (tab: "login" | "signup") => void;
+  accent?: AuthAccent;
+  className?: string;
 };
 
-export function AuthUzumHeader({ tab, onTabChange }: Props) {
+export function AuthUzumHeader({ tab, onTabChange, accent = "violet", className }: Props) {
+  const a = ACCENT_STYLES[accent];
   return (
-    <header className="relative z-20 flex items-center justify-between gap-4 px-5 py-4 md:px-10 md:py-5">
+    <header className={cn("relative z-20 flex items-center justify-between gap-4 px-5 py-4 md:px-10 md:py-5", className)}>
       <div className="flex min-w-0 items-center gap-2.5">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-violet-600 text-white shadow-sm">
+        <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-full text-white shadow-sm", a.logo)}>
           <Scissors className="size-4" />
         </div>
         <div className="min-w-0 leading-none">
-          <span className="text-lg font-bold tracking-tight text-violet-700">mysaloon</span>
+          <span className={cn("text-lg font-bold tracking-tight", a.text)}>mysaloon</span>
           <span className="ml-1.5 text-lg font-semibold text-foreground">partners</span>
         </div>
       </div>
@@ -32,7 +37,7 @@ export function AuthUzumHeader({ tab, onTabChange }: Props) {
           className={cn(
             "rounded-xl px-4 py-2.5 text-sm font-semibold transition-all active:scale-[0.98]",
             tab === "login"
-              ? "bg-violet-600 text-white shadow-sm hover:bg-violet-700"
+              ? cn(a.btn, a.btnHover, "text-white shadow-sm")
               : "border border-border bg-white text-foreground hover:bg-zinc-50",
           )}
         >

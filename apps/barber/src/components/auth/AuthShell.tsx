@@ -1,12 +1,11 @@
 import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { AuthStepIndicator } from "@/components/auth/AuthStepIndicator";
-import { AuthOnboardingProgress } from "@/components/auth/uzum/AuthOnboardingProgress";
-import { AuthUzumBackground } from "@/components/auth/uzum/AuthUzumBackground";
-import { AuthUzumCardTitle } from "@/components/auth/uzum/AuthUzumCardTitle";
-import { AuthUzumHeader } from "@/components/auth/uzum/AuthUzumHeader";
+import { AuthDesktopLayout } from "@/components/auth/desktop/AuthDesktopLayouts";
+import { AuthDesktopVariantPicker } from "@/components/auth/desktop/AuthDesktopVariantPicker";
 import { Scissors } from "lucide-react";
 import type { SignupFlow } from "@/lib/auth-ui";
+import type { AuthDesktopVariant } from "@/lib/auth-desktop-variant";
 import { FLOW_IDENTITY_META } from "@/lib/barber-flow-config";
 import { pageEnter } from "@/lib/motion-presets";
 
@@ -15,10 +14,20 @@ type Props = {
   tab: "login" | "signup";
   signupStep?: number;
   onTabChange: (tab: "login" | "signup") => void;
+  desktopVariant: AuthDesktopVariant;
+  onDesktopVariantChange: (variant: AuthDesktopVariant) => void;
   children: ReactNode;
 };
 
-export function AuthShell({ flow, tab, signupStep = 0, onTabChange, children }: Props) {
+export function AuthShell({
+  flow,
+  tab,
+  signupStep = 0,
+  onTabChange,
+  desktopVariant,
+  onDesktopVariantChange,
+  children,
+}: Props) {
   const meta = flow ? FLOW_IDENTITY_META[flow] : null;
   const mobileTitle =
     tab === "login"
@@ -28,7 +37,7 @@ export function AuthShell({ flow, tab, signupStep = 0, onTabChange, children }: 
         : (meta?.signupTitle ?? "Ro'yxatdan o'tish");
 
   return (
-    <div className="relative min-h-[100dvh] bg-[#eceef2] text-foreground">
+    <div className="relative min-h-[100dvh] bg-[#eceef2] text-foreground md:bg-transparent">
       {/* Mobile header */}
       <header className="sticky top-0 z-50 border-b border-black/5 bg-white/90 backdrop-blur-md pt-[max(env(safe-area-inset-top),0px)] md:hidden">
         <div className="flex items-center justify-between gap-3 px-4 py-3">
@@ -51,40 +60,27 @@ export function AuthShell({ flow, tab, signupStep = 0, onTabChange, children }: 
         ) : null}
       </header>
 
-      {/* Desktop background + top bar */}
-      <div className="hidden md:block">
-        <AuthUzumBackground />
-        <AuthUzumHeader tab={tab} onTabChange={onTabChange} />
-      </div>
-
-      {/* Single content tree */}
+      {/* Mobile content */}
       <motion.div
         {...pageEnter}
-        className="relative px-4 pt-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] md:flex md:min-h-[calc(100vh-76px)] md:items-center md:justify-center md:px-6 md:pb-12 md:pt-0"
+        className="px-4 pt-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] md:hidden"
       >
-        <div className="w-full md:max-w-[480px] md:rounded-2xl md:bg-white md:px-8 md:py-8 md:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.12)]">
-          <div className="hidden md:block">
-            <AuthUzumCardTitle tab={tab} signupStep={signupStep} flow={flow} />
-            {tab === "signup" ? <AuthOnboardingProgress step={signupStep} /> : null}
-          </div>
-
-          {children}
-
-          {tab === "login" ? (
-            <p className="mt-6 hidden text-center text-[11px] leading-relaxed text-muted-foreground md:block">
-              Tugmani bosish orqali{" "}
-              <a href="/privacy" className="text-violet-600 hover:underline">
-                Oferta
-              </a>{" "}
-              va{" "}
-              <a href="/privacy" className="text-violet-600 hover:underline">
-                Maxfiylik siyosati
-              </a>
-              ga rozilik bildirasiz.
-            </p>
-          ) : null}
-        </div>
+        {children}
       </motion.div>
+
+      {/* Desktop — 15 variant */}
+      <div className="hidden md:block md:pb-36">
+        <AuthDesktopLayout
+          variant={desktopVariant}
+          flow={flow}
+          tab={tab}
+          signupStep={signupStep}
+          onTabChange={onTabChange}
+        >
+          {children}
+        </AuthDesktopLayout>
+        <AuthDesktopVariantPicker value={desktopVariant} onChange={onDesktopVariantChange} />
+      </div>
     </div>
   );
 }
