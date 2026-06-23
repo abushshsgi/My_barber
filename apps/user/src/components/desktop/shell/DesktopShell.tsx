@@ -5,11 +5,17 @@ type Props = {
   chatUnread?: number;
   notificationsUnread?: number;
   fullBleed?: boolean;
+  mainClassName?: string;
 };
 
-export function DesktopShell({ children, chatUnread, notificationsUnread, fullBleed }: Props) {
+export function DesktopShell({ children, chatUnread, notificationsUnread, fullBleed, mainClassName }: Props) {
   return (
-    <ShellBazaarClassic chatUnread={chatUnread} notificationsUnread={notificationsUnread} fullBleed={fullBleed}>
+    <ShellBazaarClassic
+      chatUnread={chatUnread}
+      notificationsUnread={notificationsUnread}
+      fullBleed={fullBleed}
+      mainClassName={mainClassName}
+    >
       {children}
     </ShellBazaarClassic>
   );

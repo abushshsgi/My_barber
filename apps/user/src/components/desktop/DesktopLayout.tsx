@@ -15,6 +15,7 @@ type Props = {
 export function DesktopLayout({ children, chatUnread = 0, notificationsUnread = 0 }: Props) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isMap = pathname === "/map";
+  const isHome = pathname === "/";
   const isAiStyle = pathname === "/ai-style";
   const isFullBleed =
     isAiStyle ||
@@ -28,6 +29,7 @@ export function DesktopLayout({ children, chatUnread = 0, notificationsUnread = 
         chatUnread={chatUnread}
         notificationsUnread={notificationsUnread}
         fullBleed={isFullBleed}
+        mainClassName={isHome ? "px-0 xl:px-0 2xl:px-0" : undefined}
       >
         {isFullBleed ? (
           <div

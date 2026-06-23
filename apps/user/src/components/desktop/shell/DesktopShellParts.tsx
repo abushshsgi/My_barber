@@ -18,6 +18,7 @@ type ShellProps = {
   chatUnread?: number;
   notificationsUnread?: number;
   fullBleed?: boolean;
+  mainClassName?: string;
 };
 
 const MAIN_NAV = [
@@ -49,6 +50,7 @@ export function ShellBazaarClassic({
   notificationsUnread = 0,
   chatUnread = 0,
   fullBleed,
+  mainClassName,
 }: ShellProps) {
   const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -114,7 +116,7 @@ export function ShellBazaarClassic({
           })}
         </nav>
       </header>
-      <Main fullBleed={fullBleed}>{children}</Main>
+      <Main fullBleed={fullBleed} className={mainClassName}>{children}</Main>
     </div>
   );
 }
