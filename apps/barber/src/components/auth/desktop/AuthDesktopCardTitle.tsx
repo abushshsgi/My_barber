@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { SignupFlow } from "@/lib/auth-ui";
 import { FLOW_IDENTITY_META } from "@/lib/barber-flow-config";
 
-const STEP_TITLES = ["Yo'lingizni tanlang", "Ma'lumotlaringiz", "Tekshirish"] as const;
+const STEP_TITLES = ["Yo'lingizni tanlang", "Ma'lumotlaringiz", "Ma'lumotlarni tekshiring"] as const;
 
 type Props = {
   tab: "login" | "signup";
@@ -28,9 +28,7 @@ export function AuthDesktopCardTitle({
       ? "Hisob yarating"
       : signupStep === 1
         ? STEP_TITLES[1]
-        : flow
-          ? FLOW_IDENTITY_META[flow].signupTitle
-          : STEP_TITLES[2];
+        : STEP_TITLES[2];
 
   const subtitle =
     tab === "login"
@@ -39,8 +37,8 @@ export function AuthDesktopCardTitle({
         ? "Salon egasi, ishchi yoki mustaqil barber"
         : signupStep === 1 && flow
           ? FLOW_IDENTITY_META[flow].signupNextStep
-          : flow
-            ? FLOW_IDENTITY_META[flow].successBody
+          : signupStep === 2
+            ? "Hammasi to'g'ri bo'lsa, davom eting"
             : undefined;
 
   const titleClass =
