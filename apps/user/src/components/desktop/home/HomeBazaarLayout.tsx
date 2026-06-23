@@ -66,12 +66,12 @@ export function HomeBazaarLayout({ data }: Props) {
             </div>
           ))}
 
-          <div className="min-w-0 lg:col-span-2 lg:col-start-5 lg:row-span-3 lg:row-start-1">
+          <div className="min-w-0 lg:col-span-2 lg:col-start-5 lg:row-start-1">
             <BazaarMapPanel
               variant="preview"
               salons={mapSalons}
               salonCount={filtered.length}
-              className="h-full min-h-[40rem] w-full"
+              className="h-[420px] w-full"
             />
           </div>
         </div>
