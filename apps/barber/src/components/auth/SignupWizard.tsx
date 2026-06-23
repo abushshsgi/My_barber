@@ -37,6 +37,7 @@ type Props = {
   onPhoneBlur: () => void;
   onSubmit: () => void;
   onClearError: () => void;
+  onStep1Next?: () => Promise<boolean>;
 };
 
 const STEP_EASE = [0.22, 1, 0.36, 1] as const;
@@ -125,23 +126,21 @@ export function SignupWizard({
   onPhoneBlur,
   onSubmit,
   onClearError,
+  onStep1Next,
 }: Props) {
   const reduceMotion = useReducedMotion();
 
   const canStep0 = data.flow !== null;
-  const canStep1 =
-    validateSignupIdentity({
-      fullName: data.name,
-      phone: data.phone,
-      email: data.email,
-      password: data.password,
-      flow: data.flow ?? "owner",
-    }) === null &&
-    !emailError &&
-    !phoneError &&
-    !checkingAvailability;
+  const step1Validation = validateSignupIdentity({
+    fullName: data.name,
+    phone: data.phone,
+    email: data.email,
+    password: data.password,
+    flow: data.flow ?? "owner",
+  });
+  const canStep1 = step1Validation === null && !checkingAvailability;
 
-  const handleNext = () => {
+  const handleNext = async () => {
     onClearError();
     if (step === 0) {
       if (!canStep0) return;
@@ -149,16 +148,11 @@ export function SignupWizard({
       return;
     }
     if (step === 1) {
-      const emailErr = validateEmailField(data.email);
-      if (emailErr) return;
-      const validation = validateSignupIdentity({
-        fullName: data.name,
-        phone: data.phone,
-        email: data.email,
-        password: data.password,
-        flow: data.flow ?? "owner",
-      });
-      if (validation) return;
+      if (step1Validation) return;
+      if (onStep1Next) {
+        const ok = await onStep1Next();
+        if (!ok) return;
+      }
       onStepChange(2);
       return;
     }
@@ -228,7 +222,13 @@ export function SignupWizard({
             onBack={handleBack}
             onNext={handleNext}
             nextLabel={nextLabel}
-            disabledTooltip={step === 0 ? "Avval signup yo'lini tanlang" : undefined}
+            disabledTooltip={
+              step === 0
+                ? "Avval signup yo'lini tanlang"
+                : step === 1 && step1Validation
+                  ? step1Validation
+                  : undefined
+            }
           />
         </div>
       </div>
@@ -241,7 +241,13 @@ export function SignupWizard({
           onBack={handleBack}
           onNext={handleNext}
           nextLabel={nextLabel}
-          disabledTooltip={step === 0 ? "Avval signup yo'lini tanlang" : undefined}
+          disabledTooltip={
+            step === 0
+              ? "Avval signup yo'lini tanlang"
+              : step === 1 && step1Validation
+                ? step1Validation
+                : undefined
+          }
           className="w-full"
         />
       </AuthMobileStickyBar>

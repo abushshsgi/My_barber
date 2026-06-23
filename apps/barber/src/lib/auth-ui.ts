@@ -117,11 +117,6 @@ export function validateLogin(values: { email: string; password: string }): stri
 
 export function validatePasswordPolicy(password: string): string | null {
   if (password.length < 8) return "Parol kamida 8 ta belgi bo'lishi kerak.";
-  const hasDigit = /\d/.test(password);
-  const hasMixedCase = /[A-Z]/.test(password) && /[a-z]/.test(password);
-  if (!hasDigit && !hasMixedCase) {
-    return "Parol kamida bitta raqam yoki katta+kichik harf bo'lishi kerak.";
-  }
   return null;
 }
 

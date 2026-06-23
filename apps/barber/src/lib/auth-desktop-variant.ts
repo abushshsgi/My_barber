@@ -130,7 +130,7 @@ export const LIGHT_FORM_SKIN = "";
 
 /** Auth forma inputlari — yengil border, tinch focus. */
 export const AUTH_INPUT_CLASS =
-  "peer h-[50px] w-full rounded-xl border border-border/35 bg-white px-3.5 pt-5 pb-1.5 text-base text-foreground shadow-none outline-none ring-0 transition-colors focus:border-border/60 focus:bg-white md:text-sm";
+  "peer h-[50px] w-full rounded-xl border border-border/35 bg-white px-3.5 pt-5 pb-1.5 text-base text-foreground shadow-none outline-none ring-0 transition-colors placeholder-transparent focus:border-border/60 focus:bg-white md:text-sm";
 
 export const AUTH_PHONE_SHELL_CLASS =
   "flex h-[50px] w-full items-stretch overflow-hidden rounded-xl border border-border/35 bg-white shadow-none ring-0 transition-colors focus-within:border-border/60";

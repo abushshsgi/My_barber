@@ -259,6 +259,14 @@ function AuthPage() {
                 onPhoneBlur={handlePhoneBlur}
                 onSubmit={onSignupSubmit}
                 onClearError={() => setError(null)}
+                onStep1Next={async () => {
+                  const formatErr = validateEmailField(signupEmail);
+                  if (formatErr) {
+                    setEmailError(formatErr);
+                    return false;
+                  }
+                  return runAvailabilityCheck(signupEmail, signupPhone);
+                }}
               />
             </motion.div>
           )}
