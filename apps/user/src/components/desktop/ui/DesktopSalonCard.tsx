@@ -33,13 +33,13 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false, cl
         params={{ id: salon.id }}
         className={cn(
           "group block",
-          elevated && "transition-all duration-300 hover:-translate-y-1",
+          elevated && "flex h-full flex-col transition-all duration-300 hover:-translate-y-1",
           className,
         )}
       >
         <div
           className={cn(
-            "relative w-full overflow-hidden bg-surface",
+            "relative w-full shrink-0 overflow-hidden bg-surface",
             elevated
               ? "aspect-[4/3] rounded-2xl shadow-[0_22px_46px_-16px_rgba(0,0,0,0.55),0_10px_20px_-10px_rgba(0,0,0,0.35)] transition-shadow group-hover:shadow-[0_28px_54px_-14px_rgba(0,0,0,0.62),0_14px_24px_-10px_rgba(0,0,0,0.4)]"
               : "aspect-[5/4] rounded-xl",
@@ -79,7 +79,7 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false, cl
           className={cn(
             "space-y-0.5",
             elevated
-              ? "min-h-[5rem] px-0.5 pb-1 pt-3 shadow-[0_10px_18px_-14px_rgba(0,0,0,0.2)]"
+              ? "flex min-h-0 flex-1 flex-col justify-start px-0.5 pb-1 pt-3"
               : "mt-3 min-h-[4.75rem]",
           )}
         >

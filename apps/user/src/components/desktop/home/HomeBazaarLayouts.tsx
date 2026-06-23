@@ -23,7 +23,7 @@ const BAZAAR_ROW_CLASS =
   "grid w-full grid-cols-1 gap-4 lg:grid-cols-[minmax(200px,240px)_repeat(3,minmax(0,1fr))_minmax(300px,380px)] lg:items-start lg:gap-x-4 lg:[--bazaar-card-w:calc((100%-240px-380px-4*1rem)/3)]";
 
 const BAZAAR_TOP_ROW_CLASS =
-  "grid w-full grid-cols-1 gap-4 lg:grid-cols-[minmax(200px,220px)_repeat(4,minmax(0,1fr))] lg:items-start lg:gap-x-3 lg:[--bazaar-card-w:calc((100%-220px-4*0.75rem)/4)]";
+  "grid w-full grid-cols-1 gap-4 lg:grid-cols-[minmax(200px,220px)_repeat(4,minmax(0,1fr))] lg:items-start lg:gap-x-3 lg:[--bazaar-card-w:calc((100%-220px-4*0.75rem)/4)] lg:[--bazaar-tile-h:calc(var(--bazaar-card-w)*0.75+5rem)]";
 
 const CENTER_COLS = ["lg:col-start-2", "lg:col-start-3", "lg:col-start-4"] as const;
 
@@ -32,7 +32,9 @@ function SalonGridCells({ salons }: { salons: Salon[] }) {
     <>
       {salons.map((salon, index) => (
         <div key={salon.id} className={cn("min-w-0 pb-3", CENTER_COLS[index])}>
-          <DesktopSalonCard salon={salon} variant="marketplace" elevated />
+          <div className={BAZAAR_ELEVATED_TILE_H}>
+            <DesktopSalonCard salon={salon} variant="marketplace" elevated className="h-full" />
+          </div>
         </div>
       ))}
     </>
@@ -63,7 +65,9 @@ export function HomeBazaarClassic({ data }: Props) {
           )}
 
           <div className="min-w-0 pb-3 lg:col-start-5">
-            <BazaarMapPanel salons={mapSalons} className={cn("w-full", BAZAAR_ELEVATED_TILE_H)} />
+            <div className={BAZAAR_ELEVATED_TILE_H}>
+              <BazaarMapPanel salons={mapSalons} className="h-full w-full" />
+            </div>
           </div>
         </div>
 
