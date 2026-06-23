@@ -4,6 +4,7 @@ import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { SalonDesktopPage } from "@/components/desktop/pages/SalonDesktopPage";
 import { SalonMobilePage } from "@/components/salon/SalonMobilePage";
 import { useFavorites } from "@/hooks/use-favorites";
+import { useShareSalon } from "@/hooks/use-share-salon";
 import { useSalonPage } from "@/hooks/use-salon-page";
 
 export const Route = createFileRoute("/salon/$id")({
@@ -15,7 +16,8 @@ function SalonPage() {
   const { t } = useTranslation();
   const { id } = useParams({ from: "/salon/$id" });
   const { salon, isLoading, reviewsAreMock } = useSalonPage(id);
-  const { isFav, toggle } = useFavorites();
+  const { isFav, toggle, isPending } = useFavorites();
+  const onShare = useShareSalon(salon ?? undefined);
 
   if (isLoading || !salon) {
     return (
@@ -27,11 +29,19 @@ function SalonPage() {
 
   const fav = isFav(salon.id);
   const toggleFav = () => toggle(salon.id);
+  const pageProps = {
+    salon,
+    fav,
+    onToggleFav: toggleFav,
+    onShare,
+    favPending: isPending,
+    reviewsAreMock,
+  };
 
   return (
     <DesktopPageSplit
-      mobile={<SalonMobilePage salon={salon} fav={fav} onToggleFav={toggleFav} reviewsAreMock={reviewsAreMock} />}
-      desktop={<SalonDesktopPage salon={salon} fav={fav} onToggleFav={toggleFav} reviewsAreMock={reviewsAreMock} />}
+      mobile={<SalonMobilePage {...pageProps} />}
+      desktop={<SalonDesktopPage {...pageProps} />}
     />
   );
 }

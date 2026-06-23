@@ -225,6 +225,13 @@
     "select": "Tanlash",
     "minutes": "daqiqa",
     "fromPrice": "{{price}} dan",
+    "share": "Ulashish",
+    "shareCopied": "Havola nusxalandi",
+    "shareFailed": "Ulashib bo'lmadi",
+    "favoriteAdded": "Sevimlilarga qo'shildi",
+    "favoriteRemoved": "Sevimlilardan olib tashlandi",
+    "favoriteError": "Sevimlilarni saqlab bo'lmadi",
+    "loginForFavorite": "Sevimlilar uchun tizimga kiring",
     "nav": {
       "amenities": "Qulayliklar",
       "location": "Manzil"

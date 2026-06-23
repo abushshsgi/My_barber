@@ -220,6 +220,13 @@
     "select": "Select",
     "minutes": "min",
     "fromPrice": "From {{price}}",
+    "share": "Share",
+    "shareCopied": "Link copied",
+    "shareFailed": "Could not share",
+    "favoriteAdded": "Added to favorites",
+    "favoriteRemoved": "Removed from favorites",
+    "favoriteError": "Could not save favorite",
+    "loginForFavorite": "Sign in to save favorites",
     "nav": {
       "amenities": "Amenities",
       "location": "Location"

@@ -9,18 +9,29 @@ export function SalonDesktopPage({
   salon,
   fav,
   onToggleFav,
+  onShare,
+  favPending = false,
   reviewsAreMock = false,
 }: {
   salon: Salon;
   fav: boolean;
   onToggleFav: () => void;
+  onShare?: () => void;
+  favPending?: boolean;
   reviewsAreMock?: boolean;
 }) {
   return (
     <div className="mx-auto max-w-6xl pb-16">
       <SalonHeroGallery salon={salon} variant="desktop" />
 
-      <SalonPageHeader salon={salon} fav={fav} onToggleFav={onToggleFav} variant="desktop" />
+      <SalonPageHeader
+        salon={salon}
+        fav={fav}
+        onToggleFav={onToggleFav}
+        onShare={onShare}
+        favPending={favPending}
+        variant="desktop"
+      />
 
       <SalonSectionNav salon={salon} />
 

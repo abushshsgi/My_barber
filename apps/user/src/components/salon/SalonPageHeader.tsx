@@ -8,11 +8,15 @@ export function SalonPageHeader({
   salon,
   fav,
   onToggleFav,
+  onShare,
+  favPending = false,
   variant = "desktop",
 }: {
   salon: Salon;
   fav: boolean;
   onToggleFav: () => void;
+  onShare?: () => void;
+  favPending?: boolean;
   variant?: "desktop" | "mobile";
 }) {
   const { t } = useTranslation();
@@ -63,16 +67,22 @@ export function SalonPageHeader({
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={() => void onShare?.()}
             className="grid h-10 w-10 place-items-center rounded-full border border-border transition-colors hover:bg-muted"
-            aria-label="Share"
+            aria-label={t("salon.share", { defaultValue: "Ulashish" })}
           >
             <Share2 className="h-4 w-4" />
           </button>
           <button
             type="button"
             onClick={onToggleFav}
-            className="grid h-10 w-10 place-items-center rounded-full border border-border transition-colors hover:bg-muted"
-            aria-label="Favorite"
+            disabled={favPending}
+            aria-pressed={fav}
+            className={cn(
+              "grid h-10 w-10 place-items-center rounded-full border border-border transition-colors hover:bg-muted",
+              favPending && "opacity-60",
+            )}
+            aria-label={t("favorites.title", { defaultValue: "Sevimli salonlar" })}
           >
             <Heart className={cn("h-4 w-4", fav && "fill-foreground")} />
           </button>

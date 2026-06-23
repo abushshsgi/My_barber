@@ -468,12 +468,18 @@ class FavoriteSalonListCreateView(APIView):
         )
 
     def post(self, request):
-        salon_id = request.data.get("salon")
+        raw = request.data.get("salon")
+        if raw is None or raw == "":
+            return Response({"detail": "salon maydoni talab qilinadi."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            salon_id = int(raw)
+        except (TypeError, ValueError):
+            return Response({"detail": "salon butun son bo'lishi kerak."}, status=status.HTTP_400_BAD_REQUEST)
         salon = get_object_or_404(Salon, pk=salon_id, is_published=True)
-        row, _ = FavoriteSalon.objects.get_or_create(user=request.user, salon=salon)
+        row, created = FavoriteSalon.objects.get_or_create(user=request.user, salon=salon)
         return Response(
             {"id": row.id, "salon": salon.id, "created_at": row.created_at.isoformat()},
-            status=status.HTTP_201_CREATED,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
 
 

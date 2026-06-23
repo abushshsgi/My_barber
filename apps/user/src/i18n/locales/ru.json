@@ -220,6 +220,13 @@
     "select": "Выбрать",
     "minutes": "мин",
     "fromPrice": "От {{price}}",
+    "share": "Поделиться",
+    "shareCopied": "Ссылка скопирована",
+    "shareFailed": "Не удалось поделиться",
+    "favoriteAdded": "Добавлено в избранное",
+    "favoriteRemoved": "Удалено из избранного",
+    "favoriteError": "Не удалось сохранить в избранное",
+    "loginForFavorite": "Войдите, чтобы сохранять избранное",
     "nav": {
       "amenities": "Удобства",
       "location": "Местоположение"

@@ -12,11 +12,15 @@ export function SalonMobilePage({
   salon,
   fav,
   onToggleFav,
+  onShare,
+  favPending = false,
   reviewsAreMock = false,
 }: {
   salon: Salon;
   fav: boolean;
   onToggleFav: () => void;
+  onShare?: () => void;
+  favPending?: boolean;
   reviewsAreMock?: boolean;
 }) {
   const { t } = useTranslation();
@@ -31,7 +35,14 @@ export function SalonMobilePage({
       </div>
 
       <div className="relative z-10 -mt-6 px-4">
-        <SalonPageHeader salon={salon} fav={fav} onToggleFav={onToggleFav} variant="mobile" />
+        <SalonPageHeader
+          salon={salon}
+          fav={fav}
+          onToggleFav={onToggleFav}
+          onShare={onShare}
+          favPending={favPending}
+          variant="mobile"
+        />
       </div>
 
       <div className="mt-6 px-4">

@@ -58,7 +58,7 @@ export function useSalonsByIds(ids: string[]) {
       const data = await fetchSalons({ ids: ids.join(",") });
       return data.map((s) => mapSalonList(s));
     },
-    enabled: authQueryEnabled(ids.length > 0),
+    enabled: catalogQueryEnabled(ids.length > 0),
   });
 }
 
