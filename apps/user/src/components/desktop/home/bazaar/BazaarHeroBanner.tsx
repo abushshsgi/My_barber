@@ -17,7 +17,7 @@ export function BazaarHeroBanner({ className }: Props) {
     <Link
       to="/today"
       className={cn(
-        "group relative block aspect-[5/4] w-full overflow-hidden rounded-2xl border border-border",
+        "group relative block aspect-[5/4] w-full overflow-hidden rounded-2xl border border-border xl:aspect-auto xl:h-full xl:min-h-0",
         "shadow-[0_10px_36px_rgba(15,15,15,0.08)] transition-all hover:shadow-[0_14px_44px_rgba(15,15,15,0.14)]",
         className,
       )}
@@ -36,19 +36,19 @@ export function BazaarHeroBanner({ className }: Props) {
         −30%
       </span>
 
-      <div className="absolute inset-0 flex flex-col justify-between p-5">
+      <div className="absolute inset-0 flex flex-col justify-between p-4 xl:p-5">
         <span className="w-fit rounded-full bg-white/95 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-foreground shadow-sm">
           {t("todayPage.heroBadge")}
         </span>
 
         <div>
-          <h2 className="max-w-[18ch] text-[clamp(1.25rem,2.2vw,1.75rem)] font-bold leading-[1.15] tracking-tight text-white">
+          <h2 className="max-w-[20ch] text-lg font-bold leading-[1.15] tracking-tight text-white xl:text-[clamp(1.1rem,1.6vw,1.5rem)]">
             {t("todayPage.heroTitle")}
           </h2>
-          <p className="mt-2 max-w-[28ch] text-sm font-medium leading-snug text-white/80">
+          <p className="mt-1.5 line-clamp-2 max-w-[32ch] text-xs font-medium leading-snug text-white/80 xl:text-sm">
             {t("todayPage.heroDesc")}
           </p>
-          <span className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-foreground transition group-hover:bg-white/95">
+          <span className="mt-3 inline-flex items-center gap-2 rounded-xl bg-white px-3.5 py-2 text-xs font-bold text-foreground transition group-hover:bg-white/95 xl:mt-4 xl:px-4 xl:py-2.5 xl:text-sm">
             {t("todayPage.bookSelected")}
             <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </span>

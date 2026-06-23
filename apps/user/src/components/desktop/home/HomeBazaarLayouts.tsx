@@ -28,24 +28,28 @@ export function HomeBazaarClassic({ data }: Props) {
   return (
     <div className="w-full">
       <BazaarPageTitle title={t("home.nearby")} count={filtered.length} />
-      {/*
-        1-qator: filter (chap) + reklama banner (o'rta) + xarita (o'ng).
-        2-qator: barcha salon kartochkalari bir gridda — bir xil o'lcham.
-      */}
-      <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-[minmax(240px,280px)_minmax(0,1fr)_minmax(320px,400px)] xl:grid-rows-[auto_auto] xl:items-stretch xl:gap-x-8 xl:gap-y-6">
-        <div className="xl:col-start-1 xl:row-start-1">
-          <BazaarFilterSidebar {...data} />
+      <div className="flex w-full flex-col gap-6">
+        {/* 1-qator: filter | banner | xarita — bir xil balandlik (xarita aspect bo'yicha) */}
+        <div className="flex flex-col gap-6 xl:flex-row xl:items-stretch xl:gap-8">
+          <div className="min-h-0 xl:w-[280px] xl:shrink-0">
+            <BazaarFilterSidebar {...data} />
+          </div>
+
+          <div className="min-h-0 min-w-0 flex-1">
+            <BazaarHeroBanner />
+          </div>
+
+          <div className="relative min-h-0 w-full shrink-0 xl:w-[400px]">
+            <div className="aspect-[5/4] w-full" aria-hidden />
+            <BazaarMapPanel
+              salons={mapSalons}
+              salonCount={filtered.length}
+              className="absolute inset-0 h-full w-full"
+            />
+          </div>
         </div>
 
-        <div className="min-w-0 xl:col-start-2 xl:row-start-1">
-          <BazaarHeroBanner />
-        </div>
-
-        <div className="xl:col-start-3 xl:row-start-1">
-          <BazaarMapPanel salons={mapSalons} salonCount={filtered.length} />
-        </div>
-
-        <section className="min-w-0 xl:col-span-3 xl:row-start-2">
+        <section className="min-w-0">
           {loading ? <BazaarGridSkeleton /> : <SalonGrid salons={filtered} />}
         </section>
       </div>

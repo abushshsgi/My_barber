@@ -6,7 +6,9 @@ import { cn } from "@/lib/utils";
 export { BazaarMapPanel } from "./BazaarMapPanel";
 export { BazaarHeroBanner } from "./BazaarHeroBanner";
 
-type FilterProps = Pick<HomeData, "query" | "setQuery" | "effectiveCat" | "visibleCategoryKeys" | "setCat">;
+type FilterProps = Pick<HomeData, "query" | "setQuery" | "effectiveCat" | "visibleCategoryKeys" | "setCat"> & {
+  className?: string;
+};
 
 export function BazaarFilterSidebar({
   query,
@@ -14,10 +16,11 @@ export function BazaarFilterSidebar({
   effectiveCat,
   visibleCategoryKeys,
   setCat,
+  className,
 }: FilterProps) {
   const { t } = useTranslation();
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+    <div className={cn("flex h-full flex-col rounded-2xl border border-border bg-card p-4 shadow-sm", className)}>
       <p className="flex items-center gap-2 text-sm font-bold">
         <SlidersHorizontal className="h-4 w-4 text-foreground" />
         {t("common.search", { defaultValue: "Filter" })}
@@ -29,7 +32,7 @@ export function BazaarFilterSidebar({
         placeholder={t("common.search")}
         className="mt-3 w-full rounded-xl border border-border bg-surface/50 px-3 py-2.5 text-sm focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
       />
-      <div className="mt-4 space-y-1">
+      <div className="mt-4 min-h-0 flex-1 space-y-1 overflow-y-auto">
         {visibleCategoryKeys.map((key) => (
           <button
             key={key}
