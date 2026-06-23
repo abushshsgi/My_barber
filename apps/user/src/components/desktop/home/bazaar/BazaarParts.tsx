@@ -4,7 +4,7 @@ import type { HomeData } from "@/components/home/useHomeData";
 import { cn } from "@/lib/utils";
 
 export { BazaarMapPanel } from "./BazaarMapPanel";
-export { BazaarTrendAiPanel } from "./BazaarTrendAiPanel";
+export { BazaarHeroBanner } from "./BazaarHeroBanner";
 
 type FilterProps = Pick<HomeData, "query" | "setQuery" | "effectiveCat" | "visibleCategoryKeys" | "setCat">;
 

@@ -4,9 +4,9 @@ import { DesktopSalonCard } from "@/components/desktop/ui/DesktopSalonCard";
 import {
   BazaarFilterSidebar,
   BazaarGridSkeleton,
+  BazaarHeroBanner,
   BazaarMapPanel,
   BazaarPageTitle,
-  BazaarTrendAiPanel,
 } from "./bazaar/BazaarParts";
 
 type Props = { data: HomeData };
@@ -23,13 +23,13 @@ function SalonGrid({ salons }: { salons: HomeData["filtered"] }) {
 
 export function HomeBazaarClassic({ data }: Props) {
   const { t } = useTranslation();
-  const { filtered, mapSalons, loading, trending } = data;
+  const { filtered, mapSalons, loading } = data;
 
   return (
     <div className="w-full">
       <BazaarPageTitle title={t("home.nearby")} count={filtered.length} />
       {/*
-        1-qator: filter (chap) + trend/AI (o'rta) + xarita (o'ng).
+        1-qator: filter (chap) + reklama banner (o'rta) + xarita (o'ng).
         2-qator: barcha salon kartochkalari bir gridda — bir xil o'lcham.
       */}
       <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-[minmax(240px,280px)_minmax(0,1fr)_minmax(320px,400px)] xl:grid-rows-[auto_auto] xl:items-stretch xl:gap-x-8 xl:gap-y-6">
@@ -38,7 +38,7 @@ export function HomeBazaarClassic({ data }: Props) {
         </div>
 
         <div className="min-w-0 xl:col-start-2 xl:row-start-1">
-          <BazaarTrendAiPanel trending={trending} />
+          <BazaarHeroBanner />
         </div>
 
         <div className="xl:col-start-3 xl:row-start-1">
