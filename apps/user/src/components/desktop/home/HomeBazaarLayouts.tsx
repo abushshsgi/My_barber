@@ -17,7 +17,7 @@ type Props = { data: HomeData };
 type Salon = HomeData["filtered"][number];
 
 const BAZAAR_ROW_CLASS =
-  "grid w-full grid-cols-1 gap-4 lg:grid-cols-[minmax(240px,280px)_repeat(3,minmax(0,1fr))_minmax(320px,400px)] lg:items-start lg:gap-x-4 lg:[--bazaar-card-w:calc((100%-280px-400px-4*1rem)/3)]";
+  "grid w-full grid-cols-1 gap-4 lg:grid-cols-[minmax(200px,240px)_repeat(3,minmax(0,1fr))_minmax(280px,340px)] lg:items-start lg:gap-x-4 lg:[--bazaar-card-w:calc((100%-240px-340px-4*1rem)/3)]";
 const CENTER_COLS = ["lg:col-start-2", "lg:col-start-3", "lg:col-start-4"] as const;
 
 function SalonGridCells({ salons }: { salons: Salon[] }) {
