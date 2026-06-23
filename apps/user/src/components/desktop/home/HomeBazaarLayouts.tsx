@@ -18,24 +18,13 @@ const BAZAAR_ROW_CLASS =
 const CENTER_COLS = ["lg:col-start-2", "lg:col-start-3", "lg:col-start-4"] as const;
 
 type BazaarSalonRow = {
-  left: Salon | null;
   center: Salon[];
   right: Salon | null;
 };
 
-function BazaarSideCard({ salon, side }: { salon: Salon; side: "left" | "right" }) {
+function BazaarSideCard({ salon }: { salon: Salon }) {
   return (
-    <div
-      className={cn(
-        "w-full min-w-0",
-        side === "left" && "lg:flex lg:justify-end",
-        side === "right" && "lg:flex lg:justify-start",
-      )}
-    >
-      {/*
-        shrink-0: flex + min-w-0 on parent otherwise collapses card width to 0
-        and only the text block below the image stays visible.
-      */}
+    <div className="w-full min-w-0 lg:flex lg:justify-start">
       <div className="w-full shrink-0 lg:w-[var(--bazaar-card-w)]">
         <DesktopSalonCard salon={salon} variant="marketplace" />
       </div>
@@ -55,19 +44,19 @@ function SalonGridCells({ salons }: { salons: Salon[] }) {
   );
 }
 
-/** Har qator: chap 1 ta | markaz 3 ta | o‘ng 1 ta kartochka. */
+/** Har qator: filter ustuni bo'sh | markaz 3 ta | o‘ng 1 ta kartochka. */
 function splitBazaarSalonRows(filtered: Salon[]): BazaarSalonRow[] {
   const rows: BazaarSalonRow[] = [];
   let rest = filtered.slice(3);
 
   while (rest.length > 0) {
-    if (rest.length >= 5) {
-      rows.push({ left: rest[0]!, center: rest.slice(1, 4), right: rest[4]! });
-      rest = rest.slice(5);
+    if (rest.length >= 4) {
+      rows.push({ center: rest.slice(0, 3), right: rest[3]! });
+      rest = rest.slice(4);
       continue;
     }
 
-    rows.push({ left: rest[0] ?? null, center: rest.slice(1), right: null });
+    rows.push({ center: rest, right: null });
     break;
   }
 
@@ -77,12 +66,10 @@ function splitBazaarSalonRows(filtered: Salon[]): BazaarSalonRow[] {
 function BazaarSalonRow({ row }: { row: BazaarSalonRow }) {
   return (
     <div className={BAZAAR_ROW_CLASS}>
-      <div className="min-w-0 lg:col-start-1">
-        {row.left ? <BazaarSideCard salon={row.left} side="left" /> : null}
-      </div>
+      <div className="hidden lg:block lg:col-start-1" aria-hidden />
       <SalonGridCells salons={row.center} />
       <div className="min-w-0 lg:col-start-5">
-        {row.right ? <BazaarSideCard salon={row.right} side="right" /> : null}
+        {row.right ? <BazaarSideCard salon={row.right} /> : null}
       </div>
     </div>
   );
