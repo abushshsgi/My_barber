@@ -11,39 +11,59 @@ import {
 } from "./bazaar/BazaarParts";
 
 type Props = { data: HomeData };
+type Salon = HomeData["filtered"][number];
 
-const CARD_GRID_CLASS = "grid grid-cols-1 gap-4 sm:grid-cols-3";
-const BAZAAR_GRID_CLASS =
-  "grid w-full grid-cols-1 gap-6 lg:grid-cols-[minmax(240px,280px)_repeat(3,minmax(0,1fr))_minmax(320px,400px)] lg:grid-rows-[auto_auto_auto] lg:items-start lg:gap-x-4 lg:gap-y-6 lg:[--bazaar-card-w:calc((100%-280px-400px-4*1rem)/3)]";
-const TOP_CARD_COLS = ["lg:col-start-2", "lg:col-start-3", "lg:col-start-4"] as const;
-const ROW2_COLS = ["lg:col-start-1", "lg:col-start-2", "lg:col-start-3", "lg:col-start-4", "lg:col-start-5"] as const;
-const SIDE_CARD_W = "lg:w-[var(--bazaar-card-w)] lg:max-w-full lg:min-w-0";
+const BAZAAR_ROW_CLASS =
+  "grid w-full grid-cols-1 gap-4 lg:grid-cols-[minmax(240px,280px)_repeat(3,minmax(0,1fr))_minmax(320px,400px)] lg:items-start lg:gap-x-4";
+const CENTER_COLS = ["lg:col-start-2", "lg:col-start-3", "lg:col-start-4"] as const;
 
-function Row2CardSlot({ salon, index }: { salon: HomeData["filtered"][number]; index: number }) {
-  const isSide = index === 0 || index === 4;
+type BazaarSalonRow = {
+  left: Salon | null;
+  center: Salon[];
+  right: Salon | null;
+};
 
+/** 1-qator markazda 3 ta; keyingi qatorlarda chap | 3 markaz | o‘ng tartibida taqsimlanadi. */
+function splitBazaarSalonRows(filtered: Salon[]): BazaarSalonRow[] {
+  const rows: BazaarSalonRow[] = [];
+  let rest = filtered.slice(3);
+
+  while (rest.length > 0) {
+    if (rest.length >= 5) {
+      rows.push({ left: rest[0], center: rest.slice(1, 4), right: rest[4] });
+      rest = rest.slice(5);
+      continue;
+    }
+
+    rows.push({ left: rest[0] ?? null, center: rest.slice(1, 4), right: null });
+    break;
+  }
+
+  return rows;
+}
+
+function SalonGridCells({ salons }: { salons: Salon[] }) {
   return (
-    <div
-      className={cn(
-        "min-w-0 lg:row-start-2",
-        ROW2_COLS[index],
-        index === 0 && "lg:flex lg:justify-end",
-        index === 4 && "lg:flex lg:justify-start",
-      )}
-    >
-      <div className={cn(isSide ? SIDE_CARD_W : "w-full")}>
-        <DesktopSalonCard salon={salon} variant="marketplace" />
-      </div>
-    </div>
+    <>
+      {salons.map((salon, index) => (
+        <div key={salon.id} className={cn("min-w-0", CENTER_COLS[index])}>
+          <DesktopSalonCard salon={salon} variant="marketplace" />
+        </div>
+      ))}
+    </>
   );
 }
 
-function SalonCards({ salons }: { salons: HomeData["filtered"] }) {
+function BazaarSalonRow({ row }: { row: BazaarSalonRow }) {
   return (
-    <div className={CARD_GRID_CLASS}>
-      {salons.map((s) => (
-        <DesktopSalonCard key={s.id} salon={s} variant="marketplace" />
-      ))}
+    <div className={BAZAAR_ROW_CLASS}>
+      <div className="min-w-0 lg:col-start-1">
+        {row.left ? <DesktopSalonCard salon={row.left} variant="marketplace" /> : null}
+      </div>
+      <SalonGridCells salons={row.center} />
+      <div className="min-w-0 lg:col-start-5">
+        {row.right ? <DesktopSalonCard salon={row.right} variant="marketplace" /> : null}
+      </div>
     </div>
   );
 }
@@ -52,8 +72,7 @@ export function HomeBazaarClassic({ data }: Props) {
   const { t } = useTranslation();
   const { filtered, mapSalons, loading } = data;
   const topRowSalons = filtered.slice(0, 3);
-  const row2Line = filtered.slice(3, 8);
-  const row2Rest = filtered.slice(8);
+  const salonRows = splitBazaarSalonRows(filtered);
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -62,41 +81,31 @@ export function HomeBazaarClassic({ data }: Props) {
       <BazaarHeroBanner className="aspect-[21/9] max-h-[400px]" />
 
       {/*
-        5 ustun: filter | 3 kartochka | map.
-        2-qator: har ustunda bitta kartochka (filter va map ostida ham).
+        Har bir qator — 5 ustunli grid: filter/map yoki kartochka | 3 markaz | kartochka.
+        2-qator va keyingilari bir chiziqda: filter va map ostida ham kartochkalar.
       */}
-      <div className={BAZAAR_GRID_CLASS}>
-        <div className="lg:col-start-1 lg:row-start-1">
-          <BazaarFilterSidebar {...data} />
-        </div>
-
-        {topRowSalons.map((salon, index) => (
-          <div
-            key={salon.id}
-            className={cn("min-w-0 lg:row-start-1", TOP_CARD_COLS[index])}
-          >
-            <DesktopSalonCard salon={salon} variant="marketplace" />
+      <div className="flex w-full flex-col gap-6">
+        <div className={BAZAAR_ROW_CLASS}>
+          <div className="lg:col-start-1">
+            <BazaarFilterSidebar {...data} />
           </div>
-        ))}
 
-        <div className="lg:col-start-5 lg:row-start-1">
-          <BazaarMapPanel salons={mapSalons} salonCount={filtered.length} />
+          {loading ? (
+            <div className="min-w-0 lg:col-span-3 lg:col-start-2">
+              <BazaarGridSkeleton cols={3} />
+            </div>
+          ) : (
+            <SalonGridCells salons={topRowSalons} />
+          )}
+
+          <div className="lg:col-start-5">
+            <BazaarMapPanel salons={mapSalons} salonCount={filtered.length} />
+          </div>
         </div>
 
-        {row2Line.map((salon, index) => (
-          <Row2CardSlot key={salon.id} salon={salon} index={index} />
-        ))}
-
-        {row2Rest.length > 0 ? (
-          <section
-            className={cn(
-              "min-w-0 lg:col-span-3 lg:col-start-2",
-              row2Line.length > 0 ? "lg:row-start-3" : "lg:row-start-2",
-            )}
-          >
-            {loading ? <BazaarGridSkeleton cols={3} /> : <SalonCards salons={row2Rest} />}
-          </section>
-        ) : null}
+        {!loading
+          ? salonRows.map((row, index) => <BazaarSalonRow key={index} row={row} />)
+          : null}
       </div>
     </div>
   );
