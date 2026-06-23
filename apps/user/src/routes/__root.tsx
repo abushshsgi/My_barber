@@ -15,7 +15,7 @@ import appCss from "../styles.css?url";
 import { I18nProvider } from "../components/I18nProvider";
 import { LangAwareOutlet } from "../components/LangAwareOutlet";
 import { UserLayout } from "../components/UserLayout";
-import { AppVersionWatcher } from "../components/AppVersionWatcher";
+import { DeployRecovery } from "../components/DeployRecovery";
 import { ClientOnly } from "../components/ClientOnly";
 import { CLIENT_BOOT_SCRIPT } from "../lib/client-boot-script";
 import { Toaster } from "sonner";
@@ -171,7 +171,7 @@ function AppShell() {
             </OnboardingGuard>
           </AuthSessionGuard>
           <ClientOnly>
-            <AppVersionWatcher />
+            <DeployRecovery />
             <Toaster position="top-center" />
           </ClientOnly>
         </CurrencyProvider>
