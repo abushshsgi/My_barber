@@ -85,7 +85,7 @@ export function BazaarMapPanel({ salons = [], nearbyCount, className }: Props) {
         />
 
         <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-10">
-          <p className="relative z-10 mb-2.5 text-center text-sm font-bold text-foreground">
+          <p className="relative z-10 mb-2.5 flex flex-wrap justify-center text-center text-lg font-black text-black">
             {t("home.mapPreview.nearbyCount", { count })}
           </p>
           <span className="relative z-10 flex w-full items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-sm font-bold text-background shadow-lg transition group-hover:opacity-95">
