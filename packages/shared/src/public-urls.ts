@@ -20,14 +20,21 @@ export function barberWebUrl(path: string): string {
 
 /**
  * Mijoz ilovasiga havola (kirish `/auth`).
- * Production: NEXT_PUBLIC_USER_WEB_ORIGIN=https://app.sizning-domen.uz
- * Lokal: http://localhost:3000
+ * Production: https://mysaloon.uz (yoki VITE_USER_WEB_ORIGIN)
+ * Lokal dev: http://localhost:3000
  */
+function defaultUserWebOrigin(): string {
+  const viteEnv = (import.meta as ImportMeta & { env?: { DEV?: boolean } }).env;
+  if (viteEnv?.DEV) return "http://localhost:3000";
+  return "https://mysaloon.uz";
+}
+
 export function userWebUrl(path: string): string {
   const origin = (
-    readPublicEnv("VITE_USER_WEB_ORIGIN") || readPublicEnv("NEXT_PUBLIC_USER_WEB_ORIGIN")
+    readPublicEnv("VITE_USER_WEB_ORIGIN") ||
+    readPublicEnv("NEXT_PUBLIC_USER_WEB_ORIGIN") ||
+    defaultUserWebOrigin()
   ).replace(/\/$/, "");
   const p = path.startsWith("/") ? path : `/${path}`;
-  if (origin) return `${origin}${p}`;
-  return p;
+  return `${origin}${p}`;
 }
