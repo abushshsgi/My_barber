@@ -58,7 +58,7 @@ export function BazaarMapPanel({ salons = [], className }: Props) {
         className,
       )}
     >
-      <div className="map-home-preview relative aspect-[5/4] w-full overflow-hidden bg-surface">
+      <div className="map-home-preview relative aspect-[4/3] min-h-[300px] w-full overflow-hidden bg-surface">
         {mounted ? (
           <div className="pointer-events-none absolute inset-0">
             <MapErrorBoundary>
