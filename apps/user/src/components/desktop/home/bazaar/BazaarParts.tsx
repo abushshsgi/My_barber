@@ -5,6 +5,11 @@ import { cn } from "@/lib/utils";
 
 export { BazaarMapPanel } from "./BazaarMapPanel";
 export { BazaarHeroBanner } from "./BazaarHeroBanner";
+export {
+  BazaarWeekendDeals,
+  BazaarCategoryBrowse,
+  BazaarMapRail,
+} from "./BazaarDiscoveryRails";
 
 type FilterProps = Pick<HomeData, "query" | "setQuery" | "effectiveCat" | "visibleCategoryKeys" | "setCat"> & {
   className?: string;

@@ -126,6 +126,11 @@ export function getSalonCoverUrl(
   return pexelsCoverUrl(photoId, width);
 }
 
+export function getCategoryCoverUrl(category: Category, width = 900): string {
+  const pool = poolForCategory(category);
+  return pexelsCoverUrl(pool[0]!, width);
+}
+
 export function getTrendCoverUrl(seed: string): string {
   return TREND_COVERS[seed] ?? getSalonCoverUrl(`trend-${seed}`, "beauty", 560, 740);
 }

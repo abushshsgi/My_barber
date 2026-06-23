@@ -17,7 +17,7 @@ export function BazaarHeroBanner({ className }: Props) {
     <Link
       to="/today"
       className={cn(
-        "group relative block aspect-[5/4] w-full overflow-hidden rounded-2xl border border-border xl:aspect-auto xl:h-full xl:min-h-0",
+        "group relative block aspect-[21/9] w-full max-h-[240px] overflow-hidden rounded-2xl border border-border",
         "shadow-[0_10px_36px_rgba(15,15,15,0.08)] transition-all hover:shadow-[0_14px_44px_rgba(15,15,15,0.14)]",
         className,
       )}

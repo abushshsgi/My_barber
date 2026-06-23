@@ -57,6 +57,19 @@
       "hint": "Masofa va yo'nalish bilan qulay qidiruv",
       "openMap": "Xaritani ochish",
       "seeMore": "Ko'proq"
+    },
+    "discovery": {
+      "weekendDeals": {
+        "title": "Dam olish kunlari takliflari",
+        "subtitle": "Yaqin salonlarda chegirmali bo'sh vaqtlar"
+      },
+      "browseCategories": {
+        "title": "Kategoriya bo'yicha ko'ring"
+      },
+      "mapSection": {
+        "title": "Salonlar xaritada",
+        "subtitle": "{{count}} ta salon yaqiningizda"
+      }
     }
   },
   "homePage": {

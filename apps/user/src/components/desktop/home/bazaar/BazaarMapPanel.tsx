@@ -80,7 +80,7 @@ export function BazaarMapPanel({ salons = [], salonCount = 0, className }: Props
 
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-32 bg-gradient-to-t from-background from-15% via-background/75 to-transparent" />
 
-        <div className="relative z-[2] px-4 pb-4 pt-2">
+        <div className="absolute inset-x-0 bottom-0 z-[2] px-4 pb-4 pt-2">
           <p className="text-lg font-bold tracking-tight">
             {salonCount > 0
               ? t("home.mapPreview.nearbyCount", {

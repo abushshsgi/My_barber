@@ -52,6 +52,19 @@
       "hint": "Search by distance and direction",
       "openMap": "Open map",
       "seeMore": "More"
+    },
+    "discovery": {
+      "weekendDeals": {
+        "title": "Deals for the weekend",
+        "subtitle": "Save on open slots at nearby salons"
+      },
+      "browseCategories": {
+        "title": "Browse by category"
+      },
+      "mapSection": {
+        "title": "Salons on the map",
+        "subtitle": "{{count}} salons near you"
+      }
     }
   },
   "homePage": {
