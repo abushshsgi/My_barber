@@ -1,7 +1,6 @@
 import { WalletDesktopOverviewPanel } from "@/components/desktop/wallet/WalletDesktopOverviewPanel";
 import { WalletGiftPanel } from "@/components/wallet/panels/WalletGiftPanel";
 import { WalletLoyaltyPanel } from "@/components/wallet/panels/WalletLoyaltyPanel";
-import { WalletOffersPanel } from "@/components/wallet/panels/WalletOffersPanel";
 import { WalletTransactionsPanel } from "@/components/wallet/WalletTransactionsPanel";
 import { SettingsPaymentMethodsPanel } from "@/components/settings/panels/SettingsPaymentMethodsPanel";
 import { SettingsSubscriptionsPanel } from "@/components/settings/panels/SettingsSubscriptionsPanel";
@@ -35,8 +34,6 @@ export function WalletPanelContent({ section, hideTitle }: Props) {
         {section === "gift" && <WalletGiftPanel />}
 
         {section === "loyalty" && <WalletLoyaltyPanel />}
-
-        {section === "offers" && <WalletOffersPanel />}
 
         {section === "subscriptions" && <SettingsSubscriptionsPanel />}
       </div>

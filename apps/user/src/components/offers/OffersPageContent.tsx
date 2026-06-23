@@ -19,7 +19,7 @@ import { useAudience, matchAudience } from "@/hooks/use-audience";
 /** Backend offers API hali yo'q — bo'sh ro'yxat (mock olib tashlangan). */
 const offers: never[] = [];
 
-export function WalletOffersPanel() {
+export function OffersPageContent() {
   const { t } = useTranslation();
   const { audience } = useAudience();
   const [variant, setVariant] = useState<OffersPageVariant>(() => readOffersVariant());

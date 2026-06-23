@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { WalletDesktopPage } from "@/components/desktop/pages/WalletDesktopPage";
@@ -16,6 +16,11 @@ const walletSearchSchema = z.object({
 
 export const Route = createFileRoute("/wallet")({
   validateSearch: walletSearchSchema,
+  beforeLoad: ({ search }) => {
+    if (search.section === "offers") {
+      throw redirect({ to: "/offers" });
+    }
+  },
   ssr: false,
   head: () => ({
     meta: [

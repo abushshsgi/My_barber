@@ -37,7 +37,7 @@ const tabs = [
 const discoveryLinks = [
   { to: "/today", icon: Flame, labelKey: "home.quick.today" },
   { to: "/explore", icon: Sparkles, labelKey: "home.quick.trends" },
-  { to: "/wallet", icon: Tag, labelKey: "home.quick.offers", search: { section: "offers" } },
+  { to: "/offers", icon: Tag, labelKey: "home.quick.offers" },
   { to: "/compare", icon: GitCompareArrows, labelKey: "home.quick.compare" },
   { to: "/ai-style", icon: Wand2, labelKey: "home.quick.aiStyle" },
   { to: "/reels", icon: Film, labelKey: "home.quick.reels" },

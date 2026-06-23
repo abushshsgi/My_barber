@@ -46,7 +46,7 @@ export const PROFILE_MENU_SECTIONS: {
       { icon: Wallet, to: "/wallet" },
       { icon: Sparkles, to: "/wallet", search: { section: "loyalty" } },
       { icon: CreditCard, to: "/payment-methods" },
-      { icon: Tag, to: "/wallet", search: { section: "offers" } },
+      { icon: Tag, to: "/offers" },
       { icon: Repeat, to: "/subscriptions" },
     ],
   },

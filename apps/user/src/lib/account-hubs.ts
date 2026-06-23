@@ -57,7 +57,7 @@ export const ACCOUNT_HUBS: AccountHubMeta[] = [
       { icon: Wallet, label: "", to: "/wallet" },
       { icon: Sparkles, label: "", to: "/wallet", search: { section: "loyalty" } },
       { icon: CreditCard, label: "", to: "/payment-methods" },
-      { icon: Tag, label: "", to: "/wallet", search: { section: "offers" } },
+      { icon: Tag, label: "", to: "/offers" },
       { icon: Repeat, label: "", to: "/subscriptions" },
     ],
   },
