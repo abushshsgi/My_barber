@@ -16,7 +16,7 @@ import { useBazaarSections } from "./bazaar/useBazaarSections";
 
 type Props = { data: HomeData };
 
-const GRID_CARD_COUNT = 9;
+const GRID_CARD_COUNT = 6;
 
 function SalonGrid({ salons }: { salons: HomeData["filtered"] }) {
   return (
@@ -29,7 +29,7 @@ function SalonGrid({ salons }: { salons: HomeData["filtered"] }) {
 }
 
 /**
- * Banner → bir qator: chapda filter | o'rtada kartochkalar | o'ngda xarita (bir xil balandlik).
+ * Wireframe: hero banner → filtr | kartochkalar | map (bir qator, bir xil balandlik).
  */
 export function HomeBazaarLayout({ data }: Props) {
   const { t } = useTranslation();
@@ -39,33 +39,33 @@ export function HomeBazaarLayout({ data }: Props) {
   const gridSalons = useMemo(() => filtered.slice(0, GRID_CARD_COUNT), [filtered]);
 
   return (
-    <div className="mx-auto w-full max-w-[1360px] px-3">
-      <div className="flex w-full flex-col gap-10">
-        <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 px-4 md:px-8">
-          <BazaarHeroBanner className="mx-auto aspect-[21/9] max-h-[400px] w-full max-w-[1680px] rounded-3xl" />
-        </div>
+    <div className="mx-auto w-full max-w-[1440px] px-4 lg:px-6">
+      <div className="flex w-full flex-col gap-8">
+        <BazaarHeroBanner className="w-full rounded-2xl aspect-[21/9] max-h-[400px]" />
 
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-stretch">
-          <aside className="h-[420px] w-full shrink-0 lg:w-[260px]">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[240px_minmax(0,1fr)_240px] lg:items-stretch">
+          <aside className="h-[420px]">
             <BazaarFilterSidebar {...data} className="h-full" />
           </aside>
 
-          <div className="grid min-w-0 flex-1 grid-cols-2 gap-3 sm:grid-cols-3 lg:h-[420px] lg:grid-rows-3">
-            {gridSalons.map((salon) => (
-              <div key={salon.id} className="min-h-0 min-w-0 lg:h-full">
-                <DesktopSalonCard salon={salon} variant="bazaar" />
-              </div>
-            ))}
-          </div>
+          <section className="min-w-0 lg:h-[420px]">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:h-full lg:grid-rows-2">
+              {gridSalons.map((salon) => (
+                <div key={salon.id} className="min-h-0 min-w-0 lg:h-full">
+                  <DesktopSalonCard salon={salon} variant="bazaar" />
+                </div>
+              ))}
+            </div>
+          </section>
 
-          <div className="h-[420px] w-full shrink-0 lg:w-[280px]">
+          <aside className="h-[420px]">
             <BazaarMapPanel
               variant="preview"
               salons={mapSalons}
               salonCount={filtered.length}
               className="h-full w-full"
             />
-          </div>
+          </aside>
         </div>
 
         <BazaarWeekendDeals salons={dealSalons} />

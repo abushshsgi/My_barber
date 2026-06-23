@@ -49,17 +49,17 @@ export function DesktopSalonCard({ salon, variant = "grid" }: Props) {
           </button>
         </div>
         <div className="mt-1.5 shrink-0 space-y-0.5">
-          <div className="flex items-start justify-between gap-1">
-            <h3 className="truncate text-xs font-semibold leading-tight">{salon.name}</h3>
-            <span className="flex shrink-0 items-center gap-0.5 text-xs">
+          <div className="flex items-start justify-between gap-1.5">
+            <h3 className="truncate text-[13px] font-semibold leading-tight">{salon.name}</h3>
+            <span className="flex shrink-0 items-center gap-0.5 text-[13px]">
               <Star className="h-3 w-3 fill-foreground" />
               {salon.rating.toFixed(1)}
             </span>
           </div>
-          <p className="truncate text-[11px] text-muted-foreground">
+          <p className="truncate text-xs text-muted-foreground">
             {salon.category} · {salon.distanceKm} km
           </p>
-          <p className="text-[11px] leading-tight">
+          <p className="text-xs leading-tight">
             <span className="font-semibold">{shortPrice(salon.priceFrom)}</span>
             <span className="text-muted-foreground"> dan</span>
           </p>
