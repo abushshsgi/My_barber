@@ -45,7 +45,6 @@ import { Route as WalletHistoryRouteImport } from './routes/wallet_.history'
 import { Route as StoriesSalonIdRouteImport } from './routes/stories.$salonId'
 import { Route as SalonIdRouteImport } from './routes/salon.$id'
 import { Route as MapPeekVariantsRouteImport } from './routes/map.peek-variants'
-import { Route as HomeLayoutVariantsRouteImport } from './routes/home.layout-variants'
 import { Route as ExploreStyleIdRouteImport } from './routes/explore_.$styleId'
 import { Route as ChatIdRouteImport } from './routes/chat.$id'
 import { Route as CategoryCategoryRouteImport } from './routes/category.$category'
@@ -237,11 +236,6 @@ const MapPeekVariantsRoute = MapPeekVariantsRouteImport.update({
   path: '/peek-variants',
   getParentRoute: () => MapRoute,
 } as any)
-const HomeLayoutVariantsRoute = HomeLayoutVariantsRouteImport.update({
-  id: '/home/layout-variants',
-  path: '/home/layout-variants',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ExploreStyleIdRoute = ExploreStyleIdRouteImport.update({
   id: '/explore_/$styleId',
   path: '/explore/$styleId',
@@ -333,7 +327,6 @@ export interface FileRoutesByFullPath {
   '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
   '/explore/$styleId': typeof ExploreStyleIdRoute
-  '/home/layout-variants': typeof HomeLayoutVariantsRoute
   '/map/peek-variants': typeof MapPeekVariantsRoute
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
@@ -382,7 +375,6 @@ export interface FileRoutesByTo {
   '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
   '/explore/$styleId': typeof ExploreStyleIdRoute
-  '/home/layout-variants': typeof HomeLayoutVariantsRoute
   '/map/peek-variants': typeof MapPeekVariantsRoute
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
@@ -432,7 +424,6 @@ export interface FileRoutesById {
   '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
   '/explore_/$styleId': typeof ExploreStyleIdRoute
-  '/home/layout-variants': typeof HomeLayoutVariantsRoute
   '/map/peek-variants': typeof MapPeekVariantsRoute
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
@@ -483,7 +474,6 @@ export interface FileRouteTypes {
     | '/category/$category'
     | '/chat/$id'
     | '/explore/$styleId'
-    | '/home/layout-variants'
     | '/map/peek-variants'
     | '/salon/$id'
     | '/stories/$salonId'
@@ -532,7 +522,6 @@ export interface FileRouteTypes {
     | '/category/$category'
     | '/chat/$id'
     | '/explore/$styleId'
-    | '/home/layout-variants'
     | '/map/peek-variants'
     | '/salon/$id'
     | '/stories/$salonId'
@@ -581,7 +570,6 @@ export interface FileRouteTypes {
     | '/category/$category'
     | '/chat/$id'
     | '/explore_/$styleId'
-    | '/home/layout-variants'
     | '/map/peek-variants'
     | '/salon/$id'
     | '/stories/$salonId'
@@ -630,7 +618,6 @@ export interface RootRouteChildren {
   BookingSalonIdRoute: typeof BookingSalonIdRoute
   CategoryCategoryRoute: typeof CategoryCategoryRoute
   ExploreStyleIdRoute: typeof ExploreStyleIdRoute
-  HomeLayoutVariantsRoute: typeof HomeLayoutVariantsRoute
   SalonIdRoute: typeof SalonIdRoute
   WalletHistoryRoute: typeof WalletHistoryRoute
   WalletTopUpRoute: typeof WalletTopUpRoute
@@ -892,13 +879,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MapPeekVariantsRouteImport
       parentRoute: typeof MapRoute
     }
-    '/home/layout-variants': {
-      id: '/home/layout-variants'
-      path: '/home/layout-variants'
-      fullPath: '/home/layout-variants'
-      preLoaderRoute: typeof HomeLayoutVariantsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/explore_/$styleId': {
       id: '/explore_/$styleId'
       path: '/explore/$styleId'
@@ -1042,7 +1022,6 @@ const rootRouteChildren: RootRouteChildren = {
   BookingSalonIdRoute: BookingSalonIdRoute,
   CategoryCategoryRoute: CategoryCategoryRoute,
   ExploreStyleIdRoute: ExploreStyleIdRoute,
-  HomeLayoutVariantsRoute: HomeLayoutVariantsRoute,
   SalonIdRoute: SalonIdRoute,
   WalletHistoryRoute: WalletHistoryRoute,
   WalletTopUpRoute: WalletTopUpRoute,
