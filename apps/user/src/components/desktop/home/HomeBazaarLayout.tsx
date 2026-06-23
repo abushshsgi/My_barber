@@ -41,27 +41,29 @@ export function HomeBazaarLayout({ data }: Props) {
   return (
     <div className="mx-auto w-full max-w-[1360px] px-3">
       <div className="flex w-full flex-col gap-10">
-        <BazaarHeroBanner className="mx-auto aspect-[2.85/1] max-h-[360px] w-full rounded-3xl" />
+        <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 px-4 md:px-8">
+          <BazaarHeroBanner className="mx-auto aspect-[21/9] max-h-[400px] w-full max-w-[1680px] rounded-3xl" />
+        </div>
 
-        <div className="flex flex-col gap-5 lg:h-[520px] lg:flex-row lg:items-stretch">
-          <aside className="w-full shrink-0 lg:h-full lg:w-[260px]">
-            <BazaarFilterSidebar {...data} className="h-full min-h-[300px] lg:min-h-0" />
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-stretch">
+          <aside className="h-[420px] w-full shrink-0 lg:w-[260px]">
+            <BazaarFilterSidebar {...data} className="h-full" />
           </aside>
 
-          <div className="grid min-w-0 flex-1 grid-cols-2 gap-4 sm:grid-cols-3 sm:grid-rows-3 sm:gap-5 lg:h-full">
+          <div className="grid min-w-0 flex-1 grid-cols-2 gap-3 sm:grid-cols-3 lg:h-[420px] lg:grid-rows-3">
             {gridSalons.map((salon) => (
-              <div key={salon.id} className="min-w-0">
-                <DesktopSalonCard salon={salon} variant="marketplace" />
+              <div key={salon.id} className="min-h-0 min-w-0 lg:h-full">
+                <DesktopSalonCard salon={salon} variant="bazaar" />
               </div>
             ))}
           </div>
 
-          <div className="w-full shrink-0 lg:h-full lg:w-[280px]">
+          <div className="h-[420px] w-full shrink-0 lg:w-[280px]">
             <BazaarMapPanel
               variant="preview"
               salons={mapSalons}
               salonCount={filtered.length}
-              className="h-[280px] w-full lg:h-full"
+              className="h-full w-full"
             />
           </div>
         </div>
