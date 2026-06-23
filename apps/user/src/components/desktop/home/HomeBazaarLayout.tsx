@@ -16,7 +16,7 @@ import { useBazaarSections } from "./bazaar/useBazaarSections";
 
 type Props = { data: HomeData };
 
-const GRID_CARD_COUNT = 10;
+const GRID_CARD_COUNT = 9;
 
 const GRID_SLOTS = [
   "lg:col-start-2 lg:row-start-1",
@@ -28,7 +28,6 @@ const GRID_SLOTS = [
   "lg:col-start-2 lg:row-start-3",
   "lg:col-start-3 lg:row-start-3",
   "lg:col-start-4 lg:row-start-3",
-  "lg:col-start-5 lg:row-start-3",
 ] as const;
 
 function SalonGrid({ salons }: { salons: HomeData["filtered"] }) {
@@ -52,13 +51,13 @@ export function HomeBazaarLayout({ data }: Props) {
   const gridSalons = useMemo(() => filtered.slice(0, GRID_CARD_COUNT), [filtered]);
 
   return (
-    <div className="mx-auto w-full max-w-[1280px]">
+    <div className="mx-auto w-full max-w-[1360px] px-3">
       <div className="flex w-full flex-col gap-10">
-        <BazaarHeroBanner className="aspect-[3/1] max-h-[320px] w-full rounded-3xl" />
+        <BazaarHeroBanner className="mx-auto aspect-[2.85/1] max-h-[360px] w-full rounded-3xl" />
 
-        <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5 lg:grid-rows-3 lg:items-stretch">
-          <div className="col-span-2 min-h-[280px] sm:col-span-1 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:min-h-0">
-            <BazaarFilterSidebar {...data} className="h-full min-h-[280px] lg:min-h-full" />
+        <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-6 lg:grid-rows-3 lg:items-stretch">
+          <div className="col-span-2 min-h-[300px] sm:col-span-1 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:min-h-0">
+            <BazaarFilterSidebar {...data} className="h-full min-h-[300px] lg:min-h-full" />
           </div>
 
           {gridSalons.map((salon, index) => (
@@ -67,12 +66,12 @@ export function HomeBazaarLayout({ data }: Props) {
             </div>
           ))}
 
-          <div className="min-w-0 lg:col-start-5 lg:row-span-2 lg:row-start-1">
+          <div className="min-w-0 lg:col-span-2 lg:col-start-5 lg:row-span-3 lg:row-start-1">
             <BazaarMapPanel
               variant="preview"
               salons={mapSalons}
               salonCount={filtered.length}
-              className="h-full min-h-[32rem] w-full"
+              className="h-full min-h-[40rem] w-full"
             />
           </div>
         </div>

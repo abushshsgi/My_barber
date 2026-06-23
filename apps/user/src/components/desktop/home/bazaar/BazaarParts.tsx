@@ -60,7 +60,7 @@ export function BazaarFilterSidebar({
 }
 
 export const SALON_GRID_CLASS =
-  "grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] 2xl:grid-cols-5 2xl:gap-6";
+  "grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] 2xl:grid-cols-5 2xl:gap-7";
 
 export function BazaarGridSkeleton() {
   return (
