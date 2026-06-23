@@ -9,7 +9,6 @@ type Props = {
   accent?: AuthAccent;
 };
 
-/** Ketma-ket onboarding progress — marketplace uslubida. */
 export function AuthOnboardingProgress({ step, accent = "violet" }: Props) {
   const styles = ACCENT_STYLES[accent];
   return (
