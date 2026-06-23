@@ -18,11 +18,15 @@ export function PasswordStrengthInput({
   label,
   value,
   onChange,
+  placeholder,
   autoComplete,
   required,
 }: Props) {
   const [show, setShow] = useState(false);
+  const [focused, setFocused] = useState(false);
   const has = value.length > 0;
+  const floatLabel = has || focused;
+  const hint = placeholder ?? label;
 
   return (
     <div className="relative">
@@ -31,22 +35,26 @@ export function PasswordStrengthInput({
         type={show ? "text" : "password"}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         autoComplete={autoComplete}
         required={required}
-        className={cn(AUTH_INPUT_CLASS, "pr-11")}
-        placeholder={label}
-      />
-      <label
-        htmlFor={id}
         className={cn(
-          "pointer-events-none absolute left-3.5 text-muted-foreground transition-all",
-          has ? "top-1.5 text-[10px] font-semibold uppercase tracking-wider" : "top-1/2 -translate-y-1/2 text-sm",
-          "peer-focus:top-1.5 peer-focus:translate-y-0 peer-focus:text-[10px] peer-focus:font-semibold peer-focus:uppercase peer-focus:tracking-wider",
+          AUTH_INPUT_CLASS,
+          "pr-11",
+          floatLabel ? "placeholder-transparent" : "!py-3.5 placeholder:text-muted-foreground/55",
         )}
-      >
-        {label}
-        {required && <span className="text-destructive">*</span>}
-      </label>
+        placeholder={hint}
+      />
+      {floatLabel ? (
+        <label
+          htmlFor={id}
+          className="pointer-events-none absolute left-3.5 top-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+        >
+          {label}
+          {required && <span className="text-destructive">*</span>}
+        </label>
+      ) : null}
       <button
         type="button"
         onClick={() => setShow((s) => !s)}

@@ -39,7 +39,7 @@ export function FloatingInput({
         aria-invalid={!!error}
         className={cn(
           AUTH_INPUT_CLASS,
-          error && "border-destructive/40 focus:border-destructive/50",
+          error && "border-destructive/40 focus:border-destructive/55",
         )}
         placeholder={label}
       />

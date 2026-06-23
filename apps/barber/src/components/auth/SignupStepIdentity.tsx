@@ -84,7 +84,8 @@ export function SignupStepIdentity({
       node: (
         <PasswordStrengthInput
           id="signup-password"
-          label="Parol (kamida 8 belgi)"
+          label="Parol"
+          placeholder="8 ta belgi"
           value={password}
           onChange={onPasswordChange}
           autoComplete="new-password"
