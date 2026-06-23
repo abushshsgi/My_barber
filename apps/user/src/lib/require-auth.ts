@@ -1,11 +1,12 @@
 import { redirect } from "@tanstack/react-router";
-import { bootstrapUserSession } from "@/lib/api/client";
+import { bootstrapUserSession, hasValidUserSession } from "@/lib/api/client";
 
 const PUBLIC_PATHS = ["/auth", "/privacy"];
 
 export async function requireAuth(pathname: string) {
   if (typeof window === "undefined") return;
   if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return;
+  if (hasValidUserSession()) return;
   const ok = await bootstrapUserSession();
   if (!ok) {
     throw redirect({ to: "/auth", search: { redirect: pathname } });

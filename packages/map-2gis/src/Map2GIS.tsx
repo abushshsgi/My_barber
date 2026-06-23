@@ -199,11 +199,6 @@ export function Map2GIS({
     const notifyResize = () => {
       const m = mapRef.current as (mapgl.Map & { invalidateSize?: () => void }) | null;
       m?.invalidateSize?.();
-      window.dispatchEvent(new Event("resize"));
-      requestAnimationFrame(() => {
-        m?.invalidateSize?.();
-        window.dispatchEvent(new Event("resize"));
-      });
     };
 
     const buildHandle = (): MapHandle => ({
