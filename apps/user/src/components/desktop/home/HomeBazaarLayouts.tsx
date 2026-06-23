@@ -4,6 +4,7 @@ import { DesktopSalonCard } from "@/components/desktop/ui/DesktopSalonCard";
 import {
   BazaarFilterSidebar,
   BazaarGridSkeleton,
+  BazaarHeroBanner,
   BazaarMapPanel,
   BazaarPageTitle,
 } from "./bazaar/BazaarParts";
@@ -29,8 +30,11 @@ export function HomeBazaarClassic({ data }: Props) {
   const gridSalons = filtered.length > 3 ? filtered.slice(3) : [];
 
   return (
-    <div className="w-full">
+    <div className="flex w-full flex-col gap-6">
       <BazaarPageTitle title={t("home.nearby")} count={filtered.length} />
+
+      <BazaarHeroBanner className="aspect-[21/9] max-h-[400px]" />
+
       {/*
         1-qator: filter (chap) + top kartochka (o'rta) + xarita (o'ng).
         2-qator: chap kartochka | markaz grid | o'ng kartochka.
