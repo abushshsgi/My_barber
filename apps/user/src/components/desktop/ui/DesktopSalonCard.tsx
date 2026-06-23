@@ -24,9 +24,9 @@ export function DesktopSalonCard({ salon, variant = "grid" }: Props) {
       <Link
         to="/salon/$id"
         params={{ id: salon.id }}
-        className="group flex w-[300px] max-w-full flex-col"
+        className="group flex w-full flex-col"
       >
-        <div className="relative h-[150px] w-full shrink-0 overflow-hidden rounded-lg bg-surface">
+        <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl bg-surface">
           <img
             src={cover}
             alt=""
@@ -40,27 +40,27 @@ export function DesktopSalonCard({ salon, variant = "grid" }: Props) {
               e.stopPropagation();
               toggle(salon.id);
             }}
-            className="absolute right-2 top-2 text-white drop-shadow-md transition-transform hover:scale-110"
+            className="absolute right-2.5 top-2.5 text-white drop-shadow-md transition-transform hover:scale-110"
             aria-label="Sevimli"
           >
             <Heart
-              className={cn("h-4 w-4", fav ? "fill-white" : "fill-black/20 stroke-white stroke-[2px]")}
+              className={cn("h-5 w-5", fav ? "fill-white" : "fill-black/20 stroke-white stroke-[2px]")}
             />
           </button>
         </div>
-        <div className="mt-1.5 shrink-0 space-y-0.5">
-          <div className="flex items-start justify-between gap-1.5">
-            <h3 className="truncate text-[13px] font-semibold leading-tight">{salon.name}</h3>
-            <span className="flex shrink-0 items-center gap-0.5 text-[13px]">
-              <Star className="h-3 w-3 fill-foreground" />
+        <div className="mt-2.5 shrink-0 space-y-1">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="line-clamp-1 text-sm font-semibold leading-snug">{salon.name}</h3>
+            <span className="flex shrink-0 items-center gap-0.5 text-sm font-medium">
+              <Star className="h-3.5 w-3.5 fill-foreground" />
               {salon.rating.toFixed(1)}
             </span>
           </div>
-          <p className="truncate text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {salon.category} · {salon.distanceKm} km
           </p>
-          <p className="text-xs leading-tight">
-            <span className="font-semibold">{shortPrice(salon.priceFrom)}</span>
+          <p className="text-sm">
+            <span className="font-bold">{shortPrice(salon.priceFrom)}</span>
             <span className="text-muted-foreground"> dan</span>
           </p>
         </div>

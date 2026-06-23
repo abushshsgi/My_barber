@@ -43,22 +43,20 @@ export function HomeBazaarLayout({ data }: Props) {
       <div className="flex w-full flex-col gap-8">
         <BazaarHeroBanner className="aspect-[21/9] max-h-[400px]" />
 
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[300px_minmax(0,1fr)_400px] lg:items-start">
-          <aside className="h-[450px]">
-            <BazaarFilterSidebar {...data} className="h-full" />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[260px_1fr_480px] lg:items-start">
+          <aside>
+            <BazaarFilterSidebar {...data} className="min-h-[280px]" />
           </aside>
 
-          <section className="min-w-0 overflow-x-auto lg:h-[450px]">
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:h-full lg:w-max lg:grid-cols-[repeat(3,300px)] lg:grid-rows-2">
+          <section className="min-w-0">
+            <div className="grid w-full grid-cols-2 gap-5 xl:grid-cols-3">
               {gridSalons.map((salon) => (
-                <div key={salon.id} className="min-h-0 min-w-0">
-                  <DesktopSalonCard salon={salon} variant="bazaar" />
-                </div>
+                <DesktopSalonCard key={salon.id} salon={salon} variant="bazaar" />
               ))}
             </div>
           </section>
 
-          <aside className="h-[320px]">
+          <aside className="h-[220px]">
             <BazaarMapPanel
               variant="preview"
               salons={mapSalons}

@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 type MapSalon = Pick<Salon, "id" | "lat" | "lng" | "name" | "priceFrom" | "rating">;
 
 const PREVIEW_MARKER_LIMIT = 5;
-const PREVIEW_FIT_PADDING = { top: 28, right: 20, bottom: 168, left: 20 };
+const PREVIEW_FIT_PADDING = { top: 16, right: 16, bottom: 72, left: 16 };
 const PREVIEW_FIT_MAX_ZOOM = 12;
 
 function buildMarker(s: MapSalon): SalonMapMarker {
@@ -104,8 +104,8 @@ export function BazaarMapPanel({
         )}
 
         {isPreview ? (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 border-t border-border/60 bg-background px-4 pb-4 pt-3 shadow-[0_-8px_24px_rgba(15,15,15,0.06)]">
-            <p className="text-base font-bold tracking-tight">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t border-border/60 bg-background px-3 py-2.5 shadow-[0_-6px_20px_rgba(15,15,15,0.06)]">
+            <p className="min-w-0 truncate text-sm font-bold tracking-tight">
               {salonCount > 0
                 ? t("home.mapPreview.nearbyCount", {
                     count: salonCount,
@@ -113,9 +113,9 @@ export function BazaarMapPanel({
                   })
                 : t("home.mapPreview.explore", { defaultValue: "Yaqin salonlarni toping" })}
             </p>
-            <span className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl bg-foreground py-2.5 text-sm font-bold text-background">
+            <span className="flex shrink-0 items-center gap-1.5 rounded-lg bg-foreground px-3 py-2 text-xs font-bold text-background">
               {t("home.mapPreview.openMap", { defaultValue: "Xaritani ochish" })}
-              <ArrowUpRight className="h-4 w-4" />
+              <ArrowUpRight className="h-3.5 w-3.5" />
             </span>
           </div>
         ) : (
