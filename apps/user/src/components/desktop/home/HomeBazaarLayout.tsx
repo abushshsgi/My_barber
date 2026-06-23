@@ -53,38 +53,38 @@ export function HomeBazaarLayout({ data }: Props) {
   const gridSalons = useMemo(() => filtered.slice(0, GRID_CARD_COUNT), [filtered]);
 
   return (
-    <div className="flex w-full flex-col gap-10">
-      <div className="flex w-full justify-center">
-        <BazaarHeroBanner className="aspect-[4/1] max-h-[280px] w-full max-w-5xl" />
-      </div>
+    <div className="mx-auto w-full max-w-[1280px]">
+      <div className="flex w-full flex-col gap-10">
+        <BazaarHeroBanner className="aspect-[3/1] max-h-[320px] w-full rounded-3xl" />
 
-      <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5 lg:grid-rows-3 lg:items-stretch">
-        <div className="col-span-2 min-h-[280px] sm:col-span-1 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:min-h-0">
-          <BazaarFilterSidebar {...data} className="h-full min-h-[280px] lg:min-h-full" />
-        </div>
-
-        {gridSalons.map((salon, index) => (
-          <div key={salon.id} className={`min-w-0 ${GRID_SLOTS[index] ?? ""}`}>
-            <DesktopSalonCard salon={salon} variant="marketplace" />
+        <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5 lg:grid-rows-3 lg:items-stretch">
+          <div className="col-span-2 min-h-[280px] sm:col-span-1 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:min-h-0">
+            <BazaarFilterSidebar {...data} className="h-full min-h-[280px] lg:min-h-full" />
           </div>
-        ))}
 
-        <div className="min-w-0 lg:col-start-5 lg:row-start-1">
-          <BazaarMapCard salons={mapSalons} salonCount={filtered.length} className="max-w-none" />
+          {gridSalons.map((salon, index) => (
+            <div key={salon.id} className={`min-w-0 ${GRID_SLOTS[index] ?? ""}`}>
+              <DesktopSalonCard salon={salon} variant="marketplace" />
+            </div>
+          ))}
+
+          <div className="min-w-0 lg:col-start-5 lg:row-start-1">
+            <BazaarMapCard salons={mapSalons} salonCount={filtered.length} className="max-w-none" />
+          </div>
         </div>
+
+        <BazaarWeekendDeals salons={dealSalons} />
+        <BazaarCategoryBrowse
+          categories={visibleCategoryKeys}
+          onSelect={selectCategory}
+          onViewAll={scrollToSalons}
+        />
+
+        <section id="nearby-salons" className="min-w-0 scroll-mt-24">
+          <BazaarPageTitle title={t("home.nearby")} count={filtered.length} />
+          {loading ? <BazaarGridSkeleton /> : <SalonGrid salons={filtered} />}
+        </section>
       </div>
-
-      <BazaarWeekendDeals salons={dealSalons} />
-      <BazaarCategoryBrowse
-        categories={visibleCategoryKeys}
-        onSelect={selectCategory}
-        onViewAll={scrollToSalons}
-      />
-
-      <section id="nearby-salons" className="min-w-0 scroll-mt-24">
-        <BazaarPageTitle title={t("home.nearby")} count={filtered.length} />
-        {loading ? <BazaarGridSkeleton /> : <SalonGrid salons={filtered} />}
-      </section>
     </div>
   );
 }
