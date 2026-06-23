@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { HomeData } from "@/components/home/useHomeData";
@@ -67,17 +68,49 @@ export function BazaarPageTitle({
   title,
   count,
   className,
+  hideCount,
 }: {
   title: string;
-  count: number;
+  count?: number;
   className?: string;
+  hideCount?: boolean;
 }) {
   return (
     <div className={cn("mb-6 flex items-baseline gap-3", className)}>
       <h2 className="text-xl font-bold tracking-tight xl:text-2xl">{title}</h2>
-      <span className="rounded-full bg-foreground px-3 py-1 text-sm font-bold text-background">
-        {count}
-      </span>
+      {!hideCount && count != null ? (
+        <span className="rounded-full bg-foreground px-3 py-1 text-sm font-bold text-background">
+          {count}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+export function BazaarSectionHeader({
+  title,
+  count,
+  viewAllTo,
+  className,
+}: {
+  title: string;
+  count?: number;
+  viewAllTo?: string;
+  className?: string;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className={cn("flex items-end justify-between gap-4", className)}>
+      <BazaarPageTitle title={title} count={count} className="mb-0" />
+      {viewAllTo ? (
+        <Link
+          to={viewAllTo}
+          className="shrink-0 pb-1 text-sm font-bold text-foreground underline-offset-4 hover:underline"
+        >
+          {t("common.viewAll")}
+        </Link>
+      ) : null}
     </div>
   );
 }

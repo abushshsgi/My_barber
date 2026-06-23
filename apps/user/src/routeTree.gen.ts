@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as TopRouteImport } from './routes/top'
 import { Route as TodayRouteImport } from './routes/today'
 import { Route as SupportRouteImport } from './routes/support'
 import { Route as SubscriptionsRouteImport } from './routes/subscriptions'
@@ -62,6 +63,11 @@ const WalletRoute = WalletRouteImport.update({
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
   path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TopRoute = TopRouteImport.update({
+  id: '/top',
+  path: '/top',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TodayRoute = TodayRouteImport.update({
@@ -304,6 +310,7 @@ export interface FileRoutesByFullPath {
   '/subscriptions': typeof SubscriptionsRoute
   '/support': typeof SupportRoute
   '/today': typeof TodayRoute
+  '/top': typeof TopRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wallet': typeof WalletRoute
   '/account/activity': typeof AccountActivityRoute
@@ -350,6 +357,7 @@ export interface FileRoutesByTo {
   '/subscriptions': typeof SubscriptionsRoute
   '/support': typeof SupportRoute
   '/today': typeof TodayRoute
+  '/top': typeof TopRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wallet': typeof WalletRoute
   '/account/activity': typeof AccountActivityRoute
@@ -397,6 +405,7 @@ export interface FileRoutesById {
   '/subscriptions': typeof SubscriptionsRoute
   '/support': typeof SupportRoute
   '/today': typeof TodayRoute
+  '/top': typeof TopRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wallet': typeof WalletRoute
   '/account/activity': typeof AccountActivityRoute
@@ -445,6 +454,7 @@ export interface FileRouteTypes {
     | '/subscriptions'
     | '/support'
     | '/today'
+    | '/top'
     | '/verify-email'
     | '/wallet'
     | '/account/activity'
@@ -491,6 +501,7 @@ export interface FileRouteTypes {
     | '/subscriptions'
     | '/support'
     | '/today'
+    | '/top'
     | '/verify-email'
     | '/wallet'
     | '/account/activity'
@@ -537,6 +548,7 @@ export interface FileRouteTypes {
     | '/subscriptions'
     | '/support'
     | '/today'
+    | '/top'
     | '/verify-email'
     | '/wallet'
     | '/account/activity'
@@ -584,6 +596,7 @@ export interface RootRouteChildren {
   SubscriptionsRoute: typeof SubscriptionsRoute
   SupportRoute: typeof SupportRoute
   TodayRoute: typeof TodayRoute
+  TopRoute: typeof TopRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   WalletRoute: typeof WalletRoute
   AccountActivityRoute: typeof AccountActivityRoute
@@ -613,6 +626,13 @@ declare module '@tanstack/react-router' {
       path: '/verify-email'
       fullPath: '/verify-email'
       preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/top': {
+      id: '/top'
+      path: '/top'
+      fullPath: '/top'
+      preLoaderRoute: typeof TopRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/today': {
@@ -972,6 +992,7 @@ const rootRouteChildren: RootRouteChildren = {
   SubscriptionsRoute: SubscriptionsRoute,
   SupportRoute: SupportRoute,
   TodayRoute: TodayRoute,
+  TopRoute: TopRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   WalletRoute: WalletRoute,
   AccountActivityRoute: AccountActivityRoute,

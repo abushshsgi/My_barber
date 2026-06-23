@@ -78,7 +78,15 @@
       "aiCta": "Sinab ko'rish",
       "trendsTitle": "Trend uslublar va mashhur ustalar",
       "trendsDesc": "Yangi look toping va darhol bron qiling"
+    },
+    "topSalons": {
+      "title": "Top salonlar"
     }
+  },
+  "topSalonsPage": {
+    "title": "Top salonlar",
+    "subtitle": "Reytingi 4.8 va undan yuqori — mehmonlar tanlovi",
+    "empty": "Hozircha top maqomli salon topilmadi"
   },
   "homePage": {
     "featuredOffer": "Bugungi taklif",
