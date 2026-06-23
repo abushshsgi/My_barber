@@ -53,9 +53,12 @@ export function BazaarFilterSidebar({
   );
 }
 
+export const SALON_GRID_CLASS =
+  "grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] 2xl:grid-cols-5 2xl:gap-6";
+
 export function BazaarGridSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] 2xl:gap-6">
+    <div className={SALON_GRID_CLASS}>
       {Array.from({ length: 12 }).map((_, i) => (
         <div key={i} className="animate-pulse">
           <div className="aspect-[5/4] rounded-xl bg-surface" />

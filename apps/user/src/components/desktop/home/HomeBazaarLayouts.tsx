@@ -7,13 +7,14 @@ import {
   BazaarHeroBanner,
   BazaarMapPanel,
   BazaarPageTitle,
+  SALON_GRID_CLASS,
 } from "./bazaar/BazaarParts";
 
 type Props = { data: HomeData };
 
 function SalonGrid({ salons }: { salons: HomeData["filtered"] }) {
   return (
-    <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] 2xl:gap-6">
+    <div className={SALON_GRID_CLASS}>
       {salons.map((s) => (
         <DesktopSalonCard key={s.id} salon={s} variant="marketplace" />
       ))}
