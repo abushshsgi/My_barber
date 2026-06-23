@@ -44,21 +44,21 @@ export function HomeBazaarLayout({ data }: Props) {
         <BazaarHeroBanner className="aspect-[21/9] max-h-[400px]" />
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[300px_minmax(0,1fr)_340px] lg:items-stretch">
-          <aside className="h-[310px]">
+          <aside className="h-[450px]">
             <BazaarFilterSidebar {...data} className="h-full" />
           </aside>
 
-          <section className="min-w-0 lg:h-[310px]">
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:h-full lg:grid-rows-2">
+          <section className="min-w-0 overflow-x-auto lg:h-[450px]">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:h-full lg:w-max lg:grid-cols-[repeat(3,300px)] lg:grid-rows-2">
               {gridSalons.map((salon) => (
-                <div key={salon.id} className="min-h-0 min-w-0 lg:h-full">
+                <div key={salon.id} className="min-h-0 min-w-0">
                   <DesktopSalonCard salon={salon} variant="bazaar" />
                 </div>
               ))}
             </div>
           </section>
 
-          <aside className="h-[310px]">
+          <aside className="h-[450px]">
             <BazaarMapPanel
               variant="preview"
               salons={mapSalons}

@@ -24,9 +24,9 @@ export function DesktopSalonCard({ salon, variant = "grid" }: Props) {
       <Link
         to="/salon/$id"
         params={{ id: salon.id }}
-        className="group flex h-full min-h-0 flex-col"
+        className="group flex w-[300px] max-w-full flex-col"
       >
-        <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg bg-surface aspect-[5/4] lg:aspect-auto">
+        <div className="relative h-[150px] w-full shrink-0 overflow-hidden rounded-lg bg-surface">
           <img
             src={cover}
             alt=""
