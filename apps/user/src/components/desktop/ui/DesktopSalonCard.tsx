@@ -32,14 +32,15 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false }: 
         params={{ id: salon.id }}
         className={cn(
           "group block",
-          elevated &&
-            "overflow-hidden rounded-2xl bg-surface/30 shadow-[0_22px_46px_-16px_rgba(0,0,0,0.55),0_10px_20px_-10px_rgba(0,0,0,0.35)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_54px_-14px_rgba(0,0,0,0.62),0_14px_24px_-10px_rgba(0,0,0,0.4)]",
+          elevated && "transition-all duration-300 hover:-translate-y-1",
         )}
       >
         <div
           className={cn(
             "relative w-full overflow-hidden bg-surface",
-            elevated ? "aspect-[4/3] rounded-t-2xl" : "aspect-[5/4] rounded-xl",
+            elevated
+              ? "aspect-[4/3] rounded-2xl shadow-[0_22px_46px_-16px_rgba(0,0,0,0.55),0_10px_20px_-10px_rgba(0,0,0,0.35)] transition-shadow group-hover:shadow-[0_28px_54px_-14px_rgba(0,0,0,0.62),0_14px_24px_-10px_rgba(0,0,0,0.4)]"
+              : "aspect-[5/4] rounded-xl",
           )}
         >
           <img
@@ -76,7 +77,7 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false }: 
           className={cn(
             "space-y-0.5",
             elevated
-              ? "bg-surface/20 px-3.5 pb-4 pt-3.5 min-h-[5rem]"
+              ? "min-h-[5rem] px-0.5 pb-1 pt-3 shadow-[0_10px_18px_-14px_rgba(0,0,0,0.2)]"
               : "mt-3 min-h-[4.75rem]",
           )}
         >
