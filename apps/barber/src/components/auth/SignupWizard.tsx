@@ -9,7 +9,6 @@ import { SignupStepIdentity } from "@/components/auth/SignupStepIdentity";
 import { SignupStepReview } from "@/components/auth/SignupStepReview";
 import type { SignupFlow } from "@/lib/auth-ui";
 import { validateEmailField, validateSignupIdentity } from "@/lib/auth-ui";
-import { stepTransition } from "@/lib/motion-presets";
 import { cn } from "@/lib/utils";
 
 export type SignupWizardData = {
@@ -39,6 +38,18 @@ type Props = {
   onSubmit: () => void;
   onClearError: () => void;
 };
+
+const STEP_EASE = [0.22, 1, 0.36, 1] as const;
+
+function stepMotion(reduceMotion: boolean, direction: "forward" | "back") {
+  const offset = direction === "forward" ? 24 : -24;
+  return {
+    initial: { opacity: 0, x: reduceMotion ? 0 : offset, filter: "blur(4px)" },
+    animate: { opacity: 1, x: 0, filter: "blur(0px)" },
+    exit: { opacity: 0, x: reduceMotion ? 0 : -offset / 2, filter: "blur(2px)" },
+    transition: { duration: reduceMotion ? 0 : 0.38, ease: STEP_EASE },
+  };
+}
 
 function ActionBar({
   step,
@@ -76,12 +87,13 @@ function ActionBar({
           <span className="hidden sm:inline">Orqaga</span>
         </button>
 
-        <div className="hidden flex-1 sm:flex sm:justify-center">
+        <div className="hidden flex-1 sm:flex sm:justify-center md:hidden">
           <AuthStepIndicator currentStep={step} />
         </div>
 
         <AuthSubmitButton
           type="button"
+          variant="brand"
           onClick={onNext}
           loading={loading}
           disabled={!canNext}
@@ -115,7 +127,6 @@ export function SignupWizard({
   onClearError,
 }: Props) {
   const reduceMotion = useReducedMotion();
-  const transition = stepTransition(!!reduceMotion);
 
   const canStep0 = data.flow !== null;
   const canStep1 =
@@ -175,12 +186,8 @@ export function SignupWizard({
 
   return (
     <div className="md:pb-0">
-      <div className="mb-4 hidden md:block">
-        <AuthStepIndicator currentStep={step} />
-      </div>
-
-      <AnimatePresence mode="wait">
-        <motion.div key={step} {...transition} className="min-h-[280px]">
+      <AnimatePresence mode="wait" custom={step}>
+        <motion.div key={step} {...stepMotion(!!reduceMotion, "forward")} className="min-h-[280px]">
           {step === 0 && <SignupStepFlow flow={data.flow} onSelect={onFlowSelect} />}
           {step === 1 && (
             <SignupStepIdentity
@@ -213,7 +220,6 @@ export function SignupWizard({
       <div className="mt-4 space-y-4">
         <AuthErrorAlert error={error} />
 
-        {/* Desktop inline actions */}
         <div className="hidden md:block">
           <ActionBar
             step={step}

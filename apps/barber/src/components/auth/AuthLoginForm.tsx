@@ -65,7 +65,12 @@ export function AuthLoginForm({
 
       <AuthErrorAlert error={error && !emailError ? error : null} />
 
-      <AuthSubmitButton loading={loading} disabled={loading} className="hidden md:inline-flex">
+      <AuthSubmitButton
+        variant="brand"
+        loading={loading}
+        disabled={loading}
+        className="hidden md:inline-flex"
+      >
         {loading ? "Kutilmoqda..." : "Kirish"}
       </AuthSubmitButton>
 

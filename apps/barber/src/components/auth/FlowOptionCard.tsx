@@ -40,8 +40,8 @@ export function FlowOptionCard({
         "w-full cursor-pointer rounded-2xl border text-left transition-[var(--transition-smooth)]",
         isList ? "p-4" : "p-3",
         selected
-          ? "border-foreground bg-foreground text-background shadow-[var(--shadow-pop)]"
-          : "border-border bg-card shadow-[var(--shadow-soft)] active:bg-muted/40",
+          ? "border-violet-600 bg-violet-600 text-white shadow-[0_4px_20px_-6px_rgba(124,58,237,0.55)]"
+          : "border-border bg-card shadow-[var(--shadow-soft)] active:bg-muted/40 hover:border-violet-200",
       )}
     >
       <div className="flex items-start gap-3">

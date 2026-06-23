@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
+import { motion } from "framer-motion";
 import { AuthStepIndicator } from "@/components/auth/AuthStepIndicator";
-import { AuthDesktopLayout } from "@/components/auth/desktop/AuthDesktopLayouts";
-import { AuthDesktopVariantPicker } from "@/components/auth/desktop/AuthDesktopVariantPicker";
+import { AuthOnboardingProgress } from "@/components/auth/uzum/AuthOnboardingProgress";
+import { AuthUzumBackground } from "@/components/auth/uzum/AuthUzumBackground";
+import { AuthUzumCardTitle } from "@/components/auth/uzum/AuthUzumCardTitle";
+import { AuthUzumHeader } from "@/components/auth/uzum/AuthUzumHeader";
 import { Scissors } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
 import type { SignupFlow } from "@/lib/auth-ui";
-import type { AuthDesktopVariant } from "@/lib/auth-desktop-variant";
 import { FLOW_IDENTITY_META } from "@/lib/barber-flow-config";
 import { pageEnter } from "@/lib/motion-presets";
 
@@ -13,84 +14,77 @@ type Props = {
   flow: SignupFlow | null;
   tab: "login" | "signup";
   signupStep?: number;
-  desktopVariant: AuthDesktopVariant;
-  onDesktopVariantChange: (variant: AuthDesktopVariant) => void;
+  onTabChange: (tab: "login" | "signup") => void;
   children: ReactNode;
 };
 
-export function AuthShell({
-  flow,
-  tab,
-  signupStep = 0,
-  desktopVariant,
-  onDesktopVariantChange,
-  children,
-}: Props) {
+export function AuthShell({ flow, tab, signupStep = 0, onTabChange, children }: Props) {
   const meta = flow ? FLOW_IDENTITY_META[flow] : null;
   const mobileTitle =
     tab === "login"
-      ? "Barber kabineti"
+      ? "Partner kirish"
       : signupStep === 0 && !flow
         ? "Ro'yxatdan o'tish"
-        : meta?.signupTitle ?? "Ro'yxatdan o'tish";
-  const mobileSubtitle =
-    tab === "login"
-      ? "Kabinetga kirish"
-      : signupStep === 0 && !flow
-        ? "Avval yo'lingizni tanlang"
-        : meta?.badge ?? "Ma'lumotlarni kiriting";
+        : (meta?.signupTitle ?? "Ro'yxatdan o'tish");
 
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground md:min-h-screen md:bg-zinc-50 md:pt-safe md:pb-safe">
-      {/* Mobile */}
-      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/90 backdrop-blur-xl md:hidden pt-[max(env(safe-area-inset-top),0px)]">
-        <div className="flex items-center justify-between gap-3 px-3.5 py-3">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-amber-100">
-              <Scissors className="size-4" />
+    <div className="relative min-h-[100dvh] bg-[#eceef2] text-foreground">
+      {/* Mobile header */}
+      <header className="sticky top-0 z-50 border-b border-black/5 bg-white/90 backdrop-blur-md pt-[max(env(safe-area-inset-top),0px)] md:hidden">
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex size-8 items-center justify-center rounded-full bg-violet-600 text-white">
+              <Scissors className="size-3.5" />
             </div>
-            <div className="min-w-0">
-              <p className="truncate text-[13px] font-semibold leading-tight tracking-tight">
-                {mobileTitle}
-              </p>
-              <p className="truncate text-[11px] text-muted-foreground">{mobileSubtitle}</p>
-            </div>
+            <p className="truncate text-sm font-bold">{mobileTitle}</p>
           </div>
-          {tab === "signup" && (
-            <span className="shrink-0 text-[11px] font-medium tabular-nums text-muted-foreground">
-              <span className="text-foreground">{signupStep + 1}</span>
-              <span className="opacity-50"> / 3</span>
+          {tab === "signup" ? (
+            <span className="text-[11px] font-medium tabular-nums text-muted-foreground">
+              <span className="text-violet-700">{signupStep + 1}</span>/3
             </span>
-          )}
+          ) : null}
         </div>
-        {tab === "signup" && (
-          <div className="border-t border-border/40 px-3.5 py-2">
+        {tab === "signup" ? (
+          <div className="border-t border-black/5 px-4 py-2">
             <AuthStepIndicator currentStep={signupStep} compact />
           </div>
-        )}
+        ) : null}
       </header>
 
-      <div className="md:hidden">
-        <motion.div
-          {...pageEnter}
-          className="px-3.5 pt-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))]"
-        >
-          {children}
-        </motion.div>
+      {/* Desktop background + top bar */}
+      <div className="hidden md:block">
+        <AuthUzumBackground />
+        <AuthUzumHeader tab={tab} onTabChange={onTabChange} />
       </div>
 
-      {/* Desktop — 5 layout variant */}
-      <div className="hidden md:block md:pb-36">
-        <AuthDesktopLayout
-          variant={desktopVariant}
-          flow={flow}
-          tab={tab}
-          signupStep={signupStep}
-        >
+      {/* Single content tree */}
+      <motion.div
+        {...pageEnter}
+        className="relative px-4 pt-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] md:flex md:min-h-[calc(100vh-76px)] md:items-center md:justify-center md:px-6 md:pb-12 md:pt-0"
+      >
+        <div className="w-full md:max-w-[480px] md:rounded-2xl md:bg-white md:px-8 md:py-8 md:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.12)]">
+          <div className="hidden md:block">
+            <AuthUzumCardTitle tab={tab} signupStep={signupStep} flow={flow} />
+            {tab === "signup" ? <AuthOnboardingProgress step={signupStep} /> : null}
+          </div>
+
           {children}
-        </AuthDesktopLayout>
-        <AuthDesktopVariantPicker value={desktopVariant} onChange={onDesktopVariantChange} />
-      </div>
+
+          {tab === "login" ? (
+            <p className="mt-6 hidden text-center text-[11px] leading-relaxed text-muted-foreground md:block">
+              Tugmani bosish orqali{" "}
+              <a href="/privacy" className="text-violet-600 hover:underline">
+                Oferta
+              </a>{" "}
+              va{" "}
+              <a href="/privacy" className="text-violet-600 hover:underline">
+                Maxfiylik siyosati
+              </a>
+              ga rozilik bildirasiz.
+            </p>
+          ) : null}
+        </div>
+      </motion.div>
     </div>
   );
 }

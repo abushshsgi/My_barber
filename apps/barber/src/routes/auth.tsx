@@ -1,23 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useState } from "react";
-import { z } from "zod";
 import { AuthLoginForm, AUTH_LOGIN_FORM_ID } from "@/components/auth/AuthLoginForm";
 import { AuthMobileStickyBar } from "@/components/auth/AuthMobileStickyBar";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { SignupWizard } from "@/components/auth/SignupWizard";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { apiFetch, setBarberTokens } from "@/lib/api";
 import { submitEarlyFlowSignup } from "@/lib/barber-signup-flow";
 import { checkBarberAvailability, parseFieldErrors } from "@/lib/auth-errors";
-import {
-  AUTH_DESKTOP_VARIANT_IDS,
-  DEFAULT_AUTH_DESKTOP_VARIANT,
-  parseAuthDesktopVariant,
-  type AuthDesktopVariant,
-} from "@/lib/auth-desktop-variant";
 import {
   extractApiError,
   formatFetchError,
@@ -32,24 +24,14 @@ import { SIGNUP_FLOW_PATH } from "@/lib/barber-flow-config";
 import { tabSlide } from "@/lib/motion-presets";
 import { formatUzPhoneE164 } from "@/lib/phone";
 import { saveSignupDraft } from "@/lib/signup-draft";
-
-const authSearchSchema = z.object({
-  desktop: z.enum(AUTH_DESKTOP_VARIANT_IDS).optional().catch(DEFAULT_AUTH_DESKTOP_VARIANT),
-});
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: authSearchSchema,
   component: AuthPage,
 });
 
 function AuthPage() {
   const navigate = useNavigate({ from: Route.fullPath });
-  const { desktop = DEFAULT_AUTH_DESKTOP_VARIANT } = Route.useSearch();
-  const desktopVariant = parseAuthDesktopVariant(desktop);
-
-  const setDesktopVariant = (variant: AuthDesktopVariant) => {
-    void navigate({ search: (prev) => ({ ...prev, desktop: variant }), replace: true });
-  };
   const [tab, setTab] = useState<"login" | "signup">("login");
   const [signupStep, setSignupStep] = useState(0);
 
@@ -194,8 +176,9 @@ function AuthPage() {
     await runAvailabilityCheck(signupEmail, signupPhone);
   };
 
-  const handleTabChange = (v: string) => {
-    setTab(v as "login" | "signup");
+  const handleTabChange = (v: "login" | "signup") => {
+    setTab(v);
+    setSignupStep(0);
     setError(null);
     setLoginEmailError(null);
     setEmailError(null);
@@ -211,84 +194,75 @@ function AuthPage() {
         flow={tab === "signup" ? flow : null}
         tab={tab}
         signupStep={signupStep}
-        desktopVariant={desktopVariant}
-        onDesktopVariantChange={setDesktopVariant}
+        onTabChange={handleTabChange}
       >
-        <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid h-12 w-full grid-cols-2 rounded-xl md:h-11">
-            <TabsTrigger
-              value="login"
-              className="cursor-pointer rounded-lg text-sm font-medium md:text-sm"
-            >
-              Kirish
-            </TabsTrigger>
-            <TabsTrigger
-              value="signup"
-              className="cursor-pointer rounded-lg text-sm font-medium md:text-sm"
-            >
-              Ro'yxatdan o'tish
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="login" className="mt-5">
-            <AnimatePresence mode="wait">
-              {tab === "login" && (
-                <motion.div key="login" {...loginMotion}>
-                  <AuthLoginForm
-                    email={loginEmail}
-                    password={loginPassword}
-                    error={error}
-                    emailError={loginEmailError}
-                    loading={loadingLogin}
-                    onEmailChange={setLoginEmail}
-                    onPasswordChange={setLoginPassword}
-                    onSubmit={onLoginSubmit}
-                  />
-                </motion.div>
+        {/* Mobile tab switcher */}
+        <div className="mb-5 grid h-12 grid-cols-2 rounded-xl bg-zinc-100 p-1 md:hidden">
+          {(["login", "signup"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => handleTabChange(t)}
+              className={cn(
+                "cursor-pointer rounded-lg text-sm font-medium transition-all",
+                tab === t ? "bg-white text-foreground shadow-sm" : "text-muted-foreground",
               )}
-            </AnimatePresence>
-          </TabsContent>
+            >
+              {t === "login" ? "Kirish" : "Ro'yxatdan o'tish"}
+            </button>
+          ))}
+        </div>
 
-          <TabsContent value="signup" className="mt-5">
-            <AnimatePresence mode="wait">
-              {tab === "signup" && (
-                <motion.div key="signup" {...signupMotion}>
-                  <SignupWizard
-                    step={signupStep}
-                    data={{
-                      name: signupName,
-                      phone: signupPhone,
-                      email: signupEmail,
-                      password: signupPassword,
-                      flow,
-                    }}
-                    error={error}
-                    loading={loadingSignup}
-                    checkingAvailability={checkingAvailability}
-                    emailError={emailError}
-                    phoneError={phoneError}
-                    onStepChange={setSignupStep}
-                    onNameChange={setSignupName}
-                    onPhoneChange={(v) => {
-                      setSignupPhone(v);
-                      if (phoneError) setPhoneError(null);
-                    }}
-                    onEmailChange={(v) => {
-                      setSignupEmail(v);
-                      if (emailError) setEmailError(null);
-                    }}
-                    onPasswordChange={setSignupPassword}
-                    onFlowSelect={setFlow}
-                    onEmailBlur={handleEmailBlur}
-                    onPhoneBlur={handlePhoneBlur}
-                    onSubmit={onSignupSubmit}
-                    onClearError={() => setError(null)}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </TabsContent>
-        </Tabs>
+        <AnimatePresence mode="wait">
+          {tab === "login" ? (
+            <motion.div key="login" {...loginMotion}>
+              <AuthLoginForm
+                email={loginEmail}
+                password={loginPassword}
+                error={error}
+                emailError={loginEmailError}
+                loading={loadingLogin}
+                onEmailChange={setLoginEmail}
+                onPasswordChange={setLoginPassword}
+                onSubmit={onLoginSubmit}
+              />
+            </motion.div>
+          ) : (
+            <motion.div key="signup" {...signupMotion}>
+              <SignupWizard
+                step={signupStep}
+                data={{
+                  name: signupName,
+                  phone: signupPhone,
+                  email: signupEmail,
+                  password: signupPassword,
+                  flow,
+                }}
+                error={error}
+                loading={loadingSignup}
+                checkingAvailability={checkingAvailability}
+                emailError={emailError}
+                phoneError={phoneError}
+                onStepChange={setSignupStep}
+                onNameChange={setSignupName}
+                onPhoneChange={(v) => {
+                  setSignupPhone(v);
+                  if (phoneError) setPhoneError(null);
+                }}
+                onEmailChange={(v) => {
+                  setSignupEmail(v);
+                  if (emailError) setEmailError(null);
+                }}
+                onPasswordChange={setSignupPassword}
+                onFlowSelect={setFlow}
+                onEmailBlur={handleEmailBlur}
+                onPhoneBlur={handlePhoneBlur}
+                onSubmit={onSignupSubmit}
+                onClearError={() => setError(null)}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {tab === "login" && (
           <AuthMobileStickyBar>

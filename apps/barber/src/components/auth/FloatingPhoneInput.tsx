@@ -19,11 +19,11 @@ export function FloatingPhoneInput({ id, label, value, onChange, error, onBlur }
     <div className="relative">
       <div
         className={cn(
-          "flex h-14 w-full items-stretch rounded-xl border bg-background transition-[var(--transition-smooth)] focus-within:border-foreground",
-          error ? "border-destructive" : "border-border",
+          "flex h-14 w-full items-stretch rounded-xl border-0 bg-[#f0f1f3] transition-[var(--transition-smooth)] focus-within:bg-[#e8e9ed]",
+          error && "ring-1 ring-destructive",
         )}
       >
-        <span className="flex shrink-0 items-center border-r border-border pl-3.5 pr-2.5 text-sm font-medium text-muted-foreground">
+        <span className="flex shrink-0 items-center border-r border-black/10 pl-3.5 pr-2.5 text-sm font-medium text-muted-foreground">
           +998
         </span>
         <div className="relative min-w-0 flex-1">
