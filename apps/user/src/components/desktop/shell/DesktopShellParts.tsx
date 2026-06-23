@@ -13,12 +13,15 @@ import { DesktopHeaderActions } from "@/components/desktop/shell/DesktopHeaderAc
 import { isNavTabActive } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
+const HEADER_INSET_DEFAULT = "px-6 xl:px-10 2xl:px-12";
+
 type ShellProps = {
   children: React.ReactNode;
   chatUnread?: number;
   notificationsUnread?: number;
   fullBleed?: boolean;
   mainClassName?: string;
+  headerInsetClassName?: string;
 };
 
 const MAIN_NAV = [
@@ -51,6 +54,7 @@ export function ShellBazaarClassic({
   chatUnread = 0,
   fullBleed,
   mainClassName,
+  headerInsetClassName = HEADER_INSET_DEFAULT,
 }: ShellProps) {
   const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -58,7 +62,7 @@ export function ShellBazaarClassic({
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md">
-        <div className="flex h-[4.25rem] w-full items-center gap-4 px-6 xl:px-10 2xl:px-12">
+        <div className={cn("flex h-[4.25rem] w-full items-center gap-4", headerInsetClassName)}>
           <Link to="/" className="flex shrink-0 items-baseline gap-0.5">
             <span className="text-xl font-bold tracking-tight text-foreground">mysaloon</span>
             <span className="text-sm font-bold text-muted-foreground">.uz</span>
@@ -97,7 +101,7 @@ export function ShellBazaarClassic({
           </div>
         </div>
 
-        <nav className="flex gap-1 overflow-x-auto border-t border-border/60 px-6 py-2 lg:hidden xl:px-10 2xl:px-12">
+        <nav className={cn("flex gap-1 overflow-x-auto border-t border-border/60 py-2 lg:hidden", headerInsetClassName)}>
           {MAIN_NAV.map(({ to, key, icon: Icon }) => {
             const active = isNavTabActive(pathname, to);
             return (

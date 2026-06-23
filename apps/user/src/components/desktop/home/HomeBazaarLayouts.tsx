@@ -16,6 +16,7 @@ import {
   HOME_CATEGORY_ROW_AFTER,
   buildHomeSalonSections,
 } from "@/lib/home-sections";
+import { DESKTOP_BAZAAR_INSET } from "@/lib/desktop-bazaar-layout";
 
 type Props = { data: HomeData };
 type Salon = HomeData["filtered"][number];
@@ -43,7 +44,7 @@ export function HomeBazaarClassic({ data }: Props) {
   const salonSections = useMemo(() => buildHomeSalonSections(filtered), [filtered]);
 
   return (
-    <div className="flex w-full flex-col gap-6 px-[150px]">
+    <div className={cn("flex w-full flex-col gap-6", DESKTOP_BAZAAR_INSET)}>
       <BazaarHeroBanner />
 
       <div className="flex w-full flex-col gap-4">

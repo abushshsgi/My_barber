@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { DesktopSalonCard } from "@/components/desktop/ui/DesktopSalonCard";
+import { DESKTOP_BAZAAR_INSET } from "@/lib/desktop-bazaar-layout";
 import type { Category, Salon } from "@/lib/mock-data";
+import { cn } from "@/lib/utils";
 
 type Props = {
   category: Category;
@@ -12,7 +14,7 @@ export function CategorySalonsDesktopPage({ category, salons, loading }: Props) 
   const { t } = useTranslation();
 
   return (
-    <div className="w-full px-[150px] pb-12 pt-6">
+    <div className={cn("w-full pb-12 pt-6", DESKTOP_BAZAAR_INSET)}>
       <header className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight xl:text-3xl">
           {t(`home.categories.${category}`)}

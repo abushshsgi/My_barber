@@ -1,12 +1,22 @@
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/utils";
 
-export function SiteFooter() {
+type Props = {
+  insetClassName?: string;
+};
+
+export function SiteFooter({ insetClassName }: Props) {
   const { t } = useTranslation();
   const year = new Date().getFullYear();
 
   return (
-    <footer className="hidden shrink-0 border-t border-border/60 bg-background px-6 py-10 lg:block xl:px-10 2xl:px-12">
+    <footer
+      className={cn(
+        "hidden shrink-0 border-t border-border/60 bg-background py-10 lg:block",
+        insetClassName ?? "px-6 xl:px-10 2xl:px-12",
+      )}
+    >
       <div className="grid w-full gap-8 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <p className="text-sm font-bold tracking-tight">mysaloon.uz</p>
