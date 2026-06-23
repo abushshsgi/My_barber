@@ -9,8 +9,6 @@ export function useBazaarSections(data: HomeData) {
     [filtered],
   );
 
-  const featuredSalons = useMemo(() => filtered.slice(0, 4), [filtered]);
-
   const scrollToSalons = () => {
     setCat("all");
     document.getElementById("nearby-salons")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -21,5 +19,5 @@ export function useBazaarSections(data: HomeData) {
     document.getElementById("nearby-salons")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  return { dealSalons, featuredSalons, scrollToSalons, selectCategory };
+  return { dealSalons, scrollToSalons, selectCategory };
 }
