@@ -49,10 +49,10 @@ export function BazaarFilterSidebar({
   );
 }
 
-export function BazaarGridSkeleton({ cols }: { cols: number }) {
+export function BazaarGridSkeleton() {
   return (
-    <div className={cn("grid gap-5", cols === 2 && "grid-cols-2", cols === 3 && "grid-cols-3", cols === 4 && "grid-cols-4", cols === 5 && "grid-cols-5")}>
-      {Array.from({ length: cols * 3 }).map((_, i) => (
+    <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] 2xl:gap-6">
+      {Array.from({ length: 12 }).map((_, i) => (
         <div key={i} className="animate-pulse">
           <div className="aspect-[5/4] rounded-xl bg-surface" />
           <div className="mt-3 h-4 w-2/3 rounded bg-surface" />
