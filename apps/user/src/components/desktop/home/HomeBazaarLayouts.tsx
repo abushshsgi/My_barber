@@ -14,9 +14,29 @@ type Props = { data: HomeData };
 
 const CARD_GRID_CLASS = "grid grid-cols-1 gap-4 sm:grid-cols-3";
 const BAZAAR_GRID_CLASS =
-  "grid w-full grid-cols-1 gap-6 lg:grid-cols-[minmax(240px,280px)_repeat(3,minmax(0,1fr))_minmax(320px,400px)] lg:grid-rows-[auto_auto_auto] lg:items-start lg:gap-x-4 lg:gap-y-6";
+  "grid w-full grid-cols-1 gap-6 lg:grid-cols-[minmax(240px,280px)_repeat(3,minmax(0,1fr))_minmax(320px,400px)] lg:grid-rows-[auto_auto_auto] lg:items-start lg:gap-x-4 lg:gap-y-6 lg:[--bazaar-card-w:calc((100%-280px-400px-4*1rem)/3)]";
 const TOP_CARD_COLS = ["lg:col-start-2", "lg:col-start-3", "lg:col-start-4"] as const;
 const ROW2_COLS = ["lg:col-start-1", "lg:col-start-2", "lg:col-start-3", "lg:col-start-4", "lg:col-start-5"] as const;
+const SIDE_CARD_W = "lg:w-[var(--bazaar-card-w)] lg:max-w-full lg:min-w-0";
+
+function Row2CardSlot({ salon, index }: { salon: HomeData["filtered"][number]; index: number }) {
+  const isSide = index === 0 || index === 4;
+
+  return (
+    <div
+      className={cn(
+        "min-w-0 lg:row-start-2",
+        ROW2_COLS[index],
+        index === 0 && "lg:flex lg:justify-end",
+        index === 4 && "lg:flex lg:justify-start",
+      )}
+    >
+      <div className={cn(isSide ? SIDE_CARD_W : "w-full")}>
+        <DesktopSalonCard salon={salon} variant="marketplace" />
+      </div>
+    </div>
+  );
+}
 
 function SalonCards({ salons }: { salons: HomeData["filtered"] }) {
   return (
@@ -64,12 +84,7 @@ export function HomeBazaarClassic({ data }: Props) {
         </div>
 
         {row2Line.map((salon, index) => (
-          <div
-            key={salon.id}
-            className={cn("min-w-0 lg:row-start-2", ROW2_COLS[index])}
-          >
-            <DesktopSalonCard salon={salon} variant="marketplace" />
-          </div>
+          <Row2CardSlot key={salon.id} salon={salon} index={index} />
         ))}
 
         {row2Rest.length > 0 ? (
