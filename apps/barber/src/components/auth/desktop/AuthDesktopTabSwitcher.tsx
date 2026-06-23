@@ -12,7 +12,7 @@ export function AuthDesktopTabSwitcher({ tab, onTabChange, accent }: Props) {
   const a = ACCENT_STYLES[accent];
 
   return (
-    <div className="mb-1 grid grid-cols-2 gap-1 p-1">
+    <div className="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-zinc-100 p-1">
       {(["login", "signup"] as const).map((t) => {
         const active = tab === t;
         return (
