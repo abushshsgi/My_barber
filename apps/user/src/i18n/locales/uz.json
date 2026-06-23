@@ -82,6 +82,17 @@
     "topSalons": {
       "title": "Top salonlar"
     },
+    "filters": {
+      "title": "Salonlar va ustalarni izlang",
+      "sortTitle": "Saralash",
+      "quickLinks": "Tezkor havolalar",
+      "sort": {
+        "recommended": "Tavsiya",
+        "rating": "Reyting",
+        "distance": "Masofa",
+        "price": "Narx"
+      }
+    },
     "sections": {
       "browseCategories": "Kategoriya bo'yicha ko'ring",
       "moreSalons": "Yana salonlar"

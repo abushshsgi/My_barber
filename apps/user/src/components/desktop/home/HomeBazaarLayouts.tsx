@@ -21,7 +21,7 @@ type Props = { data: HomeData };
 type Salon = HomeData["filtered"][number];
 
 const BAZAAR_ROW_CLASS =
-  "grid w-full grid-cols-1 gap-4 lg:grid-cols-[minmax(200px,240px)_repeat(3,minmax(0,1fr))_minmax(280px,340px)] lg:items-start lg:gap-x-4 lg:[--bazaar-card-w:calc((100%-240px-340px-4*1rem)/3)]";
+  "grid w-full grid-cols-1 gap-4 lg:grid-cols-[minmax(280px,320px)_repeat(3,minmax(0,1fr))_minmax(260px,320px)] lg:items-start lg:gap-x-4 lg:[--bazaar-card-w:calc((100%-320px-320px-4*1rem)/3)]";
 const CENTER_COLS = ["lg:col-start-2", "lg:col-start-3", "lg:col-start-4"] as const;
 
 function SalonGridCells({ salons }: { salons: Salon[] }) {
@@ -48,7 +48,7 @@ export function HomeBazaarClassic({ data }: Props) {
 
       <div className="flex w-full flex-col gap-4">
         <div className={BAZAAR_ROW_CLASS}>
-          <div className="self-start lg:sticky lg:top-[5.75rem] lg:col-start-1">
+          <div className="self-start lg:sticky lg:top-[5.75rem] lg:col-start-1 lg:max-h-[calc(100vh-6.5rem)] lg:overflow-y-auto lg:pr-1">
             <BazaarPageTitle title={t("home.nearby")} count={filtered.length} className="mb-4" />
             <BazaarFilterSidebar {...data} />
           </div>

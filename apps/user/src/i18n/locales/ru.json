@@ -77,6 +77,17 @@
     "topSalons": {
       "title": "Топ салоны"
     },
+    "filters": {
+      "title": "Поиск салонов и мастеров",
+      "sortTitle": "Сортировка",
+      "quickLinks": "Быстрые ссылки",
+      "sort": {
+        "recommended": "Рекомендуем",
+        "rating": "Рейтинг",
+        "distance": "Расстояние",
+        "price": "Цена"
+      }
+    },
     "sections": {
       "browseCategories": "Смотреть по категориям",
       "moreSalons": "Ещё салоны"

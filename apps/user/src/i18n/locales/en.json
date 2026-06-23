@@ -77,6 +77,17 @@
     "topSalons": {
       "title": "Top salons"
     },
+    "filters": {
+      "title": "Search salons & pros",
+      "sortTitle": "Sort by",
+      "quickLinks": "Quick links",
+      "sort": {
+        "recommended": "Recommended",
+        "rating": "Rating",
+        "distance": "Distance",
+        "price": "Price"
+      }
+    },
     "sections": {
       "browseCategories": "Browse by category",
       "moreSalons": "More salons"
