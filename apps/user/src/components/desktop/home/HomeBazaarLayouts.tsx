@@ -95,7 +95,7 @@ export function HomeBazaarClassic({ data }: Props) {
   const salonRows = splitBazaarSalonRows(filtered);
 
   return (
-    <div className="flex w-full flex-col gap-6">
+    <div className="flex w-full flex-col gap-6 px-[150px]">
       <BazaarHeroBanner />
 
       <div className="flex w-full flex-col gap-4">
