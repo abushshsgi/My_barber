@@ -1,5 +1,5 @@
 import type { ApiNearbySalon, ApiSalonDetail, ApiSalonList, ApiSalonRatingSummary } from "@/lib/api/types";
-import { getSalonCoverUrl } from "@/lib/cover-images";
+import { resolveCoverUrl } from "@/lib/cover-images";
 import { resolveMediaUrl } from "@/lib/media-url";
 import type { Audience, Category, Salon, SalonRatingSummary } from "@/lib/mock-data";
 
@@ -49,10 +49,7 @@ export function mapSalonList(api: ApiSalonList, distanceKm = 0): Salon {
   const { category, audience } = resolveCategoryAndAudience(api);
   const priceFrom = toNum(api.price_from);
   const resolvedCover = resolveMediaUrl(api.cover_image);
-  const coverUrl =
-    resolvedCover && !resolvedCover.includes("picsum.photos")
-      ? resolvedCover
-      : getSalonCoverUrl(coverSeed, category);
+  const coverUrl = resolveCoverUrl(resolvedCover, coverSeed, category);
   return {
     id: String(api.id),
     name: api.name,

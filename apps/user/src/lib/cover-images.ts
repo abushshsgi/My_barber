@@ -2,9 +2,16 @@ import type { Category } from "@/lib/mock-data";
 
 const MOCK_SALON_COUNT = 250;
 
+/** Barqaror fallback — Pexels CDN da doim mavjud. */
+export const PEXELS_FALLBACK_PHOTO_ID = 3992860;
+
 /** Pexels CDN — mock backend bilan bir xil manba. */
 export function pexelsCoverUrl(photoId: number, width = 900): string {
   return `https://images.pexels.com/photos/${photoId}/pexels-photo-${photoId}.jpeg?auto=compress&cs=tinysrgb&w=${width >= 800 ? 1200 : 800}`;
+}
+
+export function pexelsFallbackCoverUrl(width = 900): string {
+  return pexelsCoverUrl(PEXELS_FALLBACK_PHOTO_ID, width);
 }
 
 /** @deprecated Pexels fallback ishlatiladi */
@@ -34,22 +41,19 @@ const BARBER_PHOTO_IDS = [
 ] as const;
 
 const BEAUTY_PHOTO_IDS = [
-  2523205, 2523210, 2523215, 2523220, 2523225, 2523230, 2523235, 2523240, 2523245, 2523250,
-  2523255, 2523260, 2523265, 2523270, 2523275, 2523280, 2523285, 2523290, 2523295, 2523300,
-  2537564, 834280, 2521943, 1064815, 569111, 3259028, 3288365, 4564265, 4564260, 4666064,
-  4043096, 2676392, 6964555, 6974242, 6964536, 5200392,
+  2523210, 2523235, 2523240, 2523250, 2523255, 2523260, 2523265, 2523270, 2523290, 2523295,
+  2523300, 2523305, 2523315, 2523320, 2537564, 834280, 2521943, 3288365, 4564265, 4564260,
+  4666064, 4043096, 2676392, 6964536, 5200392,
 ] as const;
 
 const NAILS_PHOTO_IDS = [
-  2866114, 2866115, 2866116, 2866117, 2866118, 2866119, 2866120, 2866121, 2866122, 2866123,
-  5529805, 3181279, 2587157, 865082, 1677561, 865121, 5529803, 2688565, 2583493, 2688470,
-  9283145, 498665,
+  2866115, 2866116, 2866117, 2866118, 2866119, 2866120, 2866121, 2866123, 2866124, 2866126,
+  2866127, 2866128, 2866129, 1677561, 2688470, 9283145,
 ] as const;
 
 const SPA_PHOTO_IDS = [
-  1453001, 1453005, 1453010, 1453015, 1453020, 1453025, 1453030, 1453035, 1453040, 1453045,
-  335965, 1884166, 936549, 567021, 1327811, 2357980, 3141766, 4108085, 835468, 2722936,
-  1612308, 776994, 1929064, 3949746, 5132408, 5382251,
+  1453001, 1453005, 1453015, 1453025, 1453030, 1453055, 1453060, 1453065, 1453070, 335965,
+  1884166, 936549, 567021, 4108085, 5132408, 5382251,
 ] as const;
 
 const ALL_SALON_PHOTO_IDS = [
@@ -88,12 +92,12 @@ const MOCK_TASHKENT_COVERS: Record<string, string> = Object.fromEntries(
 
 const SALON_COVERS: Record<string, string> = {
   ...MOCK_TASHKENT_COVERS,
-  legacy: pexelsCoverUrl(BARBER_PHOTO_IDS[0]),
-  atelier: pexelsCoverUrl(BEAUTY_PHOTO_IDS[0]),
-  studiom: pexelsCoverUrl(BARBER_PHOTO_IDS[1]),
-  nailhouse: pexelsCoverUrl(NAILS_PHOTO_IDS[0]),
-  noir: pexelsCoverUrl(BARBER_PHOTO_IDS[2]),
-  glow: pexelsCoverUrl(BEAUTY_PHOTO_IDS[1]),
+  legacy: pexelsCoverUrl(BARBER_PHOTO_IDS[0]!),
+  atelier: pexelsCoverUrl(BEAUTY_PHOTO_IDS[0]!),
+  studiom: pexelsCoverUrl(BARBER_PHOTO_IDS[1]!),
+  nailhouse: pexelsCoverUrl(NAILS_PHOTO_IDS[0]!),
+  noir: pexelsCoverUrl(BARBER_PHOTO_IDS[2]!),
+  glow: pexelsCoverUrl(BEAUTY_PHOTO_IDS[1]!),
   abdubarber: pexelsCoverUrl(BARBER_PHOTO_IDS[0]),
   "abdubarber-1": pexelsCoverUrl(BARBER_PHOTO_IDS[1]),
   "abdubarber-2": pexelsCoverUrl(BARBER_PHOTO_IDS[2]),
@@ -124,6 +128,19 @@ export function getSalonCoverUrl(
   const pool = poolForCategory(category);
   const photoId = pool[hashSeed(seed) % pool.length]!;
   return pexelsCoverUrl(photoId, width);
+}
+
+/** API cover_image — Pexels mock URL larini seed asosida almashtiradi. */
+export function resolveCoverUrl(
+  apiUrl: string | null | undefined,
+  seed: string,
+  category: Category = "barber",
+): string {
+  const resolved = apiUrl?.trim() ?? "";
+  if (!resolved || resolved.includes("picsum.photos") || resolved.includes("images.pexels.com")) {
+    return getSalonCoverUrl(seed, category);
+  }
+  return resolved;
 }
 
 export function getCategoryCoverUrl(category: Category, width = 900): string {

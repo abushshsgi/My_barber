@@ -3,7 +3,7 @@ import { Heart, Star } from "lucide-react";
 import { useState } from "react";
 import type { Salon } from "@/lib/mock-data";
 import { shortPrice } from "@/lib/mock-data";
-import { getSalonCoverUrl } from "@/lib/cover-images";
+import { getSalonCoverUrl, pexelsFallbackCoverUrl } from "@/lib/cover-images";
 import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +18,7 @@ export function DesktopSalonCard({ salon, variant = "grid" }: Props) {
   const { isFav, toggle } = useFavorites();
   const fav = isFav(salon.id);
   const fallbackCover = getSalonCoverUrl(salon.coverSeed, salon.category);
+  const guaranteedCover = pexelsFallbackCoverUrl();
   const [cover, setCover] = useState(salon.coverUrl?.trim() || fallbackCover);
   const isGuestFavorite = salon.rating >= 4.8;
 
@@ -31,6 +32,7 @@ export function DesktopSalonCard({ salon, variant = "grid" }: Props) {
             loading="lazy"
             onError={() => {
               if (cover !== fallbackCover) setCover(fallbackCover);
+              else if (cover !== guaranteedCover) setCover(guaranteedCover);
             }}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />

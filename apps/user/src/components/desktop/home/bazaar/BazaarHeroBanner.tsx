@@ -32,7 +32,7 @@ const HERO_SLIDES = [
     ctaKey: "home.mapPreview.openMap",
   },
   {
-    photoId: 2523205,
+    photoId: 3288365,
     to: "/offers",
     badgeKey: "nav.offers",
     titleKey: "home.heroCarousel.offersTitle",
