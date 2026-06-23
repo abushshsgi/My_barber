@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { HomeData } from "@/components/home/useHomeData";
 import { DesktopSalonCard } from "@/components/desktop/ui/DesktopSalonCard";
@@ -7,11 +6,12 @@ import {
   BazaarFilterSidebar,
   BazaarGridSkeleton,
   BazaarHeroBanner,
-  BazaarMapRail,
+  BazaarMapPanel,
   BazaarPageTitle,
   BazaarWeekendDeals,
   SALON_GRID_CLASS,
 } from "./bazaar/BazaarParts";
+import { useBazaarSections } from "./bazaar/useBazaarSections";
 
 type Props = { data: HomeData };
 
@@ -25,43 +25,37 @@ function SalonGrid({ salons }: { salons: HomeData["filtered"] }) {
   );
 }
 
-export function HomeBazaarClassic({ data }: Props) {
+/** V2: sticky filter · xarita yuqorida keng · keyin discovery */
+export function HomeBazaarLayoutV2({ data }: Props) {
   const { t } = useTranslation();
-  const { filtered, mapSalons, loading, setCat, visibleCategoryKeys } = data;
-
-  const dealSalons = useMemo(
-    () => [...filtered].sort((a, b) => b.rating - a.rating).slice(0, 10),
-    [filtered],
-  );
-
-  const scrollToSalons = () => {
-    setCat("all");
-    document.getElementById("nearby-salons")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  const { filtered, mapSalons, loading, visibleCategoryKeys } = data;
+  const { dealSalons, scrollToSalons, selectCategory } = useBazaarSections(data);
 
   return (
-    <div className="flex w-full flex-col gap-8 xl:flex-row xl:items-start xl:gap-8">
+    <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:gap-8">
       <aside className="xl:w-[280px] xl:shrink-0 xl:sticky xl:top-24">
         <BazaarFilterSidebar {...data} />
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col gap-10">
-        <BazaarHeroBanner />
+        <div className="relative aspect-[21/9] w-full max-h-[320px] overflow-hidden rounded-2xl">
+          <BazaarMapPanel
+            salons={mapSalons}
+            salonCount={filtered.length}
+            className="absolute inset-0 h-full w-full"
+          />
+        </div>
+
+        <BazaarHeroBanner className="max-h-[200px] aspect-[4/1]" />
 
         <BazaarWeekendDeals salons={dealSalons} />
-
         <BazaarCategoryBrowse
           categories={visibleCategoryKeys}
-          onSelect={(cat) => {
-            setCat(cat);
-            document.getElementById("nearby-salons")?.scrollIntoView({ behavior: "smooth", block: "start" });
-          }}
+          onSelect={selectCategory}
           onViewAll={scrollToSalons}
         />
 
-        <BazaarMapRail salons={mapSalons} salonCount={filtered.length} />
-
-        <section id="nearby-salons" className="min-w-0 scroll-mt-24">
+        <section id="nearby-salons" className="scroll-mt-24">
           <BazaarPageTitle title={t("home.nearby")} count={filtered.length} />
           {loading ? <BazaarGridSkeleton /> : <SalonGrid salons={filtered} />}
         </section>

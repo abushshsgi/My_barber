@@ -4,6 +4,7 @@ import type { HomeData } from "@/components/home/useHomeData";
 import { cn } from "@/lib/utils";
 
 export { BazaarMapPanel } from "./BazaarMapPanel";
+export { BazaarMapCard } from "./BazaarMapCard";
 export { BazaarHeroBanner } from "./BazaarHeroBanner";
 export {
   BazaarWeekendDeals,
