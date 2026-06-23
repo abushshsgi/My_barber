@@ -23,7 +23,7 @@ export function DesktopSalonCard({ salon, variant = "grid" }: Props) {
 
   if (variant === "marketplace") {
     return (
-      <Link to="/salon/$id" params={{ id: salon.id }} className="group block h-full">
+      <Link to="/salon/$id" params={{ id: salon.id }} className="group block">
         <div className="relative aspect-[5/4] w-full overflow-hidden rounded-xl bg-surface">
           <img
             src={cover}
