@@ -226,4 +226,12 @@
   .map-sidebar-card-enter {
     animation: map-sidebar-card-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
+
+  /* Home map preview — 2GIS copyright yashirish (faqat kichik widget) */
+  .map-home-preview a[href*="2gis"],
+  .map-home-preview [class*="copyright"] {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
 }

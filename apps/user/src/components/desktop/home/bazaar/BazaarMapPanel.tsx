@@ -61,7 +61,7 @@ export function BazaarMapPanel({ salons = [], salonCount = 0, className }: Props
     >
       <div className="relative h-full min-h-0 w-full overflow-hidden bg-surface">
         {mounted ? (
-          <div className="pointer-events-none absolute inset-0">
+          <div className="map-home-preview pointer-events-none absolute inset-0">
             <MapErrorBoundary>
               <SalonMap
                 markers={markers}
@@ -78,9 +78,9 @@ export function BazaarMapPanel({ salons = [], salonCount = 0, className }: Props
           <div className="absolute inset-0 animate-pulse bg-surface-2" />
         )}
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-background via-background/90 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-32 bg-gradient-to-t from-background from-15% via-background/75 to-transparent" />
 
-        <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-10 shadow-[0_-28px_56px_rgba(255,255,255,0.92)]">
+        <div className="relative z-[2] px-4 pb-4 pt-2">
           <p className="text-lg font-bold tracking-tight">
             {salonCount > 0
               ? t("home.mapPreview.nearbyCount", {
@@ -94,6 +94,12 @@ export function BazaarMapPanel({ salons = [], salonCount = 0, className }: Props
             <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </span>
         </div>
+
+        {/* 2GIS watermark — preview kartochkasida yashirish */}
+        <div
+          className="pointer-events-none absolute bottom-0 right-0 z-[3] h-7 w-[4.75rem] bg-background"
+          aria-hidden
+        />
       </div>
     </Link>
   );
