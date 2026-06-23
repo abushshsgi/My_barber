@@ -170,29 +170,14 @@ export const FLOW_IDENTITY_META: Record<
 };
 
 /** Auth chap panel — tanlangan signup yo'li bo'yicha marketing. */
-export type AuthMarketingFeature = {
-  icon: string;
-  title: string;
-  desc: string;
-};
-
-export type AuthMarketingVisual = {
-  gradient: string;
-  icon: string;
-  ring: string;
-};
-
 export type AuthFlowMarketingContent = {
   badge: string;
   headline: string;
   highlight: string;
   subline: string;
-  shortTitle: string;
-  longText: string;
   bullets: readonly [string, string, string];
-  features: readonly [AuthMarketingFeature, AuthMarketingFeature, AuthMarketingFeature];
+  bulletIcons: readonly [string, string, string];
   stat: { value: string; label: string };
-  visual: AuthMarketingVisual;
 };
 
 export const AUTH_FLOW_MARKETING: Record<SignupFlow, AuthFlowMarketingContent> = {
@@ -200,73 +185,41 @@ export const AUTH_FLOW_MARKETING: Record<SignupFlow, AuthFlowMarketingContent> =
     badge: "Salon egasi",
     headline: "Salonni",
     highlight: "boshqaring",
-    shortTitle: "Salonni to'liq boshqaring",
     subline:
       "Jamoa, xizmatlar va bronlarni bitta joydan boshqaring. Owner sifatida salon natijalari ustidan to'liq nazorat sizda.",
-    longText:
-      "Salon egasi sifatida siz jamoa a'zolarini qo'shasiz, xizmat narxlari va jadvalni sozlaysiz, bronlar oqimini kuzatasiz va daromad ko'rsatkichlarini bir paneldan ko'rasiz. MySaloon Partner salon kundalik ishlarini sodda va tushunarli qiladi — qog'oz jadvallar va chalkash chatlar o'rniga.",
     bullets: ["Jamoa va xizmatlar boshqaruvi", "Salon jadvali va bronlar", "Daromad va statistika"],
-    features: [
-      { icon: "Users", title: "Jamoa boshqaruvi", desc: "Barberlarni qo'shing va rollarni belgilang" },
-      { icon: "CalendarDays", title: "Bron va jadval", desc: "Online bronlar va ish vaqtlari" },
-      { icon: "Wallet", title: "Daromad", desc: "Kunlik va oylik hisobotlar" },
-    ],
+    bulletIcons: ["Users", "CalendarDays", "Wallet"],
     stat: { value: "5–7", label: "qadam sozlash" },
-    visual: { gradient: "from-amber-100 via-orange-50 to-[#f4f4f5]", icon: "Store", ring: "ring-amber-200/70" },
   },
   employee: {
     badge: "Salon ishchisi",
     headline: "Jamoa bilan",
     highlight: "ishlang",
-    shortTitle: "Salon jamoasiga qo'shiling",
     subline:
       "Mavjud salonga qo'shiling va salon workspace'da mijozlar, bronlar va chat orqali ish olib boring.",
-    longText:
-      "Ishchi barber sifatida siz mavjud salon tizimiga ulanib, tayyor mijoz oqimi va jadval bilan ishlay boshlaysiz. GPS orqali joyingiz tasdiqlanadi, salon egasi jamoani boshqaradi — siz esa bronlar, chat va xizmatlar ustida e'tibor qaratishingiz mumkin.",
     bullets: ["Salon jamoasiga ulanish", "GPS orqali joy tasdiqlash", "Bronlar va mijozlar bilan ishlash"],
-    features: [
-      { icon: "MapPin", title: "Joy tasdiqlash", desc: "Salondan ~100 m ichida GPS tekshiruvi" },
-      { icon: "MessageSquare", title: "Chat va bronlar", desc: "Mijozlar bilan to'g'ridan-to'g'ri aloqa" },
-      { icon: "CalendarDays", title: "Ish jadvali", desc: "Salon vaqtiga mos bronlar" },
-    ],
+    bulletIcons: ["MapPin", "MessageSquare", "CalendarDays"],
     stat: { value: "~100 m", label: "salondan yaqinlik" },
-    visual: { gradient: "from-sky-100 via-blue-50 to-[#f4f4f5]", icon: "UserPlus", ring: "ring-sky-200/70" },
   },
   mybarber: {
     badge: "MyBarber",
     headline: "Tez oching,",
     highlight: "brend bilan",
-    shortTitle: "MyBarber bilan tez boshlang",
     subline:
       "MyBarber shabloni bilan salonni qisqa vaqt ichida ishga tushiring — tayyor brend ko'rinishi va tez sozlash.",
-    longText:
-      "MyBarber yo'li yangi salonni tez ochish uchun mo'ljallangan: brend uslubi, profil shabloni va xizmatlar ro'yxati tayyor. Bir necha qadamda salon sahifangiz tayyor bo'ladi va mijozlar oqimini yoqish mumkin — dizayn va texnik qismlarni qayta o'ylab chiqish shart emas.",
     bullets: ["Tayyor MyBarber uslubi", "Tez profil va xizmatlar", "Mijoz oqimini yoqish"],
-    features: [
-      { icon: "Sparkles", title: "Brend shablon", desc: "Tayyor MyBarber ko'rinishi" },
-      { icon: "Zap", title: "Tez sozlash", desc: "3–5 qadamda ishga tushirish" },
-      { icon: "Users", title: "Mijoz oqimi", desc: "Online bron va profil" },
-    ],
+    bulletIcons: ["Sparkles", "Zap", "Users"],
     stat: { value: "3–5", label: "qadam sozlash" },
-    visual: { gradient: "from-violet-100 via-purple-50 to-[#f4f4f5]", icon: "Sparkles", ring: "ring-violet-200/70" },
   },
   independent: {
     badge: "Mustaqil barber",
     headline: "O'zingiz",
     highlight: "boshqaring",
-    shortTitle: "Mustaqil ish maydoningiz",
     subline:
       "Salonsiz shaxsiy workspace — uydan, studiyadan yoki mobil xizmat. Jadval, xizmatlar va daromad sizniki.",
-    longText:
-      "Mustaqil barber uchun alohida workspace: o'z jadvalingiz, xizmatlaringiz va mijozlaringiz — hech qanday salon egasiga bog'liq emas. Uyda, studiyada yoki mobil xizmat ko'rsatishingiz mumkin. Barcha bronlar, chat va daromad shaxsiy kabinetingizda.",
     bullets: ["Shaxsiy jadval va bronlar", "O'z xizmatlaringiz", "To'liq mustaqil ish maydoni"],
-    features: [
-      { icon: "Briefcase", title: "Shaxsiy workspace", desc: "Salonsiz mustaqil kabinet" },
-      { icon: "Clock", title: "O'z jadvalingiz", desc: "Vaqt va bandlikni boshqaring" },
-      { icon: "Star", title: "Mijozlar", desc: "Sharhlar va portfolio" },
-    ],
+    bulletIcons: ["Briefcase", "Clock", "Star"],
     stat: { value: "Solo", label: "ish maydoni" },
-    visual: { gradient: "from-emerald-100 via-green-50 to-[#f4f4f5]", icon: "Briefcase", ring: "ring-emerald-200/70" },
   },
 };
 

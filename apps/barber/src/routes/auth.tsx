@@ -25,31 +25,13 @@ import { tabSlide } from "@/lib/motion-presets";
 import { formatUzPhoneE164 } from "@/lib/phone";
 import { saveSignupDraft } from "@/lib/signup-draft";
 import { cn } from "@/lib/utils";
-import { z } from "zod";
-import {
-  AUTH_IMAGE_LAYOUT_IDS,
-  DEFAULT_AUTH_IMAGE_LAYOUT,
-  parseAuthImageLayout,
-  type AuthImageLayoutVariant,
-} from "@/lib/auth-image-layout-variant";
-
-const authSearchSchema = z.object({
-  img: z.enum(AUTH_IMAGE_LAYOUT_IDS).optional().catch(DEFAULT_AUTH_IMAGE_LAYOUT),
-});
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: authSearchSchema,
   component: AuthPage,
 });
 
 function AuthPage() {
   const navigate = useNavigate({ from: Route.fullPath });
-  const { img = DEFAULT_AUTH_IMAGE_LAYOUT } = Route.useSearch();
-  const imageLayout = parseAuthImageLayout(img);
-
-  const setImageLayout = (layout: AuthImageLayoutVariant) => {
-    void navigate({ search: (prev) => ({ ...prev, img: layout }), replace: true });
-  };
   const [tab, setTab] = useState<"login" | "signup">("login");
   const [signupStep, setSignupStep] = useState(0);
 
@@ -213,8 +195,6 @@ function AuthPage() {
         tab={tab}
         signupStep={signupStep}
         onTabChange={handleTabChange}
-        imageLayout={imageLayout}
-        onImageLayoutChange={setImageLayout}
       >
         {/* Mobile tab switcher */}
         <div className="mb-5 grid h-12 grid-cols-2 rounded-xl bg-zinc-100 p-1 md:hidden">
