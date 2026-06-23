@@ -19,6 +19,8 @@ class Conversation(models.Model):
     barber = models.ForeignKey(Barber, on_delete=models.CASCADE, related_name="chat_conversations")
     last_message_text = models.CharField(max_length=1000, blank=True, default="")
     last_message_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    user_last_read_at = models.DateTimeField(null=True, blank=True)
+    barber_last_read_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, db_index=True)
 

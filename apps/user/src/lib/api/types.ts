@@ -202,6 +202,8 @@ export type ApiConversation = {
   last_message_at: string | null;
   updated_at: string;
   other: ApiChatOther;
+  salon_name: string;
+  unread_count: number;
 };
 
 export type ApiMessage = {

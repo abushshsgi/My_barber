@@ -4,6 +4,7 @@ import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { SalonDesktopPage } from "@/components/desktop/pages/SalonDesktopPage";
 import { SalonMobilePage } from "@/components/salon/SalonMobilePage";
 import { useFavorites } from "@/hooks/use-favorites";
+import { SalonShareSheet } from "@/components/salon/SalonShareSheet";
 import { useShareSalon } from "@/hooks/use-share-salon";
 import { useSalonPage } from "@/hooks/use-salon-page";
 
@@ -17,7 +18,7 @@ function SalonPage() {
   const { id } = useParams({ from: "/salon/$id" });
   const { salon, isLoading, reviewsAreMock } = useSalonPage(id);
   const { isFav, toggle, isPending } = useFavorites();
-  const onShare = useShareSalon(salon ?? undefined);
+  const { openShare, shareOpen, setShareOpen, shareSalon } = useShareSalon(salon ?? undefined);
 
   if (isLoading || !salon) {
     return (
@@ -33,15 +34,20 @@ function SalonPage() {
     salon,
     fav,
     onToggleFav: toggleFav,
-    onShare,
+    onShare: openShare,
     favPending: isPending,
     reviewsAreMock,
   };
 
   return (
-    <DesktopPageSplit
-      mobile={<SalonMobilePage {...pageProps} />}
-      desktop={<SalonDesktopPage {...pageProps} />}
-    />
+    <>
+      <DesktopPageSplit
+        mobile={<SalonMobilePage {...pageProps} />}
+        desktop={<SalonDesktopPage {...pageProps} />}
+      />
+      {shareSalon ? (
+        <SalonShareSheet open={shareOpen} onOpenChange={setShareOpen} salon={shareSalon} />
+      ) : null}
+    </>
   );
 }

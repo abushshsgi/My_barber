@@ -18,13 +18,14 @@ function formatRelativeTime(iso: string | null): string {
 export function mapConversation(api: ApiConversation): ChatThread {
   return {
     id: api.id,
-    salonName: api.other.full_name,
+    salonName: api.salon_name ?? api.other.full_name,
     barberName: api.other.full_name,
+    barberId: api.other.kind === "BARBER" ? api.other.id : undefined,
     avatarSeed: String(api.other.id),
     avatarUrl: api.other.avatar || undefined,
     lastMessage: api.last_message_text || "",
     lastTime: formatRelativeTime(api.last_message_at ?? api.updated_at),
-    unread: 0,
+    unread: api.unread_count ?? 0,
   };
 }
 

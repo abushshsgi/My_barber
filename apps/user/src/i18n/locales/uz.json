@@ -38,6 +38,9 @@
     "loadError": "Ma'lumot yuklanmadi. Qayta urinib ko'ring.",
     "empty": "Hozircha bo'sh"
   },
+  "scrollToTop": {
+    "label": "Yuqoriga"
+  },
   "footer": {
     "tagline": "Salon va sartarosh bron platformasi"
   },
@@ -228,6 +231,16 @@
     "share": "Ulashish",
     "shareCopied": "Havola nusxalandi",
     "shareFailed": "Ulashib bo'lmadi",
+    "shareSheet": {
+      "title": "Ulashish",
+      "subtitle": "Do'stlaringizga salon havolasini yuboring",
+      "copy": "Nusxalash",
+      "copyLink": "Havolani nusxalash",
+      "copied": "Nusxalandi!",
+      "telegram": "Telegram",
+      "whatsapp": "WhatsApp",
+      "more": "Boshqa"
+    },
     "favoriteAdded": "Sevimlilarga qo'shildi",
     "favoriteRemoved": "Sevimlilardan olib tashlandi",
     "favoriteError": "Sevimlilarni saqlab bo'lmadi",
@@ -288,11 +301,15 @@
   },
   "bookings": {
     "title": "Buyurtmalarim",
+    "subtitle": "Kelayotgan va o'tgan tashriflar.",
     "upcoming": "Kelayotgan",
     "history": "Tarix",
     "chat": "Chat",
     "review": "Sharh",
     "writeReview": "Sharh yozish",
+    "emptyTitle": "Hali bron yo'q",
+    "emptyHint": "Yaqin atrofdagi salonlardan vaqtni tanlab, birinchi broningizni qiling.",
+    "browseSalons": "Bron qilish",
     "status": {
       "pending": "Kutilmoqda",
       "accepted": "Tasdiqlangan",
@@ -303,12 +320,44 @@
   "chat": {
     "title": "Xabarlar",
     "placeholder": "Xabar yozing...",
-    "empty": "Hali xabarlar yo'q"
+    "empty": "Hali xabarlar yo'q",
+    "searchPlaceholder": "Suhbatlarni izlash",
+    "filterAll": "Hammasi",
+    "filterUnread": "O'qilmagan{{count}}",
+    "searchEmpty": "Hech narsa topilmadi",
+    "noMessagesYet": "Xabar yo'q"
   },
   "notifications": {
     "title": "Bildirishnomalar",
     "markAll": "Hammasini o'qilgan deb belgilash",
-    "empty": "Bildirishnomalar yo'q"
+    "empty": "Bildirishnomalar yo'q",
+    "loginRequired": "Kirish kerak",
+    "loginHint": "Bildirishnomalarni ko'rish uchun hisobingizga kiring.",
+    "settings": "Sozlamalar",
+    "channelSettings": "Bildirishnoma kanallari",
+    "channelsOn": "{{on}}/{{total}} yoqilgan",
+    "allOffTitle": "Hamma kanallar o'chirilgan",
+    "allOffHint": "Sozlamalardan kerakli kanallarni yoqing",
+    "enableAll": "Yoqish",
+    "read": "O'qildi",
+    "filters": {
+      "all": "Hammasi",
+      "unread": "O'qilmagan",
+      "booking": "Bron",
+      "chat": "Chat",
+      "promo": "Chegirma",
+      "review": "Sharh"
+    },
+    "channels": {
+      "booking": "Bron eslatmalari",
+      "bookingDesc": "Tasdiq, vaqt va o'zgarishlar",
+      "chat": "Chat xabarlari",
+      "chatDesc": "Usta va salonlardan",
+      "promo": "Chegirma va aksiyalar",
+      "promoDesc": "Bugungi takliflar va kuponlar",
+      "review": "Sharh eslatmalari",
+      "reviewDesc": "Tashrifdan keyin baho so'rovi"
+    }
   },
   "profile": {
     "title": "Profil",
@@ -483,8 +532,10 @@
   },
   "reviews": {
     "title": "Mening sharhlarim",
+    "subtitle": "Tashriflaringizdan keyin qoldirgan baholar.",
     "empty": "Hali sharh yo'q",
-    "emptyHint": "Tashrifdan keyin baho qoldiring"
+    "emptyHint": "Tashrifdan keyin baho qoldiring — fikringiz boshqalarga yordam beradi.",
+    "emptyAction": "Buyurtmalarga o'tish"
   },
   "paymentMethods": {
     "title": "To'lov usullari",
@@ -773,12 +824,14 @@
   "favorites": {
     "title": "Sevimli salonlar",
     "hubTitle": "Sevimlilar",
+    "subtitle": "Saqlangan salonlar va ustalar — tez kirish uchun.",
     "tabs": {
       "salons": "Salonlar",
       "stylists": "Ustalar"
     },
     "browseSalons": "Salonlarni topish",
-    "empty": "Hali sevimli salon yo'q"
+    "empty": "Hali sevimli salon yo'q",
+    "emptyHint": "Yoqtirgan salonlaringizni saqlang — keyin bir bosishda qayta topasiz."
   },
   "reelsPage": {
     "title": "Reels",
@@ -1102,7 +1155,14 @@
   },
   "offersPage": {
     "title": "Aksiyalar",
+    "subtitle": "Salonlar va xizmatlar bo'yicha maxsus takliflar",
+    "mobileSubtitle": "Kuponlar va maxsus takliflar bir joyda.",
+    "desktopSubtitle": "Promokodlar, kuponlar va yaqin orada qo'shiladigan salon aksiyalari.",
+    "heroBadge": "Maxsus takliflar",
+    "heroTitle": "Kuponlar va salon aksiyalari",
     "empty": "Aksiya topilmadi",
+    "emptyHint": "Tez orada yangi salon aksiyalari shu yerda paydo bo'ladi. Hozircha kuponlardan foydalaning.",
+    "viewToday": "Bugungi takliflar",
     "featuredLabel": "Asosiy taklif",
     "validUntil": "{{date}} gacha",
     "bookNow": "Bron qilish",

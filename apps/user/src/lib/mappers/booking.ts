@@ -16,6 +16,7 @@ export function mapBooking(api: ApiBooking): BookingItem {
     salonId: api.salon ? String(api.salon) : "",
     salonName: api.salon_name ?? "Salon",
     barberName: api.barber_name,
+    barberId: api.barber,
     serviceName: line?.service_name ?? "Xizmat",
     date: api.start_at,
     duration: line?.duration_minutes ?? 30,

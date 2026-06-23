@@ -20,9 +20,15 @@ function OffersMobile() {
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-full bg-background pb-[calc(68px+env(safe-area-inset-bottom)+12px)]">
-      <PageHeader showBack title={t("nav.offers", { defaultValue: "Aksiyalar" })} />
-      <div className="border-t border-border px-5 py-6">
+    <div className="min-h-full bg-surface pb-[calc(68px+env(safe-area-inset-bottom)+12px)]">
+      <PageHeader
+        showBack
+        title={t("nav.offers", { defaultValue: "Aksiyalar" })}
+        subtitle={t("offersPage.mobileSubtitle", {
+          defaultValue: "Kuponlar va maxsus takliflar bir joyda.",
+        })}
+      />
+      <div className="page-stagger rounded-t-[28px] bg-background px-5 py-6 shadow-[0_-8px_32px_-12px_rgba(0,0,0,0.08)]">
         <OffersPageContent />
       </div>
     </div>

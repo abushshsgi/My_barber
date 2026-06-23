@@ -6,6 +6,9 @@ import { notificationsQueryKeyBase } from "@/hooks/use-notifications-api";
 
 type WsPayload = {
   type?: string;
+  event?: string;
+  id?: number;
+  title?: string;
 };
 
 /**
@@ -48,7 +51,12 @@ function openSocket(token: string) {
   socket.onmessage = (evt) => {
     try {
       const payload = JSON.parse(evt.data) as WsPayload;
-      if (payload.type === "notification" || payload.type === "notifications") {
+      if (
+        payload.event === "notification" ||
+        payload.type === "notification" ||
+        payload.type === "notifications" ||
+        (typeof payload.id === "number" && typeof payload.title === "string")
+      ) {
         invalidateAll();
       }
     } catch {

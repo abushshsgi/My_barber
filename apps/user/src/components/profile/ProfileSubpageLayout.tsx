@@ -32,7 +32,7 @@ function ProfileSubpageMobile({ title, subtitle, children, className, right, bac
           {right}
         </div>
       </div>
-      <div className="rounded-t-[28px] bg-background px-5 pb-6 pt-5 shadow-[0_-8px_32px_-12px_rgba(0,0,0,0.08)]">
+      <div className="page-stagger rounded-t-[28px] bg-background px-5 pb-6 pt-5 shadow-[0_-8px_32px_-12px_rgba(0,0,0,0.08)]">
         {children}
       </div>
     </div>

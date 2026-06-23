@@ -20,7 +20,11 @@ export function AccountDesktopShell({ title, subtitle, children, bare, wide }: P
         </header>
       ) : null}
 
-      {bare ? children : <div className={cn(DESKTOP_GLASS_PANEL, "p-5 lg:p-6")}>{children}</div>}
+      {bare ? (
+        <div className="page-stagger">{children}</div>
+      ) : (
+        <div className={cn(DESKTOP_GLASS_PANEL, "page-stagger p-5 lg:p-6")}>{children}</div>
+      )}
     </div>
   );
 }

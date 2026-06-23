@@ -4,6 +4,7 @@ from accounts.models import User
 from barbers.models import Barber
 
 from .models import Conversation, Message
+from .salon_lookup import salon_name_for_barber
 
 
 def _absolute_file_url(request, filefield) -> str:
@@ -18,6 +19,8 @@ def _absolute_file_url(request, filefield) -> str:
 class ConversationListSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(source="public_id", read_only=True)
     other = serializers.SerializerMethodField()
+    salon_name = serializers.SerializerMethodField()
+    unread_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Conversation
@@ -27,7 +30,27 @@ class ConversationListSerializer(serializers.ModelSerializer):
             "last_message_at",
             "updated_at",
             "other",
+            "salon_name",
+            "unread_count",
         ]
+
+    def get_salon_name(self, obj: Conversation) -> str:
+        return salon_name_for_barber(obj.barber)
+
+    def get_unread_count(self, obj: Conversation) -> int:
+        actor = self.context.get("actor") or {}
+        kind = actor.get("kind")
+        if kind == "USER":
+            since = obj.user_last_read_at
+            qs = obj.messages.filter(sender_kind=Message.SenderKind.BARBER)
+        elif kind == "BARBER":
+            since = obj.barber_last_read_at
+            qs = obj.messages.filter(sender_kind=Message.SenderKind.USER)
+        else:
+            return 0
+        if since:
+            qs = qs.filter(created_at__gt=since)
+        return qs.count()
 
     def get_other(self, obj: Conversation):
         request = self.context.get("request")

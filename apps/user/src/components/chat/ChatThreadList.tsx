@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { MessageSquare, Pin, Search } from "lucide-react";
+import { MessageSquare, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useConversations } from "@/hooks/use-chat-api";
 import { EmptyState } from "@/components/EmptyState";
@@ -71,7 +71,7 @@ export function ChatThreadList({ activeId, className, hideMobileTitle }: Props) 
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Suhbatlarni izlash"
+            placeholder={t("chat.searchPlaceholder", { defaultValue: "Suhbatlarni izlash" })}
             className="flex-1 bg-transparent text-sm font-medium placeholder:text-muted-foreground focus:outline-none"
           />
         </div>
@@ -86,15 +86,19 @@ export function ChatThreadList({ activeId, className, hideMobileTitle }: Props) 
                 filter === k ? "bg-foreground text-background" : "bg-surface text-foreground/70",
               )}
             >
-              {k === "all" ? "Hammasi" : `O'qilmagan${totalUnread > 0 ? ` · ${totalUnread}` : ""}`}
+              {k === "all"
+                ? t("chat.filterAll", { defaultValue: "Hammasi" })
+                : t("chat.filterUnread", {
+                    defaultValue: "O'qilmagan",
+                    count: totalUnread > 0 ? ` · ${totalUnread}` : "",
+                  })}
             </button>
           ))}
         </div>
       </div>
 
       <div className="min-h-0 flex-1 divide-y divide-border overflow-y-auto">
-        {list.map((c, i) => {
-          const online = i % 2 === 0;
+        {list.map((c) => {
           const active = activeId === c.id;
           return (
             <Link
@@ -107,24 +111,26 @@ export function ChatThreadList({ activeId, className, hideMobileTitle }: Props) 
               )}
             >
               <div className="relative shrink-0">
-                <div
-                  className="grid h-12 w-12 place-items-center rounded-full text-sm font-bold text-background"
-                  style={{
-                    background: `linear-gradient(135deg, oklch(0.55 0.05 ${(c.id.charCodeAt(0) * 30) % 360}), oklch(0.25 0.02 ${(c.id.charCodeAt(0) * 30 + 60) % 360}))`,
-                  }}
-                >
-                  {initials(c.barberName)}
-                </div>
-                {online ? (
-                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-foreground ring-2 ring-background" />
-                ) : null}
+                {c.avatarUrl ? (
+                  <img
+                    src={c.avatarUrl}
+                    alt=""
+                    className="h-12 w-12 rounded-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="grid h-12 w-12 place-items-center rounded-full text-sm font-bold text-background"
+                    style={{
+                      background: `linear-gradient(135deg, oklch(0.55 0.05 ${(c.id.charCodeAt(0) * 30) % 360}), oklch(0.25 0.02 ${(c.id.charCodeAt(0) * 30 + 60) % 360}))`,
+                    }}
+                  >
+                    {initials(c.barberName)}
+                  </div>
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-1.5">
-                    <h3 className="truncate text-sm font-bold">{c.barberName}</h3>
-                    {i === 0 ? <Pin className="h-3 w-3 shrink-0 text-muted-foreground" /> : null}
-                  </div>
+                  <h3 className="truncate text-sm font-bold">{c.barberName}</h3>
                   <span
                     className={cn(
                       "shrink-0 text-[10px] font-bold uppercase tracking-wide",
@@ -144,7 +150,7 @@ export function ChatThreadList({ activeId, className, hideMobileTitle }: Props) 
                       c.unread > 0 ? "font-bold text-foreground" : "text-muted-foreground",
                     )}
                   >
-                    {c.lastMessage}
+                    {c.lastMessage || t("chat.noMessagesYet", { defaultValue: "Xabar yo'q" })}
                   </p>
                   {c.unread > 0 ? (
                     <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-foreground px-1.5 text-[10px] font-bold text-background">
@@ -157,7 +163,10 @@ export function ChatThreadList({ activeId, className, hideMobileTitle }: Props) 
           );
         })}
         {list.length === 0 ? (
-          <EmptyState icon={<Search className="h-7 w-7" />} title="Hech narsa topilmadi" />
+          <EmptyState
+            icon={<Search className="h-7 w-7" />}
+            title={t("chat.searchEmpty", { defaultValue: "Hech narsa topilmadi" })}
+          />
         ) : null}
       </div>
     </div>

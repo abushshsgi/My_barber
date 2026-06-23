@@ -17,6 +17,10 @@ export async function fetchMessages(conversationId: string): Promise<ApiMessage[
   return apiList<ApiMessage>(`/api/v1/chat/conversations/${conversationId}/messages/`);
 }
 
+export async function markConversationRead(conversationId: string): Promise<void> {
+  await apiJson(`/api/v1/chat/conversations/${conversationId}/read/`, { method: "POST" });
+}
+
 export async function sendMessage(conversationId: string, text: string): Promise<ApiMessage> {
   return apiJson<ApiMessage>(`/api/v1/chat/conversations/${conversationId}/messages/`, {
     method: "POST",

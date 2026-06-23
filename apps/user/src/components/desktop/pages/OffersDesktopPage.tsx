@@ -9,12 +9,14 @@ export function OffersDesktopPage() {
   return (
     <div className={cn("w-full", DESKTOP_ACCOUNT_BG)}>
       <div className="lg:pl-8 xl:pl-14">
-        <div className="lg:max-w-[820px] lg:pb-12">
+        <div className="lg:max-w-4xl lg:pb-12">
           <h1 className="text-[32px] font-semibold tracking-tight text-foreground xl:text-[36px]">
             {t("nav.offers", { defaultValue: "Aksiyalar" })}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {t("offersPage.subtitle", { defaultValue: "Salonlar va xizmatlar bo'yicha maxsus takliflar" })}
+            {t("offersPage.desktopSubtitle", {
+              defaultValue: "Promokodlar, kuponlar va yaqin orada qo'shiladigan salon aksiyalari.",
+            })}
           </p>
           <div className="mt-7">
             <OffersPageContent />

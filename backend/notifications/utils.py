@@ -10,6 +10,7 @@ from .ws_broadcast import push_ws_barber, push_ws_user
 
 def _ws_payload(n: Notification) -> dict:
     return {
+        "event": "notification",
         "id": n.id,
         "type": n.type,
         "title": n.title,

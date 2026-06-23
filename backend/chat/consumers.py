@@ -27,6 +27,39 @@ def _booking_allows_chat(user_id: int, barber_id: int) -> bool:
 
 
 @database_sync_to_async
+def _notify_chat_message(convo: Conversation, actor_kind: str, text: str) -> None:
+    from notifications.utils import notify_barber, notify_user
+
+    preview = text[:80]
+    payload = {"conversation_id": str(convo.public_id)}
+    if actor_kind == "USER":
+        notify_barber(
+            convo.barber,
+            "chat_message",
+            "Yangi xabar",
+            f"{convo.user.full_name or convo.user.email}: {preview}",
+            payload,
+        )
+    else:
+        notify_user(
+            convo.user,
+            "chat_message",
+            "Yangi xabar",
+            f"{convo.barber.full_name or convo.barber.email}: {preview}",
+            payload,
+        )
+
+
+@database_sync_to_async
+def _mark_sender_read(convo: Conversation, actor_kind: str) -> None:
+    now = timezone.now()
+    if actor_kind == "USER":
+        Conversation.objects.filter(pk=convo.pk).update(user_last_read_at=now)
+    else:
+        Conversation.objects.filter(pk=convo.pk).update(barber_last_read_at=now)
+
+
+@database_sync_to_async
 def _create_message(convo: Conversation, sender_kind: str, user: User | None, barber: Barber | None, text: str):
     msg = Message.objects.create(
         conversation=convo,
@@ -134,6 +167,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         else:
             barber = await database_sync_to_async(Barber.objects.filter(pk=self.actor_barber_id).first)()
         msg = await _create_message(self.convo, sender_kind, user, barber, text)
+        await _mark_sender_read(self.convo, self.actor_kind)
+        await _notify_chat_message(self.convo, self.actor_kind, text)
 
         payload = {
             "type": "message",

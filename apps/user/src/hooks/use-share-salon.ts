@@ -1,26 +1,16 @@
-import { useCallback } from "react";
-import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
+import { useCallback, useState } from "react";
 import type { Salon } from "@/lib/mock-data";
-import { shareSalon } from "@/lib/share-salon";
 
-export function useShareSalon(salon: Pick<Salon, "id" | "name" | "address"> | null | undefined) {
-  const { t } = useTranslation();
+type ShareSalon = Pick<Salon, "id" | "name" | "address" | "coverUrl" | "coverSeed" | "category" | "rating">;
 
-  return useCallback(async () => {
-    if (!salon) return;
-    try {
-      const result = await shareSalon(salon);
-      if (result === "copied") {
-        toast.success(t("salon.shareCopied", { defaultValue: "Havola nusxalandi" }));
-      }
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
-      toast.error(
-        err instanceof Error
-          ? err.message
-          : t("salon.shareFailed", { defaultValue: "Ulashib bo'lmadi" }),
-      );
-    }
-  }, [salon, t]);
+export function useShareSalon(salon: ShareSalon | null | undefined) {
+  const [open, setOpen] = useState(false);
+  const openShare = useCallback(() => setOpen(true), []);
+
+  return {
+    openShare,
+    shareOpen: open,
+    setShareOpen: setOpen,
+    shareSalon: salon ?? null,
+  };
 }

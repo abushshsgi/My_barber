@@ -15,7 +15,7 @@ type Props = { data: HomeData };
 /** v03 — Editorial: katta hero, featured carousel, to'liq ro'yxat (faqat mobil). */
 export function HomeVariantEditorial({ data }: Props) {
   return (
-    <>
+    <div className="page-stagger">
       <header
         className="pt-4"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 12px)" }}
@@ -28,6 +28,6 @@ export function HomeVariantEditorial({ data }: Props) {
       <HomeAiPromo />
       <HomeSearchAndCategories {...data} />
       <HomeTrustStrip />
-    </>
+    </div>
   );
 }

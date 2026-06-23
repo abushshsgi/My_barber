@@ -130,7 +130,7 @@ from ai.views import (
     HairstyleDetailView,
     HairstyleListView,
 )
-from chat.views import ConversationListCreateView, ConversationMessagesView
+from chat.views import ConversationListCreateView, ConversationMarkReadView, ConversationMessagesView
 from geo.views import CurrencyRatesView, GeocodeView, ReverseGeocodeView, ValidateLocationView
 from notifications.push_views import BarberPushTokenView
 from wallet.payment_confirm import PaymentConfirmView
@@ -270,6 +270,10 @@ api_routes = [
     path(
         "chat/conversations/<uuid:conversation_id>/messages/",
         ConversationMessagesView.as_view(),
+    ),
+    path(
+        "chat/conversations/<uuid:conversation_id>/read/",
+        ConversationMarkReadView.as_view(),
     ),
     path("support/tickets/", UserSupportTicketListCreateView.as_view()),
     path("wallet/me/", WalletMeView.as_view()),

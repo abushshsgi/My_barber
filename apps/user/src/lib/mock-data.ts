@@ -81,6 +81,7 @@ export interface BookingItem {
   id: string;
   salonId: string;
   salonName: string;
+  barberId: number;
   barberName: string;
   serviceName: string;
   date: string; // ISO
@@ -95,6 +96,7 @@ export interface ChatThread {
   id: string;
   salonName: string;
   barberName: string;
+  barberId?: number;
   avatarSeed: string;
   lastMessage: string;
   lastTime: string;
@@ -392,77 +394,6 @@ export const bookings: BookingItem[] = [
     price: 80000,
     status: "done",
     coverSeed: "legacy",
-  },
-];
-
-export const chatThreads: ChatThread[] = [
-  {
-    id: "c1",
-    salonName: "Legacy Barbershop",
-    barberName: "Jasur K.",
-    avatarSeed: "jasur",
-    lastMessage: "Albatta, ertaga kutamiz!",
-    lastTime: "12:34",
-    unread: 2,
-  },
-  {
-    id: "c2",
-    salonName: "Atelier Beauty",
-    barberName: "Malika A.",
-    avatarSeed: "malika",
-    lastMessage: "Vaqt sizga qulay bo'ladimi?",
-    lastTime: "yest.",
-    unread: 0,
-  },
-];
-
-export const chatMessages: Record<string, ChatMessage[]> = {
-  c1: [
-    { id: "m1", fromMe: false, text: "Buyurtmangizni qabul qildim.", time: "12:30" },
-    { id: "m2", fromMe: true, text: "Rahmat! Ertaga 10:00 ga to'g'rimi?", time: "12:32" },
-    { id: "m3", fromMe: false, text: "Albatta, ertaga kutamiz!", time: "12:34" },
-  ],
-  c2: [
-    { id: "m1", fromMe: false, text: "Vaqt sizga qulay bo'ladimi?", time: "yest." },
-  ],
-};
-
-export const notifications: Notification[] = [
-  {
-    id: "n1",
-    type: "booking",
-    title: "Buyurtma tasdiqlandi",
-    body: "Legacy Barbershop sizning buyurtmangizni qabul qildi.",
-    time: "5 daq",
-    read: false,
-    bookingId: "bk1",
-  },
-  {
-    id: "n2",
-    type: "chat_message",
-    title: "Yangi xabar — Jasur K.",
-    body: "Albatta, ertaga kutamiz!",
-    time: "1 soat",
-    read: false,
-    chatId: "c1",
-  },
-  {
-    id: "n3",
-    type: "promo",
-    title: "−20% Atelier Beauty",
-    body: "Hafta oxirigacha manikyur va styling chegirma.",
-    time: "3 soat",
-    read: false,
-    link: "/offers",
-  },
-  {
-    id: "n4",
-    type: "review",
-    title: "Sharhga javob",
-    body: "Atelier Beauty sizning sharhingizga javob berdi.",
-    time: "2 kun",
-    read: true,
-    reviewId: "ur2",
   },
 ];
 

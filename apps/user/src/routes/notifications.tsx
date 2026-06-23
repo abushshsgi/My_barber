@@ -11,7 +11,7 @@ import {
   Check,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { notifications as initialFallback, type Notification } from "@/lib/mock-data";
+import type { Notification } from "@/lib/mock-data";
 import {
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
@@ -39,20 +39,20 @@ const TYPE_ICON: Record<Notification["type"], typeof Bell> = {
 type Channel = "booking" | "chat_message" | "review" | "promo";
 type FilterKey = "all" | "unread" | Channel;
 
-const CHANNELS: { key: Channel; label: string; desc: string; icon: typeof Bell }[] = [
-  { key: "booking", label: "Bron eslatmalari", desc: "Tasdiq, vaqt va o'zgarishlar", icon: CalendarCheck },
-  { key: "chat_message", label: "Chat xabarlari", desc: "Usta va salonlardan", icon: MessageSquare },
-  { key: "promo", label: "Chegirma va aksiyalar", desc: "Bugungi takliflar va kuponlar", icon: Tag },
-  { key: "review", label: "Sharh eslatmalari", desc: "Tashrifdan keyin baho so'rovi", icon: Star },
+const CHANNELS: { key: Channel; labelKey: string; descKey: string; icon: typeof Bell }[] = [
+  { key: "booking", labelKey: "notifications.channels.booking", descKey: "notifications.channels.bookingDesc", icon: CalendarCheck },
+  { key: "chat_message", labelKey: "notifications.channels.chat", descKey: "notifications.channels.chatDesc", icon: MessageSquare },
+  { key: "promo", labelKey: "notifications.channels.promo", descKey: "notifications.channels.promoDesc", icon: Tag },
+  { key: "review", labelKey: "notifications.channels.review", descKey: "notifications.channels.reviewDesc", icon: Star },
 ];
 
-const FILTERS: { key: FilterKey; label: string }[] = [
-  { key: "all", label: "Hammasi" },
-  { key: "unread", label: "O'qilmagan" },
-  { key: "booking", label: "Bron" },
-  { key: "chat_message", label: "Chat" },
-  { key: "promo", label: "Chegirma" },
-  { key: "review", label: "Sharh" },
+const FILTERS: { key: FilterKey; labelKey: string }[] = [
+  { key: "all", labelKey: "notifications.filters.all" },
+  { key: "unread", labelKey: "notifications.filters.unread" },
+  { key: "booking", labelKey: "notifications.filters.booking" },
+  { key: "chat_message", labelKey: "notifications.filters.chat" },
+  { key: "promo", labelKey: "notifications.filters.promo" },
+  { key: "review", labelKey: "notifications.filters.review" },
 ];
 
 const defaultPrefs: Record<Channel, boolean> = {
@@ -100,8 +100,9 @@ function usePrefs() {
 
 function Notifications() {
   const { t } = useTranslation();
+  const userId = getAuthUserId();
   const { data: apiItems = [], isLoading, isError } = useNotificationsApi();
-  const items = apiItems.length > 0 || isLoading || isError ? apiItems : initialFallback;
+  const items = apiItems;
   const markAllMutation = useMarkAllNotificationsRead();
   const markOneMutation = useMarkNotificationRead();
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -139,6 +140,28 @@ function Notifications() {
 
   const allOff = Object.values(prefs).every((v) => !v);
 
+  if (!userId) {
+    return (
+      <ProfileSubpageLayout title={t("notifications.title")}>
+        <EmptyState
+          icon={<Bell className="h-7 w-7" />}
+          title={t("notifications.loginRequired", { defaultValue: "Kirish kerak" })}
+          description={t("notifications.loginHint", {
+            defaultValue: "Bildirishnomalarni ko'rish uchun hisobingizga kiring.",
+          })}
+        />
+        <div className="mt-4">
+          <Link
+            to="/auth"
+            className="inline-flex w-full items-center justify-center rounded-2xl bg-foreground px-6 py-3.5 text-sm font-bold text-background"
+          >
+            {t("auth.login", { defaultValue: "Kirish" })}
+          </Link>
+        </div>
+      </ProfileSubpageLayout>
+    );
+  }
+
   return (
     <ProfileSubpageLayout
       title={t("notifications.title")}
@@ -150,29 +173,32 @@ function Notifications() {
               "grid h-9 w-9 place-items-center rounded-full transition-colors",
               showSettings ? "bg-foreground text-background" : "bg-background text-foreground shadow-sm",
             )}
-            aria-label="Settings"
+            aria-label={t("notifications.settings", { defaultValue: "Sozlamalar" })}
           >
             <Settings2 className="h-4 w-4" />
           </button>
           <button
             onClick={markAll}
-            className="rounded-full bg-background px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-foreground shadow-sm"
+            disabled={markAllMutation.isPending || items.length === 0}
+            className="rounded-full bg-background px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-foreground shadow-sm disabled:opacity-50"
           >
             {t("notifications.markAll")}
           </button>
         </div>
       }
     >
-
-      {/* Channel preferences */}
       {showSettings && (
         <section className="mb-4 rounded-2xl border border-border bg-background p-4">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              Bildirishnoma kanallari
+              {t("notifications.channelSettings", { defaultValue: "Bildirishnoma kanallari" })}
             </p>
             <span className="text-[10px] font-bold text-muted-foreground">
-              {Object.values(prefs).filter(Boolean).length}/{CHANNELS.length} yoqilgan
+              {t("notifications.channelsOn", {
+                defaultValue: "{{on}}/{{total}} yoqilgan",
+                on: Object.values(prefs).filter(Boolean).length,
+                total: CHANNELS.length,
+              })}
             </span>
           </div>
           <ul className="space-y-1">
@@ -189,9 +215,9 @@ function Notifications() {
                       <Icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-bold leading-tight">{c.label}</p>
+                      <p className="text-[13px] font-bold leading-tight">{t(c.labelKey)}</p>
                       <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-1">
-                        {c.desc}
+                        {t(c.descKey)}
                       </p>
                     </div>
                     <span
@@ -217,7 +243,6 @@ function Notifications() {
         </section>
       )}
 
-      {/* Quick filter chips */}
       <div className="no-scrollbar -mx-1 mb-2 flex gap-2 overflow-x-auto px-1">
         {FILTERS.map((f) => {
           const active = filter === f.key;
@@ -233,7 +258,7 @@ function Notifications() {
                   : "border-border bg-background text-foreground/70",
               )}
             >
-              {f.label}
+              {t(f.labelKey)}
               <span
                 className={cn(
                   "inline-flex min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums",
@@ -251,21 +276,30 @@ function Notifications() {
         <div className="mx-5 mt-3 flex items-start gap-3 rounded-2xl bg-foreground/5 p-4">
           <BellOff className="mt-0.5 h-4 w-4" />
           <div className="min-w-0 flex-1">
-            <p className="text-[12px] font-bold leading-tight">Hamma kanallar o'chirilgan</p>
+            <p className="text-[12px] font-bold leading-tight">
+              {t("notifications.allOffTitle", { defaultValue: "Hamma kanallar o'chirilgan" })}
+            </p>
             <p className="mt-0.5 text-[11px] text-muted-foreground">
-              Sozlamalardan kerakli kanallarni yoqing
+              {t("notifications.allOffHint", { defaultValue: "Sozlamalardan kerakli kanallarni yoqing" })}
             </p>
           </div>
           <button
             onClick={() => CHANNELS.forEach((c) => update(c.key, true))}
             className="rounded-full bg-foreground px-3 py-1.5 text-[11px] font-bold text-background"
           >
-            Yoqish
+            {t("notifications.enableAll", { defaultValue: "Yoqish" })}
           </button>
         </div>
       )}
 
-      {filtered.length === 0 ? (
+      {isLoading ? (
+        <p className="px-5 py-8 text-sm text-muted-foreground">{t("common.loading")}</p>
+      ) : isError ? (
+        <EmptyState
+          icon={<Bell className="h-7 w-7" />}
+          title={t("common.loadError")}
+        />
+      ) : filtered.length === 0 ? (
         <EmptyState icon={<Bell className="h-7 w-7" />} title={t("notifications.empty")} />
       ) : (
         <div className="divide-y divide-border">
@@ -297,7 +331,7 @@ function Notifications() {
                   <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{n.body}</p>
                   {n.read && (
                     <p className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                      <Check className="h-3 w-3" /> O'qildi
+                      <Check className="h-3 w-3" /> {t("notifications.read", { defaultValue: "O'qildi" })}
                     </p>
                   )}
                 </div>

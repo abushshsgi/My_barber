@@ -20,7 +20,7 @@ export function HomeBazaarClassic({ data }: Props) {
   const [a, b, c, d, e] = featuredSalons;
 
   return (
-    <div className={cn("flex w-full min-w-0 flex-col gap-6 overflow-x-clip", DESKTOP_BAZAAR_INSET)}>
+    <div className={cn("page-stagger flex w-full min-w-0 flex-col gap-6 overflow-x-clip", DESKTOP_BAZAAR_INSET)}>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:grid-rows-[auto_auto]">
         <div className="lg:col-span-8 lg:row-span-1">
           <BazaarHeroBanner className="h-full min-h-[240px]" />

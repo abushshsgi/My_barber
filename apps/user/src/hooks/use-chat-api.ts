@@ -3,6 +3,7 @@ import {
   createConversation,
   fetchConversations,
   fetchMessages,
+  markConversationRead,
   sendMessage,
 } from "@/lib/api/chat";
 import { authQueryEnabled } from "@/lib/auth-query";
@@ -52,5 +53,15 @@ export function useCreateConversation() {
   return useMutation({
     mutationFn: (barberId: number) => createConversation(barberId),
     onSuccess: () => void qc.invalidateQueries({ queryKey: conversationsQueryKeyBase }),
+  });
+}
+
+export function useMarkConversationRead(conversationId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => markConversationRead(conversationId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: conversationsQueryKeyBase });
+    },
   });
 }

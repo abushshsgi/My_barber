@@ -33,6 +33,9 @@
     "loadError": "Could not load data. Please try again.",
     "empty": "Nothing here yet"
   },
+  "scrollToTop": {
+    "label": "Back to top"
+  },
   "footer": {
     "tagline": "Salon and barber booking platform"
   },
@@ -223,6 +226,16 @@
     "share": "Share",
     "shareCopied": "Link copied",
     "shareFailed": "Could not share",
+    "shareSheet": {
+      "title": "Share",
+      "subtitle": "Send this salon link to friends",
+      "copy": "Copy",
+      "copyLink": "Copy link",
+      "copied": "Copied!",
+      "telegram": "Telegram",
+      "whatsapp": "WhatsApp",
+      "more": "More"
+    },
     "favoriteAdded": "Added to favorites",
     "favoriteRemoved": "Removed from favorites",
     "favoriteError": "Could not save favorite",
@@ -283,11 +296,15 @@
   },
   "bookings": {
     "title": "My bookings",
+    "subtitle": "Upcoming and past appointments.",
     "upcoming": "Upcoming",
     "history": "History",
     "chat": "Chat",
     "review": "Review",
     "writeReview": "Write a review",
+    "emptyTitle": "No bookings yet",
+    "emptyHint": "Pick a time at a nearby salon and make your first booking.",
+    "browseSalons": "Book now",
     "status": {
       "pending": "Pending",
       "accepted": "Accepted",
@@ -295,8 +312,48 @@
       "cancelled": "Cancelled"
     }
   },
-  "chat": { "title": "Messages", "placeholder": "Type a message...", "empty": "No messages yet" },
-  "notifications": { "title": "Notifications", "markAll": "Mark all as read", "empty": "No notifications" },
+  "chat": {
+    "title": "Messages",
+    "placeholder": "Type a message...",
+    "empty": "No messages yet",
+    "searchPlaceholder": "Search conversations",
+    "filterAll": "All",
+    "filterUnread": "Unread{{count}}",
+    "searchEmpty": "Nothing found",
+    "noMessagesYet": "No messages"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAll": "Mark all as read",
+    "empty": "No notifications",
+    "loginRequired": "Sign in required",
+    "loginHint": "Sign in to view your notifications.",
+    "settings": "Settings",
+    "channelSettings": "Notification channels",
+    "channelsOn": "{{on}}/{{total}} enabled",
+    "allOffTitle": "All channels are off",
+    "allOffHint": "Turn on the channels you need in settings",
+    "enableAll": "Enable",
+    "read": "Read",
+    "filters": {
+      "all": "All",
+      "unread": "Unread",
+      "booking": "Bookings",
+      "chat": "Chat",
+      "promo": "Offers",
+      "review": "Reviews"
+    },
+    "channels": {
+      "booking": "Booking reminders",
+      "bookingDesc": "Confirmations, times, and changes",
+      "chat": "Chat messages",
+      "chatDesc": "From barbers and salons",
+      "promo": "Deals and offers",
+      "promoDesc": "Today's deals and coupons",
+      "review": "Review reminders",
+      "reviewDesc": "Rate your visit after booking"
+    }
+  },
   "profile": {
     "title": "Profile",
     "bookings": "Bookings",
@@ -470,8 +527,10 @@
   },
   "reviews": {
     "title": "My reviews",
+    "subtitle": "Ratings you've left after your visits.",
     "empty": "No reviews yet",
-    "emptyHint": "Leave a rating after your visit"
+    "emptyHint": "Leave a rating after your visit — it helps others choose.",
+    "emptyAction": "Go to bookings"
   },
   "paymentMethods": {
     "title": "Payment methods",
@@ -726,9 +785,11 @@
   "favorites": {
     "title": "Favorite salons",
     "hubTitle": "Saved",
+    "subtitle": "Saved salons and stylists — quick access.",
     "tabs": { "salons": "Salons", "stylists": "Stylists" },
     "browseSalons": "Find salons",
-    "empty": "No favorites yet"
+    "empty": "No favorites yet",
+    "emptyHint": "Save salons you like — find them again in one tap."
   },
   "reelsPage": {
     "title": "Reels",
@@ -1052,7 +1113,14 @@
   },
   "offersPage": {
     "title": "Offers",
+    "subtitle": "Special deals from salons and services",
+    "mobileSubtitle": "Coupons and special deals in one place.",
+    "desktopSubtitle": "Promo codes, coupons, and salon deals coming soon.",
+    "heroBadge": "Special deals",
+    "heroTitle": "Coupons & salon offers",
     "empty": "No offers found",
+    "emptyHint": "New salon deals will appear here soon. Use coupons for now.",
+    "viewToday": "Today's deals",
     "featuredLabel": "Featured deal",
     "validUntil": "Until {{date}}",
     "bookNow": "Book now",

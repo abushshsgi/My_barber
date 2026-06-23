@@ -14,8 +14,23 @@ function formatRelativeTime(iso: string): string {
 
 function mapType(t: string): Notification["type"] {
   if (t === "chat_message" || t === "CHAT") return "chat_message";
-  if (t === "review" || t === "REVIEW") return "review";
-  if (t === "promo" || t === "PROMO") return "promo";
+  if (
+    t === "review" ||
+    t === "REVIEW" ||
+    t === "review_created" ||
+    t === "review_reply"
+  ) {
+    return "review";
+  }
+  if (
+    t === "promo" ||
+    t === "PROMO" ||
+    t === "barber_announcement" ||
+    t === "salon_invite" ||
+    t === "salon_approved"
+  ) {
+    return "promo";
+  }
   return "booking";
 }
 
@@ -31,5 +46,6 @@ export function mapNotification(api: ApiNotification): Notification {
     bookingId: payload.booking_id != null ? String(payload.booking_id) : undefined,
     chatId: payload.conversation_id != null ? String(payload.conversation_id) : undefined,
     reviewId: payload.review_id != null ? String(payload.review_id) : undefined,
+    link: typeof payload.link === "string" ? payload.link : undefined,
   };
 }

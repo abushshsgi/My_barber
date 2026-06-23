@@ -27,6 +27,40 @@ from .serializers import (
 )
 
 
+def _broadcast_chat_message(convo: Conversation, message_payload: dict) -> None:
+    channel_layer = get_channel_layer()
+    if not channel_layer:
+        return
+    async_to_sync(channel_layer.group_send)(
+        f"chat_{convo.public_id}",
+        {
+            "type": "chat_message",
+            "payload": {"type": "message", "message": message_payload},
+        },
+    )
+
+
+def _push_chat_notification(convo: Conversation, actor: Actor, text: str) -> None:
+    preview = text[:80]
+    payload = {"conversation_id": str(convo.public_id)}
+    if actor["kind"] == "USER":
+        notify_barber(
+            convo.barber,
+            "chat_message",
+            "Yangi xabar",
+            f"{convo.user.full_name or convo.user.email}: {preview}",
+            payload,
+        )
+    else:
+        notify_user(
+            convo.user,
+            "chat_message",
+            "Yangi xabar",
+            f"{convo.barber.full_name or convo.barber.email}: {preview}",
+            payload,
+        )
+
+
 class Actor(TypedDict):
     kind: Literal["USER", "BARBER"]
     user: User | None
@@ -96,6 +130,20 @@ class ConversationListCreateView(APIView):
         return Response(payload, status=201)
 
 
+class ConversationMarkReadView(APIView):
+    permission_classes = [IsAuthenticatedBarberAware]
+
+    def post(self, request, conversation_id: str):
+        actor = get_actor_from_request(request)
+        convo = ConversationMessagesView().get_conversation(actor, conversation_id)
+        now = timezone.now()
+        if actor["kind"] == "USER":
+            Conversation.objects.filter(pk=convo.pk).update(user_last_read_at=now)
+        else:
+            Conversation.objects.filter(pk=convo.pk).update(barber_last_read_at=now)
+        return Response({"status": "ok"})
+
+
 class ConversationMessagesView(APIView, PageNumberPagination):
     permission_classes = [IsAuthenticatedBarberAware]
     page_size = 50
@@ -158,30 +206,17 @@ class ConversationMessagesView(APIView, PageNumberPagination):
                 updated_at=timezone.now(),
             )
             if actor["kind"] == "USER":
-                notify_barber(
-                    convo.barber,
-                    "chat_message",
-                    "Yangi xabar",
-                    f"{convo.user.full_name or convo.user.email}: {text[:80]}",
-                    {"conversation_id": str(convo.public_id)},
+                Conversation.objects.filter(pk=convo.pk).update(
+                    user_last_read_at=timezone.now(),
                 )
             else:
-                notify_user(
-                    convo.user,
-                    "chat_message",
-                    "Yangi xabar",
-                    f"{convo.barber.full_name or convo.barber.email}: {text[:80]}",
-                    {"conversation_id": str(convo.public_id)},
+                Conversation.objects.filter(pk=convo.pk).update(
+                    barber_last_read_at=timezone.now(),
                 )
 
+            _push_chat_notification(convo, actor, text)
+
         message_payload = MessageSerializer(msg).data
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"chat_{convo.public_id}",
-            {
-                "type": "chat_message",
-                "payload": {"type": "message", "message": message_payload},
-            },
-        )
+        _broadcast_chat_message(convo, message_payload)
         return Response(message_payload, status=201)
 
