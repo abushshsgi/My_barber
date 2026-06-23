@@ -48,15 +48,8 @@ export function HomeBazaarClassic({ data }: Props) {
 
       <div className="flex w-full flex-col gap-4">
         <div className={BAZAAR_ROW_CLASS}>
-          <div className="hidden lg:block lg:col-start-1" aria-hidden />
-          <div className="lg:col-span-3 lg:col-start-2">
-            <BazaarPageTitle title={t("home.nearby")} count={filtered.length} className="mb-0" />
-          </div>
-          <div className="hidden lg:block lg:col-start-5" aria-hidden />
-        </div>
-
-        <div className={BAZAAR_ROW_CLASS}>
           <div className="self-start lg:sticky lg:top-[5.75rem] lg:col-start-1">
+            <BazaarPageTitle title={t("home.nearby")} count={filtered.length} className="mb-4" />
             <BazaarFilterSidebar {...data} />
           </div>
 
