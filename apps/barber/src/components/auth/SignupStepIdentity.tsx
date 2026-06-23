@@ -88,7 +88,6 @@ export function SignupStepIdentity({
           value={password}
           onChange={onPasswordChange}
           autoComplete="new-password"
-          showStrength
           required
         />
       ),

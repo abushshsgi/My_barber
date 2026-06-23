@@ -1,5 +1,4 @@
-import { useAuthAccent } from "@/components/auth/AuthAccentContext";
-import { ACCENT_FOCUS_WITHIN, ACCENT_INPUT_FOCUS } from "@/lib/auth-desktop-variant";
+import { AUTH_PHONE_SHELL_CLASS } from "@/lib/auth-desktop-variant";
 import { cn } from "@/lib/utils";
 import { formatUzLocalPhone, parseUzLocalPhone } from "@/lib/phone";
 
@@ -13,7 +12,6 @@ type Props = {
 };
 
 export function FloatingPhoneInput({ id, label, value, onChange, error, onBlur }: Props) {
-  const accent = useAuthAccent();
   const digits = parseUzLocalPhone(value);
   const display = formatUzLocalPhone(digits);
   const has = display.length > 0;
@@ -22,12 +20,11 @@ export function FloatingPhoneInput({ id, label, value, onChange, error, onBlur }
     <div className="relative">
       <div
         className={cn(
-          "flex h-[52px] w-full items-stretch overflow-hidden rounded-xl border border-transparent bg-white shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] transition-all focus-within:ring-2",
-          ACCENT_FOCUS_WITHIN[accent],
-          error && "ring-2 ring-destructive/30",
+          AUTH_PHONE_SHELL_CLASS,
+          error && "border-destructive/40 focus-within:border-destructive/50",
         )}
       >
-        <span className="flex shrink-0 items-center border-r border-zinc-100 bg-zinc-50/80 pl-3.5 pr-2.5 text-sm font-semibold text-muted-foreground">
+        <span className="flex shrink-0 items-center border-r border-border/60 bg-white/50 px-3.5 text-sm font-semibold text-muted-foreground">
           +998
         </span>
         <div className="relative min-w-0 flex-1">
@@ -40,7 +37,7 @@ export function FloatingPhoneInput({ id, label, value, onChange, error, onBlur }
             onBlur={onBlur}
             autoComplete="tel"
             aria-invalid={!!error}
-            className="peer h-full w-full bg-transparent px-3 pt-5 pb-1.5 text-base text-foreground outline-none placeholder-transparent md:text-sm"
+            className="peer h-full w-full bg-transparent px-3 pt-5 pb-1.5 text-base text-foreground outline-none ring-0 placeholder-transparent md:text-sm"
             placeholder={label}
           />
           <label

@@ -126,4 +126,11 @@ export const ACCENT_FOCUS_WITHIN: Record<AuthAccent, string> = {
   fuchsia: "focus-within:ring-2 focus-within:ring-fuchsia-500/25",
 };
 
-export const LIGHT_FORM_SKIN = "[&_input]:bg-[#f4f4f5] [&_input]:border-0";
+export const LIGHT_FORM_SKIN = "";
+
+/** Auth forma inputlari — rangli ring yo'q, yengil border focus. */
+export const AUTH_INPUT_CLASS =
+  "peer h-[50px] w-full rounded-xl border border-transparent bg-[#f4f4f5] px-3.5 pt-5 pb-1.5 text-base text-foreground shadow-none outline-none ring-0 transition-colors placeholder-transparent focus:border-border focus:bg-white md:text-sm";
+
+export const AUTH_PHONE_SHELL_CLASS =
+  "flex h-[50px] w-full items-stretch overflow-hidden rounded-xl border border-transparent bg-[#f4f4f5] shadow-none ring-0 transition-colors focus-within:border-border focus-within:bg-white";

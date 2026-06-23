@@ -1,5 +1,4 @@
-import { useAuthAccent } from "@/components/auth/AuthAccentContext";
-import { ACCENT_INPUT_FOCUS } from "@/lib/auth-desktop-variant";
+import { AUTH_INPUT_CLASS } from "@/lib/auth-desktop-variant";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -25,7 +24,6 @@ export function FloatingInput({
   error,
   onBlur,
 }: Props) {
-  const accent = useAuthAccent();
   const has = value.length > 0;
 
   return (
@@ -40,9 +38,8 @@ export function FloatingInput({
         required={required}
         aria-invalid={!!error}
         className={cn(
-          "peer h-[52px] w-full rounded-xl border border-transparent bg-white px-3.5 pt-5 pb-1.5 text-base text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] outline-none ring-0 transition-all placeholder-transparent focus:border-transparent focus:bg-white md:text-sm",
-          ACCENT_INPUT_FOCUS[accent],
-          error && "ring-2 ring-destructive/30",
+          AUTH_INPUT_CLASS,
+          error && "border-destructive/40 focus:border-destructive/50",
         )}
         placeholder={label}
       />
