@@ -18,18 +18,6 @@ type Props = { data: HomeData };
 
 const GRID_CARD_COUNT = 9;
 
-const GRID_SLOTS = [
-  "lg:col-start-2 lg:row-start-1",
-  "lg:col-start-3 lg:row-start-1",
-  "lg:col-start-4 lg:row-start-1",
-  "lg:col-start-2 lg:row-start-2",
-  "lg:col-start-3 lg:row-start-2",
-  "lg:col-start-4 lg:row-start-2",
-  "lg:col-start-2 lg:row-start-3",
-  "lg:col-start-3 lg:row-start-3",
-  "lg:col-start-4 lg:row-start-3",
-] as const;
-
 function SalonGrid({ salons }: { salons: HomeData["filtered"] }) {
   return (
     <div className={SALON_GRID_CLASS}>
@@ -41,7 +29,7 @@ function SalonGrid({ salons }: { salons: HomeData["filtered"] }) {
 }
 
 /**
- * Banner → chapda filter (2 qator) + o'ngda kartochkalar + yuqori o'ngda xarita.
+ * Banner → bir qator: chapda filter | o'rtada kartochkalar | o'ngda xarita (bir xil balandlik).
  */
 export function HomeBazaarLayout({ data }: Props) {
   const { t } = useTranslation();
@@ -55,23 +43,25 @@ export function HomeBazaarLayout({ data }: Props) {
       <div className="flex w-full flex-col gap-10">
         <BazaarHeroBanner className="mx-auto aspect-[2.85/1] max-h-[360px] w-full rounded-3xl" />
 
-        <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-6 lg:grid-rows-3 lg:items-stretch">
-          <div className="col-span-2 min-h-[300px] sm:col-span-1 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:min-h-0">
-            <BazaarFilterSidebar {...data} className="h-full min-h-[300px] lg:min-h-full" />
+        <div className="flex flex-col gap-5 lg:h-[520px] lg:flex-row lg:items-stretch">
+          <aside className="w-full shrink-0 lg:h-full lg:w-[260px]">
+            <BazaarFilterSidebar {...data} className="h-full min-h-[300px] lg:min-h-0" />
+          </aside>
+
+          <div className="grid min-w-0 flex-1 grid-cols-2 gap-4 sm:grid-cols-3 sm:grid-rows-3 sm:gap-5 lg:h-full">
+            {gridSalons.map((salon) => (
+              <div key={salon.id} className="min-w-0">
+                <DesktopSalonCard salon={salon} variant="marketplace" />
+              </div>
+            ))}
           </div>
 
-          {gridSalons.map((salon, index) => (
-            <div key={salon.id} className={`min-w-0 ${GRID_SLOTS[index] ?? ""}`}>
-              <DesktopSalonCard salon={salon} variant="marketplace" />
-            </div>
-          ))}
-
-          <div className="min-w-0 lg:col-span-2 lg:col-start-5 lg:row-start-1">
+          <div className="w-full shrink-0 lg:h-full lg:w-[280px]">
             <BazaarMapPanel
               variant="preview"
               salons={mapSalons}
               salonCount={filtered.length}
-              className="h-[420px] w-full"
+              className="h-[280px] w-full lg:h-full"
             />
           </div>
         </div>
