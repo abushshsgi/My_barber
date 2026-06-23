@@ -1,3 +1,5 @@
+import { useAuthAccent } from "@/components/auth/AuthAccentContext";
+import { ACCENT_INPUT_FOCUS } from "@/lib/auth-desktop-variant";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -23,7 +25,9 @@ export function FloatingInput({
   error,
   onBlur,
 }: Props) {
+  const accent = useAuthAccent();
   const has = value.length > 0;
+
   return (
     <div className="relative">
       <input
@@ -36,25 +40,24 @@ export function FloatingInput({
         required={required}
         aria-invalid={!!error}
         className={cn(
-          "peer h-14 w-full rounded-xl border-0 bg-[#f0f1f3] px-3.5 pt-5 pb-1.5 text-base text-foreground outline-none ring-0 transition-[var(--transition-smooth)] placeholder-transparent focus:bg-[#e8e9ed] md:text-sm",
-          error && "ring-1 ring-destructive",
+          "peer h-[52px] w-full rounded-xl border border-transparent bg-white px-3.5 pt-5 pb-1.5 text-base text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] outline-none ring-0 transition-all placeholder-transparent focus:border-transparent focus:bg-white md:text-sm",
+          ACCENT_INPUT_FOCUS[accent],
+          error && "ring-2 ring-destructive/30",
         )}
         placeholder={label}
       />
       <label
         htmlFor={id}
         className={cn(
-          "pointer-events-none absolute left-3.5 text-muted-foreground transition-[var(--transition-smooth)]",
-          has
-            ? "top-2 text-[10px] uppercase tracking-wider"
-            : "top-1/2 -translate-y-1/2 text-sm",
-          "peer-focus:top-2 peer-focus:translate-y-0 peer-focus:text-[10px] peer-focus:uppercase peer-focus:tracking-wider peer-focus:text-foreground",
+          "pointer-events-none absolute left-3.5 text-muted-foreground transition-all",
+          has ? "top-1.5 text-[10px] font-semibold uppercase tracking-wider" : "top-1/2 -translate-y-1/2 text-sm",
+          "peer-focus:top-1.5 peer-focus:translate-y-0 peer-focus:text-[10px] peer-focus:font-semibold peer-focus:uppercase peer-focus:tracking-wider",
         )}
       >
         {label}
-        {required && <span className="ml-0.5 text-foreground">*</span>}
+        {required && <span className="text-destructive">*</span>}
       </label>
-      {error && <p className="mt-1.5 text-xs text-destructive">{error}</p>}
+      {error && <p className="mt-1.5 text-xs font-medium text-destructive">{error}</p>}
     </div>
   );
 }

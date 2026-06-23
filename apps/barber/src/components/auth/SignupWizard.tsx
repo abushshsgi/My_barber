@@ -78,7 +78,7 @@ function ActionBar({
           onClick={onBack}
           disabled={step === 0 || loading}
           className={cn(
-            "inline-flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border border-border bg-background text-sm font-medium text-foreground transition-[var(--transition-smooth)] md:h-11 md:w-auto md:rounded-xl md:px-4",
+            "inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 bg-white text-sm font-medium text-foreground shadow-sm transition-all md:w-auto md:px-4",
             step === 0 ? "cursor-not-allowed opacity-40" : "hover:bg-muted active:scale-[0.98]",
           )}
           aria-label="Orqaga"
@@ -98,7 +98,7 @@ function ActionBar({
           loading={loading}
           disabled={!canNext}
           disabledTooltip={disabledTooltip}
-          className="h-12 min-w-0 flex-1 rounded-full text-[15px] md:min-w-[170px] md:flex-none md:rounded-xl md:text-sm"
+          className="h-11 min-w-0 flex-1 rounded-xl text-sm md:min-w-[160px] md:flex-none"
         >
           {nextLabel}
         </AuthSubmitButton>
@@ -187,7 +187,7 @@ export function SignupWizard({
   return (
     <div className="md:pb-0">
       <AnimatePresence mode="wait" custom={step}>
-        <motion.div key={step} {...stepMotion(!!reduceMotion, "forward")} className="min-h-[280px]">
+        <motion.div key={step} {...stepMotion(!!reduceMotion, "forward")} className="min-h-[200px] md:min-h-[220px]">
           {step === 0 && <SignupStepFlow flow={data.flow} onSelect={onFlowSelect} />}
           {step === 1 && (
             <SignupStepIdentity

@@ -4,6 +4,7 @@ import { AuthErrorAlert } from "@/components/auth/AuthErrorAlert";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { FloatingInput } from "@/components/auth/FloatingInput";
 import { PasswordStrengthInput } from "@/components/auth/PasswordStrengthInput";
+import { cn } from "@/lib/utils";
 
 export const AUTH_LOGIN_FORM_ID = "auth-login-form";
 
@@ -31,7 +32,7 @@ export function AuthLoginForm({
   const userAuthUrl = userWebUrl("/auth");
 
   return (
-    <form id={AUTH_LOGIN_FORM_ID} onSubmit={onSubmit} className="space-y-4">
+    <form id={AUTH_LOGIN_FORM_ID} onSubmit={onSubmit} className="space-y-3.5">
       <FloatingInput
         id="login-email"
         label="Email"
@@ -65,19 +66,14 @@ export function AuthLoginForm({
 
       <AuthErrorAlert error={error && !emailError ? error : null} />
 
-      <AuthSubmitButton
-        variant="brand"
-        loading={loading}
-        disabled={loading}
-        className="hidden md:inline-flex"
-      >
-        {loading ? "Kutilmoqda..." : "Kirish"}
+      <AuthSubmitButton variant="brand" loading={loading} disabled={loading}>
+        {loading ? "Kutilmoqda..." : "Kabinetga kirish"}
       </AuthSubmitButton>
 
-      <div className="pt-2 text-center">
+      <div className="border-t border-zinc-100 pt-3 text-center">
         <a
           href={userAuthUrl}
-          className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-muted-foreground transition-[var(--transition-smooth)] hover:text-foreground"
+          className={cn("inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground")}
         >
           Mijoz sifatida kirish
           <ExternalLink className="size-3.5" />

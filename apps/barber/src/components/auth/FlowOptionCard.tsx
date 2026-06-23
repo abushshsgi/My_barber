@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 import { motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { Check, Briefcase, Sparkles, Store, UserPlus } from "lucide-react";
+import { useAuthAccent } from "@/components/auth/AuthAccentContext";
 import type { SignupFlow } from "@/lib/auth-ui";
-import { cn } from "@/lib/utils";
-import { Briefcase, Sparkles, Store, UserPlus } from "lucide-react";
+import { ACCENT_STYLES } from "@/lib/auth-desktop-variant";
 import { FLOW_IDENTITY_META } from "@/lib/barber-flow-config";
+import { cn } from "@/lib/utils";
 
 const FLOW_ICON: Record<SignupFlow, ReactNode> = {
   owner: <Store className="size-5" />,
@@ -26,6 +27,8 @@ export function FlowOptionCard({
   layout?: "list" | "grid";
 }) {
   const meta = FLOW_IDENTITY_META[flow];
+  const accent = useAuthAccent();
+  const a = ACCENT_STYLES[accent];
   const isList = layout === "list";
 
   return (
@@ -40,8 +43,8 @@ export function FlowOptionCard({
         "w-full cursor-pointer rounded-2xl border text-left transition-[var(--transition-smooth)]",
         isList ? "p-4" : "p-3",
         selected
-          ? "border-violet-600 bg-violet-600 text-white shadow-[0_4px_20px_-6px_rgba(124,58,237,0.55)]"
-          : "border-border bg-card shadow-[var(--shadow-soft)] active:bg-muted/40 hover:border-violet-200",
+          ? cn(a.btn, "border-transparent text-white shadow-md")
+          : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm",
       )}
     >
       <div className="flex items-start gap-3">

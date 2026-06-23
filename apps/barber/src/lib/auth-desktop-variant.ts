@@ -115,6 +115,31 @@ export const ACCENT_STYLES: Record<
   },
 };
 
+/** Input focus halqasi — variant rangiga mos. */
+export const ACCENT_INPUT_FOCUS: Record<AuthAccent, string> = {
+  indigo: "peer-focus:ring-2 peer-focus:ring-indigo-500/25",
+  cyan: "peer-focus:ring-2 peer-focus:ring-cyan-500/25",
+  rose: "peer-focus:ring-2 peer-focus:ring-rose-500/25",
+  orange: "peer-focus:ring-2 peer-focus:ring-orange-500/25",
+  violet: "peer-focus:ring-2 peer-focus:ring-violet-500/25",
+  purple: "peer-focus:ring-2 peer-focus:ring-purple-500/25",
+  emerald: "peer-focus:ring-2 peer-focus:ring-emerald-500/25",
+  teal: "peer-focus:ring-2 peer-focus:ring-teal-500/25",
+  fuchsia: "peer-focus:ring-2 peer-focus:ring-fuchsia-500/25",
+};
+
+export const ACCENT_FOCUS_WITHIN: Record<AuthAccent, string> = {
+  indigo: "focus-within:ring-2 focus-within:ring-indigo-500/25",
+  cyan: "focus-within:ring-2 focus-within:ring-cyan-500/25",
+  rose: "focus-within:ring-2 focus-within:ring-rose-500/25",
+  orange: "focus-within:ring-2 focus-within:ring-orange-500/25",
+  violet: "focus-within:ring-2 focus-within:ring-violet-500/25",
+  purple: "focus-within:ring-2 focus-within:ring-purple-500/25",
+  emerald: "focus-within:ring-2 focus-within:ring-emerald-500/25",
+  teal: "focus-within:ring-2 focus-within:ring-teal-500/25",
+  fuchsia: "focus-within:ring-2 focus-within:ring-fuchsia-500/25",
+};
+
 export const VARIANT_ACCENT: Record<AuthDesktopVariant, AuthAccent> = {
   "framer-ember": "orange",
   "framer-violet": "violet",

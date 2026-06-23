@@ -1,11 +1,17 @@
 import { motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { Check, Scissors } from "lucide-react";
 import type { ReactNode } from "react";
+import { AuthAccentProvider } from "@/components/auth/AuthAccentContext";
 import { AuthDesktopFormChrome } from "@/components/auth/desktop/AuthDesktopFormChrome";
-import { AuthDesktopHeader } from "@/components/auth/desktop/AuthDesktopHeader";
+import { AuthDesktopTabSwitcher } from "@/components/auth/desktop/AuthDesktopTabSwitcher";
 import type { SignupFlow } from "@/lib/auth-ui";
 import { FRAMER_VARIANT_CONFIG } from "@/lib/auth-framer-variants";
-import { LIGHT_FORM_SKIN, VARIANT_ACCENT, type AuthDesktopVariant } from "@/lib/auth-desktop-variant";
+import {
+  ACCENT_STYLES,
+  LIGHT_FORM_SKIN,
+  VARIANT_ACCENT,
+  type AuthDesktopVariant,
+} from "@/lib/auth-desktop-variant";
 import { pageEnter } from "@/lib/motion-presets";
 import { cn } from "@/lib/utils";
 
@@ -20,122 +26,128 @@ export type AuthDesktopLayoutProps = {
 
 type ShellProps = Omit<AuthDesktopLayoutProps, "variant">;
 
-function MarketingPanel({ variant }: { variant: AuthDesktopVariant }) {
+function UnifiedAuthCard({
+  variant,
+  tab,
+  signupStep,
+  flow,
+  onTabChange,
+  children,
+}: ShellProps & { variant: AuthDesktopVariant }) {
   const c = FRAMER_VARIANT_CONFIG[variant];
-  const isDark = c.textMain.includes("white");
+  const accent = VARIANT_ACCENT[variant];
+  const a = ACCENT_STYLES[accent];
 
   return (
-    <div className={cn("relative flex flex-col justify-center overflow-hidden px-10 py-12 lg:px-16", c.bgLeft)}>
-      <motion.div
-        className={cn(
-          "pointer-events-none absolute -right-20 top-1/4 size-72 rounded-full opacity-40 blur-3xl",
-          c.orbPosition,
-        )}
-        style={{ background: c.glowColor }}
-        animate={{ scale: [1, 1.18, 1], opacity: [0.35, 0.55, 0.35] }}
-        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="pointer-events-none absolute bottom-0 left-0 h-px w-full opacity-20"
-        style={{ background: `linear-gradient(90deg, transparent, ${c.glowColor}, transparent)` }}
-        animate={{ opacity: [0.1, 0.35, 0.1] }}
-        transition={{ duration: 4, repeat: Infinity }}
-      />
-
+    <AuthAccentProvider accent={accent}>
       <motion.div
         {...pageEnter}
-        className="relative z-10 max-w-lg"
+        className="relative w-full max-w-[540px] overflow-hidden rounded-[28px] border border-white/60 bg-white/95 shadow-[0_24px_80px_-20px_rgba(0,0,0,0.18)] backdrop-blur-xl"
       >
-        <span
-          className={cn(
-            "inline-flex rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider",
-            isDark ? "bg-white/10 text-white/90" : "bg-black/5 text-zinc-600",
-          )}
-        >
-          {c.badge}
-        </span>
+        {/* Yuqori gradient chiziq — variant rangi */}
+        <div
+          className="h-1 w-full"
+          style={{ background: `linear-gradient(90deg, ${c.glowColor}, ${c.glowColor}88, transparent)` }}
+        />
 
-        <h2
-          className={cn(
-            "mt-6 text-4xl font-bold leading-[1.08] tracking-tight lg:text-[3.25rem]",
-            c.textMain,
-          )}
-        >
-          {c.headline}
-          <br />
-          <span className={c.highlightClass}>{c.highlight}</span>
-        </h2>
+        <div className="p-8 pt-7">
+          {/* Logo + stat */}
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-2.5">
+              <div className={cn("flex size-10 items-center justify-center rounded-xl text-white shadow-sm", a.logo)}>
+                <Scissors className="size-4" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-foreground">MySaloon Partner</p>
+                <p className={cn("text-[11px] font-semibold uppercase tracking-wider", a.text)}>{c.badge}</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-black/[0.06] bg-zinc-50 px-3 py-2 text-right">
+              <p className={cn("text-lg font-bold tabular-nums leading-none", a.text)}>{c.stat.value}</p>
+              <p className="text-[10px] text-muted-foreground">{c.stat.label}</p>
+            </div>
+          </div>
 
-        <p className={cn("mt-5 text-base leading-relaxed lg:text-[17px]", isDark ? "text-zinc-400" : "text-zinc-600")}>
-          {c.subline}
-        </p>
+          {/* Marketing — qisqa, forma ustida */}
+          <div className="mt-6">
+            <h1 className="text-2xl font-bold leading-tight tracking-tight text-foreground">
+              {c.headline}{" "}
+              <span className={c.highlightClass}>{c.highlight}</span>
+            </h1>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{c.subline}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {c.bullets.map((b) => (
+                <span
+                  key={b}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.06] bg-zinc-50 px-2.5 py-1 text-[11px] font-medium text-zinc-700"
+                >
+                  <Check className="size-3" style={{ color: c.glowColor }} strokeWidth={3} />
+                  {b}
+                </span>
+              ))}
+            </div>
+          </div>
 
-        <ul className="mt-8 space-y-2.5">
-          {c.bullets.map((b, i) => (
-            <motion.li
-              key={b}
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.15 + i * 0.08 }}
-              className={cn("flex items-center gap-2.5 text-sm font-medium", isDark ? "text-zinc-300" : "text-zinc-700")}
-            >
-              <span
-                className="flex size-5 shrink-0 items-center justify-center rounded-full"
-                style={{ backgroundColor: `${c.glowColor}33`, color: c.glowColor }}
+          {/* Tab + forma — bitta blok */}
+          <div className="mt-7 rounded-2xl border border-black/[0.05] bg-zinc-50/80 p-1">
+            <AuthDesktopTabSwitcher tab={tab} onTabChange={onTabChange} accent={accent} />
+            <div className={cn("rounded-xl bg-white p-5 pt-4", LIGHT_FORM_SKIN)}>
+              <AuthDesktopFormChrome
+                tab={tab}
+                signupStep={signupStep}
+                flow={flow}
+                accent={accent}
+                showMarketingTitle={false}
               >
-                <Check className="size-3 stroke-[3]" />
-              </span>
-              {b}
-            </motion.li>
-          ))}
-        </ul>
+                {children}
+              </AuthDesktopFormChrome>
+            </div>
+          </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className={cn(
-            "mt-10 inline-flex items-baseline gap-2 rounded-2xl border px-5 py-3",
-            isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white/60",
-          )}
-        >
-          <span className={cn("text-3xl font-bold tabular-nums", c.highlightClass)}>{c.stat.value}</span>
-          <span className={cn("text-sm", isDark ? "text-zinc-500" : "text-zinc-500")}>{c.stat.label}</span>
-        </motion.div>
+          <p className="mt-5 text-center text-[11px] leading-relaxed text-muted-foreground">
+            {tab === "login" ? (
+              <>
+                Tugmani bosish orqali{" "}
+                <a href="/privacy" className={cn(a.link, "hover:underline")}>
+                  Oferta
+                </a>{" "}
+                va{" "}
+                <a href="/privacy" className={cn(a.link, "hover:underline")}>
+                  Maxfiylik
+                </a>
+                ga rozilik bildirasiz.
+              </>
+            ) : (
+              "Ro'yxatdan o'tish bepul — bir necha daqiqada profilni yoqing."
+            )}
+          </p>
+        </div>
       </motion.div>
-    </div>
-  );
-}
-
-function FramerLayout({ variant, flow, tab, signupStep, onTabChange, children }: ShellProps & { variant: AuthDesktopVariant }) {
-  const accent = VARIANT_ACCENT[variant];
-
-  return (
-    <div className="grid min-h-screen lg:grid-cols-2">
-      <MarketingPanel variant={variant} />
-      <div className="flex flex-col justify-center border-l border-black/[0.04] bg-white px-10 py-12 lg:px-16">
-        <AuthDesktopHeader tab={tab} onTabChange={onTabChange} accent={accent} className="mb-6 !px-0 !py-0" />
-        <motion.div {...pageEnter} className={cn("max-w-[420px]", LIGHT_FORM_SKIN)}>
-          <AuthDesktopFormChrome
-            tab={tab}
-            signupStep={signupStep}
-            flow={flow}
-            accent={accent}
-            titleSize="compact"
-          >
-            {children}
-          </AuthDesktopFormChrome>
-        </motion.div>
-        <p className="mt-6 max-w-[420px] text-xs leading-relaxed text-muted-foreground">
-          {tab === "login"
-            ? "Minglab salon va barberlar allaqachon MySaloon Partner orqali ishlayapti."
-            : "Ro'yxatdan o'tish bepul — bir necha daqiqada profilni yoqing."}
-        </p>
-      </div>
-    </div>
+    </AuthAccentProvider>
   );
 }
 
 export function AuthDesktopLayout({ variant, ...props }: AuthDesktopLayoutProps) {
-  return <FramerLayout variant={variant} {...props} />;
+  const c = FRAMER_VARIANT_CONFIG[variant];
+
+  return (
+    <div className={cn("relative min-h-screen overflow-hidden", c.bgLeft)}>
+      <motion.div
+        className="pointer-events-none absolute -left-32 top-0 size-96 rounded-full opacity-50 blur-3xl"
+        style={{ background: c.glowColor }}
+        animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.5, 0.3] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="pointer-events-none absolute -right-20 bottom-0 size-80 rounded-full opacity-40 blur-3xl"
+        style={{ background: c.glowColor }}
+        animate={{ scale: [1.1, 1, 1.1] }}
+        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+      />
+
+      <div className="relative flex min-h-screen items-center justify-center px-6 py-16 pb-36">
+        <UnifiedAuthCard variant={variant} {...props} />
+      </div>
+    </div>
+  );
 }

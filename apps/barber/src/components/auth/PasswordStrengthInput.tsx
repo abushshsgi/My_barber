@@ -1,5 +1,7 @@
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
+import { useAuthAccent } from "@/components/auth/AuthAccentContext";
+import { ACCENT_INPUT_FOCUS } from "@/lib/auth-desktop-variant";
 import { cn } from "@/lib/utils";
 import { getPasswordStrength } from "@/lib/auth-ui";
 
@@ -23,6 +25,7 @@ export function PasswordStrengthInput({
   showStrength = false,
   required,
 }: Props) {
+  const accent = useAuthAccent();
   const [show, setShow] = useState(false);
   const has = value.length > 0;
   const strength = getPasswordStrength(value);
@@ -37,26 +40,27 @@ export function PasswordStrengthInput({
           onChange={(e) => onChange(e.target.value)}
           autoComplete={autoComplete}
           required={required}
-          className="peer h-14 w-full rounded-xl border-0 bg-[#f0f1f3] px-3.5 pt-5 pb-1.5 pr-10 text-base text-foreground outline-none transition-[var(--transition-smooth)] placeholder-transparent focus:bg-[#e8e9ed] md:text-sm"
+          className={cn(
+            "peer h-[52px] w-full rounded-xl border border-transparent bg-white px-3.5 pt-5 pb-1.5 pr-11 text-base text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] outline-none transition-all placeholder-transparent focus:bg-white md:text-sm",
+            ACCENT_INPUT_FOCUS[accent],
+          )}
           placeholder={label}
         />
         <label
           htmlFor={id}
           className={cn(
-            "pointer-events-none absolute left-3.5 text-muted-foreground transition-[var(--transition-smooth)]",
-            has
-              ? "top-2 text-[10px] uppercase tracking-wider"
-              : "top-1/2 -translate-y-1/2 text-sm",
-            "peer-focus:top-2 peer-focus:translate-y-0 peer-focus:text-[10px] peer-focus:uppercase peer-focus:tracking-wider peer-focus:text-foreground",
+            "pointer-events-none absolute left-3.5 text-muted-foreground transition-all",
+            has ? "top-1.5 text-[10px] font-semibold uppercase tracking-wider" : "top-1/2 -translate-y-1/2 text-sm",
+            "peer-focus:top-1.5 peer-focus:translate-y-0 peer-focus:text-[10px] peer-focus:font-semibold peer-focus:uppercase peer-focus:tracking-wider",
           )}
         >
           {label}
-          {required && <span className="ml-0.5 text-foreground">*</span>}
+          {required && <span className="text-destructive">*</span>}
         </label>
         <button
           type="button"
           onClick={() => setShow((s) => !s)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground transition-[var(--transition-smooth)] hover:text-foreground"
+          className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer rounded-md p-0.5 text-muted-foreground transition-colors hover:text-foreground"
           aria-label={show ? "Parolni yashirish" : "Parolni ko'rsatish"}
         >
           {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -64,7 +68,7 @@ export function PasswordStrengthInput({
       </div>
       {showStrength && has && (
         <div className="space-y-1">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-100">
             <div
               className={cn("h-full rounded-full transition-all duration-300", strength.barClass)}
               style={{ width: `${strength.percent}%` }}

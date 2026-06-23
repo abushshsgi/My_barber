@@ -1,3 +1,5 @@
+import { useAuthAccent } from "@/components/auth/AuthAccentContext";
+import { ACCENT_FOCUS_WITHIN, ACCENT_INPUT_FOCUS } from "@/lib/auth-desktop-variant";
 import { cn } from "@/lib/utils";
 import { formatUzLocalPhone, parseUzLocalPhone } from "@/lib/phone";
 
@@ -11,6 +13,7 @@ type Props = {
 };
 
 export function FloatingPhoneInput({ id, label, value, onChange, error, onBlur }: Props) {
+  const accent = useAuthAccent();
   const digits = parseUzLocalPhone(value);
   const display = formatUzLocalPhone(digits);
   const has = display.length > 0;
@@ -19,11 +22,12 @@ export function FloatingPhoneInput({ id, label, value, onChange, error, onBlur }
     <div className="relative">
       <div
         className={cn(
-          "flex h-14 w-full items-stretch rounded-xl border-0 bg-[#f0f1f3] transition-[var(--transition-smooth)] focus-within:bg-[#e8e9ed]",
-          error && "ring-1 ring-destructive",
+          "flex h-[52px] w-full items-stretch overflow-hidden rounded-xl border border-transparent bg-white shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] transition-all focus-within:ring-2",
+          ACCENT_FOCUS_WITHIN[accent],
+          error && "ring-2 ring-destructive/30",
         )}
       >
-        <span className="flex shrink-0 items-center border-r border-black/10 pl-3.5 pr-2.5 text-sm font-medium text-muted-foreground">
+        <span className="flex shrink-0 items-center border-r border-zinc-100 bg-zinc-50/80 pl-3.5 pr-2.5 text-sm font-semibold text-muted-foreground">
           +998
         </span>
         <div className="relative min-w-0 flex-1">
@@ -42,18 +46,16 @@ export function FloatingPhoneInput({ id, label, value, onChange, error, onBlur }
           <label
             htmlFor={id}
             className={cn(
-              "pointer-events-none absolute left-3 text-muted-foreground transition-[var(--transition-smooth)]",
-              has
-                ? "top-2 text-[10px] uppercase tracking-wider"
-                : "top-1/2 -translate-y-1/2 text-sm",
-              "peer-focus:top-2 peer-focus:translate-y-0 peer-focus:text-[10px] peer-focus:uppercase peer-focus:tracking-wider peer-focus:text-foreground",
+              "pointer-events-none absolute left-3 text-muted-foreground transition-all",
+              has ? "top-1.5 text-[10px] font-semibold uppercase tracking-wider" : "top-1/2 -translate-y-1/2 text-sm",
+              "peer-focus:top-1.5 peer-focus:translate-y-0 peer-focus:text-[10px] peer-focus:font-semibold peer-focus:uppercase peer-focus:tracking-wider",
             )}
           >
             {label}
           </label>
         </div>
       </div>
-      {error && <p className="mt-1.5 text-xs text-destructive">{error}</p>}
+      {error && <p className="mt-1.5 text-xs font-medium text-destructive">{error}</p>}
     </div>
   );
 }
