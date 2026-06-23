@@ -41,7 +41,7 @@ export function HomeBazaarLayout({ data }: Props) {
   return (
     <div className="w-full">
       <div className="flex w-full flex-col gap-8">
-        <BazaarHeroBanner className="w-full rounded-2xl aspect-[21/9] max-h-[400px]" />
+        <BazaarHeroBanner className="aspect-[21/9] max-h-[400px]" />
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[300px_minmax(0,1fr)_340px] lg:items-stretch">
           <aside className="h-[310px]">

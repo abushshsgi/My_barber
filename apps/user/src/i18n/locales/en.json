@@ -65,6 +65,14 @@
         "title": "Salons on the map",
         "subtitle": "{{count}} salons near you"
       }
+    },
+    "heroCarousel": {
+      "offersTitle": "Weekend promos — discounted slots",
+      "offersDesc": "See special offers from nearby salons",
+      "aiTitle": "Upload a selfie — AI suggests your style",
+      "aiCta": "Try it",
+      "trendsTitle": "Trending styles and top barbers",
+      "trendsDesc": "Find a new look and book instantly"
     }
   },
   "homePage": {

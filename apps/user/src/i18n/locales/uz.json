@@ -70,6 +70,14 @@
         "title": "Salonlar xaritada",
         "subtitle": "{{count}} ta salon yaqiningizda"
       }
+    },
+    "heroCarousel": {
+      "offersTitle": "Hafta oxiri aksiyalari — chegirmali slotlar",
+      "offersDesc": "Yaqin salonlardan maxsus takliflarni ko'ring",
+      "aiTitle": "Selfie yuklang — AI mos uslub tavsiya qilsin",
+      "aiCta": "Sinab ko'rish",
+      "trendsTitle": "Trend uslublar va mashhur ustalar",
+      "trendsDesc": "Yangi look toping va darhol bron qiling"
     }
   },
   "homePage": {
