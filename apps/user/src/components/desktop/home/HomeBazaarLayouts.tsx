@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { useTranslation } from "react-i18next";
 import type { HomeData } from "@/components/home/useHomeData";
 import { DesktopSalonCard } from "@/components/desktop/ui/DesktopSalonCard";
 import { cn } from "@/lib/utils";
@@ -8,7 +7,6 @@ import {
   BazaarGridSkeleton,
   BazaarHeroBanner,
   BazaarMapPanel,
-  BazaarPageTitle,
 } from "./bazaar/BazaarParts";
 import { BazaarCategoryStrip } from "./bazaar/BazaarCategoryStrip";
 import { BazaarSalonRowSection, BazaarSalonRowSectionSkeleton } from "./bazaar/BazaarSalonRowSection";
@@ -38,7 +36,6 @@ function SalonGridCells({ salons }: { salons: Salon[] }) {
 }
 
 export function HomeBazaarClassic({ data }: Props) {
-  const { t } = useTranslation();
   const { filtered, mapSalons, loading } = data;
   const topRowSalons = filtered.slice(0, 3);
   const salonSections = useMemo(() => buildHomeSalonSections(filtered), [filtered]);
@@ -50,7 +47,6 @@ export function HomeBazaarClassic({ data }: Props) {
       <div className="flex w-full flex-col gap-4">
         <div className={BAZAAR_ROW_CLASS}>
           <div className="self-start lg:sticky lg:top-[5.75rem] lg:col-start-1">
-            <BazaarPageTitle title={t("home.nearby")} count={filtered.length} className="mb-4" />
             <BazaarFilterSidebar {...data} />
           </div>
 
