@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchSalon, fetchSalons, fetchSalonsNearby, fetchSalonStaff, searchSalons } from "@/lib/api/salons";
-import { authQueryEnabled } from "@/lib/auth-query";
+import { authQueryEnabled, catalogQueryEnabled } from "@/lib/auth-query";
 import { mapNearbySalon, mapSalonDetail, mapSalonList, mapStaffToBarber } from "@/lib/mappers/salon";
 
 export const salonsQueryKey = ["salons"] as const;
@@ -13,7 +13,7 @@ export function useSalonsList() {
       return data.map((s) => mapSalonList(s));
     },
     staleTime: 30_000,
-    enabled: authQueryEnabled(),
+    enabled: catalogQueryEnabled(),
   });
 }
 
@@ -21,7 +21,7 @@ export function useSalonDetail(id: string) {
   return useQuery({
     queryKey: [...salonsQueryKey, "detail", id],
     queryFn: async () => mapSalonDetail(await fetchSalon(id)),
-    enabled: authQueryEnabled(Boolean(id)),
+    enabled: catalogQueryEnabled(Boolean(id)),
   });
 }
 
@@ -33,7 +33,7 @@ export function useSalonsNearby(lat?: number, lng?: number, radiusKm = 25) {
       const data = await fetchSalonsNearby(lat, lng, radiusKm);
       return data.map(mapNearbySalon);
     },
-    enabled: authQueryEnabled(lat != null && lng != null),
+    enabled: catalogQueryEnabled(lat != null && lng != null),
     staleTime: 30_000,
   });
 }
@@ -46,7 +46,7 @@ export function useSalonSearch(q: string) {
       const data = await searchSalons(q.trim());
       return data.map((s) => mapSalonList(s));
     },
-    enabled: authQueryEnabled(q.trim().length >= 2),
+    enabled: catalogQueryEnabled(q.trim().length >= 2),
   });
 }
 

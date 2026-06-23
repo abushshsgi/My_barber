@@ -4,3 +4,8 @@ import { hasValidUserSession } from "@/lib/api/client";
 export function authQueryEnabled(extra = true): boolean {
   return extra && hasValidUserSession();
 }
+
+/** Salon katalogi — login shart emas. */
+export function catalogQueryEnabled(extra = true): boolean {
+  return extra;
+}

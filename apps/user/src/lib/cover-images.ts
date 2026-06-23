@@ -5,9 +5,19 @@ const MOCK_SALON_COUNT = 250;
 /** Barqaror fallback — Pexels CDN da doim mavjud. */
 export const PEXELS_FALLBACK_PHOTO_ID = 3992860;
 
-/** Pexels CDN — mock backend bilan bir xil manba. */
+/** Pexels CDN — same-origin proxy orqali (ORB/CORS muammosiz). */
 export function pexelsCoverUrl(photoId: number, width = 900): string {
-  return `https://images.pexels.com/photos/${photoId}/pexels-photo-${photoId}.jpeg?auto=compress&cs=tinysrgb&w=${width >= 800 ? 1200 : 800}`;
+  const w = width >= 800 ? 1200 : 800;
+  return `/covers/pexels/${photoId}?w=${w}`;
+}
+
+/** API yoki tashqi Pexels URL ni same-origin proxy yo‘liga aylantiradi. */
+export function normalizeCoverUrl(url: string | null | undefined): string | null {
+  const raw = url?.trim();
+  if (!raw) return null;
+  const match = raw.match(/images\.pexels\.com\/photos\/(\d+)/);
+  if (match) return pexelsCoverUrl(Number(match[1]));
+  return raw;
 }
 
 export function pexelsFallbackCoverUrl(width = 900): string {
@@ -136,8 +146,8 @@ export function resolveCoverUrl(
   seed: string,
   category: Category = "barber",
 ): string {
-  const resolved = apiUrl?.trim() ?? "";
-  if (!resolved || resolved.includes("picsum.photos") || resolved.includes("images.pexels.com")) {
+  const resolved = normalizeCoverUrl(apiUrl?.trim() ?? "") ?? "";
+  if (!resolved || resolved.includes("picsum.photos") || resolved.endsWith("/media/")) {
     return getSalonCoverUrl(seed, category);
   }
   return resolved;

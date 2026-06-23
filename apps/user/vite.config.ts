@@ -10,6 +10,18 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
       },
+      "/covers/pexels": {
+        target: "https://images.pexels.com",
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => {
+          const match = path.match(/^\/covers\/pexels\/(\d+)/);
+          if (!match) return path;
+          const id = match[1];
+          const width = new URL(path, "http://localhost").searchParams.get("w") ?? "800";
+          return `/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${width}`;
+        },
+      },
     },
   },
   nitro: {

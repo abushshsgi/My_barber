@@ -26,6 +26,19 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false, cl
   const [cover, setCover] = useState(salon.coverUrl?.trim() || fallbackCover);
   const isGuestFavorite = isTopSalon(salon);
 
+  const handleCoverError = () => {
+    if (cover !== fallbackCover) setCover(fallbackCover);
+    else if (cover !== guaranteedCover) setCover(guaranteedCover);
+  };
+
+  const coverImgProps = {
+    src: cover,
+    alt: "",
+    loading: "lazy" as const,
+    referrerPolicy: "no-referrer" as const,
+    onError: handleCoverError,
+  };
+
   if (variant === "marketplace") {
     return (
       <Link
@@ -46,13 +59,7 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false, cl
           )}
         >
           <img
-            src={cover}
-            alt=""
-            loading="lazy"
-            onError={() => {
-              if (cover !== fallbackCover) setCover(fallbackCover);
-              else if (cover !== guaranteedCover) setCover(guaranteedCover);
-            }}
+            {...coverImgProps}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
           <button
@@ -118,7 +125,7 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false, cl
     return (
       <div className="group flex items-center gap-4 rounded-2xl border border-border bg-background p-3 transition-shadow hover:shadow-md">
         <Link to="/salon/$id" params={{ id: salon.id }} className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl">
-          <img src={cover} alt="" className="h-full w-full object-cover" loading="lazy" />
+          <img {...coverImgProps} className="h-full w-full object-cover" />
         </Link>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
@@ -153,7 +160,7 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false, cl
     return (
       <Link to="/salon/$id" params={{ id: salon.id }} className="group block">
         <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-surface">
-          <img src={cover} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]" loading="lazy" />
+          <img {...coverImgProps} className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]" />
           <button
             type="button"
             onClick={(e) => {
@@ -177,7 +184,7 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false, cl
     <div className="group">
       <Link to="/salon/$id" params={{ id: salon.id }} className="block">
         <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-surface">
-          <img src={cover} alt="" className="h-full w-full object-cover" loading="lazy" />
+          <img {...coverImgProps} className="h-full w-full object-cover" />
           <button
             type="button"
             onClick={(e) => {
