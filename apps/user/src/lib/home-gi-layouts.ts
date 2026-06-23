@@ -112,3 +112,26 @@ export function parseHomeGiLayout(value: unknown): HomeGiLayoutId {
 export function homeGiLayoutMeta(id: HomeGiLayoutId): HomeGiLayoutMeta {
   return HOME_GI_LAYOUTS.find((l) => l.id === id) ?? HOME_GI_LAYOUTS[0]!;
 }
+
+export const HOME_GI_LAYOUT_STORAGE_KEY = "mysaloon.home.gi";
+
+export function readPersistedHomeGiLayout(): HomeGiLayoutId | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(HOME_GI_LAYOUT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = parseHomeGiLayout(raw);
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function persistHomeGiLayout(id: HomeGiLayoutId): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(HOME_GI_LAYOUT_STORAGE_KEY, id);
+  } catch {
+    /* ignore */
+  }
+}

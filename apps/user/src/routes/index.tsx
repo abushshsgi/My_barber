@@ -6,9 +6,11 @@ import { useHomeData } from "@/components/home/useHomeData";
 import { parseHomeGiLayout } from "@/lib/home-gi-layouts";
 
 export const Route = createFileRoute("/")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    gi: parseHomeGiLayout(search.gi),
-  }),
+  validateSearch: (search: Record<string, unknown>) => {
+    const raw = search.gi;
+    if (raw == null || raw === "") return {};
+    return { gi: parseHomeGiLayout(raw) };
+  },
   head: () => ({
     meta: [
       { title: "mysaloon.uz — Sartaroshxona va salon bron qiling" },
