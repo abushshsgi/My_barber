@@ -39,7 +39,7 @@ export function HomeBazaarLayout({ data }: Props) {
   const gridSalons = useMemo(() => filtered.slice(0, GRID_CARD_COUNT), [filtered]);
 
   return (
-    <div className="mx-auto w-full max-w-[1440px] px-4 lg:px-6">
+    <div className="w-full">
       <div className="flex w-full flex-col gap-8">
         <BazaarHeroBanner className="w-full rounded-2xl aspect-[21/9] max-h-[400px]" />
 
