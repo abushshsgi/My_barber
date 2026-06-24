@@ -56,8 +56,8 @@ class ReverseGeocodeView(APIView):
             return Response({"detail": "lat and lng are required."}, status=400)
         try:
             result = reverse_geocode(lat, lng)
-        except DgisGeocoderError:
-            return Response({"detail": "Address lookup temporarily unavailable."}, status=404)
+        except DgisGeocoderError as exc:
+            return Response({"detail": str(exc)}, status=exc.status_code)
         if result is None:
             return Response({"detail": "No address found for these coordinates."}, status=404)
         return Response(

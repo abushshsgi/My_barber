@@ -66,6 +66,18 @@ def geocode_query(q: str) -> list[GeocodeResult]:
     q = q.strip()
     if len(q) < 2:
         return []
+    try:
+        results = _geocode_query_dgis(q)
+        if results:
+            return results
+    except DgisGeocoderError:
+        pass
+    from geo.services.nominatim import geocode_query_nominatim
+
+    return geocode_query_nominatim(q)
+
+
+def _geocode_query_dgis(q: str) -> list[GeocodeResult]:
     data = _request(
         {
             "q": q,
@@ -86,6 +98,18 @@ def geocode_query(q: str) -> list[GeocodeResult]:
 def reverse_geocode(lat: float, lng: float) -> GeocodeResult | None:
     if not (-90.0 <= lat <= 90.0) or not (-180.0 <= lng <= 180.0):
         raise DgisGeocoderError("Invalid coordinates.", status_code=400)
+    try:
+        result = _reverse_geocode_dgis(lat, lng)
+        if result:
+            return result
+    except DgisGeocoderError:
+        pass
+    from geo.services.nominatim import reverse_geocode_nominatim
+
+    return reverse_geocode_nominatim(lat, lng)
+
+
+def _reverse_geocode_dgis(lat: float, lng: float) -> GeocodeResult | None:
     data = _request(
         {
             "lat": str(lat),

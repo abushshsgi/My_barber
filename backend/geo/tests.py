@@ -10,7 +10,7 @@ from geo.region_resolver import (
     resolve_region_from_coords,
     _match_region_from_text,
 )
-from geo.services.dgis import GeocodeResult, geocode_query, reverse_geocode
+from geo.services.dgis import DgisGeocoderError, GeocodeResult, geocode_query, reverse_geocode
 from geo.views import GeocodeView, ReverseGeocodeView, ValidateLocationView
 
 
@@ -104,6 +104,25 @@ class DgisServiceTests(SimpleTestCase):
         self.assertIsNotNone(result)
         assert result is not None
         self.assertIn("Navoiy", result.address)
+
+
+    @override_settings(DGIS_API_KEY="test-key")
+    @patch("geo.services.dgis._reverse_geocode_dgis")
+    @patch("geo.services.nominatim.reverse_geocode_nominatim")
+    def test_reverse_geocode_falls_back_to_nominatim(self, mock_nominatim, mock_dgis):
+        mock_dgis.side_effect = DgisGeocoderError("2GIS geocoder returned an error.")
+        mock_nominatim.return_value = GeocodeResult(
+            lat=39.65,
+            lng=66.96,
+            address="Registon ko'chasi",
+            city="Samarqand",
+            full_name="Samarqand, Registon ko'chasi",
+        )
+        result = reverse_geocode(39.65, 66.96)
+        self.assertIsNotNone(result)
+        assert result is not None
+        self.assertEqual(result.city, "Samarqand")
+        mock_nominatim.assert_called_once_with(39.65, 66.96)
 
 
 class GeocodeViewTests(SimpleTestCase):

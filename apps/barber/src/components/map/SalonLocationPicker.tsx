@@ -40,6 +40,7 @@ export function SalonLocationPicker({
   const lng = parseCoord(longitude);
   const skipGeocodeRef = useRef(false);
   const skipReverseRef = useRef(false);
+  const reverseTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const addressPart = address.trim();
@@ -74,12 +75,21 @@ export function SalonLocationPicker({
     skipGeocodeRef.current = true;
     setLatitude(nextLat.toFixed(6));
     setLongitude(nextLng.toFixed(6));
-    void reverseGeocodeAddress(nextLat, nextLng).then((result) => {
-      if (!result) return;
-      setAddress?.(result.address);
-      if (result.city) setCity?.(result.city);
-    });
+    if (reverseTimerRef.current) window.clearTimeout(reverseTimerRef.current);
+    reverseTimerRef.current = window.setTimeout(() => {
+      void reverseGeocodeAddress(nextLat, nextLng).then((result) => {
+        if (!result) return;
+        setAddress?.(result.address);
+        if (result.city) setCity?.(result.city);
+      });
+    }, 450);
   };
+
+  useEffect(() => {
+    return () => {
+      if (reverseTimerRef.current) window.clearTimeout(reverseTimerRef.current);
+    };
+  }, []);
 
   return (
     <div className={cn("overflow-hidden rounded-2xl border border-border", className)}>
