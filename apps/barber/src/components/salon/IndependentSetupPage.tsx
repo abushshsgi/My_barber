@@ -8,11 +8,9 @@ import {
   CalendarDays,
   Check,
   Clock,
-  Crosshair,
   Languages,
   Loader2,
   MapPin,
-  Navigation,
   Phone,
   Plus,
   Scissors,
@@ -33,8 +31,9 @@ import { apiFetch, getBarberAccessToken } from "@/lib/api";
 import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { roundCoord6, submitFlowSignup } from "@/lib/barber-signup-flow";
 import { clearSignupDraft, readSignupDraft } from "@/lib/signup-draft";
-import { UZ_REGIONS, uzRegionCodeFromLabel, uzRegionLabel } from "@/lib/uz-regions";
+import { uzRegionCodeFromLabel } from "@/lib/uz-regions";
 import { SalonLocationPicker } from "@/components/map/SalonLocationPicker";
+import { requestGpsLocation } from "@/lib/geo-location";
 import { cn } from "@/lib/utils";
 import { getFlowMeta } from "@/lib/barber-flow-config";
 
@@ -89,7 +88,7 @@ const STEP_META = [
   {
     short: "Joylashuv",
     title: "Sizni qayerda topishadi?",
-    subtitle: "Mijozlar yaqinroqdan topishi uchun manzil va GPS koordinatalari.",
+    subtitle: "Xaritada joyni belgilang — shahar va ko'cha avtomatik to'ldiriladi.",
     icon: MapPin,
   },
   {
@@ -145,14 +144,10 @@ export function IndependentSetupPage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   // Location state
-  const [region, setRegion] = useState("");
+  const [city, setCity] = useState("");
   const [address, setAddress] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
-  const [locationStatus, setLocationStatus] = useState<"idle" | "locating" | "ok" | "error">(
-    "idle",
-  );
-  const [locationError, setLocationError] = useState<string | null>(null);
 
   const [services, setServices] = useState<Service[]>([
     { id: uid(), name: "", price: "", duration: "" },
@@ -224,10 +219,7 @@ export function IndependentSetupPage() {
           const parts = String(body.location_text)
             .split(",")
             .map((s) => s.trim());
-          if (parts[0]) {
-            const code = uzRegionCodeFromLabel(parts[0]);
-            setRegion(code || parts[0]);
-          }
+          if (parts[0]) setCity(parts[0]);
           if (parts[1]) setAddress(parts.slice(1).join(", "));
         }
         const langs = body.spoken_languages;
@@ -249,7 +241,7 @@ export function IndependentSetupPage() {
       // 0: Barber profile (Create salon bilan bir xil talablar)
       firstName.trim().length > 1 && lastName.trim().length > 1 && phoneDigits.length === 9,
       // 1: Location
-      region.trim().length > 1 &&
+      city.trim().length > 1 &&
         address.trim().length > 2 &&
         Number.isFinite(lat) &&
         Number.isFinite(lng) &&
@@ -268,7 +260,7 @@ export function IndependentSetupPage() {
     firstName,
     lastName,
     phoneDigits,
-    region,
+    city,
     address,
     latitude,
     longitude,
@@ -308,34 +300,6 @@ export function IndependentSetupPage() {
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const requestLocation = () => {
-    if (!("geolocation" in navigator)) {
-      setLocationStatus("error");
-      setLocationError("Brauzeringiz geolokatsiyani qo'llab-quvvatlamaydi.");
-      return;
-    }
-    setLocationStatus("locating");
-    setLocationError(null);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLatitude(roundCoord6(pos.coords.latitude).toString());
-        setLongitude(roundCoord6(pos.coords.longitude).toString());
-        setLocationStatus("ok");
-      },
-      (err) => {
-        setLocationStatus("error");
-        if (err.code === err.PERMISSION_DENIED) {
-          setLocationError("Lokatsiya ruxsati berilmadi. Brauzer sozlamalarini tekshiring.");
-        } else if (err.code === err.TIMEOUT) {
-          setLocationError("Vaqt tugadi. Qayta urinib ko'ring.");
-        } else {
-          setLocationError("Lokatsiyani aniqlab bo'lmadi.");
-        }
-      },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
-    );
-  };
-
   const updateService = (id: string, key: keyof Service, value: string) =>
     setServices((prev) => prev.map((s) => (s.id === id ? { ...s, [key]: value } : s)));
 
@@ -365,9 +329,8 @@ export function IndependentSetupPage() {
     try {
       const lat = roundCoord6(Number(latitude));
       const lng = roundCoord6(Number(longitude));
-      const regionCode = region.trim();
-      const regionLabel = uzRegionLabel(regionCode);
-      const locationText = [regionLabel, address.trim()].filter(Boolean).join(", ");
+      const regionCode = uzRegionCodeFromLabel(city.trim()) || "";
+      const locationText = [city.trim(), address.trim()].filter(Boolean).join(", ");
       const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
       const barberPhone = `+998${phoneDigits}`;
 
@@ -646,17 +609,14 @@ export function IndependentSetupPage() {
             )}
             {step === 1 && (
               <LocationStep
-                region={region}
-                setRegion={setRegion}
+                city={city}
+                setCity={setCity}
                 address={address}
                 setAddress={setAddress}
                 latitude={latitude}
                 setLatitude={setLatitude}
                 longitude={longitude}
                 setLongitude={setLongitude}
-                locationStatus={locationStatus}
-                locationError={locationError}
-                requestLocation={requestLocation}
               />
             )}
             {step === 2 && (
@@ -938,129 +898,58 @@ function PhoneInput({
    ============================================================ */
 
 function LocationStep(props: {
-  region: string;
-  setRegion: (v: string) => void;
+  city: string;
+  setCity: (v: string) => void;
   address: string;
   setAddress: (v: string) => void;
   latitude: string;
   setLatitude: (v: string) => void;
   longitude: string;
   setLongitude: (v: string) => void;
-  locationStatus: "idle" | "locating" | "ok" | "error";
-  locationError: string | null;
-  requestLocation: () => void;
 }) {
+  const fillCurrentLocation = () => {
+    requestGpsLocation({
+      setLatitude: props.setLatitude,
+      setLongitude: props.setLongitude,
+      setAddress: props.setAddress,
+      setCity: props.setCity,
+    });
+  };
+
   return (
-    <Section
-      icon={<MapPin className="h-4 w-4" />}
-      label="Lokatsiya"
-      title="Joylashuvingiz"
-      description="Mijozlar yaqinroq sartaroshlarni avval ko'radi — manzilni aniq kiriting."
-    >
+    <div className="space-y-4 rounded-2xl border border-border bg-card p-3.5 shadow-[var(--shadow-card)] sm:space-y-5 sm:p-7">
       <SalonLocationPicker
-        city={uzRegionLabel(props.region)}
+        city={props.city}
         address={props.address}
         latitude={props.latitude}
         longitude={props.longitude}
         setLatitude={props.setLatitude}
         setLongitude={props.setLongitude}
         setAddress={props.setAddress}
+        setCity={props.setCity}
+        mapClassName="h-48 sm:h-72"
       />
-
-      {/* Region quick-pick */}
-      <div>
-        <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Viloyat / Shahar
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {UZ_REGIONS.map((r) => {
-            const active = props.region.trim() === r.value;
-            return (
-              <button
-                key={r.value}
-                type="button"
-                onClick={() => props.setRegion(r.value)}
-                className={cn(
-                  "rounded-full border px-3 py-1 text-[11px] font-medium transition-[var(--transition-smooth)]",
-                  active
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-border bg-card text-foreground hover:border-foreground/50",
-                )}
-              >
-                {r.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
+      <button
+        type="button"
+        onClick={fillCurrentLocation}
+        className="inline-flex items-center gap-2 text-sm font-semibold text-foreground transition hover:opacity-80 sm:text-[15px]"
+      >
+        <MapPin className="h-4 w-4" />
+        Joriy joylashuvni ishlatish
+      </button>
       <FloatingInput
-        label="Viloyat / Shahar"
+        label="Shahar"
         required
-        value={uzRegionLabel(props.region)}
-        onChange={(v) => {
-          const code = uzRegionCodeFromLabel(v);
-          props.setRegion(code || v);
-        }}
+        value={props.city}
+        onChange={props.setCity}
       />
-
       <FloatingInput
-        label="Manzil (ko'cha, uy raqami yoki mo'ljal)"
+        label="Ko'cha, uy raqami"
         required
         value={props.address}
         onChange={props.setAddress}
       />
-
-      <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-        <FloatingInput
-          label="Latitude"
-          required
-          value={props.latitude}
-          onChange={props.setLatitude}
-        />
-        <FloatingInput
-          label="Longitude"
-          required
-          value={props.longitude}
-          onChange={props.setLongitude}
-        />
-        <button
-          type="button"
-          onClick={props.requestLocation}
-          disabled={props.locationStatus === "locating"}
-          className={cn(
-            "inline-flex h-14 items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-semibold text-foreground transition-[var(--transition-smooth)]",
-            props.locationStatus === "locating"
-              ? "cursor-not-allowed opacity-70"
-              : "hover:border-foreground hover:bg-muted active:scale-[0.98]",
-          )}
-        >
-          {props.locationStatus === "locating" ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Navigation className="h-4 w-4" />
-          )}
-          <span className="whitespace-nowrap">GPS olish</span>
-        </button>
-      </div>
-
-      {props.locationStatus === "ok" && props.latitude && props.longitude && (
-        <div className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-[12px] text-foreground">
-          <span className="inline-flex items-center gap-1.5">
-            <Crosshair className="h-3.5 w-3.5" />
-            GPS koordinatalari olindi: {props.latitude}, {props.longitude}
-          </span>
-        </div>
-      )}
-
-      {props.locationStatus === "error" && props.locationError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Lokatsiya olinmadi</AlertTitle>
-          <AlertDescription>{props.locationError}</AlertDescription>
-        </Alert>
-      )}
-    </Section>
+    </div>
   );
 }
 
