@@ -27,7 +27,7 @@ import {
   SomPriceInput,
   validateServicePrice,
 } from "@/components/barber/SomPriceInput";
-import { apiFetch, getBarberAccessToken } from "@/lib/api";
+import { apiFetch, BARBER_SIGNUP_TIMEOUT_MS, getBarberAccessToken } from "@/lib/api";
 import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { roundCoord6, submitFlowSignup } from "@/lib/barber-signup-flow";
 import { clearSignupDraft, readSignupDraft } from "@/lib/signup-draft";
@@ -37,6 +37,7 @@ import { requestGpsLocation } from "@/lib/geo-location";
 import { cn } from "@/lib/utils";
 import { getFlowMeta } from "@/lib/barber-flow-config";
 import { finishOnboardingAndGo } from "@/lib/onboarding-complete";
+import { toast } from "sonner";
 
 /* ============================================================
    Types
@@ -370,6 +371,7 @@ export function IndependentSetupPage() {
         meBody.append("avatar", avatarFile);
         const meRes = await apiFetch("/api/v1/barber/auth/me/", {
           method: "PATCH",
+          timeoutMs: BARBER_SIGNUP_TIMEOUT_MS,
           body: meBody,
           headers: {},
         });
@@ -381,6 +383,7 @@ export function IndependentSetupPage() {
       } else {
         const meRes = await apiFetch("/api/v1/barber/auth/me/", {
           method: "PATCH",
+          timeoutMs: BARBER_SIGNUP_TIMEOUT_MS,
           body: JSON.stringify({
             full_name: fullName,
             phone: barberPhone,
@@ -397,6 +400,7 @@ export function IndependentSetupPage() {
       // 3) Save barber profile (location + muloqot tillari).
       const profileRes = await apiFetch("/api/v1/barber/profile/", {
         method: "PATCH",
+        timeoutMs: BARBER_SIGNUP_TIMEOUT_MS,
         body: JSON.stringify({
           location_text: locationText,
           latitude: lat,
@@ -412,7 +416,9 @@ export function IndependentSetupPage() {
 
       // 4) Create services. Skip duplicates by name (case-insensitive) if backend
       //    already returns existing ones.
-      const existingRes = await apiFetch("/api/v1/barber/services/");
+      const existingRes = await apiFetch("/api/v1/barber/services/", {
+        timeoutMs: BARBER_SIGNUP_TIMEOUT_MS,
+      });
       const existingBody = (await parseJsonSafe(existingRes)) as
         | Array<{ id: number; name: string }>
         | { results?: Array<{ id: number; name: string }> }
@@ -424,6 +430,7 @@ export function IndependentSetupPage() {
           : [];
       const existingNames = new Set(existing.map((e) => e.name.trim().toLowerCase()));
 
+      const servicePromises: Promise<Response>[] = [];
       for (const s of services) {
         if (!s.name.trim() && !s.price.trim() && !s.duration.trim()) continue;
         if (existingNames.has(s.name.trim().toLowerCase())) continue;
@@ -433,26 +440,33 @@ export function IndependentSetupPage() {
           setSubmitError(priceError);
           return;
         }
-        const res = await apiFetch("/api/v1/barber/services/", {
-          method: "POST",
-          body: JSON.stringify({
-            name: s.name.trim(),
-            price,
-            duration_minutes: Number(s.duration),
-            is_active: true,
+        servicePromises.push(
+          apiFetch("/api/v1/barber/services/", {
+            method: "POST",
+            timeoutMs: BARBER_SIGNUP_TIMEOUT_MS,
+            body: JSON.stringify({
+              name: s.name.trim(),
+              price,
+              duration_minutes: Number(s.duration),
+              is_active: true,
+            }),
           }),
-        });
-        if (!res.ok) {
-          const err = await parseJsonSafe(res);
-          setSubmitError(
-            extractApiError(err, `"${s.name.trim()}" xizmatini saqlashda xatolik yuz berdi.`),
-          );
+        );
+      }
+      if (servicePromises.length > 0) {
+        const serviceResults = await Promise.all(servicePromises);
+        const failedService = serviceResults.find((r) => !r.ok);
+        if (failedService) {
+          const err = await parseJsonSafe(failedService);
+          setSubmitError(extractApiError(err, "Xizmatlarni saqlashda xatolik yuz berdi."));
           return;
         }
       }
 
       // 5) Replace working hours with current schedule. Delete then recreate.
-      const hoursRes = await apiFetch("/api/v1/barber/working-hours/");
+      const hoursRes = await apiFetch("/api/v1/barber/working-hours/", {
+        timeoutMs: BARBER_SIGNUP_TIMEOUT_MS,
+      });
       const hoursBody = (await parseJsonSafe(hoursRes)) as
         | Array<{ id: number; weekday: number }>
         | { results?: Array<{ id: number; weekday: number }> }
@@ -462,9 +476,14 @@ export function IndependentSetupPage() {
         : Array.isArray((hoursBody as { results?: unknown })?.results)
           ? ((hoursBody as { results: Array<{ id: number; weekday: number }> }).results ?? [])
           : [];
-      for (const row of existingHours) {
-        await apiFetch(`/api/v1/barber/working-hours/${row.id}/`, { method: "DELETE" });
-      }
+      await Promise.all(
+        existingHours.map((row) =>
+          apiFetch(`/api/v1/barber/working-hours/${row.id}/`, {
+            method: "DELETE",
+            timeoutMs: BARBER_SIGNUP_TIMEOUT_MS,
+          }),
+        ),
+      );
       const hourPromises: Promise<Response>[] = [];
       for (const d of schedule) {
         const weekday = WEEKDAYS.indexOf(d.day);
@@ -485,6 +504,7 @@ export function IndependentSetupPage() {
         hourPromises.push(
           apiFetch("/api/v1/barber/working-hours/", {
             method: "POST",
+            timeoutMs: BARBER_SIGNUP_TIMEOUT_MS,
             body: JSON.stringify(payload),
           }),
         );
@@ -500,7 +520,9 @@ export function IndependentSetupPage() {
       clearSignupDraft();
       finishOnboardingAndGo(navigate, "Mustaqil profil tayyor.");
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Kutilmagan xatolik yuz berdi.");
+      const message = err instanceof Error ? err.message : "Kutilmagan xatolik yuz berdi.";
+      setSubmitError(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
@@ -704,8 +726,9 @@ export function IndependentSetupPage() {
             </button>
           ) : (
             <button
+              type="button"
               disabled={!allValid || submitting}
-              onClick={handleSubmit}
+              onClick={() => void handleSubmit()}
               className={cn(
                 "inline-flex h-11 flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl px-4 text-[13px] font-semibold transition-[var(--transition-smooth)] sm:h-11 sm:flex-none sm:min-w-[170px] sm:text-sm",
                 allValid && !submitting

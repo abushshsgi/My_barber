@@ -18,6 +18,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { GpsLocationPreviewMap } from "@/components/map/GpsLocationPreviewMap";
+import { toast } from "sonner";
 
 import { submitEmployeeRegisterAndJoin, roundCoord6 } from "@/lib/barber-signup-flow";
 import { readSignupDraft } from "@/lib/signup-draft";
