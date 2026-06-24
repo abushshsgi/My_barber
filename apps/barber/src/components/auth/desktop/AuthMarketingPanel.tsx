@@ -86,7 +86,7 @@ export function AuthMarketingPanel({ tab, flow }: Props) {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-left">
+            <div className="mx-10 flex flex-wrap items-center gap-x-3 gap-y-2 text-left">
               <div className="flex items-center gap-2.5">
                 <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-xl text-primary-foreground shadow-sm sm:size-10", a.logo)}>
                   <Scissors className="size-3.5 sm:size-4" />
@@ -98,14 +98,14 @@ export function AuthMarketingPanel({ tab, flow }: Props) {
               </span>
             </div>
 
-            <motion.div className="mt-7 flex w-[400px] max-w-full flex-wrap items-end text-left sm:mt-8">
-              <h1 className="w-full text-[1.75rem] font-bold leading-[1.1] tracking-tight text-zinc-900 sm:text-[2rem] lg:text-[2.35rem]">
+            <motion.div className="mt-[100px] ml-10 flex w-[400px] max-w-full flex-wrap items-end text-left text-[30px]">
+              <h1 className="w-full text-[50px] font-bold leading-[1.1] tracking-tight text-zinc-900">
                 {content.headline}
                 <br />
                 <span className={c.highlightClass}>{content.highlight}</span>
               </h1>
 
-              <p className="mt-3 w-full max-w-[400px] text-[14px] leading-relaxed text-zinc-600 sm:mt-4 sm:text-[15px] lg:text-base">
+              <p className="mt-3 w-full max-w-[400px] text-[18px] leading-relaxed text-zinc-600 sm:mt-4">
                 {content.subline}
               </p>
 
@@ -116,7 +116,7 @@ export function AuthMarketingPanel({ tab, flow }: Props) {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.06 + i * 0.06 }}
-                    className="flex items-center gap-2.5 text-[14px] font-medium text-zinc-700 sm:gap-3 sm:text-[15px]"
+                    className="flex items-center gap-2.5 text-[18px] font-medium text-zinc-700 sm:gap-3"
                   >
                     <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white/80 shadow-sm ring-1 ring-black/5 sm:size-7">
                       <FlowIcon name={content.bulletIcons[i] ?? "Check"} className="size-3 text-foreground sm:size-3.5" />
@@ -127,10 +127,10 @@ export function AuthMarketingPanel({ tab, flow }: Props) {
               </ul>
 
               <div className="mt-4 flex flex-wrap items-end gap-2.5 rounded-2xl border border-black/5 bg-white/70 px-4 py-3 text-left shadow-sm sm:mt-5 sm:gap-3 sm:px-5 sm:py-3.5">
-                <span className={cn("text-[2rem] font-bold leading-none tabular-nums sm:text-[2.25rem] lg:text-[2.5rem]", c.highlightClass)}>
+                <span className={cn("text-[20px] font-bold leading-none tabular-nums", c.highlightClass)}>
                   {content.stat.value}
                 </span>
-                <span className="pb-0.5 text-sm text-zinc-500 sm:text-base">{content.stat.label}</span>
+                <span className="pb-0.5 text-[11px] text-zinc-500">{content.stat.label}</span>
               </div>
             </motion.div>
           </motion.div>

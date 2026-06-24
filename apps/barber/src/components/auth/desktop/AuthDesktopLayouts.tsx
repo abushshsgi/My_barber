@@ -25,7 +25,7 @@ function FormPanel({ tab, signupStep, flow, onTabChange, children }: AuthDesktop
   const isSignup = tab === "signup";
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col justify-start overflow-hidden px-5 pt-8 pb-6 sm:px-7 sm:pt-10 lg:px-14 lg:pt-12 xl:pt-14">
+    <div className="relative flex h-full min-h-0 flex-col justify-start overflow-hidden px-5 pt-8 pb-6 sm:px-7 sm:pt-10 lg:px-14 lg:pt-16 xl:pt-20">
       <AuthAccentProvider accent={accent}>
         <motion.div
           {...pageEnter}
