@@ -90,7 +90,7 @@ const STEP_META = [
     group: "Salon",
     short: "Lokatsiya",
     title: "Salon manzili",
-    subtitle: "Mijozlar sizning saloningizga oson topib kelishi uchun manzil.",
+    subtitle: "Xaritada belgilang va manzilni kiriting.",
     icon: MapPin,
   },
   {
@@ -175,7 +175,6 @@ export function CreateSalonPage() {
   const [salonPhoneDigits, setSalonPhoneDigits] = useState("");
   const [salonAddress, setSalonAddress] = useState("");
   const [salonCity, setSalonCity] = useState("");
-  const [salonLandmark, setSalonLandmark] = useState("");
   const [salonLatitude, setSalonLatitude] = useState("");
   const [salonLongitude, setSalonLongitude] = useState("");
   const [cover, setCover] = useState<string | null>(null);
@@ -337,9 +336,7 @@ export function CreateSalonPage() {
             latitude: roundCoord6(Number(salonLatitude)),
             longitude: roundCoord6(Number(salonLongitude)),
             shop_name: salonName.trim(),
-            address: [salonCity.trim(), salonAddress.trim(), salonLandmark.trim()]
-              .filter(Boolean)
-              .join(", "),
+            address: [salonCity.trim(), salonAddress.trim()].filter(Boolean).join(", "),
           });
         } catch (err) {
           setSubmitError(err instanceof Error ? err.message : "Signup amalga oshmadi.");
@@ -349,9 +346,7 @@ export function CreateSalonPage() {
 
       const fullName = `${barberFirstName} ${barberLastName}`.trim();
       const barberPhone = barberPhoneDigits ? `+998${barberPhoneDigits}` : "";
-      const locationText = [salonCity.trim(), salonAddress.trim(), salonLandmark.trim()]
-        .filter(Boolean)
-        .join(", ");
+      const locationText = [salonCity.trim(), salonAddress.trim()].filter(Boolean).join(", ");
       const hoursPayload = schedule
         .filter((d) => d.open)
         .map((d) => ({
@@ -643,8 +638,6 @@ export function CreateSalonPage() {
               <SalonLocationStep
                 salonCity={salonCity}
                 setSalonCity={setSalonCity}
-                salonLandmark={salonLandmark}
-                setSalonLandmark={setSalonLandmark}
                 salonAddress={salonAddress}
                 setSalonAddress={setSalonAddress}
                 salonLatitude={salonLatitude}
@@ -838,8 +831,6 @@ function SalonInfoStep(props: {
 function SalonLocationStep(props: {
   salonCity: string;
   setSalonCity: (v: string) => void;
-  salonLandmark: string;
-  setSalonLandmark: (v: string) => void;
   salonAddress: string;
   setSalonAddress: (v: string) => void;
   salonLatitude: string;
@@ -857,12 +848,7 @@ function SalonLocationStep(props: {
   };
 
   return (
-    <Section
-      icon={<MapPin className="h-4 w-4" />}
-      label="Lokatsiya"
-      title="Salon manzili"
-      description="Mijozlar sizni topa olishi uchun aniq manzil."
-    >
+    <div className="space-y-4 rounded-2xl border border-border bg-card p-3.5 shadow-[var(--shadow-card)] sm:space-y-5 sm:p-7">
       <SalonLocationPicker
         city={props.salonCity}
         address={props.salonAddress}
@@ -872,76 +858,29 @@ function SalonLocationStep(props: {
         setLongitude={props.setSalonLongitude}
         setAddress={props.setSalonAddress}
         setCity={props.setSalonCity}
+        mapClassName="h-48 sm:h-72"
       />
-
-      {/* City quick-pick chips */}
-      <div>
-        <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Mashhur shaharlar
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {["Toshkent", "Samarqand", "Buxoro", "Andijon", "Farg'ona", "Namangan"].map((city) => {
-            const active = props.salonCity.trim().toLowerCase() === city.toLowerCase();
-            return (
-              <button
-                key={city}
-                type="button"
-                onClick={() => props.setSalonCity(city)}
-                className={cn(
-                  "rounded-full border px-3 py-1 text-[11px] font-medium transition-[var(--transition-smooth)]",
-                  active
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-border bg-card text-foreground hover:border-foreground/50",
-                )}
-              >
-                {city}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <FloatingInput
-          label="Shahar"
-          required
-          value={props.salonCity}
-          onChange={props.setSalonCity}
-        />
-        <FloatingInput
-          label="Mo'ljal (ixtiyoriy)"
-          value={props.salonLandmark}
-          onChange={props.setSalonLandmark}
-        />
-      </div>
+      <button
+        type="button"
+        onClick={fillCurrentLocation}
+        className="inline-flex items-center gap-2 text-sm font-semibold text-foreground transition hover:opacity-80 sm:text-[15px]"
+      >
+        <MapPin className="h-4 w-4" />
+        Joriy joylashuvni ishlatish
+      </button>
+      <FloatingInput
+        label="Shahar"
+        required
+        value={props.salonCity}
+        onChange={props.setSalonCity}
+      />
       <FloatingInput
         label="Ko'cha, uy raqami"
         required
         value={props.salonAddress}
         onChange={props.setSalonAddress}
       />
-      <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-        <FloatingInput
-          label="Latitude"
-          required
-          value={props.salonLatitude}
-          onChange={props.setSalonLatitude}
-        />
-        <FloatingInput
-          label="Longitude"
-          required
-          value={props.salonLongitude}
-          onChange={props.setSalonLongitude}
-        />
-        <button
-          type="button"
-          onClick={fillCurrentLocation}
-          className="h-14 rounded-xl border border-border bg-background px-3 text-xs font-semibold text-foreground transition-[var(--transition-smooth)] hover:border-foreground hover:bg-muted"
-        >
-          Joylashuvni olish
-        </button>
-      </div>
-    </Section>
+    </div>
   );
 }
 
