@@ -65,6 +65,10 @@ import {
   NAV_CONFIG,
   type NavItem as MatrixNavItem,
 } from "@/lib/barber-flow-config";
+import {
+  isBarberNavAllowedDuringActivation,
+  isBarberPathAllowedDuringActivation,
+} from "@/lib/barber-activation-gate";
 
 type NavItem = {
   to: string;
@@ -186,10 +190,7 @@ function Sidebar({
                           ? pathname === "/barber"
                           : pathname === item.to || pathname.startsWith(item.to + "/");
                       const locked =
-                        !fullyReady &&
-                        item.to !== "/barber/activation" &&
-                        item.to !== "/barber/services" &&
-                        item.to !== "/barber/schedule";
+                        !fullyReady && !isBarberNavAllowedDuringActivation(item.to);
                       return (
                         <motion.div
                           key={item.to}
@@ -227,8 +228,12 @@ function Sidebar({
       <div className="p-3 border-t border-sidebar-border">
         <Link
           to="/barber/profile"
-          onClick={onNavigate}
-          className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-sidebar-accent transition-colors"
+          onClick={!fullyReady ? (e) => e.preventDefault() : onNavigate}
+          aria-disabled={!fullyReady}
+          className={cn(
+            "flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-sidebar-accent transition-colors",
+            !fullyReady && "pointer-events-none opacity-35",
+          )}
         >
           <UserAvatar
             src={profile.avatar}
@@ -256,7 +261,7 @@ function Topbar({
 }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { notifications, profile, viewMode, isJoinedWorker, setViewMode, flowIdentity } =
+  const { notifications, profile, viewMode, isJoinedWorker, setViewMode, flowIdentity, fullyReady } =
     useBarberContext();
   const unread = notifications.filter((n) => !n.read).length;
 
@@ -288,7 +293,7 @@ function Topbar({
       </div>
 
       <div className="flex items-center gap-2">
-        {isJoinedWorker && !onSalonViewArea && (
+        {isJoinedWorker && fullyReady && !onSalonViewArea && (
           <Button
             type="button"
             variant="outline"
@@ -305,7 +310,7 @@ function Topbar({
             Salon ish maydoni
           </Button>
         )}
-        {isJoinedWorker && onSalonViewArea && (
+        {isJoinedWorker && fullyReady && onSalonViewArea && (
           <Button
             type="button"
             variant="outline"
@@ -324,8 +329,12 @@ function Topbar({
         )}
 
         <button
-          onClick={onCommandOpen}
-          className="hidden md:inline-flex items-center gap-2 h-9 pl-3 pr-2 rounded-lg border border-border bg-card hover:bg-accent transition-colors text-sm text-muted-foreground"
+          onClick={fullyReady ? onCommandOpen : undefined}
+          disabled={!fullyReady}
+          className={cn(
+            "hidden md:inline-flex items-center gap-2 h-9 pl-3 pr-2 rounded-lg border border-border bg-card hover:bg-accent transition-colors text-sm text-muted-foreground",
+            !fullyReady && "pointer-events-none opacity-40",
+          )}
         >
           <Search className="size-3.5" />
           <span>Qidirish</span>
@@ -333,19 +342,34 @@ function Topbar({
             <CommandIcon className="size-2.5" />K
           </kbd>
         </button>
-        <Button variant="ghost" size="icon" className="md:hidden" onClick={onCommandOpen}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden"
+          disabled={!fullyReady}
+          onClick={onCommandOpen}
+        >
           <Search className="size-4" />
         </Button>
 
-        <Link
-          to="/barber/notifications"
-          className="relative inline-flex items-center justify-center size-9 rounded-md hover:bg-accent transition-colors"
-        >
-          <Bell className="size-4" />
-          {unread > 0 && (
-            <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-foreground ring-2 ring-background" />
-          )}
-        </Link>
+        {fullyReady ? (
+          <Link
+            to="/barber/notifications"
+            className="relative inline-flex items-center justify-center size-9 rounded-md hover:bg-accent transition-colors"
+          >
+            <Bell className="size-4" />
+            {unread > 0 && (
+              <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-foreground ring-2 ring-background" />
+            )}
+          </Link>
+        ) : (
+          <span
+            className="relative inline-flex size-9 items-center justify-center rounded-md opacity-35"
+            aria-hidden
+          >
+            <Bell className="size-4" />
+          </span>
+        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -362,19 +386,23 @@ function Topbar({
               <div className="text-xs text-muted-foreground font-normal">{profile.email}</div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate({ to: "/barber/profile" })}>
-              <UserCog className="size-4 mr-2" />
-              Profil
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate({ to: "/barber/settings" })}>
-              <Settings className="size-4 mr-2" />
-              Sozlamalar
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate({ to: "/barber/help" })}>
-              <HelpCircle className="size-4 mr-2" />
-              Yordam
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            {fullyReady ? (
+              <>
+                <DropdownMenuItem onClick={() => navigate({ to: "/barber/profile" })}>
+                  <UserCog className="size-4 mr-2" />
+                  Profil
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/barber/settings" })}>
+                  <Settings className="size-4 mr-2" />
+                  Sozlamalar
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/barber/help" })}>
+                  <HelpCircle className="size-4 mr-2" />
+                  Yordam
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            ) : null}
             <DropdownMenuItem
               className="text-destructive"
               onClick={() => {
@@ -399,24 +427,28 @@ function CommandPalette({
   nav,
   capability,
   flowIdentity,
+  fullyReady,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   nav: NavItem[];
   capability: "independentBase" | "salonOwner" | "salonWorker";
   flowIdentity: "owner" | "employee" | "mybarber" | "independent" | "unknown";
+  fullyReady: boolean;
 }) {
   const navigate = useNavigate();
   const { viewMode } = useBarberContext();
   const go = (to: string) => {
+    if (!fullyReady && !isBarberNavAllowedDuringActivation(to)) return;
     onOpenChange(false);
     navigate({ to });
   };
   const quickActionsAll = QUICK_ACTIONS[flowIdentity];
-  const quickActions =
+  const quickActions = (
     viewMode === "salon"
       ? quickActionsAll.filter((a) => pathAllowedInSalonWorkspace(a.to))
-      : quickActionsAll;
+      : quickActionsAll
+  ).filter((a) => fullyReady || isBarberNavAllowedDuringActivation(a.to));
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <CommandInput placeholder="Sahifa yoki amalni qidiring..." />
@@ -473,15 +505,15 @@ export function BarberShell() {
   const [cmdOpen, setCmdOpen] = useState(false);
 
   const nav = useMemo(() => {
+    if (!fullyReady) {
+      return [
+        { to: "/barber/activation", label: "Profil 100%", icon: Sparkles, group: "Asosiy" },
+        { to: "/barber/services", label: "Xizmatlar", icon: Scissors, group: "Asosiy" },
+        { to: "/barber/schedule", label: "Ish jadvali", icon: Clock, group: "Asosiy" },
+      ] satisfies NavItem[];
+    }
     const capability = getCapabilities({ onboardingComplete, viewMode, isJoinedWorker });
     const full = mapNav(NAV_CONFIG[capability]);
-    const activationFirst: NavItem[] = [
-      { to: "/barber/activation", label: "Profil 100%", icon: Sparkles, group: "Asosiy" },
-    ];
-    if (!fullyReady) {
-      const seen = new Set(activationFirst.map((x) => x.to));
-      return [...activationFirst, ...full.filter((n) => !seen.has(n.to))];
-    }
     if (!onboardingComplete) {
       return full.filter((n) =>
         ["/barber", "/barber/notifications", "/barber/profile"].includes(n.to),
@@ -499,6 +531,13 @@ export function BarberShell() {
       `${viewMode}-${onboardingComplete ? "ok" : "onb"}-${fullyReady ? "live" : "act"}-${nav.map((n) => n.to).join("|")}`,
     [viewMode, onboardingComplete, fullyReady, nav],
   );
+
+  useEffect(() => {
+    if (fullyReady) return;
+    if (!pathname.startsWith("/barber")) return;
+    if (isBarberPathAllowedDuringActivation(pathname)) return;
+    void navigate({ to: "/barber/activation", replace: true });
+  }, [fullyReady, pathname, navigate]);
 
   useEffect(() => {
     if (!onboardingComplete || !fullyReady) return;
@@ -564,6 +603,7 @@ export function BarberShell() {
         nav={nav}
         capability={capability}
         flowIdentity={flowIdentity}
+        fullyReady={fullyReady}
       />
     </div>
   );

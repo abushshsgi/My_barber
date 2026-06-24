@@ -335,7 +335,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     hasServices: true,
     hasWorkingHours: true,
   });
-  const [fullyReady, setFullyReady] = useState(true);
+  const [fullyReady, setFullyReady] = useState(false);
   const [readinessPercent, setReadinessPercent] = useState(100);
   const [activationSteps, setActivationSteps] = useState<ActivationSteps>({
     email_verified: true,
@@ -972,6 +972,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       );
       return { fullyReady: gate, emailVerified };
     } catch {
+      setFullyReady(false);
       setOnboardingFlow(null);
       return { fullyReady: false, emailVerified: false };
     }
