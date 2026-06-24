@@ -33,6 +33,7 @@ import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { roundCoord6, submitFlowSignup } from "@/lib/barber-signup-flow";
 import { clearSignupDraft, readSignupDraft } from "@/lib/signup-draft";
 import { SalonLocationPicker } from "@/components/map/SalonLocationPicker";
+import { requestGpsLocation } from "@/lib/geo-location";
 import { cn } from "@/lib/utils";
 import { getFlowMeta } from "@/lib/barber-flow-config";
 
@@ -847,17 +848,12 @@ function SalonLocationStep(props: {
   setSalonLongitude: (v: string) => void;
 }) {
   const fillCurrentLocation = () => {
-    if (!("geolocation" in navigator)) return;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        props.setSalonLatitude(pos.coords.latitude.toFixed(6));
-        props.setSalonLongitude(pos.coords.longitude.toFixed(6));
-      },
-      () => {
-        // Keep UI lightweight: validation and submit will show if coords are missing.
-      },
-      { enableHighAccuracy: true, timeout: 10000 },
-    );
+    requestGpsLocation({
+      setLatitude: props.setSalonLatitude,
+      setLongitude: props.setSalonLongitude,
+      setAddress: props.setSalonAddress,
+      setCity: props.setSalonCity,
+    });
   };
 
   return (

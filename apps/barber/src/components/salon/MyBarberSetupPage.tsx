@@ -33,6 +33,7 @@ import { clearSignupDraft, readSignupDraft } from "@/lib/signup-draft";
 import { cn } from "@/lib/utils";
 import { SalonLocationPicker } from "@/components/map/SalonLocationPicker";
 import { getFlowMeta } from "@/lib/barber-flow-config";
+import { requestGpsLocation } from "@/lib/geo-location";
 
 type Service = { id: string; name: string; price: string; duration: string };
 
@@ -1006,15 +1007,12 @@ function LocationStep(props: {
   setSalonLongitude: (v: string) => void;
 }) {
   const fillCurrentLocation = () => {
-    if (!("geolocation" in navigator)) return;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        props.setSalonLatitude(pos.coords.latitude.toFixed(6));
-        props.setSalonLongitude(pos.coords.longitude.toFixed(6));
-      },
-      () => {},
-      { enableHighAccuracy: true, timeout: 10000 },
-    );
+    requestGpsLocation({
+      setLatitude: props.setSalonLatitude,
+      setLongitude: props.setSalonLongitude,
+      setAddress: props.setSalonAddress,
+      setCity: props.setSalonCity,
+    });
   };
 
   return (
@@ -1033,9 +1031,9 @@ function LocationStep(props: {
       <button
         type="button"
         onClick={fillCurrentLocation}
-        className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground transition hover:text-foreground sm:text-xs"
+        className="inline-flex items-center gap-2 text-sm font-semibold text-foreground transition hover:opacity-80 sm:text-[15px]"
       >
-        <MapPin className="h-3.5 w-3.5" />
+        <MapPin className="h-4 w-4" />
         Joriy joylashuvni ishlatish
       </button>
       <FloatingInput
