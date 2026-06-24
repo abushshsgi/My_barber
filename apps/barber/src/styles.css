@@ -199,6 +199,17 @@
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
+  .auth-viewport {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+  .auth-viewport-scroll {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
   .onboarding-title {
     font-size: 1.375rem;
     font-weight: 600;

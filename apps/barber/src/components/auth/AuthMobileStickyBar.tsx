@@ -11,7 +11,7 @@ export function AuthMobileStickyBar({ children, className }: Props) {
   return (
     <div
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 backdrop-blur-xl md:hidden",
+        "fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 backdrop-blur-xl lg:hidden",
         className,
       )}
     >

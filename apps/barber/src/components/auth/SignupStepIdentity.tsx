@@ -95,10 +95,10 @@ export function SignupStepIdentity({
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div>
-        <h2 className="text-lg font-semibold tracking-tight">Shaxsiy ma'lumotlar</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h2 className="text-base font-semibold tracking-tight sm:text-lg">Shaxsiy ma'lumotlar</h2>
+        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
           Email yoki telefon — kamida bittasi. Parol faqat sizning akkauntingiz uchun.
         </p>
         {checkingAvailability && (
@@ -108,7 +108,7 @@ export function SignupStepIdentity({
           </p>
         )}
       </div>
-      <div className="space-y-3">
+      <div className="space-y-2.5 sm:space-y-3">
         {fields.map((field, index) => (
           <motion.div key={field.key} {...staggerChild(index, !!reduceMotion)}>
             {field.node}

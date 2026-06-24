@@ -31,19 +31,19 @@ export function FlowCard({ flow, selected, onSelect, className }: Props) {
       type="button"
       onClick={() => onSelect(flow)}
       className={cn(
-        "flex w-full cursor-pointer items-center gap-4 rounded-2xl border px-5 py-4 text-left transition-all active:scale-[0.99]",
+        "flex w-full cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-all active:scale-[0.99] sm:gap-4 sm:rounded-2xl sm:px-5 sm:py-4",
         selected
           ? cn(a.btn, "border-primary text-primary-foreground shadow-md")
           : "border-border bg-card hover:border-zinc-300 hover:shadow-sm",
         className,
       )}
     >
-      <div className={cn("flex size-12 shrink-0 items-center justify-center rounded-xl", selected ? "bg-primary-foreground/15" : "bg-muted")}>
+      <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl sm:size-12", selected ? "bg-primary-foreground/15" : "bg-muted")}>
         {FLOW_ICON[flow]}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="text-[15px] font-semibold">{meta.signupTitle}</p>
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <p className="text-sm font-semibold sm:text-[15px]">{meta.signupTitle}</p>
           <span
             className={cn(
               "rounded-full px-2 py-0.5 text-[10px] font-bold",
@@ -53,7 +53,7 @@ export function FlowCard({ flow, selected, onSelect, className }: Props) {
             {meta.badge}
           </span>
         </div>
-        <p className={cn("mt-1 text-sm leading-snug", selected ? "text-primary-foreground/80" : "text-muted-foreground")}>
+        <p className={cn("mt-0.5 text-xs leading-snug sm:mt-1 sm:text-sm", selected ? "text-primary-foreground/80" : "text-muted-foreground")}>
           {meta.signupSubtitle}
         </p>
       </div>

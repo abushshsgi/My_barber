@@ -25,7 +25,7 @@ function FormPanel({ tab, signupStep, flow, onTabChange, children }: AuthDesktop
   const isSignup = tab === "signup";
 
   return (
-    <div className="relative flex flex-col justify-center px-8 py-12 lg:px-14 lg:py-16">
+    <div className="relative flex h-full min-h-0 flex-col justify-center overflow-hidden px-5 py-8 sm:px-7 sm:py-10 lg:px-14 lg:py-12">
       <AuthAccentProvider accent={accent}>
         <motion.div
           {...pageEnter}
@@ -35,8 +35,8 @@ function FormPanel({ tab, signupStep, flow, onTabChange, children }: AuthDesktop
 
           <div
             className={cn(
-              "mt-4 rounded-2xl border border-border/40 bg-white shadow-sm",
-              isSignup ? "p-6 lg:p-7" : "p-5",
+              "mt-3 overflow-hidden rounded-2xl border border-border/40 bg-white shadow-sm",
+              isSignup ? "p-4 sm:p-5 lg:p-7" : "p-4 sm:p-5",
               LIGHT_FORM_SKIN,
             )}
           >
@@ -72,7 +72,7 @@ export function AuthDesktopLayout({ tab, flow, ...props }: AuthDesktopLayoutProp
   const tone = resolveAuthPanelTone(tab, flow);
 
   return (
-    <div className={cn("relative grid min-h-screen overflow-hidden lg:grid-cols-2", tone.bg)}>
+    <div className={cn("relative grid h-[100dvh] max-h-[100dvh] w-full overflow-hidden lg:grid-cols-2", tone.bg)}>
       <motion.div
         key={tone.glow}
         className="pointer-events-none absolute left-1/2 top-1/2 size-[min(100vw,56rem)] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-30 blur-3xl"

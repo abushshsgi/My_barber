@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { AuthStepIndicator } from "@/components/auth/AuthStepIndicator";
 import { AuthDesktopLayout } from "@/components/auth/desktop/AuthDesktopLayouts";
@@ -24,10 +24,28 @@ export function AuthShell({ flow, tab, signupStep = 0, onTabChange, children }: 
         ? "Ro'yxatdan o'tish"
         : (meta?.signupTitle ?? "Ro'yxatdan o'tish");
 
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = body.style.overflow;
+    const prevBodyHeight = body.style.height;
+
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    body.style.height = "100dvh";
+
+    return () => {
+      html.style.overflow = prevHtmlOverflow;
+      body.style.overflow = prevBodyOverflow;
+      body.style.height = prevBodyHeight;
+    };
+  }, []);
+
   return (
-    <div className="relative min-h-[100dvh] bg-[#f4f4f5] text-foreground lg:bg-transparent">
-      <header className="sticky top-0 z-50 border-b border-black/5 bg-white/90 backdrop-blur-md pt-[max(env(safe-area-inset-top),0px)] lg:hidden">
-        <div className="flex items-center justify-between gap-3 px-4 py-3">
+    <div className="auth-viewport relative flex flex-col bg-[#f4f4f5] text-foreground lg:bg-transparent">
+      <header className="z-50 shrink-0 border-b border-black/5 bg-white/90 backdrop-blur-md pt-[max(env(safe-area-inset-top),0px)] lg:hidden">
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5">
           <div className="flex min-w-0 items-center gap-2">
             <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <Scissors className="size-3.5" />
@@ -41,7 +59,7 @@ export function AuthShell({ flow, tab, signupStep = 0, onTabChange, children }: 
           ) : null}
         </div>
         {tab === "signup" ? (
-          <div className="border-t border-black/5 px-4 py-2">
+          <div className="border-t border-black/5 px-4 py-1.5">
             <AuthStepIndicator currentStep={signupStep} compact />
           </div>
         ) : null}
@@ -49,12 +67,12 @@ export function AuthShell({ flow, tab, signupStep = 0, onTabChange, children }: 
 
       <motion.div
         {...pageEnter}
-        className="px-4 pt-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] lg:hidden"
+        className="auth-viewport-scroll flex min-h-0 flex-1 flex-col px-4 pt-3 pb-[calc(4.75rem+env(safe-area-inset-bottom))] lg:hidden"
       >
-        {children}
+        <div className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden">{children}</div>
       </motion.div>
 
-      <div className="hidden lg:block">
+      <div className="auth-viewport hidden h-full min-h-0 w-full lg:flex">
         <AuthDesktopLayout flow={flow} tab={tab} signupStep={signupStep} onTabChange={onTabChange}>
           {children}
         </AuthDesktopLayout>

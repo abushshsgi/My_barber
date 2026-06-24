@@ -179,9 +179,9 @@ export function SignupWizard({
         : "Keyingisi";
 
   return (
-    <div className="md:pb-0">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden lg:pb-0">
       <AnimatePresence mode="wait" custom={step}>
-        <motion.div key={step} {...stepMotion(!!reduceMotion, "forward")} className="min-h-[200px] md:min-h-[280px]">
+        <motion.div key={step} {...stepMotion(!!reduceMotion, "forward")} className="min-h-0 shrink overflow-hidden">
           {step === 0 && <SignupStepFlow flow={data.flow} onSelect={onFlowSelect} />}
           {step === 1 && (
             <SignupStepIdentity
@@ -211,10 +211,10 @@ export function SignupWizard({
         </motion.div>
       </AnimatePresence>
 
-      <div className="mt-4 space-y-4">
+      <div className="mt-3 shrink-0 space-y-3">
         <AuthErrorAlert error={error} />
 
-        <div className="hidden md:block border-t border-border/60 pt-5">
+        <div className="hidden border-t border-border/60 pt-4 lg:block">
           <ActionBar
             step={step}
             canNext={canNext}

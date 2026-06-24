@@ -76,11 +76,11 @@ export function AuthMarketingPanel({ tab, flow }: Props) {
   const content = resolveContent(tab, flow);
 
   return (
-    <div className="relative flex flex-col justify-center px-10 py-14 lg:px-16 lg:py-16">
+    <div className="relative flex h-full min-h-0 flex-col justify-center overflow-hidden px-8 py-10 sm:px-10 lg:px-14 xl:px-16">
       <div className="relative z-10 max-w-xl">
         <div className="flex items-center gap-2.5">
-          <div className={cn("flex size-10 items-center justify-center rounded-xl text-primary-foreground shadow-sm", a.logo)}>
-            <Scissors className="size-4" />
+          <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-xl text-primary-foreground shadow-sm sm:size-10", a.logo)}>
+            <Scissors className="size-3.5 sm:size-4" />
           </div>
           <span className="text-sm font-bold text-foreground">MySaloon Partner</span>
         </div>
@@ -93,38 +93,42 @@ export function AuthMarketingPanel({ tab, flow }: Props) {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span className="mt-8 inline-flex rounded-full bg-black/5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-zinc-600">
+            <span className="mt-6 inline-flex rounded-full bg-black/5 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-600 sm:mt-7 sm:text-[11px]">
               {content.badge}
             </span>
 
-            <h1 className="mt-5 text-4xl font-bold leading-[1.08] tracking-tight text-zinc-900 lg:text-[3.25rem]">
+            <h1 className="mt-4 text-[1.65rem] font-bold leading-[1.1] tracking-tight text-zinc-900 sm:mt-5 sm:text-3xl lg:text-4xl xl:text-[3.1rem]">
               {content.headline}
               <br />
               <span className={c.highlightClass}>{content.highlight}</span>
             </h1>
 
-            <p className="mt-5 max-w-md text-base leading-relaxed text-zinc-600 lg:text-[17px]">{content.subline}</p>
+            <p className="mt-4 max-w-md text-[13px] leading-relaxed text-zinc-600 sm:mt-5 sm:text-[15px] lg:text-base">
+              {content.subline}
+            </p>
 
-            <ul className="mt-9 space-y-3">
+            <ul className="mt-6 space-y-2.5 sm:mt-8 sm:space-y-3">
               {content.bullets.map((b, i) => (
                 <motion.li
                   key={b}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.06 + i * 0.06 }}
-                  className="flex items-center gap-3 text-sm font-medium text-zinc-700"
+                  className="flex items-center gap-2.5 text-[13px] font-medium text-zinc-700 sm:gap-3 sm:text-sm"
                 >
-                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white/80 shadow-sm ring-1 ring-black/5">
-                    <FlowIcon name={content.bulletIcons[i] ?? "Check"} className="size-3.5 text-foreground" />
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white/80 shadow-sm ring-1 ring-black/5 sm:size-7">
+                    <FlowIcon name={content.bulletIcons[i] ?? "Check"} className="size-3 text-foreground sm:size-3.5" />
                   </span>
                   {b}
                 </motion.li>
               ))}
             </ul>
 
-            <div className="mt-11 inline-flex items-baseline gap-2.5 rounded-2xl border border-black/5 bg-white/70 px-5 py-3.5 shadow-sm">
-              <span className={cn("text-3xl font-bold tabular-nums", c.highlightClass)}>{content.stat.value}</span>
-              <span className="text-sm text-zinc-500">{content.stat.label}</span>
+            <div className="mt-7 ml-5 inline-flex items-baseline gap-2.5 rounded-2xl border border-black/5 bg-white/70 px-4 py-3 shadow-sm sm:mt-9 sm:ml-8 sm:gap-3 sm:px-5 sm:py-3.5 lg:ml-12">
+              <span className={cn("text-[2rem] font-bold leading-none tabular-nums sm:text-[2.35rem] lg:text-[2.75rem]", c.highlightClass)}>
+                {content.stat.value}
+              </span>
+              <span className="pb-0.5 text-sm text-zinc-500 sm:text-base">{content.stat.label}</span>
             </div>
           </motion.div>
         </AnimatePresence>
