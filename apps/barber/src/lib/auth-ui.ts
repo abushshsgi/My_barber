@@ -130,9 +130,16 @@ export function validateLogin(values: { email: string; password: string }): stri
 
 export function validateSignupIdentity(values: SignupIdentity): string | null {
   if (!values.fullName.trim()) return "Ism-familiya kiriting.";
-  const phoneErr = validateUzPhoneField(values.phone);
-  if (phoneErr) return phoneErr;
-  if (!looksLikeEmail(values.email)) return "Email noto'g'ri.";
+  const hasEmail = values.email.trim().length > 0;
+  const hasPhone = values.phone.trim().length > 0;
+  if (!hasEmail && !hasPhone) return "Email yoki telefon kiriting — kamida bittasi.";
+  if (hasPhone) {
+    const phoneErr = validateUzPhoneField(values.phone);
+    if (phoneErr) return phoneErr;
+  }
+  if (hasEmail) {
+    if (!looksLikeEmail(values.email)) return "Email noto'g'ri.";
+  }
   const pwdErr = validatePasswordPolicy(values.password);
   if (pwdErr) return pwdErr;
   return null;

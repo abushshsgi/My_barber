@@ -23,7 +23,7 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
 
 export function SignupStepReview({ name, phone, email, flow }: Props) {
   const meta = FLOW_IDENTITY_META[flow];
-  const phoneDisplay = formatUzPhoneDisplay(phone);
+  const phoneDisplay = phone.trim() ? formatUzPhoneDisplay(phone) : "";
 
   return (
     <div className="space-y-3">
@@ -40,8 +40,8 @@ export function SignupStepReview({ name, phone, email, flow }: Props) {
 
         <div className="px-4">
           <ReviewRow label="Ism" value={name.trim()} />
-          <ReviewRow label="Telefon" value={phoneDisplay} />
-          <ReviewRow label="Email" value={email.trim()} />
+          {phoneDisplay ? <ReviewRow label="Telefon" value={phoneDisplay} /> : null}
+          {email.trim() ? <ReviewRow label="Email" value={email.trim()} /> : null}
         </div>
       </div>
 

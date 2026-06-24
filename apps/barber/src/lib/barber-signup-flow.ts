@@ -46,7 +46,7 @@ export function validateCoordinates(latitude: string, longitude: string): string
 
 async function registerAndStoreTokens(
   body: Record<string, unknown>,
-  email: string,
+  login: { email?: string; phone?: string },
   password: string,
 ): Promise<void> {
   const registerRes = await apiFetch("/api/v1/auth/barber-register/", {
@@ -70,7 +70,11 @@ async function registerAndStoreTokens(
   if (!access || !refresh) {
     const loginRes = await apiFetch("/api/v1/barber/auth/token/", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(
+        login.phone
+          ? { phone: login.phone, password }
+          : { email: login.email, password },
+      ),
     });
     const loginBody = await parseJsonSafe(loginRes);
     if (!loginRes.ok) throw new Error(extractApiError(loginBody, "Login amalga oshmadi.", loginRes));
@@ -88,18 +92,19 @@ export async function submitEarlyFlowSignup(flow: SignupFlow, draft: SignupDraft
   if (flow === "employee") {
     throw new Error("Employee oqimi salonga qo'shilishda register qilinadi.");
   }
-  const email = normalizeEmail(draft.email);
+  const email = draft.email.trim() ? normalizeEmail(draft.email) : "";
+  const phoneE164 = draft.phone?.trim() ? draft.phone.trim() : "";
   const flowFields = deriveFlowFields(flow);
   await registerAndStoreTokens(
     {
-      email,
+      ...(email ? { email } : {}),
+      ...(phoneE164 ? { phone: phoneE164 } : {}),
       password: draft.password,
       full_name: draft.full_name.trim(),
-      phone: draft.phone?.trim() || undefined,
       onboarding_flow: flow,
       ...flowFields,
     },
-    email,
+    phoneE164 ? { phone: phoneE164 } : { email },
     draft.password,
   );
 }
@@ -115,14 +120,15 @@ export async function submitFlowSignup(flow: SignupFlow, payload: FlowPayload): 
   if (!draft || !password) throw new Error("Signup ma'lumoti topilmadi. Qaytadan boshlang.");
 
   const flowFields = deriveFlowFields(flow);
-  const email = normalizeEmail(draft.email);
+  const email = draft.email.trim() ? normalizeEmail(draft.email) : "";
+  const phoneE164 = draft.phone?.trim() || "";
 
   const { latitude, longitude, full_name, phone, ...payloadRest } = payload;
   const registerBody: Record<string, unknown> = {
-    email,
+    ...(email ? { email } : {}),
+    ...(phoneE164 || phone?.trim() ? { phone: phone?.trim() || phoneE164 } : {}),
     password,
     full_name: full_name?.trim() || draft.full_name,
-    phone: phone?.trim() || draft.phone || undefined,
     onboarding_flow: flow,
     ...flowFields,
     ...payloadRest,
@@ -132,7 +138,11 @@ export async function submitFlowSignup(flow: SignupFlow, payload: FlowPayload): 
     registerBody.longitude = roundCoord6(longitude);
   }
 
-  await registerAndStoreTokens(registerBody, email, password);
+  await registerAndStoreTokens(
+    registerBody,
+    phoneE164 || phone?.trim() ? { phone: phone?.trim() || phoneE164 } : { email },
+    password,
+  );
 }
 
 /** Employee: draft + salon tanlash + GPS — backendda register va join bitta tranzaksiya. */
@@ -146,14 +156,15 @@ export async function submitEmployeeRegisterAndJoin(payload: {
   if (!draft || !password || draft.flow !== "employee") {
     throw new Error("Signup ma'lumoti topilmadi yoki bu oqim employee uchun emas.");
   }
-  const email = normalizeEmail(draft.email);
+  const email = draft.email.trim() ? normalizeEmail(draft.email) : "";
+  const phoneE164 = draft.phone?.trim() || "";
   const res = await apiFetch("/api/v1/auth/barber-register-join-salon/", {
     method: "POST",
     body: JSON.stringify({
-      email,
+      ...(email ? { email } : {}),
+      ...(phoneE164 ? { phone: phoneE164 } : {}),
       password,
       full_name: draft.full_name,
-      phone: draft.phone || "",
       salon_id: payload.salon_id,
       latitude: roundCoord6(payload.latitude),
       longitude: roundCoord6(payload.longitude),

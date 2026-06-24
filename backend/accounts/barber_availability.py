@@ -40,10 +40,10 @@ class BarberCheckAvailabilityView(APIView):
 
     def post(self, request):
         email = (request.data.get("email") or "").strip()
-        phone = request.data.get("phone") or ""
+        phone = (request.data.get("phone") or "").strip()
 
         email_ok, email_hint = check_barber_email_available(email) if email else (True, None)
-        phone_ok, phone_hint = check_barber_phone_available(phone)
+        phone_ok, phone_hint = check_barber_phone_available(phone) if phone else (True, None)
 
         hints: list[str] = []
         if email_hint:

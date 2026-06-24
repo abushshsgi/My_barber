@@ -96,19 +96,39 @@ function AuthPage() {
   };
 
   const runAvailabilityCheck = useCallback(async (email: string, phone: string) => {
-    const formatErr = validateEmailField(email);
-    if (formatErr) {
-      setEmailError(formatErr);
+    const hasEmail = email.trim().length > 0;
+    const hasPhone = phone.trim().length > 0;
+    if (!hasEmail && !hasPhone) {
+      setEmailError("Email yoki telefon kiriting.");
       return false;
     }
-    const phoneFormatErr = validateUzPhoneField(phone);
-    if (phoneFormatErr) {
-      setPhoneError(phoneFormatErr);
-      return false;
+
+    if (hasEmail) {
+      const formatErr = validateEmailField(email);
+      if (formatErr) {
+        setEmailError(formatErr);
+        return false;
+      }
+    } else {
+      setEmailError(null);
     }
+
+    if (hasPhone) {
+      const phoneFormatErr = validateUzPhoneField(phone);
+      if (phoneFormatErr) {
+        setPhoneError(phoneFormatErr);
+        return false;
+      }
+    } else {
+      setPhoneError(null);
+    }
+
     setCheckingAvailability(true);
     try {
-      const result = await checkBarberAvailability({ email, phone });
+      const result = await checkBarberAvailability({
+        email: hasEmail ? email : undefined,
+        phone: hasPhone ? phone : undefined,
+      });
       setEmailError(result.emailError);
       setPhoneError(result.phoneError);
       return !result.emailError && !result.phoneError;
@@ -140,11 +160,11 @@ function AuthPage() {
     const available = await runAvailabilityCheck(signupEmail, signupPhone);
     if (!available) return;
 
-    const phoneE164 = formatUzPhoneE164(signupPhone);
+    const phoneE164 = signupPhone.trim() ? formatUzPhoneE164(signupPhone) : "";
     const draft = {
       full_name: signupName.trim(),
       phone: phoneE164,
-      email: normalizeEmail(signupEmail),
+      email: signupEmail.trim() ? normalizeEmail(signupEmail) : "",
       password: signupPassword,
       flow,
     };
@@ -170,6 +190,7 @@ function AuthPage() {
   const handleEmailBlur = async () => {
     if (!signupEmail.trim()) {
       setEmailError(null);
+      if (signupPhone.trim()) await runAvailabilityCheck(signupEmail, signupPhone);
       return;
     }
     const formatErr = validateEmailField(signupEmail);
@@ -182,7 +203,8 @@ function AuthPage() {
 
   const handlePhoneBlur = async () => {
     if (!signupPhone.trim()) {
-      setPhoneError("Telefon raqami majburiy.");
+      setPhoneError(null);
+      if (signupEmail.trim()) await runAvailabilityCheck(signupEmail, signupPhone);
       return;
     }
     const formatErr = validateUzPhoneField(signupPhone);
@@ -277,14 +299,18 @@ function AuthPage() {
                 onSubmit={onSignupSubmit}
                 onClearError={() => setError(null)}
                 onStep1Next={async () => {
-                  const formatErr = validateEmailField(signupEmail);
-                  if (formatErr) {
-                    setEmailError(formatErr);
-                    return false;
-                  }
-                  const phoneErr = validateUzPhoneField(signupPhone);
-                  if (phoneErr) {
-                    setPhoneError(phoneErr);
+                  const validation = validateSignupIdentity({
+                    fullName: signupName,
+                    phone: signupPhone,
+                    email: signupEmail,
+                    password: signupPassword,
+                    flow: flow ?? "owner",
+                  });
+                  if (validation) {
+                    if (validation.includes("Email")) setEmailError(validation);
+                    else if (validation.includes("telefon") || validation.includes("Telefon"))
+                      setPhoneError(validation);
+                    else setError(validation);
                     return false;
                   }
                   return runAvailabilityCheck(signupEmail, signupPhone);

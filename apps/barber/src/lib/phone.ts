@@ -1,26 +1,11 @@
 const UZ_LOCAL_SEGMENTS = [2, 3, 2, 2] as const;
 
-/** +998 dan keyingi 2 xonali operator kodlari */
-const UZ_MOBILE_PREFIXES = new Set([
-  "20",
-  "22",
-  "33",
-  "50",
-  "77",
-  "78",
-  "88",
-  "90",
-  "91",
-  "93",
-  "94",
-  "95",
-  "97",
-  "98",
-  "99",
-]);
-
 export function parseUzLocalPhone(value: string): string {
-  return value.replace(/\D/g, "").slice(0, 9);
+  let digits = value.replace(/\D/g, "");
+  if (digits.startsWith("998") && digits.length >= 12) {
+    digits = digits.slice(3);
+  }
+  return digits.slice(0, 9);
 }
 
 export function formatUzLocalPhone(digits: string): string {
@@ -50,16 +35,13 @@ export function formatUzPhoneE164(raw: string): string {
 }
 
 export function isValidUzLocalPhone(digits: string): boolean {
-  const d = parseUzLocalPhone(digits);
-  if (d.length !== 9) return false;
-  return UZ_MOBILE_PREFIXES.has(d.slice(0, 2));
+  return parseUzLocalPhone(digits).length === 9;
 }
 
 export function validateUzPhoneField(raw: string): string | null {
   const digits = parseUzLocalPhone(raw);
   if (!digits) return "Telefon raqami majburiy.";
-  if (digits.length < 9) return "Telefon 9 ta raqamdan iborat bo'lishi kerak.";
-  if (!isValidUzLocalPhone(digits)) return "O'zbekiston mobil raqami kiriting.";
+  if (digits.length < 9) return "Telefon 9 ta raqamdan iborat bo'lishi kerak (+998 dan keyin).";
   return null;
 }
 

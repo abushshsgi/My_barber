@@ -60,7 +60,6 @@ export function SignupStepIdentity({
           onChange={onPhoneChange}
           error={phoneError}
           onBlur={onPhoneBlur}
-          required
         />
       ),
     },
@@ -75,7 +74,6 @@ export function SignupStepIdentity({
           onBlur={onEmailBlur}
           type="email"
           autoComplete="email"
-          required
           error={emailError}
         />
       ),
@@ -101,7 +99,7 @@ export function SignupStepIdentity({
       <div>
         <h2 className="text-lg font-semibold tracking-tight">Shaxsiy ma'lumotlar</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Email, telefon va parol — faqat sizning akkauntingiz uchun. Telefon boshqa barberda ishlatilmaydi.
+          Email yoki telefon — kamida bittasi. Parol faqat sizning akkauntingiz uchun.
         </p>
         {checkingAvailability && (
           <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground">

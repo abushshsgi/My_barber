@@ -4,7 +4,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from accounts.barber_signup_service import create_barber_with_flow
-from accounts.phone_validation import validate_uz_mobile_phone
+from accounts.phone_validation import resolve_barber_signup_contact, validate_uz_mobile_phone
 from accounts.password_policy import validate_barber_password
 from barbers.models import Barber
 from salons.geo_join import assert_join_distance_ok
@@ -242,8 +242,8 @@ class BarberSignupSerializer(serializers.Serializer):
     has_salon=False: salon egasi, MyBarber yoki mustaqil barber — keyingi qadamlar UI bo‘yicha.
     """
 
-    email = serializers.EmailField()
-    phone = serializers.CharField()
+    email = serializers.EmailField(required=False, allow_blank=True, default="")
+    phone = serializers.CharField(required=False, allow_blank=True, default="")
     password = serializers.CharField(
         write_only=True,
         min_length=8,
@@ -290,6 +290,8 @@ class BarberSignupSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         v = (value or "").strip().lower()
+        if not v:
+            return ""
         if User.objects.filter(email__iexact=v).exists():
             raise serializers.ValidationError(
                 "Bu email allaqachon mijoz sifatida ro'yxatdan o'tgan."
@@ -301,6 +303,8 @@ class BarberSignupSerializer(serializers.Serializer):
         return v
 
     def validate_phone(self, value):
+        if not (value or "").strip():
+            return ""
         normalized, err = validate_uz_mobile_phone(value)
         if err:
             raise serializers.ValidationError(err)
@@ -316,6 +320,15 @@ class BarberSignupSerializer(serializers.Serializer):
         return normalized
 
     def validate(self, attrs):
+        resolved_email, resolved_phone, contact_err = resolve_barber_signup_contact(
+            attrs.get("email"),
+            attrs.get("phone"),
+        )
+        if contact_err:
+            raise serializers.ValidationError({"detail": contact_err})
+        attrs["email"] = resolved_email
+        attrs["phone"] = resolved_phone
+
         flow = (attrs.get("onboarding_flow") or "").strip()
         lat_raw = attrs.get("latitude")
         lng_raw = attrs.get("longitude")
@@ -387,8 +400,8 @@ class BarberRegisterJoinSalonSerializer(serializers.Serializer):
     Bitta so‘rovda barber yaratiladi, 100 m tekshiriladi va ACTIVE membership bog‘lanadi.
     """
 
-    email = serializers.EmailField()
-    phone = serializers.CharField()
+    email = serializers.EmailField(required=False, allow_blank=True, default="")
+    phone = serializers.CharField(required=False, allow_blank=True, default="")
     password = serializers.CharField(
         write_only=True,
         min_length=8,
@@ -409,6 +422,8 @@ class BarberRegisterJoinSalonSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         v = (value or "").strip().lower()
+        if not v:
+            return ""
         if User.objects.filter(email__iexact=v).exists():
             raise serializers.ValidationError(
                 "Bu email allaqachon mijoz sifatida ro'yxatdan o'tgan."
@@ -420,6 +435,8 @@ class BarberRegisterJoinSalonSerializer(serializers.Serializer):
         return v
 
     def validate_phone(self, value):
+        if not (value or "").strip():
+            return ""
         normalized, err = validate_uz_mobile_phone(value)
         if err:
             raise serializers.ValidationError(err)
@@ -433,6 +450,15 @@ class BarberRegisterJoinSalonSerializer(serializers.Serializer):
         return normalized
 
     def validate(self, attrs):
+        resolved_email, resolved_phone, contact_err = resolve_barber_signup_contact(
+            attrs.get("email"),
+            attrs.get("phone"),
+        )
+        if contact_err:
+            raise serializers.ValidationError({"detail": contact_err})
+        attrs["email"] = resolved_email
+        attrs["phone"] = resolved_phone
+
         salon = get_object_or_404(
             Salon.objects.filter(is_published=True).select_related("owner_barber"),
             pk=int(attrs["salon_id"]),

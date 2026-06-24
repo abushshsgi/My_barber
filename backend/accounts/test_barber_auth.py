@@ -90,12 +90,34 @@ class BarberAuthIntegrationTests(TestCase):
         self.assertFalse(body["phone_available"])
         self.assertTrue(len(body["hints"]) >= 1)
 
-    def test_register_without_phone_returns_400(self):
+    def test_register_email_only_without_phone(self):
+        payload = self._register_payload("owner", "emailonly@test.com")
+        payload["phone"] = ""
+        res = self.client.post("/api/v1/auth/barber-register/", payload, format="json")
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()["barber"]["email"], "emailonly@test.com")
+
+    def test_register_phone_only_without_email(self):
+        res = self.client.post(
+            "/api/v1/auth/barber-register/",
+            {
+                "password": "Secret123",
+                "full_name": "Phone Only",
+                "phone": "+998651234567",
+                "onboarding_flow": "mybarber",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, 201)
+        barber = Barber.objects.get(phone="+998651234567")
+        self.assertTrue(barber.email.endswith("@phone.mysaloon.local"))
+
+    def test_register_without_email_or_phone_returns_400(self):
         payload = self._register_payload("owner", "nophone@test.com")
+        payload["email"] = ""
         payload["phone"] = ""
         res = self.client.post("/api/v1/auth/barber-register/", payload, format="json")
         self.assertEqual(res.status_code, 400)
-        self.assertIn("phone", res.json())
 
     def test_register_duplicate_phone_returns_400(self):
         self.client.post(

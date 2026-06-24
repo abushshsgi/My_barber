@@ -66,7 +66,7 @@ def _persist(validated_data: dict[str, Any]) -> Barber:
 
     pwd = validated_data.pop("password")
     email = validated_data.pop("email")
-    phone = normalize_phone_field(validated_data.pop("phone", "") or "")
+    phone = normalize_phone_field(validated_data.pop("phone", "") or "") or None
     full_name = validated_data.pop("full_name")
     has_salon = bool(validated_data.pop("has_salon"))
     latitude = validated_data.pop("latitude", None)

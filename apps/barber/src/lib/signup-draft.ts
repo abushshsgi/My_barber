@@ -44,7 +44,8 @@ export function readSignupDraft(): SignupDraft | null {
   try {
     const parsed = JSON.parse(raw) as SignupDraftStored;
     const password = getSignupPassword();
-    if (!parsed.email || !password || !parsed.full_name || !parsed.flow || !parsed.phone) return null;
+    if (!parsed.full_name || !parsed.flow || !password) return null;
+    if (!parsed.email && !parsed.phone) return null;
     return { ...parsed, password };
   } catch {
     return null;
