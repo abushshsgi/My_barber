@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import User
-from accounts.phone_utils import normalize_phone_field
+from accounts.phone_validation import validate_uz_mobile_phone
 from accounts.throttles import AuthIPThrottle
 from barbers.barber_auth import encode_barber_tokens, validate_and_rotate_barber_refresh
 from barbers.barber_email import send_barber_email_verification_with_timeout
@@ -43,9 +43,14 @@ class BarberTokenView(APIView):
     throttle_classes = [AuthIPThrottle]
 
     def post(self, request):
-        email = (request.data.get("email") or "").strip().lower()
+        identifier = (request.data.get("email") or request.data.get("phone") or "").strip()
         password = request.data.get("password") or ""
-        if email:
+        if not identifier or not password:
+            return Response({"detail": "Email/telefon va parol kiriting."}, status=400)
+
+        barber: Barber | None = None
+        if "@" in identifier:
+            email = identifier.lower()
             has_user = User.objects.filter(email__iexact=email).exists()
             has_barber = Barber.objects.filter(email__iexact=email).exists()
             if has_user and not has_barber:
@@ -55,11 +60,18 @@ class BarberTokenView(APIView):
                     },
                     status=401,
                 )
-        b = Barber.objects.filter(email__iexact=email, is_active=True).first()
-        if not b or not b.check_password(password):
-            return Response({"detail": "Noto‘g‘ri email yoki parol."}, status=401)
-        access, refresh = encode_barber_tokens(b.id)
-        Barber.objects.filter(pk=b.pk).update(last_login=timezone.now())
+            barber = Barber.objects.filter(email__iexact=email, is_active=True).first()
+        else:
+            normalized, err = validate_uz_mobile_phone(identifier)
+            if err:
+                return Response({"detail": err}, status=400)
+            assert normalized is not None
+            barber = Barber.objects.filter(phone=normalized, is_active=True).first()
+
+        if not barber or not barber.check_password(password):
+            return Response({"detail": "Noto'g'ri email/telefon yoki parol."}, status=401)
+        access, refresh = encode_barber_tokens(barber.id)
+        Barber.objects.filter(pk=barber.pk).update(last_login=timezone.now())
         return Response({"access": access, "refresh": refresh})
 
 
@@ -190,17 +202,19 @@ class BarberMeView(APIView):
         if full_name is not None:
             b.full_name = str(full_name).strip()
         if phone is not None:
-            normalized = normalize_phone_field(str(phone).strip())
-            if normalized:
-                if User.objects.filter(phone=normalized).exists():
-                    raise ValidationError({"phone": "Bu telefon mijoz akkauntida band."})
-                if (
-                    Barber.objects.filter(phone=normalized)
-                    .exclude(pk=b.pk)
-                    .exists()
-                ):
-                    raise ValidationError({"phone": "Bu telefon sartarosh akkauntida band."})
-            b.phone = normalized or None
+            normalized, err = validate_uz_mobile_phone(str(phone).strip())
+            if err:
+                raise ValidationError({"phone": err})
+            assert normalized is not None
+            if User.objects.filter(phone=normalized).exists():
+                raise ValidationError({"phone": "Bu telefon mijoz akkauntida band."})
+            if (
+                Barber.objects.filter(phone=normalized)
+                .exclude(pk=b.pk)
+                .exists()
+            ):
+                raise ValidationError({"phone": "Bu telefon boshqa sartaroshda band."})
+            b.phone = normalized
         if region is not None:
             b.region = str(region).strip()
         avatar = request.FILES.get("avatar")

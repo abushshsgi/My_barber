@@ -55,7 +55,11 @@ export async function checkBarberAvailability(input: {
     emailError = hints.find((h) => h.toLowerCase().includes("email")) ?? "Email band.";
   }
   if (input.phone && data.phone_available === false) {
-    phoneError = hints.find((h) => h.toLowerCase().includes("telefon")) ?? "Telefon band.";
+    phoneError =
+      hints.find((h) => h.toLowerCase().includes("telefon")) ??
+      "Bu telefon boshqa akkauntda band.";
+  } else if (input.phone && !data.phone_available && hints.length) {
+    phoneError = hints.find((h) => !h.toLowerCase().includes("email")) ?? hints[0] ?? null;
   }
   return { emailError, phoneError };
 }

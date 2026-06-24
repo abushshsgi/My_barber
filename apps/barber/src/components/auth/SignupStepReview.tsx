@@ -23,7 +23,7 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
 
 export function SignupStepReview({ name, phone, email, flow }: Props) {
   const meta = FLOW_IDENTITY_META[flow];
-  const phoneDisplay = phone ? formatUzPhoneDisplay(phone) : "Kiritilmagan";
+  const phoneDisplay = formatUzPhoneDisplay(phone);
 
   return (
     <div className="space-y-3">

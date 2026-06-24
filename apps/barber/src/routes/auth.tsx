@@ -22,7 +22,7 @@ import {
 } from "@/lib/auth-ui";
 import { SIGNUP_FLOW_PATH } from "@/lib/barber-flow-config";
 import { tabSlide } from "@/lib/motion-presets";
-import { formatUzPhoneE164 } from "@/lib/phone";
+import { formatUzPhoneE164, looksLikeLoginEmail, validateUzPhoneField } from "@/lib/phone";
 import { saveSignupDraft } from "@/lib/signup-draft";
 import { cn } from "@/lib/utils";
 
@@ -62,11 +62,18 @@ function AuthPage() {
       return;
     }
     const email = normalizeEmail(loginEmail);
+    const loginId = looksLikeLoginEmail(loginEmail.trim())
+      ? email
+      : formatUzPhoneE164(loginEmail);
     setLoadingLogin(true);
     try {
       const res = await apiFetch("/api/v1/barber/auth/token/", {
         method: "POST",
-        body: JSON.stringify({ email, password: loginPassword }),
+        body: JSON.stringify(
+          looksLikeLoginEmail(loginEmail.trim())
+            ? { email: loginId, password: loginPassword }
+            : { phone: loginId, password: loginPassword },
+        ),
       });
       const body = await parseJsonSafe(res);
       if (!res.ok) {
@@ -92,6 +99,11 @@ function AuthPage() {
     const formatErr = validateEmailField(email);
     if (formatErr) {
       setEmailError(formatErr);
+      return false;
+    }
+    const phoneFormatErr = validateUzPhoneField(phone);
+    if (phoneFormatErr) {
+      setPhoneError(phoneFormatErr);
       return false;
     }
     setCheckingAvailability(true);
@@ -128,10 +140,10 @@ function AuthPage() {
     const available = await runAvailabilityCheck(signupEmail, signupPhone);
     if (!available) return;
 
-    const phoneE164 = signupPhone ? formatUzPhoneE164(signupPhone) : undefined;
+    const phoneE164 = formatUzPhoneE164(signupPhone);
     const draft = {
       full_name: signupName.trim(),
-      phone: phoneE164 || undefined,
+      phone: phoneE164,
       email: normalizeEmail(signupEmail),
       password: signupPassword,
       flow,
@@ -170,7 +182,12 @@ function AuthPage() {
 
   const handlePhoneBlur = async () => {
     if (!signupPhone.trim()) {
-      setPhoneError(null);
+      setPhoneError("Telefon raqami majburiy.");
+      return;
+    }
+    const formatErr = validateUzPhoneField(signupPhone);
+    if (formatErr) {
+      setPhoneError(formatErr);
       return;
     }
     await runAvailabilityCheck(signupEmail, signupPhone);
@@ -263,6 +280,11 @@ function AuthPage() {
                   const formatErr = validateEmailField(signupEmail);
                   if (formatErr) {
                     setEmailError(formatErr);
+                    return false;
+                  }
+                  const phoneErr = validateUzPhoneField(signupPhone);
+                  if (phoneErr) {
+                    setPhoneError(phoneErr);
                     return false;
                   }
                   return runAvailabilityCheck(signupEmail, signupPhone);

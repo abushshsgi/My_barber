@@ -17,12 +17,12 @@ class BarberAuthIntegrationTests(TestCase):
     def setUp(self):
         self.client = APIClient()
 
-    def _register_payload(self, flow: str, email: str = "owner@test.com"):
+    def _register_payload(self, flow: str, email: str = "owner@test.com", phone: str = "+998901234567"):
         return {
             "email": email,
             "password": "Secret123",
             "full_name": "Test Owner",
-            "phone": "",
+            "phone": phone,
             "onboarding_flow": flow,
         }
 
@@ -55,7 +55,7 @@ class BarberAuthIntegrationTests(TestCase):
     def test_login_success_and_wrong_password(self):
         self.client.post(
             "/api/v1/auth/barber-register/",
-            self._register_payload("independent", "login@test.com"),
+            self._register_payload("independent", "login@test.com", "+998902345678"),
             format="json",
         )
         ok = self.client.post(
@@ -76,18 +76,54 @@ class BarberAuthIntegrationTests(TestCase):
     def test_check_availability(self):
         self.client.post(
             "/api/v1/auth/barber-register/",
-            self._register_payload("owner", "avail@test.com"),
+            self._register_payload("owner", "avail@test.com", "+998901112233"),
             format="json",
         )
         res = self.client.post(
             "/api/v1/auth/barber-check-availability/",
-            {"email": "avail@test.com"},
+            {"email": "avail@test.com", "phone": "+998901112233"},
             format="json",
         )
         self.assertEqual(res.status_code, 200)
         body = res.json()
         self.assertFalse(body["email_available"])
+        self.assertFalse(body["phone_available"])
         self.assertTrue(len(body["hints"]) >= 1)
+
+    def test_register_without_phone_returns_400(self):
+        payload = self._register_payload("owner", "nophone@test.com")
+        payload["phone"] = ""
+        res = self.client.post("/api/v1/auth/barber-register/", payload, format="json")
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("phone", res.json())
+
+    def test_register_duplicate_phone_returns_400(self):
+        self.client.post(
+            "/api/v1/auth/barber-register/",
+            self._register_payload("owner", "phone1@test.com", "+998901223344"),
+            format="json",
+        )
+        res = self.client.post(
+            "/api/v1/auth/barber-register/",
+            self._register_payload("mybarber", "phone2@test.com", "+998901223344"),
+            format="json",
+        )
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("phone", res.json())
+
+    def test_login_with_phone(self):
+        self.client.post(
+            "/api/v1/auth/barber-register/",
+            self._register_payload("independent", "phone-login@test.com", "+998909887766"),
+            format="json",
+        )
+        ok = self.client.post(
+            "/api/v1/barber/auth/token/",
+            {"phone": "+998909887766", "password": "Secret123"},
+            format="json",
+        )
+        self.assertEqual(ok.status_code, 200)
+        self.assertTrue(ok.json().get("access"))
 
     def test_join_unpublished_salon_returns_404(self):
         barber = Barber.objects.create(
@@ -117,7 +153,7 @@ class BarberAuthIntegrationTests(TestCase):
         self.assertEqual(res.status_code, 404)
 
     def test_weak_password_rejected(self):
-        payload = self._register_payload("owner", "weak@test.com")
+        payload = self._register_payload("owner", "weak@test.com", "+998903456789")
         payload["password"] = "short"
         res = self.client.post("/api/v1/auth/barber-register/", payload, format="json")
         self.assertEqual(res.status_code, 400)
@@ -125,7 +161,7 @@ class BarberAuthIntegrationTests(TestCase):
     def test_refresh_rotation_invalidates_old_token(self):
         reg = self.client.post(
             "/api/v1/auth/barber-register/",
-            self._register_payload("owner", "refresh@test.com"),
+            self._register_payload("owner", "refresh@test.com", "+998904567890"),
             format="json",
         )
         old_refresh = reg.json()["refresh"]

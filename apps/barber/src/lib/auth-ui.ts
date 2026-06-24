@@ -19,6 +19,7 @@ import {
   formatApiErrorBody,
   formatHttpApiError,
 } from "@/lib/http-errors";
+import { looksLikeLoginEmail, validateUzPhoneField } from "@/lib/phone";
 
 export function extractApiError(
   body: unknown,
@@ -109,19 +110,28 @@ export function normalizeEmail(raw: string): string {
   return raw.trim().toLowerCase();
 }
 
-export function validateLogin(values: { email: string; password: string }): string | null {
-  if (!looksLikeEmail(values.email)) return "Email noto'g'ri.";
-  if (!values.password) return "Parol kiriting.";
-  return null;
-}
-
 export function validatePasswordPolicy(password: string): string | null {
   if (password.length < 8) return "Parol kamida 8 ta belgi bo'lishi kerak.";
   return null;
 }
 
+export function validateLogin(values: { email: string; password: string }): string | null {
+  const id = values.email.trim();
+  if (!id) return "Email yoki telefon kiriting.";
+  if (looksLikeLoginEmail(id)) {
+    if (!looksLikeEmail(id)) return "Email noto'g'ri.";
+  } else {
+    const phoneErr = validateUzPhoneField(id);
+    if (phoneErr) return phoneErr;
+  }
+  if (!values.password) return "Parol kiriting.";
+  return null;
+}
+
 export function validateSignupIdentity(values: SignupIdentity): string | null {
   if (!values.fullName.trim()) return "Ism-familiya kiriting.";
+  const phoneErr = validateUzPhoneField(values.phone);
+  if (phoneErr) return phoneErr;
   if (!looksLikeEmail(values.email)) return "Email noto'g'ri.";
   const pwdErr = validatePasswordPolicy(values.password);
   if (pwdErr) return pwdErr;

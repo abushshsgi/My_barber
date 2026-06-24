@@ -4,7 +4,7 @@ const DRAFT_KEY = "barber_signup_draft_v1";
 
 export type SignupDraftStored = {
   full_name: string;
-  phone?: string;
+  phone: string;
   email: string;
   flow: SignupFlow;
 };
@@ -44,7 +44,7 @@ export function readSignupDraft(): SignupDraft | null {
   try {
     const parsed = JSON.parse(raw) as SignupDraftStored;
     const password = getSignupPassword();
-    if (!parsed.email || !password || !parsed.full_name || !parsed.flow) return null;
+    if (!parsed.email || !password || !parsed.full_name || !parsed.flow || !parsed.phone) return null;
     return { ...parsed, password };
   } catch {
     return null;

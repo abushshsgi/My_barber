@@ -9,9 +9,10 @@ type Props = {
   onChange: (v: string) => void;
   error?: string | null;
   onBlur?: () => void;
+  required?: boolean;
 };
 
-export function FloatingPhoneInput({ id, label, value, onChange, error, onBlur }: Props) {
+export function FloatingPhoneInput({ id, label, value, onChange, error, onBlur, required }: Props) {
   const digits = parseUzLocalPhone(value);
   const display = formatUzLocalPhone(digits);
   const has = display.length > 0;
@@ -49,6 +50,7 @@ export function FloatingPhoneInput({ id, label, value, onChange, error, onBlur }
             )}
           >
             {label}
+            {required ? " *" : ""}
           </label>
         </div>
       </div>

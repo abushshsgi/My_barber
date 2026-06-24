@@ -35,11 +35,11 @@ export function AuthLoginForm({
     <form id={AUTH_LOGIN_FORM_ID} onSubmit={onSubmit} className="space-y-3.5">
       <FloatingInput
         id="login-email"
-        label="Email"
+        label="Email yoki telefon"
         value={email}
         onChange={onEmailChange}
-        type="email"
-        autoComplete="email"
+        type="text"
+        autoComplete="username"
         required
         error={emailError ?? undefined}
       />

@@ -4,7 +4,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.phone_utils import normalize_phone_field
+from accounts.phone_validation import validate_uz_mobile_phone
 from accounts.throttles import BarberCheckThrottle
 from barbers.models import Barber
 
@@ -23,13 +23,14 @@ def check_barber_email_available(email: str) -> tuple[bool, str | None]:
 
 
 def check_barber_phone_available(phone: str) -> tuple[bool, str | None]:
-    v = normalize_phone_field(phone)
-    if not v:
-        return True, None
-    if User.objects.filter(phone=v).exists():
-        return False, "Bu telefon mijoz akkauntida band."
-    if Barber.objects.filter(phone=v).exists():
-        return False, "Bu telefon sartarosh akkauntida band."
+    normalized, err = validate_uz_mobile_phone(phone)
+    if err:
+        return False, err
+    assert normalized is not None
+    if User.objects.filter(phone=normalized).exists():
+        return False, "Bu telefon mijoz akkauntida band — boshqa raqam kiriting."
+    if Barber.objects.filter(phone=normalized).exists():
+        return False, "Bu telefon boshqa sartaroshda ro'yxatdan o'tgan."
     return True, None
 
 

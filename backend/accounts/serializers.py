@@ -4,6 +4,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from accounts.barber_signup_service import create_barber_with_flow
+from accounts.phone_validation import validate_uz_mobile_phone
 from accounts.password_policy import validate_barber_password
 from barbers.models import Barber
 from salons.geo_join import assert_join_distance_ok
@@ -242,7 +243,7 @@ class BarberSignupSerializer(serializers.Serializer):
     """
 
     email = serializers.EmailField()
-    phone = serializers.CharField(required=False, allow_blank=True)
+    phone = serializers.CharField()
     password = serializers.CharField(
         write_only=True,
         min_length=8,
@@ -300,14 +301,19 @@ class BarberSignupSerializer(serializers.Serializer):
         return v
 
     def validate_phone(self, value):
-        value = normalize_phone_field(value)
-        if not value:
-            return ""
-        if User.objects.filter(phone=value).exists():
-            raise serializers.ValidationError("Bu telefon raqam allaqachon mijozda ro'yxatdan o'tgan.")
-        if Barber.objects.filter(phone=value).exists():
-            raise serializers.ValidationError("Bu telefon raqam allaqachon sartaroshda ro'yxatdan o'tgan.")
-        return value
+        normalized, err = validate_uz_mobile_phone(value)
+        if err:
+            raise serializers.ValidationError(err)
+        assert normalized is not None
+        if User.objects.filter(phone=normalized).exists():
+            raise serializers.ValidationError(
+                "Bu telefon raqam allaqachon mijozda ro'yxatdan o'tgan."
+            )
+        if Barber.objects.filter(phone=normalized).exists():
+            raise serializers.ValidationError(
+                "Bu telefon raqam boshqa sartaroshda ro'yxatdan o'tgan."
+            )
+        return normalized
 
     def validate(self, attrs):
         flow = (attrs.get("onboarding_flow") or "").strip()
@@ -382,7 +388,7 @@ class BarberRegisterJoinSalonSerializer(serializers.Serializer):
     """
 
     email = serializers.EmailField()
-    phone = serializers.CharField(required=False, allow_blank=True)
+    phone = serializers.CharField()
     password = serializers.CharField(
         write_only=True,
         min_length=8,
@@ -414,16 +420,17 @@ class BarberRegisterJoinSalonSerializer(serializers.Serializer):
         return v
 
     def validate_phone(self, value):
-        value = normalize_phone_field(value)
-        if not value:
-            return ""
-        if User.objects.filter(phone=value).exists():
+        normalized, err = validate_uz_mobile_phone(value)
+        if err:
+            raise serializers.ValidationError(err)
+        assert normalized is not None
+        if User.objects.filter(phone=normalized).exists():
             raise serializers.ValidationError("Bu telefon raqam allaqachon mijozda ro'yxatdan o'tgan.")
-        if Barber.objects.filter(phone=value).exists():
+        if Barber.objects.filter(phone=normalized).exists():
             raise serializers.ValidationError(
-                "Bu telefon raqam allaqachon sartaroshda ro'yxatdan o'tgan."
+                "Bu telefon raqam boshqa sartaroshda ro'yxatdan o'tgan."
             )
-        return value
+        return normalized
 
     def validate(self, attrs):
         salon = get_object_or_404(

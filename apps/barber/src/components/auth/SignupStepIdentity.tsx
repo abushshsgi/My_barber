@@ -55,11 +55,12 @@ export function SignupStepIdentity({
       node: (
         <FloatingPhoneInput
           id="signup-phone"
-          label="Telefon (ixtiyoriy)"
+          label="Telefon raqami"
           value={phone}
           onChange={onPhoneChange}
           error={phoneError}
           onBlur={onPhoneBlur}
+          required
         />
       ),
     },
@@ -100,7 +101,7 @@ export function SignupStepIdentity({
       <div>
         <h2 className="text-lg font-semibold tracking-tight">Shaxsiy ma'lumotlar</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Profil va kirish uchun asosiy ma'lumotlarni kiriting.
+          Email, telefon va parol — faqat sizning akkauntingiz uchun. Telefon boshqa barberda ishlatilmaydi.
         </p>
         {checkingAvailability && (
           <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
