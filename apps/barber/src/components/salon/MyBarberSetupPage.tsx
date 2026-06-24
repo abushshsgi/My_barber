@@ -456,7 +456,7 @@ export function MyBarberSetupPage() {
         {success && (
           <SuccessOverlay
             salonName={`MyBarber · ${firstName} ${lastName}`.trim()}
-            onContinue={() => void navigate({ to: "/barber" })}
+            onContinue={() => void finishOnboardingAndGo(navigate)}
           />
         )}
       </AnimatePresence>

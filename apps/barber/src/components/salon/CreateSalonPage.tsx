@@ -541,7 +541,7 @@ export function CreateSalonPage() {
             barberName={`${barberFirstName} ${barberLastName}`.trim()}
             onClose={() => {
               setSuccess(false);
-              void navigate({ to: "/barber" });
+              void finishOnboardingAndGo(navigate);
             }}
           />
         )}

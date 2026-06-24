@@ -8,7 +8,6 @@ import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { SignupWizard } from "@/components/auth/SignupWizard";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { apiFetch, setBarberTokens } from "@/lib/api";
-import { submitEarlyFlowSignup } from "@/lib/barber-signup-flow";
 import { checkBarberAvailability, parseFieldErrors } from "@/lib/auth-errors";
 import {
   extractApiError,
@@ -24,6 +23,7 @@ import { SIGNUP_FLOW_PATH } from "@/lib/barber-flow-config";
 import { tabSlide } from "@/lib/motion-presets";
 import { formatUzPhoneE164, looksLikeLoginEmail, validateUzPhoneField } from "@/lib/phone";
 import { saveSignupDraft } from "@/lib/signup-draft";
+import { resolveBarberEntryPath } from "@/lib/onboarding-redirect";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/auth")({
@@ -87,7 +87,8 @@ function AuthPage() {
       const data = body as { access?: string; refresh?: string };
       if (!data.access || !data.refresh) throw new Error("Token qaytmadi.");
       setBarberTokens(data.access, data.refresh);
-      await navigate({ to: "/barber" });
+      const next = await resolveBarberEntryPath();
+      await navigate({ to: next });
     } catch (err) {
       setError(formatFetchError(err, "Kirish amalga oshmadi."));
     } finally {
@@ -167,22 +168,8 @@ function AuthPage() {
       flow,
     };
 
-    if (flow === "employee") {
-      saveSignupDraft(draft);
-      await navigate({ to: SIGNUP_FLOW_PATH[flow] });
-      return;
-    }
-
-    setLoadingSignup(true);
-    try {
-      saveSignupDraft(draft);
-      await submitEarlyFlowSignup(flow, draft);
-      await navigate({ to: SIGNUP_FLOW_PATH[flow] });
-    } catch (err) {
-      setError(formatFetchError(err, "Ro'yxatdan o'tish amalga oshmadi."));
-    } finally {
-      setLoadingSignup(false);
-    }
+    saveSignupDraft(draft);
+    await navigate({ to: SIGNUP_FLOW_PATH[flow] });
   };
 
   const handleEmailBlur = async () => {

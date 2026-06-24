@@ -537,7 +537,7 @@ export function IndependentSetupPage() {
         {success && (
           <SuccessOverlay
             onClose={() => setSuccess(false)}
-            onContinue={() => void navigate({ to: "/barber" })}
+            onContinue={() => void finishOnboardingAndGo(navigate)}
           />
         )}
       </AnimatePresence>

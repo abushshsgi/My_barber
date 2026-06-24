@@ -14,6 +14,20 @@ if TYPE_CHECKING:
     from barbers.models import Barber
 
 MIN_ACTIVE_SERVICES = 5
+MIN_SETUP_SERVICES = 1
+
+
+def _barber_active_service_count(barber: Barber) -> int:
+    from barbers.models import BarberService
+
+    return BarberService.objects.filter(
+        profile__barber=barber,
+        is_active=True,
+    ).filter(Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True)).count()
+
+
+def _profile_location_text_ok(prof) -> bool:
+    return bool(prof and len((prof.location_text or "").strip()) >= 5)
 
 
 @dataclass(frozen=True)
@@ -116,18 +130,16 @@ def compute_barber_readiness(barber: Barber) -> ReadinessBreakdown:
         ).exists()
         schedule_ok = bool(has_work_hours_indep)
         services_ok = svc_count >= MIN_ACTIVE_SERVICES
+        setup_services = _barber_active_service_count(barber) >= MIN_SETUP_SERVICES
         if not has_location:
             required_next_path = "/independent/setup"
-        signup_complete = has_location
-
-    elif flow in ("owner", "mybarber") or (flow == "" and owns_salon):
-        if not owns_salon:
-            required_next_path = "/mybarber/setup" if flow == "mybarber" else "/salon/create"
-        elif not has_location:
-            required_next_path = "/mybarber/setup" if flow == "mybarber" else "/salon/create"
+        elif not setup_services or not has_work_hours_indep:
+            required_next_path = "/independent/setup"
         else:
             signup_complete = True
 
+    elif flow in ("owner", "mybarber") or (flow == "" and owns_salon):
+        setup_path = "/mybarber/setup" if flow == "mybarber" else "/salon/create"
         mem = owner_mem
         has_membership_hours = bool(
             mem and SalonWorkingHours.objects.filter(membership=mem, is_day_off=False).exists()
@@ -136,21 +148,33 @@ def compute_barber_readiness(barber: Barber) -> ReadinessBreakdown:
         sid = owner_mem.salon_id if owner_mem else None
         svc_count = _service_count_for_readiness(barber, sid)
         services_ok = svc_count >= MIN_ACTIVE_SERVICES
+        setup_services = _barber_active_service_count(barber) >= MIN_SETUP_SERVICES
+
+        if not owns_salon:
+            required_next_path = setup_path
+        elif not has_location:
+            required_next_path = setup_path
+        elif not setup_services or not has_membership_hours:
+            required_next_path = setup_path
+        else:
+            signup_complete = True
 
     elif flow == "employee" or flow == "":
         if not active_mem:
             required_next_path = "/salon/join"
         else:
-            signup_complete = True
-        has_membership_hours = SalonWorkingHours.objects.filter(
-            membership=active_mem, is_day_off=False
-        ).exists() if active_mem else False
-        schedule_ok = bool(has_membership_hours)
-        if active_mem:
+            has_membership_hours = SalonWorkingHours.objects.filter(
+                membership=active_mem, is_day_off=False
+            ).exists()
+            schedule_ok = bool(has_membership_hours)
             svc_count = _service_count_for_readiness(barber, active_mem.salon_id)
-        else:
-            svc_count = _service_count_for_readiness(barber, None)
-        services_ok = svc_count >= MIN_ACTIVE_SERVICES
+            services_ok = svc_count >= MIN_ACTIVE_SERVICES
+            setup_services = _barber_active_service_count(barber) >= MIN_SETUP_SERVICES
+            profile_ok = _profile_location_text_ok(prof)
+            if not (has_location and profile_ok and setup_services and schedule_ok):
+                required_next_path = "/salon/join/setup"
+            else:
+                signup_complete = True
 
     else:
         required_next_path = "/auth"

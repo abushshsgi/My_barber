@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ensureBarberOnboardingAccess } from "@/lib/auth-guard";
 import { SalonLocationPicker } from "@/components/map/SalonLocationPicker";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -31,8 +32,14 @@ import { apiFetch, getBarberAccessToken } from "@/lib/api";
 import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { cn } from "@/lib/utils";
 import { finishOnboardingAndGo } from "@/lib/onboarding-complete";
+import { readJoinDraft, clearJoinDraft } from "@/lib/join-draft";
+import { readSignupDraft } from "@/lib/signup-draft";
+import { submitEmployeeRegisterAndJoin } from "@/lib/barber-signup-flow";
 
 export const Route = createFileRoute("/salon/join/setup")({
+  beforeLoad: () => {
+    ensureBarberOnboardingAccess();
+  },
   component: SalonJoinSetupPage,
 });
 
@@ -60,6 +67,7 @@ type DaySchedule = {
 
 type OnboardingStatus = {
   is_complete?: boolean;
+  fully_ready?: boolean;
   required_next_path?: string | null;
   flow?: string | null;
   work_mode?: string;
@@ -224,46 +232,69 @@ function SalonJoinSetupPage() {
   useEffect(() => {
     let alive = true;
     const run = async () => {
-      if (!getBarberAccessToken()) {
+      const token = getBarberAccessToken();
+      const joinDraft = readJoinDraft();
+      const signupDraft = readSignupDraft();
+      const pendingEmployeeSignup = signupDraft?.flow === "employee" && !token;
+
+      if (!token && !pendingEmployeeSignup) {
         await navigate({ to: "/auth" });
         return;
       }
+      if (pendingEmployeeSignup && !joinDraft) {
+        await navigate({ to: "/salon/join" });
+        return;
+      }
+
       setBooting(true);
       setBootError(null);
       try {
-        const stRes = await apiFetch("/api/v1/barber/onboarding/status/");
-        const stRaw = await parseJsonSafe(stRes);
-        if (!alive) return;
-        if (!stRes.ok) {
-          setBootError(extractApiError(stRaw, "Onboarding holatini tekshirib boʻlmadi."));
+        let activeMid: number | null = null;
+
+        if (token) {
+          const stRes = await apiFetch("/api/v1/barber/onboarding/status/");
+          const stRaw = await parseJsonSafe(stRes);
+          if (!alive) return;
+          if (!stRes.ok) {
+            setBootError(extractApiError(stRaw, "Onboarding holatini tekshirib boʻlmadi."));
+            setBooting(false);
+            return;
+          }
+          const st = stRaw as OnboardingStatus;
+
+          if (st.fully_ready) {
+            await finishOnboardingAndGo(navigate);
+            return;
+          }
+
+          if (st.required_next_path && st.required_next_path !== "/salon/join/setup") {
+            await navigate({ to: st.required_next_path });
+            return;
+          }
+
+          activeMid =
+            typeof st.active_membership_id === "number" ? st.active_membership_id : null;
+          if (activeMid == null) {
+            await navigate({ to: "/salon/join" });
+            return;
+          }
+          setMembershipId(activeMid);
+        } else if (pendingEmployeeSignup && signupDraft) {
+          const parts = signupDraft.full_name.trim().split(/\s+/).filter(Boolean);
+          setFirstName(parts[0] || "");
+          setLastName(parts.slice(1).join(" ") || "");
+          let ph = signupDraft.phone.replace(/\D/g, "");
+          if (ph.startsWith("998")) ph = ph.slice(3);
+          setPhoneDigits(ph.slice(0, 9));
           setBooting(false);
           return;
         }
-        const st = stRaw as OnboardingStatus;
-
-        if (st.is_complete) {
-          finishOnboardingAndGo(navigate);
-          return;
-        }
-
-        if (st.required_next_path && st.required_next_path !== "/salon/join/setup") {
-          await navigate({ to: st.required_next_path });
-          return;
-        }
-
-        const mid = typeof st.active_membership_id === "number" ? st.active_membership_id : null;
-        if (mid == null) {
-          await navigate({ to: "/salon/join" });
-          return;
-        }
-
-        setMembershipId(mid);
 
         const [meRes, profRes, svcRes, schRes] = await Promise.all([
           apiFetch("/api/v1/barber/auth/me/"),
           apiFetch("/api/v1/barber/profile/"),
           apiFetch("/api/v1/barber/services/"),
-          apiFetch(`/api/v1/schedules/?membership=${mid}`),
+          apiFetch(`/api/v1/schedules/?membership=${activeMid}`),
         ]);
         const [meRaw, profRaw, svcRaw, schRaw] = await Promise.all([
           parseJsonSafe(meRes),
@@ -359,15 +390,22 @@ function SalonJoinSetupPage() {
 
   /* --- Step validation --- */
   const stepValid = useMemo(() => {
+    const hasValidService = services.some((s) => {
+      const name = s.name.trim();
+      if (!name) return false;
+      const price = parseSomDigits(s.price);
+      return !validateServicePrice(price);
+    });
+    const hasOpenDay = schedule.some((d) => d.open);
     return [
       // 0: Profile
       firstName.trim().length > 1 && lastName.trim().length > 1 && phoneDigits.length === 9,
       // 1: Location text
       locationText.trim().length > 4,
-      // 2: Services can be skipped; dashboard checklist will keep booking disabled.
-      true,
-      // 3: Schedule can be skipped; dashboard checklist will keep booking disabled.
-      true,
+      // 2: Services — kamida bitta to‘liq xizmat
+      hasValidService,
+      // 3: Schedule — kamida bitta ish kuni
+      hasOpenDay,
       // 4: Languages
       languages.length > 0,
     ];
@@ -376,7 +414,6 @@ function SalonJoinSetupPage() {
   const isLast = step === TOTAL_STEPS - 1;
   const canNext = stepValid[step];
   const allValid = stepValid.every(Boolean);
-  const isOptionalSetupStep = step === 2 || step === 3;
 
   /* --- Persistence helpers (preserve existing logic) --- */
   const persistProfileStep = async () => {
@@ -500,15 +537,18 @@ function SalonJoinSetupPage() {
     setPageError(null);
     setBusy(true);
     try {
-      if (step === 0) {
-        await persistProfileStep();
-        toast.success("Profil saqlandi.");
-      } else if (step === 1) {
-        await persistLocationStep();
-        toast.success("Joylashuv saqlandi.");
-      } else if (step === 2) {
-        await persistServicesStep();
-        toast.success("Xizmatlar saqlandi.");
+      const hasToken = Boolean(getBarberAccessToken());
+      if (hasToken) {
+        if (step === 0) {
+          await persistProfileStep();
+          toast.success("Profil saqlandi.");
+        } else if (step === 1) {
+          await persistLocationStep();
+          toast.success("Joylashuv saqlandi.");
+        } else if (step === 2) {
+          await persistServicesStep();
+          toast.success("Xizmatlar saqlandi.");
+        }
       }
       setDirection(1);
       setStep((s) => Math.min(TOTAL_STEPS - 1, s + 1));
@@ -533,26 +573,38 @@ function SalonJoinSetupPage() {
     }
   };
 
-  const skipOptionalStep = () => {
-    if (step === 2) {
-      setServices([{ id: uid(), name: "", price: "", duration: "" }]);
-    }
-    if (step === 3) {
-      setSchedule((prev) => prev.map((day) => ({ ...day, open: false })));
-    }
-    setDirection(1);
-    setStep((s) => Math.min(TOTAL_STEPS - 1, s + 1));
-    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
   const handleFinish = async () => {
-    if (membershipId == null || busy) return;
+    if (busy || !allValid) return;
     setPageError(null);
     setBusy(true);
     try {
+      let mid = membershipId;
+      const joinDraft = readJoinDraft();
+
+      if (!getBarberAccessToken() && joinDraft) {
+        await submitEmployeeRegisterAndJoin({
+          salon_id: joinDraft.salon_id,
+          latitude: joinDraft.latitude,
+          longitude: joinDraft.longitude,
+        });
+        clearJoinDraft();
+        const stRes = await apiFetch("/api/v1/barber/onboarding/status/");
+        const st = (await parseJsonSafe(stRes)) as OnboardingStatus;
+        mid = typeof st.active_membership_id === "number" ? st.active_membership_id : null;
+        if (mid == null) throw new Error("Salonga ulanish tasdiqlanmadi.");
+        setMembershipId(mid);
+      }
+
+      if (mid == null) {
+        throw new Error("Salon a'zoligi topilmadi.");
+      }
+
+      await persistProfileStep();
+      await persistLocationStep();
+      await persistServicesStep();
       await persistSpokenLanguages();
-      await replaceSchedules(membershipId);
-      finishOnboardingAndGo(navigate, "Sozlamalar yakunlandi. Barber panel tayyor.");
+      await replaceSchedules(mid);
+      await finishOnboardingAndGo(navigate, "Sozlamalar yakunlandi. Barber panel tayyor.");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Xato";
       setPageError(msg);
@@ -638,7 +690,7 @@ function SalonJoinSetupPage() {
         {success && (
           <SuccessOverlay
             barberName={`${firstName} ${lastName}`.trim()}
-            onContinue={() => void navigate({ to: "/barber" })}
+            onContinue={() => void finishOnboardingAndGo(navigate)}
           />
         )}
       </AnimatePresence>
@@ -791,17 +843,6 @@ function SalonJoinSetupPage() {
               </motion.span>
             </AnimatePresence>
           </div>
-
-          {isOptionalSetupStep && (
-            <button
-              type="button"
-              onClick={skipOptionalStep}
-              disabled={busy || success}
-              className="inline-flex h-11 items-center rounded-xl border border-border bg-background px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50 sm:px-4 sm:text-sm"
-            >
-              Keyinroq
-            </button>
-          )}
 
           {!isLast ? (
             <button

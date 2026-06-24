@@ -1,41 +1,42 @@
 import { toast } from "sonner";
-
-const SKIP_ACTIVATION_GATE_KEY = "barber_skip_activation_gate";
-const SKIP_ACTIVATION_GATE_TTL_MS = 120_000;
-
-/** Onboarding yakunida /barber beforeLoad aktivatsiya tekshiruvini vaqtincha o‘tkazib yuborish. */
-export function markOnboardingJustCompleted(): void {
-  try {
-    sessionStorage.setItem(SKIP_ACTIVATION_GATE_KEY, String(Date.now()));
-  } catch {
-    /* private mode */
-  }
-}
-
-export function shouldSkipActivationGate(): boolean {
-  try {
-    const raw = sessionStorage.getItem(SKIP_ACTIVATION_GATE_KEY);
-    if (!raw) return false;
-    const ts = Number(raw);
-    return Number.isFinite(ts) && Date.now() - ts < SKIP_ACTIVATION_GATE_TTL_MS;
-  } catch {
-    return false;
-  }
-}
-
-export function clearOnboardingJustCompleted(): void {
-  try {
-    sessionStorage.removeItem(SKIP_ACTIVATION_GATE_KEY);
-  } catch {
-    /* ignore */
-  }
-}
+import { apiFetch } from "@/lib/api";
+import type { OnboardingStatusLite } from "@/lib/onboarding-redirect";
 
 type NavigateFn = (opts: { to: string; replace?: boolean }) => void | Promise<void>;
 
-/** Onboarding tugagach darhol dashboardga — overlay kutishsiz. */
-export function finishOnboardingAndGo(navigate: NavigateFn, message?: string): void {
-  markOnboardingJustCompleted();
+/** Onboarding tugagach to‘g‘ri yo‘nalishga — dashboard faqat fully_ready bo‘lsa. */
+export async function finishOnboardingAndGo(navigate: NavigateFn, message?: string): Promise<void> {
   if (message) toast.success(message);
-  void navigate({ to: "/barber", replace: true });
+  try {
+    const res = await apiFetch("/api/v1/barber/onboarding/status/");
+    if (!res.ok) {
+      await navigate({ to: "/barber/activation", replace: true });
+      return;
+    }
+    const st = (await res.json()) as OnboardingStatusLite;
+    if (st.required_next_path) {
+      await navigate({ to: st.required_next_path, replace: true });
+      return;
+    }
+    if (st.fully_ready) {
+      await navigate({ to: "/barber", replace: true });
+      return;
+    }
+    await navigate({ to: "/barber/activation", replace: true });
+  } catch {
+    await navigate({ to: "/barber/activation", replace: true });
+  }
+}
+
+/** @deprecated Aktivatsiya bypass o‘chirilgan — xavfsizlik uchun ishlatilmaydi. */
+export function shouldSkipActivationGate(): boolean {
+  return false;
+}
+
+export function markOnboardingJustCompleted(): void {
+  /* bypass o‘chirilgan */
+}
+
+export function clearOnboardingJustCompleted(): void {
+  /* bypass o‘chirilgan */
 }

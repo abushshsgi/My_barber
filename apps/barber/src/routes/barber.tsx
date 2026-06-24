@@ -3,7 +3,6 @@ import { BarberShell } from "@/components/barber/BarberShell";
 import { BarberProvider } from "@/components/barber/BarberContext";
 import { apiFetch, getBarberAccessToken } from "@/lib/api";
 import { isBarberPathAllowedDuringActivation } from "@/lib/barber-activation-gate";
-import { shouldSkipActivationGate } from "@/lib/onboarding-complete";
 
 export const Route = createFileRoute("/barber")({
   beforeLoad: async ({ location }) => {
@@ -14,16 +13,24 @@ export const Route = createFileRoute("/barber")({
     if (isBarberPathAllowedDuringActivation(path)) return;
     if (typeof window === "undefined") return;
     if (!getBarberAccessToken()) return;
-    if (shouldSkipActivationGate()) return;
     try {
       const res = await apiFetch("/api/v1/barber/onboarding/status/");
-      if (!res.ok) return;
-      const st = (await res.json()) as { fully_ready?: boolean };
+      if (!res.ok) {
+        throw redirect({ to: "/auth" });
+      }
+      const st = (await res.json()) as {
+        fully_ready?: boolean;
+        required_next_path?: string | null;
+      };
+      if (st.required_next_path) {
+        throw redirect({ to: st.required_next_path });
+      }
       if (st.fully_ready === false) {
         throw redirect({ to: "/barber/activation" });
       }
     } catch (e) {
       if (isRedirect(e)) throw e;
+      throw redirect({ to: "/auth" });
     }
   },
   component: BarberRoot,

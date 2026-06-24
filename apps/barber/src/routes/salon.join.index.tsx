@@ -17,10 +17,10 @@ import {
   X,
   AlertCircle,
 } from "lucide-react";
-import { GpsLocationPreviewMap } from "@/components/map/GpsLocationPreviewMap";
 import { toast } from "sonner";
 
-import { submitEmployeeRegisterAndJoin, roundCoord6 } from "@/lib/barber-signup-flow";
+import { roundCoord6 } from "@/lib/barber-signup-flow";
+import { saveJoinDraft } from "@/lib/join-draft";
 import { readSignupDraft } from "@/lib/signup-draft";
 import {
   apiFetch,
@@ -90,7 +90,7 @@ const STEP_META = [
     short: "Lokatsiya",
     title: "Joriy joylashuvingiz",
     subtitle:
-      "GPS yoqib turganda eng aniq natija. Salonga taxminan 100 m ichida bo'lishingiz kerak. Keyin «Salonga qo'shilish» — profil va jadval alohida sahifada.",
+      "Faqat salon yaqinligini tasdiqlash uchun. Profil, xizmatlar va jadval keyingi bosqichda to'ldiriladi.",
     icon: Crosshair,
   },
 ] as const;
@@ -159,10 +159,6 @@ function friendlyError(
   }
 
   return message.trim() || fallback;
-}
-
-function formatCoordinate(value: number) {
-  return value.toFixed(6);
 }
 
 /* ============================================================
@@ -334,10 +330,9 @@ function SalonJoinPage() {
     }
   };
 
-  /** Auto-advance to setup wizard after success. */
+  /** Muvaffaqiyatdan keyin setup wizardga — dashboard emas. */
   useEffect(() => {
     if (joinStatus !== "success") return;
-    if (!getBarberAccessToken()) return;
     void navigate({ to: "/salon/join/setup", replace: true });
   }, [joinStatus, navigate]);
 
@@ -365,12 +360,12 @@ function SalonJoinPage() {
 
     try {
       if (employeeSignupDraft) {
-        await submitEmployeeRegisterAndJoin({
+        saveJoinDraft({
           salon_id: selectedSalon.id,
+          salon_name: selectedSalon.name,
           latitude: currentLocation.location.latitude,
           longitude: currentLocation.location.longitude,
         });
-        setHasBearer(true);
       } else if (hasBearer) {
         await joinSalon({
           salon_id: selectedSalon.id,
@@ -384,7 +379,11 @@ function SalonJoinPage() {
         return;
       }
       setJoinStatus("success");
-      toast.success(`${selectedSalon.name} saloniga muvaffaqiyatli qo'shildingiz.`);
+      toast.success(
+        employeeSignupDraft
+          ? "Salon tanlandi. Endi profilingizni to'ldiring."
+          : `${selectedSalon.name} saloniga muvaffaqiyatli qo'shildingiz.`,
+      );
     } catch (err) {
       let message = friendlyError(err, "Salonga qo'shilib bo'lmadi.");
       const raw = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
@@ -416,7 +415,7 @@ function SalonJoinPage() {
           <SuccessOverlay
             salonName={selectedSalon?.name || ""}
             onContinue={() => void navigate({ to: "/salon/join/setup", replace: true })}
-            onClose={() => void navigate({ to: "/barber" })}
+            onClose={() => void navigate({ to: "/salon/join/setup", replace: true })}
           />
         )}
       </AnimatePresence>
@@ -541,7 +540,7 @@ function SalonJoinPage() {
           <button
             onClick={() => {
               if (step === 0) {
-                void navigate({ to: hasBearer ? "/barber" : "/auth" });
+                void navigate({ to: employeeSignupDraft ? "/auth" : "/auth" });
                 return;
               }
               goBack();
@@ -814,68 +813,53 @@ function LocationStep({
     <Section
       icon={<Crosshair className="h-4 w-4" />}
       label="Lokatsiya"
-      title="Joriy joylashuv"
-      description="GPS bilan joriy nuqtangizni oling — masofa server tomonidan tekshiriladi."
+      title="Salon yaqinligini tasdiqlang"
+      description="GPS orqali joylashuvingiz olinadi va salon bilan masofa tekshiriladi (~100 m)."
     >
       {location ? (
-        <GpsLocationPreviewMap latitude={location.latitude} longitude={location.longitude} />
+        <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3.5">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white">
+            <Check className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground">Joylashuv aniqlandi</p>
+            <p className="mt-0.5 text-[12px] text-muted-foreground">
+              Endi pastdagi tugma bilan salonga qo&apos;shilishingiz mumkin.
+            </p>
+          </div>
+        </div>
       ) : (
-        <div className="flex h-40 items-center justify-center rounded-2xl border border-border bg-muted/30 text-sm text-muted-foreground sm:h-60">
-          «Mening lokatsiyam» tugmasini bosing
+        <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-10 text-center">
+          <MapPin className="h-8 w-8 text-muted-foreground" />
+          <p className="text-sm font-medium text-foreground">GPS ruxsatini bering</p>
+          <p className="max-w-[280px] text-[12px] text-muted-foreground">
+            Salon ichida yoki yaqinida turgan holda lokatsiyani oling.
+          </p>
         </div>
       )}
 
-      {/* CTA + accuracy hint */}
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={onRequest}
-          disabled={status === "locating"}
-          className={cn(
-            "inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-medium text-foreground transition-[var(--transition-smooth)]",
-            status === "locating"
-              ? "cursor-not-allowed opacity-70"
-              : "cursor-pointer hover:border-foreground hover:bg-muted active:scale-[0.98]",
-          )}
-        >
-          {status === "locating" ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Navigation className="h-4 w-4" />
-          )}
-          {location ? "Lokatsiyani yangilash" : "Mening lokatsiyam"}
-        </button>
-        <span className="text-[11px] text-muted-foreground">
-          Eng yaxshi aniqlik uchun salon ichida yoki yaqinida turgan holda oling.
-        </span>
-      </div>
+      <button
+        type="button"
+        onClick={onRequest}
+        disabled={status === "locating"}
+        className={cn(
+          "inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-medium text-foreground transition-[var(--transition-smooth)] sm:w-auto",
+          status === "locating"
+            ? "cursor-not-allowed opacity-70"
+            : "cursor-pointer hover:border-foreground hover:bg-muted active:scale-[0.98]",
+        )}
+      >
+        {status === "locating" ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Navigation className="h-4 w-4" />
+        )}
+        {location ? "Lokatsiyani yangilash" : "Mening lokatsiyam"}
+      </button>
 
       {error && <ErrorCard title="Lokatsiya olinmadi" message={error} />}
       {joinError && <ErrorCard title="Qo‘shilish xatosi" message={joinError} />}
-
-      {/* Coord cards */}
-      {location && (
-        <div className="grid gap-2 sm:grid-cols-3">
-          <CoordCell label="Latitude" value={formatCoordinate(location.latitude)} />
-          <CoordCell label="Longitude" value={formatCoordinate(location.longitude)} />
-          <CoordCell
-            label="Aniqlik"
-            value={location.accuracy ? `${Math.round(location.accuracy)} m` : "Noma'lum"}
-          />
-        </div>
-      )}
     </Section>
-  );
-}
-
-function CoordCell({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-border bg-background px-3.5 py-3">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-1 text-[14px] font-semibold text-foreground tabular-nums">{value}</p>
-    </div>
   );
 }
 
