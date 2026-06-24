@@ -45,9 +45,9 @@ const STEP_EASE = [0.22, 1, 0.36, 1] as const;
 function stepMotion(reduceMotion: boolean, direction: "forward" | "back") {
   const offset = direction === "forward" ? 24 : -24;
   return {
-    initial: { opacity: 0, x: reduceMotion ? 0 : offset, filter: "blur(4px)" },
-    animate: { opacity: 1, x: 0, filter: "blur(0px)" },
-    exit: { opacity: 0, x: reduceMotion ? 0 : -offset / 2, filter: "blur(2px)" },
+    initial: { opacity: 0, y: reduceMotion ? 0 : offset },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: reduceMotion ? 0 : -offset / 2 },
     transition: { duration: reduceMotion ? 0 : 0.38, ease: STEP_EASE },
   };
 }

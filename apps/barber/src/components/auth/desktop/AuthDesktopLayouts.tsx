@@ -25,7 +25,7 @@ function FormPanel({ tab, signupStep, flow, onTabChange, children }: AuthDesktop
   const isSignup = tab === "signup";
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col justify-center overflow-hidden px-5 py-8 sm:px-7 sm:py-10 lg:px-14 lg:py-12">
+    <div className="relative flex h-full min-h-0 flex-col justify-start overflow-hidden px-5 pt-8 pb-6 sm:px-7 sm:pt-10 lg:px-14 lg:pt-12 xl:pt-14">
       <AuthAccentProvider accent={accent}>
         <motion.div
           {...pageEnter}
@@ -75,9 +75,9 @@ export function AuthDesktopLayout({ tab, flow, ...props }: AuthDesktopLayoutProp
     <div className={cn("relative grid h-[100dvh] max-h-[100dvh] w-full overflow-hidden lg:grid-cols-2", tone.bg)}>
       <motion.div
         key={tone.glow}
-        className="pointer-events-none absolute left-1/2 top-1/2 size-[min(100vw,56rem)] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-30 blur-3xl"
+        className="pointer-events-none absolute left-1/2 top-1/2 size-[min(100vw,56rem)] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-25 blur-3xl"
         style={{ background: tone.glow }}
-        animate={{ scale: [1, 1.08, 1], opacity: [0.22, 0.32, 0.22] }}
+        animate={{ scale: [1, 1.08, 1] }}
         transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
       />
       <AuthMarketingPanel tab={tab} flow={flow} />

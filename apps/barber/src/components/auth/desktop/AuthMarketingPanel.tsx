@@ -76,7 +76,7 @@ export function AuthMarketingPanel({ tab, flow }: Props) {
   const content = resolveContent(tab, flow);
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col justify-center overflow-hidden px-8 py-10 sm:px-10 lg:px-14 xl:px-16">
+    <div className="relative flex h-full min-h-0 flex-col justify-start overflow-hidden px-8 pt-8 pb-6 sm:px-10 sm:pt-10 lg:px-14 lg:pt-12 xl:px-16 xl:pt-14">
       <div className="relative z-10 max-w-xl">
         <div className="flex items-center gap-2.5">
           <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-xl text-primary-foreground shadow-sm sm:size-10", a.logo)}>
@@ -107,7 +107,7 @@ export function AuthMarketingPanel({ tab, flow }: Props) {
               {content.subline}
             </p>
 
-            <ul className="mt-6 space-y-2.5 sm:mt-8 sm:space-y-3">
+            <ul className="mt-5 space-y-2.5 sm:mt-6 sm:space-y-3">
               {content.bullets.map((b, i) => (
                 <motion.li
                   key={b}
@@ -124,7 +124,7 @@ export function AuthMarketingPanel({ tab, flow }: Props) {
               ))}
             </ul>
 
-            <div className="mt-7 ml-5 inline-flex items-baseline gap-2.5 rounded-2xl border border-black/5 bg-white/70 px-4 py-3 shadow-sm sm:mt-9 sm:ml-8 sm:gap-3 sm:px-5 sm:py-3.5 lg:ml-12">
+            <div className="mt-4 ml-5 inline-flex items-baseline gap-2.5 rounded-2xl border border-black/5 bg-white/70 px-4 py-3 shadow-sm sm:mt-5 sm:ml-8 sm:gap-3 sm:px-5 sm:py-3.5 lg:ml-12">
               <span className={cn("text-[2rem] font-bold leading-none tabular-nums sm:text-[2.35rem] lg:text-[2.75rem]", c.highlightClass)}>
                 {content.stat.value}
               </span>
