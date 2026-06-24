@@ -1,8 +1,17 @@
+from django.conf import settings as django_settings
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from barbers.models import Barber
 from salons.models import Salon
+
+_TEST_THROTTLE_RATES = {
+    **django_settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"],
+    "auth": "10000/minute",
+    "barber_check": "10000/minute",
+    "anon": "10000/minute",
+    "user": "10000/minute",
+}
 
 
 @override_settings(
@@ -11,7 +20,11 @@ from salons.models import Salon
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
             "LOCATION": "barber-auth-tests",
         }
-    }
+    },
+    REST_FRAMEWORK={
+        **django_settings.REST_FRAMEWORK,
+        "DEFAULT_THROTTLE_RATES": _TEST_THROTTLE_RATES,
+    },
 )
 class BarberAuthIntegrationTests(TestCase):
     def setUp(self):
