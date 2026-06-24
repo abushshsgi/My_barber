@@ -1,4 +1,9 @@
-import { apiFetch, getBarberAccessToken, setBarberTokens } from "@/lib/api";
+import {
+  apiFetch,
+  BARBER_SIGNUP_TIMEOUT_MS,
+  getBarberAccessToken,
+  setBarberTokens,
+} from "@/lib/api";
 import {
   extractApiError,
   formatFetchError,
@@ -52,6 +57,7 @@ async function registerAndStoreTokens(
   const registerRes = await apiFetch("/api/v1/auth/barber-register/", {
     method: "POST",
     body: JSON.stringify(body),
+    timeoutMs: BARBER_SIGNUP_TIMEOUT_MS,
   });
   const registerBody = await parseJsonSafe(registerRes);
   if (!registerRes.ok) {
@@ -160,6 +166,7 @@ export async function submitEmployeeRegisterAndJoin(payload: {
   const phoneE164 = draft.phone?.trim() || "";
   const res = await apiFetch("/api/v1/auth/barber-register-join-salon/", {
     method: "POST",
+    timeoutMs: BARBER_SIGNUP_TIMEOUT_MS,
     body: JSON.stringify({
       ...(email ? { email } : {}),
       ...(phoneE164 ? { phone: phoneE164 } : {}),

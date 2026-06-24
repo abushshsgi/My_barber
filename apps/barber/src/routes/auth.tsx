@@ -140,6 +140,7 @@ function AuthPage() {
   }, []);
 
   const onSignupSubmit = async () => {
+    if (loadingSignup) return;
     setError(null);
     if (!flow) {
       setError("Signup yo'lini tanlang: owner, employee, mybarber yoki independent.");
@@ -156,9 +157,6 @@ function AuthPage() {
       setError(validation);
       return;
     }
-
-    const available = await runAvailabilityCheck(signupEmail, signupPhone);
-    if (!available) return;
 
     const phoneE164 = signupPhone.trim() ? formatUzPhoneE164(signupPhone) : "";
     const draft = {

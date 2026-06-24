@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, BARBER_AVAILABILITY_TIMEOUT_MS } from "@/lib/api";
 import { normalizeEmail, parseJsonSafe } from "@/lib/auth-ui";
 import { formatUzPhoneE164 } from "@/lib/phone";
 
@@ -30,6 +30,7 @@ export async function checkBarberAvailability(input: {
 }): Promise<{ emailError: string | null; phoneError: string | null }> {
   const res = await apiFetch("/api/v1/auth/barber-check-availability/", {
     method: "POST",
+    timeoutMs: BARBER_AVAILABILITY_TIMEOUT_MS,
     body: JSON.stringify({
       email: input.email ? normalizeEmail(input.email) : "",
       phone: input.phone ? formatUzPhoneE164(input.phone) : "",

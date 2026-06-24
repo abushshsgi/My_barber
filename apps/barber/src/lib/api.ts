@@ -103,6 +103,9 @@ async function refreshBarberAccess(): Promise<string | null> {
 }
 
 export const RESEND_VERIFICATION_EMAIL_TIMEOUT_MS = 45_000;
+/** Neon/remote DB bilan register 10–20s davom etishi mumkin; dev server band bo‘lsa kutish kerak. */
+export const BARBER_SIGNUP_TIMEOUT_MS = 90_000;
+export const BARBER_AVAILABILITY_TIMEOUT_MS = 20_000;
 
 export function isFetchAbortError(e: unknown): boolean {
   if (e instanceof DOMException || e instanceof Error) return e.name === "AbortError";

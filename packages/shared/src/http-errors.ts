@@ -111,10 +111,21 @@ export function formatHttpApiError(
 }
 
 export function formatFetchError(err: unknown, fallback: string): string {
+  if (err instanceof DOMException && err.name === "AbortError") {
+    return "So‘rov vaqti tugadi. Backend sekin yoki band bo‘lishi mumkin — biroz kutib qayta urinib ko‘ring.";
+  }
   const msg = err instanceof Error ? err.message : String(err ?? "");
   const lower = msg.toLowerCase();
-  if (lower.includes("failed to fetch") || lower.includes("networkerror")) {
-    return "Internet yoki API server bilan aloqa yo‘q. API manzilini va backend holatini tekshiring.";
+  if (lower.includes("abort") || lower.includes("vaqt tugadi")) {
+    return "So‘rov vaqti tugadi. Backend sekin yoki band bo‘lishi mumkin — biroz kutib qayta urinib ko‘ring.";
+  }
+  if (
+    lower.includes("failed to fetch") ||
+    lower.includes("networkerror") ||
+    lower.includes("cors") ||
+    lower.includes("cross-origin")
+  ) {
+    return "API server bilan aloqa yo‘q. Backend ishlayotganini tekshiring (localhost:8000) yoki biroz kutib qayta urinib ko‘ring.";
   }
   if (msg.trim()) return msg;
   return fallback;
