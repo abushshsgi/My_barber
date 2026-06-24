@@ -36,6 +36,7 @@ import { SalonLocationPicker } from "@/components/map/SalonLocationPicker";
 import { requestGpsLocation } from "@/lib/geo-location";
 import { cn } from "@/lib/utils";
 import { getFlowMeta } from "@/lib/barber-flow-config";
+import { finishOnboardingAndGo } from "@/lib/onboarding-complete";
 
 /* ============================================================
    Types
@@ -520,10 +521,8 @@ export function CreateSalonPage() {
         }
       }
 
-      setSuccess(true);
       clearSignupDraft();
-      const goDashboard = () => void navigate({ to: "/barber" });
-      window.setTimeout(goDashboard, 2500);
+      finishOnboardingAndGo(navigate, "Salon va profilingiz muvaffaqiyatli yaratildi.");
     } finally {
       setSubmitting(false);
     }

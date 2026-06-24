@@ -36,6 +36,7 @@ import { SalonLocationPicker } from "@/components/map/SalonLocationPicker";
 import { requestGpsLocation } from "@/lib/geo-location";
 import { cn } from "@/lib/utils";
 import { getFlowMeta } from "@/lib/barber-flow-config";
+import { finishOnboardingAndGo } from "@/lib/onboarding-complete";
 
 /* ============================================================
    Types
@@ -496,10 +497,8 @@ export function IndependentSetupPage() {
         return;
       }
 
-      setSuccess(true);
       clearSignupDraft();
-      const goDashboard = () => void navigate({ to: "/barber" });
-      window.setTimeout(goDashboard, 2000);
+      finishOnboardingAndGo(navigate, "Mustaqil profil tayyor.");
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Kutilmagan xatolik yuz berdi.");
     } finally {

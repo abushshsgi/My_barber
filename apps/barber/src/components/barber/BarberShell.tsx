@@ -590,7 +590,7 @@ export function BarberShell() {
           key={viewMode}
           initial={{ opacity: 0.94 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.1, ease: [0.22, 1, 0.36, 1] }}
           className="flex-1 overflow-y-auto"
         >
           <Outlet />

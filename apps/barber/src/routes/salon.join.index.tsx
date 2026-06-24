@@ -337,10 +337,7 @@ function SalonJoinPage() {
   useEffect(() => {
     if (joinStatus !== "success") return;
     if (!getBarberAccessToken()) return;
-    const id = window.setTimeout(() => {
-      void navigate({ to: "/salon/join/setup", replace: true });
-    }, 300);
-    return () => window.clearTimeout(id);
+    void navigate({ to: "/salon/join/setup", replace: true });
   }, [joinStatus, navigate]);
 
   const handleSelectSalon = (salon: SalonSearchHit) => {

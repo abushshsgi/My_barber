@@ -33,6 +33,7 @@ import { clearSignupDraft, readSignupDraft } from "@/lib/signup-draft";
 import { cn } from "@/lib/utils";
 import { SalonLocationPicker } from "@/components/map/SalonLocationPicker";
 import { getFlowMeta } from "@/lib/barber-flow-config";
+import { finishOnboardingAndGo } from "@/lib/onboarding-complete";
 import { requestGpsLocation } from "@/lib/geo-location";
 
 type Service = { id: string; name: string; price: string; duration: string };
@@ -437,10 +438,8 @@ export function MyBarberSetupPage() {
         return;
       }
 
-      setSuccess(true);
       clearSignupDraft();
-      const goDashboard = () => void navigate({ to: "/barber" });
-      window.setTimeout(goDashboard, 2000);
+      finishOnboardingAndGo(navigate, "MyBarber salon tayyor.");
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : "Xatolik");
     } finally {

@@ -3,6 +3,7 @@ import { BarberShell } from "@/components/barber/BarberShell";
 import { BarberProvider } from "@/components/barber/BarberContext";
 import { apiFetch, getBarberAccessToken } from "@/lib/api";
 import { isBarberPathAllowedDuringActivation } from "@/lib/barber-activation-gate";
+import { shouldSkipActivationGate } from "@/lib/onboarding-complete";
 
 export const Route = createFileRoute("/barber")({
   beforeLoad: async ({ location }) => {
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/barber")({
     if (isBarberPathAllowedDuringActivation(path)) return;
     if (typeof window === "undefined") return;
     if (!getBarberAccessToken()) return;
+    if (shouldSkipActivationGate()) return;
     try {
       const res = await apiFetch("/api/v1/barber/onboarding/status/");
       if (!res.ok) return;

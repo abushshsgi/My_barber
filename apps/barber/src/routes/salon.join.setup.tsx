@@ -30,6 +30,7 @@ import {
 import { apiFetch, getBarberAccessToken } from "@/lib/api";
 import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { cn } from "@/lib/utils";
+import { finishOnboardingAndGo } from "@/lib/onboarding-complete";
 
 export const Route = createFileRoute("/salon/join/setup")({
   component: SalonJoinSetupPage,
@@ -241,7 +242,7 @@ function SalonJoinSetupPage() {
         const st = stRaw as OnboardingStatus;
 
         if (st.is_complete) {
-          await navigate({ to: "/barber" });
+          finishOnboardingAndGo(navigate);
           return;
         }
 
@@ -258,8 +259,18 @@ function SalonJoinSetupPage() {
 
         setMembershipId(mid);
 
-        const meRes = await apiFetch("/api/v1/barber/auth/me/");
-        const meRaw = await parseJsonSafe(meRes);
+        const [meRes, profRes, svcRes, schRes] = await Promise.all([
+          apiFetch("/api/v1/barber/auth/me/"),
+          apiFetch("/api/v1/barber/profile/"),
+          apiFetch("/api/v1/barber/services/"),
+          apiFetch(`/api/v1/schedules/?membership=${mid}`),
+        ]);
+        const [meRaw, profRaw, svcRaw, schRaw] = await Promise.all([
+          parseJsonSafe(meRes),
+          parseJsonSafe(profRes),
+          parseJsonSafe(svcRes),
+          parseJsonSafe(schRes),
+        ]);
         if (!alive) return;
         if (!meRes.ok) {
           setBootError(extractApiError(meRaw, "Profilni yuklab boʻlmadi."));
@@ -278,9 +289,6 @@ function SalonJoinSetupPage() {
           setAvatarPreview(me.avatar);
         }
 
-        const profRes = await apiFetch("/api/v1/barber/profile/");
-        const profRaw = await parseJsonSafe(profRes);
-        if (!alive) return;
         if (profRes.ok && profRaw && typeof profRaw === "object") {
           const po = profRaw as {
             location_text?: string;
@@ -296,9 +304,6 @@ function SalonJoinSetupPage() {
           }
         }
 
-        const svcRes = await apiFetch("/api/v1/barber/services/");
-        const svcRaw = await parseJsonSafe(svcRes);
-        if (!alive) return;
         if (svcRes.ok) {
           const svcRows = unwrapResults<{
             id: number;
@@ -318,9 +323,6 @@ function SalonJoinSetupPage() {
           }
         }
 
-        const schRes = await apiFetch(`/api/v1/schedules/?membership=${mid}`);
-        const schRaw = await parseJsonSafe(schRes);
-        if (!alive) return;
         if (schRes.ok) {
           const rows = unwrapResults<ScheduleApiRow>(schRaw);
           if (rows.length) {
@@ -550,11 +552,7 @@ function SalonJoinSetupPage() {
     try {
       await persistSpokenLanguages();
       await replaceSchedules(membershipId);
-      toast.success("Sozlamalar yakunlandi. Barber panel tayyor.");
-      setSuccess(true);
-      window.setTimeout(() => {
-        void navigate({ to: "/barber" });
-      }, 4000);
+      finishOnboardingAndGo(navigate, "Sozlamalar yakunlandi. Barber panel tayyor.");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Xato";
       setPageError(msg);
