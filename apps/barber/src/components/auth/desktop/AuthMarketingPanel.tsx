@@ -19,11 +19,7 @@ import {
 import type { SignupFlow } from "@/lib/auth-ui";
 import { AUTH_FRAMER_CONFIG } from "@/lib/auth-framer-variants";
 import { ACCENT_STYLES, AUTH_ACCENT } from "@/lib/auth-desktop-variant";
-import {
-  AUTH_FLOW_MARKETING,
-  resolveAuthPanelTone,
-  type AuthFlowMarketingContent,
-} from "@/lib/barber-flow-config";
+import { AUTH_FLOW_MARKETING, type AuthFlowMarketingContent } from "@/lib/barber-flow-config";
 import { cn } from "@/lib/utils";
 
 const c = AUTH_FRAMER_CONFIG;
@@ -78,18 +74,9 @@ type Props = {
 
 export function AuthMarketingPanel({ tab, flow }: Props) {
   const content = resolveContent(tab, flow);
-  const tone = resolveAuthPanelTone(tab, flow);
 
   return (
-    <div className={cn("relative flex flex-col justify-center overflow-hidden px-10 py-14 lg:px-16 lg:py-16", tone.bg)}>
-      <motion.div
-        key={tone.glow}
-        className="pointer-events-none absolute -right-16 top-1/4 size-80 rounded-full opacity-40 blur-3xl"
-        style={{ background: tone.glow }}
-        animate={{ scale: [1, 1.2, 1], opacity: [0.35, 0.55, 0.35] }}
-        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-      />
-
+    <div className="relative flex flex-col justify-center px-10 py-14 lg:px-16 lg:py-16">
       <div className="relative z-10 max-w-xl">
         <div className="flex items-center gap-2.5">
           <div className={cn("flex size-10 items-center justify-center rounded-xl text-primary-foreground shadow-sm", a.logo)}>

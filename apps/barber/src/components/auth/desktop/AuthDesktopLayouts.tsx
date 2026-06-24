@@ -23,18 +23,9 @@ const a = ACCENT_STYLES[accent];
 
 function FormPanel({ tab, signupStep, flow, onTabChange, children }: AuthDesktopLayoutProps) {
   const isSignup = tab === "signup";
-  const tone = resolveAuthPanelTone(tab, flow);
 
   return (
-    <div className={cn("relative flex flex-col justify-center overflow-hidden px-8 py-12 lg:px-14 lg:py-16", tone.bg)}>
-      <motion.div
-        key={tone.glow}
-        className="pointer-events-none absolute -left-20 top-1/3 size-72 rounded-full opacity-35 blur-3xl"
-        style={{ background: tone.glow }}
-        animate={{ scale: [1, 1.15, 1], opacity: [0.28, 0.45, 0.28] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-      />
-
+    <div className="relative flex flex-col justify-center px-8 py-12 lg:px-14 lg:py-16">
       <AuthAccentProvider accent={accent}>
         <motion.div
           {...pageEnter}
@@ -78,8 +69,17 @@ function FormPanel({ tab, signupStep, flow, onTabChange, children }: AuthDesktop
 }
 
 export function AuthDesktopLayout({ tab, flow, ...props }: AuthDesktopLayoutProps) {
+  const tone = resolveAuthPanelTone(tab, flow);
+
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
+    <div className={cn("relative grid min-h-screen overflow-hidden lg:grid-cols-2", tone.bg)}>
+      <motion.div
+        key={tone.glow}
+        className="pointer-events-none absolute left-1/2 top-1/2 size-[min(100vw,56rem)] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-30 blur-3xl"
+        style={{ background: tone.glow }}
+        animate={{ scale: [1, 1.08, 1], opacity: [0.22, 0.32, 0.22] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+      />
       <AuthMarketingPanel tab={tab} flow={flow} />
       <FormPanel tab={tab} flow={flow} {...props} />
     </div>
