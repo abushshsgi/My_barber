@@ -1,6 +1,6 @@
 /**
- * MyBarber brendi ostida virtual salon — CreateSalonPage UI uslubi.
- * Tartib: Salon nomi (nik) → Profil → Joylashuv → Xizmatlar → Tillar → salon + akkaunt.
+ * MyBarber brendi ostida virtual salon.
+ * Tartib: Salon nomi (nik) → Profil → Joylashuv → Xizmatlar → salon + akkaunt.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,7 +10,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  Languages,
   Loader2,
   MapPin,
   Plus,
@@ -39,20 +38,11 @@ type Service = { id: string; name: string; price: string; duration: string };
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
-const LANGUAGES = [
-  { code: "uz", label: "O'zbek" },
-  { code: "ru", label: "Русский" },
-  { code: "en", label: "English" },
-  { code: "tr", label: "Türkçe" },
-  { code: "ar", label: "العربية" },
-] as const;
-
 const STEP_META = [
   {
     short: "Salon nomi",
     title: "MyBarber orqali salon yaratish",
-    subtitle:
-      "Virtual salon uchun nom / nik kiriting — keyin profil, joylashuv, xizmatlar va tillarni to'ldirasiz.",
+    subtitle: "Virtual salon uchun nom kiriting — mijozlar sizni MyBarber brendi ostida ko'radi.",
     icon: Sparkles,
   },
   {
@@ -64,7 +54,7 @@ const STEP_META = [
   {
     short: "Joylashuv",
     title: "Salon joylashuvi",
-    subtitle: "MyBarber salon mijozlarga qayerda ko'rinishi uchun manzil va GPS.",
+    subtitle: "Xaritada belgilang va manzilni kiriting.",
     icon: MapPin,
   },
   {
@@ -72,12 +62,6 @@ const STEP_META = [
     title: "Sizning xizmatlaringiz",
     subtitle: "Mijozlar buyurtma berishi mumkin bo'lgan xizmatlar ro'yxati.",
     icon: Scissors,
-  },
-  {
-    short: "Tillar",
-    title: "Muloqot tillari",
-    subtitle: "Salon va siz qaysi tillarda muloqot qilasiz.",
-    icon: Languages,
   },
 ] as const;
 
@@ -123,7 +107,6 @@ export function MyBarberSetupPage() {
   const [salonNick, setSalonNick] = useState("");
 
   const [salonCity, setSalonCity] = useState("");
-  const [salonLandmark, setSalonLandmark] = useState("");
   const [salonAddress, setSalonAddress] = useState("");
   const [salonLatitude, setSalonLatitude] = useState("");
   const [salonLongitude, setSalonLongitude] = useState("");
@@ -131,7 +114,7 @@ export function MyBarberSetupPage() {
   const [services, setServices] = useState<Service[]>([
     { id: uid(), name: "", price: "", duration: "" },
   ]);
-  const [languages, setLanguages] = useState<string[]>(["uz"]);
+  const languages = ["uz"] as const;
 
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
@@ -210,7 +193,6 @@ export function MyBarberSetupPage() {
         lng <= 180,
       // Services can be skipped; dashboard checklist will keep booking disabled.
       true,
-      languages.length > 0,
     ];
   }, [
     salonNick,
@@ -221,8 +203,6 @@ export function MyBarberSetupPage() {
     salonAddress,
     salonLatitude,
     salonLongitude,
-    services,
-    languages,
   ]);
 
   const isLast = step === TOTAL_STEPS - 1;
@@ -274,11 +254,6 @@ export function MyBarberSetupPage() {
     });
   };
 
-  const toggleLanguage = (code: string) =>
-    setLanguages((prev) =>
-      prev.includes(code) ? prev.filter((l) => l !== code) : [...prev, code],
-    );
-
   const handleAvatar = (files: FileList | null) => {
     if (!files?.[0]) return;
     const f = files[0];
@@ -294,9 +269,7 @@ export function MyBarberSetupPage() {
     try {
       const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
       const barberPhone = `+998${phoneDigits}`;
-      const locationText = [salonCity.trim(), salonAddress.trim(), salonLandmark.trim()]
-        .filter(Boolean)
-        .join(", ");
+      const locationText = [salonCity.trim(), salonAddress.trim()].filter(Boolean).join(", ");
       const salonBrandName = `MyBarber · ${salonNick.trim()}`;
       const scheduleRows = defaultScheduleRows();
       const hoursPayload = scheduleRows
@@ -366,7 +339,7 @@ export function MyBarberSetupPage() {
           location_text: locationText,
           latitude: roundCoord6(Number(salonLatitude)),
           longitude: roundCoord6(Number(salonLongitude)),
-          spoken_languages: languages,
+          spoken_languages: [...languages],
         }),
       });
       const profErr = await parseJsonSafe(profRes);
@@ -392,7 +365,7 @@ export function MyBarberSetupPage() {
         longitude: roundCoord6(Number(salonLongitude)),
         address: locationText,
         phone: barberPhone,
-        languages,
+        languages: [...languages],
         closed_weekdays: closedWeekdays,
         hours: hoursPayload,
         services: serviceRows.map((s) => ({
@@ -523,18 +496,6 @@ export function MyBarberSetupPage() {
       </header>
 
       <main className="mx-auto max-w-[920px] px-3.5 pt-5 sm:px-6 sm:pt-14">
-        {step > 0 && salonNick.trim().length >= 2 && (
-          <div className="mb-4 rounded-2xl border border-border bg-muted/30 px-3 py-2.5 text-center sm:mb-6 sm:px-4 sm:py-3">
-            <p className="text-[11px] font-semibold text-foreground sm:text-xs">
-              Salon nomi (brend):{" "}
-              <span className="text-foreground">MyBarber · {salonNick.trim()}</span>
-            </p>
-            <p className="mt-0.5 text-[10px] text-muted-foreground sm:text-[11px]">
-              Birinchi qadamda tanladingiz. Keyinroq tahrirlash mumkin.
-            </p>
-          </div>
-        )}
-
         <div className="mb-5 overflow-hidden text-center sm:mb-10">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
@@ -595,8 +556,6 @@ export function MyBarberSetupPage() {
               <LocationStep
                 salonCity={salonCity}
                 setSalonCity={setSalonCity}
-                salonLandmark={salonLandmark}
-                setSalonLandmark={setSalonLandmark}
                 salonAddress={salonAddress}
                 setSalonAddress={setSalonAddress}
                 salonLatitude={salonLatitude}
@@ -614,7 +573,6 @@ export function MyBarberSetupPage() {
                 applyPreset={applyServicePreset}
               />
             )}
-            {step === 4 && <LanguagesStep languages={languages} toggleLanguage={toggleLanguage} />}
           </motion.div>
         </AnimatePresence>
 
@@ -946,8 +904,8 @@ function MyBarberSalonNameStep(props: {
     <Section
       icon={<Sparkles className="h-4 w-4" />}
       label="Boshlash"
-      title="MyBarber orqali salon yaratish"
-      description="Bu yerda virtual salon ochasiz: mijozlar ilovada sizning xizmatlaringizni ko'radi va buyurtma beradi. Fizik salon bo'lmasa ham, manzil va GPS orqali joylashuvni ko'rsatishingiz mumkin."
+      title="Salon nomi"
+      description="Mijozlar ilovada shu nom bilan sizni topadi."
     >
       <FloatingInput
         label="Salon nomi / nik (MyBarber dan keyin)"
@@ -956,27 +914,8 @@ function MyBarberSalonNameStep(props: {
         onChange={(v) => props.setSalonNick(v.slice(0, 200))}
       />
       <p className="text-[11px] leading-snug text-muted-foreground sm:text-xs">
-        Mijozlarga shu ko'rinishda chiqadi:{" "}
-        <span className="font-semibold text-foreground">{preview}</span>. Keyingi qadamda profil
-        (ism, telefon, rasm) to'ldirasiz.
+        Ko'rinishi: <span className="font-semibold text-foreground">{preview}</span>
       </p>
-      <div className="rounded-xl border border-border bg-muted/25 px-3.5 py-3 text-[12px] leading-relaxed text-foreground sm:px-4 sm:py-3.5 sm:text-sm">
-        <p className="font-semibold text-foreground">Keyingi qadamlar</p>
-        <ul className="mt-2 list-inside list-disc space-y-1 text-muted-foreground marker:text-foreground/50">
-          <li>
-            <span className="text-foreground">Profil</span> — ism, familiya, telefon va rasm
-          </li>
-          <li>
-            <span className="text-foreground">Joylashuv</span> — manzil va GPS
-          </li>
-          <li>
-            <span className="text-foreground">Xizmatlar</span> — narx va davomiylik
-          </li>
-          <li>
-            <span className="text-foreground">Tillar</span> — muloqot tillari
-          </li>
-        </ul>
-      </div>
     </Section>
   );
 }
@@ -1059,8 +998,6 @@ function ProfileStep(props: {
 function LocationStep(props: {
   salonCity: string;
   setSalonCity: (v: string) => void;
-  salonLandmark: string;
-  setSalonLandmark: (v: string) => void;
   salonAddress: string;
   setSalonAddress: (v: string) => void;
   salonLatitude: string;
@@ -1079,13 +1016,9 @@ function LocationStep(props: {
       { enableHighAccuracy: true, timeout: 10000 },
     );
   };
+
   return (
-    <Section
-      icon={<MapPin className="h-4 w-4" />}
-      label="Lokatsiya"
-      title="Salon manzili"
-      description="Mijozlar sizni topa olishi uchun aniq manzil (Create salon sahifasidagi kabi)."
-    >
+    <div className="space-y-4 rounded-2xl border border-border bg-card p-3.5 shadow-[var(--shadow-card)] sm:space-y-5 sm:p-7">
       <SalonLocationPicker
         city={props.salonCity}
         address={props.salonAddress}
@@ -1095,73 +1028,29 @@ function LocationStep(props: {
         setLongitude={props.setSalonLongitude}
         setAddress={props.setSalonAddress}
         setCity={props.setSalonCity}
+        mapClassName="h-48 sm:h-72"
       />
-      <div>
-        <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Mashhur shaharlar
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {["Toshkent", "Samarqand", "Buxoro", "Andijon", "Farg'ona", "Namangan"].map((city) => {
-            const active = props.salonCity.trim().toLowerCase() === city.toLowerCase();
-            return (
-              <button
-                key={city}
-                type="button"
-                onClick={() => props.setSalonCity(city)}
-                className={cn(
-                  "rounded-full border px-3 py-1 text-[11px] font-medium transition-[var(--transition-smooth)]",
-                  active
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-border bg-card text-foreground hover:border-foreground/50",
-                )}
-              >
-                {city}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <FloatingInput
-          label="Shahar"
-          required
-          value={props.salonCity}
-          onChange={props.setSalonCity}
-        />
-        <FloatingInput
-          label="Mo'ljal (ixtiyoriy)"
-          value={props.salonLandmark}
-          onChange={props.setSalonLandmark}
-        />
-      </div>
+      <button
+        type="button"
+        onClick={fillCurrentLocation}
+        className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground transition hover:text-foreground sm:text-xs"
+      >
+        <MapPin className="h-3.5 w-3.5" />
+        Joriy joylashuvni ishlatish
+      </button>
+      <FloatingInput
+        label="Shahar"
+        required
+        value={props.salonCity}
+        onChange={props.setSalonCity}
+      />
       <FloatingInput
         label="Ko'cha, uy raqami"
         required
         value={props.salonAddress}
         onChange={props.setSalonAddress}
       />
-      <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-        <FloatingInput
-          label="Latitude"
-          required
-          value={props.salonLatitude}
-          onChange={props.setSalonLatitude}
-        />
-        <FloatingInput
-          label="Longitude"
-          required
-          value={props.salonLongitude}
-          onChange={props.setSalonLongitude}
-        />
-        <button
-          type="button"
-          onClick={fillCurrentLocation}
-          className="h-14 rounded-xl border border-border bg-background px-3 text-xs font-semibold text-foreground transition-[var(--transition-smooth)] hover:border-foreground hover:bg-muted"
-        >
-          Joylashuvni olish
-        </button>
-      </div>
-    </Section>
+    </div>
   );
 }
 
@@ -1260,46 +1149,6 @@ function ServicesStep(props: {
         >
           <Plus className="h-4 w-4" /> Xizmat qo'shish
         </button>
-      </div>
-    </Section>
-  );
-}
-
-function LanguagesStep(props: { languages: string[]; toggleLanguage: (code: string) => void }) {
-  return (
-    <Section
-      icon={<Languages className="h-4 w-4" />}
-      label="Tillar"
-      title="Muloqot tillari"
-      description="Kamida bitta tilni tanlang."
-    >
-      <div className="flex flex-wrap gap-2">
-        {LANGUAGES.map((l) => {
-          const active = props.languages.includes(l.code);
-          return (
-            <button
-              key={l.code}
-              type="button"
-              onClick={() => props.toggleLanguage(l.code)}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition-[var(--transition-smooth)]",
-                active
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-border bg-card hover:border-foreground/40",
-              )}
-            >
-              <span
-                className={cn(
-                  "flex h-4 w-4 items-center justify-center rounded-full border",
-                  active ? "border-background bg-background text-foreground" : "border-border",
-                )}
-              >
-                {active && <Check className="h-2.5 w-2.5" />}
-              </span>
-              {l.label}
-            </button>
-          );
-        })}
       </div>
     </Section>
   );
