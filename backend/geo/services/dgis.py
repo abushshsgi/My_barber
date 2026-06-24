@@ -73,8 +73,12 @@ def geocode_query(q: str) -> list[GeocodeResult]:
     except DgisGeocoderError:
         pass
     from geo.services.nominatim import geocode_query_nominatim
+    from geo.services.photon import geocode_query_photon
 
-    return geocode_query_nominatim(q)
+    results = geocode_query_nominatim(q)
+    if results:
+        return results
+    return geocode_query_photon(q)
 
 
 def _geocode_query_dgis(q: str) -> list[GeocodeResult]:
@@ -105,8 +109,12 @@ def reverse_geocode(lat: float, lng: float) -> GeocodeResult | None:
     except DgisGeocoderError:
         pass
     from geo.services.nominatim import reverse_geocode_nominatim
+    from geo.services.photon import reverse_geocode_photon
 
-    return reverse_geocode_nominatim(lat, lng)
+    result = reverse_geocode_nominatim(lat, lng)
+    if result:
+        return result
+    return reverse_geocode_photon(lat, lng)
 
 
 def _reverse_geocode_dgis(lat: float, lng: float) -> GeocodeResult | None:

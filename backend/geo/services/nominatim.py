@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from typing import Any
 from urllib.parse import urlencode
 
@@ -9,13 +10,31 @@ from geo.services.dgis import GeocodeResult
 
 NOMINATIM_BASE = "https://nominatim.openstreetmap.org"
 USER_AGENT = "MyBarber/1.0 (geo fallback; contact@mysaloon.uz)"
+NOMINATIM_HEADERS = {
+    "User-Agent": USER_AGENT,
+    "Referer": "https://mysaloon.uz/",
+    "Accept-Language": "uz,ru,en",
+}
 
 
 def _request(path: str, params: dict[str, str]) -> Any:
     url = f"{NOMINATIM_BASE}{path}?{urlencode(params)}"
-    resp = requests.get(url, timeout=10, headers={"User-Agent": USER_AGENT})
-    resp.raise_for_status()
-    return resp.json()
+    last_exc: requests.RequestException | None = None
+    for attempt in range(3):
+        try:
+            resp = requests.get(url, timeout=12, headers=NOMINATIM_HEADERS)
+            if resp.status_code in (429, 503) and attempt < 2:
+                time.sleep(1.25 * (attempt + 1))
+                continue
+            resp.raise_for_status()
+            return resp.json()
+        except requests.RequestException as exc:
+            last_exc = exc
+            if attempt < 2:
+                time.sleep(0.75 * (attempt + 1))
+                continue
+            raise last_exc from exc
+    raise RuntimeError("unreachable")
 
 
 def _normalize_city(name: str) -> str:

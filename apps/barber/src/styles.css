@@ -166,6 +166,8 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    overflow-x: clip;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
@@ -196,5 +198,37 @@
   }
   .scrollbar-none::-webkit-scrollbar {
     display: none;
+  }
+  .onboarding-title {
+    font-size: 1.375rem;
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+  @media (min-width: 40rem) {
+    .onboarding-title {
+      font-size: 1.875rem;
+    }
+  }
+  @media (min-width: 64rem) {
+    .onboarding-title {
+      font-size: 2.25rem;
+    }
+  }
+  .onboarding-section-title {
+    font-size: 1.625rem;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+  @media (min-width: 40rem) {
+    .onboarding-section-title {
+      font-size: 1.875rem;
+    }
+  }
+  @media (min-width: 64rem) {
+    .onboarding-section-title {
+      font-size: 2.25rem;
+    }
   }
 }

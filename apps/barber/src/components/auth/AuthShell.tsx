@@ -25,8 +25,8 @@ export function AuthShell({ flow, tab, signupStep = 0, onTabChange, children }: 
         : (meta?.signupTitle ?? "Ro'yxatdan o'tish");
 
   return (
-    <div className="relative min-h-[100dvh] bg-[#f4f4f5] text-foreground md:bg-transparent">
-      <header className="sticky top-0 z-50 border-b border-black/5 bg-white/90 backdrop-blur-md pt-[max(env(safe-area-inset-top),0px)] md:hidden">
+    <div className="relative min-h-[100dvh] bg-[#f4f4f5] text-foreground lg:bg-transparent">
+      <header className="sticky top-0 z-50 border-b border-black/5 bg-white/90 backdrop-blur-md pt-[max(env(safe-area-inset-top),0px)] lg:hidden">
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <div className="flex min-w-0 items-center gap-2">
             <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -49,12 +49,12 @@ export function AuthShell({ flow, tab, signupStep = 0, onTabChange, children }: 
 
       <motion.div
         {...pageEnter}
-        className="px-4 pt-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] md:hidden"
+        className="px-4 pt-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] lg:hidden"
       >
         {children}
       </motion.div>
 
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         <AuthDesktopLayout flow={flow} tab={tab} signupStep={signupStep} onTabChange={onTabChange}>
           {children}
         </AuthDesktopLayout>

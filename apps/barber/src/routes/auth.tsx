@@ -214,7 +214,7 @@ function AuthPage() {
         onTabChange={handleTabChange}
       >
         {/* Mobile tab switcher */}
-        <div className="mb-5 grid h-12 grid-cols-2 rounded-xl bg-zinc-100 p-1 md:hidden">
+        <div className="mb-5 grid h-12 grid-cols-2 rounded-xl bg-zinc-100 p-1 lg:hidden">
           {(["login", "signup"] as const).map((t) => (
             <button
               key={t}

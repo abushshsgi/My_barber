@@ -105,7 +105,6 @@ class DgisServiceTests(SimpleTestCase):
         assert result is not None
         self.assertIn("Navoiy", result.address)
 
-
     @override_settings(DGIS_API_KEY="test-key")
     @patch("geo.services.dgis._reverse_geocode_dgis")
     @patch("geo.services.nominatim.reverse_geocode_nominatim")
@@ -123,6 +122,26 @@ class DgisServiceTests(SimpleTestCase):
         assert result is not None
         self.assertEqual(result.city, "Samarqand")
         mock_nominatim.assert_called_once_with(39.65, 66.96)
+
+    @override_settings(DGIS_API_KEY="test-key")
+    @patch("geo.services.dgis._reverse_geocode_dgis")
+    @patch("geo.services.nominatim.reverse_geocode_nominatim")
+    @patch("geo.services.photon.reverse_geocode_photon")
+    def test_reverse_geocode_falls_back_to_photon(self, mock_photon, mock_nominatim, mock_dgis):
+        mock_dgis.side_effect = DgisGeocoderError("2GIS geocoder returned an error.")
+        mock_nominatim.return_value = None
+        mock_photon.return_value = GeocodeResult(
+            lat=41.31,
+            lng=69.27,
+            address="Bunyodkor Avenue",
+            city="Tashkent",
+            full_name="Tashkent, Bunyodkor Avenue, Uzbekistan",
+        )
+        result = reverse_geocode(41.31, 69.27)
+        self.assertIsNotNone(result)
+        assert result is not None
+        self.assertEqual(result.city, "Tashkent")
+        mock_photon.assert_called_once_with(41.31, 69.27)
 
 
 class GeocodeViewTests(SimpleTestCase):

@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { reverseGeocodeAddress } from "@/lib/api/geo";
 
 export type GpsLocationSetters = {
@@ -9,7 +10,10 @@ export type GpsLocationSetters = {
 
 /** Browser GPS → koordinata + backend reverse geocode (shahar, ko'cha). */
 export function requestGpsLocation(setters: GpsLocationSetters): void {
-  if (!("geolocation" in navigator)) return;
+  if (!("geolocation" in navigator)) {
+    toast.error("Brauzeringiz joylashuvni qo'llab-quvvatlamaydi.");
+    return;
+  }
 
   navigator.geolocation.getCurrentPosition(
     (pos) => {
@@ -18,12 +22,21 @@ export function requestGpsLocation(setters: GpsLocationSetters): void {
       setters.setLatitude(lat.toFixed(6));
       setters.setLongitude(lng.toFixed(6));
       void reverseGeocodeAddress(lat, lng).then((result) => {
-        if (!result) return;
+        if (!result) {
+          toast.error("Manzil aniqlanmadi. Shahar va ko'chani qo'lda kiriting.");
+          return;
+        }
         setters.setAddress?.(result.address);
         if (result.city) setters.setCity?.(result.city);
       });
     },
-    () => {},
+    (err) => {
+      const message =
+        err.code === err.PERMISSION_DENIED
+          ? "Joylashuvga ruxsat berilmadi. Sozlamalardan GPS ni yoqing."
+          : "GPS joylashuvni aniqlab bo'lmadi. Qayta urinib ko'ring.";
+      toast.error(message);
+    },
     { enableHighAccuracy: true, timeout: 10000 },
   );
 }

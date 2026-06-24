@@ -518,7 +518,7 @@ export function MyBarberSetupPage() {
                 </span>
                 {flowMeta.badge} · Qadam {step + 1}
               </div>
-              <h1 className="text-[22px] font-semibold leading-[1.15] tracking-tight text-foreground sm:text-5xl">
+              <h1 className="onboarding-title text-foreground">
                 {currentMeta.title}
               </h1>
               <p className="mx-auto mt-2 max-w-[520px] px-1 text-[12.5px] leading-snug text-muted-foreground sm:mt-3 sm:px-0 sm:text-base">

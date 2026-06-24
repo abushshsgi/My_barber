@@ -88,7 +88,7 @@ function ActionBar({
           <span className="hidden sm:inline">Orqaga</span>
         </button>
 
-        <div className="hidden flex-1 justify-center sm:flex md:hidden">
+        <div className="hidden flex-1 justify-center sm:flex lg:hidden">
           <AuthStepIndicator currentStep={step} />
         </div>
 

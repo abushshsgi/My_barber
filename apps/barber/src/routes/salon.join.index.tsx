@@ -478,7 +478,7 @@ function SalonJoinPage() {
                 </span>
                 {flowMeta.badge} · Qadam {step + 1}
               </div>
-              <h1 className="text-[22px] font-semibold leading-[1.15] tracking-tight text-foreground sm:text-5xl">
+              <h1 className="onboarding-title text-foreground">
                 {currentMeta.title}
               </h1>
               <p className="mx-auto mt-2 max-w-[520px] px-1 text-[12.5px] leading-snug text-muted-foreground sm:mt-3 sm:px-0 sm:text-base">
@@ -1213,7 +1213,7 @@ function SuccessOverlay({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.65, duration: 0.4 }}
-          className="text-[26px] font-bold leading-[1.1] tracking-tight text-foreground sm:text-4xl"
+          className="onboarding-section-title text-foreground"
         >
           Salonga qo‘shildingiz
         </motion.h2>
