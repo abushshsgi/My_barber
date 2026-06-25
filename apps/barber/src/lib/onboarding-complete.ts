@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api";
 import type { OnboardingStatusLite } from "@/lib/onboarding-redirect";
+import { normalizeRequiredNextPath } from "@/lib/onboarding-redirect";
 
 type NavigateFn = (opts: { to: string; replace?: boolean }) => void | Promise<void>;
 
@@ -23,8 +24,9 @@ export async function finishOnboardingAndGo(
       return;
     }
     const st = (await res.json()) as OnboardingStatusLite;
-    if (!opts?.afterSetup && st.required_next_path) {
-      await navigate({ to: st.required_next_path, replace: true });
+    const requiredNext = normalizeRequiredNextPath(st);
+    if (!opts?.afterSetup && requiredNext) {
+      await navigate({ to: requiredNext, replace: true });
       return;
     }
     if (st.fully_ready) {

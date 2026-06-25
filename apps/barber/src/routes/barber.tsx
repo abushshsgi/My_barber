@@ -3,6 +3,7 @@ import { BarberShell } from "@/components/barber/BarberShell";
 import { BarberProvider } from "@/components/barber/BarberContext";
 import { apiFetch, getBarberAccessToken } from "@/lib/api";
 import { isBarberPathAllowedDuringActivation } from "@/lib/barber-activation-gate";
+import { normalizeRequiredNextPath } from "@/lib/onboarding-redirect";
 
 export const Route = createFileRoute("/barber")({
   beforeLoad: async ({ location }) => {
@@ -21,9 +22,11 @@ export const Route = createFileRoute("/barber")({
       const st = (await res.json()) as {
         fully_ready?: boolean;
         required_next_path?: string | null;
+        owns_salon?: boolean;
       };
-      if (st.required_next_path) {
-        throw redirect({ to: st.required_next_path });
+      const requiredNext = normalizeRequiredNextPath(st);
+      if (requiredNext) {
+        throw redirect({ to: requiredNext });
       }
       if (st.fully_ready === false) {
         throw redirect({ to: "/barber/activation" });

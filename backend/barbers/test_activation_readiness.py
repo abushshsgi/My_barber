@@ -195,6 +195,40 @@ class BarberActivationReadinessTests(TestCase):
         self.assertIsNone(r.required_next_path)
         self.assertTrue(r.has_membership_hours)
 
+    def test_owner_with_salon_incomplete_setup_no_create_redirect(self):
+        owner = Barber.objects.create(
+            email="partial@test.uz",
+            username="partial@test.uz",
+            full_name="Partial Owner",
+            work_mode=Barber.WorkMode.SALON,
+            onboarding_flow=Barber.OnboardingFlow.OWNER,
+        )
+        owner.set_password("pass12345")
+        owner.save()
+        BarberProfile.objects.create(
+            barber=owner,
+            latitude=41.0,
+            longitude=69.0,
+            location_text="Toshkent, Chilonzor",
+        )
+        salon = Salon.objects.create(
+            name="Partial Salon",
+            owner_barber=owner,
+            latitude=41.0,
+            longitude=69.0,
+        )
+        SalonMembership.objects.create(
+            barber=owner,
+            salon=salon,
+            role=SalonMembership.Role.OWNER,
+            invite_state=SalonMembership.InviteState.ACTIVE,
+        )
+        from barbers.readiness import compute_barber_readiness
+
+        r = compute_barber_readiness(owner)
+        self.assertFalse(r.signup_complete)
+        self.assertIsNone(r.required_next_path)
+
     def test_resend_verification_sends_mail(self):
         access, _ = encode_barber_tokens(self.barber.id)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")

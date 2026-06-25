@@ -171,6 +171,46 @@ export function CreateSalonPage() {
     }
   }, [navigate]);
 
+  // Token bor bo'lsa profilni serverdan to'ldirish (erta signupdan keyin).
+  useEffect(() => {
+    if (!getBarberAccessToken()) {
+      const draft = readSignupDraft();
+      if (draft?.full_name) {
+        const parts = draft.full_name.trim().split(/\s+/).filter(Boolean);
+        setBarberFirstName((p) => p || parts[0] || "");
+        setBarberLastName((p) => p || parts.slice(1).join(" ") || "");
+        if (draft.phone) {
+          let ph = draft.phone.replace(/\D/g, "");
+          if (ph.startsWith("998")) ph = ph.slice(3);
+          setBarberPhoneDigits((p) => p || ph.slice(0, 9));
+        }
+      }
+      return;
+    }
+    let alive = true;
+    void (async () => {
+      try {
+        const meRes = await apiFetch("/api/v1/barber/auth/me/");
+        const meRaw = await parseJsonSafe(meRes);
+        if (!alive || !meRes.ok || !meRaw || typeof meRaw !== "object") return;
+        const me = meRaw as { full_name?: string; phone?: string; avatar?: string };
+        const full = ((me.full_name || "") as string).trim();
+        const parts = full.split(/\s+/).filter(Boolean);
+        setBarberFirstName(parts[0] || "");
+        setBarberLastName(parts.slice(1).join(" ") || "");
+        let ph = ((me.phone || "") as string).replace(/\D/g, "");
+        if (ph.startsWith("998")) ph = ph.slice(3);
+        setBarberPhoneDigits(ph.slice(0, 9));
+        if (me.avatar && typeof me.avatar === "string") setBarberAvatar(me.avatar);
+      } catch {
+        /* optional */
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   // Salon allaqachon yaratilgan bo'lsa — qayta yaratish sahifasida qolmaslik.
   useEffect(() => {
     if (!getBarberAccessToken()) return;

@@ -39,14 +39,29 @@ function computePrimaryNext(
   steps: ActivationSteps,
   requiredNextPath: string | null,
   onboardingFlow: string | null,
+  ownsSalon: boolean,
 ): { to: string; label: string } | null {
-  // Email tasdiqlash faqat pochtadagi havola orqali (token bilan). verify-email ga tokensiz yo‘naltirmaymiz.
   if (!steps.email_verified) {
     return null;
   }
   if (!steps.signup_complete) {
-    if (requiredNextPath) {
-      return { to: requiredNextPath, label: "Keyingi qadam: ro‘yxatdan o‘tishni yakunlang" };
+    if (requiredNextPath && !(ownsSalon && requiredNextPath === "/salon/create")) {
+      return { to: requiredNextPath, label: "Keyingi qadam: sozlashni yakunlang" };
+    }
+    if (ownsSalon) {
+      if (!steps.services_ok) {
+        return {
+          to: "/barber/services#activation-services",
+          label: "Keyingi qadam: xizmatlarni to‘ldiring",
+        };
+      }
+      if (!steps.schedule_ok) {
+        return {
+          to: "/barber/schedule",
+          label: "Keyingi qadam: ish jadvalini saqlang",
+        };
+      }
+      return null;
     }
     return {
       to: signupFallbackPath(onboardingFlow),
@@ -77,6 +92,7 @@ function BarberActivationPage() {
     activationServicesCount,
     requiredNextPath,
     onboardingFlow,
+    ownsSalon,
     refreshActivationStatus,
   } = useBarberContext();
   const [resending, setResending] = useState(false);
@@ -97,8 +113,8 @@ function BarberActivationPage() {
   }, [refreshActivationStatus]);
 
   const primaryNext = useMemo(
-    () => computePrimaryNext(activationSteps, requiredNextPath, onboardingFlow),
-    [activationSteps, requiredNextPath, onboardingFlow],
+    () => computePrimaryNext(activationSteps, requiredNextPath, onboardingFlow, ownsSalon),
+    [activationSteps, requiredNextPath, onboardingFlow, ownsSalon],
   );
 
   const stepMeta = useMemo(
@@ -112,8 +128,10 @@ function BarberActivationPage() {
       {
         n: 2,
         ok: activationSteps.signup_complete,
-        title: "Ro‘yxatdan o‘tish",
-        body: "Salon yoki mustaqil oqim — joylashuv va asosiy ma’lumotlar.",
+        title: ownsSalon ? "Salon sozlash" : "Ro‘yxatdan o‘tish",
+        body: ownsSalon
+          ? "Salon yaratildi — xizmatlar va ish jadvalini to‘ldiring."
+          : "Salon yoki mustaqil oqim — joylashuv va asosiy ma’lumotlar.",
       },
       {
         n: 3,
@@ -130,7 +148,7 @@ function BarberActivationPage() {
         body: "Kamida bitta ish kuni ochiq va jadval saqlangan.",
       },
     ],
-    [activationSteps, activationServicesCount],
+    [activationSteps, activationServicesCount, ownsSalon],
   );
 
   const activeIndex = useMemo(() => {

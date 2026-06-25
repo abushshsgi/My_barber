@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useState } from "react";
 import { AuthLoginForm, AUTH_LOGIN_FORM_ID } from "@/components/auth/AuthLoginForm";
@@ -7,7 +7,7 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { SignupWizard } from "@/components/auth/SignupWizard";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { apiFetch, setBarberTokens } from "@/lib/api";
+import { apiFetch, getBarberAccessToken, setBarberTokens } from "@/lib/api";
 import { checkBarberAvailability, parseFieldErrors } from "@/lib/auth-errors";
 import {
   extractApiError,
@@ -23,10 +23,17 @@ import { SIGNUP_FLOW_PATH } from "@/lib/barber-flow-config";
 import { tabSlide } from "@/lib/motion-presets";
 import { formatUzPhoneE164, looksLikeLoginEmail, validateUzPhoneField } from "@/lib/phone";
 import { saveSignupDraft } from "@/lib/signup-draft";
+import { submitEarlyFlowSignup } from "@/lib/barber-signup-flow";
 import { resolveBarberEntryPath } from "@/lib/onboarding-redirect";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/auth")({
+  beforeLoad: async () => {
+    if (typeof window === "undefined") return;
+    if (!getBarberAccessToken()) return;
+    const next = await resolveBarberEntryPath();
+    throw redirect({ to: next });
+  },
   component: AuthPage,
 });
 
@@ -169,7 +176,17 @@ function AuthPage() {
     };
 
     saveSignupDraft(draft);
-    await navigate({ to: SIGNUP_FLOW_PATH[flow] });
+    setLoadingSignup(true);
+    try {
+      if (flow !== "employee") {
+        await submitEarlyFlowSignup(flow, draft);
+      }
+      await navigate({ to: SIGNUP_FLOW_PATH[flow] });
+    } catch (err) {
+      setError(formatFetchError(err, "Ro'yxatdan o'tish amalga oshmadi."));
+    } finally {
+      setLoadingSignup(false);
+    }
   };
 
   const handleEmailBlur = async () => {

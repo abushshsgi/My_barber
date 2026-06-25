@@ -178,7 +178,9 @@ def compute_barber_readiness(barber: Barber) -> ReadinessBreakdown:
         elif not has_location:
             required_next_path = setup_path
         elif not setup_services or not has_membership_hours:
-            required_next_path = setup_path
+            # Salon mavjud — qayta create wizard emas, aktivatsiya orqali davom etiladi.
+            required_next_path = None
+            signup_complete = False
         else:
             signup_complete = True
 
