@@ -37,6 +37,7 @@ import { requestGpsLocation } from "@/lib/geo-location";
 import { cn } from "@/lib/utils";
 import { getFlowMeta } from "@/lib/barber-flow-config";
 import { finishOnboardingAndGo } from "@/lib/onboarding-complete";
+import { useBarberPhoneAvailability } from "@/lib/barber-phone-availability";
 import { toast } from "sonner";
 
 /* ============================================================
@@ -172,6 +173,14 @@ export function IndependentSetupPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  const {
+    phoneError,
+    checkingPhone,
+    verifyPhoneDigits,
+    handlePhoneBlur,
+    clearPhoneError,
+  } = useBarberPhoneAvailability();
+
   // Pre-fill: signup draft (token yo'q) yoki server (token bor)
   useEffect(() => {
     void (async () => {
@@ -241,7 +250,7 @@ export function IndependentSetupPage() {
     const lng = Number(longitude);
     return [
       // 0: Barber profile (Create salon bilan bir xil talablar)
-      firstName.trim().length > 1 && lastName.trim().length > 1 && phoneDigits.length === 9,
+      firstName.trim().length > 1 && lastName.trim().length > 1 && phoneDigits.length === 9 && !phoneError,
       // 1: Location
       city.trim().length > 1 &&
         address.trim().length > 2 &&
@@ -262,6 +271,7 @@ export function IndependentSetupPage() {
     firstName,
     lastName,
     phoneDigits,
+    phoneError,
     city,
     address,
     latitude,
@@ -276,8 +286,12 @@ export function IndependentSetupPage() {
   const allValid = stepValid.every(Boolean);
   const isOptionalSetupStep = step === 2 || step === 3;
 
-  const goNext = () => {
+  const goNext = async () => {
     if (!canNext || isLast) return;
+    if (step === 0 && phoneDigits.length === 9) {
+      const ok = await verifyPhoneDigits(phoneDigits);
+      if (!ok) return;
+    }
     setDirection(1);
     setStep((s) => Math.min(TOTAL_STEPS - 1, s + 1));
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
@@ -335,6 +349,8 @@ export function IndependentSetupPage() {
       const locationText = [city.trim(), address.trim()].filter(Boolean).join(", ");
       const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
       const barberPhone = `+998${phoneDigits}`;
+      const phoneOk = await verifyPhoneDigits(phoneDigits);
+      if (!phoneOk) return;
 
       // 1) Ensure we are logged in: if no token, register the independent barber from draft.
       if (!getBarberAccessToken()) {
@@ -623,7 +639,13 @@ export function IndependentSetupPage() {
                 lastName={lastName}
                 setLastName={setLastName}
                 phoneDigits={phoneDigits}
-                setPhoneDigits={setPhoneDigits}
+                setPhoneDigits={(v) => {
+                  setPhoneDigits(v);
+                  clearPhoneError();
+                }}
+                phoneError={phoneError}
+                checkingPhone={checkingPhone}
+                onPhoneBlur={() => handlePhoneBlur(phoneDigits)}
                 avatar={avatarPreview}
                 handleAvatarFile={handleAvatar}
               />
@@ -766,6 +788,9 @@ function IndependentBarberProfileStep(props: {
   setLastName: (v: string) => void;
   phoneDigits: string;
   setPhoneDigits: (v: string) => void;
+  phoneError?: string | null;
+  checkingPhone?: boolean;
+  onPhoneBlur?: () => void;
   avatar: string | null;
   handleAvatarFile: (f: FileList | null) => void;
 }) {
@@ -827,6 +852,9 @@ function IndependentBarberProfileStep(props: {
               required
               digits={props.phoneDigits}
               onChange={props.setPhoneDigits}
+              error={props.phoneError}
+              checking={props.checkingPhone}
+              onBlur={props.onPhoneBlur}
             />
           </div>
         </div>
@@ -840,16 +868,22 @@ function PhoneInput({
   digits,
   onChange,
   required,
+  error,
+  checking,
+  onBlur,
 }: {
   label: string;
   digits: string;
   onChange: (digitsOnly: string) => void;
   required?: boolean;
+  error?: string | null;
+  checking?: boolean;
+  onBlur?: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const formatted = formatPhone(digits);
   const has = digits.length > 0;
-  const valid = digits.length === 9;
+  const valid = digits.length === 9 && !error;
 
   useEffect(() => {
     const el = inputRef.current;
@@ -879,6 +913,7 @@ function PhoneInput({
             autoComplete="tel-national"
             value={formatted}
             onChange={(e) => onChange(normalizePhoneDigits(e.target.value))}
+            onBlur={onBlur}
             placeholder="99 123-45-67"
             className={cn(
               "peer h-full w-full rounded-r-xl bg-transparent px-3.5 text-sm tabular-nums text-foreground outline-none placeholder:text-muted-foreground/60",
@@ -906,11 +941,15 @@ function PhoneInput({
           </div>
         )}
       </div>
-      {has && !valid && (
+      {error ? (
+        <p className="mt-1.5 text-[11px] font-medium text-destructive">{error}</p>
+      ) : checking ? (
+        <p className="mt-1.5 text-[11px] font-medium text-muted-foreground">Telefon tekshirilmoqda…</p>
+      ) : has && !valid ? (
         <p className="mt-1.5 text-[11px] font-medium text-destructive">
           Telefon raqami 9 ta raqamdan iborat bo'lishi kerak
         </p>
-      )}
+      ) : null}
     </div>
   );
 }

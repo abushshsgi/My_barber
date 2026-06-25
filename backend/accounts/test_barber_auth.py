@@ -193,6 +193,53 @@ class BarberAuthIntegrationTests(TestCase):
         res = self.client.post("/api/v1/auth/barber-register/", payload, format="json")
         self.assertEqual(res.status_code, 400)
 
+    def test_check_availability_authenticated_excludes_own_phone(self):
+        reg = self.client.post(
+            "/api/v1/auth/barber-register/",
+            self._register_payload("owner", "self@test.com", "+998901112233"),
+            format="json",
+        )
+        access = reg.json()["access"]
+        self.client.post(
+            "/api/v1/auth/barber-register/",
+            self._register_payload("employee", "other@test.com", "+998902223344"),
+            format="json",
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+        own = self.client.post(
+            "/api/v1/auth/barber-check-availability/",
+            {"phone": "+998901112233"},
+            format="json",
+        )
+        self.assertEqual(own.status_code, 200)
+        self.assertTrue(own.json()["phone_available"])
+
+        taken = self.client.post(
+            "/api/v1/auth/barber-check-availability/",
+            {"phone": "+998902223344"},
+            format="json",
+        )
+        self.assertEqual(taken.status_code, 200)
+        self.assertFalse(taken.json()["phone_available"])
+
+    def test_check_availability_also_allow_phones(self):
+        self.client.post(
+            "/api/v1/auth/barber-register/",
+            self._register_payload("owner", "allow@test.com", "+998901112233"),
+            format="json",
+        )
+        res = self.client.post(
+            "/api/v1/auth/barber-check-availability/",
+            {
+                "phone": "+998901112233",
+                "also_allow_phones": ["+998901112233"],
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.json()["phone_available"])
+
     def test_refresh_rotation_invalidates_old_token(self):
         reg = self.client.post(
             "/api/v1/auth/barber-register/",

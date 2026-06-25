@@ -27,6 +27,7 @@ export function parseFieldErrors(body: unknown): FieldErrors {
 export async function checkBarberAvailability(input: {
   email?: string;
   phone?: string;
+  alsoAllowPhones?: string[];
 }): Promise<{ emailError: string | null; phoneError: string | null }> {
   const res = await apiFetch("/api/v1/auth/barber-check-availability/", {
     method: "POST",
@@ -34,6 +35,9 @@ export async function checkBarberAvailability(input: {
     body: JSON.stringify({
       email: input.email ? normalizeEmail(input.email) : "",
       phone: input.phone ? formatUzPhoneE164(input.phone) : "",
+      also_allow_phones: (input.alsoAllowPhones ?? [])
+        .map((p) => formatUzPhoneE164(p))
+        .filter(Boolean),
     }),
   });
   const body = await parseJsonSafe(res);

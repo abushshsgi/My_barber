@@ -32,6 +32,7 @@ import { apiFetch, getBarberAccessToken } from "@/lib/api";
 import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { cn } from "@/lib/utils";
 import { finishOnboardingAndGo } from "@/lib/onboarding-complete";
+import { useBarberPhoneAvailability } from "@/lib/barber-phone-availability";
 import { readJoinDraft, clearJoinDraft } from "@/lib/join-draft";
 import { readSignupDraft } from "@/lib/signup-draft";
 import { submitEmployeeRegisterAndJoin } from "@/lib/barber-signup-flow";
@@ -228,6 +229,14 @@ function SalonJoinSetupPage() {
   const [pageError, setPageError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  const {
+    phoneError,
+    checkingPhone,
+    verifyPhoneDigits,
+    handlePhoneBlur,
+    clearPhoneError,
+  } = useBarberPhoneAvailability();
+
   /* --- Boot: hydrate from server --- */
   useEffect(() => {
     let alive = true;
@@ -399,7 +408,7 @@ function SalonJoinSetupPage() {
     const hasOpenDay = schedule.some((d) => d.open);
     return [
       // 0: Profile
-      firstName.trim().length > 1 && lastName.trim().length > 1 && phoneDigits.length === 9,
+      firstName.trim().length > 1 && lastName.trim().length > 1 && phoneDigits.length === 9 && !phoneError,
       // 1: Location text
       locationText.trim().length > 4,
       // 2: Services — kamida bitta to‘liq xizmat
@@ -409,7 +418,7 @@ function SalonJoinSetupPage() {
       // 4: Languages
       languages.length > 0,
     ];
-  }, [firstName, lastName, phoneDigits, locationText, services, schedule, languages]);
+  }, [firstName, lastName, phoneDigits, phoneError, locationText, services, schedule, languages]);
 
   const isLast = step === TOTAL_STEPS - 1;
   const canNext = stepValid[step];
@@ -537,6 +546,10 @@ function SalonJoinSetupPage() {
     setPageError(null);
     setBusy(true);
     try {
+      if (step === 0 && phoneDigits.length === 9) {
+        const ok = await verifyPhoneDigits(phoneDigits);
+        if (!ok) return;
+      }
       const hasToken = Boolean(getBarberAccessToken());
       if (hasToken) {
         if (step === 0) {
@@ -578,6 +591,10 @@ function SalonJoinSetupPage() {
     setPageError(null);
     setBusy(true);
     try {
+      if (phoneDigits.length === 9) {
+        const ok = await verifyPhoneDigits(phoneDigits);
+        if (!ok) return;
+      }
       let mid = membershipId;
       const joinDraft = readJoinDraft();
 
@@ -774,7 +791,13 @@ function SalonJoinSetupPage() {
                 lastName={lastName}
                 setLastName={setLastName}
                 phoneDigits={phoneDigits}
-                setPhoneDigits={setPhoneDigits}
+                setPhoneDigits={(v) => {
+                  setPhoneDigits(v);
+                  clearPhoneError();
+                }}
+                phoneError={phoneError}
+                checkingPhone={checkingPhone}
+                onPhoneBlur={() => handlePhoneBlur(phoneDigits)}
                 avatar={avatarPreview}
                 handleAvatarFile={handleAvatar}
               />
@@ -910,6 +933,9 @@ function BarberProfileStep(props: {
   setLastName: (v: string) => void;
   phoneDigits: string;
   setPhoneDigits: (v: string) => void;
+  phoneError?: string | null;
+  checkingPhone?: boolean;
+  onPhoneBlur?: () => void;
   avatar: string | null;
   handleAvatarFile: (f: FileList | null) => void;
 }) {
@@ -970,6 +996,9 @@ function BarberProfileStep(props: {
               required
               digits={props.phoneDigits}
               onChange={props.setPhoneDigits}
+              error={props.phoneError}
+              checking={props.checkingPhone}
+              onBlur={props.onPhoneBlur}
             />
           </div>
         </div>
@@ -1505,16 +1534,22 @@ function PhoneInput({
   digits,
   onChange,
   required,
+  error,
+  checking,
+  onBlur,
 }: {
   label: string;
   digits: string;
   onChange: (digitsOnly: string) => void;
   required?: boolean;
+  error?: string | null;
+  checking?: boolean;
+  onBlur?: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const formatted = formatPhone(digits);
   const has = digits.length > 0;
-  const valid = digits.length === 9;
+  const valid = digits.length === 9 && !error;
 
   useEffect(() => {
     const el = inputRef.current;
@@ -1544,6 +1579,7 @@ function PhoneInput({
             autoComplete="tel-national"
             value={formatted}
             onChange={(e) => onChange(normalizePhoneDigits(e.target.value))}
+            onBlur={onBlur}
             placeholder="99 123-45-67"
             className={cn(
               "peer h-full w-full rounded-r-xl bg-transparent px-3.5 text-sm tabular-nums text-foreground outline-none placeholder:text-muted-foreground/60",
@@ -1571,11 +1607,15 @@ function PhoneInput({
           </div>
         )}
       </div>
-      {has && !valid && (
+      {error ? (
+        <p className="mt-1.5 text-[11px] font-medium text-destructive">{error}</p>
+      ) : checking ? (
+        <p className="mt-1.5 text-[11px] font-medium text-muted-foreground">Telefon tekshirilmoqda…</p>
+      ) : has && digits.length !== 9 ? (
         <p className="mt-1.5 text-[11px] font-medium text-destructive">
           Telefon raqami 9 ta raqamdan iborat bo‘lishi kerak
         </p>
-      )}
+      ) : null}
     </div>
   );
 }
