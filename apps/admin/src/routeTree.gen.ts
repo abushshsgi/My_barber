@@ -32,6 +32,7 @@ import { Route as AdminSupportTicketIdRouteImport } from './routes/admin.support
 import { Route as AdminServicesAnalyticsRouteImport } from './routes/admin.services.analytics'
 import { Route as AdminSalonsSalonIdRouteImport } from './routes/admin.salons.$salonId'
 import { Route as AdminFinanceTransactionsRouteImport } from './routes/admin.finance.transactions'
+import { Route as AdminFinancePromotionsRouteImport } from './routes/admin.finance.promotions'
 import { Route as AdminFinancePayoutsRouteImport } from './routes/admin.finance.payouts'
 import { Route as AdminBookingsBookingIdRouteImport } from './routes/admin.bookings.$bookingId'
 import { Route as AdminBarbersBarberIdRouteImport } from './routes/admin.barbers.$barberId'
@@ -157,6 +158,11 @@ const AdminFinanceTransactionsRoute =
     path: '/transactions',
     getParentRoute: () => AdminFinanceRoute,
   } as any)
+const AdminFinancePromotionsRoute = AdminFinancePromotionsRouteImport.update({
+  id: '/promotions',
+  path: '/promotions',
+  getParentRoute: () => AdminFinanceRoute,
+} as any)
 const AdminFinancePayoutsRoute = AdminFinancePayoutsRouteImport.update({
   id: '/payouts',
   path: '/payouts',
@@ -223,6 +229,7 @@ export interface FileRoutesByFullPath {
   '/admin/barbers/$barberId': typeof AdminBarbersBarberIdRouteWithChildren
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
+  '/admin/finance/promotions': typeof AdminFinancePromotionsRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
@@ -254,6 +261,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
+  '/admin/finance/promotions': typeof AdminFinancePromotionsRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
@@ -287,6 +295,7 @@ export interface FileRoutesById {
   '/admin/barbers/$barberId': typeof AdminBarbersBarberIdRouteWithChildren
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
+  '/admin/finance/promotions': typeof AdminFinancePromotionsRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
@@ -322,6 +331,7 @@ export interface FileRouteTypes {
     | '/admin/barbers/$barberId'
     | '/admin/bookings/$bookingId'
     | '/admin/finance/payouts'
+    | '/admin/finance/promotions'
     | '/admin/finance/transactions'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
@@ -353,6 +363,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/bookings/$bookingId'
     | '/admin/finance/payouts'
+    | '/admin/finance/promotions'
     | '/admin/finance/transactions'
     | '/admin/services/analytics'
     | '/admin/support/$ticketId'
@@ -385,6 +396,7 @@ export interface FileRouteTypes {
     | '/admin/barbers/$barberId'
     | '/admin/bookings/$bookingId'
     | '/admin/finance/payouts'
+    | '/admin/finance/promotions'
     | '/admin/finance/transactions'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
@@ -566,6 +578,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminFinanceTransactionsRouteImport
       parentRoute: typeof AdminFinanceRoute
     }
+    '/admin/finance/promotions': {
+      id: '/admin/finance/promotions'
+      path: '/promotions'
+      fullPath: '/admin/finance/promotions'
+      preLoaderRoute: typeof AdminFinancePromotionsRouteImport
+      parentRoute: typeof AdminFinanceRoute
+    }
     '/admin/finance/payouts': {
       id: '/admin/finance/payouts'
       path: '/payouts'
@@ -666,11 +685,13 @@ const AdminBookingsRouteWithChildren = AdminBookingsRoute._addFileChildren(
 
 interface AdminFinanceRouteChildren {
   AdminFinancePayoutsRoute: typeof AdminFinancePayoutsRoute
+  AdminFinancePromotionsRoute: typeof AdminFinancePromotionsRoute
   AdminFinanceTransactionsRoute: typeof AdminFinanceTransactionsRoute
 }
 
 const AdminFinanceRouteChildren: AdminFinanceRouteChildren = {
   AdminFinancePayoutsRoute: AdminFinancePayoutsRoute,
+  AdminFinancePromotionsRoute: AdminFinancePromotionsRoute,
   AdminFinanceTransactionsRoute: AdminFinanceTransactionsRoute,
 }
 

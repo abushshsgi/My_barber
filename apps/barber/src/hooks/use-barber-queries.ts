@@ -1,5 +1,12 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiJson, apiList } from "@/lib/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiFetch, apiJson, apiList } from "@/lib/api";
+import {
+  mapApiBooking,
+  statusAfterAction,
+  type ApiBookingRow,
+  type BookingAction,
+} from "@/lib/map-booking";
+import type { Booking } from "@/components/barber/BarberContext";
 
 export const barberQueryKeys = {
   all: ["barber"] as const,
@@ -28,6 +35,55 @@ export type ApiBarberService = {
   image_url?: string | null;
   barber?: number | null;
 };
+
+export function useBarberBookingsQuery(enabled = true) {
+  return useQuery({
+    queryKey: barberQueryKeys.bookings(),
+    queryFn: async () => {
+      const rows = await apiList<ApiBookingRow>("/api/v1/bookings/");
+      return rows.map(mapApiBooking);
+    },
+    enabled,
+    staleTime: 20_000,
+    refetchInterval: 30_000,
+  });
+}
+
+export function useBookingActionMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, action }: { id: string; action: BookingAction }) => {
+      const res = await apiFetch(`/api/v1/bookings/${id}/${action}/`, { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const detail =
+          typeof body === "object" && body && "detail" in body
+            ? String((body as { detail: unknown }).detail)
+            : "Amal bajarilmadi";
+        throw new Error(detail);
+      }
+      return { id, action };
+    },
+    onMutate: async ({ id, action }) => {
+      await qc.cancelQueries({ queryKey: barberQueryKeys.bookings() });
+      const prev = qc.getQueryData<Booking[]>(barberQueryKeys.bookings());
+      qc.setQueryData<Booking[]>(barberQueryKeys.bookings(), (old) =>
+        (old ?? []).map((b) =>
+          b.id === id ? { ...b, status: statusAfterAction(action, b.status) } : b,
+        ),
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) {
+        qc.setQueryData(barberQueryKeys.bookings(), ctx.prev);
+      }
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: barberQueryKeys.bookings() });
+    },
+  });
+}
 
 export function useBarberServicesQuery(enabled = true) {
   return useQuery({

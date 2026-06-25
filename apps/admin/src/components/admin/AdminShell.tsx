@@ -106,6 +106,7 @@ const SECTIONS: Section[] = [
     items: [
       { to: "/admin/finance", label: "Daromad", icon: TrendingUp },
       { to: "/admin/finance/payouts", label: "To'lovlar", icon: Wallet },
+      { to: "/admin/finance/promotions", label: "TOP reklamalar", icon: Megaphone },
       { to: "/admin/finance/transactions", label: "Tranzaksiyalar", icon: Receipt },
     ],
   },

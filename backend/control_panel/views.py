@@ -12,7 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from accounts.models import AdminAccount, LaunchInterest, User
 from accounts.uz_regions import UzRegion
 from accounts.permissions import IsAdmin
-from barbers.models import Barber, BarberService, BarberSupportTicket
+from barbers.models import Barber, BarberPromotion, BarberService, BarberSupportTicket
 from bookings.models import Booking, BookingLine, Review
 from bookings.serializers import BookingSerializer
 from salons.catalog_bootstrap import ensure_default_catalog_seeded
@@ -32,6 +32,7 @@ from .serializers import (
     AdminCategoryWriteSerializer,
     AdminFinanceTransactionSerializer,
     AdminPayoutSerializer,
+    AdminBarberPromotionSerializer,
     AdminReviewListSerializer,
     AdminSalonDetailSerializer,
     AdminSalonListSerializer,
@@ -956,6 +957,90 @@ class AdminPayoutMarkPaidView(APIView):
         except Exception:
             pass
         return Response({"ok": True})
+
+
+class AdminBarberPromotionListView(generics.ListAPIView):
+    permission_classes = [IsAdmin]
+    serializer_class = AdminBarberPromotionSerializer
+
+    def get_queryset(self):
+        qs = BarberPromotion.objects.select_related("barber").order_by("-created_at")
+        status = (self.request.query_params.get("status") or "").strip()
+        if status:
+            qs = qs.filter(status=status)
+        return qs
+
+
+class AdminBarberPromotionApproveView(APIView):
+    permission_classes = [IsAdmin]
+
+    def post(self, request, pk: int):
+        promo = BarberPromotion.objects.select_related("barber").filter(pk=pk).first()
+        if not promo:
+            raise NotFound()
+        if promo.status != BarberPromotion.Status.PENDING:
+            return Response({"detail": "Faqat kutilayotgan so'rov tasdiqlanadi."}, status=400)
+        before = {"status": promo.status}
+        promo.status = BarberPromotion.Status.ACTIVE
+        promo.save(update_fields=["status"])
+        _audit(
+            request,
+            "update",
+            "barber_promotion",
+            promo.id,
+            promo.barber.full_name or promo.barber.email,
+            before=before,
+            after={"status": promo.status},
+        )
+        try:
+            from notifications.utils import notify_barber
+
+            notify_barber(
+                promo.barber,
+                "promotion_active",
+                "TOP reklama faollashdi",
+                f"Reklamangiz {promo.ends_at.date()} gacha faol.",
+                {"promotion_id": promo.id},
+            )
+        except Exception:
+            pass
+        return Response(AdminBarberPromotionSerializer(promo).data)
+
+
+class AdminBarberPromotionRejectView(APIView):
+    permission_classes = [IsAdmin]
+
+    def post(self, request, pk: int):
+        promo = BarberPromotion.objects.select_related("barber").filter(pk=pk).first()
+        if not promo:
+            raise NotFound()
+        if promo.status != BarberPromotion.Status.PENDING:
+            return Response({"detail": "Faqat kutilayotgan so'rov rad etiladi."}, status=400)
+        before = {"status": promo.status}
+        promo.status = BarberPromotion.Status.CANCELLED
+        promo.save(update_fields=["status"])
+        _audit(
+            request,
+            "update",
+            "barber_promotion",
+            promo.id,
+            promo.barber.full_name or promo.barber.email,
+            before=before,
+            after={"status": promo.status},
+        )
+        try:
+            from notifications.utils import notify_barber
+
+            notify_barber(
+                promo.barber,
+                "promotion_rejected",
+                "TOP so'rovi rad etildi",
+                "Admin bilan bog'laning yoki qayta urinib ko'ring.",
+                {"promotion_id": promo.id},
+            )
+        except Exception:
+            pass
+        return Response(AdminBarberPromotionSerializer(promo).data)
 
 
 class AdminAuditLogListView(generics.ListAPIView):

@@ -1378,6 +1378,89 @@ export async function markPayoutPaid(id: string): Promise<{ ok: true }> {
   return { ok: true as const };
 }
 
+export type AdminPromotion = {
+  id: string;
+  barber_name: string;
+  barber_email: string;
+  barber_avatar: string;
+  promotion_type: string;
+  status: string;
+  starts_at: string;
+  ends_at: string;
+  amount_paid: number;
+  region: string;
+  notes: string;
+  package_label: string;
+  created_at: string;
+};
+
+export async function fetchPromotions(status?: string): Promise<AdminPromotion[]> {
+  const url = status
+    ? `/api/v1/admin/marketing/promotions/?status=${encodeURIComponent(status)}`
+    : "/api/v1/admin/marketing/promotions/";
+  const res = await apiFetch(url);
+  const j = (await res.json().catch(() => ({}))) as any;
+  if (!res.ok) throw new Error(j.detail || "Xato");
+  const rows = Array.isArray(j) ? j : j.results || [];
+  return rows.map((p: any) => ({
+    id: String(p.id),
+    barber_name: String(p.barber_name || ""),
+    barber_email: String(p.barber_email || ""),
+    barber_avatar: String(p.barber_avatar || ""),
+    promotion_type: String(p.promotion_type || ""),
+    status: String(p.status || ""),
+    starts_at: String(p.starts_at || ""),
+    ends_at: String(p.ends_at || ""),
+    amount_paid: Number(p.amount_paid || 0),
+    region: String(p.region || ""),
+    notes: String(p.notes || ""),
+    package_label: String(p.package_label || ""),
+    created_at: String(p.created_at || ""),
+  }));
+}
+
+export async function approvePromotion(id: string): Promise<AdminPromotion> {
+  const res = await apiFetch(`/api/v1/admin/marketing/promotions/${id}/approve/`, { method: "POST" });
+  const j = (await res.json().catch(() => ({}))) as any;
+  if (!res.ok) throw new Error(j.detail || "Xato");
+  return {
+    id: String(j.id),
+    barber_name: String(j.barber_name || ""),
+    barber_email: String(j.barber_email || ""),
+    barber_avatar: String(j.barber_avatar || ""),
+    promotion_type: String(j.promotion_type || ""),
+    status: String(j.status || ""),
+    starts_at: String(j.starts_at || ""),
+    ends_at: String(j.ends_at || ""),
+    amount_paid: Number(j.amount_paid || 0),
+    region: String(j.region || ""),
+    notes: String(j.notes || ""),
+    package_label: String(j.package_label || ""),
+    created_at: String(j.created_at || ""),
+  };
+}
+
+export async function rejectPromotion(id: string): Promise<AdminPromotion> {
+  const res = await apiFetch(`/api/v1/admin/marketing/promotions/${id}/reject/`, { method: "POST" });
+  const j = (await res.json().catch(() => ({}))) as any;
+  if (!res.ok) throw new Error(j.detail || "Xato");
+  return {
+    id: String(j.id),
+    barber_name: String(j.barber_name || ""),
+    barber_email: String(j.barber_email || ""),
+    barber_avatar: String(j.barber_avatar || ""),
+    promotion_type: String(j.promotion_type || ""),
+    status: String(j.status || ""),
+    starts_at: String(j.starts_at || ""),
+    ends_at: String(j.ends_at || ""),
+    amount_paid: Number(j.amount_paid || 0),
+    region: String(j.region || ""),
+    notes: String(j.notes || ""),
+    package_label: String(j.package_label || ""),
+    created_at: String(j.created_at || ""),
+  };
+}
+
 export type AdminAuditRow = {
   id: string;
   admin: string;

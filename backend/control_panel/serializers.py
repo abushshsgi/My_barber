@@ -4,7 +4,7 @@ from django.db.utils import OperationalError, ProgrammingError
 
 from accounts.models import AdminAccount, User
 from accounts.uz_regions import UzRegion
-from barbers.models import Barber, BarberService
+from barbers.models import Barber, BarberPromotion, BarberService
 from bookings.models import Booking, Review
 from salons.models import CatalogService, Category, Salon, SalonMembership, Service
 
@@ -880,6 +880,47 @@ class AdminPayoutSerializer(serializers.ModelSerializer):
             return b.avatar.url
         except Exception:
             return ""
+
+
+class AdminBarberPromotionSerializer(serializers.ModelSerializer):
+    barber_name = serializers.CharField(source="barber.full_name", read_only=True)
+    barber_email = serializers.CharField(source="barber.email", read_only=True)
+    barber_avatar = serializers.SerializerMethodField()
+    package_label = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BarberPromotion
+        fields = (
+            "id",
+            "barber_name",
+            "barber_email",
+            "barber_avatar",
+            "promotion_type",
+            "status",
+            "starts_at",
+            "ends_at",
+            "amount_paid",
+            "region",
+            "notes",
+            "package_label",
+            "created_at",
+        )
+
+    def get_barber_avatar(self, obj: BarberPromotion) -> str:
+        b = obj.barber
+        if not b.avatar:
+            return ""
+        try:
+            return b.avatar.url
+        except Exception:
+            return ""
+
+    def get_package_label(self, obj: BarberPromotion) -> str:
+        notes = (obj.notes or "").strip()
+        if notes.startswith("package="):
+            key = notes.split("=", 1)[-1]
+            return {"week": "1 hafta TOP", "month": "1 oy TOP"}.get(key, key)
+        return "TOP listing"
 
 
 class AdminSupportTicketSerializer(serializers.ModelSerializer):
