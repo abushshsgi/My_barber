@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.auth_utils import customer_catalog_region
-from accounts.throttles import SalonSearchThrottle
+from accounts.throttles import BarberBroadcastThrottle, BarberPromoThrottle, SalonSearchThrottle
 from accounts.uz_regions import UzRegion
 from bookings.availability import (
     build_available_slots,
@@ -357,14 +357,8 @@ class MyBarberCatalogServiceView(APIView):
 
 
 class MyBarberServiceViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticatedBarberAware]
+    permission_classes = [IsBarber]
     serializer_class = BarberServiceSerializer
-
-    def list(self, request, *args, **kwargs):
-        from barbers.salon_service_sync import sync_all_barber_services_for_barber
-
-        sync_all_barber_services_for_barber(request.user.barber)
-        return super().list(request, *args, **kwargs)
 
     def get_queryset(self):
         b = self.request.user.barber
@@ -507,6 +501,7 @@ class MyBarberGoalViewSet(viewsets.ModelViewSet):
 class MyBarberPromoViewSet(viewsets.ModelViewSet):
     permission_classes = [IsBarber]
     serializer_class = BarberPromoSerializer
+    throttle_classes = [BarberPromoThrottle]
 
     def get_queryset(self):
         return BarberPromo.objects.filter(barber=self.request.user.barber).order_by("-created_at")
@@ -514,7 +509,7 @@ class MyBarberPromoViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(barber=self.request.user.barber)
 
-    @action(detail=False, methods=["post"])
+    @action(detail=False, methods=["post"], throttle_classes=[BarberBroadcastThrottle])
     def broadcast(self, request):
         message = str(request.data.get("message", "") or "").strip()
         if not message:
@@ -645,7 +640,7 @@ class MyBarberReviewsView(APIView):
 
 
 class MyBarberWorkingHoursViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticatedBarberAware]
+    permission_classes = [IsBarber]
     serializer_class = BarberWorkingHoursSerializer
 
     def get_queryset(self):

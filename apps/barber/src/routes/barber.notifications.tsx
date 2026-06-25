@@ -15,7 +15,7 @@ const ICONS = {
 } as const;
 
 function NotificationsPage() {
-  const { notifications, markNotificationRead } = useBarberContext();
+  const { notifications, markNotificationRead, markAllNotificationsRead } = useBarberContext();
   const navigate = useNavigate();
   const unread = notifications.filter((n) => !n.read).length;
   const openTarget = (n: (typeof notifications)[number]) => {
@@ -38,14 +38,25 @@ function NotificationsPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
-      <div className="flex items-end justify-between">
+      <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-heading text-3xl font-semibold text-foreground">Bildirishnomalar</h1>
           <p className="text-muted-foreground mt-1 text-sm">
             {unread > 0 ? `${unread} ta o'qilmagan` : "Barchasi o'qildi"}
           </p>
         </div>
-        <Bell className="size-5 text-muted-foreground" />
+        <div className="flex items-center gap-3">
+          {unread > 0 ? (
+            <button
+              type="button"
+              onClick={() => void markAllNotificationsRead()}
+              className="text-sm font-medium text-foreground underline underline-offset-4"
+            >
+              Barchasini o'qilgan deb belgilash
+            </button>
+          ) : null}
+          <Bell className="size-5 text-muted-foreground" />
+        </div>
       </div>
 
       <div className="space-y-2">

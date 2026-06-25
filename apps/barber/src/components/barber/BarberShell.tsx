@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { flushSync } from "react-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard,
@@ -159,15 +159,7 @@ function Sidebar({
 
       {/* Nav */}
       <nav className="flex-1 p-3 overflow-y-auto overflow-x-hidden">
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={navAnimationKey}
-            initial={{ opacity: 0, x: viewMode === "salon" ? 14 : -14 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: viewMode === "salon" ? -10 : 10 }}
-            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="space-y-4"
-          >
+        <div className="space-y-4">
             {(() => {
               const groups = nav.reduce<Record<string, NavItem[]>>((acc, item) => {
                 const g = item.group ?? "—";
@@ -183,7 +175,7 @@ function Sidebar({
                     </div>
                   )}
                   <div className="flex flex-col gap-0.5">
-                    {groups[g].map((item, idx) => {
+                    {groups[g].map((item) => {
                       const Icon = item.icon;
                       const active =
                         item.to === "/barber"
@@ -192,18 +184,13 @@ function Sidebar({
                       const locked =
                         !fullyReady && !isBarberNavAllowedDuringActivation(item.to);
                       return (
-                        <motion.div
-                          key={item.to}
-                          initial={{ opacity: 0, y: 4 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.02 * idx, duration: 0.18 }}
-                        >
+                        <div key={item.to}>
                           <Link
                             to={item.to}
                             onClick={locked ? (e) => e.preventDefault() : onNavigate}
                             aria-disabled={locked}
                             className={cn(
-                              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-200",
+                              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-150",
                               active
                                 ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
                                 : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
@@ -213,15 +200,14 @@ function Sidebar({
                             <Icon className="size-4 shrink-0" />
                             <span>{item.label}</span>
                           </Link>
-                        </motion.div>
+                        </div>
                       );
                     })}
                   </div>
                 </div>
               ));
             })()}
-          </motion.div>
-        </AnimatePresence>
+        </div>
       </nav>
 
       {/* Profile card */}
@@ -586,15 +572,9 @@ export function BarberShell() {
           onMobileMenu={() => setMobileOpen(true)}
           onCommandOpen={() => setCmdOpen(true)}
         />
-        <motion.div
-          key={viewMode}
-          initial={{ opacity: 0.94 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.1, ease: [0.22, 1, 0.36, 1] }}
-          className="flex-1 overflow-y-auto"
-        >
+        <div className="flex-1 overflow-y-auto">
           <Outlet />
-        </motion.div>
+        </div>
       </main>
 
       <CommandPalette

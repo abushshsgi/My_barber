@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, Megaphone, Copy, Sparkles, Send } from "lucide-react";
+import { Plus, Megaphone, Copy, Sparkles, Send, Rocket } from "lucide-react";
 import { useBarberContext } from "@/components/barber/BarberContext";
 import { PageHeader, SectionCard, StatusPill } from "@/components/barber/primitives";
 import { toast } from "sonner";
+import { apiFetch, formatApiError } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/barber/marketing")({
   component: MarketingPage,
@@ -11,6 +13,17 @@ export const Route = createFileRoute("/barber/marketing")({
 
 function MarketingPage() {
   const { promos, togglePromo, clients, addPromo, sendAnnouncement } = useBarberContext();
+  const boostQ = useQuery({
+    queryKey: ["barber", "marketing-boost"],
+    queryFn: async () => {
+      const res = await apiFetch("/api/v1/barber/marketing/boost/");
+      if (!res.ok) throw new Error("Boost ma'lumotlari yuklanmadi");
+      return res.json() as Promise<{
+        packages: Array<{ key: string; days: number; amount: string; label: string }>;
+        active: { id: number; ends_at: string; amount_paid: string } | null;
+      }>;
+    },
+  });
   const [showPromoForm, setShowPromoForm] = useState(false);
   const [promoForm, setPromoForm] = useState({
     code: "",
@@ -105,6 +118,47 @@ function MarketingPage() {
           </div>
         </SectionCard>
       )}
+
+      <SectionCard
+        title="Topga chiqish"
+        description="To'lov qilib qidiruvda yuqoriroq ko'rining — admin tasdiqlaydi"
+      >
+        {boostQ.data?.active ? (
+          <p className="text-sm text-emerald-700 dark:text-emerald-400 mb-3">
+            Faol TOP: {boostQ.data.active.ends_at.slice(0, 10)} gacha
+          </p>
+        ) : null}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {(boostQ.data?.packages ?? []).map((pkg) => (
+            <button
+              key={pkg.key}
+              type="button"
+              onClick={async () => {
+                const res = await apiFetch("/api/v1/barber/marketing/boost/", {
+                  method: "POST",
+                  body: JSON.stringify({ package: pkg.key }),
+                });
+                const body = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                  toast.error(formatApiError(body, "So'rov yuborilmadi."));
+                  return;
+                }
+                toast.success("TOP so'rovi yuborildi — admin tasdiqlaydi.");
+                void boostQ.refetch();
+              }}
+              className="flex items-center gap-3 rounded-xl border border-border p-4 text-left hover:border-foreground/40 transition-colors"
+            >
+              <Rocket className="size-5 shrink-0" />
+              <div>
+                <div className="font-medium text-sm">{pkg.label}</div>
+                <div className="text-xs text-muted-foreground">
+                  {Number(pkg.amount).toLocaleString()} so'm · {pkg.days} kun
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </SectionCard>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <Hero

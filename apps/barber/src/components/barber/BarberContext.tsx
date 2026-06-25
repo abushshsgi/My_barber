@@ -10,6 +10,10 @@ import {
 import { apiFetch, apiJson, apiList, clearBarberTokens } from "@/lib/api";
 import { inferFlowIdentity, type FlowIdentity } from "@/lib/barber-flow-config";
 import { clearOnboardingJustCompleted } from "@/lib/onboarding-complete";
+import {
+  clearOnboardingStatusCache,
+  writeOnboardingStatusCache,
+} from "@/lib/onboarding-status-cache";
 
 type OnboardingStatusPayload = {
   is_complete?: boolean;
@@ -977,6 +981,10 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   }> => {
     try {
       const st = await apiJson<OnboardingStatusPayload>("/api/v1/barber/onboarding/status/");
+      writeOnboardingStatusCache({
+        fully_ready: st.fully_ready,
+        required_next_path: st.required_next_path ?? null,
+      });
       return applyActivationStatus(st);
     } catch {
       setFullyReady(false);
@@ -1046,30 +1054,38 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         if (!alive) return;
         const loaders = gateFullyReady
           ? [
-              refreshServices(),
-              refreshWorkingHours(),
-              refreshBookings(),
-              refreshNotifications(),
-              refreshConversations(),
-              refreshClients({ workMode: wm, salonId: aid }),
-              refreshInventory(),
-              refreshExpenses(),
-              refreshGoals(),
-              refreshPromos(),
-              refreshSettings(),
-              refreshPortfolio(),
-              refreshFinanceSummary(),
-              refreshReviews(),
-              refreshSalonView(),
+              refreshServices,
+              refreshWorkingHours,
+              refreshBookings,
+              refreshNotifications,
+              refreshConversations,
+              () => refreshClients({ workMode: wm, salonId: aid }),
+              refreshInventory,
+              refreshExpenses,
+              refreshGoals,
+              refreshPromos,
+              refreshSettings,
+              refreshPortfolio,
+              refreshFinanceSummary,
+              refreshReviews,
+              refreshSalonView,
             ]
           : emailVerified
-            ? [refreshServices(), refreshWorkingHours()]
+            ? [refreshServices, refreshWorkingHours]
             : [];
         if (!loaders.length) return;
-        void Promise.all(loaders).catch(() => {
-          if (!alive) return;
-          setBookings([]);
-        });
+        const runBatch = (start: number) => {
+          const batch = loaders.slice(start, start + 4);
+          if (!batch.length) return;
+          void Promise.all(batch.map((fn) => fn())).catch(() => {
+            if (!alive) return;
+            setBookings([]);
+          });
+          if (start + 4 < loaders.length) {
+            window.setTimeout(() => runBatch(start + 4), 0);
+          }
+        };
+        runBatch(0);
       };
       loadSecondary();
     };

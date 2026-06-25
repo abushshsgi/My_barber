@@ -86,6 +86,13 @@ from bookings.views import (
     SalonClientsView,
     SalonPortfolioView,
 )
+from barbers.marketing_api import BarberMarketingBoostView
+from barbers.payout_api import (
+    BarberPayoutBalanceView,
+    BarberPayoutDetailsView,
+    BarberPayoutListView,
+    BarberPayoutRequestView,
+)
 from barbers.views import (
     BarberPublicViewSet,
     MyBarberExpenseViewSet,
@@ -253,6 +260,11 @@ api_routes = [
     path("barber/service-recommendations/", MyBarberServiceRecommendationsView.as_view()),
     path("barber/reviews/", MyBarberReviewsView.as_view()),
     path("barber/finance/summary/", MyBarberFinanceSummaryView.as_view()),
+    path("barber/payouts/", BarberPayoutListView.as_view()),
+    path("barber/payouts/balance/", BarberPayoutBalanceView.as_view()),
+    path("barber/payouts/request/", BarberPayoutRequestView.as_view()),
+    path("barber/payouts/details/", BarberPayoutDetailsView.as_view()),
+    path("barber/marketing/boost/", BarberMarketingBoostView.as_view()),
     path("favorites/salons/", FavoriteSalonListCreateView.as_view()),
     path("favorites/salons/<int:salon_id>/", FavoriteSalonDetailView.as_view()),
     path("notifications/", NotificationListView.as_view()),

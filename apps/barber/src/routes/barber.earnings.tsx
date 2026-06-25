@@ -12,12 +12,23 @@ import {
   type EarningsRange,
 } from "@/lib/finance-range";
 import { cn } from "@/lib/utils";
+import { useBarberPayoutsQuery, useInvalidateBarberQueries, usePayoutBalanceQuery } from "@/hooks/use-barber-queries";
+import { apiFetch, formatApiError } from "@/lib/api";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/barber/earnings")({
   component: EarningsPage,
 });
 
-/** Oxirgi 7 kun: yakunlangan bronlar summasi (start_at bo‘yicha). */
 function useLast7DaysCompletedSeries(bookings: Booking[]) {
   return useMemo(() => {
     const amounts = new Array(7).fill(0);
@@ -46,6 +57,13 @@ function useLast7DaysCompletedSeries(bookings: Booking[]) {
 function EarningsPage() {
   const { transactions, bookings, financeTotals } = useBarberContext();
   const [range, setRange] = useState<EarningsRange>("Hafta");
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [accountRef, setAccountRef] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const { data: balance } = usePayoutBalanceQuery();
+  const { data: payouts = [] } = useBarberPayoutsQuery();
+  const { invalidatePayouts } = useInvalidateBarberQueries();
 
   const completed = useMemo(() => bookings.filter((b) => b.status === "completed"), [bookings]);
   const filteredBookings = useMemo(
@@ -61,7 +79,7 @@ function EarningsPage() {
   const rangeExpenses = filteredTransactions
     .filter((t) => t.kind === "expense")
     .reduce((s, t) => s + Math.abs(t.amount), 0);
-  const balance = gross - rangeExpenses;
+  const balanceVal = balance ? Number(balance.available_balance) : gross - rangeExpenses;
 
   const { bars, labels, weekSegmentTotal } = useLast7DaysCompletedSeries(bookings);
 
@@ -86,8 +104,43 @@ function EarningsPage() {
     URL.revokeObjectURL(url);
   };
 
+  const submitWithdraw = async () => {
+    const amount = Number(withdrawAmount.replace(/\s/g, ""));
+    if (!amount || amount <= 0) {
+      toast.error("Summani kiriting.");
+      return;
+    }
+    if (!accountRef.trim()) {
+      toast.error("Karta yoki hisob raqamini kiriting.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await apiFetch("/api/v1/barber/payouts/request/", {
+        method: "POST",
+        body: JSON.stringify({
+          amount,
+          account_reference: accountRef.trim(),
+          idempotency_key: `wd-${Date.now()}`,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        toast.error(formatApiError(body, "So'rov yuborilmadi."));
+        return;
+      }
+      toast.success("Pul yechish so'rovi admin ga yuborildi.");
+      setWithdrawOpen(false);
+      setWithdrawAmount("");
+      invalidatePayouts();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const rangeHint = range.toLowerCase();
   const showAllTimeNote = range === "Yil";
+  const minWithdraw = balance ? Number(balance.min_withdrawal) : 50000;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
@@ -107,9 +160,8 @@ function EarningsPage() {
             </button>
             <button
               type="button"
-              disabled
-              title="Pul yechish API tez orada"
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-foreground text-background text-sm font-medium opacity-50 cursor-not-allowed"
+              onClick={() => setWithdrawOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
             >
               <ArrowDownToLine className="size-4" />
               Pul yechish
@@ -121,13 +173,14 @@ function EarningsPage() {
       <div className="rounded-2xl bg-foreground text-background p-6 sm:p-8 shadow-card">
         <div className="flex items-center gap-2 text-xs uppercase tracking-wider opacity-70">
           <Wallet className="size-3.5" />
-          Sof balans ({rangeHint})
+          Mavjud balans (yechish uchun)
         </div>
         <div className="font-heading text-4xl sm:text-5xl font-semibold mt-2">
-          {formatUZS(balance)}
+          {formatUZS(balanceVal)}
         </div>
         <div className="text-sm opacity-70 mt-2">
-          Yalpi: {formatUZS(gross)} · xarajatlar: {formatUZS(rangeExpenses)}
+          Tanlangan davr sof: {formatUZS(gross - rangeExpenses)}
+          {balance?.pending_payouts ? ` · kutilayotgan: ${formatUZS(Number(balance.pending_payouts))}` : null}
           {showAllTimeNote ? (
             <>
               {" "}
@@ -136,6 +189,42 @@ function EarningsPage() {
           ) : null}
         </div>
       </div>
+
+      <Dialog open={withdrawOpen} onOpenChange={setWithdrawOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Pul yechish</DialogTitle>
+            <DialogDescription>
+              So'rov admin tasdiqlagandan keyin to'lanadi. Minimal summa: {formatUZS(minWithdraw)}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <input
+              type="text"
+              inputMode="numeric"
+              value={withdrawAmount}
+              onChange={(e) => setWithdrawAmount(e.target.value)}
+              placeholder="Summa (so'm)"
+              className="h-10 w-full rounded-lg border border-border px-3 text-sm"
+            />
+            <input
+              type="text"
+              value={accountRef}
+              onChange={(e) => setAccountRef(e.target.value)}
+              placeholder="Karta yoki hisob raqami"
+              className="h-10 w-full rounded-lg border border-border px-3 text-sm"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setWithdrawOpen(false)}>
+              Bekor
+            </Button>
+            <Button onClick={() => void submitWithdraw()} disabled={submitting}>
+              {submitting ? "Yuborilmoqda..." : "So'rov yuborish"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="inline-flex gap-1 bg-muted p-1 rounded-lg">
         {EARNINGS_RANGES.map((r) => (
@@ -171,7 +260,7 @@ function EarningsPage() {
         <StatCard
           icon={<Wallet className="size-4" />}
           label="Sof daromad"
-          value={formatUZS(balance)}
+          value={formatUZS(gross - rangeExpenses)}
           hint={rangeHint}
         />
         <StatCard
@@ -187,7 +276,7 @@ function EarningsPage() {
           <div>
             <h2 className="font-heading text-lg font-semibold">Oxirgi 7 kun</h2>
             <div className="text-xs text-muted-foreground">
-              Yakunlangan bronlar summasi (kun bo‘yicha) · jami {formatUZS(weekSegmentTotal)}
+              Yakunlangan bronlar summasi · jami {formatUZS(weekSegmentTotal)}
             </div>
           </div>
           <div className="text-2xl font-heading font-semibold">{formatUZS(weekSegmentTotal)}</div>
@@ -204,6 +293,24 @@ function EarningsPage() {
           ))}
         </div>
       </div>
+
+      {payouts.length > 0 ? (
+        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-card">
+          <div className="px-5 py-4 border-b border-border">
+            <h2 className="font-heading text-lg font-semibold">Pul yechish tarixi</h2>
+          </div>
+          {payouts.map((p) => (
+            <div
+              key={p.id}
+              className="grid grid-cols-12 gap-4 px-5 py-3 items-center border-b border-border last:border-b-0"
+            >
+              <div className="col-span-4 text-sm">{p.created_at.slice(0, 10)}</div>
+              <div className="col-span-4 text-sm font-medium">{formatUZS(Number(p.amount))}</div>
+              <div className="col-span-4 text-sm text-muted-foreground capitalize">{p.status}</div>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       <div className="rounded-xl border border-border bg-card overflow-hidden shadow-card">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">

@@ -30,6 +30,10 @@ WALLET_DEBUG_TOPUP_MAX = int(os.environ.get("WALLET_DEBUG_TOPUP_MAX", "1000000")
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() in ("1", "true", "yes")
 
+# Request body size limit (DDoS / abuse mitigation)
+DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.environ.get("DATA_UPLOAD_MAX_MEMORY_SIZE", str(2 * 1024 * 1024)))
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
+
 
 def _build_allowed_hosts() -> list[str]:
     """
@@ -266,6 +270,10 @@ REST_FRAMEWORK = {
         "salon_join": "20/minute",
         "wallet_gift": "30/minute",
         "wallet_topup": "20/minute",
+        "barber_write": "60/minute",
+        "barber_payout": "3/hour",
+        "barber_broadcast": "5/day",
+        "barber_promo": "20/day",
     },
 }
 

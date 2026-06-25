@@ -270,14 +270,19 @@ class SalonDetailSerializer(serializers.ModelSerializer):
         return SalonImageSerializer(obj.images.all(), many=True, context=self.context).data
 
     def get_services(self, obj):
+        from django.core.cache import cache
+
         from barbers.salon_service_sync import sync_all_barber_services_for_barber
 
-        for mem in SalonMembership.objects.filter(
-            salon=obj,
-            invite_state=SalonMembership.InviteState.ACTIVE,
-        ).select_related("barber"):
-            if mem.barber_id:
-                sync_all_barber_services_for_barber(mem.barber)
+        cache_key = f"salon_services_sync:{obj.id}"
+        if not cache.get(cache_key):
+            for mem in SalonMembership.objects.filter(
+                salon=obj,
+                invite_state=SalonMembership.InviteState.ACTIVE,
+            ).select_related("barber"):
+                if mem.barber_id:
+                    sync_all_barber_services_for_barber(mem.barber)
+            cache.set(cache_key, 1, 60)
         qs = obj.services.filter(is_active=True).filter(
             Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True)
         ).order_by("name")

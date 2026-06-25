@@ -47,14 +47,15 @@ class BarberServiceSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
     )
+    barber = serializers.IntegerField(source="profile.barber_id", read_only=True)
     name = serializers.SerializerMethodField()
     duration_minutes = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = BarberService
-        fields = ("id", "catalog_service", "name", "price", "duration_minutes", "is_active", "image_url")
-        read_only_fields = ("id", "name", "duration_minutes", "image_url")
+        fields = ("id", "barber", "catalog_service", "name", "price", "duration_minutes", "is_active", "image_url")
+        read_only_fields = ("id", "barber", "name", "duration_minutes", "image_url")
 
     def validate_price(self, value):
         from .pricing import MIN_SERVICE_PRICE_ERROR, MIN_SERVICE_PRICE_UZS
@@ -293,9 +294,12 @@ class BarberSettingSerializer(serializers.ModelSerializer):
             "auto_accept",
             "language",
             "theme",
+            "payout_holder_name",
+            "payout_bank_name",
+            "payout_account_last4",
             "updated_at",
         )
-        read_only_fields = ("updated_at",)
+        read_only_fields = ("updated_at", "payout_account_last4")
 
 
 class BarberSupportTicketSerializer(serializers.ModelSerializer):

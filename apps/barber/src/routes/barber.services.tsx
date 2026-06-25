@@ -387,6 +387,29 @@ function ServicesSchedulePage() {
     }
   };
 
+  const toggleServiceActive = async (service: ServiceForm) => {
+    if (!service.id || !canEditService(service)) return;
+    const nextActive = !service.is_active;
+    setServices((prev) =>
+      prev.map((item) => (item.id === service.id ? { ...item, is_active: nextActive } : item)),
+    );
+    const ok = await saveService({ ...service, is_active: nextActive });
+    if (!ok) {
+      setServices((prev) =>
+        prev.map((item) => (item.id === service.id ? { ...item, is_active: service.is_active } : item)),
+      );
+      return;
+    }
+    committedRef.current = serializeForm(
+      services.map((item) =>
+        item.id === service.id ? { ...item, is_active: nextActive } : item,
+      ),
+      pendingServicesRef.current,
+    );
+    toast.success(nextActive ? "Xizmat faollashtirildi — mijozlar ko‘ra oladi." : "Xizmat o‘chirildi.");
+    await refreshActivationStatus();
+  };
+
   const deleteService = async (service: ServiceForm) => {
     if (!service.id || !canEditService(service)) return;
     const endpoint = `/api/v1/barber/services/${service.id}/`;
@@ -573,19 +596,11 @@ function ServicesSchedulePage() {
                           <button
                             type="button"
                             disabled={!editable}
-                            onClick={() =>
-                              setServices((prev) =>
-                                prev.map((item) =>
-                                  item.id === service.id
-                                    ? { ...item, is_active: !item.is_active }
-                                    : item,
-                                ),
-                              )
-                            }
+                            onClick={() => void toggleServiceActive(service)}
                             className={cn(
-                              "h-10 rounded-lg border px-2 text-xs font-medium",
+                              "h-10 rounded-lg border px-2 text-xs font-medium transition-colors",
                               service.is_active
-                                ? "border-foreground bg-foreground text-background"
+                                ? "border-emerald-600 bg-emerald-600 text-white"
                                 : "border-border bg-background text-muted-foreground",
                             )}
                           >

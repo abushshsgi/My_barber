@@ -225,6 +225,21 @@ class BookingViewSet(viewsets.ModelViewSet):
             booking.end_at = actual_end
         booking.save(update_fields=["status", "end_at", "updated_at"])
         BookingCompletion.objects.update_or_create(booking=booking, defaults=comp_defaults)
+        try:
+            from control_panel.models import FinanceTransaction
+
+            FinanceTransaction.objects.get_or_create(
+                booking=booking,
+                type=FinanceTransaction.Type.BOOKING,
+                defaults={
+                    "status": FinanceTransaction.Status.COMPLETED,
+                    "amount": booking.total_price,
+                    "barber": booking.barber,
+                    "related_name": f"Booking #{booking.id}",
+                },
+            )
+        except Exception:
+            pass
         notify_user(
             booking.customer,
             "booking_done",
@@ -315,9 +330,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
         if barber:
             qs = qs.filter(barber_id=barber)
         return qs
-
-    def get_permissions(self):
-        return super().get_permissions()
 
     def perform_create(self, serializer):
         review = serializer.save()
@@ -661,17 +673,29 @@ class AnalyticsView(APIView):
             daily_rows = (
                 bookings.annotate(day=TruncDate("start_at"))
                 .values("day")
-                .annotate(rev=Sum("total_price"))
+                .annotate(
+                    rev=Sum("total_price"),
+                    bookings=Count("id"),
+                    clients=Count("customer", distinct=True),
+                )
                 .order_by("day")
             )
             daily = [
                 {
                     "date": row["day"].isoformat() if row["day"] else "",
                     "revenue": str(row["rev"] or 0),
+                    "bookings": row["bookings"] or 0,
+                    "clients": row["clients"] or 0,
                 }
                 for row in daily_rows
             ]
-
+            cancelled_count = Booking.objects.filter(
+                barber=bp,
+                salon__isnull=True,
+                status=Booking.Status.CANCELLED,
+                start_at__gte=start_dt,
+                start_at__lte=end_dt,
+            ).count()
             return Response(
                 {
                     "revenue": str(revenue),
@@ -680,6 +704,8 @@ class AnalyticsView(APIView):
                     "returning_clients": returning,
                     "top_services": top_services,
                     "daily": daily,
+                    "completed_count": bookings.count(),
+                    "cancelled_count": cancelled_count,
                 }
             )
 
@@ -741,16 +767,25 @@ class AnalyticsView(APIView):
         daily_rows = (
             bookings.annotate(day=TruncDate("start_at"))
             .values("day")
-            .annotate(rev=Sum("total_price"))
+            .annotate(rev=Sum("total_price"), bookings=Count("id"), clients=Count("customer", distinct=True))
             .order_by("day")
         )
         daily = [
             {
                 "date": row["day"].isoformat() if row["day"] else "",
                 "revenue": str(row["rev"] or 0),
+                "bookings": row["bookings"] or 0,
+                "clients": row["clients"] or 0,
             }
             for row in daily_rows
         ]
+        cancelled_count = Booking.objects.filter(
+            salon_id=salon_id,
+            status=Booking.Status.CANCELLED,
+            start_at__gte=start_dt,
+            start_at__lte=end_dt,
+        ).count()
+        completed_count = bookings.count()
 
         return Response(
             {
@@ -760,6 +795,8 @@ class AnalyticsView(APIView):
                 "returning_clients": returning,
                 "top_services": top_services,
                 "daily": daily,
+                "completed_count": completed_count,
+                "cancelled_count": cancelled_count,
             }
         )
 

@@ -153,3 +153,47 @@ class WalletGiftThrottle(AuthIPThrottle):
 
 class WalletTopUpThrottle(AuthIPThrottle):
     scope = "wallet_topup"
+
+
+class BarberWriteThrottle(SimpleRateThrottle):
+    scope = "barber_write"
+
+    def get_cache_key(self, request, view):
+        if request.user and request.user.is_authenticated:
+            ident = getattr(request.user, "pk", None) or self.get_ident(request)
+        else:
+            ident = self.get_ident(request)
+        return self.cache_format % {"scope": self.scope, "ident": ident}
+
+
+class BarberPayoutThrottle(SimpleRateThrottle):
+    scope = "barber_payout"
+
+    def get_cache_key(self, request, view):
+        if request.user and request.user.is_authenticated:
+            ident = getattr(request.user, "pk", None) or self.get_ident(request)
+        else:
+            ident = self.get_ident(request)
+        return self.cache_format % {"scope": self.scope, "ident": ident}
+
+
+class BarberBroadcastThrottle(SimpleRateThrottle):
+    scope = "barber_broadcast"
+
+    def get_cache_key(self, request, view):
+        if request.user and request.user.is_authenticated:
+            ident = getattr(request.user, "pk", None) or self.get_ident(request)
+        else:
+            ident = self.get_ident(request)
+        return self.cache_format % {"scope": self.scope, "ident": ident}
+
+
+class BarberPromoThrottle(SimpleRateThrottle):
+    scope = "barber_promo"
+
+    def get_cache_key(self, request, view):
+        if request.user and request.user.is_authenticated:
+            ident = getattr(request.user, "pk", None) or self.get_ident(request)
+        else:
+            ident = self.get_ident(request)
+        return self.cache_format % {"scope": self.scope, "ident": ident}

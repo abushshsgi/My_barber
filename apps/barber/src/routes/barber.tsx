@@ -3,6 +3,10 @@ import { BarberShell } from "@/components/barber/BarberShell";
 import { BarberProvider } from "@/components/barber/BarberContext";
 import { apiFetch, getBarberAccessToken } from "@/lib/api";
 import { isBarberPathAllowedDuringActivation } from "@/lib/barber-activation-gate";
+import {
+  readOnboardingStatusCache,
+  writeOnboardingStatusCache,
+} from "@/lib/onboarding-status-cache";
 import { normalizeRequiredNextPath } from "@/lib/onboarding-redirect";
 
 export const Route = createFileRoute("/barber")({
@@ -14,6 +18,12 @@ export const Route = createFileRoute("/barber")({
     if (isBarberPathAllowedDuringActivation(path)) return;
     if (typeof window === "undefined") return;
     if (!getBarberAccessToken()) return;
+
+    const cached = readOnboardingStatusCache();
+    if (cached?.fully_ready === true) {
+      return;
+    }
+
     try {
       const res = await apiFetch("/api/v1/barber/onboarding/status/");
       if (!res.ok) {
@@ -24,6 +34,7 @@ export const Route = createFileRoute("/barber")({
         required_next_path?: string | null;
         owns_salon?: boolean;
       };
+      writeOnboardingStatusCache(st);
       const requiredNext = normalizeRequiredNextPath(st);
       if (requiredNext) {
         throw redirect({ to: requiredNext });

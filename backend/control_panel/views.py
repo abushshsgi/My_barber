@@ -943,6 +943,18 @@ class AdminPayoutMarkPaidView(APIView):
         p.paid_at = timezone.now()
         p.save(update_fields=["status", "paid_at"])
         _audit(request, "update", "payout", p.id, p.period, before=before, after={"status": p.status})
+        try:
+            from notifications.utils import notify_barber
+
+            notify_barber(
+                p.barber,
+                "payout_paid",
+                "To'lov amalga oshirildi",
+                f"{p.amount} so'm hisobingizga o'tkazildi.",
+                {"payout_id": p.id},
+            )
+        except Exception:
+            pass
         return Response({"ok": True})
 
 

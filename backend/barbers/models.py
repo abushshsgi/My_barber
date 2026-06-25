@@ -303,7 +303,44 @@ class BarberSetting(models.Model):
     auto_accept = models.BooleanField(default=False)
     language = models.CharField(max_length=8, choices=Language.choices, default=Language.UZ)
     theme = models.CharField(max_length=8, choices=Theme.choices, default=Theme.LIGHT)
+    payout_holder_name = models.CharField(max_length=120, blank=True, default="")
+    payout_bank_name = models.CharField(max_length=120, blank=True, default="")
+    payout_account_last4 = models.CharField(max_length=4, blank=True, default="")
+    payout_account_encrypted = models.CharField(max_length=64, blank=True, default="")
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class BarberPromotion(models.Model):
+    class Type(models.TextChoices):
+        TOP_LISTING = "top_listing", "Top listing"
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        ACTIVE = "active", "Active"
+        EXPIRED = "expired", "Expired"
+        CANCELLED = "cancelled", "Cancelled"
+
+    barber = models.ForeignKey(
+        Barber,
+        on_delete=models.CASCADE,
+        related_name="promotions",
+    )
+    promotion_type = models.CharField(max_length=32, choices=Type.choices, db_index=True)
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+    )
+    starts_at = models.DateTimeField(db_index=True)
+    ends_at = models.DateTimeField(db_index=True)
+    amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    region = models.CharField(max_length=32, blank=True, default="", db_index=True)
+    notes = models.CharField(max_length=255, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
 
 
 class BarberSupportTicket(models.Model):
