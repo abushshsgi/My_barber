@@ -1,6 +1,7 @@
 import { Outlet, Link, createRootRouteWithContext } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
+import { DeployRecovery } from "@/components/DeployRecovery";
 import { PwaInstallHint } from "@/components/PwaInstallHint";
 
 interface RouterContext {
@@ -38,6 +39,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
+      <DeployRecovery />
       <PwaInstallHint />
       <Outlet />
       <Toaster position="top-right" richColors closeButton />

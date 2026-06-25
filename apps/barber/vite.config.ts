@@ -66,8 +66,10 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,woff,webmanifest}"],
+          globIgnores: ["**/version.json"],
           navigateFallback: "/index.html",
-          navigateFallbackDenylist: [/^\/api/],
+          navigateFallbackDenylist: [/^\/api/, /^\/assets\//, /\.(?:js|css|map)$/],
+          cleanupOutdatedCaches: true,
         },
       }),
     ],

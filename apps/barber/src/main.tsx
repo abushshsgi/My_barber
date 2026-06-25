@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
 
 import { getRouter } from "./router";
+import { installChunkReloadGuard } from "./lib/chunk-reload";
 import { initNativeShell } from "./lib/native-shell";
 import "./styles.css";
 
@@ -13,6 +14,7 @@ if (!root) {
 }
 
 void initNativeShell();
+installChunkReloadGuard();
 
 createRoot(root).render(
   <React.StrictMode>

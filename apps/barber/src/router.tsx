@@ -1,9 +1,16 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter, useRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
+import { isChunkLoadError } from "@/lib/chunk-reload";
 
 function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
+  const chunkError = isChunkLoadError(error);
+
+  if (chunkError && typeof window !== "undefined") {
+    window.location.reload();
+    return null;
+  }
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
