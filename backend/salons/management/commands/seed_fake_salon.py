@@ -49,8 +49,20 @@ class Command(BaseCommand):
             action="store_true",
             help="owner_barber bo‘lmasin (faqat anonim qidiruv, region parametrisiz).",
         )
+        parser.add_argument(
+            "--purge",
+            action="store_true",
+            help="seed_fake_salon orqali yaratilgan salonlarni o'chirish.",
+        )
 
     def handle(self, *args, **options):
+        if options["purge"]:
+            deleted, _ = Salon.objects.filter(
+                description="seed_fake_salon orqali test uchun."
+            ).delete()
+            self.stdout.write(self.style.SUCCESS(f"Purged seed_fake_salon salons: {deleted}"))
+            return
+
         name = (options["name"] or "").strip()
         if not name:
             self.stderr.write(self.style.ERROR("name bo‘sh bo‘lmasligi kerak."))

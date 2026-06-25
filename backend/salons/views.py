@@ -78,15 +78,11 @@ class SalonViewSet(viewsets.ModelViewSet):
         """Mijoz JWT: viloyat serverdan; anonim / barber: ixtiyoriy ?region=."""
         forced = customer_catalog_region(self.request)
         if forced:
-            return qs.filter(
-                Q(owner_barber__region=forced) | Q(owner_barber__region="")
-            )
+            return qs.filter(owner_barber__region=forced)
         region = (self.request.query_params.get("region") or "").strip()
         valid_regions = {c[0] for c in UzRegion.choices}
         if region and region in valid_regions:
-            return qs.filter(
-                Q(owner_barber__region=region) | Q(owner_barber__region="")
-            )
+            return qs.filter(owner_barber__region=region)
         return qs
 
     def get_queryset(self):
@@ -130,9 +126,7 @@ class SalonViewSet(viewsets.ModelViewSet):
             qs = qs.filter(is_published=True)
             reg = customer_catalog_region(self.request)
             if reg:
-                qs = qs.filter(
-                    Q(owner_barber__region=reg) | Q(owner_barber__region="")
-                )
+                qs = qs.filter(owner_barber__region=reg)
             return qs
 
         return qs

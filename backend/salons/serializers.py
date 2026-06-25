@@ -20,6 +20,17 @@ from .models import (
 )
 
 
+def _salon_cover_url(salon, context: dict | None = None) -> str | None:
+    if not salon.cover_image:
+        return None
+    context = context or {}
+    request = context.get("request")
+    url = salon.cover_image.url
+    if request is not None:
+        return request.build_absolute_uri(url)
+    return url
+
+
 class SalonHoursSerializer(serializers.ModelSerializer):
     class Meta:
         model = SalonHours
@@ -170,9 +181,7 @@ class SalonListSerializer(serializers.ModelSerializer):
         return out
 
     def get_cover_image(self, obj):
-        from salons.mock.cover_urls import resolve_salon_cover_url
-
-        return resolve_salon_cover_url(obj, self.context)
+        return _salon_cover_url(obj, self.context)
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -255,17 +264,10 @@ class SalonDetailSerializer(serializers.ModelSerializer):
         return obj.reviews.count()
 
     def get_cover_image(self, obj):
-        from salons.mock.cover_urls import resolve_salon_cover_url
-
-        return resolve_salon_cover_url(obj, self.context)
+        return _salon_cover_url(obj, self.context)
 
     def get_images(self, obj):
-        real = SalonImageSerializer(obj.images.all(), many=True, context=self.context).data
-        if real:
-            return real
-        from salons.mock.serialization import serialize_mock_gallery_images
-
-        return serialize_mock_gallery_images(obj)
+        return SalonImageSerializer(obj.images.all(), many=True, context=self.context).data
 
     def get_services(self, obj):
         from barbers.salon_service_sync import sync_all_barber_services_for_barber

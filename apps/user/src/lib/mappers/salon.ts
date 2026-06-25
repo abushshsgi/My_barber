@@ -9,14 +9,6 @@ function toNum(v: string | number | null | undefined, fallback = 0): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function mockKindFromSlug(slug: string): Category | null {
-  const match = /^mock-tashkent-(\d{3})$/.exec(slug);
-  if (!match) return null;
-  const kinds: Category[] = ["barber", "barber", "barber", "beauty", "nails", "spa"];
-  const idx = parseInt(match[1], 10) - 1;
-  return kinds[idx % kinds.length] ?? "barber";
-}
-
 function audienceForCategory(category: Category): Audience {
   if (category === "barber") return "men";
   if (category === "beauty" || category === "nails" || category === "spa") return "women";
@@ -24,8 +16,6 @@ function audienceForCategory(category: Category): Audience {
 }
 
 function resolveCategory(api: ApiSalonList): Category {
-  const fromSlug = mockKindFromSlug(api.slug || "");
-  if (fromSlug) return fromSlug;
   const name = api.name.toLowerCase();
   if (/nail|gel pro|manicure|polish/i.test(name)) return "nails";
   if (/spa|wellness|harmony|zen|oasis|serenity|retreat|calm|hammom|massaj/i.test(name)) return "spa";

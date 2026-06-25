@@ -4,7 +4,7 @@ import { fetchSalonReviews } from "@/lib/api/reviews";
 import { mapReview } from "@/lib/mappers/review";
 import { authQueryEnabled } from "@/lib/auth-query";
 import { mapRatingSummary, mapStaffToBarber } from "@/lib/mappers/salon";
-import { mockSalonReviews, mergeRatingSummary } from "@/lib/mock-salon-reviews";
+import { mergeRatingSummary } from "@/lib/salon-rating-summary";
 import { useSalonDetail } from "@/hooks/use-salons";
 import i18n from "@/i18n/config";
 
@@ -49,9 +49,7 @@ export function useSalonPage(id: string) {
 
   const apiReviews = reviews.data ?? [];
   const base = detail.data;
-  const usingMockReviews = apiReviews.length === 0 && Boolean(base) && !reviews.isLoading;
-  const resolvedReviews =
-    apiReviews.length > 0 ? apiReviews : base ? mockSalonReviews(base, lang) : [];
+  const resolvedReviews = apiReviews;
 
   const resolvedSummary = base
     ? mergeRatingSummary(ratingSummary.data, resolvedReviews, base.rating, lang)
@@ -69,7 +67,7 @@ export function useSalonPage(id: string) {
 
   return {
     salon,
-    reviewsAreMock: usingMockReviews && resolvedReviews.length > 0,
+    reviewsAreMock: false,
     isLoading: detail.isLoading,
     error: detail.error,
   };

@@ -247,7 +247,7 @@ export function MapSalonSheet({
   }, [expanded, onExpandedChange]);
 
   const gridSalons = salons.slice(0, GRID_COUNT);
-  const activeSalon = salons.find((s) => s.id === activeId) ?? gridSalons[0];
+  const activeSalon = salons.find((s) => s.id === activeId) ?? null;
 
   const updateDetailReveal = (height: number) => {
     setDetailRevealed(height > collapsedHeightRef.current + DETAIL_REVEAL_PX);

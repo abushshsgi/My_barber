@@ -67,6 +67,7 @@ export type Map2GISProps = {
   showUserLocation?: boolean;
   userLocation?: { lat: number; lng: number } | null;
   onMapReady?: (handle: MapHandle) => void;
+  onMapError?: (message: string) => void;
   autoFitMarkers?: boolean;
   fitPadding?: { top?: number; right?: number; bottom?: number; left?: number };
   fitMaxZoom?: number;
@@ -85,6 +86,7 @@ export function Map2GIS({
   showUserLocation = false,
   userLocation = null,
   onMapReady,
+  onMapError,
   autoFitMarkers = true,
   fitPadding,
   fitMaxZoom,
@@ -102,6 +104,7 @@ export function Map2GIS({
   const userMarkerRef = useRef<mapgl.HtmlMarker | null>(null);
   const userCircleRef = useRef<mapgl.Circle | null>(null);
   const onMapReadyRef = useRef(onMapReady);
+  const onMapErrorRef = useRef(onMapError);
   const onViewportChangeRef = useRef(onViewportChange);
   const onMarkerHoverRef = useRef(onMarkerHover);
   const onMarkerSelectRef = useRef(onMarkerSelect);
@@ -118,6 +121,10 @@ export function Map2GIS({
   useEffect(() => {
     onMapReadyRef.current = onMapReady;
   }, [onMapReady]);
+
+  useEffect(() => {
+    onMapErrorRef.current = onMapError;
+  }, [onMapError]);
 
   useEffect(() => {
     onViewportChangeRef.current = onViewportChange;
@@ -332,7 +339,9 @@ export function Map2GIS({
       })
       .catch((err: unknown) => {
         console.error("[Map2GIS] failed to load mapgl", err);
-        setMapError("Xarita yuklanmadi. Internet yoki 2GIS kalitini tekshiring.");
+        const message = "Xarita yuklanmadi. Internet yoki 2GIS kalitini tekshiring.";
+        setMapError(message);
+        onMapErrorRef.current?.(message);
       });
 
     return () => {

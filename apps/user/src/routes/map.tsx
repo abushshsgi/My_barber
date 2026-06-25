@@ -17,11 +17,9 @@ import {
   DEFAULT_MAP_FILTERS,
   applyMapSalonFilters,
   countActiveMapFilters,
-  serializeMapFilters,
   type MapFiltersState,
 } from "@/lib/map-filters";
 import { hasValidMapCoords, salonMatchesMapAudience } from "@/lib/map-utils";
-import { mergeSalonCatalogSources } from "@/lib/merge-salon-catalog";
 import { filterSalonsByViewport, normalizeMapCoords } from "@/lib/map-viewport";
 import { rankSalonsForUser } from "@/lib/recommendations";
 import { parseMapRouteSearch } from "@/lib/map-route-search";
@@ -73,6 +71,7 @@ type SalonMapProps = {
   showUserLocation: boolean;
   userLocation: { lat: number; lng: number } | null;
   onMapReady?: (handle: SalonMapHandle) => void;
+  onMapError?: (message: string) => void;
   autoFitMarkers?: boolean;
 };
 
@@ -87,6 +86,7 @@ function MapCanvas({
   showUserLocation,
   userLocation,
   onMapReady,
+  onMapError,
   autoFitMarkers,
 }: SalonMapProps) {
   return (
@@ -102,6 +102,7 @@ function MapCanvas({
         showUserLocation={showUserLocation}
         userLocation={userLocation}
         onMapReady={onMapReady}
+        onMapError={onMapError}
         autoFitMarkers={autoFitMarkers}
       />
     </MapErrorBoundary>
@@ -123,18 +124,28 @@ function MapView() {
 
   const ctx = useRecommendContext();
   const hasCoords = ctx.lat != null && ctx.lng != null;
-  const { data: nearbySalons = [], isLoading: nearbyLoading } = useSalonsNearby(
+  const {
+    data: nearbySalons = [],
+    isLoading: nearbyLoading,
+    isError: nearbyError,
+    refetch: refetchNearby,
+  } = useSalonsNearby(
     hasCoords ? ctx.lat! : undefined,
     hasCoords ? ctx.lng! : undefined,
     25,
   );
-  const { data: listSalons = [], isLoading: listLoading } = useSalonsList();
+  const {
+    data: listSalons = [],
+    isLoading: listLoading,
+    isError: listError,
+    refetch: refetchList,
+  } = useSalonsList();
   const listLoadingAny = listLoading || nearbyLoading;
+  const catalogError = nearbyError || listError;
 
   const baseSalons = useMemo(() => {
-    const base = hasCoords
-      ? mergeSalonCatalogSources(nearbySalons, listSalons)
-      : listSalons;
+    const base =
+      hasCoords && nearbySalons.length > 0 ? nearbySalons : listSalons;
     return rankSalonsForUser(base, ctx).map(withNormalizedCoords);
   }, [hasCoords, nearbySalons, listSalons, ctx]);
 
@@ -160,10 +171,12 @@ function MapView() {
   }));
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [desktopMapExpanded, setDesktopMapExpanded] = useState(false);
-  const [mapHandle, setMapHandle] = useState<SalonMapHandle | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [mapLoadError, setMapLoadError] = useState<string | null>(null);
   const [viewport, setViewport] = useState<SalonMapViewport | null>(null);
   const mapHandleRef = useRef<SalonMapHandle | null>(null);
+  const initialFitDoneRef = useRef(false);
+  const userHasPannedRef = useRef(false);
 
   useEffect(() => {
     setQuery(routeQ);
@@ -177,7 +190,7 @@ function MapView() {
 
   const onMapReady = useCallback((handle: SalonMapHandle) => {
     mapHandleRef.current = handle;
-    setMapHandle(handle);
+    setMapLoadError(null);
     setMapReady(true);
     const vp = handle.getViewport();
     if (vp) setViewport(vp);
@@ -186,7 +199,13 @@ function MapView() {
     [50, 200, 500].forEach((ms) => window.setTimeout(resize, ms));
   }, []);
 
+  const onMapError = useCallback((message: string) => {
+    setMapLoadError(message);
+    setMapReady(true);
+  }, []);
+
   const onViewportChange = useCallback((vp: SalonMapViewport) => {
+    userHasPannedRef.current = true;
     setViewport(vp);
   }, []);
 
@@ -218,7 +237,10 @@ function MapView() {
       setActive("");
       return;
     }
-    if (visibleSalons.length === 0) return;
+    if (visibleSalons.length === 0) {
+      setActive("");
+      return;
+    }
     setActive((prev) => {
       if (prev && visibleSalons.some((s) => s.id === prev)) return prev;
       return visibleSalons[0].id;
@@ -261,11 +283,6 @@ function MapView() {
     setHovered(id);
   }, []);
 
-  const fitKey = useMemo(
-    () => `${query}|${mapAudience}|${serializeMapFilters(filters)}`,
-    [query, mapAudience, filters],
-  );
-
   const fitMarkers = useMemo(
     (): SalonMapMarker[] => filtered.map((s) => toMapMarker(s, ctaLabel)),
     [filtered, ctaLabel],
@@ -274,11 +291,13 @@ function MapView() {
   useEffect(() => {
     if (fitMarkers.length === 0) return;
     if (!mapHandleRef.current) return;
+    if (initialFitDoneRef.current && userHasPannedRef.current) return;
     const fit = () => mapHandleRef.current?.fitMarkers(fitMarkers, { bottom: 48 });
     fit();
     const delays = [120, 400].map((ms) => window.setTimeout(fit, ms));
+    initialFitDoneRef.current = true;
     return () => delays.forEach((id) => window.clearTimeout(id));
-  }, [fitKey, fitMarkers, mapReady]);
+  }, [fitMarkers, mapReady]);
 
   useEffect(() => {
     const handle = mapHandleRef.current;
@@ -291,19 +310,34 @@ function MapView() {
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");
-    if (mq.matches) return;
+    const applyOverflow = () => {
+      if (mq.matches) return;
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.overflow = "hidden";
+    };
+    const clearOverflow = () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
 
-    const prevHtml = document.documentElement.style.overflow;
-    const prevBody = document.body.style.overflow;
-    document.documentElement.style.overflow = "hidden";
-    document.body.style.overflow = "hidden";
+    if (!mq.matches) applyOverflow();
+    const onChange = () => {
+      if (mq.matches) clearOverflow();
+      else applyOverflow();
+    };
+    mq.addEventListener("change", onChange);
     return () => {
-      document.documentElement.style.overflow = prevHtml;
-      document.body.style.overflow = prevBody;
+      mq.removeEventListener("change", onChange);
+      clearOverflow();
     };
   }, []);
 
-  const emptyMessage = query.trim()
+  const viewportEmpty =
+    !listLoadingAny && !catalogError && filtered.length > 0 && visibleSalons.length === 0;
+
+  const emptyMessage = catalogError
+    ? t("map.loadError", { defaultValue: "Salonlar yuklanmadi" })
+    : query.trim()
     ? t("map.emptySearch")
     : countActiveMapFilters(filters) > 0
       ? t("map.emptyFilters")
@@ -326,11 +360,26 @@ function MapView() {
   };
 
   const showMapSkeleton = listLoadingAny && salonsWithCoords.length === 0;
-  const showMapBootOverlay = mounted && !mapReady && !showMapSkeleton;
+  const showMapBootOverlay = mounted && !mapReady && !showMapSkeleton && !mapLoadError;
+
+  const retryCatalog = useCallback(() => {
+    void refetchList();
+    if (hasCoords) void refetchNearby();
+  }, [refetchList, refetchNearby, hasCoords]);
 
   const mapCanvas = mounted ? (
     <>
-      <MapCanvas {...sharedMapProps} onMapReady={onMapReady} autoFitMarkers={false} />
+      <MapCanvas
+        {...sharedMapProps}
+        onMapReady={onMapReady}
+        onMapError={onMapError}
+        autoFitMarkers={false}
+      />
+      {mapLoadError ? (
+        <div className="absolute inset-x-4 top-4 z-30 rounded-2xl border border-destructive/30 bg-background/95 p-3 text-center shadow-sm">
+          <p className="text-sm font-medium text-destructive">{mapLoadError}</p>
+        </div>
+      ) : null}
       {showMapSkeleton || showMapBootOverlay ? (
         <div className="absolute inset-0 z-20 transition-opacity duration-500 pointer-events-none">
           <MapAreaSkeleton className="h-full w-full" />
@@ -349,9 +398,28 @@ function MapView() {
           {mapCanvas}
         </div>
 
-        {!listLoadingAny && filtered.length === 0 ? (
+        {!listLoadingAny && catalogError ? (
           <div className="absolute inset-x-0 bottom-0 z-30 rounded-t-[22px] border-t border-border/50 bg-background p-4 text-center">
             <p className="text-sm font-medium text-muted-foreground">{emptyMessage}</p>
+            <button
+              type="button"
+              onClick={retryCatalog}
+              className="mt-3 rounded-2xl bg-foreground px-4 py-2 text-sm font-bold text-background"
+            >
+              {t("common.retry", { defaultValue: "Qayta urinish" })}
+            </button>
+          </div>
+        ) : !listLoadingAny && filtered.length === 0 ? (
+          <div className="absolute inset-x-0 bottom-0 z-30 rounded-t-[22px] border-t border-border/50 bg-background p-4 text-center">
+            <p className="text-sm font-medium text-muted-foreground">{emptyMessage}</p>
+          </div>
+        ) : null}
+
+        {viewportEmpty ? (
+          <div className="absolute inset-x-4 top-20 z-30 rounded-2xl border border-border bg-background/95 px-4 py-3 text-center shadow-sm">
+            <p className="text-sm font-medium text-muted-foreground">
+              {t("map.emptyViewport", { defaultValue: "Bu hududda salon yo'q — xaritani siljiting." })}
+            </p>
           </div>
         ) : null}
 
@@ -359,8 +427,8 @@ function MapView() {
           <MapMobileSheetSkeleton />
         ) : (
           <MapSalonSheet
-            salons={visibleSalons}
-            activeId={active || visibleSalons[0]?.id || ""}
+            salons={sidebarSalons}
+            activeId={active}
             onActiveChange={focusSalon}
             query={query}
             onQueryChange={setQuery}
@@ -386,7 +454,7 @@ function MapView() {
             onSalonHover={onMarkerHover}
             loading={listLoadingAny}
             emptyMessage={emptyMessage}
-            viewportEmpty={!listLoadingAny && filtered.length > 0 && visibleSalons.length === 0}
+            viewportEmpty={viewportEmpty}
           />
         ) : null}
         <MapDesktopMapFrame expanded={desktopMapExpanded}>

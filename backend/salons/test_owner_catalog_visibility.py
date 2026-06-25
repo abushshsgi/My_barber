@@ -125,6 +125,27 @@ class OwnerCatalogVisibilityTests(TestCase):
         mem = ensure_owner_membership_active(self.barber, salon)
         self.assertEqual(mem.invite_state, SalonMembership.InviteState.ACTIVE)
 
+    def test_salon_hidden_when_owner_region_empty_without_sync(self):
+        """Region backfill/sync bo'lmasa — mijoz katalogida chiqmasin."""
+        salon = Salon.objects.create(
+            name="No Region Salon",
+            owner_barber=self.barber,
+            latitude=41.2995,
+            longitude=69.2401,
+            address="Toshkent",
+            is_published=True,
+        )
+        self.assertEqual(self.barber.region, "")
+
+        list_res = self.customer_client.get("/api/v1/salons/")
+        self.assertEqual(list_res.status_code, 200)
+        results = list_res.json().get("results", list_res.json())
+        ids = {row["id"] for row in results}
+        self.assertNotIn(salon.id, ids)
+
+        detail_res = self.customer_client.get(f"/api/v1/salons/{salon.id}/")
+        self.assertEqual(detail_res.status_code, 404)
+
     def test_anon_catalog_lists_published_salon(self):
         payload = self._create_salon_payload("Anon Visible Salon")
         create_res = self.barber_client.post("/api/v1/salons/", payload, format="json")

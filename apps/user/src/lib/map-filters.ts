@@ -56,7 +56,7 @@ function matchesRating(salon: Salon, min: MapRatingMin): boolean {
 
 function matchesDistance(salon: Salon, max: MapDistanceMax): boolean {
   if (max === "any") return true;
-  if (!Number.isFinite(salon.distanceKm) || salon.distanceKm <= 0) return true;
+  if (!Number.isFinite(salon.distanceKm) || salon.distanceKm <= 0) return false;
   return salon.distanceKm <= parseFloat(max);
 }
 

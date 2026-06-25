@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { CalendarPlus, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { salonCoverGradient, salonForOffer } from "@/components/offers/offers-shared";
+import { salonCoverGradient } from "@/components/offers/offers-shared";
 import type { Offer } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -51,8 +51,7 @@ export function OffersVariantSwipe({ list }: Props) {
           className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2"
         >
           {list.map((o) => {
-            const salon = salonForOffer(o.salonId);
-            const seed = salon?.coverSeed ?? o.salonId;
+            const seed = o.salonId;
             return (
               <article
                 key={o.id}
@@ -76,7 +75,6 @@ export function OffersVariantSwipe({ list }: Props) {
                     <h3 className="mt-1 text-xl font-bold leading-tight">{o.title}</h3>
                     <p className="mt-2 text-xs font-medium text-background/60">
                       {t("offersPage.validUntil", { date: o.validUntil })}
-                      {salon ? ` · ${salon.distanceKm} km` : ""}
                     </p>
                   </div>
 

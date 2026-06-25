@@ -6,7 +6,6 @@ import {
   filterOffers,
   pickFeatured,
   salonCoverGradient,
-  salonForOffer,
   type OfferFilter,
 } from "@/components/offers/offers-shared";
 import type { Offer } from "@/lib/mock-data";
@@ -74,8 +73,7 @@ export function OffersVariantFeatured({ list }: Props) {
 
       <div className="space-y-3">
         {filtered.map((o) => {
-          const salon = salonForOffer(o.salonId);
-          const seed = salon?.coverSeed ?? o.salonId;
+          const seed = o.salonId;
           return (
             <Link
               key={o.id}
@@ -91,7 +89,6 @@ export function OffersVariantFeatured({ list }: Props) {
               <div className="p-4">
                 <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
                   {o.salonName}
-                  {salon ? ` · ${salon.distanceKm} km` : ""}
                 </p>
                 <h3 className="mt-0.5 text-sm font-bold">{o.title}</h3>
                 <p className="mt-1 text-[11px] font-medium text-muted-foreground">

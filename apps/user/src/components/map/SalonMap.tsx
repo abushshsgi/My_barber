@@ -15,6 +15,7 @@ export function SalonMap({
   showUserLocation = false,
   userLocation = null,
   onMapReady,
+  onMapError,
   autoFitMarkers = true,
   fitPadding,
   fitMaxZoom,
@@ -29,6 +30,7 @@ export function SalonMap({
   showUserLocation?: boolean;
   userLocation?: { lat: number; lng: number } | null;
   onMapReady?: (handle: SalonMapHandle) => void;
+  onMapError?: (message: string) => void;
   autoFitMarkers?: boolean;
   fitPadding?: { top?: number; right?: number; bottom?: number; left?: number };
   fitMaxZoom?: number;
@@ -45,6 +47,7 @@ export function SalonMap({
       showUserLocation={showUserLocation}
       userLocation={userLocation}
       onMapReady={onMapReady}
+      onMapError={onMapError}
       autoFitMarkers={autoFitMarkers}
       fitPadding={fitPadding}
       fitMaxZoom={fitMaxZoom}

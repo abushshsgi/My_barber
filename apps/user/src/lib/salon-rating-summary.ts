@@ -1,87 +1,8 @@
-import type { Review, Salon, SalonRatingSummary } from "@/lib/mock-data";
-
-const MOCK_TEXTS = {
-  uz: [
-    "Juda yaxshi xizmat, ustalar professional!",
-    "Toza va qulay muhit, yana kelaman.",
-    "Vaqtida qabul qilishdi, natijadan mamnunman.",
-    "Narx-sifat nisbati a'lo.",
-    "Do'stlarga tavsiya qilaman.",
-    "Kutish zonasi qulay, choy ham bor edi.",
-    "Soch olish juda sifatli bo'ldi.",
-    "Yaxshi, lekin biroz kutishga to'g'ri keldi.",
-  ],
-  ru: [
-    "Отличный сервис, мастера профессионалы!",
-    "Чисто и уютно, приду ещё.",
-    "Приняли вовремя, результатом доволен.",
-    "Отличное соотношение цены и качества.",
-    "Рекомендую друзьям.",
-    "Удобная зона ожидания.",
-    "Стрижка получилась на высоте.",
-    "Хорошо, но пришлось немного подождать.",
-  ],
-  en: [
-    "Excellent service, very professional staff!",
-    "Clean and cozy — I'll come again.",
-    "On time and great results.",
-    "Great value for the price.",
-    "Highly recommend to friends.",
-    "Comfortable waiting area.",
-    "The haircut turned out great.",
-    "Good overall, but a short wait.",
-  ],
-};
-
-const MOCK_NAMES = {
-  uz: ["Sardor", "Dilshod", "Malika", "Jasur", "Timur", "Aziza", "Bobur", "Nilufar"],
-  ru: ["Алексей", "Мария", "Дмитрий", "Анна", "Игорь", "Елена", "Сергей", "Ольга"],
-  en: ["Alex", "Maria", "David", "Emma", "James", "Sophie", "Michael", "Olivia"],
-};
-
-function hash(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i += 1) h = (h * 31 + s.charCodeAt(i)) | 0;
-  return Math.abs(h);
-}
+import type { Review, SalonRatingSummary } from "@/lib/mock-data";
 
 function pickLang(lang?: string): "uz" | "ru" | "en" {
   const code = (lang || "uz").split("-")[0].toLowerCase();
   return code === "ru" || code === "en" ? code : "uz";
-}
-
-export function mockSalonReviews(
-  salon: Pick<Salon, "id" | "name" | "rating" | "reviewCount">,
-  lang = "uz",
-): Review[] {
-  const l = pickLang(lang);
-  const texts = MOCK_TEXTS[l];
-  const names = MOCK_NAMES[l];
-  const seed = hash(salon.id);
-  const count = Math.min(Math.max(salon.reviewCount || 8, 6), 12);
-  const baseRating = salon.rating > 0 ? salon.rating : 4.85;
-
-  return Array.from({ length: count }, (_, i) => {
-    const n = (seed + i * 17) % names.length;
-    const t = (seed + i * 13) % texts.length;
-    const ratingRoll = (seed + i * 7) % 100;
-    let rating = 5;
-    if (ratingRoll > 88) rating = 4;
-    else if (ratingRoll > 96) rating = 3;
-    if (baseRating >= 4.8 && rating < 4) rating = 4;
-
-    const daysAgo = 2 + ((seed + i * 3) % 45);
-    const date = new Date();
-    date.setDate(date.getDate() - daysAgo);
-
-    return {
-      id: `mock-${salon.id}-${i}`,
-      author: names[n],
-      rating,
-      text: texts[t],
-      date: date.toLocaleDateString(l === "ru" ? "ru-RU" : l === "en" ? "en-US" : "uz-UZ"),
-    };
-  });
 }
 
 export function deriveRatingSummaryFromReviews(

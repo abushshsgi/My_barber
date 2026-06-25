@@ -90,7 +90,7 @@ function BookNowLink({
       params={{ salonId: salon.id }}
       className={className}
     >
-      {children ?? t("map.bookNow")}
+      {children ?? String(t("map.bookNow"))}
     </Link>
   );
 }
