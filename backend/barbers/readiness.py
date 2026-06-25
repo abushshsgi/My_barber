@@ -70,6 +70,31 @@ def _service_count_salon(salon_id: int, barber: Barber) -> int:
     )
 
 
+def _owner_setup_services_ok(barber: Barber, salon_id: int | None) -> bool:
+    """Owner onboarding: salon Service yoki BarberService yetarli."""
+    if _barber_active_service_count(barber) >= MIN_SETUP_SERVICES:
+        return True
+    if not salon_id:
+        return False
+    from salons.models import Service
+
+    return Service.objects.filter(salon_id=salon_id, is_active=True).exists()
+
+
+def _owner_has_schedule(salon_id: int | None, membership) -> bool:
+    """Owner onboarding: membership soatlari yoki salon SalonHours."""
+    from salons.models import BarberWorkingHours as SalonWorkingHours
+    from salons.models import SalonHours
+
+    if membership and SalonWorkingHours.objects.filter(
+        membership=membership, is_day_off=False
+    ).exists():
+        return True
+    if salon_id:
+        return SalonHours.objects.filter(salon_id=salon_id).exists()
+    return False
+
+
 def _service_count_for_readiness(barber: Barber, salon_id: int | None = None) -> int:
     """
     Barber panel `/api/v1/barber/services/` BarberService yozadi.
@@ -141,14 +166,12 @@ def compute_barber_readiness(barber: Barber) -> ReadinessBreakdown:
     elif flow in ("owner", "mybarber") or (flow == "" and owns_salon):
         setup_path = "/mybarber/setup" if flow == "mybarber" else "/salon/create"
         mem = owner_mem
-        has_membership_hours = bool(
-            mem and SalonWorkingHours.objects.filter(membership=mem, is_day_off=False).exists()
-        )
-        schedule_ok = bool(has_membership_hours)
         sid = owner_mem.salon_id if owner_mem else None
+        has_membership_hours = _owner_has_schedule(sid, mem)
+        schedule_ok = bool(has_membership_hours)
         svc_count = _service_count_for_readiness(barber, sid)
         services_ok = svc_count >= MIN_ACTIVE_SERVICES
-        setup_services = _barber_active_service_count(barber) >= MIN_SETUP_SERVICES
+        setup_services = _owner_setup_services_ok(barber, sid)
 
         if not owns_salon:
             required_next_path = setup_path

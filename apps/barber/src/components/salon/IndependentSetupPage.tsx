@@ -534,7 +534,7 @@ export function IndependentSetupPage() {
       }
 
       clearSignupDraft();
-      finishOnboardingAndGo(navigate, "Mustaqil profil tayyor.");
+      await finishOnboardingAndGo(navigate, "Mustaqil profil tayyor.", { afterSetup: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Kutilmagan xatolik yuz berdi.";
       setSubmitError(message);
@@ -553,7 +553,7 @@ export function IndependentSetupPage() {
         {success && (
           <SuccessOverlay
             onClose={() => setSuccess(false)}
-            onContinue={() => void finishOnboardingAndGo(navigate)}
+            onContinue={() => void finishOnboardingAndGo(navigate, undefined, { afterSetup: true })}
           />
         )}
       </AnimatePresence>

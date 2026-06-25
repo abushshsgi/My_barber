@@ -4,8 +4,17 @@ import type { OnboardingStatusLite } from "@/lib/onboarding-redirect";
 
 type NavigateFn = (opts: { to: string; replace?: boolean }) => void | Promise<void>;
 
+type FinishOptions = {
+  /** Setup wizard yakunlanganda — foydalanuvchini qayta setup sahifasiga qaytarmaslik. */
+  afterSetup?: boolean;
+};
+
 /** Onboarding tugagach to‘g‘ri yo‘nalishga — dashboard faqat fully_ready bo‘lsa. */
-export async function finishOnboardingAndGo(navigate: NavigateFn, message?: string): Promise<void> {
+export async function finishOnboardingAndGo(
+  navigate: NavigateFn,
+  message?: string,
+  opts?: FinishOptions,
+): Promise<void> {
   if (message) toast.success(message);
   try {
     const res = await apiFetch("/api/v1/barber/onboarding/status/");
@@ -14,7 +23,7 @@ export async function finishOnboardingAndGo(navigate: NavigateFn, message?: stri
       return;
     }
     const st = (await res.json()) as OnboardingStatusLite;
-    if (st.required_next_path) {
+    if (!opts?.afterSetup && st.required_next_path) {
       await navigate({ to: st.required_next_path, replace: true });
       return;
     }

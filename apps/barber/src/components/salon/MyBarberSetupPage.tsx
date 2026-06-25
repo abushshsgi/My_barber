@@ -455,7 +455,7 @@ export function MyBarberSetupPage() {
       }
 
       clearSignupDraft();
-      finishOnboardingAndGo(navigate, "MyBarber salon tayyor.");
+      await finishOnboardingAndGo(navigate, "MyBarber salon tayyor.", { afterSetup: true });
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : "Xatolik");
     } finally {
@@ -472,7 +472,7 @@ export function MyBarberSetupPage() {
         {success && (
           <SuccessOverlay
             salonName={`MyBarber · ${firstName} ${lastName}`.trim()}
-            onContinue={() => void finishOnboardingAndGo(navigate)}
+            onContinue={() => void finishOnboardingAndGo(navigate, undefined, { afterSetup: true })}
           />
         )}
       </AnimatePresence>

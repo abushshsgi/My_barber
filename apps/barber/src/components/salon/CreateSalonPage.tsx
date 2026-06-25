@@ -171,6 +171,27 @@ export function CreateSalonPage() {
     }
   }, [navigate]);
 
+  // Salon allaqachon yaratilgan bo'lsa — qayta yaratish sahifasida qolmaslik.
+  useEffect(() => {
+    if (!getBarberAccessToken()) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const res = await apiFetch("/api/v1/barber/onboarding/status/");
+        if (!alive || !res.ok) return;
+        const st = (await res.json()) as { owns_salon?: boolean };
+        if (st.owns_salon) {
+          await finishOnboardingAndGo(navigate, undefined, { afterSetup: true });
+        }
+      } catch {
+        /* optional */
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [navigate]);
+
   // --- Salon state ---
   const [salonName, setSalonName] = useState("");
   const [salonDescription, setSalonDescription] = useState("");
@@ -207,6 +228,7 @@ export function CreateSalonPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [completed, setCompleted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
@@ -334,9 +356,10 @@ export function CreateSalonPage() {
   };
 
   const handleSubmit = async () => {
-    if (!allValid || submitting) return;
+    if (!allValid || submitting || completed) return;
     setSubmitError(null);
     setSubmitting(true);
+    let finished = false;
     try {
       // Signup onboarding path: if barber token is missing, complete register -> login first.
       if (!getBarberAccessToken()) {
@@ -458,7 +481,22 @@ export function CreateSalonPage() {
       });
       const createBody = await parseJsonSafe(createRes);
       if (!createRes.ok) {
-        setSubmitError(extractApiError(createBody, "Salon yaratishda xatolik yuz berdi."));
+        const errMsg = extractApiError(createBody, "Salon yaratishda xatolik yuz berdi.");
+        if (createRes.status === 400 && /mavjud|band/i.test(errMsg)) {
+          const stRes = await apiFetch("/api/v1/barber/onboarding/status/");
+          if (stRes.ok) {
+            const st = (await stRes.json()) as { owns_salon?: boolean };
+            if (st.owns_salon) {
+              finished = true;
+              setCompleted(true);
+              await finishOnboardingAndGo(navigate, "Saloningiz allaqachon yaratilgan.", {
+                afterSetup: true,
+              });
+              return;
+            }
+          }
+        }
+        setSubmitError(errMsg);
         return;
       }
 
@@ -520,7 +558,39 @@ export function CreateSalonPage() {
         return;
       }
 
-      // 5) Optional cover upload as salon gallery image.
+      // 5) Barber xizmatlari (onboarding signup_complete uchun).
+      if (serviceRows.length > 0) {
+        const existingSvcRes = await apiFetch("/api/v1/barber/services/");
+        const existingSvcBody = await parseJsonSafe(existingSvcRes);
+        const existingSvc = Array.isArray(existingSvcBody)
+          ? existingSvcBody
+          : Array.isArray((existingSvcBody as { results?: unknown })?.results)
+            ? ((existingSvcBody as { results: Array<{ name: string }> }).results ?? [])
+            : [];
+        const existingNames = new Set(
+          existingSvc.map((e) => (e.name || "").trim().toLowerCase()).filter(Boolean),
+        );
+        for (const s of serviceRows) {
+          const name = s.name.trim();
+          if (!name || existingNames.has(name.toLowerCase())) continue;
+          const svcRes = await apiFetch("/api/v1/barber/services/", {
+            method: "POST",
+            body: JSON.stringify({
+              name,
+              price: parseSomDigits(s.price),
+              duration_minutes: Number(s.duration),
+              is_active: true,
+            }),
+          });
+          if (!svcRes.ok) {
+            const svcErr = await parseJsonSafe(svcRes);
+            setSubmitError(extractApiError(svcErr, "Barber xizmatlarini saqlashda xatolik."));
+            return;
+          }
+        }
+      }
+
+      // 6) Optional cover upload as salon gallery image.
       if (coverFile && Number.isFinite(createdId)) {
         const imageBody = new FormData();
         imageBody.append("images", coverFile);
@@ -539,9 +609,14 @@ export function CreateSalonPage() {
       }
 
       clearSignupDraft();
-      finishOnboardingAndGo(navigate, "Salon va profilingiz muvaffaqiyatli yaratildi.");
+      finished = true;
+      setCompleted(true);
+      setSuccess(true);
+      await finishOnboardingAndGo(navigate, "Salon va profilingiz muvaffaqiyatli yaratildi.", {
+        afterSetup: true,
+      });
     } finally {
-      setSubmitting(false);
+      if (!finished) setSubmitting(false);
     }
   };
 
@@ -558,7 +633,7 @@ export function CreateSalonPage() {
             barberName={`${barberFirstName} ${barberLastName}`.trim()}
             onClose={() => {
               setSuccess(false);
-              void finishOnboardingAndGo(navigate);
+              void finishOnboardingAndGo(navigate, undefined, { afterSetup: true });
             }}
           />
         )}
@@ -776,8 +851,8 @@ export function CreateSalonPage() {
             </button>
           ) : (
             <button
-              disabled={!allValid || submitting}
-              onClick={handleSubmit}
+              disabled={!allValid || submitting || completed}
+              onClick={() => void handleSubmit()}
               className={cn(
                 "inline-flex h-11 flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl px-4 text-[13px] font-semibold transition-[var(--transition-smooth)] sm:h-11 sm:flex-none sm:min-w-[170px] sm:text-sm",
                 allValid && !submitting

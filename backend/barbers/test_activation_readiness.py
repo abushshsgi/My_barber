@@ -144,6 +144,57 @@ class BarberActivationReadinessTests(TestCase):
         self.assertGreaterEqual(r.has_services_count, 5)
         self.assertTrue(r.services_ok)
 
+    def test_owner_signup_complete_with_salon_services_only(self):
+        """Owner create flow salon Service yozadi — BarberService bo‘lmasa ham signup_complete."""
+        owner = Barber.objects.create(
+            email="salononly@test.uz",
+            username="salononly@test.uz",
+            full_name="Salon Owner",
+            work_mode=Barber.WorkMode.SALON,
+            onboarding_flow=Barber.OnboardingFlow.OWNER,
+        )
+        owner.set_password("pass12345")
+        owner.save()
+        BarberProfile.objects.create(
+            barber=owner,
+            latitude=41.0,
+            longitude=69.0,
+            location_text="Toshkent, Chilonzor",
+        )
+        salon = Salon.objects.create(
+            name="Only Salon Services",
+            owner_barber=owner,
+            latitude=41.0,
+            longitude=69.0,
+        )
+        mem = SalonMembership.objects.create(
+            barber=owner,
+            salon=salon,
+            role=SalonMembership.Role.OWNER,
+            invite_state=SalonMembership.InviteState.ACTIVE,
+        )
+        from salons.models import Service, SalonHours
+
+        Service.objects.create(
+            salon=salon,
+            name="Soch olish",
+            price=50_000,
+            duration_minutes=30,
+            is_active=True,
+        )
+        SalonHours.objects.create(
+            salon=salon,
+            weekday=1,
+            open_time=time(9, 0),
+            close_time=time(18, 0),
+        )
+        from barbers.readiness import compute_barber_readiness
+
+        r = compute_barber_readiness(owner)
+        self.assertTrue(r.signup_complete)
+        self.assertIsNone(r.required_next_path)
+        self.assertTrue(r.has_membership_hours)
+
     def test_resend_verification_sends_mail(self):
         access, _ = encode_barber_tokens(self.barber.id)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")

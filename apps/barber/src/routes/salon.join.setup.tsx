@@ -272,7 +272,7 @@ function SalonJoinSetupPage() {
           const st = stRaw as OnboardingStatus;
 
           if (st.fully_ready) {
-            await finishOnboardingAndGo(navigate);
+            await finishOnboardingAndGo(navigate, undefined, { afterSetup: true });
             return;
           }
 
@@ -621,7 +621,9 @@ function SalonJoinSetupPage() {
       await persistServicesStep();
       await persistSpokenLanguages();
       await replaceSchedules(mid);
-      await finishOnboardingAndGo(navigate, "Sozlamalar yakunlandi. Barber panel tayyor.");
+      await finishOnboardingAndGo(navigate, "Sozlamalar yakunlandi. Barber panel tayyor.", {
+        afterSetup: true,
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Xato";
       setPageError(msg);
@@ -707,7 +709,7 @@ function SalonJoinSetupPage() {
         {success && (
           <SuccessOverlay
             barberName={`${firstName} ${lastName}`.trim()}
-            onContinue={() => void finishOnboardingAndGo(navigate)}
+            onContinue={() => void finishOnboardingAndGo(navigate, undefined, { afterSetup: true })}
           />
         )}
       </AnimatePresence>
