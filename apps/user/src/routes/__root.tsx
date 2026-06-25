@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import "@fontsource-variable/space-grotesk";
 import "@fontsource-variable/inter";
 import "../i18n/config";
@@ -6,7 +7,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Link,
   createRootRouteWithContext,
-  useRouter,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -20,6 +20,7 @@ import { ClientOnly } from "../components/ClientOnly";
 import { CLIENT_BOOT_SCRIPT } from "../lib/client-boot-script";
 import { Toaster } from "sonner";
 import { APP_BUILD_ID } from "../lib/app-build-id";
+import { isChunkLoadError, reloadForChunkError } from "../lib/chunk-reload";
 import { requireAuth } from "../lib/require-auth";
 import { AudienceProvider } from "../hooks/use-audience";
 import { CurrencyProvider } from "../hooks/use-currency";
@@ -54,13 +55,28 @@ function NotFoundComponent() {
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
-  const router = useRouter();
+
+  useEffect(() => {
+    if (isChunkLoadError(error)) {
+      reloadForChunkError();
+    }
+  }, [error]);
+
+  const isChunk = isChunkLoadError(error);
+  const hardReload = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("_reload", Date.now().toString(36));
+    window.location.replace(url.toString());
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-6">
       <div className="max-w-md text-center">
         <h1 className="text-2xl font-bold tracking-tight">Xatolik yuz berdi</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Sahifa yuklanmadi. Qaytadan urinib ko'ring.
+          {isChunk
+            ? "Sayt yangilandi — sahifani qayta yuklang."
+            : "Sahifa yuklanmadi. Qaytadan urinib ko'ring."}
         </p>
         {import.meta.env.DEV ? (
           <p className="mt-3 break-all text-left text-xs font-mono text-muted-foreground">
@@ -70,13 +86,17 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <p className="mt-2 text-[10px] text-muted-foreground">Build: {APP_BUILD_ID}</p>
         <div className="mt-6 flex justify-center gap-2">
           <button
+            type="button"
             onClick={() => {
-              router.invalidate();
+              if (isChunk) {
+                hardReload();
+                return;
+              }
               reset();
             }}
             className="rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground"
           >
-            Qaytadan
+            {isChunk ? "Yangilash" : "Qaytadan"}
           </button>
           <a
             href="/"

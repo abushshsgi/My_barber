@@ -50,8 +50,16 @@ if (Array.isArray(config.routes)) {
     const [filesystem] = config.routes.splice(fsIdx, 1);
     config.routes.unshift(filesystem);
   }
+  const fsAt = config.routes.findIndex((r) => r.handle === "filesystem");
+  if (fsAt >= 0) {
+    config.routes.splice(fsAt + 1, 0, {
+      src: "/assets/(.*)",
+      status: 404,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
+  }
 
-  const insertAt = config.routes.findIndex((r) => r.src === "/assets/(.*)");
+  const insertAt = config.routes.findIndex((r) => r.src === "/assets/(.*)" && r.dest);
   const headerRoutes = [
     { src: "/version.json", headers: NO_STORE_HEADERS, continue: true },
     { src: "/((?!assets/).*)", headers: NO_STORE_HEADERS, continue: true },

@@ -1,21 +1,9 @@
 import { useEffect } from "react";
 import { APP_BUILD_ID } from "@/lib/app-build-id";
+import { isChunkLoadError, reloadForChunkError } from "@/lib/chunk-reload";
 import { toast } from "sonner";
 
-const CHUNK_RELOAD_KEY = "mysaloon-chunk-reload";
 const VERSION_RELOAD_KEY = "mysaloon-version-reload";
-
-function isChunkLoadError(reason: unknown): boolean {
-  const message =
-    reason instanceof Error
-      ? reason.message
-      : typeof reason === "string"
-        ? reason
-        : "";
-  return /Failed to fetch dynamically imported module|Importing a module script failed|Loading chunk .* failed|error loading dynamically imported module/i.test(
-    message,
-  );
-}
 
 async function fetchRemoteBuildId(): Promise<string | null> {
   try {
@@ -31,7 +19,9 @@ async function fetchRemoteBuildId(): Promise<string | null> {
 function reloadOnce(storageKey: string) {
   if (sessionStorage.getItem(storageKey)) return false;
   sessionStorage.setItem(storageKey, "1");
-  window.location.reload();
+  const url = new URL(window.location.href);
+  url.searchParams.set("_v", Date.now().toString(36));
+  window.location.replace(url.toString());
   return true;
 }
 
@@ -43,13 +33,13 @@ export function DeployRecovery() {
   useEffect(() => {
     const onPreloadError = (event: Event) => {
       event.preventDefault();
-      reloadOnce(CHUNK_RELOAD_KEY);
+      reloadForChunkError();
     };
 
     const onRejection = (event: PromiseRejectionEvent) => {
       if (!isChunkLoadError(event.reason)) return;
       event.preventDefault();
-      reloadOnce(CHUNK_RELOAD_KEY);
+      reloadForChunkError();
     };
 
     window.addEventListener("vite:preloadError", onPreloadError);

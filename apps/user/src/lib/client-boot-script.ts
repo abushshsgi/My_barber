@@ -1,19 +1,2 @@
-/** Brauzer cache va eski PWA qoldiqlarini React yuklanishidan OLDIN bir marta tozalaydi. */
-export const CLIENT_BOOT_SCRIPT = `(function(){
-var CV="6",CK="mysaloon-ui-cache";
-function purge(cb){
-  var t=[];
-  if("serviceWorker"in navigator)t.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister()}))}));
-  if("caches"in window)t.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k)}))}));
-  if(t.length)Promise.all(t).then(function(){if(cb)cb()});else if(cb)cb();
-}
-try{
-  if(localStorage.getItem(CK)===CV)return;
-  localStorage.setItem(CK,CV);
-  purge(function(){
-    var u=new URL(location.href);
-    u.searchParams.set("_v",Date.now().toString(36));
-    location.replace(u.toString());
-  });
-}catch(e){}
-})();`;
+/** Generated at build — do not edit */
+export const CLIENT_BOOT_SCRIPT = "(function(){\nvar BUILD=\"4e3b8f1\";\nvar CK=\"mysaloon-app-build\";\nfunction purge(cb){\n  var t=[];\n  if(\"serviceWorker\"in navigator)t.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister()}))}));\n  if(\"caches\"in window)t.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k)}))}));\n  if(t.length)Promise.all(t).then(function(){if(cb)cb()});else if(cb)cb();\n}\ntry{\n  if(localStorage.getItem(CK)===BUILD)return;\n  localStorage.setItem(CK,BUILD);\n  purge(function(){\n    var u=new URL(location.href);\n    u.searchParams.set(\"_v\",Date.now().toString(36));\n    location.replace(u.toString());\n  });\n}catch(e){}\n})();";
