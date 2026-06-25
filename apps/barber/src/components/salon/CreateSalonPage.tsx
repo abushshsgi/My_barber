@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 import { getFlowMeta } from "@/lib/barber-flow-config";
 import { finishOnboardingAndGo } from "@/lib/onboarding-complete";
 import { useBarberPhoneAvailability } from "@/lib/barber-phone-availability";
+import { uzRegionCodeFromLabel } from "@/lib/uz-regions";
 
 /* ============================================================
    Types
@@ -428,6 +429,7 @@ export function CreateSalonPage() {
       const phoneOk = await verifyBarberPhone(barberPhoneDigits);
       if (!phoneOk) return;
       const locationText = [salonCity.trim(), salonAddress.trim()].filter(Boolean).join(", ");
+      const regionCode = uzRegionCodeFromLabel(salonCity.trim()) || "";
       const hoursPayload = schedule
         .filter((d) => d.open)
         .map((d) => ({
@@ -446,6 +448,7 @@ export function CreateSalonPage() {
         const meBody = new FormData();
         meBody.append("full_name", fullName);
         meBody.append("phone", barberPhone);
+        if (regionCode) meBody.append("region", regionCode);
         meBody.append("avatar", barberAvatarFile);
         const meRes = await apiFetch("/api/v1/barber/auth/me/", {
           method: "PATCH",
@@ -463,6 +466,7 @@ export function CreateSalonPage() {
           body: JSON.stringify({
             full_name: fullName,
             phone: barberPhone,
+            ...(regionCode ? { region: regionCode } : {}),
           }),
         });
         if (!meRes.ok) {

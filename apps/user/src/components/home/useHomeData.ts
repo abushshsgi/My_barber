@@ -18,6 +18,7 @@ import { useMe } from "@/hooks/use-me";
 import { useRecommendContext } from "@/hooks/use-recommend-context";
 import { useSalonsList, useSalonsNearby } from "@/hooks/use-salons";
 import { hasValidMapCoords } from "@/lib/map-utils";
+import { mergeSalonCatalogSources } from "@/lib/merge-salon-catalog";
 import { rankSalonsForUser } from "@/lib/recommendations";
 
 export function useHomeData() {
@@ -37,10 +38,9 @@ export function useHomeData() {
   const { data: listSalons = [], isLoading: listLoading, error } = useSalonsList();
 
   const salons = useMemo(() => {
-    const base =
-      hasCoords && nearbySalons.length > 0
-        ? nearbySalons
-        : listSalons;
+    const base = hasCoords
+      ? mergeSalonCatalogSources(nearbySalons, listSalons)
+      : listSalons;
     return rankSalonsForUser(base, ctx);
   }, [hasCoords, nearbySalons, listSalons, ctx]);
 

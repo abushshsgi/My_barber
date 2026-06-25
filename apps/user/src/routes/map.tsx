@@ -21,6 +21,7 @@ import {
   type MapFiltersState,
 } from "@/lib/map-filters";
 import { hasValidMapCoords, salonMatchesMapAudience } from "@/lib/map-utils";
+import { mergeSalonCatalogSources } from "@/lib/merge-salon-catalog";
 import { filterSalonsByViewport, normalizeMapCoords } from "@/lib/map-viewport";
 import { rankSalonsForUser } from "@/lib/recommendations";
 import { parseMapRouteSearch } from "@/lib/map-route-search";
@@ -131,7 +132,9 @@ function MapView() {
   const listLoadingAny = listLoading || nearbyLoading;
 
   const baseSalons = useMemo(() => {
-    const base = hasCoords && nearbySalons.length > 0 ? nearbySalons : listSalons;
+    const base = hasCoords
+      ? mergeSalonCatalogSources(nearbySalons, listSalons)
+      : listSalons;
     return rankSalonsForUser(base, ctx).map(withNormalizedCoords);
   }, [hasCoords, nearbySalons, listSalons, ctx]);
 

@@ -26,6 +26,7 @@ from .geo_join import (
 )
 from .join_service import attach_worker_membership
 from .models import CatalogService, BarberWorkingHours, FavoriteSalon, Salon, SalonImage, SalonMembership
+from .owner_setup import ensure_owner_membership_active, sync_owner_region_from_salon
 from .serializers import (
     BarberWorkingHoursSerializer,
     BarberSalonViewSerializer,
@@ -77,11 +78,15 @@ class SalonViewSet(viewsets.ModelViewSet):
         """Mijoz JWT: viloyat serverdan; anonim / barber: ixtiyoriy ?region=."""
         forced = customer_catalog_region(self.request)
         if forced:
-            return qs.filter(owner_barber__region=forced)
+            return qs.filter(
+                Q(owner_barber__region=forced) | Q(owner_barber__region="")
+            )
         region = (self.request.query_params.get("region") or "").strip()
         valid_regions = {c[0] for c in UzRegion.choices}
         if region and region in valid_regions:
-            return qs.filter(owner_barber__region=region)
+            return qs.filter(
+                Q(owner_barber__region=region) | Q(owner_barber__region="")
+            )
         return qs
 
     def get_queryset(self):
@@ -125,7 +130,9 @@ class SalonViewSet(viewsets.ModelViewSet):
             qs = qs.filter(is_published=True)
             reg = customer_catalog_region(self.request)
             if reg:
-                qs = qs.filter(owner_barber__region=reg)
+                qs = qs.filter(
+                    Q(owner_barber__region=reg) | Q(owner_barber__region="")
+                )
             return qs
 
         return qs
@@ -144,14 +151,8 @@ class SalonViewSet(viewsets.ModelViewSet):
         if bp is None:
             raise PermissionDenied("Faqat sartarosh akkaunti bilan salon yaratish mumkin.")
         salon = serializer.save(owner_barber=bp)
-        SalonMembership.objects.get_or_create(
-            barber=bp,
-            salon=salon,
-            defaults={
-                "role": SalonMembership.Role.OWNER,
-                "invite_state": SalonMembership.InviteState.NA,
-            },
-        )
+        sync_owner_region_from_salon(bp, salon)
+        ensure_owner_membership_active(bp, salon)
 
     def perform_update(self, serializer):
         salon = self.get_object()
@@ -329,7 +330,12 @@ class SalonViewSet(viewsets.ModelViewSet):
         salon = self.get_object()
         mems = SalonMembership.objects.filter(
             salon=salon,
-            invite_state=SalonMembership.InviteState.ACTIVE,
+        ).filter(
+            Q(invite_state=SalonMembership.InviteState.ACTIVE)
+            | Q(
+                role=SalonMembership.Role.OWNER,
+                invite_state=SalonMembership.InviteState.NA,
+            )
         ).select_related("barber")
         out = []
         for m in mems:

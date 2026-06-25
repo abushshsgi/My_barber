@@ -35,6 +35,7 @@ import { SalonLocationPicker } from "@/components/map/SalonLocationPicker";
 import { getFlowMeta } from "@/lib/barber-flow-config";
 import { finishOnboardingAndGo } from "@/lib/onboarding-complete";
 import { useBarberPhoneAvailability } from "@/lib/barber-phone-availability";
+import { uzRegionCodeFromLabel } from "@/lib/uz-regions";
 import { requestGpsLocation } from "@/lib/geo-location";
 
 type Service = { id: string; name: string; price: string; duration: string };
@@ -288,6 +289,7 @@ export function MyBarberSetupPage() {
       const phoneOk = await verifyPhoneDigits(phoneDigits);
       if (!phoneOk) return;
       const locationText = [salonCity.trim(), salonAddress.trim()].filter(Boolean).join(", ");
+      const regionCode = uzRegionCodeFromLabel(salonCity.trim()) || "";
       const salonBrandName = `MyBarber · ${salonNick.trim()}`;
       const scheduleRows = defaultScheduleRows();
       const hoursPayload = scheduleRows
@@ -328,6 +330,7 @@ export function MyBarberSetupPage() {
         const fd = new FormData();
         fd.append("full_name", fullName);
         fd.append("phone", barberPhone);
+        if (regionCode) fd.append("region", regionCode);
         fd.append("avatar", avatarFile);
         const meRes = await apiFetch("/api/v1/barber/auth/me/", {
           method: "PATCH",
@@ -342,7 +345,11 @@ export function MyBarberSetupPage() {
       } else {
         const meRes = await apiFetch("/api/v1/barber/auth/me/", {
           method: "PATCH",
-          body: JSON.stringify({ full_name: fullName, phone: barberPhone }),
+          body: JSON.stringify({
+            full_name: fullName,
+            phone: barberPhone,
+            ...(regionCode ? { region: regionCode } : {}),
+          }),
         });
         const meErr = await parseJsonSafe(meRes);
         if (!meRes.ok) {
