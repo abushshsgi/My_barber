@@ -174,3 +174,17 @@ class OwnerCatalogVisibilityTests(TestCase):
         self.assertIn("is_bookable", owner_row)
         # Email tasdiqlanmagan owner — ko‘rinadi, lekin hozircha bron qabul qilmaydi.
         self.assertFalse(owner_row["is_bookable"])
+
+    def test_barber_services_returns_owner_linked_services(self):
+        payload = self._create_salon_payload("Barber Services Salon")
+        create_res = self.barber_client.post("/api/v1/salons/", payload, format="json")
+        self.assertEqual(create_res.status_code, 201, create_res.content)
+        salon_id = create_res.json()["id"]
+
+        svc_res = self.customer_client.get(
+            f"/api/v1/salons/{salon_id}/barber-services/?barber={self.barber.id}",
+        )
+        self.assertEqual(svc_res.status_code, 200, svc_res.content)
+        services = svc_res.json()
+        self.assertGreaterEqual(len(services), 1)
+        self.assertTrue(all(s.get("barber") in (None, self.barber.id) for s in services))

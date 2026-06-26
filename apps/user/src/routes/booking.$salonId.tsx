@@ -1,5 +1,5 @@
 import { createFileRoute, useParams, useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -13,7 +13,9 @@ import { Stepper } from "@/components/Stepper";
 import { useCreateBooking, useBookingAvailability } from "@/hooks/use-bookings-api";
 import { useFamilyMembers } from "@/hooks/use-family";
 import { useDisplayUser } from "@/hooks/use-me";
+import { useSalonBarberServices } from "@/hooks/use-salon-barber-services";
 import { useSalonPage } from "@/hooks/use-salon-page";
+import { filterSalonServicesForBarber, resolveDefaultSalonBarberId } from "@/lib/salon-services";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/$salonId")({
@@ -76,18 +78,18 @@ function useBookingSalonState(
       if (prev) return prev;
       const fromUrl = opts?.initialBarber?.replace(/^["']+|["']+$/g, "");
       if (fromUrl && salon.staff.some((b) => b.id === fromUrl)) return fromUrl;
-      return (
-        salon.staff.find((s) => s.isBookable !== false)?.id ?? salon.staff[0]?.id ?? null
-      );
+      return resolveDefaultSalonBarberId(salon.staff);
     });
   }, [salon, opts?.initialBarber]);
 
+  useEffect(() => {
+    setServiceIds([]);
+  }, [barberId]);
+
+  const barberServicesQuery = useSalonBarberServices(salonId, barberId);
+
   const pickBarber = (id: string) => {
     setBarberId(id);
-    const member = salon?.staff.find((b) => b.id === id);
-    if (member?.serviceIds.length) {
-      setServiceIds((prev) => prev.filter((sid) => member.serviceIds.includes(sid)));
-    }
   };
 
   const dayList = buildDayList(opts?.initialDate);
@@ -109,11 +111,12 @@ function useBookingSalonState(
     }) ?? SLOTS;
 
   const selectedBarber = salon?.staff.find((b) => b.id === barberId);
-  const selectedServices = salon?.services.filter((s) => serviceIds.includes(s.id)) ?? [];
-  const barberServiceOptions =
-    selectedBarber?.serviceIds.length
-      ? salon?.services.filter((s) => selectedBarber.serviceIds.includes(s.id)) ?? []
-      : salon?.services.filter((s) => !s.barberId || s.barberId === barberId) ?? [];
+  const barberServiceOptions = useMemo(() => {
+    if (barberServicesQuery.data?.length) return barberServicesQuery.data;
+    if (!barberId) return salon?.services ?? [];
+    return filterSalonServicesForBarber(salon?.services ?? [], barberId);
+  }, [barberServicesQuery.data, barberId, salon?.services]);
+  const selectedServices = barberServiceOptions.filter((s) => serviceIds.includes(s.id));
   const total = selectedServices.reduce((sum, s) => sum + s.price, 0);
   const bookedForLabel =
     familyMemberId != null
@@ -164,6 +167,7 @@ function useBookingSalonState(
     slotOptions,
     selectedServices,
     barberServiceOptions,
+    barberServicesLoading: barberServicesQuery.isLoading,
     total,
     selectedBarber,
     bookedForLabel,
@@ -179,7 +183,7 @@ function BookingStepContent({
   state: ReturnType<typeof useBookingSalonState>;
   t: ReturnType<typeof useTranslation>["t"];
 }) {
-  const { salon, step, familyMemberId, setFamilyMemberId, barberId, setBarberId, serviceIds, setServiceIds, dayIdx, setDayIdx, slot, setSlot, dayList, slotOptions, selectedServices, barberServiceOptions, selectedBarber, bookedForLabel, total } = state;
+  const { salon, step, familyMemberId, setFamilyMemberId, barberId, setBarberId, serviceIds, setServiceIds, dayIdx, setDayIdx, slot, setSlot, dayList, slotOptions, selectedServices, barberServiceOptions, barberServicesLoading, selectedBarber, bookedForLabel, total } = state;
   if (!salon) return null;
 
   if (step === 1) {
@@ -230,6 +234,13 @@ function BookingStepContent({
       <div>
         <h2 className="text-xl font-bold">{t("booking.selectService")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{selectedBarber?.name}</p>
+        {barberServicesLoading ? (
+          <p className="mt-6 text-sm text-muted-foreground">{t("common.loading")}</p>
+        ) : barberServiceOptions.length === 0 ? (
+          <p className="mt-6 text-sm text-muted-foreground">
+            {t("booking.noServices", { defaultValue: "Bu usta uchun xizmatlar topilmadi" })}
+          </p>
+        ) : (
         <div className="mt-6 space-y-2">
           {barberServiceOptions.map((s) => {
             const sel = serviceIds.includes(s.id);
@@ -251,6 +262,7 @@ function BookingStepContent({
             );
           })}
         </div>
+        )}
       </div>
     );
   }

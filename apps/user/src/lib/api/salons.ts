@@ -1,6 +1,6 @@
 import { apiJson } from "./client";
 import { apiList } from "./list-utils";
-import type { ApiSalonDetail, ApiSalonList, ApiSalonRatingSummary, ApiSalonStaff } from "./types";
+import type { ApiSalonDetail, ApiSalonList, ApiSalonRatingSummary, ApiSalonStaff, ApiService } from "./types";
 import type { ApiNearbySalon } from "./types";
 
 function qs(params: Record<string, string | number | undefined>): string {
@@ -22,6 +22,15 @@ export async function fetchSalon(id: string | number): Promise<ApiSalonDetail> {
 
 export async function fetchSalonStaff(id: string | number): Promise<ApiSalonStaff[]> {
   return apiJson<ApiSalonStaff[]>(`/api/v1/salons/${id}/staff/`);
+}
+
+export async function fetchSalonBarberServices(
+  salonId: string | number,
+  barberId: string | number,
+): Promise<ApiService[]> {
+  return apiJson<ApiService[]>(
+    `/api/v1/salons/${salonId}/barber-services/${qs({ barber: barberId })}`,
+  );
 }
 
 export async function fetchSalonsNearby(

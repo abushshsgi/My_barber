@@ -30,6 +30,7 @@ from .owner_setup import ensure_owner_membership_active, sync_owner_region_from_
 from .serializers import (
     BarberWorkingHoursSerializer,
     BarberSalonViewSerializer,
+    PublicServiceSerializer,
     SalonCreateUpdateSerializer,
     SalonDetailSerializer,
     SalonListSerializer,
@@ -390,6 +391,39 @@ class SalonViewSet(viewsets.ModelViewSet):
                 )
             )
         return Response(out)
+
+    @action(detail=True, methods=["get"], permission_classes=[AllowAny], url_path="barber-services")
+    def barber_services(self, request, pk=None):
+        """Tanlangan barber uchun salon xizmatlari (umumiy + shu barberga bog‘langan)."""
+        salon = self.get_object()
+        barber_param = request.query_params.get("barber")
+        if not barber_param:
+            return Response({"detail": "barber query param required."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            barber_id = int(barber_param)
+        except (TypeError, ValueError):
+            return Response({"detail": "Invalid barber id."}, status=status.HTTP_400_BAD_REQUEST)
+
+        barber = get_object_or_404(Barber, pk=barber_id)
+        is_owner = salon.owner_barber_id == barber.id
+        in_salon = SalonMembership.objects.filter(
+            salon=salon,
+            barber=barber,
+            invite_state=SalonMembership.InviteState.ACTIVE,
+        ).exists()
+        if not is_owner and not in_salon:
+            return Response({"detail": "Barber bu salonda ishlamaydi."}, status=status.HTTP_404_NOT_FOUND)
+
+        from barbers.salon_service_sync import sync_all_barber_services_for_barber
+
+        sync_all_barber_services_for_barber(barber)
+        qs = (
+            salon.services.filter(is_active=True)
+            .filter(Q(barber__isnull=True) | Q(barber=barber))
+            .filter(Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True))
+            .order_by("name")
+        )
+        return Response(PublicServiceSerializer(qs, many=True, context={"request": request}).data)
 
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticatedBarberAware])
     def add_images(self, request, pk=None):

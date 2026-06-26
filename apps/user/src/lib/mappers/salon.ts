@@ -71,6 +71,24 @@ export function mapSalonList(api: ApiSalonList, distanceKm = 0): Salon {
   };
 }
 
+export function mapApiServices(
+  services: {
+    id: number;
+    name: string;
+    duration_minutes: number;
+    price: string | number;
+    barber?: number | null;
+  }[],
+) {
+  return services.map((s) => ({
+    id: String(s.id),
+    name: s.name,
+    duration: s.duration_minutes,
+    price: toNum(s.price),
+    barberId: s.barber != null ? String(s.barber) : null,
+  }));
+}
+
 export function mapSalonDetail(api: ApiSalonDetail, distanceKm = 0): Salon {
   const { from, to } = priceRange(api.services);
   const base = mapSalonList(api, distanceKm);
@@ -80,13 +98,7 @@ export function mapSalonDetail(api: ApiSalonDetail, distanceKm = 0): Salon {
     priceFrom: from,
     priceTo: to,
     coverUrl: base.coverUrl,
-    services: (api.services ?? []).map((s) => ({
-      id: String(s.id),
-      name: s.name,
-      duration: s.duration_minutes,
-      price: toNum(s.price),
-      barberId: s.barber != null ? String(s.barber) : null,
-    })),
+    services: mapApiServices(api.services ?? []),
     portfolio: (api.images ?? []).map((img) => img.image),
     amenities: (api.amenities ?? []).map((a) => ({
       code: a.code,
