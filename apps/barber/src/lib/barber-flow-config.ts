@@ -29,7 +29,8 @@ export type NavItem = {
     | "Settings"
     | "HelpCircle"
     | "Building2"
-    | "Images";
+    | "Images"
+    | "Sparkles";
   group?: string;
 };
 
@@ -39,6 +40,7 @@ export const NAV_CONFIG: Record<NavCapability, NavItem[]> = {
     { to: "/barber/calendar", label: "Kalendar", iconName: "CalendarDays", group: "Asosiy" },
     { to: "/barber/bookings", label: "Bronlar", iconName: "CalendarClock", group: "Asosiy" },
     { to: "/barber/services", label: "Xizmatlar", iconName: "Scissors", group: "Asosiy" },
+    { to: "/barber/amenities", label: "Qulayliklar", iconName: "Sparkles", group: "Asosiy" },
     { to: "/barber/schedule", label: "Ish jadvali", iconName: "Clock", group: "Asosiy" },
     { to: "/barber/clients", label: "Mijozlar", iconName: "Users", group: "Asosiy" },
     { to: "/barber/chat", label: "Chat", iconName: "MessageSquare", group: "Aloqa" },
@@ -57,6 +59,7 @@ export const NAV_CONFIG: Record<NavCapability, NavItem[]> = {
   ],
   salonOwner: [
     { to: "/barber/salon-view", label: "Salon", iconName: "Building2" },
+    { to: "/barber/amenities", label: "Qulayliklar", iconName: "Sparkles" },
     { to: "/barber/salon-view/gallery", label: "Galereya", iconName: "Images" },
     { to: "/barber/salon-view/reviews", label: "Sharhlar", iconName: "Star" },
     { to: "/barber/salon-view/team", label: "Jamoa", iconName: "Users" },
@@ -323,6 +326,7 @@ export function pathAllowedInSalonWorkspace(pathname: string): boolean {
     pathname === "/barber/settings" ||
     pathname === "/barber/help" ||
     pathname === "/barber/notifications" ||
+    pathname === "/barber/amenities" ||
     pathname.startsWith("/barber/notifications/")
   ) {
     return true;

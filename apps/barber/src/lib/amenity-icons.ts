@@ -40,6 +40,7 @@ import {
   Smartphone,
   Sofa,
   Sparkles,
+  Sun,
   Sunrise,
   Thermometer,
   Ticket,
@@ -103,6 +104,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   fan: Fan,
   shirt: Shirt,
   languages: Languages,
+  sun: Sun,
 };
 
 export function amenityIcon(name: string): LucideIcon {

@@ -4,25 +4,10 @@ from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.db import connection, transaction
 
+from salons.amenity_catalog import AMENITY_CATALOG
 from salons.models import Amenity, Salon, SalonAmenity
 
-DEFAULT_AMENITIES = [
-    ("wifi", "wifi", {"uz": "Wi‑Fi", "ru": "Wi‑Fi", "en": "Wi‑Fi"}),
-    ("parking", "car", {"uz": "Avtoturargoh", "ru": "Парковка", "en": "Parking"}),
-    ("card_payment", "credit-card", {"uz": "Karta orqali to'lov", "ru": "Оплата картой", "en": "Card payment"}),
-    ("air_conditioning", "air-vent", {"uz": "Konditsioner", "ru": "Кондиционер", "en": "Air conditioning"}),
-    ("waiting_area", "sofa", {"uz": "Kutish zonasi", "ru": "Зона ожидания", "en": "Waiting area"}),
-    ("coffee_tea", "coffee", {"uz": "Choy va kofe", "ru": "Чай и кофе", "en": "Coffee & tea"}),
-    ("online_booking", "calendar-check", {"uz": "Onlayn bron", "ru": "Онлайн-запись", "en": "Online booking"}),
-    ("sanitized_tools", "sparkles", {"uz": "Dezinfeksiya", "ru": "Стерильность", "en": "Sanitized tools"}),
-    ("premium_products", "gem", {"uz": "Premium mahsulotlar", "ru": "Премиум средства", "en": "Premium products"}),
-    ("kids_friendly", "baby", {"uz": "Bolalar uchun", "ru": "Для детей", "en": "Kids friendly"}),
-    ("wheelchair", "accessibility", {"uz": "Imkoniyati cheklanganlar", "ru": "Доступная среда", "en": "Accessible"}),
-    ("tv", "tv", {"uz": "Televizor", "ru": "ТВ", "en": "TV"}),
-    ("music", "music", {"uz": "Musiqa", "ru": "Музыка", "en": "Music"}),
-    ("private_room", "door-closed", {"uz": "Alohida xona", "ru": "Отдельная комната", "en": "Private room"}),
-    ("loyalty_program", "gift", {"uz": "Bonus dasturi", "ru": "Бонусная программа", "en": "Loyalty program"}),
-]
+DEFAULT_AMENITIES = AMENITY_CATALOG
 
 # Har bir salon slug/id bo'yicha default amenity kodlari (kamida 5 ta)
 DEFAULT_SALON_AMENITY_CODES = [

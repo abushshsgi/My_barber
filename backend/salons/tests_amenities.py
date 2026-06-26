@@ -5,6 +5,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from bookings.models import Booking, Review
 from salons.models import Amenity, Salon, SalonAmenity
+from salons.amenity_catalog import AMENITY_CATALOG
 from salons.management.commands.seed_amenities import DEFAULT_AMENITIES
 
 User = get_user_model()
@@ -42,6 +43,10 @@ class SalonAmenitiesTests(TestCase):
         codes = {a["code"] for a in amenities}
         self.assertIn("wifi", codes)
         self.assertTrue(all("label" in a and "icon" in a for a in amenities))
+
+    def test_amenity_catalog_has_fifty_items(self):
+        self.assertEqual(len(AMENITY_CATALOG), 50)
+        self.assertEqual(len(DEFAULT_AMENITIES), 50)
 
 
 class SalonRatingSummaryTests(TestCase):

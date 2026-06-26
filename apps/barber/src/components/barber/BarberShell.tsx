@@ -99,6 +99,7 @@ const ICON_BY_NAME: Record<MatrixNavItem["iconName"], NavItem["icon"]> = {
   HelpCircle,
   Building2,
   Images,
+  Sparkles,
 };
 
 function mapNav(items: MatrixNavItem[]): NavItem[] {

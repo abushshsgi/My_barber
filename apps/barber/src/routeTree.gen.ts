@@ -36,6 +36,7 @@ import { Route as BarberClientsRouteImport } from './routes/barber.clients'
 import { Route as BarberChatRouteImport } from './routes/barber.chat'
 import { Route as BarberCalendarRouteImport } from './routes/barber.calendar'
 import { Route as BarberBookingsRouteImport } from './routes/barber.bookings'
+import { Route as BarberAmenitiesRouteImport } from './routes/barber.amenities'
 import { Route as BarberActivationRouteImport } from './routes/barber.activation'
 import { Route as SalonJoinIndexRouteImport } from './routes/salon.join.index'
 import { Route as BarberSalonViewIndexRouteImport } from './routes/barber.salon-view.index'
@@ -180,6 +181,11 @@ const BarberBookingsRoute = BarberBookingsRouteImport.update({
   path: '/bookings',
   getParentRoute: () => BarberRoute,
 } as any)
+const BarberAmenitiesRoute = BarberAmenitiesRouteImport.update({
+  id: '/amenities',
+  path: '/amenities',
+  getParentRoute: () => BarberRoute,
+} as any)
 const BarberActivationRoute = BarberActivationRouteImport.update({
   id: '/activation',
   path: '/activation',
@@ -226,6 +232,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/barber': typeof BarberRouteWithChildren
   '/barber/activation': typeof BarberActivationRoute
+  '/barber/amenities': typeof BarberAmenitiesRoute
   '/barber/bookings': typeof BarberBookingsRoute
   '/barber/calendar': typeof BarberCalendarRoute
   '/barber/chat': typeof BarberChatRoute
@@ -262,6 +269,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/barber/activation': typeof BarberActivationRoute
+  '/barber/amenities': typeof BarberAmenitiesRoute
   '/barber/bookings': typeof BarberBookingsRoute
   '/barber/calendar': typeof BarberCalendarRoute
   '/barber/chat': typeof BarberChatRoute
@@ -299,6 +307,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/barber': typeof BarberRouteWithChildren
   '/barber/activation': typeof BarberActivationRoute
+  '/barber/amenities': typeof BarberAmenitiesRoute
   '/barber/bookings': typeof BarberBookingsRoute
   '/barber/calendar': typeof BarberCalendarRoute
   '/barber/chat': typeof BarberChatRoute
@@ -338,6 +347,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/barber'
     | '/barber/activation'
+    | '/barber/amenities'
     | '/barber/bookings'
     | '/barber/calendar'
     | '/barber/chat'
@@ -374,6 +384,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/barber/activation'
+    | '/barber/amenities'
     | '/barber/bookings'
     | '/barber/calendar'
     | '/barber/chat'
@@ -410,6 +421,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/barber'
     | '/barber/activation'
+    | '/barber/amenities'
     | '/barber/bookings'
     | '/barber/calendar'
     | '/barber/chat'
@@ -644,6 +656,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BarberBookingsRouteImport
       parentRoute: typeof BarberRoute
     }
+    '/barber/amenities': {
+      id: '/barber/amenities'
+      path: '/amenities'
+      fullPath: '/barber/amenities'
+      preLoaderRoute: typeof BarberAmenitiesRouteImport
+      parentRoute: typeof BarberRoute
+    }
     '/barber/activation': {
       id: '/barber/activation'
       path: '/activation'
@@ -705,6 +724,7 @@ declare module '@tanstack/react-router' {
 
 interface BarberRouteChildren {
   BarberActivationRoute: typeof BarberActivationRoute
+  BarberAmenitiesRoute: typeof BarberAmenitiesRoute
   BarberBookingsRoute: typeof BarberBookingsRoute
   BarberCalendarRoute: typeof BarberCalendarRoute
   BarberChatRoute: typeof BarberChatRoute
@@ -734,6 +754,7 @@ interface BarberRouteChildren {
 
 const BarberRouteChildren: BarberRouteChildren = {
   BarberActivationRoute: BarberActivationRoute,
+  BarberAmenitiesRoute: BarberAmenitiesRoute,
   BarberBookingsRoute: BarberBookingsRoute,
   BarberCalendarRoute: BarberCalendarRoute,
   BarberChatRoute: BarberChatRoute,

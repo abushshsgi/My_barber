@@ -131,6 +131,7 @@ from salons.views import (
     SalonMembershipViewSet,
     SalonViewSet,
 )
+from salons.amenity_views import AmenityCatalogView, BarberSalonAmenitiesView
 from ai.views import (
     AiFaceCheckView,
     AiStyleAnalyzeView,
@@ -271,6 +272,8 @@ api_routes = [
     path("barber/payouts/request/", BarberPayoutRequestView.as_view()),
     path("barber/payouts/details/", BarberPayoutDetailsView.as_view()),
     path("barber/marketing/boost/", BarberMarketingBoostView.as_view()),
+    path("amenities/", AmenityCatalogView.as_view()),
+    path("barber/amenities/", BarberSalonAmenitiesView.as_view()),
     path("favorites/salons/", FavoriteSalonListCreateView.as_view()),
     path("favorites/salons/<int:salon_id>/", FavoriteSalonDetailView.as_view()),
     path("notifications/", NotificationListView.as_view()),
