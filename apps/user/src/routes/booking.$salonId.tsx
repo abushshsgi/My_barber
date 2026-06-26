@@ -1,5 +1,5 @@
 import { createFileRoute, useParams, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -18,8 +18,9 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/$salonId")({
   head: () => ({ meta: [{ title: "Band qilish — mysaloon.uz" }] }),
-  validateSearch: (search: Record<string, unknown>): { date?: string } => ({
+  validateSearch: (search: Record<string, unknown>): { date?: string; barber?: string } => ({
     date: typeof search.date === "string" ? search.date : undefined,
+    barber: typeof search.barber === "string" ? search.barber : undefined,
   }),
   component: BookingFlow,
 });
@@ -48,7 +49,10 @@ function buildDayList(initialDate?: string) {
   });
 }
 
-function useBookingSalonState(salonId: string, initialDate?: string) {
+function useBookingSalonState(
+  salonId: string,
+  opts?: { initialDate?: string; initialBarber?: string },
+) {
   const router = useRouter();
   const { t } = useTranslation();
   const user = useDisplayUser();
@@ -62,7 +66,27 @@ function useBookingSalonState(salonId: string, initialDate?: string) {
   const [dayIdx, setDayIdx] = useState(0);
   const [slot, setSlot] = useState<string | null>(null);
 
-  const dayList = buildDayList(initialDate);
+  useEffect(() => {
+    if (!salon?.staff.length) return;
+    setBarberId((prev) => {
+      if (prev) return prev;
+      const fromUrl = opts?.initialBarber;
+      if (fromUrl && salon.staff.some((b) => b.id === fromUrl)) return fromUrl;
+      return (
+        salon.staff.find((s) => s.isBookable !== false)?.id ?? salon.staff[0]?.id ?? null
+      );
+    });
+  }, [salon, opts?.initialBarber]);
+
+  const pickBarber = (id: string) => {
+    setBarberId(id);
+    const member = salon?.staff.find((b) => b.id === id);
+    if (member?.serviceIds.length) {
+      setServiceIds((prev) => prev.filter((sid) => member.serviceIds.includes(sid)));
+    }
+  };
+
+  const dayList = buildDayList(opts?.initialDate);
 
   const dateIso = dayList[dayIdx]?.full ? dayList[dayIdx].full.toISOString().slice(0, 10) : "";
 
@@ -81,6 +105,10 @@ function useBookingSalonState(salonId: string, initialDate?: string) {
     }) ?? SLOTS;
 
   const selectedServices = salon?.services.filter((s) => serviceIds.includes(s.id)) ?? [];
+  const barberServiceOptions =
+    selectedBarber?.serviceIds.length
+      ? salon?.services.filter((s) => selectedBarber.serviceIds.includes(s.id)) ?? []
+      : salon?.services.filter((s) => !s.barberId || s.barberId === barberId) ?? [];
   const total = selectedServices.reduce((sum, s) => sum + s.price, 0);
   const selectedBarber = salon?.staff.find((b) => b.id === barberId);
   const bookedForLabel =
@@ -121,7 +149,7 @@ function useBookingSalonState(salonId: string, initialDate?: string) {
     step,
     setStep,
     barberId,
-    setBarberId,
+    setBarberId: pickBarber,
     serviceIds,
     setServiceIds,
     dayIdx,
@@ -131,6 +159,7 @@ function useBookingSalonState(salonId: string, initialDate?: string) {
     dayList,
     slotOptions,
     selectedServices,
+    barberServiceOptions,
     total,
     selectedBarber,
     bookedForLabel,
@@ -146,7 +175,7 @@ function BookingStepContent({
   state: ReturnType<typeof useBookingSalonState>;
   t: ReturnType<typeof useTranslation>["t"];
 }) {
-  const { salon, step, familyMemberId, setFamilyMemberId, barberId, setBarberId, serviceIds, setServiceIds, dayIdx, setDayIdx, slot, setSlot, dayList, slotOptions, selectedServices, selectedBarber, bookedForLabel, total } = state;
+  const { salon, step, familyMemberId, setFamilyMemberId, barberId, setBarberId, serviceIds, setServiceIds, dayIdx, setDayIdx, slot, setSlot, dayList, slotOptions, selectedServices, barberServiceOptions, selectedBarber, bookedForLabel, total } = state;
   if (!salon) return null;
 
   if (step === 1) {
@@ -157,22 +186,35 @@ function BookingStepContent({
           <h2 className="text-xl font-bold">{t("booking.selectBarber")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{salon.name}</p>
         <div className="mt-6 grid grid-cols-2 gap-3">
-          {salon.staff.map((b) => (
+          {salon.staff.map((b) => {
+            const bookable = b.isBookable !== false;
+            return (
             <button
               key={b.id}
               type="button"
-              onClick={() => setBarberId(b.id)}
-              className={cn("rounded-2xl border-2 p-4 text-left", barberId === b.id ? "border-foreground bg-surface" : "border-transparent bg-surface")}
+              disabled={!bookable}
+              onClick={() => bookable && setBarberId(b.id)}
+              className={cn(
+                "rounded-2xl border-2 p-4 text-left",
+                barberId === b.id ? "border-foreground bg-surface" : "border-transparent bg-surface",
+                !bookable && "cursor-not-allowed opacity-50",
+              )}
             >
               <div className="grid h-14 w-14 place-items-center rounded-full bg-foreground text-base font-bold text-background">
                 {b.name.split(" ").map((n) => n[0]).join("")}
               </div>
               <p className="mt-3 text-sm font-bold">{b.name}</p>
+              <p className="text-[11px] text-muted-foreground">{b.role}</p>
+              {!bookable ? (
+                <p className="mt-1 text-[10px] font-medium text-muted-foreground">Tez orada</p>
+              ) : (
               <p className="flex items-center gap-1 text-[11px] font-bold">
                 <Star className="h-3 w-3 fill-foreground" /> {b.rating}
               </p>
+              )}
             </button>
-          ))}
+            );
+          })}
         </div>
         </div>
       </div>
@@ -185,7 +227,7 @@ function BookingStepContent({
         <h2 className="text-xl font-bold">{t("booking.selectService")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{selectedBarber?.name}</p>
         <div className="mt-6 space-y-2">
-          {salon.services.map((s) => {
+          {barberServiceOptions.map((s) => {
             const sel = serviceIds.includes(s.id);
             return (
               <button
@@ -281,8 +323,8 @@ function BookingNavButtons({ state, t }: { state: ReturnType<typeof useBookingSa
 function BookingMobile() {
   const { t } = useTranslation();
   const { salonId } = useParams({ from: "/booking/$salonId" });
-  const { date: initialDate } = Route.useSearch();
-  const state = useBookingSalonState(salonId, initialDate);
+  const { date: initialDate, barber: initialBarber } = Route.useSearch();
+  const state = useBookingSalonState(salonId, { initialDate, initialBarber });
   const stepLabels = [t("booking.step1"), t("booking.step2"), t("booking.step3"), t("booking.step4")];
 
   if (state.isLoading || !state.salon) {
@@ -308,8 +350,8 @@ function BookingMobile() {
 function BookingDesktop() {
   const { t } = useTranslation();
   const { salonId } = useParams({ from: "/booking/$salonId" });
-  const { date: initialDate } = Route.useSearch();
-  const state = useBookingSalonState(salonId, initialDate);
+  const { date: initialDate, barber: initialBarber } = Route.useSearch();
+  const state = useBookingSalonState(salonId, { initialDate, initialBarber });
   const stepLabels = [t("booking.step1"), t("booking.step2"), t("booking.step3"), t("booking.step4")];
 
   if (state.isLoading || !state.salon) {

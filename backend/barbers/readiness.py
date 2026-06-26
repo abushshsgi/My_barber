@@ -230,6 +230,13 @@ def barber_is_publicly_visible(barber: Barber) -> bool:
     return compute_barber_readiness(barber).fully_ready
 
 
+def barber_is_staff_listable(barber: Barber, salon) -> bool:
+    """Salon staff ro‘yxati: ega doim; ishchilar faqat bron qabul qila oladigan bo‘lsa."""
+    if salon.owner_barber_id == barber.id:
+        return True
+    return barber_is_publicly_visible(barber)
+
+
 def batch_publicly_visible_barber_ids(barber_ids: list[int]) -> set[int]:
     """Katalog filtri uchun: berilgan ID lar ichidan faqat fully_ready bo‘lganlar."""
     from barbers.models import Barber

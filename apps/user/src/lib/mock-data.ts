@@ -8,6 +8,7 @@ export interface Service {
   name: string;
   duration: number; // minutes
   price: number; // UZS
+  barberId?: string | null;
 }
 
 export interface Barber {
@@ -18,6 +19,7 @@ export interface Barber {
   avatarSeed: string;
   avatarUrl?: string;
   serviceIds: string[];
+  isBookable?: boolean;
   independent?: boolean;
   salonId?: string;
 }

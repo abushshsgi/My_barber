@@ -1038,7 +1038,9 @@ export function BarberProvider({ children }: { children: ReactNode }) {
           phone: me.phone || prev.phone,
           avatar: (me.avatar && String(me.avatar)) || prev.avatar || "",
         }));
-        setViewMode(wm === "independent" ? "independent" : "salon");
+        setViewMode(
+          wm === "independent" ? "independent" : owns ? "independent" : "salon",
+        );
         setHasSalon(wm !== "independent");
         if (!alive) return;
         const activation = applyActivationStatus(st);

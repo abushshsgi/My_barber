@@ -157,3 +157,20 @@ class OwnerCatalogVisibilityTests(TestCase):
         self.assertEqual(list_res.status_code, 200)
         results = list_res.json().get("results", list_res.json())
         self.assertTrue(any(row["id"] == salon_id for row in results))
+
+    def test_owner_always_listed_in_staff_with_bookable_flag(self):
+        payload = self._create_salon_payload("Staff Owner Salon")
+        create_res = self.barber_client.post("/api/v1/salons/", payload, format="json")
+        self.assertEqual(create_res.status_code, 201, create_res.content)
+        salon_id = create_res.json()["id"]
+
+        staff_res = self.customer_client.get(f"/api/v1/salons/{salon_id}/staff/")
+        self.assertEqual(staff_res.status_code, 200)
+        staff = staff_res.json()
+        self.assertGreaterEqual(len(staff), 1)
+        owner_row = staff[0]
+        self.assertEqual(owner_row["id"], self.barber.id)
+        self.assertEqual(owner_row["role"], "owner")
+        self.assertIn("is_bookable", owner_row)
+        # Email tasdiqlanmagan owner — ko‘rinadi, lekin hozircha bron qabul qilmaydi.
+        self.assertFalse(owner_row["is_bookable"])

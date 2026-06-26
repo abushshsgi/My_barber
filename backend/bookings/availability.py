@@ -183,26 +183,41 @@ def build_available_slots(*, barber: Barber, services, target_date, salon: Salon
 
 
 def default_salon_barber_and_service(salon: Salon):
-    """Salon uchun default barber (birinchi faol a'zo) va eng qisqa xizmat."""
-    mem = (
-        SalonMembership.objects.filter(
-            salon=salon,
-            invite_state=SalonMembership.InviteState.ACTIVE,
-            barber__isnull=False,
+    """Salon uchun default barber (avvalo ega) va eng qisqa xizmat."""
+    barber = None
+    if salon.owner_barber_id:
+        owner_mem = (
+            SalonMembership.objects.filter(
+                salon=salon,
+                barber_id=salon.owner_barber_id,
+                invite_state=SalonMembership.InviteState.ACTIVE,
+            )
+            .select_related("barber")
+            .first()
         )
-        .select_related("barber")
-        .order_by("id")
-        .first()
-    )
-    if not mem or not mem.barber_id:
-        return None, None, []
-    barber = mem.barber
+        if owner_mem:
+            barber = owner_mem.barber
+    if not barber:
+        mem = (
+            SalonMembership.objects.filter(
+                salon=salon,
+                invite_state=SalonMembership.InviteState.ACTIVE,
+                barber__isnull=False,
+            )
+            .select_related("barber")
+            .order_by("id")
+            .first()
+        )
+        if not mem or not mem.barber_id:
+            return None, None, []
+        barber = mem.barber
     svc = (
         Service.objects.filter(
             Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True),
             salon=salon,
             is_active=True,
         )
+        .filter(Q(barber=barber) | Q(barber__isnull=True))
         .order_by("duration_minutes", "id")
         .first()
     )

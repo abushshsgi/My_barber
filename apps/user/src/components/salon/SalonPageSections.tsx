@@ -12,6 +12,10 @@ import { SalonPortfolioGallery } from "@/components/salon/SalonPortfolioGallery"
 import { SalonReviewsSection } from "@/components/salon/SalonReviewsSection";
 import { cn } from "@/lib/utils";
 
+function defaultCalendarBarberId(staff: Salon["staff"]) {
+  return staff.find((s) => s.isBookable !== false)?.id ?? staff[0]?.id;
+}
+
 function SectionBlock({
   id,
   title,
@@ -87,21 +91,45 @@ export function SalonPageSections({
       {salon.staff.length > 0 ? (
         <SectionBlock id="salon-staff" title={t("salon.tabs.staff")}>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {salon.staff.map((b) => (
-              <div
-                key={b.id}
-                className="rounded-xl border border-border p-4 text-center transition-colors hover:bg-muted/30"
-              >
-                <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-muted text-base font-bold">
-                  {b.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </div>
-                <p className="mt-3 text-sm font-semibold">{b.name}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">{b.role}</p>
-              </div>
-            ))}
+            {salon.staff.map((b) => {
+              const bookable = b.isBookable !== false;
+              const inner = (
+                <>
+                  <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-muted text-base font-bold">
+                    {b.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
+                  </div>
+                  <p className="mt-3 text-sm font-semibold">{b.name}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{b.role}</p>
+                  {!bookable ? (
+                    <p className="mt-1 text-[10px] font-medium text-muted-foreground">Tez orada</p>
+                  ) : null}
+                </>
+              );
+              if (!bookable) {
+                return (
+                  <div
+                    key={b.id}
+                    className="rounded-xl border border-border p-4 text-center opacity-60"
+                  >
+                    {inner}
+                  </div>
+                );
+              }
+              return (
+                <Link
+                  key={b.id}
+                  to="/booking/$salonId"
+                  params={{ salonId: salon.id }}
+                  search={{ barber: b.id }}
+                  className="rounded-xl border border-border p-4 text-center transition-colors hover:bg-muted/30"
+                >
+                  {inner}
+                </Link>
+              );
+            })}
           </div>
         </SectionBlock>
       ) : null}
@@ -131,7 +159,11 @@ export function SalonPageSections({
 
       {showCalendar ? (
         <div id="salon-booking" className="scroll-mt-36 border-b border-border pb-10">
-          <SalonBookingCalendar salonId={salon.id} months={calendarMonths} />
+          <SalonBookingCalendar
+            salonId={salon.id}
+            barberId={defaultCalendarBarberId(salon.staff)}
+            months={calendarMonths}
+          />
         </div>
       ) : null}
 

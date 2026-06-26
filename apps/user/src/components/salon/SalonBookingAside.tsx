@@ -44,7 +44,12 @@ export function SalonBookingAside({
       </p>
 
       {!compact ? (
-        <SalonBookingCalendar salonId={salon.id} months={1} className="mt-5 !space-y-3 [&_h2]:text-base" />
+        <SalonBookingCalendar
+          salonId={salon.id}
+          barberId={salon.staff.find((s) => s.isBookable !== false)?.id ?? salon.staff[0]?.id}
+          months={1}
+          className="mt-5 !space-y-3 [&_h2]:text-base"
+        />
       ) : null}
 
       <Link

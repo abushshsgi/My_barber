@@ -44,9 +44,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         bp = request_barber(request)
         if bp is None:
             return False
-        return booking.barber_id == bp.id or (
-            booking.salon_id and booking.salon.owner_barber_id == bp.id
-        )
+        return booking.barber_id == bp.id
 
     def get_queryset(self):
         related = ["customer", "salon", "barber"]
@@ -60,7 +58,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             return base
         bp = request_barber(self.request)
         if bp is not None:
-            return base.filter(Q(barber=bp) | Q(salon__owner_barber=bp))
+            return base.filter(barber=bp)
         return base.filter(customer=self.request.user)
 
     def get_serializer_class(self):

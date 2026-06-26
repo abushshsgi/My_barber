@@ -150,7 +150,7 @@ function Sidebar({
           >
             <span className="inline-flex items-center gap-2">
               <ArrowLeftRight className="size-3.5" />
-              {viewMode === "independent" ? "Salon View" : "Independent View"}
+              {viewMode === "independent" ? "Salon sahifasi" : "Barber kabineti"}
             </span>
             <span className="text-[10px] uppercase tracking-wider opacity-70">{viewMode}</span>
           </motion.button>

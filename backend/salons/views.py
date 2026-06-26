@@ -15,7 +15,7 @@ from accounts.auth_utils import customer_catalog_region, is_platform_admin, requ
 from accounts.uz_regions import UzRegion
 from accounts.throttles import SalonJoinThrottle, SalonSearchThrottle
 from barbers.models import Barber, BarberProfile
-from barbers.readiness import barber_is_publicly_visible
+from barbers.readiness import barber_is_publicly_visible, barber_is_staff_listable
 from notifications.utils import notify_barber, notify_user
 
 from .geo_join import (
@@ -319,34 +319,75 @@ class SalonViewSet(viewsets.ModelViewSet):
         result.sort(key=lambda x: x["distance_km"])
         return Response(result)
 
+    def _staff_row(self, request, barber, role, experience_years, *, is_bookable: bool):
+        avatar = None
+        if barber.avatar:
+            avatar = request.build_absolute_uri(barber.avatar.url)
+        return {
+            "id": barber.id,
+            "full_name": barber.full_name or barber.email,
+            "avatar": avatar,
+            "role": role,
+            "experience_years": experience_years,
+            "is_bookable": is_bookable,
+        }
+
     @action(detail=True, methods=["get"], permission_classes=[AllowAny])
     def staff(self, request, pk=None):
         salon = self.get_object()
-        mems = SalonMembership.objects.filter(
-            salon=salon,
-        ).filter(
-            Q(invite_state=SalonMembership.InviteState.ACTIVE)
-            | Q(
-                role=SalonMembership.Role.OWNER,
-                invite_state=SalonMembership.InviteState.NA,
-            )
-        ).select_related("barber")
         out = []
+        seen: set[int] = set()
+
+        if salon.owner_barber_id:
+            owner = salon.owner_barber
+            owner_mem = (
+                SalonMembership.objects.filter(salon=salon, barber=owner)
+                .filter(
+                    Q(invite_state=SalonMembership.InviteState.ACTIVE)
+                    | Q(
+                        role=SalonMembership.Role.OWNER,
+                        invite_state=SalonMembership.InviteState.NA,
+                    )
+                )
+                .first()
+            )
+            if owner_mem and barber_is_staff_listable(owner, salon):
+                out.append(
+                    self._staff_row(
+                        request,
+                        owner,
+                        SalonMembership.Role.OWNER,
+                        owner_mem.experience_years,
+                        is_bookable=barber_is_publicly_visible(owner),
+                    )
+                )
+                seen.add(owner.id)
+
+        mems = (
+            SalonMembership.objects.filter(salon=salon)
+            .filter(
+                Q(invite_state=SalonMembership.InviteState.ACTIVE)
+                | Q(
+                    role=SalonMembership.Role.OWNER,
+                    invite_state=SalonMembership.InviteState.NA,
+                )
+            )
+            .exclude(barber_id__in=seen)
+            .select_related("barber")
+            .order_by("id")
+        )
         for m in mems:
             b = m.barber
             if not barber_is_publicly_visible(b):
                 continue
-            avatar = None
-            if b.avatar:
-                avatar = request.build_absolute_uri(b.avatar.url)
             out.append(
-                {
-                    "id": b.id,
-                    "full_name": b.full_name or b.email,
-                    "avatar": avatar,
-                    "role": m.role,
-                    "experience_years": m.experience_years,
-                }
+                self._staff_row(
+                    request,
+                    b,
+                    m.role,
+                    m.experience_years,
+                    is_bookable=True,
+                )
             )
         return Response(out)
 

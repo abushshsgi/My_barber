@@ -117,6 +117,7 @@ export type ApiSalonStaff = {
   avatar: string | null;
   role: string;
   experience_years: number;
+  is_bookable?: boolean;
 };
 
 export type ApiNearbySalon = {

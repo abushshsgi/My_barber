@@ -85,6 +85,7 @@ export function mapSalonDetail(api: ApiSalonDetail, distanceKm = 0): Salon {
       name: s.name,
       duration: s.duration_minutes,
       price: toNum(s.price),
+      barberId: s.barber != null ? String(s.barber) : null,
     })),
     portfolio: (api.images ?? []).map((img) => img.image),
     amenities: (api.amenities ?? []).map((a) => ({
@@ -117,18 +118,31 @@ export function mapNearbySalon(row: ApiNearbySalon): Salon {
 }
 
 export function mapStaffToBarber(
-  staff: { id: number; full_name: string; avatar: string | null; role: string },
+  staff: {
+    id: number;
+    full_name: string;
+    avatar: string | null;
+    role: string;
+    is_bookable?: boolean;
+  },
   salonId: string,
-  serviceIds: string[] = [],
+  services: { id: string; barberId?: string | null }[] = [],
 ) {
+  const barberId = String(staff.id);
+  const serviceIds = services
+    .filter((s) => !s.barberId || s.barberId === barberId)
+    .map((s) => s.id);
+  const roleLabel =
+    staff.role === "owner" ? "Salon egasi" : staff.role === "worker" ? "Usta" : staff.role;
   return {
-    id: String(staff.id),
+    id: barberId,
     name: staff.full_name,
-    role: staff.role,
+    role: roleLabel,
     rating: 4.8,
-    avatarSeed: String(staff.id),
+    avatarSeed: barberId,
     avatarUrl: staff.avatar || undefined,
     serviceIds,
+    isBookable: staff.is_bookable !== false,
     salonId,
   };
 }

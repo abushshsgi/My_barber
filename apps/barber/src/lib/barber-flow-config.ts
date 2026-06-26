@@ -103,16 +103,16 @@ export const FLOW_IDENTITY_META: Record<
     title: "Salon owner",
     signupTitle: "Salon ochaman",
     signupSubtitle: "O'z salonim bor — jamoa va xizmatlarni boshqaraman",
-    signupNextStep: "Salon nomi, manzil, xizmatlar va jadval (5–7 qadam)",
-    desc: "Salonni boshqarish, jamoa va salon workspace bilan ishlash.",
-    benefit: "Jamoa va xizmatlarni boshqaring",
+    signupNextStep: "Salon nomi, manzil, barber profili, xizmatlar va jadval",
+    desc: "Salon sahifasini boshqaring; bronlar va kalendar barber kabinetida.",
+    benefit: "Salon egasi sifatida ham barbersiz",
     accent: "salon",
     badge: "Ega",
     accentClass: "border-amber-500/40 bg-amber-500/10 text-amber-700",
     heroTitle: "Salon boshqaruvini ishga tushiring",
-    heroSubtitle: "Jamoa, xizmatlar va salon jarayonlarini owner sifatida boshqaring.",
+    heroSubtitle: "Salon sahifasi — portfolio va sharhlar. Bronlar barber kabinetida.",
     successTitle: "Owner onboarding tayyor",
-    successBody: "Endi salon workspace orqali jamoa va salon natijalarini boshqarishingiz mumkin.",
+    successBody: "Bronlar va kalendar barber kabinetida; salon sahifasida portfolio va jamoa.",
     emptyTitle: "Owner panel hali bo'sh",
     emptyBody: "Jamoa va xizmatlar qo'shilgach boshqaruv ko'rsatkichlari shu yerda ko'rinadi.",
   },
@@ -212,8 +212,8 @@ export const AUTH_FLOW_MARKETING: Record<SignupFlow, AuthFlowMarketingContent> =
     headline: "Salonni",
     highlight: "boshqaring",
     subline:
-      "Jamoa, xizmatlar va bronlarni bitta joydan boshqaring. Owner sifatida salon natijalari ustidan to'liq nazorat sizda.",
-    bullets: ["Jamoa va xizmatlar boshqaruvi", "Salon jadvali va bronlar", "Daromad va statistika"],
+      "Salon sahifasini boshqaring, bronlar va kalendar esa barber kabinetida. Siz ham salon egasi, ham barbersiz.",
+    bullets: ["Salon egasi sifatida mijozlarga ko‘rinasiz", "Bronlar barber kabinetida", "Salon sahifasi — portfolio va sharhlar"],
     bulletIcons: ["Users", "CalendarDays", "Wallet"],
     stat: { value: "5–7", label: "qadam sozlash" },
   },
@@ -349,7 +349,7 @@ export function getWorkspaceLabel(input: { isJoinedWorker: boolean; viewMode: Vi
   if (input.isJoinedWorker) {
     return input.viewMode === "salon" ? "Salon ish maydoni" : "Shaxsiy ish maydoni";
   }
-  return input.viewMode === "salon" ? "Salon" : "Mustaqil";
+  return input.viewMode === "salon" ? "Salon sahifasi" : "Barber kabineti";
 }
 
 export function getFlowMeta(flowIdentity: FlowIdentity) {

@@ -467,6 +467,7 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
             bp = request_barber(request)
             if bp is not None:
                 validated_data["owner_barber"] = bp
+        owner = validated_data.get("owner_barber")
         with transaction.atomic():
             salon = Salon.objects.create(**validated_data)
             for h in hours_data:
@@ -474,6 +475,7 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
             for s in services_data:
                 Service.objects.create(
                     salon=salon,
+                    barber=owner,
                     name=s["name"],
                     price=s["price"],
                     duration_minutes=s["duration_minutes"],
@@ -481,6 +483,10 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
                 )
             if amenity_codes is not None:
                 self._sync_amenities(salon, amenity_codes)
+        if owner is not None:
+            from barbers.salon_service_sync import sync_all_barber_services_for_barber
+
+            sync_all_barber_services_for_barber(owner)
         return salon
 
     def update(self, instance, validated_data):

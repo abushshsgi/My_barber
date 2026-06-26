@@ -465,3 +465,55 @@ class BookingCriticalTests(TestCase):
         self.assertEqual(body["month"], target.month)
         self.assertGreater(len(body["days"]), 27)
         self.assertTrue(any(d.get("available") for d in body["days"]))
+
+    def test_salon_owner_cannot_accept_worker_booking(self):
+        owner = self.barber
+        owner.work_mode = Barber.WorkMode.SALON
+        owner.onboarding_flow = Barber.OnboardingFlow.OWNER
+        owner.save()
+        salon = Salon.objects.create(
+            owner_barber=owner,
+            name="Proxy Test Salon",
+            latitude=41.31,
+            longitude=69.28,
+            address="Toshkent",
+            is_published=True,
+        )
+        SalonMembership.objects.create(
+            barber=owner,
+            salon=salon,
+            role=SalonMembership.Role.OWNER,
+            invite_state=SalonMembership.InviteState.ACTIVE,
+        )
+        worker = Barber.objects.create(
+            email="worker@test.uz",
+            username="worker@test.uz",
+            full_name="Worker Two",
+            work_mode=Barber.WorkMode.SALON,
+            onboarding_flow=Barber.OnboardingFlow.EMPLOYEE,
+            email_verified_at=timezone.now(),
+        )
+        SalonMembership.objects.create(
+            barber=worker,
+            salon=salon,
+            role=SalonMembership.Role.WORKER,
+            invite_state=SalonMembership.InviteState.ACTIVE,
+        )
+        t0 = timezone.now() + timedelta(days=5)
+        t0 = t0.replace(hour=11, minute=0, second=0, microsecond=0)
+        booking = Booking.objects.create(
+            customer=self.user,
+            barber=worker,
+            salon=salon,
+            start_at=t0,
+            end_at=t0 + timedelta(minutes=30),
+            status=Booking.Status.PENDING,
+            total_price=50_000,
+            customer_phone=self.user.phone or "",
+        )
+
+        self.client.force_authenticate(user=BarberPrincipal(owner))
+        res = self.client.post(f"/api/v1/bookings/{booking.id}/accept/")
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, Booking.Status.PENDING)

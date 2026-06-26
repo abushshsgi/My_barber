@@ -16,8 +16,8 @@ export function useSalonPage(id: string) {
     queryKey: ["salons", id, "staff"],
     queryFn: async () => {
       const rows = await fetchSalonStaff(id);
-      const serviceIds = detail.data?.services.map((s) => s.id) ?? [];
-      return rows.map((r) => mapStaffToBarber(r, id, serviceIds));
+      const services = detail.data?.services ?? [];
+      return rows.map((r) => mapStaffToBarber(r, id, services));
     },
     enabled: authQueryEnabled(Boolean(id) && Boolean(detail.data)),
   });
