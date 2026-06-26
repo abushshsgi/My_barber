@@ -18,10 +18,14 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/$salonId")({
   head: () => ({ meta: [{ title: "Band qilish — mysaloon.uz" }] }),
-  validateSearch: (search: Record<string, unknown>): { date?: string; barber?: string } => ({
-    date: typeof search.date === "string" ? search.date : undefined,
-    barber: typeof search.barber === "string" ? search.barber : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { date?: string; barber?: string } => {
+    const rawBarber = typeof search.barber === "string" ? search.barber.trim() : "";
+    const barber = rawBarber.replace(/^["']+|["']+$/g, "") || undefined;
+    return {
+      date: typeof search.date === "string" ? search.date : undefined,
+      barber,
+    };
+  },
   component: BookingFlow,
 });
 
@@ -70,7 +74,7 @@ function useBookingSalonState(
     if (!salon?.staff.length) return;
     setBarberId((prev) => {
       if (prev) return prev;
-      const fromUrl = opts?.initialBarber;
+      const fromUrl = opts?.initialBarber?.replace(/^["']+|["']+$/g, "");
       if (fromUrl && salon.staff.some((b) => b.id === fromUrl)) return fromUrl;
       return (
         salon.staff.find((s) => s.isBookable !== false)?.id ?? salon.staff[0]?.id ?? null
@@ -104,13 +108,13 @@ function useBookingSalonState(
       return new Date(s.start).toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
     }) ?? SLOTS;
 
+  const selectedBarber = salon?.staff.find((b) => b.id === barberId);
   const selectedServices = salon?.services.filter((s) => serviceIds.includes(s.id)) ?? [];
   const barberServiceOptions =
     selectedBarber?.serviceIds.length
       ? salon?.services.filter((s) => selectedBarber.serviceIds.includes(s.id)) ?? []
       : salon?.services.filter((s) => !s.barberId || s.barberId === barberId) ?? [];
   const total = selectedServices.reduce((sum, s) => sum + s.price, 0);
-  const selectedBarber = salon?.staff.find((b) => b.id === barberId);
   const bookedForLabel =
     familyMemberId != null
       ? familyMembers.find((m) => m.id === familyMemberId)?.name ?? ""
