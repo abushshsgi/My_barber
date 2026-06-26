@@ -26,7 +26,12 @@ from .geo_join import (
 )
 from .join_service import attach_worker_membership
 from .models import CatalogService, BarberWorkingHours, FavoriteSalon, Salon, SalonImage, SalonMembership
-from .owner_setup import ensure_owner_membership_active, sync_owner_region_from_salon
+from .owner_setup import (
+    ensure_owner_membership_active,
+    owner_is_salon_bookable,
+    sync_owner_profile_location_from_salon,
+    sync_owner_region_from_salon,
+)
 from .serializers import (
     BarberWorkingHoursSerializer,
     BarberSalonViewSerializer,
@@ -146,7 +151,8 @@ class SalonViewSet(viewsets.ModelViewSet):
         if bp is None:
             raise PermissionDenied("Faqat sartarosh akkaunti bilan salon yaratish mumkin.")
         salon = serializer.save(owner_barber=bp)
-        sync_owner_region_from_salon(bp, salon)
+        sync_owner_region_from_salon(bp, salon, force=True)
+        sync_owner_profile_location_from_salon(bp, salon)
         ensure_owner_membership_active(bp, salon)
 
     def perform_update(self, serializer):
@@ -159,7 +165,11 @@ class SalonViewSet(viewsets.ModelViewSet):
             from rest_framework.exceptions import PermissionDenied
 
             raise PermissionDenied()
-        serializer.save()
+        salon = serializer.save()
+        if bp is not None and salon.owner_barber_id == bp.id:
+            sync_owner_region_from_salon(bp, salon, force=True)
+            sync_owner_profile_location_from_salon(bp, salon)
+            ensure_owner_membership_active(bp, salon)
 
     @action(detail=False, methods=["get"], permission_classes=[IsAuthenticatedBarberAware])
     def mine(self, request):
@@ -359,7 +369,7 @@ class SalonViewSet(viewsets.ModelViewSet):
                         owner,
                         SalonMembership.Role.OWNER,
                         owner_mem.experience_years,
-                        is_bookable=barber_is_publicly_visible(owner),
+                        is_bookable=owner_is_salon_bookable(owner, salon),
                     )
                 )
                 seen.add(owner.id)

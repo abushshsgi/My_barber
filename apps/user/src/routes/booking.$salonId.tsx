@@ -196,6 +196,7 @@ function BookingStepContent({
         <div className="mt-6 grid grid-cols-2 gap-3">
           {salon.staff.map((b) => {
             const bookable = b.isBookable !== false;
+            const isOwner = b.role === "Salon egasi";
             return (
             <button
               key={b.id}
@@ -214,7 +215,11 @@ function BookingStepContent({
               <p className="mt-3 text-sm font-bold">{b.name}</p>
               <p className="text-[11px] text-muted-foreground">{b.role}</p>
               {!bookable ? (
-                <p className="mt-1 text-[10px] font-medium text-muted-foreground">Tez orada</p>
+                <p className="mt-1 text-[10px] font-medium text-muted-foreground">
+                  {isOwner
+                    ? t("salon.staff.notBookableYet", { defaultValue: "Hozircha band qilib bo'lmaydi" })
+                    : t("salon.staff.comingSoon", { defaultValue: "Tez orada" })}
+                </p>
               ) : (
               <p className="flex items-center gap-1 text-[11px] font-bold">
                 <Star className="h-3 w-3 fill-foreground" /> {b.rating}

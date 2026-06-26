@@ -37,6 +37,7 @@ import { requestGpsLocation } from "@/lib/geo-location";
 import { cn } from "@/lib/utils";
 import { getFlowMeta } from "@/lib/barber-flow-config";
 import { finishOnboardingAndGo } from "@/lib/onboarding-complete";
+import { validateSalonCityCoords } from "@/lib/salon-location";
 import { useBarberPhoneAvailability } from "@/lib/barber-phone-availability";
 import { uzRegionCodeFromLabel } from "@/lib/uz-regions";
 
@@ -492,6 +493,16 @@ export function CreateSalonPage() {
       }
 
       // 3) Create salon and base entities.
+      const coordErr = await validateSalonCityCoords(
+        salonCity.trim(),
+        Number(salonLatitude),
+        Number(salonLongitude),
+      );
+      if (coordErr) {
+        setSubmitError(coordErr);
+        return;
+      }
+
       const serviceRows = services.filter(
         (s) => s.name.trim() && s.price.trim() && s.duration.trim(),
       );

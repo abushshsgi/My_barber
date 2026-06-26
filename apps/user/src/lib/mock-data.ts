@@ -56,6 +56,7 @@ export interface SalonRatingSummary {
 export interface Salon {
   id: string;
   name: string;
+  ownerId?: string;
   category: Category;
   audience: Audience;
   rating: number;

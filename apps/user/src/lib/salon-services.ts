@@ -1,5 +1,11 @@
 import type { Service } from "@/lib/mock-data";
 
+/** Salon sahifasi: faqat salon egasining xizmatlari (+ legacy umumiy). */
+export function filterSalonOwnerServices(services: Service[], ownerId: string | undefined): Service[] {
+  if (!ownerId) return services;
+  return services.filter((s) => !s.barberId || s.barberId === ownerId);
+}
+
 /** Tanlangan barber uchun salon xizmatlari (backend bilan bir xil qoida). */
 export function filterSalonServicesForBarber(services: Service[], barberId: string): Service[] {
   if (!barberId) return services;

@@ -108,6 +108,21 @@ class OwnerCatalogVisibilityTests(TestCase):
         self.barber.refresh_from_db()
         self.assertEqual(self.barber.region, UzRegion.TOSHKENT_SH)
 
+    def test_sync_owner_region_force_overwrites_wrong_region(self):
+        self.barber.region = UzRegion.BUXORO
+        self.barber.save(update_fields=["region"])
+        salon = Salon.objects.create(
+            name="Force Region Salon",
+            owner_barber=self.barber,
+            latitude=41.2995,
+            longitude=69.2401,
+            address="Toshkent, test",
+            is_published=True,
+        )
+        sync_owner_region_from_salon(self.barber, salon, force=True)
+        self.barber.refresh_from_db()
+        self.assertEqual(self.barber.region, UzRegion.TOSHKENT_SH)
+
     def test_ensure_owner_membership_active_upgrades_na(self):
         salon = Salon.objects.create(
             name="Membership Salon",
@@ -172,8 +187,8 @@ class OwnerCatalogVisibilityTests(TestCase):
         self.assertEqual(owner_row["id"], self.barber.id)
         self.assertEqual(owner_row["role"], "owner")
         self.assertIn("is_bookable", owner_row)
-        # Email tasdiqlanmagan owner — ko‘rinadi, lekin hozircha bron qabul qilmaydi.
-        self.assertFalse(owner_row["is_bookable"])
+        # Xizmat + jadval bor — salon egasi bron qabul qiladi (email tasdiqlanmagan bo'lsa ham).
+        self.assertTrue(owner_row["is_bookable"])
 
     def test_barber_services_returns_owner_linked_services(self):
         payload = self._create_salon_payload("Barber Services Salon")
@@ -188,3 +203,34 @@ class OwnerCatalogVisibilityTests(TestCase):
         services = svc_res.json()
         self.assertGreaterEqual(len(services), 1)
         self.assertTrue(all(s.get("barber") in (None, self.barber.id) for s in services))
+
+    def test_detail_services_exclude_worker_services(self):
+        from barbers.models import Barber, BarberProfile
+        from salons.models import Service
+
+        payload = self._create_salon_payload("Owner Only Services Salon")
+        create_res = self.barber_client.post("/api/v1/salons/", payload, format="json")
+        self.assertEqual(create_res.status_code, 201, create_res.content)
+        salon_id = create_res.json()["id"]
+
+        worker = Barber.objects.create(
+            email="worker-catalog@test.uz",
+            username="worker-catalog@test.uz",
+            full_name="Worker",
+            region=UzRegion.TOSHKENT_SH,
+        )
+        BarberProfile.objects.get_or_create(barber=worker)
+        Service.objects.create(
+            salon_id=salon_id,
+            barber=worker,
+            name="Worker only",
+            price=40000,
+            duration_minutes=30,
+            is_active=True,
+        )
+
+        detail_res = self.customer_client.get(f"/api/v1/salons/{salon_id}/")
+        self.assertEqual(detail_res.status_code, 200)
+        names = {s["name"] for s in detail_res.json()["services"]}
+        self.assertIn("Soch olish", names)
+        self.assertNotIn("Worker only", names)

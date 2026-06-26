@@ -2,6 +2,7 @@ import { Heart, MapPin, Share2, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
 import { formatPrice } from "@/lib/mock-data";
+import { filterSalonOwnerServices } from "@/lib/salon-services";
 import { cn } from "@/lib/utils";
 
 export function SalonPageHeader({
@@ -21,6 +22,7 @@ export function SalonPageHeader({
 }) {
   const { t } = useTranslation();
   const isMobile = variant === "mobile";
+  const ownerServiceCount = filterSalonOwnerServices(salon.services, salon.ownerId).length;
 
   return (
     <div
@@ -96,9 +98,9 @@ export function SalonPageHeader({
               {t("salon.fromPrice", { defaultValue: "{{price}} dan", price: formatPrice(salon.priceFrom) })}
             </span>
           ) : null}
-          {salon.services.length > 0 ? (
+          {ownerServiceCount > 0 ? (
             <span className="rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground">
-              {salon.services.length} {t("salon.tabs.services").toLowerCase()}
+              {ownerServiceCount} {t("salon.tabs.services").toLowerCase()}
             </span>
           ) : null}
           {salon.staff.length > 0 ? (

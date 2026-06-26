@@ -26,6 +26,15 @@ export function uzRegionLabel(code: string | null | undefined): string {
 }
 
 export function uzRegionCodeFromLabel(label: string): UzRegionCode | "" {
-  const row = UZ_REGIONS.find((r) => r.label.toLowerCase() === label.trim().toLowerCase());
-  return row?.value ?? "";
+  const norm = label.trim().toLowerCase();
+  if (!norm) return "";
+  const exact = UZ_REGIONS.find((r) => r.label.toLowerCase() === norm);
+  if (exact) return exact.value;
+  if (norm.includes("toshkent") && norm.includes("viloyat")) return "TOSHKENT_V";
+  if (norm.includes("toshkent")) return "TOSHKENT_SH";
+  const partial = UZ_REGIONS.find((r) => {
+    const key = r.label.split(" ")[0]!.toLowerCase().replace(/'/g, "");
+    return norm.includes(key) || key.includes(norm);
+  });
+  return partial?.value ?? "";
 }

@@ -42,6 +42,7 @@ export function mapSalonList(api: ApiSalonList, distanceKm = 0): Salon {
   const coverUrl = resolveCoverUrl(resolvedCover, coverSeed, category);
   return {
     id: String(api.id),
+    ownerId: api.owner_id != null ? String(api.owner_id) : undefined,
     name: api.name,
     category,
     audience,

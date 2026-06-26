@@ -286,7 +286,11 @@ class SalonDetailSerializer(serializers.ModelSerializer):
             cache.set(cache_key, 1, 60)
         qs = obj.services.filter(is_active=True).filter(
             Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True)
-        ).order_by("name")
+        )
+        owner_id = obj.owner_barber_id
+        if owner_id:
+            qs = qs.filter(Q(barber_id=owner_id) | Q(barber__isnull=True))
+        qs = qs.order_by("name")
         return PublicServiceSerializer(qs, many=True, context=self.context).data
 
 
@@ -428,6 +432,20 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
             services = attrs.get("services")
             if not services:
                 attrs["services"] = []
+
+        lat = attrs.get("latitude", getattr(self.instance, "latitude", None))
+        lng = attrs.get("longitude", getattr(self.instance, "longitude", None))
+        address = attrs.get("address", getattr(self.instance, "address", "") or "")
+        if lat is not None and lng is not None and address:
+            from salons.owner_setup import validate_salon_address_coords
+
+            try:
+                coord_err = validate_salon_address_coords(address, float(lat), float(lng))
+            except (TypeError, ValueError):
+                coord_err = None
+            if coord_err:
+                raise serializers.ValidationError({"address": coord_err})
+
         return attrs
 
     def _sync_amenities(self, salon, codes: list[str] | None):

@@ -41,6 +41,35 @@ export function SalonLocationPicker({
   const skipGeocodeRef = useRef(false);
   const skipReverseRef = useRef(false);
   const reverseTimerRef = useRef<number | null>(null);
+  const prevCityRef = useRef(city);
+
+  useEffect(() => {
+    const c = city.trim();
+    if (c.length < 2 || c === prevCityRef.current) {
+      prevCityRef.current = c;
+      return;
+    }
+    prevCityRef.current = c;
+    if (skipGeocodeRef.current) {
+      skipGeocodeRef.current = false;
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      void geocodeAddress(`${c}, O'zbekiston`)
+        .then((results) => {
+          const first = results[0];
+          if (!first) return;
+          skipReverseRef.current = true;
+          setLatitude(first.lat.toFixed(6));
+          setLongitude(first.lng.toFixed(6));
+          if (!address.trim() && first.address) {
+            setAddress?.(first.address);
+          }
+        })
+        .catch(() => undefined);
+    }, 450);
+    return () => window.clearTimeout(timer);
+  }, [city, address, setLatitude, setLongitude, setAddress]);
 
   useEffect(() => {
     const addressPart = address.trim();

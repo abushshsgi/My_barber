@@ -19,7 +19,7 @@ export function useSalonPage(id: string) {
       const services = detail.data?.services ?? [];
       return rows.map((r) => mapStaffToBarber(r, id, services));
     },
-    enabled: authQueryEnabled(Boolean(id) && Boolean(detail.data)),
+    enabled: Boolean(id) && Boolean(detail.data),
   });
 
   const reviews = useQuery({

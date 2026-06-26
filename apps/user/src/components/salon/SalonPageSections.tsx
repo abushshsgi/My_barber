@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
 import { formatPrice } from "@/lib/mock-data";
+import { filterSalonOwnerServices, resolveDefaultSalonBarberId } from "@/lib/salon-services";
 import { SalonAmenitiesSection } from "@/components/salon/SalonAmenitiesSection";
 import { SalonBookingCalendar } from "@/components/salon/SalonBookingCalendar";
 import { SalonHoursSection } from "@/components/salon/SalonHoursSection";
@@ -12,8 +13,8 @@ import { SalonPortfolioGallery } from "@/components/salon/SalonPortfolioGallery"
 import { SalonReviewsSection } from "@/components/salon/SalonReviewsSection";
 import { cn } from "@/lib/utils";
 
-function defaultCalendarBarberId(staff: Salon["staff"]) {
-  return staff.find((s) => s.isBookable !== false)?.id ?? staff[0]?.id;
+function defaultCalendarBarberId(salon: Salon) {
+  return resolveDefaultSalonBarberId(salon.staff) ?? salon.staff[0]?.id;
 }
 
 function SectionBlock({
@@ -47,6 +48,8 @@ export function SalonPageSections({
   reviewsAreMock?: boolean;
 }) {
   const { t } = useTranslation();
+  const ownerServices = filterSalonOwnerServices(salon.services, salon.ownerId);
+  const ownerBarberId = salon.ownerId ?? resolveDefaultSalonBarberId(salon.staff) ?? undefined;
 
   return (
     <div className="space-y-0">
@@ -62,7 +65,7 @@ export function SalonPageSections({
 
       <SectionBlock id="salon-services" title={t("salon.tabs.services")}>
         <div className="grid gap-3 sm:grid-cols-2">
-          {salon.services.map((s) => (
+          {ownerServices.map((s) => (
             <div
               key={s.id}
               className="flex items-center justify-between gap-3 rounded-xl border border-border p-4 transition-colors hover:bg-muted/30"
@@ -78,6 +81,7 @@ export function SalonPageSections({
                 <Link
                   to="/booking/$salonId"
                   params={{ salonId: salon.id }}
+                  search={ownerBarberId ? { barber: ownerBarberId } : undefined}
                   className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-background"
                 >
                   <Plus className="h-4 w-4" />
@@ -93,6 +97,7 @@ export function SalonPageSections({
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {salon.staff.map((b) => {
               const bookable = b.isBookable !== false;
+              const isOwner = b.role === "Salon egasi";
               const inner = (
                 <>
                   <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-muted text-base font-bold">
@@ -103,8 +108,17 @@ export function SalonPageSections({
                   </div>
                   <p className="mt-3 text-sm font-semibold">{b.name}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">{b.role}</p>
-                  {!bookable ? (
-                    <p className="mt-1 text-[10px] font-medium text-muted-foreground">Tez orada</p>
+                  {!bookable && !isOwner ? (
+                    <p className="mt-1 text-[10px] font-medium text-muted-foreground">
+                      {t("salon.staff.comingSoon", { defaultValue: "Tez orada" })}
+                    </p>
+                  ) : null}
+                  {!bookable && isOwner ? (
+                    <p className="mt-1 text-[10px] font-medium text-muted-foreground">
+                      {t("salon.staff.notBookableYet", {
+                        defaultValue: "Hozircha band qilib bo'lmaydi",
+                      })}
+                    </p>
                   ) : null}
                 </>
               );
@@ -161,7 +175,7 @@ export function SalonPageSections({
         <div id="salon-booking" className="scroll-mt-36 border-b border-border pb-10">
           <SalonBookingCalendar
             salonId={salon.id}
-            barberId={defaultCalendarBarberId(salon.staff)}
+            barberId={defaultCalendarBarberId(salon)}
             months={calendarMonths}
           />
         </div>
