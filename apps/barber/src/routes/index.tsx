@@ -11,7 +11,9 @@ export const Route = createFileRoute("/")({
     }
     if (getBarberAccessToken()) {
       const next = await resolveBarberEntryPath();
-      throw redirect({ to: next });
+      if (next !== "/auth") {
+        throw redirect({ to: next });
+      }
     }
     const draft = readSignupDraft();
     if (draft?.flow && draft.flow in SIGNUP_FLOW_PATH) {

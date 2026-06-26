@@ -1,7 +1,7 @@
 import { createFileRoute, isRedirect, redirect, useRouter } from "@tanstack/react-router";
 import { BarberShell } from "@/components/barber/BarberShell";
 import { BarberProvider } from "@/components/barber/BarberContext";
-import { apiFetch, getBarberAccessToken } from "@/lib/api";
+import { apiFetch, clearBarberTokens, getBarberAccessToken } from "@/lib/api";
 import { isBarberPathAllowedDuringActivation } from "@/lib/barber-activation-gate";
 import {
   readOnboardingStatusCache,
@@ -27,6 +27,9 @@ export const Route = createFileRoute("/barber")({
     try {
       const res = await apiFetch("/api/v1/barber/onboarding/status/");
       if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          clearBarberTokens();
+        }
         throw redirect({ to: "/auth" });
       }
       const st = (await res.json()) as {

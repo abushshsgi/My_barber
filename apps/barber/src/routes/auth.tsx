@@ -32,6 +32,7 @@ export const Route = createFileRoute("/auth")({
     if (typeof window === "undefined") return;
     if (!getBarberAccessToken()) return;
     const next = await resolveBarberEntryPath();
+    if (next === "/auth") return;
     throw redirect({ to: next });
   },
   component: AuthPage,

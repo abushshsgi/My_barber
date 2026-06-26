@@ -1,14 +1,15 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter, useRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
-import { isChunkLoadError } from "@/lib/chunk-reload";
+import { isChunkLoadError, reloadForChunkError } from "@/lib/chunk-reload";
+import { APP_BUILD_ID } from "@/lib/app-build-id";
 
 function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
   const chunkError = isChunkLoadError(error);
 
   if (chunkError && typeof window !== "undefined") {
-    window.location.reload();
+    reloadForChunkError();
     return null;
   }
   return (
@@ -18,6 +19,7 @@ function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => vo
         <p className="mt-2 text-sm text-muted-foreground">
           Kutilmagan xatolik. Iltimos, qayta urinib ko'ring.
         </p>
+        <p className="mt-2 text-[10px] text-muted-foreground">build: {APP_BUILD_ID}</p>
         {import.meta.env.DEV && error.message && (
           <pre className="mt-4 max-h-40 overflow-auto rounded-md bg-muted p-3 text-left font-mono text-xs text-destructive">
             {error.message}
@@ -32,6 +34,16 @@ function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => vo
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
             Qayta urinish
+          </button>
+          <button
+            onClick={() => {
+              const url = new URL(window.location.href);
+              url.searchParams.set("_v", Date.now().toString(36));
+              window.location.replace(url.toString());
+            }}
+            className="inline-flex items-center justify-center rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-accent"
+          >
+            Yangilash
           </button>
           <a
             href="/"

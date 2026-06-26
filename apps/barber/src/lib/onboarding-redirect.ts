@@ -1,4 +1,4 @@
-import { apiFetch, getBarberAccessToken } from "@/lib/api";
+import { apiFetch, clearBarberTokens, getBarberAccessToken } from "@/lib/api";
 
 export type OnboardingStatusLite = {
   fully_ready?: boolean;
@@ -22,13 +22,19 @@ export async function resolveBarberEntryPath(): Promise<string> {
   if (!getBarberAccessToken()) return "/auth";
   try {
     const res = await apiFetch("/api/v1/barber/onboarding/status/");
-    if (!res.ok) return "/auth";
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        clearBarberTokens();
+      }
+      return "/auth";
+    }
     const st = (await res.json()) as OnboardingStatusLite;
     if (st.fully_ready) return "/barber";
     const next = normalizeRequiredNextPath(st);
     if (next) return next;
     return "/barber/activation";
   } catch {
+    clearBarberTokens();
     return "/auth";
   }
 }
