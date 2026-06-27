@@ -11,19 +11,14 @@ from rest_framework.views import APIView
 from accounts.throttles import BarberPayoutThrottle, BarberWriteThrottle
 from barbers.permissions import IsBarber
 from bookings.models import Booking
+from bookings.earnings import barber_platform_earnings_qs
 from control_panel.models import Payout
 
 MIN_WITHDRAWAL_UZS = Decimal("50000")
 
 
 def _barber_available_balance(barber) -> Decimal:
-    income = (
-        Booking.objects.filter(
-            barber=barber,
-            status=Booking.Status.COMPLETED,
-        ).aggregate(t=Sum("total_price"))["t"]
-        or 0
-    )
+    income = barber_platform_earnings_qs(barber).aggregate(t=Sum("total_price"))["t"] or 0
     from barbers.models import BarberExpense
 
     expenses = (

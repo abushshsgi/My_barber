@@ -4,6 +4,7 @@ import { Check, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { BookingForPicker } from "@/components/booking/BookingForPicker";
+import { BookingPaymentPicker, type BookingPaymentMethod } from "@/components/booking/BookingPaymentPicker";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { DesktopPageHeader } from "@/components/desktop/ui/DesktopPageHeader";
 import { BookingSummaryAside } from "@/components/booking/BookingSummaryAside";
@@ -11,6 +12,7 @@ import { formatPrice } from "@/lib/mock-data";
 import { PageHeader } from "@/components/PageHeader";
 import { Stepper } from "@/components/Stepper";
 import { useCreateBooking, useBookingAvailability } from "@/hooks/use-bookings-api";
+import { useWalletBalance } from "@/hooks/use-wallet";
 import { useFamilyMembers } from "@/hooks/use-family";
 import { useDisplayUser } from "@/hooks/use-me";
 import { useSalonBarberServices } from "@/hooks/use-salon-barber-services";
@@ -71,6 +73,8 @@ function useBookingSalonState(
   const [serviceIds, setServiceIds] = useState<string[]>([]);
   const [dayIdx, setDayIdx] = useState(0);
   const [slot, setSlot] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<BookingPaymentMethod>("cash");
+  const { balance: walletBalance, isLoading: walletLoading } = useWalletBalance();
 
   useEffect(() => {
     if (!salon?.staff.length) return;
@@ -130,6 +134,10 @@ function useBookingSalonState(
 
   const handleSubmit = async () => {
     if (!salon || !barberId || !slot || serviceIds.length === 0) return;
+    if (paymentMethod === "online" && walletBalance < total) {
+      toast.error("Hamyon balansi yetarli emas. Hamyonni to'ldiring yoki naqd tanlang.");
+      return;
+    }
     const d = new Date(dayList[dayIdx].full);
     const [h, m] = slot.split(":");
     d.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
@@ -140,6 +148,7 @@ function useBookingSalonState(
         start_at: d.toISOString(),
         service_ids: serviceIds.map((id) => parseInt(id, 10)),
         family_member_id: familyMemberId,
+        payment_method: paymentMethod,
       });
       toast.success("Buyurtma yuborildi!", { description: `${salon.name} · ${slot}` });
       setTimeout(() => router.navigate({ to: "/bookings" }), 700);
@@ -173,6 +182,10 @@ function useBookingSalonState(
     bookedForLabel,
     canAdvance,
     handleSubmit,
+    paymentMethod,
+    setPaymentMethod,
+    walletBalance,
+    walletLoading,
   };
 }
 
@@ -183,7 +196,7 @@ function BookingStepContent({
   state: ReturnType<typeof useBookingSalonState>;
   t: ReturnType<typeof useTranslation>["t"];
 }) {
-  const { salon, step, familyMemberId, setFamilyMemberId, barberId, setBarberId, serviceIds, setServiceIds, dayIdx, setDayIdx, slot, setSlot, dayList, slotOptions, selectedServices, barberServiceOptions, barberServicesLoading, selectedBarber, bookedForLabel, total } = state;
+  const { salon, step, familyMemberId, setFamilyMemberId, barberId, setBarberId, serviceIds, setServiceIds, dayIdx, setDayIdx, slot, setSlot, dayList, slotOptions, selectedServices, barberServiceOptions, barberServicesLoading, selectedBarber, bookedForLabel, total, paymentMethod, setPaymentMethod, walletBalance, walletLoading } = state;
   if (!salon) return null;
 
   if (step === 1) {
@@ -296,9 +309,16 @@ function BookingStepContent({
   }
 
   return (
-    <div>
+    <div className="space-y-6">
       <h2 className="text-xl font-bold">{t("booking.summary")}</h2>
-      <div className="mt-6 rounded-2xl bg-surface p-5">
+      <BookingPaymentPicker
+        value={paymentMethod}
+        onChange={setPaymentMethod}
+        total={total}
+        walletBalance={walletBalance}
+        walletLoading={walletLoading}
+      />
+      <div className="rounded-2xl bg-surface p-5">
         <p className="text-base font-bold">{salon.name}</p>
         <div className="my-4 h-px bg-border" />
         <div className="space-y-2 text-sm">

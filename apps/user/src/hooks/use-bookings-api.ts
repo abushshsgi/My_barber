@@ -32,7 +32,10 @@ export function useCreateBooking() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateBookingPayload) => createBooking(payload),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: bookingsQueryKeyBase }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: bookingsQueryKeyBase });
+      void qc.invalidateQueries({ queryKey: ["wallet"] });
+    },
   });
 }
 

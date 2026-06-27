@@ -1,18 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Wallet, TrendingUp, Download, ArrowDownToLine, Receipt } from "lucide-react";
-import { useBarberContext, formatUZS, type Booking } from "@/components/barber/BarberContext";
+import { Wallet, TrendingUp, Download, ArrowDownToLine, Receipt, Loader2 } from "lucide-react";
+import { formatUZS } from "@/components/barber/BarberContext";
 import { PageHeader, StatCard } from "@/components/barber/primitives";
 import {
   EARNINGS_RANGES,
-  filterCompletedBookingsByRange,
-  filterTransactionsByRange,
   formatFinanceDate,
-  startOfLocalDay,
+  last7DaysIsoParams,
+  rangeToIsoParams,
   type EarningsRange,
 } from "@/lib/finance-range";
 import { cn } from "@/lib/utils";
-import { useBarberPayoutsQuery, useInvalidateBarberQueries, usePayoutBalanceQuery } from "@/hooks/use-barber-queries";
+import {
+  useBarberFinanceQuery,
+  useBarberPayoutsQuery,
+  useInvalidateBarberQueries,
+  usePayoutBalanceQuery,
+} from "@/hooks/use-barber-queries";
 import { apiFetch, formatApiError } from "@/lib/api";
 import { toast } from "sonner";
 import {
@@ -29,69 +33,73 @@ export const Route = createFileRoute("/barber/earnings")({
   component: EarningsPage,
 });
 
-function useLast7DaysCompletedSeries(bookings: Booking[]) {
-  return useMemo(() => {
-    const amounts = new Array(7).fill(0);
-    const end = startOfLocalDay(new Date());
-    const start = new Date(end);
-    start.setDate(start.getDate() - 6);
-    const labels: string[] = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(start);
-      d.setDate(start.getDate() + i);
-      labels.push(d.toLocaleDateString("uz-UZ", { weekday: "short" }));
-    }
-    for (const b of bookings) {
-      if (b.status !== "completed" || !b.start_at) continue;
-      const dt = startOfLocalDay(new Date(b.start_at));
-      const dayIdx = Math.round((dt.getTime() - start.getTime()) / 86400000);
-      if (dayIdx >= 0 && dayIdx < 7) amounts[dayIdx] += b.price;
-    }
-    const max = Math.max(1, ...amounts);
-    const bars = amounts.map((a) => Math.round((a / max) * 100));
-    const weekSegmentTotal = amounts.reduce((s, x) => s + x, 0);
-    return { bars, labels, weekSegmentTotal };
-  }, [bookings]);
+function paymentLabel(method?: string | null): string {
+  if (method === "online") return "Onlayn";
+  if (method === "cash") return "Naqd";
+  return "—";
 }
 
 function EarningsPage() {
-  const { transactions, bookings, financeTotals } = useBarberContext();
   const [range, setRange] = useState<EarningsRange>("Hafta");
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [accountRef, setAccountRef] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const { data: balance } = usePayoutBalanceQuery();
+
+  const rangeParams = useMemo(() => rangeToIsoParams(range), [range]);
+  const chartParams = useMemo(() => last7DaysIsoParams(), []);
+  const {
+    data: finance,
+    isLoading: financeLoading,
+    isError: financeError,
+  } = useBarberFinanceQuery(rangeParams);
+  const { data: chartFinance, isLoading: chartLoading } = useBarberFinanceQuery(chartParams);
+  const { data: balance, isLoading: balanceLoading } = usePayoutBalanceQuery();
   const { data: payouts = [] } = useBarberPayoutsQuery();
-  const { invalidatePayouts } = useInvalidateBarberQueries();
+  const { invalidatePayouts, invalidateFinance } = useInvalidateBarberQueries();
 
-  const completed = useMemo(() => bookings.filter((b) => b.status === "completed"), [bookings]);
-  const filteredBookings = useMemo(
-    () => filterCompletedBookingsByRange(completed, range),
-    [completed, range],
-  );
-  const filteredTransactions = useMemo(
-    () => filterTransactionsByRange(transactions, range),
-    [transactions, range],
-  );
+  const gross = Number(finance?.income_total ?? 0);
+  const rangeExpenses = Number(finance?.expense_total ?? 0);
+  const net = Number(finance?.net_total ?? 0);
+  const allTimeNet = Number(finance?.all_time_net_total ?? 0);
+  const transactions = finance?.transactions ?? [];
+  const balanceVal = balance ? Number(balance.available_balance) : 0;
 
-  const gross = filteredBookings.reduce((s, b) => s + b.price, 0);
-  const rangeExpenses = filteredTransactions
-    .filter((t) => t.kind === "expense")
-    .reduce((s, t) => s + Math.abs(t.amount), 0);
-  const balanceVal = balance ? Number(balance.available_balance) : gross - rangeExpenses;
+  const chart = useMemo(() => {
+    const daily = chartFinance?.daily ?? [];
+    const labels: string[] = [];
+    const amounts: number[] = [];
+    const end = new Date();
+    end.setHours(0, 0, 0, 0);
+    const start = new Date(end);
+    start.setDate(start.getDate() - 6);
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const key = d.toISOString().slice(0, 10);
+      labels.push(d.toLocaleDateString("uz-UZ", { weekday: "short" }));
+      const row = daily.find((x) => x.date === key);
+      amounts.push(row ? Number(row.revenue) : 0);
+    }
+    const max = Math.max(1, ...amounts);
+    const bars = amounts.map((a) => Math.round((a / max) * 100));
+    const weekSegmentTotal = amounts.reduce((s, x) => s + x, 0);
+    return { bars, labels, weekSegmentTotal };
+  }, [chartFinance?.daily]);
 
-  const { bars, labels, weekSegmentTotal } = useLast7DaysCompletedSeries(bookings);
+  const completedOnlineCount = transactions.filter((t) => t.kind === "booking").length;
 
   const exportCsv = () => {
-    const header = "Sana,Mijoz,Narx,Holat\n";
-    const rows = filteredBookings
-      .map((b) =>
+    const header = "Sana,Mijoz,Xizmat,To'lov,Summa\n";
+    const rows = transactions
+      .filter((t) => t.kind === "booking")
+      .map((t) =>
         [
-          b.start_at ?? "",
-          `"${(b.client ?? "").replace(/"/g, '""')}"`,
-          String(b.price),
-          b.status,
+          t.date ?? "",
+          `"${(t.client ?? "").replace(/"/g, '""')}"`,
+          `"${(t.service ?? "").replace(/"/g, '""')}"`,
+          paymentLabel(t.payment_method),
+          String(t.amount),
         ].join(","),
       )
       .join("\n");
@@ -133,26 +141,28 @@ function EarningsPage() {
       setWithdrawOpen(false);
       setWithdrawAmount("");
       invalidatePayouts();
+      invalidateFinance();
     } finally {
       setSubmitting(false);
     }
   };
 
   const rangeHint = range.toLowerCase();
-  const showAllTimeNote = range === "Yil";
   const minWithdraw = balance ? Number(balance.min_withdrawal) : 50000;
+  const loading = financeLoading || balanceLoading;
+  const chartBusy = chartLoading;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
       <PageHeader
         title="Daromad"
-        description="To'lovlar, daromad va hisob holati."
+        description="Faqat onlayn (hamyon) orqali to'langan bronlar platforma daromadiga tushadi."
         actions={
           <>
             <button
               type="button"
               onClick={exportCsv}
-              disabled={filteredBookings.length === 0}
+              disabled={loading || transactions.length === 0}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-card text-sm font-medium disabled:opacity-50"
             >
               <Download className="size-4" />
@@ -175,19 +185,25 @@ function EarningsPage() {
           <Wallet className="size-3.5" />
           Mavjud balans (yechish uchun)
         </div>
-        <div className="font-heading text-4xl sm:text-5xl font-semibold mt-2">
-          {formatUZS(balanceVal)}
-        </div>
-        <div className="text-sm opacity-70 mt-2">
-          Tanlangan davr sof: {formatUZS(gross - rangeExpenses)}
-          {balance?.pending_payouts ? ` · kutilayotgan: ${formatUZS(Number(balance.pending_payouts))}` : null}
-          {showAllTimeNote ? (
-            <>
-              {" "}
-              · jami (barcha vaqt): {formatUZS(financeTotals.net_total)}
-            </>
-          ) : null}
-        </div>
+        {loading ? (
+          <div className="mt-4 flex items-center gap-2 text-sm opacity-80">
+            <Loader2 className="size-4 animate-spin" />
+            Yuklanmoqda…
+          </div>
+        ) : (
+          <>
+            <div className="font-heading text-4xl sm:text-5xl font-semibold mt-2">
+              {formatUZS(balanceVal)}
+            </div>
+            <div className="text-sm opacity-70 mt-2">
+              Tanlangan davr sof: {formatUZS(net)}
+              {balance?.pending_payouts
+                ? ` · kutilayotgan: ${formatUZS(Number(balance.pending_payouts))}`
+                : null}
+              {range === "Yil" ? ` · jami (barcha vaqt): ${formatUZS(allTimeNet)}` : null}
+            </div>
+          </>
+        )}
       </div>
 
       <Dialog open={withdrawOpen} onOpenChange={setWithdrawOpen}>
@@ -244,29 +260,35 @@ function EarningsPage() {
         ))}
       </div>
 
+      {financeError ? (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          Daromad ma&apos;lumotlarini yuklab bo&apos;lmadi. Sahifani yangilab ko&apos;ring.
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
           icon={<TrendingUp className="size-4" />}
-          label="Yalpi daromad"
-          value={formatUZS(gross)}
+          label="Onlayn daromad"
+          value={loading ? "…" : formatUZS(gross)}
           hint={rangeHint}
         />
         <StatCard
           icon={<Receipt className="size-4" />}
           label="Xarajatlar"
-          value={formatUZS(rangeExpenses)}
+          value={loading ? "…" : formatUZS(rangeExpenses)}
           hint={rangeHint}
         />
         <StatCard
           icon={<Wallet className="size-4" />}
           label="Sof daromad"
-          value={formatUZS(gross - rangeExpenses)}
+          value={loading ? "…" : formatUZS(net)}
           hint={rangeHint}
         />
         <StatCard
           icon={<TrendingUp className="size-4" />}
-          label="Yakunlangan bronlar"
-          value={filteredBookings.length.toString()}
+          label="Onlayn bronlar"
+          value={loading ? "…" : completedOnlineCount.toString()}
           hint={rangeHint}
         />
       </div>
@@ -276,22 +298,31 @@ function EarningsPage() {
           <div>
             <h2 className="font-heading text-lg font-semibold">Oxirgi 7 kun</h2>
             <div className="text-xs text-muted-foreground">
-              Yakunlangan bronlar summasi · jami {formatUZS(weekSegmentTotal)}
+              Onlayn to&apos;lovlar · jami {chartBusy ? "…" : formatUZS(chart.weekSegmentTotal)}
             </div>
           </div>
-          <div className="text-2xl font-heading font-semibold">{formatUZS(weekSegmentTotal)}</div>
+          <div className="text-2xl font-heading font-semibold">
+            {chartBusy ? "…" : formatUZS(chart.weekSegmentTotal)}
+          </div>
         </div>
-        <div className="flex items-end gap-3 h-48">
-          {bars.map((h, i) => (
-            <div key={labels[i] ?? i} className="flex-1 flex flex-col items-center gap-2">
-              <div
-                className="w-full min-h-[2px] rounded-t-md bg-foreground/90 hover:bg-foreground transition-colors"
-                style={{ height: `${h}%` }}
-              />
-              <div className="text-xs text-muted-foreground">{labels[i]}</div>
-            </div>
-          ))}
-        </div>
+        {chartBusy ? (
+          <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+            <Loader2 className="mr-2 size-4 animate-spin" />
+            Grafik yuklanmoqda…
+          </div>
+        ) : (
+          <div className="flex items-end gap-3 h-48">
+            {chart.bars.map((h, i) => (
+              <div key={chart.labels[i] ?? i} className="flex-1 flex flex-col items-center gap-2">
+                <div
+                  className="w-full min-h-[2px] rounded-t-md bg-foreground/90 hover:bg-foreground transition-colors"
+                  style={{ height: `${h}%` }}
+                />
+                <div className="text-xs text-muted-foreground">{chart.labels[i]}</div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {payouts.length > 0 ? (
@@ -315,64 +346,63 @@ function EarningsPage() {
       <div className="rounded-xl border border-border bg-card overflow-hidden shadow-card">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <h2 className="font-heading text-lg font-semibold">Tranzaksiyalar</h2>
-          <span className="text-xs text-muted-foreground">{rangeHint}</span>
+          <span className="text-xs text-muted-foreground">{rangeHint} · faqat onlayn</span>
         </div>
         <div className="grid grid-cols-12 gap-4 px-5 py-3 text-xs uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/30">
-          <div className="col-span-3">Sana</div>
-          <div className="col-span-3">Mijoz</div>
+          <div className="col-span-2">Sana</div>
+          <div className="col-span-2">Mijoz</div>
           <div className="col-span-3">Xizmat</div>
+          <div className="col-span-2">To&apos;lov</div>
           <div className="col-span-2">Holat</div>
           <div className="col-span-1 text-right">Summa</div>
         </div>
-        {filteredTransactions.length === 0 ? (
+        {loading ? (
           <div className="px-5 py-10 text-center text-sm text-muted-foreground">
-            Tanlangan davrda tranzaksiyalar yo‘q.
+            <Loader2 className="mx-auto mb-2 size-5 animate-spin" />
+            Tranzaksiyalar yuklanmoqda…
+          </div>
+        ) : transactions.length === 0 ? (
+          <div className="px-5 py-10 text-center text-sm text-muted-foreground">
+            Tanlangan davrda onlayn tranzaksiyalar yo&apos;q. Naqd to&apos;lovlar bu yerda ko&apos;rinmaydi.
           </div>
         ) : (
-          filteredTransactions.map((t) => (
-            <div
-              key={t.id}
-              className="grid grid-cols-12 gap-4 px-5 py-3 items-center border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors"
-            >
-              <div className="col-span-3 text-sm text-muted-foreground">
-                {formatFinanceDate(t.date)}
-              </div>
-              <div className="col-span-3 text-sm font-medium">{t.client}</div>
-              <div className="col-span-3 text-sm text-muted-foreground">{t.service}</div>
-              <div className="col-span-2">
-                <span
+          transactions.map((t) => {
+            const amount = Number(t.amount);
+            return (
+              <div
+                key={t.id}
+                className="grid grid-cols-12 gap-4 px-5 py-3 items-center border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors"
+              >
+                <div className="col-span-2 text-sm text-muted-foreground">
+                  {formatFinanceDate(t.date)}
+                </div>
+                <div className="col-span-2 text-sm font-medium truncate">{t.client}</div>
+                <div className="col-span-3 text-sm text-muted-foreground truncate">{t.service}</div>
+                <div className="col-span-2 text-sm">{paymentLabel(t.payment_method)}</div>
+                <div className="col-span-2">
+                  <span
+                    className={cn(
+                      "inline-flex items-center rounded-md border px-2 py-0.5 text-xs",
+                      t.kind === "booking" &&
+                        "bg-foreground/10 text-foreground border-foreground/20",
+                      t.kind === "expense" && "bg-muted text-muted-foreground border-border",
+                    )}
+                  >
+                    {t.kind === "booking" ? "Bron" : t.kind === "expense" ? "Xarajat" : t.status}
+                  </span>
+                </div>
+                <div
                   className={cn(
-                    "inline-flex items-center rounded-md border px-2 py-0.5 text-xs",
-                    t.kind === "booking" &&
-                      "bg-foreground/10 text-foreground border-foreground/20",
-                    t.kind === "expense" && "bg-muted text-muted-foreground border-border",
-                    t.status === "pending" && "bg-muted text-muted-foreground border-border",
-                    t.status === "failed" &&
-                      "bg-destructive/10 text-destructive border-destructive/20",
+                    "col-span-1 text-right text-sm font-medium",
+                    amount < 0 && "text-destructive",
                   )}
                 >
-                  {t.kind === "booking"
-                    ? "Bron"
-                    : t.kind === "expense"
-                      ? "Xarajat"
-                      : t.status === "completed"
-                        ? "Yakunlandi"
-                        : t.status === "pending"
-                          ? "Kutilmoqda"
-                          : "Xato"}
-                </span>
+                  {amount < 0 ? "-" : "+"}
+                  {formatUZS(Math.abs(amount))}
+                </div>
               </div>
-              <div
-                className={cn(
-                  "col-span-1 text-right text-sm font-medium",
-                  t.amount < 0 && "text-destructive",
-                )}
-              >
-                {t.amount < 0 ? "-" : "+"}
-                {formatUZS(Math.abs(t.amount))}
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

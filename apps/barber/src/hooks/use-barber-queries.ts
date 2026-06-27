@@ -16,6 +16,8 @@ export const barberQueryKeys = {
     [...barberQueryKeys.all, "clients", mode, salonId] as const,
   notifications: () => [...barberQueryKeys.all, "notifications"] as const,
   finance: () => [...barberQueryKeys.all, "finance"] as const,
+  financeRange: (start: string, end: string) =>
+    [...barberQueryKeys.finance(), start, end] as const,
   reviews: () => [...barberQueryKeys.all, "reviews"] as const,
   analytics: (params: string) => [...barberQueryKeys.all, "analytics", params] as const,
   payouts: () => [...barberQueryKeys.all, "payouts"] as const,
@@ -81,6 +83,8 @@ export function useBookingActionMutation() {
     },
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: barberQueryKeys.bookings() });
+      void qc.invalidateQueries({ queryKey: barberQueryKeys.finance() });
+      void qc.invalidateQueries({ queryKey: barberQueryKeys.payoutBalance() });
     },
   });
 }
@@ -128,6 +132,36 @@ export function useCatalogServicesQuery(enabled = true) {
       }>("/api/v1/barber/catalog-services/"),
     enabled,
     staleTime: 120_000,
+  });
+}
+
+export function useBarberFinanceQuery(
+  params: { start: string; end: string },
+  enabled = true,
+) {
+  const qs = new URLSearchParams({ start: params.start, end: params.end });
+  return useQuery({
+    queryKey: barberQueryKeys.financeRange(params.start, params.end),
+    queryFn: () =>
+      apiJson<{
+        income_total: string | number;
+        expense_total: string | number;
+        net_total: string | number;
+        all_time_net_total?: string | number;
+        transactions: Array<{
+          id: string;
+          date: string;
+          client: string;
+          service: string;
+          amount: string | number;
+          kind: string;
+          status: string;
+          payment_method?: string | null;
+        }>;
+        daily: Array<{ date: string; revenue: string | number; bookings: number }>;
+      }>(`/api/v1/barber/finance/summary/?${qs}`),
+    enabled: enabled && Boolean(params.start && params.end),
+    staleTime: 20_000,
   });
 }
 
@@ -202,6 +236,7 @@ export function useInvalidateBarberQueries() {
       qc.invalidateQueries({ queryKey: barberQueryKeys.payouts() });
       qc.invalidateQueries({ queryKey: barberQueryKeys.payoutBalance() });
     },
+    invalidateFinance: () => qc.invalidateQueries({ queryKey: barberQueryKeys.finance() }),
     invalidateAll: () => qc.invalidateQueries({ queryKey: barberQueryKeys.all }),
   };
 }

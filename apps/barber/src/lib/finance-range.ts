@@ -59,6 +59,20 @@ export function filterTransactionsByRange(
   return transactions.filter((t) => isDateInRange(t.date, range));
 }
 
+export function rangeToIsoParams(range: EarningsRange, now = new Date()): { start: string; end: string } {
+  const from = rangeStart(range, now);
+  const to = new Date(now);
+  to.setHours(23, 59, 59, 999);
+  return {
+    start: from.toISOString(),
+    end: to.toISOString(),
+  };
+}
+
+export function last7DaysIsoParams(now = new Date()): { start: string; end: string } {
+  return rangeToIsoParams("Hafta", now);
+}
+
 export function formatFinanceDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso.slice(0, 10);

@@ -2,9 +2,10 @@ import math
 from datetime import datetime
 
 from django.db import transaction
-from django.db.models import Avg, Count, Q
-from django.db.models.functions import Coalesce
+from django.db.models import Avg, Count, Q, Sum
+from django.db.models.functions import Coalesce, TruncDate
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -571,24 +572,63 @@ class MyBarberFinanceSummaryView(APIView):
     permission_classes = [IsBarber]
 
     def get(self, request):
+        from bookings.earnings import barber_platform_earnings_qs
+
         barber = request.user.barber
-        expenses_total = sum(BarberExpense.objects.filter(barber=barber).values_list("amount", flat=True))
-        completed = Booking.objects.filter(barber=barber, status=Booking.Status.COMPLETED)
-        income_total = sum(completed.values_list("total_price", flat=True))
+        start_raw = (request.query_params.get("start") or "").strip()
+        end_raw = (request.query_params.get("end") or "").strip()
+        start_dt = end_dt = None
+
+        earnings_base = barber_platform_earnings_qs(barber).select_related("customer").prefetch_related(
+            "lines"
+        )
+
+        if start_raw and end_raw:
+            try:
+                start_dt = timezone.datetime.fromisoformat(start_raw.replace("Z", "+00:00"))
+                end_dt = timezone.datetime.fromisoformat(end_raw.replace("Z", "+00:00"))
+                if timezone.is_naive(start_dt):
+                    start_dt = timezone.make_aware(start_dt, timezone.get_current_timezone())
+                if timezone.is_naive(end_dt):
+                    end_dt = timezone.make_aware(end_dt, timezone.get_current_timezone())
+                earnings_base = earnings_base.filter(start_at__gte=start_dt, start_at__lte=end_dt)
+            except ValueError:
+                return Response({"detail": "Invalid start/end dates."}, status=400)
+
+        income_total = earnings_base.aggregate(t=Sum("total_price"))["t"] or 0
+
+        expense_qs = BarberExpense.objects.filter(barber=barber)
+        if start_dt is not None and end_dt is not None:
+            expense_qs = expense_qs.filter(
+                spent_on__gte=start_dt.date(),
+                spent_on__lte=end_dt.date(),
+            )
+        expenses_total = expense_qs.aggregate(t=Sum("amount"))["t"] or 0
+
+        all_time_income = (
+            barber_platform_earnings_qs(barber).aggregate(t=Sum("total_price"))["t"] or 0
+        )
+        all_time_expenses = (
+            BarberExpense.objects.filter(barber=barber).aggregate(t=Sum("amount"))["t"] or 0
+        )
+
         transactions = []
-        for b in completed.order_by("-start_at")[:100]:
+        for b in earnings_base.order_by("-start_at")[:200]:
+            lines = list(b.lines.all())
+            first_line = lines[0] if lines else None
             transactions.append(
                 {
                     "id": f"booking-{b.id}",
                     "date": b.start_at.isoformat(),
                     "client": b.customer.full_name or b.customer.email,
-                    "service": (b.lines.first().service_name if b.lines.exists() else "Xizmat"),
+                    "service": first_line.service_name if first_line else "Xizmat",
                     "amount": str(b.total_price),
                     "kind": "booking",
                     "status": "completed",
+                    "payment_method": b.payment_method,
                 }
             )
-        for e in BarberExpense.objects.filter(barber=barber).order_by("-spent_on")[:100]:
+        for e in expense_qs.order_by("-spent_on")[:200]:
             transactions.append(
                 {
                     "id": f"expense-{e.id}",
@@ -598,15 +638,35 @@ class MyBarberFinanceSummaryView(APIView):
                     "amount": str(-e.amount),
                     "kind": "expense",
                     "status": "completed",
+                    "payment_method": None,
                 }
             )
         transactions.sort(key=lambda r: r["date"], reverse=True)
+        transactions = transactions[:200]
+
+        daily_rows = (
+            earnings_base.annotate(day=TruncDate("start_at"))
+            .values("day")
+            .annotate(revenue=Sum("total_price"), bookings=Count("id"))
+            .order_by("day")
+        )
+        daily = [
+            {
+                "date": row["day"].isoformat() if row["day"] else "",
+                "revenue": str(row["revenue"] or 0),
+                "bookings": row["bookings"] or 0,
+            }
+            for row in daily_rows
+        ]
+
         return Response(
             {
                 "income_total": str(income_total),
                 "expense_total": str(expenses_total),
                 "net_total": str(income_total - expenses_total),
-                "transactions": transactions[:100],
+                "all_time_net_total": str(all_time_income - all_time_expenses),
+                "transactions": transactions,
+                "daily": daily,
             }
         )
 

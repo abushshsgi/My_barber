@@ -11,6 +11,16 @@ class Booking(models.Model):
         COMPLETED = "completed", "Completed"
         CANCELLED = "cancelled", "Cancelled"
 
+    class PaymentMethod(models.TextChoices):
+        CASH = "cash", "Cash"
+        ONLINE = "online", "Online"
+
+    class PaymentStatus(models.TextChoices):
+        NOT_APPLICABLE = "not_applicable", "N/A"
+        PENDING = "pending", "Pending"
+        PAID = "paid", "Paid"
+        REFUNDED = "refunded", "Refunded"
+
     customer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -37,6 +47,19 @@ class Booking(models.Model):
         db_index=True,
     )
     total_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    payment_method = models.CharField(
+        max_length=16,
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.CASH,
+        db_index=True,
+    )
+    payment_status = models.CharField(
+        max_length=20,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.NOT_APPLICABLE,
+        db_index=True,
+    )
+    paid_at = models.DateTimeField(null=True, blank=True)
     customer_phone = models.CharField(max_length=32, blank=True, default="")
     reminder_1h_sent = models.BooleanField(default=False)
     appointment_reminder_sent = models.BooleanField(default=False)

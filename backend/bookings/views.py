@@ -26,6 +26,7 @@ from bookings.availability import (
 )
 from bookings.db_compat import bookings_has_family_member_column
 from bookings.models import Booking, BookingCompletion, BookingLine, Review
+from bookings.earnings import platform_earnings_qs
 from notifications.serializers import NotificationSerializer
 from notifications.utils import notify_barber, notify_user
 from salons.models import Salon, SalonMembership
@@ -139,6 +140,9 @@ class BookingViewSet(viewsets.ModelViewSet):
             return Response(status=403)
         if booking.status != Booking.Status.PENDING:
             return Response({"detail": "Faqat kutilayotgan bronni rad etish mumkin."}, status=400)
+        from bookings.payments import maybe_refund_booking
+
+        maybe_refund_booking(booking)
         booking.status = Booking.Status.REJECTED
         booking.save(update_fields=["status", "updated_at"])
         notify_user(
@@ -159,6 +163,9 @@ class BookingViewSet(viewsets.ModelViewSet):
             return Response(status=403)
         if booking.status in (Booking.Status.COMPLETED, Booking.Status.CANCELLED, Booking.Status.REJECTED):
             return Response({"detail": "Bu bronni bekor qilib bo‘lmaydi."}, status=400)
+        from bookings.payments import maybe_refund_booking
+
+        maybe_refund_booking(booking)
         booking.status = Booking.Status.CANCELLED
         booking.save(update_fields=["status", "updated_at"])
         payload = {"booking_id": booking.id}
@@ -223,21 +230,24 @@ class BookingViewSet(viewsets.ModelViewSet):
             booking.end_at = actual_end
         booking.save(update_fields=["status", "end_at", "updated_at"])
         BookingCompletion.objects.update_or_create(booking=booking, defaults=comp_defaults)
-        try:
-            from control_panel.models import FinanceTransaction
+        from bookings.earnings import booking_counts_for_platform_earnings
 
-            FinanceTransaction.objects.get_or_create(
-                booking=booking,
-                type=FinanceTransaction.Type.BOOKING,
-                defaults={
-                    "status": FinanceTransaction.Status.COMPLETED,
-                    "amount": booking.total_price,
-                    "barber": booking.barber,
-                    "related_name": f"Booking #{booking.id}",
-                },
-            )
-        except Exception:
-            pass
+        if booking_counts_for_platform_earnings(booking):
+            try:
+                from control_panel.models import FinanceTransaction
+
+                FinanceTransaction.objects.get_or_create(
+                    booking=booking,
+                    type=FinanceTransaction.Type.BOOKING,
+                    defaults={
+                        "status": FinanceTransaction.Status.COMPLETED,
+                        "amount": booking.total_price,
+                        "barber": booking.barber,
+                        "related_name": f"Booking #{booking.id}",
+                    },
+                )
+            except Exception:
+                pass
         notify_user(
             booking.customer,
             "booking_done",
@@ -636,12 +646,13 @@ class AnalyticsView(APIView):
                     {"detail": "Mustaqil analitika faqat sartarosh JWT bilan."},
                     status=403,
                 )
-            bookings = Booking.objects.filter(
-                barber=bp,
-                salon__isnull=True,
-                status=Booking.Status.COMPLETED,
-                start_at__gte=start_dt,
-                start_at__lte=end_dt,
+            bookings = platform_earnings_qs(
+                Booking.objects.filter(
+                    barber=bp,
+                    salon__isnull=True,
+                    start_at__gte=start_dt,
+                    start_at__lte=end_dt,
+                )
             )
             revenue = bookings.aggregate(t=Sum("total_price"))["t"] or 0
             clients = bookings.values("customer").distinct().count()
@@ -649,12 +660,13 @@ class AnalyticsView(APIView):
             new_customers = 0
             returning = 0
             for cid in set(bookings.values_list("customer_id", flat=True)):
-                prior_count = Booking.objects.filter(
-                    barber=bp,
-                    salon__isnull=True,
-                    customer_id=cid,
-                    status=Booking.Status.COMPLETED,
-                    start_at__lt=start_dt,
+                prior_count = platform_earnings_qs(
+                    Booking.objects.filter(
+                        barber=bp,
+                        salon__isnull=True,
+                        customer_id=cid,
+                        start_at__lt=start_dt,
+                    )
                 ).count()
                 if prior_count == 0:
                     new_customers += 1
@@ -732,11 +744,12 @@ class AnalyticsView(APIView):
         if not allowed:
             return Response(status=403)
 
-        bookings = Booking.objects.filter(
-            salon_id=salon_id,
-            status=Booking.Status.COMPLETED,
-            start_at__gte=start_dt,
-            start_at__lte=end_dt,
+        bookings = platform_earnings_qs(
+            Booking.objects.filter(
+                salon_id=salon_id,
+                start_at__gte=start_dt,
+                start_at__lte=end_dt,
+            )
         )
         revenue = bookings.aggregate(t=Sum("total_price"))["t"] or 0
         clients = bookings.values("customer").distinct().count()
@@ -744,11 +757,12 @@ class AnalyticsView(APIView):
         new_customers = 0
         returning = 0
         for cid in set(bookings.values_list("customer_id", flat=True)):
-            prior_count = Booking.objects.filter(
-                salon_id=salon_id,
-                customer_id=cid,
-                status=Booking.Status.COMPLETED,
-                start_at__lt=start_dt,
+            prior_count = platform_earnings_qs(
+                Booking.objects.filter(
+                    salon_id=salon_id,
+                    customer_id=cid,
+                    start_at__lt=start_dt,
+                )
             ).count()
             if prior_count == 0:
                 new_customers += 1

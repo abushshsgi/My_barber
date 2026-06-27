@@ -7,9 +7,11 @@ import { formatPrice } from "@/lib/mock-data";
 import { PageHeader } from "@/components/PageHeader";
 import { Stepper } from "@/components/Stepper";
 import { BookingForPicker } from "@/components/booking/BookingForPicker";
+import { BookingPaymentPicker, type BookingPaymentMethod } from "@/components/booking/BookingPaymentPicker";
 import { BookingSummaryAside } from "@/components/booking/BookingSummaryAside";
 import { useBarberByBarberId, useIndependentAvailability } from "@/hooks/use-barber";
 import { useCreateBooking } from "@/hooks/use-bookings-api";
+import { useWalletBalance } from "@/hooks/use-wallet";
 import { useFamilyMembers } from "@/hooks/use-family";
 import { useDisplayUser } from "@/hooks/use-me";
 import { DESKTOP_SIDEBAR_LEFT_CLASS } from "@/lib/layout-constants";
@@ -37,6 +39,8 @@ function IndependentBookingFlow() {
   const [serviceIds, setServiceIds] = useState<string[]>([]);
   const [dayIdx, setDayIdx] = useState(0);
   const [slot, setSlot] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<BookingPaymentMethod>("cash");
+  const { balance: walletBalance, isLoading: walletLoading } = useWalletBalance();
 
   const today = new Date();
   const days = Array.from({ length: 7 }).map((_, i) => {
@@ -84,6 +88,10 @@ function IndependentBookingFlow() {
 
   const handleSubmit = async () => {
     if (!slot || serviceIds.length === 0) return;
+    if (paymentMethod === "online" && walletBalance < total) {
+      toast.error("Hamyon balansi yetarli emas. Hamyonni to'ldiring yoki naqd tanlang.");
+      return;
+    }
     const d = new Date(days[dayIdx].full);
     const [h, m] = slot.split(":");
     d.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
@@ -93,6 +101,7 @@ function IndependentBookingFlow() {
         start_at: d.toISOString(),
         barber_service_ids: serviceIds.map((id) => parseInt(id, 10)),
         family_member_id: familyMemberId,
+        payment_method: paymentMethod,
       });
       toast.success("Buyurtma yuborildi!", {
         description: `${barber.name} · ${slot}`,
@@ -211,9 +220,16 @@ function IndependentBookingFlow() {
         )}
 
         {step === 3 && (
-          <div>
+          <div className="space-y-6">
             <h2 className="text-xl font-bold tracking-tight">{t("booking.summary")}</h2>
-            <div className="mt-6 rounded-2xl bg-surface p-5">
+            <BookingPaymentPicker
+              value={paymentMethod}
+              onChange={setPaymentMethod}
+              total={total}
+              walletBalance={walletBalance}
+              walletLoading={walletLoading}
+            />
+            <div className="rounded-2xl bg-surface p-5">
               <div className="space-y-2 text-sm">
                 <Row label={t("booking.forWhom", { defaultValue: "Kim uchun" })} value={bookedForLabel} />
                 <Row label="Usta" value={barber.name} />

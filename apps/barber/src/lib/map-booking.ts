@@ -11,6 +11,8 @@ export type ApiBookingRow = {
   end_at?: string;
   status: string;
   total_price: string | number;
+  payment_method?: string;
+  payment_status?: string;
   lines: Array<{ service_name: string; duration_minutes: number; price: string | number }>;
 };
 
@@ -54,6 +56,8 @@ export function mapApiBooking(b: ApiBookingRow): Booking {
     duration_min,
     price: Number.isFinite(priceN) ? Number(priceN) : 0,
     status,
+    payment_method: b.payment_method === "online" ? "online" : "cash",
+    payment_status: b.payment_status,
   };
 }
 

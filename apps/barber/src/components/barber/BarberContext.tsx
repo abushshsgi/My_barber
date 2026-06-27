@@ -90,6 +90,8 @@ export type Booking = {
   status: "pending" | "accepted" | "in_progress" | "completed" | "cancelled" | "rejected";
   /** ISO8601 — diagrammalar va filtrlash uchun */
   start_at?: string;
+  payment_method?: "cash" | "online";
+  payment_status?: string;
 };
 
 export type Client = {
@@ -159,6 +161,7 @@ export type Transaction = {
   amount: number;
   kind: "booking" | "tip" | "payout" | "refund" | "expense";
   status: "completed" | "pending" | "failed";
+  payment_method?: string | null;
 };
 
 export type FinanceTotals = {
@@ -602,6 +605,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         amount: string | number;
         kind: string;
         status: string;
+        payment_method?: string | null;
       }>;
     }>("/api/v1/barber/finance/summary/");
     setFinanceTotals({
@@ -618,6 +622,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         amount: Number(t.amount),
         kind: (t.kind as Transaction["kind"]) || "booking",
         status: (t.status as Transaction["status"]) || "completed",
+        payment_method: t.payment_method ?? null,
       })),
     );
   }, []);
@@ -691,8 +696,11 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       const res = await apiFetch(`/api/v1/bookings/${id}/${action}/`, { method: "POST" });
       if (!res.ok) return;
       await refreshBookings();
+      if (action === "complete" || action === "cancel") {
+        await refreshFinanceSummary();
+      }
     },
-    [refreshBookings],
+    [refreshBookings, refreshFinanceSummary],
   );
 
   const markNotifRead = useCallback(async (id: string) => {

@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
@@ -56,6 +57,9 @@ class BookingSerializer(serializers.ModelSerializer):
             "started_at",
             "status",
             "total_price",
+            "payment_method",
+            "payment_status",
+            "paid_at",
             "lines",
             "has_review",
             "review_id",
@@ -68,6 +72,9 @@ class BookingSerializer(serializers.ModelSerializer):
             "end_at",
             "started_at",
             "total_price",
+            "payment_method",
+            "payment_status",
+            "paid_at",
             "created_at",
         )
 
@@ -120,6 +127,15 @@ class BookingCreateSerializer(serializers.Serializer):
         required=False,
         allow_null=True,
     )
+    payment_method = serializers.ChoiceField(
+        choices=Booking.PaymentMethod.choices,
+        default=Booking.PaymentMethod.CASH,
+    )
+
+    def validate_payment_method(self, value):
+        if value not in (Booking.PaymentMethod.CASH, Booking.PaymentMethod.ONLINE):
+            raise serializers.ValidationError("To'lov turi: cash yoki online.")
+        return value
 
     def validate_family_member(self, value):
         if value is None:
@@ -226,6 +242,22 @@ class BookingCreateSerializer(serializers.Serializer):
         attrs["_total_minutes"] = total_minutes
         attrs["_total_price"] = total_price
         attrs["_end_at"] = end_at
+
+        payment_method = attrs.get("payment_method", Booking.PaymentMethod.CASH)
+        if payment_method == Booking.PaymentMethod.ONLINE:
+            request = self.context.get("request")
+            if request and request.user.is_authenticated:
+                from wallet.services.wallet_service import WalletService
+
+                wallet = WalletService.ensure_wallet(request.user)
+                if wallet.balance < Decimal(str(total_price)):
+                    raise serializers.ValidationError(
+                        {
+                            "payment_method": "Hamyon balansi yetarli emas. Hamyonni to'ldiring yoki naqd tanlang.",
+                            "required_amount": str(total_price),
+                            "available_balance": str(wallet.balance),
+                        }
+                    )
         return attrs
 
     @transaction.atomic
@@ -243,6 +275,7 @@ class BookingCreateSerializer(serializers.Serializer):
         services = validated_data.pop("_services")
         end_at = validated_data.pop("_end_at")
         total_price = validated_data.pop("_total_price")
+        payment_method = validated_data.pop("payment_method", Booking.PaymentMethod.CASH)
 
         phone_snap = (getattr(customer, "phone", None) or "").strip()
         family_member = validated_data.pop("family_member", None)
@@ -300,6 +333,18 @@ class BookingCreateSerializer(serializers.Serializer):
                         price=s.price,
                         duration_minutes=s.duration_minutes,
                     )
+            if payment_method == Booking.PaymentMethod.ONLINE:
+                from bookings.payments import apply_payment_on_create
+                from wallet.services.wallet_service import WalletServiceError
+
+                try:
+                    apply_payment_on_create(booking=booking, payment_method=payment_method)
+                except WalletServiceError as exc:
+                    raise serializers.ValidationError({"payment_method": str(exc)}) from exc
+            else:
+                booking.payment_method = Booking.PaymentMethod.CASH
+                booking.payment_status = Booking.PaymentStatus.NOT_APPLICABLE
+                booking.save(update_fields=["payment_method", "payment_status", "updated_at"])
         return booking
 
 
