@@ -35,10 +35,11 @@ export const Route = createFileRoute("/barber")({
     try {
       const res = await apiFetch("/api/v1/barber/onboarding/status/");
       if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
+        if (res.status === 401) {
           clearBarberTokens();
+          throw redirect({ to: "/auth" });
         }
-        throw redirect({ to: "/auth" });
+        return;
       }
       const st = (await res.json()) as {
         fully_ready?: boolean;
@@ -55,7 +56,7 @@ export const Route = createFileRoute("/barber")({
       }
     } catch (e) {
       if (isRedirect(e)) throw e;
-      throw redirect({ to: "/auth" });
+      return;
     }
   },
   component: BarberRoot,

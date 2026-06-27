@@ -11,22 +11,26 @@ export const AUTH_LOGIN_FORM_ID = "auth-login-form";
 type Props = {
   email: string;
   password: string;
+  rememberMe: boolean;
   error: string | null;
   emailError?: string | null;
   loading: boolean;
   onEmailChange: (v: string) => void;
   onPasswordChange: (v: string) => void;
+  onRememberMeChange: (v: boolean) => void;
   onSubmit: (e: React.FormEvent) => void;
 };
 
 export function AuthLoginForm({
   email,
   password,
+  rememberMe,
   error,
   emailError = null,
   loading,
   onEmailChange,
   onPasswordChange,
+  onRememberMeChange,
   onSubmit,
 }: Props) {
   const userAuthUrl = userWebUrl("/auth");
@@ -63,6 +67,16 @@ export function AuthLoginForm({
           </button>
         </div>
       </div>
+
+      <label className="flex cursor-pointer items-center gap-2.5 text-sm text-muted-foreground">
+        <input
+          type="checkbox"
+          checked={rememberMe}
+          onChange={(e) => onRememberMeChange(e.target.checked)}
+          className="size-4 rounded border-border accent-primary"
+        />
+        Meni eslab qol (7 kun)
+      </label>
 
       <AuthErrorAlert error={error && !emailError ? error : null} />
 

@@ -486,7 +486,7 @@ function CommandPalette({
 export function BarberShell() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { viewMode, onboardingComplete, isJoinedWorker, flowIdentity, fullyReady } =
+  const { viewMode, onboardingComplete, isJoinedWorker, flowIdentity, fullyReady, ownsSalon } =
     useBarberContext();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
@@ -518,6 +518,15 @@ export function BarberShell() {
       `${viewMode}-${onboardingComplete ? "ok" : "onb"}-${fullyReady ? "live" : "act"}-${nav.map((n) => n.to).join("|")}`,
     [viewMode, onboardingComplete, fullyReady, nav],
   );
+
+  useEffect(() => {
+    if (!fullyReady) return;
+    if (pathname !== "/barber/activation") return;
+    void navigate({
+      to: ownsSalon ? "/barber/salon-view" : "/barber",
+      replace: true,
+    });
+  }, [fullyReady, ownsSalon, pathname, navigate]);
 
   useEffect(() => {
     if (fullyReady) return;

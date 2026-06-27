@@ -9,6 +9,7 @@ import {
   validateServicePrice,
 } from "@/components/barber/SomPriceInput";
 import { MIN_ACTIVE_SERVICES, useBarberContext } from "@/components/barber/BarberContext";
+import { invalidateOnboardingAfterActivationChange } from "@/lib/onboarding-status-cache";
 import { API_BASE, apiFetch, apiList, formatApiError } from "@/lib/api";
 import {
   AlertDialog,
@@ -296,6 +297,7 @@ function ServicesSchedulePage() {
             ? `${readOnlyCount} ta qator faqat ko'rish rejimida — ular o'zgartirilmadi.`
             : undefined,
       });
+      invalidateOnboardingAfterActivationChange();
       await loadAll();
       await refreshActivationStatus();
     } finally {

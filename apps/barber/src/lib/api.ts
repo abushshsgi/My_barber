@@ -19,26 +19,46 @@ export const API_BASE = (ENV_API_BASE.trim() ? ENV_API_BASE : FALLBACK_DEV_BASE)
 
 const TOKEN_KEY_BARBER = "mybarber_barber_access";
 const REFRESH_KEY_BARBER = "mybarber_barber_refresh";
+const REMEMBER_KEY = "mybarber_barber_remember";
+
+function getRememberPreference(): boolean {
+  if (typeof window === "undefined") return true;
+  const v = localStorage.getItem(REMEMBER_KEY);
+  if (v === "0") return false;
+  return true;
+}
+
+function readToken(key: string): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(key) || sessionStorage.getItem(key);
+}
 
 export function getBarberAccessToken(): string | null {
-  if (typeof window === "undefined") return null;
-  const tok = localStorage.getItem(TOKEN_KEY_BARBER);
-  return tok || null;
+  return readToken(TOKEN_KEY_BARBER);
 }
 
 function getBarberRefreshToken(): string | null {
-  const tok = localStorage.getItem(REFRESH_KEY_BARBER);
-  return tok || null;
+  return readToken(REFRESH_KEY_BARBER);
 }
 
-export function setBarberTokens(access: string, refresh: string) {
-  localStorage.setItem(TOKEN_KEY_BARBER, access);
-  localStorage.setItem(REFRESH_KEY_BARBER, refresh);
+export function setBarberTokens(access: string, refresh: string, remember = true) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(REMEMBER_KEY, remember ? "1" : "0");
+  const store = remember ? localStorage : sessionStorage;
+  const other = remember ? sessionStorage : localStorage;
+  store.setItem(TOKEN_KEY_BARBER, access);
+  store.setItem(REFRESH_KEY_BARBER, refresh);
+  other.removeItem(TOKEN_KEY_BARBER);
+  other.removeItem(REFRESH_KEY_BARBER);
 }
 
 export function clearBarberTokens() {
+  if (typeof window === "undefined") return;
   localStorage.removeItem(TOKEN_KEY_BARBER);
   localStorage.removeItem(REFRESH_KEY_BARBER);
+  sessionStorage.removeItem(TOKEN_KEY_BARBER);
+  sessionStorage.removeItem(REFRESH_KEY_BARBER);
+  localStorage.removeItem(REMEMBER_KEY);
 }
 
 function shouldOmitBearerForPath(path: string): boolean {
@@ -52,7 +72,6 @@ function shouldOmitBearerForPath(path: string): boolean {
     p === "/api/v1/auth/barber-register/" ||
     p === "/api/v1/auth/barber-register-join-salon" ||
     p === "/api/v1/auth/barber-register-join-salon/" ||
-    // JWT yuborilsa SimpleJWT / boshqa auth xato qiladi; qidiruv — AllowAny
     p === "/api/v1/barber/auth/verify-email" ||
     p === "/api/v1/barber/auth/verify-email/" ||
     p === "/api/v1/salons/search/"
@@ -65,7 +84,6 @@ function abortAfter(ms: number): AbortSignal {
   return c.signal;
 }
 
-/** Bir nechta signaldan biri abort qilinsa, natijaviy ham abort bo‘ladi. */
 function mergeAbortSignals(parts: AbortSignal[]): AbortSignal {
   if (parts.length === 0) {
     return new AbortController().signal;
@@ -81,7 +99,9 @@ function mergeAbortSignals(parts: AbortSignal[]): AbortSignal {
   return c.signal;
 }
 
-async function refreshBarberAccess(): Promise<string | null> {
+let refreshInFlight: Promise<string | null> | null = null;
+
+async function refreshBarberAccessOnce(): Promise<string | null> {
   const refresh = getBarberRefreshToken();
   if (!refresh) return null;
   const res = await fetch(`${API_BASE}/api/v1/barber/auth/token/refresh/`, {
@@ -90,7 +110,9 @@ async function refreshBarberAccess(): Promise<string | null> {
     body: JSON.stringify({ refresh }),
   });
   if (!res.ok) {
-    clearBarberTokens();
+    if (res.status === 401 || res.status === 403) {
+      clearBarberTokens();
+    }
     return null;
   }
   const body = (await res.json().catch(() => ({}))) as { access?: string; refresh?: string };
@@ -98,12 +120,19 @@ async function refreshBarberAccess(): Promise<string | null> {
     clearBarberTokens();
     return null;
   }
-  setBarberTokens(body.access, body.refresh);
+  setBarberTokens(body.access, body.refresh, getRememberPreference());
   return body.access;
 }
 
+async function refreshBarberAccess(): Promise<string | null> {
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = refreshBarberAccessOnce().finally(() => {
+    refreshInFlight = null;
+  });
+  return refreshInFlight;
+}
+
 export const RESEND_VERIFICATION_EMAIL_TIMEOUT_MS = 45_000;
-/** Neon/remote DB bilan register 10–20s davom etishi mumkin; dev server band bo‘lsa kutish kerak. */
 export const BARBER_SIGNUP_TIMEOUT_MS = 90_000;
 export const BARBER_AVAILABILITY_TIMEOUT_MS = 20_000;
 
@@ -113,7 +142,6 @@ export function isFetchAbortError(e: unknown): boolean {
 }
 
 export type ApiFetchOptions = RequestInit & {
-  /** Client-side: so‘rov shu millisikunddan keyin abort (tugma cheksiz yuklashda qolmasin). */
   timeoutMs?: number;
 };
 
@@ -142,7 +170,10 @@ export async function apiFetch(
 
   const url = `${API_BASE}${path}`;
   const exec = () =>
-    fetch(url, mergedSignal === undefined ? { ...fetchRest, headers } : { ...fetchRest, headers, signal: mergedSignal });
+    fetch(
+      url,
+      mergedSignal === undefined ? { ...fetchRest, headers } : { ...fetchRest, headers, signal: mergedSignal },
+    );
 
   let res = await exec();
   if (res.status === 401 && retry && token) {

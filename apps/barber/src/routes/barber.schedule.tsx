@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { WorkingHoursEditor } from "@/components/barber/WorkingHoursEditor";
 import { PageHeader, SectionCard } from "@/components/barber/primitives";
 import { useBarberContext } from "@/components/barber/BarberContext";
+import { invalidateOnboardingAfterActivationChange } from "@/lib/onboarding-status-cache";
 import {
   applyHours,
   defaultDays,
@@ -129,6 +130,7 @@ function BarberSchedulePage() {
         }
       }
       toast.success("Ish jadvali saqlandi.");
+      invalidateOnboardingAfterActivationChange();
       await loadSchedule();
       await refreshActivationStatus();
     } finally {

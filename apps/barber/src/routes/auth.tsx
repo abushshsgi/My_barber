@@ -45,6 +45,7 @@ function AuthPage() {
 
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
 
   const [signupName, setSignupName] = useState("");
   const [signupPhone, setSignupPhone] = useState("");
@@ -94,7 +95,7 @@ function AuthPage() {
       }
       const data = body as { access?: string; refresh?: string };
       if (!data.access || !data.refresh) throw new Error("Token qaytmadi.");
-      setBarberTokens(data.access, data.refresh);
+      setBarberTokens(data.access, data.refresh, rememberMe);
       const next = await resolveBarberEntryPath();
       await navigate({ to: next });
     } catch (err) {
@@ -261,11 +262,13 @@ function AuthPage() {
               <AuthLoginForm
                 email={loginEmail}
                 password={loginPassword}
+                rememberMe={rememberMe}
                 error={error}
                 emailError={loginEmailError}
                 loading={loadingLogin}
                 onEmailChange={setLoginEmail}
                 onPasswordChange={setLoginPassword}
+                onRememberMeChange={setRememberMe}
                 onSubmit={onLoginSubmit}
               />
             </motion.div>

@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { apiFetch, apiJson, apiList, clearBarberTokens } from "@/lib/api";
+import { apiFetch, apiJson, apiList, getBarberAccessToken } from "@/lib/api";
 import { inferFlowIdentity, type FlowIdentity } from "@/lib/barber-flow-config";
 import { clearOnboardingJustCompleted } from "@/lib/onboarding-complete";
 import {
@@ -28,6 +28,7 @@ type OnboardingStatusPayload = {
   has_working_hours?: boolean;
   has_membership_hours?: boolean;
   fully_ready?: boolean;
+  owns_salon?: boolean;
   email_verified?: boolean;
   readiness_percent?: number;
   steps?: Partial<ActivationSteps>;
@@ -248,7 +249,7 @@ type Ctx = {
   activationSteps: ActivationSteps;
   /** Serverdagi faol xizmatlar soni (onboarding/status). */
   activationServicesCount: number;
-  refreshActivationStatus: () => Promise<void>;
+  refreshActivationStatus: () => Promise<{ fullyReady: boolean; emailVerified: boolean }>;
   bookingSetup: BookingSetupStatus;
   profile: BarberProfile;
   services: Service[];
@@ -354,20 +355,20 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   const [onboardingComplete, setOnboardingComplete] = useState(true);
   const [requiredNextPath, setRequiredNextPath] = useState<string | null>(null);
   const [bookingSetup, setBookingSetup] = useState<BookingSetupStatus>({
-    ready: true,
+    ready: false,
     missing: [],
     setupPath: null,
-    hasLocation: true,
-    hasServices: true,
-    hasWorkingHours: true,
+    hasLocation: false,
+    hasServices: false,
+    hasWorkingHours: false,
   });
   const [fullyReady, setFullyReady] = useState(false);
-  const [readinessPercent, setReadinessPercent] = useState(100);
+  const [readinessPercent, setReadinessPercent] = useState(0);
   const [activationSteps, setActivationSteps] = useState<ActivationSteps>({
-    email_verified: true,
-    signup_complete: true,
-    services_ok: true,
-    schedule_ok: true,
+    email_verified: false,
+    signup_complete: false,
+    services_ok: false,
+    schedule_ok: false,
   });
   const [activationServicesCount, setActivationServicesCount] = useState(0);
   const [settings, setSettings] = useState<Settings>({
@@ -944,8 +945,15 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const emptyActivationSteps = (): ActivationSteps => ({
+    email_verified: false,
+    signup_complete: false,
+    services_ok: false,
+    schedule_ok: false,
+  });
+
   const applyActivationStatus = useCallback((st: OnboardingStatusPayload) => {
-    const gate = st.fully_ready !== false;
+    const gate = Boolean(st.fully_ready);
     setOnboardingComplete(Boolean(st.is_complete));
     setRequiredNextPath(st.required_next_path ? String(st.required_next_path) : null);
     setOnboardingFlow(st.flow ? String(st.flow) : null);
@@ -963,6 +971,8 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         services_ok: Boolean(s.services_ok),
         schedule_ok: Boolean(s.schedule_ok),
       });
+    } else {
+      setActivationSteps(emptyActivationSteps());
     }
     setActivationServicesCount(
       typeof st.has_services_count === "number" && !Number.isNaN(st.has_services_count)
@@ -992,17 +1002,20 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       writeOnboardingStatusCache({
         fully_ready: st.fully_ready,
         required_next_path: st.required_next_path ?? null,
+        owns_salon: st.owns_salon,
       });
       return applyActivationStatus(st);
     } catch {
       setFullyReady(false);
+      setReadinessPercent(0);
+      setActivationSteps(emptyActivationSteps());
       setOnboardingFlow(null);
       return { fullyReady: false, emailVerified: false };
     }
   }, [applyActivationStatus]);
 
   const refreshActivationStatus = useCallback(async () => {
-    await reloadActivationFromApi();
+    return reloadActivationFromApi();
   }, [reloadActivationFromApi]);
 
   useEffect(() => {
@@ -1051,12 +1064,20 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         );
         setHasSalon(wm !== "independent");
         if (!alive) return;
+        writeOnboardingStatusCache({
+          fully_ready: st.fully_ready,
+          required_next_path: st.required_next_path ?? null,
+          owns_salon: owns,
+        });
         const activation = applyActivationStatus(st);
         gateFullyReady = activation.fullyReady;
         emailVerified = activation.emailVerified;
         clearOnboardingJustCompleted();
       } catch {
-        clearBarberTokens();
+        if (!getBarberAccessToken()) return;
+        setFullyReady(false);
+        setReadinessPercent(0);
+        setActivationSteps(emptyActivationSteps());
         return;
       }
 

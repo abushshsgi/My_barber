@@ -83,6 +83,10 @@ function computePrimaryNext(
   return null;
 }
 
+function activationRedirectPath(ownsSalon: boolean): string {
+  return ownsSalon ? "/barber/salon-view" : "/barber";
+}
+
 function BarberActivationPage() {
   const navigate = useNavigate();
   const {
@@ -104,6 +108,11 @@ function BarberActivationPage() {
     void refreshActivationStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only refresh
   }, []);
+
+  useEffect(() => {
+    if (!fullyReady) return;
+    void navigate({ to: activationRedirectPath(ownsSalon), replace: true });
+  }, [fullyReady, ownsSalon, navigate]);
 
   useEffect(() => {
     const onVisible = () => {
@@ -215,7 +224,12 @@ function BarberActivationPage() {
   const onRefreshStatus = async () => {
     setRefreshing(true);
     try {
-      await refreshActivationStatus();
+      const { fullyReady: ready } = await refreshActivationStatus();
+      if (ready) {
+        toast.success("Profil tayyor — dashboardga yo‘naltirilmoqda");
+        void navigate({ to: activationRedirectPath(ownsSalon), replace: true });
+        return;
+      }
       toast.success("Holat yangilandi");
     } finally {
       setRefreshing(false);
@@ -232,7 +246,7 @@ function BarberActivationPage() {
             Endi barcha bo‘limlar va mijozlarga ko‘rinish ochiq.
           </p>
           <Button asChild className="mt-4">
-            <Link to="/barber">Dashboardga</Link>
+            <Link to={activationRedirectPath(ownsSalon)}>Dashboardga</Link>
           </Button>
         </div>
       </div>

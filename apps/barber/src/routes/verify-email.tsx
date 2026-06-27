@@ -10,6 +10,7 @@ import {
 } from "@/lib/api";
 import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { Button } from "@/components/ui/button";
+import { invalidateOnboardingAfterActivationChange } from "@/lib/onboarding-status-cache";
 
 export const Route = createFileRoute("/verify-email")({
   validateSearch: (raw: Record<string, unknown>) => ({
@@ -55,6 +56,7 @@ function PartnerVerifyEmailPage() {
         return;
       }
       setStatus("ok");
+      invalidateOnboardingAfterActivationChange();
       setMsg(
         typeof body === "object" && body && "detail" in body
           ? String((body as { detail?: string }).detail)
