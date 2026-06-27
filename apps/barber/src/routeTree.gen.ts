@@ -9,6 +9,8 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as CheckEmailRouteImport } from './routes/check-email'
 import { Route as BarberRouteImport } from './routes/barber'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
@@ -17,7 +19,6 @@ import { Route as SalonJoinRouteImport } from './routes/salon.join'
 import { Route as SalonCreateRouteImport } from './routes/salon.create'
 import { Route as MybarberSetupRouteImport } from './routes/mybarber.setup'
 import { Route as IndependentSetupRouteImport } from './routes/independent.setup'
-import { Route as BarberVerifyEmailRouteImport } from './routes/barber.verify-email'
 import { Route as BarberStatsRouteImport } from './routes/barber.stats'
 import { Route as BarberSettingsRouteImport } from './routes/barber.settings'
 import { Route as BarberServicesRouteImport } from './routes/barber.services'
@@ -46,6 +47,16 @@ import { Route as BarberSalonViewReviewsRouteImport } from './routes/barber.salo
 import { Route as BarberSalonViewMembersRouteImport } from './routes/barber.salon-view.members'
 import { Route as BarberSalonViewGalleryRouteImport } from './routes/barber.salon-view.gallery'
 
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckEmailRoute = CheckEmailRouteImport.update({
+  id: '/check-email',
+  path: '/check-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BarberRoute = BarberRouteImport.update({
   id: '/barber',
   path: '/barber',
@@ -85,11 +96,6 @@ const IndependentSetupRoute = IndependentSetupRouteImport.update({
   id: '/independent/setup',
   path: '/independent/setup',
   getParentRoute: () => rootRouteImport,
-} as any)
-const BarberVerifyEmailRoute = BarberVerifyEmailRouteImport.update({
-  id: '/verify-email',
-  path: '/verify-email',
-  getParentRoute: () => BarberRoute,
 } as any)
 const BarberStatsRoute = BarberStatsRouteImport.update({
   id: '/stats',
@@ -231,6 +237,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/barber': typeof BarberRouteWithChildren
+  '/check-email': typeof CheckEmailRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/barber/activation': typeof BarberActivationRoute
   '/barber/amenities': typeof BarberAmenitiesRoute
   '/barber/bookings': typeof BarberBookingsRoute
@@ -251,7 +259,6 @@ export interface FileRoutesByFullPath {
   '/barber/services': typeof BarberServicesRoute
   '/barber/settings': typeof BarberSettingsRoute
   '/barber/stats': typeof BarberStatsRoute
-  '/barber/verify-email': typeof BarberVerifyEmailRoute
   '/independent/setup': typeof IndependentSetupRoute
   '/mybarber/setup': typeof MybarberSetupRoute
   '/salon/create': typeof SalonCreateRoute
@@ -268,6 +275,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/check-email': typeof CheckEmailRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/barber/activation': typeof BarberActivationRoute
   '/barber/amenities': typeof BarberAmenitiesRoute
   '/barber/bookings': typeof BarberBookingsRoute
@@ -288,7 +297,6 @@ export interface FileRoutesByTo {
   '/barber/services': typeof BarberServicesRoute
   '/barber/settings': typeof BarberSettingsRoute
   '/barber/stats': typeof BarberStatsRoute
-  '/barber/verify-email': typeof BarberVerifyEmailRoute
   '/independent/setup': typeof IndependentSetupRoute
   '/mybarber/setup': typeof MybarberSetupRoute
   '/salon/create': typeof SalonCreateRoute
@@ -306,6 +314,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/barber': typeof BarberRouteWithChildren
+  '/check-email': typeof CheckEmailRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/barber/activation': typeof BarberActivationRoute
   '/barber/amenities': typeof BarberAmenitiesRoute
   '/barber/bookings': typeof BarberBookingsRoute
@@ -326,7 +336,6 @@ export interface FileRoutesById {
   '/barber/services': typeof BarberServicesRoute
   '/barber/settings': typeof BarberSettingsRoute
   '/barber/stats': typeof BarberStatsRoute
-  '/barber/verify-email': typeof BarberVerifyEmailRoute
   '/independent/setup': typeof IndependentSetupRoute
   '/mybarber/setup': typeof MybarberSetupRoute
   '/salon/create': typeof SalonCreateRoute
@@ -346,6 +355,8 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/barber'
+    | '/check-email'
+    | '/verify-email'
     | '/barber/activation'
     | '/barber/amenities'
     | '/barber/bookings'
@@ -366,7 +377,6 @@ export interface FileRouteTypes {
     | '/barber/services'
     | '/barber/settings'
     | '/barber/stats'
-    | '/barber/verify-email'
     | '/independent/setup'
     | '/mybarber/setup'
     | '/salon/create'
@@ -383,6 +393,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/check-email'
+    | '/verify-email'
     | '/barber/activation'
     | '/barber/amenities'
     | '/barber/bookings'
@@ -403,7 +415,6 @@ export interface FileRouteTypes {
     | '/barber/services'
     | '/barber/settings'
     | '/barber/stats'
-    | '/barber/verify-email'
     | '/independent/setup'
     | '/mybarber/setup'
     | '/salon/create'
@@ -420,6 +431,8 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/barber'
+    | '/check-email'
+    | '/verify-email'
     | '/barber/activation'
     | '/barber/amenities'
     | '/barber/bookings'
@@ -440,7 +453,6 @@ export interface FileRouteTypes {
     | '/barber/services'
     | '/barber/settings'
     | '/barber/stats'
-    | '/barber/verify-email'
     | '/independent/setup'
     | '/mybarber/setup'
     | '/salon/create'
@@ -459,6 +471,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   BarberRoute: typeof BarberRouteWithChildren
+  CheckEmailRoute: typeof CheckEmailRoute
+  VerifyEmailRoute: typeof VerifyEmailRoute
   IndependentSetupRoute: typeof IndependentSetupRoute
   MybarberSetupRoute: typeof MybarberSetupRoute
   SalonCreateRoute: typeof SalonCreateRoute
@@ -467,6 +481,20 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/check-email': {
+      id: '/check-email'
+      path: '/check-email'
+      fullPath: '/check-email'
+      preLoaderRoute: typeof CheckEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/barber': {
       id: '/barber'
       path: '/barber'
@@ -522,13 +550,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/independent/setup'
       preLoaderRoute: typeof IndependentSetupRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/barber/verify-email': {
-      id: '/barber/verify-email'
-      path: '/verify-email'
-      fullPath: '/barber/verify-email'
-      preLoaderRoute: typeof BarberVerifyEmailRouteImport
-      parentRoute: typeof BarberRoute
     }
     '/barber/stats': {
       id: '/barber/stats'
@@ -743,7 +764,6 @@ interface BarberRouteChildren {
   BarberServicesRoute: typeof BarberServicesRoute
   BarberSettingsRoute: typeof BarberSettingsRoute
   BarberStatsRoute: typeof BarberStatsRoute
-  BarberVerifyEmailRoute: typeof BarberVerifyEmailRoute
   BarberIndexRoute: typeof BarberIndexRoute
   BarberSalonViewGalleryRoute: typeof BarberSalonViewGalleryRoute
   BarberSalonViewMembersRoute: typeof BarberSalonViewMembersRoute
@@ -773,7 +793,6 @@ const BarberRouteChildren: BarberRouteChildren = {
   BarberServicesRoute: BarberServicesRoute,
   BarberSettingsRoute: BarberSettingsRoute,
   BarberStatsRoute: BarberStatsRoute,
-  BarberVerifyEmailRoute: BarberVerifyEmailRoute,
   BarberIndexRoute: BarberIndexRoute,
   BarberSalonViewGalleryRoute: BarberSalonViewGalleryRoute,
   BarberSalonViewMembersRoute: BarberSalonViewMembersRoute,
@@ -803,6 +822,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   BarberRoute: BarberRouteWithChildren,
+  CheckEmailRoute: CheckEmailRoute,
+  VerifyEmailRoute: VerifyEmailRoute,
   IndependentSetupRoute: IndependentSetupRoute,
   MybarberSetupRoute: MybarberSetupRoute,
   SalonCreateRoute: SalonCreateRoute,

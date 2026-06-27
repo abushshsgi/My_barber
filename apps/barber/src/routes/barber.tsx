@@ -11,6 +11,14 @@ import { normalizeRequiredNextPath } from "@/lib/onboarding-redirect";
 
 export const Route = createFileRoute("/barber")({
   beforeLoad: async ({ location }) => {
+    if (location.pathname.startsWith("/barber/verify-email")) {
+      const token = new URLSearchParams(location.search).get("token")?.trim() || "";
+      throw redirect({
+        to: "/verify-email",
+        search: token ? { token } : {},
+        replace: true,
+      });
+    }
     if (typeof window !== "undefined" && !getBarberAccessToken()) {
       throw redirect({ to: "/auth" });
     }

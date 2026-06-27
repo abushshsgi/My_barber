@@ -34,6 +34,8 @@ export const WEB_TO_MOBILE_ROUTE: Record<string, string> = {
   "/barber/settings": "/(barber)/settings",
   "/barber/help": "/(barber)/help",
   "/barber/activation": "/(onboarding)/activation",
+  "/verify-email": "/verify-email",
+  "/check-email": "/check-email",
   "/barber/verify-email": "/verify-email",
   "/barber/salon-view": "/(barber)/salon-view",
   "/barber/salon-view/gallery": "/(barber)/salon-view/gallery",

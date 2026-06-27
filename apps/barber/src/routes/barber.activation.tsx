@@ -93,6 +93,7 @@ function BarberActivationPage() {
     requiredNextPath,
     onboardingFlow,
     ownsSalon,
+    profile,
     refreshActivationStatus,
   } = useBarberContext();
   const [resending, setResending] = useState(false);
@@ -194,6 +195,10 @@ function BarberActivationPage() {
           ? String((body as { detail?: string }).detail || "Tasdiq xati yuborildi")
           : "Tasdiq xati yuborildi. Pochtadagi havolani bosing.",
       );
+      void navigate({
+        to: "/check-email",
+        search: profile.email ? { email: profile.email } : {},
+      });
     } catch (e: unknown) {
       if (isFetchAbortError(e)) {
         toast.error(
@@ -259,6 +264,9 @@ function BarberActivationPage() {
             Quyidagi tugma orqali tasdiq xatini yuboring, so‘ng pochtangizdagi havolani bosing.
             Havolada uzun <span className="font-medium">token=...</span> bo‘lishi kerak.
           </p>
+          <Link to="/check-email" search={profile.email ? { email: profile.email } : {}} className="mt-2 inline-block text-sm text-primary underline">
+            Pochtani qanday tekshirish
+          </Link>
         </div>
       ) : null}
 

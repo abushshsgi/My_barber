@@ -32,6 +32,13 @@
       ]
     }
   ],
+  "redirects": [
+    {
+      "source": "/barber/verify-email",
+      "destination": "/verify-email",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!assets/).*)",

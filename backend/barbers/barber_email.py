@@ -35,7 +35,7 @@ def send_barber_email_verification(barber: Barber) -> tuple[bool, str | None]:
             )
 
     token = sign_barber_email_token(barber.id)
-    web_link = f"{base}/barber/verify-email?token={token}"
+    web_link = f"{base}/verify-email?token={token}"
     scheme = getattr(settings, "BARBER_MOBILE_VERIFY_SCHEME", "mysaloonpartner")
     mobile_link = f"{scheme}://verify-email?token={token}"
     subject = "MySaloon — email manzilingizni tasdiqlang"
