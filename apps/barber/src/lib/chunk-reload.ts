@@ -1,3 +1,5 @@
+import { hardReloadForDeploy } from "@/lib/deploy-reload";
+
 const CHUNK_RELOAD_KEY = "mybarber-partner-chunk-reload";
 
 export function isChunkLoadError(reason: unknown): boolean {
@@ -18,9 +20,7 @@ export function reloadForChunkError(): boolean {
   if (typeof window === "undefined") return false;
   if (sessionStorage.getItem(CHUNK_RELOAD_KEY)) return false;
   sessionStorage.setItem(CHUNK_RELOAD_KEY, "1");
-  const url = new URL(window.location.href);
-  url.searchParams.set("_chunk", Date.now().toString(36));
-  window.location.replace(url.toString());
+  hardReloadForDeploy();
   return true;
 }
 

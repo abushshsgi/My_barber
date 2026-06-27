@@ -1,9 +1,15 @@
 import { useEffect } from "react";
 import { APP_BUILD_ID } from "@/lib/app-build-id";
 import { isChunkLoadError, reloadForChunkError } from "@/lib/chunk-reload";
+import {
+  hardReloadForDeploy,
+  VERSION_RELOAD_KEY,
+  versionToastDismissedKey,
+  versionToastShownKey,
+} from "@/lib/deploy-reload";
 import { toast } from "sonner";
 
-const VERSION_RELOAD_KEY = "mybarber-partner-version-reload";
+const VERSION_TOAST_ID = "partner-deploy-version";
 
 async function fetchRemoteBuildId(): Promise<string | null> {
   try {
@@ -16,12 +22,10 @@ async function fetchRemoteBuildId(): Promise<string | null> {
   }
 }
 
-function reloadOnce(storageKey: string) {
-  if (sessionStorage.getItem(storageKey)) return false;
-  sessionStorage.setItem(storageKey, "1");
-  const url = new URL(window.location.href);
-  url.searchParams.set("_v", Date.now().toString(36));
-  window.location.replace(url.toString());
+function reloadOnceForVersion(remoteBuildId: string): boolean {
+  if (sessionStorage.getItem(VERSION_RELOAD_KEY)) return false;
+  sessionStorage.setItem(VERSION_RELOAD_KEY, "1");
+  hardReloadForDeploy(remoteBuildId);
   return true;
 }
 
@@ -55,17 +59,23 @@ export function DeployRecovery() {
       const remote = await fetchRemoteBuildId();
       if (!remote || remote === APP_BUILD_ID) return;
 
-      if (reloadOnce(VERSION_RELOAD_KEY)) return;
+      if (sessionStorage.getItem(versionToastDismissedKey(remote))) return;
+
+      if (reloadOnceForVersion(remote)) return;
+
+      if (sessionStorage.getItem(versionToastShownKey(remote))) return;
+      sessionStorage.setItem(versionToastShownKey(remote), "1");
 
       toast.message("Yangi versiya mavjud", {
+        id: VERSION_TOAST_ID,
         description: "Iltimos, sahifani bir marta yangilang.",
-        duration: 8000,
+        duration: Infinity,
         action: {
           label: "Yangilash",
           onClick: () => {
-            const url = new URL(window.location.href);
-            url.searchParams.set("_v", Date.now().toString(36));
-            window.location.replace(url.toString());
+            toast.dismiss(VERSION_TOAST_ID);
+            sessionStorage.setItem(versionToastDismissedKey(remote), "1");
+            hardReloadForDeploy(remote);
           },
         },
       });

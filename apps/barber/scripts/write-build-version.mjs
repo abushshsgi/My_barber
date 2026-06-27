@@ -43,12 +43,19 @@ function purge(cb){
 }
 try{
   if(localStorage.getItem(CK)===BUILD)return;
+  var stored=localStorage.getItem(CK);
+  if(stored&&stored!==BUILD){
+    purge(function(){
+      var u=new URL(location.href);
+      u.searchParams.delete("_v");
+      u.searchParams.delete("_deploy");
+      u.searchParams.delete("_chunk");
+      u.searchParams.set("_boot",Date.now().toString(36));
+      location.replace(u.toString());
+    });
+    return;
+  }
   localStorage.setItem(CK,BUILD);
-  purge(function(){
-    var u=new URL(location.href);
-    u.searchParams.set("_v",Date.now().toString(36));
-    location.replace(u.toString());
-  });
 }catch(e){}
 })();`,
 )};
