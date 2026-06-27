@@ -34,11 +34,6 @@ export const Route = createFileRoute("/booking/$salonId")({
 });
 
 const DAYS = ["Dush", "Sesh", "Chor", "Pay", "Juma", "Shan", "Yak"];
-const SLOTS = [
-  "09:00", "09:15", "09:30", "09:45", "10:00", "10:15",
-  "10:30", "10:45", "11:00", "11:15", "11:30", "11:45",
-  "12:00", "12:15", "14:00", "14:15", "14:30", "14:45",
-];
 
 function buildDayList(initialDate?: string) {
   const today = new Date();
@@ -88,7 +83,12 @@ function useBookingSalonState(
 
   useEffect(() => {
     setServiceIds([]);
+    setSlot(null);
   }, [barberId]);
+
+  useEffect(() => {
+    setSlot(null);
+  }, [dayIdx]);
 
   const barberServicesQuery = useSalonBarberServices(salonId, barberId);
 
@@ -108,11 +108,16 @@ function useBookingSalonState(
     enabled: step === 3 && Boolean(barberId) && serviceIds.length > 0 && Boolean(dateIso),
   });
 
+  // Faqat API qaytargan haqiqiy bo'sh vaqtlar — hardcoded fallback yo'q,
+  // shunda mijozga noto'g'ri/mavjud bo'lmagan soat ko'rsatilmaydi.
   const slotOptions =
     availability.data?.slots?.map((s) => {
       if (typeof s === "string") return s;
       return new Date(s.start).toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
-    }) ?? SLOTS;
+    }) ?? [];
+  const slotsLoading = step === 3 && availability.isLoading;
+  const slotsClosedReason =
+    availability.data?.closed_reason ?? availability.data?.detail ?? null;
 
   const selectedBarber = salon?.staff.find((b) => b.id === barberId);
   // Faqat tanlangan barberning xizmatlari (API'dan). Salon katalogi yoki
@@ -172,6 +177,8 @@ function useBookingSalonState(
     setSlot,
     dayList,
     slotOptions,
+    slotsLoading,
+    slotsClosedReason,
     selectedServices,
     barberServiceOptions,
     barberServicesLoading: barberServicesQuery.isLoading,
@@ -196,7 +203,7 @@ function BookingStepContent({
   state: ReturnType<typeof useBookingSalonState>;
   t: ReturnType<typeof useTranslation>["t"];
 }) {
-  const { salon, step, familyMemberId, setFamilyMemberId, barberId, setBarberId, serviceIds, setServiceIds, dayIdx, setDayIdx, slot, setSlot, dayList, slotOptions, selectedServices, barberServiceOptions, barberServicesLoading, barberServicesError, retryBarberServices, selectedBarber, bookedForLabel, total, paymentMethod, setPaymentMethod, walletBalance, walletLoading } = state;
+  const { salon, step, familyMemberId, setFamilyMemberId, barberId, setBarberId, serviceIds, setServiceIds, dayIdx, setDayIdx, slot, setSlot, dayList, slotOptions, slotsLoading, slotsClosedReason, selectedServices, barberServiceOptions, barberServicesLoading, barberServicesError, retryBarberServices, selectedBarber, bookedForLabel, total, paymentMethod, setPaymentMethod, walletBalance, walletLoading } = state;
   if (!salon) return null;
 
   if (step === 1) {
@@ -314,13 +321,26 @@ function BookingStepContent({
             </button>
           ))}
         </div>
-        <div className="mt-6 grid grid-cols-3 gap-2">
-          {slotOptions.map((s) => (
-            <button key={s} type="button" onClick={() => setSlot(s)} className={cn("rounded-xl border-2 py-3 text-sm font-bold", slot === s ? "border-foreground bg-foreground text-background" : "border-border")}>
-              {s}
-            </button>
-          ))}
-        </div>
+        {slotsLoading ? (
+          <div className="mt-6 grid grid-cols-3 gap-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-[44px] animate-pulse rounded-xl bg-surface" />
+            ))}
+          </div>
+        ) : slotOptions.length === 0 ? (
+          <p className="mt-6 rounded-2xl border-2 border-border p-4 text-sm text-muted-foreground">
+            {slotsClosedReason ??
+              t("booking.noSlots", { defaultValue: "Bu kuni bo'sh vaqt yo'q. Boshqa kunni tanlang." })}
+          </p>
+        ) : (
+          <div className="mt-6 grid grid-cols-3 gap-2">
+            {slotOptions.map((s) => (
+              <button key={s} type="button" onClick={() => setSlot(s)} className={cn("rounded-xl border-2 py-3 text-sm font-bold", slot === s ? "border-foreground bg-foreground text-background" : "border-border")}>
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     );
   }

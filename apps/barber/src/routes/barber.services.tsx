@@ -247,6 +247,19 @@ function ServicesSchedulePage() {
     }
   };
 
+  // Mutatsiyadan keyin faqat xizmatlar ro'yxatini qayta yuklaymiz — katalog va
+  // tavsiyalar o'zgarmaydi, butun sahifani bloklamaymiz (tezroq, miltillamaydi).
+  const reloadServicesOnly = async () => {
+    try {
+      const serviceRows = await apiList<ApiService>(`${servicesApiBase}/`);
+      const nextServices = serviceRows.map(mapService);
+      setServices(nextServices);
+      committedRef.current = serializeForm(nextServices, pendingServicesRef.current);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Ma'lumotlarni yuklab bo'lmadi.");
+    }
+  };
+
   useEffect(() => {
     void loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -308,7 +321,7 @@ function ServicesSchedulePage() {
             : undefined,
       });
       invalidateOnboardingAfterActivationChange();
-      await loadAll();
+      await reloadServicesOnly();
       await refreshActivationStatus();
     } finally {
       setSavingServices(false);
@@ -392,7 +405,7 @@ function ServicesSchedulePage() {
       toast.success(
         preset ? "Xizmat qo'shildi." : `${drafts.length} ta xizmat birdaniga qo'shildi.`,
       );
-      await loadAll();
+      await reloadServicesOnly();
       await refreshActivationStatus();
     } finally {
       setSavingServices(false);
@@ -431,7 +444,7 @@ function ServicesSchedulePage() {
       return;
     }
     toast.success("Xizmat o'chirildi.");
-    await loadAll();
+    await reloadServicesOnly();
     await refreshActivationStatus();
   };
 
@@ -455,7 +468,7 @@ function ServicesSchedulePage() {
       const ok = await saveService(merged);
       if (!ok) return;
       toast.success("Tavsiya saqlandi.");
-      await loadAll();
+      await reloadServicesOnly();
       await refreshActivationStatus();
     } finally {
       setSavingServices(false);
@@ -591,6 +604,8 @@ function ServicesSchedulePage() {
                             <img
                               src={serviceImageSrc(service.image_url)}
                               alt=""
+                              loading="lazy"
+                              decoding="async"
                               className="h-14 w-14 shrink-0 rounded-2xl object-cover"
                             />
                             <div className="min-w-0">
@@ -683,6 +698,8 @@ function ServicesSchedulePage() {
                             <img
                               src={serviceImageSrc(item.image_url)}
                               alt=""
+                              loading="lazy"
+                              decoding="async"
                               className="h-16 w-16 shrink-0 rounded-2xl object-cover"
                             />
                             <div className="min-w-0 flex-1">
@@ -740,6 +757,8 @@ function ServicesSchedulePage() {
                                 <img
                                   src={serviceImageSrc(catalog.image_url)}
                                   alt=""
+                                  loading="lazy"
+                                  decoding="async"
                                   className="h-14 w-14 shrink-0 rounded-2xl object-cover"
                                 />
                                 <div className="min-w-0">

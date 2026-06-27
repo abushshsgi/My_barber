@@ -181,6 +181,31 @@ class BarberWorkingHours(models.Model):
         ordering = ["weekday"]
 
 
+class BarberScheduleException(models.Model):
+    """Sana bo'yicha bir martalik jadval o'zgarishi (mustaqil sartarosh).
+
+    Haftalik jadvaldan ustun turadi: butun kun dam olish, maxsus ish soati yoki
+    bir martalik tanaffus (tushlik / ishi chiqib qolgan vaqt) belgilash uchun.
+    """
+
+    profile = models.ForeignKey(
+        BarberProfile,
+        on_delete=models.CASCADE,
+        related_name="schedule_exceptions",
+    )
+    date = models.DateField()
+    is_day_off = models.BooleanField(default=False)
+    open_time = models.TimeField(null=True, blank=True)
+    close_time = models.TimeField(null=True, blank=True)
+    breaks = models.JSONField(default=list, blank=True)
+    note = models.CharField(max_length=255, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [["profile", "date"]]
+        ordering = ["date"]
+
+
 class BarberInventoryItem(models.Model):
     class Category(models.TextChoices):
         TOOL = "tool", "Tool"

@@ -105,12 +105,14 @@ from barbers.views import (
     MyBarberInventoryViewSet,
     BarberSearchView,
     IndependentAvailabilityView,
+    IndependentAvailabilityMonthView,
     MyBarberProfileView,
     MyBarberPromoViewSet,
     MyBarberReviewsView,
     MyBarberCatalogServiceView,
     MyBarberSettingsView,
     MyBarberServiceRecommendationsView,
+    MyBarberScheduleExceptionViewSet,
     MyBarberServiceViewSet,
     MyBarberSupportTicketViewSet,
     MyBarberWorkPhotoViewSet,
@@ -125,6 +127,7 @@ from barbers.views_barber_auth import (
     BarberTokenView,
 )
 from salons.views import (
+    BarberScheduleExceptionViewSet,
     BarberScheduleViewSet,
     FavoriteSalonDetailView,
     FavoriteSalonListCreateView,
@@ -164,12 +167,22 @@ router = DefaultRouter()
 router.register(r"salons", SalonViewSet, basename="salon")
 router.register(r"memberships", SalonMembershipViewSet, basename="membership")
 router.register(r"schedules", BarberScheduleViewSet, basename="schedule")
+router.register(
+    r"schedule-exceptions",
+    BarberScheduleExceptionViewSet,
+    basename="schedule-exception",
+)
 router.register(r"bookings", BookingViewSet, basename="booking")
 router.register(r"reviews", ReviewViewSet, basename="review")
 router.register(r"barbers", BarberPublicViewSet, basename="barber")
 router.register(r"barber/services", MyBarberServiceViewSet, basename="barber-service")
 router.register(r"barber/work-photos", MyBarberWorkPhotoViewSet, basename="barber-work-photos")
 router.register(r"barber/working-hours", MyBarberWorkingHoursViewSet, basename="barber-working-hours")
+router.register(
+    r"barber/schedule-exceptions",
+    MyBarberScheduleExceptionViewSet,
+    basename="barber-schedule-exception",
+)
 router.register(r"barber/inventory", MyBarberInventoryViewSet, basename="barber-inventory")
 router.register(
     r"barber/inventory-movements",
@@ -285,6 +298,7 @@ api_routes = [
     path("bookings/availability/", BookingAvailabilityView.as_view()),
     path("bookings/availability/month/", BookingAvailabilityMonthView.as_view()),
     path("barbers/availability/", IndependentAvailabilityView.as_view()),
+    path("barbers/availability/month/", IndependentAvailabilityMonthView.as_view()),
     path("salons/<int:salon_id>/portfolio/", SalonPortfolioView.as_view()),
     # Chat (text-only): barber ↔ user
     path("chat/conversations/", ConversationListCreateView.as_view()),

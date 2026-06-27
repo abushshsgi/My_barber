@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CalendarClock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { WorkingHoursEditor } from "@/components/barber/WorkingHoursEditor";
+import { ScheduleExceptionsEditor } from "@/components/barber/ScheduleExceptionsEditor";
 import { PageHeader, SectionCard } from "@/components/barber/primitives";
 import { useBarberContext } from "@/components/barber/BarberContext";
 import { invalidateOnboardingAfterActivationChange } from "@/lib/onboarding-status-cache";
@@ -220,6 +221,19 @@ function BarberSchedulePage() {
             />
           </SectionCard>
         )}
+
+        {!loading ? (
+          <SectionCard
+            title="Maxsus kunlar"
+            description="Muayyan sana uchun dam olish, maxsus ish soati yoki bir martalik tanaffus belgilang — bu haftalik jadvaldan ustun turadi."
+          >
+            <ScheduleExceptionsEditor
+              scope={scope}
+              membershipId={membershipId}
+              disabled={scheduleBlocked || saving}
+            />
+          </SectionCard>
+        ) : null}
 
         <p className="text-center text-sm text-muted-foreground">
           <Link

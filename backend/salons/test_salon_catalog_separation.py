@@ -251,6 +251,47 @@ class SalonCatalogSeparationTests(TestCase):
         self.assertTrue(worker_rows)
         self.assertTrue(all(r["barber_name"] == "Ready Worker" for r in worker_rows))
 
+    def test_barber_services_endpoint_isolates_workers(self):
+        """Tanlangan ustaning barber-services javobida boshqa ustaning shaxsiy
+        xizmati chiqmaydi (faqat barber=null katalog + tanlangan usta)."""
+        worker_a = Barber.objects.create(
+            email="iso-a@test.uz",
+            username="iso-a@test.uz",
+            full_name="Iso A",
+            region=UzRegion.TOSHKENT_SH,
+        )
+        worker_b = Barber.objects.create(
+            email="iso-b@test.uz",
+            username="iso-b@test.uz",
+            full_name="Iso B",
+            region=UzRegion.TOSHKENT_SH,
+        )
+        for worker, catalog in ((worker_a, self.catalog), (worker_b, self.catalog2)):
+            prof, _ = BarberProfile.objects.get_or_create(barber=worker)
+            SalonMembership.objects.create(
+                barber=worker,
+                salon_id=self.salon_id,
+                role=SalonMembership.Role.WORKER,
+                invite_state=SalonMembership.InviteState.ACTIVE,
+            )
+            BarberService.objects.create(
+                profile=prof,
+                catalog_service=catalog,
+                name=catalog.name,
+                price=30000,
+                duration_minutes=20,
+                is_active=True,
+            )
+
+        res = self.customer_client.get(
+            f"/api/v1/salons/{self.salon_id}/barber-services/?barber={worker_a.id}",
+        )
+        self.assertEqual(res.status_code, 200, res.content)
+        names = {s["name"] for s in res.json()}
+        self.assertIn(self.catalog.name, names)
+        self.assertNotIn(self.catalog2.name, names)
+        self.assertTrue(all(s.get("barber") in (None, worker_a.id) for s in res.json()))
+
     def test_barber_services_for_owner_returns_catalog(self):
         self.owner_client.post(
             f"/api/v1/salons/{self.salon_id}/services/",

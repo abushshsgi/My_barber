@@ -17,6 +17,7 @@ from accounts.throttles import BarberBroadcastThrottle, BarberPromoThrottle, Sal
 from accounts.uz_regions import UzRegion
 from bookings.availability import (
     build_available_slots,
+    build_independent_month_availability,
     get_independent_services_for_barber,
     parse_id_list,
 )
@@ -33,6 +34,7 @@ from .models import (
     BarberInventoryMovement,
     BarberProfile,
     BarberPromo,
+    BarberScheduleException,
     BarberService,
     BarberSetting,
     BarberSupportTicket,
@@ -52,6 +54,7 @@ from .serializers import (
     BarberPromoSerializer,
     BarberPublicDetailSerializer,
     BarberPublicListSerializer,
+    BarberScheduleExceptionSerializer,
     BarberSettingSerializer,
     BarberServiceSerializer,
     BarberSupportTicketSerializer,
@@ -341,6 +344,9 @@ class MyBarberCatalogServiceView(APIView):
             qs = qs.filter(categories__id=int(category))
         rows = []
         for idx, item in enumerate(qs.order_by("sort_order", "name", "id")[:200]):
+            # prefetch_related("categories") keshidan foydalanamiz — har qator uchun
+            # alohida so'rov (N+1) bo'lmasligi uchun saralash xotirada bajariladi.
+            cats = sorted(item.categories.all(), key=lambda c: (c.order, c.name))
             rows.append(
                 {
                     "id": item.id,
@@ -348,8 +354,8 @@ class MyBarberCatalogServiceView(APIView):
                     "description": item.description,
                     "image_url": item.image_url,
                     "duration_minutes": item.duration_minutes,
-                    "category_ids": list(item.categories.values_list("id", flat=True)),
-                    "category_names": [c.name for c in item.categories.order_by("order", "name")],
+                    "category_ids": [c.id for c in cats],
+                    "category_names": [c.name for c in cats],
                     "sort_order": item.sort_order,
                     "index": idx,
                 }
@@ -364,7 +370,11 @@ class MyBarberServiceViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         b = self.request.user.barber
         prof, _ = BarberProfile.objects.get_or_create(barber=b)
-        return BarberService.objects.filter(profile=prof).order_by("name")
+        return (
+            BarberService.objects.filter(profile=prof)
+            .select_related("catalog_service")
+            .order_by("name")
+        )
 
     def perform_create(self, serializer):
         from rest_framework.exceptions import ValidationError
@@ -728,6 +738,29 @@ class MyBarberWorkingHoursViewSet(viewsets.ModelViewSet):
         serializer.save(profile=prof)
 
 
+class MyBarberScheduleExceptionViewSet(viewsets.ModelViewSet):
+    """Mustaqil sartarosh uchun sana bo'yicha jadval istisnolari."""
+
+    permission_classes = [IsBarber]
+    serializer_class = BarberScheduleExceptionSerializer
+
+    def get_queryset(self):
+        b = self.request.user.barber
+        prof, _ = BarberProfile.objects.get_or_create(barber=b)
+        qs = BarberScheduleException.objects.filter(profile=prof)
+        upcoming = str(self.request.query_params.get("upcoming", "") or "").strip()
+        if upcoming in ("1", "true", "yes"):
+            from django.utils import timezone
+
+            qs = qs.filter(date__gte=timezone.localdate())
+        return qs.order_by("date")
+
+    def perform_create(self, serializer):
+        b = self.request.user.barber
+        prof, _ = BarberProfile.objects.get_or_create(barber=b)
+        serializer.save(profile=prof)
+
+
 class MyBarberServiceRecommendationsView(APIView):
     permission_classes = [IsBarber]
 
@@ -915,5 +948,65 @@ class IndependentAvailabilityView(APIView):
                 barber=barber,
                 services=services,
                 target_date=target_date,
+            )
+        )
+
+
+class IndependentAvailabilityMonthView(APIView):
+    """Mustaqil sartarosh uchun oylik bandlik kalendari."""
+
+    permission_classes = [IsAuthenticatedBarberAware]
+
+    def get(self, request):
+        barber_id = request.query_params.get("barber")
+        year_s = request.query_params.get("year")
+        month_s = request.query_params.get("month")
+        service_ids = request.query_params.get("barber_service_ids", "")
+        if not all([barber_id, year_s, month_s]):
+            return Response(
+                {"detail": "barber, year, and month are required."},
+                status=400,
+            )
+        try:
+            year = int(year_s)
+            month = int(month_s)
+            if month < 1 or month > 12:
+                raise ValueError
+        except (TypeError, ValueError):
+            return Response({"detail": "Invalid year or month."}, status=400)
+
+        barber = get_object_or_404(Barber, pk=barber_id)
+        from barbers.readiness import barber_is_publicly_visible
+
+        if not barber_is_publicly_visible(barber):
+            return Response({"year": year, "month": month, "days": []})
+        forced_region = customer_catalog_region(request)
+        if forced_region and (barber.region or "").strip() != forced_region:
+            return Response({"year": year, "month": month, "days": []})
+
+        id_list = parse_id_list(service_ids)
+        if not id_list:
+            prof = BarberProfile.objects.filter(barber=barber).first()
+            if prof:
+                shortest = (
+                    prof.services.filter(is_active=True)
+                    .order_by("duration_minutes", "id")
+                    .first()
+                )
+                if shortest:
+                    id_list = [shortest.id]
+            if not id_list:
+                return Response({"year": year, "month": month, "days": []})
+
+        services = get_independent_services_for_barber(barber, id_list)
+        if len(services) != len(set(id_list)):
+            return Response({"detail": "Invalid or inactive barber services."}, status=400)
+
+        return Response(
+            build_independent_month_availability(
+                barber=barber,
+                services=services,
+                year=year,
+                month=month,
             )
         )

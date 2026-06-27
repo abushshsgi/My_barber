@@ -1,5 +1,5 @@
 import { createFileRoute, useParams, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Check, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -9,7 +9,11 @@ import { Stepper } from "@/components/Stepper";
 import { BookingForPicker } from "@/components/booking/BookingForPicker";
 import { BookingPaymentPicker, type BookingPaymentMethod } from "@/components/booking/BookingPaymentPicker";
 import { BookingSummaryAside } from "@/components/booking/BookingSummaryAside";
-import { useBarberByBarberId, useIndependentAvailability } from "@/hooks/use-barber";
+import {
+  useBarberByBarberId,
+  useIndependentAvailability,
+  useIndependentAvailabilityMonth,
+} from "@/hooks/use-barber";
 import { useCreateBooking } from "@/hooks/use-bookings-api";
 import { useWalletBalance } from "@/hooks/use-wallet";
 import { useFamilyMembers } from "@/hooks/use-family";
@@ -23,7 +27,6 @@ export const Route = createFileRoute("/booking/barber/$barberId")({
 });
 
 const DAYS = ["Dush", "Sesh", "Chor", "Pay", "Juma", "Shan", "Yak"];
-const FALLBACK_SLOTS = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "14:00", "14:30", "15:00"];
 
 function IndependentBookingFlow() {
   const { t } = useTranslation();
@@ -58,10 +61,45 @@ function IndependentBookingFlow() {
     enabled: step === 2 && Boolean(barber) && serviceIds.length > 0 && Boolean(dateIso),
   });
 
+  // Faqat API qaytargan haqiqiy bo'sh vaqtlar — hardcoded fallback yo'q.
   const slotOptions =
     availability.data?.slots?.map((s) =>
       new Date(s.start).toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }),
-    ) ?? FALLBACK_SLOTS;
+    ) ?? [];
+  const slotsLoading = step === 2 && availability.isLoading;
+  const slotsClosedReason =
+    availability.data?.closed_reason ?? availability.data?.detail ?? null;
+
+  // 7 kunlik tasma uchun oylik bandlik — barber ishlamaydigan kunlarni
+  // (haftalik dam, sana istisnosi) kalendar tasmasida o'chirib ko'rsatamiz.
+  const serviceIdNums = serviceIds.map((id) => parseInt(id, 10)).filter(Number.isFinite);
+  const lastDayFull = days[days.length - 1].full;
+  const needsSecondMonth = lastDayFull.getMonth() !== today.getMonth();
+  const monthEnabled = step === 2 && Boolean(barber) && serviceIdNums.length > 0;
+  const monthA = useIndependentAvailabilityMonth({
+    barber: barber?.barber_id ?? 0,
+    year: today.getFullYear(),
+    month: today.getMonth() + 1,
+    barberServiceIds: serviceIdNums,
+    enabled: monthEnabled,
+  });
+  const monthB = useIndependentAvailabilityMonth({
+    barber: barber?.barber_id ?? 0,
+    year: lastDayFull.getFullYear(),
+    month: lastDayFull.getMonth() + 1,
+    barberServiceIds: serviceIdNums,
+    enabled: monthEnabled && needsSecondMonth,
+  });
+  const availableDates = useMemo(() => {
+    const set = new Set<string>();
+    for (const data of [monthA.data, monthB.data]) {
+      data?.days.forEach((d) => {
+        if (d.available) set.add(d.date);
+      });
+    }
+    return set;
+  }, [monthA.data, monthB.data]);
+  const monthLoaded = !monthA.isLoading && (!needsSecondMonth || !monthB.isLoading);
 
   if (isLoading || !barber) {
     return (
@@ -183,39 +221,59 @@ function IndependentBookingFlow() {
           <div>
             <h2 className="text-xl font-bold tracking-tight">{t("booking.selectTime")}</h2>
             <div className="no-scrollbar mt-6 flex gap-2 overflow-x-auto">
-              {days.map((d, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setDayIdx(i);
-                    setSlot(null);
-                  }}
-                  className={cn(
-                    "flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-xl",
-                    dayIdx === i ? "bg-foreground text-background" : "bg-surface text-foreground",
-                  )}
-                >
-                  <span className="text-[10px] font-bold uppercase opacity-70">{d.day}</span>
-                  <span className="text-lg font-bold">{d.date}</span>
-                </button>
-              ))}
+              {days.map((d, i) => {
+                const iso = d.full.toISOString().slice(0, 10);
+                const unavailable = monthLoaded && !availableDates.has(iso);
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    disabled={unavailable}
+                    onClick={() => {
+                      setDayIdx(i);
+                      setSlot(null);
+                    }}
+                    className={cn(
+                      "flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-xl",
+                      dayIdx === i ? "bg-foreground text-background" : "bg-surface text-foreground",
+                      unavailable && "cursor-not-allowed opacity-40",
+                    )}
+                  >
+                    <span className="text-[10px] font-bold uppercase opacity-70">{d.day}</span>
+                    <span className="text-lg font-bold">{d.date}</span>
+                  </button>
+                );
+              })}
             </div>
-            <div className="mt-6 grid grid-cols-3 gap-2">
-              {slotOptions.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSlot(s)}
-                  className={cn(
-                    "rounded-xl border-2 py-3 text-sm font-bold",
-                    slot === s
-                      ? "border-foreground bg-foreground text-background"
-                      : "border-border bg-background",
-                  )}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
+            {slotsLoading ? (
+              <div className="mt-6 grid grid-cols-3 gap-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-[44px] animate-pulse rounded-xl bg-surface" />
+                ))}
+              </div>
+            ) : slotOptions.length === 0 ? (
+              <p className="mt-6 rounded-2xl border-2 border-border p-4 text-sm text-muted-foreground">
+                {slotsClosedReason ??
+                  t("booking.noSlots", { defaultValue: "Bu kuni bo'sh vaqt yo'q. Boshqa kunni tanlang." })}
+              </p>
+            ) : (
+              <div className="mt-6 grid grid-cols-3 gap-2">
+                {slotOptions.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setSlot(s)}
+                    className={cn(
+                      "rounded-xl border-2 py-3 text-sm font-bold",
+                      slot === s
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border bg-background",
+                    )}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

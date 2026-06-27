@@ -10,6 +10,7 @@ from accounts.models import User
 from salons.amenity_sync import sync_salon_amenities
 from .models import (
     Amenity,
+    BarberScheduleException as SalonScheduleException,
     BarberWorkingHours,
     CatalogService,
     Salon,
@@ -636,5 +637,41 @@ class BarberWorkingHoursSerializer(serializers.ModelSerializer):
         is_day_off = attrs.get("is_day_off", getattr(self.instance, "is_day_off", False))
         if not is_day_off and open_time and close_time and open_time >= close_time:
             raise serializers.ValidationError({"close_time": "Yopilish vaqti ochilishdan keyin bo'lishi kerak."})
+        return attrs
+
+
+class BarberScheduleExceptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SalonScheduleException
+        fields = (
+            "id",
+            "membership",
+            "date",
+            "is_day_off",
+            "open_time",
+            "close_time",
+            "breaks",
+            "note",
+        )
+
+    def validate_breaks(self, value):
+        from barbers.serializers import validate_break_list
+
+        return validate_break_list(value)
+
+    def validate(self, attrs):
+        is_day_off = attrs.get("is_day_off", getattr(self.instance, "is_day_off", False))
+        open_time = attrs.get("open_time", getattr(self.instance, "open_time", None))
+        close_time = attrs.get("close_time", getattr(self.instance, "close_time", None))
+        if is_day_off:
+            return attrs
+        if (open_time and not close_time) or (close_time and not open_time):
+            raise serializers.ValidationError(
+                {"close_time": "Maxsus soat uchun ochilish va yopilish vaqtini kiriting."}
+            )
+        if open_time and close_time and open_time >= close_time:
+            raise serializers.ValidationError(
+                {"close_time": "Yopilish vaqti ochilishdan keyin bo'lishi kerak."}
+            )
         return attrs
 

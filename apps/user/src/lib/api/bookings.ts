@@ -41,7 +41,7 @@ export async function fetchBookingAvailability(params: {
   barber: number;
   date: string;
   service_ids: string;
-}): Promise<{ slots: ApiAvailabilitySlot[] | string[] }> {
+}): Promise<{ slots: ApiAvailabilitySlot[] | string[]; closed_reason?: string; detail?: string }> {
   return apiJson(`/api/v1/bookings/availability/${qs(params)}`);
 }
 

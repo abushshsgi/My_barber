@@ -236,6 +236,31 @@ class BarberWorkingHours(models.Model):
         unique_together = [["membership", "weekday"]]
 
 
+class BarberScheduleException(models.Model):
+    """Salon ichidagi ishchi uchun sana bo'yicha bir martalik jadval o'zgarishi.
+
+    Haftalik jadvaldan ustun turadi: butun kun dam olish, maxsus ish soati yoki
+    bir martalik tanaffus belgilash uchun.
+    """
+
+    membership = models.ForeignKey(
+        SalonMembership,
+        on_delete=models.CASCADE,
+        related_name="schedule_exceptions",
+    )
+    date = models.DateField()
+    is_day_off = models.BooleanField(default=False)
+    open_time = models.TimeField(null=True, blank=True)
+    close_time = models.TimeField(null=True, blank=True)
+    breaks = models.JSONField(default=list, blank=True)
+    note = models.CharField(max_length=255, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [["membership", "date"]]
+        ordering = ["date"]
+
+
 class Amenity(models.Model):
     """Salon qulayliklari katalogi (Wi‑Fi, parking, ...)."""
 

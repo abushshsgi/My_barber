@@ -12,12 +12,32 @@ from .models import (
     BarberInventoryMovement,
     BarberProfile,
     BarberPromo,
+    BarberScheduleException,
     BarberService,
     BarberSetting,
     BarberSupportTicket,
     BarberWorkPhoto,
     BarberWorkingHours,
 )
+
+
+def validate_break_list(value):
+    """[{"start":"HH:MM","end":"HH:MM"}, ...] tekshiruvi — ish vaqti tanaffuslari."""
+    if not isinstance(value, list):
+        raise serializers.ValidationError("breaks must be a list.")
+    for item in value:
+        if not isinstance(item, dict):
+            raise serializers.ValidationError("Each break must be an object with start/end.")
+        if "start" not in item or "end" not in item:
+            raise serializers.ValidationError("Each break needs start and end (HH:MM).")
+        try:
+            st = datetime.strptime(str(item["start"]), "%H:%M").time()
+            et = datetime.strptime(str(item["end"]), "%H:%M").time()
+        except (TypeError, ValueError):
+            raise serializers.ValidationError("Break start/end must be HH:MM.")
+        if st >= et:
+            raise serializers.ValidationError("Break start must be before end.")
+    return value
 
 
 def _public_avatar_url(obj, request):
@@ -115,6 +135,31 @@ class BarberWorkingHoursSerializer(serializers.ModelSerializer):
         is_day_off = attrs.get("is_day_off", getattr(self.instance, "is_day_off", False))
         if not is_day_off and open_time and close_time and open_time >= close_time:
             raise serializers.ValidationError({"close_time": "Yopilish vaqti ochilishdan keyin bo'lishi kerak."})
+        return attrs
+
+
+class BarberScheduleExceptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BarberScheduleException
+        fields = ("id", "date", "is_day_off", "open_time", "close_time", "breaks", "note")
+
+    def validate_breaks(self, value):
+        return validate_break_list(value)
+
+    def validate(self, attrs):
+        is_day_off = attrs.get("is_day_off", getattr(self.instance, "is_day_off", False))
+        open_time = attrs.get("open_time", getattr(self.instance, "open_time", None))
+        close_time = attrs.get("close_time", getattr(self.instance, "close_time", None))
+        if is_day_off:
+            return attrs
+        if (open_time and not close_time) or (close_time and not open_time):
+            raise serializers.ValidationError(
+                {"close_time": "Maxsus soat uchun ochilish va yopilish vaqtini kiriting."}
+            )
+        if open_time and close_time and open_time >= close_time:
+            raise serializers.ValidationError(
+                {"close_time": "Yopilish vaqti ochilishdan keyin bo'lishi kerak."}
+            )
         return attrs
 
 

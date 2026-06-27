@@ -1,5 +1,5 @@
 import { apiJson } from "./client";
-import type { ApiAvailabilitySlot, ApiBarberPublic } from "./types";
+import type { ApiAvailabilityMonth, ApiAvailabilitySlot, ApiBarberPublic } from "./types";
 
 function qs(params: Record<string, string | number | undefined>): string {
   const sp = new URLSearchParams();
@@ -34,6 +34,15 @@ export async function fetchIndependentAvailability(params: {
   barber: number;
   date: string;
   barber_service_ids: string;
-}): Promise<{ slots: ApiAvailabilitySlot[] }> {
+}): Promise<{ slots: ApiAvailabilitySlot[]; closed_reason?: string; detail?: string }> {
   return apiJson(`/api/v1/barbers/availability/${qs(params)}`);
+}
+
+export async function fetchIndependentAvailabilityMonth(params: {
+  barber: number;
+  year: number;
+  month: number;
+  barber_service_ids?: string;
+}): Promise<ApiAvailabilityMonth> {
+  return apiJson(`/api/v1/barbers/availability/month/${qs(params)}`);
 }

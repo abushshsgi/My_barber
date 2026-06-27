@@ -195,6 +195,65 @@ class BookingCriticalTests(TestCase):
             Notification.objects.filter(user=self.user, type="chat_message").exists()
         )
 
+    def test_independent_schedule_exception_day_off_blocks_slots(self):
+        from barbers.models import BarberScheduleException
+
+        target = timezone.now() + timedelta(days=8)
+        target = target.replace(hour=10, minute=0, second=0, microsecond=0)
+        # Haftalik jadval ishlaydigan kun, lekin sana istisnosi — dam olish.
+        BarberScheduleException.objects.create(
+            profile=self.profile,
+            date=target.date(),
+            is_day_off=True,
+            note="Ta'til",
+        )
+        self.client.force_authenticate(user=self.user)
+        res = self.client.get(
+            "/api/v1/barbers/availability/",
+            {
+                "barber": self.barber.id,
+                "date": target.date().isoformat(),
+                "barber_service_ids": str(self.svc.id),
+            },
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        body = res.json()
+        self.assertEqual(body["slots"], [])
+        self.assertIn("dam", body.get("closed_reason", "").lower())
+
+    def test_independent_schedule_exception_custom_hours(self):
+        from barbers.models import BarberScheduleException
+
+        target = timezone.now() + timedelta(days=9)
+        target = target.replace(hour=10, minute=0, second=0, microsecond=0)
+        wh = BarberWorkingHours.objects.get(profile=self.profile, weekday=target.weekday())
+        wh.is_day_off = True
+        wh.save(update_fields=["is_day_off"])
+        # Haftalik dam kun, lekin shu sanada maxsus ish soati ochiladi.
+        BarberScheduleException.objects.create(
+            profile=self.profile,
+            date=target.date(),
+            is_day_off=False,
+            open_time=time(14, 0),
+            close_time=time(17, 0),
+            breaks=[{"start": "15:00", "end": "15:30"}],
+        )
+        self.client.force_authenticate(user=self.user)
+        res = self.client.get(
+            "/api/v1/barbers/availability/",
+            {
+                "barber": self.barber.id,
+                "date": target.date().isoformat(),
+                "barber_service_ids": str(self.svc.id),
+            },
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        slots = res.json()["slots"]
+        self.assertTrue(slots)
+        self.assertTrue(all(s >= "14:00" for s in slots))
+        # 15:00 tanaffus — 30 daqiqalik xizmat 15:00 da boshlanmaydi.
+        self.assertNotIn("15:00", slots)
+
     def test_independent_booking_respects_day_off_and_breaks(self):
         target = timezone.now() + timedelta(days=5)
         target = target.replace(hour=12, minute=0, second=0, microsecond=0)

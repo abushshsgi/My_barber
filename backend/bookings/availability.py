@@ -8,9 +8,26 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from barbers.models import Barber, BarberProfile, BarberService
+from barbers.models import BarberScheduleException as IndepScheduleException
 from bookings.models import Booking
+from salons.models import BarberScheduleException as SalonScheduleException
 from salons.models import BarberWorkingHours as SalonBarberWorkingHours
 from salons.models import Salon, SalonHours, SalonMembership, Service
+
+
+def _apply_schedule_exception(open_t, close_t, breaks_list, exc):
+    """Sana istisnosi haftalik jadvaldan ustun: dam olish, maxsus soat yoki
+    bir martalik tanaffus. (open_t, close_t, breaks, reason) qaytaradi."""
+    if exc is None:
+        return open_t, close_t, breaks_list, None
+    if exc.is_day_off:
+        return None, None, [], "Barber bu kuni dam oladi."
+    if exc.open_time:
+        open_t = exc.open_time
+    if exc.close_time:
+        close_t = exc.close_time
+    merged_breaks = list(breaks_list or []) + list(exc.breaks or [])
+    return open_t, close_t, merged_breaks, None
 
 BOOKING_BLOCKING_STATUSES = [
     Booking.Status.PENDING,
@@ -102,25 +119,40 @@ def _window_for_salon(salon: Salon, barber: Barber, target_date):
     if not mem:
         return None, None, [], "Barber bu salonda faol emas."
 
+    exc = SalonScheduleException.objects.filter(membership=mem, date=target_date).first()
+    if exc and exc.is_day_off:
+        return None, None, [], "Barber bu kuni dam oladi."
+
     sh = SalonHours.objects.filter(salon=salon, weekday=weekday).first()
     bh = SalonBarberWorkingHours.objects.filter(membership=mem, weekday=weekday).first()
-    if bh and bh.is_day_off:
+    has_exc_hours = bool(exc and exc.open_time and exc.close_time)
+    if bh and bh.is_day_off and not has_exc_hours:
         return None, None, [], "Barber bu kuni dam oladi."
 
     if sh:
         open_t = sh.open_time
         close_t = sh.close_time
         breaks_list = []
-        if bh:
+        if bh and not bh.is_day_off:
             open_t = max(open_t, bh.open_time)
             close_t = min(close_t, bh.close_time)
             breaks_list = list(getattr(bh, "breaks", []) or [])
-    elif bh:
+    elif bh and not bh.is_day_off:
         open_t = bh.open_time
         close_t = bh.close_time
         breaks_list = list(getattr(bh, "breaks", []) or [])
+    elif has_exc_hours:
+        open_t = exc.open_time
+        close_t = exc.close_time
+        breaks_list = []
     else:
         return None, None, [], "Salon yoki barber ish vaqti kiritilmagan."
+
+    open_t, close_t, breaks_list, reason = _apply_schedule_exception(
+        open_t, close_t, breaks_list, exc
+    )
+    if reason:
+        return None, None, [], reason
     if open_t >= close_t:
         return None, None, [], "Bu kunda ish oralig'i mavjud emas."
     return open_t, close_t, breaks_list, None
@@ -132,14 +164,31 @@ def _window_for_independent(barber: Barber, target_date):
     if not prof:
         return None, None, [], "Barber profili topilmadi."
 
-    wh = prof.working_hours.filter(weekday=weekday).first()
-    if wh and wh.is_day_off:
+    exc = IndepScheduleException.objects.filter(profile=prof, date=target_date).first()
+    if exc and exc.is_day_off:
         return None, None, [], "Barber bu kuni dam oladi."
-    if not wh:
+
+    wh = prof.working_hours.filter(weekday=weekday).first()
+    has_exc_hours = bool(exc and exc.open_time and exc.close_time)
+    if wh and wh.is_day_off and not has_exc_hours:
+        return None, None, [], "Barber bu kuni dam oladi."
+
+    if wh and not wh.is_day_off:
+        open_t = wh.open_time
+        close_t = wh.close_time
+        breaks_list = list(wh.breaks or [])
+    elif has_exc_hours:
+        open_t = exc.open_time
+        close_t = exc.close_time
+        breaks_list = []
+    else:
         return None, None, [], "Barber ish jadvalini kiritmagan."
-    open_t = wh.open_time
-    close_t = wh.close_time
-    breaks_list = list(wh.breaks or [])
+
+    open_t, close_t, breaks_list, reason = _apply_schedule_exception(
+        open_t, close_t, breaks_list, exc
+    )
+    if reason:
+        return None, None, [], reason
     if open_t >= close_t:
         return None, None, [], "Bu kunda ish oralig'i mavjud emas."
     return open_t, close_t, breaks_list, None
@@ -265,6 +314,31 @@ def build_month_availability(*, salon: Salon, barber: Barber, service_ids: list[
         payload = build_available_slots(
             barber=barber,
             salon=salon,
+            services=services,
+            target_date=target,
+        )
+        slots = payload.get("slots") or []
+        days.append(
+            {
+                "date": target.isoformat(),
+                "available": len(slots) > 0,
+                "slot_count": len(slots),
+            }
+        )
+    return {"year": year, "month": month, "days": days}
+
+
+def build_independent_month_availability(*, barber: Barber, services, year: int, month: int):
+    """Mustaqil sartarosh uchun oylik bandlik kalendari (salon emas)."""
+    import calendar
+    from datetime import date
+
+    _, last_day = calendar.monthrange(year, month)
+    days = []
+    for day_num in range(1, last_day + 1):
+        target = date(year, month, day_num)
+        payload = build_available_slots(
+            barber=barber,
             services=services,
             target_date=target,
         )

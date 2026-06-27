@@ -27,6 +27,7 @@ from .geo_join import (
 )
 from .join_service import attach_worker_membership
 from .models import (
+    BarberScheduleException,
     CatalogService,
     BarberWorkingHours,
     FavoriteSalon,
@@ -42,6 +43,7 @@ from .owner_setup import (
     sync_owner_region_from_salon,
 )
 from .serializers import (
+    BarberScheduleExceptionSerializer,
     BarberWorkingHoursSerializer,
     BarberSalonViewSerializer,
     PublicServiceSerializer,
@@ -445,6 +447,7 @@ class SalonViewSet(viewsets.ModelViewSet):
             salon.services.filter(is_active=True)
             .filter(Q(barber__isnull=True) | Q(barber=barber))
             .filter(Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True))
+            .select_related("catalog_service", "barber")
             .order_by("name")
         )
         return Response(PublicServiceSerializer(qs, many=True, context={"request": request}).data)
@@ -467,6 +470,7 @@ class SalonViewSet(viewsets.ModelViewSet):
             qs = (
                 salon.services.filter(barber__isnull=True)
                 .filter(Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True))
+                .select_related("catalog_service")
                 .order_by("name")
             )
             return Response(
@@ -867,6 +871,41 @@ class BarberScheduleViewSet(viewsets.ModelViewSet):
         if mid:
             qs = qs.filter(membership_id=mid)
         return qs
+
+    def perform_create(self, serializer):
+        mem = serializer.validated_data["membership"]
+        bp = request_barber(self.request)
+        is_self = bp is not None and mem.barber_id == bp.id
+        is_owner = bp is not None and mem.salon.owner_barber_id == bp.id
+        if not is_self and not is_owner:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied()
+        serializer.save()
+
+
+class BarberScheduleExceptionViewSet(viewsets.ModelViewSet):
+    """Salon ichidagi ishchi uchun sana bo'yicha jadval istisnolari."""
+
+    serializer_class = BarberScheduleExceptionSerializer
+    permission_classes = [IsAuthenticatedBarberAware]
+
+    def get_queryset(self):
+        bp = request_barber(self.request)
+        if bp is None:
+            return BarberScheduleException.objects.none()
+        qs = BarberScheduleException.objects.select_related("membership").filter(
+            Q(membership__barber=bp) | Q(membership__salon__owner_barber=bp)
+        )
+        mid = self.request.query_params.get("membership")
+        if mid:
+            qs = qs.filter(membership_id=mid)
+        upcoming = str(self.request.query_params.get("upcoming", "") or "").strip()
+        if upcoming in ("1", "true", "yes"):
+            from django.utils import timezone
+
+            qs = qs.filter(date__gte=timezone.localdate())
+        return qs.order_by("date")
 
     def perform_create(self, serializer):
         mem = serializer.validated_data["membership"]

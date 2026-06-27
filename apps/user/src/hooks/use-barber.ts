@@ -1,5 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchBarberByBarberId, fetchIndependentAvailability } from "@/lib/api/barbers";
+import {
+  fetchBarberByBarberId,
+  fetchIndependentAvailability,
+  fetchIndependentAvailabilityMonth,
+} from "@/lib/api/barbers";
 import { authQueryEnabled } from "@/lib/auth-query";
 
 export function useBarberByBarberId(barberId: string) {
@@ -32,5 +36,28 @@ export function useIndependentAvailability(params: {
           params.date.length > 0 &&
           params.barberServiceIds.length > 0,
       ),
+  });
+}
+
+export function useIndependentAvailabilityMonth(params: {
+  barber: number;
+  year: number;
+  month: number;
+  barberServiceIds?: number[];
+  enabled?: boolean;
+}) {
+  return useQuery({
+    queryKey: ["barbers", "availability-month", params],
+    queryFn: () =>
+      fetchIndependentAvailabilityMonth({
+        barber: params.barber,
+        year: params.year,
+        month: params.month,
+        barber_service_ids: params.barberServiceIds?.length
+          ? params.barberServiceIds.join(",")
+          : undefined,
+      }),
+    enabled: authQueryEnabled((params.enabled ?? true) && params.barber > 0),
+    staleTime: 60_000,
   });
 }
