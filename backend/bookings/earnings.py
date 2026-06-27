@@ -23,6 +23,12 @@ def platform_earnings_qs(base: QuerySet[Booking] | None = None) -> QuerySet[Book
     )
 
 
+def completed_bookings_qs(base: QuerySet[Booking] | None = None) -> QuerySet[Booking]:
+    """Statistika / dashboard: barcha yakunlangan bronlar (naqd + onlayn)."""
+    qs = base if base is not None else Booking.objects.all()
+    return qs.filter(status=Booking.Status.COMPLETED)
+
+
 def booking_counts_for_platform_earnings(booking: Booking) -> bool:
     return (
         booking.status == Booking.Status.COMPLETED

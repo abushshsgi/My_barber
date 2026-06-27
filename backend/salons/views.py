@@ -25,7 +25,15 @@ from .geo_join import (
     haversine_km,
 )
 from .join_service import attach_worker_membership
-from .models import CatalogService, BarberWorkingHours, FavoriteSalon, Salon, SalonImage, SalonMembership
+from .models import (
+    CatalogService,
+    BarberWorkingHours,
+    FavoriteSalon,
+    Salon,
+    SalonImage,
+    SalonMembership,
+    Service,
+)
 from .owner_setup import (
     ensure_owner_membership_active,
     owner_is_salon_bookable,
@@ -36,6 +44,7 @@ from .serializers import (
     BarberWorkingHoursSerializer,
     BarberSalonViewSerializer,
     PublicServiceSerializer,
+    SalonCatalogServiceSerializer,
     SalonCreateUpdateSerializer,
     SalonDetailSerializer,
     SalonListSerializer,
@@ -424,9 +433,12 @@ class SalonViewSet(viewsets.ModelViewSet):
         if not is_owner and not in_salon:
             return Response({"detail": "Barber bu salonda ishlamaydi."}, status=status.HTTP_404_NOT_FOUND)
 
-        from barbers.salon_service_sync import sync_all_barber_services_for_barber
+        # Salon egasi salon katalogini (barber=null) bron qiladi — uni sync
+        # qilish shart emas. Ishchilar uchun shaxsiy xizmatlarni sinxronlaymiz.
+        if not is_owner:
+            from barbers.salon_service_sync import sync_all_barber_services_for_barber
 
-        sync_all_barber_services_for_barber(barber)
+            sync_all_barber_services_for_barber(barber)
         qs = (
             salon.services.filter(is_active=True)
             .filter(Q(barber__isnull=True) | Q(barber=barber))
@@ -434,6 +446,79 @@ class SalonViewSet(viewsets.ModelViewSet):
             .order_by("name")
         )
         return Response(PublicServiceSerializer(qs, many=True, context={"request": request}).data)
+
+    @action(
+        detail=True,
+        methods=["get", "post"],
+        permission_classes=[IsAuthenticatedBarberAware],
+        url_path="services",
+    )
+    def services(self, request, pk=None):
+        """Salon katalogi (barber=null) — faqat salon egasi boshqaradi."""
+        salon = self.get_object()
+        bp = request_barber(request)
+        is_owner = bp is not None and salon.owner_barber_id == bp.id
+        if not is_owner and not is_platform_admin(request):
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        if request.method == "GET":
+            qs = (
+                salon.services.filter(barber__isnull=True)
+                .filter(Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True))
+                .order_by("name")
+            )
+            return Response(
+                SalonCatalogServiceSerializer(qs, many=True, context={"request": request}).data
+            )
+
+        serializer = SalonCatalogServiceSerializer(
+            data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        catalog = serializer.validated_data.get("catalog_service")
+        if catalog is None:
+            return Response(
+                {"catalog_service": "Katalogdan xizmat tanlang."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        obj = serializer.save(
+            salon=salon,
+            barber=None,
+            catalog_service=catalog,
+            name=catalog.name,
+            duration_minutes=catalog.duration_minutes,
+        )
+        obj.categories.set(catalog.categories.all())
+        return Response(
+            SalonCatalogServiceSerializer(obj, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(
+        detail=True,
+        methods=["patch", "delete"],
+        permission_classes=[IsAuthenticatedBarberAware],
+        url_path=r"services/(?P<service_id>[^/.]+)",
+    )
+    def service_detail(self, request, pk=None, service_id=None):
+        """Salon katalogidagi bitta xizmatni tahrirlash/o‘chirish."""
+        salon = self.get_object()
+        bp = request_barber(request)
+        is_owner = bp is not None and salon.owner_barber_id == bp.id
+        if not is_owner and not is_platform_admin(request):
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        service = get_object_or_404(
+            Service, pk=service_id, salon=salon, barber__isnull=True
+        )
+        if request.method == "DELETE":
+            service.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        serializer = SalonCatalogServiceSerializer(
+            service, data=request.data, partial=True, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticatedBarberAware])
     def add_images(self, request, pk=None):

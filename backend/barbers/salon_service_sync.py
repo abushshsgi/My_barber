@@ -35,6 +35,10 @@ def sync_barber_service_to_salons(barber_service: BarberService) -> None:
         defaults["catalog_service_id"] = barber_service.catalog_service_id
 
     for mem in _active_memberships(barber):
+        # Salon egasining xizmatlari salon katalogiga sync qilinmaydi —
+        # egasi salon katalogini (barber=null) alohida boshqaradi.
+        if mem.salon.owner_barber_id == barber.id:
+            continue
         Service.objects.update_or_create(
             **_lookup_for_barber_service(mem.salon, barber, barber_service),
             defaults=defaults,
@@ -44,6 +48,8 @@ def sync_barber_service_to_salons(barber_service: BarberService) -> None:
 def remove_barber_service_from_salons(barber_service: BarberService) -> None:
     barber = barber_service.profile.barber
     for mem in _active_memberships(barber):
+        if mem.salon.owner_barber_id == barber.id:
+            continue
         qs = Service.objects.filter(**_lookup_for_barber_service(mem.salon, barber, barber_service))
         qs.delete()
 

@@ -297,7 +297,9 @@
     "forSelf": "O'zim uchun",
     "addFamilyHint": "Oila a'zolarini Sozlamalar → Oilaviy profil bo'limidan qo'shishingiz mumkin.",
     "total": "Jami",
-    "confirm": "Buyurtmani tasdiqlash"
+    "confirm": "Buyurtmani tasdiqlash",
+    "noServices": "Bu usta uchun xizmatlar topilmadi",
+    "servicesError": "Xizmatlarni yuklab bo'lmadi."
   },
   "bookings": {
     "title": "Buyurtmalarim",

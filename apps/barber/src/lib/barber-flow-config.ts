@@ -59,6 +59,7 @@ export const NAV_CONFIG: Record<NavCapability, NavItem[]> = {
   ],
   salonOwner: [
     { to: "/barber/salon-view", label: "Salon", iconName: "Building2" },
+    { to: "/barber/services", label: "Salon xizmatlari", iconName: "Scissors" },
     { to: "/barber/amenities", label: "Qulayliklar", iconName: "Sparkles" },
     { to: "/barber/salon-view/gallery", label: "Galereya", iconName: "Images" },
     { to: "/barber/salon-view/reviews", label: "Sharhlar", iconName: "Star" },
@@ -66,6 +67,7 @@ export const NAV_CONFIG: Record<NavCapability, NavItem[]> = {
   ],
   salonWorker: [
     { to: "/barber/salon-view", label: "Salon", iconName: "Building2" },
+    { to: "/barber/services", label: "Xizmatlarim", iconName: "Scissors" },
     { to: "/barber/salon-view/members", label: "Jamoa", iconName: "Users" },
     { to: "/barber/salon-view/reviews", label: "Sharhlar", iconName: "Star" },
     { to: "/barber/salon-view/gallery", label: "Galereya", iconName: "Images" },
@@ -327,6 +329,7 @@ export function pathAllowedInSalonWorkspace(pathname: string): boolean {
     pathname === "/barber/help" ||
     pathname === "/barber/notifications" ||
     pathname === "/barber/amenities" ||
+    pathname === "/barber/services" ||
     pathname.startsWith("/barber/notifications/")
   ) {
     return true;

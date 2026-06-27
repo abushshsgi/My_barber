@@ -27,7 +27,7 @@ from bookings.availability import (
 )
 from bookings.db_compat import bookings_has_family_member_column
 from bookings.models import Booking, BookingCompletion, BookingLine, Review
-from bookings.earnings import platform_earnings_qs
+from bookings.earnings import completed_bookings_qs, platform_earnings_qs
 from notifications.serializers import NotificationSerializer
 from notifications.utils import notify_barber, notify_user
 from salons.models import Salon, SalonMembership
@@ -649,7 +649,7 @@ class AnalyticsView(APIView):
                     {"detail": "Mustaqil analitika faqat sartarosh JWT bilan."},
                     status=403,
                 )
-            bookings = platform_earnings_qs(
+            bookings = completed_bookings_qs(
                 Booking.objects.filter(
                     barber=bp,
                     salon__isnull=True,
@@ -663,7 +663,7 @@ class AnalyticsView(APIView):
             new_customers = 0
             returning = 0
             for cid in set(bookings.values_list("customer_id", flat=True)):
-                prior_count = platform_earnings_qs(
+                prior_count = completed_bookings_qs(
                     Booking.objects.filter(
                         barber=bp,
                         salon__isnull=True,
@@ -747,26 +747,29 @@ class AnalyticsView(APIView):
         if not allowed:
             return Response(status=403)
 
-        bookings = platform_earnings_qs(
-            Booking.objects.filter(
-                salon_id=salon_id,
-                start_at__gte=start_dt,
-                start_at__lte=end_dt,
-            )
+        salon_base = Booking.objects.filter(
+            salon_id=salon_id,
+            start_at__gte=start_dt,
+            start_at__lte=end_dt,
         )
+        if bp is not None and bp.id != salon.owner_barber_id:
+            salon_base = salon_base.filter(barber=bp)
+
+        bookings = completed_bookings_qs(salon_base)
         revenue = bookings.aggregate(t=Sum("total_price"))["t"] or 0
         clients = bookings.values("customer").distinct().count()
 
         new_customers = 0
         returning = 0
         for cid in set(bookings.values_list("customer_id", flat=True)):
-            prior_count = platform_earnings_qs(
-                Booking.objects.filter(
-                    salon_id=salon_id,
-                    customer_id=cid,
-                    start_at__lt=start_dt,
-                )
-            ).count()
+            prior_prior = Booking.objects.filter(
+                salon_id=salon_id,
+                customer_id=cid,
+                start_at__lt=start_dt,
+            )
+            if bp is not None and bp.id != salon.owner_barber_id:
+                prior_prior = prior_prior.filter(barber=bp)
+            prior_count = completed_bookings_qs(prior_prior).count()
             if prior_count == 0:
                 new_customers += 1
             else:

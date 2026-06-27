@@ -125,6 +125,60 @@ class PublicServiceSerializer(serializers.ModelSerializer):
         return obj.catalog_service_id
 
 
+class SalonCatalogServiceSerializer(serializers.ModelSerializer):
+    """Salon egasi salon katalogini (barber=null) boshqarishi uchun.
+
+    Mijoz salon sahifasida faqat shu xizmatlar ko‘rinadi; ular alohida
+    barberga bog‘lanmagan, butun salonga tegishli.
+    """
+
+    catalog_service = serializers.PrimaryKeyRelatedField(
+        queryset=CatalogService.objects.filter(is_active=True),
+        required=False,
+        allow_null=True,
+    )
+    name = serializers.SerializerMethodField()
+    duration_minutes = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Service
+        fields = (
+            "id",
+            "catalog_service",
+            "name",
+            "price",
+            "duration_minutes",
+            "is_active",
+            "image_url",
+        )
+        read_only_fields = ("id", "name", "duration_minutes", "image_url")
+
+    def validate_price(self, value):
+        from barbers.pricing import MIN_SERVICE_PRICE_ERROR, MIN_SERVICE_PRICE_UZS
+
+        if value <= 0:
+            raise serializers.ValidationError("Narx 0 dan katta bo'lishi kerak.")
+        if value < MIN_SERVICE_PRICE_UZS:
+            raise serializers.ValidationError(MIN_SERVICE_PRICE_ERROR)
+        return value
+
+    def get_name(self, obj):
+        if obj.catalog_service_id and obj.catalog_service:
+            return obj.catalog_service.name
+        return obj.name
+
+    def get_duration_minutes(self, obj):
+        if obj.catalog_service_id and obj.catalog_service:
+            return obj.catalog_service.duration_minutes
+        return obj.duration_minutes
+
+    def get_image_url(self, obj):
+        if obj.catalog_service_id and obj.catalog_service:
+            return obj.catalog_service.image_url
+        return ""
+
+
 class SalonListSerializer(serializers.ModelSerializer):
     cover_image = serializers.SerializerMethodField()
     # get_queryset annotate bilan beriladi (N+1 oldini olish)
@@ -281,16 +335,19 @@ class SalonDetailSerializer(serializers.ModelSerializer):
                 salon=obj,
                 invite_state=SalonMembership.InviteState.ACTIVE,
             ).select_related("barber"):
-                if mem.barber_id:
+                # Salon egasi xizmatlari salon katalogiga sync qilinmaydi —
+                # egasi salon katalogini alohida boshqaradi.
+                if mem.barber_id and mem.barber_id != obj.owner_barber_id:
                     sync_all_barber_services_for_barber(mem.barber)
             cache.set(cache_key, 1, 60)
-        qs = obj.services.filter(is_active=True).filter(
-            Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True)
+        # Mijoz salon sahifasi: faqat salon katalogi (barberga bog‘lanmagan
+        # xizmatlar). Alohida barberlarning shaxsiy xizmatlari bu yerda
+        # ko‘rinmaydi — ular bron paytida barber tanlanganda chiqadi.
+        qs = (
+            obj.services.filter(is_active=True, barber__isnull=True)
+            .filter(Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True))
+            .order_by("name")
         )
-        owner_id = obj.owner_barber_id
-        if owner_id:
-            qs = qs.filter(Q(barber_id=owner_id) | Q(barber__isnull=True))
-        qs = qs.order_by("name")
         return PublicServiceSerializer(qs, many=True, context=self.context).data
 
 
@@ -470,9 +527,10 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
             for h in hours_data:
                 SalonHours.objects.create(salon=salon, **h)
             for s in services_data:
+                # Salon katalogi: barberga bog‘lanmagan (butun salonga tegishli).
                 Service.objects.create(
                     salon=salon,
-                    barber=owner,
+                    barber=None,
                     name=s["name"],
                     price=s["price"],
                     duration_minutes=s["duration_minutes"],

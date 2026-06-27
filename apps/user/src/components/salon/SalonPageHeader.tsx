@@ -2,7 +2,7 @@ import { Heart, MapPin, Share2, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
 import { formatPrice } from "@/lib/mock-data";
-import { filterSalonOwnerServices } from "@/lib/salon-services";
+import { filterSalonCatalogServices } from "@/lib/salon-services";
 import { cn } from "@/lib/utils";
 
 export function SalonPageHeader({
@@ -22,7 +22,7 @@ export function SalonPageHeader({
 }) {
   const { t } = useTranslation();
   const isMobile = variant === "mobile";
-  const ownerServiceCount = filterSalonOwnerServices(salon.services, salon.ownerId).length;
+  const ownerServiceCount = filterSalonCatalogServices(salon.services).length;
 
   return (
     <div

@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
 import { formatPrice } from "@/lib/mock-data";
 import {
-  filterSalonOwnerServices,
+  filterSalonCatalogServices,
   resolveDefaultSalonBarberId,
   resolveDefaultServiceIdsForBarber,
 } from "@/lib/salon-services";
@@ -52,7 +52,7 @@ export function SalonPageSections({
   reviewsAreMock?: boolean;
 }) {
   const { t } = useTranslation();
-  const ownerServices = filterSalonOwnerServices(salon.services, salon.ownerId);
+  const ownerServices = filterSalonCatalogServices(salon.services);
   const ownerBarberId = salon.ownerId ?? resolveDefaultSalonBarberId(salon.staff) ?? undefined;
   const calendarBarberId = defaultCalendarBarberId(salon);
   const calendarServiceIds = resolveDefaultServiceIdsForBarber(salon.services, calendarBarberId);

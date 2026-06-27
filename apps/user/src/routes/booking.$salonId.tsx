@@ -1,5 +1,5 @@
 import { createFileRoute, useParams, useRouter } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -17,7 +17,7 @@ import { useFamilyMembers } from "@/hooks/use-family";
 import { useDisplayUser } from "@/hooks/use-me";
 import { useSalonBarberServices } from "@/hooks/use-salon-barber-services";
 import { useSalonPage } from "@/hooks/use-salon-page";
-import { filterSalonServicesForBarber, resolveDefaultSalonBarberId } from "@/lib/salon-services";
+import { resolveDefaultSalonBarberId } from "@/lib/salon-services";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/$salonId")({
@@ -115,11 +115,9 @@ function useBookingSalonState(
     }) ?? SLOTS;
 
   const selectedBarber = salon?.staff.find((b) => b.id === barberId);
-  const barberServiceOptions = useMemo(() => {
-    if (barberServicesQuery.data?.length) return barberServicesQuery.data;
-    if (!barberId) return salon?.services ?? [];
-    return filterSalonServicesForBarber(salon?.services ?? [], barberId);
-  }, [barberServicesQuery.data, barberId, salon?.services]);
+  // Faqat tanlangan barberning xizmatlari (API'dan). Salon katalogi yoki
+  // boshqa barber xizmatlari aralashmasligi uchun fallback ishlatilmaydi.
+  const barberServiceOptions = barberServicesQuery.data ?? [];
   const selectedServices = barberServiceOptions.filter((s) => serviceIds.includes(s.id));
   const total = selectedServices.reduce((sum, s) => sum + s.price, 0);
   const bookedForLabel =
@@ -177,6 +175,8 @@ function useBookingSalonState(
     selectedServices,
     barberServiceOptions,
     barberServicesLoading: barberServicesQuery.isLoading,
+    barberServicesError: barberServicesQuery.isError,
+    retryBarberServices: () => void barberServicesQuery.refetch(),
     total,
     selectedBarber,
     bookedForLabel,
@@ -196,7 +196,7 @@ function BookingStepContent({
   state: ReturnType<typeof useBookingSalonState>;
   t: ReturnType<typeof useTranslation>["t"];
 }) {
-  const { salon, step, familyMemberId, setFamilyMemberId, barberId, setBarberId, serviceIds, setServiceIds, dayIdx, setDayIdx, slot, setSlot, dayList, slotOptions, selectedServices, barberServiceOptions, barberServicesLoading, selectedBarber, bookedForLabel, total, paymentMethod, setPaymentMethod, walletBalance, walletLoading } = state;
+  const { salon, step, familyMemberId, setFamilyMemberId, barberId, setBarberId, serviceIds, setServiceIds, dayIdx, setDayIdx, slot, setSlot, dayList, slotOptions, selectedServices, barberServiceOptions, barberServicesLoading, barberServicesError, retryBarberServices, selectedBarber, bookedForLabel, total, paymentMethod, setPaymentMethod, walletBalance, walletLoading } = state;
   if (!salon) return null;
 
   if (step === 1) {
@@ -253,7 +253,24 @@ function BookingStepContent({
         <h2 className="text-xl font-bold">{t("booking.selectService")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{selectedBarber?.name}</p>
         {barberServicesLoading ? (
-          <p className="mt-6 text-sm text-muted-foreground">{t("common.loading")}</p>
+          <div className="mt-6 space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-[68px] animate-pulse rounded-2xl bg-surface" />
+            ))}
+          </div>
+        ) : barberServicesError ? (
+          <div className="mt-6 rounded-2xl border-2 border-border p-4">
+            <p className="text-sm text-muted-foreground">
+              {t("booking.servicesError", { defaultValue: "Xizmatlarni yuklab bo'lmadi." })}
+            </p>
+            <button
+              type="button"
+              onClick={retryBarberServices}
+              className="mt-3 rounded-xl bg-foreground px-4 py-2 text-xs font-bold text-background"
+            >
+              {t("common.retry", { defaultValue: "Qayta urinish" })}
+            </button>
+          </div>
         ) : barberServiceOptions.length === 0 ? (
           <p className="mt-6 text-sm text-muted-foreground">
             {t("booking.noServices", { defaultValue: "Bu usta uchun xizmatlar topilmadi" })}

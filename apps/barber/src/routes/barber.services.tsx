@@ -149,6 +149,13 @@ function ServicesSchedulePage() {
     fullyReady,
   } = useBarberContext();
   const scope = viewMode === "salon" && activeSalonId ? "salon" : "independent";
+  // Salon egasi salon katalogini (barber=null) boshqaradi — bu mijoz salon
+  // sahifasida ko‘rinadigan xizmatlar. Mustaqil rejim va ishchilar esa o‘z
+  // shaxsiy BarberService xizmatlarini boshqaradi.
+  const isSalonOwnerScope = scope === "salon" && ownsSalon && Boolean(activeSalonId);
+  const servicesApiBase = isSalonOwnerScope
+    ? `/api/v1/salons/${activeSalonId}/services`
+    : "/api/v1/barber/services";
   const barberId = Number(profile.id);
   const [services, setServices] = useState<ServiceForm[]>([]);
   const [catalogServices, setCatalogServices] = useState<CatalogServiceOption[]>([]);
@@ -179,7 +186,10 @@ function ServicesSchedulePage() {
   const availableCatalog = useMemo(() => {
     const ownedCatalogIds = new Set(
       services
-        .filter((service) => service.barber === barberId || scope === "independent")
+        .filter(
+          (service) =>
+            service.barber === barberId || scope === "independent" || isSalonOwnerScope,
+        )
         .map((service) => service.catalog_service)
         .filter(Boolean),
     );
@@ -195,7 +205,7 @@ function ServicesSchedulePage() {
         );
       return matchesCategory && matchesQuery && !ownedCatalogIds.has(String(item.id));
     });
-  }, [barberId, catalogCategory, catalogQuery, catalogServices, scope, services]);
+  }, [barberId, catalogCategory, catalogQuery, catalogServices, isSalonOwnerScope, scope, services]);
   const selectedCatalogIds = useMemo(
     () => new Set(pendingServices.map((service) => service.catalog_service)),
     [pendingServices],
@@ -219,7 +229,7 @@ function ServicesSchedulePage() {
       let recs: Recommendation[];
 
       const [serviceRows, recsList, catalogRows] = await Promise.all([
-        apiList<ApiService>("/api/v1/barber/services/"),
+        apiList<ApiService>(`${servicesApiBase}/`),
         apiList<Recommendation>("/api/v1/barber/service-recommendations/"),
         apiList<CatalogServiceOption>("/api/v1/barber/catalog-services/"),
       ]);
@@ -240,7 +250,7 @@ function ServicesSchedulePage() {
   useEffect(() => {
     void loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scope, activeSalonId, barberId]);
+  }, [scope, activeSalonId, barberId, servicesApiBase]);
 
   const canEditService = (service: ServiceForm) =>
     scope === "independent" ||
@@ -267,8 +277,8 @@ function ServicesSchedulePage() {
       body.catalog_service = Number(service.catalog_service);
     }
     const url = service.id
-      ? `/api/v1/barber/services/${service.id}/`
-      : "/api/v1/barber/services/";
+      ? `${servicesApiBase}/${service.id}/`
+      : `${servicesApiBase}/`;
     const res = await apiFetch(url, {
       method: service.id ? "PATCH" : "POST",
       body: JSON.stringify(body),
@@ -414,7 +424,7 @@ function ServicesSchedulePage() {
 
   const deleteService = async (service: ServiceForm) => {
     if (!service.id || !canEditService(service)) return;
-    const endpoint = `/api/v1/barber/services/${service.id}/`;
+    const endpoint = `${servicesApiBase}/${service.id}/`;
     const res = await apiFetch(endpoint, { method: "DELETE" });
     if (!res.ok) {
       toast.error(await parseError(res, "Xizmatni o'chirib bo'lmadi."));
@@ -477,15 +487,17 @@ function ServicesSchedulePage() {
     <>
       <div className="mx-auto max-w-[1180px] space-y-6 p-4 sm:p-6 lg:p-8">
         <PageHeader
-          title="Xizmatlar"
+          title={isSalonOwnerScope ? "Salon xizmatlari" : "Xizmatlar"}
           description={
-            scope === "salon"
-              ? "Admin katalogidagi xizmatlarni o'zingizga biriktirib, narxlarni boshqaring. Ish vaqti alohida sahifada."
-              : "Mustaqil booking uchun admin katalogidagi xizmatlarni tanlab, narxlarni sozlang. Ish jadvali alohida."
+            isSalonOwnerScope
+              ? "Salon katalogi — mijoz salon sahifasida shu xizmatlar ko'rinadi. Admin katalogidan tanlab, narxlarni belgilang."
+              : scope === "salon"
+                ? "Admin katalogidagi xizmatlarni o'zingizga biriktirib, narxlarni boshqaring. Ish vaqti alohida sahifada."
+                : "Mustaqil booking uchun admin katalogidagi xizmatlarni tanlab, narxlarni sozlang. Ish jadvali alohida."
           }
           actions={
             <div className="rounded-full border border-border bg-muted/50 px-3 py-1 text-xs text-muted-foreground">
-              {scope === "salon" ? "Salon staff" : "Mustaqil barber"}
+              {isSalonOwnerScope ? "Salon katalogi" : scope === "salon" ? "Salon staff" : "Mustaqil barber"}
             </div>
           }
         />

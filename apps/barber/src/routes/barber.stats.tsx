@@ -4,6 +4,7 @@ import { Users, Star, CalendarClock, TrendingUp, Repeat } from "lucide-react";
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
 import { PageHeader, StatCard, SectionCard, UserAvatar } from "@/components/barber/primitives";
 import { useBarberAnalyticsQuery } from "@/hooks/use-barber-queries";
+import { resolveBarberAnalyticsParams } from "@/lib/analytics-scope";
 
 export const Route = createFileRoute("/barber/stats")({
   component: StatsPage,
@@ -24,38 +25,89 @@ function rangeDates(key: RangeKey) {
 }
 
 function StatsPage() {
-  const { bookings, clients, reviews, viewMode, activeSalonId } = useBarberContext();
+  const { bookings, clients, reviews, barberWorkMode, activeSalonId } = useBarberContext();
   const [range, setRange] = useState<RangeKey>("30d");
   const dates = useMemo(() => rangeDates(range), [range]);
+  const analyticsScope = useMemo(
+    () => resolveBarberAnalyticsParams({ barberWorkMode, activeSalonId }),
+    [barberWorkMode, activeSalonId],
+  );
   const { data: analytics, isLoading } = useBarberAnalyticsQuery({
     start: dates.start,
     end: dates.end,
-    independent: viewMode === "independent",
-    salonId: activeSalonId,
+    independent: analyticsScope.independent,
+    salonId: analyticsScope.salonId,
   });
 
-  const completed = bookings.filter((b) => b.status === "completed");
-  const completionRate = analytics
-    ? (analytics.completed_count / Math.max(1, analytics.completed_count + (analytics.cancelled_count ?? 0))) * 100
-    : (completed.length / Math.max(1, bookings.length)) * 100;
-  const avgTicket = analytics
-    ? Number(analytics.revenue) / Math.max(1, analytics.completed_count ?? 1)
-    : completed.reduce((s, b) => s + b.price, 0) / Math.max(1, completed.length);
+  const bookingsInRange = useMemo(
+    () =>
+      bookings.filter((b) => {
+        const day = b.start_at?.slice(0, 10);
+        return day && day >= dates.start && day <= dates.end;
+      }),
+    [bookings, dates.end, dates.start],
+  );
+  const completedInRange = useMemo(
+    () => bookingsInRange.filter((b) => b.status === "completed"),
+    [bookingsInRange],
+  );
+  const cancelledInRange = useMemo(
+    () => bookingsInRange.filter((b) => b.status === "cancelled").length,
+    [bookingsInRange],
+  );
+  const completionRate =
+    analytics && (analytics.completed_count ?? 0) + (analytics.cancelled_count ?? 0) > 0
+      ? (analytics.completed_count / Math.max(1, analytics.completed_count + (analytics.cancelled_count ?? 0))) * 100
+      : completedInRange.length + cancelledInRange > 0
+        ? (completedInRange.length / Math.max(1, completedInRange.length + cancelledInRange)) * 100
+        : 0;
+  const avgTicket =
+    analytics && Number(analytics.revenue) > 0
+      ? Number(analytics.revenue) / Math.max(1, analytics.completed_count ?? 1)
+      : completedInRange.length > 0
+        ? completedInRange.reduce((s, b) => s + b.price, 0) / completedInRange.length
+        : 0;
   const repeatRate =
     analytics && analytics.unique_clients
       ? ((analytics.returning_clients ?? 0) / analytics.unique_clients) * 100
-      : (clients.filter((c) => c.visits >= 3).length / Math.max(1, clients.length)) * 100;
+      : clients.length > 0
+        ? (clients.filter((c) => c.visits >= 2).length / clients.length) * 100
+        : 0;
   const avgRating = reviews.reduce((s, r) => s + r.rating, 0) / Math.max(1, reviews.length);
 
   const topServices = analytics?.top_services?.length
     ? analytics.top_services.map((s) => ({ name: s.service_name, count: s.cnt }))
-    : [];
+    : Object.entries(
+        completedInRange.reduce<Record<string, number>>((acc, b) => {
+          acc[b.service] = (acc[b.service] ?? 0) + 1;
+          return acc;
+        }, {}),
+      )
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
   const maxCount = Math.max(1, ...topServices.map((s) => s.count));
   const topClients = [...clients].sort((a, b) => b.spent - a.spent).slice(0, 5);
-  const dailyMax = Math.max(
-    1,
-    ...(analytics?.daily ?? []).map((d) => Number(d.revenue)),
-  );
+  const dailyFromBookings = useMemo(() => {
+    const byDay = new Map<string, number>();
+    for (const b of completedInRange) {
+      const day = b.start_at?.slice(0, 10);
+      if (!day) continue;
+      byDay.set(day, (byDay.get(day) ?? 0) + b.price);
+    }
+    return [...byDay.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, revenue]) => ({ date, revenue: String(revenue) }));
+  }, [completedInRange]);
+  const dailyRows =
+    analytics?.daily?.length && Number(analytics.revenue) > 0
+      ? analytics.daily
+      : dailyFromBookings;
+  const dailyMax = Math.max(1, ...dailyRows.map((d) => Number(d.revenue)));
+  const totalRevenue =
+    analytics && Number(analytics.revenue) > 0
+      ? Number(analytics.revenue)
+      : completedInRange.reduce((s, b) => s + b.price, 0);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
@@ -107,7 +159,7 @@ function StatsPage() {
 
       <SectionCard title="Kunlik savdo" description="Tanlangan davr bo'yicha">
         <div className="flex items-end gap-1 h-40 overflow-x-auto pb-2">
-          {(analytics?.daily ?? []).map((d) => {
+          {(dailyRows ?? []).map((d) => {
             const h = Math.round((Number(d.revenue) / dailyMax) * 100);
             return (
               <div key={d.date} className="flex flex-col items-center gap-1 min-w-[28px]">
@@ -171,17 +223,21 @@ function StatsPage() {
         <StatCard
           icon={<Users className="size-4" />}
           label="Noyob mijozlar"
-          value={String(analytics?.unique_clients ?? "—")}
+          value={analytics?.unique_clients ? String(analytics.unique_clients) : String(clients.length)}
         />
         <StatCard
           icon={<Users className="size-4" />}
           label="Yangi mijozlar"
-          value={String(analytics?.new_clients ?? "—")}
+          value={
+            analytics?.new_clients != null
+              ? String(analytics.new_clients)
+              : String(clients.filter((c) => c.visits <= 1).length)
+          }
         />
         <StatCard
           icon={<TrendingUp className="size-4" />}
           label="Jami daromad"
-          value={analytics ? formatUZS(Number(analytics.revenue)) : "—"}
+          value={formatUZS(totalRevenue)}
         />
       </div>
     </div>

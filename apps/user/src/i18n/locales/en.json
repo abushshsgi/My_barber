@@ -292,7 +292,9 @@
     "forSelf": "For myself",
     "addFamilyHint": "Add family members in Settings → Family profile.",
     "total": "Total",
-    "confirm": "Confirm booking"
+    "confirm": "Confirm booking",
+    "noServices": "No services found for this specialist",
+    "servicesError": "Could not load services."
   },
   "bookings": {
     "title": "My bookings",

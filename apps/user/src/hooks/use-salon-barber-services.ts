@@ -9,5 +9,6 @@ export function useSalonBarberServices(salonId: string, barberId: string | null)
     queryFn: () => fetchSalonBarberServices(salonId, barberId!),
     enabled: catalogQueryEnabled(Boolean(salonId) && Boolean(barberId)),
     select: (data) => mapApiServices(data),
+    retry: 1,
   });
 }

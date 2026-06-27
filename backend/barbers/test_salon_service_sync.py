@@ -1,6 +1,8 @@
-"""BarberService → salons.Service sinxronizatsiyasi."""
+"""BarberService → salons.Service sinxronizatsiyasi.
 
-from datetime import time
+Salon egasining xizmatlari salon katalogiga sync qilinmaydi (egasi katalogni
+alohida boshqaradi). Faqat salon ishchilarining shaxsiy xizmatlari sync qilinadi.
+"""
 
 from django.test import TestCase
 
@@ -11,32 +13,52 @@ from salons.models import Salon, SalonMembership, Service
 
 class SalonServiceSyncTests(TestCase):
     def setUp(self):
-        self.barber = Barber.objects.create(
-            email="sync@test.uz",
-            username="sync@test.uz",
-            full_name="Sync Barber",
+        self.owner = Barber.objects.create(
+            email="sync-owner@test.uz",
+            username="sync-owner@test.uz",
+            full_name="Sync Owner",
             work_mode=Barber.WorkMode.SALON,
             onboarding_flow=Barber.OnboardingFlow.OWNER,
         )
-        self.barber.set_password("pass12345")
-        self.barber.save()
-        self.prof = BarberProfile.objects.create(
-            barber=self.barber,
+        self.owner.set_password("pass12345")
+        self.owner.save()
+        self.owner_prof = BarberProfile.objects.create(
+            barber=self.owner,
             latitude=41.0,
             longitude=69.0,
             location_text="Toshkent",
         )
         self.salon = Salon.objects.create(
             name="Sync Salon Unique",
-            owner_barber=self.barber,
+            owner_barber=self.owner,
             latitude=41.0,
             longitude=69.0,
             is_published=True,
         )
         SalonMembership.objects.create(
-            barber=self.barber,
+            barber=self.owner,
             salon=self.salon,
             role=SalonMembership.Role.OWNER,
+            invite_state=SalonMembership.InviteState.ACTIVE,
+        )
+
+        # Sync faqat ishchilarga tegishli — shu ishchi orqali tekshiramiz.
+        self.barber = Barber.objects.create(
+            email="sync-worker@test.uz",
+            username="sync-worker@test.uz",
+            full_name="Sync Worker",
+            work_mode=Barber.WorkMode.SALON,
+        )
+        self.prof = BarberProfile.objects.create(
+            barber=self.barber,
+            latitude=41.0,
+            longitude=69.0,
+            location_text="Toshkent",
+        )
+        SalonMembership.objects.create(
+            barber=self.barber,
+            salon=self.salon,
+            role=SalonMembership.Role.WORKER,
             invite_state=SalonMembership.InviteState.ACTIVE,
         )
 
@@ -52,6 +74,19 @@ class SalonServiceSyncTests(TestCase):
         self.assertEqual(
             Service.objects.filter(salon=self.salon, barber=self.barber, is_active=True).count(),
             1,
+        )
+
+    def test_owner_service_not_synced_to_salon(self):
+        bs = BarberService.objects.create(
+            profile=self.owner_prof,
+            name="Owner xizmati",
+            price=60_000,
+            duration_minutes=30,
+            is_active=True,
+        )
+        sync_barber_service_to_salons(bs)
+        self.assertFalse(
+            Service.objects.filter(salon=self.salon, barber=self.owner).exists()
         )
 
     def test_get_salon_services_resolves_barber_service_ids(self):
