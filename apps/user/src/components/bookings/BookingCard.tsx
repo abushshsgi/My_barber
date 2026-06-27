@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { CalendarPlus, Star } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BookingChatButton } from "@/components/bookings/BookingChatButton";
+import { WriteReviewDialog } from "@/components/bookings/WriteReviewDialog";
 import { PageSpotlightEmpty } from "@/components/ui/PageSpotlightEmpty";
 import { formatPrice, type BookingItem } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -39,6 +41,7 @@ const statusStyles: Record<BookingItem["status"], string> = {
 
 export function BookingCard({ booking: b, focused }: { booking: BookingItem; focused?: boolean }) {
   const { t } = useTranslation();
+  const [reviewOpen, setReviewOpen] = useState(false);
   const d = new Date(b.date);
   const dateStr = d.toLocaleDateString("uz-UZ", { day: "numeric", month: "short" });
   const timeStr = d.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
@@ -94,12 +97,36 @@ export function BookingCard({ booking: b, focused }: { booking: BookingItem; foc
 
       <div className="flex gap-2 border-t border-border bg-surface/40 p-3 sm:px-5">
         {b.status === "done" ? (
-          <button
-            type="button"
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-background py-2.5 text-xs font-bold shadow-sm"
-          >
-            <Star className="h-3.5 w-3.5" /> {t("bookings.writeReview")}
-          </button>
+          b.hasReview && b.reviewId ? (
+            <Link
+              to="/reviews"
+              search={{ focus: b.reviewId }}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-background py-2.5 text-xs font-bold text-muted-foreground"
+            >
+              <Star className="h-3.5 w-3.5 fill-foreground text-foreground" />{" "}
+              {t("bookings.alreadyReviewed", { defaultValue: "Sharh qoldirilgan" })}
+            </Link>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setReviewOpen(true)}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-background py-2.5 text-xs font-bold shadow-sm"
+              >
+                <Star className="h-3.5 w-3.5" /> {t("bookings.writeReview")}
+              </button>
+              <WriteReviewDialog
+                open={reviewOpen}
+                onOpenChange={setReviewOpen}
+                booking={{
+                  id: b.id,
+                  salonName: b.salonName,
+                  serviceName: b.serviceName,
+                  barberName: b.barberName,
+                }}
+              />
+            </>
+          )
         ) : (
           <BookingChatButton barberId={b.barberId} />
         )}

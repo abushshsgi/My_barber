@@ -93,6 +93,8 @@ export interface BookingItem {
   status: "pending" | "accepted" | "done" | "cancelled";
   coverSeed: string;
   bookedForName?: string;
+  hasReview?: boolean;
+  reviewId?: string;
 }
 
 export interface ChatThread {

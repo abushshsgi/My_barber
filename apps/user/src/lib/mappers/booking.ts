@@ -25,6 +25,8 @@ export function mapBooking(api: ApiBooking): BookingItem {
     coverSeed: api.salon ? String(api.salon) : String(api.barber),
     bookedForName:
       api.family_member != null && api.booked_for_name ? api.booked_for_name : undefined,
+    hasReview: api.has_review,
+    reviewId: api.review_id != null ? String(api.review_id) : undefined,
   };
 }
 
