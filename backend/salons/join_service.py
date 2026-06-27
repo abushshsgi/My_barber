@@ -46,4 +46,9 @@ def attach_worker_membership(barber, salon, lat: float, lng: float) -> SalonMemb
             },
         )
 
+    # Ishchining mavjud xizmatlarini yangi salon katalogiga moslashtirish —
+    # mijoz salon sahifasida darhol ko‘rinishi uchun.
+    from barbers.salon_service_sync import sync_all_barber_services_for_barber
+
+    sync_all_barber_services_for_barber(barber)
     return mem

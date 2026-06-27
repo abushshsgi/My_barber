@@ -9,6 +9,7 @@ export interface Service {
   duration: number; // minutes
   price: number; // UZS
   barberId?: string | null;
+  barberName?: string | null;
 }
 
 export interface Barber {

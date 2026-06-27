@@ -59,7 +59,6 @@ export const NAV_CONFIG: Record<NavCapability, NavItem[]> = {
   ],
   salonOwner: [
     { to: "/barber/salon-view", label: "Salon", iconName: "Building2" },
-    { to: "/barber/services", label: "Salon xizmatlari", iconName: "Scissors" },
     { to: "/barber/amenities", label: "Qulayliklar", iconName: "Sparkles" },
     { to: "/barber/salon-view/gallery", label: "Galereya", iconName: "Images" },
     { to: "/barber/salon-view/reviews", label: "Sharhlar", iconName: "Star" },
@@ -319,9 +318,17 @@ export function inferFlowIdentity(input: {
 }
 
 /** Salon rejimida yoqilgan marshrutlar — chuqur havola va bookmarklar ishlashi uchun. */
-export function pathAllowedInSalonWorkspace(pathname: string): boolean {
+export function pathAllowedInSalonWorkspace(
+  pathname: string,
+  isJoinedWorker = false,
+): boolean {
   if (pathname === "/barber/salon-view" || pathname.startsWith("/barber/salon-view/")) {
     return true;
+  }
+  // Xizmatlar sahifasi salon rejimida faqat ishchi barber uchun ("Xizmatlarim").
+  // Salon egasi xizmatlarni barber kabineti (independent rejim)dan boshqaradi.
+  if (pathname === "/barber/services") {
+    return isJoinedWorker;
   }
   if (
     pathname === "/barber/profile" ||
@@ -329,7 +336,6 @@ export function pathAllowedInSalonWorkspace(pathname: string): boolean {
     pathname === "/barber/help" ||
     pathname === "/barber/notifications" ||
     pathname === "/barber/amenities" ||
-    pathname === "/barber/services" ||
     pathname.startsWith("/barber/notifications/")
   ) {
     return true;

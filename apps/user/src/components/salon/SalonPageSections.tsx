@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
 import { formatPrice } from "@/lib/mock-data";
 import {
-  filterSalonCatalogServices,
+  groupSalonServicesByBarber,
   resolveDefaultSalonBarberId,
   resolveDefaultServiceIdsForBarber,
 } from "@/lib/salon-services";
@@ -52,7 +52,7 @@ export function SalonPageSections({
   reviewsAreMock?: boolean;
 }) {
   const { t } = useTranslation();
-  const ownerServices = filterSalonCatalogServices(salon.services);
+  const serviceGroups = groupSalonServicesByBarber(salon.services);
   const ownerBarberId = salon.ownerId ?? resolveDefaultSalonBarberId(salon.staff) ?? undefined;
   const calendarBarberId = defaultCalendarBarberId(salon);
   const calendarServiceIds = resolveDefaultServiceIdsForBarber(salon.services, calendarBarberId);
@@ -70,31 +70,46 @@ export function SalonPageSections({
       ) : null}
 
       <SectionBlock id="salon-services" title={t("salon.tabs.services")}>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {ownerServices.map((s) => (
-            <div
-              key={s.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-border p-4 transition-colors hover:bg-muted/30"
-            >
-              <div className="min-w-0">
-                <h3 className="truncate font-semibold">{s.name}</h3>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  {s.duration} {t("salon.minutes")}
-                </p>
+        <div className="space-y-6">
+          {serviceGroups.map((group) => {
+            const bookingBarberId = group.barberId ?? ownerBarberId;
+            const groupTitle = group.barberId
+              ? group.barberName ?? t("salon.staff.title", { defaultValue: "Usta" })
+              : t("salon.services.salonCatalog", { defaultValue: "Salon xizmatlari" });
+            return (
+              <div key={group.barberId ?? "salon-catalog"} className="space-y-3">
+                {serviceGroups.length > 1 ? (
+                  <h3 className="text-sm font-semibold text-muted-foreground">{groupTitle}</h3>
+                ) : null}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {group.services.map((s) => (
+                    <div
+                      key={s.id}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-border p-4 transition-colors hover:bg-muted/30"
+                    >
+                      <div className="min-w-0">
+                        <h3 className="truncate font-semibold">{s.name}</h3>
+                        <p className="mt-0.5 text-sm text-muted-foreground">
+                          {s.duration} {t("salon.minutes")}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold tabular-nums">{formatPrice(s.price)}</span>
+                        <Link
+                          to="/booking/$salonId"
+                          params={{ salonId: salon.id }}
+                          search={bookingBarberId ? { barber: bookingBarberId } : undefined}
+                          className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-background"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-bold tabular-nums">{formatPrice(s.price)}</span>
-                <Link
-                  to="/booking/$salonId"
-                  params={{ salonId: salon.id }}
-                  search={ownerBarberId ? { barber: ownerBarberId } : undefined}
-                  className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-background"
-                >
-                  <Plus className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </SectionBlock>
 

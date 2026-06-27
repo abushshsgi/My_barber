@@ -15,15 +15,27 @@ def _active_memberships(barber: Barber):
     ).select_related("salon")
 
 
-def _lookup_for_barber_service(salon: Salon, barber: Barber, barber_service: BarberService) -> dict:
-    base = {"salon": salon, "barber": barber}
+def _salon_target_barber(salon: Salon, barber: Barber) -> Barber | None:
+    """Salon egasi xizmatlari salon katalogiga (barber=null) yoziladi; ishchilarniki
+    o‘ziga (barber=worker) biriktiriladi. Mijoz salon sahifasida egasi guruhini
+    "Salon xizmatlari" sifatida ko‘rsatish uchun."""
+    if salon.owner_barber_id == barber.id:
+        return None
+    return barber
+
+
+def _lookup_for_barber_service(
+    salon: Salon, target_barber: Barber | None, barber_service: BarberService
+) -> dict:
+    base = {"salon": salon, "barber": target_barber}
     if barber_service.catalog_service_id:
         return {**base, "catalog_service_id": barber_service.catalog_service_id}
     return {**base, "name": barber_service.name}
 
 
 def sync_barber_service_to_salons(barber_service: BarberService) -> None:
-    """Barber xizmatini faol salon a'zoliklariga salons.Service sifatida yozadi."""
+    """Barber xizmatini faol salon a'zoliklariga salons.Service sifatida yozadi.
+    Egasi xizmatlari salon katalogiga (barber=null), ishchilarniki barber=worker."""
     barber = barber_service.profile.barber
     defaults = {
         "name": barber_service.name,
@@ -35,12 +47,9 @@ def sync_barber_service_to_salons(barber_service: BarberService) -> None:
         defaults["catalog_service_id"] = barber_service.catalog_service_id
 
     for mem in _active_memberships(barber):
-        # Salon egasining xizmatlari salon katalogiga sync qilinmaydi —
-        # egasi salon katalogini (barber=null) alohida boshqaradi.
-        if mem.salon.owner_barber_id == barber.id:
-            continue
+        target_barber = _salon_target_barber(mem.salon, barber)
         Service.objects.update_or_create(
-            **_lookup_for_barber_service(mem.salon, barber, barber_service),
+            **_lookup_for_barber_service(mem.salon, target_barber, barber_service),
             defaults=defaults,
         )
 
@@ -48,9 +57,10 @@ def sync_barber_service_to_salons(barber_service: BarberService) -> None:
 def remove_barber_service_from_salons(barber_service: BarberService) -> None:
     barber = barber_service.profile.barber
     for mem in _active_memberships(barber):
-        if mem.salon.owner_barber_id == barber.id:
-            continue
-        qs = Service.objects.filter(**_lookup_for_barber_service(mem.salon, barber, barber_service))
+        target_barber = _salon_target_barber(mem.salon, barber)
+        qs = Service.objects.filter(
+            **_lookup_for_barber_service(mem.salon, target_barber, barber_service)
+        )
         qs.delete()
 
 
@@ -63,8 +73,11 @@ def ensure_salon_service_for_barber_service(
     if not barber_service.is_active:
         return None
     sync_barber_service_to_salons(barber_service)
+    target_barber = _salon_target_barber(salon, barber)
     return (
-        Service.objects.filter(**_lookup_for_barber_service(salon, barber, barber_service))
+        Service.objects.filter(
+            **_lookup_for_barber_service(salon, target_barber, barber_service)
+        )
         .filter(is_active=True)
         .filter(Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True))
         .first()

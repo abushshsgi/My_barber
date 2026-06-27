@@ -101,10 +101,25 @@ class PublicServiceSerializer(serializers.ModelSerializer):
     duration_minutes = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
     catalog_service = serializers.SerializerMethodField()
+    barber_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Service
-        fields = ("id", "barber", "catalog_service", "name", "price", "duration_minutes", "image_url")
+        fields = (
+            "id",
+            "barber",
+            "barber_name",
+            "catalog_service",
+            "name",
+            "price",
+            "duration_minutes",
+            "image_url",
+        )
+
+    def get_barber_name(self, obj):
+        if obj.barber_id and obj.barber:
+            return obj.barber.full_name or obj.barber.email
+        return None
 
     def get_name(self, obj):
         if obj.catalog_service_id and obj.catalog_service:
@@ -325,28 +340,30 @@ class SalonDetailSerializer(serializers.ModelSerializer):
         return SalonImageSerializer(obj.images.all(), many=True, context=self.context).data
 
     def get_services(self, obj):
-        from django.core.cache import cache
+        from django.db.models import F
 
-        from barbers.salon_service_sync import sync_all_barber_services_for_barber
+        from barbers.readiness import batch_publicly_visible_barber_ids
 
-        cache_key = f"salon_services_sync:{obj.id}"
-        if not cache.get(cache_key):
+        # Mijoz salon sahifasi: salon katalogi (barber=null — egasi xizmatlari) +
+        # salonga qo‘shilgan faol ishchilarning shaxsiy xizmatlari. Sinxronizatsiya
+        # yozish (xizmat saqlash) va salonga qo‘shilish paytida bajariladi —
+        # bu yerda qayta sync qilinmaydi (tezlik uchun).
+        worker_ids = [
+            mem.barber_id
             for mem in SalonMembership.objects.filter(
                 salon=obj,
                 invite_state=SalonMembership.InviteState.ACTIVE,
-            ).select_related("barber"):
-                # Salon egasi xizmatlari salon katalogiga sync qilinmaydi —
-                # egasi salon katalogini alohida boshqaradi.
-                if mem.barber_id and mem.barber_id != obj.owner_barber_id:
-                    sync_all_barber_services_for_barber(mem.barber)
-            cache.set(cache_key, 1, 60)
-        # Mijoz salon sahifasi: faqat salon katalogi (barberga bog‘lanmagan
-        # xizmatlar). Alohida barberlarning shaxsiy xizmatlari bu yerda
-        # ko‘rinmaydi — ular bron paytida barber tanlanganda chiqadi.
+            )
+            if mem.barber_id and mem.barber_id != obj.owner_barber_id
+        ]
+        listable_worker_ids = batch_publicly_visible_barber_ids(worker_ids)
+
         qs = (
-            obj.services.filter(is_active=True, barber__isnull=True)
+            obj.services.filter(is_active=True)
+            .filter(Q(barber__isnull=True) | Q(barber_id__in=listable_worker_ids))
             .filter(Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True))
-            .order_by("name")
+            .select_related("catalog_service", "barber")
+            .order_by(F("barber_id").asc(nulls_first=True), "name")
         )
         return PublicServiceSerializer(qs, many=True, context=self.context).data
 

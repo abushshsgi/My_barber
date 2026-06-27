@@ -7,6 +7,42 @@ export function filterSalonCatalogServices(services: Service[]): Service[] {
   return services.filter((s) => !s.barberId);
 }
 
+export type SalonServiceGroup = {
+  /** null — salon katalogi (egasi/umumiy); aks holda ustaning ID si. */
+  barberId: string | null;
+  barberName: string | null;
+  services: Service[];
+};
+
+/** Salon sahifasi: xizmatlarni usta bo‘yicha guruhlash — avval salon katalogi
+ * (barber=null), keyin har bir qo‘shilgan ustaning xizmatlari. */
+export function groupSalonServicesByBarber(services: Service[]): SalonServiceGroup[] {
+  const catalog: Service[] = [];
+  const byBarber = new Map<string, SalonServiceGroup>();
+  for (const s of services) {
+    if (!s.barberId) {
+      catalog.push(s);
+      continue;
+    }
+    const existing = byBarber.get(s.barberId);
+    if (existing) {
+      existing.services.push(s);
+    } else {
+      byBarber.set(s.barberId, {
+        barberId: s.barberId,
+        barberName: s.barberName ?? null,
+        services: [s],
+      });
+    }
+  }
+  const groups: SalonServiceGroup[] = [];
+  if (catalog.length > 0) {
+    groups.push({ barberId: null, barberName: null, services: catalog });
+  }
+  groups.push(...byBarber.values());
+  return groups;
+}
+
 /** Salon sahifasi: faqat salon egasining xizmatlari (+ legacy umumiy). */
 export function filterSalonOwnerServices(services: Service[], ownerId: string | undefined): Service[] {
   if (!ownerId) return services;

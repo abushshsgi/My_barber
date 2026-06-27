@@ -433,7 +433,9 @@ function CommandPalette({
   const quickActionsAll = QUICK_ACTIONS[flowIdentity];
   const quickActions = (
     viewMode === "salon"
-      ? quickActionsAll.filter((a) => pathAllowedInSalonWorkspace(a.to))
+      ? quickActionsAll.filter((a) =>
+          pathAllowedInSalonWorkspace(a.to, capability === "salonWorker"),
+        )
       : quickActionsAll
   ).filter((a) => fullyReady || isBarberNavAllowedDuringActivation(a.to));
   return (
@@ -538,7 +540,7 @@ export function BarberShell() {
   useEffect(() => {
     if (!onboardingComplete || !fullyReady) return;
     if (viewMode === "salon") {
-      if (pathAllowedInSalonWorkspace(pathname)) return;
+      if (pathAllowedInSalonWorkspace(pathname, isJoinedWorker)) return;
       if (!pathname.startsWith("/barber")) return;
       void navigate({ to: "/barber/salon-view", replace: true });
       return;

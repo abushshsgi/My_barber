@@ -133,8 +133,9 @@ class SalonCatalogSeparationTests(TestCase):
         )
         self.assertEqual(res.status_code, 403)
 
-    def test_owner_barber_service_not_in_salon_detail(self):
-        """Salon egasining shaxsiy BarberService xizmati salon sahifasiga tushmaydi."""
+    def test_owner_barber_service_in_salon_detail_as_catalog(self):
+        """Salon egasi barber kabinetida qo'shgan xizmat salon sahifasida
+        salon katalogi (barber=null) sifatida ko'rinadi."""
         res = self.owner_client.post(
             "/api/v1/barber/services/",
             {"catalog_service": self.catalog.id, "price": 65000},
@@ -145,12 +146,16 @@ class SalonCatalogSeparationTests(TestCase):
         detail = self.customer_client.get(f"/api/v1/salons/{self.salon_id}/")
         self.assertEqual(detail.status_code, 200)
         services = detail.json()["services"]
-        self.assertTrue(all(s.get("barber") is None for s in services))
         names = {s["name"] for s in services}
-        self.assertNotIn(self.catalog.name, names)
+        self.assertIn(self.catalog.name, names)
         self.assertIn("Soch olish", names)
+        # Egasi xizmatlari salon katalogi sifatida (barber=null) saqlanadi.
+        owner_row = next(s for s in services if s["name"] == self.catalog.name)
+        self.assertIsNone(owner_row.get("barber"))
 
-    def test_worker_service_visible_in_barber_services_not_detail(self):
+    def test_unready_worker_service_hidden_from_salon_detail(self):
+        """Hali bron qabul qila olmaydigan (tayyor bo'lmagan) ishchining xizmati
+        salon sahifasida ko'rinmaydi, lekin bron oqimida tanlanganda chiqadi."""
         worker = Barber.objects.create(
             email="sep-worker@test.uz",
             username="sep-worker@test.uz",
@@ -181,10 +186,70 @@ class SalonCatalogSeparationTests(TestCase):
         names = {s["name"] for s in svc_res.json()}
         self.assertIn(self.catalog2.name, names)
 
-        # Mijoz salon sahifasida worker xizmati ko'rinmaydi.
+        # Tayyor bo'lmagan ishchi salon sahifasida ko'rinmaydi.
         detail = self.customer_client.get(f"/api/v1/salons/{self.salon_id}/")
         detail_names = {s["name"] for s in detail.json()["services"]}
         self.assertNotIn(self.catalog2.name, detail_names)
+
+    def test_ready_worker_service_grouped_in_salon_detail(self):
+        """Bron qabul qiladigan (tayyor) ishchining xizmati salon sahifasida
+        o'z nomi (barber_name) bilan guruhlangan holda ko'rinadi."""
+        from django.utils import timezone
+
+        from salons.models import BarberWorkingHours as SalonWorkingHours
+
+        worker = Barber.objects.create(
+            email="sep-ready-worker@test.uz",
+            username="sep-ready-worker@test.uz",
+            full_name="Ready Worker",
+            work_mode=Barber.WorkMode.SALON,
+            onboarding_flow=Barber.OnboardingFlow.EMPLOYEE,
+            email_verified_at=timezone.now(),
+            region=UzRegion.TOSHKENT_SH,
+        )
+        prof, _ = BarberProfile.objects.get_or_create(
+            barber=worker,
+            defaults={"latitude": 41.2995, "longitude": 69.2401, "location_text": "Toshkent, ishchi"},
+        )
+        prof.latitude = 41.2995
+        prof.longitude = 69.2401
+        prof.location_text = "Toshkent, ishchi"
+        prof.save()
+        mem = SalonMembership.objects.create(
+            barber=worker,
+            salon_id=self.salon_id,
+            role=SalonMembership.Role.WORKER,
+            invite_state=SalonMembership.InviteState.ACTIVE,
+        )
+        for weekday in range(7):
+            SalonWorkingHours.objects.create(
+                membership=mem,
+                weekday=weekday,
+                open_time="09:00",
+                close_time="18:00",
+                is_day_off=False,
+                breaks=[],
+            )
+        catalogs = [self.catalog, self.catalog2]
+        for i in range(5):
+            BarberService.objects.create(
+                profile=prof,
+                catalog_service=catalogs[i % 2],
+                name=f"Ready worker svc {i}",
+                price=30000 + i,
+                duration_minutes=20,
+                is_active=True,
+            )
+        from barbers.salon_service_sync import sync_all_barber_services_for_barber
+
+        sync_all_barber_services_for_barber(worker)
+
+        detail = self.customer_client.get(f"/api/v1/salons/{self.salon_id}/")
+        self.assertEqual(detail.status_code, 200)
+        services = detail.json()["services"]
+        worker_rows = [s for s in services if s.get("barber") == worker.id]
+        self.assertTrue(worker_rows)
+        self.assertTrue(all(r["barber_name"] == "Ready Worker" for r in worker_rows))
 
     def test_barber_services_for_owner_returns_catalog(self):
         self.owner_client.post(

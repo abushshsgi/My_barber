@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useBlocker } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, useBlocker } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Clock, Loader2, Plus, Search, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -482,6 +482,12 @@ function ServicesSchedulePage() {
     enableBeforeUnload: true,
     disabled: loading,
   });
+
+  // Salon egasi xizmatlarni barber kabineti (independent rejim)dan boshqaradi.
+  // Salon ish maydonida alohida "Salon xizmatlari" sahifasi ko'rsatilmaydi.
+  if (fullyReady && viewMode === "salon" && ownsSalon && activeSalonId) {
+    return <Navigate to="/barber/salon-view" replace />;
+  }
 
   return (
     <>

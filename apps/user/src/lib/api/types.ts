@@ -104,6 +104,7 @@ export type ApiAvailabilityMonth = {
 export type ApiService = {
   id: number;
   barber: number | null;
+  barber_name?: string | null;
   catalog_service: number | null;
   name: string;
   price: number;

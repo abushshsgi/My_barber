@@ -79,6 +79,7 @@ export function mapApiServices(
     duration_minutes: number;
     price: string | number;
     barber?: number | null;
+    barber_name?: string | null;
   }[],
 ) {
   return services.map((s) => ({
@@ -87,6 +88,7 @@ export function mapApiServices(
     duration: s.duration_minutes,
     price: toNum(s.price),
     barberId: s.barber != null ? String(s.barber) : null,
+    barberName: s.barber_name ?? null,
   }));
 }
 
