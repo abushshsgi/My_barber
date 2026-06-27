@@ -48,9 +48,16 @@ function BarberDashboard() {
 
   const today = bookings.filter((b) => b.date === "Today");
   const active = bookings.find((b) => b.status === "in_progress");
-  const earnings = bookings
-    .filter((b) => b.status === "completed" && isCurrentMonth(b.start_at))
+  const completedThisMonth = bookings.filter(
+    (b) => b.status === "completed" && isCurrentMonth(b.start_at),
+  );
+  const monthCash = completedThisMonth
+    .filter((b) => b.payment_method === "cash")
     .reduce((s, b) => s + b.price, 0);
+  const monthOnline = completedThisMonth
+    .filter((b) => b.payment_method === "online")
+    .reduce((s, b) => s + b.price, 0);
+  const earnings = monthCash + monthOnline;
   const avgRating = reviews.reduce((s, r) => s + r.rating, 0) / Math.max(1, reviews.length);
   const lowStock = inventory.filter((i) => i.stock <= i.min_stock);
   const activeGoals = goals.filter((g) => !g.done);
@@ -86,7 +93,7 @@ function BarberDashboard() {
           icon={<TrendingUp className="size-4" />}
           label="Daromad"
           value={formatUZS(earnings)}
-          hint="Bu oy"
+          hint={`Bu oy · naqd ${formatUZS(monthCash)} · onlayn ${formatUZS(monthOnline)}`}
         />
         <KPI
           icon={<Users className="size-4" />}

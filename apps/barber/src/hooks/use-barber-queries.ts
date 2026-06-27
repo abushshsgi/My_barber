@@ -145,6 +145,11 @@ export function useBarberFinanceQuery(
     queryFn: () =>
       apiJson<{
         income_total: string | number;
+        cash_total?: string | number;
+        online_total?: string | number;
+        total_income?: string | number;
+        cash_count?: number;
+        online_count?: number;
         expense_total: string | number;
         net_total: string | number;
         all_time_net_total?: string | number;
@@ -212,6 +217,11 @@ export function useBarberAnalyticsQuery(
     queryFn: () =>
       apiJson<{
         revenue: string;
+        cash_total?: string;
+        online_total?: string;
+        total_income?: string;
+        cash_count?: number;
+        online_count?: number;
         unique_clients: number;
         new_clients: number;
         returning_clients: number;

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Users, Star, CalendarClock, TrendingUp, Repeat } from "lucide-react";
+import { Users, Star, CalendarClock, TrendingUp, Repeat, Wallet } from "lucide-react";
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
 import { PageHeader, StatCard, SectionCard, UserAvatar } from "@/components/barber/primitives";
 import { useBarberAnalyticsQuery } from "@/hooks/use-barber-queries";
@@ -108,6 +108,18 @@ function StatsPage() {
     analytics && Number(analytics.revenue) > 0
       ? Number(analytics.revenue)
       : completedInRange.reduce((s, b) => s + b.price, 0);
+  const cashTotal =
+    analytics?.cash_total != null
+      ? Number(analytics.cash_total)
+      : completedInRange
+          .filter((b) => b.payment_method === "cash")
+          .reduce((s, b) => s + b.price, 0);
+  const onlineTotal =
+    analytics?.online_total != null
+      ? Number(analytics.online_total)
+      : completedInRange
+          .filter((b) => b.payment_method === "online")
+          .reduce((s, b) => s + b.price, 0);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
@@ -135,14 +147,43 @@ function StatsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
           icon={<TrendingUp className="size-4" />}
-          label="Bronlarni yakunlash"
-          value={`${completionRate.toFixed(0)}%`}
-          hint={isLoading ? "Yuklanmoqda..." : undefined}
+          label="Jami daromad"
+          value={formatUZS(totalRevenue)}
+          hint={isLoading ? "Yuklanmoqda..." : "Naqd + onlayn"}
+        />
+        <StatCard
+          icon={<Wallet className="size-4" />}
+          label="Naqd"
+          value={formatUZS(cashTotal)}
+          hint={
+            analytics?.cash_count != null
+              ? `${analytics.cash_count} ta bron`
+              : `${completedInRange.filter((b) => b.payment_method === "cash").length} ta bron`
+          }
+        />
+        <StatCard
+          icon={<TrendingUp className="size-4" />}
+          label="Onlayn"
+          value={formatUZS(onlineTotal)}
+          hint={
+            analytics?.online_count != null
+              ? `${analytics.online_count} ta bron`
+              : `${completedInRange.filter((b) => b.payment_method === "online").length} ta bron`
+          }
         />
         <StatCard
           icon={<CalendarClock className="size-4" />}
           label="O'rt. chek"
           value={formatUZS(avgTicket)}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard
+          icon={<TrendingUp className="size-4" />}
+          label="Bronlarni yakunlash"
+          value={`${completionRate.toFixed(0)}%`}
+          hint={isLoading ? "Yuklanmoqda..." : undefined}
         />
         <StatCard
           icon={<Repeat className="size-4" />}
@@ -154,6 +195,11 @@ function StatsPage() {
           label="O'rt. reyting"
           value={avgRating.toFixed(1)}
           hint={`${reviews.length} sharh`}
+        />
+        <StatCard
+          icon={<Users className="size-4" />}
+          label="Noyob mijozlar"
+          value={analytics?.unique_clients ? String(analytics.unique_clients) : String(clients.length)}
         />
       </div>
 
@@ -222,22 +268,12 @@ function StatsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
         <StatCard
           icon={<Users className="size-4" />}
-          label="Noyob mijozlar"
-          value={analytics?.unique_clients ? String(analytics.unique_clients) : String(clients.length)}
-        />
-        <StatCard
-          icon={<Users className="size-4" />}
           label="Yangi mijozlar"
           value={
             analytics?.new_clients != null
               ? String(analytics.new_clients)
               : String(clients.filter((c) => c.visits <= 1).length)
           }
-        />
-        <StatCard
-          icon={<TrendingUp className="size-4" />}
-          label="Jami daromad"
-          value={formatUZS(totalRevenue)}
         />
       </div>
     </div>

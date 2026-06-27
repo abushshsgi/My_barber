@@ -4,6 +4,7 @@ import { Play, CheckCircle2, Phone, X, Loader2 } from "lucide-react";
 import { formatUZS, type Booking } from "@/components/barber/BarberContext";
 import { StatusPill, UserAvatar } from "@/components/barber/primitives";
 import { cn } from "@/lib/utils";
+import { paymentBadgeClass, paymentLabel } from "@/lib/payment-label";
 import { useBarberBookingsQuery, useBookingActionMutation } from "@/hooks/use-barber-queries";
 import { toast } from "sonner";
 
@@ -160,6 +161,14 @@ function BookingRow({
           <div className="text-xs text-muted-foreground">Narx</div>
           <div className="font-medium">{formatUZS(b.price)}</div>
         </div>
+        <span
+          className={cn(
+            "inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold",
+            paymentBadgeClass(b.payment_method),
+          )}
+        >
+          {paymentLabel(b.payment_method)}
+        </span>
         <StatusPill status={b.status} />
         <div className="flex items-center gap-2 ml-auto">
           <button

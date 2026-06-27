@@ -572,7 +572,11 @@ class MyBarberFinanceSummaryView(APIView):
     permission_classes = [IsBarber]
 
     def get(self, request):
-        from bookings.earnings import barber_platform_earnings_qs
+        from bookings.earnings import (
+            barber_platform_earnings_qs,
+            completed_bookings_qs,
+            payment_breakdown,
+        )
 
         barber = request.user.barber
         start_raw = (request.query_params.get("start") or "").strip()
@@ -582,6 +586,9 @@ class MyBarberFinanceSummaryView(APIView):
         earnings_base = barber_platform_earnings_qs(barber).select_related("customer").prefetch_related(
             "lines"
         )
+        completed_base = completed_bookings_qs(
+            Booking.objects.filter(barber=barber)
+        ).select_related("customer").prefetch_related("lines")
 
         if start_raw and end_raw:
             try:
@@ -592,10 +599,12 @@ class MyBarberFinanceSummaryView(APIView):
                 if timezone.is_naive(end_dt):
                     end_dt = timezone.make_aware(end_dt, timezone.get_current_timezone())
                 earnings_base = earnings_base.filter(start_at__gte=start_dt, start_at__lte=end_dt)
+                completed_base = completed_base.filter(start_at__gte=start_dt, start_at__lte=end_dt)
             except ValueError:
                 return Response({"detail": "Invalid start/end dates."}, status=400)
 
         income_total = earnings_base.aggregate(t=Sum("total_price"))["t"] or 0
+        breakdown = payment_breakdown(completed_base)
 
         expense_qs = BarberExpense.objects.filter(barber=barber)
         if start_dt is not None and end_dt is not None:
@@ -613,7 +622,7 @@ class MyBarberFinanceSummaryView(APIView):
         )
 
         transactions = []
-        for b in earnings_base.order_by("-start_at")[:200]:
+        for b in completed_base.order_by("-start_at")[:200]:
             lines = list(b.lines.all())
             first_line = lines[0] if lines else None
             transactions.append(
@@ -645,7 +654,7 @@ class MyBarberFinanceSummaryView(APIView):
         transactions = transactions[:200]
 
         daily_rows = (
-            earnings_base.annotate(day=TruncDate("start_at"))
+            completed_base.annotate(day=TruncDate("start_at"))
             .values("day")
             .annotate(revenue=Sum("total_price"), bookings=Count("id"))
             .order_by("day")
@@ -662,6 +671,11 @@ class MyBarberFinanceSummaryView(APIView):
         return Response(
             {
                 "income_total": str(income_total),
+                "cash_total": str(breakdown["cash_total"]),
+                "online_total": str(breakdown["online_total"]),
+                "total_income": str(breakdown["total_income"]),
+                "cash_count": breakdown["cash_count"],
+                "online_count": breakdown["online_count"],
                 "expense_total": str(expenses_total),
                 "net_total": str(income_total - expenses_total),
                 "all_time_net_total": str(all_time_income - all_time_expenses),

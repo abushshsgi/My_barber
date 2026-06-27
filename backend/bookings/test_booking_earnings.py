@@ -101,8 +101,15 @@ class BookingEarningsPaymentTests(TestCase):
         res = self.client.get("/api/v1/barber/finance/summary/")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         body = res.json()
-        self.assertEqual(body["income_total"], "0")
-        self.assertEqual(len(body["transactions"]), 0)
+        self.assertEqual(Decimal(body["income_total"]), Decimal("0"))
+        self.assertEqual(Decimal(body["cash_total"]), Decimal("50000"))
+        self.assertEqual(Decimal(body["online_total"]), Decimal("0"))
+        self.assertEqual(len(body["transactions"]), 1)
+        self.assertEqual(body["transactions"][0]["payment_method"], "cash")
+
+        bal = self.client.get("/api/v1/barber/payouts/balance/")
+        self.assertEqual(bal.status_code, status.HTTP_200_OK)
+        self.assertEqual(bal.json()["available_balance"], "0")
 
     def test_online_booking_included_in_finance_summary(self):
         wallet = WalletService.ensure_wallet(self.user)
@@ -133,13 +140,14 @@ class BookingEarningsPaymentTests(TestCase):
         fin = self.client.get("/api/v1/barber/finance/summary/")
         self.assertEqual(fin.status_code, status.HTTP_200_OK)
         body = fin.json()
-        self.assertEqual(body["income_total"], "50000.00")
+        self.assertEqual(Decimal(body["income_total"]), Decimal("50000"))
+        self.assertEqual(Decimal(body["online_total"]), Decimal("50000"))
         self.assertEqual(len(body["transactions"]), 1)
         self.assertEqual(body["transactions"][0]["payment_method"], "online")
 
         bal = self.client.get("/api/v1/barber/payouts/balance/")
         self.assertEqual(bal.status_code, status.HTTP_200_OK)
-        self.assertEqual(bal.json()["available_balance"], "50000.00")
+        self.assertEqual(Decimal(bal.json()["available_balance"]), Decimal("50000"))
 
     def test_online_booking_cancel_refunds_wallet(self):
         wallet = WalletService.ensure_wallet(self.user)

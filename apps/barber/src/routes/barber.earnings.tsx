@@ -19,6 +19,7 @@ import {
 } from "@/hooks/use-barber-queries";
 import { apiFetch, formatApiError } from "@/lib/api";
 import { toast } from "sonner";
+import { paymentLabel } from "@/lib/payment-label";
 import {
   Dialog,
   DialogContent,
@@ -32,12 +33,6 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/barber/earnings")({
   component: EarningsPage,
 });
-
-function paymentLabel(method?: string | null): string {
-  if (method === "online") return "Onlayn";
-  if (method === "cash") return "Naqd";
-  return "—";
-}
 
 function EarningsPage() {
   const [range, setRange] = useState<EarningsRange>("Hafta");
@@ -58,7 +53,11 @@ function EarningsPage() {
   const { data: payouts = [] } = useBarberPayoutsQuery();
   const { invalidatePayouts, invalidateFinance } = useInvalidateBarberQueries();
 
-  const gross = Number(finance?.income_total ?? 0);
+  const onlineIncome = Number(finance?.income_total ?? finance?.online_total ?? 0);
+  const cashTotal = Number(finance?.cash_total ?? 0);
+  const totalIncome = Number(finance?.total_income ?? onlineIncome + cashTotal);
+  const cashCount = finance?.cash_count ?? 0;
+  const onlineCount = finance?.online_count ?? 0;
   const rangeExpenses = Number(finance?.expense_total ?? 0);
   const net = Number(finance?.net_total ?? 0);
   const allTimeNet = Number(finance?.all_time_net_total ?? 0);
@@ -86,8 +85,6 @@ function EarningsPage() {
     const weekSegmentTotal = amounts.reduce((s, x) => s + x, 0);
     return { bars, labels, weekSegmentTotal };
   }, [chartFinance?.daily]);
-
-  const completedOnlineCount = transactions.filter((t) => t.kind === "booking").length;
 
   const exportCsv = () => {
     const header = "Sana,Mijoz,Xizmat,To'lov,Summa\n";
@@ -156,7 +153,7 @@ function EarningsPage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
       <PageHeader
         title="Daromad"
-        description="Faqat onlayn (hamyon) orqali to'langan bronlar platforma daromadiga tushadi."
+        description="Naqd va onlayn to'lovlar statistikada ko'rinadi. Pul yechish faqat onlayn (hamyon) orqali to'langan summalar uchun."
         actions={
           <>
             <button
@@ -196,11 +193,14 @@ function EarningsPage() {
               {formatUZS(balanceVal)}
             </div>
             <div className="text-sm opacity-70 mt-2">
-              Tanlangan davr sof: {formatUZS(net)}
+              Onlayn (yechish mumkin): {formatUZS(balanceVal)}
+              {" · "}
+              Tanlangan davr jami: {formatUZS(totalIncome)} (naqd {formatUZS(cashTotal)} + onlayn{" "}
+              {formatUZS(onlineIncome)})
               {balance?.pending_payouts
                 ? ` · kutilayotgan: ${formatUZS(Number(balance.pending_payouts))}`
                 : null}
-              {range === "Yil" ? ` · jami (barcha vaqt): ${formatUZS(allTimeNet)}` : null}
+              {range === "Yil" ? ` · jami sof onlayn: ${formatUZS(allTimeNet)}` : null}
             </div>
           </>
         )}
@@ -266,12 +266,24 @@ function EarningsPage() {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <StatCard
           icon={<TrendingUp className="size-4" />}
-          label="Onlayn daromad"
-          value={loading ? "…" : formatUZS(gross)}
-          hint={rangeHint}
+          label="Jami daromad"
+          value={loading ? "…" : formatUZS(totalIncome)}
+          hint={`${cashCount + onlineCount} ta bron · ${rangeHint}`}
+        />
+        <StatCard
+          icon={<Wallet className="size-4" />}
+          label="Naqd"
+          value={loading ? "…" : formatUZS(cashTotal)}
+          hint={`${cashCount} ta · yechib olinmaydi`}
+        />
+        <StatCard
+          icon={<TrendingUp className="size-4" />}
+          label="Onlayn"
+          value={loading ? "…" : formatUZS(onlineIncome)}
+          hint={`${onlineCount} ta · yechish mumkin`}
         />
         <StatCard
           icon={<Receipt className="size-4" />}
@@ -281,15 +293,9 @@ function EarningsPage() {
         />
         <StatCard
           icon={<Wallet className="size-4" />}
-          label="Sof daromad"
+          label="Sof onlayn"
           value={loading ? "…" : formatUZS(net)}
-          hint={rangeHint}
-        />
-        <StatCard
-          icon={<TrendingUp className="size-4" />}
-          label="Onlayn bronlar"
-          value={loading ? "…" : completedOnlineCount.toString()}
-          hint={rangeHint}
+          hint={`${rangeHint} · yechish hisobi`}
         />
       </div>
 
@@ -298,7 +304,8 @@ function EarningsPage() {
           <div>
             <h2 className="font-heading text-lg font-semibold">Oxirgi 7 kun</h2>
             <div className="text-xs text-muted-foreground">
-              Onlayn to&apos;lovlar · jami {chartBusy ? "…" : formatUZS(chart.weekSegmentTotal)}
+              Barcha to&apos;lovlar (naqd + onlayn) · jami{" "}
+              {chartBusy ? "…" : formatUZS(chart.weekSegmentTotal)}
             </div>
           </div>
           <div className="text-2xl font-heading font-semibold">
@@ -346,7 +353,7 @@ function EarningsPage() {
       <div className="rounded-xl border border-border bg-card overflow-hidden shadow-card">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <h2 className="font-heading text-lg font-semibold">Tranzaksiyalar</h2>
-          <span className="text-xs text-muted-foreground">{rangeHint} · faqat onlayn</span>
+          <span className="text-xs text-muted-foreground">{rangeHint} · naqd + onlayn</span>
         </div>
         <div className="grid grid-cols-12 gap-4 px-5 py-3 text-xs uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/30">
           <div className="col-span-2">Sana</div>
@@ -363,7 +370,7 @@ function EarningsPage() {
           </div>
         ) : transactions.length === 0 ? (
           <div className="px-5 py-10 text-center text-sm text-muted-foreground">
-            Tanlangan davrda onlayn tranzaksiyalar yo&apos;q. Naqd to&apos;lovlar bu yerda ko&apos;rinmaydi.
+            Tanlangan davrda tranzaksiyalar yo&apos;q.
           </div>
         ) : (
           transactions.map((t) => {
