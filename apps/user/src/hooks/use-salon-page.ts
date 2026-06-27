@@ -36,7 +36,7 @@ export function useSalonPage(id: string) {
       const rows = await fetchSalonPortfolio(id);
       return rows.map((r) => r.image).filter(Boolean) as string[];
     },
-    enabled: authQueryEnabled(Boolean(id)),
+    enabled: Boolean(id),
   });
 
   const ratingSummary = useQuery({

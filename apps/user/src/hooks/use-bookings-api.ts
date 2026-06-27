@@ -7,7 +7,7 @@ import {
   fetchBookings,
   type CreateBookingPayload,
 } from "@/lib/api/bookings";
-import { authQueryEnabled } from "@/lib/auth-query";
+import { authQueryEnabled, catalogQueryEnabled } from "@/lib/auth-query";
 import { getAuthUserId } from "@/lib/auth-user";
 import { userQueryKey } from "@/lib/query-keys";
 import { mapBookings } from "@/lib/mappers/booking";
@@ -98,6 +98,6 @@ export function useAvailabilityMonth(params: {
         barber: params.barber,
         service_ids: params.serviceIds?.length ? params.serviceIds.join(",") : undefined,
       }),
-    enabled: authQueryEnabled(!!userId && (params.enabled ?? true) && params.salon > 0),
+    enabled: catalogQueryEnabled((params.enabled ?? true) && params.salon > 0),
   });
 }

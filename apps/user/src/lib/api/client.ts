@@ -1,4 +1,5 @@
 import { migrateFaceProfileOnLogout } from "@/lib/face-profile";
+import { isPublicCustomerApiPath } from "@/lib/public-api-paths";
 import { clearQueryClientCache } from "@/lib/query-client";
 import { migrateUserPrefsOnLogout } from "@/lib/user-prefs";
 
@@ -254,8 +255,9 @@ export async function apiFetch(
 ): Promise<Response> {
   const headers = new Headers(options.headers);
   const token = getUserAccessToken();
+  const publicPath = isPublicCustomerApiPath(path);
 
-  if (token && !shouldOmitBearerForPath(path)) {
+  if (token && !publicPath && !shouldOmitBearerForPath(path)) {
     headers.set("Authorization", `Bearer ${token}`);
     const sessionId = getUserSessionId();
     if (sessionId != null) {

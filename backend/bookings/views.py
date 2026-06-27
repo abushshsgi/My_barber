@@ -27,7 +27,7 @@ from bookings.availability import (
 )
 from bookings.db_compat import bookings_has_family_member_column
 from bookings.models import Booking, BookingCompletion, BookingLine, Review
-from bookings.earnings import completed_bookings_qs, platform_earnings_qs
+from bookings.earnings import completed_bookings_qs, payment_breakdown, platform_earnings_qs
 from notifications.serializers import NotificationSerializer
 from notifications.utils import notify_barber, notify_user
 from salons.models import Salon, SalonMembership
@@ -260,7 +260,7 @@ class BookingViewSet(viewsets.ModelViewSet):
 
 
 class SalonPortfolioView(APIView):
-    permission_classes = [IsAuthenticatedBarberAware]
+    permission_classes = [AllowAny]
 
     def get(self, request, salon_id):
         salon = get_object_or_404(
@@ -495,7 +495,7 @@ class BookingAvailabilityView(APIView):
     Respects salon hours, barber working hours, closed days, and existing bookings.
     """
 
-    permission_classes = [IsAuthenticatedBarberAware]
+    permission_classes = [AllowAny]
 
     def get(self, request):
         salon_id = request.query_params.get("salon")
@@ -555,7 +555,7 @@ class BookingAvailabilityMonthView(APIView):
     barber yoki service_ids berilmasa — birinchi faol staff va eng qisqa xizmat.
     """
 
-    permission_classes = [IsAuthenticatedBarberAware]
+    permission_classes = [AllowAny]
 
     def get(self, request):
         salon_id = request.query_params.get("salon")
@@ -709,9 +709,15 @@ class AnalyticsView(APIView):
                 start_at__gte=start_dt,
                 start_at__lte=end_dt,
             ).count()
+            breakdown = payment_breakdown(bookings)
             return Response(
                 {
                     "revenue": str(revenue),
+                    "cash_total": str(breakdown["cash_total"]),
+                    "online_total": str(breakdown["online_total"]),
+                    "total_income": str(breakdown["total_income"]),
+                    "cash_count": breakdown["cash_count"],
+                    "online_count": breakdown["online_count"],
                     "unique_clients": clients,
                     "new_clients": new_customers,
                     "returning_clients": returning,
@@ -804,10 +810,16 @@ class AnalyticsView(APIView):
             start_at__lte=end_dt,
         ).count()
         completed_count = bookings.count()
+        breakdown = payment_breakdown(bookings)
 
         return Response(
             {
                 "revenue": str(revenue),
+                "cash_total": str(breakdown["cash_total"]),
+                "online_total": str(breakdown["online_total"]),
+                "total_income": str(breakdown["total_income"]),
+                "cash_count": breakdown["cash_count"],
+                "online_count": breakdown["online_count"],
                 "unique_clients": clients,
                 "new_clients": new_customers,
                 "returning_clients": returning,

@@ -7,6 +7,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 
+from accounts.customer_permissions import IsAuthenticatedCustomer
 from barbers.activation_permissions import IsAuthenticatedBarberAware
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -63,6 +64,7 @@ class SalonViewSet(viewsets.ModelViewSet):
             "staff",
             "rating_summary",
             "search",
+            "barber_services",
         ):
             return [AllowAny()]
         return [IsAuthenticatedBarberAware()]
@@ -623,7 +625,7 @@ class SalonViewSet(viewsets.ModelViewSet):
         return Response({"status": "ok"})
 
 class FavoriteSalonListCreateView(APIView):
-    permission_classes = [IsAuthenticatedBarberAware]
+    permission_classes = [IsAuthenticatedCustomer]
 
     def get(self, request):
         rows = FavoriteSalon.objects.filter(user=request.user).select_related("salon")
@@ -654,7 +656,7 @@ class FavoriteSalonListCreateView(APIView):
 
 
 class FavoriteSalonDetailView(APIView):
-    permission_classes = [IsAuthenticatedBarberAware]
+    permission_classes = [IsAuthenticatedCustomer]
 
     def delete(self, request, salon_id):
         FavoriteSalon.objects.filter(user=request.user, salon_id=salon_id).delete()
