@@ -21,6 +21,7 @@ from bookings.availability import (
     build_available_slots,
     build_month_availability,
     default_salon_barber_and_service,
+    default_service_ids_for_barber,
     get_salon_services_for_barber,
     parse_id_list,
 )
@@ -593,7 +594,9 @@ class BookingAvailabilityMonthView(APIView):
             ).exists():
                 return Response({"days": []})
             if not id_list:
-                return Response({"detail": "service_ids required when barber is set."}, status=400)
+                id_list = default_service_ids_for_barber(salon, barber)
+                if not id_list:
+                    return Response({"year": year, "month": month, "days": []})
         else:
             barber, _svc, default_ids = default_salon_barber_and_service(salon)
             if barber is None or not default_ids:

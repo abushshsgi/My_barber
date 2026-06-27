@@ -182,6 +182,37 @@ def build_available_slots(*, barber: Barber, services, target_date, salon: Salon
     return {"slots": slots, "total_minutes": total_minutes}
 
 
+def default_service_ids_for_barber(salon: Salon, barber: Barber) -> list[int]:
+    """Barber uchun eng qisqa faol salon xizmati (kalendarda default)."""
+    svc = (
+        Service.objects.filter(
+            Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True),
+            salon=salon,
+            is_active=True,
+        )
+        .filter(Q(barber=barber) | Q(barber__isnull=True))
+        .order_by("duration_minutes", "id")
+        .first()
+    )
+    if svc:
+        return [svc.id]
+    from barbers.salon_service_sync import ensure_salon_service_for_barber_service
+
+    bs = (
+        BarberService.objects.filter(
+            Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True),
+            profile__barber=barber,
+            is_active=True,
+        )
+        .order_by("duration_minutes", "id")
+        .first()
+    )
+    if not bs:
+        return []
+    linked = ensure_salon_service_for_barber_service(salon, barber, bs)
+    return [linked.id] if linked else []
+
+
 def default_salon_barber_and_service(salon: Salon):
     """Salon uchun default barber (avvalo ega) va eng qisqa xizmat."""
     barber = None
@@ -211,19 +242,11 @@ def default_salon_barber_and_service(salon: Salon):
         if not mem or not mem.barber_id:
             return None, None, []
         barber = mem.barber
-    svc = (
-        Service.objects.filter(
-            Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True),
-            salon=salon,
-            is_active=True,
-        )
-        .filter(Q(barber=barber) | Q(barber__isnull=True))
-        .order_by("duration_minutes", "id")
-        .first()
-    )
-    if not svc:
+    ids = default_service_ids_for_barber(salon, barber)
+    if not ids:
         return barber, None, []
-    return barber, svc, [svc.id]
+    svc = Service.objects.filter(pk=ids[0]).first()
+    return barber, svc, ids
 
 
 def build_month_availability(*, salon: Salon, barber: Barber, service_ids: list[int], year: int, month: int):

@@ -4,7 +4,11 @@ import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
 import { formatPrice } from "@/lib/mock-data";
-import { filterSalonOwnerServices, resolveDefaultSalonBarberId } from "@/lib/salon-services";
+import {
+  filterSalonOwnerServices,
+  resolveDefaultSalonBarberId,
+  resolveDefaultServiceIdsForBarber,
+} from "@/lib/salon-services";
 import { SalonAmenitiesSection } from "@/components/salon/SalonAmenitiesSection";
 import { SalonBookingCalendar } from "@/components/salon/SalonBookingCalendar";
 import { SalonHoursSection } from "@/components/salon/SalonHoursSection";
@@ -50,6 +54,8 @@ export function SalonPageSections({
   const { t } = useTranslation();
   const ownerServices = filterSalonOwnerServices(salon.services, salon.ownerId);
   const ownerBarberId = salon.ownerId ?? resolveDefaultSalonBarberId(salon.staff) ?? undefined;
+  const calendarBarberId = defaultCalendarBarberId(salon);
+  const calendarServiceIds = resolveDefaultServiceIdsForBarber(salon.services, calendarBarberId);
 
   return (
     <div className="space-y-0">
@@ -175,7 +181,8 @@ export function SalonPageSections({
         <div id="salon-booking" className="scroll-mt-36 border-b border-border pb-10">
           <SalonBookingCalendar
             salonId={salon.id}
-            barberId={defaultCalendarBarberId(salon)}
+            barberId={calendarBarberId}
+            serviceIds={calendarServiceIds.length ? calendarServiceIds : undefined}
             months={calendarMonths}
           />
         </div>

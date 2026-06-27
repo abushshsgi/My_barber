@@ -15,6 +15,7 @@ function toIso(d: Date) {
 export function SalonBookingCalendar({
   salonId,
   barberId,
+  serviceIds,
   months = 1,
   className,
   onDateSelect,
@@ -22,6 +23,7 @@ export function SalonBookingCalendar({
 }: {
   salonId: string;
   barberId?: string | null;
+  serviceIds?: number[];
   months?: 1 | 2;
   className?: string;
   onDateSelect?: (iso: string | null) => void;
@@ -39,6 +41,7 @@ export function SalonBookingCalendar({
     year,
     month,
     barber: barberId ? parseInt(barberId, 10) : undefined,
+    serviceIds,
     enabled: Boolean(salonId),
   });
 

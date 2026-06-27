@@ -20,3 +20,17 @@ export function resolveDefaultSalonBarberId(
   const bookable = staff.find((s) => s.isBookable !== false);
   return owner?.id ?? bookable?.id ?? staff[0]?.id ?? null;
 }
+
+/** Kalendarda barber tanlanganida default xizmat (eng qisqa davomiylik). */
+export function resolveDefaultServiceIdsForBarber(
+  services: Service[],
+  barberId: string | null | undefined,
+): number[] {
+  const scoped = barberId ? filterSalonServicesForBarber(services, barberId) : services;
+  if (scoped.length === 0) return [];
+  const sorted = [...scoped].sort(
+    (a, b) => a.duration - b.duration || Number(a.id) - Number(b.id),
+  );
+  const id = Number(sorted[0]?.id);
+  return Number.isFinite(id) && id > 0 ? [id] : [];
+}

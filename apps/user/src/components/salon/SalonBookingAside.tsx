@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
 import { formatPrice } from "@/lib/mock-data";
 import { SalonBookingCalendar } from "@/components/salon/SalonBookingCalendar";
+import { resolveDefaultServiceIdsForBarber } from "@/lib/salon-services";
 import { cn } from "@/lib/utils";
 
 export function SalonBookingAside({
@@ -16,6 +17,12 @@ export function SalonBookingAside({
   compact?: boolean;
 }) {
   const { t } = useTranslation();
+  const calendarBarberId =
+    salon.staff.find((s) => s.isBookable !== false)?.id ?? salon.staff[0]?.id;
+  const calendarServiceIds = resolveDefaultServiceIdsForBarber(
+    salon.services,
+    calendarBarberId,
+  );
 
   return (
     <aside
@@ -46,7 +53,8 @@ export function SalonBookingAside({
       {!compact ? (
         <SalonBookingCalendar
           salonId={salon.id}
-          barberId={salon.staff.find((s) => s.isBookable !== false)?.id ?? salon.staff[0]?.id}
+          barberId={calendarBarberId}
+          serviceIds={calendarServiceIds.length ? calendarServiceIds : undefined}
           months={1}
           className="mt-5 !space-y-3 [&_h2]:text-base"
         />

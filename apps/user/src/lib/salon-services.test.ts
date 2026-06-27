@@ -4,6 +4,7 @@ import {
   filterSalonOwnerServices,
   filterSalonServicesForBarber,
   resolveDefaultSalonBarberId,
+  resolveDefaultServiceIdsForBarber,
 } from "@/lib/salon-services";
 
 const services: Service[] = [
@@ -29,5 +30,10 @@ describe("salon-services", () => {
       { id: "20", role: "Usta", isBookable: true },
     ]);
     expect(id).toBe("10");
+  });
+
+  it("resolveDefaultServiceIdsForBarber picks shortest service", () => {
+    const ids = resolveDefaultServiceIdsForBarber(services, "20");
+    expect(ids).toEqual([3]);
   });
 });
