@@ -628,6 +628,7 @@ class BookingCriticalTests(TestCase):
 
         self.client.force_authenticate(user=BarberPrincipal(owner))
         res = self.client.post(f"/api/v1/bookings/{booking.id}/accept/")
-        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        # Egasi faqat o'z bronlarini ko'radi (get_queryset barber=bp) — ishchi broni 404.
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
         booking.refresh_from_db()
         self.assertEqual(booking.status, Booking.Status.PENDING)
