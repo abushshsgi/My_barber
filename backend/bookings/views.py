@@ -28,6 +28,80 @@ from bookings.availability import (
 from bookings.db_compat import bookings_has_family_member_column
 from bookings.models import Booking, BookingCompletion, BookingLine, Review
 from bookings.earnings import completed_bookings_qs, payment_breakdown, platform_earnings_qs
+
+
+def _parse_analytics_datetime(raw: str, *, is_end: bool = False):
+    """ISO yoki YYYY-MM-DD; sana-only end uchun kun oxirigacha."""
+    raw = (raw or "").strip()
+    dt = timezone.datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    if timezone.is_naive(dt):
+        dt = timezone.make_aware(dt, timezone.get_current_timezone())
+    if is_end and len(raw) <= 10:
+        dt = dt.replace(hour=23, minute=59, second=59, microsecond=999999)
+    return dt
+
+
+def _analytics_response_for_bookings(
+    bookings,
+    *,
+    cancelled_count: int,
+    prior_bookings_for_customer,
+):
+    """Barber/salon analitika uchun umumiy javob."""
+    revenue = bookings.aggregate(t=Sum("total_price"))["t"] or 0
+    clients = bookings.values("customer").distinct().count()
+
+    new_customers = 0
+    returning = 0
+    for cid in set(bookings.values_list("customer_id", flat=True)):
+        prior_count = completed_bookings_qs(prior_bookings_for_customer(cid)).count()
+        if prior_count == 0:
+            new_customers += 1
+        else:
+            returning += 1
+
+    top_services = list(
+        BookingLine.objects.filter(booking__in=bookings)
+        .values("service_name")
+        .annotate(cnt=Count("id"))
+        .order_by("-cnt")[:5]
+    )
+
+    daily_rows = (
+        bookings.annotate(day=TruncDate("start_at"))
+        .values("day")
+        .annotate(
+            rev=Sum("total_price"),
+            bookings=Count("id"),
+            clients=Count("customer", distinct=True),
+        )
+        .order_by("day")
+    )
+    daily = [
+        {
+            "date": row["day"].isoformat() if row["day"] else "",
+            "revenue": str(row["rev"] or 0),
+            "bookings": row["bookings"] or 0,
+            "clients": row["clients"] or 0,
+        }
+        for row in daily_rows
+    ]
+    breakdown = payment_breakdown(bookings)
+    return {
+        "revenue": str(revenue),
+        "cash_total": str(breakdown["cash_total"]),
+        "online_total": str(breakdown["online_total"]),
+        "total_income": str(breakdown["total_income"]),
+        "cash_count": breakdown["cash_count"],
+        "online_count": breakdown["online_count"],
+        "unique_clients": clients,
+        "new_clients": new_customers,
+        "returning_clients": returning,
+        "top_services": top_services,
+        "daily": daily,
+        "completed_count": bookings.count(),
+        "cancelled_count": cancelled_count,
+    }
 from notifications.serializers import NotificationSerializer
 from notifications.utils import notify_barber, notify_user
 from salons.models import Salon, SalonMembership
@@ -627,21 +701,53 @@ class AnalyticsView(APIView):
                 status=400,
             )
         try:
-            start_dt = timezone.datetime.fromisoformat(start.replace("Z", "+00:00"))
-            end_dt = timezone.datetime.fromisoformat(end.replace("Z", "+00:00"))
-            if timezone.is_naive(start_dt):
-                start_dt = timezone.make_aware(start_dt, timezone.get_current_timezone())
-            if timezone.is_naive(end_dt):
-                end_dt = timezone.make_aware(end_dt, timezone.get_current_timezone())
+            start_dt = _parse_analytics_datetime(start, is_end=False)
+            end_dt = _parse_analytics_datetime(end, is_end=True)
         except ValueError:
             return Response({"detail": "Invalid dates."}, status=400)
+
+        bp = request_barber(request)
+        barber_me = (request.query_params.get("barber") or "").lower() in (
+            "1",
+            "true",
+            "yes",
+            "me",
+        )
+
+        if barber_me:
+            if not bp:
+                return Response(
+                    {"detail": "Barber analitikasi faqat sartarosh JWT bilan."},
+                    status=403,
+                )
+            range_base = Booking.objects.filter(
+                barber=bp,
+                start_at__gte=start_dt,
+                start_at__lte=end_dt,
+            )
+            bookings = completed_bookings_qs(range_base)
+            cancelled_count = range_base.filter(status=Booking.Status.CANCELLED).count()
+
+            def prior_for_customer(cid):
+                return Booking.objects.filter(
+                    barber=bp,
+                    customer_id=cid,
+                    start_at__lt=start_dt,
+                )
+
+            return Response(
+                _analytics_response_for_bookings(
+                    bookings,
+                    cancelled_count=cancelled_count,
+                    prior_bookings_for_customer=prior_for_customer,
+                )
+            )
 
         independent = (request.query_params.get("independent") or "").lower() in (
             "1",
             "true",
             "yes",
         )
-        bp = request_barber(request)
 
         if independent:
             if not bp:
@@ -649,83 +755,29 @@ class AnalyticsView(APIView):
                     {"detail": "Mustaqil analitika faqat sartarosh JWT bilan."},
                     status=403,
                 )
-            bookings = completed_bookings_qs(
-                Booking.objects.filter(
-                    barber=bp,
-                    salon__isnull=True,
-                    start_at__gte=start_dt,
-                    start_at__lte=end_dt,
-                )
-            )
-            revenue = bookings.aggregate(t=Sum("total_price"))["t"] or 0
-            clients = bookings.values("customer").distinct().count()
-
-            new_customers = 0
-            returning = 0
-            for cid in set(bookings.values_list("customer_id", flat=True)):
-                prior_count = completed_bookings_qs(
-                    Booking.objects.filter(
-                        barber=bp,
-                        salon__isnull=True,
-                        customer_id=cid,
-                        start_at__lt=start_dt,
-                    )
-                ).count()
-                if prior_count == 0:
-                    new_customers += 1
-                else:
-                    returning += 1
-
-            top_services = list(
-                BookingLine.objects.filter(booking__in=bookings)
-                .values("service_name")
-                .annotate(cnt=Count("id"))
-                .order_by("-cnt")[:5]
-            )
-
-            daily_rows = (
-                bookings.annotate(day=TruncDate("start_at"))
-                .values("day")
-                .annotate(
-                    rev=Sum("total_price"),
-                    bookings=Count("id"),
-                    clients=Count("customer", distinct=True),
-                )
-                .order_by("day")
-            )
-            daily = [
-                {
-                    "date": row["day"].isoformat() if row["day"] else "",
-                    "revenue": str(row["rev"] or 0),
-                    "bookings": row["bookings"] or 0,
-                    "clients": row["clients"] or 0,
-                }
-                for row in daily_rows
-            ]
-            cancelled_count = Booking.objects.filter(
+            range_base = Booking.objects.filter(
                 barber=bp,
                 salon__isnull=True,
-                status=Booking.Status.CANCELLED,
                 start_at__gte=start_dt,
                 start_at__lte=end_dt,
-            ).count()
-            breakdown = payment_breakdown(bookings)
+            )
+            bookings = completed_bookings_qs(range_base)
+            cancelled_count = range_base.filter(status=Booking.Status.CANCELLED).count()
+
+            def prior_for_customer(cid):
+                return Booking.objects.filter(
+                    barber=bp,
+                    salon__isnull=True,
+                    customer_id=cid,
+                    start_at__lt=start_dt,
+                )
+
             return Response(
-                {
-                    "revenue": str(revenue),
-                    "cash_total": str(breakdown["cash_total"]),
-                    "online_total": str(breakdown["online_total"]),
-                    "total_income": str(breakdown["total_income"]),
-                    "cash_count": breakdown["cash_count"],
-                    "online_count": breakdown["online_count"],
-                    "unique_clients": clients,
-                    "new_clients": new_customers,
-                    "returning_clients": returning,
-                    "top_services": top_services,
-                    "daily": daily,
-                    "completed_count": bookings.count(),
-                    "cancelled_count": cancelled_count,
-                }
+                _analytics_response_for_bookings(
+                    bookings,
+                    cancelled_count=cancelled_count,
+                    prior_bookings_for_customer=prior_for_customer,
+                )
             )
 
         salon_id = request.query_params.get("salon")
@@ -762,12 +814,9 @@ class AnalyticsView(APIView):
             salon_base = salon_base.filter(barber=bp)
 
         bookings = completed_bookings_qs(salon_base)
-        revenue = bookings.aggregate(t=Sum("total_price"))["t"] or 0
-        clients = bookings.values("customer").distinct().count()
+        cancelled_count = salon_base.filter(status=Booking.Status.CANCELLED).count()
 
-        new_customers = 0
-        returning = 0
-        for cid in set(bookings.values_list("customer_id", flat=True)):
+        def prior_for_customer(cid):
             prior_prior = Booking.objects.filter(
                 salon_id=salon_id,
                 customer_id=cid,
@@ -775,59 +824,14 @@ class AnalyticsView(APIView):
             )
             if bp is not None and bp.id != salon.owner_barber_id:
                 prior_prior = prior_prior.filter(barber=bp)
-            prior_count = completed_bookings_qs(prior_prior).count()
-            if prior_count == 0:
-                new_customers += 1
-            else:
-                returning += 1
-
-        top_services = list(
-            BookingLine.objects.filter(booking__in=bookings)
-            .values("service_name")
-            .annotate(cnt=Count("id"))
-            .order_by("-cnt")[:5]
-        )
-
-        daily_rows = (
-            bookings.annotate(day=TruncDate("start_at"))
-            .values("day")
-            .annotate(rev=Sum("total_price"), bookings=Count("id"), clients=Count("customer", distinct=True))
-            .order_by("day")
-        )
-        daily = [
-            {
-                "date": row["day"].isoformat() if row["day"] else "",
-                "revenue": str(row["rev"] or 0),
-                "bookings": row["bookings"] or 0,
-                "clients": row["clients"] or 0,
-            }
-            for row in daily_rows
-        ]
-        cancelled_count = Booking.objects.filter(
-            salon_id=salon_id,
-            status=Booking.Status.CANCELLED,
-            start_at__gte=start_dt,
-            start_at__lte=end_dt,
-        ).count()
-        completed_count = bookings.count()
-        breakdown = payment_breakdown(bookings)
+            return prior_prior
 
         return Response(
-            {
-                "revenue": str(revenue),
-                "cash_total": str(breakdown["cash_total"]),
-                "online_total": str(breakdown["online_total"]),
-                "total_income": str(breakdown["total_income"]),
-                "cash_count": breakdown["cash_count"],
-                "online_count": breakdown["online_count"],
-                "unique_clients": clients,
-                "new_clients": new_customers,
-                "returning_clients": returning,
-                "top_services": top_services,
-                "daily": daily,
-                "completed_count": completed_count,
-                "cancelled_count": cancelled_count,
-            }
+            _analytics_response_for_bookings(
+                bookings,
+                cancelled_count=cancelled_count,
+                prior_bookings_for_customer=prior_for_customer,
+            )
         )
 
 

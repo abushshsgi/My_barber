@@ -73,6 +73,21 @@ export function last7DaysIsoParams(now = new Date()): { start: string; end: stri
   return rangeToIsoParams("Hafta", now);
 }
 
+export type StatsRangeKey = "7d" | "30d" | "90d";
+
+export function statsRangeToIsoParams(key: StatsRangeKey, now = new Date()): { start: string; end: string } {
+  const end = new Date(now);
+  end.setHours(23, 59, 59, 999);
+  const start = startOfLocalDay(now);
+  if (key === "7d") start.setDate(start.getDate() - 6);
+  else if (key === "30d") start.setDate(start.getDate() - 29);
+  else start.setDate(start.getDate() - 89);
+  return {
+    start: start.toISOString(),
+    end: end.toISOString(),
+  };
+}
+
 export function formatFinanceDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso.slice(0, 10);

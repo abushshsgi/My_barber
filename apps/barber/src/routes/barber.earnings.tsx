@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Wallet, TrendingUp, Download, ArrowDownToLine, Receipt, Loader2 } from "lucide-react";
+import { Wallet, TrendingUp, Download, ArrowDownToLine, Receipt } from "lucide-react";
 import { formatUZS } from "@/components/barber/BarberContext";
 import { PageHeader, StatCard } from "@/components/barber/primitives";
 import {
@@ -12,6 +12,8 @@ import {
 } from "@/lib/finance-range";
 import { cn } from "@/lib/utils";
 import {
+  prefetchBarberFinance,
+  prefetchPayoutBalance,
   useBarberFinanceQuery,
   useBarberPayoutsQuery,
   useInvalidateBarberQueries,
@@ -31,6 +33,11 @@ import {
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/barber/earnings")({
+  loader: ({ context: { queryClient } }) => {
+    const rangeParams = rangeToIsoParams("Hafta");
+    void prefetchBarberFinance(queryClient, rangeParams);
+    void prefetchPayoutBalance(queryClient);
+  },
   component: EarningsPage,
 });
 
@@ -43,13 +50,13 @@ function EarningsPage() {
 
   const rangeParams = useMemo(() => rangeToIsoParams(range), [range]);
   const chartParams = useMemo(() => last7DaysIsoParams(), []);
-  const {
-    data: finance,
-    isLoading: financeLoading,
-    isError: financeError,
-  } = useBarberFinanceQuery(rangeParams);
-  const { data: chartFinance, isLoading: chartLoading } = useBarberFinanceQuery(chartParams);
-  const { data: balance, isLoading: balanceLoading } = usePayoutBalanceQuery();
+  const chartUsesRange = range === "Hafta";
+
+  const { data: finance, isError: financeError } = useBarberFinanceQuery(rangeParams);
+  const { data: chartFinanceExtra } = useBarberFinanceQuery(chartParams, !chartUsesRange);
+  const chartFinance = chartUsesRange ? finance : chartFinanceExtra;
+
+  const { data: balance } = usePayoutBalanceQuery();
   const { data: payouts = [] } = useBarberPayoutsQuery();
   const { invalidatePayouts, invalidateFinance } = useInvalidateBarberQueries();
 
@@ -60,7 +67,6 @@ function EarningsPage() {
   const onlineCount = finance?.online_count ?? 0;
   const rangeExpenses = Number(finance?.expense_total ?? 0);
   const net = Number(finance?.net_total ?? 0);
-  const allTimeNet = Number(finance?.all_time_net_total ?? 0);
   const transactions = finance?.transactions ?? [];
   const balanceVal = balance ? Number(balance.available_balance) : 0;
 
@@ -146,20 +152,18 @@ function EarningsPage() {
 
   const rangeHint = range.toLowerCase();
   const minWithdraw = balance ? Number(balance.min_withdrawal) : 50000;
-  const loading = financeLoading || balanceLoading;
-  const chartBusy = chartLoading;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
       <PageHeader
         title="Daromad"
-        description="Naqd va onlayn to'lovlar statistikada ko'rinadi. Pul yechish faqat onlayn (hamyon) orqali to'langan summalar uchun."
+        description="Naqd va onlayn to'lovlar statistikada ko'rinadi. Pul yechish faqat karta/hamyon orqali to'langan summalar uchun."
         actions={
           <>
             <button
               type="button"
               onClick={exportCsv}
-              disabled={loading || transactions.length === 0}
+              disabled={transactions.length === 0}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-card text-sm font-medium disabled:opacity-50"
             >
               <Download className="size-4" />
@@ -180,30 +184,17 @@ function EarningsPage() {
       <div className="rounded-2xl bg-foreground text-background p-6 sm:p-8 shadow-card">
         <div className="flex items-center gap-2 text-xs uppercase tracking-wider opacity-70">
           <Wallet className="size-3.5" />
-          Mavjud balans (yechish uchun)
+          Hamyon balansi (karta / onlayn)
         </div>
-        {loading ? (
-          <div className="mt-4 flex items-center gap-2 text-sm opacity-80">
-            <Loader2 className="size-4 animate-spin" />
-            Yuklanmoqda…
-          </div>
-        ) : (
-          <>
-            <div className="font-heading text-4xl sm:text-5xl font-semibold mt-2">
-              {formatUZS(balanceVal)}
-            </div>
-            <div className="text-sm opacity-70 mt-2">
-              Onlayn (yechish mumkin): {formatUZS(balanceVal)}
-              {" · "}
-              Tanlangan davr jami: {formatUZS(totalIncome)} (naqd {formatUZS(cashTotal)} + onlayn{" "}
-              {formatUZS(onlineIncome)})
-              {balance?.pending_payouts
-                ? ` · kutilayotgan: ${formatUZS(Number(balance.pending_payouts))}`
-                : null}
-              {range === "Yil" ? ` · jami sof onlayn: ${formatUZS(allTimeNet)}` : null}
-            </div>
-          </>
-        )}
+        <div className="font-heading text-4xl sm:text-5xl font-semibold mt-2">
+          {formatUZS(balanceVal)}
+        </div>
+        <div className="text-sm opacity-70 mt-2">
+          Faqat onlayn to&apos;lovlar yechiladi
+          {balance?.pending_payouts
+            ? ` · kutilayotgan: ${formatUZS(Number(balance.pending_payouts))}`
+            : null}
+        </div>
       </div>
 
       <Dialog open={withdrawOpen} onOpenChange={setWithdrawOpen}>
@@ -266,36 +257,30 @@ function EarningsPage() {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
           icon={<TrendingUp className="size-4" />}
           label="Jami daromad"
-          value={loading ? "…" : formatUZS(totalIncome)}
+          value={formatUZS(totalIncome)}
           hint={`${cashCount + onlineCount} ta bron · ${rangeHint}`}
         />
         <StatCard
           icon={<Wallet className="size-4" />}
           label="Naqd"
-          value={loading ? "…" : formatUZS(cashTotal)}
+          value={formatUZS(cashTotal)}
           hint={`${cashCount} ta · yechib olinmaydi`}
         />
         <StatCard
           icon={<TrendingUp className="size-4" />}
           label="Onlayn"
-          value={loading ? "…" : formatUZS(onlineIncome)}
+          value={formatUZS(onlineIncome)}
           hint={`${onlineCount} ta · yechish mumkin`}
         />
         <StatCard
           icon={<Receipt className="size-4" />}
           label="Xarajatlar"
-          value={loading ? "…" : formatUZS(rangeExpenses)}
-          hint={rangeHint}
-        />
-        <StatCard
-          icon={<Wallet className="size-4" />}
-          label="Sof onlayn"
-          value={loading ? "…" : formatUZS(net)}
-          hint={`${rangeHint} · yechish hisobi`}
+          value={formatUZS(rangeExpenses)}
+          hint={`${rangeHint} · sof onlayn ${formatUZS(net)}`}
         />
       </div>
 
@@ -304,32 +289,24 @@ function EarningsPage() {
           <div>
             <h2 className="font-heading text-lg font-semibold">Oxirgi 7 kun</h2>
             <div className="text-xs text-muted-foreground">
-              Barcha to&apos;lovlar (naqd + onlayn) · jami{" "}
-              {chartBusy ? "…" : formatUZS(chart.weekSegmentTotal)}
+              Barcha to&apos;lovlar (naqd + onlayn)
             </div>
           </div>
           <div className="text-2xl font-heading font-semibold">
-            {chartBusy ? "…" : formatUZS(chart.weekSegmentTotal)}
+            {formatUZS(chart.weekSegmentTotal)}
           </div>
         </div>
-        {chartBusy ? (
-          <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-            <Loader2 className="mr-2 size-4 animate-spin" />
-            Grafik yuklanmoqda…
-          </div>
-        ) : (
-          <div className="flex items-end gap-3 h-48">
-            {chart.bars.map((h, i) => (
-              <div key={chart.labels[i] ?? i} className="flex-1 flex flex-col items-center gap-2">
-                <div
-                  className="w-full min-h-[2px] rounded-t-md bg-foreground/90 hover:bg-foreground transition-colors"
-                  style={{ height: `${h}%` }}
-                />
-                <div className="text-xs text-muted-foreground">{chart.labels[i]}</div>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="flex items-end gap-3 h-48">
+          {chart.bars.map((h, i) => (
+            <div key={chart.labels[i] ?? i} className="flex-1 flex flex-col items-center gap-2">
+              <div
+                className="w-full min-h-[2px] rounded-t-md bg-foreground/90 hover:bg-foreground transition-colors"
+                style={{ height: `${h}%` }}
+              />
+              <div className="text-xs text-muted-foreground">{chart.labels[i]}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {payouts.length > 0 ? (
@@ -363,12 +340,7 @@ function EarningsPage() {
           <div className="col-span-2">Holat</div>
           <div className="col-span-1 text-right">Summa</div>
         </div>
-        {loading ? (
-          <div className="px-5 py-10 text-center text-sm text-muted-foreground">
-            <Loader2 className="mx-auto mb-2 size-5 animate-spin" />
-            Tranzaksiyalar yuklanmoqda…
-          </div>
-        ) : transactions.length === 0 ? (
+        {transactions.length === 0 ? (
           <div className="px-5 py-10 text-center text-sm text-muted-foreground">
             Tanlangan davrda tranzaksiyalar yo&apos;q.
           </div>

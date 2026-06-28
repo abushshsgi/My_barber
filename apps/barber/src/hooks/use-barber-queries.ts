@@ -86,6 +86,7 @@ export function useBookingActionMutation() {
       void qc.invalidateQueries({ queryKey: barberQueryKeys.bookings() });
       void qc.invalidateQueries({ queryKey: barberQueryKeys.finance() });
       void qc.invalidateQueries({ queryKey: barberQueryKeys.payoutBalance() });
+      void qc.invalidateQueries({ queryKey: [...barberQueryKeys.all, "analytics"] });
     },
   });
 }
@@ -193,6 +194,7 @@ export function useBarberFinanceQuery(
       }>(`/api/v1/barber/finance/summary/?${qs}`),
     enabled: enabled && Boolean(params.start && params.end),
     staleTime: 20_000,
+    placeholderData: (prev) => prev,
   });
 }
 
@@ -211,6 +213,7 @@ export function useBarberPayoutsQuery(enabled = true) {
       }>("/api/v1/barber/payouts/"),
     enabled,
     staleTime: 15_000,
+    placeholderData: (prev) => prev,
   });
 }
 
@@ -225,15 +228,23 @@ export function usePayoutBalanceQuery(enabled = true) {
       }>("/api/v1/barber/payouts/balance/"),
     enabled,
     staleTime: 15_000,
+    placeholderData: (prev) => prev,
   });
 }
 
 export function useBarberAnalyticsQuery(
-  params: { start: string; end: string; independent?: boolean; salonId?: number | null },
+  params: {
+    start: string;
+    end: string;
+    barberMe?: boolean;
+    independent?: boolean;
+    salonId?: number | null;
+  },
   enabled = true,
 ) {
   const qs = new URLSearchParams({ start: params.start, end: params.end });
-  if (params.independent) qs.set("independent", "1");
+  if (params.barberMe) qs.set("barber", "me");
+  else if (params.independent) qs.set("independent", "1");
   else if (params.salonId != null) qs.set("salon", String(params.salonId));
   const granularity = "granularity" in params ? (params as { granularity?: string }).granularity : undefined;
   if (granularity) qs.set("granularity", granularity);
@@ -259,7 +270,41 @@ export function useBarberAnalyticsQuery(
         completed_count?: number;
       }>(`/api/v1/analytics/?${qs}`),
     enabled: enabled && Boolean(params.start && params.end),
-    staleTime: 60_000,
+    staleTime: 20_000,
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function prefetchBarberFinance(
+  qc: import("@tanstack/react-query").QueryClient,
+  params: { start: string; end: string },
+) {
+  const qs = new URLSearchParams({ start: params.start, end: params.end });
+  return qc.prefetchQuery({
+    queryKey: barberQueryKeys.financeRange(params.start, params.end),
+    queryFn: () =>
+      apiJson(`/api/v1/barber/finance/summary/?${qs}`),
+    staleTime: 20_000,
+  });
+}
+
+export function prefetchPayoutBalance(qc: import("@tanstack/react-query").QueryClient) {
+  return qc.prefetchQuery({
+    queryKey: barberQueryKeys.payoutBalance(),
+    queryFn: () => apiJson("/api/v1/barber/payouts/balance/"),
+    staleTime: 15_000,
+  });
+}
+
+export function prefetchBarberAnalytics(
+  qc: import("@tanstack/react-query").QueryClient,
+  params: { start: string; end: string },
+) {
+  const qs = new URLSearchParams({ start: params.start, end: params.end, barber: "me" });
+  return qc.prefetchQuery({
+    queryKey: barberQueryKeys.analytics(qs.toString()),
+    queryFn: () => apiJson(`/api/v1/analytics/?${qs}`),
+    staleTime: 20_000,
   });
 }
 
@@ -273,6 +318,8 @@ export function useInvalidateBarberQueries() {
       qc.invalidateQueries({ queryKey: barberQueryKeys.payoutBalance() });
     },
     invalidateFinance: () => qc.invalidateQueries({ queryKey: barberQueryKeys.finance() }),
+    invalidateAnalytics: () =>
+      qc.invalidateQueries({ queryKey: [...barberQueryKeys.all, "analytics"] }),
     invalidateAll: () => qc.invalidateQueries({ queryKey: barberQueryKeys.all }),
   };
 }

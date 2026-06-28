@@ -199,3 +199,28 @@ class BookingEarningsPaymentTests(TestCase):
         self.assertTrue("payment_method" in body or "detail" in body)
         if "payment_method" in body:
             self.assertIn("balans", str(body["payment_method"]).lower())
+
+    def test_barber_me_analytics_includes_cash_completed_today(self):
+        booking = Booking.objects.create(
+            customer=self.user,
+            barber=self.barber,
+            start_at=timezone.now().replace(minute=0, second=0, microsecond=0),
+            end_at=timezone.now().replace(minute=30, second=0, microsecond=0),
+            status=Booking.Status.PENDING,
+            total_price=75_000,
+            customer_phone=self.user.phone or "",
+            payment_method=Booking.PaymentMethod.CASH,
+            payment_status=Booking.PaymentStatus.NOT_APPLICABLE,
+        )
+        self._complete_booking(booking)
+
+        today = timezone.localdate().isoformat()
+        self.client.credentials(HTTP_AUTHORIZATION=self.barber_auth)
+        res = self.client.get(
+            f"/api/v1/analytics/?barber=me&start={today}&end={today}",
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        body = res.json()
+        self.assertEqual(Decimal(body["cash_total"]), Decimal("75000"))
+        self.assertEqual(Decimal(body["revenue"]), Decimal("75000"))
+        self.assertEqual(body["completed_count"], 1)

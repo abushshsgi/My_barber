@@ -7,7 +7,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { apiFetch, apiJson, apiList, getBarberAccessToken } from "@/lib/api";
+import { barberQueryKeys } from "@/hooks/use-barber-queries";
 import { mapApiBooking } from "@/lib/map-booking";
 import { inferFlowIdentity, type FlowIdentity } from "@/lib/barber-flow-config";
 import { clearOnboardingJustCompleted } from "@/lib/onboarding-complete";
@@ -330,6 +332,7 @@ const EMPTY_SALON: Salon = {
 };
 
 export function BarberProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const bootCache = readOnboardingStatusCache();
   const [viewMode, setViewMode] = useState<ViewMode>("independent");
   const [profile, setProfile] = useState<BarberProfile>(EMPTY_PROFILE);
@@ -694,14 +697,30 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
   const mutateBooking = useCallback(
     async (id: string, action: "accept" | "reject" | "start" | "complete" | "cancel") => {
-      const res = await apiFetch(`/api/v1/bookings/${id}/${action}/`, { method: "POST" });
-      if (!res.ok) return;
+      const runAction = async (act: typeof action) => {
+        const res = await apiFetch(`/api/v1/bookings/${id}/${act}/`, { method: "POST" });
+        return res.ok;
+      };
+
+      if (action === "complete") {
+        const current = bookings.find((b) => b.id === id);
+        if (current && current.status !== "in_progress") {
+          const started = await runAction("start");
+          if (!started) return;
+        }
+      }
+
+      const ok = await runAction(action);
+      if (!ok) return;
       await refreshBookings();
       if (action === "complete" || action === "cancel") {
         await refreshFinanceSummary();
+        void queryClient.invalidateQueries({ queryKey: barberQueryKeys.finance() });
+        void queryClient.invalidateQueries({ queryKey: barberQueryKeys.payoutBalance() });
+        void queryClient.invalidateQueries({ queryKey: [...barberQueryKeys.all, "analytics"] });
       }
     },
-    [refreshBookings, refreshFinanceSummary],
+    [bookings, queryClient, refreshBookings, refreshFinanceSummary],
   );
 
   const markNotifRead = useCallback(async (id: string) => {
