@@ -35,6 +35,7 @@ export const CLIENT_BOOT_SCRIPT = ${JSON.stringify(
   `(function(){
 var BUILD=${JSON.stringify(buildId)};
 var CK="mysaloon-partner-app-build";
+var BOOT_KEY="mysaloon-partner-boot-reload";
 function purge(cb){
   var t=[];
   if("serviceWorker"in navigator)t.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister()}))}));
@@ -45,6 +46,11 @@ try{
   if(localStorage.getItem(CK)===BUILD)return;
   var stored=localStorage.getItem(CK);
   if(stored&&stored!==BUILD){
+    if(sessionStorage.getItem(BOOT_KEY)){
+      localStorage.setItem(CK,BUILD);
+      return;
+    }
+    sessionStorage.setItem(BOOT_KEY,"1");
     purge(function(){
       var u=new URL(location.href);
       u.searchParams.delete("_v");

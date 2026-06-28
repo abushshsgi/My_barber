@@ -1,5 +1,4 @@
 const BUILD_STORAGE_KEY = "mysaloon-partner-app-build";
-export const VERSION_RELOAD_KEY = "mybarber-partner-version-reload";
 
 export async function purgeDeployCaches(): Promise<void> {
   const tasks: Promise<unknown>[] = [];
@@ -17,21 +16,19 @@ export async function purgeDeployCaches(): Promise<void> {
 }
 
 /** Deploydan keyin SW/cache tozalab yangi bundle yuklash. */
-export function hardReloadForDeploy(targetBuildId?: string): void {
+export function hardReloadForDeploy(): void {
   if (typeof window === "undefined") return;
 
   void purgeDeployCaches().finally(() => {
     try {
-      if (targetBuildId) {
-        localStorage.setItem(BUILD_STORAGE_KEY, targetBuildId);
-      }
-      sessionStorage.removeItem(VERSION_RELOAD_KEY);
+      // Remote build id yozmaymiz — aks holda eski bundle boot scripti cheksiz reload qiladi.
+      localStorage.removeItem(BUILD_STORAGE_KEY);
     } catch {
       /* ignore quota / private mode */
     }
 
     const url = new URL(window.location.href);
-    for (const key of ["_v", "_chunk", "_deploy"]) {
+    for (const key of ["_v", "_chunk", "_deploy", "_boot"]) {
       url.searchParams.delete(key);
     }
     url.searchParams.set("_deploy", Date.now().toString(36));

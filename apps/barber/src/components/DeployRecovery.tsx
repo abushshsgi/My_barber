@@ -3,7 +3,6 @@ import { APP_BUILD_ID } from "@/lib/app-build-id";
 import { isChunkLoadError, reloadForChunkError } from "@/lib/chunk-reload";
 import {
   hardReloadForDeploy,
-  VERSION_RELOAD_KEY,
   versionToastDismissedKey,
   versionToastShownKey,
 } from "@/lib/deploy-reload";
@@ -20,13 +19,6 @@ async function fetchRemoteBuildId(): Promise<string | null> {
   } catch {
     return null;
   }
-}
-
-function reloadOnceForVersion(remoteBuildId: string): boolean {
-  if (sessionStorage.getItem(VERSION_RELOAD_KEY)) return false;
-  sessionStorage.setItem(VERSION_RELOAD_KEY, "1");
-  hardReloadForDeploy(remoteBuildId);
-  return true;
 }
 
 /** Deploydan keyin eski bundle hashlari 404 bo'lsa, bir marta yangilab yangi versiyani yuklaydi. */
@@ -60,9 +52,6 @@ export function DeployRecovery() {
       if (!remote || remote === APP_BUILD_ID) return;
 
       if (sessionStorage.getItem(versionToastDismissedKey(remote))) return;
-
-      if (reloadOnceForVersion(remote)) return;
-
       if (sessionStorage.getItem(versionToastShownKey(remote))) return;
       sessionStorage.setItem(versionToastShownKey(remote), "1");
 
@@ -75,7 +64,7 @@ export function DeployRecovery() {
           onClick: () => {
             toast.dismiss(VERSION_TOAST_ID);
             sessionStorage.setItem(versionToastDismissedKey(remote), "1");
-            hardReloadForDeploy(remote);
+            hardReloadForDeploy();
           },
         },
       });
