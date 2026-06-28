@@ -258,6 +258,64 @@
     }
   }
 
+  /* Auth login — chap marketing panel */
+  @keyframes auth-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes auth-feature-in {
+    from {
+      opacity: 0;
+      transform: translateX(-14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes auth-blob-drift {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    50% {
+      transform: translate(10px, -8px) scale(1.04);
+    }
+  }
+
+  .auth-marketing-in {
+    animation: auth-fade-up 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .auth-feature-in {
+    animation: auth-feature-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .auth-blob-drift {
+    animation: auth-blob-drift 9s ease-in-out infinite;
+  }
+
+  .auth-blob-drift-slow {
+    animation: auth-blob-drift 11s ease-in-out infinite reverse;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .auth-marketing-in,
+    .auth-feature-in,
+    .auth-blob-drift,
+    .auth-blob-drift-slow {
+      animation: none;
+    }
+  }
+
   /* Home map preview — 2GIS copyright yashirish (faqat kichik widget) */
   .map-home-preview a[href*="2gis"],
   .map-home-preview [class*="copyright"] {
