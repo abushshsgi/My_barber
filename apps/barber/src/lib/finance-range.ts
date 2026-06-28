@@ -120,3 +120,48 @@ export function formatFinanceDate(iso: string): string {
     year: "numeric",
   });
 }
+
+export function buildLast7DaysChart(
+  daily: Array<{ date: string; revenue: string | number }> = [],
+  completedBookings: Booking[] = [],
+): {
+  bars: number[];
+  labels: string[];
+  amounts: number[];
+  weekSegmentTotal: number;
+  hasData: boolean;
+} {
+  const end = startOfLocalDay(new Date());
+  const start = new Date(end);
+  start.setDate(start.getDate() - 6);
+
+  const fromBookings = new Map<string, number>();
+  for (const b of completedBookings) {
+    if (b.status !== "completed" || !b.start_at) continue;
+    if (!isDateInRange(b.start_at, "Hafta")) continue;
+    const key = localDateKey(new Date(b.start_at));
+    fromBookings.set(key, (fromBookings.get(key) ?? 0) + b.price);
+  }
+
+  const useBookings = fromBookings.size > 0;
+  const labels: string[] = [];
+  const amounts: number[] = [];
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const key = localDateKey(d);
+    labels.push(d.toLocaleDateString("uz-UZ", { weekday: "short" }));
+    if (useBookings) {
+      amounts.push(fromBookings.get(key) ?? 0);
+    } else {
+      const row = daily.find((x) => x.date.slice(0, 10) === key);
+      amounts.push(row ? Number(row.revenue) : 0);
+    }
+  }
+
+  const max = Math.max(1, ...amounts);
+  const bars = amounts.map((a) => (a > 0 ? Math.round((a / max) * 100) : 0));
+  const weekSegmentTotal = amounts.reduce((s, x) => s + x, 0);
+  return { bars, labels, amounts, weekSegmentTotal, hasData: weekSegmentTotal > 0 };
+}

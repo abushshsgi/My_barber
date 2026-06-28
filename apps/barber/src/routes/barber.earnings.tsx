@@ -7,8 +7,8 @@ import {
   EARNINGS_RANGES,
   filterCompletedBookingsByRange,
   formatFinanceDate,
+  buildLast7DaysChart,
   last7DaysIsoParams,
-  localDateKey,
   rangeToIsoParams,
   type EarningsRange,
 } from "@/lib/finance-range";
@@ -98,25 +98,13 @@ function EarningsPage() {
 
   const chart = useMemo(() => {
     const daily = chartFinance?.daily ?? [];
-    const labels: string[] = [];
-    const amounts: number[] = [];
-    const end = new Date();
-    end.setHours(0, 0, 0, 0);
-    const start = new Date(end);
-    start.setDate(start.getDate() - 6);
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(start);
-      d.setDate(start.getDate() + i);
-      const key = localDateKey(d);
-      labels.push(d.toLocaleDateString("uz-UZ", { weekday: "short" }));
-      const row = daily.find((x) => x.date === key);
-      amounts.push(row ? Number(row.revenue) : 0);
+    const completed = bookings.filter((b) => b.status === "completed");
+    const apiDailyHasData = daily.some((d) => Number(d.revenue) > 0);
+    if (useLocalFallback || !apiDailyHasData) {
+      return buildLast7DaysChart([], completed);
     }
-    const max = Math.max(1, ...amounts);
-    const bars = amounts.map((a) => Math.round((a / max) * 100));
-    const weekSegmentTotal = amounts.reduce((s, x) => s + x, 0);
-    return { bars, labels, weekSegmentTotal };
-  }, [chartFinance?.daily]);
+    return buildLast7DaysChart(daily, completed);
+  }, [bookings, chartFinance?.daily, useLocalFallback]);
 
   const exportCsv = () => {
     const header = "Sana,Mijoz,Xizmat,To'lov,Summa\n";
@@ -329,16 +317,30 @@ function EarningsPage() {
             {formatUZS(chart.weekSegmentTotal)}
           </div>
         </div>
-        <div className="flex items-end gap-3 h-48">
-          {chart.bars.map((h, i) => (
-            <div key={chart.labels[i] ?? i} className="flex-1 flex flex-col items-center gap-2">
+        <div className="flex h-48 items-end gap-2 sm:gap-3">
+          {!chart.hasData ? (
+            <p className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+              Oxirgi 7 kunda daromad yo&apos;q.
+            </p>
+          ) : (
+            chart.bars.map((h, i) => (
               <div
-                className="w-full min-h-[2px] rounded-t-md bg-foreground/90 hover:bg-foreground transition-colors"
-                style={{ height: `${h}%` }}
-              />
-              <div className="text-xs text-muted-foreground">{chart.labels[i]}</div>
-            </div>
-          ))}
+                key={chart.labels[i] ?? i}
+                className="flex h-full min-w-0 flex-1 flex-col items-center gap-2"
+              >
+                <div className="flex w-full flex-1 flex-col justify-end">
+                  <div
+                    className="w-full min-h-[4px] rounded-t-md bg-foreground/90 transition-colors hover:bg-foreground"
+                    style={{ height: `${Math.max(4, h)}%` }}
+                    title={`${chart.labels[i]}: ${formatUZS(chart.amounts[i] ?? 0)}`}
+                  />
+                </div>
+                <div className="shrink-0 text-[10px] text-muted-foreground sm:text-xs">
+                  {chart.labels[i]}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
