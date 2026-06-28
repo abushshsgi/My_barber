@@ -123,7 +123,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         return booking.barber_id == bp.id
 
     def get_queryset(self):
-        related = ["customer", "salon", "barber"]
+        related = ["customer", "salon", "barber", "completion"]
         if bookings_has_family_member_column():
             related.append("family_member")
         base = Booking.objects.select_related(*related).prefetch_related("lines")

@@ -7,6 +7,11 @@ import {
   type BookingAction,
 } from "@/lib/map-booking";
 import type { Booking } from "@/components/barber/BarberContext";
+import {
+  readBookingsSnapshot,
+  readBookingsSnapshotUpdatedAt,
+  writeBookingsSnapshot,
+} from "@/lib/barber-snapshot-cache";
 
 export const barberQueryKeys = {
   all: ["barber"] as const,
@@ -39,16 +44,22 @@ export type ApiBarberService = {
   barber?: number | null;
 };
 
+export async function fetchBarberBookings(): Promise<Booking[]> {
+  const rows = await apiList<ApiBookingRow>("/api/v1/bookings/");
+  const mapped = rows.map(mapApiBooking);
+  writeBookingsSnapshot(mapped);
+  return mapped;
+}
+
 export function useBarberBookingsQuery(enabled = true) {
   return useQuery({
     queryKey: barberQueryKeys.bookings(),
-    queryFn: async () => {
-      const rows = await apiList<ApiBookingRow>("/api/v1/bookings/");
-      return rows.map(mapApiBooking);
-    },
+    queryFn: fetchBarberBookings,
     enabled,
     staleTime: 20_000,
     refetchInterval: 30_000,
+    initialData: () => readBookingsSnapshot() ?? undefined,
+    initialDataUpdatedAt: readBookingsSnapshotUpdatedAt,
   });
 }
 
@@ -288,6 +299,14 @@ export function useBarberAnalyticsQuery(
     staleTime: 20_000,
     placeholderData: (prev) => prev,
   });
+}
+
+export function prefetchBarberBookings(qc: import("@tanstack/react-query").QueryClient) {
+  return qc.prefetchQuery({
+    queryKey: barberQueryKeys.bookings(),
+    queryFn: fetchBarberBookings,
+    staleTime: 20_000,
+  }).catch(() => undefined);
 }
 
 export function prefetchBarberFinance(

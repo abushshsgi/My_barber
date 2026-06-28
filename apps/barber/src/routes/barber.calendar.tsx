@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
 import { PageHeader, StatusPill, UserAvatar } from "@/components/barber/primitives";
-import { isBookingOnLocalDay } from "@/lib/finance-range";
+import { isBookingScheduledToday } from "@/lib/finance-range";
 
 export const Route = createFileRoute("/barber/calendar")({
   component: CalendarPage,
@@ -17,13 +17,7 @@ function CalendarPage() {
   const [weekOffset, setWeekOffset] = useState(0);
 
   const today = useMemo(
-    () =>
-      bookings.filter(
-        (b) =>
-          isBookingOnLocalDay(b.start_at) &&
-          b.status !== "cancelled" &&
-          b.status !== "rejected",
-      ),
+    () => bookings.filter((b) => isBookingScheduledToday(b)),
     [bookings],
   );
   const slots = useMemo(() => {

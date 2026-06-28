@@ -31,6 +31,7 @@ class BookingSerializer(serializers.ModelSerializer):
     customer_name = serializers.CharField(source="customer.full_name", read_only=True)
     customer_phone = serializers.CharField(read_only=True)
     customer_avatar = serializers.SerializerMethodField()
+    completed_at = serializers.SerializerMethodField()
     salon_name = serializers.SerializerMethodField()
     barber_name = serializers.CharField(source="barber.full_name", read_only=True)
     has_review = serializers.SerializerMethodField()
@@ -55,6 +56,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "start_at",
             "end_at",
             "started_at",
+            "completed_at",
             "status",
             "total_price",
             "payment_method",
@@ -90,6 +92,12 @@ class BookingSerializer(serializers.ModelSerializer):
         if request:
             return request.build_absolute_uri(url)
         return url
+
+    def get_completed_at(self, obj):
+        completion = getattr(obj, "completion", None)
+        if completion and completion.completed_at:
+            return completion.completed_at
+        return None
 
     def get_has_review(self, obj):
         return hasattr(obj, "review")

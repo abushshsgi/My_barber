@@ -11,7 +11,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { apiFetch, apiJson, apiList, getBarberAccessToken } from "@/lib/api";
 import { barberQueryKeys } from "@/hooks/use-barber-queries";
 import { mapApiBooking } from "@/lib/map-booking";
-import { bookingDateLabel } from "@/lib/finance-range";
+import { bookingDateLabel, bookingEarningsAt } from "@/lib/finance-range";
+import { readBookingsSnapshot } from "@/lib/barber-snapshot-cache";
+import {
+  fetchBarberBookings,
+  useBarberBookingsQuery,
+} from "@/hooks/use-barber-queries";
 import { inferFlowIdentity, type FlowIdentity } from "@/lib/barber-flow-config";
 import { clearOnboardingJustCompleted } from "@/lib/onboarding-complete";
 import {
@@ -97,6 +102,7 @@ export type Booking = {
   status: "pending" | "accepted" | "in_progress" | "completed" | "cancelled" | "rejected";
   /** ISO8601 — diagrammalar va filtrlash uchun */
   start_at?: string;
+  completed_at?: string;
   payment_method?: "cash" | "online";
   payment_status?: string;
 };
@@ -340,7 +346,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<BarberProfile>(EMPTY_PROFILE);
   const [services, setServices] = useState<Service[]>([]);
   const [workingHours, setWorkingHours] = useState<WorkingHour[]>([]);
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>(() => readBookingsSnapshot() ?? []);
   const [clients, setClients] = useState<Client[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -432,10 +438,10 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshBookings = useCallback(async () => {
-    const apiBookings = await apiList<Parameters<typeof mapApiBooking>[0]>("/api/v1/bookings/");
-    const mapped = apiBookings.map(mapApiBooking);
+    const mapped = await fetchBarberBookings();
     setBookings(mapped);
     setClients((prev) => enrichClientsLastVisit(prev, mapped));
+    return mapped;
   }, []);
 
   const refreshNotifications = useCallback(async () => {
@@ -1116,33 +1122,32 @@ export function BarberProvider({ children }: { children: ReactNode }) {
           if (emailVerified) runQuiet([refreshServices, refreshWorkingHours]);
           return;
         }
-        if (ownsSalonFlag) runQuiet([refreshSalonView]);
-        runQuiet([refreshBookings, refreshNotifications, refreshServices, refreshWorkingHours]);
+        if (ownsSalonFlag) void refreshSalonView().catch(() => undefined);
+        void Promise.all([
+          refreshBookings(),
+          refreshNotifications(),
+          refreshServices(),
+          refreshWorkingHours(),
+          refreshReviews(),
+          () => refreshClients({ workMode: wm, salonId: aid }),
+          refreshFinanceSummary(),
+        ].map((fn) => Promise.resolve(typeof fn === "function" ? fn() : fn).catch(() => undefined)));
         const defer = () => {
           if (!alive) return;
-          runQuiet([
-            () => refreshClients({ workMode: wm, salonId: aid }),
-            refreshReviews,
-            refreshFinanceSummary,
-            refreshSalonView,
-          ]);
-          window.setTimeout(() => {
-            if (!alive) return;
-            runQuiet([
-              refreshConversations,
-              refreshInventory,
-              refreshExpenses,
-              refreshGoals,
-              refreshPromos,
-              refreshSettings,
-              refreshPortfolio,
-            ]);
-          }, 1200);
+          void Promise.all([
+            refreshConversations(),
+            refreshInventory(),
+            refreshExpenses(),
+            refreshGoals(),
+            refreshPromos(),
+            refreshSettings(),
+            refreshPortfolio(),
+          ].map((fn) => fn().catch(() => undefined)));
         };
         if (typeof requestIdleCallback === "function") {
-          requestIdleCallback(defer, { timeout: 2500 });
+          requestIdleCallback(defer, { timeout: 800 });
         } else {
-          window.setTimeout(defer, 600);
+          window.setTimeout(defer, 200);
         }
       };
       loadSecondary();
@@ -1154,6 +1159,14 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only hydrate
   }, []);
+
+  const bookingsQuery = useBarberBookingsQuery(fullyReady && activationHydrated);
+
+  useEffect(() => {
+    if (!bookingsQuery.data) return;
+    setBookings(bookingsQuery.data);
+    setClients((prev) => enrichClientsLastVisit(prev, bookingsQuery.data));
+  }, [bookingsQuery.data]);
 
   useEffect(() => {
     if (!fullyReady || !activationHydrated) return;
@@ -1387,10 +1400,12 @@ function enrichClientsLastVisit(clients: Client[], bookings: Booking[]): Client[
   if (!clients.length) return clients;
   const latest = new Map<string, string>();
   for (const b of bookings) {
-    if (!b.customer_id || !b.start_at) continue;
+    if (!b.customer_id) continue;
     if (b.status === "cancelled" || b.status === "rejected") continue;
+    const at = b.status === "completed" ? bookingEarningsAt(b) : b.start_at;
+    if (!at) continue;
     const prev = latest.get(b.customer_id);
-    if (!prev || b.start_at > prev) latest.set(b.customer_id, b.start_at);
+    if (!prev || at > prev) latest.set(b.customer_id, at);
   }
   return clients.map((c) => {
     const iso = latest.get(c.id);

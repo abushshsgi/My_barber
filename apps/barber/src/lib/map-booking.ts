@@ -10,6 +10,7 @@ export type ApiBookingRow = {
   start_at: string;
   end_at?: string;
   status: string;
+  completed_at?: string | null;
   total_price: string | number;
   payment_method?: string;
   payment_status?: string;
@@ -43,6 +44,7 @@ export function mapApiBooking(b: ApiBookingRow): Booking {
     client_avatar: (b.customer_avatar && String(b.customer_avatar)) || "",
     service,
     start_at: b.start_at,
+    completed_at: b.completed_at ?? undefined,
     date: bookingDateLabel(b.start_at),
     time: `${hh}:${mm}`,
     duration_min,

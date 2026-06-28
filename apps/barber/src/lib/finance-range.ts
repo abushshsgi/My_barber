@@ -1,4 +1,10 @@
 import type { Booking, Transaction } from "@/components/barber/BarberContext";
+import {
+  dateKeyInBarberTz,
+  isSameBarberDay,
+  todayKeyInBarberTz,
+  tomorrowKeyInBarberTz,
+} from "@/lib/barber-timezone";
 
 export const EARNINGS_RANGES = ["Bugun", "Hafta", "Oy", "Yil"] as const;
 export type EarningsRange = (typeof EARNINGS_RANGES)[number];
@@ -15,7 +21,39 @@ export function formatLocalDate(d: Date): string {
 }
 
 export function localDateKey(d: Date): string {
-  return formatLocalDate(startOfLocalDay(d));
+  return dateKeyInBarberTz(d) ?? formatLocalDate(startOfLocalDay(d));
+}
+
+export function bookingEarningsAt(booking: Booking): string | undefined {
+  return booking.completed_at ?? booking.start_at;
+}
+
+export function isBookingOnLocalDay(isoDate: string | undefined, day = new Date()): boolean {
+  return isSameBarberDay(isoDate, day);
+}
+
+export function isBookingScheduledToday(booking: Booking, day = new Date()): boolean {
+  if (booking.status === "cancelled" || booking.status === "rejected") return false;
+  if (isSameBarberDay(booking.start_at, day)) return true;
+  if (booking.status === "completed") {
+    return isSameBarberDay(bookingEarningsAt(booking), day);
+  }
+  return false;
+}
+
+export function bookingDateLabel(isoDate: string, now = new Date()): string {
+  const d = new Date(isoDate);
+  if (Number.isNaN(d.getTime())) return "";
+  const key = dateKeyInBarberTz(isoDate);
+  const todayKey = todayKeyInBarberTz(now);
+  const tomorrowKey = tomorrowKeyInBarberTz(now);
+  if (key === todayKey) return "Today";
+  if (key === tomorrowKey) return "Tomorrow";
+  return d.toLocaleDateString("uz-UZ", {
+    timeZone: "Asia/Tashkent",
+    day: "2-digit",
+    month: "short",
+  });
 }
 
 export function rangeStart(range: EarningsRange, now = new Date()): Date {
@@ -36,19 +74,36 @@ export function rangeStart(range: EarningsRange, now = new Date()): Date {
   }
 }
 
+export function rangeKeysInBarberTz(
+  range: EarningsRange,
+  now = new Date(),
+): { start: string; end: string } {
+  const end = todayKeyInBarberTz(now);
+  const [y, m, d] = end.split("-").map(Number);
+  const cursor = new Date(Date.UTC(y, m - 1, d));
+  if (range === "Bugun") return { start: end, end };
+  if (range === "Hafta") {
+    cursor.setUTCDate(cursor.getUTCDate() - 6);
+    return { start: dateKeyInBarberTz(cursor)!, end };
+  }
+  if (range === "Oy") return { start: `${end.slice(0, 7)}-01`, end };
+  if (range === "Yil") return { start: `${end.slice(0, 4)}-01-01`, end };
+  return { start: end, end };
+}
+
 export function isDateInRange(isoDate: string, range: EarningsRange, now = new Date()): boolean {
-  const dt = startOfLocalDay(new Date(isoDate));
-  if (Number.isNaN(dt.getTime())) return false;
-  const from = rangeStart(range, now);
-  const to = startOfLocalDay(now);
-  return dt >= from && dt <= to;
+  const key = dateKeyInBarberTz(isoDate);
+  if (!key) return false;
+  const { start, end } = rangeKeysInBarberTz(range, now);
+  return key >= start && key <= end;
 }
 
 export function isCurrentMonth(isoDate?: string, now = new Date()): boolean {
   if (!isoDate) return false;
-  const d = new Date(isoDate);
-  if (Number.isNaN(d.getTime())) return false;
-  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  const key = dateKeyInBarberTz(isoDate);
+  if (!key) return false;
+  const monthPrefix = todayKeyInBarberTz(now).slice(0, 7);
+  return key.startsWith(monthPrefix);
 }
 
 export function filterCompletedBookingsByRange(
@@ -58,8 +113,8 @@ export function filterCompletedBookingsByRange(
   return bookings.filter(
     (b) =>
       b.status === "completed" &&
-      Boolean(b.start_at) &&
-      isDateInRange(b.start_at!, range),
+      Boolean(bookingEarningsAt(b)) &&
+      isDateInRange(bookingEarningsAt(b)!, range),
   );
 }
 
@@ -71,12 +126,7 @@ export function filterTransactionsByRange(
 }
 
 export function rangeToIsoParams(range: EarningsRange, now = new Date()): { start: string; end: string } {
-  const from = rangeStart(range, now);
-  const to = startOfLocalDay(now);
-  return {
-    start: formatLocalDate(from),
-    end: formatLocalDate(to),
-  };
+  return rangeKeysInBarberTz(range, now);
 }
 
 export function last7DaysIsoParams(now = new Date()): { start: string; end: string } {
@@ -121,25 +171,6 @@ export function formatFinanceDate(iso: string): string {
   });
 }
 
-export function isBookingOnLocalDay(isoDate: string | undefined, day = new Date()): boolean {
-  if (!isoDate) return false;
-  const d = new Date(isoDate);
-  if (Number.isNaN(d.getTime())) return false;
-  return localDateKey(d) === localDateKey(day);
-}
-
-export function bookingDateLabel(isoDate: string, now = new Date()): string {
-  const d = new Date(isoDate);
-  if (Number.isNaN(d.getTime())) return "";
-  const key = localDateKey(d);
-  const todayKey = localDateKey(now);
-  const tomorrow = startOfLocalDay(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  if (key === todayKey) return "Today";
-  if (key === localDateKey(tomorrow)) return "Tomorrow";
-  return d.toLocaleDateString("uz-UZ", { day: "2-digit", month: "short" });
-}
-
 export type DailyChartItem = {
   date: string;
   label: string;
@@ -173,9 +204,10 @@ export function buildStatsDailyRows(
 ): Array<{ date: string; revenue: string }> {
   const fromBookings = new Map<string, number>();
   for (const b of completedBookings) {
-    if (b.status !== "completed" || !b.start_at) continue;
-    if (!isDateInStatsRange(b.start_at, range)) continue;
-    const key = localDateKey(new Date(b.start_at));
+    if (b.status !== "completed" || !bookingEarningsAt(b)) continue;
+    if (!isDateInStatsRange(bookingEarningsAt(b)!, range)) continue;
+    const key = dateKeyInBarberTz(bookingEarningsAt(b)!);
+    if (!key) continue;
     fromBookings.set(key, (fromBookings.get(key) ?? 0) + b.price);
   }
 
@@ -213,27 +245,30 @@ export function buildLast7DaysChart(
   weekSegmentTotal: number;
   hasData: boolean;
 } {
-  const end = startOfLocalDay(new Date());
-  const start = new Date(end);
-  start.setDate(start.getDate() - 6);
-
   const fromBookings = new Map<string, number>();
   for (const b of completedBookings) {
-    if (b.status !== "completed" || !b.start_at) continue;
-    if (!isDateInRange(b.start_at, "Hafta")) continue;
-    const key = localDateKey(new Date(b.start_at));
+    if (b.status !== "completed" || !bookingEarningsAt(b)) continue;
+    if (!isDateInRange(bookingEarningsAt(b)!, "Hafta")) continue;
+    const key = dateKeyInBarberTz(bookingEarningsAt(b)!);
+    if (!key) continue;
     fromBookings.set(key, (fromBookings.get(key) ?? 0) + b.price);
   }
-
   const useBookings = fromBookings.size > 0;
+
+  const { start: weekStartKey } = rangeKeysInBarberTz("Hafta");
+  const [sy, sm, sd] = weekStartKey.split("-").map(Number);
   const labels: string[] = [];
   const amounts: number[] = [];
 
   for (let i = 0; i < 7; i++) {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    const key = localDateKey(d);
-    labels.push(d.toLocaleDateString("uz-UZ", { weekday: "short" }));
+    const cursor = new Date(Date.UTC(sy, sm - 1, sd + i));
+    const key = dateKeyInBarberTz(cursor)!;
+    labels.push(
+      cursor.toLocaleDateString("uz-UZ", {
+        timeZone: "Asia/Tashkent",
+        weekday: "short",
+      }),
+    );
     if (useBookings) {
       amounts.push(fromBookings.get(key) ?? 0);
     } else {

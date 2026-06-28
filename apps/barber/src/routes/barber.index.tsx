@@ -18,16 +18,35 @@ import {
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
 import { StatusPill, UserAvatar } from "@/components/barber/primitives";
 import { getFlowMeta } from "@/lib/barber-flow-config";
-import { isCurrentMonth, isBookingOnLocalDay } from "@/lib/finance-range";
+import {
+  bookingEarningsAt,
+  filterCompletedBookingsByRange,
+  isBookingScheduledToday,
+  isSameBarberDay,
+  rangeToIsoParams,
+} from "@/lib/finance-range";
 import { cn } from "@/lib/utils";
+import {
+  prefetchBarberBookings,
+  prefetchBarberFinance,
+  useBarberBookingsQuery,
+  useBarberFinanceQuery,
+} from "@/hooks/use-barber-queries";
+import { readOnboardingStatusCache } from "@/lib/onboarding-status-cache";
 
 export const Route = createFileRoute("/barber/")({
+  loader: ({ context: { queryClient } }) => {
+    const cached = readOnboardingStatusCache();
+    if (cached?.fully_ready !== true) return;
+    void prefetchBarberBookings(queryClient);
+    void prefetchBarberFinance(queryClient, rangeToIsoParams("Oy"));
+    void prefetchBarberFinance(queryClient, rangeToIsoParams("Bugun"));
+  },
   component: BarberDashboard,
 });
 
 function BarberDashboard() {
   const {
-    bookings,
     profile,
     onboardingComplete,
     reviews,
@@ -40,7 +59,14 @@ function BarberDashboard() {
     completeBooking,
     viewMode,
     flowIdentity,
+    fullyReady,
+    activationHydrated,
   } = useBarberContext();
+
+  const live = fullyReady && activationHydrated;
+  const { data: bookings = [] } = useBarberBookingsQuery(live);
+  const monthParams = useMemo(() => rangeToIsoParams("Oy"), []);
+  const { data: monthFinance } = useBarberFinanceQuery(monthParams, live);
 
   /** Salon rejimida indeks — mustaqil dashboard emas, salon overview (ishchi «Barberga oʻtish» mustaqil rejimga o‘tkazadi). */
   if (onboardingComplete && viewMode === "salon") {
@@ -50,35 +76,40 @@ function BarberDashboard() {
   const today = useMemo(
     () =>
       bookings
-        .filter(
-          (b) =>
-            isBookingOnLocalDay(b.start_at) &&
-            b.status !== "cancelled" &&
-            b.status !== "rejected",
-        )
+        .filter((b) => isBookingScheduledToday(b))
         .sort((a, b) => a.time.localeCompare(b.time)),
     [bookings],
   );
+
   const clientsToday = useMemo(() => {
     const ids = new Set(
       bookings
-        .filter((b) => b.status === "completed" && isBookingOnLocalDay(b.start_at))
+        .filter((b) => b.status === "completed" && isSameBarberDay(bookingEarningsAt(b)))
         .map((b) => b.customer_id)
         .filter(Boolean),
     );
     return ids.size;
   }, [bookings]);
-  const active = bookings.find((b) => b.status === "in_progress");
-  const completedThisMonth = bookings.filter(
-    (b) => b.status === "completed" && isCurrentMonth(b.start_at),
+
+  const localMonthCompleted = useMemo(
+    () => filterCompletedBookingsByRange(bookings, "Oy"),
+    [bookings],
   );
-  const monthCash = completedThisMonth
+  const localMonthCash = localMonthCompleted
     .filter((b) => b.payment_method === "cash")
     .reduce((s, b) => s + b.price, 0);
-  const monthOnline = completedThisMonth
+  const localMonthOnline = localMonthCompleted
     .filter((b) => b.payment_method === "online")
     .reduce((s, b) => s + b.price, 0);
-  const earnings = monthCash + monthOnline;
+  const apiMonthTotal = Number(monthFinance?.total_income ?? 0);
+  const apiMonthCash = Number(monthFinance?.cash_total ?? 0);
+  const apiMonthOnline = Number(monthFinance?.online_total ?? 0);
+  const useLocalMonth = apiMonthTotal <= 0 && localMonthCompleted.length > 0;
+  const monthCash = useLocalMonth ? localMonthCash : apiMonthCash;
+  const monthOnline = useLocalMonth ? localMonthOnline : apiMonthOnline;
+  const earnings = useLocalMonth ? localMonthCash + localMonthOnline : apiMonthTotal;
+
+  const active = bookings.find((b) => b.status === "in_progress");
   const avgRating = reviews.reduce((s, r) => s + r.rating, 0) / Math.max(1, reviews.length);
   const lowStock = inventory.filter((i) => i.stock <= i.min_stock);
   const activeGoals = goals.filter((g) => !g.done);
