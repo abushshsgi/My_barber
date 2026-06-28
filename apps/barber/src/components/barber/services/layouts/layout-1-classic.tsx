@@ -4,7 +4,7 @@ import {
   RecommendationsBlock,
   ScheduleAsideBlock,
   ServicesListBlock,
-} from "./ServicesBlocks";
+} from "../ServicesBlocks";
 
 export function ServicesLayout1Classic({ state }: { state: ServicesPageState }) {
   return (
