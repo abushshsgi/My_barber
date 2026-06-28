@@ -183,6 +183,7 @@ def _analytics_response_for_bookings(
         "cancelled_count": cancelled_count,
     }
 from bookings.ws_broadcast import broadcast_booking_updated
+from notifications.serializers import NotificationSerializer
 from notifications.utils import notify_barber, notify_user
 from salons.models import Salon, SalonMembership
 
