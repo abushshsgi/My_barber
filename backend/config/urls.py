@@ -7,6 +7,7 @@ from django.views.static import serve
 from rest_framework.routers import DefaultRouter
 from control_panel.views import (
     AdminBarberDetailView,
+    AdminBarberAnalyticsView,
     AdminBarberListView,
     AdminBarberSegmentStatsView,
     AdminBookingListView,
@@ -202,6 +203,7 @@ api_routes = [
     path("admin/salons/<int:pk>/", AdminSalonDetailView.as_view()),
     path("admin/barbers/", AdminBarberListView.as_view()),
     path("admin/barbers/segment-stats/", AdminBarberSegmentStatsView.as_view()),
+    path("admin/barbers/<int:pk>/analytics/", AdminBarberAnalyticsView.as_view()),
     path("admin/barbers/<int:pk>/", AdminBarberDetailView.as_view()),
     path("admin/bookings/", AdminBookingListView.as_view()),
     path("admin/bookings/<int:pk>/", AdminBookingDetailView.as_view()),

@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import {
+  BarChart3,
   Building2,
   CalendarClock,
   ChevronDown,
@@ -152,6 +153,12 @@ function BarberOverviewPage() {
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/80 bg-muted/20 px-3 py-2.5 sm:px-4">
         <span className="text-xs font-medium text-muted-foreground shrink-0">Tezkor havolalar</span>
         <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" className="h-8 gap-1.5" asChild>
+            <Link to="/admin/barbers/$barberId/stats" params={{ barberId }}>
+              <BarChart3 className="size-3.5" />
+              Statistika
+            </Link>
+          </Button>
           <Button variant="outline" size="sm" className="h-8 gap-1.5" asChild>
             <Link to="/admin/barbers/$barberId/bookings" params={{ barberId }}>
               <CalendarClock className="size-3.5" />

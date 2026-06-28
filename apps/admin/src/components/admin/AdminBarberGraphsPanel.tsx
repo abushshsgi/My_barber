@@ -22,13 +22,14 @@ import {
   Wallet,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { formatUZS } from "@/components/barber/BarberContext";
-import { EmptyBlock, StatCard } from "@/components/barber/primitives";
+import { formatAdminUzs } from "@/lib/admin-analytics";
+import { EmptyState } from "@/components/admin/EmptyState";
+import { KPICard } from "@/components/admin/KPICard";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { cn } from "@/lib/utils";
-import type { useBarberStatsMetrics } from "@/hooks/use-barber-stats";
+import type { AdminBarberStatsMetrics } from "@/hooks/use-admin-barber-stats";
 
-type Metrics = ReturnType<typeof useBarberStatsMetrics>;
+type Metrics = AdminBarberStatsMetrics;
 
 const chartConfig = {
   revenue: { label: "Daromad", color: "hsl(var(--foreground))" },
@@ -55,7 +56,7 @@ function formatAxisValue(value: number) {
 }
 
 function uzsTooltip(value: unknown) {
-  return formatUZS(Number(value) || 0);
+  return formatAdminUzs(Number(value) || 0);
 }
 
 function tickIntervalForLength(len: number) {
@@ -200,7 +201,7 @@ function DonutChartBlock({
   );
 }
 
-export function StatsGraphsPanel({ metrics }: { metrics: Metrics }) {
+export function AdminBarberGraphsPanel({ metrics }: { metrics: Metrics }) {
   const {
     dailyRows,
     weeklyRows,
@@ -255,7 +256,7 @@ export function StatsGraphsPanel({ metrics }: { metrics: Metrics }) {
 
   if (!dailyRows.some((row) => row.revenue > 0)) {
     return (
-      <EmptyBlock
+      <EmptyState
         icon={<BarChart3 className="size-5" />}
         title="Grafiklar hali tayyor emas"
         description="Tanlangan davrda yakunlangan bronlar bo'lgach, barcha diagrammalar shu yerda ko'rinadi."
@@ -266,29 +267,29 @@ export function StatsGraphsPanel({ metrics }: { metrics: Metrics }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard
-          icon={<Wallet className="size-4" />}
+        <KPICard
           label="Jami daromad"
-          value={formatUZS(totalRevenue)}
+          value={formatAdminUzs(totalRevenue)}
           hint={`${activeDays} faol kun`}
+          icon={Wallet}
         />
-        <StatCard
-          icon={<TrendingUp className="size-4" />}
+        <KPICard
           label="O'rtacha / kun"
-          value={formatUZS(avgDaily)}
+          value={formatAdminUzs(avgDaily)}
           hint="Faol kunlar bo'yicha"
+          icon={TrendingUp}
         />
-        <StatCard
-          icon={<CalendarDays className="size-4" />}
+        <KPICard
           label="Eng yaxshi kun"
-          value={formatUZS(peakDay.revenue)}
+          value={formatAdminUzs(peakDay.revenue)}
           hint={peakDay.date !== "—" ? peakDay.date.slice(5) : undefined}
+          icon={CalendarDays}
         />
-        <StatCard
-          icon={<Activity className="size-4" />}
+        <KPICard
           label="Jami bronlar"
           value={String(totalBookings)}
           hint={`${completionRate.toFixed(0)}% yakunlangan`}
+          icon={Activity}
         />
       </div>
 
@@ -374,11 +375,11 @@ export function StatsGraphsPanel({ metrics }: { metrics: Metrics }) {
           <div className="mb-4 flex flex-wrap gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
               <span className="size-2 rounded-full bg-emerald-600" />
-              Naqd {formatUZS(cashTotal)}
+              Naqd {formatAdminUzs(cashTotal)}
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-medium text-blue-700 dark:text-blue-400">
               <span className="size-2 rounded-full bg-blue-600" />
-              Onlayn {formatUZS(onlineTotal)}
+              Onlayn {formatAdminUzs(onlineTotal)}
             </span>
           </div>
           <ChartContainer config={chartConfig} className="aspect-auto h-[220px] w-full">
@@ -499,7 +500,7 @@ export function StatsGraphsPanel({ metrics }: { metrics: Metrics }) {
             <DonutChartBlock
               data={paymentMix}
               centerLabel="Jami"
-              centerValue={formatUZS(totalRevenue)}
+              centerValue={formatAdminUzs(totalRevenue)}
               formatValue={uzsTooltip}
             />
           </GraphChartCard>

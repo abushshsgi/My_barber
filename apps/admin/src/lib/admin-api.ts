@@ -470,12 +470,15 @@ type BackendStats = {
   salons_published: number;
   bookings_total: number;
   bookings_today: number;
+  bookings_week?: number;
+  revenue_total?: string | number;
   reviews_total: number;
   regions?: Array<{
     region: string;
     label: string;
     barbers_count: number;
     salons_count: number;
+    bookings_count?: number;
   }>;
 };
 
@@ -708,8 +711,8 @@ export async function fetchAdminStats(): Promise<AdminStats> {
     total_barbers: stats.barbers_total ?? 0,
     total_salons: stats.salons_published ?? 0,
     total_bookings: stats.bookings_total ?? 0,
-    weekly_bookings: stats.bookings_today ?? 0,
-    revenue_uzs: 0,
+    weekly_bookings: stats.bookings_week ?? stats.bookings_today ?? 0,
+    revenue_uzs: toInt(stats.revenue_total, 0),
     delta: { users: 0, barbers: 0, bookings: 0, revenue: 0 },
     regions: (stats.regions ?? []).map((r) => ({
       code: r.region,
@@ -717,9 +720,17 @@ export async function fetchAdminStats(): Promise<AdminStats> {
       barbers: r.barbers_count ?? 0,
       salons: r.salons_count ?? 0,
       users: 0,
-      bookings: 0,
+      bookings: r.bookings_count ?? 0,
     })),
   };
+}
+
+export async function fetchAdminBarberAnalytics(
+  barberId: string,
+  params: { start: string; end: string },
+): Promise<import("./admin-analytics").AdminAnalyticsResponse> {
+  const sp = new URLSearchParams({ start: params.start, end: params.end });
+  return apiJson(`/api/v1/admin/barbers/${barberId}/analytics/?${sp}`);
 }
 
 export async function fetchAdminUsers(params?: {

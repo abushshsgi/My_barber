@@ -40,6 +40,7 @@ import { Route as BarberBookingsRouteImport } from './routes/barber.bookings'
 import { Route as BarberAmenitiesRouteImport } from './routes/barber.amenities'
 import { Route as BarberActivationRouteImport } from './routes/barber.activation'
 import { Route as SalonJoinIndexRouteImport } from './routes/salon.join.index'
+import { Route as BarberStatsIndexRouteImport } from './routes/barber.stats.index'
 import { Route as BarberSalonViewIndexRouteImport } from './routes/barber.salon-view.index'
 import { Route as SalonJoinSetupRouteImport } from './routes/salon.join.setup'
 import { Route as BarberStatsGraphsRouteImport } from './routes/barber.stats.graphs'
@@ -203,6 +204,11 @@ const SalonJoinIndexRoute = SalonJoinIndexRouteImport.update({
   path: '/',
   getParentRoute: () => SalonJoinRoute,
 } as any)
+const BarberStatsIndexRoute = BarberStatsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => BarberStatsRoute,
+} as any)
 const BarberSalonViewIndexRoute = BarberSalonViewIndexRouteImport.update({
   id: '/salon-view/',
   path: '/salon-view/',
@@ -277,6 +283,7 @@ export interface FileRoutesByFullPath {
   '/barber/stats/graphs': typeof BarberStatsGraphsRoute
   '/salon/join/setup': typeof SalonJoinSetupRoute
   '/barber/salon-view/': typeof BarberSalonViewIndexRoute
+  '/barber/stats/': typeof BarberStatsIndexRoute
   '/salon/join/': typeof SalonJoinIndexRoute
 }
 export interface FileRoutesByTo {
@@ -303,7 +310,6 @@ export interface FileRoutesByTo {
   '/barber/schedule': typeof BarberScheduleRoute
   '/barber/services': typeof BarberServicesRoute
   '/barber/settings': typeof BarberSettingsRoute
-  '/barber/stats': typeof BarberStatsRouteWithChildren
   '/independent/setup': typeof IndependentSetupRoute
   '/mybarber/setup': typeof MybarberSetupRoute
   '/salon/create': typeof SalonCreateRoute
@@ -315,6 +321,7 @@ export interface FileRoutesByTo {
   '/barber/stats/graphs': typeof BarberStatsGraphsRoute
   '/salon/join/setup': typeof SalonJoinSetupRoute
   '/barber/salon-view': typeof BarberSalonViewIndexRoute
+  '/barber/stats': typeof BarberStatsIndexRoute
   '/salon/join': typeof SalonJoinIndexRoute
 }
 export interface FileRoutesById {
@@ -356,6 +363,7 @@ export interface FileRoutesById {
   '/barber/stats/graphs': typeof BarberStatsGraphsRoute
   '/salon/join/setup': typeof SalonJoinSetupRoute
   '/barber/salon-view/': typeof BarberSalonViewIndexRoute
+  '/barber/stats/': typeof BarberStatsIndexRoute
   '/salon/join/': typeof SalonJoinIndexRoute
 }
 export interface FileRouteTypes {
@@ -398,6 +406,7 @@ export interface FileRouteTypes {
     | '/barber/stats/graphs'
     | '/salon/join/setup'
     | '/barber/salon-view/'
+    | '/barber/stats/'
     | '/salon/join/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -424,7 +433,6 @@ export interface FileRouteTypes {
     | '/barber/schedule'
     | '/barber/services'
     | '/barber/settings'
-    | '/barber/stats'
     | '/independent/setup'
     | '/mybarber/setup'
     | '/salon/create'
@@ -436,6 +444,7 @@ export interface FileRouteTypes {
     | '/barber/stats/graphs'
     | '/salon/join/setup'
     | '/barber/salon-view'
+    | '/barber/stats'
     | '/salon/join'
   id:
     | '__root__'
@@ -476,6 +485,7 @@ export interface FileRouteTypes {
     | '/barber/stats/graphs'
     | '/salon/join/setup'
     | '/barber/salon-view/'
+    | '/barber/stats/'
     | '/salon/join/'
   fileRoutesById: FileRoutesById
 }
@@ -710,6 +720,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SalonJoinIndexRouteImport
       parentRoute: typeof SalonJoinRoute
     }
+    '/barber/stats/': {
+      id: '/barber/stats/'
+      path: '/'
+      fullPath: '/barber/stats/'
+      preLoaderRoute: typeof BarberStatsIndexRouteImport
+      parentRoute: typeof BarberStatsRoute
+    }
     '/barber/salon-view/': {
       id: '/barber/salon-view/'
       path: '/salon-view'
@@ -764,10 +781,12 @@ declare module '@tanstack/react-router' {
 
 interface BarberStatsRouteChildren {
   BarberStatsGraphsRoute: typeof BarberStatsGraphsRoute
+  BarberStatsIndexRoute: typeof BarberStatsIndexRoute
 }
 
 const BarberStatsRouteChildren: BarberStatsRouteChildren = {
   BarberStatsGraphsRoute: BarberStatsGraphsRoute,
+  BarberStatsIndexRoute: BarberStatsIndexRoute,
 }
 
 const BarberStatsRouteWithChildren = BarberStatsRoute._addFileChildren(

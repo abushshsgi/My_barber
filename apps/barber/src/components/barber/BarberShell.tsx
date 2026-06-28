@@ -112,6 +112,14 @@ function mapNav(items: MatrixNavItem[]): NavItem[] {
   }));
 }
 
+function isBarberNavActive(pathname: string, itemTo: string): boolean {
+  if (itemTo === "/barber") return pathname === "/barber";
+  if (itemTo === "/barber/stats") {
+    return pathname === "/barber/stats" || pathname === "/barber/stats/";
+  }
+  return pathname === itemTo || pathname.startsWith(`${itemTo}/`);
+}
+
 function switchWorkspace(
   next: ViewMode,
   setViewMode: (v: ViewMode) => void,
@@ -196,7 +204,7 @@ function Sidebar({
                       const active =
                         item.to === "/barber"
                           ? pathname === "/barber"
-                          : pathname === item.to || pathname.startsWith(item.to + "/");
+                          : isBarberNavActive(pathname, item.to);
                       const locked =
                         !fullyReady && !isBarberNavAllowedDuringActivation(item.to);
                       return (

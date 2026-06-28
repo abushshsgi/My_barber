@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { BarChart3, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/barber/primitives";
 import { StatsGraphsPanel } from "@/components/barber/StatsGraphsPanel";
 import { StatsRangePicker, StatsSectionTabs } from "@/components/barber/StatsSectionNav";
@@ -26,7 +27,7 @@ function StatsGraphsPage() {
     <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6 lg:p-8">
       <PageHeader
         title="Grafiklar"
-        description="Barcha ko'rsatkichlar vizual shaklda — bir API so'rov bilan."
+        description="Daromad, faollik va mijozlar bo'yicha vizual tahlil."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <StatsSectionTabs />
@@ -36,16 +37,28 @@ function StatsGraphsPage() {
       />
 
       {metrics.isLoading && !metrics.dailyChart.hasData ? (
-        <p className="text-sm text-muted-foreground">Grafiklar yuklanmoqda…</p>
+        <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-8 text-sm text-muted-foreground shadow-card">
+          <Loader2 className="size-4 animate-spin" />
+          Grafiklar yuklanmoqda…
+        </div>
       ) : null}
 
       {metrics.isError ? (
-        <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           Analitika yuklanmadi. Internetni tekshirib, qayta urinib ko&apos;ring.
-        </p>
+        </div>
       ) : null}
 
-      <StatsGraphsPanel metrics={metrics} />
+      {!metrics.isLoading || metrics.dailyChart.hasData ? (
+        <StatsGraphsPanel metrics={metrics} />
+      ) : null}
+
+      {!metrics.isLoading && metrics.dailyChart.hasData ? (
+        <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <BarChart3 className="size-3.5" />
+          Ma&apos;lumotlar tanlangan davr bo&apos;yicha real vaqtga yaqin yangilanadi.
+        </p>
+      ) : null}
     </div>
   );
 }

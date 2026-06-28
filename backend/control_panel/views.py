@@ -1,5 +1,6 @@
 from django.db.models import Avg, Count, Prefetch, Q, Sum
 from django.db.utils import OperationalError, ProgrammingError
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics
 from rest_framework import status as http_status
@@ -117,12 +118,14 @@ def _admin_region_breakdown():
         bqs = Barber.objects.filter(region=code)
         sqs = Salon.objects.filter(owner_barber__region=code)
         interest_count = LaunchInterest.objects.filter(region=code).count()
+        bookings_count = Booking.objects.filter(barber__region=code).count()
         regions_payload.append(
             {
                 "region": code,
                 "label": label,
                 "barbers_count": bqs.count(),
                 "salons_count": sqs.count(),
+                "bookings_count": bookings_count,
                 "launch_interest_count": interest_count,
                 "barbers": barber_rows(bqs),
                 "salons": salon_rows(sqs),
@@ -139,6 +142,9 @@ def _admin_region_breakdown():
             "label": "Viloyat ko‘rsatilmagan",
             "barbers_count": b_unset.count(),
             "salons_count": s_unset.count(),
+            "bookings_count": Booking.objects.filter(
+                Q(barber__region="") | Q(barber__isnull=True)
+            ).count(),
             "barbers": barber_rows(b_unset),
             "salons": salon_rows(s_unset),
         }
@@ -162,6 +168,13 @@ class AdminStatsView(APIView):
         bookings_total = Booking.objects.count()
         reviews_total = Review.objects.count()
         reviews_avg = Review.objects.aggregate(a=Avg("rating"))["a"]
+        completed = Booking.objects.filter(status=Booking.Status.COMPLETED)
+        revenue_total = completed.aggregate(s=Sum("total_price"))["s"] or 0
+        week_start = today - timezone.timedelta(days=6)
+        bookings_week = Booking.objects.filter(
+            start_at__date__gte=week_start,
+            start_at__date__lte=today,
+        ).count()
 
         return Response(
             {
@@ -171,7 +184,9 @@ class AdminStatsView(APIView):
                 "salons_published": salons_pub,
                 "salons_pending_review": salons_pending,
                 "bookings_today": bookings_today,
+                "bookings_week": bookings_week,
                 "bookings_total": bookings_total,
+                "revenue_total": str(revenue_total),
                 "reviews_total": reviews_total,
                 "reviews_avg": str(reviews_avg) if reviews_avg is not None else "0",
                 "launch_interest_total": LaunchInterest.objects.count(),
@@ -404,6 +419,50 @@ class AdminBarberDetailView(generics.RetrieveUpdateDestroyAPIView):
         before = {"email": instance.email, "full_name": instance.full_name}
         _audit(self.request, "delete", "barber", instance.id, instance.email, before=before, after={})
         instance.delete()
+
+
+class AdminBarberAnalyticsView(APIView):
+    """Admin: bitta sartarosh uchun barber kabinetidagi kabi analitika."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request, pk):
+        from bookings.views import _analytics_response_for_bookings, _parse_analytics_datetime
+        from bookings.earnings import completed_bookings_qs, filter_bookings_by_earnings_period
+
+        start = request.query_params.get("start")
+        end = request.query_params.get("end")
+        if not all([start, end]):
+            return Response({"detail": "start, end (ISO dates) required."}, status=400)
+        try:
+            start_dt = _parse_analytics_datetime(start, is_end=False)
+            end_dt = _parse_analytics_datetime(end, is_end=True)
+        except ValueError:
+            return Response({"detail": "Invalid dates."}, status=400)
+
+        barber = get_object_or_404(Barber, pk=pk)
+        range_base = Booking.objects.filter(
+            barber=barber,
+            start_at__gte=start_dt,
+            start_at__lte=end_dt,
+        )
+        bookings = filter_bookings_by_earnings_period(
+            completed_bookings_qs(Booking.objects.filter(barber=barber)),
+            start_dt,
+            end_dt,
+        )
+        cancelled_count = range_base.filter(status=Booking.Status.CANCELLED).count()
+
+        def prior_for_customer(cid):
+            return Booking.objects.filter(barber=barber, customer_id=cid, start_at__lt=start_dt)
+
+        return Response(
+            _analytics_response_for_bookings(
+                bookings,
+                cancelled_count=cancelled_count,
+                prior_bookings_for_customer=prior_for_customer,
+            )
+        )
 
 
 class AdminBookingListView(generics.ListAPIView):

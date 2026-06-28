@@ -2,22 +2,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { fetchAdminStats, fetchAdminBookings, downloadAdminReport } from "@/lib/admin-api";
+import { formatAdminUzs } from "@/lib/admin-analytics";
 import { KPICard } from "@/components/admin/KPICard";
 import { CardSkeleton } from "@/components/admin/Skeletons";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, TrendingUp, Users, Scissors, Building2, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/")({
   component: DashboardPage,
 });
-
-function formatUZS(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M so'm`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K so'm`;
-  return `${n} so'm`;
-}
 
 function DashboardPage() {
   const reportMut = useMutation({
@@ -42,48 +37,65 @@ function DashboardPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-8">
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">
-            Dashboard
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Tarmoq bo'yicha umumiy ko'rinish va so'nggi faollik.
-          </p>
+      <div className="rounded-2xl border border-border bg-gradient-to-br from-card via-card to-muted/30 p-6 sm:p-8 shadow-card">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              ShearHQ Admin
+            </p>
+            <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground mt-1">
+              Dashboard
+            </h1>
+            <p className="text-muted-foreground mt-2 text-sm max-w-xl">
+              Tarmoq bo&apos;yicha umumiy ko&apos;rinish — mijozlar, sartaroshlar, bronlar va daromad.
+            </p>
+          </div>
+          <Button onClick={() => reportMut.mutate()} disabled={reportMut.isPending} className="shrink-0">
+            <Download className="size-4 mr-2" />
+            Hisobot olish
+          </Button>
         </div>
-        <Button onClick={() => reportMut.mutate()} disabled={reportMut.isPending}>
-          <Download className="size-4 mr-2" />
-          Hisobot olish
-        </Button>
       </div>
 
-      {/* KPI Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {statsQ.isLoading || !stats ? (
-          Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)
+          Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
         ) : (
           <>
             <KPICard
               label="Jami mijozlar"
               value={stats.total_users.toLocaleString()}
               delta={stats.delta.users}
+              icon={Users}
             />
             <KPICard
               label="Faol sartaroshlar"
               value={stats.total_barbers.toLocaleString()}
               delta={stats.delta.barbers}
+              icon={Scissors}
             />
-            <KPICard label="Salonlar" value={stats.total_salons.toLocaleString()} hint="Hamkor" />
+            <KPICard
+              label="Salonlar"
+              value={stats.total_salons.toLocaleString()}
+              hint="Hamkor"
+              icon={Building2}
+            />
+            <KPICard
+              label="Jami bronlar"
+              value={stats.total_bookings.toLocaleString()}
+              icon={CalendarClock}
+            />
             <KPICard
               label="Haftalik bronlar"
               value={stats.weekly_bookings.toLocaleString()}
               delta={stats.delta.bookings}
+              icon={CalendarClock}
             />
             <KPICard
               label="Daromad"
-              value={formatUZS(stats.revenue_uzs)}
+              value={formatAdminUzs(stats.revenue_uzs)}
               delta={stats.delta.revenue}
+              icon={TrendingUp}
             />
           </>
         )}
@@ -166,28 +178,32 @@ function DashboardPage() {
 
           <div className="space-y-5 flex-1">
             {stats?.regions
+              .slice()
               .sort((a, b) => b.bookings - a.bookings)
               .map((r, i) => {
-                const max = Math.max(...stats.regions.map((x) => x.bookings));
-                const pct = max ? (r.bookings / max) * 100 : 0;
+                const max = Math.max(...stats.regions.map((x) => x.bookings), 1);
+                const pct = (r.bookings / max) * 100;
                 return (
                   <div key={r.code}>
-                    <div className="flex justify-between text-sm mb-1.5">
-                      <span className="font-medium text-foreground">{r.name}</span>
-                      <span className="tabular-nums text-muted-foreground">{r.bookings} bron</span>
+                    <div className="flex justify-between text-sm mb-1.5 gap-2">
+                      <span className="font-medium text-foreground truncate">{r.name}</span>
+                      <span className="tabular-nums text-muted-foreground shrink-0">
+                        {r.bookings.toLocaleString()} bron
+                      </span>
                     </div>
                     <div className="h-2 bg-background rounded-full overflow-hidden">
                       <div
                         className="h-full bg-foreground rounded-full transition-all"
                         style={{
                           width: `${pct}%`,
-                          opacity: 1 - i * 0.15,
+                          opacity: 1 - i * 0.12,
                         }}
                       />
                     </div>
-                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5 text-xs text-muted-foreground mt-1">
                       <span>{r.barbers} sartarosh</span>
                       <span>{r.salons} salon</span>
+                      <span>{r.users} mijoz</span>
                     </div>
                   </div>
                 );

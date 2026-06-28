@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, CalendarClock, LayoutGrid, MessageSquareText, UserCircle } from "lucide-react";
+import { ArrowLeft, BarChart3, CalendarClock, LayoutGrid, MessageSquareText, UserCircle } from "lucide-react";
 import { fetchAdminBarberDetail } from "@/lib/admin-api";
 import { getBarberSegmentDescription } from "@/lib/barber-segment-copy";
 import { barberDetailSearchFromRaw } from "@/lib/admin-nav";
@@ -22,11 +22,13 @@ function BarberIdLayout() {
   });
 
   const b = barberQ.data;
-  const tab = pathname.endsWith("/bookings")
-    ? "bookings"
-    : pathname.endsWith("/reviews")
-      ? "reviews"
-      : "overview";
+  const tab = pathname.includes("/stats")
+    ? "stats"
+    : pathname.endsWith("/bookings")
+      ? "bookings"
+      : pathname.endsWith("/reviews")
+        ? "reviews"
+        : "overview";
 
   const tabCls = (key: typeof tab) =>
     cn(
@@ -121,6 +123,14 @@ function BarberIdLayout() {
               className={tabCls("overview")}
             >
               <LayoutGrid className="size-4" /> Umumiy
+            </Link>
+            <Link
+              to="/admin/barbers/$barberId/stats"
+              params={{ barberId }}
+              search={search.returnTo ? { returnTo: search.returnTo } : {}}
+              className={tabCls("stats")}
+            >
+              <BarChart3 className="size-4" /> Statistika
             </Link>
             <Link
               to="/admin/barbers/$barberId/bookings"

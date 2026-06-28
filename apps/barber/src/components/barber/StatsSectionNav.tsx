@@ -2,9 +2,14 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { to: "/barber/stats", label: "Ko'rsatkichlar" },
-  { to: "/barber/stats/graphs", label: "Grafiklar" },
+  { to: "/barber/stats", label: "Ko'rsatkichlar", exact: true },
+  { to: "/barber/stats/graphs", label: "Grafiklar", exact: false },
 ] as const;
+
+function isTabActive(pathname: string, to: string, exact: boolean) {
+  if (exact) return pathname === to || pathname === `${to}/`;
+  return pathname === to || pathname.startsWith(`${to}/`);
+}
 
 export function StatsSectionTabs() {
   const { pathname } = useLocation();
@@ -12,7 +17,7 @@ export function StatsSectionTabs() {
   return (
     <div className="inline-flex gap-1 rounded-lg bg-muted p-1">
       {TABS.map((tab) => {
-        const active = pathname === tab.to;
+        const active = isTabActive(pathname, tab.to, tab.exact);
         return (
           <Link
             key={tab.to}
