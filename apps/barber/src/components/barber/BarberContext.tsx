@@ -13,6 +13,7 @@ import { inferFlowIdentity, type FlowIdentity } from "@/lib/barber-flow-config";
 import { clearOnboardingJustCompleted } from "@/lib/onboarding-complete";
 import {
   clearOnboardingStatusCache,
+  readOnboardingStatusCache,
   writeOnboardingStatusCache,
 } from "@/lib/onboarding-status-cache";
 
@@ -246,6 +247,8 @@ type Ctx = {
   onboardingComplete: boolean;
   requiredNextPath: string | null;
   fullyReady: boolean;
+  /** Birinchi onboarding/status yuklanganidan keyin true — redirect loop oldini oladi. */
+  activationHydrated: boolean;
   readinessPercent: number;
   activationSteps: ActivationSteps;
   /** Serverdagi faol xizmatlar soni (onboarding/status). */
@@ -327,6 +330,7 @@ const EMPTY_SALON: Salon = {
 };
 
 export function BarberProvider({ children }: { children: ReactNode }) {
+  const bootCache = readOnboardingStatusCache();
   const [viewMode, setViewMode] = useState<ViewMode>("independent");
   const [profile, setProfile] = useState<BarberProfile>(EMPTY_PROFILE);
   const [services, setServices] = useState<Service[]>([]);
@@ -349,12 +353,14 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [hasSalon, setHasSalon] = useState(false);
-  const [ownsSalon, setOwnsSalon] = useState(false);
+  const [ownsSalon, setOwnsSalon] = useState(() => bootCache?.owns_salon === true);
   const [activeSalonId, setActiveSalonId] = useState<number | null>(null);
   const [barberWorkMode, setBarberWorkMode] = useState<"salon" | "independent">("independent");
   const [onboardingFlow, setOnboardingFlow] = useState<string | null>(null);
-  const [onboardingComplete, setOnboardingComplete] = useState(true);
-  const [requiredNextPath, setRequiredNextPath] = useState<string | null>(null);
+  const [onboardingComplete, setOnboardingComplete] = useState(bootCache?.fully_ready === true);
+  const [requiredNextPath, setRequiredNextPath] = useState<string | null>(
+    () => bootCache?.required_next_path ?? null,
+  );
   const [bookingSetup, setBookingSetup] = useState<BookingSetupStatus>({
     ready: false,
     missing: [],
@@ -363,7 +369,8 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     hasServices: false,
     hasWorkingHours: false,
   });
-  const [fullyReady, setFullyReady] = useState(false);
+  const [fullyReady, setFullyReady] = useState(() => bootCache?.fully_ready === true);
+  const [activationHydrated, setActivationHydrated] = useState(() => bootCache?.fully_ready === true);
   const [readinessPercent, setReadinessPercent] = useState(0);
   const [activationSteps, setActivationSteps] = useState<ActivationSteps>({
     email_verified: false,
@@ -1069,44 +1076,49 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         setFullyReady(false);
         setReadinessPercent(0);
         setActivationSteps(emptyActivationSteps());
+        setActivationHydrated(true);
         return;
       }
 
       const loadSecondary = () => {
         if (!alive) return;
-        const loaders = gateFullyReady
-          ? [
-              refreshServices,
-              refreshWorkingHours,
-              refreshBookings,
-              refreshNotifications,
+        const runQuiet = (fns: Array<() => Promise<void>>) => {
+          void Promise.all(fns.map((fn) => fn().catch(() => undefined)));
+        };
+        if (!gateFullyReady) {
+          if (emailVerified) runQuiet([refreshServices, refreshWorkingHours]);
+          return;
+        }
+        runQuiet([refreshBookings, refreshNotifications, refreshServices, refreshWorkingHours]);
+        const defer = () => {
+          if (!alive) return;
+          runQuiet([
+            () => refreshClients({ workMode: wm, salonId: aid }),
+            refreshReviews,
+            refreshFinanceSummary,
+            refreshSalonView,
+          ]);
+          window.setTimeout(() => {
+            if (!alive) return;
+            runQuiet([
               refreshConversations,
-              () => refreshClients({ workMode: wm, salonId: aid }),
               refreshInventory,
               refreshExpenses,
               refreshGoals,
               refreshPromos,
               refreshSettings,
               refreshPortfolio,
-              refreshFinanceSummary,
-              refreshReviews,
-              refreshSalonView,
-            ]
-          : emailVerified
-            ? [refreshServices, refreshWorkingHours]
-            : [];
-        if (!loaders.length) return;
-        const runBatch = (start: number) => {
-          const batch = loaders.slice(start, start + 4);
-          if (!batch.length) return;
-          void Promise.all(batch.map((fn) => fn().catch(() => undefined)));
-          if (start + 4 < loaders.length) {
-            window.setTimeout(() => runBatch(start + 4), 0);
-          }
+            ]);
+          }, 1200);
         };
-        runBatch(0);
+        if (typeof requestIdleCallback === "function") {
+          requestIdleCallback(defer, { timeout: 2500 });
+        } else {
+          window.setTimeout(defer, 600);
+        }
       };
       loadSecondary();
+      setActivationHydrated(true);
     };
     void run();
     return () => {
@@ -1144,6 +1156,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       onboardingComplete,
       requiredNextPath,
       fullyReady,
+      activationHydrated,
       readinessPercent,
       activationSteps,
       activationServicesCount,
@@ -1215,6 +1228,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       onboardingComplete,
       requiredNextPath,
       fullyReady,
+      activationHydrated,
       readinessPercent,
       activationSteps,
       activationServicesCount,

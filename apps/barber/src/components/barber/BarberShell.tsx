@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { flushSync } from "react-dom";
-import { motion } from "framer-motion";
 import { Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard,
@@ -141,21 +140,19 @@ function Sidebar({
 
       {/* Mode switch — faqat salon egasi */}
       {ownsSalon && hasSalon && onboardingComplete && (
-        <motion.div layout className="p-3 border-b border-sidebar-border">
-          <motion.button
+        <div className="p-3 border-b border-sidebar-border">
+          <button
             type="button"
-            layout
-            whileTap={{ scale: 0.98 }}
             onClick={() => setViewMode(viewMode === "independent" ? "salon" : "independent")}
-            className="w-full inline-flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-sidebar-accent text-sidebar-accent-foreground text-sm hover:bg-foreground hover:text-background transition-colors duration-300 ease-out"
+            className="w-full inline-flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-sidebar-accent text-sidebar-accent-foreground text-sm hover:bg-foreground hover:text-background transition-colors duration-150"
           >
             <span className="inline-flex items-center gap-2">
               <ArrowLeftRight className="size-3.5" />
               {viewMode === "independent" ? "Salon sahifasi" : "Barber kabineti"}
             </span>
             <span className="text-[10px] uppercase tracking-wider opacity-70">{viewMode}</span>
-          </motion.button>
-        </motion.div>
+          </button>
+        </div>
       )}
 
       {/* Nav */}
@@ -488,8 +485,15 @@ function CommandPalette({
 export function BarberShell() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { viewMode, onboardingComplete, isJoinedWorker, flowIdentity, fullyReady, ownsSalon } =
-    useBarberContext();
+  const {
+    viewMode,
+    onboardingComplete,
+    isJoinedWorker,
+    flowIdentity,
+    fullyReady,
+    activationHydrated,
+    ownsSalon,
+  } = useBarberContext();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
 
@@ -522,23 +526,23 @@ export function BarberShell() {
   );
 
   useEffect(() => {
-    if (!fullyReady) return;
+    if (!activationHydrated || !fullyReady) return;
     if (pathname !== "/barber/activation") return;
     void navigate({
       to: ownsSalon ? "/barber/salon-view" : "/barber",
       replace: true,
     });
-  }, [fullyReady, ownsSalon, pathname, navigate]);
+  }, [activationHydrated, fullyReady, ownsSalon, pathname, navigate]);
 
   useEffect(() => {
-    if (fullyReady) return;
+    if (!activationHydrated || fullyReady) return;
     if (!pathname.startsWith("/barber")) return;
     if (isBarberPathAllowedDuringActivation(pathname)) return;
     void navigate({ to: "/barber/activation", replace: true });
-  }, [fullyReady, pathname, navigate]);
+  }, [activationHydrated, fullyReady, pathname, navigate]);
 
   useEffect(() => {
-    if (!onboardingComplete || !fullyReady) return;
+    if (!activationHydrated || !onboardingComplete || !fullyReady) return;
     if (viewMode === "salon") {
       if (pathAllowedInSalonWorkspace(pathname, isJoinedWorker)) return;
       if (!pathname.startsWith("/barber")) return;
@@ -549,7 +553,7 @@ export function BarberShell() {
       if (isJoinedWorker) return;
       void navigate({ to: "/barber", replace: true });
     }
-  }, [onboardingComplete, fullyReady, viewMode, pathname, navigate, isJoinedWorker]);
+  }, [activationHydrated, onboardingComplete, fullyReady, viewMode, pathname, navigate, isJoinedWorker]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

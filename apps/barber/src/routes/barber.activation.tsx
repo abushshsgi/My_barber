@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Check, Loader2, Mail, Sparkles } from "lucide-react";
+import { Check, Loader2, Mail } from "lucide-react";
 import { toast } from "sonner";
 import {
   apiFetch,
@@ -91,6 +91,7 @@ function BarberActivationPage() {
   const navigate = useNavigate();
   const {
     fullyReady,
+    activationHydrated,
     readinessPercent,
     activationSteps,
     activationServicesCount,
@@ -103,24 +104,10 @@ function BarberActivationPage() {
   const [resending, setResending] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // BarberContext allaqachon status yuklaydi; qayta chaqirish loop bermasligi uchun faqat mount.
   useEffect(() => {
-    void refreshActivationStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only refresh
-  }, []);
-
-  useEffect(() => {
-    if (!fullyReady) return;
+    if (!activationHydrated || !fullyReady) return;
     void navigate({ to: activationRedirectPath(ownsSalon), replace: true });
-  }, [fullyReady, ownsSalon, navigate]);
-
-  useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === "visible") void refreshActivationStatus();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [refreshActivationStatus]);
+  }, [activationHydrated, fullyReady, ownsSalon, navigate]);
 
   const primaryNext = useMemo(
     () => computePrimaryNext(activationSteps, requiredNextPath, onboardingFlow, ownsSalon),
@@ -236,19 +223,10 @@ function BarberActivationPage() {
     }
   };
 
-  if (fullyReady) {
+  if (!activationHydrated || fullyReady) {
     return (
-      <div className="p-6 max-w-lg mx-auto space-y-4">
-        <div className="rounded-xl border bg-card p-6 text-center">
-          <Sparkles className="size-10 mx-auto text-emerald-600 mb-3" />
-          <h1 className="font-heading text-lg font-semibold">Profil 100% tayyor</h1>
-          <p className="text-sm text-muted-foreground mt-2">
-            Endi barcha bo‘limlar va mijozlarga ko‘rinish ochiq.
-          </p>
-          <Button asChild className="mt-4">
-            <Link to={activationRedirectPath(ownsSalon)}>Dashboardga</Link>
-          </Button>
-        </div>
+      <div className="flex min-h-[40vh] items-center justify-center p-6">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
       </div>
     );
   }

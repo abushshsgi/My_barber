@@ -9,6 +9,10 @@ import {
 } from "@/lib/onboarding-status-cache";
 import { normalizeRequiredNextPath } from "@/lib/onboarding-redirect";
 
+function activationRedirectTarget(ownsSalon?: boolean): string {
+  return ownsSalon ? "/barber/salon-view" : "/barber";
+}
+
 export const Route = createFileRoute("/barber")({
   beforeLoad: async ({ location }) => {
     if (location.pathname.startsWith("/barber/verify-email")) {
@@ -23,11 +27,16 @@ export const Route = createFileRoute("/barber")({
       throw redirect({ to: "/auth" });
     }
     const path = location.pathname;
+    const cached = readOnboardingStatusCache();
+
+    if (path.startsWith("/barber/activation") && cached?.fully_ready === true) {
+      throw redirect({ to: activationRedirectTarget(cached.owns_salon), replace: true });
+    }
+
     if (isBarberPathAllowedDuringActivation(path)) return;
     if (typeof window === "undefined") return;
     if (!getBarberAccessToken()) return;
 
-    const cached = readOnboardingStatusCache();
     if (cached?.fully_ready === true) {
       return;
     }
@@ -47,13 +56,17 @@ export const Route = createFileRoute("/barber")({
         owns_salon?: boolean;
       };
       writeOnboardingStatusCache(st);
+      if (st.fully_ready === true) {
+        if (path.startsWith("/barber/activation")) {
+          throw redirect({ to: activationRedirectTarget(st.owns_salon), replace: true });
+        }
+        return;
+      }
       const requiredNext = normalizeRequiredNextPath(st);
       if (requiredNext) {
         throw redirect({ to: requiredNext });
       }
-      if (st.fully_ready === false) {
-        throw redirect({ to: "/barber/activation" });
-      }
+      throw redirect({ to: "/barber/activation" });
     } catch (e) {
       if (isRedirect(e)) throw e;
       return;
