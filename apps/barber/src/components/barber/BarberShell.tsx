@@ -53,7 +53,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { useBarberContext } from "./BarberContext";
+import { useBarberContext, type ViewMode } from "./BarberContext";
 import { UserAvatar } from "./primitives";
 import {
   getCapabilities,
@@ -110,6 +110,17 @@ function mapNav(items: MatrixNavItem[]): NavItem[] {
   }));
 }
 
+function switchWorkspace(
+  next: ViewMode,
+  setViewMode: (v: ViewMode) => void,
+  navigate: ReturnType<typeof useNavigate>,
+) {
+  flushSync(() => {
+    setViewMode(next);
+  });
+  void navigate({ to: next === "salon" ? "/barber/salon-view" : "/barber" });
+}
+
 function Sidebar({
   nav,
   navAnimationKey,
@@ -120,6 +131,7 @@ function Sidebar({
   onNavigate?: () => void;
 }) {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { viewMode, setViewMode, hasSalon, onboardingComplete, ownsSalon, profile, fullyReady } =
     useBarberContext();
 
@@ -143,7 +155,11 @@ function Sidebar({
         <div className="p-3 border-b border-sidebar-border">
           <button
             type="button"
-            onClick={() => setViewMode(viewMode === "independent" ? "salon" : "independent")}
+            onClick={() => {
+              const next = viewMode === "independent" ? "salon" : "independent";
+              switchWorkspace(next, setViewMode, navigate);
+              onNavigate?.();
+            }}
             className="w-full inline-flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-sidebar-accent text-sidebar-accent-foreground text-sm hover:bg-foreground hover:text-background transition-colors duration-150"
           >
             <span className="inline-flex items-center gap-2">
@@ -195,7 +211,16 @@ function Sidebar({
                                 item.to.startsWith("/barber/salon-view") &&
                                 viewMode !== "salon"
                               ) {
-                                setViewMode("salon");
+                                flushSync(() => setViewMode("salon"));
+                              }
+                              if (
+                                ownsSalon &&
+                                !item.to.startsWith("/barber/salon-view") &&
+                                item.to !== "/barber/amenities" &&
+                                viewMode === "salon" &&
+                                !pathAllowedInSalonWorkspace(item.to, false)
+                              ) {
+                                flushSync(() => setViewMode("independent"));
                               }
                               onNavigate?.();
                             }}
@@ -297,10 +322,7 @@ function Topbar({
             size="sm"
             className="inline-flex shrink-0"
             onClick={() => {
-              flushSync(() => {
-                setViewMode("salon");
-              });
-              void navigate({ to: "/barber/salon-view" });
+              switchWorkspace("salon", setViewMode, navigate);
             }}
           >
             <Building2 className="size-3.5" />
@@ -314,10 +336,7 @@ function Topbar({
             size="sm"
             className="inline-flex shrink-0"
             onClick={() => {
-              flushSync(() => {
-                setViewMode("independent");
-              });
-              void navigate({ to: "/barber" });
+              switchWorkspace("independent", setViewMode, navigate);
             }}
           >
             <LayoutDashboard className="size-3.5" />
@@ -562,10 +581,6 @@ export function BarberShell() {
     }
     if (viewMode === "independent" && pathname.startsWith("/barber/salon-view")) {
       if (isJoinedWorker) return;
-      if (ownsSalon) {
-        setViewMode("salon");
-        return;
-      }
       void navigate({ to: "/barber", replace: true });
     }
   }, [
@@ -576,8 +591,6 @@ export function BarberShell() {
     pathname,
     navigate,
     isJoinedWorker,
-    ownsSalon,
-    setViewMode,
   ]);
 
   useEffect(() => {
