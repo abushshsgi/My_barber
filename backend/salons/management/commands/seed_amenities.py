@@ -28,14 +28,27 @@ class Command(BaseCommand):
         tables = set(connection.introspection.table_names())
         return "salons_amenity" in tables and "salons_salonamenity" in tables
 
-    def _ensure_migrations(self):
-        if self._amenity_tables_ready():
-            return
-        self.stdout.write("Amenity tables missing; running salons migrations...")
-        call_command("migrate", "salons", interactive=False, verbosity=1)
+    def _amenity_scope_ready(self) -> bool:
         if not self._amenity_tables_ready():
+            return False
+        with connection.cursor() as cursor:
+            columns = {
+                col.name
+                for col in connection.introspection.get_table_description(
+                    cursor,
+                    Amenity._meta.db_table,
+                )
+            }
+        return "scope" in columns
+
+    def _ensure_migrations(self):
+        if self._amenity_scope_ready():
+            return
+        self.stdout.write("Amenity schema outdated; running full migrate...")
+        call_command("migrate", interactive=False, verbosity=1)
+        if not self._amenity_scope_ready():
             raise RuntimeError(
-                "salons_amenity tables still missing after migrate. "
+                "salons_amenity.scope still missing after migrate. "
                 "Check django_migrations and deploy logs."
             )
 
