@@ -11,7 +11,11 @@ from bookings.availability import (
     get_independent_services_for_barber,
     get_salon_services_for_barber,
 )
-from bookings.db_compat import bookings_has_family_member_column
+from bookings.db_compat import (
+    bookings_has_checked_in_column,
+    bookings_has_family_member_column,
+    bookings_has_portfolio_consent_column,
+)
 from bookings.models import Booking, BookingCompletion, BookingLine, Review
 from accounts.models import FamilyMember
 from barbers.models import Barber, BarberProfile
@@ -97,6 +101,13 @@ class BookingSerializer(serializers.ModelSerializer):
             "portfolio_consent",
             "created_at",
         )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not bookings_has_checked_in_column():
+            self.fields.pop("checked_in_at", None)
+        if not bookings_has_portfolio_consent_column():
+            self.fields.pop("portfolio_consent", None)
 
     def get_salon_name(self, obj):
         return obj.salon.name if obj.salon_id else None
@@ -186,7 +197,7 @@ class BookingSerializer(serializers.ModelSerializer):
                     "at": obj.created_at.isoformat(),
                 }
             )
-        if obj.checked_in_at:
+        if bookings_has_checked_in_column() and obj.checked_in_at:
             history.append(
                 {
                     "key": "checked_in",

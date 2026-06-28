@@ -25,7 +25,11 @@ from bookings.availability import (
     get_salon_services_for_barber,
     parse_id_list,
 )
-from bookings.db_compat import bookings_has_family_member_column
+from bookings.db_compat import (
+    bookings_has_checked_in_column,
+    bookings_has_family_member_column,
+    booking_queryset_compat,
+)
 from bookings.datetime_utils import parse_range_datetime
 from bookings.models import Booking, BookingCompletion, BookingLine, Review
 from bookings.earnings import (
@@ -208,6 +212,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         if bookings_has_family_member_column():
             related.append("family_member")
         base = Booking.objects.select_related(*related).prefetch_related("lines")
+        base = booking_queryset_compat(base)
         st = self.request.query_params.get("status")
         if st:
             base = base.filter(status=st)
@@ -434,6 +439,11 @@ class BookingViewSet(viewsets.ModelViewSet):
             return Response(status=403)
         if booking.status not in (Booking.Status.ACCEPTED, Booking.Status.IN_PROGRESS):
             return Response({"detail": "Faqat tasdiqlangan bron uchun check-in."}, status=400)
+        if not bookings_has_checked_in_column():
+            return Response(
+                {"detail": "Check-in vaqtincha mavjud emas. Birozdan keyin qayta urinib ko'ring."},
+                status=503,
+            )
         if booking.checked_in_at:
             return Response(BookingSerializer(booking).data)
         booking.checked_in_at = timezone.now()

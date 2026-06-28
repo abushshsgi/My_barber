@@ -4,6 +4,9 @@ set -euo pipefail
 echo "[release] Applying database migrations..."
 python manage.py migrate --noinput -v 2
 
+echo "[release] Ensuring booking check-in columns..."
+python manage.py ensure_booking_checkin_schema
+
 if python manage.py showmigrations --plan 2>/dev/null | grep -q '^\[ \]'; then
   echo "[release] ERROR: Unapplied migrations remain after migrate:" >&2
   python manage.py showmigrations --plan >&2 || true

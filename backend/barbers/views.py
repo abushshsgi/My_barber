@@ -21,6 +21,7 @@ from bookings.availability import (
     get_independent_services_for_barber,
     parse_id_list,
 )
+from bookings.db_compat import booking_queryset_compat
 from bookings.models import Booking, BookingLine, Review
 from notifications.utils import notify_user
 from salons.catalog_bootstrap import ensure_default_catalog_seeded
@@ -600,12 +601,16 @@ class MyBarberFinanceSummaryView(APIView):
         end_raw = (request.query_params.get("end") or "").strip()
         start_dt = end_dt = None
 
-        earnings_base = barber_platform_earnings_qs(barber).select_related(
-            "customer", "completion"
-        ).prefetch_related("lines")
-        completed_base = completed_bookings_qs(
-            Booking.objects.filter(barber=barber)
-        ).select_related("customer", "completion").prefetch_related("lines")
+        earnings_base = booking_queryset_compat(
+            barber_platform_earnings_qs(barber).select_related(
+                "customer", "completion"
+            ).prefetch_related("lines")
+        )
+        completed_base = booking_queryset_compat(
+            completed_bookings_qs(
+                Booking.objects.filter(barber=barber)
+            ).select_related("customer", "completion").prefetch_related("lines")
+        )
 
         if start_raw and end_raw:
             try:
