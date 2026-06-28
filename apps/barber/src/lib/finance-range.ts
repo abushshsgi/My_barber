@@ -121,6 +121,88 @@ export function formatFinanceDate(iso: string): string {
   });
 }
 
+export function isBookingOnLocalDay(isoDate: string | undefined, day = new Date()): boolean {
+  if (!isoDate) return false;
+  const d = new Date(isoDate);
+  if (Number.isNaN(d.getTime())) return false;
+  return localDateKey(d) === localDateKey(day);
+}
+
+export function bookingDateLabel(isoDate: string, now = new Date()): string {
+  const d = new Date(isoDate);
+  if (Number.isNaN(d.getTime())) return "";
+  const key = localDateKey(d);
+  const todayKey = localDateKey(now);
+  const tomorrow = startOfLocalDay(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (key === todayKey) return "Today";
+  if (key === localDateKey(tomorrow)) return "Tomorrow";
+  return d.toLocaleDateString("uz-UZ", { day: "2-digit", month: "short" });
+}
+
+export type DailyChartItem = {
+  date: string;
+  label: string;
+  amount: number;
+  heightPct: number;
+};
+
+export function buildDailyBarChart(
+  rows: Array<{ date: string; revenue: string | number }>,
+): { items: DailyChartItem[]; hasData: boolean } {
+  const items = rows.map((row) => {
+    const date = row.date.slice(0, 10);
+    const amount = Number(row.revenue) || 0;
+    return { date, label: date.slice(5), amount, heightPct: 0 };
+  });
+  const max = Math.max(1, ...items.map((i) => i.amount));
+  const withHeights = items.map((i) => ({
+    ...i,
+    heightPct: i.amount > 0 ? Math.round((i.amount / max) * 100) : 0,
+  }));
+  return {
+    items: withHeights,
+    hasData: withHeights.some((i) => i.amount > 0),
+  };
+}
+
+export function buildStatsDailyRows(
+  apiDaily: Array<{ date: string; revenue: string | number }> = [],
+  completedBookings: Booking[] = [],
+  range: StatsRangeKey,
+): Array<{ date: string; revenue: string }> {
+  const fromBookings = new Map<string, number>();
+  for (const b of completedBookings) {
+    if (b.status !== "completed" || !b.start_at) continue;
+    if (!isDateInStatsRange(b.start_at, range)) continue;
+    const key = localDateKey(new Date(b.start_at));
+    fromBookings.set(key, (fromBookings.get(key) ?? 0) + b.price);
+  }
+
+  const apiHasData = apiDaily.some((d) => Number(d.revenue) > 0);
+  const source = apiHasData
+    ? apiDaily
+    : [...fromBookings.entries()].map(([date, revenue]) => ({ date, revenue: String(revenue) }));
+
+  const { start, end } = statsRangeToIsoParams(range);
+  const startDt = parseLocalDateYmd(start);
+  const endDt = parseLocalDateYmd(end);
+  const byDate = new Map<string, number>();
+  for (const row of source) {
+    const key = row.date.slice(0, 10);
+    byDate.set(key, (byDate.get(key) ?? 0) + (Number(row.revenue) || 0));
+  }
+
+  const out: Array<{ date: string; revenue: string }> = [];
+  const cursor = new Date(startDt);
+  while (cursor <= endDt) {
+    const key = formatLocalDate(cursor);
+    out.push({ date: key, revenue: String(byDate.get(key) ?? 0) });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return out;
+}
+
 export function buildLast7DaysChart(
   daily: Array<{ date: string; revenue: string | number }> = [],
   completedBookings: Booking[] = [],

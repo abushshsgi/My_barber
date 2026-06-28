@@ -1,4 +1,5 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { useMemo } from "react";
 import {
   CalendarClock,
   TrendingUp,
@@ -17,7 +18,7 @@ import {
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
 import { StatusPill, UserAvatar } from "@/components/barber/primitives";
 import { getFlowMeta } from "@/lib/barber-flow-config";
-import { isCurrentMonth } from "@/lib/finance-range";
+import { isCurrentMonth, isBookingOnLocalDay } from "@/lib/finance-range";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/barber/")({
@@ -46,7 +47,27 @@ function BarberDashboard() {
     return <Navigate to="/barber/salon-view" replace />;
   }
 
-  const today = bookings.filter((b) => b.date === "Today");
+  const today = useMemo(
+    () =>
+      bookings
+        .filter(
+          (b) =>
+            isBookingOnLocalDay(b.start_at) &&
+            b.status !== "cancelled" &&
+            b.status !== "rejected",
+        )
+        .sort((a, b) => a.time.localeCompare(b.time)),
+    [bookings],
+  );
+  const clientsToday = useMemo(() => {
+    const ids = new Set(
+      bookings
+        .filter((b) => b.status === "completed" && isBookingOnLocalDay(b.start_at))
+        .map((b) => b.customer_id)
+        .filter(Boolean),
+    );
+    return ids.size;
+  }, [bookings]);
   const active = bookings.find((b) => b.status === "in_progress");
   const completedThisMonth = bookings.filter(
     (b) => b.status === "completed" && isCurrentMonth(b.start_at),
@@ -87,7 +108,7 @@ function BarberDashboard() {
           icon={<CalendarClock className="size-4" />}
           label="Bugungi bronlar"
           value={today.length.toString()}
-          hint={`${today.filter((b) => b.status === "accepted").length} kutilmoqda`}
+          hint={`${today.filter((b) => b.status === "pending" || b.status === "accepted").length} kutilmoqda`}
         />
         <KPI
           icon={<TrendingUp className="size-4" />}
@@ -99,7 +120,7 @@ function BarberDashboard() {
           icon={<Users className="size-4" />}
           label="Mijozlar"
           value={clients.length.toString()}
-          hint={`${clients.filter((c) => c.last_visit === "Today").length} bugun`}
+          hint={`${clientsToday} bugun`}
         />
         <KPI
           icon={<Star className="size-4" />}

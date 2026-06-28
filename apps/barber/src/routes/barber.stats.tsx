@@ -8,7 +8,14 @@ import {
   useBarberAnalyticsQuery,
 } from "@/hooks/use-barber-queries";
 import { resolveBarberAnalyticsParams } from "@/lib/analytics-scope";
-import { isDateInStatsRange, statsRangeToIsoParams, type StatsRangeKey } from "@/lib/finance-range";
+import {
+  buildDailyBarChart,
+  buildStatsDailyRows,
+  isDateInStatsRange,
+  statsRangeToIsoParams,
+  type StatsRangeKey,
+} from "@/lib/finance-range";
+import { DailyRevenueChart } from "@/components/barber/DailyRevenueChart";
 import { readOnboardingStatusCache } from "@/lib/onboarding-status-cache";
 
 export const Route = createFileRoute("/barber/stats")({
@@ -112,21 +119,11 @@ function StatsPage() {
   const maxCount = Math.max(1, ...topServices.map((s) => s.count));
   const topClients = [...clients].sort((a, b) => b.spent - a.spent).slice(0, 5);
 
-  const dailyFromBookings = useMemo(() => {
-    const byDay = new Map<string, number>();
-    for (const b of completedInRange) {
-      const day = b.start_at?.slice(0, 10);
-      if (!day) continue;
-      byDay.set(day, (byDay.get(day) ?? 0) + b.price);
-    }
-    return [...byDay.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, revenue]) => ({ date, revenue: String(revenue) }));
-  }, [completedInRange]);
-
-  const apiDailyHasData = (analytics?.daily ?? []).some((d) => Number(d.revenue) > 0);
-  const dailyRows = apiDailyHasData ? (analytics?.daily ?? []) : dailyFromBookings;
-  const dailyMax = Math.max(1, ...dailyRows.map((d) => Number(d.revenue)));
+  const dailyRows = useMemo(
+    () => buildStatsDailyRows(analytics?.daily ?? [], completedInRange, range),
+    [analytics?.daily, completedInRange, range],
+  );
+  const dailyChart = useMemo(() => buildDailyBarChart(dailyRows), [dailyRows]);
 
   const cashCount =
     analytics?.cash_count && analytics.cash_count > 0
@@ -220,25 +217,7 @@ function StatsPage() {
       </div>
 
       <SectionCard title="Kunlik savdo" description="Tanlangan davr bo'yicha">
-        <div className="flex items-end gap-1 h-40 overflow-x-auto pb-2">
-          {dailyRows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Ma&apos;lumot yo&apos;q.</p>
-          ) : (
-            dailyRows.map((d) => {
-              const h = Math.round((Number(d.revenue) / dailyMax) * 100);
-              return (
-                <div key={d.date} className="flex flex-col items-center gap-1 min-w-[28px]">
-                  <div
-                    className="w-6 rounded-t bg-foreground/85"
-                    style={{ height: `${Math.max(4, h)}%` }}
-                    title={`${d.date}: ${formatUZS(Number(d.revenue))}`}
-                  />
-                  <span className="text-[9px] text-muted-foreground">{d.date.slice(5)}</span>
-                </div>
-              );
-            })
-          )}
-        </div>
+        <DailyRevenueChart items={dailyChart.items} />
       </SectionCard>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

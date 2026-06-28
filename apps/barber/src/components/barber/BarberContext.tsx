@@ -11,6 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { apiFetch, apiJson, apiList, getBarberAccessToken } from "@/lib/api";
 import { barberQueryKeys } from "@/hooks/use-barber-queries";
 import { mapApiBooking } from "@/lib/map-booking";
+import { bookingDateLabel } from "@/lib/finance-range";
 import { inferFlowIdentity, type FlowIdentity } from "@/lib/barber-flow-config";
 import { clearOnboardingJustCompleted } from "@/lib/onboarding-complete";
 import {
@@ -85,6 +86,7 @@ export const MIN_ACTIVE_SERVICES = 5;
 
 export type Booking = {
   id: string;
+  customer_id?: string;
   client: string;
   client_avatar: string;
   service: string;
@@ -431,7 +433,9 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
   const refreshBookings = useCallback(async () => {
     const apiBookings = await apiList<Parameters<typeof mapApiBooking>[0]>("/api/v1/bookings/");
-    setBookings(apiBookings.map(mapApiBooking));
+    const mapped = apiBookings.map(mapApiBooking);
+    setBookings(mapped);
+    setClients((prev) => enrichClientsLastVisit(prev, mapped));
   }, []);
 
   const refreshNotifications = useCallback(async () => {
@@ -1151,6 +1155,21 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only hydrate
   }, []);
 
+  useEffect(() => {
+    if (!fullyReady || !activationHydrated) return;
+    const tick = () => {
+      void refreshBookings();
+      void refreshNotifications();
+    };
+    const id = window.setInterval(tick, 30_000);
+    const onFocus = () => tick();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [fullyReady, activationHydrated, refreshBookings, refreshNotifications]);
+
   const isJoinedWorker = useMemo(
     () => ownsSalon === false && barberWorkMode === "salon" && activeSalonId != null,
     [ownsSalon, barberWorkMode, activeSalonId],
@@ -1362,6 +1381,22 @@ function mapApiMessage(m: {
     text: m.text,
     time,
   };
+}
+
+function enrichClientsLastVisit(clients: Client[], bookings: Booking[]): Client[] {
+  if (!clients.length) return clients;
+  const latest = new Map<string, string>();
+  for (const b of bookings) {
+    if (!b.customer_id || !b.start_at) continue;
+    if (b.status === "cancelled" || b.status === "rejected") continue;
+    const prev = latest.get(b.customer_id);
+    if (!prev || b.start_at > prev) latest.set(b.customer_id, b.start_at);
+  }
+  return clients.map((c) => {
+    const iso = latest.get(c.id);
+    if (!iso) return c;
+    return { ...c, last_visit: bookingDateLabel(iso) };
+  });
 }
 
 function mapApiClient(c: {

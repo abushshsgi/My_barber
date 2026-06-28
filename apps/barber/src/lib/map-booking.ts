@@ -1,9 +1,9 @@
-/** Map booking API rows to barber dashboard Booking type. */
-
 import type { Booking } from "@/components/barber/BarberContext";
+import { bookingDateLabel } from "./finance-range";
 
 export type ApiBookingRow = {
   id: number;
+  customer?: number;
   customer_name: string;
   customer_phone?: string;
   customer_avatar?: string | null;
@@ -29,10 +29,6 @@ function mapBookingStatus(st: string): Booking["status"] {
 
 export function mapApiBooking(b: ApiBookingRow): Booking {
   const dt = new Date(b.start_at);
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const bookingDay = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
-  const diffDays = Math.round((bookingDay.getTime() - today.getTime()) / 86400000);
   const hh = String(dt.getHours()).padStart(2, "0");
   const mm = String(dt.getMinutes()).padStart(2, "0");
   const status = mapBookingStatus(b.status);
@@ -42,16 +38,12 @@ export function mapApiBooking(b: ApiBookingRow): Booking {
   const priceN = typeof b.total_price === "string" ? Number(b.total_price) : b.total_price;
   return {
     id: String(b.id),
+    customer_id: b.customer != null ? String(b.customer) : undefined,
     client: b.customer_name || "Mijoz",
     client_avatar: (b.customer_avatar && String(b.customer_avatar)) || "",
     service,
     start_at: b.start_at,
-    date:
-      diffDays === 0
-        ? "Today"
-        : diffDays === 1
-          ? "Tomorrow"
-          : dt.toLocaleDateString("uz-UZ", { day: "2-digit", month: "short" }),
+    date: bookingDateLabel(b.start_at),
     time: `${hh}:${mm}`,
     duration_min,
     price: Number.isFinite(priceN) ? Number(priceN) : 0,
