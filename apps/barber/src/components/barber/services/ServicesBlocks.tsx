@@ -9,6 +9,81 @@ import { serviceImageSrc } from "./utils";
 
 type BlockProps = { state: ServicesPageState };
 
+export function StudioStatsStrip({ state }: BlockProps) {
+  const { activeCount, services, availableCatalog, selectedCatalogRows } = state;
+  const pending = selectedCatalogRows.length;
+
+  const items = [
+    {
+      label: "Katalog",
+      value: availableCatalog.length,
+      hint: "Admin katalogidagi xizmatlar",
+      accent: "text-sky-600",
+      bg: "bg-sky-500/10",
+    },
+    {
+      label: "Mening xizmatlarim",
+      value: services.length,
+      hint: pending > 0 ? `+${pending} ta qo'shish kutilmoqda` : "Tanlangan va narx qo'yilgan",
+      accent: "text-violet-600",
+      bg: "bg-violet-500/10",
+    },
+    {
+      label: "Faol",
+      value: activeCount,
+      hint: "Mijozlar ko'radigan xizmatlar",
+      accent: "text-emerald-600",
+      bg: "bg-emerald-500/10",
+    },
+  ] as const;
+
+  return (
+    <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 border-y border-border bg-gradient-to-b from-muted/60 to-background">
+      <div className="mx-auto grid max-w-[min(100%,1400px)] grid-cols-1 divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0 px-4 sm:px-6 lg:px-8">
+        {items.map((item) => (
+          <div key={item.label} className="flex items-center gap-4 py-5 sm:px-6 first:sm:pl-0 last:sm:pr-0">
+            <div
+              className={cn(
+                "grid size-12 shrink-0 place-items-center rounded-2xl font-heading text-lg font-bold",
+                item.bg,
+                item.accent,
+              )}
+            >
+              {item.value}
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                {item.label}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{item.hint}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PanelHeader({
+  title,
+  description,
+  actions,
+}: {
+  title: string;
+  description?: string;
+  actions?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border bg-background/80 px-4 py-4 sm:px-5">
+      <div>
+        <h2 className="font-heading text-base font-semibold text-foreground">{title}</h2>
+        {description ? <p className="mt-1 text-xs text-muted-foreground">{description}</p> : null}
+      </div>
+      {actions}
+    </div>
+  );
+}
+
 export function ServicesActivationBanners({ state }: BlockProps) {
   const { fullyReady, activationSteps, activationServicesCount, activeCount, refreshActivationStatus } =
     state;
@@ -169,50 +244,223 @@ export function ServicesListBlock({
   state,
   compact,
   cardGrid,
-}: BlockProps & { compact?: boolean; cardGrid?: boolean }) {
+  embedded,
+}: BlockProps & { compact?: boolean; cardGrid?: boolean; embedded?: boolean }) {
   const { services, activeCount, savingServices, canEditService, saveAllServices, updateServicePrice, toggleServiceActive, deleteService } =
     state;
+
+  const saveBtn = (
+    <button
+      onClick={() => void saveAllServices()}
+      disabled={savingServices}
+      className="rounded-lg bg-foreground px-3 py-2 text-sm font-medium text-background disabled:opacity-60"
+    >
+      {savingServices ? "Saqlanmoqda..." : "Saqlash"}
+    </button>
+  );
+
+  const body = (
+    <div className={cn("space-y-3", cardGrid && "grid gap-4 sm:grid-cols-2 space-y-0", embedded && "p-4 sm:p-5")}>
+      {services.length === 0 ? (
+        <EmptyBlock
+          title="Hali xizmat tanlanmagan"
+          description="Chapdan katalogdan xizmat tanlang, o'ngda narx qo'ying."
+          icon={<Sparkles className="size-4" />}
+        />
+      ) : (
+        services.map((service) => {
+          const editable = canEditService(service);
+          return (
+            <ServiceRow
+              key={service.id}
+              service={service}
+              editable={editable}
+              compact={compact}
+              card={cardGrid}
+              onPriceChange={(digits) => updateServicePrice(service.id, digits)}
+              onToggle={() => void toggleServiceActive(service)}
+              onDelete={() => void deleteService(service)}
+            />
+          );
+        })
+      )}
+    </div>
+  );
+
+  if (embedded) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <PanelHeader
+          title="Tanlangan xizmatlar"
+          description={`${activeCount} ta faol · narx va holatni shu yerda boshqaring`}
+          actions={saveBtn}
+        />
+        <div className="min-h-0 flex-1 overflow-y-auto">{body}</div>
+      </div>
+    );
+  }
 
   return (
     <SectionCard
       title="Xizmatlar"
       description={`${activeCount} ta faol xizmat. Narxni siz boshqarasiz, davomiylik va nom esa admin katalogidan keladi.`}
-      actions={
-        <button
-          onClick={() => void saveAllServices()}
-          disabled={savingServices}
-          className="rounded-lg bg-foreground px-3 py-2 text-sm font-medium text-background disabled:opacity-60"
-        >
-          {savingServices ? "Saqlanmoqda..." : "Xizmatlarni saqlash"}
-        </button>
-      }
+      actions={saveBtn}
     >
-      <div className={cn("space-y-3", cardGrid && "grid gap-4 sm:grid-cols-2 xl:grid-cols-3 space-y-0")}>
-        {services.length === 0 ? (
-          <EmptyBlock
-            title="Hali xizmat yo'q"
-            description="Mijozlar booking qilishi uchun kamida bitta xizmat qo'shing."
-            icon={<Sparkles className="size-4" />}
-          />
-        ) : (
-          services.map((service) => {
-            const editable = canEditService(service);
-            return (
-              <ServiceRow
-                key={service.id}
-                service={service}
-                editable={editable}
-                compact={compact}
-                card={cardGrid}
-                onPriceChange={(digits) => updateServicePrice(service.id, digits)}
-                onToggle={() => void toggleServiceActive(service)}
-                onDelete={() => void deleteService(service)}
-              />
-            );
-          })
-        )}
-      </div>
+      {body}
     </SectionCard>
+  );
+}
+
+export function CatalogBrowseBlock({ state }: BlockProps) {
+  const {
+    catalogQuery,
+    setCatalogQuery,
+    catalogCategory,
+    setCatalogCategory,
+    pickerCategories,
+    availableCatalog,
+    selectedCatalogIds,
+    togglePendingCatalog,
+  } = state;
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <PanelHeader
+        title="Barcha xizmatlar"
+        description="Katalogdan tanlang — narx o'ng panelda belgilanadi"
+      />
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px]">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={catalogQuery}
+              onChange={(e) => setCatalogQuery(e.target.value)}
+              placeholder="Xizmat qidiring..."
+              className="h-10 w-full rounded-lg border border-border bg-background pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <select
+            value={catalogCategory}
+            onChange={(e) => setCatalogCategory(e.target.value)}
+            className="h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="all">Barcha kategoriyalar</option>
+            {pickerCategories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          {availableCatalog.map((item) => {
+            const selected = selectedCatalogIds.has(String(item.id));
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => togglePendingCatalog(String(item.id))}
+                className={cn(
+                  "flex items-center gap-3 rounded-xl border p-2.5 text-left transition-colors",
+                  selected
+                    ? "border-foreground bg-foreground text-background shadow-sm"
+                    : "border-border bg-background hover:border-foreground/30 hover:bg-muted/30",
+                )}
+              >
+                <img
+                  src={serviceImageSrc(item.image_url)}
+                  alt=""
+                  loading="lazy"
+                  className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold">{item.name}</p>
+                  <p
+                    className={cn(
+                      "mt-0.5 line-clamp-2 text-[11px]",
+                      selected ? "text-background/75" : "text-muted-foreground",
+                    )}
+                  >
+                    {item.duration_minutes} daq ·{" "}
+                    {item.category_names.join(" · ") || "Katalog"}
+                  </p>
+                </div>
+                {selected ? <CheckCircle2 className="size-4 shrink-0" /> : null}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function CatalogPendingBlock({ state }: BlockProps) {
+  const {
+    selectedCatalogRows,
+    savingServices,
+    updatePendingCatalog,
+    togglePendingCatalog,
+    setPendingServices,
+    addService,
+  } = state;
+
+  if (selectedCatalogRows.length === 0) return null;
+
+  return (
+    <div className="border-t border-dashed border-border bg-muted/20 p-4 sm:p-5">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-sm font-semibold">Qo'shilishi kutilmoqda</p>
+        <button
+          type="button"
+          onClick={() => setPendingServices([])}
+          className="text-xs font-medium text-muted-foreground underline"
+        >
+          Tozalash
+        </button>
+      </div>
+      <div className="space-y-2">
+        {selectedCatalogRows.map(({ catalog, catalog_service, price, is_active }) => (
+          <div
+            key={catalog_service}
+            className="grid gap-2 rounded-xl border border-border bg-background p-3 sm:grid-cols-[minmax(0,1fr)_120px_72px_auto]"
+          >
+            <div className="flex min-w-0 items-center gap-2">
+              <img
+                src={serviceImageSrc(catalog.image_url)}
+                alt=""
+                className="h-10 w-10 rounded-lg object-cover"
+              />
+              <p className="truncate text-sm font-medium">{catalog.name}</p>
+            </div>
+            <SomPriceInput
+              value={price}
+              onChange={(digits) => updatePendingCatalog(catalog_service, { price: digits })}
+            />
+            <button
+              type="button"
+              onClick={() => updatePendingCatalog(catalog_service, { is_active: !is_active })}
+              className="h-10 rounded-lg border px-2 text-xs font-medium"
+            >
+              {is_active ? "Faol" : "O'chiq"}
+            </button>
+            <button type="button" onClick={() => togglePendingCatalog(catalog_service)}>
+              <Trash2 className="size-4 text-muted-foreground" />
+            </button>
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={() => void addService()}
+        disabled={savingServices}
+        className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-foreground text-sm font-medium text-background sm:w-auto sm:px-5"
+      >
+        <Plus className="size-4" />
+        {selectedCatalogRows.length} ta xizmatni qo&apos;shish
+      </button>
+    </div>
   );
 }
 
