@@ -1,6 +1,6 @@
 """
 Redis orqali bir xil slotga parallel bronlarni kamaytirish (SET NX).
-REDIS_URL bo‘lmasa — DB tekshiruvi (serializer) yetarli.
+REDIS_URL bo‘lmasa yoki Redis javob bermasa — DB tekshiruvi (serializer) yetarli.
 """
 
 from __future__ import annotations
@@ -9,7 +9,7 @@ import logging
 from contextlib import contextmanager
 from datetime import datetime
 
-from config.redis_url import get_redis_url
+from config.redis_url import get_redis_url, redis_client_kwargs
 
 logger = logging.getLogger(__name__)
 
@@ -35,14 +35,20 @@ def booking_slot_lock(barber_id: int, start_at: datetime, end_at: datetime, ttl_
         yield True
         return
 
-    r = redis.Redis.from_url(url, decode_responses=True)
     key = _key(barber_id, start_at, end_at)
-    acquired = bool(r.set(key, "1", nx=True, ex=ttl_sec))
+    acquired = True
+    client = None
+    try:
+        client = redis.Redis.from_url(url, decode_responses=True, **redis_client_kwargs())
+        acquired = bool(client.set(key, "1", nx=True, ex=ttl_sec))
+    except Exception as exc:
+        logger.warning("Redis slot lock skipped (%s) — DB overlap check ishlatiladi.", exc)
+        acquired = True
     try:
         yield acquired
     finally:
-        if acquired:
+        if client is not None and acquired:
             try:
-                r.delete(key)
+                client.delete(key)
             except Exception:
                 pass

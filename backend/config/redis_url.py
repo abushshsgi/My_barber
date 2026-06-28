@@ -43,3 +43,19 @@ def normalize_redis_url(raw: str | None) -> str:
 
 def get_redis_url() -> str:
     return normalize_redis_url(os.environ.get("REDIS_URL"))
+
+
+def redis_client_kwargs() -> dict:
+    """Public Redis proxy uchun qisqa timeout — uzoq kutish HTTP ni bloklamasligi kerak."""
+    return {
+        "socket_connect_timeout": 3,
+        "socket_timeout": 3,
+        "retry_on_timeout": True,
+        "health_check_interval": 30,
+    }
+
+
+def redis_channel_layer_hosts(url: str) -> list:
+    if not url:
+        return []
+    return [{"address": url, **redis_client_kwargs()}]

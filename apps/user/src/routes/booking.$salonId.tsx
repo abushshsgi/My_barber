@@ -189,6 +189,7 @@ function useBookingSalonState(
     bookedForLabel,
     canAdvance,
     handleSubmit,
+    isSubmitting: createBooking.isPending,
     paymentMethod,
     setPaymentMethod,
     walletBalance,
@@ -377,11 +378,11 @@ function BookingStepContent({
 }
 
 function BookingNavButtons({ state, t }: { state: ReturnType<typeof useBookingSalonState>; t: ReturnType<typeof useTranslation>["t"] }) {
-  const { step, setStep, canAdvance, handleSubmit } = state;
+  const { step, setStep, canAdvance, handleSubmit, isSubmitting } = state;
   return (
     <div className="mt-8 flex gap-2">
       {step > 1 ? (
-        <button type="button" onClick={() => setStep((s) => s - 1)} className="flex-1 rounded-2xl border-2 border-foreground py-4 text-sm font-bold">
+        <button type="button" disabled={isSubmitting} onClick={() => setStep((s) => s - 1)} className="flex-1 rounded-2xl border-2 border-foreground py-4 text-sm font-bold disabled:opacity-50">
           {t("common.back")}
         </button>
       ) : null}
@@ -390,8 +391,13 @@ function BookingNavButtons({ state, t }: { state: ReturnType<typeof useBookingSa
           {t("common.next")}
         </button>
       ) : (
-        <button type="button" onClick={handleSubmit} className="flex-[2] rounded-2xl bg-foreground py-4 text-sm font-bold text-background">
-          {t("booking.confirm")}
+        <button
+          type="button"
+          disabled={isSubmitting}
+          onClick={() => void handleSubmit()}
+          className="flex-[2] rounded-2xl bg-foreground py-4 text-sm font-bold text-background disabled:opacity-60"
+        >
+          {isSubmitting ? t("common.loading", { defaultValue: "Yuklanmoqda..." }) : t("booking.confirm")}
         </button>
       )}
     </div>

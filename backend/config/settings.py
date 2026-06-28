@@ -133,7 +133,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 # WebSocket guruhlari: productionda Railway Redis plugin → REDIS_URL
-from config.redis_url import get_redis_url
+from config.redis_url import get_redis_url, redis_channel_layer_hosts, redis_client_kwargs
 
 _REDIS_URL = get_redis_url()
 if _REDIS_URL:
@@ -141,7 +141,7 @@ if _REDIS_URL:
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
             "CONFIG": {
-                "hosts": [_REDIS_URL],
+                "hosts": redis_channel_layer_hosts(_REDIS_URL),
             },
         },
     }
@@ -158,6 +158,7 @@ if _REDIS_URL:
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
             "LOCATION": _REDIS_URL,
+            "OPTIONS": redis_client_kwargs(),
         }
     }
 else:

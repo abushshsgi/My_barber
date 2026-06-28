@@ -340,7 +340,9 @@ function IndependentBookingFlow() {
                 onClick={() => void handleSubmit()}
                 className="flex-[2] rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background disabled:opacity-60"
               >
-                {t("booking.confirm")}
+                {createBooking.isPending
+                  ? t("common.loading", { defaultValue: "Yuklanmoqda..." })
+                  : t("booking.confirm")}
               </button>
             )}
           </div>
