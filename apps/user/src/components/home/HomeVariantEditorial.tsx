@@ -6,7 +6,6 @@ import {
   HomeOfferBanner,
   HomeSearchAndCategories,
   HomeTrendingStrip,
-  HomeTrustStrip,
   HomeUnifiedSearchResults,
 } from "@/components/home/HomeBlocks";
 import { HomeDiscoverySections } from "@/components/home/HomeDiscoverySections";
@@ -34,7 +33,6 @@ export function HomeVariantEditorial({ data }: Props) {
         barbers={data.filteredBarbers}
         loading={data.loading}
       />
-      {!data.searchActive ? <HomeTrustStrip /> : null}
     </div>
   );
 }

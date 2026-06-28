@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Instagram, Send, ShieldCheck } from "lucide-react";
+import { Instagram, Send } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FooterLanguageSwitch } from "@/components/footer/FooterLanguageSwitch";
 import { SiteFooterSchema } from "@/components/footer/SiteFooterSchema";
@@ -9,7 +9,6 @@ import {
   FOOTER_PAYMENT_METHODS,
   FOOTER_SECTIONS,
   FOOTER_SOCIAL,
-  FOOTER_TRUST_STATS,
   type FooterLink,
   type FooterSection,
 } from "@/lib/footer-links";
@@ -74,32 +73,6 @@ function FooterSectionBlock({ section, mobile }: { section: FooterSection; mobil
   );
 }
 
-function FooterTrustStrip() {
-  const { t } = useTranslation();
-
-  return (
-    <div className="rounded-2xl border border-border/70 bg-background/80 p-4 sm:p-5">
-      <div className="grid grid-cols-3 gap-3 text-center">
-        {FOOTER_TRUST_STATS.map((stat, index) => (
-          <div
-            key={stat.labelKey}
-            className={cn(index === 1 && "border-x border-border/60")}
-          >
-            <p className="text-lg font-bold sm:text-xl">{stat.value}</p>
-            <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-              {t(stat.labelKey, { defaultValue: stat.defaultValue })}
-            </p>
-          </div>
-        ))}
-      </div>
-      <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-[11px] font-semibold text-muted-foreground">
-        <ShieldCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={2.2} />
-        {t("footer.securityNote", { defaultValue: "Ma'lumotlaringiz himoyalangan" })}
-      </p>
-    </div>
-  );
-}
-
 function FooterSocialRow({ className }: { className?: string }) {
   const { t } = useTranslation();
 
@@ -145,10 +118,6 @@ export function SiteFooter({ insetClassName, className }: Props) {
       )}
     >
       <SiteFooterSchema />
-
-      <div className="mb-6 lg:mb-8">
-        <FooterTrustStrip />
-      </div>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_repeat(5,minmax(0,1fr))] lg:gap-6 xl:gap-8">
         <div className="min-w-0">

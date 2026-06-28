@@ -22,12 +22,6 @@ export const FOOTER_CONTACT = {
   phoneHref: "tel:+998712001234",
 } as const;
 
-export const FOOTER_TRUST_STATS = [
-  { value: "120+", labelKey: "homePage.trust.salons", defaultValue: "Salon" },
-  { value: "450+", labelKey: "homePage.trust.barbers", defaultValue: "Usta" },
-  { value: "4.9", labelKey: "homePage.trust.rating", defaultValue: "Reyting" },
-] as const;
-
 export const FOOTER_PAYMENT_METHODS = ["Payme", "Click", "Uzcard"] as const;
 
 export const FOOTER_SECTIONS: FooterSection[] = [
