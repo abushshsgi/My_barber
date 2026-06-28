@@ -53,7 +53,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
+import { RealtimeStatusBadge } from "@/components/barber/RealtimeStatusBadge";
+import { useBookingLiveSync } from "@/hooks/use-booking-live-sync";
 import { useBarberContext, type ViewMode } from "./BarberContext";
 import { UserAvatar } from "./primitives";
 import {
@@ -295,6 +296,7 @@ function Topbar({
   const navigate = useNavigate();
   const { notifications, profile, viewMode, isJoinedWorker, setViewMode, flowIdentity, fullyReady } =
     useBarberContext();
+  useBookingLiveSync();
   const unread = notifications.filter((n) => !n.read).length;
 
   const currentItem =
@@ -325,6 +327,7 @@ function Topbar({
       </div>
 
       <div className="flex items-center gap-2">
+        {fullyReady ? <RealtimeStatusBadge /> : null}
         {isJoinedWorker && fullyReady && !onSalonViewArea && (
           <Button
             type="button"

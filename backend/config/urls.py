@@ -161,7 +161,19 @@ from wallet.views import (
 
 
 def health(_request):
-    return JsonResponse({"ok": True})
+    from config.redis_health import redis_health_payload
+
+    redis = redis_health_payload()
+    return JsonResponse(
+        {
+            "ok": True,
+            "redis": redis,
+            "realtime": {
+                "ready": redis.get("realtime_ready", False),
+                "mode": "redis" if redis.get("realtime_ready") else "polling",
+            },
+        }
+    )
 
 
 router = DefaultRouter()

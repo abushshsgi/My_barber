@@ -4,11 +4,33 @@ import { notificationWebSocketUrl } from "@mybarber/shared/ws-url";
 import { getBarberAccessToken } from "@/lib/api";
 import { barberQueryKeys } from "@/hooks/use-barber-queries";
 
+export type WsConnectionState = "connecting" | "open" | "closed";
+
 let socket: WebSocket | null = null;
 let activeToken: string | null = null;
 let refCount = 0;
 let closeTimer: ReturnType<typeof setTimeout> | null = null;
+let wsState: WsConnectionState = "closed";
 const clients = new Set<ReturnType<typeof useQueryClient>>();
+const wsListeners = new Set<(open: boolean) => void>();
+
+function setWsState(next: WsConnectionState) {
+  wsState = next;
+  const open = next === "open";
+  for (const fn of wsListeners) fn(open);
+}
+
+export function getBarberWsState(): WsConnectionState {
+  return wsState;
+}
+
+export function subscribeBarberWsState(listener: (open: boolean) => void) {
+  wsListeners.add(listener);
+  listener(wsState === "open");
+  return () => {
+    wsListeners.delete(listener);
+  };
+}
 
 function invalidateBookings(qc: ReturnType<typeof useQueryClient>, bookingId?: number) {
   void qc.invalidateQueries({ queryKey: barberQueryKeys.bookings() });
@@ -18,7 +40,7 @@ function invalidateBookings(qc: ReturnType<typeof useQueryClient>, bookingId?: n
 }
 
 function openSocket(token: string) {
-  if (socket && activeToken === token) return;
+  if (socket && activeToken === token && wsState === "open") return;
   if (socket) {
     try {
       socket.close();
@@ -28,18 +50,25 @@ function openSocket(token: string) {
     socket = null;
   }
   activeToken = token;
+  setWsState("connecting");
   try {
     socket = new WebSocket(notificationWebSocketUrl(token));
   } catch {
     socket = null;
+    setWsState("closed");
     return;
   }
+
+  socket.onopen = () => setWsState("open");
+  socket.onclose = () => setWsState("closed");
+  socket.onerror = () => setWsState("closed");
 
   socket.onmessage = (evt) => {
     try {
       const payload = JSON.parse(evt.data) as {
         event?: string;
         booking_id?: number;
+        payload?: { booking_id?: number };
       };
       if (payload.event === "booking_updated") {
         for (const qc of clients) {
@@ -50,7 +79,7 @@ function openSocket(token: string) {
       if (payload.event === "notification") {
         for (const qc of clients) {
           void qc.invalidateQueries({ queryKey: barberQueryKeys.notifications() });
-          const bid = (payload as { payload?: { booking_id?: number } }).payload?.booking_id;
+          const bid = payload.booking_id ?? payload.payload?.booking_id;
           if (bid != null) invalidateBookings(qc, bid);
         }
       }
@@ -60,7 +89,7 @@ function openSocket(token: string) {
   };
 }
 
-/** Bron jarayonini WebSocket orqali real-time yangilash. */
+/** WebSocket + bron/bildirishnoma real-time yangilanishi. */
 export function useBookingLiveSync(bookingId?: string) {
   const qc = useQueryClient();
 
@@ -90,6 +119,7 @@ export function useBookingLiveSync(bookingId?: string) {
             }
             socket = null;
             activeToken = null;
+            setWsState("closed");
           }
           closeTimer = null;
         }, 1000);
