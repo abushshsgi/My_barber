@@ -13,6 +13,7 @@ import { authQueryEnabled, catalogQueryEnabled } from "@/lib/auth-query";
 import { getAuthUserId } from "@/lib/auth-user";
 import { userQueryKey } from "@/lib/query-keys";
 import { mapBooking, mapBookings } from "@/lib/mappers/booking";
+import { bookingLifecycleStatus, bookingsNeedLivePolling } from "@/lib/bookings-utils";
 import { bookingNeedsLiveRefresh } from "@mybarber/shared/booking-lifecycle";
 
 export const bookingsQueryKeyBase = ["bookings"] as const;
@@ -26,8 +27,10 @@ export function useBookings() {
   return useQuery({
     queryKey: bookingsQueryKeyFor(userId),
     queryFn: async () => mapBookings(await fetchBookings()),
-    staleTime: 15_000,
+    staleTime: 8_000,
     enabled: authQueryEnabled(!!userId),
+    refetchInterval: (q) => (bookingsNeedLivePolling(q.state.data) ? 5_000 : false),
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -41,14 +44,9 @@ export function useBooking(bookingId: string) {
     refetchInterval: (q) => {
       const status = q.state.data?.status;
       if (!status) return false;
-      const lifecycle =
-        status === "done"
-          ? "completed"
-          : status === "cancelled"
-            ? "cancelled"
-            : status;
-      if (lifecycle === "in_progress") return 2_000;
-      if (bookingNeedsLiveRefresh(lifecycle)) return 8_000;
+      if (bookingNeedsLiveRefresh(bookingLifecycleStatus(q.state.data!))) {
+        return status === "in_progress" ? 2_000 : 4_000;
+      }
       return false;
     },
   });

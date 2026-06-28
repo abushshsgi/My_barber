@@ -34,13 +34,14 @@ function invalidateAll() {
   }
 }
 
-function invalidateBookings(bookingId?: number) {
+function refreshBookings(bookingId?: number) {
   const userId = getAuthUserId();
   for (const qc of clients) {
-    void qc.invalidateQueries({ queryKey: bookingsQueryKeyBase });
+    void qc.refetchQueries({ queryKey: bookingsQueryKeyBase, type: "active" });
     if (bookingId != null && userId) {
-      void qc.invalidateQueries({
+      void qc.refetchQueries({
         queryKey: userQueryKey([...bookingsQueryKeyBase, String(bookingId)] as const, userId),
+        type: "active",
       });
     }
   }
@@ -69,7 +70,7 @@ function openSocket(token: string) {
     try {
       const payload = JSON.parse(evt.data) as WsPayload;
       if (payload.event === "booking_updated") {
-        invalidateBookings(payload.booking_id);
+        refreshBookings(payload.booking_id);
         return;
       }
       if (
@@ -80,7 +81,7 @@ function openSocket(token: string) {
       ) {
         invalidateAll();
         const bid = payload.booking_id ?? payload.payload?.booking_id;
-        if (bid != null) invalidateBookings(bid);
+        if (bid != null) refreshBookings(bid);
       }
     } catch {
       invalidateAll();

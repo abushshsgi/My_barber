@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Exists, OuterRef, Q, Sum
 from django.db.models.functions import TruncDate
 from django.http import Http404
 from django.shortcuts import get_object_or_404
@@ -193,6 +193,7 @@ from salons.models import Salon, SalonMembership
 
 from .serializers import (
     BookingCreateSerializer,
+    BookingListSerializer,
     BookingSerializer,
     ReviewSerializer,
 )
@@ -208,11 +209,22 @@ class BookingViewSet(viewsets.ModelViewSet):
         return booking.barber_id == bp.id
 
     def get_queryset(self):
-        related = ["customer", "salon", "barber", "barber__profile", "completion"]
-        if bookings_has_family_member_column():
-            related.append("family_member")
-        base = Booking.objects.select_related(*related).prefetch_related("lines")
-        base = booking_queryset_compat(base)
+        action = getattr(self, "action", None)
+        if action == "list":
+            related = ["customer", "salon", "barber"]
+            if bookings_has_family_member_column():
+                related.append("family_member")
+            base = Booking.objects.select_related(*related).prefetch_related("lines")
+            base = booking_queryset_compat(base)
+            base = base.annotate(
+                _has_review=Exists(Review.objects.filter(booking_id=OuterRef("pk")))
+            )
+        else:
+            related = ["customer", "salon", "barber", "barber__profile", "completion"]
+            if bookings_has_family_member_column():
+                related.append("family_member")
+            base = Booking.objects.select_related(*related).prefetch_related("lines")
+            base = booking_queryset_compat(base)
         st = self.request.query_params.get("status")
         if st:
             base = base.filter(status=st)
@@ -226,6 +238,8 @@ class BookingViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "create":
             return BookingCreateSerializer
+        if self.action == "list":
+            return BookingListSerializer
         return BookingSerializer
 
     def create(self, request, *args, **kwargs):
@@ -258,6 +272,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             f"{booking.customer.full_name or booking.customer.email} bron qildi. Tel: {phone or '—'}",
             {"booking_id": booking.id, "customer_phone": phone},
         )
+        broadcast_booking_updated(booking=booking)
         return Response(BookingSerializer(booking).data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):

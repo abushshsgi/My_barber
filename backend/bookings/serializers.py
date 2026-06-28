@@ -263,6 +263,82 @@ class BookingSerializer(serializers.ModelSerializer):
         return [h for h in history if h.get("at")]
 
 
+class BookingListSerializer(serializers.ModelSerializer):
+    """Ro'yxat uchun yengil serializer — jarayon maydonlari faqat detailda."""
+
+    lines = BookingLineSerializer(many=True, read_only=True)
+    customer_name = serializers.CharField(source="customer.full_name", read_only=True)
+    customer_phone = serializers.CharField(read_only=True)
+    customer_avatar = serializers.SerializerMethodField()
+    salon_name = serializers.SerializerMethodField()
+    barber_name = serializers.CharField(source="barber.full_name", read_only=True)
+    has_review = serializers.SerializerMethodField()
+    review_id = serializers.SerializerMethodField()
+    family_member = serializers.SerializerMethodField()
+    booked_for_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Booking
+        fields = (
+            "id",
+            "customer",
+            "customer_name",
+            "customer_phone",
+            "customer_avatar",
+            "salon",
+            "salon_name",
+            "barber",
+            "barber_name",
+            "start_at",
+            "end_at",
+            "started_at",
+            "status",
+            "total_price",
+            "payment_method",
+            "payment_status",
+            "family_member",
+            "booked_for_name",
+            "lines",
+            "has_review",
+            "review_id",
+            "created_at",
+        )
+        read_only_fields = fields
+
+    def get_customer_avatar(self, obj):
+        cust = obj.customer
+        if not cust or not cust.avatar:
+            return ""
+        request = self.context.get("request")
+        url = cust.avatar.url
+        if request:
+            return request.build_absolute_uri(url)
+        return url
+
+    def get_salon_name(self, obj):
+        return obj.salon.name if obj.salon_id else None
+
+    def get_has_review(self, obj):
+        annotated = getattr(obj, "_has_review", None)
+        if annotated is not None:
+            return bool(annotated)
+        return hasattr(obj, "review")
+
+    def get_review_id(self, obj):
+        review = getattr(obj, "review", None)
+        return review.id if review else None
+
+    def get_family_member(self, obj: Booking):
+        if not bookings_has_family_member_column():
+            return None
+        return obj.family_member_id
+
+    def get_booked_for_name(self, obj):
+        if bookings_has_family_member_column() and obj.family_member_id and obj.family_member:
+            return obj.family_member.name
+        return (obj.customer.full_name or "").strip() or obj.customer.get_username()
+
+
 class BookingCreateSerializer(serializers.Serializer):
     salon = serializers.PrimaryKeyRelatedField(
         queryset=Salon.objects.filter(is_published=True),

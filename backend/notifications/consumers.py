@@ -33,11 +33,19 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 await self.close(code=4003)
                 return
             self.group_name = f"barber_{int(bid)}"
-        elif payload.get("token_type") == "access" and payload.get("user_id") is not None:
-            self.group_name = f"user_{int(payload['user_id'])}"
         else:
-            await self.close(code=4004)
-            return
+            user_id = payload.get("user_id")
+            if user_id is None and payload.get("sub") is not None:
+                try:
+                    user_id = int(payload["sub"])
+                except (TypeError, ValueError):
+                    user_id = None
+            token_type = payload.get("token_type") or payload.get("type")
+            if user_id is not None and token_type in (None, "access", "refresh"):
+                self.group_name = f"user_{int(user_id)}"
+            else:
+                await self.close(code=4004)
+                return
 
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()

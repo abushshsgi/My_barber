@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { BookingCard, BookingsEmptyState } from "@/components/bookings/BookingCard";
 import { PagePillTabs } from "@/components/ui/PagePillTabs";
 import { useBookings } from "@/hooks/use-bookings-api";
-import { getUpcomingBookings } from "@/lib/bookings-utils";
+import { getUpcomingBookings, getHistoryBookings } from "@/lib/bookings-utils";
 
 type Props = { focus?: string };
 
@@ -14,9 +14,7 @@ export function BookingsMobile({ focus }: Props) {
   const { data: bookings = [], isLoading } = useBookings();
   const now = Date.now();
   const upcoming = getUpcomingBookings(bookings, now);
-  const history = bookings.filter(
-    (b) => new Date(b.date).getTime() < now || b.status === "cancelled",
-  );
+  const history = getHistoryBookings(bookings, now);
   const list = tab === "upcoming" ? upcoming : history;
 
   useEffect(() => {
