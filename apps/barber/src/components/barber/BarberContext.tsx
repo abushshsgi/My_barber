@@ -1157,13 +1157,13 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         const defer = () => {
           if (!alive) return;
           void Promise.all([
-            refreshConversations(),
-            refreshInventory(),
-            refreshExpenses(),
-            refreshGoals(),
-            refreshPromos(),
-            refreshSettings(),
-            refreshPortfolio(),
+            refreshConversations,
+            refreshInventory,
+            refreshExpenses,
+            refreshGoals,
+            refreshPromos,
+            refreshSettings,
+            refreshPortfolio,
           ].map((fn) => fn().catch(() => undefined)));
         };
         if (typeof requestIdleCallback === "function") {

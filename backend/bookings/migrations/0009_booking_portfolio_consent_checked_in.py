@@ -4,7 +4,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("bookings", "0006_review_barber_reply_and_more"),
+        ("bookings", "0008_booking_payment_fields"),
     ]
 
     operations = [
