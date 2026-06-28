@@ -8,7 +8,7 @@ import {
   useBarberAnalyticsQuery,
 } from "@/hooks/use-barber-queries";
 import { resolveBarberAnalyticsParams } from "@/lib/analytics-scope";
-import { statsRangeToIsoParams, type StatsRangeKey } from "@/lib/finance-range";
+import { isDateInStatsRange, statsRangeToIsoParams, type StatsRangeKey } from "@/lib/finance-range";
 
 export const Route = createFileRoute("/barber/stats")({
   loader: ({ context: { queryClient } }) => {
@@ -35,14 +35,8 @@ function StatsPage() {
   });
 
   const bookingsInRange = useMemo(
-    () =>
-      bookings.filter((b) => {
-        const day = b.start_at?.slice(0, 10);
-        const startDay = dates.start.slice(0, 10);
-        const endDay = dates.end.slice(0, 10);
-        return day && day >= startDay && day <= endDay;
-      }),
-    [bookings, dates.end, dates.start],
+    () => bookings.filter((b) => b.start_at && isDateInStatsRange(b.start_at, range)),
+    [bookings, range],
   );
   const completedInRange = useMemo(
     () => bookingsInRange.filter((b) => b.status === "completed"),

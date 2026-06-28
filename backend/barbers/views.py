@@ -586,9 +586,12 @@ class MyBarberFinanceSummaryView(APIView):
     permission_classes = [IsBarber]
 
     def get(self, request):
+        from bookings.datetime_utils import parse_range_datetime
         from bookings.earnings import (
+            annotate_earnings_day,
             barber_platform_earnings_qs,
             completed_bookings_qs,
+            filter_bookings_by_earnings_period,
             payment_breakdown,
         )
 
@@ -597,23 +600,19 @@ class MyBarberFinanceSummaryView(APIView):
         end_raw = (request.query_params.get("end") or "").strip()
         start_dt = end_dt = None
 
-        earnings_base = barber_platform_earnings_qs(barber).select_related("customer").prefetch_related(
-            "lines"
-        )
+        earnings_base = barber_platform_earnings_qs(barber).select_related(
+            "customer", "completion"
+        ).prefetch_related("lines")
         completed_base = completed_bookings_qs(
             Booking.objects.filter(barber=barber)
-        ).select_related("customer").prefetch_related("lines")
+        ).select_related("customer", "completion").prefetch_related("lines")
 
         if start_raw and end_raw:
             try:
-                start_dt = timezone.datetime.fromisoformat(start_raw.replace("Z", "+00:00"))
-                end_dt = timezone.datetime.fromisoformat(end_raw.replace("Z", "+00:00"))
-                if timezone.is_naive(start_dt):
-                    start_dt = timezone.make_aware(start_dt, timezone.get_current_timezone())
-                if timezone.is_naive(end_dt):
-                    end_dt = timezone.make_aware(end_dt, timezone.get_current_timezone())
-                earnings_base = earnings_base.filter(start_at__gte=start_dt, start_at__lte=end_dt)
-                completed_base = completed_base.filter(start_at__gte=start_dt, start_at__lte=end_dt)
+                start_dt = parse_range_datetime(start_raw, is_end=False)
+                end_dt = parse_range_datetime(end_raw, is_end=True)
+                earnings_base = filter_bookings_by_earnings_period(earnings_base, start_dt, end_dt)
+                completed_base = filter_bookings_by_earnings_period(completed_base, start_dt, end_dt)
             except ValueError:
                 return Response({"detail": "Invalid start/end dates."}, status=400)
 
@@ -639,10 +638,15 @@ class MyBarberFinanceSummaryView(APIView):
         for b in completed_base.order_by("-start_at")[:200]:
             lines = list(b.lines.all())
             first_line = lines[0] if lines else None
+            event_at = (
+                b.completion.completed_at
+                if getattr(b, "completion", None) and b.completion.completed_at
+                else b.start_at
+            )
             transactions.append(
                 {
                     "id": f"booking-{b.id}",
-                    "date": b.start_at.isoformat(),
+                    "date": event_at.isoformat(),
                     "client": b.customer.full_name or b.customer.email,
                     "service": first_line.service_name if first_line else "Xizmat",
                     "amount": str(b.total_price),
@@ -668,7 +672,7 @@ class MyBarberFinanceSummaryView(APIView):
         transactions = transactions[:200]
 
         daily_rows = (
-            completed_base.annotate(day=TruncDate("start_at"))
+            annotate_earnings_day(completed_base)
             .values("day")
             .annotate(revenue=Sum("total_price"), bookings=Count("id"))
             .order_by("day")

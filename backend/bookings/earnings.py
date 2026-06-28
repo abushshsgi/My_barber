@@ -1,9 +1,26 @@
 """Platform earnings: faqat onlayn + to'langan yakunlangan bronlar."""
 
-from django.db.models import Count, QuerySet, Sum
+from django.db.models import Count, F, Q, QuerySet, Sum
+from django.db.models.functions import Coalesce, TruncDate
 
 from bookings.models import Booking
 
+
+def earnings_event_at_field():
+    """Yakunlangan vaqt (completion) yoki reja vaqti (start_at)."""
+    return Coalesce(F("completion__completed_at"), F("start_at"))
+
+
+def filter_bookings_by_earnings_period(qs: QuerySet[Booking], start_dt, end_dt) -> QuerySet[Booking]:
+    """Daromad/statistika: xizmat yakunlangan sanasi bo'yicha (yo'q bo'lsa start_at)."""
+    return qs.filter(
+        Q(completion__completed_at__gte=start_dt, completion__completed_at__lte=end_dt)
+        | Q(completion__isnull=True, start_at__gte=start_dt, start_at__lte=end_dt)
+    )
+
+
+def annotate_earnings_day(qs: QuerySet[Booking]):
+    return qs.annotate(day=TruncDate(earnings_event_at_field()))
 
 def barber_platform_earnings_qs(barber) -> QuerySet[Booking]:
     return Booking.objects.filter(

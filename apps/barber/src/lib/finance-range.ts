@@ -7,6 +7,17 @@ export function startOfLocalDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
+export function formatLocalDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+export function localDateKey(d: Date): string {
+  return formatLocalDate(startOfLocalDay(d));
+}
+
 export function rangeStart(range: EarningsRange, now = new Date()): Date {
   const end = startOfLocalDay(now);
   const start = new Date(end);
@@ -61,11 +72,10 @@ export function filterTransactionsByRange(
 
 export function rangeToIsoParams(range: EarningsRange, now = new Date()): { start: string; end: string } {
   const from = rangeStart(range, now);
-  const to = new Date(now);
-  to.setHours(23, 59, 59, 999);
+  const to = startOfLocalDay(now);
   return {
-    start: from.toISOString(),
-    end: to.toISOString(),
+    start: formatLocalDate(from),
+    end: formatLocalDate(to),
   };
 }
 
@@ -75,16 +85,29 @@ export function last7DaysIsoParams(now = new Date()): { start: string; end: stri
 
 export type StatsRangeKey = "7d" | "30d" | "90d";
 
+function parseLocalDateYmd(ymd: string): Date {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return new Date(y, (m || 1) - 1, d || 1);
+}
+
+export function isDateInStatsRange(isoDate: string, key: StatsRangeKey, now = new Date()): boolean {
+  const dt = startOfLocalDay(new Date(isoDate));
+  if (Number.isNaN(dt.getTime())) return false;
+  const { start, end } = statsRangeToIsoParams(key, now);
+  const from = parseLocalDateYmd(start);
+  const to = parseLocalDateYmd(end);
+  return dt >= from && dt <= to;
+}
+
 export function statsRangeToIsoParams(key: StatsRangeKey, now = new Date()): { start: string; end: string } {
-  const end = new Date(now);
-  end.setHours(23, 59, 59, 999);
+  const end = startOfLocalDay(now);
   const start = startOfLocalDay(now);
   if (key === "7d") start.setDate(start.getDate() - 6);
   else if (key === "30d") start.setDate(start.getDate() - 29);
   else start.setDate(start.getDate() - 89);
   return {
-    start: start.toISOString(),
-    end: end.toISOString(),
+    start: formatLocalDate(start),
+    end: formatLocalDate(end),
   };
 }
 

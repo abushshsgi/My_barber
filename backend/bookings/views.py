@@ -26,19 +26,19 @@ from bookings.availability import (
     parse_id_list,
 )
 from bookings.db_compat import bookings_has_family_member_column
+from bookings.datetime_utils import parse_range_datetime
 from bookings.models import Booking, BookingCompletion, BookingLine, Review
-from bookings.earnings import completed_bookings_qs, payment_breakdown, platform_earnings_qs
+from bookings.earnings import (
+    annotate_earnings_day,
+    completed_bookings_qs,
+    filter_bookings_by_earnings_period,
+    payment_breakdown,
+    platform_earnings_qs,
+)
 
 
 def _parse_analytics_datetime(raw: str, *, is_end: bool = False):
-    """ISO yoki YYYY-MM-DD; sana-only end uchun kun oxirigacha."""
-    raw = (raw or "").strip()
-    dt = timezone.datetime.fromisoformat(raw.replace("Z", "+00:00"))
-    if timezone.is_naive(dt):
-        dt = timezone.make_aware(dt, timezone.get_current_timezone())
-    if is_end and len(raw) <= 10:
-        dt = dt.replace(hour=23, minute=59, second=59, microsecond=999999)
-    return dt
+    return parse_range_datetime(raw, is_end=is_end)
 
 
 def _analytics_response_for_bookings(
@@ -68,7 +68,7 @@ def _analytics_response_for_bookings(
     )
 
     daily_rows = (
-        bookings.annotate(day=TruncDate("start_at"))
+        annotate_earnings_day(bookings)
         .values("day")
         .annotate(
             rev=Sum("total_price"),
@@ -287,6 +287,11 @@ class BookingViewSet(viewsets.ModelViewSet):
         booking = self.get_object()
         if not self._barber_can_manage_booking(request, booking):
             return Response(status=403)
+        if booking.status == Booking.Status.ACCEPTED:
+            now = timezone.now()
+            booking.status = Booking.Status.IN_PROGRESS
+            booking.started_at = now
+            booking.save(update_fields=["status", "started_at", "updated_at"])
         if booking.status != Booking.Status.IN_PROGRESS:
             return Response({"detail": "Xizmatni tugatishdan oldin boshlash kerak."}, status=400)
         portfolio_allowed = request.data.get("portfolio_allowed", False)
@@ -725,7 +730,11 @@ class AnalyticsView(APIView):
                 start_at__gte=start_dt,
                 start_at__lte=end_dt,
             )
-            bookings = completed_bookings_qs(range_base)
+            bookings = filter_bookings_by_earnings_period(
+                completed_bookings_qs(Booking.objects.filter(barber=bp)),
+                start_dt,
+                end_dt,
+            )
             cancelled_count = range_base.filter(status=Booking.Status.CANCELLED).count()
 
             def prior_for_customer(cid):

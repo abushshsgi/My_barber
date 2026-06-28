@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Wallet, TrendingUp, Download, ArrowDownToLine, Receipt } from "lucide-react";
-import { formatUZS } from "@/components/barber/BarberContext";
+import { formatUZS, useBarberContext } from "@/components/barber/BarberContext";
 import { PageHeader, StatCard } from "@/components/barber/primitives";
 import {
   EARNINGS_RANGES,
+  filterCompletedBookingsByRange,
   formatFinanceDate,
   last7DaysIsoParams,
+  localDateKey,
   rangeToIsoParams,
   type EarningsRange,
 } from "@/lib/finance-range";
@@ -34,7 +36,7 @@ import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/barber/earnings")({
   loader: ({ context: { queryClient } }) => {
-    const rangeParams = rangeToIsoParams("Hafta");
+    const rangeParams = rangeToIsoParams("Bugun");
     void prefetchBarberFinance(queryClient, rangeParams);
     void prefetchPayoutBalance(queryClient);
   },
@@ -42,7 +44,8 @@ export const Route = createFileRoute("/barber/earnings")({
 });
 
 function EarningsPage() {
-  const [range, setRange] = useState<EarningsRange>("Hafta");
+  const { bookings } = useBarberContext();
+  const [range, setRange] = useState<EarningsRange>("Bugun");
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [accountRef, setAccountRef] = useState("");
@@ -56,18 +59,38 @@ function EarningsPage() {
   const { data: chartFinanceExtra } = useBarberFinanceQuery(chartParams, !chartUsesRange);
   const chartFinance = chartUsesRange ? finance : chartFinanceExtra;
 
+  const localCompleted = useMemo(
+    () => filterCompletedBookingsByRange(bookings, range),
+    [bookings, range],
+  );
+  const localCash = localCompleted
+    .filter((b) => b.payment_method === "cash")
+    .reduce((s, b) => s + b.price, 0);
+  const localOnline = localCompleted
+    .filter((b) => b.payment_method === "online")
+    .reduce((s, b) => s + b.price, 0);
+  const localCashCount = localCompleted.filter((b) => b.payment_method === "cash").length;
+  const localOnlineCount = localCompleted.filter((b) => b.payment_method === "online").length;
+
+  const apiHasBookings = (finance?.cash_count ?? 0) + (finance?.online_count ?? 0) > 0;
+  const useLocalFallback = !apiHasBookings && localCompleted.length > 0;
+
+  const onlineIncome = useLocalFallback
+    ? localOnline
+    : Number(finance?.income_total ?? finance?.online_total ?? 0);
+  const cashTotal = useLocalFallback ? localCash : Number(finance?.cash_total ?? 0);
+  const totalIncome = useLocalFallback
+    ? localCash + localOnline
+    : Number(finance?.total_income ?? onlineIncome + cashTotal);
+  const cashCount = useLocalFallback ? localCashCount : (finance?.cash_count ?? 0);
+  const onlineCount = useLocalFallback ? localOnlineCount : (finance?.online_count ?? 0);
+  const rangeExpenses = Number(finance?.expense_total ?? 0);
+  const net = useLocalFallback ? localOnline - rangeExpenses : Number(finance?.net_total ?? 0);
+  const transactions = finance?.transactions ?? [];
+
   const { data: balance } = usePayoutBalanceQuery();
   const { data: payouts = [] } = useBarberPayoutsQuery();
   const { invalidatePayouts, invalidateFinance } = useInvalidateBarberQueries();
-
-  const onlineIncome = Number(finance?.income_total ?? finance?.online_total ?? 0);
-  const cashTotal = Number(finance?.cash_total ?? 0);
-  const totalIncome = Number(finance?.total_income ?? onlineIncome + cashTotal);
-  const cashCount = finance?.cash_count ?? 0;
-  const onlineCount = finance?.online_count ?? 0;
-  const rangeExpenses = Number(finance?.expense_total ?? 0);
-  const net = Number(finance?.net_total ?? 0);
-  const transactions = finance?.transactions ?? [];
   const balanceVal = balance ? Number(balance.available_balance) : 0;
 
   const chart = useMemo(() => {
@@ -81,7 +104,7 @@ function EarningsPage() {
     for (let i = 0; i < 7; i++) {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
-      const key = d.toISOString().slice(0, 10);
+      const key = localDateKey(d);
       labels.push(d.toLocaleDateString("uz-UZ", { weekday: "short" }));
       const row = daily.find((x) => x.date === key);
       amounts.push(row ? Number(row.revenue) : 0);
@@ -254,6 +277,13 @@ function EarningsPage() {
       {financeError ? (
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           Daromad ma&apos;lumotlarini yuklab bo&apos;lmadi. Sahifani yangilab ko&apos;ring.
+        </div>
+      ) : null}
+
+      {useLocalFallback ? (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-900 dark:text-amber-100">
+          API hali yangilanmagan — bronlar ro&apos;yxatidan vaqtinchalik hisoblandi. Backend deploy
+          qilinganidan keyin yangilang.
         </div>
       ) : null}
 

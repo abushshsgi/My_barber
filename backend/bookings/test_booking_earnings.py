@@ -200,6 +200,48 @@ class BookingEarningsPaymentTests(TestCase):
         if "payment_method" in body:
             self.assertIn("balans", str(body["payment_method"]).lower())
 
+    def test_complete_from_accepted_auto_starts(self):
+        booking = Booking.objects.create(
+            customer=self.user,
+            barber=self.barber,
+            start_at=self.start,
+            end_at=self.start + timedelta(minutes=30),
+            status=Booking.Status.ACCEPTED,
+            total_price=50_000,
+            customer_phone=self.user.phone or "",
+            payment_method=Booking.PaymentMethod.CASH,
+            payment_status=Booking.PaymentStatus.NOT_APPLICABLE,
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=self.barber_auth)
+        res = self.client.post(f"/api/v1/bookings/{booking.id}/complete/", {}, format="json")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, Booking.Status.COMPLETED)
+        self.assertIsNotNone(booking.started_at)
+
+    def test_finance_summary_with_local_date_params(self):
+        booking = Booking.objects.create(
+            customer=self.user,
+            barber=self.barber,
+            start_at=timezone.now().replace(minute=0, second=0, microsecond=0),
+            end_at=timezone.now().replace(minute=30, second=0, microsecond=0),
+            status=Booking.Status.PENDING,
+            total_price=60_000,
+            customer_phone=self.user.phone or "",
+            payment_method=Booking.PaymentMethod.CASH,
+            payment_status=Booking.PaymentStatus.NOT_APPLICABLE,
+        )
+        self._complete_booking(booking)
+
+        today = timezone.localdate().isoformat()
+        self.client.credentials(HTTP_AUTHORIZATION=self.barber_auth)
+        res = self.client.get(f"/api/v1/barber/finance/summary/?start={today}&end={today}")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        body = res.json()
+        self.assertEqual(Decimal(body["cash_total"]), Decimal("60000"))
+        self.assertEqual(body["cash_count"], 1)
+        self.assertEqual(len(body["transactions"]), 1)
+
     def test_barber_me_analytics_includes_cash_completed_today(self):
         booking = Booking.objects.create(
             customer=self.user,
