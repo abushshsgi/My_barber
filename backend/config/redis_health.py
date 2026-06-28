@@ -6,10 +6,12 @@ import os
 
 from django.conf import settings
 
-from config.redis_url import get_redis_url
+from config.redis_url import get_redis_url, redis_url_issue
 
 
 def redis_health_payload() -> dict:
+    raw = (os.environ.get("REDIS_URL") or "").strip()
+    issue = redis_url_issue(raw)
     url = get_redis_url()
     channel_backend = (
         settings.CHANNEL_LAYERS.get("default", {}).get("BACKEND", "") or ""
@@ -17,13 +19,16 @@ def redis_health_payload() -> dict:
     cache_backend = (settings.CACHES.get("default", {}).get("BACKEND", "") or "").lower()
 
     if not url:
-        return {
-            "configured": False,
+        out = {
+            "configured": bool(raw),
             "ping": False,
             "channel_layer": "memory" if "inmemory" in channel_backend else "unknown",
-            "cache": "locmem" if "locmem" in cache_backend else "unknown",
+            "cache": "locmem" if "locmem" in cache_backend else "fallback",
             "realtime_ready": False,
         }
+        if issue:
+            out["error"] = issue
+        return out
 
     ping = False
     error = ""
@@ -48,7 +53,7 @@ def redis_health_payload() -> dict:
         "realtime_ready": ping and channel_layer == "redis",
     }
     raw = (os.environ.get("REDIS_URL") or "").strip()
-    if raw and not raw.startswith(("redis://", "rediss://", "unix://")):
+    if raw and not raw.startswith(("redis://", "rediss://", "unix://")) and not issue:
         out["url_normalized"] = True
     if error and not ping:
         out["error"] = error
