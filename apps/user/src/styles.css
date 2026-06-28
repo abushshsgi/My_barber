@@ -307,12 +307,47 @@
     animation: auth-blob-drift 11s ease-in-out infinite reverse;
   }
 
+  @keyframes auth-form-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) translateX(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) translateX(0);
+    }
+  }
+
+  .auth-form-in {
+    animation: auth-form-in 0.44s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .auth-cta {
+    transition:
+      opacity 0.2s ease,
+      transform 0.15s cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 0.2s ease;
+  }
+
+  .auth-cta:hover:not(:disabled) {
+    opacity: 0.92;
+  }
+
+  .auth-cta:active:not(:disabled) {
+    transform: scale(0.985);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .auth-marketing-in,
     .auth-feature-in,
     .auth-blob-drift,
-    .auth-blob-drift-slow {
+    .auth-blob-drift-slow,
+    .auth-form-in {
       animation: none;
+    }
+
+    .auth-cta:active:not(:disabled) {
+      transform: none;
     }
   }
 

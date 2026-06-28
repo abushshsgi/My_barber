@@ -262,20 +262,30 @@ function Auth() {
       <AuthMarketingPanel />
 
       <div className="flex flex-col px-6 py-10 lg:justify-center lg:px-12">
-      <div className="flex items-baseline gap-1 lg:hidden">
-        <span className="text-2xl font-bold tracking-tight">mysaloon</span>
-        <span className="text-base font-bold text-muted-foreground">.uz</span>
-      </div>
+        <div className="auth-form-in flex items-baseline gap-1 lg:hidden" style={{ animationDelay: "0ms" }}>
+          <span className="text-2xl font-bold tracking-tight">mysaloon</span>
+          <span className="text-base font-bold text-muted-foreground">.uz</span>
+        </div>
 
-      <div className="flex flex-1 flex-col justify-center py-12">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-          {header.kicker}
-        </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight">{header.title}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{header.desc}</p>
+        <div key={step} className="flex flex-1 flex-col justify-center py-12">
+          <p
+            className="auth-form-in text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground"
+            style={{ animationDelay: "60ms" }}
+          >
+            {header.kicker}
+          </p>
+          <h1
+            className="auth-form-in mt-2 text-3xl font-bold tracking-tight"
+            style={{ animationDelay: "110ms" }}
+          >
+            {header.title}
+          </h1>
+          <p className="auth-form-in mt-2 text-sm text-muted-foreground" style={{ animationDelay: "160ms" }}>
+            {header.desc}
+          </p>
 
         {step === "phone" ? (
-          <div className="mt-8">
+          <div className="auth-form-in mt-8" style={{ animationDelay: "220ms" }}>
             <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
               {t("auth.phone")}
             </label>
@@ -295,7 +305,7 @@ function Auth() {
         ) : null}
 
         {step === "password" ? (
-          <div className="mt-8 space-y-4">
+          <div className="auth-form-in mt-8 space-y-4" style={{ animationDelay: "220ms" }}>
             <div>
               <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
                 {t("auth.password")}
@@ -337,7 +347,7 @@ function Auth() {
         ) : null}
 
         {step === "code" ? (
-          <div className="mt-8">
+          <div className="auth-form-in mt-8" style={{ animationDelay: "220ms" }}>
             {appDeliveryCode ? (
               <div className="mb-6 rounded-2xl border-2 border-dashed border-foreground/30 bg-surface px-4 py-4 text-center">
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
@@ -391,7 +401,7 @@ function Auth() {
         ) : null}
 
         {step === "set-password" ? (
-          <div className="mt-8 space-y-4">
+          <div className="auth-form-in mt-8 space-y-4" style={{ animationDelay: "220ms" }}>
             <div>
               <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
                 {t("auth.newPassword")}
@@ -425,7 +435,6 @@ function Auth() {
             </button>
           </div>
         ) : null}
-      </div>
 
       {step !== "set-password" ? (
         <button
@@ -433,18 +442,19 @@ function Auth() {
           disabled={busy}
           onClick={primaryAction}
           className={cn(
-            "w-full rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background active:scale-[0.99] disabled:opacity-60",
+            "auth-form-in auth-cta w-full rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background disabled:opacity-60",
           )}
+          style={{ animationDelay: "280ms" }}
         >
           {busy ? t("auth.loading") : primaryLabel}
         </button>
       ) : (
-        <div className="space-y-3">
+        <div className="auth-form-in space-y-3" style={{ animationDelay: "280ms" }}>
           <button
             type="button"
             disabled={busy}
             onClick={primaryAction}
-            className="w-full rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background disabled:opacity-60"
+            className="auth-cta w-full rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background disabled:opacity-60"
           >
             {busy ? t("auth.loading") : primaryLabel}
           </button>
@@ -452,19 +462,23 @@ function Auth() {
             type="button"
             disabled={busy}
             onClick={skipPasswordSetup}
-            className="w-full rounded-2xl border-2 border-border py-4 text-sm font-bold text-muted-foreground disabled:opacity-60"
+            className="auth-cta w-full rounded-2xl border-2 border-border py-4 text-sm font-bold text-muted-foreground transition-colors hover:bg-muted/40 disabled:opacity-60"
           >
             {t("auth.skipPassword")}
           </button>
         </div>
       )}
 
-      <p className="mt-4 text-center text-[11px] text-muted-foreground">
+      <p
+        className="auth-form-in mt-4 text-center text-[11px] text-muted-foreground"
+        style={{ animationDelay: "340ms" }}
+      >
         {t("auth.privacyPrefix")}{" "}
-        <a href="/privacy" className="font-bold underline">
+        <a href="/privacy" className="font-bold underline transition-opacity hover:opacity-80">
           {t("auth.privacyLink")}
         </a>
       </p>
+      </div>
       </div>
     </div>
   );
