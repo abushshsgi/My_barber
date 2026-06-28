@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight } from "lucide-react";
-import { useMemo } from "react";
+import { lazy, Suspense, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { MapStaticPreview } from "@/components/map/MapStaticPreview";
 import { type SalonMapMarker } from "@/components/map/SalonMap";
@@ -8,6 +8,10 @@ import type { Salon } from "@/lib/mock-data";
 import { shortPrice } from "@/lib/mock-data";
 import { hasValidMapCoords } from "@/lib/map-utils";
 import { cn } from "@/lib/utils";
+
+const SalonMap = lazy(() =>
+  import("@/components/map/SalonMap").then((m) => ({ default: m.SalonMap })),
+);
 
 type MapSalon = Pick<Salon, "id" | "lat" | "lng" | "name" | "priceFrom" | "rating">;
 
@@ -50,7 +54,18 @@ export function BazaarMapPanel({ salons = [], nearbyCount, className }: Props) {
       )}
     >
       <div className="map-home-preview relative h-full w-full overflow-hidden bg-surface">
-        <MapStaticPreview markers={markers} className="absolute inset-0" />
+        <div className="pointer-events-none absolute inset-0">
+          <Suspense fallback={<MapStaticPreview markers={markers} className="h-full w-full" />}>
+            <SalonMap
+              markers={markers}
+              autoFitMarkers
+              fitPadding={{ top: 20, right: 16, bottom: 112, left: 16 }}
+              fitMaxZoom={14}
+              onMarkerSelect={() => {}}
+              onMarkerNavigate={() => {}}
+            />
+          </Suspense>
+        </div>
 
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-[linear-gradient(to_top,#fff_0%,#fff_32%,rgba(255,255,255,0.96)_44%,rgba(255,255,255,0.55)_56%,rgba(255,255,255,0.12)_68%,transparent_80%)]"
@@ -58,7 +73,7 @@ export function BazaarMapPanel({ salons = [], nearbyCount, className }: Props) {
         />
 
         <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-10">
-          <p className="relative z-10 mb-2.5 grid w-[180px] justify-center text-center text-lg font-black text-black mr-[150px] px-[100px]">
+          <p className="relative z-10 mb-2.5 flex flex-wrap w-[185px] justify-center text-center text-lg font-black text-black mr-[50px] px-[10px]">
             {t("home.mapPreview.nearbyCount", { count })}
           </p>
           <span className="relative z-10 flex w-full items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-sm font-bold text-background shadow-lg transition group-hover:opacity-95">

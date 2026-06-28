@@ -10,10 +10,11 @@ import {
 import { useTranslation } from "react-i18next";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
 import { DesktopHeaderActions } from "@/components/desktop/shell/DesktopHeaderActions";
+import { DESKTOP_SHELL_INSET } from "@/lib/desktop-bazaar-layout";
 import { isNavTabActive } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
-const HEADER_INSET_DEFAULT = "px-6 xl:px-10 2xl:px-12";
+const HEADER_INSET_DEFAULT = DESKTOP_SHELL_INSET;
 
 type ShellProps = {
   children: React.ReactNode;
@@ -39,7 +40,7 @@ function Main({ children, fullBleed, className }: ShellProps & { className?: str
       className={cn(
         "flex-1",
         fullBleed && "flex min-h-0 flex-col",
-        !fullBleed && "w-full px-6 pb-12 pt-6 xl:px-10 2xl:px-12",
+        !fullBleed && cn("w-full pb-12 pt-6", DESKTOP_SHELL_INSET),
         className,
       )}
     >
@@ -62,35 +63,40 @@ export function ShellBazaarClassic({
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md">
-        <div className={cn("flex h-[4.25rem] w-full items-center gap-4", headerInsetClassName)}>
+        <div className={cn("flex h-[4.25rem] w-full min-w-0 items-center gap-2 sm:gap-4", headerInsetClassName)}>
           <Link to="/" className="flex shrink-0 items-baseline gap-0.5">
-            <span className="text-xl font-bold tracking-tight text-foreground">mysaloon</span>
-            <span className="text-sm font-bold text-muted-foreground">.uz</span>
+            <span className="text-lg font-bold tracking-tight text-foreground sm:text-xl">mysaloon</span>
+            <span className="text-xs font-bold text-muted-foreground sm:text-sm">.uz</span>
           </Link>
 
-          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-1 lg:flex">
+          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 overflow-x-auto lg:flex xl:gap-1">
             {MAIN_NAV.map(({ to, key, icon: Icon }) => {
               const active = isNavTabActive(pathname, to);
+              const label = t(key);
               return (
                 <Link
                   key={to}
                   to={to}
                   preload="intent"
+                  aria-label={label}
+                  title={label}
                   className={cn(
-                    "flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-bold transition-colors",
+                    "flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-2 text-[13px] font-bold transition-colors 2xl:px-3.5",
                     active
                       ? "bg-foreground text-background"
                       : "text-muted-foreground hover:bg-surface hover:text-foreground",
                   )}
                 >
                   <Icon className="h-3.5 w-3.5" strokeWidth={active ? 2.4 : 2} />
-                  <span suppressHydrationWarning>{t(key)}</span>
+                  <span className="hidden 2xl:inline" suppressHydrationWarning>
+                    {label}
+                  </span>
                 </Link>
               );
             })}
           </nav>
 
-          <div className="ml-auto flex shrink-0 items-center gap-3">
+          <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
             <div className="hidden xl:block">
               <AudienceSwitch variant="header" showProfileHint={false} />
             </div>

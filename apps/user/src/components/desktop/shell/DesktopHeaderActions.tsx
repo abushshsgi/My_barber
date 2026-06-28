@@ -58,7 +58,7 @@ export function DesktopHeaderActions({ notificationsUnread = 0, chatUnread = 0 }
         title={t("nav.chat")}
       >
         <MessageCircle className="h-4 w-4 shrink-0" strokeWidth={2.2} />
-        <span className="hidden sm:inline">{t("nav.chat")}</span>
+        <span className="hidden 2xl:inline">{t("nav.chat")}</span>
         <Badge count={chatUnread} />
       </Link>
 

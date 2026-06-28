@@ -1,7 +1,7 @@
 import { useRouterState } from "@tanstack/react-router";
 import { DesktopShell } from "@/components/desktop/shell/DesktopShell";
 import { SiteFooter } from "@/components/SiteFooter";
-import { DESKTOP_BAZAAR_INSET, usesDesktopBazaarInset } from "@/lib/desktop-bazaar-layout";
+import { DESKTOP_BAZAAR_INSET, DESKTOP_SHELL_INSET, usesDesktopBazaarInset } from "@/lib/desktop-bazaar-layout";
 import { showsSiteFooter } from "@/lib/layout-routes";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +31,7 @@ export function DesktopLayout({ children, chatUnread = 0, notificationsUnread = 
         notificationsUnread={notificationsUnread}
         fullBleed={isFullBleed}
         mainClassName={bazaarInset ? "w-full px-0" : undefined}
-        headerInsetClassName={bazaarInset ? DESKTOP_BAZAAR_INSET : undefined}
+        headerInsetClassName={DESKTOP_SHELL_INSET}
       >
         {isFullBleed ? (
           <div

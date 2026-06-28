@@ -1,6 +1,7 @@
 export type DesktopContentProfile = "discovery" | "standard" | "compact";
 
-const FOOTER_EXACT = new Set(["/", "/explore", "/offers", "/support", "/privacy"]);
+const FOOTER_HIDDEN_EXACT = new Set(["/auth", "/onboarding", "/map", "/ai-style"]);
+const FOOTER_HIDDEN_PREFIX = ["/stories/", "/booking/"];
 
 const DISCOVERY_EXACT = new Set([
   "/",
@@ -43,7 +44,11 @@ const COMPACT_EXACT = new Set(["/auth", "/onboarding"]);
 const AUDIENCE_TOPBAR_EXACT = new Set(["/", "/explore", "/map", "/today", "/offers"]);
 
 export function showsSiteFooter(pathname: string): boolean {
-  return FOOTER_EXACT.has(pathname);
+  if (FOOTER_HIDDEN_EXACT.has(pathname)) return false;
+  if (FOOTER_HIDDEN_PREFIX.some((prefix) => pathname === prefix || pathname.startsWith(prefix))) {
+    return false;
+  }
+  return true;
 }
 
 /** @deprecated Use getDesktopContentProfile */

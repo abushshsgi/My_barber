@@ -37,7 +37,15 @@
     "label": "Back to top"
   },
   "footer": {
-    "tagline": "Salon and barber booking platform"
+    "tagline": "Salon and barber booking platform",
+    "legal": "Legal",
+    "contact": "Contact us",
+    "business": "For salon owners",
+    "terms": "Terms of use",
+    "joinSalon": "List your salon",
+    "partnership": "Partnership",
+    "hours": "24/7 online booking",
+    "securityNote": "Your data is protected"
   },
   "home": {
     "title": "Refresh your look today",
@@ -838,7 +846,11 @@
   },
   "explorePage": {
     "title": "Trending styles",
-    "subtitle": "4 ready styles with AI persona previews — real sample photos.",
+    "subtitle": "4 AI models — 12+ trending style samples on each.",
+    "desktopDesc": "Pick a model, browse styles, and try them on your selfie.",
+    "styleCount": "{{count}} styles",
+    "aiStyleCtaTitle": "Try on your selfie",
+    "aiStyleCtaDesc": "AI Style advisor suggests looks tailored to your face.",
     "empty": "No styles for this filter.",
     "sampleBadge": "AI sample",
     "personaLabel": "Model",

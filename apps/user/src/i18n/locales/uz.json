@@ -42,7 +42,15 @@
     "label": "Yuqoriga"
   },
   "footer": {
-    "tagline": "Salon va sartarosh bron platformasi"
+    "tagline": "Salon va sartarosh bron platformasi",
+    "legal": "Huquqiy",
+    "contact": "Biz bilan bog'lanish",
+    "business": "Salon egalari uchun",
+    "terms": "Foydalanish shartlari",
+    "joinSalon": "Saloningizni qo'shing",
+    "partnership": "Hamkorlik",
+    "hours": "24/7 onlayn bron",
+    "securityNote": "Ma'lumotlaringiz himoyalangan"
   },
   "home": {
     "title": "Ko'rinishingizni bugun yangilang",
@@ -880,7 +888,11 @@
   },
   "explorePage": {
     "title": "Trend uslublar",
-    "subtitle": "AI personajlar bilan 4 ta tayyor uslub — haqiqiy namuna rasmlar.",
+    "subtitle": "4 ta AI model — har birida 12+ trend uslub namunalari.",
+    "desktopDesc": "Model tanlang, uslubni ko'ring va selfieda sinab ko'ring.",
+    "styleCount": "{{count}} ta uslub",
+    "aiStyleCtaTitle": "Selfieda sinab ko'ring",
+    "aiStyleCtaDesc": "AI Stil maslahatchi yuzingizga mos uslubni tavsiya qiladi.",
     "empty": "Bu filtr uchun uslub topilmadi.",
     "sampleBadge": "AI namuna",
     "personaLabel": "Model",

@@ -43,16 +43,18 @@ export function AudienceSwitch({ showProfileHint = true, variant = "default" }: 
               type="button"
               role="radio"
               aria-checked={active}
+              aria-label={t(opt.tKey)}
+              title={t(opt.tKey)}
               onClick={() => setAudience(opt.key)}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[12px] font-bold transition-colors",
+                "inline-flex items-center gap-1.5 rounded-full px-2 py-2 text-[12px] font-bold transition-colors 2xl:px-3",
                 active
                   ? "bg-foreground text-background shadow-sm"
                   : "text-muted-foreground hover:bg-background hover:text-foreground",
               )}
             >
               <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2.2} />
-              <span>{t(opt.tKey)}</span>
+              <span className="hidden 2xl:inline">{t(opt.tKey)}</span>
             </button>
           );
         })}

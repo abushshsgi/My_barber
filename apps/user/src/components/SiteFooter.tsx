@@ -1,87 +1,207 @@
 import { Link } from "@tanstack/react-router";
+import { Instagram, Send, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { FooterLanguageSwitch } from "@/components/footer/FooterLanguageSwitch";
+import { SiteFooterSchema } from "@/components/footer/SiteFooterSchema";
+import { DESKTOP_SHELL_INSET } from "@/lib/desktop-bazaar-layout";
+import {
+  FOOTER_CONTACT,
+  FOOTER_PAYMENT_METHODS,
+  FOOTER_SECTIONS,
+  FOOTER_SOCIAL,
+  FOOTER_TRUST_STATS,
+  type FooterLink,
+  type FooterSection,
+} from "@/lib/footer-links";
 import { cn } from "@/lib/utils";
 
 type Props = {
   insetClassName?: string;
+  className?: string;
 };
 
-export function SiteFooter({ insetClassName }: Props) {
+function FooterNavLink({ link }: { link: FooterLink }) {
+  const { t } = useTranslation();
+  const label = t(link.labelKey, { defaultValue: link.defaultValue });
+  const className = "text-sm font-semibold text-foreground hover:underline";
+
+  if (link.external) {
+    return (
+      <a href={link.to} className={className} target="_blank" rel="noopener noreferrer">
+        {label}
+      </a>
+    );
+  }
+
+  return (
+    <Link to={link.to} className={className}>
+      {label}
+    </Link>
+  );
+}
+
+function FooterSectionBlock({ section, mobile }: { section: FooterSection; mobile?: boolean }) {
+  const { t } = useTranslation();
+  const title = t(section.titleKey, { defaultValue: section.titleDefault });
+
+  if (mobile) {
+    return (
+      <details className="group border-b border-border/60 py-3 lg:hidden">
+        <summary className="cursor-pointer list-none text-sm font-bold text-foreground [&::-webkit-details-marker]:hidden">
+          <span className="flex items-center justify-between gap-2">
+            {title}
+            <span className="text-muted-foreground transition group-open:rotate-45">+</span>
+          </span>
+        </summary>
+        <nav className="mt-3 flex flex-col gap-2.5 pb-1">
+          {section.links.map((link) => (
+            <FooterNavLink key={`${section.id}-${link.to}-${link.labelKey}`} link={link} />
+          ))}
+        </nav>
+      </details>
+    );
+  }
+
+  return (
+    <div className="hidden min-w-0 lg:block">
+      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">{title}</p>
+      <nav className="mt-3 flex flex-col gap-2">
+        {section.links.map((link) => (
+          <FooterNavLink key={`${section.id}-${link.to}-${link.labelKey}`} link={link} />
+        ))}
+      </nav>
+    </div>
+  );
+}
+
+function FooterTrustStrip() {
+  const { t } = useTranslation();
+
+  return (
+    <div className="rounded-2xl border border-border/70 bg-background/80 p-4 sm:p-5">
+      <div className="grid grid-cols-3 gap-3 text-center">
+        {FOOTER_TRUST_STATS.map((stat, index) => (
+          <div
+            key={stat.labelKey}
+            className={cn(index === 1 && "border-x border-border/60")}
+          >
+            <p className="text-lg font-bold sm:text-xl">{stat.value}</p>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+              {t(stat.labelKey, { defaultValue: stat.defaultValue })}
+            </p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-[11px] font-semibold text-muted-foreground">
+        <ShieldCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={2.2} />
+        {t("footer.securityNote", { defaultValue: "Ma'lumotlaringiz himoyalangan" })}
+      </p>
+    </div>
+  );
+}
+
+function FooterSocialRow({ className }: { className?: string }) {
+  const { t } = useTranslation();
+
+  return (
+    <div className={cn("flex flex-wrap items-center gap-3", className)}>
+      <a
+        href={FOOTER_SOCIAL.telegram}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-bold text-foreground transition hover:bg-surface"
+        aria-label="Telegram"
+      >
+        <Send className="h-3.5 w-3.5" strokeWidth={2.2} />
+        Telegram
+      </a>
+      <a
+        href={FOOTER_SOCIAL.instagram}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-bold text-foreground transition hover:bg-surface"
+        aria-label="Instagram"
+      >
+        <Instagram className="h-3.5 w-3.5" strokeWidth={2.2} />
+        Instagram
+      </a>
+      <span className="text-xs text-muted-foreground">
+        {t("footer.hours", { defaultValue: "24/7 onlayn bron" })}
+      </span>
+    </div>
+  );
+}
+
+export function SiteFooter({ insetClassName, className }: Props) {
   const { t } = useTranslation();
   const year = new Date().getFullYear();
 
   return (
     <footer
       className={cn(
-        "hidden shrink-0 border-t border-border/60 bg-background py-10 lg:block",
-        insetClassName ?? "px-6 xl:px-10 2xl:px-12",
+        "shrink-0 border-t border-border/60 bg-surface/40 py-8 sm:py-10",
+        insetClassName ?? DESKTOP_SHELL_INSET,
+        className,
       )}
     >
-      <div className="grid w-full gap-8 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <p className="text-sm font-bold tracking-tight">mysaloon.uz</p>
-          <p className="mt-2 text-sm text-muted-foreground">
+      <SiteFooterSchema />
+
+      <div className="mb-6 lg:mb-8">
+        <FooterTrustStrip />
+      </div>
+
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_repeat(5,minmax(0,1fr))] lg:gap-6 xl:gap-8">
+        <div className="min-w-0">
+          <Link to="/" className="inline-flex items-baseline gap-0.5">
+            <span className="text-lg font-bold tracking-tight text-foreground">mysaloon</span>
+            <span className="text-sm font-bold text-muted-foreground">.uz</span>
+          </Link>
+          <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
             {t("footer.tagline", { defaultValue: "Salon va sartarosh bron platformasi" })}
           </p>
-          <p className="mt-3 text-xs text-muted-foreground">© {year} mysaloon.uz</p>
+          <p className="mt-3 text-sm font-semibold text-foreground">
+            <a href={FOOTER_CONTACT.phoneHref} className="hover:underline">
+              {FOOTER_CONTACT.phone}
+            </a>
+          </p>
+          <FooterSocialRow className="mt-4" />
+          <FooterLanguageSwitch className="mt-4" />
+          <div className="mt-4 flex flex-wrap gap-2">
+            {FOOTER_PAYMENT_METHODS.map((method) => (
+              <span
+                key={method}
+                className="rounded-md border border-border/70 bg-background px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground"
+              >
+                {method}
+              </span>
+            ))}
+          </div>
         </div>
 
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-            {t("nav.discovery", { defaultValue: "Kashf etish" })}
-          </p>
-          <nav className="mt-3 flex flex-col gap-2 text-sm font-semibold">
-            <Link to="/explore" className="text-foreground hover:underline">
-              {t("home.quick.trends")}
-            </Link>
-            <Link to="/map" className="text-foreground hover:underline">
-              {t("nav.map")}
-            </Link>
-            <Link to="/today" className="text-foreground hover:underline">
-              {t("home.quick.today")}
-            </Link>
-            <Link to="/offers" className="text-foreground hover:underline">
-              {t("home.quick.offers")}
-            </Link>
-          </nav>
-        </div>
+        {FOOTER_SECTIONS.map((section) => (
+          <FooterSectionBlock key={section.id} section={section} />
+        ))}
+      </div>
 
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-            {t("nav.account", { defaultValue: "Hisob" })}
-          </p>
-          <nav className="mt-3 flex flex-col gap-2 text-sm font-semibold">
-            <Link to="/profile" className="text-foreground hover:underline">
-              {t("nav.profile")}
-            </Link>
-            <Link to="/bookings" className="text-foreground hover:underline">
-              {t("nav.bookings")}
-            </Link>
-            <Link to="/wallet" className="text-foreground hover:underline">
-              {t("nav.wallet")}
-            </Link>
-            <Link to="/favorites" className="text-foreground hover:underline">
-              {t("profile.favorites")}
-            </Link>
-          </nav>
-        </div>
+      <div className="mt-2 lg:hidden">
+        {FOOTER_SECTIONS.map((section) => (
+          <FooterSectionBlock key={`mobile-${section.id}`} section={section} mobile />
+        ))}
+      </div>
 
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-            {t("footer.legal", { defaultValue: "Huquqiy" })}
-          </p>
-          <nav className="mt-3 flex flex-col gap-2 text-sm font-semibold">
-            <Link to="/privacy" className="text-foreground hover:underline">
-              {t("profile.privacy")}
-            </Link>
-            <Link to="/support" className="text-foreground hover:underline">
-              {t("profile.support")}
-            </Link>
-            <Link to="/settings" className="text-muted-foreground hover:text-foreground hover:underline">
-              {t("profile.settings")}
-            </Link>
-          </nav>
-        </div>
+      <div className="mt-8 flex flex-col gap-3 border-t border-border/60 pt-5 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs text-muted-foreground">© {year} mysaloon.uz</p>
+        <nav className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold">
+          <Link to="/privacy" className="text-foreground hover:underline">
+            {t("profile.privacy", { defaultValue: "Maxfiylik" })}
+          </Link>
+          <Link to="/privacy" className="text-foreground hover:underline">
+            {t("footer.terms", { defaultValue: "Foydalanish shartlari" })}
+          </Link>
+          <Link to="/support" className="text-muted-foreground hover:text-foreground hover:underline">
+            {t("profile.support", { defaultValue: "Yordam" })}
+          </Link>
+        </nav>
       </div>
     </footer>
   );

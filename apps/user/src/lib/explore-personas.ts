@@ -1,4 +1,4 @@
-export type ExplorePersonaId = "britan" | "irland" | "slavyan" | "evro" | "fransuz";
+export type ExplorePersonaId = "britan" | "irland" | "slavyan" | "evro";
 
 export type ExplorePersona = {
   id: ExplorePersonaId;
@@ -6,13 +6,12 @@ export type ExplorePersona = {
   code: string;
 };
 
-/** Foydalanuvchi tasdiqlagan 5 ta reference prompt tartibi */
+/** Foydalanuvchi tasdiqlagan 4 ta reference prompt tartibi */
 export const EXPLORE_PERSONAS: ExplorePersona[] = [
   { id: "britan", label: "Britan", code: "EU-3" },
   { id: "irland", label: "Irland", code: "EU-8" },
   { id: "slavyan", label: "Slavyan", code: "EU-6" },
   { id: "evro", label: "Evro", code: "EU-2" },
-  { id: "fransuz", label: "Fransuz", code: "EU-4" },
 ];
 
 export const DEFAULT_EXPLORE_PERSONA: ExplorePersonaId = "evro";
@@ -42,7 +41,6 @@ export const PERSONA_READY_ASSETS: Record<
   irland: { reference: true, slugs: MEN_CATALOG_STYLE_SLUGS },
   slavyan: { reference: true, slugs: MEN_CATALOG_STYLE_SLUGS },
   evro: { reference: true, slugs: MEN_CATALOG_STYLE_SLUGS },
-  fransuz: { reference: true, slugs: MEN_CATALOG_STYLE_SLUGS },
 };
 
 export function hasPersonaReference(personaId: ExplorePersonaId): boolean {
@@ -61,7 +59,7 @@ export function listReadyExplorePersonas(): ExplorePersona[] {
 export const EXPLORE_PERSONA_STORAGE_KEY = "mysaloon.explore.persona";
 
 export function isExplorePersonaId(value: string | null | undefined): value is ExplorePersonaId {
-  if (value === "skandinav") return false;
+  if (value === "skandinav" || value === "fransuz") return false;
   return EXPLORE_PERSONAS.some((persona) => persona.id === value);
 }
 
@@ -74,8 +72,8 @@ function defaultReadyExplorePersonaId(): ExplorePersonaId {
 }
 
 export function normalizeExplorePersonaId(value: string | null | undefined): ExplorePersonaId {
+  if (value === "fransuz" || value === "skandinav") return defaultReadyExplorePersonaId();
   if (isExplorePersonaId(value) && hasPersonaReference(value)) return value;
-  if (value === "skandinav") return defaultReadyExplorePersonaId();
   return defaultReadyExplorePersonaId();
 }
 

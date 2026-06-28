@@ -1,8 +1,8 @@
-"""Explore erkak personajlari — 5 ta model, har biri uchun bitta reference + 12 uslub."""
+"""Explore erkak personajlari — 4 ta model, har biri uchun bitta reference + 12 uslub."""
 
 from __future__ import annotations
 
-EXPLORE_PERSONA_IDS = frozenset({"britan", "irland", "slavyan", "evro", "fransuz"})
+EXPLORE_PERSONA_IDS = frozenset({"britan", "irland", "slavyan", "evro"})
 
 # Har bir personaj — bitta three-quarter reference (foydalanuvchi tasdiqlagan promptlar).
 PERSONA_REFERENCE_PROMPTS: dict[str, str] = {
@@ -46,15 +46,6 @@ solid flat background #E8E8E8, soft studio lighting,
 ultra sharp photorealistic, 85mm portrait, 8K detail,
 3:4 vertical, 768x1024
 """.strip(),
-    "fransuz": """
-Professional barber studio portrait, young French European man age 27,
-light skin, dark brown eyes, refined features, light designer stubble,
-dark brown hair with natural wave, neutral short sides,
-
-three-quarter profile right, elegant relaxed posture, NOT passport pose,
-plain white crew-neck, solid flat #E8E8E8, soft diffused studio light,
-photorealistic barber catalog, 3:4 vertical, 768x1024
-""".strip(),
 }
 
 EXPLORE_PERSONAS: dict[str, dict] = {
@@ -94,15 +85,6 @@ EXPLORE_PERSONAS: dict[str, dict] = {
             "defined jawline with light stubble, thick dark brown wavy hair, neutral short length"
         ),
     },
-    "fransuz": {
-        "id": "fransuz",
-        "label": "Fransuz",
-        "code": "EU-4",
-        "description": (
-            "young French European man age 27, light skin, dark brown eyes, refined features, "
-            "light designer stubble, dark brown hair with natural wave, neutral short sides"
-        ),
-    },
 }
 
 DEFAULT_MEN_PERSONA = "evro"
@@ -127,7 +109,7 @@ MEN_CATALOG_STYLE_SLUGS = frozenset(
 # Generatsiya qilingan assetlar — persona papkasida bo'lmasa flat katalog fallback.
 PERSONA_READY_ASSETS: dict[str, frozenset[str]] = {
     pid: frozenset({"reference", *MEN_CATALOG_STYLE_SLUGS})
-    for pid in ("britan", "irland", "slavyan", "evro", "fransuz")
+    for pid in ("britan", "irland", "slavyan", "evro")
 }
 
 
@@ -135,14 +117,14 @@ def normalize_persona_id(raw: str | None) -> str | None:
     value = (raw or "").strip().lower()
     if value in EXPLORE_PERSONA_IDS:
         return value
-    # Eski saqlangan id (skandinav) → evro
-    if value == "skandinav":
+    # Eski saqlangan idlar → evro
+    if value in {"skandinav", "fransuz"}:
         return "evro"
     return None
 
 
 def list_explore_personas() -> list[dict]:
-    order = ("britan", "irland", "slavyan", "evro", "fransuz")
+    order = ("britan", "irland", "slavyan", "evro")
     return [EXPLORE_PERSONAS[pid] for pid in order if has_persona_reference(pid)]
 
 
