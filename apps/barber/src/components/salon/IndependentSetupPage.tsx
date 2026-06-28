@@ -37,6 +37,7 @@ import { requestGpsLocation } from "@/lib/geo-location";
 import { cn } from "@/lib/utils";
 import { getFlowMeta } from "@/lib/barber-flow-config";
 import { finishOnboardingAndGo } from "@/lib/onboarding-complete";
+import { IndependentWorkPrefsEditor } from "@/components/barber/IndependentWorkPrefsEditor";
 import { useBarberPhoneAvailability } from "@/lib/barber-phone-availability";
 import { toast } from "sonner";
 
@@ -151,6 +152,8 @@ export function IndependentSetupPage() {
   const [address, setAddress] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
+  const [workLocation, setWorkLocation] = useState("studio");
+  const [paymentMethods, setPaymentMethods] = useState<string[]>(["cash"]);
 
   const [services, setServices] = useState<Service[]>([
     { id: uid(), name: "", price: "", duration: "" },
@@ -222,6 +225,8 @@ export function IndependentSetupPage() {
           latitude?: string | number | null;
           longitude?: string | number | null;
           spoken_languages?: string[];
+          work_location_type?: string;
+          payment_methods?: string[];
         };
         if (!res.ok || !body?.exists) return;
         if (body.latitude != null) setLatitude(String(body.latitude));
@@ -239,6 +244,10 @@ export function IndependentSetupPage() {
           const next = langs.filter((c): c is string => typeof c === "string" && allowed.has(c));
           if (next.length > 0) setLanguages(next);
         }
+        if (body.work_location_type) setWorkLocation(body.work_location_type);
+        if (Array.isArray(body.payment_methods) && body.payment_methods.length > 0) {
+          setPaymentMethods(body.payment_methods);
+        }
       } catch {
         // optional
       }
@@ -251,7 +260,7 @@ export function IndependentSetupPage() {
     return [
       // 0: Barber profile (Create salon bilan bir xil talablar)
       firstName.trim().length > 1 && lastName.trim().length > 1 && phoneDigits.length === 9 && !phoneError,
-      // 1: Location
+      // 1: Location + ish sharoiti
       city.trim().length > 1 &&
         address.trim().length > 2 &&
         Number.isFinite(lat) &&
@@ -259,7 +268,9 @@ export function IndependentSetupPage() {
         lat >= -90 &&
         lat <= 90 &&
         lng >= -180 &&
-        lng <= 180,
+        lng <= 180 &&
+        workLocation.trim().length > 0 &&
+        paymentMethods.length > 0,
       // 2: Services can be skipped; booking activation checklist will keep it visible.
       true,
       // 3: Schedule can be skipped; booking activation checklist will keep it visible.
@@ -276,6 +287,8 @@ export function IndependentSetupPage() {
     address,
     latitude,
     longitude,
+    workLocation,
+    paymentMethods,
     services,
     schedule,
     languages,
@@ -422,6 +435,8 @@ export function IndependentSetupPage() {
           latitude: lat,
           longitude: lng,
           spoken_languages: languages,
+          work_location_type: workLocation,
+          payment_methods: paymentMethods,
         }),
       });
       if (!profileRes.ok) {
@@ -660,6 +675,10 @@ export function IndependentSetupPage() {
                 setLatitude={setLatitude}
                 longitude={longitude}
                 setLongitude={setLongitude}
+                workLocation={workLocation}
+                onWorkLocationChange={setWorkLocation}
+                paymentMethods={paymentMethods}
+                onPaymentMethodsChange={setPaymentMethods}
               />
             )}
             {step === 2 && (
@@ -967,6 +986,10 @@ function LocationStep(props: {
   setLatitude: (v: string) => void;
   longitude: string;
   setLongitude: (v: string) => void;
+  workLocation: string;
+  onWorkLocationChange: (v: string) => void;
+  paymentMethods: string[];
+  onPaymentMethodsChange: (codes: string[]) => void;
 }) {
   const fillCurrentLocation = () => {
     requestGpsLocation({
@@ -1010,6 +1033,14 @@ function LocationStep(props: {
         value={props.address}
         onChange={props.setAddress}
       />
+      <div className="border-t border-border pt-5">
+        <IndependentWorkPrefsEditor
+          workLocation={props.workLocation}
+          onWorkLocationChange={props.onWorkLocationChange}
+          paymentMethods={props.paymentMethods}
+          onPaymentMethodsChange={props.onPaymentMethodsChange}
+        />
+      </div>
     </div>
   );
 }

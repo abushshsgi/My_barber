@@ -667,9 +667,11 @@ export function CreateSalonPage() {
       finished = true;
       setCompleted(true);
       setSuccess(true);
-      await finishOnboardingAndGo(navigate, "Salon va profilingiz muvaffaqiyatli yaratildi.", {
-        afterSetup: true,
-      });
+      await finishOnboardingAndGo(
+        navigate,
+        "Brend sahifangiz tayyor. «Mijozlar uchun» bo'limidan joyingiz haqida qo'shing.",
+        { afterSetup: true },
+      );
     } finally {
       if (!finished) setSubmitting(false);
     }

@@ -241,12 +241,14 @@
     "favoriteError": "Could not save favorite",
     "loginForFavorite": "Sign in to save favorites",
     "nav": {
-      "amenities": "Amenities",
+      "amenities": "For clients",
+      "amenitiesSalon": "Amenities",
       "location": "Location"
     },
     "amenities": {
       "title": "What amenities await you",
-      "showAll": "Show all amenities: {{count}}"
+      "titleStudio": "For your clients",
+      "showAll": "Show all: {{count}}"
     },
     "reviews": {
       "guestFavorite": "Guest favorite",
@@ -275,6 +277,12 @@
       "fri": "Friday",
       "sat": "Saturday",
       "sun": "Sunday"
+    }
+  },
+  "barber": {
+    "workPrefs": {
+      "title": "Work setup",
+      "payment": "Payment"
     }
   },
   "booking": {

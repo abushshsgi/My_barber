@@ -7,6 +7,7 @@ from rest_framework import serializers
 
 from accounts.auth_utils import is_platform_admin
 from accounts.models import User
+from salons.amenity_scopes import salon_is_solo_studio
 from salons.amenity_sync import sync_salon_amenities
 from .models import (
     Amenity,
@@ -271,6 +272,7 @@ class SalonDetailSerializer(serializers.ModelSerializer):
     cover_image = serializers.SerializerMethodField()
     services = serializers.SerializerMethodField()
     amenities = serializers.SerializerMethodField()
+    venue_kind = serializers.SerializerMethodField()
     owner_id = serializers.SerializerMethodField()
     rating_avg = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
@@ -296,6 +298,7 @@ class SalonDetailSerializer(serializers.ModelSerializer):
             "images",
             "services",
             "amenities",
+            "venue_kind",
             "rating_avg",
             "review_count",
             "created_at",
@@ -321,6 +324,9 @@ class SalonDetailSerializer(serializers.ModelSerializer):
             label = labels.get(lang) or labels.get("uz") or amenity.code
             out.append({"code": amenity.code, "icon": amenity.icon, "label": label})
         return out
+
+    def get_venue_kind(self, obj):
+        return "solo_studio" if salon_is_solo_studio(obj) else "salon"
 
     def get_owner_id(self, obj):
         return obj.owner_barber_id or obj.owner_id

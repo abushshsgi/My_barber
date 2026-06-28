@@ -76,6 +76,7 @@ export interface Salon {
   lat: number;
   lng: number;
   amenities: SalonAmenity[];
+  venueKind?: "solo_studio" | "salon";
   hours: SalonHour[];
   closedWeekdays: number[];
   ratingSummary: SalonRatingSummary | null;

@@ -36,7 +36,7 @@ class SalonAmenitiesTests(TestCase):
             longitude="69.2401",
             is_published=True,
         )
-        for code, icon, labels in DEFAULT_AMENITIES[:3]:
+        for code, icon, labels, _scope in DEFAULT_AMENITIES[:3]:
             amenity = Amenity.objects.create(code=code, icon=icon, labels=labels)
             SalonAmenity.objects.create(salon=self.salon, amenity=amenity)
 
@@ -95,7 +95,7 @@ class BarberSalonAmenitiesPermissionTests(TestCase):
             invite_state=SalonMembership.InviteState.ACTIVE,
             activated_at=timezone.now(),
         )
-        for code, icon, labels in DEFAULT_AMENITIES[:2]:
+        for code, icon, labels, _scope in DEFAULT_AMENITIES[:2]:
             amenity, _ = Amenity.objects.get_or_create(
                 code=code,
                 defaults={"icon": icon, "labels": labels},
@@ -122,6 +122,45 @@ class BarberSalonAmenitiesPermissionTests(TestCase):
             format="json",
         )
         self.assertEqual(res.status_code, 403)
+
+
+class AmenityScopeFilterTests(TestCase):
+    def setUp(self):
+        from barbers.models import Barber
+
+        self.owner = Barber.objects.create(
+            email="scope-owner@test.uz",
+            username="scope-owner@test.uz",
+            full_name="Scope Owner",
+            is_active=True,
+        )
+        self.salon = Salon.objects.create(
+            owner_barber=self.owner,
+            name="Scope Salon",
+            latitude="41.2995",
+            longitude="69.2401",
+            is_published=True,
+        )
+        for code, icon, labels, scope in DEFAULT_AMENITIES:
+            Amenity.objects.update_or_create(
+                code=code,
+                defaults={"icon": icon, "labels": labels, "scope": scope},
+            )
+
+    def test_solo_studio_gets_subset_catalog(self):
+        from barbers.barber_auth import encode_barber_tokens
+        from rest_framework.test import APIClient
+
+        access, _ = encode_barber_tokens(self.owner.id)
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+        res = client.get(f"/api/v1/barber/amenities/?salon={self.salon.id}")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["venue_kind"], "solo_studio")
+        codes = {a["code"] for a in res.data["catalog"]}
+        self.assertIn("wifi", codes)
+        self.assertNotIn("bridal_room", codes)
+        self.assertIn("tv", codes)
 
 
 class SalonRatingSummaryTests(TestCase):

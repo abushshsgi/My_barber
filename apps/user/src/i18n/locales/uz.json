@@ -246,12 +246,14 @@
     "favoriteError": "Sevimlilarni saqlab bo'lmadi",
     "loginForFavorite": "Sevimlilar uchun tizimga kiring",
     "nav": {
-      "amenities": "Qulayliklar",
+      "amenities": "Mijozlar uchun",
+      "amenitiesSalon": "Qulayliklar",
       "location": "Manzil"
     },
     "amenities": {
       "title": "Qanday qulayliklar sizni kutmoqda",
-      "showAll": "Barcha qulayliklar: {{count}}"
+      "titleStudio": "Mijozlar uchun",
+      "showAll": "Barchasi: {{count}}"
     },
     "reviews": {
       "guestFavorite": "Mehmonlar tanlovi",
@@ -280,6 +282,12 @@
       "fri": "Juma",
       "sat": "Shanba",
       "sun": "Yakshanba"
+    }
+  },
+  "barber": {
+    "workPrefs": {
+      "title": "Ish sharoiti",
+      "payment": "To'lov"
     }
   },
   "booking": {

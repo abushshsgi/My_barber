@@ -15,6 +15,8 @@ export type BarberDiscovery = {
   salonId: string | null;
   salonName: string | null;
   amenities: { code: string; icon: string; label: string }[];
+  workLocation: { code: string; label: string } | null;
+  paymentMethods: { code: string; label: string }[];
   priceFrom: number;
   servicesPreview: string[];
 };
@@ -43,6 +45,8 @@ export function mapBarberDiscovery(api: ApiBarberPublic): BarberDiscovery {
     salonId: api.salon_id != null ? String(api.salon_id) : null,
     salonName: api.salon_name ?? null,
     amenities: api.amenities ?? [],
+    workLocation: api.work_location ?? null,
+    paymentMethods: api.payment_methods ?? [],
     priceFrom: prices.length ? Math.min(...prices) : 0,
     servicesPreview: services.slice(0, 3).map((s) => s.name),
   };

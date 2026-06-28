@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Mail, Phone, Clock, Sparkles } from "lucide-react";
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
+import { IndependentWorkPrefsEditor } from "@/components/barber/IndependentWorkPrefsEditor";
+import { apiFetch } from "@/lib/api";
 import {
   parseSomDigits,
   SomPriceInput,
@@ -18,8 +20,55 @@ export const Route = createFileRoute("/barber/profile")({
 const WEEKDAYS = ["Yakshanba", "Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba"];
 
 function ProfilePage() {
-  const { profile, services, workingHours, salon, viewMode, toggleService, addService } =
+  const { profile, services, workingHours, salon, viewMode, barberWorkMode, toggleService, addService } =
     useBarberContext();
+  const isIndependent = barberWorkMode === "independent" && viewMode === "independent";
+  const [workLocation, setWorkLocation] = useState("studio");
+  const [paymentMethods, setPaymentMethods] = useState<string[]>(["cash"]);
+  const [prefsLoading, setPrefsLoading] = useState(isIndependent);
+  const [prefsSaving, setPrefsSaving] = useState(false);
+
+  const loadPrefs = useCallback(async () => {
+    if (!isIndependent) return;
+    setPrefsLoading(true);
+    try {
+      const res = await apiFetch("/api/v1/barber/profile/");
+      const body = (await res.json()) as {
+        work_location_type?: string;
+        payment_methods?: string[];
+      };
+      if (body.work_location_type) setWorkLocation(body.work_location_type);
+      if (Array.isArray(body.payment_methods) && body.payment_methods.length > 0) {
+        setPaymentMethods(body.payment_methods);
+      }
+    } finally {
+      setPrefsLoading(false);
+    }
+  }, [isIndependent]);
+
+  useEffect(() => {
+    void loadPrefs();
+  }, [loadPrefs]);
+
+  const savePrefs = async () => {
+    setPrefsSaving(true);
+    try {
+      const res = await apiFetch("/api/v1/barber/profile/", {
+        method: "PATCH",
+        body: JSON.stringify({
+          work_location_type: workLocation,
+          payment_methods: paymentMethods,
+        }),
+      });
+      if (!res.ok) throw new Error("Saqlashda xatolik");
+      toast.success("Ish sharoiti saqlandi");
+    } catch {
+      toast.error("Saqlashda xatolik");
+    } finally {
+      setPrefsSaving(false);
+    }
+  };
+
   const activeServices = services.filter((s) => s.is_active);
   const [creating, setCreating] = useState(false);
   const [serviceForm, setServiceForm] = useState({ name: "", duration: "", price: "" });
@@ -52,6 +101,35 @@ function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {isIndependent ? (
+        <div className="rounded-xl border border-border bg-card p-6 shadow-card space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="font-heading text-lg font-semibold">Ish sharoiti</h2>
+              <p className="text-sm text-muted-foreground">Mijozlar profilida ko'rinadi</p>
+            </div>
+            <button
+              type="button"
+              disabled={prefsLoading || prefsSaving || paymentMethods.length === 0}
+              onClick={() => void savePrefs()}
+              className="rounded-lg bg-foreground px-3 py-2 text-sm font-medium text-background disabled:opacity-50"
+            >
+              Saqlash
+            </button>
+          </div>
+          {prefsLoading ? (
+            <p className="text-sm text-muted-foreground">Yuklanmoqda...</p>
+          ) : (
+            <IndependentWorkPrefsEditor
+              workLocation={workLocation}
+              onWorkLocationChange={setWorkLocation}
+              paymentMethods={paymentMethods}
+              onPaymentMethodsChange={setPaymentMethods}
+            />
+          )}
+        </div>
+      ) : null}
 
       {/* Services */}
       <div className="rounded-xl border border-border bg-card p-6 shadow-card">

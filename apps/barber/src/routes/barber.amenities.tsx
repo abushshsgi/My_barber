@@ -21,6 +21,7 @@ type AmenityItem = {
 
 type AmenitiesPayload = {
   salon_id: number;
+  venue_kind?: "solo_studio" | "salon";
   can_edit: boolean;
   selected_codes: string[];
   catalog: AmenityItem[];
@@ -33,6 +34,7 @@ function BarberAmenitiesPage() {
   const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState("");
   const [canEdit, setCanEdit] = useState(false);
+  const [venueKind, setVenueKind] = useState<"solo_studio" | "salon">("solo_studio");
   const [catalog, setCatalog] = useState<AmenityItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [baseline, setBaseline] = useState("");
@@ -47,13 +49,14 @@ function BarberAmenitiesPage() {
       const res = await apiFetch(`/api/v1/barber/amenities/?salon=${salonPk}`);
       const body = (await res.json().catch(() => ({}))) as AmenitiesPayload & { detail?: string };
       if (!res.ok) {
-        throw new Error(formatApiError(body, "Qulayliklarni yuklashda xatolik"));
+        throw new Error(formatApiError(body, "Ma'lumotlarni yuklashda xatolik"));
       }
       setCatalog(body.catalog ?? []);
       const codes = new Set(body.selected_codes ?? []);
       setSelected(codes);
       setBaseline(JSON.stringify([...(body.selected_codes ?? [])].sort()));
       setCanEdit(Boolean(body.can_edit));
+      setVenueKind(body.venue_kind === "salon" ? "salon" : "solo_studio");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Xatolik");
     } finally {
@@ -77,6 +80,11 @@ function BarberAmenitiesPage() {
       (a) => a.label.toLowerCase().includes(q) || a.code.toLowerCase().includes(q),
     );
   }, [catalog, query]);
+
+  const subtitle =
+    venueKind === "solo_studio"
+      ? "Brend sahifangizda mijozlar uchun nimalar bor — ixtiyoriy, lekin ishonch oshiradi."
+      : "Salon sahifasida mijozlar ko'radigan qulayliklar.";
 
   const toggle = (code: string) => {
     if (!canEdit) return;
@@ -106,7 +114,7 @@ function BarberAmenitiesPage() {
       const codes = (body as AmenitiesPayload).selected_codes ?? [...selected];
       setSelected(new Set(codes));
       setBaseline(JSON.stringify([...codes].sort()));
-      toast.success("Qulayliklar saqlandi");
+      toast.success("Saqlandi");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Xatolik");
     } finally {
@@ -117,14 +125,14 @@ function BarberAmenitiesPage() {
   if (!salonPk) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Qulayliklar" subtitle="Salon qulayliklari mijozlarga ko'rinadi" />
+        <PageHeader title="Mijozlar uchun" subtitle="Joyingiz va xizmatlar haqida qisqa ma'lumot" />
         <EmptyBlock
           title="Salon topilmadi"
-          description="Qulayliklarni faqat salon egasi boshqaradi. Avval salon yarating."
+          description="Avval brend sahifangizni yarating — keyin mijozlar uchun bandlarni tanlaysiz."
           action={
             ownsSalon ? (
               <Button asChild>
-                <Link to="/salon/create">Salon yaratish</Link>
+                <Link to="/salon/create">Brend yaratish</Link>
               </Button>
             ) : undefined
           }
@@ -136,10 +144,10 @@ function BarberAmenitiesPage() {
   if (!ownsSalon) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Qulayliklar" subtitle="Salon qulayliklari" />
+        <PageHeader title="Mijozlar uchun" subtitle={subtitle} />
         <EmptyBlock
           title="Faqat salon egasi"
-          description="Qulayliklarni faqat salon egasi qo'shadi va tahrirlaydi. Siz ishlayotgan saloningiz qulayliklari mijozlarga avtomatik ko'rinadi."
+          description="Bandlarni faqat salon egasi tanlaydi. Siz ishlayotgan joy qulayliklari mijozlarga avtomatik ko'rinadi."
           action={
             <Button asChild variant="outline">
               <Link to="/barber/salon-view">Salon sahifasiga</Link>
@@ -153,10 +161,10 @@ function BarberAmenitiesPage() {
   return (
     <div className="space-y-6 pb-24">
       <PageHeader
-        title="Qulayliklar"
+        title="Mijozlar uchun"
         description={
           canEdit
-            ? `${profile.name || "Salon"} — mijozlar sahifasida ko'rinadi`
+            ? `${profile.name || salon.name || "Brend"} — ${subtitle}`
             : "Faqat ko'rish rejimi"
         }
         actions={
@@ -176,13 +184,13 @@ function BarberAmenitiesPage() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Qulaylik qidirish..."
+              placeholder="Qidirish..."
               className="h-11 w-full rounded-xl border border-border bg-background pl-10 pr-3 text-sm outline-none focus:border-foreground"
             />
           </div>
           <p className="text-sm text-muted-foreground tabular-nums">
             <span className="font-semibold text-foreground">{selected.size}</span> / {catalog.length}{" "}
-            tanlangan
+            tanlangan · ixtiyoriy
           </p>
         </div>
       </SectionCard>
@@ -218,7 +226,6 @@ function BarberAmenitiesPage() {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-semibold leading-snug">{item.label}</span>
-                  <span className="mt-0.5 block text-[11px] text-muted-foreground">{item.code}</span>
                 </span>
                 {on ? (
                   <span className="grid size-6 shrink-0 place-items-center rounded-full bg-foreground text-background">

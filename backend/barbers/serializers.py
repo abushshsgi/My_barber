@@ -163,7 +163,13 @@ class BarberScheduleExceptionSerializer(serializers.ModelSerializer):
         return attrs
 
 
-from salons.amenity_public import barber_booking_context
+from barbers.barber_work_prefs import (
+    ALLOWED_PAYMENT_METHODS,
+    ALLOWED_WORK_LOCATIONS,
+    serialize_payment_methods,
+    serialize_work_location,
+)
+from salons.amenity_public import amenity_lang_from_request, barber_booking_context
 
 
 class BarberPublicContextMixin:
@@ -171,6 +177,11 @@ class BarberPublicContextMixin:
     salon_id = serializers.SerializerMethodField()
     salon_name = serializers.SerializerMethodField()
     amenities = serializers.SerializerMethodField()
+    work_location = serializers.SerializerMethodField()
+    payment_methods = serializers.SerializerMethodField()
+
+    def _lang(self):
+        return amenity_lang_from_request(self.context.get("request"))
 
     def _booking_ctx(self, obj):
         cache = getattr(self, "_booking_ctx_cache", None)
@@ -193,6 +204,16 @@ class BarberPublicContextMixin:
 
     def get_amenities(self, obj):
         return self._booking_ctx(obj)["amenities"]
+
+    def get_work_location(self, obj):
+        if self._booking_ctx(obj)["booking_kind"] != "independent":
+            return None
+        return serialize_work_location(obj.work_location_type or None, self._lang())
+
+    def get_payment_methods(self, obj):
+        if self._booking_ctx(obj)["booking_kind"] != "independent":
+            return []
+        return serialize_payment_methods(obj.payment_methods, self._lang())
 
 
 class BarberPublicListSerializer(BarberPublicContextMixin, serializers.ModelSerializer):
@@ -226,6 +247,8 @@ class BarberPublicListSerializer(BarberPublicContextMixin, serializers.ModelSeri
             "salon_id",
             "salon_name",
             "amenities",
+            "work_location",
+            "payment_methods",
         )
 
     def get_avatar(self, obj):
@@ -271,6 +294,8 @@ class BarberPublicDetailSerializer(BarberPublicContextMixin, serializers.ModelSe
             "salon_id",
             "salon_name",
             "amenities",
+            "work_location",
+            "payment_methods",
         )
 
     def get_services(self, obj):
@@ -289,7 +314,14 @@ _ALLOWED_SPOKEN_LANG = frozenset({"uz", "ru", "en", "tr", "ar"})
 class BarberProfileUpsertSerializer(serializers.ModelSerializer):
     class Meta:
         model = BarberProfile
-        fields = ("location_text", "latitude", "longitude", "spoken_languages")
+        fields = (
+            "location_text",
+            "latitude",
+            "longitude",
+            "spoken_languages",
+            "work_location_type",
+            "payment_methods",
+        )
 
     def validate_spoken_languages(self, value):
         if value is None:
@@ -301,6 +333,30 @@ class BarberProfileUpsertSerializer(serializers.ModelSerializer):
             code = str(item).strip().lower()
             if code not in _ALLOWED_SPOKEN_LANG:
                 raise serializers.ValidationError(f"Noma’lum til kodi: {item}")
+            if code not in out:
+                out.append(code)
+        return out
+
+    def validate_work_location_type(self, value):
+        if value is None:
+            return ""
+        code = str(value).strip().lower()
+        if not code:
+            return ""
+        if code not in ALLOWED_WORK_LOCATIONS:
+            raise serializers.ValidationError(f"Noma'lum ish joyi: {value}")
+        return code
+
+    def validate_payment_methods(self, value):
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            raise serializers.ValidationError("payment_methods ro'yxat bo'lishi kerak.")
+        out = []
+        for item in value:
+            code = str(item).strip().lower()
+            if code not in ALLOWED_PAYMENT_METHODS:
+                raise serializers.ValidationError(f"Noma'lum to'lov usuli: {item}")
             if code not in out:
                 out.append(code)
         return out

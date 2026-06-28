@@ -3,6 +3,7 @@ import { Star, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { PageHeader } from "@/components/PageHeader";
+import { BarberWorkPrefsSection } from "@/components/barber/BarberWorkPrefsSection";
 import { SalonAmenitiesSection } from "@/components/salon/SalonAmenitiesSection";
 import { useBarberPublic } from "@/hooks/use-barbers";
 import { cn } from "@/lib/utils";
@@ -83,8 +84,18 @@ function BarberProfileContent({ barberId }: { barberId: string }) {
         </div>
       ) : null}
 
+      {barber.bookingKind === "independent" ? (
+        <BarberWorkPrefsSection
+          workLocation={barber.workLocation}
+          paymentMethods={barber.paymentMethods}
+        />
+      ) : null}
+
       {barber.amenities.length > 0 ? (
-        <SalonAmenitiesSection amenities={barber.amenities} />
+        <SalonAmenitiesSection
+          amenities={barber.amenities}
+          variant={barber.bookingKind === "salon" ? "solo_studio" : "salon"}
+        />
       ) : null}
 
       <button

@@ -264,9 +264,20 @@ class BarberScheduleException(models.Model):
 class Amenity(models.Model):
     """Salon qulayliklari katalogi (Wi‑Fi, parking, ...)."""
 
+    class Scope(models.TextChoices):
+        ALL = "all", "All venues"
+        SOLO_STUDIO = "solo_studio", "Solo studio / brand"
+        SALON = "salon", "Multi-staff salon"
+
     code = models.SlugField(max_length=64, unique=True)
     icon = models.CharField(max_length=64, help_text="Lucide icon nomi")
     labels = models.JSONField(default=dict, blank=True)
+    scope = models.CharField(
+        max_length=16,
+        choices=Scope.choices,
+        default=Scope.ALL,
+        db_index=True,
+    )
 
     class Meta:
         ordering = ["code"]

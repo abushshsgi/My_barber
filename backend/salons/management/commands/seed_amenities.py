@@ -42,10 +42,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self._ensure_migrations()
         with transaction.atomic():
-            for code, icon, labels in DEFAULT_AMENITIES:
+            for code, icon, labels, scope in DEFAULT_AMENITIES:
                 Amenity.objects.update_or_create(
                     code=code,
-                    defaults={"icon": icon, "labels": labels},
+                    defaults={"icon": icon, "labels": labels, "scope": scope},
                 )
 
             amenities = {a.code: a for a in Amenity.objects.all()}

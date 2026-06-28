@@ -60,6 +60,7 @@ export type ApiSalonList = {
   review_count: number;
   price_from?: number;
   amenities?: ApiSalonAmenity[];
+  venue_kind?: "solo_studio" | "salon";
 };
 
 export type ApiSalonDetail = ApiSalonList & {
@@ -253,6 +254,8 @@ export type ApiBarberPublic = {
   salon_id?: number | null;
   salon_name?: string | null;
   amenities?: ApiAmenityChip[];
+  work_location?: { code: string; label: string } | null;
+  payment_methods?: { code: string; label: string }[];
   work_mode?: string;
   distance_km?: number;
 };

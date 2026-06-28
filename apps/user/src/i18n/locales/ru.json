@@ -241,12 +241,14 @@
     "favoriteError": "Не удалось сохранить в избранное",
     "loginForFavorite": "Войдите, чтобы сохранять избранное",
     "nav": {
-      "amenities": "Удобства",
+      "amenities": "Для клиентов",
+      "amenitiesSalon": "Удобства",
       "location": "Местоположение"
     },
     "amenities": {
       "title": "Какие удобства вас ждут",
-      "showAll": "Показать все удобства: {{count}}"
+      "titleStudio": "Для клиентов",
+      "showAll": "Показать все: {{count}}"
     },
     "reviews": {
       "guestFavorite": "Выбор гостей",
@@ -275,6 +277,12 @@
       "fri": "Пятница",
       "sat": "Суббота",
       "sun": "Воскресенье"
+    }
+  },
+  "barber": {
+    "workPrefs": {
+      "title": "Условия работы",
+      "payment": "Оплата"
     }
   },
   "booking": {

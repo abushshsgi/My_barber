@@ -66,6 +66,7 @@ export function mapSalonList(api: ApiSalonList, distanceKm = 0): Salon {
       icon: a.icon,
       label: a.label,
     })),
+    venueKind: api.venue_kind === "salon" ? "salon" : api.venue_kind === "solo_studio" ? "solo_studio" : undefined,
     hours: [],
     closedWeekdays: [],
     ratingSummary: null,

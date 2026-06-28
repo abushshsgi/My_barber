@@ -22,7 +22,13 @@ function AmenityRow({ item, className }: { item: SalonAmenity; className?: strin
   );
 }
 
-export function SalonAmenitiesSection({ amenities }: { amenities: SalonAmenity[] }) {
+export function SalonAmenitiesSection({
+  amenities,
+  variant = "salon",
+}: {
+  amenities: SalonAmenity[];
+  variant?: "solo_studio" | "salon";
+}) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
@@ -30,10 +36,12 @@ export function SalonAmenitiesSection({ amenities }: { amenities: SalonAmenity[]
 
   const preview = amenities.slice(0, PREVIEW_COUNT);
   const hasMore = amenities.length > PREVIEW_COUNT;
+  const titleKey =
+    variant === "solo_studio" ? "salon.amenities.titleStudio" : "salon.amenities.title";
 
   return (
     <section className="space-y-6">
-      <h2 className="text-[22px] font-semibold tracking-tight">{t("salon.amenities.title")}</h2>
+      <h2 className="text-[22px] font-semibold tracking-tight">{t(titleKey)}</h2>
 
       <div className="grid grid-cols-1 gap-x-12 sm:grid-cols-2">
         {preview.map((item) => (
@@ -55,7 +63,7 @@ export function SalonAmenitiesSection({ amenities }: { amenities: SalonAmenity[]
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-left text-xl font-semibold">
-              {t("salon.amenities.title")}
+              {t(titleKey)}
             </DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 gap-x-8 sm:grid-cols-2">

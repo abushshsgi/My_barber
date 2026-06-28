@@ -14,7 +14,7 @@ type Barber = { id: string; name: string };
 type DayItem = { date: number; day: string };
 
 type Props = {
-  salon: Pick<Salon, "name" | "address"> & { amenities?: SalonAmenity[] };
+  salon: Pick<Salon, "name" | "address" | "amenities" | "venueKind">;
   selectedBarber?: Barber;
   selectedServices: Service[];
   total: number;
@@ -26,7 +26,13 @@ type Props = {
 
 const PREVIEW_COUNT = 6;
 
-function BookingAmenitiesPreview({ amenities }: { amenities: SalonAmenity[] }) {
+function BookingAmenitiesPreview({
+  amenities,
+  title,
+}: {
+  amenities: SalonAmenity[];
+  title: string;
+}) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const preview = amenities.slice(0, PREVIEW_COUNT);
@@ -35,7 +41,7 @@ function BookingAmenitiesPreview({ amenities }: { amenities: SalonAmenity[] }) {
   return (
     <div className="mt-4 border-t border-border pt-4">
       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-        {t("salon.nav.amenities", { defaultValue: "Qulayliklar" })}
+        {title}
       </p>
       <div className="mt-2 flex flex-wrap gap-2">
         {preview.map((item) => {
@@ -97,6 +103,10 @@ export function BookingSummaryAside({
   const { t } = useTranslation();
   const day = dayList[dayIdx];
   const amenities = salon.amenities ?? [];
+  const amenityTitle =
+    salon.venueKind === "salon"
+      ? t("salon.nav.amenitiesSalon", { defaultValue: "Qulayliklar" })
+      : t("salon.nav.amenities", { defaultValue: "Mijozlar uchun" });
 
   return (
     <aside className="sticky top-24">
@@ -114,7 +124,9 @@ export function BookingSummaryAside({
           </div>
         ) : null}
 
-        {amenities.length > 0 ? <BookingAmenitiesPreview amenities={amenities} /> : null}
+        {amenities.length > 0 ? (
+          <BookingAmenitiesPreview amenities={amenities} title={amenityTitle} />
+        ) : null}
 
         {selectedServices.length > 0 ? (
           <div className="mt-3 space-y-2 border-t border-border pt-4">

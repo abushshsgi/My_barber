@@ -65,7 +65,10 @@ export function SalonPageSections({
 
       {salon.amenities.length > 0 ? (
         <div id="salon-amenities" className="scroll-mt-36 border-b border-border pb-10">
-          <SalonAmenitiesSection amenities={salon.amenities} />
+          <SalonAmenitiesSection
+            amenities={salon.amenities}
+            variant={salon.venueKind === "salon" ? "salon" : "solo_studio"}
+          />
         </div>
       ) : null}
 

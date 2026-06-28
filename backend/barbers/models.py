@@ -102,6 +102,17 @@ class BarberProfile(models.Model):
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     # Mijoz bilan muloqot tillari (masalan: ["uz","ru"]) — salon tillaridan mustaqil.
     spoken_languages = models.JSONField(default=list, blank=True)
+    work_location_type = models.CharField(
+        max_length=16,
+        blank=True,
+        default="",
+        help_text="Mustaqil usta: studio | home | mobile",
+    )
+    payment_methods = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Mustaqil usta to'lov usullari: cash, card, payme, ...",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 from accounts.auth_utils import is_platform_admin, request_barber
 from barbers.activation_permissions import IsAuthenticatedBarberAware
 from salons.amenity_public import amenity_lang_from_request, serialize_amenity
+from salons.amenity_scopes import filter_amenities_for_salon, salon_is_solo_studio
 from salons.amenity_sync import sync_salon_amenities
 from salons.models import Amenity, Salon, SalonMembership
 
@@ -69,13 +70,15 @@ class BarberSalonAmenitiesView(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         lang = _amenity_lang(request)
-        catalog = [_serialize_amenity(a, lang) for a in Amenity.objects.all().order_by("code")]
+        catalog_qs = filter_amenities_for_salon(Amenity.objects.all().order_by("code"), salon)
+        catalog = [_serialize_amenity(a, lang) for a in catalog_qs]
         selected = list(
             salon.salon_amenities.select_related("amenity").values_list("amenity__code", flat=True)
         )
         return Response(
             {
                 "salon_id": salon.id,
+                "venue_kind": "solo_studio" if salon_is_solo_studio(salon) else "salon",
                 "can_edit": _owner_can_edit_salon(bp, salon) or is_platform_admin(request),
                 "selected_codes": selected,
                 "catalog": catalog,
