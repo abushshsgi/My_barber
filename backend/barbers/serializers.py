@@ -190,7 +190,11 @@ class BarberPublicContextMixin:
             setattr(self, "_booking_ctx_cache", cache)
         key = obj.barber_id
         if key not in cache:
-            cache[key] = barber_booking_context(obj.barber, self.context.get("request"))
+            prebuilt = (self.context.get("booking_contexts") or {}).get(key)
+            cache[key] = prebuilt if prebuilt is not None else barber_booking_context(
+                obj.barber,
+                self.context.get("request"),
+            )
         return cache[key]
 
     def get_booking_kind(self, obj):

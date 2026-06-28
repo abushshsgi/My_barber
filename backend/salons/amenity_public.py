@@ -51,6 +51,34 @@ def resolve_work_salon_for_barber(barber) -> SalonModel | None:
     return membership.salon if membership is not None else None
 
 
+def batch_resolve_work_salons_for_barbers(barber_ids: list[int]) -> dict[int, SalonModel]:
+    """Katalog uchun barber → ish salonini N+1 siz yig'adi."""
+    if not barber_ids:
+        return {}
+    out: dict[int, SalonModel] = {}
+    for salon in SalonModel.objects.filter(
+        owner_barber_id__in=barber_ids,
+        is_published=True,
+    ).only("id", "name", "latitude", "longitude", "owner_barber_id"):
+        out[salon.owner_barber_id] = salon
+    remaining = [bid for bid in barber_ids if bid not in out]
+    if not remaining:
+        return out
+    memberships = (
+        SalonMembership.objects.select_related("salon")
+        .filter(
+            barber_id__in=remaining,
+            invite_state=SalonMembership.InviteState.ACTIVE,
+            salon__is_published=True,
+        )
+        .order_by("barber_id", "-activated_at", "-id")
+    )
+    for mem in memberships:
+        if mem.barber_id not in out:
+            out[mem.barber_id] = mem.salon
+    return out
+
+
 def barber_booking_context(barber, request=None) -> dict:
     """booking_kind, salon_id, salon_name, amenities for public barber payloads."""
     lang = amenity_lang_from_request(request)

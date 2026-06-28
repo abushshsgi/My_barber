@@ -39,37 +39,55 @@ const NO_STORE_HEADERS = {
 };
 
 if (Array.isArray(config.routes)) {
+  // Nitro: text/plain asset 404 (continue) brauzerda MIME xatosini keltiradi.
+  config.routes = config.routes.filter(
+    (route) =>
+      !(
+        route.src === "/assets/(.*)" &&
+        route.status === 404 &&
+        String(route.headers?.["content-type"] || "").includes("text/plain")
+      ),
+  );
+
   for (const route of config.routes) {
-    if (route.headers && !route.dest && !route.handle) {
+    if (route.headers && !route.dest && !route.handle && route.status !== 404) {
       route.continue = true;
     }
   }
 
+  config.routes = config.routes.filter(
+    (route) =>
+      !(
+        (route.src === "/version.json" || route.src === "/((?!assets/).*)") &&
+        route.continue &&
+        route.headers?.["cache-control"]?.includes("no-store")
+      ),
+  );
+  config.routes = config.routes.filter(
+    (route) => !(route.src === "/assets/(.*)" && route.status === 404),
+  );
+
+  config.routes.unshift(
+    { src: "/version.json", headers: NO_STORE_HEADERS, continue: true },
+    { src: "/((?!assets/).*)", headers: NO_STORE_HEADERS, continue: true },
+  );
+
   const fsIdx = config.routes.findIndex((r) => r.handle === "filesystem");
-  if (fsIdx > 0) {
+  if (fsIdx > 2) {
     const [filesystem] = config.routes.splice(fsIdx, 1);
-    config.routes.unshift(filesystem);
+    config.routes.splice(2, 0, filesystem);
   }
+
   const fsAt = config.routes.findIndex((r) => r.handle === "filesystem");
   if (fsAt >= 0) {
-    // /api/v1, /media, /covers/pexels — Nitro server (api-proxy.server.ts) orqali;
-    // edge rewrite Cloudflare Set-Cookie brauzerda "invalid domain" xatosini keltiradi.
     config.routes.splice(fsAt + 1, 0, {
       src: "/assets/(.*)",
       status: 404,
-      headers: { "content-type": "text/plain; charset=utf-8" },
+      headers: {
+        "cache-control": "no-store, no-cache, must-revalidate, max-age=0",
+        pragma: "no-cache",
+      },
     });
-  }
-
-  const insertAt = config.routes.findIndex((r) => r.src === "/assets/(.*)" && r.dest);
-  const headerRoutes = [
-    { src: "/version.json", headers: NO_STORE_HEADERS, continue: true },
-    { src: "/((?!assets/).*)", headers: NO_STORE_HEADERS, continue: true },
-  ];
-  if (insertAt >= 0) {
-    config.routes.splice(insertAt, 0, ...headerRoutes);
-  } else {
-    config.routes.unshift(...headerRoutes);
   }
 }
 

@@ -180,8 +180,13 @@ function MapView() {
     25,
     discoveryTab === "barbers",
   );
+  const catalogHasData =
+    discoveryTab === "salons" ? salonsWithCoords.length > 0 : baseBarbers.length > 0;
   const listLoadingAny =
-    discoveryTab === "salons" ? listLoading || nearbyLoading : barbersLoading;
+    !catalogHasData &&
+    (discoveryTab === "salons"
+      ? listLoading || (hasCoords && nearbyLoading)
+      : barbersLoading);
   const catalogError =
     discoveryTab === "salons" ? nearbyError || listError : barbersError;
 

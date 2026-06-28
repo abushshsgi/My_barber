@@ -24,7 +24,7 @@ from bookings.availability import (
 from bookings.models import Booking, BookingLine, Review
 from notifications.utils import notify_user
 from salons.catalog_bootstrap import ensure_default_catalog_seeded
-from salons.amenity_public import resolve_work_salon_for_barber
+from salons.amenity_public import batch_resolve_work_salons_for_barbers, resolve_work_salon_for_barber
 from salons.models import CatalogService, Salon, SalonMembership
 
 from .models import (
@@ -215,34 +215,52 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
             valid_regions = {c[0] for c in UzRegion.choices}
             if region and region in valid_regions:
                 qs = qs.filter(barber__region=region)
-        out = []
-        for p in qs:
+
+        barber_ids = list(qs.values_list("barber_id", flat=True).distinct())
+        visible = batch_publicly_visible_barber_ids(barber_ids)
+        if not visible:
+            return Response([])
+        qs = qs.filter(barber_id__in=visible)
+        work_salons = batch_resolve_work_salons_for_barbers(list(visible))
+
+        booking_contexts: dict[int, dict] = {}
+        candidates: list[tuple] = []
+        for p in qs.iterator(chunk_size=200):
             barber = p.barber
-            row_lat = p.latitude
-            row_lng = p.longitude
-            booking_kind = "independent"
             salon = None
+            booking_kind = "independent"
             if barber.work_mode != Barber.WorkMode.INDEPENDENT:
-                salon = resolve_work_salon_for_barber(barber)
+                salon = work_salons.get(barber.id)
                 if salon is None:
                     continue
                 row_lat = salon.latitude
                 row_lng = salon.longitude
                 booking_kind = "salon"
+            else:
+                row_lat = p.latitude
+                row_lng = p.longitude
             if row_lat is None or row_lng is None:
                 continue
             d = _haversine_km(lat, lng, float(row_lat), float(row_lng))
-            if d <= radius:
-                ser = BarberPublicListSerializer(p, context={"request": request})
-                row = dict(ser.data)
-                row["latitude"] = str(row_lat)
-                row["longitude"] = str(row_lng)
-                row["work_mode"] = barber.work_mode
-                row["booking_kind"] = booking_kind
-                row["salon_id"] = salon.id if salon is not None else None
-                row["salon_name"] = salon.name if salon is not None else None
-                row["distance_km"] = round(d, 3)
-                out.append(row)
+            if d > radius:
+                continue
+            booking_contexts[barber.id] = {
+                "booking_kind": booking_kind,
+                "salon_id": salon.id if salon is not None else None,
+                "salon_name": salon.name if salon is not None else None,
+                "amenities": [],
+            }
+            candidates.append((p, row_lat, row_lng, d))
+
+        out = []
+        ser_ctx = {"request": request, "booking_contexts": booking_contexts}
+        for p, row_lat, row_lng, d in candidates:
+            ser = BarberPublicListSerializer(p, context=ser_ctx)
+            row = dict(ser.data)
+            row["latitude"] = str(row_lat)
+            row["longitude"] = str(row_lng)
+            row["distance_km"] = round(d, 3)
+            out.append(row)
         out.sort(key=lambda x: x["distance_km"])
         return Response(out)
 

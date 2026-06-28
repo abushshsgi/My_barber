@@ -24,6 +24,29 @@ export function reloadForChunkError(): boolean {
   return true;
 }
 
+function isAssetChunkFailure(event: ErrorEvent): boolean {
+  const msg = event.message || "";
+  if (
+    /disallowed MIME type|Loading module .* failed|Importing a module script failed|Failed to fetch dynamically imported module/i.test(
+      msg,
+    )
+  ) {
+    return true;
+  }
+  const target = event.target;
+  if (target instanceof HTMLScriptElement && target.src.includes("/assets/")) {
+    return true;
+  }
+  if (
+    target instanceof HTMLLinkElement &&
+    target.rel === "modulepreload" &&
+    target.href.includes("/assets/")
+  ) {
+    return true;
+  }
+  return false;
+}
+
 /** React mountdan oldin chunk xatolarida bir marta reload. */
 export function installChunkReloadGuard() {
   if (typeof window === "undefined") return;
@@ -31,11 +54,9 @@ export function installChunkReloadGuard() {
   window.addEventListener(
     "error",
     (event) => {
-      const target = event.target;
-      if (target instanceof HTMLScriptElement && target.src.includes("/assets/")) {
-        event.preventDefault();
-        reloadForChunkError();
-      }
+      if (!isAssetChunkFailure(event)) return;
+      event.preventDefault();
+      reloadForChunkError();
     },
     true,
   );
