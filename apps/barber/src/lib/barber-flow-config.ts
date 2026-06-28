@@ -23,6 +23,7 @@ export type NavItem = {
     | "Receipt"
     | "Package"
     | "BarChart3"
+    | "LineChart"
     | "Megaphone"
     | "Target"
     | "UserCog"
@@ -50,6 +51,7 @@ export const NAV_CONFIG: Record<NavCapability, NavItem[]> = {
     { to: "/barber/expenses", label: "Xarajatlar", iconName: "Receipt", group: "Biznes" },
     { to: "/barber/inventory", label: "Inventar", iconName: "Package", group: "Biznes" },
     { to: "/barber/stats", label: "Statistika", iconName: "BarChart3", group: "Biznes" },
+    { to: "/barber/stats/graphs", label: "Grafiklar", iconName: "LineChart", group: "Biznes" },
     { to: "/barber/marketing", label: "Marketing", iconName: "Megaphone", group: "Biznes" },
     { to: "/barber/goals", label: "Maqsadlar", iconName: "Target", group: "Biznes" },
     { to: "/barber/profile", label: "Profil", iconName: "UserCog", group: "Sozlama" },

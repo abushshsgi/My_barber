@@ -1,21 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Users, Star, CalendarClock, TrendingUp, Repeat, Wallet } from "lucide-react";
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
 import { PageHeader, StatCard, SectionCard, UserAvatar } from "@/components/barber/primitives";
-import {
-  prefetchBarberAnalytics,
-  useBarberAnalyticsQuery,
-} from "@/hooks/use-barber-queries";
-import { resolveBarberAnalyticsParams } from "@/lib/analytics-scope";
-import {
-  buildDailyBarChart,
-  buildStatsDailyRows,
-  isDateInStatsRange,
-  statsRangeToIsoParams,
-  type StatsRangeKey,
-} from "@/lib/finance-range";
 import { DailyRevenueChart } from "@/components/barber/DailyRevenueChart";
+import { StatsRangePicker, StatsSectionTabs } from "@/components/barber/StatsSectionNav";
+import { prefetchBarberAnalytics } from "@/hooks/use-barber-queries";
+import { useBarberStatsMetrics } from "@/hooks/use-barber-stats";
+import { statsRangeToIsoParams, type StatsRangeKey } from "@/lib/finance-range";
 import { readOnboardingStatusCache } from "@/lib/onboarding-status-cache";
 
 export const Route = createFileRoute("/barber/stats")({
@@ -28,136 +20,42 @@ export const Route = createFileRoute("/barber/stats")({
   component: StatsPage,
 });
 
-function pickMetric(apiVal: number | null | undefined, localVal: number): number {
-  if (apiVal != null && apiVal > 0) return apiVal;
-  return localVal;
-}
-
 function StatsPage() {
-  const { bookings, clients, reviews, fullyReady } = useBarberContext();
+  const { clients, reviews } = useBarberContext();
   const [range, setRange] = useState<StatsRangeKey>("30d");
-  const dates = useMemo(() => statsRangeToIsoParams(range), [range]);
-  const analyticsScope = useMemo(() => resolveBarberAnalyticsParams(), []);
-  const { data: analytics } = useBarberAnalyticsQuery(
-    {
-      start: dates.start,
-      end: dates.end,
-      barberMe: analyticsScope.barberMe,
-    },
-    fullyReady,
-  );
+  const metrics = useBarberStatsMetrics(range);
+  const {
+    analytics,
+    dailyChart,
+    totalRevenue,
+    cashTotal,
+    onlineTotal,
+    cashCount,
+    onlineCount,
+    completionRate,
+    repeatRate,
+    avgTicket,
+    avgRating,
+    topServices,
+  } = metrics;
 
-  const bookingsInRange = useMemo(
-    () => bookings.filter((b) => b.start_at && isDateInStatsRange(b.start_at, range)),
-    [bookings, range],
-  );
-  const completedInRange = useMemo(
-    () => bookingsInRange.filter((b) => b.status === "completed"),
-    [bookingsInRange],
-  );
-  const cancelledInRange = useMemo(
-    () => bookingsInRange.filter((b) => b.status === "cancelled").length,
-    [bookingsInRange],
-  );
-
-  const localCash = completedInRange
-    .filter((b) => b.payment_method === "cash")
-    .reduce((s, b) => s + b.price, 0);
-  const localOnline = completedInRange
-    .filter((b) => b.payment_method === "online")
-    .reduce((s, b) => s + b.price, 0);
-  const localRevenue = completedInRange.reduce((s, b) => s + b.price, 0);
-
-  const totalRevenue = pickMetric(
-    analytics?.revenue != null ? Number(analytics.revenue) : null,
-    localRevenue,
-  );
-  const cashTotal = pickMetric(
-    analytics?.cash_total != null ? Number(analytics.cash_total) : null,
-    localCash,
-  );
-  const onlineTotal = pickMetric(
-    analytics?.online_total != null ? Number(analytics.online_total) : null,
-    localOnline,
-  );
-
-  const completedCount =
-    analytics?.completed_count && analytics.completed_count > 0
-      ? analytics.completed_count
-      : completedInRange.length;
-  const cancelledCount =
-    analytics?.cancelled_count != null && analytics.cancelled_count > 0
-      ? analytics.cancelled_count
-      : cancelledInRange;
-  const completionRate =
-    completedCount + cancelledCount > 0
-      ? (completedCount / Math.max(1, completedCount + cancelledCount)) * 100
-      : 0;
-
-  const avgTicket =
-    totalRevenue > 0 ? totalRevenue / Math.max(1, completedCount) : 0;
-
-  const repeatRate =
-    analytics?.unique_clients
-      ? ((analytics.returning_clients ?? 0) / Math.max(1, analytics.unique_clients)) * 100
-      : clients.length > 0
-        ? (clients.filter((c) => c.visits >= 2).length / clients.length) * 100
-        : 0;
-  const avgRating = reviews.reduce((s, r) => s + r.rating, 0) / Math.max(1, reviews.length);
-
-  const topServices = analytics?.top_services?.length
-    ? analytics.top_services.map((s) => ({ name: s.service_name, count: s.cnt }))
-    : Object.entries(
-        completedInRange.reduce<Record<string, number>>((acc, b) => {
-          acc[b.service] = (acc[b.service] ?? 0) + 1;
-          return acc;
-        }, {}),
-      )
-        .map(([name, count]) => ({ name, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
   const maxCount = Math.max(1, ...topServices.map((s) => s.count));
   const topClients = [...clients].sort((a, b) => b.spent - a.spent).slice(0, 5);
 
-  const dailyRows = useMemo(
-    () => buildStatsDailyRows(analytics?.daily ?? [], completedInRange, range),
-    [analytics?.daily, completedInRange, range],
-  );
-  const dailyChart = useMemo(() => buildDailyBarChart(dailyRows), [dailyRows]);
-
-  const cashCount =
-    analytics?.cash_count && analytics.cash_count > 0
-      ? analytics.cash_count
-      : completedInRange.filter((b) => b.payment_method === "cash").length;
-  const onlineCount =
-    analytics?.online_count && analytics.online_count > 0
-      ? analytics.online_count
-      : completedInRange.filter((b) => b.payment_method === "online").length;
-
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
+    <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6 lg:p-8">
       <PageHeader
         title="Statistika"
         description="Ish samaradorligingiz va ko'rsatkichlar."
         actions={
-          <div className="inline-flex gap-1 bg-muted p-1 rounded-lg">
-            {(["7d", "30d", "90d"] as StatsRangeKey[]).map((k) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => setRange(k)}
-                className={`px-3 py-1.5 rounded-md text-sm ${
-                  range === k ? "bg-background font-medium shadow-card" : "text-muted-foreground"
-                }`}
-              >
-                {k === "7d" ? "7 kun" : k === "30d" ? "30 kun" : "90 kun"}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-2">
+            <StatsSectionTabs />
+            <StatsRangePicker range={range} onChange={setRange} />
           </div>
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
           icon={<TrendingUp className="size-4" />}
           label="Jami daromad"
@@ -183,7 +81,7 @@ function StatsPage() {
         />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
           icon={<TrendingUp className="size-4" />}
           label="Bronlarni yakunlash"
@@ -217,19 +115,19 @@ function StatsPage() {
       </div>
 
       <SectionCard title="Kunlik savdo" description="Tanlangan davr bo'yicha">
-        <DailyRevenueChart items={dailyChart.items} />
+        <DailyRevenueChart items={dailyChart.items} tickInterval={dailyChart.tickInterval} />
       </SectionCard>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <SectionCard title="Eng mashhur xizmatlar" description="Bronlar bo'yicha">
           <div className="space-y-3">
             {topServices.map((s) => (
               <div key={s.name}>
-                <div className="flex items-center justify-between text-sm mb-1">
+                <div className="mb-1 flex items-center justify-between text-sm">
                   <span className="font-medium">{s.name}</span>
                   <span className="text-muted-foreground">{s.count}</span>
                 </div>
-                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div className="h-2 overflow-hidden rounded-full bg-muted">
                   <div
                     className="h-full bg-foreground"
                     style={{ width: `${(s.count / maxCount) * 100}%` }}
@@ -247,12 +145,12 @@ function StatsPage() {
           <div className="space-y-3">
             {topClients.map((c, i) => (
               <div key={c.id} className="flex items-center gap-3">
-                <div className="size-7 rounded-full bg-muted text-foreground text-xs font-semibold flex items-center justify-center">
+                <div className="flex size-7 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">
                   {i + 1}
                 </div>
                 <UserAvatar src={c.avatar} name={c.name} className="size-9" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{c.name}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium">{c.name}</div>
                   <div className="text-xs text-muted-foreground">{c.visits} ta tashrif</div>
                 </div>
                 <div className="text-sm font-medium">{formatUZS(c.spent)}</div>

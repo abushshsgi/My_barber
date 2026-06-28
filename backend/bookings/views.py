@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from django.db.models import Count, Q, Sum
@@ -41,6 +41,70 @@ def _parse_analytics_datetime(raw: str, *, is_end: bool = False):
     return parse_range_datetime(raw, is_end=is_end)
 
 
+def _rollup_analytics_periods(daily):
+    """Kunlik qatorlardan haftalik/oylik agregat — qo'shimcha DB so'rovisiz."""
+    weekly: dict[str, dict] = {}
+    monthly: dict[str, dict] = {}
+
+    for row in daily:
+        date_str = (row.get("date") or "")[:10]
+        if len(date_str) < 10:
+            continue
+        try:
+            dt = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            continue
+
+        revenue = float(row.get("revenue") or 0)
+        cash = float(row.get("cash_revenue") or 0)
+        online = float(row.get("online_revenue") or 0)
+        bookings = int(row.get("bookings") or 0)
+        clients = int(row.get("clients") or 0)
+
+        week_start = dt - timedelta(days=dt.weekday())
+        week_key = week_start.isoformat()
+        month_key = date_str[:7]
+
+        for bucket, key in ((weekly, week_key), (monthly, month_key)):
+            if key not in bucket:
+                bucket[key] = {
+                    "revenue": 0.0,
+                    "cash_revenue": 0.0,
+                    "online_revenue": 0.0,
+                    "bookings": 0,
+                    "clients": 0,
+                }
+            bucket[key]["revenue"] += revenue
+            bucket[key]["cash_revenue"] += cash
+            bucket[key]["online_revenue"] += online
+            bucket[key]["bookings"] += bookings
+            bucket[key]["clients"] += clients
+
+    weekly_out = [
+        {
+            "week": key,
+            "revenue": str(round(values["revenue"], 2)),
+            "cash_revenue": str(round(values["cash_revenue"], 2)),
+            "online_revenue": str(round(values["online_revenue"], 2)),
+            "bookings": values["bookings"],
+            "clients": values["clients"],
+        }
+        for key, values in sorted(weekly.items())
+    ]
+    monthly_out = [
+        {
+            "month": key,
+            "revenue": str(round(values["revenue"], 2)),
+            "cash_revenue": str(round(values["cash_revenue"], 2)),
+            "online_revenue": str(round(values["online_revenue"], 2)),
+            "bookings": values["bookings"],
+            "clients": values["clients"],
+        }
+        for key, values in sorted(monthly.items())
+    ]
+    return weekly_out, monthly_out
+
+
 def _analytics_response_for_bookings(
     bookings,
     *,
@@ -72,6 +136,17 @@ def _analytics_response_for_bookings(
         .values("day")
         .annotate(
             rev=Sum("total_price"),
+            cash_rev=Sum(
+                "total_price",
+                filter=Q(payment_method=Booking.PaymentMethod.CASH),
+            ),
+            online_rev=Sum(
+                "total_price",
+                filter=Q(
+                    payment_method=Booking.PaymentMethod.ONLINE,
+                    payment_status=Booking.PaymentStatus.PAID,
+                ),
+            ),
             bookings=Count("id"),
             clients=Count("customer", distinct=True),
         )
@@ -81,11 +156,14 @@ def _analytics_response_for_bookings(
         {
             "date": row["day"].isoformat() if row["day"] else "",
             "revenue": str(row["rev"] or 0),
+            "cash_revenue": str(row["cash_rev"] or 0),
+            "online_revenue": str(row["online_rev"] or 0),
             "bookings": row["bookings"] or 0,
             "clients": row["clients"] or 0,
         }
         for row in daily_rows
     ]
+    weekly, monthly = _rollup_analytics_periods(daily)
     breakdown = payment_breakdown(bookings)
     return {
         "revenue": str(revenue),
@@ -99,6 +177,8 @@ def _analytics_response_for_bookings(
         "returning_clients": returning,
         "top_services": top_services,
         "daily": daily,
+        "weekly": weekly,
+        "monthly": monthly,
         "completed_count": bookings.count(),
         "cancelled_count": cancelled_count,
     }

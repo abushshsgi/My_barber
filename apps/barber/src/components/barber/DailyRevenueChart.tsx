@@ -1,11 +1,28 @@
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { formatUZS } from "@/components/barber/BarberContext";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import type { DailyChartItem } from "@/lib/finance-range";
+
+const chartConfig = {
+  amount: {
+    label: "Daromad",
+    color: "hsl(var(--foreground))",
+  },
+};
+
+function formatAxisValue(value: number) {
+  if (value >= 1_000_000) return `${Math.round(value / 100_000) / 10}M`;
+  if (value >= 1_000) return `${Math.round(value / 100) / 10}K`;
+  return String(value);
+}
 
 export function DailyRevenueChart({
   items,
+  tickInterval = 0,
   emptyLabel = "Ma'lumot yo'q.",
 }: {
   items: DailyChartItem[];
+  tickInterval?: number;
   emptyLabel?: string;
 }) {
   if (items.length === 0 || !items.some((i) => i.amount > 0)) {
@@ -13,22 +30,55 @@ export function DailyRevenueChart({
   }
 
   return (
-    <div className="flex h-40 items-end gap-1 overflow-x-auto pb-2">
-      {items.map((item) => (
-        <div
-          key={item.date}
-          className="flex h-full min-w-[28px] flex-1 flex-col items-center gap-1"
-        >
-          <div className="flex w-full flex-1 flex-col justify-end">
-            <div
-              className="mx-auto w-6 min-h-[4px] rounded-t bg-foreground/85 transition-colors hover:bg-foreground"
-              style={{ height: `${Math.max(4, item.heightPct)}%` }}
-              title={`${item.date}: ${formatUZS(item.amount)}`}
+    <ChartContainer config={chartConfig} className="aspect-auto h-[220px] w-full">
+      <BarChart data={items} margin={{ top: 12, right: 4, left: -8, bottom: 0 }}>
+        <CartesianGrid vertical={false} strokeDasharray="4 4" className="stroke-border/60" />
+        <XAxis
+          dataKey="label"
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          interval={tickInterval > 0 ? tickInterval : 0}
+          minTickGap={tickInterval > 0 ? 0 : 24}
+          className="text-[10px]"
+        />
+        <YAxis
+          tickLine={false}
+          axisLine={false}
+          tickMargin={4}
+          width={44}
+          tickFormatter={formatAxisValue}
+          className="text-[10px]"
+        />
+        <ChartTooltip
+          cursor={{ fill: "hsl(var(--muted))", opacity: 0.35 }}
+          content={
+            <ChartTooltipContent
+              labelFormatter={(_, payload) => {
+                const row = payload?.[0]?.payload as DailyChartItem | undefined;
+                return row?.date ?? "";
+              }}
+              formatter={(value, _name, item) => {
+                const row = item.payload as DailyChartItem;
+                return (
+                  <div className="flex w-full flex-col gap-0.5">
+                    <span className="font-semibold">{formatUZS(Number(value))}</span>
+                    {row.bookings > 0 ? (
+                      <span className="text-muted-foreground">{row.bookings} ta bron</span>
+                    ) : null}
+                  </div>
+                );
+              }}
             />
-          </div>
-          <span className="shrink-0 text-[9px] text-muted-foreground">{item.label}</span>
-        </div>
-      ))}
-    </div>
+          }
+        />
+        <Bar
+          dataKey="amount"
+          fill="var(--color-amount)"
+          radius={[6, 6, 0, 0]}
+          maxBarSize={tickInterval > 0 ? 18 : 36}
+        />
+      </BarChart>
+    </ChartContainer>
   );
 }

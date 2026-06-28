@@ -289,9 +289,30 @@ export function useBarberAnalyticsQuery(
         new_clients: number;
         returning_clients: number;
         top_services: Array<{ service_name: string; cnt: number }>;
-        daily: Array<{ date: string; revenue: string; bookings?: number; clients?: number }>;
-        weekly?: Array<{ week: string; revenue: string; bookings: number; clients: number }>;
-        monthly?: Array<{ month: string; revenue: string; bookings: number; clients: number }>;
+        daily: Array<{
+          date: string;
+          revenue: string;
+          cash_revenue?: string;
+          online_revenue?: string;
+          bookings?: number;
+          clients?: number;
+        }>;
+        weekly?: Array<{
+          week: string;
+          revenue: string;
+          cash_revenue?: string;
+          online_revenue?: string;
+          bookings: number;
+          clients: number;
+        }>;
+        monthly?: Array<{
+          month: string;
+          revenue: string;
+          cash_revenue?: string;
+          online_revenue?: string;
+          bookings: number;
+          clients: number;
+        }>;
         cancelled_count?: number;
         completed_count?: number;
       }>(`/api/v1/analytics/?${qs}`),
