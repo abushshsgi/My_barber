@@ -23,6 +23,9 @@ def _barber_me_salon_fields(b: Barber):
     from salons.models import Salon, SalonMembership
 
     owns_salon = Salon.objects.filter(owner_barber=b).exists()
+    owned_salon = (
+        Salon.objects.filter(owner_barber=b).order_by("-id").values_list("id", flat=True).first()
+    )
     active_mem = SalonMembership.objects.filter(
         barber=b,
         invite_state=SalonMembership.InviteState.ACTIVE,
@@ -32,9 +35,15 @@ def _barber_me_salon_fields(b: Barber):
         .select_related("salon")
         .first()
     )
-    active_salon_id = (
-        active_mem.salon_id if active_mem else (owner_mem.salon_id if owner_mem else None)
-    )
+    # Egasi boshqa salonda ishchi bo'lsa ham panel o'z saloniga yo'nalsin.
+    if owned_salon:
+        active_salon_id = owned_salon
+    elif active_mem:
+        active_salon_id = active_mem.salon_id
+    elif owner_mem:
+        active_salon_id = owner_mem.salon_id
+    else:
+        active_salon_id = None
     return owns_salon, active_salon_id
 
 

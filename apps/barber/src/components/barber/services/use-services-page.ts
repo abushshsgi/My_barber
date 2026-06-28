@@ -36,9 +36,8 @@ export function useServicesPage() {
 
   const scope = viewMode === "salon" && activeSalonId ? "salon" : "independent";
   const isSalonOwnerScope = scope === "salon" && ownsSalon && Boolean(activeSalonId);
-  const servicesApiBase = isSalonOwnerScope
-    ? `/api/v1/salons/${activeSalonId}/services`
-    : "/api/v1/barber/services";
+  // Barber panel barcha CRUD ni BarberService orqali boshqaradi; salon katalogi sync orqali yangilanadi.
+  const servicesApiBase = "/api/v1/barber/services";
   const barberId = Number(profile.id);
 
   const servicesQuery = useScopedServicesQuery(servicesApiBase);
@@ -333,7 +332,29 @@ export function useServicesPage() {
 
   const deleteService = async (service: ServiceForm) => {
     if (!service.id || !canEditService(service)) return;
-    const res = await apiFetch(`${servicesApiBase}/${service.id}/`, { method: "DELETE" });
+
+    const tryDelete = (id: string, base = servicesApiBase) =>
+      apiFetch(`${base}/${id}/`, { method: "DELETE" });
+
+    let res = await tryDelete(service.id);
+
+    if (!res.ok && (res.status === 403 || res.status === 404) && service.catalog_service) {
+      const rows = await apiList<ApiBarberService>(`${servicesApiBase}/`);
+      const match = rows.find((row) => String(row.catalog_service) === service.catalog_service);
+      if (match && String(match.id) !== service.id) {
+        res = await tryDelete(String(match.id));
+      }
+    }
+
+    if (
+      !res.ok &&
+      (res.status === 403 || res.status === 404) &&
+      isSalonOwnerScope &&
+      activeSalonId
+    ) {
+      res = await tryDelete(service.id, `/api/v1/salons/${activeSalonId}/services`);
+    }
+
     if (!res.ok) {
       toast.error(await parseError(res, "Xizmatni o'chirib bo'lmadi."));
       return;

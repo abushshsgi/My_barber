@@ -55,6 +55,33 @@ from .serializers import (
 )
 
 
+def _barber_owns_salon(bp: Barber | None, salon: Salon) -> bool:
+    if bp is None:
+        return False
+    if salon.owner_barber_id == bp.id:
+        return True
+    return SalonMembership.objects.filter(
+        salon=salon,
+        barber=bp,
+        role=SalonMembership.Role.OWNER,
+        invite_state=SalonMembership.InviteState.ACTIVE,
+    ).exists()
+
+
+def _delete_salon_catalog_service_for_owner(bp: Barber, service: Service) -> None:
+    """Salon katalogi qatorini va bog'langan BarberService ni o'chirish."""
+    from barbers.models import BarberProfile, BarberService
+
+    if service.catalog_service_id:
+        prof = BarberProfile.objects.filter(barber=bp).first()
+        if prof:
+            BarberService.objects.filter(
+                profile=prof,
+                catalog_service_id=service.catalog_service_id,
+            ).delete()
+    service.delete()
+
+
 class SalonViewSet(viewsets.ModelViewSet):
     lookup_field = "pk"
 
@@ -462,13 +489,16 @@ class SalonViewSet(viewsets.ModelViewSet):
         """Salon katalogi (barber=null) — faqat salon egasi boshqaradi."""
         salon = self.get_object()
         bp = request_barber(request)
-        is_owner = bp is not None and salon.owner_barber_id == bp.id
-        if not is_owner and not is_platform_admin(request):
+        is_owner = _barber_owns_salon(bp, salon) or is_platform_admin(request)
+        if not is_owner:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         if request.method == "GET":
+            catalog_filter = Q(barber__isnull=True)
+            if bp is not None and salon.owner_barber_id == bp.id:
+                catalog_filter |= Q(barber=bp)
             qs = (
-                salon.services.filter(barber__isnull=True)
+                salon.services.filter(catalog_filter)
                 .filter(Q(catalog_service__isnull=True) | Q(catalog_service__is_active=True))
                 .select_related("catalog_service")
                 .order_by("name")
@@ -510,14 +540,22 @@ class SalonViewSet(viewsets.ModelViewSet):
         """Salon katalogidagi bitta xizmatni tahrirlash/o‘chirish."""
         salon = self.get_object()
         bp = request_barber(request)
-        is_owner = bp is not None and salon.owner_barber_id == bp.id
-        if not is_owner and not is_platform_admin(request):
+        is_owner = _barber_owns_salon(bp, salon) or is_platform_admin(request)
+        if not is_owner:
             return Response(status=status.HTTP_403_FORBIDDEN)
+        catalog_filter = Q(barber__isnull=True)
+        if bp is not None and salon.owner_barber_id == bp.id:
+            catalog_filter |= Q(barber=bp)
         service = get_object_or_404(
-            Service, pk=service_id, salon=salon, barber__isnull=True
+            Service.objects.filter(catalog_filter),
+            pk=service_id,
+            salon=salon,
         )
         if request.method == "DELETE":
-            service.delete()
+            if bp is not None and salon.owner_barber_id == bp.id:
+                _delete_salon_catalog_service_for_owner(bp, service)
+            else:
+                service.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         serializer = SalonCatalogServiceSerializer(
             service, data=request.data, partial=True, context={"request": request}

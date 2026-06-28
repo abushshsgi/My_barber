@@ -115,6 +115,49 @@ class SalonCatalogSeparationTests(TestCase):
         self.assertEqual(del_res.status_code, 204)
         self.assertFalse(Service.objects.filter(pk=svc_id).exists())
 
+    def test_owner_can_delete_barber_service(self):
+        create_res = self.owner_client.post(
+            "/api/v1/barber/services/",
+            {"catalog_service": self.catalog2.id, "price": 55000},
+            format="json",
+        )
+        self.assertEqual(create_res.status_code, 201, create_res.content)
+        barber_svc_id = create_res.json()["id"]
+
+        del_res = self.owner_client.delete(f"/api/v1/barber/services/{barber_svc_id}/")
+        self.assertEqual(del_res.status_code, 204, del_res.content)
+        self.assertFalse(BarberService.objects.filter(pk=barber_svc_id).exists())
+
+    def test_salon_catalog_delete_removes_linked_barber_service(self):
+        create_res = self.owner_client.post(
+            "/api/v1/barber/services/",
+            {"catalog_service": self.catalog.id, "price": 65000},
+            format="json",
+        )
+        self.assertEqual(create_res.status_code, 201, create_res.content)
+        prof = BarberProfile.objects.get(barber=self.owner)
+        self.assertTrue(
+            BarberService.objects.filter(
+                profile=prof, catalog_service_id=self.catalog.id
+            ).exists()
+        )
+        salon_row = Service.objects.get(
+            salon_id=self.salon_id,
+            catalog_service_id=self.catalog.id,
+            barber__isnull=True,
+        )
+
+        del_res = self.owner_client.delete(
+            f"/api/v1/salons/{self.salon_id}/services/{salon_row.id}/"
+        )
+        self.assertEqual(del_res.status_code, 204, del_res.content)
+        self.assertFalse(Service.objects.filter(pk=salon_row.id).exists())
+        self.assertFalse(
+            BarberService.objects.filter(
+                profile=prof, catalog_service_id=self.catalog.id
+            ).exists()
+        )
+
     def test_non_owner_cannot_manage_salon_catalog(self):
         other = Barber.objects.create(
             email="sep-other@test.uz",
