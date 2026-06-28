@@ -357,7 +357,9 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   const [activeSalonId, setActiveSalonId] = useState<number | null>(null);
   const [barberWorkMode, setBarberWorkMode] = useState<"salon" | "independent">("independent");
   const [onboardingFlow, setOnboardingFlow] = useState<string | null>(null);
-  const [onboardingComplete, setOnboardingComplete] = useState(bootCache?.fully_ready === true);
+  const [onboardingComplete, setOnboardingComplete] = useState(
+    () => bootCache?.fully_ready === true,
+  );
   const [requiredNextPath, setRequiredNextPath] = useState<string | null>(
     () => bootCache?.required_next_path ?? null,
   );
@@ -370,7 +372,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     hasWorkingHours: false,
   });
   const [fullyReady, setFullyReady] = useState(() => bootCache?.fully_ready === true);
-  const [activationHydrated, setActivationHydrated] = useState(() => bootCache?.fully_ready === true);
+  const [activationHydrated, setActivationHydrated] = useState(false);
   const [readinessPercent, setReadinessPercent] = useState(0);
   const [activationSteps, setActivationSteps] = useState<ActivationSteps>({
     email_verified: false,
@@ -1023,6 +1025,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       let emailVerified = false;
       let wm: "independent" | "salon" = "independent";
       let aid: number | null = null;
+      let ownsSalonFlag = false;
       try {
         const [me, st] = await Promise.all([
           apiJson<{
@@ -1042,6 +1045,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         wm = me.work_mode === "independent" ? "independent" : "salon";
         setBarberWorkMode(wm);
         const owns = Boolean(me.owns_salon);
+        ownsSalonFlag = owns;
         setOwnsSalon(owns);
         aid =
           me.active_salon_id != null && Number.isFinite(Number(me.active_salon_id))
@@ -1089,6 +1093,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
           if (emailVerified) runQuiet([refreshServices, refreshWorkingHours]);
           return;
         }
+        if (ownsSalonFlag) runQuiet([refreshSalonView]);
         runQuiet([refreshBookings, refreshNotifications, refreshServices, refreshWorkingHours]);
         const defer = () => {
           if (!alive) return;

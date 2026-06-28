@@ -3,51 +3,69 @@ import { MapPin, Star, Users, Images, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBarberContext } from "@/components/barber/BarberContext";
 
+const PLACEHOLDER_COVER = "/placeholder-salon.svg";
+
 export const Route = createFileRoute("/barber/salon-view/")({
   component: SalonViewPage,
 });
 
 function SalonViewPage() {
-  const { salon, isJoinedWorker } = useBarberContext();
+  const { salon, isJoinedWorker, activationHydrated } = useBarberContext();
+  const rating = Number.isFinite(salon.rating) ? salon.rating : 0;
+  const coverSrc = salon.cover?.trim() ? salon.cover : PLACEHOLDER_COVER;
+  const salonName = salon.name?.trim() || "Salon";
+  const salonAddress = salon.address?.trim() || "Manzil kiritilmagan";
+
+  if (!activationHydrated) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center p-6">
+        <p className="text-sm text-muted-foreground">Yuklanmoqda…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
-      {/* Cover */}
       <div className="relative rounded-2xl overflow-hidden h-56 sm:h-72 bg-muted">
-        <img src={salon.cover} alt="" className="size-full object-cover" />
+        <img
+          src={coverSrc}
+          alt={salonName}
+          className="size-full object-cover"
+          onError={(e) => {
+            e.currentTarget.src = PLACEHOLDER_COVER;
+          }}
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-6 text-background">
-          <h1 className="font-heading text-3xl sm:text-4xl font-semibold">{salon.name}</h1>
+          <h1 className="font-heading text-3xl sm:text-4xl font-semibold">{salonName}</h1>
           <div className="mt-2 inline-flex items-center gap-1.5 text-sm opacity-90">
-            <MapPin className="size-3.5" />
-            {salon.address}
+            <MapPin className="size-3.5 shrink-0" />
+            {salonAddress}
           </div>
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         <Stat
           icon={<Star className="size-4" />}
           label="Reyting"
-          value={salon.rating.toFixed(1)}
-          hint={`${salon.reviews_count} sharh`}
+          value={rating.toFixed(1)}
+          hint={`${salon.reviews_count ?? 0} sharh`}
         />
         <Stat
           icon={<Users className="size-4" />}
           label="A'zolar"
-          value={salon.members.toString()}
+          value={String(salon.members ?? 0)}
           hint="Faol sartaroshlar"
         />
         <Stat
           icon={<Images className="size-4" />}
           label="Galereya"
-          value={salon.gallery.length.toString()}
+          value={String(salon.gallery?.length ?? 0)}
           hint="Rasmlar"
         />
       </div>
 
-      {/* Quick links */}
       <div
         className={cn(
           "grid gap-3",
@@ -101,10 +119,9 @@ function SalonViewPage() {
         </Link>
       </div>
 
-      {/* Address card */}
       <div className="rounded-xl border border-border bg-card p-6 shadow-card">
         <h2 className="font-heading text-lg font-semibold mb-3">Manzil va aloqa</h2>
-        <p className="text-sm text-muted-foreground">{salon.address}</p>
+        <p className="text-sm text-muted-foreground">{salonAddress}</p>
       </div>
     </div>
   );

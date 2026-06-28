@@ -185,7 +185,20 @@ function Sidebar({
                         <div key={item.to}>
                           <Link
                             to={item.to}
-                            onClick={locked ? (e) => e.preventDefault() : onNavigate}
+                            onClick={(e) => {
+                              if (locked) {
+                                e.preventDefault();
+                                return;
+                              }
+                              if (
+                                ownsSalon &&
+                                item.to.startsWith("/barber/salon-view") &&
+                                viewMode !== "salon"
+                              ) {
+                                setViewMode("salon");
+                              }
+                              onNavigate?.();
+                            }}
                             aria-disabled={locked}
                             className={cn(
                               "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-150",
@@ -487,6 +500,7 @@ export function BarberShell() {
   const { pathname } = useLocation();
   const {
     viewMode,
+    setViewMode,
     onboardingComplete,
     isJoinedWorker,
     flowIdentity,
@@ -528,11 +542,8 @@ export function BarberShell() {
   useEffect(() => {
     if (!activationHydrated || !fullyReady) return;
     if (pathname !== "/barber/activation") return;
-    void navigate({
-      to: ownsSalon ? "/barber/salon-view" : "/barber",
-      replace: true,
-    });
-  }, [activationHydrated, fullyReady, ownsSalon, pathname, navigate]);
+    void navigate({ to: "/barber", replace: true });
+  }, [activationHydrated, fullyReady, pathname, navigate]);
 
   useEffect(() => {
     if (!activationHydrated || fullyReady) return;
@@ -551,9 +562,23 @@ export function BarberShell() {
     }
     if (viewMode === "independent" && pathname.startsWith("/barber/salon-view")) {
       if (isJoinedWorker) return;
+      if (ownsSalon) {
+        setViewMode("salon");
+        return;
+      }
       void navigate({ to: "/barber", replace: true });
     }
-  }, [activationHydrated, onboardingComplete, fullyReady, viewMode, pathname, navigate, isJoinedWorker]);
+  }, [
+    activationHydrated,
+    onboardingComplete,
+    fullyReady,
+    viewMode,
+    pathname,
+    navigate,
+    isJoinedWorker,
+    ownsSalon,
+    setViewMode,
+  ]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

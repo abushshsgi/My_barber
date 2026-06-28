@@ -9,8 +9,8 @@ import {
 } from "@/lib/onboarding-status-cache";
 import { normalizeRequiredNextPath } from "@/lib/onboarding-redirect";
 
-function activationRedirectTarget(ownsSalon?: boolean): string {
-  return ownsSalon ? "/barber/salon-view" : "/barber";
+function activationRedirectTarget(_ownsSalon?: boolean): string {
+  return "/barber";
 }
 
 export const Route = createFileRoute("/barber")({
@@ -86,10 +86,12 @@ function BarberRoot() {
 
 function BarberError({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
+  const message =
+    error instanceof Error && error.message ? error.message : "Barber panelda xatolik yuz berdi.";
   return (
     <div className="p-8">
       <h2 className="font-heading text-xl font-semibold text-foreground">Barber panelda xatolik</h2>
-      <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{message}</p>
       <button
         onClick={() => {
           router.invalidate();

@@ -8,6 +8,8 @@ import { APP_BUILD_ID } from "@/lib/app-build-id";
 function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
   const chunkError = isChunkLoadError(error);
+  const message =
+    error instanceof Error && error.message ? error.message : "Kutilmagan xatolik yuz berdi.";
 
   if (chunkError && typeof window !== "undefined") {
     reloadForChunkError();
@@ -21,9 +23,9 @@ function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => vo
           Kutilmagan xatolik. Iltimos, qayta urinib ko'ring.
         </p>
         <p className="mt-2 text-[10px] text-muted-foreground">build: {APP_BUILD_ID}</p>
-        {import.meta.env.DEV && error.message && (
+        {import.meta.env.DEV && (
           <pre className="mt-4 max-h-40 overflow-auto rounded-md bg-muted p-3 text-left font-mono text-xs text-destructive">
-            {error.message}
+            {message}
           </pre>
         )}
         <div className="mt-6 flex items-center justify-center gap-3">

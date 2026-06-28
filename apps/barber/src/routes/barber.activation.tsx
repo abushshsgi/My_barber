@@ -83,8 +83,8 @@ function computePrimaryNext(
   return null;
 }
 
-function activationRedirectPath(ownsSalon: boolean): string {
-  return ownsSalon ? "/barber/salon-view" : "/barber";
+function activationRedirectPath(_ownsSalon: boolean): string {
+  return "/barber";
 }
 
 function BarberActivationPage() {
