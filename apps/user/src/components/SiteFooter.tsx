@@ -139,7 +139,7 @@ export function SiteFooter({ insetClassName, className }: Props) {
   return (
     <footer
       className={cn(
-        "shrink-0 border-t border-border/60 bg-surface/40 py-8 sm:py-10",
+        "shrink-0 bg-white/[0.01] py-8 sm:py-10",
         insetClassName ?? DESKTOP_SHELL_INSET,
         className,
       )}
