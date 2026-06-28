@@ -6,12 +6,7 @@ const ENV_API_BASE =
 
 const FALLBACK_DEV_BASE = import.meta.env.DEV ? "http://localhost:8000" : "";
 
-if (import.meta.env.PROD && !ENV_API_BASE.trim()) {
-  throw new Error(
-    "Production build requires VITE_API_URL or NEXT_PUBLIC_API_URL (e.g. https://api.mysaloon.uz).",
-  );
-}
-
+/** Web (Vercel): bo'sh = joriy origin (/api/v1 proxy). */
 export const API_BASE = (ENV_API_BASE.trim() ? ENV_API_BASE : FALLBACK_DEV_BASE).replace(
   /\/+$/,
   "",

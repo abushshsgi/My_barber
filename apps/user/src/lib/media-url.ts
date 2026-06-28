@@ -1,9 +1,19 @@
 import { API_BASE } from "@/lib/api/client";
 
-/** API yoki nisbiy media yo‘lini to‘liq URL ga aylantiradi. */
+const PEXELS_RE = /(?:https?:\/\/)?images\.pexels\.com\/photos\/(\d+)/i;
+const API_MEDIA_RE = /^https?:\/\/api\.mysaloon\.uz(\/media\/.*)$/i;
+
+/** API yoki nisbiy media yo‘lini same-origin URL ga aylantiradi. */
 export function resolveMediaUrl(path: string | null | undefined): string | null {
   const raw = path?.trim();
   if (!raw) return null;
+
+  const pexels = raw.match(PEXELS_RE);
+  if (pexels) return `/covers/pexels/${pexels[1]}?w=900`;
+
+  const apiMedia = raw.match(API_MEDIA_RE);
+  if (apiMedia) return apiMedia[1];
+
   if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("data:")) {
     return raw;
   }

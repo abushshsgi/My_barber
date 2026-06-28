@@ -3,12 +3,6 @@
   "installCommand": "cd ../.. && npm ci",
   "buildCommand": "npm run build",
   "framework": null,
-  "rewrites": [
-    {
-      "source": "/covers/pexels/:id",
-      "destination": "https://images.pexels.com/photos/:id/pexels-photo-:id.jpeg?auto=compress&cs=tinysrgb&w=800"
-    }
-  ],
   "headers": [
     {
       "source": "/version.json",

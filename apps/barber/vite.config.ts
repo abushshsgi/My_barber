@@ -12,9 +12,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, "");
   const apiUrl = env.VITE_API_URL || env.NEXT_PUBLIC_API_URL;
-  if (mode === "production" && !apiUrl?.trim()) {
+  const isMobileSpa = env.VITE_MOBILE_SPA === "true";
+  if (mode === "production" && !apiUrl?.trim() && isMobileSpa) {
     throw new Error(
-      "Production build requires VITE_API_URL or NEXT_PUBLIC_API_URL in .env.production (e.g. https://api.mysaloon.uz).",
+      "Mobile production build requires VITE_API_URL or NEXT_PUBLIC_API_URL in .env.production (e.g. https://api.mysaloon.uz).",
     );
   }
 

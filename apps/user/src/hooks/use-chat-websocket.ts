@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { buildChatWebSocketUrl } from "@mybarber/shared/ws-url";
-import { API_BASE, getUserAccessToken } from "@/lib/api/client";
+import { getUserAccessToken, getWsApiBase } from "@/lib/api/client";
 import { mapMessage } from "@/lib/mappers/chat";
 import { conversationsQueryKeyBase } from "@/hooks/use-chat-api";
 import { getAuthUserId } from "@/lib/auth-user";
@@ -24,7 +24,7 @@ export function useChatWebSocket(conversationId: string) {
     const token = getUserAccessToken();
     if (!conversationId || !token) return;
 
-    const ws = new WebSocket(buildChatWebSocketUrl(API_BASE, conversationId, token));
+    const ws = new WebSocket(buildChatWebSocketUrl(getWsApiBase(), conversationId, token));
 
     ws.onmessage = (evt) => {
       try {

@@ -9,19 +9,37 @@ const ENV_API_BASE =
     ?.NEXT_PUBLIC_API_URL ||
   "";
 
-/** Dev: bo'sh = joriy origin (/api/v1 server proxy orqali). */
-const FALLBACK_DEV_BASE = import.meta.env.DEV ? "" : "";
+const IS_MOBILE_SPA =
+  (import.meta as unknown as { env?: Record<string, string | undefined> }).env
+    ?.VITE_MOBILE_SPA === "true";
 
-if (import.meta.env.PROD && !ENV_API_BASE.trim()) {
+/** Web (Vercel): bo'sh = joriy origin (/api/v1 proxy). Capacitor: VITE_API_URL majburiy. */
+if (import.meta.env.PROD && !ENV_API_BASE.trim() && IS_MOBILE_SPA) {
   throw new Error(
-    "Production build requires VITE_API_URL or NEXT_PUBLIC_API_URL (e.g. https://api.mysaloon.uz).",
+    "Mobile production build requires VITE_API_URL or NEXT_PUBLIC_API_URL (e.g. https://api.mysaloon.uz).",
   );
 }
 
-export const API_BASE = (ENV_API_BASE.trim() ? ENV_API_BASE : FALLBACK_DEV_BASE).replace(
-  /\/+$/,
-  "",
-);
+function resolveWebApiBase(envBase: string): string {
+  const trimmed = envBase.trim().replace(/\/+$/, "");
+  if (IS_MOBILE_SPA) return trimmed;
+  // Web production: same-origin proxy — to‘g‘ridan-to‘g‘ri api.mysaloon.uz Cloudflare cookie xatolarini keltiradi.
+  if (import.meta.env.PROD) return "";
+  return trimmed;
+}
+
+export const API_BASE = resolveWebApiBase(ENV_API_BASE);
+
+/** WebSocket REST bilan bir xil domen talab qilmaydi — to‘g‘ridan-to‘g‘ri API host. */
+export function getWsApiBase(): string {
+  if (API_BASE) return API_BASE;
+  if (import.meta.env.DEV) return "http://127.0.0.1:8000";
+  const override =
+    (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_WS_API_URL ||
+    (import.meta as unknown as { env?: Record<string, string | undefined> }).env
+      ?.NEXT_PUBLIC_WS_API_URL;
+  return override?.trim() || "https://api.mysaloon.uz";
+}
 
 const TOKEN_KEY_USER = "mybarber_user_access";
 const REFRESH_KEY_USER = "mybarber_user_refresh";

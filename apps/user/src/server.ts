@@ -1,6 +1,6 @@
 import "./lib/error-capture";
 
-import { maybeProxyDevApi } from "./lib/api-dev-proxy.server";
+import { maybeProxyApi } from "./lib/api-proxy.server";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 
@@ -41,7 +41,7 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
-      const proxied = await maybeProxyDevApi(request);
+      const proxied = await maybeProxyApi(request);
       if (proxied) return proxied;
 
       const handler = await getServerEntry();

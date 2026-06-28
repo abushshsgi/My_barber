@@ -29,8 +29,6 @@ jobs:
 
       - name: Build user app
         run: npm run build -w user-web
-        env:
-          VITE_API_URL: https://api.mysaloon.uz
 
   trigger-vercel:
     needs: build

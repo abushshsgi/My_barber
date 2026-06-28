@@ -52,6 +52,8 @@ if (Array.isArray(config.routes)) {
   }
   const fsAt = config.routes.findIndex((r) => r.handle === "filesystem");
   if (fsAt >= 0) {
+    // /api/v1, /media, /covers/pexels — Nitro server (api-proxy.server.ts) orqali;
+    // edge rewrite Cloudflare Set-Cookie brauzerda "invalid domain" xatosini keltiradi.
     config.routes.splice(fsAt + 1, 0, {
       src: "/assets/(.*)",
       status: 404,

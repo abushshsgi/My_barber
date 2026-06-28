@@ -41,6 +41,14 @@
   ],
   "rewrites": [
     {
+      "source": "/api/v1/:path*",
+      "destination": "https://api.mysaloon.uz/api/v1/:path*"
+    },
+    {
+      "source": "/media/:path*",
+      "destination": "https://api.mysaloon.uz/media/:path*"
+    },
+    {
       "source": "/((?!assets/).*)",
       "destination": "/index.html"
     }
