@@ -180,15 +180,6 @@ function MapView() {
     25,
     discoveryTab === "barbers",
   );
-  const catalogHasData =
-    discoveryTab === "salons" ? salonsWithCoords.length > 0 : baseBarbers.length > 0;
-  const listLoadingAny =
-    !catalogHasData &&
-    (discoveryTab === "salons"
-      ? listLoading || (hasCoords && nearbyLoading)
-      : barbersLoading);
-  const catalogError =
-    discoveryTab === "salons" ? nearbyError || listError : barbersError;
 
   const baseSalons = useMemo(() => {
     let base =
@@ -279,6 +270,16 @@ function MapView() {
       hasValidMapCoords(b.lat, b.lng),
     );
   }, [nearbyBarbers, apiSearchActive, apiSearchBarbers, ctx]);
+
+  const catalogHasData =
+    discoveryTab === "salons" ? salonsWithCoords.length > 0 : baseBarbers.length > 0;
+  const listLoadingAny =
+    !catalogHasData &&
+    (discoveryTab === "salons"
+      ? listLoading || (hasCoords && nearbyLoading)
+      : barbersLoading);
+  const catalogError =
+    discoveryTab === "salons" ? nearbyError || listError : barbersError;
 
   const filteredBarbers = useMemo(() => {
     const q = query.trim().toLowerCase();
