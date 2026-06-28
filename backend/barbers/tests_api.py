@@ -303,7 +303,7 @@ class BarberPublicDiscoveryTests(APITestCase):
         worker_membership = SalonMembership.objects.create(
             barber=worker,
             salon=salon,
-            role=SalonMembership.Role.BARBER,
+            role=SalonMembership.Role.WORKER,
             invite_state=SalonMembership.InviteState.ACTIVE,
             activated_at=timezone.now(),
         )

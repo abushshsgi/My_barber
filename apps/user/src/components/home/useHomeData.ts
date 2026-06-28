@@ -30,7 +30,7 @@ export function useHomeData() {
   const { data: hairstyles = [] } = useHairstyles(audience, menPersona, { ignoreAgeGroup: true });
   const ctx = useRecommendContext();
   const hasCoords = ctx.lat != null && ctx.lng != null;
-  const { data: nearbySalons = [], isLoading: nearbyLoading } = useSalonsNearby(
+  const { data: nearbySalons = [], isLoading: nearbyLoading, isError: nearbyError } = useSalonsNearby(
     hasCoords ? ctx.lat! : undefined,
     hasCoords ? ctx.lng! : undefined,
     25,
@@ -38,10 +38,10 @@ export function useHomeData() {
   const { data: listSalons = [], isLoading: listLoading, error } = useSalonsList();
 
   const salons = useMemo(() => {
-    const base =
-      hasCoords && nearbySalons.length > 0 ? nearbySalons : listSalons;
+    const useNearby = hasCoords && !nearbyError && nearbySalons.length > 0;
+    const base = useNearby ? nearbySalons : listSalons;
     return rankSalonsForUser(base, ctx);
-  }, [hasCoords, nearbySalons, listSalons, ctx]);
+  }, [hasCoords, nearbyError, nearbySalons, listSalons, ctx]);
 
   const [cat, setCat] = useState<Category | "all">("all");
   const [query, setQuery] = useState("");

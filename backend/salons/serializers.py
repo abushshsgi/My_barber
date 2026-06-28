@@ -23,12 +23,21 @@ from .models import (
 )
 
 
+from salons.mock.cover_urls import resolve_salon_cover_url
+
+
 def _salon_cover_url(salon, context: dict | None = None) -> str | None:
+    """Mock Pexels URL yoki DB cover; yo‘qolgan fayl 500 bermasin."""
+    resolved = resolve_salon_cover_url(salon, context)
+    if resolved:
+        return resolved
     if not salon.cover_image:
         return None
-    context = context or {}
-    request = context.get("request")
-    url = salon.cover_image.url
+    try:
+        url = salon.cover_image.url
+    except (ValueError, OSError):
+        return None
+    request = (context or {}).get("request")
     if request is not None:
         return request.build_absolute_uri(url)
     return url

@@ -2,8 +2,8 @@ import math
 from datetime import datetime
 
 from django.db import transaction
-from django.db.models import Avg, Count, Q, Sum
-from django.db.models.functions import Coalesce, TruncDate
+from django.db.models import Avg, Count, FloatField, Q, Sum, Value
+from django.db.models.functions import Cast, Coalesce, TruncDate
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status, viewsets
@@ -88,7 +88,11 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
             BarberProfile.objects.select_related("barber")
             .prefetch_related("services", "services__catalog_service", "work_photos", "working_hours")
             .annotate(
-                avg_rating=Coalesce(Avg("barber__reviews_about__rating"), 0.0),
+                avg_rating=Coalesce(
+                    Cast(Avg("barber__reviews_about__rating"), FloatField()),
+                    Value(0.0),
+                    output_field=FloatField(),
+                ),
                 review_count=Count("barber__reviews_about", distinct=True),
             )
         )

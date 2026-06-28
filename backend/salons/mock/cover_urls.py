@@ -45,11 +45,15 @@ def resolve_salon_cover_url(salon, context: dict | None = None) -> str | None:
     """DB dagi cover yoki mock uchun Pexels CDN."""
     context = context or {}
     if salon.cover_image:
-        request = context.get("request")
-        url = salon.cover_image.url
-        if request is not None:
-            return request.build_absolute_uri(url)
-        return url
+        try:
+            url = salon.cover_image.url
+        except (ValueError, OSError):
+            url = None
+        if url:
+            request = context.get("request")
+            if request is not None:
+                return request.build_absolute_uri(url)
+            return url
     if is_mock_salon(salon) and salon.slug:
         return mock_cover_cdn_url(salon.slug)
     return None

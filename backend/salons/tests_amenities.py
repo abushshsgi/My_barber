@@ -91,7 +91,7 @@ class BarberSalonAmenitiesPermissionTests(TestCase):
         SalonMembership.objects.create(
             barber=self.worker,
             salon=self.salon,
-            role=SalonMembership.Role.BARBER,
+            role=SalonMembership.Role.WORKER,
             invite_state=SalonMembership.InviteState.ACTIVE,
             activated_at=timezone.now(),
         )

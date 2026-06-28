@@ -42,6 +42,10 @@ function stripHopByHopHeaders(headers: Headers): void {
 /** Cloudflare __cf_bm / _cfuvid cross-origin Set-Cookie brauzerda rad etiladi — proxy javobidan olib tashlaymiz. */
 function sanitizeProxyResponseHeaders(headers: Headers): void {
   headers.delete("set-cookie");
+  // fetch body allaqachon decode qilingan — eski content-length/content-encoding noto‘g‘ri bo‘ladi.
+  headers.delete("content-length");
+  headers.delete("content-encoding");
+  headers.delete("transfer-encoding");
 }
 
 /** /api/v1, /media, /covers/pexels ni upstream ga yo‘naltirish (same-origin, Set-Cookie tozalangan). */
@@ -68,7 +72,18 @@ export async function maybeProxyApi(request: Request): Promise<Response | null> 
     const upstream = await fetch(target, init);
     const outHeaders = new Headers(upstream.headers);
     sanitizeProxyResponseHeaders(outHeaders);
-    return new Response(upstream.body, {
+
+    if (request.method === "HEAD") {
+      return new Response(null, {
+        status: upstream.status,
+        statusText: upstream.statusText,
+        headers: outHeaders,
+      });
+    }
+
+    // Vercel serverless: upstream.body stream ko‘pincha bo‘sh qaytadi — buffer majburiy.
+    const body = await upstream.arrayBuffer();
+    return new Response(body, {
       status: upstream.status,
       statusText: upstream.statusText,
       headers: outHeaders,

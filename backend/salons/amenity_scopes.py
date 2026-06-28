@@ -13,7 +13,7 @@ def salon_is_solo_studio(salon: Salon) -> bool:
     active_workers = SalonMembership.objects.filter(
         salon=salon,
         invite_state=SalonMembership.InviteState.ACTIVE,
-        role=SalonMembership.Role.BARBER,
+        role=SalonMembership.Role.WORKER,
     ).count()
     return active_workers == 0
 
