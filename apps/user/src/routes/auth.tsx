@@ -261,224 +261,230 @@ function Auth() {
     <div className="flex min-h-[100dvh] flex-col bg-background lg:grid lg:grid-cols-2">
       <AuthMarketingPanel />
 
-      <div className="flex flex-col px-6 py-10 lg:justify-center lg:px-12">
-        <div className="auth-form-in flex items-baseline gap-1 lg:hidden" style={{ animationDelay: "0ms" }}>
-          <span className="text-2xl font-bold tracking-tight">mysaloon</span>
-          <span className="text-base font-bold text-muted-foreground">.uz</span>
-        </div>
-
-        <div key={step} className="flex flex-1 flex-col justify-center py-12">
-          <p
-            className="auth-form-in text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground"
-            style={{ animationDelay: "60ms" }}
-          >
-            {header.kicker}
-          </p>
-          <h1
-            className="auth-form-in mt-2 text-3xl font-bold tracking-tight"
-            style={{ animationDelay: "110ms" }}
-          >
-            {header.title}
-          </h1>
-          <p className="auth-form-in mt-2 text-sm text-muted-foreground" style={{ animationDelay: "160ms" }}>
-            {header.desc}
-          </p>
-
-        {step === "phone" ? (
-          <div className="auth-form-in mt-8" style={{ animationDelay: "220ms" }}>
-            <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-              {t("auth.phone")}
-            </label>
-            <div className="mt-2 flex items-center overflow-hidden rounded-2xl border-2 border-border bg-background focus-within:border-foreground">
-              <span className="border-r border-border px-4 py-4 text-sm font-bold">+998</span>
-              <input
-                type="tel"
-                inputMode="numeric"
-                value={formatUzLocalPhone(phone)}
-                disabled={busy}
-                onChange={(e) => setPhone(parseUzLocalPhone(e.target.value))}
-                placeholder="90-123-45-67"
-                className="flex-1 border-0 bg-transparent px-4 py-4 text-sm font-bold placeholder:text-muted-foreground/50 focus:outline-none disabled:opacity-60"
-              />
-            </div>
+      <div className="flex min-h-[100dvh] flex-col justify-center px-6 py-10 lg:px-12 xl:px-16">
+        <div className="mx-auto w-full max-w-md">
+          <div className="mb-8 flex items-baseline gap-1 lg:hidden">
+            <span className="text-2xl font-bold tracking-tight">mysaloon</span>
+            <span className="text-base font-bold text-muted-foreground">.uz</span>
           </div>
-        ) : null}
 
-        {step === "password" ? (
-          <div className="auth-form-in mt-8 space-y-4" style={{ animationDelay: "220ms" }}>
-            <div>
-              <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                {t("auth.password")}
-              </label>
-              <div className="mt-2 flex items-center overflow-hidden rounded-2xl border-2 border-border bg-background focus-within:border-foreground">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  disabled={busy}
-                  onChange={(e) => setPasswordInput(e.target.value)}
-                  placeholder="••••••••"
-                  className="flex-1 border-0 bg-transparent px-4 py-4 text-sm font-bold focus:outline-none disabled:opacity-60"
-                />
+          <div key={step} className="auth-form-stagger">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+              {header.kicker}
+            </p>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight">{header.title}</h1>
+            <p className="mt-2 text-sm text-muted-foreground">{header.desc}</p>
+
+            <div className="mt-8">
+              {step === "phone" ? (
+                <div>
+                  <label
+                    htmlFor="auth-phone"
+                    className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground"
+                  >
+                    {t("auth.phone")}
+                  </label>
+                  <div className="mt-2 flex h-14 items-stretch overflow-hidden rounded-2xl border-2 border-border bg-background focus-within:border-foreground">
+                    <span className="flex shrink-0 items-center border-r border-border px-4 text-sm font-bold tabular-nums">
+                      +998
+                    </span>
+                    <input
+                      id="auth-phone"
+                      type="tel"
+                      inputMode="numeric"
+                      value={formatUzLocalPhone(phone)}
+                      disabled={busy}
+                      onChange={(e) => setPhone(parseUzLocalPhone(e.target.value))}
+                      placeholder="90-123-45-67"
+                      className="min-w-0 flex-1 border-0 bg-transparent px-4 text-sm font-bold leading-none placeholder:text-muted-foreground/50 focus:outline-none disabled:opacity-60"
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+              {step === "password" ? (
+                <div className="space-y-4">
+                  <div>
+                    <label
+                      htmlFor="auth-password"
+                      className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground"
+                    >
+                      {t("auth.password")}
+                    </label>
+                    <div className="mt-2 flex h-14 items-stretch overflow-hidden rounded-2xl border-2 border-border bg-background focus-within:border-foreground">
+                      <input
+                        id="auth-password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        disabled={busy}
+                        onChange={(e) => setPasswordInput(e.target.value)}
+                        placeholder="••••••••"
+                        className="min-w-0 flex-1 border-0 bg-transparent px-4 text-sm font-bold leading-none focus:outline-none disabled:opacity-60"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((s) => !s)}
+                        className="flex shrink-0 items-center px-4 text-muted-foreground"
+                        aria-label="Toggle password"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <OtpResendTimer
+                    seconds={resendSeconds}
+                    busy={busy}
+                    idleLabel={t("auth.loginWithOtp")}
+                    onResend={requestOtpCode}
+                  />
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setStep("phone")}
+                    className="w-full text-center text-xs font-bold text-muted-foreground underline disabled:opacity-60"
+                  >
+                    {t("auth.changePhone")}
+                  </button>
+                </div>
+              ) : null}
+
+              {step === "code" ? (
+                <div>
+                  {appDeliveryCode ? (
+                    <div className="mb-6 rounded-2xl border-2 border-dashed border-foreground/30 bg-surface px-4 py-4 text-center">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                        {t("auth.debugCode")}
+                      </p>
+                      <p className="mt-2 font-mono text-3xl font-bold tracking-[0.35em]">{appDeliveryCode}</p>
+                    </div>
+                  ) : null}
+                  <div className="flex justify-center gap-3">
+                    {code.map((c, i) => (
+                      <input
+                        key={i}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={c}
+                        disabled={busy}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/\D/g, "").slice(0, 1);
+                          const next = [...code];
+                          next[i] = v;
+                          setCode(next);
+                          if (v && i < 3) document.getElementById(`otp-${i + 1}`)?.focus();
+                        }}
+                        id={`otp-${i}`}
+                        className="h-16 w-14 rounded-2xl border-2 border-border bg-background text-center text-2xl font-bold focus:border-foreground focus:outline-none disabled:opacity-60"
+                      />
+                    ))}
+                  </div>
+                  <div className="mt-6">
+                    <OtpResendTimer
+                      seconds={resendSeconds}
+                      busy={busy}
+                      idleLabel={t("auth.resendCode")}
+                      onResend={requestOtpCode}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      setStep("phone");
+                      setCode(["", "", "", ""]);
+                      setAppDeliveryCode(null);
+                    }}
+                    className="mt-3 w-full text-center text-xs font-bold text-muted-foreground underline disabled:opacity-60"
+                  >
+                    {t("auth.changePhone")}
+                  </button>
+                </div>
+              ) : null}
+
+              {step === "set-password" ? (
+                <div className="space-y-4">
+                  <div>
+                    <label
+                      htmlFor="auth-new-password"
+                      className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground"
+                    >
+                      {t("auth.newPassword")}
+                    </label>
+                    <div className="mt-2 flex h-14 items-stretch overflow-hidden rounded-2xl border-2 border-border bg-background focus-within:border-foreground">
+                      <input
+                        id="auth-new-password"
+                        type={showNewPassword ? "text" : "password"}
+                        value={newPassword}
+                        disabled={busy}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder={t("auth.passwordMin")}
+                        className="min-w-0 flex-1 border-0 bg-transparent px-4 text-sm font-bold leading-none focus:outline-none disabled:opacity-60"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword((s) => !s)}
+                        className="flex shrink-0 items-center px-4 text-muted-foreground"
+                      >
+                        {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <p className="mt-2 text-[11px] text-muted-foreground">{t("auth.passwordHint")}</p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={skipPasswordSetup}
+                    className="w-full text-center text-sm font-bold text-muted-foreground underline disabled:opacity-60"
+                  >
+                    {t("auth.skipPassword")}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="mt-8">
+              {step !== "set-password" ? (
                 <button
                   type="button"
-                  onClick={() => setShowPassword((s) => !s)}
-                  className="px-4 text-muted-foreground"
-                  aria-label="Toggle password"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-            <OtpResendTimer
-              seconds={resendSeconds}
-              busy={busy}
-              idleLabel={t("auth.loginWithOtp")}
-              onResend={requestOtpCode}
-            />
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setStep("phone")}
-              className="w-full text-center text-xs font-bold text-muted-foreground underline disabled:opacity-60"
-            >
-              {t("auth.changePhone")}
-            </button>
-          </div>
-        ) : null}
-
-        {step === "code" ? (
-          <div className="auth-form-in mt-8" style={{ animationDelay: "220ms" }}>
-            {appDeliveryCode ? (
-              <div className="mb-6 rounded-2xl border-2 border-dashed border-foreground/30 bg-surface px-4 py-4 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                  {t("auth.debugCode")}
-                </p>
-                <p className="mt-2 font-mono text-3xl font-bold tracking-[0.35em]">{appDeliveryCode}</p>
-              </div>
-            ) : null}
-            <div className="flex justify-center gap-3">
-              {code.map((c, i) => (
-                <input
-                  key={i}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={c}
                   disabled={busy}
-                  onChange={(e) => {
-                    const v = e.target.value.replace(/\D/g, "").slice(0, 1);
-                    const next = [...code];
-                    next[i] = v;
-                    setCode(next);
-                    if (v && i < 3) document.getElementById(`otp-${i + 1}`)?.focus();
-                  }}
-                  id={`otp-${i}`}
-                  className="h-16 w-14 rounded-2xl border-2 border-border bg-background text-center text-2xl font-bold focus:border-foreground focus:outline-none disabled:opacity-60"
-                />
-              ))}
-            </div>
-            <div className="mt-6">
-              <OtpResendTimer
-                seconds={resendSeconds}
-                busy={busy}
-                idleLabel={t("auth.resendCode")}
-                onResend={requestOtpCode}
-              />
-            </div>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                setStep("phone");
-                setCode(["", "", "", ""]);
-                setAppDeliveryCode(null);
-              }}
-              className="mt-3 w-full text-center text-xs font-bold text-muted-foreground underline disabled:opacity-60"
-            >
-              {t("auth.changePhone")}
-            </button>
-          </div>
-        ) : null}
-
-        {step === "set-password" ? (
-          <div className="auth-form-in mt-8 space-y-4" style={{ animationDelay: "220ms" }}>
-            <div>
-              <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                {t("auth.newPassword")}
-              </label>
-              <div className="mt-2 flex items-center overflow-hidden rounded-2xl border-2 border-border bg-background focus-within:border-foreground">
-                <input
-                  type={showNewPassword ? "text" : "password"}
-                  value={newPassword}
-                  disabled={busy}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder={t("auth.passwordMin")}
-                  className="flex-1 border-0 bg-transparent px-4 py-4 text-sm font-bold focus:outline-none disabled:opacity-60"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowNewPassword((s) => !s)}
-                  className="px-4 text-muted-foreground"
+                  onClick={primaryAction}
+                  className={cn(
+                    "auth-cta w-full rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background disabled:opacity-60",
+                  )}
                 >
-                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {busy ? t("auth.loading") : primaryLabel}
                 </button>
-              </div>
-              <p className="mt-2 text-[11px] text-muted-foreground">{t("auth.passwordHint")}</p>
+              ) : (
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={primaryAction}
+                    className="auth-cta w-full rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background disabled:opacity-60"
+                  >
+                    {busy ? t("auth.loading") : primaryLabel}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={skipPasswordSetup}
+                    className="auth-cta w-full rounded-2xl border-2 border-border py-4 text-sm font-bold text-muted-foreground transition-colors hover:bg-muted/40 disabled:opacity-60"
+                  >
+                    {t("auth.skipPassword")}
+                  </button>
+                </div>
+              )}
             </div>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={skipPasswordSetup}
-              className="w-full text-center text-sm font-bold text-muted-foreground underline disabled:opacity-60"
-            >
-              {t("auth.skipPassword")}
-            </button>
-          </div>
-        ) : null}
 
-      {step !== "set-password" ? (
-        <button
-          type="button"
-          disabled={busy}
-          onClick={primaryAction}
-          className={cn(
-            "auth-form-in auth-cta w-full rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background disabled:opacity-60",
-          )}
-          style={{ animationDelay: "280ms" }}
-        >
-          {busy ? t("auth.loading") : primaryLabel}
-        </button>
-      ) : (
-        <div className="auth-form-in space-y-3" style={{ animationDelay: "280ms" }}>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={primaryAction}
-            className="auth-cta w-full rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background disabled:opacity-60"
-          >
-            {busy ? t("auth.loading") : primaryLabel}
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={skipPasswordSetup}
-            className="auth-cta w-full rounded-2xl border-2 border-border py-4 text-sm font-bold text-muted-foreground transition-colors hover:bg-muted/40 disabled:opacity-60"
-          >
-            {t("auth.skipPassword")}
-          </button>
+            <p className="mt-4 text-center text-[11px] text-muted-foreground">
+              {t("auth.privacyPrefix")}{" "}
+              <a href="/privacy" className="font-bold underline transition-opacity hover:opacity-80">
+                {t("auth.privacyLink")}
+              </a>
+            </p>
+          </div>
         </div>
-      )}
-
-      <p
-        className="auth-form-in mt-4 text-center text-[11px] text-muted-foreground"
-        style={{ animationDelay: "340ms" }}
-      >
-        {t("auth.privacyPrefix")}{" "}
-        <a href="/privacy" className="font-bold underline transition-opacity hover:opacity-80">
-          {t("auth.privacyLink")}
-        </a>
-      </p>
-      </div>
       </div>
     </div>
   );
