@@ -48,6 +48,8 @@ class BarberJWTAuthentication(BaseAuthentication):
                 settings.JWT_HS256_SIGNING_KEY,
                 algorithms=["HS256"],
             )
+        except jwt.ExpiredSignatureError as exc:
+            raise AuthenticationFailed("Token expired.") from exc
         except jwt.PyJWTError:
             return None
         if payload.get("type") != "barber_access":

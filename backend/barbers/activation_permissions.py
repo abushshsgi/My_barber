@@ -49,6 +49,19 @@ def barber_activation_rel_allowed(http_path: str) -> bool:
     return False
 
 
+def barber_request_rel_path(request) -> str:
+    """DRF request.path yoki PATH_INFO — proxy ortida ham ishlashi uchun."""
+    for candidate in (
+        getattr(request, "path", ""),
+        getattr(request, "path_info", ""),
+        request.META.get("PATH_INFO", ""),
+        request.META.get("RAW_URI", "").split("?")[0],
+    ):
+        if candidate:
+            return _strip_api_prefix(str(candidate))
+    return ""
+
+
 class IsAuthenticatedBarberAware(IsAuthenticated):
     """
     Oddiy User — o‘zgarishsiz.
@@ -63,4 +76,9 @@ class IsAuthenticatedBarberAware(IsAuthenticated):
             return True
         if compute_barber_readiness(u.barber).fully_ready:
             return True
-        return barber_activation_rel_allowed(request.path)
+        from barbers.activation_permissions import barber_activation_rel_allowed, barber_request_rel_path
+
+        rel = barber_request_rel_path(request)
+        if barber_activation_rel_allowed(rel):
+            return True
+        return barber_activation_rel_allowed(getattr(request, "path", ""))

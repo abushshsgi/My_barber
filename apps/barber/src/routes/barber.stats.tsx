@@ -9,9 +9,12 @@ import {
 } from "@/hooks/use-barber-queries";
 import { resolveBarberAnalyticsParams } from "@/lib/analytics-scope";
 import { isDateInStatsRange, statsRangeToIsoParams, type StatsRangeKey } from "@/lib/finance-range";
+import { readOnboardingStatusCache } from "@/lib/onboarding-status-cache";
 
 export const Route = createFileRoute("/barber/stats")({
   loader: ({ context: { queryClient } }) => {
+    const cached = readOnboardingStatusCache();
+    if (cached?.fully_ready !== true) return;
     const dates = statsRangeToIsoParams("30d");
     void prefetchBarberAnalytics(queryClient, dates);
   },
@@ -24,15 +27,18 @@ function pickMetric(apiVal: number | null | undefined, localVal: number): number
 }
 
 function StatsPage() {
-  const { bookings, clients, reviews } = useBarberContext();
+  const { bookings, clients, reviews, fullyReady } = useBarberContext();
   const [range, setRange] = useState<StatsRangeKey>("30d");
   const dates = useMemo(() => statsRangeToIsoParams(range), [range]);
   const analyticsScope = useMemo(() => resolveBarberAnalyticsParams(), []);
-  const { data: analytics } = useBarberAnalyticsQuery({
-    start: dates.start,
-    end: dates.end,
-    barberMe: analyticsScope.barberMe,
-  });
+  const { data: analytics } = useBarberAnalyticsQuery(
+    {
+      start: dates.start,
+      end: dates.end,
+      barberMe: analyticsScope.barberMe,
+    },
+    fullyReady,
+  );
 
   const bookingsInRange = useMemo(
     () => bookings.filter((b) => b.start_at && isDateInStatsRange(b.start_at, range)),

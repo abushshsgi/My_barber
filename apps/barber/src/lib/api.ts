@@ -171,7 +171,7 @@ export async function apiFetch(
     );
 
   let res = await exec();
-  if (res.status === 401 && retry && token) {
+  if ((res.status === 401 || res.status === 403) && retry && token) {
     const newAccess = await refreshBarberAccess();
     if (newAccess) {
       headers.set("Authorization", `Bearer ${newAccess}`);

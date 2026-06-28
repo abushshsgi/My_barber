@@ -44,7 +44,7 @@ export const Route = createFileRoute("/barber")({
     try {
       const res = await apiFetch("/api/v1/barber/onboarding/status/");
       if (!res.ok) {
-        if (res.status === 401) {
+        if (res.status === 401 || res.status === 403) {
           clearBarberTokens();
           throw redirect({ to: "/auth" });
         }

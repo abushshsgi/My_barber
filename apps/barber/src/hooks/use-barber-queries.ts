@@ -300,7 +300,7 @@ export function prefetchBarberFinance(
     queryFn: () =>
       apiJson(`/api/v1/barber/finance/summary/?${qs}`),
     staleTime: 20_000,
-  });
+  }).catch(() => undefined);
 }
 
 export function prefetchPayoutBalance(qc: import("@tanstack/react-query").QueryClient) {
@@ -308,7 +308,7 @@ export function prefetchPayoutBalance(qc: import("@tanstack/react-query").QueryC
     queryKey: barberQueryKeys.payoutBalance(),
     queryFn: () => apiJson("/api/v1/barber/payouts/balance/"),
     staleTime: 15_000,
-  });
+  }).catch(() => undefined);
 }
 
 export function prefetchBarberAnalytics(
@@ -320,7 +320,7 @@ export function prefetchBarberAnalytics(
     queryKey: barberQueryKeys.analytics(qs.toString()),
     queryFn: () => apiJson(`/api/v1/analytics/?${qs}`),
     staleTime: 20_000,
-  });
+  }).catch(() => undefined);
 }
 
 export function useInvalidateBarberQueries() {

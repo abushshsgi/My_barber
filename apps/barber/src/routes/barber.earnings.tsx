@@ -33,9 +33,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { readOnboardingStatusCache } from "@/lib/onboarding-status-cache";
 
 export const Route = createFileRoute("/barber/earnings")({
   loader: ({ context: { queryClient } }) => {
+    const cached = readOnboardingStatusCache();
+    if (cached?.fully_ready !== true) return;
     const rangeParams = rangeToIsoParams("Bugun");
     void prefetchBarberFinance(queryClient, rangeParams);
     void prefetchPayoutBalance(queryClient);
@@ -44,7 +47,7 @@ export const Route = createFileRoute("/barber/earnings")({
 });
 
 function EarningsPage() {
-  const { bookings } = useBarberContext();
+  const { bookings, fullyReady } = useBarberContext();
   const [range, setRange] = useState<EarningsRange>("Bugun");
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
@@ -55,8 +58,8 @@ function EarningsPage() {
   const chartParams = useMemo(() => last7DaysIsoParams(), []);
   const chartUsesRange = range === "Hafta";
 
-  const { data: finance, isError: financeError } = useBarberFinanceQuery(rangeParams);
-  const { data: chartFinanceExtra } = useBarberFinanceQuery(chartParams, !chartUsesRange);
+  const { data: finance, isError: financeError } = useBarberFinanceQuery(rangeParams, fullyReady);
+  const { data: chartFinanceExtra } = useBarberFinanceQuery(chartParams, fullyReady && !chartUsesRange);
   const chartFinance = chartUsesRange ? finance : chartFinanceExtra;
 
   const localCompleted = useMemo(
@@ -88,8 +91,8 @@ function EarningsPage() {
   const net = useLocalFallback ? localOnline - rangeExpenses : Number(finance?.net_total ?? 0);
   const transactions = finance?.transactions ?? [];
 
-  const { data: balance } = usePayoutBalanceQuery();
-  const { data: payouts = [] } = useBarberPayoutsQuery();
+  const { data: balance } = usePayoutBalanceQuery(fullyReady);
+  const { data: payouts = [] } = useBarberPayoutsQuery(fullyReady);
   const { invalidatePayouts, invalidateFinance } = useInvalidateBarberQueries();
   const balanceVal = balance ? Number(balance.available_balance) : 0;
 
