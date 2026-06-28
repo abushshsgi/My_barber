@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { MapDiscoveryTabs, type MapDiscoveryTab } from "@/components/map/MapDiscoveryTabs";
 import { MapBarberList } from "@/components/map/MapBarberList";
 import { MapDesktopMapFrame } from "@/components/map/MapDesktopMapFrame";
+import { MapDesktopMapControls } from "@/components/map/MapDesktopMapControls";
 import { MapDesktopPanel } from "@/components/map/MapDesktopPanel";
 import { MapErrorBoundary } from "@/components/map/MapErrorBoundary";
 import { MapSalonSheet } from "@/components/map/MapSalonSheet";
