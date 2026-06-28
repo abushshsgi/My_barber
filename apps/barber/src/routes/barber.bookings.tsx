@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useMatch } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   CalendarClock,
@@ -15,8 +15,17 @@ import { paymentBadgeClass, paymentLabel } from "@/lib/payment-label";
 import { useBarberBookingsQuery } from "@/hooks/use-barber-queries";
 
 export const Route = createFileRoute("/barber/bookings")({
-  component: BookingsPage,
+  component: BookingsRoute,
 });
+
+function BookingsRoute() {
+  const detail = useMatch({
+    from: "/barber/bookings/$bookingId",
+    shouldThrow: false,
+  });
+  if (detail) return <Outlet />;
+  return <BookingsPage />;
+}
 
 const TABS = [
   { id: "all", label: "Hammasi" },

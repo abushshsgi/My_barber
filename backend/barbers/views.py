@@ -718,6 +718,15 @@ class MyBarberReviewsView(APIView):
             .select_related("author")
             .order_by("-created_at")
         )
+        booking_ids = [r.booking_id for r in rows if r.booking_id]
+        service_by_booking: dict[int, str] = {}
+        if booking_ids:
+            for line in (
+                BookingLine.objects.filter(booking_id__in=booking_ids)
+                .order_by("booking_id", "id")
+                .values("booking_id", "service_name")
+            ):
+                service_by_booking.setdefault(line["booking_id"], line["service_name"])
         out = []
         for r in rows:
             out.append(
@@ -728,7 +737,7 @@ class MyBarberReviewsView(APIView):
                     "rating": r.rating,
                     "text": r.text,
                     "date": r.created_at.isoformat(),
-                    "service": (r.booking.lines.first().service_name if r.booking.lines.exists() else "Xizmat"),
+                    "service": service_by_booking.get(r.booking_id, "Xizmat") if r.booking_id else "Xizmat",
                     "barber_reply": r.barber_reply,
                     "barber_replied_at": r.barber_replied_at.isoformat() if r.barber_replied_at else None,
                 }
