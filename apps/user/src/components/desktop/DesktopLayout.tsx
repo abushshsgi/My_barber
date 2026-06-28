@@ -1,7 +1,12 @@
 import { useRouterState } from "@tanstack/react-router";
 import { DesktopShell } from "@/components/desktop/shell/DesktopShell";
 import { SiteFooter } from "@/components/SiteFooter";
-import { DESKTOP_BAZAAR_INSET, DESKTOP_SHELL_INSET, usesDesktopBazaarInset } from "@/lib/desktop-bazaar-layout";
+import {
+  DESKTOP_BAZAAR_INSET,
+  DESKTOP_HOME_INSET,
+  DESKTOP_SHELL_INSET,
+  usesDesktopBazaarInset,
+} from "@/lib/desktop-bazaar-layout";
 import { showsSiteFooter } from "@/lib/layout-routes";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +22,7 @@ export function DesktopLayout({ children, chatUnread = 0, notificationsUnread = 
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isMap = pathname === "/map";
   const bazaarInset = usesDesktopBazaarInset(pathname);
+  const isHome = pathname === "/";
   const isAiStyle = pathname === "/ai-style";
   const isFullBleed =
     isAiStyle ||
@@ -45,7 +51,11 @@ export function DesktopLayout({ children, chatUnread = 0, notificationsUnread = 
         ) : (
           <>
             {children}
-            {showFooter ? <SiteFooter insetClassName={bazaarInset ? DESKTOP_BAZAAR_INSET : undefined} /> : null}
+            {showFooter ? (
+              <SiteFooter
+                insetClassName={bazaarInset ? (isHome ? DESKTOP_HOME_INSET : DESKTOP_BAZAAR_INSET) : undefined}
+              />
+            ) : null}
           </>
         )}
       </DesktopShell>
