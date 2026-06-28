@@ -1229,6 +1229,12 @@
     "loading": "Please wait…",
     "debugCode": "Temporary code (SMS not connected)",
     "privacyPrefix": "By continuing you agree to our",
-    "privacyLink": "privacy policy"
+    "privacyLink": "privacy policy",
+    "marketing": {
+      "badge": "Salon & barber booking platform",
+      "featureMap": "Find nearby salons on the map",
+      "featureBook": "Book online in just a few seconds",
+      "featureAi": "Pick your look with AI style advice"
+    }
   }
 }

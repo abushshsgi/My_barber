@@ -1271,6 +1271,12 @@
     "loading": "Kutilmoqda…",
     "debugCode": "Vaqtinchalik kod (SMS ulanmagan)",
     "privacyPrefix": "Davom etish orqali siz",
-    "privacyLink": "maxfiylik siyosati"
+    "privacyLink": "maxfiylik siyosati",
+    "marketing": {
+      "badge": "Salon va sartarosh bron platformasi",
+      "featureMap": "Yaqin salonlarni xaritada toping",
+      "featureBook": "Bir necha soniyada onlayn bron qiling",
+      "featureAi": "AI yordamida o'zingizga mos uslub tanlang"
+    }
   }
 }

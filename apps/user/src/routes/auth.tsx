@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { OtpResendTimer } from "@/components/auth/OtpResendTimer";
+import { AuthMarketingPanel } from "@/components/auth/AuthMarketingPanel";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -258,26 +259,7 @@ function Auth() {
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-background lg:grid lg:grid-cols-2">
-      <div className="hidden flex-col justify-between bg-surface p-10 lg:flex">
-        <div className="flex items-baseline gap-1">
-          <span className="text-3xl font-bold tracking-tight">mysaloon</span>
-          <span className="text-lg font-bold text-muted-foreground">.uz</span>
-        </div>
-        <div className="max-w-md">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-            mysaloon.uz
-          </p>
-          <h2 className="mt-4 text-4xl font-bold leading-[1.08] tracking-tight text-foreground xl:text-5xl">
-            {t("home.title")}
-          </h2>
-          <p className="mt-4 text-lg font-medium leading-relaxed text-muted-foreground">
-            {t("homePage.editorialTagline")}
-          </p>
-        </div>
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-          {t("footer.tagline")}
-        </p>
-      </div>
+      <AuthMarketingPanel />
 
       <div className="flex flex-col px-6 py-10 lg:justify-center lg:px-12">
       <div className="flex items-baseline gap-1 lg:hidden">
