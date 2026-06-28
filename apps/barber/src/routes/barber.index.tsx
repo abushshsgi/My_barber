@@ -22,9 +22,9 @@ import {
   bookingEarningsAt,
   filterCompletedBookingsByRange,
   isBookingScheduledToday,
-  isSameBarberDay,
   rangeToIsoParams,
 } from "@/lib/finance-range";
+import { isSameBarberDay } from "@/lib/barber-timezone";
 import { cn } from "@/lib/utils";
 import {
   prefetchBarberBookings,
