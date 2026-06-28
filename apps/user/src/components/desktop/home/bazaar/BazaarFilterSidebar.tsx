@@ -26,7 +26,7 @@ export function BazaarFilterSidebar({
   return (
     <div
       className={cn(
-        "flex h-full flex-col rounded-2xl border border-[#d5dde8] bg-[#e9eef6] p-4 shadow-sm",
+        "flex h-full flex-col rounded-2xl bg-audience-all p-4 shadow-sm",
         className,
       )}
     >
@@ -51,7 +51,7 @@ export function BazaarFilterSidebar({
               "flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors",
               effectiveCat === key
                 ? "bg-foreground text-background shadow-sm"
-                : "text-foreground hover:bg-white/60",
+                : "text-foreground",
             )}
           >
             {t(`home.categories.${key}`)}
@@ -61,7 +61,7 @@ export function BazaarFilterSidebar({
       <Link
         to="/map"
         search={mapSearch}
-        className="mt-4 flex w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-[#cfd8e6] bg-white/70 px-3 py-2.5 text-sm font-bold transition-colors hover:border-foreground/30 hover:bg-white"
+        className="mt-4 flex w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-[#cfd8e6] bg-background px-3 py-2.5 text-sm font-bold transition-colors hover:border-foreground/30"
       >
         {t("nav.more")}
         <ArrowRight className="h-4 w-4" />

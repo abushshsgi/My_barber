@@ -29,7 +29,7 @@ export function HomeBazaarClassic({ data }: Props) {
           <BazaarMapPanel salons={mapSalons} nearbyCount={filtered.length} className="h-full w-full" />
         </div>
         <div className="lg:col-span-3 lg:row-start-2">
-          <BazaarFilterSidebar {...data} className="h-[400px] w-[300px]" />
+          <BazaarFilterSidebar {...data} className="h-[450px] w-[300px]" />
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:col-span-9 lg:row-start-2">
           {data.searchActive ? (
