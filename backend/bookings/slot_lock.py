@@ -6,9 +6,10 @@ REDIS_URL bo‘lmasa — DB tekshiruvi (serializer) yetarli.
 from __future__ import annotations
 
 import logging
-import os
 from contextlib import contextmanager
 from datetime import datetime
+
+from config.redis_url import get_redis_url
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ def _key(barber_id: int, start_at: datetime, end_at: datetime) -> str:
 
 @contextmanager
 def booking_slot_lock(barber_id: int, start_at: datetime, end_at: datetime, ttl_sec: int = 45):
-    url = os.environ.get("REDIS_URL", "").strip()
+    url = get_redis_url()
     if not url:
         yield True
         return

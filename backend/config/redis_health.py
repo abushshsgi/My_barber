@@ -6,9 +6,11 @@ import os
 
 from django.conf import settings
 
+from config.redis_url import get_redis_url
+
 
 def redis_health_payload() -> dict:
-    url = (os.environ.get("REDIS_URL") or "").strip()
+    url = get_redis_url()
     channel_backend = (
         settings.CHANNEL_LAYERS.get("default", {}).get("BACKEND", "") or ""
     ).lower()
@@ -45,6 +47,9 @@ def redis_health_payload() -> dict:
         "cache": cache,
         "realtime_ready": ping and channel_layer == "redis",
     }
+    raw = (os.environ.get("REDIS_URL") or "").strip()
+    if raw and not raw.startswith(("redis://", "rediss://", "unix://")):
+        out["url_normalized"] = True
     if error and not ping:
         out["error"] = error
     return out

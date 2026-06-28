@@ -133,12 +133,15 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 # WebSocket guruhlari: productionda Railway Redis plugin → REDIS_URL
-if os.environ.get("REDIS_URL"):
+from config.redis_url import get_redis_url
+
+_REDIS_URL = get_redis_url()
+if _REDIS_URL:
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
             "CONFIG": {
-                "hosts": [os.environ["REDIS_URL"]],
+                "hosts": [_REDIS_URL],
             },
         },
     }
@@ -150,11 +153,11 @@ else:
     }
 
 # OTP throttles and phone_auth cache — productionda REDIS_URL bilan bir xil Redis ishlatiladi.
-if os.environ.get("REDIS_URL"):
+if _REDIS_URL:
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": os.environ["REDIS_URL"],
+            "LOCATION": _REDIS_URL,
         }
     }
 else:
