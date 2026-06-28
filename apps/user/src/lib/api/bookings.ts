@@ -15,6 +15,10 @@ export async function fetchBookings(status?: string): Promise<ApiBooking[]> {
   return apiList<ApiBooking>(`/api/v1/bookings/${qs({ status })}`);
 }
 
+export async function fetchBooking(id: string | number): Promise<ApiBooking> {
+  return apiJson<ApiBooking>(`/api/v1/bookings/${id}/`);
+}
+
 export type CreateBookingPayload = {
   salon?: number | null;
   barber: number;
@@ -34,6 +38,20 @@ export async function createBooking(data: CreateBookingPayload): Promise<ApiBook
 
 export async function cancelBooking(id: number | string): Promise<ApiBooking> {
   return apiJson<ApiBooking>(`/api/v1/bookings/${id}/cancel/`, { method: "POST" });
+}
+
+export async function setPortfolioConsent(
+  id: number | string,
+  consent: boolean,
+): Promise<ApiBooking> {
+  return apiJson<ApiBooking>(`/api/v1/bookings/${id}/portfolio_consent/`, {
+    method: "POST",
+    body: JSON.stringify({ consent }),
+  });
+}
+
+export async function checkInBooking(id: number | string): Promise<ApiBooking> {
+  return apiJson<ApiBooking>(`/api/v1/bookings/${id}/check_in/`, { method: "POST" });
 }
 
 export async function fetchBookingAvailability(params: {

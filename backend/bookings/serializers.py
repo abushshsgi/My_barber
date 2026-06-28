@@ -38,6 +38,13 @@ class BookingSerializer(serializers.ModelSerializer):
     review_id = serializers.SerializerMethodField()
     family_member = serializers.SerializerMethodField()
     booked_for_name = serializers.SerializerMethodField()
+    salon_address = serializers.SerializerMethodField()
+    salon_latitude = serializers.SerializerMethodField()
+    salon_longitude = serializers.SerializerMethodField()
+    result_image_url = serializers.SerializerMethodField()
+    portfolio_allowed = serializers.SerializerMethodField()
+    status_history = serializers.SerializerMethodField()
+    check_in_code = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
@@ -51,17 +58,26 @@ class BookingSerializer(serializers.ModelSerializer):
             "booked_for_name",
             "salon",
             "salon_name",
+            "salon_address",
+            "salon_latitude",
+            "salon_longitude",
             "barber",
             "barber_name",
             "start_at",
             "end_at",
             "started_at",
+            "checked_in_at",
             "completed_at",
             "status",
             "total_price",
             "payment_method",
             "payment_status",
             "paid_at",
+            "portfolio_consent",
+            "portfolio_allowed",
+            "result_image_url",
+            "check_in_code",
+            "status_history",
             "lines",
             "has_review",
             "review_id",
@@ -73,10 +89,12 @@ class BookingSerializer(serializers.ModelSerializer):
             "customer_phone",
             "end_at",
             "started_at",
+            "checked_in_at",
             "total_price",
             "payment_method",
             "payment_status",
             "paid_at",
+            "portfolio_consent",
             "created_at",
         )
 
@@ -115,6 +133,123 @@ class BookingSerializer(serializers.ModelSerializer):
         if bookings_has_family_member_column() and obj.family_member_id and obj.family_member:
             return obj.family_member.name
         return (obj.customer.full_name or "").strip() or obj.customer.get_username()
+
+    def _location_from_salon_or_barber(self, obj):
+        if obj.salon_id and obj.salon:
+            return {
+                "address": (obj.salon.address or "").strip(),
+                "latitude": float(obj.salon.latitude) if obj.salon.latitude is not None else None,
+                "longitude": float(obj.salon.longitude) if obj.salon.longitude is not None else None,
+            }
+        prof = getattr(obj.barber, "profile", None)
+        if prof:
+            return {
+                "address": (getattr(prof, "location_text", None) or "").strip(),
+                "latitude": float(prof.latitude) if getattr(prof, "latitude", None) is not None else None,
+                "longitude": float(prof.longitude) if getattr(prof, "longitude", None) is not None else None,
+            }
+        return {"address": "", "latitude": None, "longitude": None}
+
+    def get_salon_address(self, obj):
+        return self._location_from_salon_or_barber(obj)["address"]
+
+    def get_salon_latitude(self, obj):
+        return self._location_from_salon_or_barber(obj)["latitude"]
+
+    def get_salon_longitude(self, obj):
+        return self._location_from_salon_or_barber(obj)["longitude"]
+
+    def get_result_image_url(self, obj):
+        completion = getattr(obj, "completion", None)
+        if not completion or not completion.result_image:
+            return None
+        request = self.context.get("request")
+        url = completion.result_image.url
+        if request:
+            return request.build_absolute_uri(url)
+        return url
+
+    def get_portfolio_allowed(self, obj):
+        completion = getattr(obj, "completion", None)
+        return bool(completion and completion.portfolio_allowed)
+
+    def get_check_in_code(self, obj):
+        return f"MB-{obj.pk}"
+
+    def get_status_history(self, obj):
+        history = []
+        if obj.created_at:
+            history.append(
+                {
+                    "key": "created",
+                    "label": "So'rov yuborildi",
+                    "at": obj.created_at.isoformat(),
+                }
+            )
+        if obj.checked_in_at:
+            history.append(
+                {
+                    "key": "checked_in",
+                    "label": "Mijoz keldi",
+                    "at": obj.checked_in_at.isoformat(),
+                }
+            )
+        if obj.status in (
+            Booking.Status.ACCEPTED,
+            Booking.Status.IN_PROGRESS,
+            Booking.Status.COMPLETED,
+        ):
+            ts = obj.updated_at or obj.created_at
+            if ts:
+                history.append(
+                    {
+                        "key": "accepted",
+                        "label": "Tasdiqlandi",
+                        "at": ts.isoformat(),
+                    }
+                )
+        if obj.started_at:
+            history.append(
+                {
+                    "key": "started",
+                    "label": "Xizmat boshlandi",
+                    "at": obj.started_at.isoformat(),
+                }
+            )
+        completion = getattr(obj, "completion", None)
+        if completion and completion.completed_at:
+            history.append(
+                {
+                    "key": "completed",
+                    "label": "Yakunlandi",
+                    "at": completion.completed_at.isoformat(),
+                }
+            )
+        elif obj.status == Booking.Status.COMPLETED and obj.updated_at:
+            history.append(
+                {
+                    "key": "completed",
+                    "label": "Yakunlandi",
+                    "at": obj.updated_at.isoformat(),
+                }
+            )
+        if obj.status == Booking.Status.CANCELLED:
+            history.append(
+                {
+                    "key": "cancelled",
+                    "label": "Bekor qilindi",
+                    "at": obj.updated_at.isoformat() if obj.updated_at else None,
+                }
+            )
+        if obj.status == Booking.Status.REJECTED:
+            history.append(
+                {
+                    "key": "rejected",
+                    "label": "Rad etildi",
+                    "at": obj.updated_at.isoformat() if obj.updated_at else None,
+                }
+            )
+        return [h for h in history if h.get("at")]
 
 
 class BookingCreateSerializer(serializers.Serializer):

@@ -89,11 +89,18 @@ export type ActivationSteps = {
 
 export const MIN_ACTIVE_SERVICES = 5;
 
+export type BookingLine = {
+  service_name: string;
+  duration_minutes: number;
+  price: number;
+};
+
 export type Booking = {
   id: string;
   customer_id?: string;
   client: string;
   client_avatar: string;
+  client_phone?: string;
   service: string;
   date: string; // "Today" | "Tomorrow" | "DD MMM"
   time: string;
@@ -102,9 +109,24 @@ export type Booking = {
   status: "pending" | "accepted" | "in_progress" | "completed" | "cancelled" | "rejected";
   /** ISO8601 — diagrammalar va filtrlash uchun */
   start_at?: string;
+  end_at?: string;
+  started_at?: string | null;
   completed_at?: string;
+  salon_name?: string | null;
+  lines?: BookingLine[];
   payment_method?: "cash" | "online";
   payment_status?: string;
+  paid_at?: string | null;
+  portfolio_consent?: boolean | null;
+  portfolio_allowed?: boolean;
+  result_image_url?: string | null;
+  check_in_code?: string;
+  booked_for_name?: string | null;
+  salon_address?: string | null;
+  salon_latitude?: number | null;
+  salon_longitude?: number | null;
+  checked_in_at?: string | null;
+  status_history?: Array<{ key: string; label: string; at: string }>;
 };
 
 export type Client = {

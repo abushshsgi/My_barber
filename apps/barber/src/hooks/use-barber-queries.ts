@@ -5,6 +5,7 @@ import {
   statusAfterAction,
   type ApiBookingRow,
   type BookingAction,
+  type CompleteBookingOptions,
 } from "@/lib/map-booking";
 import type { Booking } from "@/components/barber/BarberContext";
 import {
@@ -51,6 +52,11 @@ export async function fetchBarberBookings(): Promise<Booking[]> {
   return mapped;
 }
 
+export async function fetchBarberBooking(id: string): Promise<Booking> {
+  const row = await apiJson<ApiBookingRow>(`/api/v1/bookings/${id}/`);
+  return mapApiBooking(row);
+}
+
 export function useBarberBookingsQuery(enabled = true) {
   return useQuery({
     queryKey: barberQueryKeys.bookings(),
@@ -63,10 +69,33 @@ export function useBarberBookingsQuery(enabled = true) {
   });
 }
 
+export function useBarberBookingQuery(id: string, enabled = true) {
+  return useQuery({
+    queryKey: [...barberQueryKeys.bookings(), id] as const,
+    queryFn: () => fetchBarberBooking(id),
+    enabled: enabled && Boolean(id),
+    staleTime: 5_000,
+    refetchInterval: (q) => {
+      const status = q.state.data?.status;
+      if (status === "in_progress") return 2_000;
+      if (status === "pending" || status === "accepted") return 8_000;
+      return false;
+    },
+  });
+}
+
 export function useBookingActionMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, action }: { id: string; action: BookingAction }) => {
+    mutationFn: async ({
+      id,
+      action,
+      completeOptions,
+    }: {
+      id: string;
+      action: BookingAction;
+      completeOptions?: CompleteBookingOptions;
+    }) => {
       if (action === "complete") {
         const rows = qc.getQueryData<Booking[]>(barberQueryKeys.bookings());
         const current = rows?.find((b) => b.id === id);
@@ -82,7 +111,18 @@ export function useBookingActionMutation() {
           }
         }
       }
-      const res = await apiFetch(`/api/v1/bookings/${id}/${action}/`, { method: "POST" });
+
+      let res: Response;
+      if (action === "complete" && completeOptions) {
+        const fd = new FormData();
+        if (completeOptions.early_finish) fd.append("early_finish", "true");
+        if (completeOptions.portfolio_allowed) fd.append("portfolio_allowed", "true");
+        if (completeOptions.result_image) fd.append("result_image", completeOptions.result_image);
+        res = await apiFetch(`/api/v1/bookings/${id}/complete/`, { method: "POST", body: fd });
+      } else {
+        res = await apiFetch(`/api/v1/bookings/${id}/${action}/`, { method: "POST" });
+      }
+
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         const detail =
@@ -108,8 +148,11 @@ export function useBookingActionMutation() {
         qc.setQueryData(barberQueryKeys.bookings(), ctx.prev);
       }
     },
-    onSettled: () => {
+    onSettled: (_data, _err, vars) => {
       void qc.invalidateQueries({ queryKey: barberQueryKeys.bookings() });
+      if (vars?.id) {
+        void qc.invalidateQueries({ queryKey: [...barberQueryKeys.bookings(), vars.id] });
+      }
       void qc.invalidateQueries({ queryKey: barberQueryKeys.finance() });
       void qc.invalidateQueries({ queryKey: barberQueryKeys.payoutBalance() });
       void qc.invalidateQueries({ queryKey: [...barberQueryKeys.all, "analytics"] });

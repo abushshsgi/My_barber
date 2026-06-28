@@ -30,7 +30,10 @@ function NotificationsPage() {
     }
     const bookingId = payload.booking_id;
     if (typeof bookingId === "number" || typeof bookingId === "string") {
-      void navigate({ to: "/barber/bookings" });
+      void navigate({
+        to: "/barber/bookings/$bookingId",
+        params: { bookingId: String(bookingId) },
+      });
       return;
     }
     if (n.kind === "review") void navigate({ to: "/barber/reviews" });

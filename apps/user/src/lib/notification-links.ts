@@ -14,7 +14,7 @@ export function getNotificationLinkProps(n: Notification): {
   search?: Record<string, string>;
 } {
   if (n.bookingId) {
-    return { to: "/bookings", search: { focus: n.bookingId } };
+    return { to: "/bookings/$bookingId", params: { bookingId: n.bookingId } };
   }
   if (n.chatId) {
     return { to: "/chat/$id", params: { id: n.chatId } };

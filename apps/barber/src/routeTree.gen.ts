@@ -48,6 +48,7 @@ import { Route as BarberSalonViewTeamRouteImport } from './routes/barber.salon-v
 import { Route as BarberSalonViewReviewsRouteImport } from './routes/barber.salon-view.reviews'
 import { Route as BarberSalonViewMembersRouteImport } from './routes/barber.salon-view.members'
 import { Route as BarberSalonViewGalleryRouteImport } from './routes/barber.salon-view.gallery'
+import { Route as BarberBookingsBookingIdRouteImport } from './routes/barber.bookings.$bookingId'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -244,6 +245,11 @@ const BarberSalonViewGalleryRoute = BarberSalonViewGalleryRouteImport.update({
   path: '/salon-view/gallery',
   getParentRoute: () => BarberRoute,
 } as any)
+const BarberBookingsBookingIdRoute = BarberBookingsBookingIdRouteImport.update({
+  id: '/$bookingId',
+  path: '/$bookingId',
+  getParentRoute: () => BarberBookingsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -253,7 +259,7 @@ export interface FileRoutesByFullPath {
   '/verify-email': typeof VerifyEmailRoute
   '/barber/activation': typeof BarberActivationRoute
   '/barber/amenities': typeof BarberAmenitiesRoute
-  '/barber/bookings': typeof BarberBookingsRoute
+  '/barber/bookings': typeof BarberBookingsRouteWithChildren
   '/barber/calendar': typeof BarberCalendarRoute
   '/barber/chat': typeof BarberChatRoute
   '/barber/clients': typeof BarberClientsRoute
@@ -276,6 +282,7 @@ export interface FileRoutesByFullPath {
   '/salon/create': typeof SalonCreateRoute
   '/salon/join': typeof SalonJoinRouteWithChildren
   '/barber/': typeof BarberIndexRoute
+  '/barber/bookings/$bookingId': typeof BarberBookingsBookingIdRoute
   '/barber/salon-view/gallery': typeof BarberSalonViewGalleryRoute
   '/barber/salon-view/members': typeof BarberSalonViewMembersRoute
   '/barber/salon-view/reviews': typeof BarberSalonViewReviewsRoute
@@ -293,7 +300,7 @@ export interface FileRoutesByTo {
   '/verify-email': typeof VerifyEmailRoute
   '/barber/activation': typeof BarberActivationRoute
   '/barber/amenities': typeof BarberAmenitiesRoute
-  '/barber/bookings': typeof BarberBookingsRoute
+  '/barber/bookings': typeof BarberBookingsRouteWithChildren
   '/barber/calendar': typeof BarberCalendarRoute
   '/barber/chat': typeof BarberChatRoute
   '/barber/clients': typeof BarberClientsRoute
@@ -314,6 +321,7 @@ export interface FileRoutesByTo {
   '/mybarber/setup': typeof MybarberSetupRoute
   '/salon/create': typeof SalonCreateRoute
   '/barber': typeof BarberIndexRoute
+  '/barber/bookings/$bookingId': typeof BarberBookingsBookingIdRoute
   '/barber/salon-view/gallery': typeof BarberSalonViewGalleryRoute
   '/barber/salon-view/members': typeof BarberSalonViewMembersRoute
   '/barber/salon-view/reviews': typeof BarberSalonViewReviewsRoute
@@ -333,7 +341,7 @@ export interface FileRoutesById {
   '/verify-email': typeof VerifyEmailRoute
   '/barber/activation': typeof BarberActivationRoute
   '/barber/amenities': typeof BarberAmenitiesRoute
-  '/barber/bookings': typeof BarberBookingsRoute
+  '/barber/bookings': typeof BarberBookingsRouteWithChildren
   '/barber/calendar': typeof BarberCalendarRoute
   '/barber/chat': typeof BarberChatRoute
   '/barber/clients': typeof BarberClientsRoute
@@ -356,6 +364,7 @@ export interface FileRoutesById {
   '/salon/create': typeof SalonCreateRoute
   '/salon/join': typeof SalonJoinRouteWithChildren
   '/barber/': typeof BarberIndexRoute
+  '/barber/bookings/$bookingId': typeof BarberBookingsBookingIdRoute
   '/barber/salon-view/gallery': typeof BarberSalonViewGalleryRoute
   '/barber/salon-view/members': typeof BarberSalonViewMembersRoute
   '/barber/salon-view/reviews': typeof BarberSalonViewReviewsRoute
@@ -399,6 +408,7 @@ export interface FileRouteTypes {
     | '/salon/create'
     | '/salon/join'
     | '/barber/'
+    | '/barber/bookings/$bookingId'
     | '/barber/salon-view/gallery'
     | '/barber/salon-view/members'
     | '/barber/salon-view/reviews'
@@ -437,6 +447,7 @@ export interface FileRouteTypes {
     | '/mybarber/setup'
     | '/salon/create'
     | '/barber'
+    | '/barber/bookings/$bookingId'
     | '/barber/salon-view/gallery'
     | '/barber/salon-view/members'
     | '/barber/salon-view/reviews'
@@ -478,6 +489,7 @@ export interface FileRouteTypes {
     | '/salon/create'
     | '/salon/join'
     | '/barber/'
+    | '/barber/bookings/$bookingId'
     | '/barber/salon-view/gallery'
     | '/barber/salon-view/members'
     | '/barber/salon-view/reviews'
@@ -776,8 +788,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BarberSalonViewGalleryRouteImport
       parentRoute: typeof BarberRoute
     }
+    '/barber/bookings/$bookingId': {
+      id: '/barber/bookings/$bookingId'
+      path: '/$bookingId'
+      fullPath: '/barber/bookings/$bookingId'
+      preLoaderRoute: typeof BarberBookingsBookingIdRouteImport
+      parentRoute: typeof BarberBookingsRoute
+    }
   }
 }
+
+interface BarberBookingsRouteChildren {
+  BarberBookingsBookingIdRoute: typeof BarberBookingsBookingIdRoute
+}
+
+const BarberBookingsRouteChildren: BarberBookingsRouteChildren = {
+  BarberBookingsBookingIdRoute: BarberBookingsBookingIdRoute,
+}
+
+const BarberBookingsRouteWithChildren = BarberBookingsRoute._addFileChildren(
+  BarberBookingsRouteChildren,
+)
 
 interface BarberStatsRouteChildren {
   BarberStatsGraphsRoute: typeof BarberStatsGraphsRoute
@@ -796,7 +827,7 @@ const BarberStatsRouteWithChildren = BarberStatsRoute._addFileChildren(
 interface BarberRouteChildren {
   BarberActivationRoute: typeof BarberActivationRoute
   BarberAmenitiesRoute: typeof BarberAmenitiesRoute
-  BarberBookingsRoute: typeof BarberBookingsRoute
+  BarberBookingsRoute: typeof BarberBookingsRouteWithChildren
   BarberCalendarRoute: typeof BarberCalendarRoute
   BarberChatRoute: typeof BarberChatRoute
   BarberClientsRoute: typeof BarberClientsRoute
@@ -825,7 +856,7 @@ interface BarberRouteChildren {
 const BarberRouteChildren: BarberRouteChildren = {
   BarberActivationRoute: BarberActivationRoute,
   BarberAmenitiesRoute: BarberAmenitiesRoute,
-  BarberBookingsRoute: BarberBookingsRoute,
+  BarberBookingsRoute: BarberBookingsRouteWithChildren,
   BarberCalendarRoute: BarberCalendarRoute,
   BarberChatRoute: BarberChatRoute,
   BarberClientsRoute: BarberClientsRoute,

@@ -182,7 +182,7 @@ def _analytics_response_for_bookings(
         "completed_count": bookings.count(),
         "cancelled_count": cancelled_count,
     }
-from notifications.serializers import NotificationSerializer
+from bookings.ws_broadcast import broadcast_booking_updated
 from notifications.utils import notify_barber, notify_user
 from salons.models import Salon, SalonMembership
 
@@ -203,7 +203,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         return booking.barber_id == bp.id
 
     def get_queryset(self):
-        related = ["customer", "salon", "barber", "completion"]
+        related = ["customer", "salon", "barber", "barber__profile", "completion"]
         if bookings_has_family_member_column():
             related.append("family_member")
         base = Booking.objects.select_related(*related).prefetch_related("lines")
@@ -286,6 +286,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             {"booking_id": booking.id},
             send_email=True,
         )
+        broadcast_booking_updated(booking=booking)
         return Response(BookingSerializer(booking).data)
 
     @action(detail=True, methods=["post"])
@@ -307,6 +308,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             "Sartarosh bu bronni rad etdi. Boshqa vaqt yoki sartarosh tanlashingiz mumkin.",
             {"booking_id": booking.id},
         )
+        broadcast_booking_updated(booking=booking)
         return Response(BookingSerializer(booking).data)
 
     @action(detail=True, methods=["post"])
@@ -340,6 +342,7 @@ class BookingViewSet(viewsets.ModelViewSet):
                 "Bron sartarosh tomonidan bekor qilindi.",
                 payload,
             )
+        broadcast_booking_updated(booking=booking)
         return Response(BookingSerializer(booking).data)
 
     @action(detail=True, methods=["post"])
@@ -360,6 +363,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             "Sartarosh booking xizmatini boshladi.",
             {"booking_id": booking.id},
         )
+        broadcast_booking_updated(booking=booking)
         return Response(BookingSerializer(booking).data)
 
     @action(detail=True, methods=["post"])
@@ -374,7 +378,11 @@ class BookingViewSet(viewsets.ModelViewSet):
             booking.save(update_fields=["status", "started_at", "updated_at"])
         if booking.status != Booking.Status.IN_PROGRESS:
             return Response({"detail": "Xizmatni tugatishdan oldin boshlash kerak."}, status=400)
-        portfolio_allowed = request.data.get("portfolio_allowed", False)
+        portfolio_allowed = str(request.data.get("portfolio_allowed", "")).lower() in ("1", "true", "yes")
+        if booking.portfolio_consent is True:
+            portfolio_allowed = True
+        elif booking.portfolio_consent is False:
+            portfolio_allowed = False
         early_finish = str(request.data.get("early_finish", "")).lower() in ("1", "true", "yes")
         actual_end = timezone.now()
         if not early_finish:
@@ -415,6 +423,50 @@ class BookingViewSet(viewsets.ModelViewSet):
             "Iltimos, sharh qoldiring.",
             {"booking_id": booking.id},
         )
+        broadcast_booking_updated(booking=booking)
+        return Response(BookingSerializer(booking).data)
+
+    @action(detail=True, methods=["post"])
+    def check_in(self, request, pk=None):
+        booking = self.get_object()
+        if not self._barber_can_manage_booking(request, booking):
+            return Response(status=403)
+        if booking.status not in (Booking.Status.ACCEPTED, Booking.Status.IN_PROGRESS):
+            return Response({"detail": "Faqat tasdiqlangan bron uchun check-in."}, status=400)
+        if booking.checked_in_at:
+            return Response(BookingSerializer(booking).data)
+        booking.checked_in_at = timezone.now()
+        booking.save(update_fields=["checked_in_at", "updated_at"])
+        notify_user(
+            booking.customer,
+            "booking_checked_in",
+            "Siz qabul qilindingiz",
+            "Sartarosh sizning kelganingizni qayd etdi.",
+            {"booking_id": booking.id},
+        )
+        broadcast_booking_updated(booking=booking)
+        return Response(BookingSerializer(booking).data)
+
+    @action(detail=True, methods=["post"])
+    def portfolio_consent(self, request, pk=None):
+        booking = self.get_object()
+        is_customer = not isinstance(request.user, BarberPrincipal) and booking.customer_id == request.user.id
+        if not is_customer:
+            return Response(status=403)
+        raw = request.data.get("consent")
+        if raw is None:
+            return Response({"detail": "consent (true/false) majburiy."}, status=400)
+        consent = str(raw).lower() in ("1", "true", "yes")
+        booking.portfolio_consent = consent
+        booking.save(update_fields=["portfolio_consent", "updated_at"])
+        notify_barber(
+            booking.barber,
+            "portfolio_consent",
+            "Portfolio ruxsati",
+            f"Mijoz portfolio uchun rasmga {'ruxsat berdi' if consent else 'rad etdi'}.",
+            {"booking_id": booking.id, "consent": consent},
+        )
+        broadcast_booking_updated(booking=booking)
         return Response(BookingSerializer(booking).data)
 
 

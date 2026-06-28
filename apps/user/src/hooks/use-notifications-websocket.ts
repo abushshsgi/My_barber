@@ -3,12 +3,17 @@ import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { notificationWebSocketUrl } from "@mybarber/shared/ws-url";
 import { getUserAccessToken } from "@/lib/api/client";
 import { notificationsQueryKeyBase } from "@/hooks/use-notifications-api";
+import { bookingsQueryKeyBase } from "@/hooks/use-bookings-api";
+import { getAuthUserId } from "@/lib/auth-user";
+import { userQueryKey } from "@/lib/query-keys";
 
 type WsPayload = {
   type?: string;
   event?: string;
   id?: number;
   title?: string;
+  booking_id?: number;
+  payload?: { booking_id?: number };
 };
 
 /**
@@ -26,6 +31,18 @@ const clients = new Set<QueryClient>();
 function invalidateAll() {
   for (const qc of clients) {
     void qc.invalidateQueries({ queryKey: notificationsQueryKeyBase });
+  }
+}
+
+function invalidateBookings(bookingId?: number) {
+  const userId = getAuthUserId();
+  for (const qc of clients) {
+    void qc.invalidateQueries({ queryKey: bookingsQueryKeyBase });
+    if (bookingId != null && userId) {
+      void qc.invalidateQueries({
+        queryKey: userQueryKey([...bookingsQueryKeyBase, String(bookingId)] as const, userId),
+      });
+    }
   }
 }
 
@@ -51,6 +68,10 @@ function openSocket(token: string) {
   socket.onmessage = (evt) => {
     try {
       const payload = JSON.parse(evt.data) as WsPayload;
+      if (payload.event === "booking_updated") {
+        invalidateBookings(payload.booking_id);
+        return;
+      }
       if (
         payload.event === "notification" ||
         payload.type === "notification" ||
@@ -58,6 +79,8 @@ function openSocket(token: string) {
         (typeof payload.id === "number" && typeof payload.title === "string")
       ) {
         invalidateAll();
+        const bid = payload.booking_id ?? payload.payload?.booking_id;
+        if (bid != null) invalidateBookings(bid);
       }
     } catch {
       invalidateAll();

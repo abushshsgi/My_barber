@@ -335,6 +335,7 @@
     "status": {
       "pending": "Ожидает",
       "accepted": "Подтверждена",
+      "in_progress": "В процессе",
       "done": "Выполнено",
       "cancelled": "Отменена"
     }

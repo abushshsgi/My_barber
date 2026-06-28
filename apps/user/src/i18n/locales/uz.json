@@ -340,6 +340,7 @@
     "status": {
       "pending": "Kutilmoqda",
       "accepted": "Tasdiqlangan",
+      "in_progress": "Davom etmoqda",
       "done": "Bajarilgan",
       "cancelled": "Bekor qilingan"
     }

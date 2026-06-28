@@ -1,7 +1,9 @@
 import type { BookingItem } from "@/lib/mock-data";
 
 export function isUpcomingBooking(booking: BookingItem, now = Date.now()): boolean {
-  return new Date(booking.date).getTime() >= now && booking.status !== "cancelled";
+  if (booking.status === "cancelled" || booking.status === "done") return false;
+  if (booking.status === "in_progress") return true;
+  return new Date(booking.date).getTime() >= now;
 }
 
 export function getUpcomingBookings(list: BookingItem[] | null | undefined, now = Date.now()): BookingItem[] {

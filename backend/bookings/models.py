@@ -77,6 +77,16 @@ class Booking(models.Model):
         blank=True,
         help_text="Barber xizmatni boshlagan vaqt (taymer uchun).",
     )
+    checked_in_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Mijoz kelgan vaqt (barber check-in).",
+    )
+    portfolio_consent = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Mijoz portfolio uchun rasmga ruxsat berishi (null = hali javob bermagan).",
+    )
 
     class Meta:
         ordering = ["-start_at"]

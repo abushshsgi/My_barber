@@ -3,14 +3,17 @@ import {
   cancelBooking,
   createBooking,
   fetchAvailabilityMonth,
+  fetchBooking,
   fetchBookingAvailability,
   fetchBookings,
+  setPortfolioConsent,
   type CreateBookingPayload,
 } from "@/lib/api/bookings";
 import { authQueryEnabled, catalogQueryEnabled } from "@/lib/auth-query";
 import { getAuthUserId } from "@/lib/auth-user";
 import { userQueryKey } from "@/lib/query-keys";
-import { mapBookings } from "@/lib/mappers/booking";
+import { mapBooking, mapBookings } from "@/lib/mappers/booking";
+import { bookingNeedsLiveRefresh } from "@mybarber/shared/booking-lifecycle";
 
 export const bookingsQueryKeyBase = ["bookings"] as const;
 
@@ -25,6 +28,29 @@ export function useBookings() {
     queryFn: async () => mapBookings(await fetchBookings()),
     staleTime: 15_000,
     enabled: authQueryEnabled(!!userId),
+  });
+}
+
+export function useBooking(bookingId: string) {
+  const userId = getAuthUserId();
+  return useQuery({
+    queryKey: userQueryKey([...bookingsQueryKeyBase, bookingId] as const, userId),
+    queryFn: async () => mapBooking(await fetchBooking(bookingId)),
+    enabled: authQueryEnabled(!!userId && Boolean(bookingId)),
+    staleTime: 5_000,
+    refetchInterval: (q) => {
+      const status = q.state.data?.status;
+      if (!status) return false;
+      const lifecycle =
+        status === "done"
+          ? "completed"
+          : status === "cancelled"
+            ? "cancelled"
+            : status;
+      if (lifecycle === "in_progress") return 2_000;
+      if (bookingNeedsLiveRefresh(lifecycle)) return 8_000;
+      return false;
+    },
   });
 }
 
@@ -43,7 +69,20 @@ export function useCancelBooking() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string | number) => cancelBooking(id),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: bookingsQueryKeyBase }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: bookingsQueryKeyBase });
+    },
+  });
+}
+
+export function usePortfolioConsentMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, consent }: { id: string; consent: boolean }) => setPortfolioConsent(id, consent),
+    onSuccess: (_data, vars) => {
+      void qc.invalidateQueries({ queryKey: bookingsQueryKeyBase });
+      void qc.invalidateQueries({ queryKey: [...bookingsQueryKeyBase, vars.id] });
+    },
   });
 }
 

@@ -1,12 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Play, CheckCircle2, Phone, X, Loader2 } from "lucide-react";
+import {
+  CalendarClock,
+  ChevronRight,
+  Clock,
+  Loader2,
+  Search,
+  Sparkles,
+} from "lucide-react";
 import { formatUZS, type Booking } from "@/components/barber/BarberContext";
 import { StatusPill, UserAvatar } from "@/components/barber/primitives";
 import { cn } from "@/lib/utils";
 import { paymentBadgeClass, paymentLabel } from "@/lib/payment-label";
-import { useBarberBookingsQuery, useBookingActionMutation } from "@/hooks/use-barber-queries";
-import { toast } from "sonner";
+import { useBarberBookingsQuery } from "@/hooks/use-barber-queries";
 
 export const Route = createFileRoute("/barber/bookings")({
   component: BookingsPage,
@@ -22,9 +28,17 @@ const TABS = [
   { id: "rejected", label: "Rad etilgan" },
 ] as const;
 
+const STATUS_ACCENT: Partial<Record<Booking["status"], string>> = {
+  pending: "border-l-amber-400",
+  accepted: "border-l-foreground",
+  in_progress: "border-l-emerald-500",
+  completed: "border-l-muted-foreground/40",
+  cancelled: "border-l-destructive/50",
+  rejected: "border-l-destructive/50",
+};
+
 function BookingsPage() {
   const { data: bookings = [], isLoading, isFetching } = useBarberBookingsQuery();
-  const actionMut = useBookingActionMutation();
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("all");
   const [query, setQuery] = useState("");
 
@@ -39,47 +53,62 @@ function BookingsPage() {
     return rows;
   }, [bookings, tab, query]);
 
-  const runAction = (id: string, action: Parameters<typeof actionMut.mutate>[0]["action"]) => {
-    actionMut.mutate(
-      { id, action },
-      {
-        onError: (e) => toast.error(e.message),
-      },
-    );
-  };
-
-  const pendingId = actionMut.isPending ? actionMut.variables?.id : null;
+  const stats = useMemo(
+    () => ({
+      pending: bookings.filter((b) => b.status === "pending").length,
+      active: bookings.filter((b) => b.status === "in_progress").length,
+      today: bookings.filter((b) => b.date === "Bugun").length,
+    }),
+    [bookings],
+  );
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+    <div className="mx-auto max-w-[1200px] space-y-6 p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-heading text-3xl font-semibold text-foreground">Bronlar</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Mijozlar tomonidan qilingan barcha bronlar.
+          <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">
+            Bronlar
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Har bir bronni bosing — jarayon va taymer alohida sahifada.
             {isFetching && !isLoading ? (
               <span className="ml-2 text-xs">Yangilanmoqda…</span>
             ) : null}
           </p>
         </div>
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Mijoz yoki xizmat bo'yicha qidirish"
-          className="h-10 w-full sm:w-72 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-        />
+        <div className="relative w-full sm:w-80">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Mijoz yoki xizmat bo'yicha qidirish"
+            className="h-11 w-full rounded-xl border border-border bg-background pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
       </div>
 
-      <div className="inline-flex gap-1 bg-muted p-1 rounded-lg overflow-x-auto max-w-full">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <StatChip
+          icon={Sparkles}
+          label="Yangi so'rovlar"
+          value={stats.pending}
+          tone={stats.pending > 0 ? "warm" : "muted"}
+        />
+        <StatChip icon={Clock} label="Hozir kresloda" value={stats.active} tone="live" />
+        <StatChip icon={CalendarClock} label="Bugungi bronlar" value={stats.today} />
+      </div>
+
+      <div className="inline-flex max-w-full gap-1 overflow-x-auto rounded-xl border border-border bg-muted/50 p-1">
         {TABS.map((t) => (
           <button
             key={t.id}
+            type="button"
             onClick={() => setTab(t.id)}
             className={cn(
-              "px-3 sm:px-4 py-1.5 rounded-md text-sm transition-colors whitespace-nowrap",
+              "whitespace-nowrap rounded-lg px-3 py-2 text-sm transition-colors sm:px-4",
               tab === t.id
-                ? "bg-background text-foreground shadow-card font-medium"
+                ? "bg-background font-medium text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
@@ -92,140 +121,115 @@ function BookingsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex h-48 items-center justify-center rounded-xl border border-border bg-card">
+        <div className="flex h-48 items-center justify-center rounded-2xl border border-border bg-card">
           <Loader2 className="size-6 animate-spin text-muted-foreground" />
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border bg-card/40 p-14 text-center">
+          <CalendarClock className="mx-auto mb-3 size-10 text-muted-foreground/60" />
+          <p className="font-medium text-foreground">Bu kategoriyada bronlar yo'q</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Yangi bronlar kelganda shu yerda ko'rinadi.
+          </p>
+        </div>
       ) : (
-        <div className="space-y-3">
-          {filtered.length === 0 ? (
-            <div className="rounded-xl border border-border bg-card p-12 text-center text-sm text-muted-foreground">
-              Bu kategoriyada bronlar yo'q.
-            </div>
-          ) : (
-            filtered.map((b) => (
-              <BookingRow
-                key={b.id}
-                booking={b}
-                busy={pendingId === b.id}
-                onAccept={() => runAction(b.id, "accept")}
-                onCancel={() => runAction(b.id, "cancel")}
-                onStart={() => runAction(b.id, "start")}
-                onComplete={() => runAction(b.id, "complete")}
-              />
-            ))
-          )}
+        <div className="grid gap-3 lg:grid-cols-2">
+          {filtered.map((b) => (
+            <BookingCard key={b.id} booking={b} />
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-function BookingRow({
-  booking: b,
-  busy,
-  onAccept,
-  onCancel,
-  onStart,
-  onComplete,
+function StatChip({
+  icon: Icon,
+  label,
+  value,
+  tone = "muted",
 }: {
-  booking: Booking;
-  busy: boolean;
-  onAccept: () => void;
-  onCancel: () => void;
-  onStart: () => void;
-  onComplete: () => void;
+  icon: typeof Clock;
+  label: string;
+  value: number;
+  tone?: "muted" | "warm" | "live";
 }) {
   return (
     <div
       className={cn(
-        "rounded-xl border border-border bg-card p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4 shadow-card hover:border-foreground/20 transition-colors",
-        busy && "opacity-70",
+        "flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 shadow-card",
+        tone === "warm" && value > 0 && "border-amber-200/80 bg-amber-50/50 dark:bg-amber-950/20",
+        tone === "live" && value > 0 && "border-emerald-200/80 bg-emerald-50/40 dark:bg-emerald-950/20",
       )}
     >
-      <div className="flex items-center gap-3 flex-1 min-w-0">
+      <div className="flex size-10 items-center justify-center rounded-xl bg-muted">
+        <Icon className="size-4 text-foreground/80" />
+      </div>
+      <div>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="font-heading text-xl font-semibold tabular-nums">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function BookingCard({ booking: b }: { booking: Booking }) {
+  return (
+    <Link
+      to="/barber/bookings/$bookingId"
+      params={{ bookingId: b.id }}
+      className={cn(
+        "group flex flex-col gap-4 rounded-2xl border border-border border-l-4 bg-card p-4 shadow-card transition-all hover:border-foreground/25 hover:shadow-md sm:p-5",
+        STATUS_ACCENT[b.status] ?? "border-l-border",
+        b.status === "in_progress" && "ring-1 ring-emerald-500/20",
+      )}
+    >
+      <div className="flex items-start gap-3">
         <UserAvatar src={b.client_avatar} name={b.client} className="size-12 shrink-0" />
-        <div className="min-w-0">
-          <div className="font-medium truncate">{b.client}</div>
-          <div className="text-xs text-muted-foreground truncate">{b.service}</div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="truncate font-semibold">{b.client}</p>
+              <p className="truncate text-sm text-muted-foreground">{b.service}</p>
+            </div>
+            <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <StatusPill status={b.status} />
+            <span
+              className={cn(
+                "inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold",
+                paymentBadgeClass(b.payment_method),
+              )}
+            >
+              {paymentLabel(b.payment_method)}
+            </span>
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 sm:gap-6">
-        <div className="text-sm">
-          <div className="text-xs text-muted-foreground">Vaqt</div>
-          <div className="font-medium">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/80 pt-3 text-sm">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <CalendarClock className="size-3.5" />
+          <span className="font-medium text-foreground">
             {b.date} · {b.time}
-          </div>
+          </span>
         </div>
-        <div className="text-sm">
-          <div className="text-xs text-muted-foreground">Narx</div>
-          <div className="font-medium">{formatUZS(b.price)}</div>
-        </div>
-        <span
-          className={cn(
-            "inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold",
-            paymentBadgeClass(b.payment_method),
-          )}
-        >
-          {paymentLabel(b.payment_method)}
-        </span>
-        <StatusPill status={b.status} />
-        <div className="flex items-center gap-2 ml-auto">
-          <button
-            type="button"
-            className="size-9 rounded-lg border border-border hover:bg-muted transition-colors flex items-center justify-center"
-          >
-            <Phone className="size-4" />
-          </button>
-          {busy ? (
-            <Loader2 className="size-5 animate-spin text-muted-foreground" />
-          ) : null}
-          {b.status === "pending" && !busy && (
-            <>
-              <button
-                type="button"
-                onClick={onCancel}
-                className="size-9 rounded-lg border border-border hover:bg-destructive/10 hover:text-destructive transition-colors flex items-center justify-center"
-              >
-                <X className="size-4" />
-              </button>
-              <button
-                type="button"
-                onClick={onAccept}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
-              >
-                <CheckCircle2 className="size-3.5" />
-                Qabul qilish
-              </button>
-            </>
-          )}
-          {b.status === "accepted" && !busy && (
-            <button
-              type="button"
-              onClick={onStart}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
-            >
-              <Play className="size-3.5" />
-              Boshlash
-            </button>
-          )}
-          {b.status === "in_progress" && !busy && (
-            <button
-              type="button"
-              onClick={onComplete}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
-            >
-              <CheckCircle2 className="size-3.5" />
-              Tugatish
-            </button>
-          )}
-          {b.status === "rejected" && (
-            <span className="rounded-lg border border-destructive/20 px-3 py-2 text-sm font-medium text-destructive">
-              Rad etilgan
-            </span>
-          )}
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">{b.duration_min} daq</span>
+          <span className="font-semibold tabular-nums">{formatUZS(b.price)}</span>
         </div>
       </div>
-    </div>
+
+      {b.status === "in_progress" ? (
+        <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-800 dark:text-emerald-300">
+          <span className="relative flex size-2">
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+            <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+          </span>
+          Xizmat davom etmoqda — taymerni ko'rish uchun bosing
+        </div>
+      ) : null}
+    </Link>
   );
 }

@@ -89,14 +89,29 @@ export interface BookingItem {
   barberId: number;
   barberName: string;
   serviceName: string;
-  date: string; // ISO
+  date: string; // ISO start_at
+  endAt?: string;
+  startedAt?: string | null;
   duration: number;
   price: number;
-  status: "pending" | "accepted" | "done" | "cancelled";
+  status: "pending" | "accepted" | "in_progress" | "done" | "cancelled";
   coverSeed: string;
   bookedForName?: string;
   hasReview?: boolean;
   reviewId?: string;
+  lines?: Array<{ service_name: string; duration_minutes: number; price: number }>;
+  salonAddress?: string;
+  salonLatitude?: number;
+  salonLongitude?: number;
+  checkedInAt?: string;
+  portfolioConsent?: boolean | null;
+  portfolioAllowed?: boolean;
+  resultImageUrl?: string;
+  checkInCode?: string;
+  statusHistory?: Array<{ key: string; label: string; at: string }>;
+  paymentMethod?: "cash" | "online";
+  paymentStatus?: string;
+  paidAt?: string;
 }
 
 export interface ChatThread {

@@ -47,6 +47,7 @@ import { Route as SalonIdRouteImport } from './routes/salon.$id'
 import { Route as ExploreStyleIdRouteImport } from './routes/explore_.$styleId'
 import { Route as ChatIdRouteImport } from './routes/chat.$id'
 import { Route as CategoryCategoryRouteImport } from './routes/category.$category'
+import { Route as BookingsBookingIdRouteImport } from './routes/bookings.$bookingId'
 import { Route as BookingSalonIdRouteImport } from './routes/booking.$salonId'
 import { Route as BarberBarberIdRouteImport } from './routes/barber.$barberId'
 import { Route as AccountPreferencesRouteImport } from './routes/account.preferences'
@@ -246,6 +247,11 @@ const CategoryCategoryRoute = CategoryCategoryRouteImport.update({
   path: '/category/$category',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BookingsBookingIdRoute = BookingsBookingIdRouteImport.update({
+  id: '/$bookingId',
+  path: '/$bookingId',
+  getParentRoute: () => BookingsRoute,
+} as any)
 const BookingSalonIdRoute = BookingSalonIdRouteImport.update({
   id: '/booking/$salonId',
   path: '/booking/$salonId',
@@ -292,7 +298,7 @@ export interface FileRoutesByFullPath {
   '/addresses': typeof AddressesRoute
   '/ai-style': typeof AiStyleRoute
   '/auth': typeof AuthRoute
-  '/bookings': typeof BookingsRoute
+  '/bookings': typeof BookingsRouteWithChildren
   '/chat': typeof ChatRouteWithChildren
   '/compare': typeof CompareRoute
   '/explore': typeof ExploreRoute
@@ -325,6 +331,7 @@ export interface FileRoutesByFullPath {
   '/account/preferences': typeof AccountPreferencesRoute
   '/barber/$barberId': typeof BarberBarberIdRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
+  '/bookings/$bookingId': typeof BookingsBookingIdRoute
   '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
   '/explore/$styleId': typeof ExploreStyleIdRoute
@@ -340,7 +347,7 @@ export interface FileRoutesByTo {
   '/addresses': typeof AddressesRoute
   '/ai-style': typeof AiStyleRoute
   '/auth': typeof AuthRoute
-  '/bookings': typeof BookingsRoute
+  '/bookings': typeof BookingsRouteWithChildren
   '/chat': typeof ChatRouteWithChildren
   '/compare': typeof CompareRoute
   '/explore': typeof ExploreRoute
@@ -373,6 +380,7 @@ export interface FileRoutesByTo {
   '/account/preferences': typeof AccountPreferencesRoute
   '/barber/$barberId': typeof BarberBarberIdRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
+  '/bookings/$bookingId': typeof BookingsBookingIdRoute
   '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
   '/explore/$styleId': typeof ExploreStyleIdRoute
@@ -389,7 +397,7 @@ export interface FileRoutesById {
   '/addresses': typeof AddressesRoute
   '/ai-style': typeof AiStyleRoute
   '/auth': typeof AuthRoute
-  '/bookings': typeof BookingsRoute
+  '/bookings': typeof BookingsRouteWithChildren
   '/chat': typeof ChatRouteWithChildren
   '/compare': typeof CompareRoute
   '/explore': typeof ExploreRoute
@@ -422,6 +430,7 @@ export interface FileRoutesById {
   '/account/preferences': typeof AccountPreferencesRoute
   '/barber/$barberId': typeof BarberBarberIdRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
+  '/bookings/$bookingId': typeof BookingsBookingIdRoute
   '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
   '/explore_/$styleId': typeof ExploreStyleIdRoute
@@ -472,6 +481,7 @@ export interface FileRouteTypes {
     | '/account/preferences'
     | '/barber/$barberId'
     | '/booking/$salonId'
+    | '/bookings/$bookingId'
     | '/category/$category'
     | '/chat/$id'
     | '/explore/$styleId'
@@ -520,6 +530,7 @@ export interface FileRouteTypes {
     | '/account/preferences'
     | '/barber/$barberId'
     | '/booking/$salonId'
+    | '/bookings/$bookingId'
     | '/category/$category'
     | '/chat/$id'
     | '/explore/$styleId'
@@ -568,6 +579,7 @@ export interface FileRouteTypes {
     | '/account/preferences'
     | '/barber/$barberId'
     | '/booking/$salonId'
+    | '/bookings/$bookingId'
     | '/category/$category'
     | '/chat/$id'
     | '/explore_/$styleId'
@@ -584,7 +596,7 @@ export interface RootRouteChildren {
   AddressesRoute: typeof AddressesRoute
   AiStyleRoute: typeof AiStyleRoute
   AuthRoute: typeof AuthRoute
-  BookingsRoute: typeof BookingsRoute
+  BookingsRoute: typeof BookingsRouteWithChildren
   ChatRoute: typeof ChatRouteWithChildren
   CompareRoute: typeof CompareRoute
   ExploreRoute: typeof ExploreRoute
@@ -894,6 +906,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CategoryCategoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/bookings/$bookingId': {
+      id: '/bookings/$bookingId'
+      path: '/$bookingId'
+      fullPath: '/bookings/$bookingId'
+      preLoaderRoute: typeof BookingsBookingIdRouteImport
+      parentRoute: typeof BookingsRoute
+    }
     '/booking/$salonId': {
       id: '/booking/$salonId'
       path: '/booking/$salonId'
@@ -953,6 +972,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface BookingsRouteChildren {
+  BookingsBookingIdRoute: typeof BookingsBookingIdRoute
+}
+
+const BookingsRouteChildren: BookingsRouteChildren = {
+  BookingsBookingIdRoute: BookingsBookingIdRoute,
+}
+
+const BookingsRouteWithChildren = BookingsRoute._addFileChildren(
+  BookingsRouteChildren,
+)
+
 interface ChatRouteChildren {
   ChatIdRoute: typeof ChatIdRoute
 }
@@ -979,7 +1010,7 @@ const rootRouteChildren: RootRouteChildren = {
   AddressesRoute: AddressesRoute,
   AiStyleRoute: AiStyleRoute,
   AuthRoute: AuthRoute,
-  BookingsRoute: BookingsRoute,
+  BookingsRoute: BookingsRouteWithChildren,
   ChatRoute: ChatRouteWithChildren,
   CompareRoute: CompareRoute,
   ExploreRoute: ExploreRoute,

@@ -335,6 +335,7 @@
     "status": {
       "pending": "Pending",
       "accepted": "Accepted",
+      "in_progress": "In progress",
       "done": "Completed",
       "cancelled": "Cancelled"
     }
