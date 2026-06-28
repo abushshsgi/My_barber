@@ -17,8 +17,7 @@ const ROW = "grid w-full min-w-0 grid-cols-1 gap-4 lg:grid-cols-1";
 /** Bento: hero + xarita, filter + kartochkalar */
 export function HomeBazaarClassic({ data }: Props) {
   const { filtered, mapSalons, loading } = useHomeLayoutSlice(data);
-  const featuredSalons = filtered.slice(0, 5);
-  const [a, b, c, d, e] = featuredSalons;
+  const featuredSalons = filtered.slice(0, 6);
 
   return (
     <div className={cn("page-stagger flex w-full min-w-0 flex-col gap-6 overflow-x-clip", DESKTOP_BAZAAR_INSET)}>
@@ -30,7 +29,7 @@ export function HomeBazaarClassic({ data }: Props) {
           <BazaarMapPanel salons={mapSalons} nearbyCount={filtered.length} className="h-full w-full" />
         </div>
         <div className="lg:col-span-3 lg:row-start-2">
-          <BazaarFilterSidebar {...data} className="h-[250px] w-[260px]" />
+          <BazaarFilterSidebar {...data} className="h-[400px] w-[300px]" />
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:col-span-9 lg:row-start-2">
           {data.searchActive ? (
@@ -44,18 +43,11 @@ export function HomeBazaarClassic({ data }: Props) {
             </div>
           ) : (
             <>
-          {[a, b, c, d, e].filter(Boolean).map((salon) =>
-            salon ? (
-              <div key={salon.id} className={cn("min-w-0", salon === a && "col-span-2 row-span-2")}>
-                <DesktopSalonCard
-                  salon={salon}
-                  variant="marketplace"
-                  elevated={salon === a}
-                  className={salon === a ? "h-full" : undefined}
-                />
-              </div>
-            ) : null,
-          )}
+          {featuredSalons.map((salon) => (
+            <div key={salon.id} className="min-w-0">
+              <DesktopSalonCard salon={salon} variant="marketplace" />
+            </div>
+          ))}
           {loading ? (
             <div className="col-span-full h-40 animate-pulse rounded-xl bg-surface" />
           ) : null}
