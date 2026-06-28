@@ -11,6 +11,7 @@ import type { Booking } from "@/components/barber/BarberContext";
 export const barberQueryKeys = {
   all: ["barber"] as const,
   services: () => [...barberQueryKeys.all, "services"] as const,
+  servicesScope: (apiBase: string) => [...barberQueryKeys.all, "services", apiBase] as const,
   bookings: () => [...barberQueryKeys.all, "bookings"] as const,
   clients: (mode: string, salonId: number | null) =>
     [...barberQueryKeys.all, "clients", mode, salonId] as const,
@@ -94,44 +95,69 @@ export function useBarberServicesQuery(enabled = true) {
     queryKey: barberQueryKeys.services(),
     queryFn: () => apiList<ApiBarberService>("/api/v1/barber/services/"),
     enabled,
-    staleTime: 30_000,
+    staleTime: 60_000,
+    gcTime: 300_000,
+    placeholderData: (prev) => prev,
   });
 }
+
+export function useScopedServicesQuery(apiBase: string, enabled = true) {
+  return useQuery({
+    queryKey: barberQueryKeys.servicesScope(apiBase),
+    queryFn: () => apiList<ApiBarberService>(`${apiBase}/`),
+    enabled: enabled && Boolean(apiBase),
+    staleTime: 60_000,
+    gcTime: 300_000,
+    placeholderData: (prev) => prev,
+  });
+}
+
+export type ApiServiceRecommendation = {
+  kind: string;
+  title: string;
+  description: string;
+  action_label: string;
+  service_id?: number;
+  suggested_price?: string;
+  suggested_duration_minutes?: number;
+  suggested_service?: {
+    name: string;
+    price: string;
+    duration_minutes: number;
+  };
+};
+
+export type ApiCatalogService = {
+  id: number;
+  name: string;
+  description: string;
+  image_url: string;
+  duration_minutes: number;
+  category_ids: number[];
+  category_names: string[];
+  sort_order: number;
+  index: number;
+};
 
 export function useServiceRecommendationsQuery(enabled = true) {
   return useQuery({
     queryKey: barberQueryKeys.recommendations(),
-    queryFn: () =>
-      apiJson<
-        Array<{
-          key: string;
-          name: string;
-          price: number;
-          duration: number;
-          reason: string;
-          booking_count?: number;
-          avg_market_price?: number;
-        }>
-      >("/api/v1/barber/service-recommendations/"),
+    queryFn: () => apiList<ApiServiceRecommendation>("/api/v1/barber/service-recommendations/"),
     enabled,
-    staleTime: 60_000,
+    staleTime: 120_000,
+    gcTime: 600_000,
+    placeholderData: (prev) => prev,
   });
 }
 
 export function useCatalogServicesQuery(enabled = true) {
   return useQuery({
     queryKey: barberQueryKeys.catalogServices(),
-    queryFn: () =>
-      apiList<{
-        id: number;
-        name: string;
-        duration_minutes: number;
-        image_url?: string | null;
-        category_ids: number[];
-        category_names: string[];
-      }>("/api/v1/barber/catalog-services/"),
+    queryFn: () => apiList<ApiCatalogService>("/api/v1/barber/catalog-services/"),
     enabled,
-    staleTime: 120_000,
+    staleTime: 300_000,
+    gcTime: 600_000,
+    placeholderData: (prev) => prev,
   });
 }
 

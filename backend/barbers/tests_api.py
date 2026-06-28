@@ -180,10 +180,10 @@ class BarberBusinessApiTests(APITestCase):
 class BarberPublicDiscoveryTests(APITestCase):
     def setUp(self):
         self.client.credentials()
-        for code, icon, labels in DEFAULT_AMENITIES[:2]:
+        for code, icon, labels, _scope in DEFAULT_AMENITIES[:2]:
             Amenity.objects.get_or_create(
                 code=code,
-                defaults={"icon": icon, "labels": labels},
+                defaults={"icon": icon, "labels": labels, "scope": _scope},
             )
 
     def _create_salon_owner_with_amenities(self):
