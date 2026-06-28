@@ -263,12 +263,20 @@ function Auth() {
           <span className="text-3xl font-bold tracking-tight">mysaloon</span>
           <span className="text-lg font-bold text-muted-foreground">.uz</span>
         </div>
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">{header.desc}</p>
-          <p className="mt-6 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-            Salon va sartarosh bron platformasi
+        <div className="max-w-md">
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            mysaloon.uz
+          </p>
+          <h2 className="mt-4 text-4xl font-bold leading-[1.08] tracking-tight text-foreground xl:text-5xl">
+            {t("home.title")}
+          </h2>
+          <p className="mt-4 text-lg font-medium leading-relaxed text-muted-foreground">
+            {t("homePage.editorialTagline")}
           </p>
         </div>
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+          {t("footer.tagline")}
+        </p>
       </div>
 
       <div className="flex flex-col px-6 py-10 lg:justify-center lg:px-12">
