@@ -9,20 +9,17 @@ from rest_framework.views import APIView
 
 from accounts.auth_utils import is_platform_admin, request_barber
 from barbers.activation_permissions import IsAuthenticatedBarberAware
+from salons.amenity_public import amenity_lang_from_request, serialize_amenity
 from salons.amenity_sync import sync_salon_amenities
 from salons.models import Amenity, Salon, SalonMembership
 
 
 def _amenity_lang(request) -> str:
-    raw = (request.query_params.get("lang") or request.headers.get("Accept-Language") or "uz").split(",")[0]
-    code = raw.strip().lower().split("-")[0]
-    return code if code in ("uz", "ru", "en") else "uz"
+    return amenity_lang_from_request(request)
 
 
 def _serialize_amenity(amenity: Amenity, lang: str) -> dict:
-    labels = amenity.labels or {}
-    label = labels.get(lang) or labels.get("uz") or amenity.code
-    return {"code": amenity.code, "icon": amenity.icon, "label": label}
+    return serialize_amenity(amenity, lang)
 
 
 def _owner_can_edit_salon(bp, salon: Salon) -> bool:

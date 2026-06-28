@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { MapDesktopMapControls } from "@/components/map/MapDesktopMapControls";
+import { MapDiscoveryTabs, type MapDiscoveryTab } from "@/components/map/MapDiscoveryTabs";
+import { MapBarberList } from "@/components/map/MapBarberList";
 import { MapDesktopMapFrame } from "@/components/map/MapDesktopMapFrame";
 import { MapDesktopPanel } from "@/components/map/MapDesktopPanel";
 import { MapErrorBoundary } from "@/components/map/MapErrorBoundary";
@@ -11,17 +12,20 @@ import { SalonMap, type SalonMapHandle, type SalonMapMarker, type SalonMapViewpo
 import { resolveMapAudienceFilter, useAudience } from "@/hooks/use-audience";
 import { useIsLgUp } from "@/hooks/use-mobile";
 import { useRecommendContext } from "@/hooks/use-recommend-context";
-import { useSalonsList, useSalonsNearby } from "@/hooks/use-salons";
+import { useSalonsList, useSalonsNearby, useSalonSearch } from "@/hooks/use-salons";
+import { useBarbersNearby, useBarberFind } from "@/hooks/use-barbers";
 import { shortPrice, type Salon } from "@/lib/mock-data";
+import { applyMapBarberFilters } from "@/lib/map-barber-filters";
 import {
   DEFAULT_MAP_FILTERS,
   applyMapSalonFilters,
   countActiveMapFilters,
   type MapFiltersState,
 } from "@/lib/map-filters";
+import type { BarberDiscovery } from "@/lib/mappers/barber";
 import { hasValidMapCoords, salonMatchesMapAudience } from "@/lib/map-utils";
 import { filterSalonsByViewport, normalizeMapCoords } from "@/lib/map-viewport";
-import { rankSalonsForUser } from "@/lib/recommendations";
+import { rankBarbersForUser, rankSalonsForUser } from "@/lib/recommendations";
 import { parseMapRouteSearch } from "@/lib/map-route-search";
 
 export const Route = createFileRoute("/map")({
@@ -46,7 +50,6 @@ function mapPinLabel(salon: Salon): string {
   if (salon.rating > 0) return `★ ${salon.rating.toFixed(1)}`;
   return "—";
 }
-
 function toMapMarker(salon: Salon, ctaLabel: string): SalonMapMarker {
   return {
     id: salon.id,
@@ -58,6 +61,26 @@ function toMapMarker(salon: Salon, ctaLabel: string): SalonMapMarker {
     ctaLabel,
     priceLabel: mapPinLabel(salon),
   };
+}
+
+function toBarberMarker(barber: BarberDiscovery, ctaLabel: string): SalonMapMarker {
+  const initial = barber.name.trim().split(/\s+/)[0]?.slice(0, 8) || "U";
+  return {
+    id: barber.id,
+    lat: barber.lat,
+    lng: barber.lng,
+    label: barber.name,
+    coverUrl: barber.avatar,
+    address: barber.salonName ?? "",
+    ctaLabel,
+    priceLabel: barber.rating > 0 ? `★ ${barber.rating.toFixed(1)}` : initial,
+  };
+}
+
+function withBarberCoords(barber: BarberDiscovery): BarberDiscovery {
+  const { lat, lng } = normalizeMapCoords(barber.lat, barber.lng);
+  if (lat === barber.lat && lng === barber.lng) return barber;
+  return { ...barber, lat, lng };
 }
 
 type SalonMapProps = {
@@ -124,6 +147,11 @@ function MapView() {
 
   const ctx = useRecommendContext();
   const hasCoords = ctx.lat != null && ctx.lng != null;
+  const [discoveryTab, setDiscoveryTab] = useState<MapDiscoveryTab>("salons");
+  const [query, setQuery] = useState(routeQ);
+  const apiSearchActive = query.trim().length >= 2;
+  const { data: apiSearchSalons = [] } = useSalonSearch(apiSearchActive ? query : "");
+  const { data: apiSearchBarbers = [] } = useBarberFind(apiSearchActive ? query : "", apiSearchActive);
   const {
     data: nearbySalons = [],
     isLoading: nearbyLoading,
@@ -140,14 +168,32 @@ function MapView() {
     isError: listError,
     refetch: refetchList,
   } = useSalonsList();
-  const listLoadingAny = listLoading || nearbyLoading;
-  const catalogError = nearbyError || listError;
+  const {
+    data: nearbyBarbers = [],
+    isLoading: barbersLoading,
+    isError: barbersError,
+    refetch: refetchBarbers,
+  } = useBarbersNearby(
+    hasCoords ? ctx.lat! : undefined,
+    hasCoords ? ctx.lng! : undefined,
+    25,
+    discoveryTab === "barbers",
+  );
+  const listLoadingAny =
+    discoveryTab === "salons" ? listLoading || nearbyLoading : barbersLoading;
+  const catalogError =
+    discoveryTab === "salons" ? nearbyError || listError : barbersError;
 
   const baseSalons = useMemo(() => {
-    const base =
+    let base =
       hasCoords && nearbySalons.length > 0 ? nearbySalons : listSalons;
+    if (apiSearchActive && apiSearchSalons.length > 0) {
+      const byId = new Map(base.map((s) => [s.id, s]));
+      for (const s of apiSearchSalons) byId.set(s.id, s);
+      base = [...byId.values()];
+    }
     return rankSalonsForUser(base, ctx).map(withNormalizedCoords);
-  }, [hasCoords, nearbySalons, listSalons, ctx]);
+  }, [hasCoords, nearbySalons, listSalons, ctx, apiSearchActive, apiSearchSalons]);
 
   const salonsWithCoords = useMemo(
     () => baseSalons.filter((s) => hasValidMapCoords(s.lat, s.lng)),
@@ -164,7 +210,6 @@ function MapView() {
   const [active, setActive] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
-  const [query, setQuery] = useState(routeQ);
   const [filters, setFilters] = useState<MapFiltersState>(() => ({
     ...DEFAULT_MAP_FILTERS,
     category: routeCategory,
@@ -217,6 +262,35 @@ function MapView() {
     setDesktopMapExpanded(false);
   }, []);
 
+  const baseBarbers = useMemo(() => {
+    let barbers = nearbyBarbers;
+    if (apiSearchActive && apiSearchBarbers.length > 0) {
+      const byId = new Map(barbers.map((b) => [b.id, b]));
+      for (const b of apiSearchBarbers) byId.set(b.id, b);
+      barbers = [...byId.values()];
+    }
+    return rankBarbersForUser(barbers.map(withBarberCoords), ctx).filter((b) =>
+      hasValidMapCoords(b.lat, b.lng),
+    );
+  }, [nearbyBarbers, apiSearchActive, apiSearchBarbers, ctx]);
+
+  const filteredBarbers = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const searchFiltered = baseBarbers.filter((b) => {
+      if (!q) return true;
+      return (
+        b.name.toLowerCase().includes(q) ||
+        (b.salonName?.toLowerCase().includes(q) ?? false)
+      );
+    });
+    return applyMapBarberFilters(searchFiltered, filters);
+  }, [query, baseBarbers, filters]);
+
+  const visibleBarbers = useMemo(() => {
+    if (!viewport) return filteredBarbers;
+    return filterSalonsByViewport(filteredBarbers, viewport);
+  }, [filteredBarbers, viewport]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const audienceFiltered = salonsWithCoords.filter((s) => salonMatchesMapAudience(s, mapAudience));
@@ -233,19 +307,27 @@ function MapView() {
   }, [filtered, viewport]);
 
   useEffect(() => {
-    if (filtered.length === 0) {
+    setSelected(null);
+    userHasPannedRef.current = false;
+    initialFitDoneRef.current = false;
+  }, [discoveryTab]);
+
+  useEffect(() => {
+    const items = discoveryTab === "salons" ? filtered : filteredBarbers;
+    const visible = discoveryTab === "salons" ? visibleSalons : visibleBarbers;
+    if (items.length === 0) {
       setActive("");
       return;
     }
-    if (visibleSalons.length === 0) {
+    if (visible.length === 0) {
       setActive("");
       return;
     }
     setActive((prev) => {
-      if (prev && visibleSalons.some((s) => s.id === prev)) return prev;
-      return visibleSalons[0].id;
+      if (prev && visible.some((s) => s.id === prev)) return prev;
+      return visible[0].id;
     });
-  }, [filtered, visibleSalons]);
+  }, [discoveryTab, filtered, filteredBarbers, visibleSalons, visibleBarbers]);
 
   const sidebarSalons = useMemo(() => {
     if (!selected) return visibleSalons;
@@ -254,20 +336,49 @@ function MapView() {
     return pinned ? [...visibleSalons, pinned] : visibleSalons;
   }, [visibleSalons, selected, filtered]);
 
+  const sidebarBarbers = useMemo(() => {
+    if (!selected) return visibleBarbers;
+    if (visibleBarbers.some((b) => b.id === selected)) return visibleBarbers;
+    const pinned = filteredBarbers.find((b) => b.id === selected);
+    return pinned ? [...visibleBarbers, pinned] : visibleBarbers;
+  }, [visibleBarbers, selected, filteredBarbers]);
+
   const mapSalons = sidebarSalons;
 
-  const ctaLabel = t("map.viewSalon");
+  const ctaLabel =
+    discoveryTab === "salons"
+      ? t("map.viewSalon")
+      : t("map.viewProfile", { defaultValue: "Profil" });
 
-  const mapMarkers = useMemo(
-    (): SalonMapMarker[] => mapSalons.map((s) => toMapMarker(s, ctaLabel)),
-    [mapSalons, ctaLabel],
-  );
+  const mapMarkers = useMemo((): SalonMapMarker[] => {
+    if (discoveryTab === "barbers") {
+      return sidebarBarbers.map((b) => toBarberMarker(b, ctaLabel));
+    }
+    return mapSalons.map((s) => toMapMarker(s, ctaLabel));
+  }, [discoveryTab, sidebarBarbers, mapSalons, ctaLabel]);
 
   const goToSalon = useCallback(
     (id: string) => {
       void navigate({ to: "/salon/$id", params: { id } });
     },
     [navigate],
+  );
+
+  const goToBarber = useCallback(
+    (id: string) => {
+      const barber = sidebarBarbers.find((b) => b.id === id);
+      if (!barber) return;
+      void navigate({ to: "/barber/$barberId", params: { barberId: barber.barberId } });
+    },
+    [navigate, sidebarBarbers],
+  );
+
+  const onMarkerNavigate = useCallback(
+    (id: string) => {
+      if (discoveryTab === "barbers") goToBarber(id);
+      else goToSalon(id);
+    },
+    [discoveryTab, goToBarber, goToSalon],
   );
 
   const focusSalon = useCallback((id: string) => {
@@ -283,10 +394,12 @@ function MapView() {
     setHovered(id);
   }, []);
 
-  const fitMarkers = useMemo(
-    (): SalonMapMarker[] => filtered.map((s) => toMapMarker(s, ctaLabel)),
-    [filtered, ctaLabel],
-  );
+  const fitMarkers = useMemo((): SalonMapMarker[] => {
+    if (discoveryTab === "barbers") {
+      return filteredBarbers.map((b) => toBarberMarker(b, ctaLabel));
+    }
+    return filtered.map((s) => toMapMarker(s, ctaLabel));
+  }, [discoveryTab, filteredBarbers, filtered, ctaLabel]);
 
   useEffect(() => {
     if (fitMarkers.length === 0) return;
@@ -333,39 +446,51 @@ function MapView() {
   }, []);
 
   const viewportEmpty =
-    !listLoadingAny && !catalogError && filtered.length > 0 && visibleSalons.length === 0;
+    !listLoadingAny &&
+    !catalogError &&
+    (discoveryTab === "salons"
+      ? filtered.length > 0 && visibleSalons.length === 0
+      : filteredBarbers.length > 0 && visibleBarbers.length === 0);
 
   const emptyMessage = catalogError
     ? t("map.loadError", { defaultValue: "Salonlar yuklanmadi" })
     : query.trim()
-    ? t("map.emptySearch")
-    : countActiveMapFilters(filters) > 0
-      ? t("map.emptyFilters")
-      : mapAudience === "men"
-        ? t("map.emptyMen")
-        : mapAudience === "women"
-          ? t("map.emptyWomen")
-          : t("map.empty");
+      ? t("map.emptySearch")
+      : countActiveMapFilters(filters) > 0
+        ? t("map.emptyFilters")
+        : discoveryTab === "barbers"
+          ? t("map.emptyBarbers", { defaultValue: "Yaqin atrofda usta topilmadi" })
+          : mapAudience === "men"
+            ? t("map.emptyMen")
+            : mapAudience === "women"
+              ? t("map.emptyWomen")
+              : t("map.empty");
 
   const sharedMapProps: SalonMapProps = {
     markers: mapMarkers,
     selectedId: selected,
     hoveredId: hovered,
     onMarkerSelect,
-    onMarkerNavigate: goToSalon,
+    onMarkerNavigate,
     onMarkerHover,
     onViewportChange,
     showUserLocation: !sheetExpanded,
     userLocation,
   };
 
-  const showMapSkeleton = listLoadingAny && salonsWithCoords.length === 0;
+  const showMapSkeleton =
+    listLoadingAny &&
+    (discoveryTab === "salons" ? salonsWithCoords.length === 0 : baseBarbers.length === 0);
   const showMapBootOverlay = mounted && !mapReady && !showMapSkeleton && !mapLoadError;
 
   const retryCatalog = useCallback(() => {
-    void refetchList();
-    if (hasCoords) void refetchNearby();
-  }, [refetchList, refetchNearby, hasCoords]);
+    if (discoveryTab === "salons") {
+      void refetchList();
+      if (hasCoords) void refetchNearby();
+    } else {
+      void refetchBarbers();
+    }
+  }, [discoveryTab, refetchList, refetchNearby, refetchBarbers, hasCoords]);
 
   const mapCanvas = mounted ? (
     <>
@@ -409,7 +534,8 @@ function MapView() {
               {t("common.retry", { defaultValue: "Qayta urinish" })}
             </button>
           </div>
-        ) : !listLoadingAny && filtered.length === 0 ? (
+        ) : !listLoadingAny &&
+          (discoveryTab === "salons" ? filtered.length === 0 : filteredBarbers.length === 0) ? (
           <div className="absolute inset-x-0 bottom-0 z-30 rounded-t-[22px] border-t border-border/50 bg-background p-4 text-center">
             <p className="text-sm font-medium text-muted-foreground">{emptyMessage}</p>
           </div>
@@ -418,14 +544,16 @@ function MapView() {
         {viewportEmpty ? (
           <div className="absolute inset-x-4 top-20 z-30 rounded-2xl border border-border bg-background/95 px-4 py-3 text-center shadow-sm">
             <p className="text-sm font-medium text-muted-foreground">
-              {t("map.emptyViewport", { defaultValue: "Bu hududda salon yo'q — xaritani siljiting." })}
+              {discoveryTab === "barbers"
+                ? t("map.emptyViewportBarbers", { defaultValue: "Bu hududda usta yo'q — xaritani siljiting." })
+                : t("map.emptyViewport", { defaultValue: "Bu hududda salon yo'q — xaritani siljiting." })}
             </p>
           </div>
         ) : null}
 
         {listLoadingAny ? (
           <MapMobileSheetSkeleton />
-        ) : (
+        ) : discoveryTab === "salons" ? (
           <MapSalonSheet
             salons={sidebarSalons}
             activeId={active}
@@ -436,26 +564,79 @@ function MapView() {
             onFiltersChange={setFilters}
             mapAudience={mapAudience}
             onExpandedChange={setSheetExpanded}
+            headerSlot={
+              <MapDiscoveryTabs value={discoveryTab} onChange={setDiscoveryTab} className="w-full justify-center" />
+            }
           />
+        ) : (
+          <div className="absolute inset-x-0 bottom-0 z-30 max-h-[55vh] overflow-hidden rounded-t-[22px] border-t border-border bg-background shadow-lg">
+            <div className="border-b border-border px-4 py-3 space-y-3">
+              <MapDiscoveryTabs value={discoveryTab} onChange={setDiscoveryTab} className="w-full justify-center" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t("common.search")}
+                className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm"
+              />
+            </div>
+            <div className="max-h-[calc(55vh-88px)] overflow-y-auto">
+              <MapBarberList
+                barbers={sidebarBarbers}
+                activeId={active}
+                onActiveChange={focusSalon}
+                emptyMessage={emptyMessage}
+              />
+            </div>
+          </div>
         )}
       </div>
       ) : (
       <div className="relative flex h-full min-h-0 w-full overflow-hidden">
         {!desktopMapExpanded ? (
-          <MapDesktopPanel
-            salons={sidebarSalons}
-            highlightedId={selected || hovered || active}
-            scrollToId={selected ?? undefined}
-            query={query}
-            onQueryChange={setQuery}
-            filters={filters}
-            onFiltersChange={setFilters}
-            mapAudience={mapAudience}
-            onSalonHover={onMarkerHover}
-            loading={listLoadingAny}
-            emptyMessage={emptyMessage}
-            viewportEmpty={viewportEmpty}
-          />
+          discoveryTab === "salons" ? (
+            <MapDesktopPanel
+              salons={sidebarSalons}
+              highlightedId={selected || hovered || active}
+              scrollToId={selected ?? undefined}
+              query={query}
+              onQueryChange={setQuery}
+              filters={filters}
+              onFiltersChange={setFilters}
+              mapAudience={mapAudience}
+              onSalonHover={onMarkerHover}
+              loading={listLoadingAny}
+              emptyMessage={emptyMessage}
+              viewportEmpty={viewportEmpty}
+              headerSlot={
+                <MapDiscoveryTabs value={discoveryTab} onChange={setDiscoveryTab} />
+              }
+            />
+          ) : (
+            <div
+              className="flex h-full shrink-0 flex-col overflow-hidden border-r border-border bg-background"
+              style={{ width: 420 }}
+            >
+              <div className="border-b border-border px-4 py-4 space-y-3">
+                <MapDiscoveryTabs value={discoveryTab} onChange={setDiscoveryTab} />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={t("common.search")}
+                  className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm"
+                />
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                <MapBarberList
+                  barbers={sidebarBarbers}
+                  activeId={active}
+                  onActiveChange={focusSalon}
+                  onHover={onMarkerHover}
+                  loading={listLoadingAny}
+                  emptyMessage={emptyMessage}
+                />
+              </div>
+            </div>
+          )
         ) : null}
         <MapDesktopMapFrame expanded={desktopMapExpanded}>
           <div className="relative h-full w-full">

@@ -6,6 +6,10 @@ export function isPublicCustomerApiPath(path: string): boolean {
   if (/^\/api\/v1\/salons\/\d+\/(staff|rating-summary|barber-services|portfolio)$/.test(p)) {
     return true;
   }
+  if (p === "/api/v1/barbers" || p.startsWith("/api/v1/barbers/")) {
+    if (p.includes("/search")) return false;
+    return true;
+  }
   if (p.startsWith("/api/v1/bookings/availability")) return true;
   if (p === "/api/v1/reviews" || (p.startsWith("/api/v1/reviews/") && !p.includes("mine"))) {
     return true;

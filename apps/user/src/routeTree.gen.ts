@@ -48,6 +48,7 @@ import { Route as ExploreStyleIdRouteImport } from './routes/explore_.$styleId'
 import { Route as ChatIdRouteImport } from './routes/chat.$id'
 import { Route as CategoryCategoryRouteImport } from './routes/category.$category'
 import { Route as BookingSalonIdRouteImport } from './routes/booking.$salonId'
+import { Route as BarberBarberIdRouteImport } from './routes/barber.$barberId'
 import { Route as AccountPreferencesRouteImport } from './routes/account.preferences'
 import { Route as AccountPaymentsRouteImport } from './routes/account.payments'
 import { Route as AccountHouseholdRouteImport } from './routes/account.household'
@@ -250,6 +251,11 @@ const BookingSalonIdRoute = BookingSalonIdRouteImport.update({
   path: '/booking/$salonId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BarberBarberIdRoute = BarberBarberIdRouteImport.update({
+  id: '/barber/$barberId',
+  path: '/barber/$barberId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AccountPreferencesRoute = AccountPreferencesRouteImport.update({
   id: '/account/preferences',
   path: '/account/preferences',
@@ -317,6 +323,7 @@ export interface FileRoutesByFullPath {
   '/account/household': typeof AccountHouseholdRoute
   '/account/payments': typeof AccountPaymentsRoute
   '/account/preferences': typeof AccountPreferencesRoute
+  '/barber/$barberId': typeof BarberBarberIdRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
@@ -364,6 +371,7 @@ export interface FileRoutesByTo {
   '/account/household': typeof AccountHouseholdRoute
   '/account/payments': typeof AccountPaymentsRoute
   '/account/preferences': typeof AccountPreferencesRoute
+  '/barber/$barberId': typeof BarberBarberIdRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
@@ -412,6 +420,7 @@ export interface FileRoutesById {
   '/account/household': typeof AccountHouseholdRoute
   '/account/payments': typeof AccountPaymentsRoute
   '/account/preferences': typeof AccountPreferencesRoute
+  '/barber/$barberId': typeof BarberBarberIdRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
@@ -461,6 +470,7 @@ export interface FileRouteTypes {
     | '/account/household'
     | '/account/payments'
     | '/account/preferences'
+    | '/barber/$barberId'
     | '/booking/$salonId'
     | '/category/$category'
     | '/chat/$id'
@@ -508,6 +518,7 @@ export interface FileRouteTypes {
     | '/account/household'
     | '/account/payments'
     | '/account/preferences'
+    | '/barber/$barberId'
     | '/booking/$salonId'
     | '/category/$category'
     | '/chat/$id'
@@ -555,6 +566,7 @@ export interface FileRouteTypes {
     | '/account/household'
     | '/account/payments'
     | '/account/preferences'
+    | '/barber/$barberId'
     | '/booking/$salonId'
     | '/category/$category'
     | '/chat/$id'
@@ -603,6 +615,7 @@ export interface RootRouteChildren {
   AccountHouseholdRoute: typeof AccountHouseholdRoute
   AccountPaymentsRoute: typeof AccountPaymentsRoute
   AccountPreferencesRoute: typeof AccountPreferencesRoute
+  BarberBarberIdRoute: typeof BarberBarberIdRoute
   BookingSalonIdRoute: typeof BookingSalonIdRoute
   CategoryCategoryRoute: typeof CategoryCategoryRoute
   ExploreStyleIdRoute: typeof ExploreStyleIdRoute
@@ -888,6 +901,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookingSalonIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/barber/$barberId': {
+      id: '/barber/$barberId'
+      path: '/barber/$barberId'
+      fullPath: '/barber/$barberId'
+      preLoaderRoute: typeof BarberBarberIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/account/preferences': {
       id: '/account/preferences'
       path: '/account/preferences'
@@ -990,6 +1010,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountHouseholdRoute: AccountHouseholdRoute,
   AccountPaymentsRoute: AccountPaymentsRoute,
   AccountPreferencesRoute: AccountPreferencesRoute,
+  BarberBarberIdRoute: BarberBarberIdRoute,
   BookingSalonIdRoute: BookingSalonIdRoute,
   CategoryCategoryRoute: CategoryCategoryRoute,
   ExploreStyleIdRoute: ExploreStyleIdRoute,

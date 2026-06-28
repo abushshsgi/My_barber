@@ -24,6 +24,7 @@ from bookings.availability import (
 from bookings.models import Booking, BookingLine, Review
 from notifications.utils import notify_user
 from salons.catalog_bootstrap import ensure_default_catalog_seeded
+from salons.amenity_public import resolve_work_salon_for_barber
 from salons.models import CatalogService, Salon, SalonMembership
 
 from .models import (
@@ -74,29 +75,8 @@ def _haversine_km(lat1, lon1, lat2, lon2):
     return 2 * r * math.asin(math.sqrt(a))
 
 
-def _public_salon_for_barber(barber):
-    owned = (
-        Salon.objects.filter(owner_barber=barber, is_published=True)
-        .only("id", "name", "latitude", "longitude")
-        .first()
-    )
-    if owned is not None:
-        return owned
-    membership = (
-        SalonMembership.objects.select_related("salon")
-        .filter(
-            barber=barber,
-            invite_state=SalonMembership.InviteState.ACTIVE,
-            salon__is_published=True,
-        )
-        .order_by("-activated_at", "-id")
-        .first()
-    )
-    return membership.salon if membership is not None else None
-
-
 class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
-    permission_classes = [IsAuthenticatedBarberAware]
+    permission_classes = [AllowAny]
     queryset = BarberProfile.objects.select_related("barber").prefetch_related(
         "services",
         "services__catalog_service",
@@ -239,7 +219,7 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
             booking_kind = "independent"
             salon = None
             if barber.work_mode != Barber.WorkMode.INDEPENDENT:
-                salon = _public_salon_for_barber(barber)
+                salon = resolve_work_salon_for_barber(barber)
                 if salon is None:
                     continue
                 row_lat = salon.latitude
@@ -283,7 +263,7 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
             barber = p.barber
             ser = BarberPublicListSerializer(p, context={"request": request})
             row = dict(ser.data)
-            salon = _public_salon_for_barber(barber)
+            salon = resolve_work_salon_for_barber(barber)
             if barber.work_mode != Barber.WorkMode.INDEPENDENT and salon is not None:
                 row["booking_kind"] = "salon"
                 row["salon_id"] = salon.id

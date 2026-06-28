@@ -120,13 +120,30 @@ function BarberAmenitiesPage() {
         <PageHeader title="Qulayliklar" subtitle="Salon qulayliklari mijozlarga ko'rinadi" />
         <EmptyBlock
           title="Salon topilmadi"
-          description="Qulayliklarni boshqarish uchun avval salon yarating yoki salonga qo'shiling."
+          description="Qulayliklarni faqat salon egasi boshqaradi. Avval salon yarating."
           action={
             ownsSalon ? (
               <Button asChild>
                 <Link to="/salon/create">Salon yaratish</Link>
               </Button>
             ) : undefined
+          }
+        />
+      </div>
+    );
+  }
+
+  if (!ownsSalon) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Qulayliklar" subtitle="Salon qulayliklari" />
+        <EmptyBlock
+          title="Faqat salon egasi"
+          description="Qulayliklarni faqat salon egasi qo'shadi va tahrirlaydi. Siz ishlayotgan saloningiz qulayliklari mijozlarga avtomatik ko'rinadi."
+          action={
+            <Button asChild variant="outline">
+              <Link to="/barber/salon-view">Salon sahifasiga</Link>
+            </Button>
           }
         />
       </div>

@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { motion, animate, useMotionValue, type PanInfo } from "framer-motion";
 import { Search, Star } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { MapFilters } from "@/components/map/MapFilters";
 import type { AudienceFilter } from "@/hooks/use-audience";
@@ -34,6 +34,7 @@ type Props = {
   onFiltersChange: (next: MapFiltersState) => void;
   mapAudience: AudienceFilter;
   onExpandedChange?: (expanded: boolean) => void;
+  headerSlot?: ReactNode;
 };
 
 function SalonCoverImage({ salon, className }: { salon: Salon; className?: string }) {
@@ -200,6 +201,7 @@ export function MapSalonSheet({
   onFiltersChange,
   mapAudience,
   onExpandedChange,
+  headerSlot,
 }: Props) {
   const { t } = useTranslation();
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -318,6 +320,12 @@ export function MapSalonSheet({
           className="flex shrink-0 cursor-grab flex-col touch-none active:cursor-grabbing"
         >
           <SheetHandle />
+
+          {headerSlot ? (
+            <div className="shrink-0 px-4 pb-2" onPointerDown={(e) => e.stopPropagation()}>
+              {headerSlot}
+            </div>
+          ) : null}
 
           <div className="shrink-0 px-4 pb-2" onPointerDown={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-2">

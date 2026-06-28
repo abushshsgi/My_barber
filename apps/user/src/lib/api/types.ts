@@ -228,14 +228,33 @@ export type ApiBarberService = {
   image_url?: string;
 };
 
+export type ApiAmenityChip = {
+  code: string;
+  icon: string;
+  label: string;
+};
+
 export type ApiBarberPublic = {
   id: number;
   barber_id: number;
   name: string;
+  phone?: string | null;
+  region?: string;
+  location_text?: string;
+  latitude?: string | number | null;
+  longitude?: string | number | null;
   avatar: string | null;
   avg_rating?: number | null;
   review_count?: number | null;
   services?: ApiBarberService[];
+  active_services?: ApiBarberService[];
+  work_photos?: { id: number; image: string; title?: string }[];
+  booking_kind?: "salon" | "independent";
+  salon_id?: number | null;
+  salon_name?: string | null;
+  amenities?: ApiAmenityChip[];
+  work_mode?: string;
+  distance_km?: number;
 };
 
 export type Paginated<T> = {

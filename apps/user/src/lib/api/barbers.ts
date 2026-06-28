@@ -22,11 +22,11 @@ export async function fetchBarbersNearby(
   lat: number,
   lng: number,
   radiusKm = 15,
-): Promise<unknown[]> {
+): Promise<import("./types").ApiBarberPublic[]> {
   return apiJson(`/api/v1/barbers/nearby/${qs({ lat, lng, radius_km: radiusKm })}`);
 }
 
-export async function findBarbers(q: string): Promise<unknown[]> {
+export async function findBarbers(q: string): Promise<import("./types").ApiBarberPublic[]> {
   return apiJson(`/api/v1/barbers/find/${qs({ q })}`);
 }
 

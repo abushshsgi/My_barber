@@ -16,7 +16,8 @@ import {
 import { useHairstyles } from "@/hooks/use-hairstyles";
 import { useMe } from "@/hooks/use-me";
 import { useRecommendContext } from "@/hooks/use-recommend-context";
-import { useSalonsList, useSalonsNearby } from "@/hooks/use-salons";
+import { useSalonsList, useSalonsNearby, useSalonSearch } from "@/hooks/use-salons";
+import { useBarberFind } from "@/hooks/use-barbers";
 import { hasValidMapCoords } from "@/lib/map-utils";
 import { rankSalonsForUser } from "@/lib/recommendations";
 
@@ -44,6 +45,14 @@ export function useHomeData() {
 
   const [cat, setCat] = useState<Category | "all">("all");
   const [query, setQuery] = useState("");
+  const searchActive = query.trim().length >= 2;
+  const { data: searchSalons = [], isLoading: searchSalonsLoading } = useSalonSearch(
+    searchActive ? query : "",
+  );
+  const { data: searchBarbers = [], isLoading: searchBarbersLoading } = useBarberFind(
+    searchActive ? query : "",
+    searchActive,
+  );
 
   useEffect(() => {
     setCat(audienceToCategory(audience));
@@ -61,16 +70,20 @@ export function useHomeData() {
     [audience],
   );
 
-  const filtered = useMemo(
-    () =>
-      salons.filter(
-        (s) =>
-          matchAudience(s.audience, audience) &&
-          (effectiveCat === "all" || s.category === effectiveCat) &&
-          (query === "" || s.name.toLowerCase().includes(query.toLowerCase())),
-      ),
-    [salons, audience, effectiveCat, query],
-  );
+  const filtered = useMemo(() => {
+    const source = searchActive ? searchSalons : salons;
+    return source.filter(
+      (s) =>
+        matchAudience(s.audience, audience) &&
+        (effectiveCat === "all" || s.category === effectiveCat) &&
+        (!searchActive || query === "" || s.name.toLowerCase().includes(query.toLowerCase())),
+    );
+  }, [salons, searchSalons, searchActive, audience, effectiveCat, query]);
+
+  const filteredBarbers = useMemo(() => {
+    if (!searchActive) return [];
+    return searchBarbers;
+  }, [searchActive, searchBarbers]);
 
   const trending = useMemo(() => {
     const hints = readTrendingFaceHints();
@@ -109,13 +122,15 @@ export function useHomeData() {
     effectiveCat,
     visibleCategoryKeys,
     filtered,
+    filteredBarbers,
+    searchActive,
     mapSalons,
     trending,
     exploreRow,
     topOffer,
     featuredSalons,
     personalized,
-    loading: nearbyLoading || listLoading,
+    loading: nearbyLoading || listLoading || (searchActive && (searchSalonsLoading || searchBarbersLoading)),
     error,
   };
 }

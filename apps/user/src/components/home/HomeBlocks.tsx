@@ -2,6 +2,8 @@ import { Link } from "@tanstack/react-router";
 import {
   ChevronRight,
   Search,
+  Star,
+  User,
   Wand2,
 } from "lucide-react";
 import { useState } from "react";
@@ -13,6 +15,7 @@ import { AudienceSwitch } from "@/components/AudienceSwitch";
 import { getTrendCoverUrl } from "@/lib/cover-images";
 import { getHairstyleDisplayUrl, type TrendingHairstyle } from "@/lib/hairstyles/catalog";
 import type { Offer } from "@/lib/mock-data";
+import type { BarberDiscovery } from "@/lib/mappers/barber";
 
 function TrendingStyleCard({ style }: { style: TrendingHairstyle }) {
   const { t } = useTranslation();
@@ -88,6 +91,104 @@ export function HomeSearchAndCategories({ query, setQuery, visibleCategoryKeys, 
         })}
       </div>
     </>
+  );
+}
+
+export function HomeUnifiedSearchResults({
+  searchActive,
+  salons,
+  barbers,
+  loading,
+}: {
+  searchActive: boolean;
+  salons: HomeData["filtered"];
+  barbers: BarberDiscovery[];
+  loading: boolean;
+}) {
+  const { t } = useTranslation();
+  if (!searchActive) return null;
+
+  if (loading) {
+    return (
+      <div className="px-5 py-8 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
+    );
+  }
+
+  if (salons.length === 0 && barbers.length === 0) {
+    return (
+      <section className="mt-6 px-5">
+        <p className="rounded-2xl bg-surface p-8 text-center text-sm font-medium text-muted-foreground">
+          {t("homePage.emptyTitle")}
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="mt-6 space-y-8 px-5">
+      {salons.length > 0 ? (
+        <div>
+          <h2 className="mb-4 text-lg font-bold tracking-tight">
+            {t("map.tabSalons", { defaultValue: "Salonlar" })}
+          </h2>
+          <div className="space-y-5">
+            {salons.map((s) => (
+              <SalonCard key={s.id} salon={s} />
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {barbers.length > 0 ? (
+        <div>
+          <h2 className="mb-4 text-lg font-bold tracking-tight">
+            {t("map.tabBarbers", { defaultValue: "Ustalar" })}
+          </h2>
+          <ul className="divide-y divide-border rounded-2xl border border-border">
+            {barbers.map((b) => {
+              const bookTo =
+                b.bookingKind === "salon" && b.salonId
+                  ? `/booking/${b.salonId}?barber=${b.barberId}`
+                  : `/booking/barber/${b.barberId}`;
+              return (
+                <li key={b.id} className="flex gap-3 p-4">
+                  <div className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-muted">
+                    {b.avatar ? (
+                      <img src={b.avatar} alt="" className="size-full object-cover" />
+                    ) : (
+                      <User className="size-5 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold truncate">{b.name}</p>
+                    {b.salonName ? (
+                      <p className="text-xs text-muted-foreground truncate">{b.salonName}</p>
+                    ) : null}
+                    {b.rating > 0 ? (
+                      <p className="mt-1 inline-flex items-center gap-0.5 text-xs font-semibold">
+                        <Star className="size-3 fill-foreground" />
+                        {b.rating.toFixed(1)}
+                      </p>
+                    ) : null}
+                    <div className="mt-2 flex gap-2">
+                      <Link to={bookTo} className="rounded-xl bg-foreground px-3 py-1.5 text-xs font-bold text-background">
+                        {t("map.bookBarber", { defaultValue: "Bron qilish" })}
+                      </Link>
+                      <Link
+                        to="/barber/$barberId"
+                        params={{ barberId: b.barberId }}
+                        className="rounded-xl border border-border px-3 py-1.5 text-xs font-bold"
+                      >
+                        {t("map.viewProfile", { defaultValue: "Profil" })}
+                      </Link>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
+    </section>
   );
 }
 

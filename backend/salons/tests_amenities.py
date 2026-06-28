@@ -1,10 +1,15 @@
+from datetime import time
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from barbers.barber_auth import encode_barber_tokens
+from barbers.models import Barber
 from bookings.models import Booking, Review
-from salons.models import Amenity, Salon, SalonAmenity
+from salons.models import Amenity, Salon, SalonAmenity, SalonMembership
 from salons.amenity_catalog import AMENITY_CATALOG
 from salons.management.commands.seed_amenities import DEFAULT_AMENITIES
 
@@ -47,6 +52,76 @@ class SalonAmenitiesTests(TestCase):
     def test_amenity_catalog_has_fifty_items(self):
         self.assertEqual(len(AMENITY_CATALOG), 50)
         self.assertEqual(len(DEFAULT_AMENITIES), 50)
+
+
+class BarberSalonAmenitiesPermissionTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.owner = Barber.objects.create(
+            email="owner-put@test.uz",
+            username="owner-put@test.uz",
+            full_name="Owner Put",
+            is_active=True,
+            work_mode=Barber.WorkMode.SALON,
+            onboarding_flow=Barber.OnboardingFlow.OWNER,
+            email_verified_at=timezone.now(),
+        )
+        self.worker = Barber.objects.create(
+            email="worker-put@test.uz",
+            username="worker-put@test.uz",
+            full_name="Worker Put",
+            is_active=True,
+            work_mode=Barber.WorkMode.SALON,
+            onboarding_flow=Barber.OnboardingFlow.EMPLOYEE,
+            email_verified_at=timezone.now(),
+        )
+        self.salon = Salon.objects.create(
+            owner_barber=self.owner,
+            name="Perm Salon",
+            latitude="41.2995",
+            longitude="69.2401",
+            is_published=True,
+        )
+        SalonMembership.objects.create(
+            barber=self.owner,
+            salon=self.salon,
+            role=SalonMembership.Role.OWNER,
+            invite_state=SalonMembership.InviteState.NA,
+        )
+        SalonMembership.objects.create(
+            barber=self.worker,
+            salon=self.salon,
+            role=SalonMembership.Role.BARBER,
+            invite_state=SalonMembership.InviteState.ACTIVE,
+            activated_at=timezone.now(),
+        )
+        for code, icon, labels in DEFAULT_AMENITIES[:2]:
+            amenity, _ = Amenity.objects.get_or_create(
+                code=code,
+                defaults={"icon": icon, "labels": labels},
+            )
+            SalonAmenity.objects.get_or_create(salon=self.salon, amenity=amenity)
+
+    def test_owner_can_put_amenities(self):
+        access, _ = encode_barber_tokens(self.owner.id)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+        res = self.client.put(
+            "/api/v1/barber/amenities/",
+            {"salon": self.salon.id, "amenity_codes": ["wifi"]},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["selected_codes"], ["wifi"])
+
+    def test_worker_put_amenities_forbidden(self):
+        access, _ = encode_barber_tokens(self.worker.id)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+        res = self.client.put(
+            "/api/v1/barber/amenities/",
+            {"salon": self.salon.id, "amenity_codes": ["wifi"]},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 403)
 
 
 class SalonRatingSummaryTests(TestCase):

@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Heart, Search, Star } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { MapFilters } from "@/components/map/MapFilters";
 import {
@@ -31,6 +31,7 @@ type Props = {
   loading?: boolean;
   emptyMessage?: string;
   viewportEmpty?: boolean;
+  headerSlot?: ReactNode;
 };
 
 function salonDescription(salon: Salon): string {
@@ -182,6 +183,7 @@ export function MapDesktopPanel({
   loading,
   emptyMessage,
   viewportEmpty,
+  headerSlot,
 }: Props) {
   const { t } = useTranslation();
   const listRef = useRef<HTMLDivElement>(null);
@@ -227,6 +229,7 @@ export function MapDesktopPanel({
             })
           )}
         </h1>
+        {headerSlot}
         <div className="flex items-center gap-2">
           <div className="relative min-w-0 flex-1 rounded-full border border-border/50 bg-background py-2 pl-9 pr-3 shadow-sm">
             <Search

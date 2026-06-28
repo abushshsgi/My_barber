@@ -7,6 +7,7 @@ import {
   HomeSearchAndCategories,
   HomeTrendingStrip,
   HomeTrustStrip,
+  HomeUnifiedSearchResults,
 } from "@/components/home/HomeBlocks";
 import { HomeDiscoverySections } from "@/components/home/HomeDiscoverySections";
 
@@ -27,7 +28,13 @@ export function HomeVariantEditorial({ data }: Props) {
       <HomeTrendingStrip trending={data.trending} />
       <HomeAiPromo />
       <HomeSearchAndCategories {...data} />
-      <HomeTrustStrip />
+      <HomeUnifiedSearchResults
+        searchActive={data.searchActive}
+        salons={data.filtered}
+        barbers={data.filteredBarbers}
+        loading={data.loading}
+      />
+      {!data.searchActive ? <HomeTrustStrip /> : null}
     </div>
   );
 }

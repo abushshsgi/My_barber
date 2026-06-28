@@ -8,6 +8,7 @@ import {
   BazaarMapPanel,
 } from "./bazaar/BazaarParts";
 import { HomeSalonSectionsBlock, useHomeLayoutSlice } from "./home-layout-shared";
+import { HomeUnifiedSearchResults } from "@/components/home/HomeBlocks";
 
 type Props = { data: HomeData };
 
@@ -32,6 +33,17 @@ export function HomeBazaarClassic({ data }: Props) {
           <BazaarFilterSidebar {...data} className="h-[250px] w-[260px]" />
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:col-span-9 lg:row-start-2">
+          {data.searchActive ? (
+            <div className="col-span-full">
+              <HomeUnifiedSearchResults
+                searchActive={data.searchActive}
+                salons={data.filtered}
+                barbers={data.filteredBarbers}
+                loading={data.loading}
+              />
+            </div>
+          ) : (
+            <>
           {[a, b, c, d, e].filter(Boolean).map((salon) =>
             salon ? (
               <div key={salon.id} className={cn("min-w-0", salon === a && "col-span-2 row-span-2")}>
@@ -47,9 +59,11 @@ export function HomeBazaarClassic({ data }: Props) {
           {loading ? (
             <div className="col-span-full h-40 animate-pulse rounded-xl bg-surface" />
           ) : null}
+            </>
+          )}
         </div>
       </div>
-      <HomeSalonSectionsBlock data={data} rowClass={ROW} />
+      <HomeSalonSectionsBlock data={data} rowClass={ROW} showCategoryStrip={!data.searchActive} />
     </div>
   );
 }

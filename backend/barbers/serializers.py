@@ -163,7 +163,39 @@ class BarberScheduleExceptionSerializer(serializers.ModelSerializer):
         return attrs
 
 
-class BarberPublicListSerializer(serializers.ModelSerializer):
+from salons.amenity_public import barber_booking_context
+
+
+class BarberPublicContextMixin:
+    booking_kind = serializers.SerializerMethodField()
+    salon_id = serializers.SerializerMethodField()
+    salon_name = serializers.SerializerMethodField()
+    amenities = serializers.SerializerMethodField()
+
+    def _booking_ctx(self, obj):
+        cache = getattr(self, "_booking_ctx_cache", None)
+        if cache is None:
+            cache = {}
+            setattr(self, "_booking_ctx_cache", cache)
+        key = obj.barber_id
+        if key not in cache:
+            cache[key] = barber_booking_context(obj.barber, self.context.get("request"))
+        return cache[key]
+
+    def get_booking_kind(self, obj):
+        return self._booking_ctx(obj)["booking_kind"]
+
+    def get_salon_id(self, obj):
+        return self._booking_ctx(obj)["salon_id"]
+
+    def get_salon_name(self, obj):
+        return self._booking_ctx(obj)["salon_name"]
+
+    def get_amenities(self, obj):
+        return self._booking_ctx(obj)["amenities"]
+
+
+class BarberPublicListSerializer(BarberPublicContextMixin, serializers.ModelSerializer):
     name = serializers.CharField(source="barber.full_name", read_only=True)
     phone = serializers.CharField(
         source="barber.phone", read_only=True, allow_null=True, allow_blank=True
@@ -190,6 +222,10 @@ class BarberPublicListSerializer(serializers.ModelSerializer):
             "avg_rating",
             "review_count",
             "active_services",
+            "booking_kind",
+            "salon_id",
+            "salon_name",
+            "amenities",
         )
 
     def get_avatar(self, obj):
@@ -202,7 +238,7 @@ class BarberPublicListSerializer(serializers.ModelSerializer):
         return BarberServiceSerializer(qs, many=True).data
 
 
-class BarberPublicDetailSerializer(serializers.ModelSerializer):
+class BarberPublicDetailSerializer(BarberPublicContextMixin, serializers.ModelSerializer):
     name = serializers.CharField(source="barber.full_name", read_only=True)
     phone = serializers.CharField(
         source="barber.phone", read_only=True, allow_null=True, allow_blank=True
@@ -231,6 +267,10 @@ class BarberPublicDetailSerializer(serializers.ModelSerializer):
             "review_count",
             "services",
             "work_photos",
+            "booking_kind",
+            "salon_id",
+            "salon_name",
+            "amenities",
         )
 
     def get_services(self, obj):

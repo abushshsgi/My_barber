@@ -96,6 +96,31 @@ export function rankSalonsForUser(salons: Salon[], ctx: RecommendContext): Salon
     .map(({ salon }) => salon);
 }
 
+/** Reyting, masofa va xizmatlar bo‘yicha barberlarni tartiblash. */
+export function rankBarbersForUser(
+  barbers: import("@/lib/mappers/barber").BarberDiscovery[],
+  ctx: RecommendContext,
+) {
+  if (!barbers.length) return barbers;
+  return [...barbers]
+    .map((b) => {
+      let score = (b.rating ?? 0) * 24 + Math.min(b.reviewCount ?? 0, 80) * 0.4;
+      if (b.lat && b.lng && ctx.lat != null && ctx.lng != null) {
+        const km = haversineKm(ctx.lat, ctx.lng, b.lat, b.lng);
+        score += distanceScore(km);
+        return { barber: { ...b, distanceKm: Math.round(km * 10) / 10 }, score };
+      }
+      if (b.distanceKm > 0) score += distanceScore(b.distanceKm);
+      if (b.priceFrom > 0) score += 4;
+      return { barber: b, score };
+    })
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return (a.barber.distanceKm || 999) - (b.barber.distanceKm || 999);
+    })
+    .map(({ barber }) => barber);
+}
+
 export function buildRecommendContext(
   user?: {
     region?: string | null;
