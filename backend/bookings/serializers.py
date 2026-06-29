@@ -18,6 +18,8 @@ from bookings.db_compat import (
     bookings_has_order_number_column,
     bookings_has_portfolio_consent_column,
     booking_create_compat,
+    booking_has_review_for,
+    booking_review_fields,
 )
 from bookings.models import Booking, BookingCompletion, BookingLine, Review
 from accounts.models import FamilyMember
@@ -149,11 +151,12 @@ class BookingSerializer(serializers.ModelSerializer):
         return None
 
     def get_has_review(self, obj):
-        return hasattr(obj, "review")
+        has, _ = booking_review_fields(obj)
+        return has
 
     def get_review_id(self, obj):
-        review = getattr(obj, "review", None)
-        return review.id if review else None
+        _, rid = booking_review_fields(obj)
+        return rid
 
     def get_family_member(self, obj: Booking):
         if not bookings_has_family_member_column():
@@ -376,14 +379,12 @@ class BookingListSerializer(serializers.ModelSerializer):
         return obj.salon.name if obj.salon_id else None
 
     def get_has_review(self, obj):
-        annotated = getattr(obj, "_has_review", None)
-        if annotated is not None:
-            return bool(annotated)
-        return hasattr(obj, "review")
+        has, _ = booking_review_fields(obj)
+        return has
 
     def get_review_id(self, obj):
-        review = getattr(obj, "review", None)
-        return review.id if review else None
+        _, rid = booking_review_fields(obj)
+        return rid
 
     def get_family_member(self, obj: Booking):
         if not bookings_has_family_member_column():
@@ -693,7 +694,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Not your booking.")
         if booking.status != Booking.Status.COMPLETED:
             raise serializers.ValidationError("Booking not completed.")
-        if hasattr(booking, "review"):
+        if booking_has_review_for(booking.id):
             raise serializers.ValidationError("Already reviewed.")
         return booking
 

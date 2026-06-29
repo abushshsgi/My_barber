@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from django.db.models import Count, Exists, OuterRef, Q, Sum
+from django.db.models import Count, Exists, OuterRef, Q, Subquery, Sum
 from django.db.models.functions import TruncDate
 from django.http import Http404
 from django.shortcuts import get_object_or_404
@@ -219,16 +219,18 @@ class BookingViewSet(viewsets.ModelViewSet):
             if bookings_has_family_member_column():
                 related.append("family_member")
             base = Booking.objects.select_related(*related).prefetch_related("lines")
-            base = booking_queryset_compat(base)
-            base = base.annotate(
-                _has_review=Exists(Review.objects.filter(booking_id=OuterRef("pk")))
-            )
         else:
             related = ["customer", "salon", "barber", "barber__profile", "completion"]
             if bookings_has_family_member_column():
                 related.append("family_member")
             base = Booking.objects.select_related(*related).prefetch_related("lines")
-            base = booking_queryset_compat(base)
+        base = booking_queryset_compat(base)
+        base = base.annotate(
+            _has_review=Exists(Review.objects.filter(booking_id=OuterRef("pk"))),
+            _review_id=Subquery(
+                Review.objects.filter(booking_id=OuterRef("pk")).values("id")[:1]
+            ),
+        )
         st = self.request.query_params.get("status")
         if st:
             base = base.filter(status=st)
@@ -689,12 +691,9 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     def _defer_review_compat(self, qs):
-        """salon_rating/salon_text ustunlari hali yo'q bo'lsa SELECT dan chiqaramiz."""
-        from bookings.db_compat import reviews_has_salon_rating_column
+        from bookings.db_compat import review_queryset_compat
 
-        if not reviews_has_salon_rating_column():
-            return qs.defer("salon_rating", "salon_text")
-        return qs
+        return review_queryset_compat(qs)
 
     def get_queryset(self):
         if self.request.query_params.get("mine") == "1":

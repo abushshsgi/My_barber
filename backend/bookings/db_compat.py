@@ -52,6 +52,45 @@ def reviews_has_dimension_table() -> bool:
     return _has_review_dimension_table()
 
 
+def booking_review_id_for(booking_id: int) -> int | None:
+    """Review id — faqat `id` ustuni (salon_rating SELECT qilinmaydi)."""
+    from bookings.models import Review
+
+    return Review.objects.filter(booking_id=booking_id).values_list("id", flat=True).first()
+
+
+def booking_has_review_for(booking_id: int) -> bool:
+    from bookings.models import Review
+
+    return Review.objects.filter(booking_id=booking_id).exists()
+
+
+def booking_review_fields(obj) -> tuple[bool, int | None]:
+    """(has_review, review_id) — annotate yoki id-only so'rov, relation yuklanmaydi."""
+    has_ann = getattr(obj, "_has_review", None)
+    id_ann = getattr(obj, "_review_id", None)
+    if has_ann is not None:
+        has = bool(has_ann)
+        if not has:
+            return False, None
+        if id_ann is not None:
+            return True, int(id_ann)
+        rid = booking_review_id_for(obj.pk)
+        return True, rid
+    rid = booking_review_id_for(obj.pk)
+    return rid is not None, rid
+
+
+def review_queryset_compat(qs: QuerySet) -> QuerySet:
+    """Review queryset — migrate kechiksa yangi ustunlarni SELECT dan chiqaradi."""
+    defer: list[str] = []
+    if not reviews_has_salon_rating_column():
+        defer.extend(["salon_rating", "salon_text"])
+    if defer:
+        qs = qs.defer(*defer)
+    return qs
+
+
 def bookings_has_family_member_column() -> bool:
     return "family_member_id" in _booking_column_names()
 
