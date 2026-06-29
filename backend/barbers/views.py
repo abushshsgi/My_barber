@@ -712,6 +712,10 @@ class MyBarberReviewsView(APIView):
     permission_classes = [IsBarber]
 
     def get(self, request):
+        from collections import defaultdict
+
+        from bookings.models import ReviewDimensionScore
+
         barber = request.user.barber
         rows = (
             Review.objects.filter(barber=barber)
@@ -727,6 +731,18 @@ class MyBarberReviewsView(APIView):
                 .values("booking_id", "service_name")
             ):
                 service_by_booking.setdefault(line["booking_id"], line["service_name"])
+
+        review_ids = [r.id for r in rows]
+        dims_by_review: dict[int, list] = defaultdict(list)
+        if review_ids:
+            for d in ReviewDimensionScore.objects.filter(
+                review_id__in=review_ids,
+                target=ReviewDimensionScore.Target.BARBER,
+            ).values("review_id", "dimension", "score"):
+                dims_by_review[d["review_id"]].append(
+                    {"dimension": d["dimension"], "score": d["score"]}
+                )
+
         out = []
         for r in rows:
             out.append(
@@ -740,6 +756,7 @@ class MyBarberReviewsView(APIView):
                     "service": service_by_booking.get(r.booking_id, "Xizmat") if r.booking_id else "Xizmat",
                     "barber_reply": r.barber_reply,
                     "barber_replied_at": r.barber_replied_at.isoformat() if r.barber_replied_at else None,
+                    "dimensions": dims_by_review.get(r.id, []),
                 }
             )
         return Response(out)

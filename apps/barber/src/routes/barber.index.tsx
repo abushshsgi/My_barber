@@ -1,11 +1,13 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
   CalendarClock,
   TrendingUp,
   Users,
   Star,
   Play,
+  ScanLine,
   CheckCircle2,
   ArrowRight,
   Package,
@@ -31,7 +33,10 @@ import {
   prefetchBarberFinance,
   useBarberBookingsQuery,
   useBarberFinanceQuery,
+  useBookingActionMutation,
 } from "@/hooks/use-barber-queries";
+import { CompleteBookingDialog } from "@/components/bookings/CompleteBookingDialog";
+import type { CompleteBookingOptions } from "@/lib/map-booking";
 import { readOnboardingStatusCache } from "@/lib/onboarding-status-cache";
 
 export const Route = createFileRoute("/barber/")({
@@ -56,7 +61,6 @@ function BarberDashboard() {
     portfolio,
     expenses,
     startBooking,
-    completeBooking,
     viewMode,
     flowIdentity,
     fullyReady,
@@ -65,6 +69,21 @@ function BarberDashboard() {
 
   const live = fullyReady && activationHydrated;
   const { data: bookings = [] } = useBarberBookingsQuery(live);
+  const completeMut = useBookingActionMutation();
+  const [completeOpen, setCompleteOpen] = useState(false);
+
+  const onCompleteActive = (id: string, options: CompleteBookingOptions) => {
+    completeMut.mutate(
+      { id, action: "complete", completeOptions: options },
+      {
+        onSuccess: () => {
+          toast.success("Xizmat yakunlandi");
+          setCompleteOpen(false);
+        },
+        onError: (e) => toast.error(e.message),
+      },
+    );
+  };
   const monthParams = useMemo(() => rangeToIsoParams("Oy"), []);
   const { data: monthFinance } = useBarberFinanceQuery(monthParams, live);
 
@@ -179,13 +198,23 @@ function BarberDashboard() {
             </div>
           </div>
           <button
-            onClick={() => completeBooking(active.id)}
+            onClick={() => setCompleteOpen(true)}
             className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-background text-foreground text-sm font-medium hover:opacity-90 transition-opacity"
           >
             <CheckCircle2 className="size-4" />
             Tugatish
           </button>
         </div>
+      )}
+
+      {active && (
+        <CompleteBookingDialog
+          open={completeOpen}
+          onOpenChange={setCompleteOpen}
+          booking={active}
+          busy={completeMut.isPending}
+          onConfirm={(options) => onCompleteActive(active.id, options)}
+        />
       )}
 
       {/* Today bookings */}
@@ -219,15 +248,25 @@ function BarberDashboard() {
                 </div>
                 <div className="hidden sm:block text-sm font-medium">{formatUZS(b.price)}</div>
                 <StatusPill status={b.status} />
-                {b.status === "accepted" && (
-                  <button
-                    onClick={() => startBooking(b.id)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-medium hover:opacity-90"
-                  >
-                    <Play className="size-3" />
-                    Boshlash
-                  </button>
-                )}
+                {b.status === "accepted" &&
+                  (b.checked_in_at ? (
+                    <button
+                      onClick={() => startBooking(b.id)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-medium hover:opacity-90"
+                    >
+                      <Play className="size-3" />
+                      Boshlash
+                    </button>
+                  ) : (
+                    <Link
+                      to="/barber/bookings/$bookingId"
+                      params={{ bookingId: b.id }}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border text-xs font-medium hover:bg-muted"
+                    >
+                      <ScanLine className="size-3" />
+                      QR tasdiqlash
+                    </Link>
+                  ))}
               </div>
             ))
           )}

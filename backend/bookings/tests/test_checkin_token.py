@@ -249,3 +249,60 @@ class CheckInTokenTests(TestCase):
             format="json",
         )
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_start_blocked_without_check_in(self):
+        """QR/kod tasdiqlanmasa xizmatni boshlash mumkin emas (firibgarlik oldini olish)."""
+        booking = self._make_booking(status_value=Booking.Status.ACCEPTED)
+        from bookings.checkin_tokens import issue_check_in_token
+
+        issue_check_in_token(booking)
+        booking.save()
+
+        barber_client = APIClient()
+        barber_client.force_authenticate(user=BarberPrincipal(self.barber))
+        res = barber_client.post(f"/api/v1/bookings/{booking.id}/start/")
+        self.assertEqual(res.status_code, status.HTTP_409_CONFLICT)
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, Booking.Status.ACCEPTED)
+        self.assertIsNone(booking.started_at)
+
+    def test_start_allowed_after_token_check_in(self):
+        booking = self._make_booking(status_value=Booking.Status.ACCEPTED)
+        from bookings.checkin_tokens import issue_check_in_token
+
+        issue_check_in_token(booking)
+        booking.save()
+
+        barber_client = APIClient()
+        barber_client.force_authenticate(user=BarberPrincipal(self.barber))
+        checkin = barber_client.post(
+            "/api/v1/bookings/check-in-by-token/",
+            {"token": booking.check_in_token},
+            format="json",
+        )
+        self.assertEqual(checkin.status_code, status.HTTP_200_OK)
+
+        res = barber_client.post(f"/api/v1/bookings/{booking.id}/start/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, Booking.Status.IN_PROGRESS)
+        self.assertIsNotNone(booking.started_at)
+
+    def test_complete_blocked_from_accepted_without_check_in(self):
+        booking = self._make_booking(status_value=Booking.Status.ACCEPTED)
+
+        barber_client = APIClient()
+        barber_client.force_authenticate(user=BarberPrincipal(self.barber))
+        res = barber_client.post(f"/api/v1/bookings/{booking.id}/complete/")
+        self.assertEqual(res.status_code, status.HTTP_409_CONFLICT)
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, Booking.Status.ACCEPTED)
+
+    def test_manual_check_in_disabled(self):
+        booking = self._make_booking(status_value=Booking.Status.ACCEPTED)
+        barber_client = APIClient()
+        barber_client.force_authenticate(user=BarberPrincipal(self.barber))
+        res = barber_client.post(f"/api/v1/bookings/{booking.id}/check_in/")
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        booking.refresh_from_db()
+        self.assertIsNone(booking.checked_in_at)

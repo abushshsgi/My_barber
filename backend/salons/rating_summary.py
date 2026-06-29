@@ -5,11 +5,15 @@ from __future__ import annotations
 from collections import defaultdict
 
 from django.db.models import Avg, Count
+from django.db.models.functions import Coalesce
 
-from bookings.models import Review
+from bookings.models import Review, ReviewDimensionScore
 
 GUEST_FAVORITE_MIN_RATING = 4.8
 GUEST_FAVORITE_MIN_REVIEWS = 10
+
+# Salon umumiy bahosi: yangi so'rovnomada `salon_rating`, eski sharhlarda `rating`.
+SALON_SCORE = Coalesce("salon_rating", "rating")
 
 HIGHLIGHT_META = [
     ("cleanliness", {"uz": "Tozalik", "ru": "Чистота", "en": "Cleanliness"}),
@@ -17,6 +21,13 @@ HIGHLIGHT_META = [
     ("masters", {"uz": "Ustalar", "ru": "Мастера", "en": "Masters"}),
     ("atmosphere", {"uz": "Atmosfera", "ru": "Атмосфера", "en": "Atmosphere"}),
 ]
+
+# So'rovnoma o'lchovlari uchun ko'p tilli yorliqlar.
+SALON_DIMENSION_LABELS = {
+    "atmosphere": {"uz": "Atmosfera", "ru": "Атмосфера", "en": "Atmosphere"},
+    "cleanliness": {"uz": "Tozalik va hid", "ru": "Чистота", "en": "Cleanliness"},
+    "comfort": {"uz": "Qulaylik", "ru": "Комфорт", "en": "Comfort"},
+}
 
 
 def _lang(request) -> str:
@@ -30,13 +41,13 @@ def _lang(request) -> str:
 def build_rating_summary(salon, request=None) -> dict:
     lang = _lang(request)
     qs = Review.objects.filter(salon=salon)
-    agg = qs.aggregate(avg=Avg("rating"), total=Count("id"))
+    agg = qs.aggregate(avg=Avg(SALON_SCORE), total=Count("id"))
     rating_avg = round(float(agg["avg"] or 0), 2)
     review_count = int(agg["total"] or 0)
 
     distribution = {str(i): 0 for i in range(1, 6)}
-    for row in qs.values("rating").annotate(c=Count("id")):
-        r = str(row["rating"])
+    for row in qs.annotate(score=SALON_SCORE).values("score").annotate(c=Count("id")):
+        r = str(row["score"])
         if r in distribution:
             distribution[r] = row["c"]
 
@@ -72,8 +83,33 @@ def build_rating_summary(salon, request=None) -> dict:
     service_highlights.sort(key=lambda x: (-x["count"], -x["score"]))
     service_highlights = service_highlights[:4]
 
+    # So'rovnoma o'lchovlari (haqiqiy ma'lumot) — ustuvor.
+    dimension_highlights = []
+    dim_rows = (
+        ReviewDimensionScore.objects.filter(
+            review__salon=salon,
+            target=ReviewDimensionScore.Target.SALON,
+        )
+        .values("dimension")
+        .annotate(avg=Avg("score"), c=Count("id"))
+    )
+    for row in dim_rows:
+        slug = row["dimension"]
+        labels = SALON_DIMENSION_LABELS.get(slug)
+        dimension_highlights.append(
+            {
+                "code": slug,
+                "label": (labels.get(lang) or labels.get("uz")) if labels else slug,
+                "score": round(float(row["avg"] or 0), 1),
+                "count": int(row["c"] or 0),
+            }
+        )
+    dimension_highlights.sort(key=lambda x: (-x["count"], -x["score"]))
+
     highlights = []
-    if service_highlights:
+    if dimension_highlights:
+        highlights = dimension_highlights
+    elif service_highlights:
         highlights = service_highlights
     else:
         offsets = [0.05, 0.0, -0.02, 0.03]

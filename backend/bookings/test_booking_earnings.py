@@ -75,7 +75,9 @@ class BookingEarningsPaymentTests(TestCase):
 
     def _complete_booking(self, booking: Booking) -> None:
         booking.status = Booking.Status.ACCEPTED
-        booking.save(update_fields=["status", "updated_at"])
+        # Start endi check-in talab qiladi (QR/kod) — testda to'g'ridan-to'g'ri belgilaymiz.
+        booking.checked_in_at = timezone.now()
+        booking.save(update_fields=["status", "checked_in_at", "updated_at"])
         self.client.force_authenticate(user=None)
         self.client.credentials(HTTP_AUTHORIZATION=self.barber_auth)
         res = self.client.post(f"/api/v1/bookings/{booking.id}/start/", {}, format="json")
@@ -200,13 +202,14 @@ class BookingEarningsPaymentTests(TestCase):
         if "payment_method" in body:
             self.assertIn("balans", str(body["payment_method"]).lower())
 
-    def test_complete_from_accepted_auto_starts(self):
+    def test_complete_from_accepted_auto_starts_after_check_in(self):
         booking = Booking.objects.create(
             customer=self.user,
             barber=self.barber,
             start_at=self.start,
             end_at=self.start + timedelta(minutes=30),
             status=Booking.Status.ACCEPTED,
+            checked_in_at=timezone.now(),
             total_price=50_000,
             customer_phone=self.user.phone or "",
             payment_method=Booking.PaymentMethod.CASH,

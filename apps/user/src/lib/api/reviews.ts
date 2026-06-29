@@ -19,10 +19,19 @@ export async function fetchSalonReviews(salonId: string | number): Promise<ApiRe
   return apiList<ApiReview>(`/api/v1/reviews/${qs({ salon: salonId })}`);
 }
 
+export type ReviewDimensionScore = {
+  target: "barber" | "salon";
+  dimension: string;
+  score: number;
+};
+
 export type CreateReviewPayload = {
   booking: number;
   rating: number;
   text: string;
+  salon_rating?: number;
+  salon_text?: string;
+  dimensions?: ReviewDimensionScore[];
 };
 
 export async function createReview(data: CreateReviewPayload): Promise<ApiReview> {

@@ -421,6 +421,11 @@ class BookingViewSet(viewsets.ModelViewSet):
             return Response(status=403)
         if booking.status != Booking.Status.ACCEPTED:
             return Response({"detail": "Must be accepted."}, status=400)
+        if bookings_has_checked_in_column() and not booking.checked_in_at:
+            return Response(
+                {"detail": "Avval mijoz QR yoki kodini tasdiqlang."},
+                status=409,
+            )
         now = timezone.now()
         booking.status = Booking.Status.IN_PROGRESS
         booking.started_at = now
@@ -441,6 +446,12 @@ class BookingViewSet(viewsets.ModelViewSet):
         if not self._barber_can_manage_booking(request, booking):
             return Response(status=403)
         if booking.status == Booking.Status.ACCEPTED:
+            # Check-in qilingan bo'lsagina avtomatik boshlash mumkin (firibgarlik oldini olish).
+            if bookings_has_checked_in_column() and not booking.checked_in_at:
+                return Response(
+                    {"detail": "Avval mijoz QR yoki kodini tasdiqlang."},
+                    status=409,
+                )
             now = timezone.now()
             booking.status = Booking.Status.IN_PROGRESS
             booking.started_at = now
@@ -522,20 +533,14 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def check_in(self, request, pk=None):
-        booking = self.get_object()
-        if not self._barber_can_manage_booking(request, booking):
-            return Response(status=403)
-        if booking.status not in (Booking.Status.ACCEPTED, Booking.Status.IN_PROGRESS):
-            return Response({"detail": "Faqat tasdiqlangan bron uchun check-in."}, status=400)
-        if not bookings_has_checked_in_column():
-            return Response(
-                {"detail": "Check-in vaqtincha mavjud emas. Birozdan keyin qayta urinib ko'ring."},
-                status=503,
-            )
-        if booking.checked_in_at:
-            return Response(self._booking_data(booking, request))
-        self._mark_checked_in(booking)
-        return Response(self._booking_data(booking, request))
+        # Qo'lda check-in o'chirildi: firibgarlikni oldini olish uchun faqat mijoz
+        # QR kodi yoki bir martalik qisqa kodi orqali check-in qilinadi.
+        return Response(
+            {
+                "detail": "Qo'lda check-in o'chirilgan. Mijoz QR kodi yoki qisqa kodini skaner qiling.",
+            },
+            status=405,
+        )
 
     @action(detail=False, methods=["post"], url_path="check-in-by-token")
     def check_in_by_token(self, request):
@@ -603,6 +608,38 @@ class BookingViewSet(viewsets.ModelViewSet):
             f"Mijoz portfolio uchun rasmga {'ruxsat berdi' if consent else 'rad etdi'}.",
             {"booking_id": booking.id, "consent": consent},
         )
+        broadcast_booking_updated(booking=booking)
+        return Response(self._booking_data(booking, request))
+
+    @action(detail=True, methods=["post"], url_path="portfolio_photo")
+    def portfolio_photo(self, request, pk=None):
+        """Natija rasmini yuklash — sartarosh yoki (ruxsat bergan) mijoz."""
+        booking = self.get_object()
+        is_barber = isinstance(request.user, BarberPrincipal)
+        is_customer = not is_barber and booking.customer_id == request.user.id
+        if is_barber:
+            if not self._barber_can_manage_booking(request, booking):
+                return Response(status=403)
+        elif is_customer:
+            if booking.portfolio_consent is not True:
+                return Response(
+                    {"detail": "Avval portfolio uchun ruxsat bering."}, status=400
+                )
+        else:
+            return Response(status=403)
+        if booking.status != Booking.Status.COMPLETED:
+            return Response(
+                {"detail": "Faqat yakunlangan xizmat uchun rasm yuklash mumkin."},
+                status=400,
+            )
+        image = request.FILES.get("image") or request.FILES.get("result_image")
+        if image is None:
+            return Response({"detail": "Rasm (image) majburiy."}, status=400)
+        comp, _ = BookingCompletion.objects.get_or_create(booking=booking)
+        comp.result_image = image
+        if is_customer:
+            comp.portfolio_allowed = True
+        comp.save(update_fields=["result_image", "portfolio_allowed"])
         broadcast_booking_updated(booking=booking)
         return Response(self._booking_data(booking, request))
 

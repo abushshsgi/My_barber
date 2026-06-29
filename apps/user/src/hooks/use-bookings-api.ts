@@ -7,6 +7,7 @@ import {
   fetchBookingAvailability,
   fetchBookings,
   setPortfolioConsent,
+  uploadPortfolioPhoto,
   type CreateBookingPayload,
 } from "@/lib/api/bookings";
 import { authQueryEnabled, catalogQueryEnabled } from "@/lib/auth-query";
@@ -81,6 +82,17 @@ export function usePortfolioConsentMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, consent }: { id: string; consent: boolean }) => setPortfolioConsent(id, consent),
+    onSuccess: (_data, vars) => {
+      void qc.invalidateQueries({ queryKey: bookingsQueryKeyBase });
+      void qc.invalidateQueries({ queryKey: [...bookingsQueryKeyBase, vars.id] });
+    },
+  });
+}
+
+export function usePortfolioPhotoMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) => uploadPortfolioPhoto(id, file),
     onSuccess: (_data, vars) => {
       void qc.invalidateQueries({ queryKey: bookingsQueryKeyBase });
       void qc.invalidateQueries({ queryKey: [...bookingsQueryKeyBase, vars.id] });

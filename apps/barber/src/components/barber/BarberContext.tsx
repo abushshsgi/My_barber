@@ -167,6 +167,11 @@ export type Conversation = {
   messages: ChatMessage[];
 };
 
+export type ReviewDimension = {
+  dimension: string;
+  score: number;
+};
+
 export type Review = {
   id: string;
   client: string;
@@ -176,6 +181,7 @@ export type Review = {
   date: string;
   service: string;
   barber_reply?: string;
+  dimensions: ReviewDimension[];
 };
 
 export type Salon = {
@@ -674,6 +680,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       date: string;
       service: string;
       barber_reply?: string;
+      dimensions?: Array<{ dimension: string; score: number }>;
     }>("/api/v1/barber/reviews/");
     setReviews(
       rows.map((r) => ({
@@ -685,6 +692,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         date: r.date,
         service: r.service,
         barber_reply: r.barber_reply || "",
+        dimensions: r.dimensions ?? [],
       })),
     );
   }, []);

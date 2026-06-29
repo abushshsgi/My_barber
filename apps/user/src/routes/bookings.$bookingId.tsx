@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { playBookingCompletionChime } from "@mybarber/shared/booking-lifecycle";
-import { BookingInlineReview } from "@/components/bookings/BookingInlineReview";
+import { PostCompletionSurvey } from "@/components/bookings/PostCompletionSurvey";
 import { BookingChatButton } from "@/components/bookings/BookingChatButton";
 import {
   BookingAddonHint,
@@ -14,6 +14,7 @@ import {
   BookingOrderNumberBanner,
   BookingPaymentCard,
   BookingPortfolioConsent,
+  BookingPortfolioUpload,
   BookingCheckInSection,
   BookingResultPreview,
   BookingServiceTimer,
@@ -22,7 +23,12 @@ import {
 } from "@/components/bookings/BookingProcessParts";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { useNotificationsWebSocket } from "@/hooks/use-notifications-websocket";
-import { useBooking, useCancelBooking, usePortfolioConsentMutation } from "@/hooks/use-bookings-api";
+import {
+  useBooking,
+  useCancelBooking,
+  usePortfolioConsentMutation,
+  usePortfolioPhotoMutation,
+} from "@/hooks/use-bookings-api";
 
 export const Route = createFileRoute("/bookings/$bookingId")({
   head: ({ params }) => ({
@@ -43,13 +49,16 @@ function BookingProcessPage({ wide }: { wide?: boolean }) {
   const { data: booking, isLoading, isError, error } = useBooking(bookingId);
   const cancelMut = useCancelBooking();
   const consentMut = usePortfolioConsentMutation();
+  const portfolioPhotoMut = usePortfolioPhotoMutation();
   const prevStatus = useRef<string | null>(null);
+  const [surveyAutoOpen, setSurveyAutoOpen] = useState(false);
   useNotificationsWebSocket();
 
   useEffect(() => {
     if (!booking) return;
     if (prevStatus.current === "in_progress" && booking.status === "done") {
       playBookingCompletionChime();
+      if (!booking.hasReview) setSurveyAutoOpen(true);
     }
     prevStatus.current = booking.status;
   }, [booking?.status, booking]);
@@ -72,10 +81,28 @@ function BookingProcessPage({ wide }: { wide?: boolean }) {
     );
   };
 
+  const onPortfolioPhoto = (file: File) => {
+    portfolioPhotoMut.mutate(
+      { id: bookingId, file },
+      {
+        onSuccess: () => toast.success("Rasm yuklandi"),
+        onError: (e) => toast.error(e.message),
+      },
+    );
+  };
+
   const showPortfolioConsent =
     booking &&
-    (booking.status === "accepted" || booking.status === "in_progress") &&
+    (booking.status === "accepted" ||
+      booking.status === "in_progress" ||
+      booking.status === "done") &&
     booking.portfolioConsent == null;
+
+  const showPortfolioUpload =
+    booking &&
+    booking.status === "done" &&
+    booking.portfolioConsent === true &&
+    !booking.resultImageUrl;
 
   return (
     <div className={wide ? "mx-auto max-w-2xl px-6 py-8 pb-28" : "px-4 py-5 pb-28"}>
@@ -115,7 +142,7 @@ function BookingProcessPage({ wide }: { wide?: boolean }) {
 
           <div className="rounded-[24px] border border-border bg-background p-5 shadow-[0_8px_30px_-18px_rgba(0,0,0,0.18)]">
             <h2 className="mb-4 text-base font-bold">Jarayon</h2>
-            <BookingLifecycleTimeline status={booking.status} />
+            <BookingLifecycleTimeline status={booking.status} checkedIn={!!booking.checkedInAt} />
           </div>
 
           <BookingStatusHistory history={booking.statusHistory} />
@@ -128,12 +155,18 @@ function BookingProcessPage({ wide }: { wide?: boolean }) {
             />
           ) : null}
 
+          {showPortfolioUpload ? (
+            <BookingPortfolioUpload busy={portfolioPhotoMut.isPending} onUpload={onPortfolioPhoto} />
+          ) : null}
+
           {booking.status === "in_progress" ? <BookingAddonHint /> : null}
 
           <BookingResultPreview url={booking.resultImageUrl} />
 
           {booking.status === "done" ? (
-            <BookingInlineReview
+            <PostCompletionSurvey
+              key={surveyAutoOpen ? "survey-auto" : "survey"}
+              autoOpen={surveyAutoOpen}
               booking={{
                 id: booking.id,
                 salonName: booking.salonName,

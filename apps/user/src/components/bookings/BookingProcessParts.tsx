@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   buildCheckInQrUrl,
   buildLifecycleSteps,
@@ -8,7 +8,7 @@ import {
   paymentStatusLabel,
   type BookingLifecycleStatus,
 } from "@mybarber/shared/booking-lifecycle";
-import { Check, Circle, Clock3, History, Loader2, MapPin, MessageSquare, Navigation, QrCode, Scissors, Users, Wallet } from "lucide-react";
+import { Camera, Check, Circle, Clock3, History, ImagePlus, Loader2, MapPin, MessageSquare, Navigation, QrCode, Scissors, Users, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { BookingItem } from "@/lib/mock-data";
 import { formatPrice } from "@/lib/mock-data";
@@ -39,8 +39,14 @@ export function useLiveBookingTimer(
   });
 }
 
-export function BookingLifecycleTimeline({ status }: { status: BookingItem["status"] }) {
-  const steps = buildLifecycleSteps(toLifecycleStatus(status));
+export function BookingLifecycleTimeline({
+  status,
+  checkedIn = false,
+}: {
+  status: BookingItem["status"];
+  checkedIn?: boolean;
+}) {
+  const steps = buildLifecycleSteps(toLifecycleStatus(status), checkedIn);
 
   return (
     <ol className="space-y-0">
@@ -440,6 +446,61 @@ export function BookingPortfolioConsent({
           Rad etaman
         </button>
       </div>
+    </div>
+  );
+}
+
+export function BookingPortfolioUpload({
+  busy,
+  onUpload,
+}: {
+  busy?: boolean;
+  onUpload: (file: File) => void;
+}) {
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
+
+  const pick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) onUpload(file);
+    e.target.value = "";
+  };
+
+  return (
+    <div className="rounded-[24px] border border-border bg-background p-5 shadow-[0_8px_30px_-18px_rgba(0,0,0,0.18)]">
+      <h2 className="text-base font-bold">Natija rasmini ulashing</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Siz portfolio uchun ruxsat berdingiz. Yangi obrazingiz rasmini joylashingiz mumkin.
+      </p>
+      <div className="mt-4 flex gap-2">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => cameraRef.current?.click()}
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-foreground py-3 text-sm font-bold text-background disabled:opacity-60"
+        >
+          {busy ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />}
+          Rasmga olish
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => galleryRef.current?.click()}
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-border py-3 text-sm font-bold disabled:opacity-60"
+        >
+          <ImagePlus className="size-4" />
+          Galereyadan
+        </button>
+      </div>
+      <input
+        ref={cameraRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={pick}
+      />
+      <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={pick} />
     </div>
   );
 }

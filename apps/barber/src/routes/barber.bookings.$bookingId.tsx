@@ -42,7 +42,7 @@ function BarberBookingProcessPage() {
   const busy = actionMut.isPending;
 
   const runAction = (
-    action: "accept" | "reject" | "cancel" | "start" | "check_in",
+    action: "accept" | "reject" | "cancel" | "start",
     opts?: { onSuccess?: () => void },
   ) => {
     actionMut.mutate(
@@ -51,7 +51,6 @@ function BarberBookingProcessPage() {
         onSuccess: () => {
           if (action === "accept") toast.success("Bron qabul qilindi");
           if (action === "start") toast.success("Xizmat boshlandi");
-          if (action === "check_in") toast.success("Mijoz keldi deb belgilandi");
           if (action === "cancel" || action === "reject") toast.success("Bron bekor qilindi");
           opts?.onSuccess?.();
         },
@@ -114,7 +113,7 @@ function BarberBookingProcessPage() {
 
           <div className="rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6">
             <h2 className="font-heading text-base font-semibold mb-4">Jarayon</h2>
-            <BookingLifecycleTimeline status={booking.status} />
+            <BookingLifecycleTimeline status={booking.status} checkedIn={!!booking.checked_in_at} />
           </div>
 
           <BookingStatusHistory history={booking.status_history} />
@@ -175,17 +174,7 @@ function BarberBookingProcessPage() {
                   </>
                 ) : null}
                 {booking.status === "accepted" ? (
-                  <>
-                    {!booking.checked_in_at ? (
-                      <button
-                        type="button"
-                        onClick={() => runAction("check_in")}
-                        className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border py-3 text-sm font-medium hover:bg-muted"
-                      >
-                        <UserCheck className="size-4" />
-                        Mijoz keldi
-                      </button>
-                    ) : null}
+                  booking.checked_in_at ? (
                     <button
                       type="button"
                       onClick={() => runAction("start")}
@@ -194,7 +183,15 @@ function BarberBookingProcessPage() {
                       <Play className="size-4" />
                       Boshlash
                     </button>
-                  </>
+                  ) : (
+                    <div
+                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-3 text-center text-xs font-medium text-muted-foreground"
+                      title="Avval mijoz QR yoki kodini tasdiqlang"
+                    >
+                      <ScanLine className="size-4 shrink-0" />
+                      Boshlash uchun QR/kodni tasdiqlang
+                    </div>
+                  )
                 ) : null}
                 {booking.status === "in_progress" ? (
                   <button

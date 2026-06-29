@@ -6,7 +6,12 @@ export type BookingLifecycleStatus =
   | "completed"
   | "cancelled";
 
-export type LifecycleStepId = "requested" | "confirmed" | "in_service" | "done";
+export type LifecycleStepId =
+  | "requested"
+  | "confirmed"
+  | "checked_in"
+  | "in_service"
+  | "done";
 
 export type LifecycleStepState = "done" | "current" | "upcoming" | "skipped";
 
@@ -16,21 +21,31 @@ export type LifecycleStep = {
   state: LifecycleStepState;
 };
 
-const STEP_ORDER: LifecycleStepId[] = ["requested", "confirmed", "in_service", "done"];
+const STEP_ORDER: LifecycleStepId[] = [
+  "requested",
+  "confirmed",
+  "checked_in",
+  "in_service",
+  "done",
+];
 
 const STEP_LABELS: Record<LifecycleStepId, string> = {
   requested: "So'rov yuborildi",
   confirmed: "Tasdiqlandi",
+  checked_in: "Mijoz keldi",
   in_service: "Xizmat davom etmoqda",
   done: "Yakunlandi",
 };
 
-function activeStepForStatus(status: BookingLifecycleStatus): LifecycleStepId | null {
+function activeStepForStatus(
+  status: BookingLifecycleStatus,
+  checkedIn: boolean,
+): LifecycleStepId | null {
   switch (status) {
     case "pending":
       return "requested";
     case "accepted":
-      return "confirmed";
+      return checkedIn ? "checked_in" : "confirmed";
     case "in_progress":
       return "in_service";
     case "completed":
@@ -41,8 +56,11 @@ function activeStepForStatus(status: BookingLifecycleStatus): LifecycleStepId | 
 }
 
 /** Barber va user panelida bir xil ko'rinishdagi jarayon bosqichlari. */
-export function buildLifecycleSteps(status: BookingLifecycleStatus): LifecycleStep[] {
-  const active = activeStepForStatus(status);
+export function buildLifecycleSteps(
+  status: BookingLifecycleStatus,
+  checkedIn = false,
+): LifecycleStep[] {
+  const active = activeStepForStatus(status, checkedIn);
   const isTerminal = status === "cancelled" || status === "rejected";
 
   return STEP_ORDER.map((id) => {
@@ -137,6 +155,36 @@ export function computeBookingTimer(opts: {
 export function bookingNeedsLiveRefresh(status: BookingLifecycleStatus): boolean {
   return status === "pending" || status === "accepted" || status === "in_progress";
 }
+
+/** Yandex Go uslubidagi so'rovnoma o'lchovlari (backend `bookings/survey.py` bilan bir xil). */
+export type SurveyTarget = "barber" | "salon";
+
+export type SurveyDimension = {
+  slug: string;
+  label: string;
+};
+
+export const SURVEY_DIMENSIONS: Record<SurveyTarget, SurveyDimension[]> = {
+  barber: [
+    { slug: "politeness", label: "Sartarosh xushmuomalimi?" },
+    { slug: "tool_cleanliness", label: "Asbob-uskunalar tozami?" },
+    { slug: "skill", label: "Kasb mahorati qondirildimi?" },
+  ],
+  salon: [
+    { slug: "atmosphere", label: "Atmosfera yoqdimi?" },
+    { slug: "cleanliness", label: "Salon toza va hidi yaxshimi?" },
+    { slug: "comfort", label: "Qulaylik darajasi qanday?" },
+  ],
+};
+
+export const SURVEY_DIMENSION_LABELS: Record<string, string> = Object.values(
+  SURVEY_DIMENSIONS,
+)
+  .flat()
+  .reduce<Record<string, string>>((acc, item) => {
+    acc[item.slug] = item.label;
+    return acc;
+  }, {});
 
 export type StatusHistoryEntry = {
   key: string;

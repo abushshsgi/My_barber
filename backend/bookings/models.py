@@ -180,8 +180,12 @@ class Review(models.Model):
         on_delete=models.CASCADE,
         related_name="reviews_about",
     )
+    # `rating` — sartarosh uchun umumiy baho (eski mantiq saqlanadi).
     rating = models.PositiveSmallIntegerField()
     text = models.TextField(blank=True)
+    # Salon uchun alohida umumiy baho va izoh (Yandex Go uslubidagi so'rovnoma).
+    salon_rating = models.PositiveSmallIntegerField(null=True, blank=True)
+    salon_text = models.TextField(blank=True, default="")
     photo = models.ImageField(upload_to="reviews/", blank=True, null=True)
     barber_reply = models.TextField(blank=True, default="")
     barber_replied_at = models.DateTimeField(null=True, blank=True)
@@ -189,3 +193,29 @@ class Review(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+
+
+class ReviewDimensionScore(models.Model):
+    """So'rovnoma o'lchovlari: sartarosh xushmuomalaligi, salon tozaligi va h.k."""
+
+    class Target(models.TextChoices):
+        BARBER = "barber", "Barber"
+        SALON = "salon", "Salon"
+
+    review = models.ForeignKey(
+        Review,
+        on_delete=models.CASCADE,
+        related_name="dimensions",
+    )
+    target = models.CharField(max_length=10, choices=Target.choices)
+    dimension = models.CharField(max_length=32)
+    score = models.PositiveSmallIntegerField()
+
+    class Meta:
+        unique_together = ("review", "target", "dimension")
+        indexes = [
+            models.Index(fields=["target", "dimension"]),
+        ]
+
+    def __str__(self):
+        return f"{self.target}:{self.dimension}={self.score}"

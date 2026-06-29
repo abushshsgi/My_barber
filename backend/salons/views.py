@@ -108,7 +108,10 @@ class SalonViewSet(viewsets.ModelViewSet):
             .annotate(
                 review_count=Count("reviews", distinct=True),
                 rating_avg=Coalesce(
-                    Cast(Avg("reviews__rating"), FloatField()),
+                    Cast(
+                        Avg(Coalesce("reviews__salon_rating", "reviews__rating")),
+                        FloatField(),
+                    ),
                     Value(0.0),
                     output_field=FloatField(),
                 ),
@@ -229,7 +232,10 @@ class SalonViewSet(viewsets.ModelViewSet):
             .annotate(
                 review_count=Count("reviews", distinct=True),
                 rating_avg=Coalesce(
-                    Cast(Avg("reviews__rating"), FloatField()),
+                    Cast(
+                        Avg(Coalesce("reviews__salon_rating", "reviews__rating")),
+                        FloatField(),
+                    ),
                     Value(0.0),
                     output_field=FloatField(),
                 ),

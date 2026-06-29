@@ -1,11 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Star } from "lucide-react";
+import { SURVEY_DIMENSIONS } from "@mybarber/shared/booking-lifecycle";
 import { useBarberContext } from "@/components/barber/BarberContext";
 import { UserAvatar } from "@/components/barber/primitives";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
 import { toast } from "sonner";
+
+const BARBER_DIMENSION_LABELS: Record<string, string> = SURVEY_DIMENSIONS.barber.reduce(
+  (acc, d) => {
+    acc[d.slug] = d.label;
+    return acc;
+  },
+  {} as Record<string, string>,
+);
 
 export const Route = createFileRoute("/barber/reviews")({
   component: ReviewsPage,
@@ -36,6 +45,18 @@ function ReviewsPage() {
     star,
     count: reviews.filter((r) => r.rating === star).length,
   }));
+
+  const dimensionAverages = useMemo(() => {
+    return SURVEY_DIMENSIONS.barber.map((d) => {
+      const scores = reviews.flatMap((r) =>
+        (r.dimensions ?? []).filter((x) => x.dimension === d.slug).map((x) => x.score),
+      );
+      const dimAvg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+      return { slug: d.slug, label: d.label, avg: dimAvg, count: scores.length };
+    });
+  }, [reviews]);
+
+  const hasDimensionData = dimensionAverages.some((d) => d.count > 0);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
@@ -73,6 +94,31 @@ function ReviewsPage() {
         </div>
       </div>
 
+      {/* Dimension averages */}
+      {hasDimensionData ? (
+        <div className="rounded-xl border border-border bg-card p-6 shadow-card">
+          <h2 className="font-heading text-lg font-semibold">O'lchovlar bo'yicha baho</h2>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Mijozlar so'rovnomasidan o'rtacha ko'rsatkichlar.
+          </p>
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {dimensionAverages.map((d) => (
+              <div key={d.slug} className="rounded-lg border border-border bg-background p-4">
+                <div className="text-sm text-muted-foreground">{d.label}</div>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="font-heading text-2xl font-semibold">{d.avg.toFixed(1)}</span>
+                  <Stars value={Math.round(d.avg)} />
+                </div>
+                <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full bg-foreground" style={{ width: `${(d.avg / 5) * 100}%` }} />
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">{d.count} ta baho</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {/* Review list */}
       <div className="space-y-3">
         {reviews.map((r) => {
@@ -91,6 +137,18 @@ function ReviewsPage() {
                   <span className="text-xs text-muted-foreground">· {r.service}</span>
                 </div>
                 <p className="mt-2 text-sm text-foreground/90">{r.text}</p>
+                {r.dimensions && r.dimensions.length > 0 ? (
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+                    {r.dimensions.map((d) => (
+                      <div key={d.dimension} className="flex items-center gap-1.5">
+                        <span className="text-xs text-muted-foreground">
+                          {BARBER_DIMENSION_LABELS[d.dimension] ?? d.dimension}
+                        </span>
+                        <Stars value={d.score} size={3} />
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
                 {replyText ? (
                   <div className="mt-3 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
                     <span className="font-medium text-muted-foreground">Javobingiz: </span>

@@ -54,6 +54,18 @@ export async function checkInBooking(id: number | string): Promise<ApiBooking> {
   return apiJson<ApiBooking>(`/api/v1/bookings/${id}/check_in/`, { method: "POST" });
 }
 
+export async function uploadPortfolioPhoto(
+  id: number | string,
+  file: File,
+): Promise<ApiBooking> {
+  const fd = new FormData();
+  fd.append("image", file);
+  return apiJson<ApiBooking>(`/api/v1/bookings/${id}/portfolio_photo/`, {
+    method: "POST",
+    body: fd,
+  });
+}
+
 export async function fetchBookingAvailability(params: {
   salon: number;
   barber: number;

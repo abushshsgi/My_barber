@@ -42,8 +42,14 @@ export function useLiveBookingTimer(booking: Pick<Booking, "status" | "started_a
   });
 }
 
-export function BookingLifecycleTimeline({ status }: { status: Booking["status"] }) {
-  const steps = buildLifecycleSteps(status as BookingLifecycleStatus);
+export function BookingLifecycleTimeline({
+  status,
+  checkedIn = false,
+}: {
+  status: Booking["status"];
+  checkedIn?: boolean;
+}) {
+  const steps = buildLifecycleSteps(status as BookingLifecycleStatus, checkedIn);
 
   return (
     <ol className="space-y-0">

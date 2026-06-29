@@ -645,8 +645,15 @@ class BookingCompletionSerializer(serializers.ModelSerializer):
         fields = ("result_image", "portfolio_allowed", "actual_end_at", "completed_at")
 
 
+class ReviewDimensionScoreSerializer(serializers.Serializer):
+    target = serializers.ChoiceField(choices=["barber", "salon"])
+    dimension = serializers.CharField(max_length=32)
+    score = serializers.IntegerField(min_value=1, max_value=5)
+
+
 class ReviewSerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source="author.full_name", read_only=True)
+    dimensions = ReviewDimensionScoreSerializer(many=True, required=False)
 
     class Meta:
         model = Review
@@ -656,7 +663,10 @@ class ReviewSerializer(serializers.ModelSerializer):
             "author_name",
             "rating",
             "text",
+            "salon_rating",
+            "salon_text",
             "photo",
+            "dimensions",
             "barber_reply",
             "barber_replied_at",
             "created_at",
@@ -673,9 +683,42 @@ class ReviewSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Already reviewed.")
         return booking
 
+    def validate_dimensions(self, value):
+        from bookings.survey import VALID_DIMENSIONS
+
+        seen = set()
+        for item in value:
+            key = (item["target"], item["dimension"])
+            if key not in VALID_DIMENSIONS:
+                raise serializers.ValidationError(
+                    f"Noma'lum o'lchov: {item['target']}/{item['dimension']}"
+                )
+            if key in seen:
+                raise serializers.ValidationError(
+                    f"O'lchov takrorlangan: {item['target']}/{item['dimension']}"
+                )
+            seen.add(key)
+        return value
+
     def create(self, validated_data):
+        from bookings.models import ReviewDimensionScore
+
+        dimensions = validated_data.pop("dimensions", [])
         booking = validated_data["booking"]
         validated_data["author"] = self.context["request"].user
         validated_data["salon"] = booking.salon
         validated_data["barber"] = booking.barber
-        return super().create(validated_data)
+        review = super().create(validated_data)
+        if dimensions:
+            ReviewDimensionScore.objects.bulk_create(
+                [
+                    ReviewDimensionScore(
+                        review=review,
+                        target=item["target"],
+                        dimension=item["dimension"],
+                        score=item["score"],
+                    )
+                    for item in dimensions
+                ]
+            )
+        return review
