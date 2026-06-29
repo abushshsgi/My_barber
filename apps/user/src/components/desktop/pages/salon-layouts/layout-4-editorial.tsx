@@ -8,11 +8,13 @@ import { useTranslation } from "react-i18next";
 import { filterSalonCatalogServices } from "@/lib/salon-services";
 import { scrollToSalonSection } from "@/lib/salon-scroll";
 import { cn } from "@/lib/utils";
+import { salonSectionUi } from "./section-styles";
 import type { SalonDesktopPageProps } from "./types";
 
 /** Layout 4: katta hero banner, matn ustida — editorial uslub. */
 export function SalonDesktopLayout4Editorial(props: SalonDesktopPageProps) {
-  const { salon, fav, onToggleFav, onShare, favPending, reviewsAreMock } = props;
+  const { salon, fav, onToggleFav, onShare, favPending, reviewsAreMock, layoutId } = props;
+  const ui = salonSectionUi(layoutId);
   const { t } = useTranslation();
   const cover =
     (salon.coverUrl ? resolveMediaUrl(salon.coverUrl) ?? salon.coverUrl : null) ??
@@ -29,7 +31,7 @@ export function SalonDesktopLayout4Editorial(props: SalonDesktopPageProps) {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">
               {salon.category}
             </p>
-            <h1 className="mt-2 text-4xl font-semibold tracking-tight">{salon.name}</h1>
+            <h1 className="mt-2 font-serif text-4xl font-semibold tracking-tight">{salon.name}</h1>
             <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
               <span className="inline-flex items-center gap-1 font-semibold">
                 <Star className="h-4 w-4 fill-white" />
@@ -97,9 +99,9 @@ export function SalonDesktopLayout4Editorial(props: SalonDesktopPageProps) {
 
       <div className="mx-auto max-w-6xl">
         <SalonSectionNav salon={salon} />
-        <div className="mt-8 grid grid-cols-[minmax(0,1fr)_340px] items-start gap-10 xl:gap-14">
-          <SalonPageSections salon={salon} showCalendar={false} reviewsAreMock={reviewsAreMock} />
-          <SalonBookingAside salon={salon} className="sticky top-36" />
+        <div className="mt-8 grid grid-cols-[minmax(0,1fr)_360px] items-start gap-10 xl:gap-14">
+          <SalonPageSections salon={salon} layoutId={layoutId} showCalendar={false} reviewsAreMock={reviewsAreMock} />
+          <SalonBookingAside salon={salon} asideVariant={ui.aside} className="sticky top-36" />
         </div>
       </div>
     </div>

@@ -17,7 +17,7 @@ const LAYOUTS: Record<SalonDesktopLayoutId, ComponentType<SalonDesktopPageProps>
 export function SalonDesktopLayoutView({
   layout,
   ...props
-}: SalonDesktopPageProps & { layout: SalonDesktopLayoutId }) {
+}: Omit<SalonDesktopPageProps, "layoutId"> & { layout: SalonDesktopLayoutId }) {
   const Component = LAYOUTS[layout] ?? SalonDesktopLayout1Classic;
-  return <Component {...props} />;
+  return <Component {...props} layoutId={layout} />;
 }

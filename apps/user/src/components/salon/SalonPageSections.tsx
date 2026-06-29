@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import type { SalonDesktopLayoutId } from "@/components/desktop/pages/salon-layouts/types";
+import { salonSectionUi } from "@/components/desktop/pages/salon-layouts/section-styles";
 import type { Salon } from "@/lib/mock-data";
 import {
   groupSalonServicesByBarber,
@@ -24,18 +26,38 @@ function SectionBlock({
   id,
   title,
   children,
+  ui,
   className,
 }: {
   id: string;
   title?: string;
   children: ReactNode;
+  ui: ReturnType<typeof salonSectionUi>;
   className?: string;
 }) {
   return (
-    <section id={id} className={cn("scroll-mt-36 space-y-5 border-b border-border pb-10", className)}>
-      {title ? <h2 className="text-[22px] font-semibold tracking-tight">{title}</h2> : null}
+    <section id={id} className={cn(ui.section, className)}>
+      {title ? <h2 className={ui.title}>{title}</h2> : null}
       {children}
     </section>
+  );
+}
+
+function StaffAvatar({ name, layoutId }: { name: string; layoutId: SalonDesktopLayoutId }) {
+  const initials = name
+    .split(" ")
+    .map((n) => n[0])
+    .join("");
+  const horizontal = layoutId === 3 || layoutId === 4;
+  return (
+    <div
+      className={cn(
+        "grid place-items-center rounded-full bg-muted font-bold",
+        horizontal ? "h-12 w-12 shrink-0 text-sm" : "mx-auto h-14 w-14 text-base",
+      )}
+    >
+      {initials}
+    </div>
   );
 }
 
@@ -44,35 +66,44 @@ export function SalonPageSections({
   calendarMonths = 1,
   showCalendar = true,
   reviewsAreMock = false,
+  layoutId = 1,
 }: {
   salon: Salon;
   calendarMonths?: 1 | 2;
   showCalendar?: boolean;
   reviewsAreMock?: boolean;
+  layoutId?: SalonDesktopLayoutId;
 }) {
   const { t } = useTranslation();
+  const ui = salonSectionUi(layoutId);
   const serviceGroups = groupSalonServicesByBarber(salon.services);
   const ownerBarberId = salon.ownerId ?? resolveDefaultSalonBarberId(salon.staff) ?? undefined;
   const calendarBarberId = defaultCalendarBarberId(salon);
   const calendarServiceIds = resolveDefaultServiceIdsForBarber(salon.services, calendarBarberId);
+  const staffHorizontal = layoutId === 3 || layoutId === 4;
+  const staffInline = layoutId === 5;
 
   return (
     <div className="space-y-0">
-      <SectionBlock id="salon-about" title={t("salon.tabs.about")}>
-        <p className="max-w-2xl text-base leading-relaxed text-muted-foreground">{salon.about}</p>
+      <SectionBlock id="salon-about" title={t("salon.tabs.about")} ui={ui}>
+        <div className={ui.aboutWrap}>
+          <p className={ui.aboutText}>{salon.about}</p>
+        </div>
       </SectionBlock>
 
       {salon.amenities.length > 0 ? (
-        <div id="salon-amenities" className="scroll-mt-36 border-b border-border pb-10">
+        <div id="salon-amenities" className={cn(ui.section, "border-b-0")}>
           <SalonAmenitiesSection
             amenities={salon.amenities}
             variant={salon.venueKind === "salon" ? "salon" : "solo_studio"}
+            display={ui.amenities}
+            titleClassName={ui.title}
           />
         </div>
       ) : null}
 
-      <SectionBlock id="salon-services" title={t("salon.tabs.services")}>
-        <div className="space-y-6">
+      <SectionBlock id="salon-services" title={t("salon.tabs.services")} ui={ui}>
+        <div className={ui.servicesWrap}>
           {serviceGroups.map((group) => {
             const bookingBarberId = group.barberId ?? ownerBarberId;
             const groupTitle = group.barberId
@@ -81,31 +112,33 @@ export function SalonPageSections({
             return (
               <div key={group.barberId ?? "salon-catalog"} className="space-y-3">
                 {serviceGroups.length > 1 ? (
-                  <h3 className="text-sm font-semibold text-muted-foreground">{groupTitle}</h3>
+                  <h3 className={ui.serviceGroupTitle}>{groupTitle}</h3>
                 ) : null}
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className={ui.servicesGrid}>
                   {group.services.map((s) => (
-                    <div
-                      key={s.id}
-                      className="flex items-center justify-between gap-3 rounded-xl border border-border p-4 transition-colors hover:bg-muted/30"
-                    >
+                    <div key={s.id} className={ui.serviceCard}>
                       <div className="min-w-0">
                         <h3 className="truncate font-semibold">{s.name}</h3>
                         <p className="mt-0.5 text-sm text-muted-foreground">
                           {s.duration} {t("salon.minutes")}
                         </p>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <Link
-                          to="/booking/$salonId"
-                          params={{ salonId: salon.id }}
-                          search={bookingBarberId ? { barber: bookingBarberId } : undefined}
-                          className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-background"
-                          aria-label={t("salon.bookNow")}
-                        >
+                      <Link
+                        to="/booking/$salonId"
+                        params={{ salonId: salon.id }}
+                        search={bookingBarberId ? { barber: bookingBarberId } : undefined}
+                        className={cn(
+                          "grid shrink-0 place-items-center bg-foreground text-background transition-opacity hover:opacity-90",
+                          layoutId === 4 ? "h-11 w-11 rounded-xl" : "h-9 w-9 rounded-full",
+                        )}
+                        aria-label={t("salon.bookNow")}
+                      >
+                        {layoutId === 4 ? (
+                          <ChevronRight className="h-4 w-4" />
+                        ) : (
                           <Plus className="h-4 w-4" />
-                        </Link>
-                      </div>
+                        )}
+                      </Link>
                     </div>
                   ))}
                 </div>
@@ -116,19 +149,36 @@ export function SalonPageSections({
       </SectionBlock>
 
       {salon.staff.length > 0 ? (
-        <SectionBlock id="salon-staff" title={t("salon.tabs.staff")}>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <SectionBlock id="salon-staff" title={t("salon.tabs.staff")} ui={ui}>
+          <div className={ui.staffGrid}>
             {salon.staff.map((b) => {
               const bookable = b.isBookable !== false;
               const isOwner = b.role === "Salon egasi";
-              const inner = (
+              const inner = staffInline ? (
                 <>
-                  <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-muted text-base font-bold">
-                    {b.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
+                  <StaffAvatar name={b.name} layoutId={layoutId} />
+                  <span>{b.name.split(" ")[0]}</span>
+                </>
+              ) : staffHorizontal ? (
+                <>
+                  <StaffAvatar name={b.name} layoutId={layoutId} />
+                  <div className="min-w-0 text-left">
+                    <p className="truncate text-sm font-semibold">{b.name}</p>
+                    <p className="text-xs text-muted-foreground">{b.role}</p>
+                    {!bookable ? (
+                      <p className="mt-0.5 text-[10px] text-muted-foreground">
+                        {isOwner
+                          ? t("salon.staff.notBookableYet", {
+                              defaultValue: "Hozircha band qilib bo'lmaydi",
+                            })
+                          : t("salon.staff.comingSoon", { defaultValue: "Tez orada" })}
+                      </p>
+                    ) : null}
                   </div>
+                </>
+              ) : (
+                <>
+                  <StaffAvatar name={b.name} layoutId={layoutId} />
                   <p className="mt-3 text-sm font-semibold">{b.name}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">{b.role}</p>
                   {!bookable && !isOwner ? (
@@ -145,12 +195,10 @@ export function SalonPageSections({
                   ) : null}
                 </>
               );
+
               if (!bookable) {
                 return (
-                  <div
-                    key={b.id}
-                    className="rounded-xl border border-border p-4 text-center opacity-60"
-                  >
+                  <div key={b.id} className={ui.staffCardDisabled}>
                     {inner}
                   </div>
                 );
@@ -161,7 +209,7 @@ export function SalonPageSections({
                   to="/booking/$salonId"
                   params={{ salonId: salon.id }}
                   search={{ barber: b.id }}
-                  className="rounded-xl border border-border p-4 text-center transition-colors hover:bg-muted/30"
+                  className={ui.staffCard}
                 >
                   {inner}
                 </Link>
@@ -171,7 +219,7 @@ export function SalonPageSections({
         </SectionBlock>
       ) : null}
 
-      <SectionBlock id="salon-reviews" title={t("salon.tabs.reviews")}>
+      <SectionBlock id="salon-reviews" title={t("salon.tabs.reviews")} ui={ui}>
         <SalonReviewsSection
           summary={salon.ratingSummary}
           reviews={salon.reviews}
@@ -179,23 +227,30 @@ export function SalonPageSections({
         />
       </SectionBlock>
 
-      <div id="salon-location" className="scroll-mt-36 border-b border-border pb-10">
+      <div id="salon-location" className={ui.section}>
         <SalonLocationSection
           address={salon.address}
           lat={salon.lat}
           lng={salon.lng}
           salonId={salon.id}
+          variant={ui.location}
+          titleClassName={ui.title}
         />
       </div>
 
       {(salon.hours.length > 0 || salon.closedWeekdays.length > 0) ? (
-        <div id="salon-hours" className="scroll-mt-36 border-b border-border pb-10">
-          <SalonHoursSection hours={salon.hours} closedWeekdays={salon.closedWeekdays} />
+        <div id="salon-hours" className={ui.section}>
+          <SalonHoursSection
+            hours={salon.hours}
+            closedWeekdays={salon.closedWeekdays}
+            variant={ui.hours}
+            titleClassName={ui.title}
+          />
         </div>
       ) : null}
 
       {showCalendar ? (
-        <div id="salon-booking" className="scroll-mt-36 border-b border-border pb-10">
+        <div id="salon-booking" className={ui.section}>
           <SalonBookingCalendar
             salonId={salon.id}
             barberId={calendarBarberId}
@@ -206,7 +261,7 @@ export function SalonPageSections({
       ) : null}
 
       {salon.portfolio.length > 0 ? (
-        <SectionBlock id="salon-portfolio" title={t("salon.tabs.portfolio")} className="border-b-0">
+        <SectionBlock id="salon-portfolio" title={t("salon.tabs.portfolio")} ui={ui} className="border-b-0">
           <SalonPortfolioGallery images={salon.portfolio} />
         </SectionBlock>
       ) : null}

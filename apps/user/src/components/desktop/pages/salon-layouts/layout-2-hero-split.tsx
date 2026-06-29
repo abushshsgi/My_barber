@@ -3,11 +3,13 @@ import { SalonHeroGallery } from "@/components/salon/SalonHeroGallery";
 import { SalonPageHeader } from "@/components/salon/SalonPageHeader";
 import { SalonPageSections } from "@/components/salon/SalonPageSections";
 import { SalonSectionNav } from "@/components/salon/SalonSectionNav";
+import { salonSectionUi } from "./section-styles";
 import type { SalonDesktopPageProps } from "./types";
 
 /** Layout 2: yuqorida galereya + sarlavha yonma-yon, pastda to‘liq kenglik. */
 export function SalonDesktopLayout2HeroSplit(props: SalonDesktopPageProps) {
-  const { salon, fav, onToggleFav, onShare, favPending, reviewsAreMock } = props;
+  const { salon, fav, onToggleFav, onShare, favPending, reviewsAreMock, layoutId } = props;
+  const ui = salonSectionUi(layoutId);
 
   return (
     <div className="mx-auto max-w-6xl pb-16">
@@ -23,9 +25,9 @@ export function SalonDesktopLayout2HeroSplit(props: SalonDesktopPageProps) {
         />
       </div>
       <SalonSectionNav salon={salon} />
-      <div className="mt-8 grid grid-cols-[minmax(0,1fr)_320px] items-start gap-8 xl:gap-12">
-        <SalonPageSections salon={salon} showCalendar={false} reviewsAreMock={reviewsAreMock} />
-        <SalonBookingAside salon={salon} className="sticky top-36" compact />
+      <div className="mt-8 grid grid-cols-[minmax(0,1fr)_300px] items-start gap-8 xl:gap-12">
+        <SalonPageSections salon={salon} layoutId={layoutId} showCalendar={false} reviewsAreMock={reviewsAreMock} />
+        <SalonBookingAside salon={salon} asideVariant={ui.aside} compact className="sticky top-36" />
       </div>
     </div>
   );

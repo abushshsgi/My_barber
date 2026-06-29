@@ -15,6 +15,7 @@ export type SalonDesktopPageProps = {
   onShare?: () => void;
   favPending?: boolean;
   reviewsAreMock?: boolean;
+  layoutId: SalonDesktopLayoutId;
 };
 
 export function resolveSalonDesktopLayout(
