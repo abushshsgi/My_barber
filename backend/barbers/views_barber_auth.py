@@ -47,6 +47,29 @@ def _barber_me_salon_fields(b: Barber):
     return owns_salon, active_salon_id
 
 
+def _resolve_barber_by_identifier(identifier: str) -> tuple[Barber | None, str | None, int | None]:
+    identifier = (identifier or "").strip()
+    if not identifier:
+        return None, "Email/telefon va parol kiriting.", 400
+    if "@" in identifier:
+        email = identifier.lower()
+        has_user = User.objects.filter(email__iexact=email).exists()
+        has_barber = Barber.objects.filter(email__iexact=email).exists()
+        if has_user and not has_barber:
+            return (
+                None,
+                "Bu email mijoz akkauntiga tegishli. Sartarosh panelidan kirish mumkin emas — mijoz ilovasidan kiring.",
+                401,
+            )
+        return Barber.objects.filter(email__iexact=email, is_active=True).first(), None, None
+
+    normalized, err = validate_uz_mobile_phone(identifier)
+    if err:
+        return None, err, 400
+    assert normalized is not None
+    return Barber.objects.filter(phone=normalized, is_active=True).first(), None, None
+
+
 class BarberTokenView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [AuthIPThrottle]
@@ -57,31 +80,50 @@ class BarberTokenView(APIView):
         if not identifier or not password:
             return Response({"detail": "Email/telefon va parol kiriting."}, status=400)
 
-        barber: Barber | None = None
-        if "@" in identifier:
-            email = identifier.lower()
-            has_user = User.objects.filter(email__iexact=email).exists()
-            has_barber = Barber.objects.filter(email__iexact=email).exists()
-            if has_user and not has_barber:
-                return Response(
-                    {
-                        "detail": "Bu email mijoz akkauntiga tegishli. Sartarosh panelidan kirish mumkin emas — mijoz ilovasidan kiring.",
-                    },
-                    status=401,
-                )
-            barber = Barber.objects.filter(email__iexact=email, is_active=True).first()
-        else:
-            normalized, err = validate_uz_mobile_phone(identifier)
-            if err:
-                return Response({"detail": err}, status=400)
-            assert normalized is not None
-            barber = Barber.objects.filter(phone=normalized, is_active=True).first()
+        barber, err, status_code = _resolve_barber_by_identifier(identifier)
+        if err:
+            return Response({"detail": err}, status=status_code or 400)
 
         if not barber or not barber.check_password(password):
             return Response({"detail": "Noto'g'ri email/telefon yoki parol."}, status=401)
         access, refresh = encode_barber_tokens(barber.id)
         Barber.objects.filter(pk=barber.pk).update(last_login=timezone.now())
         return Response({"access": access, "refresh": refresh})
+
+
+class LegacyBarberSendOtpEmailCompatView(APIView):
+    """
+    Legacy partner build compatibility.
+
+    Old frontend occasionally calls /accounts/auth/barber/send-otp/email/.
+    We accept POST and return a non-405 response.
+    """
+
+    permission_classes = [AllowAny]
+    throttle_classes = [AuthIPThrottle]
+
+    def post(self, request):
+        # If old client sent password together with identifier, allow direct sign in.
+        identifier = (request.data.get("email") or request.data.get("phone") or "").strip()
+        password = request.data.get("password") or ""
+        if identifier and password:
+            barber, err, status_code = _resolve_barber_by_identifier(identifier)
+            if err:
+                return Response({"detail": err}, status=status_code or 400)
+            if not barber or not barber.check_password(password):
+                return Response({"detail": "Noto'g'ri email/telefon yoki parol."}, status=401)
+            access, refresh = encode_barber_tokens(barber.id)
+            Barber.objects.filter(pk=barber.pk).update(last_login=timezone.now())
+            return Response({"access": access, "refresh": refresh})
+
+        # Fallback: avoid 405 for stale clients and guide upgrade.
+        return Response(
+            {
+                "detail": "Auth endpoint yangilangan. Iltimos sahifani qayta yuklang (Ctrl+F5).",
+                "legacy_endpoint": True,
+            },
+            status=200,
+        )
 
 
 class BarberTokenRefreshView(APIView):

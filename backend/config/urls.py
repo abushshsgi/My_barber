@@ -122,6 +122,7 @@ from barbers.views import (
 from barbers.views_barber_auth import (
     BarberEmailResendView,
     BarberEmailVerifyView,
+    LegacyBarberSendOtpEmailCompatView,
     BarberMeView,
     BarberOnboardingStatusView,
     BarberTokenRefreshView,
@@ -283,6 +284,8 @@ api_routes = [
     path("barbers/search/", BarberSearchView.as_view()),
     path("barber/auth/token/", BarberTokenView.as_view()),
     path("barber/auth/token/refresh/", BarberTokenRefreshView.as_view()),
+    # Legacy partner auth endpoint (older deployed bundles).
+    path("accounts/auth/barber/send-otp/email/", LegacyBarberSendOtpEmailCompatView.as_view()),
     path("barber/auth/verify-email/", BarberEmailVerifyView.as_view()),
     path("barber/auth/resend-verification-email/", BarberEmailResendView.as_view()),
     path("barber/auth/me/", BarberMeView.as_view()),
