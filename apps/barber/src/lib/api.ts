@@ -114,6 +114,13 @@ async function refreshBarberAccessOnce(): Promise<string | null> {
     body: JSON.stringify({ refresh }),
   });
   if (!res.ok) {
+    const access = getBarberAccessToken();
+    if (access && (res.status === 401 || res.status === 403)) {
+      const meRes = await fetch(`${API_BASE}/api/v1/barber/auth/me/`, {
+        headers: { Authorization: `Bearer ${access}` },
+      });
+      if (meRes.ok) return access;
+    }
     if (res.status === 401 || res.status === 403) {
       clearBarberTokens();
     }
@@ -180,7 +187,8 @@ export async function apiFetch(
     );
 
   let res = await exec();
-  if ((res.status === 401 || res.status === 403) && retry && token) {
+  // 403 ko'pincha activation/permission — refresh faqat 401 (auth) uchun.
+  if (res.status === 401 && retry && token) {
     const newAccess = await refreshBarberAccess();
     if (newAccess) {
       headers.set("Authorization", `Bearer ${newAccess}`);

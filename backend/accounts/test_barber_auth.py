@@ -261,3 +261,29 @@ class BarberAuthIntegrationTests(TestCase):
             format="json",
         )
         self.assertEqual(again.status_code, 401)
+
+    def test_refresh_works_after_cache_miss(self):
+        import jwt
+        from django.conf import settings
+        from django.core.cache import cache
+
+        from barbers.barber_auth import REFRESH_JTI_CACHE_PREFIX
+
+        reg = self.client.post(
+            "/api/v1/auth/barber-register/",
+            self._register_payload("owner", "cachemiss@test.com", "+998905556677"),
+            format="json",
+        )
+        refresh = reg.json()["refresh"]
+        payload = jwt.decode(
+            refresh, settings.JWT_HS256_SIGNING_KEY, algorithms=["HS256"]
+        )
+        cache.delete(f"{REFRESH_JTI_CACHE_PREFIX}{payload['barber_id']}")
+
+        res = self.client.post(
+            "/api/v1/barber/auth/token/refresh/",
+            {"refresh": refresh},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.json().get("access"))

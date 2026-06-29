@@ -78,7 +78,12 @@ def validate_and_rotate_barber_refresh(
     if not jti:
         return False
     cached = cache.get(_refresh_cache_key(barber_id))
-    return cached == jti
+    if cached == jti:
+        return True
+    # Redis blip / deploy: refresh JWT yaroqli bo'lsa cache qayta tiklanadi.
+    if cached is None:
+        return True
+    return False
 
 
 def encode_barber_tokens(barber_id: int) -> tuple[str, str]:
