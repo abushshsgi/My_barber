@@ -11,7 +11,7 @@ export function SalonDesktopLayout2HeroSplit(props: SalonDesktopPageProps) {
 
   return (
     <div className="mx-auto max-w-6xl pb-16">
-      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:gap-10">
+      <div className="grid items-start gap-6 rounded-2xl border border-border bg-muted/20 p-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:gap-8 lg:p-6">
         <SalonHeroGallery salon={salon} variant="desktop" />
         <SalonPageHeader
           salon={salon}

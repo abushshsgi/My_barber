@@ -22,7 +22,7 @@ export function SalonDesktopLayout3SidebarLeft(props: SalonDesktopPageProps) {
       />
       <SalonSectionNav salon={salon} />
       <div className="mt-8 grid grid-cols-[320px_minmax(0,1fr)] items-start gap-10 xl:grid-cols-[360px_minmax(0,1fr)] xl:gap-14">
-        <SalonBookingAside salon={salon} className="sticky top-36" />
+        <SalonBookingAside salon={salon} className="sticky top-36 ring-2 ring-foreground/10" />
         <SalonPageSections salon={salon} showCalendar={false} reviewsAreMock={reviewsAreMock} />
       </div>
     </div>

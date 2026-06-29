@@ -1,6 +1,5 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { SalonDesktopPage } from "@/components/desktop/pages/SalonDesktopPage";
 import type { SalonDesktopLayoutId } from "@/components/desktop/pages/salon-layouts/types";
 import { SalonMobilePage } from "@/components/salon/SalonMobilePage";
@@ -8,6 +7,7 @@ import { useFavorites } from "@/hooks/use-favorites";
 import { SalonShareSheet } from "@/components/salon/SalonShareSheet";
 import { useShareSalon } from "@/hooks/use-share-salon";
 import { useSalonPage } from "@/hooks/use-salon-page";
+import { useIsLgUp } from "@/hooks/use-mobile";
 import { buildSalonHeadMeta, fetchSalonSeoMeta } from "@/lib/salon-seo.server";
 
 export const Route = createFileRoute("/salon/$id")({
@@ -23,14 +23,15 @@ export const Route = createFileRoute("/salon/$id")({
   component: SalonPage,
 });
 
-function parseLayoutOverride(value: unknown): SalonDesktopLayoutId | null {
+function parseLayoutOverride(value: unknown): SalonDesktopLayoutId | undefined {
   const n = Number(value);
   if (n >= 1 && n <= 5) return n as SalonDesktopLayoutId;
-  return null;
+  return undefined;
 }
 
 function SalonPage() {
   const { t } = useTranslation();
+  const isLgUp = useIsLgUp();
   const { id } = useParams({ from: "/salon/$id" });
   const { layout: layoutOverride } = Route.useSearch();
   const { salon, isLoading, reviewsAreMock } = useSalonPage(id);
@@ -58,10 +59,11 @@ function SalonPage() {
 
   return (
     <>
-      <DesktopPageSplit
-        mobile={<SalonMobilePage {...pageProps} />}
-        desktop={<SalonDesktopPage {...pageProps} layoutOverride={layoutOverride} />}
-      />
+      {isLgUp ? (
+        <SalonDesktopPage {...pageProps} layoutOverride={layoutOverride ?? null} />
+      ) : (
+        <SalonMobilePage {...pageProps} />
+      )}
       {shareSalon ? (
         <SalonShareSheet open={shareOpen} onOpenChange={setShareOpen} salon={shareSalon} />
       ) : null}

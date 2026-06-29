@@ -3,6 +3,7 @@ import "./lib/error-capture";
 import { maybeProxyApi } from "./lib/api-proxy.server";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { injectSalonOgIntoHtml } from "./lib/salon-og-inject.server";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -45,8 +46,15 @@ export default {
       if (proxied) return proxied;
 
       const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      let response = await handler.fetch(request, env, ctx);
+      response = await normalizeCatastrophicSsrResponse(response);
+
+      const { pathname } = new URL(request.url);
+      if (request.method === "GET" && /^\/salon\/[^/]+\/?$/.test(pathname)) {
+        response = await injectSalonOgIntoHtml(response, pathname);
+      }
+
+      return response;
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {

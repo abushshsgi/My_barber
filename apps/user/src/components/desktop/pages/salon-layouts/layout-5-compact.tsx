@@ -10,7 +10,7 @@ export function SalonDesktopLayout5Compact(props: SalonDesktopPageProps) {
   const { salon, fav, onToggleFav, onShare, favPending, reviewsAreMock } = props;
 
   return (
-    <div className="mx-auto max-w-5xl pb-14">
+    <div className="mx-auto max-w-5xl rounded-3xl border-2 border-dashed border-border bg-muted/10 p-4 pb-14 sm:p-6">
       <SalonHeroGallery salon={salon} variant="desktop" size="compact" />
       <div className="mt-6">
         <SalonPageHeader
