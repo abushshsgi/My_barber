@@ -107,7 +107,9 @@ export interface BookingItem {
   portfolioConsent?: boolean | null;
   portfolioAllowed?: boolean;
   resultImageUrl?: string;
+  orderNumber?: string;
   checkInCode?: string;
+  checkInShortCode?: string;
   statusHistory?: Array<{ key: string; label: string; at: string }>;
   paymentMethod?: "cash" | "online";
   paymentStatus?: string;

@@ -26,6 +26,7 @@ from bookings.availability import (
     parse_id_list,
 )
 from bookings.db_compat import (
+    bookings_has_check_in_token_column,
     bookings_has_checked_in_column,
     bookings_has_family_member_column,
     booking_queryset_compat,
@@ -208,6 +209,9 @@ class BookingViewSet(viewsets.ModelViewSet):
             return False
         return booking.barber_id == bp.id
 
+    def _booking_data(self, booking, request):
+        return BookingSerializer(booking, context={"request": request}).data
+
     def get_queryset(self):
         action = getattr(self, "action", None)
         if action == "list":
@@ -273,7 +277,9 @@ class BookingViewSet(viewsets.ModelViewSet):
             {"booking_id": booking.id, "customer_phone": phone},
         )
         broadcast_booking_updated(booking=booking)
-        return Response(BookingSerializer(booking).data, status=status.HTTP_201_CREATED)
+        return Response(
+            self._booking_data(booking, request), status=status.HTTP_201_CREATED
+        )
 
     def update(self, request, *args, **kwargs):
         return Response(
@@ -298,7 +304,18 @@ class BookingViewSet(viewsets.ModelViewSet):
         if booking.status != Booking.Status.PENDING:
             return Response({"detail": "Invalid status."}, status=400)
         booking.status = Booking.Status.ACCEPTED
-        booking.save(update_fields=["status", "updated_at"])
+        update_fields = ["status", "updated_at"]
+        if bookings_has_check_in_token_column() and not booking.checked_in_at:
+            from bookings.checkin_tokens import issue_check_in_token
+
+            issue_check_in_token(booking)
+            update_fields += [
+                "check_in_token",
+                "check_in_short_code",
+                "check_in_token_issued_at",
+                "check_in_token_used_at",
+            ]
+        booking.save(update_fields=update_fields)
         notify_user(
             booking.customer,
             "booking_accepted",
@@ -308,7 +325,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             send_email=True,
         )
         broadcast_booking_updated(booking=booking)
-        return Response(BookingSerializer(booking).data)
+        return Response(self._booking_data(booking, request))
 
     @action(detail=True, methods=["post"])
     def reject(self, request, pk=None):
@@ -330,7 +347,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             {"booking_id": booking.id},
         )
         broadcast_booking_updated(booking=booking)
-        return Response(BookingSerializer(booking).data)
+        return Response(self._booking_data(booking, request))
 
     @action(detail=True, methods=["post"])
     def cancel(self, request, pk=None):
@@ -345,7 +362,13 @@ class BookingViewSet(viewsets.ModelViewSet):
 
         maybe_refund_booking(booking)
         booking.status = Booking.Status.CANCELLED
-        booking.save(update_fields=["status", "updated_at"])
+        cancel_update_fields = ["status", "updated_at"]
+        if bookings_has_check_in_token_column() and booking.check_in_token:
+            from bookings.checkin_tokens import clear_check_in_token
+
+            clear_check_in_token(booking)
+            cancel_update_fields += ["check_in_token", "check_in_short_code"]
+        booking.save(update_fields=cancel_update_fields)
         payload = {"booking_id": booking.id}
         if is_customer:
             notify_barber(
@@ -364,7 +387,7 @@ class BookingViewSet(viewsets.ModelViewSet):
                 payload,
             )
         broadcast_booking_updated(booking=booking)
-        return Response(BookingSerializer(booking).data)
+        return Response(self._booking_data(booking, request))
 
     @action(detail=True, methods=["post"])
     def start(self, request, pk=None):
@@ -385,7 +408,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             {"booking_id": booking.id},
         )
         broadcast_booking_updated(booking=booking)
-        return Response(BookingSerializer(booking).data)
+        return Response(self._booking_data(booking, request))
 
     @action(detail=True, methods=["post"])
     def complete(self, request, pk=None):
@@ -445,7 +468,32 @@ class BookingViewSet(viewsets.ModelViewSet):
             {"booking_id": booking.id},
         )
         broadcast_booking_updated(booking=booking)
-        return Response(BookingSerializer(booking).data)
+        return Response(self._booking_data(booking, request))
+
+    def _mark_checked_in(self, booking):
+        """Check-in qiladi va bir martalik tokenni ishlatilgan deb belgilaydi."""
+        now = timezone.now()
+        booking.checked_in_at = now
+        update_fields = ["checked_in_at", "updated_at"]
+        if bookings_has_check_in_token_column() and booking.check_in_token:
+            from bookings.checkin_tokens import clear_check_in_token
+
+            booking.check_in_token_used_at = now
+            clear_check_in_token(booking)
+            update_fields += [
+                "check_in_token",
+                "check_in_short_code",
+                "check_in_token_used_at",
+            ]
+        booking.save(update_fields=update_fields)
+        notify_user(
+            booking.customer,
+            "booking_checked_in",
+            "Siz qabul qilindingiz",
+            "Sartarosh sizning kelganingizni qayd etdi.",
+            {"booking_id": booking.id},
+        )
+        broadcast_booking_updated(booking=booking)
 
     @action(detail=True, methods=["post"])
     def check_in(self, request, pk=None):
@@ -460,18 +508,56 @@ class BookingViewSet(viewsets.ModelViewSet):
                 status=503,
             )
         if booking.checked_in_at:
-            return Response(BookingSerializer(booking).data)
-        booking.checked_in_at = timezone.now()
-        booking.save(update_fields=["checked_in_at", "updated_at"])
-        notify_user(
-            booking.customer,
-            "booking_checked_in",
-            "Siz qabul qilindingiz",
-            "Sartarosh sizning kelganingizni qayd etdi.",
-            {"booking_id": booking.id},
-        )
-        broadcast_booking_updated(booking=booking)
-        return Response(BookingSerializer(booking).data)
+            return Response(self._booking_data(booking, request))
+        self._mark_checked_in(booking)
+        return Response(self._booking_data(booking, request))
+
+    @action(detail=False, methods=["post"], url_path="check-in-by-token")
+    def check_in_by_token(self, request):
+        """Sartarosh QR token yoki qisqa kod orqali mijozni check-in qiladi."""
+        bp = request_barber(request)
+        if bp is None:
+            return Response(
+                {"detail": "Faqat sartarosh check-in qila oladi."}, status=403
+            )
+        if not bookings_has_check_in_token_column():
+            return Response(
+                {"detail": "Check-in vaqtincha mavjud emas. Birozdan keyin qayta urinib ko'ring."},
+                status=503,
+            )
+        token = (request.data.get("token") or "").strip()
+        short_code = (request.data.get("short_code") or "").strip().upper()
+        if not token and not short_code:
+            return Response(
+                {"detail": "QR token yoki qisqa kod kiriting."}, status=400
+            )
+
+        qs = Booking.objects.select_related("customer", "salon", "barber")
+        if token:
+            booking = qs.filter(check_in_token=token).first()
+        else:
+            booking = qs.filter(
+                check_in_short_code=short_code,
+                check_in_token__isnull=False,
+            ).first()
+        if booking is None:
+            return Response(
+                {"detail": "Kod topilmadi yoki allaqachon ishlatilgan."}, status=404
+            )
+        if booking.barber_id != bp.id:
+            return Response(
+                {"detail": "Bu buyurtma sizga tegishli emas."}, status=403
+            )
+        if booking.check_in_token_used_at or booking.checked_in_at:
+            return Response(
+                {"detail": "Bu kod allaqachon ishlatilgan."}, status=410
+            )
+        if booking.status != Booking.Status.ACCEPTED:
+            return Response(
+                {"detail": "Faqat tasdiqlangan bron uchun check-in."}, status=400
+            )
+        self._mark_checked_in(booking)
+        return Response(self._booking_data(booking, request))
 
     @action(detail=True, methods=["post"])
     def portfolio_consent(self, request, pk=None):
@@ -493,7 +579,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             {"booking_id": booking.id, "consent": consent},
         )
         broadcast_booking_updated(booking=booking)
-        return Response(BookingSerializer(booking).data)
+        return Response(self._booking_data(booking, request))
 
 
 class SalonPortfolioView(APIView):

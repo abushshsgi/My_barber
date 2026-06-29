@@ -160,7 +160,9 @@ export type ApiBooking = {
   portfolio_consent?: boolean | null;
   portfolio_allowed?: boolean;
   result_image_url?: string | null;
-  check_in_code?: string;
+  order_number?: string | null;
+  check_in_code?: string | null;
+  check_in_short_code?: string | null;
   status_history?: Array<{ key: string; label: string; at: string }>;
   salon_address?: string | null;
   salon_latitude?: number | null;

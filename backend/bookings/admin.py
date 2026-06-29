@@ -17,10 +17,11 @@ class BookingCompletionInline(admin.StackedInline):
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
-    list_display = ("id", "customer", "salon", "barber", "start_at", "status")
+    list_display = ("id", "order_number", "customer", "salon", "barber", "start_at", "status")
     list_filter = ("status", "salon", "barber")
     search_fields = (
         "id",
+        "order_number",
         "customer__email",
         "customer__full_name",
         "barber__email",

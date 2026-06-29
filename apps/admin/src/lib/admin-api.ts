@@ -225,6 +225,7 @@ export type AdminSalonDetail = AdminSalon & {
 
 export type AdminBooking = {
   id: string;
+  order_number: string;
   client_name: string;
   client_avatar: string;
   barber_name: string;
@@ -444,6 +445,7 @@ type BackendSalonRow = {
 
 type BackendBookingRow = {
   id: number;
+  order_number?: string | null;
   salon_name?: string;
   customer_name?: string;
   barber_name?: string;
@@ -911,6 +913,7 @@ export async function deleteAdminSalon(id: string): Promise<{ ok: true }> {
 function mapAdminBookingRow(b: BackendBookingRow): AdminBooking {
   return {
     id: String(b.id),
+    order_number: b.order_number ?? `MS-${b.id}`,
     client_name: b.customer_name ?? "—",
     client_avatar: avatarFor(`c${b.id}`),
     barber_name: b.barber_name ?? "—",
@@ -926,12 +929,14 @@ function mapAdminBookingRow(b: BackendBookingRow): AdminBooking {
 export async function fetchAdminBookings(params?: {
   status?: string;
   barber?: string;
+  search?: string;
   page?: number;
 }): Promise<Paginated<AdminBooking>> {
   const page = params?.page ?? 1;
   const sp = new URLSearchParams();
   if (params?.status && params.status !== "all") sp.set("status", params.status);
   if (params?.barber?.trim()) sp.set("barber", params.barber.trim());
+  if (params?.search?.trim()) sp.set("search", params.search.trim());
   sp.set("page", String(page));
   const res = await apiFetch(`/api/v1/admin/bookings/?${sp.toString()}`);
   const j = (await res.json().catch(() => ({}))) as

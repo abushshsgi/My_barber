@@ -87,6 +87,30 @@ class Booking(models.Model):
         blank=True,
         help_text="Mijoz portfolio uchun rasmga ruxsat berishi (null = hali javob bermagan).",
     )
+    order_number = models.CharField(
+        max_length=32,
+        unique=True,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Support uchun doimiy buyurtma raqami (MS-YYYYMMDD-XXXX).",
+    )
+    check_in_token = models.CharField(
+        max_length=64,
+        unique=True,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Mijoz QR kodi uchun maxfiy token. Bir marta ishlatiladi.",
+    )
+    check_in_short_code = models.CharField(
+        max_length=12,
+        null=True,
+        blank=True,
+        help_text="Qo'lda kiritish uchun qisqa kod (token bilan birga).",
+    )
+    check_in_token_issued_at = models.DateTimeField(null=True, blank=True)
+    check_in_token_used_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-start_at"]

@@ -1,7 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, CheckCircle2, Loader2, Phone, Play, UserCheck, X } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, Phone, Play, ScanLine, UserCheck, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { parseCheckInQrPayload } from "@mybarber/shared/booking-lifecycle";
+import { CheckInScanner } from "@/components/bookings/CheckInScanner";
 import { CompleteBookingDialog } from "@/components/bookings/CompleteBookingDialog";
 import {
   BookingAddonHint,
@@ -9,15 +11,20 @@ import {
   BookingFamilyBanner,
   BookingLifecycleTimeline,
   BookingLocationCard,
+  BookingOrderNumberBanner,
   BookingPaymentCard,
-  BookingQrCard,
   BookingResultPreview,
   BookingServiceTimer,
   BookingStatusHistory,
   BookingWaitCountdown,
 } from "@/components/bookings/BookingProcessParts";
 import { useBookingLiveSync } from "@/hooks/use-booking-live-sync";
-import { useBarberBookingQuery, useBookingActionMutation } from "@/hooks/use-barber-queries";
+import {
+  useBarberBookingQuery,
+  useBookingActionMutation,
+  useCheckInByTokenMutation,
+} from "@/hooks/use-barber-queries";
+import type { Booking } from "@/components/barber/BarberContext";
 import type { CompleteBookingOptions } from "@/lib/map-booking";
 import { cn } from "@/lib/utils";
 
@@ -92,13 +99,16 @@ function BarberBookingProcessPage() {
             <BookingDetailSummary booking={booking} />
           </div>
 
+          <BookingOrderNumberBanner orderNumber={booking.order_number} />
+
           <BookingWaitCountdown booking={booking} />
           <BookingServiceTimer booking={booking} />
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <BookingPaymentCard booking={booking} />
-            <BookingQrCard code={booking.check_in_code ?? `MB-${booking.id}`} />
-          </div>
+          {booking.status === "accepted" && !booking.checked_in_at ? (
+            <BarberManualCheckInCard booking={booking} />
+          ) : null}
+
+          <BookingPaymentCard booking={booking} />
 
           <BookingLocationCard booking={booking} />
 
@@ -213,6 +223,87 @@ function BarberBookingProcessPage() {
           </div>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function BarberManualCheckInCard({ booking: _booking }: { booking: Booking }) {
+  const [code, setCode] = useState("");
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const checkInMut = useCheckInByTokenMutation();
+
+  const runCheckIn = (payload: { token?: string; short_code?: string }) => {
+    checkInMut.mutate(payload, {
+      onSuccess: () => {
+        toast.success("Mijoz qabul qilindi");
+        setCode("");
+        setScannerOpen(false);
+      },
+      onError: (e) => toast.error(e.message),
+    });
+  };
+
+  const submit = () => {
+    const raw = code.trim();
+    if (!raw) {
+      toast.error("Mijoz kodini kiriting");
+      return;
+    }
+    // QR matni ham, qisqa kod ham qabul qilinadi.
+    const token = parseCheckInQrPayload(raw);
+    runCheckIn(token && token.length > 12 ? { token } : { short_code: raw.toUpperCase() });
+  };
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
+      <h2 className="mb-1 flex items-center gap-2 font-heading text-base font-semibold">
+        <ScanLine className="size-4" />
+        Mijozni qabul qilish
+      </h2>
+      <p className="mb-3 text-xs text-muted-foreground">
+        Mijoz ilovasidagi QR yoki bir martalik kodni kiriting. Kod bir marta ishlatiladi.
+      </p>
+      <div className="flex gap-2">
+        <input
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") submit();
+          }}
+          placeholder="Masalan: 7F3A9K"
+          autoCapitalize="characters"
+          autoComplete="off"
+          className="min-w-0 flex-1 rounded-xl border border-border bg-background px-4 py-3 text-sm font-mono font-semibold uppercase tracking-[0.2em] outline-none focus:border-foreground"
+        />
+        <button
+          type="button"
+          onClick={submit}
+          disabled={checkInMut.isPending}
+          className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-background hover:opacity-90 disabled:opacity-60"
+        >
+          {checkInMut.isPending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <UserCheck className="size-4" />
+          )}
+          Qabul
+        </button>
+      </div>
+      <button
+        type="button"
+        onClick={() => setScannerOpen(true)}
+        disabled={checkInMut.isPending}
+        className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-border py-3 text-sm font-medium hover:bg-muted disabled:opacity-60"
+      >
+        <ScanLine className="size-4" />
+        QR kodni skaner qilish
+      </button>
+
+      <CheckInScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onDetected={(token) => runCheckIn({ token })}
+      />
     </div>
   );
 }

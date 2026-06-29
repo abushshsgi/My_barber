@@ -94,8 +94,8 @@ export function UserProfile() {
                 icon: Calendar,
                 title: t("profile.nextBooking.title"),
                 subtitle: `${nextBooking.salonName} · ${when.date} · ${when.time}`,
-                to: "/bookings",
-                search: { focus: nextBooking.id },
+                to: "/bookings/$bookingId",
+                params: { bookingId: nextBooking.id },
               },
             ]}
           />

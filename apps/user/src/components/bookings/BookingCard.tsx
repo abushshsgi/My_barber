@@ -2,9 +2,11 @@ import { Link } from "@tanstack/react-router";
 import { CalendarPlus, ChevronRight, Star } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { BookingChatButton } from "@/components/bookings/BookingChatButton";
 import { WriteReviewDialog } from "@/components/bookings/WriteReviewDialog";
 import { PageSpotlightEmpty } from "@/components/ui/PageSpotlightEmpty";
+import { useCancelBooking } from "@/hooks/use-bookings-api";
 import { formatPrice, type BookingItem } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -43,9 +45,18 @@ const statusStyles: Record<BookingItem["status"], string> = {
 export function BookingCard({ booking: b, focused }: { booking: BookingItem; focused?: boolean }) {
   const { t } = useTranslation();
   const [reviewOpen, setReviewOpen] = useState(false);
+  const cancelMut = useCancelBooking();
   const d = new Date(b.date);
   const dateStr = d.toLocaleDateString("uz-UZ", { day: "numeric", month: "short" });
   const timeStr = d.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
+
+  const onCancel = () => {
+    cancelMut.mutate(b.id, {
+      onSuccess: () =>
+        toast.success(t("bookings.cancelled", { defaultValue: "Bron bekor qilindi" })),
+      onError: (e) => toast.error(e.message),
+    });
+  };
 
   return (
     <article
@@ -103,6 +114,12 @@ export function BookingCard({ booking: b, focused }: { booking: BookingItem; foc
               <span className="font-bold tabular-nums">{formatPrice(b.price)}</span>
             </div>
 
+            {b.orderNumber ? (
+              <p className="mt-2 font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {b.orderNumber}
+              </p>
+            ) : null}
+
             {b.status === "in_progress" ? (
               <p className="mt-3 flex items-center gap-2 text-xs font-bold text-emerald-700">
                 <span className="relative flex size-2">
@@ -154,9 +171,11 @@ export function BookingCard({ booking: b, focused }: { booking: BookingItem; foc
         {b.status === "pending" || b.status === "accepted" ? (
           <button
             type="button"
-            className="flex-1 rounded-xl border-2 border-foreground bg-background py-2.5 text-xs font-bold"
+            disabled={cancelMut.isPending}
+            onClick={onCancel}
+            className="flex-1 rounded-xl border-2 border-foreground bg-background py-2.5 text-xs font-bold disabled:opacity-60"
           >
-            {t("common.cancel")}
+            {cancelMut.isPending ? "…" : t("common.cancel")}
           </button>
         ) : null}
       </div>

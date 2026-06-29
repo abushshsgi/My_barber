@@ -165,9 +165,35 @@ export function computeAppointmentCountdown(
   return { isUpcoming: false, isPast: true, totalMs: abs, label };
 }
 
-export function buildCheckInQrUrl(code: string, size = 180): string {
-  const payload = `mybarber:booking:${code}`;
+/** QR payload prefiksi — skaner mijoz check-in tokenini tanib olishi uchun. */
+export const CHECK_IN_QR_PREFIX = "mybarber:checkin:";
+
+/** Mijoz check-in tokeni asosida QR rasm URL (sartarosh skaner qiladi). */
+export function buildCheckInQrUrl(token: string, size = 200): string {
+  const payload = `${CHECK_IN_QR_PREFIX}${token}`;
   return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(payload)}`;
+}
+
+/**
+ * Skaner natijasidan check-in tokenini ajratadi.
+ * `mybarber:checkin:<token>` yoki to'g'ridan-to'g'ri token qabul qiladi.
+ */
+export function parseCheckInQrPayload(raw: string): string | null {
+  const value = (raw || "").trim();
+  if (!value) return null;
+  if (value.startsWith(CHECK_IN_QR_PREFIX)) {
+    const token = value.slice(CHECK_IN_QR_PREFIX.length).trim();
+    return token || null;
+  }
+  // Eski QR formati yoki boshqa URL — token emas.
+  if (value.includes("://") || value.includes(" ")) return null;
+  return value;
+}
+
+/** Buyurtma raqamini UI uchun normallashtiradi (katta harf, bo'shliqsiz). */
+export function formatOrderNumber(value: string | null | undefined): string {
+  if (!value) return "";
+  return value.trim().toUpperCase();
 }
 
 export function paymentStatusLabel(

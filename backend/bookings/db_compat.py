@@ -31,12 +31,32 @@ def bookings_has_portfolio_consent_column() -> bool:
     return "portfolio_consent" in _booking_column_names()
 
 
+def bookings_has_order_number_column() -> bool:
+    return "order_number" in _booking_column_names()
+
+
+def bookings_has_check_in_token_column() -> bool:
+    return "check_in_token" in _booking_column_names()
+
+
 def booking_queryset_compat(qs: QuerySet) -> QuerySet:
+    cols = _booking_column_names()
     defer: list[str] = []
-    if not bookings_has_checked_in_column():
+    if "checked_in_at" not in cols:
         defer.append("checked_in_at")
-    if not bookings_has_portfolio_consent_column():
+    if "portfolio_consent" not in cols:
         defer.append("portfolio_consent")
+    if "order_number" not in cols:
+        defer.append("order_number")
+    if "check_in_token" not in cols:
+        defer.extend(
+            [
+                "check_in_token",
+                "check_in_short_code",
+                "check_in_token_issued_at",
+                "check_in_token_used_at",
+            ]
+        )
     if defer:
         qs = qs.defer(*defer)
     return qs

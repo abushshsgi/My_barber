@@ -25,7 +25,9 @@ export type ApiBookingRow = {
   portfolio_consent?: boolean | null;
   portfolio_allowed?: boolean;
   result_image_url?: string | null;
-  check_in_code?: string;
+  order_number?: string | null;
+  check_in_code?: string | null;
+  check_in_short_code?: string | null;
   status_history?: Array<{ key: string; label: string; at: string }>;
   lines: Array<{ service_name: string; duration_minutes: number; price: string | number }>;
 };
@@ -89,7 +91,8 @@ export function mapApiBooking(b: ApiBookingRow): Booking {
     portfolio_consent: b.portfolio_consent ?? null,
     portfolio_allowed: b.portfolio_allowed ?? false,
     result_image_url: b.result_image_url ?? null,
-    check_in_code: b.check_in_code ?? `MB-${b.id}`,
+    order_number: b.order_number ?? `MS-${b.id}`,
+    check_in_code: b.check_in_code ?? undefined,
     status_history: b.status_history ?? [],
   };
 }

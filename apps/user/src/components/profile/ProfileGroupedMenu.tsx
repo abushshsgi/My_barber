@@ -7,6 +7,7 @@ export type ProfileGoMenuRow = {
   title: string;
   subtitle?: string;
   to: string;
+  params?: Record<string, string>;
   search?: Record<string, string>;
   badge?: string;
   chevronClassName?: string;
@@ -34,6 +35,7 @@ export function ProfileGoMenuGroup({ items, dark, className }: GroupProps) {
           <Link
             key={item.title + item.to}
             to={item.to as never}
+            params={item.params as never}
             search={item.search as never}
             className={cn(
               "flex items-center gap-3 px-4 py-3.5 active:opacity-90",

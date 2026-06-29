@@ -484,6 +484,14 @@ class AdminBookingListView(generics.ListAPIView):
         barber_raw = self.request.query_params.get("barber", "").strip()
         if barber_raw.isdigit():
             qs = qs.filter(barber_id=int(barber_raw))
+        search = self.request.query_params.get("search", "").strip()
+        if search:
+            cond = Q(order_number__icontains=search) | Q(
+                customer__full_name__icontains=search
+            ) | Q(customer__email__icontains=search)
+            if search.isdigit():
+                cond |= Q(id=int(search))
+            qs = qs.filter(cond)
         return qs
 
 

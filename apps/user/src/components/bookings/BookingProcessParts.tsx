@@ -330,17 +330,44 @@ export function BookingPaymentCard({ booking }: { booking: BookingItem }) {
   );
 }
 
-export function BookingQrCard({ code }: { code: string }) {
-  const qrUrl = buildCheckInQrUrl(code);
+export function BookingOrderNumberBanner({ orderNumber }: { orderNumber?: string }) {
+  if (!orderNumber) return null;
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-[24px] border border-border bg-surface/50 p-4">
+      <div className="min-w-0">
+        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+          Buyurtma raqami
+        </p>
+        <p className="mt-0.5 font-mono text-base font-bold tracking-wide">{orderNumber}</p>
+      </div>
+      <p className="shrink-0 text-right text-[11px] text-muted-foreground">
+        Yordam uchun shu
+        <br />
+        raqamni ayting
+      </p>
+    </div>
+  );
+}
+
+export function BookingQrCard({ token, shortCode }: { token: string; shortCode?: string }) {
+  const qrUrl = buildCheckInQrUrl(token);
   return (
     <div className="rounded-[24px] border border-border bg-background p-5 text-center shadow-[0_8px_30px_-18px_rgba(0,0,0,0.18)]">
       <h2 className="mb-3 flex items-center justify-center gap-2 text-base font-bold">
         <QrCode className="size-4" />
         Check-in QR
       </h2>
-      <img src={qrUrl} alt={`QR ${code}`} className="mx-auto size-44 rounded-2xl border border-border bg-white p-2" />
-      <p className="mt-3 font-mono text-sm font-bold tracking-wide">{code}</p>
-      <p className="mt-1 text-xs text-muted-foreground">Salonda ushbu kodni ko'rsating</p>
+      <img
+        src={qrUrl}
+        alt="Check-in QR"
+        className="mx-auto size-44 rounded-2xl border border-border bg-white p-2"
+      />
+      {shortCode ? (
+        <p className="mt-3 font-mono text-lg font-bold tracking-[0.3em]">{shortCode}</p>
+      ) : null}
+      <p className="mt-1 text-xs text-muted-foreground">
+        Sartaroshga QR yoki ushbu kodni ko'rsating. Kod bir martalik.
+      </p>
     </div>
   );
 }

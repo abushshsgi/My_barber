@@ -160,6 +160,36 @@ export function useBookingActionMutation() {
   });
 }
 
+export function useCheckInByTokenMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { token?: string; short_code?: string }) => {
+      const res = await apiFetch("/api/v1/bookings/check-in-by-token/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const detail =
+          typeof body === "object" && body && "detail" in body
+            ? String((body as { detail: unknown }).detail)
+            : "Check-in bajarilmadi";
+        throw new Error(detail);
+      }
+      return (await res.json()) as ApiBookingRow;
+    },
+    onSuccess: (row) => {
+      void qc.invalidateQueries({ queryKey: barberQueryKeys.bookings() });
+      if (row?.id != null) {
+        void qc.invalidateQueries({
+          queryKey: [...barberQueryKeys.bookings(), String(row.id)],
+        });
+      }
+    },
+  });
+}
+
 export function useBarberServicesQuery(enabled = true) {
   return useQuery({
     queryKey: barberQueryKeys.services(),

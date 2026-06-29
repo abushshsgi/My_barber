@@ -12,8 +12,10 @@ from bookings.availability import (
     get_salon_services_for_barber,
 )
 from bookings.db_compat import (
+    bookings_has_check_in_token_column,
     bookings_has_checked_in_column,
     bookings_has_family_member_column,
+    bookings_has_order_number_column,
     bookings_has_portfolio_consent_column,
 )
 from bookings.models import Booking, BookingCompletion, BookingLine, Review
@@ -48,7 +50,9 @@ class BookingSerializer(serializers.ModelSerializer):
     result_image_url = serializers.SerializerMethodField()
     portfolio_allowed = serializers.SerializerMethodField()
     status_history = serializers.SerializerMethodField()
+    order_number = serializers.SerializerMethodField()
     check_in_code = serializers.SerializerMethodField()
+    check_in_short_code = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
@@ -80,7 +84,9 @@ class BookingSerializer(serializers.ModelSerializer):
             "portfolio_consent",
             "portfolio_allowed",
             "result_image_url",
+            "order_number",
             "check_in_code",
+            "check_in_short_code",
             "status_history",
             "lines",
             "has_review",
@@ -108,6 +114,19 @@ class BookingSerializer(serializers.ModelSerializer):
             self.fields.pop("checked_in_at", None)
         if not bookings_has_portfolio_consent_column():
             self.fields.pop("portfolio_consent", None)
+        if not bookings_has_order_number_column():
+            self.fields.pop("order_number", None)
+        if not bookings_has_check_in_token_column():
+            self.fields.pop("check_in_code", None)
+            self.fields.pop("check_in_short_code", None)
+
+    def _is_request_barber(self) -> bool:
+        request = self.context.get("request")
+        if request is None:
+            return False
+        from barbers.barber_auth import BarberPrincipal
+
+        return isinstance(getattr(request, "user", None), BarberPrincipal)
 
     def get_salon_name(self, obj):
         return obj.salon.name if obj.salon_id else None
@@ -184,8 +203,33 @@ class BookingSerializer(serializers.ModelSerializer):
         completion = getattr(obj, "completion", None)
         return bool(completion and completion.portfolio_allowed)
 
+    def get_order_number(self, obj):
+        return obj.order_number or f"MS-{obj.pk}"
+
+    def _checkin_active(self, obj) -> bool:
+        """QR token faqat tasdiqlangan va hali check-in bo'lmagan bronda faol."""
+        if not getattr(obj, "check_in_token", None):
+            return False
+        if getattr(obj, "check_in_token_used_at", None):
+            return False
+        if getattr(obj, "checked_in_at", None):
+            return False
+        return obj.status == Booking.Status.ACCEPTED
+
     def get_check_in_code(self, obj):
-        return f"MB-{obj.pk}"
+        # Token faqat bron egasiga (mijozga) beriladi — sartarosh skaner qiladi.
+        if self._is_request_barber():
+            return None
+        if not self._checkin_active(obj):
+            return None
+        return obj.check_in_token
+
+    def get_check_in_short_code(self, obj):
+        if self._is_request_barber():
+            return None
+        if not self._checkin_active(obj):
+            return None
+        return obj.check_in_short_code
 
     def get_status_history(self, obj):
         history = []
@@ -276,6 +320,7 @@ class BookingListSerializer(serializers.ModelSerializer):
     review_id = serializers.SerializerMethodField()
     family_member = serializers.SerializerMethodField()
     booked_for_name = serializers.SerializerMethodField()
+    order_number = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
@@ -298,12 +343,21 @@ class BookingListSerializer(serializers.ModelSerializer):
             "payment_status",
             "family_member",
             "booked_for_name",
+            "order_number",
             "lines",
             "has_review",
             "review_id",
             "created_at",
         )
         read_only_fields = fields
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not bookings_has_order_number_column():
+            self.fields.pop("order_number", None)
+
+    def get_order_number(self, obj):
+        return obj.order_number or f"MS-{obj.pk}"
 
     def get_customer_avatar(self, obj):
         cust = obj.customer
@@ -546,6 +600,11 @@ class BookingCreateSerializer(serializers.Serializer):
                 )
 
             booking = Booking.objects.create(**create_kwargs)
+            if bookings_has_order_number_column():
+                from bookings.checkin_tokens import assign_unique_order_number
+
+                assign_unique_order_number(booking)
+                booking.save(update_fields=["order_number"])
             for s in services:
                 if is_salon_flow:
                     BookingLine.objects.create(

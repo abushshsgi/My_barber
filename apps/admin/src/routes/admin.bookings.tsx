@@ -25,12 +25,14 @@ type Tab = (typeof STATUS_TABS)[number]["key"];
 
 function BookingsPage() {
   const [tab, setTab] = useState<Tab>("all");
+  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
 
   const [page, setPage] = useState(1);
 
   const bookingsQ = useQuery({
-    queryKey: ["admin", "bookings", { status: tab, page }],
-    queryFn: () => fetchAdminBookings({ status: tab, page }),
+    queryKey: ["admin", "bookings", { status: tab, page, search }],
+    queryFn: () => fetchAdminBookings({ status: tab, page, search }),
   });
 
   const data = bookingsQ.data?.results ?? [];
@@ -47,24 +49,61 @@ function BookingsPage() {
         </p>
       </div>
 
-      <div className="inline-flex rounded-lg border border-border bg-card p-1 overflow-x-auto max-w-full">
-        {STATUS_TABS.map((t) => (
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="inline-flex rounded-lg border border-border bg-card p-1 overflow-x-auto max-w-full">
+          {STATUS_TABS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => {
+                setTab(t.key);
+                setPage(1);
+              }}
+              className={cn(
+                "px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap",
+                tab === t.key
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setSearch(searchInput.trim());
+            setPage(1);
+          }}
+          className="flex items-center gap-2"
+        >
+          <input
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Buyurtma raqami yoki mijoz…"
+            className="w-64 max-w-full rounded-lg border border-border bg-card px-3 py-1.5 text-sm outline-none focus:border-foreground"
+          />
           <button
-            key={t.key}
-            onClick={() => {
-              setTab(t.key);
-              setPage(1);
-            }}
-            className={cn(
-              "px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap",
-              tab === t.key
-                ? "bg-foreground text-background"
-                : "text-muted-foreground hover:text-foreground",
-            )}
+            type="submit"
+            className="rounded-lg bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90"
           >
-            {t.label}
+            Qidirish
           </button>
-        ))}
+          {search ? (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setSearchInput("");
+                setPage(1);
+              }}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Tozalash
+            </button>
+          ) : null}
+        </form>
       </div>
 
       <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
@@ -81,7 +120,7 @@ function BookingsPage() {
               <table className="w-full text-left text-sm">
                 <thead className="bg-background border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
-                    <th className="px-6 py-3 font-medium">ID</th>
+                    <th className="px-6 py-3 font-medium">Buyurtma</th>
                     <th className="px-6 py-3 font-medium">Mijoz</th>
                     <th className="px-6 py-3 font-medium">Sartarosh / Salon</th>
                     <th className="px-6 py-3 font-medium">Vaqt</th>
@@ -98,7 +137,7 @@ function BookingsPage() {
                           params={{ bookingId: b.id }}
                           className="hover:text-foreground hover:underline"
                         >
-                          {b.id}
+                          {b.order_number}
                         </Link>
                       </td>
                       <td className="px-6 py-4">

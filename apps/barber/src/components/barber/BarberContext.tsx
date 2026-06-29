@@ -120,6 +120,7 @@ export type Booking = {
   portfolio_consent?: boolean | null;
   portfolio_allowed?: boolean;
   result_image_url?: string | null;
+  order_number?: string;
   check_in_code?: string;
   booked_for_name?: string | null;
   salon_address?: string | null;

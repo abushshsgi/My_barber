@@ -145,7 +145,7 @@ function useBookingSalonState(
     const [h, m] = slot.split(":");
     d.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
     try {
-      await createBooking.mutateAsync({
+      const created = await createBooking.mutateAsync({
         salon: parseInt(salonId, 10),
         barber: parseInt(barberId, 10),
         start_at: d.toISOString(),
@@ -154,7 +154,14 @@ function useBookingSalonState(
         payment_method: paymentMethod,
       });
       toast.success("Buyurtma yuborildi!", { description: `${salon.name} · ${slot}` });
-      setTimeout(() => router.navigate({ to: "/bookings" }), 700);
+      setTimeout(
+        () =>
+          router.navigate({
+            to: "/bookings/$bookingId",
+            params: { bookingId: String(created.id) },
+          }),
+        700,
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Xatolik");
     }

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  buildCheckInQrUrl,
   buildLifecycleSteps,
   computeAppointmentCountdown,
   computeBookingTimer,
@@ -16,7 +15,6 @@ import {
   MapPin,
   MessageSquare,
   Navigation,
-  QrCode,
   Users,
   Wallet,
 } from "lucide-react";
@@ -319,17 +317,19 @@ export function BookingPaymentCard({ booking }: { booking: Booking }) {
   );
 }
 
-export function BookingQrCard({ code }: { code: string }) {
-  const qrUrl = buildCheckInQrUrl(code);
+export function BookingOrderNumberBanner({ orderNumber }: { orderNumber?: string }) {
+  if (!orderNumber) return null;
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-card text-center">
-      <h2 className="mb-3 flex items-center justify-center gap-2 font-heading text-base font-semibold">
-        <QrCode className="size-4" />
-        Check-in kodi
-      </h2>
-      <img src={qrUrl} alt={`QR ${code}`} className="mx-auto size-44 rounded-xl border border-border bg-white p-2" />
-      <p className="mt-3 font-mono text-sm font-semibold tracking-wide">{code}</p>
-      <p className="mt-1 text-xs text-muted-foreground">Mijoz ushbu kodni ko'rsatadi</p>
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-card">
+      <div className="min-w-0">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Buyurtma raqami
+        </p>
+        <p className="mt-0.5 font-mono text-base font-semibold tracking-wide">{orderNumber}</p>
+      </div>
+      <p className="shrink-0 text-right text-[11px] text-muted-foreground">
+        Support uchun
+      </p>
     </div>
   );
 }

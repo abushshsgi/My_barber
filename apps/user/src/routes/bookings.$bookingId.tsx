@@ -11,6 +11,7 @@ import {
   BookingDetailSummary,
   BookingLifecycleTimeline,
   BookingLocationCard,
+  BookingOrderNumberBanner,
   BookingPaymentCard,
   BookingPortfolioConsent,
   BookingQrCard,
@@ -100,14 +101,16 @@ function BookingProcessPage({ wide }: { wide?: boolean }) {
             <BookingDetailSummary booking={booking} />
           </div>
 
+          <BookingOrderNumberBanner orderNumber={booking.orderNumber} />
+
           <BookingWaitCountdown booking={booking} />
           <BookingServiceTimer booking={booking} />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <BookingPaymentCard booking={booking} />
-            {(booking.status === "pending" || booking.status === "accepted") && (
-              <BookingQrCard code={booking.checkInCode ?? `MB-${booking.id}`} />
-            )}
+            {booking.status === "accepted" && !booking.checkedInAt && booking.checkInCode ? (
+              <BookingQrCard token={booking.checkInCode} shortCode={booking.checkInShortCode} />
+            ) : null}
           </div>
 
           <BookingLocationCard booking={booking} />
