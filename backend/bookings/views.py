@@ -254,7 +254,21 @@ class BookingViewSet(viewsets.ModelViewSet):
             )
         ser = BookingCreateSerializer(data=request.data, context={"request": request})
         ser.is_valid(raise_exception=True)
-        booking = ser.save()
+        try:
+            booking = ser.save()
+        except Exception as exc:
+            from django.db.utils import ProgrammingError
+
+            if not isinstance(exc, ProgrammingError):
+                raise
+            from django.core.management import call_command
+
+            from bookings.db_compat import clear_booking_schema_cache
+
+            clear_booking_schema_cache()
+            call_command("ensure_booking_checkin_schema", verbosity=0)
+            clear_booking_schema_cache()
+            booking = ser.save()
         phone = booking.customer_phone or getattr(booking.customer, "phone", None) or ""
         place = (
             booking.salon.name

@@ -64,3 +64,68 @@ def booking_queryset_compat(qs: QuerySet) -> QuerySet:
 
 def clear_booking_schema_cache() -> None:
     _booking_column_names.cache_clear()
+
+
+def booking_create_compat(**kwargs) -> "Booking":
+    """
+    INSERT faqat DBda mavjud ustunlar bilan.
+    Migrate kechiksa ham bron yaratish 500 bermasligi uchun.
+    """
+    from django.utils import timezone
+
+    from bookings.models import Booking
+
+    cols = _booking_column_names()
+    if not cols:
+        return Booking.objects.create(**kwargs)
+
+    missing = [
+        f
+        for f in Booking._meta.concrete_fields
+        if (not f.auto_created or f.concrete)
+        and not f.primary_key
+        and f.column not in cols
+    ]
+    if not missing:
+        return Booking.objects.create(**kwargs)
+
+    now = timezone.now()
+    col_names: list[str] = []
+    params: list = []
+    for field in Booking._meta.concrete_fields:
+        if field.primary_key or (field.auto_created and not field.concrete):
+            continue
+        if field.column not in cols:
+            continue
+        name = field.name
+        if name in kwargs:
+            val = kwargs[name]
+            if field.is_relation and val is not None and hasattr(val, "pk"):
+                val = val.pk
+            col_names.append(field.column)
+            params.append(val)
+        elif getattr(field, "auto_now_add", False) or getattr(field, "auto_now", False):
+            col_names.append(field.column)
+            params.append(now)
+        elif field.null:
+            col_names.append(field.column)
+            params.append(None)
+        elif field.has_default():
+            col_names.append(field.column)
+            params.append(field.get_default())
+
+    if not col_names:
+        return Booking.objects.create(**kwargs)
+
+    placeholders = ", ".join(["%s"] * len(col_names))
+    sql = (
+        f"INSERT INTO bookings_booking ({', '.join(col_names)}) "
+        f"VALUES ({placeholders}) RETURNING id"
+    )
+    with connection.cursor() as cursor:
+        cursor.execute(sql, params)
+        row = cursor.fetchone()
+    pk = row[0] if row else None
+    if pk is None:
+        return Booking.objects.create(**kwargs)
+    return booking_queryset_compat(Booking.objects.filter(pk=pk)).get()

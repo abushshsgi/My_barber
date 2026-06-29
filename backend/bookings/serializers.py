@@ -17,6 +17,7 @@ from bookings.db_compat import (
     bookings_has_family_member_column,
     bookings_has_order_number_column,
     bookings_has_portfolio_consent_column,
+    booking_create_compat,
 )
 from bookings.models import Booking, BookingCompletion, BookingLine, Review
 from accounts.models import FamilyMember
@@ -599,12 +600,11 @@ class BookingCreateSerializer(serializers.Serializer):
                     {"detail": "Tanlangan vaqt boshqa bron bilan ustma-ust tushdi."}
                 )
 
-            booking = Booking.objects.create(**create_kwargs)
+            booking = booking_create_compat(**create_kwargs)
             if bookings_has_order_number_column():
                 from bookings.checkin_tokens import assign_unique_order_number
 
                 assign_unique_order_number(booking)
-                booking.save(update_fields=["order_number"])
             for s in services:
                 if is_salon_flow:
                     BookingLine.objects.create(

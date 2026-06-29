@@ -30,16 +30,23 @@ def generate_short_code() -> str:
 
 def assign_unique_order_number(booking) -> str:
     """Booking uchun unique order_number topadi va saqlaydi."""
+    from django.db import IntegrityError
+
     from bookings.models import Booking
 
     for _ in range(10):
         candidate = generate_order_number()
         if not Booking.objects.filter(order_number=candidate).exists():
             booking.order_number = candidate
-            return candidate
+            try:
+                booking.save(update_fields=["order_number"])
+                return candidate
+            except IntegrityError:
+                continue
     # Juda kam ehtimol: PK bilan kafolatlangan unique.
     candidate = f"MS-{booking.pk}"
     booking.order_number = candidate
+    booking.save(update_fields=["order_number"])
     return candidate
 
 
