@@ -55,6 +55,18 @@ from .serializers import (
 )
 
 
+def _salon_review_score_expr():
+    """Salon bahosi: `salon_rating` ustuni bo'lsa Coalesce, bo'lmasa eski `rating`.
+
+    Migrate kechikkan deploylarda 500 (ProgrammingError) oldini oladi.
+    """
+    from bookings.db_compat import reviews_has_salon_rating_column
+
+    if reviews_has_salon_rating_column():
+        return Coalesce("reviews__salon_rating", "reviews__rating")
+    return "reviews__rating"
+
+
 def _barber_owns_salon(bp: Barber | None, salon: Salon) -> bool:
     if bp is None:
         return False
@@ -101,6 +113,7 @@ class SalonViewSet(viewsets.ModelViewSet):
     def _salon_public_list_qs(self):
         """Ro‘yxat va nearby uchun: reyting/sharhlar soni bitta so‘rovda."""
         # PostgreSQL: Coalesce(Avg(..), Value(0)) integer/numeric aralashmasi 500 beradi — FloatField bilan bir xil.
+        score = _salon_review_score_expr()
         return (
             Salon.objects.filter(is_published=True)
             .select_related("owner", "owner_barber")
@@ -108,10 +121,7 @@ class SalonViewSet(viewsets.ModelViewSet):
             .annotate(
                 review_count=Count("reviews", distinct=True),
                 rating_avg=Coalesce(
-                    Cast(
-                        Avg(Coalesce("reviews__salon_rating", "reviews__rating")),
-                        FloatField(),
-                    ),
+                    Cast(Avg(score), FloatField()),
                     Value(0.0),
                     output_field=FloatField(),
                 ),
@@ -232,10 +242,7 @@ class SalonViewSet(viewsets.ModelViewSet):
             .annotate(
                 review_count=Count("reviews", distinct=True),
                 rating_avg=Coalesce(
-                    Cast(
-                        Avg(Coalesce("reviews__salon_rating", "reviews__rating")),
-                        FloatField(),
-                    ),
+                    Cast(Avg(_salon_review_score_expr()), FloatField()),
                     Value(0.0),
                     output_field=FloatField(),
                 ),

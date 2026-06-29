@@ -688,12 +688,20 @@ class ReviewViewSet(viewsets.ModelViewSet):
             return [AllowAny()]
         return super().get_permissions()
 
+    def _defer_review_compat(self, qs):
+        """salon_rating/salon_text ustunlari hali yo'q bo'lsa SELECT dan chiqaramiz."""
+        from bookings.db_compat import reviews_has_salon_rating_column
+
+        if not reviews_has_salon_rating_column():
+            return qs.defer("salon_rating", "salon_text")
+        return qs
+
     def get_queryset(self):
         if self.request.query_params.get("mine") == "1":
             if not self.request.user.is_authenticated:
                 return Review.objects.none()
-            return Review.objects.filter(author=self.request.user).select_related(
-                "author"
+            return self._defer_review_compat(
+                Review.objects.filter(author=self.request.user).select_related("author")
             )
         salon = self.request.query_params.get("salon")
         bp = request_barber(self.request)
@@ -709,7 +717,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
                 ).exists()
             )
             if allowed:
-                return (
+                return self._defer_review_compat(
                     Review.objects.filter(salon_id=salon)
                     .select_related("author", "barber")
                     .order_by("-created_at")
@@ -723,7 +731,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
         barber = self.request.query_params.get("barber")
         if barber:
             qs = qs.filter(barber_id=barber)
-        return qs
+        return self._defer_review_compat(qs)
 
     def perform_create(self, serializer):
         review = serializer.save()

@@ -714,14 +714,20 @@ class MyBarberReviewsView(APIView):
     def get(self, request):
         from collections import defaultdict
 
-        from bookings.models import ReviewDimensionScore
+        from bookings.db_compat import (
+            reviews_has_dimension_table,
+            reviews_has_salon_rating_column,
+        )
 
         barber = request.user.barber
-        rows = (
+        rows_qs = (
             Review.objects.filter(barber=barber)
             .select_related("author")
             .order_by("-created_at")
         )
+        if not reviews_has_salon_rating_column():
+            rows_qs = rows_qs.defer("salon_rating", "salon_text")
+        rows = list(rows_qs)
         booking_ids = [r.booking_id for r in rows if r.booking_id]
         service_by_booking: dict[int, str] = {}
         if booking_ids:
@@ -734,7 +740,9 @@ class MyBarberReviewsView(APIView):
 
         review_ids = [r.id for r in rows]
         dims_by_review: dict[int, list] = defaultdict(list)
-        if review_ids:
+        if review_ids and reviews_has_dimension_table():
+            from bookings.models import ReviewDimensionScore
+
             for d in ReviewDimensionScore.objects.filter(
                 review_id__in=review_ids,
                 target=ReviewDimensionScore.Target.BARBER,

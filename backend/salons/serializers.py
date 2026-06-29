@@ -344,7 +344,14 @@ class SalonDetailSerializer(serializers.ModelSerializer):
         from django.db.models import Avg
         from django.db.models.functions import Coalesce
 
-        agg = obj.reviews.aggregate(a=Avg(Coalesce("salon_rating", "rating")))
+        from bookings.db_compat import reviews_has_salon_rating_column
+
+        score = (
+            Coalesce("salon_rating", "rating")
+            if reviews_has_salon_rating_column()
+            else "rating"
+        )
+        agg = obj.reviews.aggregate(a=Avg(score))
         return round(agg["a"] or 0, 2)
 
     def get_review_count(self, obj):
@@ -428,7 +435,14 @@ class BarberSalonViewSerializer(serializers.ModelSerializer):
         from django.db.models import Avg
         from django.db.models.functions import Coalesce
 
-        agg = obj.reviews.aggregate(a=Avg(Coalesce("salon_rating", "rating")))
+        from bookings.db_compat import reviews_has_salon_rating_column
+
+        score = (
+            Coalesce("salon_rating", "rating")
+            if reviews_has_salon_rating_column()
+            else "rating"
+        )
+        agg = obj.reviews.aggregate(a=Avg(score))
         return round(agg["a"] or 0, 2)
 
     def get_review_count(self, obj):

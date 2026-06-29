@@ -19,6 +19,39 @@ def _booking_column_names() -> frozenset[str]:
         return frozenset()
 
 
+@lru_cache(maxsize=1)
+def _review_column_names() -> frozenset[str]:
+    try:
+        with connection.cursor() as cursor:
+            columns = connection.introspection.get_table_description(
+                cursor, "bookings_review"
+            )
+        return frozenset(col.name for col in columns)
+    except Exception:
+        return frozenset()
+
+
+@lru_cache(maxsize=1)
+def _has_review_dimension_table() -> bool:
+    try:
+        with connection.cursor() as cursor:
+            return "bookings_reviewdimensionscore" in set(
+                connection.introspection.table_names(cursor)
+            )
+    except Exception:
+        return False
+
+
+def reviews_has_salon_rating_column() -> bool:
+    """`salon_rating` ustuni mavjudligini tekshiradi (migrate kechiksa 500 oldini olish)."""
+    return "salon_rating" in _review_column_names()
+
+
+def reviews_has_dimension_table() -> bool:
+    """`ReviewDimensionScore` jadvali mavjudligini tekshiradi."""
+    return _has_review_dimension_table()
+
+
 def bookings_has_family_member_column() -> bool:
     return "family_member_id" in _booking_column_names()
 
@@ -64,6 +97,8 @@ def booking_queryset_compat(qs: QuerySet) -> QuerySet:
 
 def clear_booking_schema_cache() -> None:
     _booking_column_names.cache_clear()
+    _review_column_names.cache_clear()
+    _has_review_dimension_table.cache_clear()
 
 
 def booking_create_compat(**kwargs) -> "Booking":

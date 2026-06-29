@@ -7,13 +7,21 @@ from collections import defaultdict
 from django.db.models import Avg, Count
 from django.db.models.functions import Coalesce
 
-from bookings.models import Review, ReviewDimensionScore
+from bookings.db_compat import (
+    reviews_has_dimension_table,
+    reviews_has_salon_rating_column,
+)
+from bookings.models import Review
 
 GUEST_FAVORITE_MIN_RATING = 4.8
 GUEST_FAVORITE_MIN_REVIEWS = 10
 
-# Salon umumiy bahosi: yangi so'rovnomada `salon_rating`, eski sharhlarda `rating`.
-SALON_SCORE = Coalesce("salon_rating", "rating")
+
+def _salon_score():
+    """Salon umumiy bahosi: `salon_rating` ustuni bo'lsa Coalesce, bo'lmasa `rating`."""
+    if reviews_has_salon_rating_column():
+        return Coalesce("salon_rating", "rating")
+    return "rating"
 
 HIGHLIGHT_META = [
     ("cleanliness", {"uz": "Tozalik", "ru": "Чистота", "en": "Cleanliness"}),
@@ -40,13 +48,14 @@ def _lang(request) -> str:
 
 def build_rating_summary(salon, request=None) -> dict:
     lang = _lang(request)
+    score_expr = _salon_score()
     qs = Review.objects.filter(salon=salon)
-    agg = qs.aggregate(avg=Avg(SALON_SCORE), total=Count("id"))
+    agg = qs.aggregate(avg=Avg(score_expr), total=Count("id"))
     rating_avg = round(float(agg["avg"] or 0), 2)
     review_count = int(agg["total"] or 0)
 
     distribution = {str(i): 0 for i in range(1, 6)}
-    for row in qs.annotate(score=SALON_SCORE).values("score").annotate(c=Count("id")):
+    for row in qs.annotate(score=score_expr).values("score").annotate(c=Count("id")):
         r = str(row["score"])
         if r in distribution:
             distribution[r] = row["c"]
@@ -85,26 +94,29 @@ def build_rating_summary(salon, request=None) -> dict:
 
     # So'rovnoma o'lchovlari (haqiqiy ma'lumot) — ustuvor.
     dimension_highlights = []
-    dim_rows = (
-        ReviewDimensionScore.objects.filter(
-            review__salon=salon,
-            target=ReviewDimensionScore.Target.SALON,
+    if reviews_has_dimension_table():
+        from bookings.models import ReviewDimensionScore
+
+        dim_rows = (
+            ReviewDimensionScore.objects.filter(
+                review__salon=salon,
+                target=ReviewDimensionScore.Target.SALON,
+            )
+            .values("dimension")
+            .annotate(avg=Avg("score"), c=Count("id"))
         )
-        .values("dimension")
-        .annotate(avg=Avg("score"), c=Count("id"))
-    )
-    for row in dim_rows:
-        slug = row["dimension"]
-        labels = SALON_DIMENSION_LABELS.get(slug)
-        dimension_highlights.append(
-            {
-                "code": slug,
-                "label": (labels.get(lang) or labels.get("uz")) if labels else slug,
-                "score": round(float(row["avg"] or 0), 1),
-                "count": int(row["c"] or 0),
-            }
-        )
-    dimension_highlights.sort(key=lambda x: (-x["count"], -x["score"]))
+        for row in dim_rows:
+            slug = row["dimension"]
+            labels = SALON_DIMENSION_LABELS.get(slug)
+            dimension_highlights.append(
+                {
+                    "code": slug,
+                    "label": (labels.get(lang) or labels.get("uz")) if labels else slug,
+                    "score": round(float(row["avg"] or 0), 1),
+                    "count": int(row["c"] or 0),
+                }
+            )
+        dimension_highlights.sort(key=lambda x: (-x["count"], -x["score"]))
 
     highlights = []
     if dimension_highlights:

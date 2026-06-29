@@ -655,6 +655,20 @@ class ReviewSerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source="author.full_name", read_only=True)
     dimensions = ReviewDimensionScoreSerializer(many=True, required=False)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Migrate kechiksa (salon_rating ustuni / dimension jadvali yo'q) — 500 oldini olish.
+        from bookings.db_compat import (
+            reviews_has_dimension_table,
+            reviews_has_salon_rating_column,
+        )
+
+        if not reviews_has_salon_rating_column():
+            self.fields.pop("salon_rating", None)
+            self.fields.pop("salon_text", None)
+        if not reviews_has_dimension_table():
+            self.fields.pop("dimensions", None)
+
     class Meta:
         model = Review
         fields = (
