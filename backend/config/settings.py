@@ -333,6 +333,13 @@ def _cors_allowed_origins():
             "http://localhost:5173",
             "http://127.0.0.1:5173",
         ]
+    for prod_origin in (
+        "https://www.mysaloon.uz",
+        "https://mysaloon.uz",
+        "https://partner.mysaloon.uz",
+        "https://admin.mysaloon.uz",
+    ):
+        chunks.append(prod_origin)
     # Capacitor Android/iOS WebView originlari — productionda ham REST fetch ishlashi uchun.
     chunks.extend(
         [

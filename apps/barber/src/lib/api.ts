@@ -4,13 +4,22 @@ const ENV_API_BASE =
     ?.NEXT_PUBLIC_API_URL ||
   "";
 
+const IS_MOBILE_SPA =
+  (import.meta as unknown as { env?: Record<string, string | undefined> }).env
+    ?.VITE_MOBILE_SPA === "true";
+
 const FALLBACK_DEV_BASE = import.meta.env.DEV ? "http://localhost:8000" : "";
 
+function resolveWebApiBase(envBase: string): string {
+  const trimmed = envBase.trim().replace(/\/+$/, "");
+  if (IS_MOBILE_SPA) return trimmed;
+  // Web production: same-origin Vercel rewrite — to'g'ridan-to'g'ri api CORS xatosini oldini oladi.
+  if (import.meta.env.PROD) return "";
+  return trimmed || FALLBACK_DEV_BASE;
+}
+
 /** Web (Vercel): bo'sh = joriy origin (/api/v1 proxy). */
-export const API_BASE = (ENV_API_BASE.trim() ? ENV_API_BASE : FALLBACK_DEV_BASE).replace(
-  /\/+$/,
-  "",
-);
+export const API_BASE = resolveWebApiBase(ENV_API_BASE);
 
 const TOKEN_KEY_BARBER = "mybarber_barber_access";
 const REFRESH_KEY_BARBER = "mybarber_barber_refresh";

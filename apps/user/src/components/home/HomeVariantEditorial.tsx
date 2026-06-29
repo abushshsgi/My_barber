@@ -2,7 +2,6 @@ import type { HomeData } from "@/components/home/useHomeData";
 import {
   HomeAiPromo,
   HomeAudience,
-  HomeEditorialHero,
   HomeOfferBanner,
   HomeSearchAndCategories,
   HomeTrendingStrip,
@@ -20,7 +19,6 @@ export function HomeVariantEditorial({ data }: Props) {
         className="pt-4"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 12px)" }}
       />
-      <HomeEditorialHero />
       <HomeAudience />
       {data.topOffer ? <HomeOfferBanner offer={data.topOffer} /> : null}
       <HomeDiscoverySections filtered={data.filtered} />

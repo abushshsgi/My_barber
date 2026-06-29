@@ -288,31 +288,6 @@ export function HomeSalonCarousel({ salons: list, titleKey }: { salons: HomeData
   );
 }
 
-export function HomeEditorialHero() {
-  const { t } = useTranslation();
-  return (
-    <section className="mx-5 mt-2 overflow-hidden rounded-[28px] border border-border bg-surface p-5">
-      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">mysaloon.uz</p>
-      <h1 className="mt-2 text-[30px] font-bold leading-[1.05] tracking-tight">{t("home.title")}</h1>
-      <p className="mt-2 text-sm font-medium text-muted-foreground">{t("homePage.editorialTagline")}</p>
-      <div className="mt-4 flex gap-2">
-        <Link
-          to="/today"
-          className="inline-flex flex-1 items-center justify-center rounded-2xl bg-foreground py-3 text-xs font-bold text-background"
-        >
-          {t("homePage.quick.today")}
-        </Link>
-        <Link
-          to="/ai-style"
-          className="inline-flex flex-1 items-center justify-center rounded-2xl border-2 border-foreground py-3 text-xs font-bold"
-        >
-          {t("homePage.quick.aiStyle")}
-        </Link>
-      </div>
-    </section>
-  );
-}
-
 export function HomeAiPromo() {
   const { t } = useTranslation();
   return (
