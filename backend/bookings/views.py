@@ -307,9 +307,13 @@ class BookingViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         booking = self.get_object()
         if not isinstance(request.user, BarberPrincipal):
-            from bookings.checkin_tokens import maybe_issue_check_in_token
+            try:
+                from bookings.checkin_tokens import maybe_issue_check_in_token
 
-            maybe_issue_check_in_token(booking)
+                # GET so'rovida migrate chaqirmaymiz — faqat ustun mavjud bo'lsa token beriladi.
+                maybe_issue_check_in_token(booking, allow_schema_ensure=False)
+            except Exception:
+                pass
         return super().retrieve(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
@@ -329,8 +333,13 @@ class BookingViewSet(viewsets.ModelViewSet):
         update_fields = ["status", "updated_at"]
         from bookings.checkin_tokens import checkin_token_update_fields, maybe_issue_check_in_token
 
-        if maybe_issue_check_in_token(booking, persist=False):
-            update_fields += checkin_token_update_fields()
+        try:
+            if maybe_issue_check_in_token(
+                booking, persist=False, allow_schema_ensure=True
+            ):
+                update_fields += checkin_token_update_fields()
+        except Exception:
+            pass
         booking.save(update_fields=update_fields)
         notify_user(
             booking.customer,

@@ -209,6 +209,8 @@ class BookingSerializer(serializers.ModelSerializer):
 
     def _checkin_active(self, obj) -> bool:
         """QR token faqat tasdiqlangan va hali check-in bo'lmagan bronda faol."""
+        if not bookings_has_check_in_token_column():
+            return False
         if not getattr(obj, "check_in_token", None):
             return False
         if getattr(obj, "check_in_token_used_at", None):

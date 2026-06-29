@@ -83,37 +83,56 @@ def ensure_checkin_schema_ready() -> bool:
 
     if bookings_has_check_in_token_column():
         return True
-    from django.core.management import call_command
+    try:
+        from django.core.management import call_command
 
-    clear_booking_schema_cache()
-    call_command("ensure_booking_checkin_schema", verbosity=0)
-    clear_booking_schema_cache()
-    return bookings_has_check_in_token_column()
+        clear_booking_schema_cache()
+        call_command("ensure_booking_checkin_schema", verbosity=0)
+        clear_booking_schema_cache()
+        return bookings_has_check_in_token_column()
+    except Exception:
+        clear_booking_schema_cache()
+        return False
 
 
-def maybe_issue_check_in_token(booking, *, persist: bool = True) -> bool:
+def maybe_issue_check_in_token(
+    booking,
+    *,
+    persist: bool = True,
+    allow_schema_ensure: bool = False,
+) -> bool:
     """
     Tasdiqlangan, check-in qilinmagan bron uchun token yo'q bo'lsa beradi.
     True = token mavjud yoki yangi berildi.
-    """
-    from bookings.db_compat import bookings_has_checked_in_column
+  """
+    from django.db.utils import DatabaseError
+
+    from bookings.db_compat import bookings_has_checked_in_column, bookings_has_check_in_token_column
     from bookings.models import Booking
 
-    if booking.status != Booking.Status.ACCEPTED:
-        return bool(getattr(booking, "check_in_token", None))
-    if bookings_has_checked_in_column() and getattr(booking, "checked_in_at", None):
-        return False
-    if getattr(booking, "check_in_token_used_at", None):
-        return False
-    if not ensure_checkin_schema_ready():
-        return False
-    if booking.check_in_token:
-        return True
+    try:
+        if not bookings_has_check_in_token_column():
+            if not allow_schema_ensure or not ensure_checkin_schema_ready():
+                return False
+        if not bookings_has_check_in_token_column():
+            return False
 
-    issue_check_in_token(booking)
-    if persist:
-        booking.save(update_fields=list(_CHECKIN_TOKEN_UPDATE_FIELDS))
-    return True
+        if booking.status != Booking.Status.ACCEPTED:
+            return bool(booking.check_in_token)
+
+        if bookings_has_checked_in_column() and booking.checked_in_at:
+            return False
+        if booking.check_in_token_used_at:
+            return False
+        if booking.check_in_token:
+            return True
+
+        issue_check_in_token(booking)
+        if persist:
+            booking.save(update_fields=list(_CHECKIN_TOKEN_UPDATE_FIELDS))
+        return True
+    except DatabaseError:
+        return False
 
 
 def checkin_token_update_fields() -> list[str]:
