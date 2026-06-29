@@ -3,7 +3,6 @@ import { Link } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
-import { formatPrice } from "@/lib/mock-data";
 import {
   groupSalonServicesByBarber,
   resolveDefaultSalonBarberId,
@@ -97,12 +96,12 @@ export function SalonPageSections({
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-sm font-bold tabular-nums">{formatPrice(s.price)}</span>
                         <Link
                           to="/booking/$salonId"
                           params={{ salonId: salon.id }}
                           search={bookingBarberId ? { barber: bookingBarberId } : undefined}
                           className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-background"
+                          aria-label={t("salon.bookNow")}
                         >
                           <Plus className="h-4 w-4" />
                         </Link>

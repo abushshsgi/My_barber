@@ -1,23 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
+import { scrollToSalonSection, type SalonSectionId } from "@/lib/salon-scroll";
 import { cn } from "@/lib/utils";
 
-export type SalonSectionId =
-  | "about"
-  | "amenities"
-  | "services"
-  | "staff"
-  | "reviews"
-  | "location"
-  | "hours"
-  | "portfolio";
+export type { SalonSectionId };
 
 type NavItem = { id: SalonSectionId; label: string };
-
-function scrollToSection(id: SalonSectionId) {
-  document.getElementById(`salon-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-}
 
 export function SalonSectionNav({ salon }: { salon: Salon }) {
   const { t } = useTranslation();
@@ -64,7 +53,7 @@ export function SalonSectionNav({ salon }: { salon: Salon }) {
           <button
             key={item.id}
             type="button"
-            onClick={() => scrollToSection(item.id)}
+            onClick={() => scrollToSalonSection(item.id)}
             className={cn(
               "shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-colors",
               active === item.id

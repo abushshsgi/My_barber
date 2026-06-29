@@ -1,9 +1,9 @@
 import type { Salon } from "@/lib/mock-data";
-import { SalonBookingAside } from "@/components/salon/SalonBookingAside";
-import { SalonHeroGallery } from "@/components/salon/SalonHeroGallery";
-import { SalonPageHeader } from "@/components/salon/SalonPageHeader";
-import { SalonPageSections } from "@/components/salon/SalonPageSections";
-import { SalonSectionNav } from "@/components/salon/SalonSectionNav";
+import {
+  resolveSalonDesktopLayout,
+  type SalonDesktopLayoutId,
+} from "@/components/desktop/pages/salon-layouts/types";
+import { SalonDesktopLayoutView } from "@/components/desktop/pages/salon-layouts";
 
 export function SalonDesktopPage({
   salon,
@@ -12,6 +12,7 @@ export function SalonDesktopPage({
   onShare,
   favPending = false,
   reviewsAreMock = false,
+  layoutOverride,
 }: {
   salon: Salon;
   fav: boolean;
@@ -19,26 +20,19 @@ export function SalonDesktopPage({
   onShare?: () => void;
   favPending?: boolean;
   reviewsAreMock?: boolean;
+  layoutOverride?: SalonDesktopLayoutId | null;
 }) {
+  const layout = resolveSalonDesktopLayout(salon.id, layoutOverride);
+
   return (
-    <div className="mx-auto max-w-6xl pb-16">
-      <SalonHeroGallery salon={salon} variant="desktop" />
-
-      <SalonPageHeader
-        salon={salon}
-        fav={fav}
-        onToggleFav={onToggleFav}
-        onShare={onShare}
-        favPending={favPending}
-        variant="desktop"
-      />
-
-      <SalonSectionNav salon={salon} />
-
-      <div className="mt-8 grid grid-cols-[minmax(0,1fr)_340px] items-start gap-10 xl:grid-cols-[minmax(0,1fr)_380px] xl:gap-14">
-        <SalonPageSections salon={salon} showCalendar={false} reviewsAreMock={reviewsAreMock} />
-        <SalonBookingAside salon={salon} className="sticky top-36" />
-      </div>
-    </div>
+    <SalonDesktopLayoutView
+      layout={layout}
+      salon={salon}
+      fav={fav}
+      onToggleFav={onToggleFav}
+      onShare={onShare}
+      favPending={favPending}
+      reviewsAreMock={reviewsAreMock}
+    />
   );
 }

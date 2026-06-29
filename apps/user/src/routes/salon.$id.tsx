@@ -2,20 +2,37 @@ import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { SalonDesktopPage } from "@/components/desktop/pages/SalonDesktopPage";
+import type { SalonDesktopLayoutId } from "@/components/desktop/pages/salon-layouts/types";
 import { SalonMobilePage } from "@/components/salon/SalonMobilePage";
 import { useFavorites } from "@/hooks/use-favorites";
 import { SalonShareSheet } from "@/components/salon/SalonShareSheet";
 import { useShareSalon } from "@/hooks/use-share-salon";
 import { useSalonPage } from "@/hooks/use-salon-page";
+import { buildSalonHeadMeta, fetchSalonSeoMeta } from "@/lib/salon-seo.server";
 
 export const Route = createFileRoute("/salon/$id")({
-  head: () => ({ meta: [{ title: "Salon — mysaloon.uz" }] }),
+  ssr: true,
+  validateSearch: (search: Record<string, unknown>) => ({
+    layout: parseLayoutOverride(search.layout),
+  }),
+  loader: async ({ params }) => {
+    const seo = await fetchSalonSeoMeta(params.id);
+    return { seo };
+  },
+  head: ({ loaderData, params }) => buildSalonHeadMeta(params.id, loaderData?.seo ?? null),
   component: SalonPage,
 });
+
+function parseLayoutOverride(value: unknown): SalonDesktopLayoutId | null {
+  const n = Number(value);
+  if (n >= 1 && n <= 5) return n as SalonDesktopLayoutId;
+  return null;
+}
 
 function SalonPage() {
   const { t } = useTranslation();
   const { id } = useParams({ from: "/salon/$id" });
+  const { layout: layoutOverride } = Route.useSearch();
   const { salon, isLoading, reviewsAreMock } = useSalonPage(id);
   const { isFav, toggle, isPending } = useFavorites();
   const { openShare, shareOpen, setShareOpen, shareSalon } = useShareSalon(salon ?? undefined);
@@ -43,7 +60,7 @@ function SalonPage() {
     <>
       <DesktopPageSplit
         mobile={<SalonMobilePage {...pageProps} />}
-        desktop={<SalonDesktopPage {...pageProps} />}
+        desktop={<SalonDesktopPage {...pageProps} layoutOverride={layoutOverride} />}
       />
       {shareSalon ? (
         <SalonShareSheet open={shareOpen} onOpenChange={setShareOpen} salon={shareSalon} />

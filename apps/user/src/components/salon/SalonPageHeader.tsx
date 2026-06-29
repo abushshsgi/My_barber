@@ -1,8 +1,8 @@
 import { Heart, MapPin, Share2, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
-import { formatPrice } from "@/lib/mock-data";
 import { filterSalonCatalogServices } from "@/lib/salon-services";
+import { scrollToSalonSection } from "@/lib/salon-scroll";
 import { cn } from "@/lib/utils";
 
 export function SalonPageHeader({
@@ -93,32 +93,36 @@ export function SalonPageHeader({
 
       {!isMobile ? (
         <div className="mt-5 flex flex-wrap gap-2">
-          {salon.priceFrom > 0 ? (
-            <span className="rounded-full bg-muted px-3 py-1.5 text-sm font-semibold">
-              {t("salon.fromPrice", { defaultValue: "{{price}} dan", price: formatPrice(salon.priceFrom) })}
-            </span>
-          ) : null}
           {ownerServiceCount > 0 ? (
-            <span className="rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground">
+            <button
+              type="button"
+              onClick={() => scrollToSalonSection("services")}
+              className="rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
               {ownerServiceCount} {t("salon.tabs.services").toLowerCase()}
-            </span>
+            </button>
           ) : null}
           {salon.staff.length > 0 ? (
-            <span className="rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground">
+            <button
+              type="button"
+              onClick={() => scrollToSalonSection("staff")}
+              className="rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
               {salon.staff.length} {t("salon.tabs.staff").toLowerCase()}
-            </span>
+            </button>
           ) : null}
           {salon.amenities.length > 0 ? (
-            <span className="rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground">
-              {salon.amenities.length} {t("salon.nav.amenities", { defaultValue: "qulaylik" })}
-            </span>
+            <button
+              type="button"
+              onClick={() => scrollToSalonSection("amenities")}
+              className="rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              {salon.amenities.length}{" "}
+              {t("salon.nav.amenities", { defaultValue: "Mijozlar uchun" })}
+            </button>
           ) : null}
         </div>
-      ) : (
-        <p className="mt-4 text-lg font-bold tabular-nums">
-          {formatPrice(salon.priceFrom)}+
-        </p>
-      )}
+      ) : null}
     </div>
   );
 }

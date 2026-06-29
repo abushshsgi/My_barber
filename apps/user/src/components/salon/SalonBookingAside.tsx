@@ -2,7 +2,6 @@ import { Link } from "@tanstack/react-router";
 import { MapPin } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
-import { formatPrice } from "@/lib/mock-data";
 import { SalonBookingCalendar } from "@/components/salon/SalonBookingCalendar";
 import { resolveDefaultServiceIdsForBarber } from "@/lib/salon-services";
 import { cn } from "@/lib/utils";
@@ -36,7 +35,9 @@ export function SalonBookingAside({
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {t("salon.bookNow")}
           </p>
-          <p className="mt-1 text-2xl font-bold tabular-nums">{formatPrice(salon.priceFrom)}+</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t("salon.bookingHint", { defaultValue: "Xizmat va vaqtni tanlang" })}
+          </p>
         </div>
         {salon.rating > 0 ? (
           <span className="rounded-lg bg-muted px-2.5 py-1 text-sm font-bold tabular-nums">

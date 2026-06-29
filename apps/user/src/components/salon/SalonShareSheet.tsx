@@ -1,5 +1,5 @@
 import { Check, Copy, Share2, Star } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -88,12 +88,6 @@ function SalonShareContent({ salon, onDone }: { salon: ShareSalon; onDone?: () =
     }
   }, [t, url]);
 
-  useEffect(() => {
-    if (!copied) return;
-    const timer = window.setTimeout(() => setCopied(false), 2200);
-    return () => window.clearTimeout(timer);
-  }, [copied]);
-
   const handleNativeShare = async () => {
     setNativeSharing(true);
     try {
@@ -111,116 +105,119 @@ function SalonShareContent({ salon, onDone }: { salon: ShareSalon; onDone?: () =
     }
   };
 
-  const channels = [
-    {
-      id: "copy",
-      label: copied ? t("salon.shareSheet.copied") : t("salon.shareSheet.copyLink"),
-      onClick: () => void copyLink(),
-      icon: copied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />,
-      className: copied
-        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-        : "border-border bg-muted/40 text-foreground hover:bg-muted",
-    },
-    {
-      id: "telegram",
-      label: t("salon.shareSheet.telegram"),
-      href: telegramShareUrl(url, text),
-      icon: <TelegramIcon className="h-5 w-5" />,
-      className: "border-transparent bg-[#229ED9] text-white hover:opacity-90",
-    },
-    {
-      id: "whatsapp",
-      label: t("salon.shareSheet.whatsapp"),
-      href: whatsAppShareUrl(url, text),
-      icon: <WhatsAppIcon className="h-5 w-5" />,
-      className: "border-transparent bg-[#25D366] text-white hover:opacity-90",
-    },
-    ...(canNativeShare
-      ? [
-          {
-            id: "more",
-            label: t("salon.shareSheet.more"),
-            onClick: () => void handleNativeShare(),
-            icon: <Share2 className="h-5 w-5" />,
-            className: "border-border bg-background text-foreground hover:bg-muted",
-            disabled: nativeSharing,
-          },
-        ]
-      : []),
-  ];
+  const iconBtn =
+    "inline-flex h-10 w-10 items-center justify-center rounded-xl border transition-all active:scale-95";
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-3 rounded-2xl border border-border bg-muted/30 p-3">
-        <div
-          className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-muted shadow-sm"
-          style={coverSrc ? undefined : { background: salonCoverGradient(salon.coverSeed) }}
-        >
-          {coverSrc ? (
-            <img src={coverSrc} alt="" className="h-full w-full object-cover" loading="lazy" />
-          ) : null}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold text-foreground">{salon.name}</p>
-          {salon.rating > 0 ? (
-            <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-muted-foreground">
-              <Star className="h-3.5 w-3.5 fill-foreground text-foreground" />
-              {salon.rating.toFixed(1)}
-            </p>
-          ) : null}
-          {salon.address ? (
-            <p className="mt-1 line-clamp-2 text-xs leading-snug text-muted-foreground">{salon.address}</p>
-          ) : null}
+    <div className="space-y-4">
+      <div className="overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-muted/50 to-background">
+        <div className="flex gap-3 p-3">
+          <div
+            className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-muted shadow-sm"
+            style={coverSrc ? undefined : { background: salonCoverGradient(salon.coverSeed) }}
+          >
+            {coverSrc ? (
+              <img src={coverSrc} alt="" className="h-full w-full object-cover" loading="lazy" />
+            ) : null}
+          </div>
+          <div className="min-w-0 flex-1 py-0.5">
+            <p className="truncate text-base font-bold text-foreground">{salon.name}</p>
+            {salon.rating > 0 ? (
+              <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+                <Star className="h-3 w-3 fill-foreground text-foreground" />
+                {salon.rating.toFixed(1)}
+              </p>
+            ) : null}
+            {salon.address ? (
+              <p className="mt-1 line-clamp-2 text-xs leading-snug text-muted-foreground">{salon.address}</p>
+            ) : null}
+          </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5">
-        <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{url}</p>
+      <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/20 px-3 py-2">
+        <p className="min-w-0 flex-1 truncate font-mono text-[11px] text-muted-foreground">{url}</p>
         <button
           type="button"
           onClick={() => void copyLink()}
           className={cn(
-            "inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors",
+            "inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition-colors",
             copied ? "bg-emerald-600 text-white" : "bg-foreground text-background hover:opacity-90",
           )}
         >
-          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
           {copied ? t("salon.shareSheet.copied") : t("salon.shareSheet.copy")}
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-        {channels.map((channel) =>
-          "href" in channel && channel.href ? (
-            <a
-              key={channel.id}
-              href={channel.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn(
-                "flex flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center text-xs font-bold transition-all active:scale-[0.98]",
-                channel.className,
-              )}
-            >
-              {channel.icon}
-              {channel.label}
-            </a>
-          ) : (
+      <div>
+        <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {t("salon.shareSheet.shareVia", { defaultValue: "Ulashish usuli" })}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void copyLink()}
+            title={t("salon.shareSheet.copyLink")}
+            className={cn(
+              iconBtn,
+              copied
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-border bg-background text-foreground hover:bg-muted",
+            )}
+          >
+            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          </button>
+
+          <a
+            href={telegramShareUrl(url, text)}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={t("salon.shareSheet.telegram")}
+            className={cn(iconBtn, "border-transparent bg-[#229ED9] text-white hover:opacity-90")}
+          >
+            <TelegramIcon className="h-4 w-4" />
+          </a>
+
+          <a
+            href={whatsAppShareUrl(url, text)}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={t("salon.shareSheet.whatsapp")}
+            className={cn(iconBtn, "border-transparent bg-[#25D366] text-white hover:opacity-90")}
+          >
+            <WhatsAppIcon className="h-4 w-4" />
+          </a>
+
+          {canNativeShare ? (
             <button
-              key={channel.id}
               type="button"
-              onClick={channel.onClick}
-              disabled={"disabled" in channel ? channel.disabled : false}
+              onClick={() => void handleNativeShare()}
+              disabled={nativeSharing}
+              title={t("salon.shareSheet.more")}
               className={cn(
-                "flex flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-60",
-                channel.className,
+                iconBtn,
+                "border-border bg-background text-foreground hover:bg-muted disabled:opacity-60",
               )}
             >
-              {channel.icon}
-              {channel.label}
+              <Share2 className="h-4 w-4" />
             </button>
-          ),
-        )}
+          ) : null}
+        </div>
+
+        <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+          <span>{t("salon.shareSheet.copyLink")}</span>
+          <span>·</span>
+          <span>{t("salon.shareSheet.telegram")}</span>
+          <span>·</span>
+          <span>{t("salon.shareSheet.whatsapp")}</span>
+          {canNativeShare ? (
+            <>
+              <span>·</span>
+              <span>{t("salon.shareSheet.more")}</span>
+            </>
+          ) : null}
+        </div>
       </div>
     </div>
   );
@@ -239,12 +236,12 @@ export function SalonShareSheet({ open, onOpenChange, salon }: Props) {
         <DrawerContent className="rounded-t-3xl px-5 pb-8 pt-2">
           <DrawerHeader className="px-0 pb-2 text-left">
             <div className="mb-1 flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-foreground text-background">
-                <Share2 className="h-4 w-4" />
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-background">
+                <Share2 className="h-3.5 w-3.5" />
               </span>
               <div>
-                <DrawerTitle className="text-left text-xl">{title}</DrawerTitle>
-                <DrawerDescription className="text-left">{description}</DrawerDescription>
+                <DrawerTitle className="text-left text-lg">{title}</DrawerTitle>
+                <DrawerDescription className="text-left text-sm">{description}</DrawerDescription>
               </div>
             </div>
           </DrawerHeader>
@@ -256,15 +253,15 @@ export function SalonShareSheet({ open, onOpenChange, salon }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[440px] gap-0 rounded-2xl p-6 sm:rounded-2xl">
-        <DialogHeader className="space-y-3 pb-4 text-left">
+      <DialogContent className="max-w-[400px] gap-0 rounded-2xl p-5 sm:rounded-2xl">
+        <DialogHeader className="space-y-2 pb-3 text-left">
           <div className="flex items-center gap-3">
-            <span className="grid h-11 w-11 place-items-center rounded-full bg-foreground text-background">
-              <Share2 className="h-5 w-5" />
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-background">
+              <Share2 className="h-3.5 w-3.5" />
             </span>
             <div>
-              <DialogTitle className="text-xl">{title}</DialogTitle>
-              <DialogDescription>{description}</DialogDescription>
+              <DialogTitle className="text-lg">{title}</DialogTitle>
+              <DialogDescription className="text-sm">{description}</DialogDescription>
             </div>
           </div>
         </DialogHeader>
