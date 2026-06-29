@@ -19,7 +19,25 @@ export default defineConfig(({ mode }) => {
     );
   }
 
+  const devApiTarget = env.DEV_API_TARGET?.trim() || "http://127.0.0.1:8000";
+
   return {
+    server: {
+      port: 3003,
+      host: true,
+      proxy: {
+        "/api/v1": {
+          target: devApiTarget,
+          changeOrigin: true,
+          secure: false,
+        },
+        "/media": {
+          target: devApiTarget,
+          changeOrigin: true,
+          secure: false,
+        },
+      },
+    },
     plugins: [
       TanStackRouterVite(),
       react(),

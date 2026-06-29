@@ -8,14 +8,11 @@ const IS_MOBILE_SPA =
   (import.meta as unknown as { env?: Record<string, string | undefined> }).env
     ?.VITE_MOBILE_SPA === "true";
 
-const FALLBACK_DEV_BASE = import.meta.env.DEV ? "http://localhost:8000" : "";
-
 function resolveWebApiBase(envBase: string): string {
   const trimmed = envBase.trim().replace(/\/+$/, "");
   if (IS_MOBILE_SPA) return trimmed;
-  // Web production: same-origin Vercel rewrite — to'g'ridan-to'g'ri api CORS xatosini oldini oladi.
-  if (import.meta.env.PROD) return "";
-  return trimmed || FALLBACK_DEV_BASE;
+  // Production: VITE_API_URL=https://api.mysaloon.uz. Dev: bo'sh = Vite proxy.
+  return trimmed;
 }
 
 /** Web (Vercel): bo'sh = joriy origin (/api/v1 proxy). */
