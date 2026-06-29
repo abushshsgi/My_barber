@@ -304,6 +304,14 @@ class BookingViewSet(viewsets.ModelViewSet):
     def partial_update(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)
 
+    def retrieve(self, request, *args, **kwargs):
+        booking = self.get_object()
+        if not isinstance(request.user, BarberPrincipal):
+            from bookings.checkin_tokens import maybe_issue_check_in_token
+
+            maybe_issue_check_in_token(booking)
+        return super().retrieve(request, *args, **kwargs)
+
     def destroy(self, request, *args, **kwargs):
         return Response(
             {"detail": "Bookingni o‘chirish mumkin emas; bekor qilish actionidan foydalaning."},
@@ -319,16 +327,10 @@ class BookingViewSet(viewsets.ModelViewSet):
             return Response({"detail": "Invalid status."}, status=400)
         booking.status = Booking.Status.ACCEPTED
         update_fields = ["status", "updated_at"]
-        if bookings_has_check_in_token_column() and not booking.checked_in_at:
-            from bookings.checkin_tokens import issue_check_in_token
+        from bookings.checkin_tokens import checkin_token_update_fields, maybe_issue_check_in_token
 
-            issue_check_in_token(booking)
-            update_fields += [
-                "check_in_token",
-                "check_in_short_code",
-                "check_in_token_issued_at",
-                "check_in_token_used_at",
-            ]
+        if maybe_issue_check_in_token(booking, persist=False):
+            update_fields += checkin_token_update_fields()
         booking.save(update_fields=update_fields)
         notify_user(
             booking.customer,

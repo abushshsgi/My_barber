@@ -42,13 +42,17 @@ export function useBooking(bookingId: string) {
     enabled: authQueryEnabled(!!userId && Boolean(bookingId)),
     staleTime: 5_000,
     refetchInterval: (q) => {
-      const status = q.state.data?.status;
-      if (!status) return false;
-      if (bookingNeedsLiveRefresh(bookingLifecycleStatus(q.state.data!))) {
+      const data = q.state.data;
+      if (!data) return 3_000;
+      const status = data.status;
+      if (status === "pending") return 3_000;
+      if (status === "accepted" && !data.checkedInAt && !data.checkInCode) return 2_000;
+      if (bookingNeedsLiveRefresh(bookingLifecycleStatus(data))) {
         return status === "in_progress" ? 2_000 : 4_000;
       }
       return false;
     },
+    refetchOnWindowFocus: true,
   });
 }
 

@@ -8,7 +8,7 @@ import {
   paymentStatusLabel,
   type BookingLifecycleStatus,
 } from "@mybarber/shared/booking-lifecycle";
-import { Check, Circle, Clock3, History, MapPin, MessageSquare, Navigation, QrCode, Scissors, Users, Wallet } from "lucide-react";
+import { Check, Circle, Clock3, History, Loader2, MapPin, MessageSquare, Navigation, QrCode, Scissors, Users, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { BookingItem } from "@/lib/mock-data";
 import { formatPrice } from "@/lib/mock-data";
@@ -352,24 +352,53 @@ export function BookingOrderNumberBanner({ orderNumber }: { orderNumber?: string
 export function BookingQrCard({ token, shortCode }: { token: string; shortCode?: string }) {
   const qrUrl = buildCheckInQrUrl(token);
   return (
-    <div className="rounded-[24px] border border-border bg-background p-5 text-center shadow-[0_8px_30px_-18px_rgba(0,0,0,0.18)]">
+    <div className="rounded-[24px] border border-border bg-background p-5 text-center shadow-[0_8px_30px_-18px_rgba(0,0,0,0.18)] sm:col-span-2">
       <h2 className="mb-3 flex items-center justify-center gap-2 text-base font-bold">
         <QrCode className="size-4" />
-        Check-in QR
+        Kelish QR kodi
       </h2>
       <img
         src={qrUrl}
-        alt="Check-in QR"
-        className="mx-auto size-44 rounded-2xl border border-border bg-white p-2"
+        alt="Kelish QR kodi"
+        className="mx-auto size-48 rounded-2xl border border-border bg-white p-2"
       />
       {shortCode ? (
         <p className="mt-3 font-mono text-lg font-bold tracking-[0.3em]">{shortCode}</p>
       ) : null}
       <p className="mt-1 text-xs text-muted-foreground">
-        Sartaroshga QR yoki ushbu kodni ko'rsating. Kod bir martalik.
+        Salon kelganingizda sartaroshga QR yoki yuqoridagi kodni ko'rsating. Kod bir martalik.
       </p>
     </div>
   );
+}
+
+export function BookingCheckInSection({ booking }: { booking: BookingItem }) {
+  if (booking.status === "pending") {
+    return (
+      <div className="rounded-[24px] border border-dashed border-amber-200/80 bg-amber-50/40 p-5 text-center sm:col-span-2">
+        <QrCode className="mx-auto mb-2 size-8 text-amber-800/70" />
+        <p className="text-sm font-bold text-foreground">Kelish QR kodi</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Sartarosh bronni tasdiqlagach, kelganingizda ko'rsatish uchun QR shu yerda paydo bo'ladi.
+        </p>
+      </div>
+    );
+  }
+
+  if (booking.status === "accepted" && !booking.checkedInAt) {
+    if (booking.checkInCode) {
+      return <BookingQrCard token={booking.checkInCode} shortCode={booking.checkInShortCode} />;
+    }
+    return (
+      <div className="flex flex-col items-center justify-center rounded-[24px] border border-border bg-background p-6 text-center sm:col-span-2">
+        <Loader2 className="mb-2 size-7 animate-spin text-muted-foreground" />
+        <p className="text-sm font-bold">QR tayyorlanmoqda…</p>
+        <p className="mt-1 text-xs text-muted-foreground">Bir necha soniya kuting yoki sahifani yangilang.</p>
+      </div>
+    );
+  }
+
+  return null;
 }
 
 export function BookingPortfolioConsent({

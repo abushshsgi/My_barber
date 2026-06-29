@@ -149,6 +149,18 @@ class CheckInTokenTests(TestCase):
             detail.json()["check_in_short_code"], booking.check_in_short_code
         )
 
+    def test_retrieve_issues_missing_token_for_accepted_booking(self):
+        """Eski tasdiqlangan bronlar uchun detail ochilganda token beriladi."""
+        booking = self._make_booking(status_value=Booking.Status.ACCEPTED)
+        self.assertFalse(booking.check_in_token)
+
+        self.client.force_authenticate(user=self.user)
+        res = self.client.get(f"/api/v1/bookings/{booking.id}/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        booking.refresh_from_db()
+        self.assertTrue(booking.check_in_token)
+        self.assertEqual(res.json()["check_in_code"], booking.check_in_token)
+
     def test_check_in_by_token_first_ok_then_gone(self):
         booking = self._make_booking(status_value=Booking.Status.ACCEPTED)
         from bookings.checkin_tokens import issue_check_in_token
