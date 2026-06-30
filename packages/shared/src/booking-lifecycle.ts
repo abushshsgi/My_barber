@@ -454,6 +454,59 @@ export function getCustomerCancelPolicy(opts: {
   };
 }
 
+export const BOOKING_PENDING_RESPONSE_MINUTES = BOOKING_CANCEL_WINDOW_MINUTES;
+
+export type PendingBarberResponsePolicy = {
+  /** Sartarosh hali javob berishi kerakmi (pending). */
+  awaitingBarber: boolean;
+  expired: boolean;
+  secondsUntilExpiry?: number;
+  reason?: string;
+};
+
+/**
+ * Sartarosh qabul qilishi uchun 5 daqiqalik oyna (buyurtma vaqtidan).
+ * Muddati tugasa bron avtomatik bekor qilinadi.
+ */
+export function getPendingBarberResponsePolicy(opts: {
+  createdAt: string;
+  status: BookingLifecycleStatus;
+  now?: number;
+}): PendingBarberResponsePolicy {
+  const { status, createdAt } = opts;
+  const now = opts.now ?? Date.now();
+
+  if (status !== "pending") {
+    return { awaitingBarber: false, expired: false };
+  }
+
+  const createdMs = new Date(createdAt).getTime();
+  if (!Number.isFinite(createdMs)) {
+    return {
+      awaitingBarber: true,
+      expired: true,
+      reason: "Sartarosh javob bermadi — bron yopiladi.",
+    };
+  }
+
+  const cutoffMs = createdMs + BOOKING_PENDING_RESPONSE_MINUTES * 60_000;
+  const secondsLeft = Math.ceil((cutoffMs - now) / 1000);
+
+  if (now >= cutoffMs) {
+    return {
+      awaitingBarber: true,
+      expired: true,
+      reason: `Sartarosh ${BOOKING_PENDING_RESPONSE_MINUTES} daqiqa ichida javob bermadi — bron bekor qilinadi.`,
+    };
+  }
+
+  return {
+    awaitingBarber: true,
+    expired: false,
+    secondsUntilExpiry: Math.max(0, secondsLeft),
+  };
+}
+
 /** Buyurtma raqamini UI uchun normallashtiradi (katta harf, bo'shliqsiz). */
 export function formatOrderNumber(value: string | null | undefined): string {
   if (!value) return "";

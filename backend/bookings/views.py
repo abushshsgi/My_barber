@@ -289,7 +289,10 @@ class BookingViewSet(viewsets.ModelViewSet):
             booking.barber,
             "new_booking",
             "Yangi bron",
-            f"{booking.customer.full_name or booking.customer.email} bron qildi. Tel: {phone or '—'}",
+            (
+                f"{booking.customer.full_name or booking.customer.email} bron qildi. "
+                f"Tel: {phone or '—'}. 5 daqiqa ichida qabul qiling."
+            ),
             {"booking_id": booking.id, "customer_phone": phone},
         )
         broadcast_booking_updated(booking=booking)
@@ -306,8 +309,18 @@ class BookingViewSet(viewsets.ModelViewSet):
     def partial_update(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)
 
+    def list(self, request, *args, **kwargs):
+        from bookings.expiry import expire_stale_pending_bookings
+
+        expire_stale_pending_bookings()
+        return super().list(request, *args, **kwargs)
+
     def retrieve(self, request, *args, **kwargs):
         booking = self.get_object()
+        from bookings.expiry import ensure_pending_not_expired
+
+        ensure_pending_not_expired(booking)
+        booking.refresh_from_db()
         if not isinstance(request.user, BarberPrincipal):
             try:
                 from bookings.checkin_tokens import maybe_issue_check_in_token
@@ -326,23 +339,33 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def accept(self, request, pk=None):
-        booking = self.get_object()
-        if not self._barber_can_manage_booking(request, booking):
-            return Response(status=403)
-        if booking.status != Booking.Status.PENDING:
-            return Response({"detail": "Invalid status."}, status=400)
-        booking.status = Booking.Status.ACCEPTED
-        update_fields = ["status", "updated_at"]
-        from bookings.checkin_tokens import checkin_token_update_fields, maybe_issue_check_in_token
+        from django.db import transaction
 
-        try:
-            if maybe_issue_check_in_token(
-                booking, persist=False, allow_schema_ensure=True
-            ):
-                update_fields += checkin_token_update_fields()
-        except Exception:
-            pass
-        booking.save(update_fields=update_fields)
+        from bookings.expiry import ensure_pending_not_expired
+        from bookings.models import Booking
+
+        with transaction.atomic():
+            booking = Booking.objects.select_for_update().get(pk=pk)
+            if not self._barber_can_manage_booking(request, booking):
+                return Response(status=403)
+            expired = ensure_pending_not_expired(booking)
+            if expired:
+                return Response({"detail": expired}, status=410)
+            booking.refresh_from_db()
+            if booking.status != Booking.Status.PENDING:
+                return Response({"detail": "Invalid status."}, status=400)
+            booking.status = Booking.Status.ACCEPTED
+            update_fields = ["status", "updated_at"]
+            from bookings.checkin_tokens import checkin_token_update_fields, maybe_issue_check_in_token
+
+            try:
+                if maybe_issue_check_in_token(
+                    booking, persist=False, allow_schema_ensure=True
+                ):
+                    update_fields += checkin_token_update_fields()
+            except Exception:
+                pass
+            booking.save(update_fields=update_fields)
         notify_user(
             booking.customer,
             "booking_accepted",
@@ -357,6 +380,12 @@ class BookingViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def reject(self, request, pk=None):
         booking = self.get_object()
+        from bookings.expiry import ensure_pending_not_expired
+
+        expired = ensure_pending_not_expired(booking)
+        if expired:
+            return Response({"detail": expired}, status=410)
+        booking.refresh_from_db()
         if not self._barber_can_manage_booking(request, booking):
             return Response(status=403)
         if booking.status != Booking.Status.PENDING:

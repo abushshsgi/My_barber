@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Loader2, ScanLine, Scissors } from "lucide-react";
 import { useState } from "react";
+import { BarberPendingResponseBanner } from "@/components/bookings/BarberPendingResponseBanner";
 import { BarberBookingActionBar } from "@/components/bookings/BarberBookingActionBar";
 import { CompleteBookingDialog } from "@/components/bookings/CompleteBookingDialog";
 import {
@@ -56,6 +57,10 @@ function BarberBookingOverviewPage() {
       ) : booking ? (
         <>
           <BookingStatusHero booking={booking} />
+
+          {booking.status === "pending" ? (
+            <BarberPendingResponseBanner booking={booking} />
+          ) : null}
 
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:gap-5">
             <div className="space-y-4">

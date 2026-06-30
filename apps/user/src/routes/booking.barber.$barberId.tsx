@@ -144,7 +144,7 @@ function IndependentBookingFlow() {
         notes: notes.trim() || undefined,
       });
       toast.success("Buyurtma yuborildi!", {
-        description: `${barber.name} · ${slot}. 5 daqiqa ichida bekor qilish mumkin — sartarosh qabul qilsa ham taymer davom etadi.`,
+        description: `${barber.name} · ${slot}. Sartarosh 5 daqiqa ichida javob berishi kerak.`,
       });
       setTimeout(
         () =>

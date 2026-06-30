@@ -7,6 +7,7 @@ from datetime import timedelta
 from django.utils import timezone
 
 BOOKING_CANCEL_WINDOW_MINUTES = 5
+BOOKING_PENDING_RESPONSE_MINUTES = BOOKING_CANCEL_WINDOW_MINUTES
 
 
 def customer_cancel_blocked_reason(booking, *, now=None) -> str | None:

@@ -156,7 +156,7 @@ function useBookingSalonState(
         notes: notes.trim() || undefined,
       });
       toast.success("Buyurtma yuborildi!", {
-        description: `${salon.name} · ${slot}. 5 daqiqa ichida bekor qilish mumkin — sartarosh qabul qilsa ham taymer davom etadi.`,
+        description: `${salon.name} · ${slot}. Sartarosh 5 daqiqa ichida javob berishi kerak.`,
       });
       setTimeout(
         () =>

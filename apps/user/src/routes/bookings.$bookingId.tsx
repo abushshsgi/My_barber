@@ -64,7 +64,8 @@ function BookingProcessPage({ wide }: { wide?: boolean }) {
     prevStatus.current = booking.status;
   }, [booking?.status, booking]);
 
-  const cancelPolicy = useLiveCustomerCancelPolicy(booking ?? null);
+  const cancelPolicies = useLiveCustomerCancelPolicy(booking ?? null);
+  const cancelPolicy = cancelPolicies.cancel;
 
   const showCancel =
     booking &&
@@ -72,8 +73,8 @@ function BookingProcessPage({ wide }: { wide?: boolean }) {
     cancelPolicy.allowed;
 
   const onCancel = () => {
-    if (!cancelPolicy?.allowed) {
-      toast.error(cancelPolicy?.reason ?? "Bekor qilish mumkin emas");
+    if (!cancelPolicy.allowed) {
+      toast.error(cancelPolicy.reason ?? "Bekor qilish mumkin emas");
       return;
     }
     cancelMut.mutate(bookingId, {

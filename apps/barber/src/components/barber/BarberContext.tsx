@@ -128,7 +128,7 @@ export type Booking = {
   salon_latitude?: number | null;
   salon_longitude?: number | null;
   checked_in_at?: string | null;
-  status_history?: Array<{ key: string; label: string; at: string }>;
+  created_at?: string;
 };
 
 export type Client = {
