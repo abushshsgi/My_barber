@@ -66,7 +66,10 @@ function BookingProcessPage({ wide }: { wide?: boolean }) {
 
   const cancelPolicy = useLiveCustomerCancelPolicy(booking ?? null);
 
-  const showCancel = booking?.status === "pending" && cancelPolicy.allowed;
+  const showCancel =
+    booking &&
+    (booking.status === "pending" || booking.status === "accepted") &&
+    cancelPolicy.allowed;
 
   const onCancel = () => {
     if (!cancelPolicy?.allowed) {

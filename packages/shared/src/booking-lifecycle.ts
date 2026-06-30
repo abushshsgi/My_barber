@@ -403,8 +403,7 @@ export function formatCancelCountdown(totalSeconds: number): string {
 
 /**
  * Mijoz bronni qachon bekor qila olishini hisoblaydi.
- * Faqat pending va buyurtmadan keyin 5 daqiqa ichida.
- * Sartarosh qabul qilgach — bekor qilish mumkin emas.
+ * Buyurtmadan keyin 5 daqiqa — sartarosh qabul qilsa ham taymer tugaguncha.
  */
 export function getCustomerCancelPolicy(opts: {
   createdAt: string;
@@ -422,16 +421,12 @@ export function getCustomerCancelPolicy(opts: {
     return { allowed: false, reason: "Bu bronni bekor qilib bo'lmaydi." };
   }
 
-  if (status === "accepted") {
-    return {
-      allowed: false,
-      reason:
-        "Bron tasdiqlandi — endi bekor qilib bo'lmaydi. Savollar bo'lsa sartarosh bilan chatda yozing.",
-    };
-  }
-
   if (status === "in_progress") {
     return { allowed: false, reason: "Xizmat davom etmoqda — bekor qilish mumkin emas." };
+  }
+
+  if (status !== "pending" && status !== "accepted") {
+    return { allowed: false, reason: "Bu bronni bekor qilib bo'lmaydi." };
   }
 
   const createdMs = new Date(createdAt).getTime();
@@ -448,7 +443,7 @@ export function getCustomerCancelPolicy(opts: {
   if (now >= cutoffMs) {
     return {
       allowed: false,
-      reason: `Bekor qilish muddati tugadi (${BOOKING_CANCEL_WINDOW_MINUTES} daqiqa). Sartarosh javobini kuting yoki chat orqali yozing.`,
+      reason: `Bekor qilish muddati tugadi (${BOOKING_CANCEL_WINDOW_MINUTES} daqiqa). Chat orqali bog'laning.`,
     };
   }
 

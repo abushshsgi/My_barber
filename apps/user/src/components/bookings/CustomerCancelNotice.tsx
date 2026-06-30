@@ -13,7 +13,7 @@ export function useLiveCustomerCancelPolicy(booking: Pick<BookingItem, "status" 
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    if (!booking || booking.status !== "pending") return;
+    if (!booking || (booking.status !== "pending" && booking.status !== "accepted")) return;
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
   }, [booking?.status, booking?.createdAt]);
@@ -45,25 +45,7 @@ export function CustomerCancelNotice({
   const policy = useLiveCustomerCancelPolicy(booking);
 
   if (booking.status === "cancelled" || booking.status === "done") return null;
-
-  if (booking.status === "accepted") {
-    return (
-      <div
-        className={cn(
-          "rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground",
-          className,
-        )}
-      >
-        <p className="font-medium text-foreground">Bron tasdiqlandi</p>
-        <p className="mt-1 text-xs leading-relaxed">
-          Endi bekor qilib bo&apos;lmaydi. O&apos;zgarish kerak bo&apos;lsa sartarosh bilan chatda
-          yozing.
-        </p>
-      </div>
-    );
-  }
-
-  if (booking.status !== "pending") return null;
+  if (booking.status !== "pending" && booking.status !== "accepted") return null;
 
   if (policy.allowed && policy.secondsUntilCutoff != null) {
     return (
@@ -81,8 +63,10 @@ export function CustomerCancelNotice({
               Bekor qilish: {formatCancelCountdown(policy.secondsUntilCutoff)} qoldi
             </p>
             <p className={cn("mt-1 text-background/75", variant === "compact" ? "text-[11px]" : "text-xs")}>
-              Faqat buyurtmadan keyin {BOOKING_CANCEL_WINDOW_MINUTES} daqiqa va faqat sartarosh qabul
-              qilmasdan oldin. Keyin bekor qilish mumkin emas.
+              Buyurtmadan keyin {BOOKING_CANCEL_WINDOW_MINUTES} daqiqa ichida bekor qilish mumkin.
+              {booking.status === "accepted"
+                ? " Sartarosh qabul qildi — taymer tugaguncha bekor qila olasiz."
+                : " Sartarosh qabul qilsa ham taymer davom etadi."}
             </p>
           </div>
         </div>

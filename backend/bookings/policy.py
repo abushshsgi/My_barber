@@ -12,18 +12,23 @@ BOOKING_CANCEL_WINDOW_MINUTES = 5
 def customer_cancel_blocked_reason(booking, *, now=None) -> str | None:
     """
     Mijoz bekor qila olmasa sabab qaytaradi, aks holda None.
-    Faqat pending + buyurtmadan keyin 5 daqiqa ichida ruxsat.
-    """
+    Buyurtmadan keyin 5 daqiqa ichida — pending yoki accepted (xizmat boshlanmaguncha).
+  """
     from bookings.models import Booking
 
     now = now or timezone.now()
 
-    if booking.status != Booking.Status.PENDING:
-        if booking.status == Booking.Status.ACCEPTED:
-            return (
-                "Bron tasdiqlandi — endi bekor qilib bo'lmaydi. "
-                "Savollar bo'lsa chat orqali yozing."
-            )
+    if booking.status in (
+        Booking.Status.COMPLETED,
+        Booking.Status.CANCELLED,
+        Booking.Status.REJECTED,
+        Booking.Status.IN_PROGRESS,
+    ):
+        if booking.status == Booking.Status.IN_PROGRESS:
+            return "Xizmat davom etmoqda — bekor qilish mumkin emas."
+        return "Bu bronni bekor qilib bo'lmaydi."
+
+    if booking.status not in (Booking.Status.PENDING, Booking.Status.ACCEPTED):
         return "Bu bronni bekor qilib bo'lmaydi."
 
     if not booking.created_at:
@@ -33,7 +38,7 @@ def customer_cancel_blocked_reason(booking, *, now=None) -> str | None:
     if now >= cutoff:
         return (
             f"Buyurtmadan keyin faqat {BOOKING_CANCEL_WINDOW_MINUTES} daqiqa ichida "
-            "bekor qilish mumkin. Sartarosh javobini kuting yoki chat orqali yozing."
+            "bekor qilish mumkin. Muddati tugadi — chat orqali bog'laning."
         )
 
     return None

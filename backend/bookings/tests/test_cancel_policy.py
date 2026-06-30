@@ -28,11 +28,21 @@ class CustomerCancelPolicyTests(CheckInTokenTests):
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("5 daqiqa", res.json()["detail"])
 
-    def test_customer_cannot_cancel_after_barber_accepts_even_within_5_minutes(self):
+    def test_customer_can_cancel_accepted_within_5_minutes(self):
         booking = self._make_booking(status_value=Booking.Status.ACCEPTED)
-        booking.created_at = timezone.now() - timedelta(minutes=1)
+        booking.created_at = timezone.now() - timedelta(minutes=2)
+        booking.save(update_fields=["created_at"])
+        self.client.force_authenticate(user=self.user)
+        res = self.client.post(f"/api/v1/bookings/{booking.id}/cancel/", {}, format="json")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, Booking.Status.CANCELLED)
+
+    def test_customer_cannot_cancel_accepted_after_5_minutes(self):
+        booking = self._make_booking(status_value=Booking.Status.ACCEPTED)
+        booking.created_at = timezone.now() - timedelta(minutes=6)
         booking.save(update_fields=["created_at"])
         self.client.force_authenticate(user=self.user)
         res = self.client.post(f"/api/v1/bookings/{booking.id}/cancel/", {}, format="json")
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("tasdiqlandi", res.json()["detail"].lower())
+        self.assertIn("5 daqiqa", res.json()["detail"])

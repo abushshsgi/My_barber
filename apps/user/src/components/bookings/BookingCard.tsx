@@ -56,7 +56,8 @@ export function BookingCard({ booking: b, focused }: { booking: BookingItem; foc
     createdAt: b.createdAt ?? b.date,
     status: bookingLifecycleStatus(b),
   });
-  const canCancel = b.status === "pending" && cancelPolicy.allowed;
+  const canCancel =
+    (b.status === "pending" || b.status === "accepted") && cancelPolicy.allowed;
 
   const onCancel = () => {
     if (!cancelPolicy.allowed) {
@@ -132,12 +133,15 @@ export function BookingCard({ booking: b, focused }: { booking: BookingItem; foc
               </p>
             ) : null}
 
-            {b.status === "pending" && cancelPolicy.allowed && cancelPolicy.secondsUntilCutoff != null ? (
-              <p className="mt-3 text-xs font-semibold text-foreground">
-                Bekor qilish: {formatCancelCountdown(cancelPolicy.secondsUntilCutoff)}
-              </p>
-            ) : b.status === "accepted" ? (
-              <p className="mt-3 text-xs text-muted-foreground">Tasdiqlandi — bekor qilish yopiq</p>
+            {b.status === "pending" || b.status === "accepted" ? (
+              cancelPolicy.allowed && cancelPolicy.secondsUntilCutoff != null ? (
+                <p className="mt-3 text-xs font-semibold text-foreground">
+                  Bekor qilish: {formatCancelCountdown(cancelPolicy.secondsUntilCutoff)}
+                  {b.status === "accepted" ? " (tasdiqlangan)" : ""}
+                </p>
+              ) : (
+                <p className="mt-3 text-xs text-muted-foreground">Bekor qilish muddati tugadi</p>
+              )
             ) : null}
 
             {b.status === "in_progress" ? (
