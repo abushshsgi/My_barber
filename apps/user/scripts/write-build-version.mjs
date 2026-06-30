@@ -37,6 +37,7 @@ export const CLIENT_BOOT_SCRIPT = ${JSON.stringify(
   `(function(){
 var BUILD=${JSON.stringify(buildId)};
 var CK="mysaloon-app-build";
+var BOOT_KEY="mysaloon-app-boot-reload";
 function purge(cb){
   var t=[];
   if("serviceWorker"in navigator)t.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister()}))}));
@@ -45,12 +46,24 @@ function purge(cb){
 }
 try{
   if(localStorage.getItem(CK)===BUILD)return;
+  var stored=localStorage.getItem(CK);
+  if(stored&&stored!==BUILD){
+    if(sessionStorage.getItem(BOOT_KEY)){
+      localStorage.setItem(CK,BUILD);
+      return;
+    }
+    sessionStorage.setItem(BOOT_KEY,"1");
+    purge(function(){
+      var u=new URL(location.href);
+      u.searchParams.delete("_v");
+      u.searchParams.delete("_deploy");
+      u.searchParams.delete("_chunk");
+      u.searchParams.set("_boot",Date.now().toString(36));
+      location.replace(u.toString());
+    });
+    return;
+  }
   localStorage.setItem(CK,BUILD);
-  purge(function(){
-    var u=new URL(location.href);
-    u.searchParams.set("_v",Date.now().toString(36));
-    location.replace(u.toString());
-  });
 }catch(e){}
 })();`,
 )};
