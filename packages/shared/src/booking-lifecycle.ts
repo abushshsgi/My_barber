@@ -216,6 +216,9 @@ export function computeAppointmentCountdown(
 /** QR payload prefiksi — skaner mijoz check-in tokenini tanib olishi uchun. */
 export const CHECK_IN_QR_PREFIX = "mybarber:checkin:";
 
+/** `secrets.token_urlsafe(24)` — odatda 32 belgi. */
+export const CHECK_IN_TOKEN_MIN_LEN = 27;
+
 /** Mijoz check-in tokeni asosida QR rasm URL (sartarosh skaner qiladi). */
 export function buildCheckInQrUrl(token: string, size = 200): string {
   const payload = `${CHECK_IN_QR_PREFIX}${token}`;
@@ -332,6 +335,48 @@ export function resolveCheckInPayload(raw: string): CheckInResolveResult | null 
   }
 
   return null;
+}
+
+/** Tashqi skaner noto'g'ri klaviatura (o'zbek/rus) bilan kirgizganini aniqlash. */
+export function hasWrongKeyboardLayoutInput(raw: string): boolean {
+  const value = sanitizeCheckInScannerInput(raw);
+  if (!value) return false;
+  if (/[\u0400-\u04FF]/.test(value)) return true;
+  const lower = value.toLowerCase();
+  if (lower.includes("mybarber") || lower.includes("checkin")) return false;
+  if (value.includes(":") && /[a-z0-9_-]{8,}/i.test(value)) return false;
+  return value.length > 12 && !/^[A-Za-z0-9:_?&#=\-./]+$/u.test(value);
+}
+
+/**
+ * Skaner kiritmasi to'liq bo'lganini tekshiradi (yarim token yuborilmasligi uchun).
+ */
+export function isCompleteCheckInScannerInput(raw: string): boolean {
+  const value = sanitizeCheckInScannerInput(raw);
+  if (!value) return false;
+
+  const payload = resolveCheckInPayload(value);
+  if (!payload) return false;
+
+  if (payload.short_code) {
+    return payload.short_code.length >= 4 && payload.short_code.length <= 8;
+  }
+
+  if (payload.token) {
+    const token = payload.token;
+    if (token.length < CHECK_IN_TOKEN_MIN_LEN) return false;
+    const lower = value.toLowerCase();
+    if (lower.includes(CHECK_IN_QR_PREFIX)) {
+      const afterPrefix = value.slice(
+        lower.indexOf(CHECK_IN_QR_PREFIX) + CHECK_IN_QR_PREFIX.length,
+      );
+      const tokenPart = afterPrefix.split(/[\s?&#;]+/)[0] ?? "";
+      return tokenPart.length >= CHECK_IN_TOKEN_MIN_LEN;
+    }
+    return true;
+  }
+
+  return false;
 }
 
 /** Buyurtma raqamini UI uchun normallashtiradi (katta harf, bo'shliqsiz). */

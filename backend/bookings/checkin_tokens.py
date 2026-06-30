@@ -23,6 +23,21 @@ def generate_check_in_token() -> str:
     return secrets.token_urlsafe(24)
 
 
+_CHECK_IN_QR_PREFIX = "mybarber:checkin:"
+
+
+def normalize_check_in_token(raw: str) -> str:
+    """QR prefiksi, boshqaruv belgilari va ortiqcha bo'shliqlarni olib tashlaydi."""
+    value = (raw or "").replace("\x00", "").strip()
+    for ch in ("\r", "\n", "\t"):
+        value = value.replace(ch, "")
+    lower = value.lower()
+    idx = lower.find(_CHECK_IN_QR_PREFIX)
+    if idx >= 0:
+        value = value[idx + len(_CHECK_IN_QR_PREFIX) :]
+    return value.split()[0].strip() if value else ""
+
+
 def generate_short_code() -> str:
     """6 belgili qo'lda kiritiladigan kod."""
     return "".join(secrets.choice(_SHORT_CODE_ALPHABET) for _ in range(6))

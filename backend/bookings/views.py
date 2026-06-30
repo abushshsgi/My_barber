@@ -557,7 +557,9 @@ class BookingViewSet(viewsets.ModelViewSet):
                 {"detail": "Check-in vaqtincha mavjud emas. Birozdan keyin qayta urinib ko'ring."},
                 status=503,
             )
-        token = (request.data.get("token") or "").strip()
+        from bookings.checkin_tokens import normalize_check_in_token
+
+        token = normalize_check_in_token(request.data.get("token") or "")
         short_code = (request.data.get("short_code") or "").strip().upper()
         if not token and not short_code:
             return Response(

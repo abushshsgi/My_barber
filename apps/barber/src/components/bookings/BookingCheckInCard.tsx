@@ -2,13 +2,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle, CheckCircle2, Loader2, ScanLine, UserCheck } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { resolveCheckInPayload } from "@mybarber/shared/booking-lifecycle";
+import { resolveCheckInPayload, hasWrongKeyboardLayoutInput, isCompleteCheckInScannerInput } from "@mybarber/shared/booking-lifecycle";
 import { CheckInScanner } from "@/components/bookings/CheckInScanner";
 import { CheckInOnboarding } from "@/components/bookings/CheckInOnboarding";
 import { useCheckInByTokenMutation } from "@/hooks/use-barber-queries";
 import { cn } from "@/lib/utils";
 
 type Phase = "idle" | "scanning" | "submitting" | "success" | "error";
+
+const WEDGE_IDLE_MS = 450;
 
 function mapCheckInError(message: string): string {
   const m = message.toLowerCase();
@@ -33,10 +35,15 @@ export function BarberManualCheckInCard({ onCheckedIn }: { onCheckedIn?: () => v
   const [inputHint, setInputHint] = useState<string | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const wedgeTimerRef = useRef<number | null>(null);
+  const submittingRef = useRef(false);
   const checkInMut = useCheckInByTokenMutation();
 
   useEffect(() => {
     inputRef.current?.focus();
+    return () => {
+      if (wedgeTimerRef.current) window.clearTimeout(wedgeTimerRef.current);
+    };
   }, []);
 
   const clearInput = () => {
@@ -46,10 +53,13 @@ export function BarberManualCheckInCard({ onCheckedIn }: { onCheckedIn?: () => v
 
   const runCheckIn = useCallback(
     (payload: { token?: string; short_code?: string }) => {
+      if (submittingRef.current || checkInMut.isPending) return;
+      submittingRef.current = true;
       setPhase("submitting");
       setLastError(null);
       checkInMut.mutate(payload, {
         onSuccess: () => {
+          submittingRef.current = false;
           setPhase("success");
           clearInput();
           setScannerOpen(false);
@@ -58,6 +68,7 @@ export function BarberManualCheckInCard({ onCheckedIn }: { onCheckedIn?: () => v
           window.setTimeout(() => setPhase("idle"), 1200);
         },
         onError: (e) => {
+          submittingRef.current = false;
           const msg = mapCheckInError(e.message);
           setLastError(msg);
           setPhase("error");
@@ -76,6 +87,24 @@ export function BarberManualCheckInCard({ onCheckedIn }: { onCheckedIn?: () => v
         toast.error("Mijoz kodini kiriting");
         return;
       }
+      if (hasWrongKeyboardLayoutInput(trimmed)) {
+        const msg =
+          "Klaviatura ingliz (EN) tilida emas. Windows tilini EN qilib, qayta skaner qiling.";
+        setLastError(msg);
+        setPhase("error");
+        toast.error(msg);
+        window.setTimeout(() => setPhase("idle"), 3000);
+        return;
+      }
+      if (!isCompleteCheckInScannerInput(trimmed)) {
+        const msg =
+          "Kod to'liq emas. QR ni qayta skaner qiling yoki Enter bosing.";
+        setLastError(msg);
+        setPhase("error");
+        toast.error(msg);
+        window.setTimeout(() => setPhase("idle"), 2500);
+        return;
+      }
       const payload = resolveCheckInPayload(trimmed);
       if (!payload) {
         const msg =
@@ -91,6 +120,19 @@ export function BarberManualCheckInCard({ onCheckedIn }: { onCheckedIn?: () => v
     [runCheckIn],
   );
 
+  const scheduleWedgeSubmit = useCallback(
+    (raw: string) => {
+      if (wedgeTimerRef.current) window.clearTimeout(wedgeTimerRef.current);
+      wedgeTimerRef.current = window.setTimeout(() => {
+        wedgeTimerRef.current = null;
+        if (isCompleteCheckInScannerInput(raw)) {
+          submitRaw(raw);
+        }
+      }, WEDGE_IDLE_MS);
+    },
+    [submitRaw],
+  );
+
   const submitFromInput = () => {
     const raw = inputRef.current?.value ?? "";
     submitRaw(raw);
@@ -104,18 +146,26 @@ export function BarberManualCheckInCard({ onCheckedIn }: { onCheckedIn?: () => v
       return;
     }
 
+    if (hasWrongKeyboardLayoutInput(v)) {
+      setInputHint("Klaviatura EN (ingliz) tilida bo'lishi kerak");
+      return;
+    }
+
     const lower = v.toLowerCase();
     if (lower.includes("mybarber") || v.length > 10) {
-      setInputHint("QR skanerlanmoqda…");
-      const payload = resolveCheckInPayload(v);
-      if (payload?.token && v.length >= 28) {
-        clearInput();
-        runCheckIn(payload);
-      }
+      setInputHint(
+        isCompleteCheckInScannerInput(v)
+          ? "QR to'liq — tekshirilmoqda…"
+          : "QR skanerlanmoqda…",
+      );
+      scheduleWedgeSubmit(v);
       return;
     }
 
     setInputHint(v.length >= 4 ? `${v.replace(/[\s-]/g, "").length}/6 xonali kod` : null);
+    if (v.replace(/[\s-]/g, "").length >= 6) {
+      scheduleWedgeSubmit(v);
+    }
   };
 
   const handleScannerRaw = (raw: string) => {
@@ -161,8 +211,9 @@ export function BarberManualCheckInCard({ onCheckedIn }: { onCheckedIn?: () => v
       </div>
 
       <p className="mb-3 text-xs text-muted-foreground">
-        Tashqi skaner: maydonga fokus qiling va QR ni skaner qiling (oxirida Enter keladi).
-        Qo'lda: 6 xonali kod yozib Enter yoki Qabul.
+        Tashqi skaner: maydonga fokus qiling va QR ni skaner qiling. Klaviatura{" "}
+        <span className="font-semibold text-foreground">ingliz (EN)</span> tilida bo'lsin.
+        Qo'lda: 6 xonali kod + Enter yoki Qabul.
       </p>
 
       {lastError ? (
@@ -176,10 +227,16 @@ export function BarberManualCheckInCard({ onCheckedIn }: { onCheckedIn?: () => v
           <input
             ref={inputRef}
             defaultValue=""
+            lang="en"
+            inputMode="text"
             onChange={handleInputChange}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+              if (e.key === "Enter" || e.key === "Tab") {
                 e.preventDefault();
+                if (wedgeTimerRef.current) {
+                  window.clearTimeout(wedgeTimerRef.current);
+                  wedgeTimerRef.current = null;
+                }
                 submitFromInput();
               }
             }}

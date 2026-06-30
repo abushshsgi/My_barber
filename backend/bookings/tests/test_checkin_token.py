@@ -189,6 +189,24 @@ class CheckInTokenTests(TestCase):
         )
         self.assertEqual(res2.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_check_in_by_token_with_qr_prefix_payload(self):
+        booking = self._make_booking(status_value=Booking.Status.ACCEPTED)
+        from bookings.checkin_tokens import issue_check_in_token
+
+        issue_check_in_token(booking)
+        booking.save()
+
+        barber_client = APIClient()
+        barber_client.force_authenticate(user=BarberPrincipal(self.barber))
+        res = barber_client.post(
+            "/api/v1/bookings/check-in-by-token/",
+            {"token": f"mybarber:checkin:{booking.check_in_token}"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        booking.refresh_from_db()
+        self.assertIsNotNone(booking.checked_in_at)
+
     def test_check_in_by_short_code(self):
         booking = self._make_booking(status_value=Booking.Status.ACCEPTED)
         from bookings.checkin_tokens import issue_check_in_token
