@@ -15,5 +15,6 @@ export const BAZAAR_ELEVATED_TILE_H = "h-[var(--bazaar-tile-h)]";
 export function usesDesktopBazaarInset(pathname: string): boolean {
   if (pathname === "/" || pathname === "/top") return true;
   if (pathname.startsWith("/category/")) return true;
+  if (pathname.startsWith("/salon/")) return true;
   return false;
 }

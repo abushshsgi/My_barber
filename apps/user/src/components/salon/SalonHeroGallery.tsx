@@ -21,15 +21,12 @@ function galleryImages(salon: Salon): string[] {
 export function SalonHeroGallery({
   salon,
   variant = "desktop",
-  size = "default",
 }: {
   salon: Salon;
   variant?: "desktop" | "mobile";
-  size?: "default" | "compact";
 }) {
   const images = galleryImages(salon);
   const isMobile = variant === "mobile";
-  const isCompact = !isMobile && size === "compact";
 
   return (
     <div
@@ -37,9 +34,7 @@ export function SalonHeroGallery({
         "grid gap-2 overflow-hidden",
         isMobile
           ? "grid-cols-4 grid-rows-2 h-[220px]"
-          : isCompact
-            ? "grid-cols-4 grid-rows-2 h-[min(260px,30vh)] rounded-2xl"
-            : "grid-cols-4 grid-rows-2 h-[min(420px,42vh)] rounded-2xl",
+          : "grid-cols-4 grid-rows-2 h-[min(420px,42vh)] rounded-2xl",
       )}
     >
       <div className={cn("relative col-span-2 row-span-2 bg-muted", !isMobile && "rounded-l-2xl overflow-hidden")}>
