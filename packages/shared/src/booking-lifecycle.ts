@@ -243,12 +243,26 @@ export type CheckInResolveResult = { token?: string; short_code?: string };
 const SHORT_CODE_RE = /^[A-Z0-9]{4,8}$/;
 const TOKEN_RE = /^[A-Za-z0-9_-]{13,}$/;
 
+/** Skaner / klaviatura kiritmasini tozalash (boshqaruv belgilari, GS va h.k.). */
+export function sanitizeCheckInScannerInput(raw: string): string {
+  return (raw || "")
+    .replace(/[\x00-\x1F\x7F]/g, "")
+    .replace(/^[\][*;]+/, "")
+    .trim();
+}
+
 function tryDecode(value: string): string {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
+  let out = value;
+  for (let i = 0; i < 2; i += 1) {
+    try {
+      const next = decodeURIComponent(out);
+      if (next === out) break;
+      out = next;
+    } catch {
+      break;
+    }
   }
+  return out;
 }
 
 function extractFromUrl(value: string): CheckInResolveResult | null {
@@ -268,32 +282,43 @@ function extractFromUrl(value: string): CheckInResolveResult | null {
   return null;
 }
 
+function extractTokenAfterPrefix(value: string): string | null {
+  const lower = value.toLowerCase();
+  const prefixIdx = lower.indexOf(CHECK_IN_QR_PREFIX);
+  if (prefixIdx < 0) return null;
+  const token = value
+    .slice(prefixIdx + CHECK_IN_QR_PREFIX.length)
+    .trim()
+    .split(/[\s?&#;]+/)[0];
+  return token || null;
+}
+
 /**
  * QR skaner, qo'lda kod, tashqi barcode skaner — barcha formatlardan
  * check-in payload (`token` yoki `short_code`) ajratadi.
+ * Token registrini saqlaydi (URL-safe tokenlar uchun muhim).
  */
 export function resolveCheckInPayload(raw: string): CheckInResolveResult | null {
-  let value = tryDecode((raw || "").trim().replace(/[\r\n]+$/g, ""));
+  let value = tryDecode(sanitizeCheckInScannerInput(raw));
   if (!value) return null;
 
-  const prefixIdx = value.indexOf(CHECK_IN_QR_PREFIX);
-  if (prefixIdx >= 0) {
-    const token = value
-      .slice(prefixIdx + CHECK_IN_QR_PREFIX.length)
-      .trim()
-      .split(/[\s?&#]/)[0];
-    if (token) return { token };
+  const tokenFromPrefix = extractTokenAfterPrefix(value);
+  if (tokenFromPrefix) {
+    return { token: tokenFromPrefix };
   }
 
   const fromUrl = extractFromUrl(value);
   if (fromUrl) return fromUrl;
 
   const compact = value.replace(/[\s-]/g, "").toUpperCase();
-  if (SHORT_CODE_RE.test(compact) && compact.length <= 8) {
+  const looksLikeQr =
+    value.includes(":") || value.length > 12 || value.toLowerCase().includes("mybarber");
+
+  if (!looksLikeQr && SHORT_CODE_RE.test(compact) && compact.length <= 8) {
     return { short_code: compact };
   }
 
-  const tokenCandidate = value.split(/[\s?&#]/)[0];
+  const tokenCandidate = value.split(/[\s?&#;]+/)[0];
   if (TOKEN_RE.test(tokenCandidate)) {
     return { token: tokenCandidate };
   }
@@ -301,7 +326,9 @@ export function resolveCheckInPayload(raw: string): CheckInResolveResult | null 
   const legacy = parseCheckInQrPayload(value);
   if (legacy) {
     if (legacy.length > 12) return { token: legacy };
-    if (SHORT_CODE_RE.test(legacy.toUpperCase())) return { short_code: legacy.toUpperCase() };
+    if (!looksLikeQr && SHORT_CODE_RE.test(legacy.toUpperCase())) {
+      return { short_code: legacy.toUpperCase() };
+    }
   }
 
   return null;

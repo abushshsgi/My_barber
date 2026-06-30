@@ -181,10 +181,17 @@ export function useCheckInByTokenMutation() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        const detail =
+        let detail =
           typeof body === "object" && body && "detail" in body
             ? String((body as { detail: unknown }).detail)
             : "Check-in bajarilmadi";
+        if (res.status === 404) {
+          detail = "Kod topilmadi yoki allaqachon ishlatilgan.";
+        } else if (res.status === 410) {
+          detail = "Bu kod allaqachon ishlatilgan.";
+        } else if (res.status === 403) {
+          detail = "Bu buyurtma sizga tegishli emas.";
+        }
         throw new Error(detail);
       }
       return (await res.json()) as ApiBookingRow;
