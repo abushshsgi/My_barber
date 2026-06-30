@@ -3,9 +3,10 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { playBookingCompletionChime, getCustomerCancelPolicy } from "@mybarber/shared/booking-lifecycle";
+import { playBookingCompletionChime, formatCancelCountdown } from "@mybarber/shared/booking-lifecycle";
 import { PostCompletionSurvey } from "@/components/bookings/PostCompletionSurvey";
 import { BookingChatButton } from "@/components/bookings/BookingChatButton";
+import { CustomerCancelNotice, useLiveCustomerCancelPolicy } from "@/components/bookings/CustomerCancelNotice";
 import {
   BookingAddonHint,
   BookingDetailSummary,
@@ -29,7 +30,6 @@ import {
   usePortfolioConsentMutation,
   usePortfolioPhotoMutation,
 } from "@/hooks/use-bookings-api";
-import { bookingLifecycleStatus } from "@/lib/bookings-utils";
 
 export const Route = createFileRoute("/bookings/$bookingId")({
   head: ({ params }) => ({
@@ -64,17 +64,9 @@ function BookingProcessPage({ wide }: { wide?: boolean }) {
     prevStatus.current = booking.status;
   }, [booking?.status, booking]);
 
-  const cancelPolicy = booking
-    ? getCustomerCancelPolicy({
-        startAt: booking.date,
-        status: bookingLifecycleStatus(booking),
-      })
-    : null;
+  const cancelPolicy = useLiveCustomerCancelPolicy(booking ?? null);
 
-  const showCancel =
-    booking &&
-    (booking.status === "pending" || booking.status === "accepted") &&
-    cancelPolicy?.allowed;
+  const showCancel = booking?.status === "pending" && cancelPolicy.allowed;
 
   const onCancel = () => {
     if (!cancelPolicy?.allowed) {
@@ -147,6 +139,8 @@ function BookingProcessPage({ wide }: { wide?: boolean }) {
 
           <BookingOrderNumberBanner orderNumber={booking.orderNumber} />
 
+          <CustomerCancelNotice booking={booking} />
+
           <BookingWaitCountdown booking={booking} />
           <BookingServiceTimer booking={booking} />
 
@@ -208,11 +202,9 @@ function BookingProcessPage({ wide }: { wide?: boolean }) {
 
             {booking.status !== "done" && booking.status !== "cancelled" ? (
               <>
-                {cancelPolicy && !cancelPolicy.allowed && booking.status === "accepted" ? (
-                  <p className="text-center text-xs text-muted-foreground">{cancelPolicy.reason}</p>
-                ) : cancelPolicy?.allowed && cancelPolicy.minutesUntilCutoff ? (
-                  <p className="text-center text-xs text-muted-foreground">
-                    Bekor qilish: yana {cancelPolicy.minutesUntilCutoff} daqiqa mavjud
+                {showCancel && cancelPolicy.secondsUntilCutoff != null ? (
+                  <p className="text-center text-xs font-medium text-foreground">
+                    Bekor qilish: {formatCancelCountdown(cancelPolicy.secondsUntilCutoff)}
                   </p>
                 ) : null}
                 <div className="flex gap-2">

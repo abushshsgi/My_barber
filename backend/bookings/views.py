@@ -385,21 +385,12 @@ class BookingViewSet(viewsets.ModelViewSet):
             return Response(status=403)
         if booking.status in (Booking.Status.COMPLETED, Booking.Status.CANCELLED, Booking.Status.REJECTED):
             return Response({"detail": "Bu bronni bekor qilib bo‘lmaydi."}, status=400)
-        from datetime import timedelta
+        if is_customer:
+            from bookings.policy import customer_cancel_blocked_reason
 
-        BOOKING_CANCEL_CUTOFF_MINUTES = 60
-        if is_customer and booking.status == Booking.Status.ACCEPTED:
-            cutoff = booking.start_at - timedelta(minutes=BOOKING_CANCEL_CUTOFF_MINUTES)
-            if timezone.now() >= cutoff:
-                return Response(
-                    {
-                        "detail": (
-                            f"Bron boshlanishidan {BOOKING_CANCEL_CUTOFF_MINUTES} daqiqa "
-                            "oldin bekor qilish mumkin emas."
-                        ),
-                    },
-                    status=400,
-                )
+            blocked = customer_cancel_blocked_reason(booking)
+            if blocked:
+                return Response({"detail": blocked}, status=400)
         from bookings.payments import maybe_refund_booking
 
         maybe_refund_booking(booking)

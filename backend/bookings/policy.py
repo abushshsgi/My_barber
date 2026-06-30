@@ -1,0 +1,39 @@
+"""Bron bekor qilish qoidalari."""
+
+from __future__ import annotations
+
+from datetime import timedelta
+
+from django.utils import timezone
+
+BOOKING_CANCEL_WINDOW_MINUTES = 5
+
+
+def customer_cancel_blocked_reason(booking, *, now=None) -> str | None:
+    """
+    Mijoz bekor qila olmasa sabab qaytaradi, aks holda None.
+    Faqat pending + buyurtmadan keyin 5 daqiqa ichida ruxsat.
+    """
+    from bookings.models import Booking
+
+    now = now or timezone.now()
+
+    if booking.status != Booking.Status.PENDING:
+        if booking.status == Booking.Status.ACCEPTED:
+            return (
+                "Bron tasdiqlandi — endi bekor qilib bo'lmaydi. "
+                "Savollar bo'lsa chat orqali yozing."
+            )
+        return "Bu bronni bekor qilib bo'lmaydi."
+
+    if not booking.created_at:
+        return "Bekor qilish muddati tugadi."
+
+    cutoff = booking.created_at + timedelta(minutes=BOOKING_CANCEL_WINDOW_MINUTES)
+    if now >= cutoff:
+        return (
+            f"Buyurtmadan keyin faqat {BOOKING_CANCEL_WINDOW_MINUTES} daqiqa ichida "
+            "bekor qilish mumkin. Sartarosh javobini kuting yoki chat orqali yozing."
+        )
+
+    return None

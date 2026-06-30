@@ -3,7 +3,7 @@ import { CalendarPlus, ChevronRight, Star } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { getCustomerCancelPolicy } from "@mybarber/shared/booking-lifecycle";
+import { getCustomerCancelPolicy, formatCancelCountdown } from "@mybarber/shared/booking-lifecycle";
 import { BookingChatButton } from "@/components/bookings/BookingChatButton";
 import { WriteReviewDialog } from "@/components/bookings/WriteReviewDialog";
 import { PageSpotlightEmpty } from "@/components/ui/PageSpotlightEmpty";
@@ -53,11 +53,10 @@ export function BookingCard({ booking: b, focused }: { booking: BookingItem; foc
   const timeStr = d.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
 
   const cancelPolicy = getCustomerCancelPolicy({
-    startAt: b.date,
+    createdAt: b.createdAt ?? b.date,
     status: bookingLifecycleStatus(b),
   });
-  const canCancel =
-    (b.status === "pending" || b.status === "accepted") && cancelPolicy.allowed;
+  const canCancel = b.status === "pending" && cancelPolicy.allowed;
 
   const onCancel = () => {
     if (!cancelPolicy.allowed) {
@@ -131,6 +130,14 @@ export function BookingCard({ booking: b, focused }: { booking: BookingItem; foc
               <p className="mt-2 font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                 {b.orderNumber}
               </p>
+            ) : null}
+
+            {b.status === "pending" && cancelPolicy.allowed && cancelPolicy.secondsUntilCutoff != null ? (
+              <p className="mt-3 text-xs font-semibold text-foreground">
+                Bekor qilish: {formatCancelCountdown(cancelPolicy.secondsUntilCutoff)}
+              </p>
+            ) : b.status === "accepted" ? (
+              <p className="mt-3 text-xs text-muted-foreground">Tasdiqlandi — bekor qilish yopiq</p>
             ) : null}
 
             {b.status === "in_progress" ? (

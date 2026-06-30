@@ -50,6 +50,7 @@ export function mapBooking(api: ApiBooking): BookingItem {
     paymentMethod: api.payment_method === "online" ? "online" : "cash",
     paymentStatus: api.payment_status,
     paidAt: api.paid_at ?? undefined,
+    createdAt: api.created_at,
   };
 }
 

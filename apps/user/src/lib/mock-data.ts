@@ -114,6 +114,7 @@ export interface BookingItem {
   paymentMethod?: "cash" | "online";
   paymentStatus?: string;
   paidAt?: string;
+  createdAt?: string;
 }
 
 export interface ChatThread {

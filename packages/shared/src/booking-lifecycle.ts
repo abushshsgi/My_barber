@@ -379,56 +379,83 @@ export function isCompleteCheckInScannerInput(raw: string): boolean {
   return false;
 }
 
-export const BOOKING_CANCEL_CUTOFF_MINUTES = 60;
+export const BOOKING_CANCEL_WINDOW_MINUTES = 5;
+export const BOOKING_CANCEL_WINDOW_MS = BOOKING_CANCEL_WINDOW_MINUTES * 60_000;
+
+/** @deprecated BOOKING_CANCEL_WINDOW_MINUTES ishlating */
+export const BOOKING_CANCEL_CUTOFF_MINUTES = BOOKING_CANCEL_WINDOW_MINUTES;
 
 export type CustomerCancelPolicy = {
   allowed: boolean;
   reason?: string;
-  /** Bekor qilish oynasi yopilishigacha qolgan daqiqalar (faqat allowed=true). */
+  /** Bekor qilish oynasi yopilishigacha qolgan soniyalar (faqat allowed=true). */
+  secondsUntilCutoff?: number;
+  /** @deprecated secondsUntilCutoff ishlating */
   minutesUntilCutoff?: number;
 };
 
+export function formatCancelCountdown(totalSeconds: number): string {
+  const safe = Math.max(0, totalSeconds);
+  const m = Math.floor(safe / 60);
+  const s = safe % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
 /**
  * Mijoz bronni qachon bekor qila olishini hisoblaydi.
- * Tasdiqlangan bronlar uchun boshlanishdan 60 daqiqa oldin cheklov.
+ * Faqat pending va buyurtmadan keyin 5 daqiqa ichida.
+ * Sartarosh qabul qilgach — bekor qilish mumkin emas.
  */
 export function getCustomerCancelPolicy(opts: {
-  startAt: string;
+  createdAt: string;
   status: BookingLifecycleStatus;
   now?: number;
 }): CustomerCancelPolicy {
-  const { status, startAt } = opts;
+  const { status, createdAt } = opts;
   const now = opts.now ?? Date.now();
 
   if (
     status === "completed" ||
     status === "cancelled" ||
-    status === "rejected" ||
-    status === "in_progress"
+    status === "rejected"
   ) {
     return { allowed: false, reason: "Bu bronni bekor qilib bo'lmaydi." };
   }
 
-  if (status === "pending") {
-    return { allowed: true };
+  if (status === "accepted") {
+    return {
+      allowed: false,
+      reason:
+        "Bron tasdiqlandi — endi bekor qilib bo'lmaydi. Savollar bo'lsa sartarosh bilan chatda yozing.",
+    };
   }
 
-  const startMs = new Date(startAt).getTime();
-  if (!Number.isFinite(startMs)) {
-    return { allowed: true };
+  if (status === "in_progress") {
+    return { allowed: false, reason: "Xizmat davom etmoqda — bekor qilish mumkin emas." };
   }
 
-  const cutoffMs = startMs - BOOKING_CANCEL_CUTOFF_MINUTES * 60_000;
+  const createdMs = new Date(createdAt).getTime();
+  if (!Number.isFinite(createdMs)) {
+    return {
+      allowed: false,
+      reason: `Bekor qilish muddati tugadi (${BOOKING_CANCEL_WINDOW_MINUTES} daqiqa).`,
+    };
+  }
+
+  const cutoffMs = createdMs + BOOKING_CANCEL_WINDOW_MS;
+  const secondsLeft = Math.ceil((cutoffMs - now) / 1000);
+
   if (now >= cutoffMs) {
     return {
       allowed: false,
-      reason: `Bron boshlanishidan ${BOOKING_CANCEL_CUTOFF_MINUTES} daqiqadan kam vaqt qoldi.`,
+      reason: `Bekor qilish muddati tugadi (${BOOKING_CANCEL_WINDOW_MINUTES} daqiqa). Sartarosh javobini kuting yoki chat orqali yozing.`,
     };
   }
 
   return {
     allowed: true,
-    minutesUntilCutoff: Math.max(1, Math.ceil((cutoffMs - now) / 60_000)),
+    secondsUntilCutoff: Math.max(0, secondsLeft),
+    minutesUntilCutoff: Math.max(1, Math.ceil(secondsLeft / 60)),
   };
 }
 

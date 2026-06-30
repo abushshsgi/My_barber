@@ -155,7 +155,9 @@ function useBookingSalonState(
         payment_method: paymentMethod,
         notes: notes.trim() || undefined,
       });
-      toast.success("Buyurtma yuborildi!", { description: `${salon.name} · ${slot}` });
+      toast.success("Buyurtma yuborildi!", {
+        description: `${salon.name} · ${slot}. Bekor qilish uchun 5 daqiqa — sartarosh qabul qilgach yopiladi.`,
+      });
       setTimeout(
         () =>
           router.navigate({
