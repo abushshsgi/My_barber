@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   CheckCircle2,
   Loader2,
-  Phone,
   Play,
   ScanLine,
   UserCheck,
@@ -17,8 +16,8 @@ import { CheckInScanner } from "@/components/bookings/CheckInScanner";
 import { CompleteBookingDialog } from "@/components/bookings/CompleteBookingDialog";
 import {
   BookingAddonHint,
+  BookingContactRow,
   BookingDetailSummary,
-  BookingLocationCard,
   BookingOrderNumberBanner,
   BookingPaymentCard,
   BookingProcessSection,
@@ -108,6 +107,11 @@ function BarberBookingProcessPage() {
             <div className="space-y-4">
               <BookingDetailSummary booking={booking} />
 
+              <BookingContactRow
+                phone={booking.client_phone}
+                onChat={() => void navigate({ to: "/barber/chat" })}
+              />
+
               <BookingProcessSection status={booking.status} checkedIn={!!booking.checked_in_at} />
 
               {booking.status === "accepted" && !booking.checked_in_at ? (
@@ -119,21 +123,6 @@ function BarberBookingProcessPage() {
 
               {booking.status === "in_progress" ? (
                 <BookingAddonHint onChat={() => void navigate({ to: "/barber/chat" })} />
-              ) : null}
-
-              <BookingLocationCard booking={booking} />
-
-              {booking.client_phone ? (
-                <motion.a
-                  href={`tel:${booking.client_phone}`}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.18 }}
-                  className="flex items-center justify-center gap-2 rounded-2xl bg-card py-3.5 text-sm font-medium shadow-card transition-colors hover:bg-muted"
-                >
-                  <Phone className="size-4" />
-                  {booking.client_phone}
-                </motion.a>
               ) : null}
             </div>
 
@@ -267,10 +256,10 @@ function BarberManualCheckInCard({ booking: _booking }: { booking: Booking }) {
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.14, duration: 0.35 }}
-      className="rounded-2xl bg-gradient-to-br from-sky-500/10 to-card p-4 shadow-card sm:p-5"
+      className="rounded-2xl bg-card p-4 shadow-card sm:p-5"
     >
       <h2 className="mb-1 flex items-center gap-2 font-heading text-base font-semibold">
-        <span className="grid size-8 place-items-center rounded-xl bg-sky-500/15 text-sky-700 dark:text-sky-300">
+        <span className="grid size-8 place-items-center rounded-lg bg-muted text-foreground">
           <ScanLine className="size-4" />
         </span>
         Mijozni qabul qilish

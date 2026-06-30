@@ -9,15 +9,16 @@ import {
   Clock3,
   Copy,
   History,
+  Image as ImageIcon,
   MapPin,
   MessageSquare,
   Navigation,
+  Phone,
   Receipt,
   Scissors,
   Sparkles,
   Timer,
   Trophy,
-  UserCheck,
   Wallet,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -28,12 +29,12 @@ import {
   formatHistoryWhen,
   paymentStatusLabel,
   type BookingLifecycleStatus,
-  type LifecycleStepId,
 } from "@mybarber/shared/booking-lifecycle";
 import type { Booking } from "@/components/barber/BarberContext";
 import { formatUZS } from "@/components/barber/BarberContext";
 import { StatusPill, UserAvatar } from "@/components/barber/primitives";
-import { paymentBadgeClass, paymentLabel } from "@/lib/payment-label";
+import { paymentLabel } from "@/lib/payment-label";
+import { formatUzPhoneDisplay, formatUzPhoneE164 } from "@/lib/phone";
 import { cn } from "@/lib/utils";
 import { BookingRouteMap } from "@/components/bookings/BookingRouteMap";
 
@@ -46,52 +47,32 @@ const stagger = {
   animate: { transition: { staggerChildren: 0.07 } },
 };
 
-const STEP_ICONS: Record<LifecycleStepId, typeof ClipboardList> = {
-  requested: ClipboardList,
-  confirmed: BadgeCheck,
-  checked_in: UserCheck,
-  in_service: Scissors,
-  done: Trophy,
-};
-
 const STATUS_HERO: Record<
   Booking["status"],
-  { icon: typeof Timer; gradient: string; ring: string; label: string }
+  { icon: typeof Timer; label: string }
 > = {
   pending: {
     icon: CalendarClock,
-    gradient: "from-amber-500/15 via-amber-400/5 to-card",
-    ring: "ring-amber-400/30",
     label: "Yangi so'rov — javob bering",
   },
   accepted: {
     icon: BadgeCheck,
-    gradient: "from-sky-500/15 via-sky-400/5 to-card",
-    ring: "ring-sky-400/30",
     label: "Tasdiqlangan — mijozni kuting",
   },
   in_progress: {
     icon: Scissors,
-    gradient: "from-emerald-500/15 via-emerald-400/5 to-card",
-    ring: "ring-emerald-400/40",
     label: "Xizmat davom etmoqda",
   },
   completed: {
     icon: Trophy,
-    gradient: "from-violet-500/12 via-violet-400/5 to-card",
-    ring: "ring-violet-400/25",
     label: "Xizmat yakunlandi",
   },
   cancelled: {
     icon: ClipboardList,
-    gradient: "from-muted/80 to-card",
-    ring: "ring-border",
     label: "Bron bekor qilindi",
   },
   rejected: {
     icon: ClipboardList,
-    gradient: "from-destructive/10 to-card",
-    ring: "ring-destructive/20",
     label: "Bron rad etildi",
   },
 };
@@ -157,38 +138,21 @@ export function useLiveBookingTimer(booking: Pick<Booking, "status" | "started_a
 export function BookingStatusHero({ booking }: { booking: Booking }) {
   const hero = STATUS_HERO[booking.status];
   const Icon = hero.icon;
-  const pulse = booking.status === "pending" || booking.status === "in_progress";
 
   return (
     <motion.div
       {...fadeUp}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className={cn(
-        "relative overflow-hidden rounded-2xl bg-gradient-to-br p-4 shadow-card sm:p-5",
-        hero.gradient,
-      )}
+      className="rounded-2xl bg-card p-4 shadow-card sm:p-5"
     >
-      {pulse ? (
-        <span className="pointer-events-none absolute -right-6 -top-6 size-32 rounded-full bg-current opacity-[0.04] animate-pulse" />
-      ) : null}
-      <div className="relative flex items-start gap-3.5">
-        <div className="relative shrink-0">
-          {pulse ? (
-            <span className="absolute inset-0 animate-ping rounded-2xl bg-foreground/10" />
-          ) : null}
-          <span className="relative grid size-11 place-items-center rounded-2xl bg-background/80 shadow-sm backdrop-blur-sm">
-            <Icon className="size-6" />
-          </span>
-        </div>
+      <div className="flex items-start gap-3.5">
+        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-muted text-foreground">
+          <Icon className="size-5" />
+        </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <StatusPill status={booking.status} />
-            <span
-              className={cn(
-                "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold",
-                paymentBadgeClass(booking.payment_method),
-              )}
-            >
+            <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
               <Wallet className="size-3" />
               {paymentLabel(booking.payment_method)}
             </span>
@@ -221,7 +185,6 @@ export function BookingLifecycleTimeline({
       animate="animate"
     >
       {steps.map((step, i) => {
-        const StepIcon = STEP_ICONS[step.id];
         const lineDone = step.state === "done";
         const nextStep = steps[i + 1];
         const nextLineActive =
@@ -244,31 +207,23 @@ export function BookingLifecycleTimeline({
               ) : (
                 <span className="flex-1" />
               )}
-              <motion.span
-                layout
+              <span
                 className={cn(
                   "mx-1 flex size-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
                   step.state === "done" && "border-foreground bg-foreground text-background",
-                  step.state === "current" &&
-                    "border-foreground bg-background text-foreground shadow-sm",
+                  step.state === "current" && "border-foreground bg-foreground text-background",
                   step.state === "upcoming" && "border-border bg-muted text-muted-foreground",
                   step.state === "skipped" && "border-transparent bg-transparent opacity-0",
                 )}
-                animate={step.state === "current" ? { scale: [1, 1.05, 1] } : { scale: 1 }}
-                transition={
-                  step.state === "current"
-                    ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
-                    : { duration: 0.2 }
-                }
               >
                 {step.state === "done" ? (
                   <Check className="size-3.5" strokeWidth={2.5} />
                 ) : step.state === "current" ? (
-                  <StepIcon className="size-3.5" />
+                  <span className="size-2 rounded-full bg-background" />
                 ) : step.state === "upcoming" ? (
                   <Circle className="size-1.5 fill-current" />
                 ) : null}
-              </motion.span>
+              </span>
               {i < steps.length - 1 ? (
                 <span
                   className={cn(
@@ -372,7 +327,9 @@ export function BookingDetailSummary({ booking }: { booking: Booking }) {
             <StatusPill status={booking.status} className="shrink-0" />
           </div>
           {booking.client_phone ? (
-            <p className="mt-0.5 text-sm text-muted-foreground tabular-nums">{booking.client_phone}</p>
+            <p className="mt-0.5 text-sm text-muted-foreground tabular-nums">
+              {formatUzPhoneDisplay(booking.client_phone)}
+            </p>
           ) : null}
           {booking.salon_name ? (
             <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground truncate">
@@ -398,12 +355,7 @@ export function BookingDetailSummary({ booking }: { booking: Booking }) {
         {booking.payment_method ? (
           <>
             <span className="text-muted-foreground">·</span>
-            <span
-              className={cn(
-                "inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                paymentBadgeClass(booking.payment_method),
-              )}
-            >
+            <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground">
               {paymentLabel(booking.payment_method)}
             </span>
           </>
@@ -432,6 +384,55 @@ export function BookingDetailSummary({ booking }: { booking: Booking }) {
             ))}
           </ul>
         )}
+      </div>
+    </ProcessCard>
+  );
+}
+
+export function BookingContactRow({
+  phone,
+  onChat,
+}: {
+  phone?: string | null;
+  onChat?: () => void;
+}) {
+  if (!phone) return null;
+  const e164 = formatUzPhoneE164(phone);
+  const actions = [
+    { icon: Phone, label: "Qo'ng'iroq", href: `tel:${e164}` },
+    { icon: MessageSquare, label: "SMS", href: `sms:${e164}` },
+  ];
+  return (
+    <ProcessCard delay={0.06} className="!p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Telefon
+          </p>
+          <p className="mt-0.5 text-sm font-medium tabular-nums">{formatUzPhoneDisplay(phone)}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {actions.map((a) => (
+            <a
+              key={a.label}
+              href={a.href}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted/70"
+            >
+              <a.icon className="size-3.5" />
+              {a.label}
+            </a>
+          ))}
+          {onChat ? (
+            <button
+              type="button"
+              onClick={onChat}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-foreground px-3 py-2 text-xs font-medium text-background transition-opacity hover:opacity-90"
+            >
+              <MessageSquare className="size-3.5" />
+              Chat
+            </button>
+          ) : null}
+        </div>
       </div>
     </ProcessCard>
   );
@@ -581,7 +582,7 @@ export function BookingOrderNumberBanner({ orderNumber }: { orderNumber?: string
           className={cn(
             "inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
             copied
-              ? "bg-emerald-50 text-emerald-700"
+              ? "bg-foreground text-background"
               : "bg-muted/50 hover:bg-muted",
           )}
         >
@@ -612,7 +613,7 @@ export function BookingResultPreview({ url }: { url?: string | null }) {
   if (!url) return null;
   return (
     <ProcessCard delay={0.14} className="overflow-hidden">
-      <SectionTitle icon={Sparkles}>Natija</SectionTitle>
+      <SectionTitle icon={ImageIcon}>Natija</SectionTitle>
       <motion.img
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -626,7 +627,7 @@ export function BookingResultPreview({ url }: { url?: string | null }) {
 
 export function BookingAddonHint({ onChat }: { onChat?: () => void }) {
   return (
-    <ProcessCard delay={0.13} className="border-dashed bg-muted/10">
+    <ProcessCard delay={0.13} className="bg-muted/20">
       <p className="flex items-center gap-2 text-sm font-medium">
         <MessageSquare className="size-4 text-muted-foreground" />
         Qo'shimcha xizmat kerakmi?
