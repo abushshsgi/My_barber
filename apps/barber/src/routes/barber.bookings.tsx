@@ -1,18 +1,17 @@
 import { createFileRoute, Link, Outlet, useMatch } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
-  CalendarDays,
-  CalendarX,
+  Calendar,
+  Circle,
   Clock,
-  Flame,
+  Inbox,
   Loader2,
   Search,
-  Sparkles,
 } from "lucide-react";
 import { formatUZS, type Booking } from "@/components/barber/BarberContext";
 import { StatusPill, UserAvatar } from "@/components/barber/primitives";
 import { cn } from "@/lib/utils";
-import { paymentBadgeClass, paymentLabel } from "@/lib/payment-label";
+import { paymentLabel } from "@/lib/payment-label";
 import { useBarberBookingsQuery } from "@/hooks/use-barber-queries";
 
 export const Route = createFileRoute("/barber/bookings")({
@@ -82,7 +81,6 @@ function BookingsList() {
 
   return (
     <div className="mx-auto max-w-[1300px] space-y-5 p-4 sm:space-y-6 sm:p-6 lg:p-8">
-      {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
@@ -106,78 +104,67 @@ function BookingsList() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Mijoz yoki xizmat bo'yicha qidirish"
-              className="h-11 w-full rounded-2xl border border-border bg-card pl-10 pr-4 text-sm shadow-card outline-none transition-shadow focus:ring-2 focus:ring-ring/40"
+              className="h-11 w-full rounded-xl border border-border bg-background pl-10 pr-4 text-sm outline-none transition-colors focus:border-foreground/40"
             />
           </div>
         </div>
       </div>
 
-      {/* Stats bar */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
-        <StatChip
-          icon={Sparkles}
-          label="Yangi so'rovlar"
-          value={counts.pending}
-          accent={counts.pending > 0}
-        />
-        <StatChip icon={Flame} label="Hozir kresloda" value={counts.in_progress} live />
-        <StatChip icon={CalendarDays} label="Bugungi bronlar" value={counts.today} />
+        <StatChip icon={Inbox} label="Yangi so'rovlar" value={counts.pending} highlight={counts.pending > 0} />
+        <StatChip icon={Circle} label="Hozir kresloda" value={counts.in_progress} live />
+        <StatChip icon={Calendar} label="Bugungi bronlar" value={counts.today} />
       </div>
 
-      {/* Main content */}
       <div className="space-y-4">
-        {/* Status tabs */}
-          <div className="flex flex-wrap gap-2 lg:gap-1.5">
-            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0">
-              {TABS.map((t) => {
-                const active = status === t.id;
-                const count = counts[t.id];
-                const isCancel = t.id === "cancelled" || t.id === "rejected";
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setStatus(t.id)}
+        <div className="flex flex-wrap gap-2 lg:gap-1.5">
+          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0">
+            {TABS.map((t) => {
+              const active = status === t.id;
+              const count = counts[t.id];
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setStatus(t.id)}
+                  className={cn(
+                    "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm transition-colors",
+                    active
+                      ? "border-foreground bg-foreground font-medium text-background"
+                      : "border-border bg-card text-muted-foreground hover:border-foreground/30 hover:text-foreground",
+                  )}
+                >
+                  {t.label}
+                  <span
                     className={cn(
-                      "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm transition-all duration-200",
-                      active
-                        ? "border-foreground bg-foreground font-medium text-background shadow-sm"
-                        : "border-border bg-card text-muted-foreground hover:text-foreground",
-                      !active && isCancel && "text-destructive/80 hover:text-destructive",
+                      "rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
+                      active ? "bg-background/20 text-background" : "bg-muted text-muted-foreground",
                     )}
                   >
-                    {t.label}
-                    <span
-                      className={cn(
-                        "rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
-                        active ? "bg-background/20 text-background" : "bg-muted text-muted-foreground",
-                      )}
-                    >
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-
-          {/* Content */}
-          {isLoading ? (
-            <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <BookingCardSkeleton key={i} />
-              ))}
-            </div>
-          ) : filtered.length === 0 ? (
-            <EmptyState status={status} hasQuery={query.trim().length > 0} />
-          ) : (
-            <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
-              {filtered.map((b) => (
-                <BookingCard key={b.id} booking={b} />
-              ))}
-            </div>
-          )}
         </div>
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <BookingCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <EmptyState status={status} hasQuery={query.trim().length > 0} />
+        ) : (
+          <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
+            {filtered.map((b) => (
+              <BookingCard key={b.id} booking={b} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -186,50 +173,44 @@ function StatChip({
   icon: Icon,
   label,
   value,
-  accent,
+  highlight,
   live,
 }: {
-  icon: typeof Clock;
+  icon: typeof Inbox;
   label: string;
   value: number;
-  accent?: boolean;
+  highlight?: boolean;
   live?: boolean;
 }) {
   const isLive = live && value > 0;
+  const isHighlight = highlight && value > 0;
   return (
     <div
       className={cn(
-        "flex items-center gap-2.5 rounded-xl px-3 py-2.5 shadow-card transition-colors",
-        isLive
-          ? "bg-[#2B59FF] text-white"
-          : accent
-            ? "bg-amber-500/10"
-            : "bg-card",
+        "flex items-center gap-2.5 rounded-xl border px-3 py-2.5 transition-colors",
+        isHighlight || isLive
+          ? "border-foreground bg-foreground text-background"
+          : "border-border bg-card text-foreground",
       )}
     >
       <Icon
-        className={cn("size-4 shrink-0", isLive ? "text-white/90" : "text-muted-foreground")}
+        className={cn(
+          "size-4 shrink-0 stroke-[1.5]",
+          isHighlight || isLive ? "text-background/80" : "text-muted-foreground",
+        )}
       />
       <p
         className={cn(
           "min-w-0 flex-1 truncate text-xs font-medium",
-          isLive ? "text-white/80" : "text-muted-foreground",
+          isHighlight || isLive ? "text-background/75" : "text-muted-foreground",
         )}
       >
         {label}
       </p>
-      <p
-        className={cn(
-          "font-heading text-xl font-semibold tabular-nums tracking-tight",
-          isLive ? "text-white" : "text-foreground",
-        )}
-      >
-        {value}
-      </p>
+      <p className="font-heading text-xl font-semibold tabular-nums tracking-tight">{value}</p>
       {isLive ? (
-        <span className="relative flex size-2 shrink-0">
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-white/70 opacity-75" />
-          <span className="relative inline-flex size-2 rounded-full bg-white" />
+        <span className="relative flex size-1.5 shrink-0">
+          <span className="relative inline-flex size-1.5 rounded-full bg-background" />
         </span>
       ) : null}
     </div>
@@ -238,9 +219,9 @@ function StatChip({
 
 function BookingCardSkeleton() {
   return (
-    <div className="animate-pulse rounded-2xl bg-card p-3.5 shadow-card sm:p-4">
+    <div className="animate-pulse rounded-xl border border-border bg-card p-3.5 sm:p-4">
       <div className="flex items-center gap-3">
-        <div className="size-10 shrink-0 rounded-xl bg-muted" />
+        <div className="size-10 shrink-0 rounded-lg bg-muted" />
         <div className="flex-1 space-y-2">
           <div className="h-4 w-2/3 rounded-md bg-muted" />
           <div className="h-3 w-1/2 rounded-md bg-muted" />
@@ -260,9 +241,9 @@ function EmptyState({ status, hasQuery }: { status: Status | "all"; hasQuery: bo
       : `"${tabLabel}" holatidagi bronlar hozircha yo'q.`;
 
   return (
-    <div className="rounded-2xl bg-card px-6 py-14 text-center shadow-card">
-      <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-muted">
-        <CalendarX className="size-6 text-muted-foreground" />
+    <div className="rounded-xl border border-border bg-card px-6 py-14 text-center">
+      <div className="mx-auto mb-4 flex size-11 items-center justify-center rounded-lg border border-border bg-muted/50">
+        <Calendar className="size-5 stroke-[1.5] text-muted-foreground" />
       </div>
       <h2 className="font-heading text-lg font-semibold text-foreground">Bronlar topilmadi</h2>
       <p className="mx-auto mt-1.5 max-w-sm text-sm text-muted-foreground">{description}</p>
@@ -276,42 +257,37 @@ function BookingCard({ booking: b }: { booking: Booking }) {
       to="/barber/bookings/$bookingId"
       params={{ bookingId: b.id }}
       className={cn(
-        "group flex flex-col overflow-hidden rounded-2xl bg-card shadow-card transition-all duration-200",
-        "[@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:shadow-lg",
-        b.status === "pending" && "bg-amber-500/[0.07]",
-        b.status === "in_progress" && "bg-emerald-500/[0.06]",
+        "group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-colors",
+        "[@media(hover:hover)]:hover:border-foreground/25 [@media(hover:hover)]:hover:bg-muted/30",
+        b.status === "pending" && "border-foreground/20",
+        b.status === "in_progress" && "border-foreground/35",
       )}
     >
       <div className="flex items-center gap-3 p-3.5 sm:p-4">
         <UserAvatar
           src={b.client_avatar}
           name={b.client}
-          className="size-11 shrink-0 rounded-xl"
+          className="size-11 shrink-0 rounded-lg"
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <p className="truncate font-heading text-base font-semibold text-foreground">
               {b.client}
             </p>
-            <StatusPill status={b.status} className="shrink-0" />
+            <StatusPill status={b.status} variant="mono" className="shrink-0" />
           </div>
           <p className="mt-0.5 truncate text-sm text-muted-foreground">{b.service}</p>
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="flex items-center gap-1 text-xs font-medium text-foreground">
-              <CalendarDays className="size-3.5 text-muted-foreground" />
+            <span className="flex items-center gap-1 text-xs font-medium text-foreground/80">
+              <Calendar className="size-3.5 stroke-[1.5] text-muted-foreground" />
               {b.date} · {b.time}
             </span>
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock className="size-3" />
+              <Clock className="size-3 stroke-[1.5]" />
               {b.duration_min} daq
             </span>
             {b.payment_method ? (
-              <span
-                className={cn(
-                  "inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                  paymentBadgeClass(b.payment_method),
-                )}
-              >
+              <span className="inline-flex items-center rounded-md border border-border bg-muted/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-foreground/65">
                 {paymentLabel(b.payment_method)}
               </span>
             ) : null}
@@ -323,11 +299,8 @@ function BookingCard({ booking: b }: { booking: Booking }) {
       </div>
 
       {b.status === "in_progress" ? (
-        <div className="flex items-center gap-2 bg-emerald-500/10 px-3.5 py-2 text-xs font-medium text-emerald-700 dark:text-emerald-400 sm:px-4">
-          <span className="relative flex size-2 shrink-0">
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-            <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
-          </span>
+        <div className="flex items-center gap-2 border-t border-border bg-muted/40 px-3.5 py-2 text-xs font-medium text-foreground/80 sm:px-4">
+          <span className="inline-flex size-1.5 shrink-0 rounded-full bg-foreground" />
           Xizmat davom etmoqda
         </div>
       ) : null}

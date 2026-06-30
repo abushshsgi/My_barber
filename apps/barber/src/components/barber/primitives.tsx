@@ -39,12 +39,18 @@ export function StatusPill({
   status,
   className,
   label,
+  variant = "default",
 }: {
   status: BarberStatus;
   className?: string;
   label?: string;
+  variant?: "default" | "mono";
 }) {
-  const v = STATUS_MAP[status];
+  const monoMap: Partial<Record<BarberStatus, { label: string; className: string }>> = {
+    cancelled: { label: "Bekor qilindi", className: "bg-muted text-foreground/60 border-border" },
+    rejected: { label: "Rad etildi", className: "bg-muted text-foreground/60 border-border" },
+  };
+  const v = variant === "mono" && monoMap[status] ? monoMap[status] : STATUS_MAP[status];
   return (
     <span
       className={cn(
