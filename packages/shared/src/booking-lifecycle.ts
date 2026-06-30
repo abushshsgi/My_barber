@@ -379,6 +379,59 @@ export function isCompleteCheckInScannerInput(raw: string): boolean {
   return false;
 }
 
+export const BOOKING_CANCEL_CUTOFF_MINUTES = 60;
+
+export type CustomerCancelPolicy = {
+  allowed: boolean;
+  reason?: string;
+  /** Bekor qilish oynasi yopilishigacha qolgan daqiqalar (faqat allowed=true). */
+  minutesUntilCutoff?: number;
+};
+
+/**
+ * Mijoz bronni qachon bekor qila olishini hisoblaydi.
+ * Tasdiqlangan bronlar uchun boshlanishdan 60 daqiqa oldin cheklov.
+ */
+export function getCustomerCancelPolicy(opts: {
+  startAt: string;
+  status: BookingLifecycleStatus;
+  now?: number;
+}): CustomerCancelPolicy {
+  const { status, startAt } = opts;
+  const now = opts.now ?? Date.now();
+
+  if (
+    status === "completed" ||
+    status === "cancelled" ||
+    status === "rejected" ||
+    status === "in_progress"
+  ) {
+    return { allowed: false, reason: "Bu bronni bekor qilib bo'lmaydi." };
+  }
+
+  if (status === "pending") {
+    return { allowed: true };
+  }
+
+  const startMs = new Date(startAt).getTime();
+  if (!Number.isFinite(startMs)) {
+    return { allowed: true };
+  }
+
+  const cutoffMs = startMs - BOOKING_CANCEL_CUTOFF_MINUTES * 60_000;
+  if (now >= cutoffMs) {
+    return {
+      allowed: false,
+      reason: `Bron boshlanishidan ${BOOKING_CANCEL_CUTOFF_MINUTES} daqiqadan kam vaqt qoldi.`,
+    };
+  }
+
+  return {
+    allowed: true,
+    minutesUntilCutoff: Math.max(1, Math.ceil((cutoffMs - now) / 60_000)),
+  };
+}
+
 /** Buyurtma raqamini UI uchun normallashtiradi (katta harf, bo'shliqsiz). */
 export function formatOrderNumber(value: string | null | undefined): string {
   if (!value) return "";

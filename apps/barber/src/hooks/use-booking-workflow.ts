@@ -41,7 +41,9 @@ export function useBookingWorkflowActions(bookingId: string) {
               });
             }
           }
-          if (action === "cancel" || action === "reject") {
+          if (action === "reject") {
+            toast.success("Bron rad etildi");
+          } else if (action === "cancel") {
             toast.success("Bron bekor qilindi");
           }
           opts?.onSuccess?.();

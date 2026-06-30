@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { ArrowLeft, CheckCircle2, Loader2, Scissors } from "lucide-react";
+import { ArrowLeft, Loader2, Scissors } from "lucide-react";
 import { useState } from "react";
 import { CompleteBookingDialog } from "@/components/bookings/CompleteBookingDialog";
+import { BarberBookingActionBar } from "@/components/bookings/BarberBookingActionBar";
 import {
   BookingContactRow,
   BookingNotesCard,
@@ -118,20 +119,14 @@ function BarberBookingSessionPage() {
         </>
       ) : null}
 
-      {inProgress ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-          <div className="mx-auto flex max-w-[900px] items-center gap-2">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setCompleteOpen(true)}
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-foreground py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60"
-            >
-              {busy ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
-              Tugatish
-            </button>
-          </div>
-        </div>
+      {booking && inProgress ? (
+        <BarberBookingActionBar
+          booking={booking}
+          bookingId={bookingId}
+          busy={busy}
+          onComplete={() => setCompleteOpen(true)}
+          maxWidthClass="max-w-[900px]"
+        />
       ) : null}
     </div>
   );

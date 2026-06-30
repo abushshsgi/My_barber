@@ -3,11 +3,13 @@ import { CalendarPlus, ChevronRight, Star } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { getCustomerCancelPolicy } from "@mybarber/shared/booking-lifecycle";
 import { BookingChatButton } from "@/components/bookings/BookingChatButton";
 import { WriteReviewDialog } from "@/components/bookings/WriteReviewDialog";
 import { PageSpotlightEmpty } from "@/components/ui/PageSpotlightEmpty";
 import { useCancelBooking } from "@/hooks/use-bookings-api";
 import { formatPrice, type BookingItem } from "@/lib/mock-data";
+import { bookingLifecycleStatus } from "@/lib/bookings-utils";
 import { cn } from "@/lib/utils";
 
 export function BookingsEmptyState() {
@@ -50,7 +52,18 @@ export function BookingCard({ booking: b, focused }: { booking: BookingItem; foc
   const dateStr = d.toLocaleDateString("uz-UZ", { day: "numeric", month: "short" });
   const timeStr = d.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
 
+  const cancelPolicy = getCustomerCancelPolicy({
+    startAt: b.date,
+    status: bookingLifecycleStatus(b),
+  });
+  const canCancel =
+    (b.status === "pending" || b.status === "accepted") && cancelPolicy.allowed;
+
   const onCancel = () => {
+    if (!cancelPolicy.allowed) {
+      toast.error(cancelPolicy.reason ?? "Bekor qilish mumkin emas");
+      return;
+    }
     cancelMut.mutate(b.id, {
       onSuccess: () =>
         toast.success(t("bookings.cancelled", { defaultValue: "Bron bekor qilindi" })),
@@ -168,12 +181,12 @@ export function BookingCard({ booking: b, focused }: { booking: BookingItem; foc
         ) : (
           <BookingChatButton barberId={b.barberId} />
         )}
-        {b.status === "pending" || b.status === "accepted" ? (
+        {canCancel ? (
           <button
             type="button"
             disabled={cancelMut.isPending}
             onClick={onCancel}
-            className="flex-1 rounded-xl border-2 border-foreground bg-background py-2.5 text-xs font-bold disabled:opacity-60"
+            className="flex-1 rounded-xl border border-border bg-background py-2.5 text-xs font-semibold disabled:opacity-60"
           >
             {cancelMut.isPending ? "…" : t("common.cancel")}
           </button>

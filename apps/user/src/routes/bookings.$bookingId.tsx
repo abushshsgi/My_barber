@@ -3,7 +3,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { playBookingCompletionChime } from "@mybarber/shared/booking-lifecycle";
+import { playBookingCompletionChime, getCustomerCancelPolicy } from "@mybarber/shared/booking-lifecycle";
 import { PostCompletionSurvey } from "@/components/bookings/PostCompletionSurvey";
 import { BookingChatButton } from "@/components/bookings/BookingChatButton";
 import {
@@ -29,6 +29,7 @@ import {
   usePortfolioConsentMutation,
   usePortfolioPhotoMutation,
 } from "@/hooks/use-bookings-api";
+import { bookingLifecycleStatus } from "@/lib/bookings-utils";
 
 export const Route = createFileRoute("/bookings/$bookingId")({
   head: ({ params }) => ({
@@ -63,7 +64,23 @@ function BookingProcessPage({ wide }: { wide?: boolean }) {
     prevStatus.current = booking.status;
   }, [booking?.status, booking]);
 
+  const cancelPolicy = booking
+    ? getCustomerCancelPolicy({
+        startAt: booking.date,
+        status: bookingLifecycleStatus(booking),
+      })
+    : null;
+
+  const showCancel =
+    booking &&
+    (booking.status === "pending" || booking.status === "accepted") &&
+    cancelPolicy?.allowed;
+
   const onCancel = () => {
+    if (!cancelPolicy?.allowed) {
+      toast.error(cancelPolicy?.reason ?? "Bekor qilish mumkin emas");
+      return;
+    }
     cancelMut.mutate(bookingId, {
       onSuccess: () => toast.success(t("bookings.cancelled", { defaultValue: "Bron bekor qilindi" })),
       onError: (e) => toast.error(e.message),
@@ -180,31 +197,37 @@ function BookingProcessPage({ wide }: { wide?: boolean }) {
       ) : null}
 
       {booking ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 p-4 backdrop-blur">
-          <div className="mx-auto flex max-w-2xl gap-2">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 shadow-[0_-4px_24px_rgba(41,38,36,0.06)]">
+          <div className="mx-auto flex max-w-2xl flex-col gap-2 px-4">
             {booking.status === "in_progress" ? (
-              <div className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-600/10 py-3.5 text-sm font-bold text-emerald-800">
-                <span className="relative flex size-2">
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-                  <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
-                </span>
+              <div className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card py-3 text-sm font-medium text-foreground">
+                <span className="inline-flex size-1.5 rounded-full bg-foreground" />
                 Xizmat davom etmoqda
               </div>
             ) : null}
 
             {booking.status !== "done" && booking.status !== "cancelled" ? (
               <>
-                <BookingChatButton barberId={booking.barberId} className="flex-1 rounded-2xl py-3.5" />
-                {(booking.status === "pending" || booking.status === "accepted") && (
-                  <button
-                    type="button"
-                    disabled={cancelMut.isPending}
-                    onClick={onCancel}
-                    className="flex-1 rounded-2xl border-2 border-foreground py-3.5 text-sm font-bold disabled:opacity-60"
-                  >
-                    {cancelMut.isPending ? "…" : t("common.cancel")}
-                  </button>
-                )}
+                {cancelPolicy && !cancelPolicy.allowed && booking.status === "accepted" ? (
+                  <p className="text-center text-xs text-muted-foreground">{cancelPolicy.reason}</p>
+                ) : cancelPolicy?.allowed && cancelPolicy.minutesUntilCutoff ? (
+                  <p className="text-center text-xs text-muted-foreground">
+                    Bekor qilish: yana {cancelPolicy.minutesUntilCutoff} daqiqa mavjud
+                  </p>
+                ) : null}
+                <div className="flex gap-2">
+                  <BookingChatButton barberId={booking.barberId} className="flex-1 rounded-xl py-3.5" />
+                  {showCancel ? (
+                    <button
+                      type="button"
+                      disabled={cancelMut.isPending}
+                      onClick={onCancel}
+                      className="flex-1 rounded-xl border border-border bg-card py-3.5 text-sm font-semibold text-foreground transition-colors hover:border-foreground/30 disabled:opacity-60"
+                    >
+                      {cancelMut.isPending ? "…" : t("common.cancel")}
+                    </button>
+                  ) : null}
+                </div>
               </>
             ) : null}
           </div>

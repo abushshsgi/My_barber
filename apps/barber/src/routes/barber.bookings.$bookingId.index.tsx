@@ -1,15 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import {
-  ArrowLeft,
-  ArrowRight,
-  CheckCircle2,
-  Loader2,
-  Play,
-  ScanLine,
-  Scissors,
-  X,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, ScanLine, Scissors } from "lucide-react";
 import { useState } from "react";
+import { BarberBookingActionBar } from "@/components/bookings/BarberBookingActionBar";
 import { CompleteBookingDialog } from "@/components/bookings/CompleteBookingDialog";
 import {
   BookingAddonHint,
@@ -29,7 +21,6 @@ import { useBookingClientInfo } from "@/hooks/use-booking-client-info";
 import { useBookingLiveSync } from "@/hooks/use-booking-live-sync";
 import { useBookingWorkflowActions } from "@/hooks/use-booking-workflow";
 import { useBarberBookingQuery } from "@/hooks/use-barber-queries";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/barber/bookings/$bookingId/")({
   component: BarberBookingOverviewPage,
@@ -138,82 +129,15 @@ function BarberBookingOverviewPage() {
       ) : null}
 
       {booking && !["completed", "cancelled", "rejected"].includes(booking.status) ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-          <div className="mx-auto flex max-w-[1300px] flex-wrap items-center gap-2">
-            {busy ? (
-              <div className="flex flex-1 items-center justify-center gap-2 py-3 text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" />
-                Bajarilmoqda…
-              </div>
-            ) : (
-              <>
-                {booking.status === "pending" ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => runAction("reject")}
-                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border py-3 text-sm font-medium transition-colors hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <X className="size-4" />
-                      Rad etish
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => runAction("accept")}
-                      className="inline-flex flex-[2] items-center justify-center gap-1.5 rounded-xl bg-foreground py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90"
-                    >
-                      <CheckCircle2 className="size-4" />
-                      Qabul qilish
-                    </button>
-                  </>
-                ) : null}
-                {booking.status === "accepted" ? (
-                  booking.checked_in_at ? (
-                    <button
-                      type="button"
-                      onClick={() => runAction("start")}
-                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-foreground py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90"
-                    >
-                      <Play className="size-4" />
-                      Boshlash
-                    </button>
-                  ) : (
-                    <Link
-                      to="/barber/bookings/$bookingId/check-in"
-                      params={{ bookingId }}
-                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-foreground py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90"
-                    >
-                      <ScanLine className="size-4 shrink-0" />
-                      Mijozni qabul qilish
-                    </Link>
-                  )
-                ) : null}
-                {booking.status === "in_progress" ? (
-                  <button
-                    type="button"
-                    onClick={() => setCompleteOpen(true)}
-                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-foreground py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90"
-                  >
-                    <CheckCircle2 className="size-4" />
-                    Tugatish
-                  </button>
-                ) : null}
-                {(booking.status === "pending" || booking.status === "accepted") && (
-                  <button
-                    type="button"
-                    onClick={() => runAction("cancel")}
-                    className={cn(
-                      "inline-flex items-center justify-center rounded-xl border border-border px-4 py-3 text-sm font-medium transition-colors hover:bg-muted",
-                      booking.status === "accepted" && "flex-1",
-                    )}
-                  >
-                    Bekor
-                  </button>
-                )}
-              </>
-            )}
-          </div>
-        </div>
+        <BarberBookingActionBar
+          booking={booking}
+          bookingId={bookingId}
+          busy={busy}
+          onReject={() => runAction("reject")}
+          onAccept={() => runAction("accept")}
+          onStart={() => runAction("start")}
+          onComplete={() => setCompleteOpen(true)}
+        />
       ) : null}
     </div>
   );
