@@ -41,9 +41,15 @@ export function useSalonPage(id: string) {
 
   const ratingSummary = useQuery({
     queryKey: ["salons", id, "rating-summary", lang],
-    queryFn: async () => mapRatingSummary(await fetchSalonRatingSummary(id, lang)),
+    queryFn: async () => {
+      try {
+        return mapRatingSummary(await fetchSalonRatingSummary(id, lang));
+      } catch {
+        return null;
+      }
+    },
     enabled: Boolean(id),
-    retry: 1,
+    retry: false,
     staleTime: 60_000,
   });
 

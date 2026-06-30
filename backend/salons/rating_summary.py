@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from django.db.models import Avg, Count
-from django.db.models.functions import Coalesce
+from django.db.models import Avg, Count, FloatField, Value
+from django.db.models.functions import Cast, Coalesce
 
 from bookings.db_compat import (
     reviews_has_dimension_table,
@@ -50,13 +50,24 @@ def build_rating_summary(salon, request=None) -> dict:
     lang = _lang(request)
     score_expr = _salon_score()
     qs = Review.objects.filter(salon=salon)
-    agg = qs.aggregate(avg=Avg(score_expr), total=Count("id"))
+    # PostgreSQL: Avg(Coalesce(int, int)) integer qaytaradi — Cast bilan float ga o'tkazamiz.
+    agg = qs.aggregate(
+        avg=Coalesce(
+            Cast(Avg(score_expr), FloatField()),
+            Value(0.0),
+            output_field=FloatField(),
+        ),
+        total=Count("id"),
+    )
     rating_avg = round(float(agg["avg"] or 0), 2)
     review_count = int(agg["total"] or 0)
 
     distribution = {str(i): 0 for i in range(1, 6)}
     for row in qs.annotate(score=score_expr).values("score").annotate(c=Count("id")):
-        r = str(row["score"])
+        raw = row["score"]
+        if raw is None:
+            continue
+        r = str(int(round(float(raw))))
         if r in distribution:
             distribution[r] = row["c"]
 

@@ -7,6 +7,7 @@ import { filterSalonCatalogServices } from "@/lib/salon-services";
 import { scrollToSalonSection } from "@/lib/salon-scroll";
 import { DESKTOP_BAZAAR_INSET } from "@/lib/desktop-bazaar-layout";
 import { SalonBookingAside } from "@/components/salon/SalonBookingAside";
+import { SalonCoverImg } from "@/components/salon/SalonCoverImg";
 import { SalonPageSections } from "@/components/salon/SalonPageSections";
 import { SalonSectionNav } from "@/components/salon/SalonSectionNav";
 import { cn } from "@/lib/utils";
@@ -35,7 +36,13 @@ export function SalonDesktopPage({
   return (
     <div className="w-full">
       <div className="relative h-[min(56vh,560px)] w-full overflow-hidden bg-muted">
-        <img src={cover} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <SalonCoverImg
+          src={cover}
+          seed={salon.coverSeed}
+          category={salon.category}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/10" />
 
         <div className={cn("absolute inset-x-0 bottom-0 pb-8 pt-16", DESKTOP_BAZAAR_INSET)}>

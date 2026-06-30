@@ -1,4 +1,5 @@
 import type { Salon } from "@/lib/mock-data";
+import { SalonCoverImg } from "@/components/salon/SalonCoverImg";
 import { getSalonCoverUrl } from "@/lib/cover-images";
 import { resolveMediaUrl } from "@/lib/media-url";
 import { cn } from "@/lib/utils";
@@ -38,13 +39,31 @@ export function SalonHeroGallery({
       )}
     >
       <div className={cn("relative col-span-2 row-span-2 bg-muted", !isMobile && "rounded-l-2xl overflow-hidden")}>
-        <img src={images[0]} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <SalonCoverImg
+          src={images[0]}
+          seed={salon.coverSeed}
+          category={salon.category}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+        />
       </div>
       <div className={cn("relative col-span-2 bg-muted", !isMobile && "overflow-hidden")}>
-        <img src={images[1]} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <SalonCoverImg
+          src={images[1]}
+          seed={`${salon.coverSeed}-1`}
+          category={salon.category}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+        />
       </div>
       <div className={cn("relative col-span-2 bg-muted", !isMobile && "rounded-br-2xl overflow-hidden")}>
-        <img src={images[2]} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <SalonCoverImg
+          src={images[2]}
+          seed={`${salon.coverSeed}-2`}
+          category={salon.category}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+        />
       </div>
     </div>
   );

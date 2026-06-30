@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Star, MapPin, Heart } from "lucide-react";
 import type { Salon } from "@/lib/mock-data";
 import { shortPrice } from "@/lib/mock-data";
-import { getSalonCoverUrl } from "@/lib/cover-images";
+import { SalonCoverImg } from "@/components/salon/SalonCoverImg";
 import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
 
@@ -28,8 +28,10 @@ export function SalonCard({ salon }: Props) {
         className="block shrink-0 active:scale-[0.98] transition-transform"
       >
         <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-surface">
-          <img
-            src={salon.coverUrl ?? getSalonCoverUrl(salon.coverSeed, salon.category)}
+          <SalonCoverImg
+            src={salon.coverUrl}
+            seed={salon.coverSeed}
+            category={salon.category}
             alt=""
             loading="lazy"
             decoding="async"
