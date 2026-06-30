@@ -1202,18 +1202,15 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!fullyReady || !activationHydrated) return;
-    const tick = () => {
-      void refreshBookings();
-      void refreshNotifications();
-    };
-    const id = window.setInterval(tick, 30_000);
-    const onFocus = () => tick();
+    const tick = () => void refreshNotifications();
+    const id = window.setInterval(tick, 60_000);
+    const onFocus = () => void refreshNotifications();
     window.addEventListener("focus", onFocus);
     return () => {
       window.clearInterval(id);
       window.removeEventListener("focus", onFocus);
     };
-  }, [fullyReady, activationHydrated, refreshBookings, refreshNotifications]);
+  }, [fullyReady, activationHydrated, refreshNotifications]);
 
   const isJoinedWorker = useMemo(
     () => ownsSalon === false && barberWorkMode === "salon" && activeSalonId != null,

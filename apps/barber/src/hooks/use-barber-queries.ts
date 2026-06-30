@@ -63,24 +63,32 @@ export function useBarberBookingsQuery(enabled = true) {
     queryKey: barberQueryKeys.bookings(),
     queryFn: fetchBarberBookings,
     enabled,
-    staleTime: 20_000,
-    refetchInterval: 30_000,
+    staleTime: 30_000,
+    refetchInterval: (q) => {
+      if (getBarberWsState() === "open") return 60_000;
+      return 45_000;
+    },
     initialData: () => readBookingsSnapshot() ?? undefined,
     initialDataUpdatedAt: readBookingsSnapshotUpdatedAt,
   });
 }
 
 export function useBarberBookingQuery(id: string, enabled = true) {
+  const qc = useQueryClient();
   return useQuery({
     queryKey: [...barberQueryKeys.bookings(), id] as const,
     queryFn: () => fetchBarberBooking(id),
     enabled: enabled && Boolean(id),
-    staleTime: 5_000,
+    placeholderData: () => {
+      const list = qc.getQueryData<Booking[]>(barberQueryKeys.bookings());
+      return list?.find((b) => b.id === id);
+    },
+    staleTime: 20_000,
     refetchInterval: (q) => {
       if (getBarberWsState() === "open") return false;
       const status = q.state.data?.status;
-      if (status === "in_progress") return 4_000;
-      if (status === "pending" || status === "accepted") return 15_000;
+      if (status === "in_progress") return 5_000;
+      if (status === "pending" || status === "accepted") return 20_000;
       return false;
     },
   });

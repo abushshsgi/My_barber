@@ -238,6 +238,75 @@ export function parseCheckInQrPayload(raw: string): string | null {
   return value;
 }
 
+export type CheckInResolveResult = { token?: string; short_code?: string };
+
+const SHORT_CODE_RE = /^[A-Z0-9]{4,8}$/;
+const TOKEN_RE = /^[A-Za-z0-9_-]{13,}$/;
+
+function tryDecode(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function extractFromUrl(value: string): CheckInResolveResult | null {
+  if (!value.includes("?") && !value.includes("://")) return null;
+  try {
+    const url = new URL(value.includes("://") ? value : `https://x.invalid/?${value.replace(/^\?/, "")}`);
+    for (const key of ["data", "token", "checkin", "code", "q"]) {
+      const q = url.searchParams.get(key);
+      if (q) {
+        const nested = resolveCheckInPayload(q);
+        if (nested) return nested;
+      }
+    }
+  } catch {
+    /* noop */
+  }
+  return null;
+}
+
+/**
+ * QR skaner, qo'lda kod, tashqi barcode skaner — barcha formatlardan
+ * check-in payload (`token` yoki `short_code`) ajratadi.
+ */
+export function resolveCheckInPayload(raw: string): CheckInResolveResult | null {
+  let value = tryDecode((raw || "").trim().replace(/[\r\n]+$/g, ""));
+  if (!value) return null;
+
+  const prefixIdx = value.indexOf(CHECK_IN_QR_PREFIX);
+  if (prefixIdx >= 0) {
+    const token = value
+      .slice(prefixIdx + CHECK_IN_QR_PREFIX.length)
+      .trim()
+      .split(/[\s?&#]/)[0];
+    if (token) return { token };
+  }
+
+  const fromUrl = extractFromUrl(value);
+  if (fromUrl) return fromUrl;
+
+  const compact = value.replace(/[\s-]/g, "").toUpperCase();
+  if (SHORT_CODE_RE.test(compact) && compact.length <= 8) {
+    return { short_code: compact };
+  }
+
+  const tokenCandidate = value.split(/[\s?&#]/)[0];
+  if (TOKEN_RE.test(tokenCandidate)) {
+    return { token: tokenCandidate };
+  }
+
+  const legacy = parseCheckInQrPayload(value);
+  if (legacy) {
+    if (legacy.length > 12) return { token: legacy };
+    if (SHORT_CODE_RE.test(legacy.toUpperCase())) return { short_code: legacy.toUpperCase() };
+  }
+
+  return null;
+}
+
 /** Buyurtma raqamini UI uchun normallashtiradi (katta harf, bo'shliqsiz). */
 export function formatOrderNumber(value: string | null | undefined): string {
   if (!value) return "";

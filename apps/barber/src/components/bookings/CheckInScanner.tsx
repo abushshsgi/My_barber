@@ -1,6 +1,6 @@
 import { Loader2, ScanLine, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { parseCheckInQrPayload } from "@mybarber/shared/booking-lifecycle";
+import { resolveCheckInPayload } from "@mybarber/shared/booking-lifecycle";
 
 type DetectedBarcode = { rawValue: string };
 
@@ -13,13 +13,15 @@ type BarcodeDetectorCtor = {
   getSupportedFormats?: () => Promise<string[]>;
 };
 
+const SCAN_FORMATS = ["qr_code", "code_128", "code_39", "ean_13", "data_matrix"];
+
 function getBarcodeDetector(): BarcodeDetectorCtor | null {
   if (typeof window === "undefined") return null;
   return (window as unknown as { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector ?? null;
 }
 
 /**
- * Kamera orqali mijoz check-in QR kodini skaner qiladi.
+ * Kamera orqali mijoz check-in QR/barcode kodini skaner qiladi.
  * `BarcodeDetector` mavjud bo'lmasa, qo'lda kiritishga qaytariladi.
  */
 export function CheckInScanner({
@@ -29,7 +31,7 @@ export function CheckInScanner({
 }: {
   open: boolean;
   onClose: () => void;
-  onDetected: (token: string) => void;
+  onDetected: (raw: string) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -57,13 +59,13 @@ export function CheckInScanner({
       }
       try {
         const codes = await detector.detect(video);
-        const hit = codes
-          .map((c) => parseCheckInQrPayload(c.rawValue))
-          .find((token): token is string => Boolean(token));
-        if (hit) {
-          stopped = true;
-          onDetected(hit);
-          return;
+        for (const c of codes) {
+          const payload = resolveCheckInPayload(c.rawValue);
+          if (payload) {
+            stopped = true;
+            onDetected(c.rawValue);
+            return;
+          }
         }
       } catch {
         /* freym o'tkazib yuboriladi */
@@ -75,7 +77,7 @@ export function CheckInScanner({
       setStarting(true);
       setError(null);
       try {
-        detector = new Detector({ formats: ["qr_code"] });
+        detector = new Detector({ formats: SCAN_FORMATS });
         stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: "environment" },
           audio: false,
@@ -110,7 +112,7 @@ export function CheckInScanner({
       <div className="flex items-center justify-between p-4 text-white">
         <span className="flex items-center gap-2 text-sm font-semibold">
           <ScanLine className="size-4" />
-          QR kodni skaner qiling
+          QR / barcode skaner
         </span>
         <button
           type="button"
@@ -123,12 +125,7 @@ export function CheckInScanner({
       </div>
 
       <div className="relative flex flex-1 items-center justify-center overflow-hidden">
-        <video
-          ref={videoRef}
-          playsInline
-          muted
-          className="h-full w-full object-cover"
-        />
+        <video ref={videoRef} playsInline muted className="h-full w-full object-cover" />
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="size-60 rounded-3xl border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]" />
         </div>
@@ -140,7 +137,7 @@ export function CheckInScanner({
       </div>
 
       <div className="p-5 text-center text-sm text-white/80">
-        {error ? error : "Mijoz ilovasidagi QR kodni ramka ichiga joylashtiring"}
+        {error ? error : "Mijoz QR yoki barcode kodini ramka ichiga joylashtiring"}
       </div>
     </div>
   );

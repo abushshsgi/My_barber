@@ -96,6 +96,10 @@ function BarberBookingCheckInPage() {
             ) : (
               <BarberManualCheckInCard />
             )
+          ) : booking.status === "pending" ? (
+            <div className="rounded-2xl bg-muted/40 p-4 text-sm text-muted-foreground">
+              Avval bronni tasdiqlang. Keyin mijozni qabul qilish ochiladi.
+            </div>
           ) : null}
         </>
       ) : null}

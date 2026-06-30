@@ -33,10 +33,42 @@ export function subscribeBarberWsState(listener: (open: boolean) => void) {
 }
 
 function invalidateBookings(qc: ReturnType<typeof useQueryClient>, bookingId?: number) {
-  void qc.invalidateQueries({ queryKey: barberQueryKeys.bookings() });
-  if (bookingId != null) {
-    void qc.invalidateQueries({ queryKey: [...barberQueryKeys.bookings(), String(bookingId)] });
+  scheduleBookingInvalidate(qc, bookingId);
+}
+
+let invalidateTimer: ReturnType<typeof setTimeout> | null = null;
+const pendingInvalidations = new Map<
+  ReturnType<typeof useQueryClient>,
+  Set<string | undefined>
+>();
+
+function scheduleBookingInvalidate(
+  qc: ReturnType<typeof useQueryClient>,
+  bookingId?: number,
+) {
+  const key = bookingId != null ? String(bookingId) : undefined;
+  let ids = pendingInvalidations.get(qc);
+  if (!ids) {
+    ids = new Set();
+    pendingInvalidations.set(qc, ids);
   }
+  ids.add(key);
+
+  if (invalidateTimer) return;
+  invalidateTimer = setTimeout(() => {
+    invalidateTimer = null;
+    for (const [client, bookingIds] of pendingInvalidations) {
+      void client.invalidateQueries({ queryKey: barberQueryKeys.bookings() });
+      for (const id of bookingIds) {
+        if (id != null) {
+          void client.invalidateQueries({
+            queryKey: [...barberQueryKeys.bookings(), id],
+          });
+        }
+      }
+    }
+    pendingInvalidations.clear();
+  }, 400);
 }
 
 function openSocket(token: string) {
