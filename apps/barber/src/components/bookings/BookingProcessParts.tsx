@@ -18,7 +18,6 @@ import {
   Timer,
   Trophy,
   UserCheck,
-  Users,
   Wallet,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -36,6 +35,7 @@ import { formatUZS } from "@/components/barber/BarberContext";
 import { StatusPill, UserAvatar } from "@/components/barber/primitives";
 import { paymentBadgeClass, paymentLabel } from "@/lib/payment-label";
 import { cn } from "@/lib/utils";
+import { BookingRouteMap } from "@/components/bookings/BookingRouteMap";
 
 const fadeUp = {
   initial: { opacity: 0, y: 14 },
@@ -214,22 +214,47 @@ export function BookingLifecycleTimeline({
   const steps = buildLifecycleSteps(status as BookingLifecycleStatus, checkedIn);
 
   return (
-    <motion.ol className="space-y-0" variants={stagger} initial="initial" animate="animate">
+    <motion.ol
+      className="flex items-start justify-between gap-1"
+      variants={stagger}
+      initial="initial"
+      animate="animate"
+    >
       {steps.map((step, i) => {
         const StepIcon = STEP_ICONS[step.id];
+        const lineDone = step.state === "done";
+        const nextStep = steps[i + 1];
+        const nextLineActive =
+          nextStep && (nextStep.state === "done" || nextStep.state === "current");
+
         return (
-          <motion.li key={step.id} variants={fadeUp} className="flex gap-3">
-            <div className="flex flex-col items-center">
+          <motion.li
+            key={step.id}
+            variants={fadeUp}
+            className="flex min-w-0 flex-1 flex-col items-center"
+          >
+            <div className="flex w-full items-center">
+              {i > 0 ? (
+                <span
+                  className={cn(
+                    "h-0.5 flex-1 rounded-full transition-colors",
+                    lineDone ? "bg-foreground" : "bg-border",
+                  )}
+                />
+              ) : (
+                <span className="flex-1" />
+              )}
               <motion.span
                 layout
                 className={cn(
-                  "flex size-8 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+                  "mx-1 flex size-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
                   step.state === "done" && "border-foreground bg-foreground text-background",
-                  step.state === "current" && "border-foreground bg-background text-foreground shadow-sm",
+                  step.state === "current" &&
+                    "border-foreground bg-background text-foreground shadow-sm",
                   step.state === "upcoming" && "border-border bg-muted text-muted-foreground",
-                  step.state === "skipped" && "border-transparent bg-transparent text-transparent",
+                  step.state === "skipped" && "border-transparent bg-transparent opacity-0",
                 )}
-                animate={step.state === "current" ? { scale: [1, 1.06, 1] } : { scale: 1 }}
+                animate={step.state === "current" ? { scale: [1, 1.05, 1] } : { scale: 1 }}
                 transition={
                   step.state === "current"
                     ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
@@ -237,35 +262,35 @@ export function BookingLifecycleTimeline({
                 }
               >
                 {step.state === "done" ? (
-                  <Check className="size-4" strokeWidth={2.5} />
+                  <Check className="size-3.5" strokeWidth={2.5} />
                 ) : step.state === "current" ? (
-                  <StepIcon className="size-4" />
+                  <StepIcon className="size-3.5" />
                 ) : step.state === "upcoming" ? (
-                  <Circle className="size-2 fill-current" />
+                  <Circle className="size-1.5 fill-current" />
                 ) : null}
               </motion.span>
               {i < steps.length - 1 ? (
                 <span
                   className={cn(
-                    "my-1 min-h-4 w-0.5 flex-1 rounded-full transition-colors",
-                    step.state === "done" ? "bg-foreground" : "bg-border",
+                    "h-0.5 flex-1 rounded-full transition-colors",
+                    nextLineActive ? "bg-foreground" : "bg-border",
                   )}
                 />
-              ) : null}
+              ) : (
+                <span className="flex-1" />
+              )}
             </div>
-            <div className={cn("min-w-0 pb-4", i === steps.length - 1 && "pb-0")}>
-              <p
-                className={cn(
-                  "text-sm font-medium",
-                  step.state === "current" && "text-foreground",
-                  step.state === "done" && "text-foreground",
-                  step.state === "upcoming" && "text-muted-foreground",
-                  step.state === "skipped" && "text-muted-foreground/50 line-through",
-                )}
-              >
-                {step.label}
-              </p>
-            </div>
+            <p
+              className={cn(
+                "mt-2 px-0.5 text-center text-[10px] font-medium leading-tight sm:text-xs",
+                step.state === "current" && "text-foreground",
+                step.state === "done" && "text-foreground",
+                step.state === "upcoming" && "text-muted-foreground",
+                step.state === "skipped" && "text-muted-foreground/40 line-through",
+              )}
+            >
+              {step.label}
+            </p>
           </motion.li>
         );
       })}
@@ -335,68 +360,78 @@ export function BookingDetailSummary({ booking }: { booking: Booking }) {
     ? booking.lines
     : [{ service_name: booking.service, duration_minutes: booking.duration_min, price: booking.price }];
 
+  const serviceSummary = lines.map((l) => l.service_name).join(", ");
+
   return (
     <ProcessCard delay={0.05}>
-      <div className="flex items-center gap-3.5">
-        <UserAvatar src={booking.client_avatar} name={booking.client} className="size-12" />
+      <div className="flex items-start gap-3.5">
+        <UserAvatar src={booking.client_avatar} name={booking.client} className="size-12 shrink-0" />
         <div className="min-w-0 flex-1">
-          <p className="font-heading text-lg font-semibold truncate">{booking.client}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-heading text-lg font-semibold truncate">{booking.client}</p>
+            <StatusPill status={booking.status} className="shrink-0" />
+          </div>
+          {booking.client_phone ? (
+            <p className="mt-0.5 text-sm text-muted-foreground tabular-nums">{booking.client_phone}</p>
+          ) : null}
           {booking.salon_name ? (
             <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground truncate">
               <Sparkles className="size-3.5 shrink-0" />
               {booking.salon_name}
             </p>
           ) : null}
-          {booking.client_phone ? (
-            <p className="mt-1 text-xs text-muted-foreground tabular-nums">{booking.client_phone}</p>
-          ) : null}
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-3 gap-2">
-        {[
-          { icon: Calendar, label: "Sana", value: booking.date },
-          { icon: Clock3, label: "Vaqt", value: booking.time },
-          { icon: Receipt, label: "Jami", value: formatUZS(booking.price) },
-        ].map((item) => (
-          <div
-            key={item.label}
-            className="rounded-lg bg-muted/40 p-2.5 transition-colors hover:bg-muted/60"
-          >
-            <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              <item.icon className="size-3" />
-              {item.label}
-            </p>
-            <p className="mt-1 text-sm font-semibold tabular-nums">{item.value}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-3 overflow-hidden rounded-xl bg-muted/20">
-        <div className="flex items-center gap-2 bg-muted/40 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          <Scissors className="size-3.5" />
-          Xizmatlar
-        </div>
-        <ul className="divide-y divide-border">
-          {lines.map((line, i) => (
-            <motion.li
-              key={i}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 + i * 0.05 }}
-              className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl bg-muted/40 px-3.5 py-2.5 text-sm">
+        <span className="inline-flex items-center gap-1.5 font-medium">
+          <Calendar className="size-3.5 text-muted-foreground" />
+          {booking.date}
+        </span>
+        <span className="text-muted-foreground">·</span>
+        <span className="inline-flex items-center gap-1.5 font-medium tabular-nums">
+          <Clock3 className="size-3.5 text-muted-foreground" />
+          {booking.time}
+        </span>
+        <span className="text-muted-foreground">·</span>
+        <span className="text-muted-foreground">{booking.duration_min} daq</span>
+        {booking.payment_method ? (
+          <>
+            <span className="text-muted-foreground">·</span>
+            <span
+              className={cn(
+                "inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                paymentBadgeClass(booking.payment_method),
+              )}
             >
-              <div className="min-w-0">
-                <p className="truncate font-medium">{line.service_name}</p>
-                <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Timer className="size-3" />
-                  {line.duration_minutes} daqiqa
-                </p>
-              </div>
-              <span className="shrink-0 font-semibold tabular-nums">{formatUZS(line.price)}</span>
-            </motion.li>
-          ))}
-        </ul>
+              {paymentLabel(booking.payment_method)}
+            </span>
+          </>
+        ) : null}
+        <span className="ml-auto font-heading text-base font-semibold tabular-nums">
+          {formatUZS(booking.price)}
+        </span>
+      </div>
+
+      <div className="mt-3 rounded-xl bg-muted/25 px-3.5 py-2.5">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Xizmat</p>
+        <p className="mt-1 text-sm font-medium">{serviceSummary}</p>
+        {lines.length === 1 ? (
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {lines[0].duration_minutes} daqiqa · {formatUZS(lines[0].price)}
+          </p>
+        ) : (
+          <ul className="mt-2 space-y-1">
+            {lines.map((line, i) => (
+              <li key={i} className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span className="truncate">{line.service_name}</span>
+                <span className="shrink-0 tabular-nums">
+                  {line.duration_minutes} daq · {formatUZS(line.price)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </ProcessCard>
   );
@@ -419,20 +454,20 @@ export function BookingWaitCountdown({
   const cd = computeAppointmentCountdown(booking.start_at, now);
   if (!cd.isUpcoming) return null;
   return (
-    <ProcessCard delay={0.1} className="bg-gradient-to-br from-amber-50/80 to-card dark:from-amber-950/20">
-      <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+    <ProcessCard delay={0.1} className="bg-foreground text-background">
+      <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-background/70">
         <CalendarClock className="size-4" />
         Bron vaqtigacha
       </p>
       <motion.p
         key={cd.label}
-        initial={{ opacity: 0.6, scale: 0.98 }}
+        initial={{ opacity: 0.7, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="mt-1.5 font-heading text-2xl font-semibold tabular-nums text-amber-950 dark:text-amber-100"
+        className="mt-2 font-heading text-3xl font-semibold tabular-nums tracking-tight"
       >
         {cd.label}
       </motion.p>
-      <p className="mt-1 text-xs text-muted-foreground">qoldi</p>
+      <p className="mt-1 text-xs text-background/60">qoldi</p>
     </ProcessCard>
   );
 }
@@ -468,29 +503,33 @@ export function BookingLocationCard({ booking }: { booking: Booking }) {
   const lat = booking.salon_latitude;
   const lng = booking.salon_longitude;
   if (!address && (lat == null || lng == null)) return null;
-  const mapsUrl =
-    lat != null && lng != null
-      ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
-      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address || "")}`;
+
+  const hasCoords = lat != null && lng != null;
+
   return (
     <ProcessCard delay={0.12}>
       <SectionTitle icon={MapPin}>Manzil</SectionTitle>
-      <div className="flex items-center justify-between gap-3">
-        {address ? (
-          <p className="min-w-0 flex-1 text-sm text-muted-foreground">{address}</p>
-        ) : (
-          <span className="flex-1" />
-        )}
-        <a
-          href={mapsUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted"
-        >
-          <Navigation className="size-4" />
-          Yo'nalish olish
-        </a>
-      </div>
+      {hasCoords ? (
+        <BookingRouteMap
+          lat={lat}
+          lng={lng}
+          address={address}
+          salonName={booking.salon_name}
+        />
+      ) : (
+        <div className="space-y-3">
+          {address ? <p className="text-sm text-muted-foreground">{address}</p> : null}
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address || "")}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 rounded-lg bg-foreground px-3 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90"
+          >
+            <Navigation className="size-4" />
+            Yo'nalish olish
+          </a>
+        </div>
+      )}
     </ProcessCard>
   );
 }
@@ -554,20 +593,18 @@ export function BookingOrderNumberBanner({ orderNumber }: { orderNumber?: string
   );
 }
 
-export function BookingFamilyBanner({ name }: { name?: string | null }) {
-  if (!name) return null;
+export function BookingProcessSection({
+  status,
+  checkedIn = false,
+}: {
+  status: Booking["status"];
+  checkedIn?: boolean;
+}) {
   return (
-    <motion.div
-      {...fadeUp}
-      className="flex items-start gap-3 rounded-2xl bg-gradient-to-r from-violet-500/10 to-card px-3.5 py-2.5 text-sm shadow-sm"
-    >
-      <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-violet-500/15 text-violet-700 dark:text-violet-300">
-        <Users className="size-4" />
-      </span>
-      <span className="min-w-0 flex-1 self-center">
-        Oilaviy bron: <strong className="break-words">{name}</strong> uchun
-      </span>
-    </motion.div>
+    <ProcessCard delay={0.12}>
+      <h2 className="mb-3 font-heading text-base font-semibold">Jarayon</h2>
+      <BookingLifecycleTimeline status={status} checkedIn={checkedIn} />
+    </ProcessCard>
   );
 }
 

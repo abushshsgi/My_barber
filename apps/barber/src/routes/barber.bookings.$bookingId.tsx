@@ -18,11 +18,10 @@ import { CompleteBookingDialog } from "@/components/bookings/CompleteBookingDial
 import {
   BookingAddonHint,
   BookingDetailSummary,
-  BookingFamilyBanner,
-  BookingLifecycleTimeline,
   BookingLocationCard,
   BookingOrderNumberBanner,
   BookingPaymentCard,
+  BookingProcessSection,
   BookingResultPreview,
   BookingServiceTimer,
   BookingStatusHero,
@@ -103,22 +102,13 @@ function BarberBookingProcessPage() {
         </div>
       ) : booking ? (
         <>
-          <BookingFamilyBanner name={booking.booked_for_name} />
           <BookingStatusHero booking={booking} />
 
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:gap-5">
             <div className="space-y-4">
               <BookingDetailSummary booking={booking} />
 
-              <motion.div
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.12, duration: 0.35 }}
-                className="rounded-2xl bg-card p-4 shadow-card sm:p-5"
-              >
-                <h2 className="mb-4 font-heading text-base font-semibold">Jarayon</h2>
-                <BookingLifecycleTimeline status={booking.status} checkedIn={!!booking.checked_in_at} />
-              </motion.div>
+              <BookingProcessSection status={booking.status} checkedIn={!!booking.checked_in_at} />
 
               {booking.status === "accepted" && !booking.checked_in_at ? (
                 <BarberManualCheckInCard booking={booking} />
