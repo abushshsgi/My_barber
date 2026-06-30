@@ -84,7 +84,7 @@ function BarberBookingProcessPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5 p-4 pb-28 sm:p-6 lg:p-8">
+    <div className="mx-auto max-w-[1300px] space-y-5 p-4 pb-28 sm:p-6 lg:p-8">
       <Link
         to="/barber/bookings"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -94,7 +94,7 @@ function BarberBookingProcessPage() {
       </Link>
 
       {isLoading ? (
-        <div className="flex h-56 items-center justify-center rounded-2xl border border-border bg-card">
+        <div className="flex h-56 items-center justify-center rounded-2xl bg-card shadow-card">
           <Loader2 className="size-7 animate-spin text-muted-foreground" />
         </div>
       ) : isError ? (
@@ -106,7 +106,7 @@ function BarberBookingProcessPage() {
           <BookingFamilyBanner name={booking.booked_for_name} />
           <BookingStatusHero booking={booking} />
 
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-5">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:gap-5">
             <div className="space-y-4">
               <BookingDetailSummary booking={booking} />
 
@@ -114,7 +114,7 @@ function BarberBookingProcessPage() {
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.12, duration: 0.35 }}
-                className="rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6"
+                className="rounded-2xl bg-card p-4 shadow-card sm:p-5"
               >
                 <h2 className="mb-4 font-heading text-base font-semibold">Jarayon</h2>
                 <BookingLifecycleTimeline status={booking.status} checkedIn={!!booking.checked_in_at} />
@@ -139,7 +139,7 @@ function BarberBookingProcessPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.18 }}
-                  className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3.5 text-sm font-medium shadow-card transition-colors hover:bg-muted"
+                  className="flex items-center justify-center gap-2 rounded-2xl bg-card py-3.5 text-sm font-medium shadow-card transition-colors hover:bg-muted"
                 >
                   <Phone className="size-4" />
                   {booking.client_phone}
@@ -167,7 +167,7 @@ function BarberBookingProcessPage() {
 
       {booking && !["completed", "cancelled", "rejected"].includes(booking.status) ? (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-          <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-2">
+          <div className="mx-auto flex max-w-[1300px] flex-wrap items-center gap-2">
             {busy ? (
               <div className="flex flex-1 items-center justify-center gap-2 py-3 text-sm text-muted-foreground">
                 <Loader2 className="size-4 animate-spin" />
@@ -277,7 +277,7 @@ function BarberManualCheckInCard({ booking: _booking }: { booking: Booking }) {
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.14, duration: 0.35 }}
-      className="rounded-2xl border border-sky-200/70 bg-gradient-to-br from-sky-500/8 to-card p-5 shadow-card"
+      className="rounded-2xl bg-gradient-to-br from-sky-500/10 to-card p-4 shadow-card sm:p-5"
     >
       <h2 className="mb-1 flex items-center gap-2 font-heading text-base font-semibold">
         <span className="grid size-8 place-items-center rounded-xl bg-sky-500/15 text-sky-700 dark:text-sky-300">
