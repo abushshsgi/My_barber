@@ -27,12 +27,10 @@ export function AuthMapIllustration() {
       />
 
       {[48, 96, 144, 192, 240].map((x, i) => (
-        <motion.line
+        <motion.path
           key={`v-${x}`}
-          x1={x}
-          y1="36"
-          x2={x}
-          y2="192"
+          d={`M ${x} 36 L ${x} 192`}
+          fill="none"
           stroke="currentColor"
           strokeOpacity="0.06"
           initial={{ pathLength: 0, opacity: 0 }}
@@ -41,12 +39,10 @@ export function AuthMapIllustration() {
         />
       ))}
       {[52, 92, 132, 172].map((y, i) => (
-        <motion.line
+        <motion.path
           key={`h-${y}`}
-          x1="28"
-          y1={y}
-          x2="292"
-          y2={y}
+          d={`M 28 ${y} L 292 ${y}`}
+          fill="none"
           stroke="currentColor"
           strokeOpacity="0.06"
           initial={{ pathLength: 0, opacity: 0 }}
@@ -172,11 +168,9 @@ export function AuthBookIllustration() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.38, delay: 0.25 + i * 0.1, ease: EASE }}
           />
-          <motion.line
-            x1={x + 14}
-            y1="112"
-            x2={x + 42}
-            y2="112"
+          <motion.path
+            d={`M ${x + 14} 112 L ${x + 42} 112`}
+            fill="none"
             stroke={active ? "white" : "currentColor"}
             strokeOpacity={active ? 0.55 : 0.2}
             strokeWidth="3"
@@ -185,11 +179,9 @@ export function AuthBookIllustration() {
             animate={{ pathLength: 1 }}
             transition={{ duration: 0.3, delay: 0.45 + i * 0.1, ease: EASE }}
           />
-          <motion.line
-            x1={x + 14}
-            y1="128"
-            x2={x + 34}
-            y2="128"
+          <motion.path
+            d={`M ${x + 14} 128 L ${x + 34} 128`}
+            fill="none"
             stroke={active ? "white" : "currentColor"}
             strokeOpacity={active ? 0.4 : 0.15}
             strokeWidth="3"
@@ -286,17 +278,23 @@ export function AuthAiIllustration() {
         transition={{ duration: 0.55, delay: 0.2, ease: EASE }}
       />
 
-      <motion.line
-        x1="48"
-        x2="272"
-        y1="78"
-        y2="78"
+      <motion.path
+        fill="none"
         stroke="currentColor"
         strokeOpacity="0.45"
         strokeWidth="1.5"
         strokeDasharray="6 8"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: [0, 0.85, 0.85, 0], x1: [48, 48, 120, 200], x2: [120, 200, 272, 272] }}
+        strokeLinecap="round"
+        initial={{ opacity: 0, d: "M 48 78 L 120 78" }}
+        animate={{
+          opacity: [0, 0.85, 0.85, 0],
+          d: [
+            "M 48 78 L 120 78",
+            "M 48 78 L 120 78",
+            "M 120 78 L 200 78",
+            "M 200 78 L 272 78",
+          ],
+        }}
         transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut", delay: 0.35 }}
       />
 
