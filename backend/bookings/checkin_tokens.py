@@ -56,7 +56,9 @@ def issue_check_in_token(booking) -> None:
 
     for _ in range(10):
         token = generate_check_in_token()
-        if not Booking.objects.filter(check_in_token=token).exists():
+        from bookings.db_compat import booking_queryset_compat
+
+        if not booking_queryset_compat(Booking.objects).filter(check_in_token=token).exists():
             booking.check_in_token = token
             break
     booking.check_in_short_code = generate_short_code()

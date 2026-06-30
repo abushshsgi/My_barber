@@ -13,6 +13,7 @@ import {
   readBookingsSnapshotUpdatedAt,
   writeBookingsSnapshot,
 } from "@/lib/barber-snapshot-cache";
+import { getBarberWsState } from "@/hooks/use-booking-live-sync";
 
 export const barberQueryKeys = {
   all: ["barber"] as const,
@@ -76,9 +77,10 @@ export function useBarberBookingQuery(id: string, enabled = true) {
     enabled: enabled && Boolean(id),
     staleTime: 5_000,
     refetchInterval: (q) => {
+      if (getBarberWsState() === "open") return false;
       const status = q.state.data?.status;
-      if (status === "in_progress") return 2_000;
-      if (status === "pending" || status === "accepted") return 8_000;
+      if (status === "in_progress") return 4_000;
+      if (status === "pending" || status === "accepted") return 15_000;
       return false;
     },
   });
@@ -180,12 +182,15 @@ export function useCheckInByTokenMutation() {
       return (await res.json()) as ApiBookingRow;
     },
     onSuccess: (row) => {
-      void qc.invalidateQueries({ queryKey: barberQueryKeys.bookings() });
-      if (row?.id != null) {
-        void qc.invalidateQueries({
-          queryKey: [...barberQueryKeys.bookings(), String(row.id)],
-        });
-      }
+      if (row?.id == null) return;
+      const mapped = mapApiBooking(row);
+      const id = String(row.id);
+      qc.setQueryData<Booking>([...barberQueryKeys.bookings(), id], mapped);
+      qc.setQueryData<Booking[]>(barberQueryKeys.bookings(), (old) => {
+        const next = (old ?? []).map((b) => (b.id === id ? mapped : b));
+        writeBookingsSnapshot(next);
+        return next;
+      });
     },
   });
 }

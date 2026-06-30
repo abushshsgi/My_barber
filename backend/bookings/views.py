@@ -564,7 +564,11 @@ class BookingViewSet(viewsets.ModelViewSet):
                 {"detail": "QR token yoki qisqa kod kiriting."}, status=400
             )
 
-        qs = Booking.objects.select_related("customer", "salon", "barber")
+        qs = booking_queryset_compat(
+            Booking.objects.select_related(
+                "customer", "salon", "barber", "barber__profile", "completion"
+            ).prefetch_related("lines")
+        )
         if token:
             booking = qs.filter(check_in_token=token).first()
         else:
@@ -589,6 +593,7 @@ class BookingViewSet(viewsets.ModelViewSet):
                 {"detail": "Faqat tasdiqlangan bron uchun check-in."}, status=400
             )
         self._mark_checked_in(booking)
+        booking = qs.get(pk=booking.pk)
         return Response(self._booking_data(booking, request))
 
     @action(detail=True, methods=["post"])
