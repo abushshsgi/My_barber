@@ -28,6 +28,7 @@ export type ApiBookingRow = {
   order_number?: string | null;
   check_in_code?: string | null;
   check_in_short_code?: string | null;
+  notes?: string | null;
   status_history?: Array<{ key: string; label: string; at: string }>;
   lines: Array<{ service_name: string; duration_minutes: number; price: string | number }>;
 };
@@ -93,6 +94,7 @@ export function mapApiBooking(b: ApiBookingRow): Booking {
     result_image_url: b.result_image_url ?? null,
     order_number: b.order_number ?? `MS-${b.id}`,
     check_in_code: b.check_in_code ?? undefined,
+    notes: (b.notes ?? "").trim() || undefined,
     status_history: b.status_history ?? [],
   };
 }

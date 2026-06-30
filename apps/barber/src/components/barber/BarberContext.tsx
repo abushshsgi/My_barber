@@ -122,6 +122,7 @@ export type Booking = {
   result_image_url?: string | null;
   order_number?: string;
   check_in_code?: string;
+  notes?: string;
   booked_for_name?: string | null;
   salon_address?: string | null;
   salon_latitude?: number | null;

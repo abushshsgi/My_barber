@@ -27,6 +27,7 @@ export type CreateBookingPayload = {
   barber_service_ids?: number[];
   family_member_id?: number | null;
   payment_method?: "cash" | "online";
+  notes?: string;
 };
 
 export async function createBooking(data: CreateBookingPayload): Promise<ApiBooking> {

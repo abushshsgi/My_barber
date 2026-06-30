@@ -15,6 +15,7 @@ from bookings.db_compat import (
     bookings_has_check_in_token_column,
     bookings_has_checked_in_column,
     bookings_has_family_member_column,
+    bookings_has_notes_column,
     bookings_has_order_number_column,
     bookings_has_portfolio_consent_column,
     booking_create_compat,
@@ -91,6 +92,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "check_in_code",
             "check_in_short_code",
             "status_history",
+            "notes",
             "lines",
             "has_review",
             "review_id",
@@ -108,6 +110,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "payment_status",
             "paid_at",
             "portfolio_consent",
+            "notes",
             "created_at",
         )
 
@@ -122,6 +125,8 @@ class BookingSerializer(serializers.ModelSerializer):
         if not bookings_has_check_in_token_column():
             self.fields.pop("check_in_code", None)
             self.fields.pop("check_in_short_code", None)
+        if not bookings_has_notes_column():
+            self.fields.pop("notes", None)
 
     def _is_request_barber(self) -> bool:
         request = self.context.get("request")
@@ -350,6 +355,7 @@ class BookingListSerializer(serializers.ModelSerializer):
             "family_member",
             "booked_for_name",
             "order_number",
+            "notes",
             "lines",
             "has_review",
             "review_id",
@@ -361,6 +367,8 @@ class BookingListSerializer(serializers.ModelSerializer):
         super().__init__(*args, **kwargs)
         if not bookings_has_order_number_column():
             self.fields.pop("order_number", None)
+        if not bookings_has_notes_column():
+            self.fields.pop("notes", None)
 
     def get_order_number(self, obj):
         return obj.order_number or f"MS-{obj.pk}"
@@ -418,6 +426,12 @@ class BookingCreateSerializer(serializers.Serializer):
     payment_method = serializers.ChoiceField(
         choices=Booking.PaymentMethod.choices,
         default=Booking.PaymentMethod.CASH,
+    )
+    notes = serializers.CharField(
+        max_length=500,
+        required=False,
+        allow_blank=True,
+        trim_whitespace=True,
     )
 
     def validate_payment_method(self, value):
@@ -567,6 +581,7 @@ class BookingCreateSerializer(serializers.Serializer):
 
         phone_snap = (getattr(customer, "phone", None) or "").strip()
         family_member = validated_data.pop("family_member", None)
+        notes = (validated_data.pop("notes", "") or "").strip()
 
         create_kwargs = {
             "customer": customer,
@@ -580,6 +595,8 @@ class BookingCreateSerializer(serializers.Serializer):
         }
         if bookings_has_family_member_column():
             create_kwargs["family_member"] = family_member
+        if notes and bookings_has_notes_column():
+            create_kwargs["notes"] = notes
 
         with booking_slot_lock(barber.id, start_at, end_at) as acquired:
             if not acquired:

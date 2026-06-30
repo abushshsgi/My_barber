@@ -49,6 +49,9 @@ import { Route as BarberSalonViewReviewsRouteImport } from './routes/barber.salo
 import { Route as BarberSalonViewMembersRouteImport } from './routes/barber.salon-view.members'
 import { Route as BarberSalonViewGalleryRouteImport } from './routes/barber.salon-view.gallery'
 import { Route as BarberBookingsBookingIdRouteImport } from './routes/barber.bookings.$bookingId'
+import { Route as BarberBookingsBookingIdIndexRouteImport } from './routes/barber.bookings.$bookingId.index'
+import { Route as BarberBookingsBookingIdSessionRouteImport } from './routes/barber.bookings.$bookingId.session'
+import { Route as BarberBookingsBookingIdCheckInRouteImport } from './routes/barber.bookings.$bookingId.check-in'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -250,6 +253,24 @@ const BarberBookingsBookingIdRoute = BarberBookingsBookingIdRouteImport.update({
   path: '/$bookingId',
   getParentRoute: () => BarberBookingsRoute,
 } as any)
+const BarberBookingsBookingIdIndexRoute =
+  BarberBookingsBookingIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => BarberBookingsBookingIdRoute,
+  } as any)
+const BarberBookingsBookingIdSessionRoute =
+  BarberBookingsBookingIdSessionRouteImport.update({
+    id: '/session',
+    path: '/session',
+    getParentRoute: () => BarberBookingsBookingIdRoute,
+  } as any)
+const BarberBookingsBookingIdCheckInRoute =
+  BarberBookingsBookingIdCheckInRouteImport.update({
+    id: '/check-in',
+    path: '/check-in',
+    getParentRoute: () => BarberBookingsBookingIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -282,7 +303,7 @@ export interface FileRoutesByFullPath {
   '/salon/create': typeof SalonCreateRoute
   '/salon/join': typeof SalonJoinRouteWithChildren
   '/barber/': typeof BarberIndexRoute
-  '/barber/bookings/$bookingId': typeof BarberBookingsBookingIdRoute
+  '/barber/bookings/$bookingId': typeof BarberBookingsBookingIdRouteWithChildren
   '/barber/salon-view/gallery': typeof BarberSalonViewGalleryRoute
   '/barber/salon-view/members': typeof BarberSalonViewMembersRoute
   '/barber/salon-view/reviews': typeof BarberSalonViewReviewsRoute
@@ -292,6 +313,9 @@ export interface FileRoutesByFullPath {
   '/barber/salon-view/': typeof BarberSalonViewIndexRoute
   '/barber/stats/': typeof BarberStatsIndexRoute
   '/salon/join/': typeof SalonJoinIndexRoute
+  '/barber/bookings/$bookingId/check-in': typeof BarberBookingsBookingIdCheckInRoute
+  '/barber/bookings/$bookingId/session': typeof BarberBookingsBookingIdSessionRoute
+  '/barber/bookings/$bookingId/': typeof BarberBookingsBookingIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -321,7 +345,6 @@ export interface FileRoutesByTo {
   '/mybarber/setup': typeof MybarberSetupRoute
   '/salon/create': typeof SalonCreateRoute
   '/barber': typeof BarberIndexRoute
-  '/barber/bookings/$bookingId': typeof BarberBookingsBookingIdRoute
   '/barber/salon-view/gallery': typeof BarberSalonViewGalleryRoute
   '/barber/salon-view/members': typeof BarberSalonViewMembersRoute
   '/barber/salon-view/reviews': typeof BarberSalonViewReviewsRoute
@@ -331,6 +354,9 @@ export interface FileRoutesByTo {
   '/barber/salon-view': typeof BarberSalonViewIndexRoute
   '/barber/stats': typeof BarberStatsIndexRoute
   '/salon/join': typeof SalonJoinIndexRoute
+  '/barber/bookings/$bookingId/check-in': typeof BarberBookingsBookingIdCheckInRoute
+  '/barber/bookings/$bookingId/session': typeof BarberBookingsBookingIdSessionRoute
+  '/barber/bookings/$bookingId': typeof BarberBookingsBookingIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -364,7 +390,7 @@ export interface FileRoutesById {
   '/salon/create': typeof SalonCreateRoute
   '/salon/join': typeof SalonJoinRouteWithChildren
   '/barber/': typeof BarberIndexRoute
-  '/barber/bookings/$bookingId': typeof BarberBookingsBookingIdRoute
+  '/barber/bookings/$bookingId': typeof BarberBookingsBookingIdRouteWithChildren
   '/barber/salon-view/gallery': typeof BarberSalonViewGalleryRoute
   '/barber/salon-view/members': typeof BarberSalonViewMembersRoute
   '/barber/salon-view/reviews': typeof BarberSalonViewReviewsRoute
@@ -374,6 +400,9 @@ export interface FileRoutesById {
   '/barber/salon-view/': typeof BarberSalonViewIndexRoute
   '/barber/stats/': typeof BarberStatsIndexRoute
   '/salon/join/': typeof SalonJoinIndexRoute
+  '/barber/bookings/$bookingId/check-in': typeof BarberBookingsBookingIdCheckInRoute
+  '/barber/bookings/$bookingId/session': typeof BarberBookingsBookingIdSessionRoute
+  '/barber/bookings/$bookingId/': typeof BarberBookingsBookingIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -418,6 +447,9 @@ export interface FileRouteTypes {
     | '/barber/salon-view/'
     | '/barber/stats/'
     | '/salon/join/'
+    | '/barber/bookings/$bookingId/check-in'
+    | '/barber/bookings/$bookingId/session'
+    | '/barber/bookings/$bookingId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -447,7 +479,6 @@ export interface FileRouteTypes {
     | '/mybarber/setup'
     | '/salon/create'
     | '/barber'
-    | '/barber/bookings/$bookingId'
     | '/barber/salon-view/gallery'
     | '/barber/salon-view/members'
     | '/barber/salon-view/reviews'
@@ -457,6 +488,9 @@ export interface FileRouteTypes {
     | '/barber/salon-view'
     | '/barber/stats'
     | '/salon/join'
+    | '/barber/bookings/$bookingId/check-in'
+    | '/barber/bookings/$bookingId/session'
+    | '/barber/bookings/$bookingId'
   id:
     | '__root__'
     | '/'
@@ -499,6 +533,9 @@ export interface FileRouteTypes {
     | '/barber/salon-view/'
     | '/barber/stats/'
     | '/salon/join/'
+    | '/barber/bookings/$bookingId/check-in'
+    | '/barber/bookings/$bookingId/session'
+    | '/barber/bookings/$bookingId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -795,15 +832,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BarberBookingsBookingIdRouteImport
       parentRoute: typeof BarberBookingsRoute
     }
+    '/barber/bookings/$bookingId/': {
+      id: '/barber/bookings/$bookingId/'
+      path: '/'
+      fullPath: '/barber/bookings/$bookingId/'
+      preLoaderRoute: typeof BarberBookingsBookingIdIndexRouteImport
+      parentRoute: typeof BarberBookingsBookingIdRoute
+    }
+    '/barber/bookings/$bookingId/session': {
+      id: '/barber/bookings/$bookingId/session'
+      path: '/session'
+      fullPath: '/barber/bookings/$bookingId/session'
+      preLoaderRoute: typeof BarberBookingsBookingIdSessionRouteImport
+      parentRoute: typeof BarberBookingsBookingIdRoute
+    }
+    '/barber/bookings/$bookingId/check-in': {
+      id: '/barber/bookings/$bookingId/check-in'
+      path: '/check-in'
+      fullPath: '/barber/bookings/$bookingId/check-in'
+      preLoaderRoute: typeof BarberBookingsBookingIdCheckInRouteImport
+      parentRoute: typeof BarberBookingsBookingIdRoute
+    }
   }
 }
 
+interface BarberBookingsBookingIdRouteChildren {
+  BarberBookingsBookingIdCheckInRoute: typeof BarberBookingsBookingIdCheckInRoute
+  BarberBookingsBookingIdSessionRoute: typeof BarberBookingsBookingIdSessionRoute
+  BarberBookingsBookingIdIndexRoute: typeof BarberBookingsBookingIdIndexRoute
+}
+
+const BarberBookingsBookingIdRouteChildren: BarberBookingsBookingIdRouteChildren =
+  {
+    BarberBookingsBookingIdCheckInRoute: BarberBookingsBookingIdCheckInRoute,
+    BarberBookingsBookingIdSessionRoute: BarberBookingsBookingIdSessionRoute,
+    BarberBookingsBookingIdIndexRoute: BarberBookingsBookingIdIndexRoute,
+  }
+
+const BarberBookingsBookingIdRouteWithChildren =
+  BarberBookingsBookingIdRoute._addFileChildren(
+    BarberBookingsBookingIdRouteChildren,
+  )
+
 interface BarberBookingsRouteChildren {
-  BarberBookingsBookingIdRoute: typeof BarberBookingsBookingIdRoute
+  BarberBookingsBookingIdRoute: typeof BarberBookingsBookingIdRouteWithChildren
 }
 
 const BarberBookingsRouteChildren: BarberBookingsRouteChildren = {
-  BarberBookingsBookingIdRoute: BarberBookingsBookingIdRoute,
+  BarberBookingsBookingIdRoute: BarberBookingsBookingIdRouteWithChildren,
 }
 
 const BarberBookingsRouteWithChildren = BarberBookingsRoute._addFileChildren(

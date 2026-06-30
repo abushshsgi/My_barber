@@ -5,12 +5,16 @@ import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
 import { EmptyBlock, UserAvatar } from "@/components/barber/primitives";
 
 export const Route = createFileRoute("/barber/clients")({
+  validateSearch: (search: Record<string, unknown>): { q?: string } => ({
+    q: typeof search.q === "string" ? search.q : undefined,
+  }),
   component: ClientsPage,
 });
 
 function ClientsPage() {
   const { clients } = useBarberContext();
-  const [q, setQ] = useState("");
+  const { q: initialQ } = Route.useSearch();
+  const [q, setQ] = useState(initialQ ?? "");
 
   const filtered = clients.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()));
 

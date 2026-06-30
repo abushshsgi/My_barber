@@ -61,6 +61,11 @@ class Booking(models.Model):
     )
     paid_at = models.DateTimeField(null=True, blank=True)
     customer_phone = models.CharField(max_length=32, blank=True, default="")
+    notes = models.TextField(
+        blank=True,
+        default="",
+        help_text="Mijozning izohi yoki maxsus so'rovi (ixtiyoriy).",
+    )
     reminder_1h_sent = models.BooleanField(default=False)
     appointment_reminder_sent = models.BooleanField(default=False)
     family_member = models.ForeignKey(

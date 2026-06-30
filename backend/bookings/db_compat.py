@@ -111,6 +111,10 @@ def bookings_has_check_in_token_column() -> bool:
     return "check_in_token" in _booking_column_names()
 
 
+def bookings_has_notes_column() -> bool:
+    return "notes" in _booking_column_names()
+
+
 def booking_queryset_compat(qs: QuerySet) -> QuerySet:
     cols = _booking_column_names()
     defer: list[str] = []
@@ -129,6 +133,8 @@ def booking_queryset_compat(qs: QuerySet) -> QuerySet:
                 "check_in_token_used_at",
             ]
         )
+    if "notes" not in cols:
+        defer.append("notes")
     if defer:
         qs = qs.defer(*defer)
     return qs

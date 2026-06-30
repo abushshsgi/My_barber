@@ -1,9 +1,11 @@
+import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import {
   BadgeCheck,
   Calendar,
   CalendarClock,
   Check,
+  ChevronRight,
   Circle,
   ClipboardList,
   Clock3,
@@ -15,8 +17,10 @@ import {
   Navigation,
   Phone,
   Receipt,
+  Repeat,
   Scissors,
   Sparkles,
+  StickyNote,
   Timer,
   Trophy,
   Wallet,
@@ -310,12 +314,37 @@ export function BookingServiceTimer({
   );
 }
 
-export function BookingDetailSummary({ booking }: { booking: Booking }) {
+function ClientVisitBadge({ visits }: { visits: number }) {
+  const label =
+    visits <= 0
+      ? "Yangi mijoz"
+      : visits === 1
+        ? "1 marta kelgan"
+        : `${visits} marta kelgan`;
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md bg-foreground px-2 py-0.5 text-[11px] font-semibold text-background">
+      <Repeat className="size-3" />
+      {label}
+    </span>
+  );
+}
+
+export function BookingDetailSummary({
+  booking,
+  clientVisits,
+  clientQuery,
+}: {
+  booking: Booking;
+  clientVisits?: number;
+  clientQuery?: string;
+}) {
   const lines = booking.lines?.length
     ? booking.lines
     : [{ service_name: booking.service, duration_minutes: booking.duration_min, price: booking.price }];
 
   const serviceSummary = lines.map((l) => l.service_name).join(", ");
+  const showVisitBadge = typeof clientVisits === "number";
+  const profileQuery = clientQuery?.trim();
 
   return (
     <ProcessCard delay={0.05}>
@@ -323,14 +352,28 @@ export function BookingDetailSummary({ booking }: { booking: Booking }) {
         <UserAvatar src={booking.client_avatar} name={booking.client} className="size-12 shrink-0" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="font-heading text-lg font-semibold truncate">{booking.client}</p>
+            {profileQuery ? (
+              <Link
+                to="/barber/clients"
+                search={{ q: profileQuery }}
+                className="group inline-flex min-w-0 items-center gap-1 font-heading text-lg font-semibold transition-colors hover:text-foreground/70"
+              >
+                <span className="truncate">{booking.client}</span>
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            ) : (
+              <p className="font-heading text-lg font-semibold truncate">{booking.client}</p>
+            )}
             <StatusPill status={booking.status} className="shrink-0" />
           </div>
-          {booking.client_phone ? (
-            <p className="mt-0.5 text-sm text-muted-foreground tabular-nums">
-              {formatUzPhoneDisplay(booking.client_phone)}
-            </p>
-          ) : null}
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            {showVisitBadge ? <ClientVisitBadge visits={clientVisits as number} /> : null}
+            {booking.client_phone ? (
+              <span className="text-sm text-muted-foreground tabular-nums">
+                {formatUzPhoneDisplay(booking.client_phone)}
+              </span>
+            ) : null}
+          </div>
           {booking.salon_name ? (
             <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground truncate">
               <Sparkles className="size-3.5 shrink-0" />
@@ -434,6 +477,19 @@ export function BookingContactRow({
           ) : null}
         </div>
       </div>
+    </ProcessCard>
+  );
+}
+
+export function BookingNotesCard({ notes }: { notes?: string }) {
+  const text = notes?.trim();
+  if (!text) return null;
+  return (
+    <ProcessCard delay={0.07}>
+      <SectionTitle icon={StickyNote}>Mijoz izohi</SectionTitle>
+      <p className="whitespace-pre-line rounded-xl bg-muted/40 px-3.5 py-2.5 text-sm leading-relaxed text-foreground">
+        {text}
+      </p>
     </ProcessCard>
   );
 }

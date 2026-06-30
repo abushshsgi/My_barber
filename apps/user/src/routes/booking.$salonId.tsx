@@ -69,6 +69,7 @@ function useBookingSalonState(
   const [dayIdx, setDayIdx] = useState(0);
   const [slot, setSlot] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<BookingPaymentMethod>("cash");
+  const [notes, setNotes] = useState("");
   const { balance: walletBalance, isLoading: walletLoading } = useWalletBalance();
 
   useEffect(() => {
@@ -152,6 +153,7 @@ function useBookingSalonState(
         service_ids: serviceIds.map((id) => parseInt(id, 10)),
         family_member_id: familyMemberId,
         payment_method: paymentMethod,
+        notes: notes.trim() || undefined,
       });
       toast.success("Buyurtma yuborildi!", { description: `${salon.name} · ${slot}` });
       setTimeout(
@@ -199,6 +201,8 @@ function useBookingSalonState(
     isSubmitting: createBooking.isPending,
     paymentMethod,
     setPaymentMethod,
+    notes,
+    setNotes,
     walletBalance,
     walletLoading,
   };
@@ -211,7 +215,7 @@ function BookingStepContent({
   state: ReturnType<typeof useBookingSalonState>;
   t: ReturnType<typeof useTranslation>["t"];
 }) {
-  const { salon, step, familyMemberId, setFamilyMemberId, barberId, setBarberId, serviceIds, setServiceIds, dayIdx, setDayIdx, slot, setSlot, dayList, slotOptions, slotsLoading, slotsClosedReason, selectedServices, barberServiceOptions, barberServicesLoading, barberServicesError, retryBarberServices, selectedBarber, bookedForLabel, total, paymentMethod, setPaymentMethod, walletBalance, walletLoading } = state;
+  const { salon, step, familyMemberId, setFamilyMemberId, barberId, setBarberId, serviceIds, setServiceIds, dayIdx, setDayIdx, slot, setSlot, dayList, slotOptions, slotsLoading, slotsClosedReason, selectedServices, barberServiceOptions, barberServicesLoading, barberServicesError, retryBarberServices, selectedBarber, bookedForLabel, total, paymentMethod, setPaymentMethod, notes, setNotes, walletBalance, walletLoading } = state;
   if (!salon) return null;
 
   if (step === 1) {
@@ -380,6 +384,38 @@ function BookingStepContent({
         ))}
         <div className="mt-4 flex justify-between font-bold"><span>{t("booking.total")}</span><span className="text-xl">{formatPrice(total)}</span></div>
       </div>
+      <BookingNotesField value={notes} onChange={setNotes} t={t} />
+    </div>
+  );
+}
+
+function BookingNotesField({
+  value,
+  onChange,
+  t,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  t: ReturnType<typeof useTranslation>["t"];
+}) {
+  return (
+    <div>
+      <label className="text-sm font-bold">
+        {t("booking.notesLabel", { defaultValue: "Izoh yoki maxsus so'rov" })}
+        <span className="ml-1 text-xs font-medium text-muted-foreground">
+          {t("booking.optional", { defaultValue: "(ixtiyoriy)" })}
+        </span>
+      </label>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value.slice(0, 500))}
+        rows={3}
+        placeholder={t("booking.notesPlaceholder", {
+          defaultValue: "Masalan: yon tomonlarni kalta qiling, farzandim uchun bron va h.k.",
+        })}
+        className="mt-2 w-full resize-none rounded-2xl border-2 border-border bg-surface p-4 text-sm outline-none transition-colors focus:border-foreground"
+      />
+      <p className="mt-1 text-right text-[11px] text-muted-foreground tabular-nums">{value.length}/500</p>
     </div>
   );
 }
