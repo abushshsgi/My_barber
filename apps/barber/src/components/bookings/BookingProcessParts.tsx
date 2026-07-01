@@ -2,13 +2,11 @@ import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import {
   BadgeCheck,
-  Calendar,
   CalendarClock,
   Check,
   ChevronRight,
   Circle,
   ClipboardList,
-  Clock3,
   Copy,
   History,
   Image as ImageIcon,
@@ -19,7 +17,6 @@ import {
   Receipt,
   Repeat,
   Scissors,
-  Sparkles,
   StickyNote,
   Timer,
   Trophy,
@@ -137,39 +134,6 @@ export function useLiveBookingTimer(booking: Pick<Booking, "status" | "started_a
     startAt: booking.start_at,
     now,
   });
-}
-
-export function BookingStatusHero({ booking }: { booking: Booking }) {
-  const hero = STATUS_HERO[booking.status];
-  const Icon = hero.icon;
-
-  return (
-    <motion.div
-      {...fadeUp}
-      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className="rounded-2xl bg-card p-4 shadow-card sm:p-5"
-    >
-      <div className="flex items-start gap-3.5">
-        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-muted text-foreground">
-          <Icon className="size-5" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusPill status={booking.status} />
-            <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
-              <Wallet className="size-3" />
-              {paymentLabel(booking.payment_method)}
-            </span>
-          </div>
-          <p className="mt-2 font-heading text-base font-semibold">{hero.label}</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {booking.date} · <span className="tabular-nums">{booking.time}</span>
-            {booking.salon_name ? ` · ${booking.salon_name}` : ""}
-          </p>
-        </div>
-      </div>
-    </motion.div>
-  );
 }
 
 export function BookingLifecycleTimeline({
@@ -333,11 +297,15 @@ export function BookingDetailSummary({
   booking,
   clientVisits,
   clientQuery,
+  onChat,
 }: {
   booking: Booking;
   clientVisits?: number;
   clientQuery?: string;
+  onChat?: () => void;
 }) {
+  const hero = STATUS_HERO[booking.status];
+  const HeroIcon = hero.icon;
   const lines = booking.lines?.length
     ? booking.lines
     : [{ service_name: booking.service, duration_minutes: booking.duration_min, price: booking.price }];
@@ -345,88 +313,102 @@ export function BookingDetailSummary({
   const serviceSummary = lines.map((l) => l.service_name).join(", ");
   const showVisitBadge = typeof clientVisits === "number";
   const profileQuery = clientQuery?.trim();
+  const phone = booking.client_phone?.trim();
+  const phoneE164 = phone ? formatUzPhoneE164(phone) : null;
 
   return (
     <ProcessCard delay={0.05}>
-      <div className="flex items-start gap-3.5">
-        <UserAvatar src={booking.client_avatar} name={booking.client} className="size-12 shrink-0" />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            {profileQuery ? (
-              <Link
-                to="/barber/clients"
-                search={{ q: profileQuery }}
-                className="group inline-flex min-w-0 items-center gap-1 font-heading text-lg font-semibold transition-colors hover:text-foreground/70"
-              >
-                <span className="truncate">{booking.client}</span>
-                <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            ) : (
-              <p className="font-heading text-lg font-semibold truncate">{booking.client}</p>
-            )}
-            <StatusPill status={booking.status} className="shrink-0" />
+      <div className="flex items-start justify-between gap-3 border-b border-border pb-4">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted text-foreground">
+            <HeroIcon className="size-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="font-heading text-sm font-semibold">{hero.label}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {booking.date} · <span className="tabular-nums">{booking.time}</span>
+              {booking.salon_name ? ` · ${booking.salon_name}` : ""}
+            </p>
           </div>
+        </div>
+        <StatusPill status={booking.status} className="shrink-0" />
+      </div>
+
+      <div className="mt-4 flex items-start gap-3">
+        <UserAvatar src={booking.client_avatar} name={booking.client} className="size-11 shrink-0" />
+        <div className="min-w-0 flex-1">
+          {profileQuery ? (
+            <Link
+              to="/barber/clients"
+              search={{ q: profileQuery }}
+              className="group inline-flex min-w-0 max-w-full items-center gap-1 font-heading text-base font-semibold transition-colors hover:text-foreground/70"
+            >
+              <span className="truncate">{booking.client}</span>
+              <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          ) : (
+            <p className="truncate font-heading text-base font-semibold">{booking.client}</p>
+          )}
           <div className="mt-1 flex flex-wrap items-center gap-2">
             {showVisitBadge ? <ClientVisitBadge visits={clientVisits as number} /> : null}
-            {booking.client_phone ? (
-              <span className="text-sm text-muted-foreground tabular-nums">
-                {formatUzPhoneDisplay(booking.client_phone)}
+            {phone ? (
+              <span className="text-sm tabular-nums text-muted-foreground">
+                {formatUzPhoneDisplay(phone)}
               </span>
             ) : null}
           </div>
-          {booking.salon_name ? (
-            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground truncate">
-              <Sparkles className="size-3.5 shrink-0" />
-              {booking.salon_name}
-            </p>
-          ) : null}
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl bg-muted/40 px-3.5 py-2.5 text-sm">
-        <span className="inline-flex items-center gap-1.5 font-medium">
-          <Calendar className="size-3.5 text-muted-foreground" />
-          {booking.date}
-        </span>
-        <span className="text-muted-foreground">·</span>
-        <span className="inline-flex items-center gap-1.5 font-medium tabular-nums">
-          <Clock3 className="size-3.5 text-muted-foreground" />
-          {booking.time}
-        </span>
-        <span className="text-muted-foreground">·</span>
-        <span className="text-muted-foreground">{booking.duration_min} daq</span>
-        {booking.payment_method ? (
-          <>
-            <span className="text-muted-foreground">·</span>
-            <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground">
-              {paymentLabel(booking.payment_method)}
-            </span>
-          </>
-        ) : null}
-        <span className="ml-auto font-heading text-base font-semibold tabular-nums">
-          {formatUZS(booking.price)}
-        </span>
-      </div>
+      {phoneE164 ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <a
+            href={`tel:${phoneE164}`}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted/70"
+          >
+            <Phone className="size-3.5" />
+            Qo&apos;ng&apos;iroq
+          </a>
+          <a
+            href={`sms:${phoneE164}`}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted/70"
+          >
+            <MessageSquare className="size-3.5" />
+            SMS
+          </a>
+          {onChat ? (
+            <button
+              type="button"
+              onClick={onChat}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-foreground px-3 py-1.5 text-xs font-medium text-background transition-opacity hover:opacity-90"
+            >
+              <MessageSquare className="size-3.5" />
+              Chat
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
-      <div className="mt-3 rounded-xl bg-muted/25 px-3.5 py-2.5">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Xizmat</p>
-        <p className="mt-1 text-sm font-medium">{serviceSummary}</p>
-        {lines.length === 1 ? (
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {lines[0].duration_minutes} daqiqa · {formatUZS(lines[0].price)}
+      <div className="mt-4 flex items-start justify-between gap-3 rounded-xl bg-muted/30 px-3.5 py-3">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold leading-snug">{serviceSummary}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {booking.duration_min} daq · {paymentLabel(booking.payment_method)}
           </p>
-        ) : (
-          <ul className="mt-2 space-y-1">
-            {lines.map((line, i) => (
-              <li key={i} className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                <span className="truncate">{line.service_name}</span>
-                <span className="shrink-0 tabular-nums">
-                  {line.duration_minutes} daq · {formatUZS(line.price)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+          {lines.length > 1 ? (
+            <ul className="mt-2 space-y-1 border-t border-border/60 pt-2">
+              {lines.map((line, i) => (
+                <li key={i} className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span className="truncate">{line.service_name}</span>
+                  <span className="shrink-0 tabular-nums">
+                    {line.duration_minutes} daq · {formatUZS(line.price)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+        <p className="shrink-0 font-heading text-xl font-semibold tabular-nums">{formatUZS(booking.price)}</p>
       </div>
     </ProcessCard>
   );
@@ -529,28 +511,46 @@ export function BookingWaitCountdown({
   );
 }
 
-export function BookingStatusHistory({ history }: { history: Booking["status_history"] }) {
+export function BookingStatusHistory({
+  history,
+  className,
+}: {
+  history: Booking["status_history"];
+  className?: string;
+}) {
   const rows = history ?? [];
   if (!rows.length) return null;
   return (
-    <ProcessCard delay={0.15}>
+    <ProcessCard delay={0.1} className={className}>
       <SectionTitle icon={History}>Tarix</SectionTitle>
-      <ul className="space-y-2">
-        {rows.map((row, i) => (
-          <motion.li
-            key={`${row.key}-${row.at}`}
-            initial={{ opacity: 0, x: -6 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.04 }}
-            className="flex items-center justify-between gap-3 rounded-lg bg-muted/30 px-3 py-2 text-sm"
-          >
-            <span className="font-medium">{row.label}</span>
-            <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-              {formatHistoryWhen(row.at)}
-            </span>
-          </motion.li>
-        ))}
-      </ul>
+      <ol className="relative mt-1">
+        {rows.map((row, i) => {
+          const isLast = i === rows.length - 1;
+          return (
+            <li key={`${row.key}-${row.at}`} className="relative flex gap-3 pb-3 last:pb-0">
+              {!isLast ? (
+                <span
+                  className="absolute bottom-0 left-[5px] top-2.5 w-px bg-border"
+                  aria-hidden
+                />
+              ) : null}
+              <span
+                className={cn(
+                  "relative z-[1] mt-1.5 size-2.5 shrink-0 rounded-full ring-2 ring-card",
+                  i === rows.length - 1 ? "bg-foreground" : "bg-muted-foreground/40",
+                )}
+                aria-hidden
+              />
+              <div className="flex min-w-0 flex-1 items-baseline justify-between gap-2">
+                <span className="text-sm font-medium leading-snug">{row.label}</span>
+                <time className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                  {formatHistoryWhen(row.at)}
+                </time>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
     </ProcessCard>
   );
 }
@@ -658,8 +658,7 @@ export function BookingProcessSection({
   checkedIn?: boolean;
 }) {
   return (
-    <ProcessCard delay={0.12}>
-      <h2 className="mb-3 font-heading text-base font-semibold">Jarayon</h2>
+    <ProcessCard delay={0.08} className="!py-4">
       <BookingLifecycleTimeline status={status} checkedIn={checkedIn} />
     </ProcessCard>
   );

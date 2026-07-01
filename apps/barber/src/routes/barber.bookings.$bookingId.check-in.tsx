@@ -2,10 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Play } from "lucide-react";
 import { BarberManualCheckInCard } from "@/components/bookings/BookingCheckInCard";
 import {
-  BookingContactRow,
   BookingDetailSummary,
   BookingNotesCard,
-  BookingStatusHero,
 } from "@/components/bookings/BookingProcessParts";
 import { useBookingClientInfo } from "@/hooks/use-booking-client-info";
 import { useBookingLiveSync } from "@/hooks/use-booking-live-sync";
@@ -47,7 +45,12 @@ function BarberBookingCheckInPage() {
         </div>
       ) : booking ? (
         <>
-          <BookingStatusHero booking={booking} />
+          <BookingDetailSummary
+            booking={booking}
+            clientVisits={clientInfo.visits}
+            clientQuery={clientInfo.query}
+            onChat={() => void navigate({ to: "/barber/chat" })}
+          />
 
           {booking.status === "in_progress" ? (
             <Link
@@ -59,17 +62,6 @@ function BarberBookingCheckInPage() {
               <ArrowRight className="size-4" />
             </Link>
           ) : null}
-
-          <BookingDetailSummary
-            booking={booking}
-            clientVisits={clientInfo.visits}
-            clientQuery={clientInfo.query}
-          />
-
-          <BookingContactRow
-            phone={booking.client_phone}
-            onChat={() => void navigate({ to: "/barber/chat" })}
-          />
 
           <BookingNotesCard notes={booking.notes} />
 

@@ -6,15 +6,12 @@ import { BarberBookingActionBar } from "@/components/bookings/BarberBookingActio
 import { CompleteBookingDialog } from "@/components/bookings/CompleteBookingDialog";
 import {
   BookingAddonHint,
-  BookingContactRow,
   BookingDetailSummary,
   BookingNotesCard,
   BookingOrderNumberBanner,
-  BookingPaymentCard,
   BookingProcessSection,
   BookingResultPreview,
   BookingServiceTimer,
-  BookingStatusHero,
   BookingStatusHistory,
   BookingWaitCountdown,
 } from "@/components/bookings/BookingProcessParts";
@@ -37,7 +34,7 @@ function BarberBookingOverviewPage() {
   useBookingLiveSync(bookingId);
 
   return (
-    <div className="mx-auto max-w-[1300px] space-y-5 p-4 pb-28 sm:p-6 lg:p-8">
+    <div className="mx-auto max-w-[960px] space-y-4 p-4 pb-28 sm:space-y-5 sm:p-6 lg:p-8">
       <Link
         to="/barber/bookings"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -56,28 +53,22 @@ function BarberBookingOverviewPage() {
         </div>
       ) : booking ? (
         <>
-          <BookingStatusHero booking={booking} />
-
           {booking.status === "pending" ? (
             <BarberPendingResponseBanner booking={booking} />
           ) : null}
 
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:gap-5">
+          <BookingDetailSummary
+            booking={booking}
+            clientVisits={clientInfo.visits}
+            clientQuery={clientInfo.query}
+            onChat={() => void navigate({ to: "/barber/chat" })}
+          />
+
+          <BookingProcessSection status={booking.status} checkedIn={!!booking.checked_in_at} />
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(240px,280px)] lg:items-start lg:gap-5">
             <div className="space-y-4">
-              <BookingDetailSummary
-                booking={booking}
-                clientVisits={clientInfo.visits}
-                clientQuery={clientInfo.query}
-              />
-
-              <BookingContactRow
-                phone={booking.client_phone}
-                onChat={() => void navigate({ to: "/barber/chat" })}
-              />
-
               <BookingNotesCard notes={booking.notes} />
-
-              <BookingProcessSection status={booking.status} checkedIn={!!booking.checked_in_at} />
 
               {booking.status === "accepted" ? (
                 <Link
@@ -107,7 +98,6 @@ function BarberBookingOverviewPage() {
                 </Link>
               ) : null}
 
-              <BookingStatusHistory history={booking.status_history} />
               <BookingResultPreview url={booking.result_image_url} />
 
               {booking.status === "in_progress" ? (
@@ -115,11 +105,11 @@ function BarberBookingOverviewPage() {
               ) : null}
             </div>
 
-            <aside className="space-y-4 lg:sticky lg:top-20">
+            <aside className="space-y-3 sm:col-span-2 lg:col-span-1 lg:sticky lg:top-20">
               <BookingWaitCountdown booking={booking} />
               <BookingServiceTimer booking={booking} />
               <BookingOrderNumberBanner orderNumber={booking.order_number} />
-              <BookingPaymentCard booking={booking} />
+              <BookingStatusHistory history={booking.status_history} />
             </aside>
           </div>
 
