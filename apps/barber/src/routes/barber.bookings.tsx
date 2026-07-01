@@ -7,8 +7,11 @@ import {
   Inbox,
   Loader2,
   Search,
+  Sparkles,
 } from "lucide-react";
+import { formatCancelCountdown } from "@mybarber/shared/booking-lifecycle";
 import { formatUZS, type Booking } from "@/components/barber/BarberContext";
+import { useLivePendingBarberResponse } from "@/components/bookings/BarberPendingResponseBanner";
 import { StatusPill, UserAvatar } from "@/components/barber/primitives";
 import { cn } from "@/lib/utils";
 import { paymentLabel } from "@/lib/payment-label";
@@ -52,14 +55,52 @@ function groupCounts(bookings: Booking[]) {
   };
 }
 
+const STATUS_SORT_RANK: Record<Booking["status"], number> = {
+  pending: 0,
+  in_progress: 1,
+  accepted: 2,
+  completed: 3,
+  cancelled: 4,
+  rejected: 5,
+};
+
+function bookingCreatedMs(b: Booking): number {
+  if (!b.created_at) return 0;
+  const ms = new Date(b.created_at).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function bookingStartMs(b: Booking): number {
+  if (!b.start_at) return 0;
+  const ms = new Date(b.start_at).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+/** Yangi so'rovlar birinchi, ichida eng yangisi yuqorida. */
 function sortBookings(rows: Booking[]): Booking[] {
-  const rank = (b: Booking) => {
-    if (b.status === "pending") return 0;
-    if (b.status === "in_progress") return 1;
-    if (b.date === "Bugun") return 2;
-    return 3;
-  };
-  return [...rows].sort((a, b) => rank(a) - rank(b));
+  return [...rows].sort((a, b) => {
+    const rankDiff = STATUS_SORT_RANK[a.status] - STATUS_SORT_RANK[b.status];
+    if (rankDiff !== 0) return rankDiff;
+
+    if (a.status === "pending" && b.status === "pending") {
+      return bookingCreatedMs(b) - bookingCreatedMs(a);
+    }
+
+    if (a.status === "in_progress" || a.status === "accepted") {
+      return bookingStartMs(a) - bookingStartMs(b);
+    }
+
+    return bookingStartMs(b) - bookingStartMs(a);
+  });
+}
+
+function partitionBookings(rows: Booking[], status: Status | "all") {
+  if (status !== "all") {
+    return { pending: [] as Booking[], rest: rows };
+  }
+  const pending = rows.filter((b) => b.status === "pending");
+  const rest = rows.filter((b) => b.status !== "pending");
+  return { pending, rest };
 }
 
 function BookingsList() {
@@ -78,6 +119,11 @@ function BookingsList() {
     );
     return sortBookings(rows);
   }, [bookings, status, query]);
+
+  const { pending: pendingRows, rest: restRows } = useMemo(
+    () => partitionBookings(filtered, status),
+    [filtered, status],
+  );
 
   return (
     <div className="mx-auto max-w-[1300px] space-y-5 p-4 sm:space-y-6 sm:p-6 lg:p-8">
@@ -158,10 +204,42 @@ function BookingsList() {
         ) : filtered.length === 0 ? (
           <EmptyState status={status} hasQuery={query.trim().length > 0} />
         ) : (
-          <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
-            {filtered.map((b) => (
-              <BookingCard key={b.id} booking={b} />
-            ))}
+          <div className="space-y-5">
+            {pendingRows.length > 0 ? (
+              <section className="space-y-2.5">
+                <div className="flex items-center justify-between gap-2 px-0.5">
+                  <h2 className="flex items-center gap-2 font-heading text-sm font-semibold text-foreground">
+                    <span className="grid size-6 place-items-center rounded-md bg-foreground text-background">
+                      <Sparkles className="size-3.5 stroke-[1.5]" />
+                    </span>
+                    Yangi so&apos;rovlar
+                  </h2>
+                  <span className="rounded-full bg-foreground px-2.5 py-0.5 text-[11px] font-bold tabular-nums text-background">
+                    {pendingRows.length}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
+                  {pendingRows.map((b) => (
+                    <BookingCard key={b.id} booking={b} isNew />
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {restRows.length > 0 ? (
+              <section className="space-y-2.5">
+                {pendingRows.length > 0 ? (
+                  <h2 className="px-0.5 font-heading text-sm font-semibold text-muted-foreground">
+                    Boshqa bronlar
+                  </h2>
+                ) : null}
+                <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
+                  {restRows.map((b) => (
+                    <BookingCard key={b.id} booking={b} />
+                  ))}
+                </div>
+              </section>
+            ) : null}
           </div>
         )}
       </div>
@@ -251,30 +329,60 @@ function EmptyState({ status, hasQuery }: { status: Status | "all"; hasQuery: bo
   );
 }
 
-function BookingCard({ booking: b }: { booking: Booking }) {
+function NewBadge() {
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-foreground px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-background shadow-sm">
+      <span className="relative flex size-1.5">
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-background/70 opacity-75" />
+        <span className="relative inline-flex size-1.5 rounded-full bg-background" />
+      </span>
+      Yangi
+    </span>
+  );
+}
+
+function BookingCard({ booking: b, isNew }: { booking: Booking; isNew?: boolean }) {
+  const isPending = b.status === "pending";
+  const showNew = isNew ?? isPending;
+  const response = useLivePendingBarberResponse(isPending ? b : null);
+
   return (
     <Link
       to="/barber/bookings/$bookingId"
       params={{ bookingId: b.id }}
       className={cn(
-        "group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-colors",
+        "group relative flex flex-col overflow-hidden rounded-xl border bg-card transition-colors",
         "[@media(hover:hover)]:hover:border-foreground/25 [@media(hover:hover)]:hover:bg-muted/30",
-        b.status === "pending" && "border-foreground/20",
-        b.status === "in_progress" && "border-foreground/35",
+        showNew
+          ? "border-foreground/30 shadow-[inset_3px_0_0_0_hsl(var(--foreground))]"
+          : "border-border",
+        b.status === "in_progress" && !showNew && "border-foreground/35",
       )}
     >
       <div className="flex items-center gap-3 p-3.5 sm:p-4">
-        <UserAvatar
-          src={b.client_avatar}
-          name={b.client}
-          className="size-11 shrink-0 rounded-lg"
-        />
+        <div className="relative shrink-0">
+          <UserAvatar
+            src={b.client_avatar}
+            name={b.client}
+            className={cn("size-11 rounded-lg", showNew && "ring-2 ring-foreground/15")}
+          />
+          {showNew ? (
+            <span className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-foreground text-[8px] font-bold text-background">
+              !
+            </span>
+          ) : null}
+        </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <p className="truncate font-heading text-base font-semibold text-foreground">
-              {b.client}
-            </p>
-            <StatusPill status={b.status} variant="mono" className="shrink-0" />
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="truncate font-heading text-base font-semibold text-foreground">
+                  {b.client}
+                </p>
+                {showNew ? <NewBadge /> : null}
+              </div>
+            </div>
+            {!showNew ? <StatusPill status={b.status} variant="mono" className="shrink-0" /> : null}
           </div>
           <p className="mt-0.5 truncate text-sm text-muted-foreground">{b.service}</p>
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -297,6 +405,15 @@ function BookingCard({ booking: b }: { booking: Booking }) {
           <p className="font-semibold tabular-nums text-foreground">{formatUZS(b.price)}</p>
         </div>
       </div>
+
+      {showNew && response.secondsUntilExpiry != null && !response.expired ? (
+        <div className="flex items-center justify-between gap-2 border-t border-foreground/10 bg-foreground px-3.5 py-2 text-xs font-medium text-background sm:px-4">
+          <span>Qabul qilish vaqti</span>
+          <span className="font-mono tabular-nums">
+            {formatCancelCountdown(response.secondsUntilExpiry)}
+          </span>
+        </div>
+      ) : null}
 
       {b.status === "in_progress" ? (
         <div className="flex items-center gap-2 border-t border-border bg-muted/40 px-3.5 py-2 text-xs font-medium text-foreground/80 sm:px-4">
