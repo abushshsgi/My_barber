@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
   ArrowRight,
-  Check,
   CheckCircle2,
   Clock3,
   Loader2,
@@ -20,23 +19,23 @@ import {
   BookingServiceTimer,
   useLiveBookingTimer,
 } from "@/components/bookings/BookingProcessParts";
+import {
+  BookingStepIndicator,
+  bookingFlowSlide,
+  type BookingStepMeta,
+} from "@/components/bookings/BookingStepIndicator";
 import type { Booking } from "@/components/barber/BarberContext";
 import { formatUZS } from "@/components/barber/BarberContext";
 import { UserAvatar } from "@/components/barber/primitives";
 import { formatUzPhoneDisplay, formatUzPhoneE164 } from "@/lib/phone";
-import { cn } from "@/lib/utils";
 
-const STEPS = [
-  { id: "chair", label: "Kresloda", short: "Seans", icon: Scissors },
-  { id: "time", label: "Vaqt", short: "Vaqt", icon: Timer },
-  { id: "finish", label: "Yakunlash", short: "Tugatish", icon: CheckCircle2 },
-] as const;
+const STEPS: readonly BookingStepMeta[] = [
+  { id: "chair", short: "Seans", icon: Scissors },
+  { id: "time", short: "Vaqt", icon: Timer },
+  { id: "finish", short: "Tugatish", icon: CheckCircle2 },
+];
 
-const slide = {
-  initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -12 },
-};
+const slide = bookingFlowSlide;
 
 type Props = {
   booking: Booking;
@@ -47,62 +46,6 @@ type Props = {
   onChat?: () => void;
   onComplete: (options: import("@/lib/map-booking").CompleteBookingOptions) => void;
 };
-
-function SessionStepIndicator({ step }: { step: number }) {
-  const progress = ((step + 1) / STEPS.length) * 100;
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2.5">
-        <div className="relative h-1 flex-1 overflow-hidden rounded-full bg-muted sm:h-1.5">
-          <motion.div
-            className="absolute inset-y-0 left-0 rounded-full bg-foreground"
-            initial={false}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
-          />
-        </div>
-        <span className="text-[10px] font-semibold uppercase tracking-wider tabular-nums text-muted-foreground">
-          {step + 1}/{STEPS.length}
-        </span>
-      </div>
-
-      <div className="flex items-center justify-center gap-1 sm:gap-2">
-        {STEPS.map((meta, i) => {
-          const Icon = meta.icon;
-          const done = i < step;
-          const active = i === step;
-          return (
-            <div key={meta.id} className="flex items-center gap-1 sm:gap-2">
-              {i > 0 ? (
-                <div className="hidden h-px w-3 bg-border sm:block sm:w-5" aria-hidden />
-              ) : null}
-              <motion.div
-                initial={false}
-                animate={{ scale: active ? 1.03 : 1 }}
-                className={cn(
-                  "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold sm:gap-1.5 sm:px-2.5 sm:py-1.5 sm:text-[11px]",
-                  done && "border-foreground bg-foreground text-background",
-                  active && !done && "border-foreground bg-background text-foreground shadow-card",
-                  !done && !active && "border-border bg-muted/30 text-muted-foreground",
-                )}
-              >
-                <span className="grid size-4 place-items-center sm:size-5">
-                  {done ? (
-                    <Check className="size-3 sm:size-3.5" />
-                  ) : (
-                    <Icon className="size-3 sm:size-3.5" />
-                  )}
-                </span>
-                <span className="hidden sm:inline">{meta.short}</span>
-              </motion.div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 function InChairHero({ active }: { active: boolean }) {
   return (
@@ -264,7 +207,7 @@ export function BookingSessionFlow({
         animate={entered ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       >
-        <SessionStepIndicator step={step} />
+        <BookingStepIndicator steps={STEPS} step={step} />
       </motion.div>
 
       <div className="mt-5 min-h-[min(420px,55vh)] sm:min-h-[460px]">
