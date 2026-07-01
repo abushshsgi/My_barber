@@ -55,6 +55,7 @@ export function BookingCard({ booking: b, focused }: { booking: BookingItem; foc
   const cancelPolicy = getCustomerCancelPolicy({
     createdAt: b.createdAt ?? b.date,
     status: bookingLifecycleStatus(b),
+    checkedInAt: b.checkedInAt,
   });
   const canCancel =
     (b.status === "pending" || b.status === "accepted") && cancelPolicy.allowed;

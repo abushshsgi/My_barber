@@ -13,8 +13,12 @@ BOOKING_PENDING_RESPONSE_MINUTES = BOOKING_CANCEL_WINDOW_MINUTES
 def customer_cancel_blocked_reason(booking, *, now=None) -> str | None:
     """
     Mijoz bekor qila olmasa sabab qaytaradi, aks holda None.
-    Buyurtmadan keyin 5 daqiqa ichida — pending yoki accepted (xizmat boshlanmaguncha).
-  """
+
+    Qoidalar:
+    - Buyurtmadan keyin 5 daqiqa ichida bekor qilish (pending yoki accepted).
+    - Sartarosh qabul qilsa ham taymer `created_at` dan hisoblanadi — qolgan vaqt davomida bekor qilish mumkin.
+    - Sartarosh QR/kod bilan tasdiqlasa (check-in) — bekor qilish butunlay yopiladi.
+    """
     from bookings.models import Booking
 
     now = now or timezone.now()
@@ -28,6 +32,14 @@ def customer_cancel_blocked_reason(booking, *, now=None) -> str | None:
         if booking.status == Booking.Status.IN_PROGRESS:
             return "Xizmat davom etmoqda — bekor qilish mumkin emas."
         return "Bu bronni bekor qilib bo'lmaydi."
+
+    checked_in_at = getattr(booking, "checked_in_at", None)
+    token_used_at = getattr(booking, "check_in_token_used_at", None)
+    if checked_in_at or token_used_at:
+        return (
+            "Sartarosh QR kod yoki kod bilan tasdiqlagan — "
+            "bu bronni bekor qilib bo'lmaydi."
+        )
 
     if booking.status not in (Booking.Status.PENDING, Booking.Status.ACCEPTED):
         return "Bu bronni bekor qilib bo'lmaydi."

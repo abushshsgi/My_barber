@@ -404,13 +404,15 @@ export function formatCancelCountdown(totalSeconds: number): string {
 /**
  * Mijoz bronni qachon bekor qila olishini hisoblaydi.
  * Buyurtmadan keyin 5 daqiqa — sartarosh qabul qilsa ham taymer tugaguncha.
+ * QR/kod bilan check-in qilingan bo'lsa — bekor qilish butunlay yopiladi.
  */
 export function getCustomerCancelPolicy(opts: {
   createdAt: string;
   status: BookingLifecycleStatus;
+  checkedInAt?: string | null;
   now?: number;
 }): CustomerCancelPolicy {
-  const { status, createdAt } = opts;
+  const { status, createdAt, checkedInAt } = opts;
   const now = opts.now ?? Date.now();
 
   if (
@@ -423,6 +425,13 @@ export function getCustomerCancelPolicy(opts: {
 
   if (status === "in_progress") {
     return { allowed: false, reason: "Xizmat davom etmoqda — bekor qilish mumkin emas." };
+  }
+
+  if (checkedInAt) {
+    return {
+      allowed: false,
+      reason: "Sartarosh QR kod yoki kod bilan tasdiqlagan — bekor qilish mumkin emas.",
+    };
   }
 
   if (status !== "pending" && status !== "accepted") {

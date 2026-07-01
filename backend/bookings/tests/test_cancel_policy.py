@@ -71,3 +71,26 @@ class CustomerCancelPolicyTests(CheckInTokenTests):
         res = self.client.post(f"/api/v1/bookings/{booking.id}/cancel/", {}, format="json")
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("5 daqiqa", res.json()["detail"])
+
+    def test_customer_cannot_cancel_after_qr_check_in_within_window(self):
+        booking = self._make_booking(status_value=Booking.Status.ACCEPTED)
+        booking.created_at = timezone.now() - timedelta(minutes=2)
+        booking.checked_in_at = timezone.now()
+        booking.save(update_fields=["created_at", "checked_in_at"])
+        self.client.force_authenticate(user=self.user)
+        res = self.client.post(f"/api/v1/bookings/{booking.id}/cancel/", {}, format="json")
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("tasdiqlagan", res.json()["detail"])
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, Booking.Status.ACCEPTED)
+
+    def test_customer_can_cancel_accepted_before_check_in_within_window(self):
+        """Sartarosh qabul qilgan, lekin hali QR tasdiqlamagan — qolgan vaqt ichida bekor qilish."""
+        booking = self._make_booking(status_value=Booking.Status.ACCEPTED)
+        booking.created_at = timezone.now() - timedelta(minutes=3)
+        booking.save(update_fields=["created_at"])
+        self.client.force_authenticate(user=self.user)
+        res = self.client.post(f"/api/v1/bookings/{booking.id}/cancel/", {}, format="json")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, Booking.Status.CANCELLED)

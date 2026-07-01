@@ -11,20 +11,28 @@ import type { BookingItem } from "@/lib/mock-data";
 import { bookingLifecycleStatus } from "@/lib/bookings-utils";
 import { cn } from "@/lib/utils";
 
-export function useLiveCustomerCancelPolicy(booking: Pick<BookingItem, "status" | "createdAt"> | null) {
+export function useLiveCustomerCancelPolicy(
+  booking: Pick<BookingItem, "status" | "createdAt" | "checkedInAt"> | null,
+) {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    if (!booking || (booking.status !== "pending" && booking.status !== "accepted")) return;
+    if (!booking || booking.checkedInAt) return;
+    if (booking.status !== "pending" && booking.status !== "accepted") return;
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
-  }, [booking?.status, booking?.createdAt]);
+  }, [booking?.status, booking?.createdAt, booking?.checkedInAt]);
 
   const createdAt = booking?.createdAt ?? new Date().toISOString();
   const status = booking ? bookingLifecycleStatus(booking) : "pending";
 
   return {
-    cancel: getCustomerCancelPolicy({ createdAt, status, now }),
+    cancel: getCustomerCancelPolicy({
+      createdAt,
+      status,
+      checkedInAt: booking?.checkedInAt,
+      now,
+    }),
     barberResponse:
       booking?.status === "pending"
         ? getPendingBarberResponsePolicy({ createdAt, status: "pending", now })
@@ -45,6 +53,27 @@ export function CustomerCancelNotice({
 
   if (booking.status === "cancelled" || booking.status === "done") return null;
   if (booking.status !== "pending" && booking.status !== "accepted") return null;
+
+  if (booking.checkedInAt) {
+    return (
+      <div
+        className={cn(
+          "rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground",
+          className,
+        )}
+      >
+        <div className="flex items-start gap-2.5">
+          <AlertCircle className="mt-0.5 size-4 shrink-0 stroke-[1.5]" />
+          <div>
+            <p className="font-medium text-foreground">Bekor qilish yopildi</p>
+            <p className="mt-1 text-xs leading-relaxed">
+              Sartarosh QR kod yoki kod bilan tasdiqlagan — bu bronni bekor qilib bo&apos;lmaydi.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (booking.status === "pending" && barberPolicy?.expired) {
     return (
