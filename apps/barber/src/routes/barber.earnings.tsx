@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Wallet, TrendingUp, Download, ArrowDownToLine, Receipt } from "lucide-react";
+import { Wallet, TrendingUp, Download, ArrowDownToLine, Receipt, Loader2 } from "lucide-react";
 import { formatUZS, useBarberContext } from "@/components/barber/BarberContext";
 import { PageHeader, StatCard } from "@/components/barber/primitives";
+import { EarningsPageSkeleton } from "@/components/barber/EarningsPageSkeleton";
 import {
   EARNINGS_RANGES,
-  filterCompletedBookingsByRange,
   formatFinanceDate,
   buildLast7DaysChart,
   last7DaysIsoParams,
@@ -14,8 +14,7 @@ import {
 } from "@/lib/finance-range";
 import { cn } from "@/lib/utils";
 import {
-  prefetchBarberFinance,
-  prefetchPayoutBalance,
+  prefetchEarningsPage,
   useBarberFinanceQuery,
   useBarberPayoutsQuery,
   useInvalidateBarberQueries,
@@ -36,18 +35,16 @@ import { Button } from "@/components/ui/button";
 import { readOnboardingStatusCache } from "@/lib/onboarding-status-cache";
 
 export const Route = createFileRoute("/barber/earnings")({
-  loader: ({ context: { queryClient } }) => {
+  loader: async ({ context: { queryClient } }) => {
     const cached = readOnboardingStatusCache();
     if (cached?.fully_ready !== true) return;
-    const rangeParams = rangeToIsoParams("Bugun");
-    void prefetchBarberFinance(queryClient, rangeParams);
-    void prefetchPayoutBalance(queryClient);
+    await prefetchEarningsPage(queryClient);
   },
   component: EarningsPage,
 });
 
 function EarningsPage() {
-  const { bookings, fullyReady } = useBarberContext();
+  const { fullyReady } = useBarberContext();
   const [range, setRange] = useState<EarningsRange>("Bugun");
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
@@ -58,53 +55,45 @@ function EarningsPage() {
   const chartParams = useMemo(() => last7DaysIsoParams(), []);
   const chartUsesRange = range === "Hafta";
 
-  const { data: finance, isError: financeError } = useBarberFinanceQuery(rangeParams, fullyReady);
-  const { data: chartFinanceExtra } = useBarberFinanceQuery(chartParams, fullyReady && !chartUsesRange);
+  const {
+    data: finance,
+    isLoading: financeLoading,
+    isFetching: financeFetching,
+    isError: financeError,
+  } = useBarberFinanceQuery(rangeParams, fullyReady);
+  const { data: chartFinanceExtra, isLoading: chartLoading } = useBarberFinanceQuery(
+    chartParams,
+    fullyReady && !chartUsesRange,
+  );
   const chartFinance = chartUsesRange ? finance : chartFinanceExtra;
 
-  const localCompleted = useMemo(
-    () => filterCompletedBookingsByRange(bookings, range),
-    [bookings, range],
-  );
-  const localCash = localCompleted
-    .filter((b) => b.payment_method === "cash")
-    .reduce((s, b) => s + b.price, 0);
-  const localOnline = localCompleted
-    .filter((b) => b.payment_method === "online")
-    .reduce((s, b) => s + b.price, 0);
-  const localCashCount = localCompleted.filter((b) => b.payment_method === "cash").length;
-  const localOnlineCount = localCompleted.filter((b) => b.payment_method === "online").length;
-
-  const apiHasBookings = (finance?.cash_count ?? 0) + (finance?.online_count ?? 0) > 0;
-  const useLocalFallback = !apiHasBookings && localCompleted.length > 0;
-
-  const onlineIncome = useLocalFallback
-    ? localOnline
-    : Number(finance?.income_total ?? finance?.online_total ?? 0);
-  const cashTotal = useLocalFallback ? localCash : Number(finance?.cash_total ?? 0);
-  const totalIncome = useLocalFallback
-    ? localCash + localOnline
-    : Number(finance?.total_income ?? onlineIncome + cashTotal);
-  const cashCount = useLocalFallback ? localCashCount : (finance?.cash_count ?? 0);
-  const onlineCount = useLocalFallback ? localOnlineCount : (finance?.online_count ?? 0);
+  const onlineIncome = Number(finance?.income_total ?? finance?.online_total ?? 0);
+  const cashTotal = Number(finance?.cash_total ?? 0);
+  const totalIncome = Number(finance?.total_income ?? onlineIncome + cashTotal);
+  const cashCount = finance?.cash_count ?? 0;
+  const onlineCount = finance?.online_count ?? 0;
   const rangeExpenses = Number(finance?.expense_total ?? 0);
-  const net = useLocalFallback ? localOnline - rangeExpenses : Number(finance?.net_total ?? 0);
+  const net = Number(finance?.net_total ?? 0);
   const transactions = finance?.transactions ?? [];
 
-  const { data: balance } = usePayoutBalanceQuery(fullyReady);
-  const { data: payouts = [] } = useBarberPayoutsQuery(fullyReady);
+  const { data: balance, isLoading: balanceLoading } = usePayoutBalanceQuery(fullyReady);
+  const { data: payouts, isLoading: payoutsLoading } = useBarberPayoutsQuery(fullyReady);
   const { invalidatePayouts, invalidateFinance } = useInvalidateBarberQueries();
   const balanceVal = balance ? Number(balance.available_balance) : 0;
 
   const chart = useMemo(() => {
     const daily = chartFinance?.daily ?? [];
-    const completed = bookings.filter((b) => b.status === "completed");
-    const apiDailyHasData = daily.some((d) => Number(d.revenue) > 0);
-    if (useLocalFallback || !apiDailyHasData) {
-      return buildLast7DaysChart([], completed);
-    }
-    return buildLast7DaysChart(daily, completed);
-  }, [bookings, chartFinance?.daily, useLocalFallback]);
+    return buildLast7DaysChart(daily, []);
+  }, [chartFinance?.daily]);
+
+  const pageLoading =
+    !fullyReady ||
+    balanceLoading ||
+    payoutsLoading ||
+    (financeLoading && finance === undefined) ||
+    (!chartUsesRange && chartLoading && chartFinanceExtra === undefined);
+
+  const rangeLoading = financeFetching && finance === undefined;
 
   const exportCsv = () => {
     const header = "Sana,Mijoz,Xizmat,To'lov,Summa\n";
@@ -164,8 +153,13 @@ function EarningsPage() {
     }
   };
 
+  if (pageLoading) {
+    return <EarningsPageSkeleton />;
+  }
+
   const rangeHint = range.toLowerCase();
   const minWithdraw = balance ? Number(balance.min_withdrawal) : 50000;
+  const payoutList = payouts ?? [];
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
@@ -271,39 +265,39 @@ function EarningsPage() {
         </div>
       ) : null}
 
-      {useLocalFallback ? (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-900 dark:text-amber-100">
-          API hali yangilanmagan — bronlar ro&apos;yxatidan vaqtinchalik hisoblandi. Backend deploy
-          qilinganidan keyin yangilang.
+      {rangeLoading ? (
+        <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          {range} davri yuklanmoqda…
         </div>
-      ) : null}
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard
-          icon={<TrendingUp className="size-4" />}
-          label="Jami daromad"
-          value={formatUZS(totalIncome)}
-          hint={`${cashCount + onlineCount} ta bron · ${rangeHint}`}
-        />
-        <StatCard
-          icon={<Wallet className="size-4" />}
-          label="Naqd"
-          value={formatUZS(cashTotal)}
-          hint={`${cashCount} ta · yechib olinmaydi`}
-        />
-        <StatCard
-          icon={<TrendingUp className="size-4" />}
-          label="Onlayn"
-          value={formatUZS(onlineIncome)}
-          hint={`${onlineCount} ta · yechish mumkin`}
-        />
-        <StatCard
-          icon={<Receipt className="size-4" />}
-          label="Xarajatlar"
-          value={formatUZS(rangeExpenses)}
-          hint={`${rangeHint} · sof onlayn ${formatUZS(net)}`}
-        />
-      </div>
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard
+            icon={<TrendingUp className="size-4" />}
+            label="Jami daromad"
+            value={formatUZS(totalIncome)}
+            hint={`${cashCount + onlineCount} ta bron · ${rangeHint}`}
+          />
+          <StatCard
+            icon={<Wallet className="size-4" />}
+            label="Naqd"
+            value={formatUZS(cashTotal)}
+            hint={`${cashCount} ta · yechib olinmaydi`}
+          />
+          <StatCard
+            icon={<TrendingUp className="size-4" />}
+            label="Onlayn"
+            value={formatUZS(onlineIncome)}
+            hint={`${onlineCount} ta · yechish mumkin`}
+          />
+          <StatCard
+            icon={<Receipt className="size-4" />}
+            label="Xarajatlar"
+            value={formatUZS(rangeExpenses)}
+            hint={`${rangeHint} · sof onlayn ${formatUZS(net)}`}
+          />
+        </div>
+      )}
 
       <div className="rounded-xl border border-border bg-card p-6 shadow-card">
         <div className="flex items-center justify-between mb-6">
@@ -344,12 +338,12 @@ function EarningsPage() {
         </div>
       </div>
 
-      {payouts.length > 0 ? (
+      {payoutList.length > 0 ? (
         <div className="rounded-xl border border-border bg-card overflow-hidden shadow-card">
           <div className="px-5 py-4 border-b border-border">
             <h2 className="font-heading text-lg font-semibold">Pul yechish tarixi</h2>
           </div>
-          {payouts.map((p) => (
+          {payoutList.map((p) => (
             <div
               key={p.id}
               className="grid grid-cols-12 gap-4 px-5 py-3 items-center border-b border-border last:border-b-0"
@@ -375,7 +369,12 @@ function EarningsPage() {
           <div className="col-span-2">Holat</div>
           <div className="col-span-1 text-right">Summa</div>
         </div>
-        {transactions.length === 0 ? (
+        {rangeLoading ? (
+          <div className="flex items-center justify-center gap-2 px-5 py-10 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            Tranzaksiyalar yuklanmoqda…
+          </div>
+        ) : transactions.length === 0 ? (
           <div className="px-5 py-10 text-center text-sm text-muted-foreground">
             Tanlangan davrda tranzaksiyalar yo&apos;q.
           </div>

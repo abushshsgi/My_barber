@@ -14,6 +14,7 @@ import {
   writeBookingsSnapshot,
 } from "@/lib/barber-snapshot-cache";
 import { getBarberWsState } from "@/hooks/use-booking-live-sync";
+import { last7DaysIsoParams, rangeToIsoParams } from "@/lib/finance-range";
 
 function barberBookingsNeedLivePolling(list: Booking[] | null | undefined): boolean {
   if (!list?.length) return false;
@@ -450,6 +451,26 @@ export function prefetchPayoutBalance(qc: import("@tanstack/react-query").QueryC
     queryFn: () => apiJson("/api/v1/barber/payouts/balance/"),
     staleTime: 15_000,
   }).catch(() => undefined);
+}
+
+export function prefetchBarberPayouts(qc: import("@tanstack/react-query").QueryClient) {
+  return qc.prefetchQuery({
+    queryKey: barberQueryKeys.payouts(),
+    queryFn: () => apiList("/api/v1/barber/payouts/"),
+    staleTime: 15_000,
+  }).catch(() => undefined);
+}
+
+/** Parallel prefetch for earnings page — loader should await this before render. */
+export async function prefetchEarningsPage(qc: import("@tanstack/react-query").QueryClient) {
+  const defaultRange = rangeToIsoParams("Bugun");
+  const chartRange = last7DaysIsoParams();
+  await Promise.all([
+    prefetchBarberFinance(qc, defaultRange),
+    prefetchBarberFinance(qc, chartRange),
+    prefetchPayoutBalance(qc),
+    prefetchBarberPayouts(qc),
+  ]);
 }
 
 export function prefetchBarberAnalytics(
