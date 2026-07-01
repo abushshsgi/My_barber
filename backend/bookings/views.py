@@ -310,9 +310,16 @@ class BookingViewSet(viewsets.ModelViewSet):
         return self.update(request, *args, **kwargs)
 
     def list(self, request, *args, **kwargs):
+        import logging
+
         from bookings.expiry import expire_stale_pending_bookings
 
-        expire_stale_pending_bookings()
+        try:
+            expire_stale_pending_bookings()
+        except Exception:
+            logging.getLogger(__name__).exception(
+                "expire_stale_pending_bookings failed during list"
+            )
         return super().list(request, *args, **kwargs)
 
     def retrieve(self, request, *args, **kwargs):
@@ -341,11 +348,12 @@ class BookingViewSet(viewsets.ModelViewSet):
     def accept(self, request, pk=None):
         from django.db import transaction
 
+        from bookings.db_compat import booking_queryset_compat
         from bookings.expiry import ensure_pending_not_expired
         from bookings.models import Booking
 
         with transaction.atomic():
-            booking = Booking.objects.select_for_update().get(pk=pk)
+            booking = booking_queryset_compat(Booking.objects).select_for_update().get(pk=pk)
             if not self._barber_can_manage_booking(request, booking):
                 return Response(status=403)
             expired = ensure_pending_not_expired(booking)
