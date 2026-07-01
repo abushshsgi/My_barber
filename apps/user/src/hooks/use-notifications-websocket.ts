@@ -16,6 +16,8 @@ type WsPayload = {
   payload?: { booking_id?: number };
 };
 
+export type UserWsConnectionState = "connecting" | "open" | "closed";
+
 /**
  * Shared singleton socket so multiple consumers (and React StrictMode's
  * mount/unmount/mount cycle in dev) reuse a single connection instead of
@@ -26,7 +28,28 @@ let socket: WebSocket | null = null;
 let activeToken: string | null = null;
 let refCount = 0;
 let closeTimer: ReturnType<typeof setTimeout> | null = null;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let wsState: UserWsConnectionState = "closed";
 const clients = new Set<QueryClient>();
+const wsListeners = new Set<(open: boolean) => void>();
+
+function setWsState(next: UserWsConnectionState) {
+  wsState = next;
+  const open = next === "open";
+  for (const fn of wsListeners) fn(open);
+}
+
+export function getUserWsState(): UserWsConnectionState {
+  return wsState;
+}
+
+export function subscribeUserWsState(listener: (open: boolean) => void) {
+  wsListeners.add(listener);
+  listener(wsState === "open");
+  return () => {
+    wsListeners.delete(listener);
+  };
+}
 
 function invalidateAll() {
   for (const qc of clients) {
@@ -47,8 +70,17 @@ function refreshBookings(bookingId?: number) {
   }
 }
 
+function scheduleReconnect() {
+  if (refCount === 0 || reconnectTimer) return;
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    const token = getUserAccessToken();
+    if (token && refCount > 0) openSocket(token);
+  }, 5_000);
+}
+
 function openSocket(token: string) {
-  if (socket && activeToken === token) return;
+  if (socket && activeToken === token && wsState === "open") return;
   if (socket) {
     try {
       socket.close();
@@ -59,12 +91,16 @@ function openSocket(token: string) {
   }
 
   activeToken = token;
+  setWsState("connecting");
   try {
     socket = new WebSocket(notificationWebSocketUrl(token));
   } catch {
     socket = null;
+    setWsState("closed");
     return;
   }
+
+  socket.onopen = () => setWsState("open");
 
   socket.onmessage = (evt) => {
     try {
@@ -89,17 +125,24 @@ function openSocket(token: string) {
   };
 
   socket.onclose = () => {
+    setWsState("closed");
     if (socket && socket.readyState === WebSocket.CLOSED) {
       socket = null;
       activeToken = null;
     }
+    scheduleReconnect();
   };
 }
 
 function teardownSocket() {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
   const current = socket;
   socket = null;
   activeToken = null;
+  setWsState("closed");
   if (!current) return;
   current.onmessage = null;
   current.onclose = null;
@@ -121,6 +164,10 @@ export function useNotificationsWebSocket() {
     if (closeTimer) {
       clearTimeout(closeTimer);
       closeTimer = null;
+    }
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
     }
 
     clients.add(qc);

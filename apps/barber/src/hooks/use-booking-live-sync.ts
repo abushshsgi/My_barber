@@ -10,6 +10,7 @@ let socket: WebSocket | null = null;
 let activeToken: string | null = null;
 let refCount = 0;
 let closeTimer: ReturnType<typeof setTimeout> | null = null;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let wsState: WsConnectionState = "closed";
 const clients = new Set<ReturnType<typeof useQueryClient>>();
 const wsListeners = new Set<(open: boolean) => void>();
@@ -71,6 +72,15 @@ function scheduleBookingInvalidate(
   }, 400);
 }
 
+function scheduleReconnect() {
+  if (refCount === 0 || reconnectTimer) return;
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    const token = getBarberAccessToken();
+    if (token && refCount > 0) openSocket(token);
+  }, 5_000);
+}
+
 function openSocket(token: string) {
   if (socket && activeToken === token && wsState === "open") return;
   if (socket) {
@@ -92,7 +102,10 @@ function openSocket(token: string) {
   }
 
   socket.onopen = () => setWsState("open");
-  socket.onclose = () => setWsState("closed");
+  socket.onclose = () => {
+    setWsState("closed");
+    scheduleReconnect();
+  };
   socket.onerror = () => setWsState("closed");
 
   socket.onmessage = (evt) => {
@@ -133,6 +146,10 @@ export function useBookingLiveSync(bookingId?: string) {
       clearTimeout(closeTimer);
       closeTimer = null;
     }
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
 
     clients.add(qc);
     refCount += 1;
@@ -144,6 +161,10 @@ export function useBookingLiveSync(bookingId?: string) {
       if (refCount === 0) {
         closeTimer = setTimeout(() => {
           if (refCount === 0 && socket) {
+            if (reconnectTimer) {
+              clearTimeout(reconnectTimer);
+              reconnectTimer = null;
+            }
             try {
               socket.close();
             } catch {

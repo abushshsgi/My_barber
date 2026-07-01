@@ -310,24 +310,17 @@ class BookingViewSet(viewsets.ModelViewSet):
         return self.update(request, *args, **kwargs)
 
     def list(self, request, *args, **kwargs):
-        import logging
-
-        from bookings.expiry import expire_stale_pending_bookings
-
-        try:
-            expire_stale_pending_bookings()
-        except Exception:
-            logging.getLogger(__name__).exception(
-                "expire_stale_pending_bookings failed during list"
-            )
         return super().list(request, *args, **kwargs)
 
     def retrieve(self, request, *args, **kwargs):
-        booking = self.get_object()
-        from bookings.expiry import ensure_pending_not_expired
+        from bookings.models import Booking
 
-        ensure_pending_not_expired(booking)
-        booking.refresh_from_db()
+        booking = self.get_object()
+        if booking.status == Booking.Status.PENDING:
+            from bookings.expiry import ensure_pending_not_expired
+
+            ensure_pending_not_expired(booking)
+            booking.refresh_from_db()
         if not isinstance(request.user, BarberPrincipal):
             try:
                 from bookings.checkin_tokens import maybe_issue_check_in_token

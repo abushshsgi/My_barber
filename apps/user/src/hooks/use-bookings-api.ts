@@ -16,6 +16,7 @@ import { userQueryKey } from "@/lib/query-keys";
 import { mapBooking, mapBookings } from "@/lib/mappers/booking";
 import { bookingLifecycleStatus, bookingsNeedLivePolling } from "@/lib/bookings-utils";
 import { bookingNeedsLiveRefresh } from "@mybarber/shared/booking-lifecycle";
+import { getUserWsState } from "@/hooks/use-notifications-websocket";
 
 export const bookingsQueryKeyBase = ["bookings"] as const;
 
@@ -30,7 +31,10 @@ export function useBookings() {
     queryFn: async () => mapBookings(await fetchBookings()),
     staleTime: 8_000,
     enabled: authQueryEnabled(!!userId),
-    refetchInterval: (q) => (bookingsNeedLivePolling(q.state.data) ? 5_000 : false),
+    refetchInterval: (q) => {
+      if (getUserWsState() === "open") return false;
+      return bookingsNeedLivePolling(q.state.data) ? 15_000 : false;
+    },
     refetchOnWindowFocus: true,
   });
 }
@@ -43,13 +47,14 @@ export function useBooking(bookingId: string) {
     enabled: authQueryEnabled(!!userId && Boolean(bookingId)),
     staleTime: 5_000,
     refetchInterval: (q) => {
+      if (getUserWsState() === "open") return false;
       const data = q.state.data;
-      if (!data) return 3_000;
+      if (!data) return 10_000;
       const status = data.status;
-      if (status === "pending") return 3_000;
-      if (status === "accepted" && !data.checkedInAt && !data.checkInCode) return 2_000;
+      if (status === "pending") return 10_000;
+      if (status === "accepted" && !data.checkedInAt && !data.checkInCode) return 8_000;
       if (bookingNeedsLiveRefresh(bookingLifecycleStatus(data))) {
-        return status === "in_progress" ? 2_000 : 4_000;
+        return status === "in_progress" ? 8_000 : 15_000;
       }
       return false;
     },

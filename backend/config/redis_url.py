@@ -46,7 +46,7 @@ def get_redis_url() -> str:
 
 
 def redis_client_kwargs() -> dict:
-    """Public Redis proxy uchun qisqa timeout — uzoq kutish HTTP ni bloklamasligi kerak."""
+    """Cache va qisqa HTTP operatsiyalar uchun — uzoq kutish bloklamasligi kerak."""
     return {
         "socket_connect_timeout": 3,
         "socket_timeout": 3,
@@ -55,7 +55,15 @@ def redis_client_kwargs() -> dict:
     }
 
 
+def redis_channel_layer_kwargs() -> dict:
+    """Channels pub/sub uzoq kutadi — socket_timeout qo'ymaymiz (WS idle holatda)."""
+    return {
+        "socket_connect_timeout": 10,
+        "retry_on_timeout": True,
+    }
+
+
 def redis_channel_layer_hosts(url: str) -> list:
     if not url:
         return []
-    return [{"address": url, **redis_client_kwargs()}]
+    return [{"address": url, **redis_channel_layer_kwargs()}]

@@ -15,6 +15,13 @@ import {
 } from "@/lib/barber-snapshot-cache";
 import { getBarberWsState } from "@/hooks/use-booking-live-sync";
 
+function barberBookingsNeedLivePolling(list: Booking[] | null | undefined): boolean {
+  if (!list?.length) return false;
+  return list.some(
+    (b) => b.status === "pending" || b.status === "accepted" || b.status === "in_progress",
+  );
+}
+
 export const barberQueryKeys = {
   all: ["barber"] as const,
   services: () => [...barberQueryKeys.all, "services"] as const,
@@ -65,8 +72,9 @@ export function useBarberBookingsQuery(enabled = true) {
     enabled,
     staleTime: 30_000,
     refetchInterval: (q) => {
-      if (getBarberWsState() === "open") return 60_000;
-      return 45_000;
+      if (!barberBookingsNeedLivePolling(q.state.data)) return false;
+      if (getBarberWsState() === "open") return 120_000;
+      return 90_000;
     },
     initialData: () => readBookingsSnapshot() ?? undefined,
     initialDataUpdatedAt: readBookingsSnapshotUpdatedAt,
@@ -87,8 +95,8 @@ export function useBarberBookingQuery(id: string, enabled = true) {
     refetchInterval: (q) => {
       if (getBarberWsState() === "open") return false;
       const status = q.state.data?.status;
-      if (status === "in_progress") return 5_000;
-      if (status === "pending" || status === "accepted") return 20_000;
+      if (status === "in_progress") return 10_000;
+      if (status === "pending" || status === "accepted") return 30_000;
       return false;
     },
   });

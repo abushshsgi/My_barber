@@ -56,7 +56,7 @@ export function useRealtimeStatus(enabled = true) {
     queryFn: fetchHealth,
     enabled,
     staleTime: 15_000,
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
     retry: 1,
   });
 
