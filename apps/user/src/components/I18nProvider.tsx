@@ -8,15 +8,19 @@ function syncDocumentLang(lang: string) {
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState(() => i18n.resolvedLanguage || i18n.language || "uz");
+  // SSR va hydration bir xil bo'lishi uchun dastlab "uz"; clientda localStorage o'qiladi.
+  const [lang, setLang] = useState("uz");
 
   useEffect(() => {
+    const resolved = i18n.resolvedLanguage || i18n.language || "uz";
+    setLang(resolved);
+    syncDocumentLang(resolved);
+
     const onChange = (lng: string) => {
       setLang(lng);
       syncDocumentLang(lng);
     };
 
-    syncDocumentLang(i18n.resolvedLanguage || i18n.language || "uz");
     i18n.on("languageChanged", onChange);
     i18n.on("loaded", onChange);
 
@@ -28,9 +32,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   return (
     <I18nextProvider i18n={i18n} defaultNS="translation">
-      <div key={lang.split("-")[0]} data-app-lang={lang.split("-")[0]}>
-        {children}
-      </div>
+      <div data-app-lang={lang.split("-")[0]}>{children}</div>
     </I18nextProvider>
   );
 }

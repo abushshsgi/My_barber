@@ -1,12 +1,13 @@
+import { useEffect, useState } from "react";
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { SalonDesktopPage } from "@/components/desktop/pages/SalonDesktopPage";
 import { SalonMobilePage } from "@/components/salon/SalonMobilePage";
 import { useFavorites } from "@/hooks/use-favorites";
 import { SalonShareSheet } from "@/components/salon/SalonShareSheet";
 import { useShareSalon } from "@/hooks/use-share-salon";
 import { useSalonPage } from "@/hooks/use-salon-page";
+import { useIsLgUp } from "@/hooks/use-mobile";
 import { salonsQueryKey } from "@/hooks/use-salons";
 import { fetchSalon } from "@/lib/api/salons";
 import { mapSalonDetail } from "@/lib/mappers/salon";
@@ -37,6 +38,10 @@ function SalonPage() {
   const { salon, isLoading, reviewsAreMock } = useSalonPage(id);
   const { isFav, toggle, isPending } = useFavorites();
   const { openShare, shareOpen, setShareOpen, shareSalon } = useShareSalon(salon ?? undefined);
+  const isLgUp = useIsLgUp();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   if (isLoading || !salon) {
     return (
@@ -57,12 +62,11 @@ function SalonPage() {
     reviewsAreMock,
   };
 
+  const showDesktop = mounted && isLgUp;
+
   return (
     <>
-      <DesktopPageSplit
-        mobile={<SalonMobilePage {...pageProps} />}
-        desktop={<SalonDesktopPage {...pageProps} />}
-      />
+      {showDesktop ? <SalonDesktopPage {...pageProps} /> : <SalonMobilePage {...pageProps} />}
       {shareSalon ? (
         <SalonShareSheet open={shareOpen} onOpenChange={setShareOpen} salon={shareSalon} />
       ) : null}

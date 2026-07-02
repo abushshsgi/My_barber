@@ -8,6 +8,7 @@ import {
   resolveDefaultSalonBarberId,
   resolveDefaultServiceIdsForBarber,
 } from "@/lib/salon-services";
+import { ClientOnly } from "@/components/ClientOnly";
 import { SalonAmenitiesSection } from "@/components/salon/SalonAmenitiesSection";
 import { SalonBookingCalendar } from "@/components/salon/SalonBookingCalendar";
 import { SalonHoursSection } from "@/components/salon/SalonHoursSection";
@@ -196,12 +197,18 @@ export function SalonPageSections({
 
       {showCalendar ? (
         <div id="salon-booking" className="scroll-mt-36 border-b border-border pb-12">
-          <SalonBookingCalendar
-            salonId={salon.id}
-            barberId={calendarBarberId}
-            serviceIds={calendarServiceIds.length ? calendarServiceIds : undefined}
-            months={calendarMonths}
-          />
+          <ClientOnly
+            fallback={
+              <div className="h-72 animate-pulse rounded-2xl bg-muted" aria-label={t("common.loading")} />
+            }
+          >
+            <SalonBookingCalendar
+              salonId={salon.id}
+              barberId={calendarBarberId}
+              serviceIds={calendarServiceIds.length ? calendarServiceIds : undefined}
+              months={calendarMonths}
+            />
+          </ClientOnly>
         </div>
       ) : null}
 

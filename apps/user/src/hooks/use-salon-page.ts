@@ -21,7 +21,7 @@ export function useSalonPage(id: string) {
   });
 
   const staffMapped = useMemo(() => {
-    const rows = staffRaw.data ?? [];
+    const rows = Array.isArray(staffRaw.data) ? staffRaw.data : [];
     const services = detail.data?.services ?? [];
     return rows.map((r) => mapStaffToBarber(r, id, services));
   }, [staffRaw.data, detail.data?.services, id]);

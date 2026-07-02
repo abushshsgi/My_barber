@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { ClientOnly } from "@/components/ClientOnly";
 import { SalonMap } from "@/components/map/SalonMap";
 
 export function SalonLocationSection({
@@ -21,13 +22,17 @@ export function SalonLocationSection({
       <p className="text-base font-medium">{address}</p>
       {hasCoords ? (
         <div className="h-80 overflow-hidden rounded-2xl border border-border shadow-sm">
-          <SalonMap
-            markers={[{ id: salonId, lat, lng, label: address }]}
-            selectedId={null}
-            onMarkerSelect={() => {}}
-            onMarkerNavigate={() => {}}
-            autoFitMarkers
-          />
+          <ClientOnly
+            fallback={<div className="h-full w-full animate-pulse bg-muted" aria-hidden />}
+          >
+            <SalonMap
+              markers={[{ id: salonId, lat, lng, label: address }]}
+              selectedId={null}
+              onMarkerSelect={() => {}}
+              onMarkerNavigate={() => {}}
+              autoFitMarkers
+            />
+          </ClientOnly>
         </div>
       ) : null}
     </section>

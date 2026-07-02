@@ -49,6 +49,83 @@ function Main({ children, fullBleed, className }: ShellProps & { className?: str
   );
 }
 
+export function DesktopAppHeader({
+  notificationsUnread = 0,
+  chatUnread = 0,
+  headerInsetClassName = HEADER_INSET_DEFAULT,
+}: {
+  notificationsUnread?: number;
+  chatUnread?: number;
+  headerInsetClassName?: string;
+}) {
+  const { t } = useTranslation();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  return (
+    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md">
+      <div className={cn("flex h-[4.25rem] w-full min-w-0 items-center gap-2 sm:gap-4", headerInsetClassName)}>
+        <Link to="/" className="flex shrink-0 items-baseline gap-0.5">
+          <span className="text-lg font-bold tracking-tight text-foreground sm:text-xl">mysaloon</span>
+          <span className="text-xs font-bold text-muted-foreground sm:text-sm">.uz</span>
+        </Link>
+
+        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 overflow-x-auto lg:flex xl:gap-1">
+          {MAIN_NAV.map(({ to, key, icon: Icon }) => {
+            const active = isNavTabActive(pathname, to);
+            const label = t(key);
+            return (
+              <Link
+                key={to}
+                to={to}
+                preload="intent"
+                aria-label={label}
+                title={label}
+                className={cn(
+                  "flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-2 text-[13px] font-bold transition-colors 2xl:px-3.5",
+                  active
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:bg-surface hover:text-foreground",
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" strokeWidth={active ? 2.4 : 2} />
+                <span className="hidden 2xl:inline" suppressHydrationWarning>
+                  {label}
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+          <div className="hidden xl:block">
+            <AudienceSwitch variant="header" showProfileHint={false} />
+          </div>
+          <DesktopHeaderActions notificationsUnread={notificationsUnread} chatUnread={chatUnread} />
+        </div>
+      </div>
+
+      <nav className={cn("flex gap-1 overflow-x-auto border-t border-border/60 py-2 lg:hidden", headerInsetClassName)}>
+        {MAIN_NAV.map(({ to, key, icon: Icon }) => {
+          const active = isNavTabActive(pathname, to);
+          return (
+            <Link
+              key={to}
+              to={to}
+              className={cn(
+                "flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-bold",
+                active ? "bg-foreground text-background" : "text-muted-foreground",
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {t(key)}
+            </Link>
+          );
+        })}
+      </nav>
+    </header>
+  );
+}
+
 export function ShellBazaarClassic({
   children,
   notificationsUnread = 0,
@@ -57,76 +134,16 @@ export function ShellBazaarClassic({
   mainClassName,
   headerInsetClassName = HEADER_INSET_DEFAULT,
 }: ShellProps) {
-  const { t } = useTranslation();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md">
-        <div className={cn("flex h-[4.25rem] w-full min-w-0 items-center gap-2 sm:gap-4", headerInsetClassName)}>
-          <Link to="/" className="flex shrink-0 items-baseline gap-0.5">
-            <span className="text-lg font-bold tracking-tight text-foreground sm:text-xl">mysaloon</span>
-            <span className="text-xs font-bold text-muted-foreground sm:text-sm">.uz</span>
-          </Link>
-
-          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 overflow-x-auto lg:flex xl:gap-1">
-            {MAIN_NAV.map(({ to, key, icon: Icon }) => {
-              const active = isNavTabActive(pathname, to);
-              const label = t(key);
-              return (
-                <Link
-                  key={to}
-                  to={to}
-                  preload="intent"
-                  aria-label={label}
-                  title={label}
-                  className={cn(
-                    "flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-2 text-[13px] font-bold transition-colors 2xl:px-3.5",
-                    active
-                      ? "bg-foreground text-background"
-                      : "text-muted-foreground hover:bg-surface hover:text-foreground",
-                  )}
-                >
-                  <Icon className="h-3.5 w-3.5" strokeWidth={active ? 2.4 : 2} />
-                  <span className="hidden 2xl:inline" suppressHydrationWarning>
-                    {label}
-                  </span>
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
-            <div className="hidden xl:block">
-              <AudienceSwitch variant="header" showProfileHint={false} />
-            </div>
-            <DesktopHeaderActions
-              notificationsUnread={notificationsUnread}
-              chatUnread={chatUnread}
-            />
-          </div>
-        </div>
-
-        <nav className={cn("flex gap-1 overflow-x-auto border-t border-border/60 py-2 lg:hidden", headerInsetClassName)}>
-          {MAIN_NAV.map(({ to, key, icon: Icon }) => {
-            const active = isNavTabActive(pathname, to);
-            return (
-              <Link
-                key={to}
-                to={to}
-                className={cn(
-                  "flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-bold",
-                  active ? "bg-foreground text-background" : "text-muted-foreground",
-                )}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {t(key)}
-              </Link>
-            );
-          })}
-        </nav>
-      </header>
-      <Main fullBleed={fullBleed} className={mainClassName}>{children}</Main>
+      <DesktopAppHeader
+        notificationsUnread={notificationsUnread}
+        chatUnread={chatUnread}
+        headerInsetClassName={headerInsetClassName}
+      />
+      <Main fullBleed={fullBleed} className={mainClassName}>
+        {children}
+      </Main>
     </div>
   );
 }
