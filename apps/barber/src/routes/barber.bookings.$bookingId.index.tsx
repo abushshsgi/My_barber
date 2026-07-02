@@ -93,7 +93,7 @@ function BarberBookingOverviewPage() {
     }
     if (booking.status === "in_progress") {
       void navigate({
-        to: "/barber/bookings/$bookingId/session",
+        to: "/barber/bookings/$bookingId/check-in",
         params: { bookingId },
         replace: true,
       });

@@ -1,71 +1,104 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { useCallback, useEffect } from "react";
-import { BookingConfirmFlow } from "@/components/bookings/BookingConfirmFlow";
+import { useCallback, useState } from "react";
+import { BookingUnifiedFlow } from "@/components/bookings/BookingUnifiedFlow";
 import { BookingQueryError } from "@/components/bookings/BookingQueryError";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { useBookingClientInfo } from "@/hooks/use-booking-client-info";
 import { useBookingWorkflowActions } from "@/hooks/use-booking-workflow";
 import { useBarberBookingQuery } from "@/hooks/use-barber-queries";
 
+type FlowSearch = {
+  finish?: boolean;
+};
+
 export const Route = createFileRoute("/barber/bookings/$bookingId/check-in")({
-  component: BarberBookingCheckInPage,
+  validateSearch: (raw: Record<string, unknown>): FlowSearch => ({
+    finish: raw.finish === "1" || raw.finish === 1 || raw.finish === true,
+  }),
+  component: BarberBookingFlowPage,
 });
 
-function ConfirmPageContent({
+function FlowPageContent({
   booking,
   bookingId,
+  autoOpenComplete,
   wide,
 }: {
   booking: NonNullable<ReturnType<typeof useBarberBookingQuery>["data"]>;
   bookingId: string;
+  autoOpenComplete?: boolean;
   wide?: boolean;
 }) {
   const navigate = useNavigate();
   const clientInfo = useBookingClientInfo(booking);
-  const { runAction, busy } = useBookingWorkflowActions(bookingId);
+  const { runAction, complete, busy } = useBookingWorkflowActions(bookingId);
+  const [completeSuccess, setCompleteSuccess] = useState(false);
 
   const handleStart = useCallback(() => {
-    runAction("start", { navigateOnFlow: true });
+    runAction("start", { navigateOnFlow: false });
   }, [runAction]);
 
+  const active =
+    booking.status === "accepted" || booking.status === "in_progress";
+
+  if (!active) {
+    return (
+      <div className="rounded-2xl bg-muted/40 p-6 text-center text-sm text-muted-foreground">
+        Bu bron faol jarayonda emas.{" "}
+        <button
+          type="button"
+          className="font-medium text-foreground underline-offset-2 hover:underline"
+          onClick={() =>
+            void navigate({ to: "/barber/bookings/$bookingId", params: { bookingId } })
+          }
+        >
+          Tafsilotlarga qaytish
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <BookingConfirmFlow
+    <BookingUnifiedFlow
       booking={booking}
       bookingId={bookingId}
       clientVisits={clientInfo.visits}
       clientQuery={clientInfo.query}
       busy={busy}
+      autoOpenComplete={autoOpenComplete}
+      completeSuccess={completeSuccess}
+      wide={wide}
       onChat={() => void navigate({ to: "/barber/chat" })}
       onStart={handleStart}
+      onComplete={(opts) =>
+        complete(opts, {
+          onSuccess: () => {
+            setCompleteSuccess(true);
+            window.setTimeout(() => {
+              void navigate({ to: "/barber/bookings" });
+            }, 2800);
+          },
+        })
+      }
     />
   );
 }
 
-function BarberBookingCheckInPage() {
-  const navigate = useNavigate();
+function BarberBookingFlowPage() {
   const { bookingId } = Route.useParams();
+  const { finish } = Route.useSearch();
   const { data: booking, isLoading, isError, error } = useBarberBookingQuery(bookingId);
-
-  useEffect(() => {
-    if (booking?.status === "in_progress") {
-      void navigate({
-        to: "/barber/bookings/$bookingId/session",
-        params: { bookingId },
-        replace: true,
-      });
-    }
-  }, [booking?.status, bookingId, navigate]);
 
   const shell = (wide?: boolean) => (
     <div
       className={
         wide
-          ? "min-h-[calc(100dvh-4rem)] space-y-5 px-6 pb-12 pt-6 lg:px-10"
-          : "min-h-[calc(100dvh-4rem)] space-y-5 p-4 pb-12 sm:p-6"
+          ? "min-h-[calc(100dvh-4rem)] px-8 pb-32 pt-6 lg:px-12"
+          : "min-h-[calc(100dvh-4rem)] px-4 pb-32 pt-4 sm:px-6 sm:pt-6"
       }
     >
-      <div className={wide ? "mx-auto max-w-4xl" : "mx-auto max-w-lg"}>
+      <div className={wide ? "mx-auto w-full max-w-[1400px]" : "mx-auto w-full max-w-lg"}>
         <Link
           to="/barber/bookings"
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -75,34 +108,21 @@ function BarberBookingCheckInPage() {
         </Link>
 
         {isLoading ? (
-          <div className="mt-5 flex h-56 items-center justify-center rounded-2xl bg-card shadow-card">
+          <div className="mt-6 flex h-56 items-center justify-center rounded-2xl bg-card shadow-card">
             <Loader2 className="size-7 animate-spin text-muted-foreground" />
           </div>
         ) : isError ? (
-          <div className="mt-5">
+          <div className="mt-6">
             <BookingQueryError error={error} />
           </div>
-        ) : booking?.status === "in_progress" ? (
-          <div className="mt-5 flex h-40 items-center justify-center text-sm text-muted-foreground">
-            <Loader2 className="mr-2 size-5 animate-spin" />
-            Seans sahifasiga yo&apos;naltirilmoqda…
-          </div>
-        ) : booking?.status === "accepted" ? (
-          <div className="mt-5">
-            <ConfirmPageContent booking={booking} bookingId={bookingId} wide={wide} />
-          </div>
         ) : booking ? (
-          <div className="mt-5 rounded-2xl bg-muted/40 p-4 text-sm text-muted-foreground">
-            Bu bron tasdiqlash bosqichida emas.{" "}
-            <button
-              type="button"
-              className="font-medium text-foreground underline-offset-2 hover:underline"
-              onClick={() =>
-                void navigate({ to: "/barber/bookings/$bookingId", params: { bookingId } })
-              }
-            >
-              Orqaga
-            </button>
+          <div className="mt-6">
+            <FlowPageContent
+              booking={booking}
+              bookingId={bookingId}
+              autoOpenComplete={finish === true}
+              wide={wide}
+            />
           </div>
         ) : null}
       </div>

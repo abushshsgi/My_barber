@@ -37,7 +37,7 @@ export function useBookingWorkflowActions(bookingId: string) {
             toast.success("Xizmat boshlandi");
             if (navigateOnFlow) {
               void navigate({
-                to: "/barber/bookings/$bookingId/session",
+                to: "/barber/bookings/$bookingId/check-in",
                 params: { bookingId },
                 replace: true,
               });
