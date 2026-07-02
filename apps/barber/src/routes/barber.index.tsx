@@ -166,7 +166,7 @@ function BarberDashboard() {
       {active && (
         <div className="rounded-xl border border-foreground bg-foreground text-background p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4">
           <Link
-            to="/barber/bookings/$bookingId/check-in"
+            to="/barber/bookings/$bookingId"
             params={{ bookingId: active.id }}
             className="flex min-w-0 flex-1 items-center gap-3 transition-opacity hover:opacity-90"
           >
@@ -187,7 +187,7 @@ function BarberDashboard() {
             type="button"
             onClick={() =>
               void navigate({
-                to: "/barber/bookings/$bookingId/check-in",
+                to: "/barber/bookings/$bookingId",
                 params: { bookingId: active.id },
                 search: { finish: true },
               })

@@ -1,13 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  BadgeCheck,
   CheckCircle2,
-  ChevronLeft,
   Loader2,
   MessageSquare,
   Phone,
-  ScanLine,
   Scissors,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -41,13 +38,13 @@ type Props = {
   wide?: boolean;
 };
 
-type FlowStage = "review" | "qr" | "starting" | "session";
+type FlowStage = "qr" | "starting" | "session";
 
 const stageMotion = {
-  initial: { opacity: 0, y: 20, scale: 0.98 },
-  animate: { opacity: 1, y: 0, scale: 1 },
-  exit: { opacity: 0, y: -16, scale: 0.98 },
-  transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] as const },
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
+  transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as const },
 };
 
 function InChairHero({ active }: { active: boolean }) {
@@ -88,20 +85,13 @@ export function BookingUnifiedFlow({
   completeSuccess = false,
   wide = false,
 }: Props) {
-  const [showQr, setShowQr] = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
   const autoStartedRef = useRef(false);
 
   const checkedIn = !!booking.checked_in_at;
   const isSession = booking.status === "in_progress";
 
-  const stage: FlowStage = isSession
-    ? "session"
-    : checkedIn
-      ? "starting"
-      : showQr
-        ? "qr"
-        : "review";
+  const stage: FlowStage = isSession ? "session" : checkedIn ? "starting" : "qr";
 
   useEffect(() => {
     if (!checkedIn || autoStartedRef.current || busy) return;
@@ -122,7 +112,7 @@ export function BookingUnifiedFlow({
   }, [completeSuccess]);
 
   const handleCheckedIn = useCallback(() => {
-    setShowQr(false);
+    /* refetch via mutation invalidates booking query */
   }, []);
 
   const phone = booking.client_phone?.trim();
@@ -130,62 +120,37 @@ export function BookingUnifiedFlow({
 
   const maxW = wide ? "max-w-[1400px]" : "max-w-lg";
 
+  const primaryLabel =
+    stage === "starting" ? "Kresloda" : stage === "session" ? "Xizmatni tugatish" : null;
+
   return (
     <div className={`booking-unified-flow mx-auto w-full ${maxW}`}>
       <AnimatePresence mode="wait">
-        {stage === "review" ? (
-          <motion.div key="review" {...stageMotion} className="space-y-6">
-            <div className="flex items-center gap-4 rounded-2xl border border-foreground/15 bg-foreground px-5 py-4 text-background lg:px-8 lg:py-5">
-              <span className="grid size-12 place-items-center rounded-xl bg-background/15">
-                <BadgeCheck className="size-6" />
-              </span>
-              <div>
-                <p className="font-heading text-base font-semibold lg:text-lg">Bron tasdiqlash</p>
-                <p className="text-sm text-background/75">
-                  Ma&apos;lumotlarni tekshiring va mijoz kelganda QR bilan tasdiqlang.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-start lg:gap-10">
-              <div className="space-y-4">
-                <BookingDetailSummary
-                  booking={booking}
-                  clientVisits={clientVisits}
-                  clientQuery={clientQuery}
-                  onChat={onChat}
-                />
-                <BookingNotesCard notes={booking.notes} />
-              </div>
-              <div className="space-y-4">
-                <BookingPaymentCard booking={booking} />
-                <BookingOrderNumberBanner orderNumber={booking.order_number} />
-              </div>
-            </div>
-          </motion.div>
-        ) : null}
-
         {stage === "qr" ? (
-          <motion.div key="qr" {...stageMotion} className="space-y-6">
-            <button
-              type="button"
-              onClick={() => setShowQr(false)}
-              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          <motion.div key="qr" {...stageMotion} className="relative min-h-[min(560px,72vh)]">
+            <div
+              className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl opacity-[0.2] blur-[1.5px]"
+              aria-hidden
             >
-              <ChevronLeft className="size-4" />
-              Orqaga
-            </button>
-            <div className="grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-start">
-              <div className="space-y-4">
+              <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
                 <BookingDetailSummary
                   booking={booking}
                   clientVisits={clientVisits}
                   clientQuery={clientQuery}
                   onChat={onChat}
                 />
-                <BookingOrderNumberBanner orderNumber={booking.order_number} />
+                <div className="space-y-4">
+                  <BookingPaymentCard booking={booking} />
+                  <BookingOrderNumberBanner orderNumber={booking.order_number} />
+                  <BookingNotesCard notes={booking.notes} />
+                </div>
               </div>
-              <BookingQrCheckInPanel onCheckedIn={handleCheckedIn} />
+            </div>
+
+            <div className="relative z-10 flex min-h-[inherit] items-center justify-center px-1 py-6">
+              <div className="w-full max-w-md">
+                <BookingQrCheckInPanel onCheckedIn={handleCheckedIn} />
+              </div>
             </div>
           </motion.div>
         ) : null}
@@ -197,8 +162,8 @@ export function BookingUnifiedFlow({
             className="flex min-h-[40vh] flex-col items-center justify-center rounded-3xl border border-border bg-card px-8 py-16 text-center shadow-card"
           >
             <Loader2 className="size-10 animate-spin text-foreground" />
-            <h2 className="mt-6 font-heading text-xl font-semibold">Xizmat boshlanmoqda</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Taymer va jarayon ochiladi…</p>
+            <h2 className="mt-6 font-heading text-xl font-semibold">Mijoz kresloda</h2>
+            <p className="mt-2 text-sm text-muted-foreground">Xizmat boshlanmoqda…</p>
           </motion.div>
         ) : null}
 
@@ -277,26 +242,21 @@ export function BookingUnifiedFlow({
             Chiqish
           </Link>
 
-          {stage === "review" ? (
+          {primaryLabel ? (
             <button
               type="button"
-              onClick={() => setShowQr(true)}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3.5 text-sm font-semibold text-background transition-opacity hover:opacity-90"
+              disabled={stage === "starting" || busy}
+              onClick={() => {
+                if (stage === "session") setCompleteOpen(true);
+              }}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3.5 text-sm font-semibold text-background disabled:opacity-70"
             >
-              <ScanLine className="size-4" />
-              Mijozni qabul qilish
-            </button>
-          ) : null}
-
-          {stage === "session" ? (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setCompleteOpen(true)}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3.5 text-sm font-semibold text-background disabled:opacity-60"
-            >
-              {busy ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
-              Xizmatni tugatish
+              {stage === "starting" || busy ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="size-4" />
+              )}
+              {primaryLabel}
             </button>
           ) : null}
         </div>

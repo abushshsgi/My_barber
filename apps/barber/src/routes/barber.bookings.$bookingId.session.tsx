@@ -22,7 +22,7 @@ function BarberBookingSessionRedirect() {
 
   useEffect(() => {
     void navigate({
-      to: "/barber/bookings/$bookingId/check-in",
+      to: "/barber/bookings/$bookingId",
       params: { bookingId },
       search: finish ? { finish: true } : {},
       replace: true,

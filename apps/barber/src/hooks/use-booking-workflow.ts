@@ -3,50 +3,31 @@ import { toast } from "sonner";
 import { useBookingActionMutation } from "@/hooks/use-barber-queries";
 import type { CompleteBookingOptions } from "@/lib/map-booking";
 
-type RunOpts = { onSuccess?: () => void; navigateOnFlow?: boolean };
+type RunOpts = { onSuccess?: () => void };
 
 /**
- * Bron lifecycle action'lari (accept/reject/cancel/start/complete) uchun
- * umumiy hook. `accept` → check-in sahifasi, `start` → session sahifasiga
- * navigatsiya qiladi (navigateOnFlow=true bo'lsa).
+ * Bron lifecycle action'lari (accept/reject/cancel/start/complete).
+ * Barcha bosqichlar bitta bron sahifasida qoladi — alohida navigatsiya yo'q.
  */
 export function useBookingWorkflowActions(bookingId: string) {
   const navigate = useNavigate();
   const actionMut = useBookingActionMutation();
 
-  const runAction = (
-    action: "accept" | "reject" | "cancel" | "start",
-    opts?: RunOpts,
-  ) => {
-    const navigateOnFlow = opts?.navigateOnFlow ?? true;
+  const runAction = (action: "accept" | "reject" | "cancel" | "start", opts?: RunOpts) => {
     actionMut.mutate(
       { id: bookingId, action },
       {
         onSuccess: () => {
           if (action === "accept") {
             toast.success("Bron qabul qilindi");
-            if (navigateOnFlow) {
-              void navigate({
-                to: "/barber/bookings/$bookingId/check-in",
-                params: { bookingId },
-                replace: true,
-              });
-            }
-          }
-          if (action === "start") {
+          } else if (action === "start") {
             toast.success("Xizmat boshlandi");
-            if (navigateOnFlow) {
-              void navigate({
-                to: "/barber/bookings/$bookingId/check-in",
-                params: { bookingId },
-                replace: true,
-              });
-            }
-          }
-          if (action === "reject") {
+          } else if (action === "reject") {
             toast.success("Bron rad etildi");
+            void navigate({ to: "/barber/bookings" });
           } else if (action === "cancel") {
             toast.success("Bron bekor qilindi");
+            void navigate({ to: "/barber/bookings" });
           }
           opts?.onSuccess?.();
         },

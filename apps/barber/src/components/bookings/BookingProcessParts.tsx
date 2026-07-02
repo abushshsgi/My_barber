@@ -242,7 +242,7 @@ export function BookingServiceTimer({
       <div className="relative size-28">
         <svg className="size-full -rotate-90" viewBox="0 0 120 120" aria-hidden>
           <circle cx="60" cy="60" r={radius} fill="none" stroke="currentColor" strokeWidth="8" className="text-border" />
-          <motion.circle
+          <circle
             cx="60"
             cy="60"
             r={radius}
@@ -251,10 +251,8 @@ export function BookingServiceTimer({
             strokeWidth="8"
             strokeLinecap="round"
             strokeDasharray={circumference}
-            initial={false}
-            animate={{ strokeDashoffset: offset }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="text-foreground"
+            strokeDashoffset={offset}
+            className="text-foreground transition-[stroke-dashoffset] duration-1000 ease-out"
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">

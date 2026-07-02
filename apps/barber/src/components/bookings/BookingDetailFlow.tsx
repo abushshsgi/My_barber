@@ -14,7 +14,6 @@ import { BarberPendingResponseBanner } from "@/components/bookings/BarberPending
 import {
   BookingAddonHint,
   BookingDetailSummary,
-  BookingLocationCard,
   BookingNotesCard,
   BookingOrderNumberBanner,
   BookingPaymentCard,
@@ -94,7 +93,6 @@ export function BookingDetailFlow({
             onChat={onChat}
           />
           <BookingNotesCard notes={booking.notes} />
-          <BookingLocationCard booking={booking} />
           <BookingPaymentCard booking={booking} />
           <BookingOrderNumberBanner orderNumber={booking.order_number} />
           <BookingWaitCountdown booking={booking} />

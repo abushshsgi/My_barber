@@ -1,20 +1,27 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { BarberBookingActionBar } from "@/components/bookings/BarberBookingActionBar";
 import { BookingDetailFlow } from "@/components/bookings/BookingDetailFlow";
-import { CompleteBookingSheet } from "@/components/bookings/CompleteBookingSheet";
+import { BookingUnifiedFlow } from "@/components/bookings/BookingUnifiedFlow";
 import { BookingQueryError } from "@/components/bookings/BookingQueryError";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { useBookingClientInfo } from "@/hooks/use-booking-client-info";
 import { useBookingWorkflowActions } from "@/hooks/use-booking-workflow";
 import { useBarberBookingQuery } from "@/hooks/use-barber-queries";
 
+type BookingSearch = {
+  finish?: boolean;
+};
+
 export const Route = createFileRoute("/barber/bookings/$bookingId/")({
+  validateSearch: (raw: Record<string, unknown>): BookingSearch => ({
+    finish: raw.finish === "1" || raw.finish === 1 || raw.finish === true,
+  }),
   component: BarberBookingOverviewPage,
 });
 
-function BookingDetailContent({
+function BookingPendingContent({
   booking,
   bookingId,
   wide,
@@ -25,11 +32,7 @@ function BookingDetailContent({
 }) {
   const navigate = useNavigate();
   const clientInfo = useBookingClientInfo(booking);
-  const { runAction, complete, busy } = useBookingWorkflowActions(bookingId);
-  const [completeOpen, setCompleteOpen] = useState(false);
-  const [completeSuccess, setCompleteSuccess] = useState(false);
-
-  const hasActionBar = !["completed", "cancelled", "rejected"].includes(booking.status);
+  const { runAction, busy } = useBookingWorkflowActions(bookingId);
 
   return (
     <>
@@ -39,66 +42,71 @@ function BookingDetailContent({
         clientVisits={clientInfo.visits}
         clientQuery={clientInfo.query}
         onChat={() => void navigate({ to: "/barber/chat" })}
-        hasActionBar={hasActionBar}
+        hasActionBar
         wide={wide}
       />
-
-      <CompleteBookingSheet
-        open={completeOpen}
-        onOpenChange={setCompleteOpen}
+      <BarberBookingActionBar
         booking={booking}
+        bookingId={bookingId}
         busy={busy}
-        completed={completeSuccess}
-        onConfirm={(opts) =>
-          complete(opts, {
-            onSuccess: () => {
-              setCompleteSuccess(true);
-              window.setTimeout(() => {
-                void navigate({ to: "/barber/bookings" });
-              }, 2800);
-            },
-          })
-        }
+        onReject={() => runAction("reject")}
+        onAccept={() => runAction("accept")}
+        maxWidthClass={wide ? "max-w-4xl" : "max-w-lg"}
       />
-
-      {hasActionBar ? (
-        <BarberBookingActionBar
-          booking={booking}
-          bookingId={bookingId}
-          busy={busy}
-          onReject={() => runAction("reject")}
-          onAccept={() => runAction("accept")}
-          onStart={() => runAction("start")}
-          onComplete={() => setCompleteOpen(true)}
-          maxWidthClass={wide ? "max-w-4xl" : "max-w-lg"}
-        />
-      ) : null}
     </>
   );
 }
 
-function BarberBookingOverviewPage() {
+function BookingActiveFlowContent({
+  booking,
+  bookingId,
+  autoOpenComplete,
+  wide,
+}: {
+  booking: NonNullable<ReturnType<typeof useBarberBookingQuery>["data"]>;
+  bookingId: string;
+  autoOpenComplete?: boolean;
+  wide?: boolean;
+}) {
   const navigate = useNavigate();
-  const { bookingId } = Route.useParams();
-  const { data: booking, isLoading, isError, error } = useBarberBookingQuery(bookingId);
+  const clientInfo = useBookingClientInfo(booking);
+  const { runAction, complete, busy } = useBookingWorkflowActions(bookingId);
+  const [completeSuccess, setCompleteSuccess] = useState(false);
 
-  useEffect(() => {
-    if (!booking) return;
-    if (booking.status === "accepted") {
-      void navigate({
-        to: "/barber/bookings/$bookingId/check-in",
-        params: { bookingId },
-        replace: true,
-      });
-    }
-    if (booking.status === "in_progress") {
-      void navigate({
-        to: "/barber/bookings/$bookingId/check-in",
-        params: { bookingId },
-        replace: true,
-      });
-    }
-  }, [booking, bookingId, navigate]);
+  const handleStart = useCallback(() => {
+    runAction("start");
+  }, [runAction]);
+
+  return (
+    <BookingUnifiedFlow
+      booking={booking}
+      bookingId={bookingId}
+      clientVisits={clientInfo.visits}
+      clientQuery={clientInfo.query}
+      busy={busy}
+      autoOpenComplete={autoOpenComplete}
+      completeSuccess={completeSuccess}
+      wide={wide}
+      onChat={() => void navigate({ to: "/barber/chat" })}
+      onStart={handleStart}
+      onComplete={(opts) =>
+        complete(opts, {
+          onSuccess: () => {
+            setCompleteSuccess(true);
+            window.setTimeout(() => {
+              void navigate({ to: "/barber/bookings" });
+            }, 2800);
+          },
+        })
+      }
+    />
+  );
+}
+
+function BarberBookingOverviewPage() {
+  const { bookingId } = Route.useParams();
+  const { finish } = Route.useSearch();
+  const { data: booking, isLoading, isError, error } = useBarberBookingQuery(bookingId);
 
   const shell = (wide?: boolean) => (
     <div
@@ -108,7 +116,7 @@ function BarberBookingOverviewPage() {
           : "booking-detail-page min-h-[calc(100dvh-4rem)] px-4 pb-32 pt-4 sm:px-6 sm:pt-6"
       }
     >
-      <div className={wide ? "mx-auto max-w-4xl" : "mx-auto max-w-lg"}>
+      <div className={wide ? "mx-auto w-full max-w-[1400px]" : "mx-auto w-full max-w-lg"}>
         <Link
           to="/barber/bookings"
           className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -123,13 +131,21 @@ function BarberBookingOverviewPage() {
           </div>
         ) : isError ? (
           <BookingQueryError error={error} />
-        ) : booking && booking.status === "pending" ? (
-          <BookingDetailContent booking={booking} bookingId={bookingId} wide={wide} />
+        ) : booking?.status === "pending" ? (
+          <BookingPendingContent booking={booking} bookingId={bookingId} wide={wide} />
+        ) : booking?.status === "accepted" || booking?.status === "in_progress" ? (
+          <BookingActiveFlowContent
+            booking={booking}
+            bookingId={bookingId}
+            autoOpenComplete={finish === true}
+            wide={wide}
+          />
         ) : booking ? (
-          <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-            <Loader2 className="mr-2 size-5 animate-spin" />
-            Yo&apos;naltirilmoqda…
-          </div>
+          <BookingDetailFlow
+            booking={booking}
+            bookingId={bookingId}
+            wide={wide}
+          />
         ) : null}
       </div>
     </div>
