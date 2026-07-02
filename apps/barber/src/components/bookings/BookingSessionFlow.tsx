@@ -36,15 +36,10 @@ function InChairHero({ active }: { active: boolean }) {
       <div className="relative grid size-14 place-items-center sm:size-16">
         {active ? (
           <>
-            <motion.span
-              className="absolute inset-0 rounded-full bg-background/20"
-              animate={{ scale: [1, 1.55], opacity: [0.55, 0] }}
-              transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }}
-            />
-            <motion.span
-              className="absolute inset-0 rounded-full bg-background/20"
-              animate={{ scale: [1, 1.55], opacity: [0.55, 0] }}
-              transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut", delay: 0.85 }}
+            <span className="session-pulse-ring absolute inset-0 rounded-full bg-background/20" aria-hidden />
+            <span
+              className="session-pulse-ring session-pulse-ring--delay absolute inset-0 rounded-full bg-background/20"
+              aria-hidden
             />
           </>
         ) : null}

@@ -96,14 +96,20 @@ function scheduleReconnect() {
 }
 
 function openSocket(token: string) {
-  if (socket && activeToken === token && wsState === "open") return;
+  if (socket && activeToken === token && (wsState === "open" || wsState === "connecting")) {
+    return;
+  }
   if (socket) {
+    const stale = socket;
+    socket = null;
+    stale.onclose = null;
+    stale.onerror = null;
+    stale.onmessage = null;
     try {
-      socket.close();
+      stale.close();
     } catch {
       /* noop */
     }
-    socket = null;
   }
   activeToken = token;
   setWsState("connecting");
@@ -154,7 +160,7 @@ function openSocket(token: string) {
 }
 
 /** WebSocket + bron/bildirishnoma real-time yangilanishi. */
-export function useBookingLiveSync(bookingId?: string) {
+export function useBookingLiveSync() {
   const qc = useQueryClient();
 
   useEffect(() => {
@@ -204,5 +210,5 @@ export function useBookingLiveSync(bookingId?: string) {
         }, 1000);
       }
     };
-  }, [qc, bookingId]);
+  }, [qc]);
 }

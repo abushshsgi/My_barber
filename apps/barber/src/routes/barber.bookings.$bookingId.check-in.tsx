@@ -5,7 +5,6 @@ import { BookingConfirmFlow } from "@/components/bookings/BookingConfirmFlow";
 import { BookingQueryError } from "@/components/bookings/BookingQueryError";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { useBookingClientInfo } from "@/hooks/use-booking-client-info";
-import { useBookingLiveSync } from "@/hooks/use-booking-live-sync";
 import { useBookingWorkflowActions } from "@/hooks/use-booking-workflow";
 import { useBarberBookingQuery } from "@/hooks/use-barber-queries";
 
@@ -47,7 +46,6 @@ function BarberBookingCheckInPage() {
   const navigate = useNavigate();
   const { bookingId } = Route.useParams();
   const { data: booking, isLoading, isError, error } = useBarberBookingQuery(bookingId);
-  useBookingLiveSync(bookingId);
 
   useEffect(() => {
     if (booking?.status === "in_progress") {

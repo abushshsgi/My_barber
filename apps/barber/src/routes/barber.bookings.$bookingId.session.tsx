@@ -4,7 +4,6 @@ import { useState } from "react";
 import { BookingSessionFlow } from "@/components/bookings/BookingSessionFlow";
 import { BookingQueryError } from "@/components/bookings/BookingQueryError";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
-import { useBookingLiveSync } from "@/hooks/use-booking-live-sync";
 import { useBookingWorkflowActions } from "@/hooks/use-booking-workflow";
 import { useBarberBookingQuery } from "@/hooks/use-barber-queries";
 
@@ -61,7 +60,6 @@ function BarberBookingSessionPage() {
   const { bookingId } = Route.useParams();
   const { finish } = Route.useSearch();
   const { data: booking, isLoading, isError, error } = useBarberBookingQuery(bookingId);
-  useBookingLiveSync(bookingId);
 
   const inProgress = booking?.status === "in_progress";
 
