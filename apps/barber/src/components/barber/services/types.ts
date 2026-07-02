@@ -41,5 +41,3 @@ export type Recommendation = {
     duration_minutes: number;
   };
 };
-
-export type ServicesLayoutId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;

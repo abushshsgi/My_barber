@@ -3,11 +3,8 @@ import { useCallback, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/barber/primitives";
 import { useBarberContext } from "@/components/barber/BarberContext";
-import { LayoutSwitcher } from "@/components/barber/services/LayoutSwitcher";
-import { ServicesLayoutView } from "@/components/barber/services/layouts";
-import { ServicesActivationBanners } from "@/components/barber/services/ServicesBlocks";
+import { ServicesCatalogGrid } from "@/components/barber/services/ServicesCatalogGrid";
 import { ServicesPageSkeleton } from "@/components/barber/services/ServicesPageSkeleton";
-import type { ServicesLayoutId } from "@/components/barber/services/types";
 import { useServicesPage } from "@/components/barber/services/use-services-page";
 import {
   AlertDialog,
@@ -20,21 +17,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-function parseLayout(raw: unknown): ServicesLayoutId {
-  const n = Number(raw);
-  if (n >= 1 && n <= 8) return n as ServicesLayoutId;
-  return 1;
-}
-
 export const Route = createFileRoute("/barber/services")({
   component: ServicesSchedulePage,
-  validateSearch: (raw: Record<string, unknown>) => ({
-    layout: parseLayout(raw.layout),
-  }),
 });
 
 function ServicesSchedulePage() {
-  const { layout } = Route.useSearch();
   const { viewMode, ownsSalon, activeSalonId, fullyReady } = useBarberContext();
   const state = useServicesPage();
   const {
@@ -74,36 +61,29 @@ function ServicesSchedulePage() {
 
   return (
     <>
-      <div className="mx-auto max-w-[1180px] space-y-6 p-4 sm:p-6 lg:p-8">
-        <PageHeader
-          title={isSalonOwnerScope ? "Salon xizmatlari" : "Xizmatlar"}
-          description={
-            isSalonOwnerScope
-              ? "Salon katalogi — mijoz salon sahifasida shu xizmatlar ko'rinadi."
-              : scope === "salon"
-                ? "Admin katalogidagi xizmatlarni o'zingizga biriktirib, narxlarni boshqaring."
-                : "Mustaqil booking uchun admin katalogidagi xizmatlarni tanlab, narxlarni sozlang."
-          }
-          actions={
-            <div className="flex items-center gap-2">
-              {isRefreshing ? (
+      <div
+        id="activation-services"
+        className="min-h-[calc(100dvh-4rem)] w-full px-4 py-6 sm:px-6 lg:px-10 lg:py-8"
+      >
+        <div className="mx-auto w-full max-w-[1800px] space-y-6">
+          <PageHeader
+            title={isSalonOwnerScope ? "Salon xizmatlari" : "Xizmatlar"}
+            description={
+              isSalonOwnerScope
+                ? "Admin katalogidagi barcha xizmatlar — faollashtiring va narx belgilang."
+                : scope === "salon"
+                  ? "Katalogdan xizmatni tanlang, narx qo'ying — avtomatik saqlanadi."
+                  : "Mustaqil booking uchun xizmatlarni faollashtiring va narx belgilang."
+            }
+            actions={
+              isRefreshing ? (
                 <Loader2 className="size-4 animate-spin text-muted-foreground" aria-hidden />
-              ) : null}
-              <div className="rounded-full border border-border bg-muted/50 px-3 py-1 text-xs text-muted-foreground">
-                {isSalonOwnerScope ? "Salon katalogi" : scope === "salon" ? "Salon staff" : "Mustaqil barber"}
-              </div>
-            </div>
-          }
-        />
+              ) : null
+            }
+          />
 
-        <LayoutSwitcher current={layout} />
-        <ServicesActivationBanners state={state} />
-
-        {isBootstrapping ? (
-          <ServicesPageSkeleton />
-        ) : (
-          <ServicesLayoutView layout={layout} state={state} />
-        )}
+          {isBootstrapping ? <ServicesPageSkeleton /> : <ServicesCatalogGrid state={state} />}
+        </div>
       </div>
 
       <AlertDialog

@@ -305,6 +305,51 @@ export function useServicesPage() {
     }
   };
 
+  const activateCatalogWithPrice = async (catalogId: string, priceDigits: string) => {
+    const price = parseSomDigits(priceDigits);
+    const priceError = validateServicePrice(price);
+    if (priceError) {
+      toast.error(priceError);
+      return false;
+    }
+
+    const catalog = catalogServices.find((item) => String(item.id) === catalogId);
+    if (!catalog) {
+      toast.error("Katalog xizmati topilmadi.");
+      return false;
+    }
+
+    const existing = services.find((item) => item.catalog_service === catalogId);
+    const draft: ServiceForm = existing
+      ? { ...existing, price: priceDigits, is_active: true }
+      : {
+          catalog_service: catalogId,
+          name: catalog.name,
+          image_url: catalog.image_url,
+          duration_minutes: String(catalog.duration_minutes),
+          price: priceDigits,
+          is_active: true,
+        };
+
+    if (existing && !canEditService(existing)) {
+      toast.warning("Bu xizmatni tahrirlash huquqingiz yo'q.");
+      return false;
+    }
+
+    setSavingServices(true);
+    try {
+      const ok = await saveService(draft);
+      if (!ok) return false;
+      toast.success("Xizmat saqlandi va faollashtirildi.");
+      invalidateOnboardingAfterActivationChange();
+      await reloadServicesOnly();
+      void refreshActivationStatus();
+      return true;
+    } finally {
+      setSavingServices(false);
+    }
+  };
+
   const toggleServiceActive = async (service: ServiceForm) => {
     if (!service.id || !canEditService(service)) return;
     const nextActive = !service.is_active;
@@ -443,6 +488,7 @@ export function useServicesPage() {
     togglePendingCatalog,
     updatePendingCatalog,
     addService,
+    activateCatalogWithPrice,
     toggleServiceActive,
     deleteService,
     applyRecommendation,
