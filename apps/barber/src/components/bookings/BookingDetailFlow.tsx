@@ -171,7 +171,7 @@ export function BookingDetailFlow({
     <div
       className={
         wide
-          ? "booking-detail-flow mx-auto w-full max-w-lg lg:max-w-4xl"
+          ? "booking-detail-flow mx-auto w-full"
           : "booking-detail-flow mx-auto w-full max-w-lg"
       }
     >

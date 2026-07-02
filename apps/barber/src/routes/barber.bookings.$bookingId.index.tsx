@@ -37,39 +37,24 @@ function BookingPendingContent({
 
   return (
     <>
-      <div className={wide ? "grid gap-6 lg:grid-cols-[1fr_280px] lg:items-start" : ""}>
-        <BookingDetailFlow
-          booking={booking}
-          bookingId={bookingId}
-          clientVisits={clientInfo.visits}
-          clientQuery={clientInfo.query}
-          onChat={() => void navigate({ to: "/barber/chat" })}
-          hasActionBar
-          wide={wide}
-        />
-        {wide ? (
-          <div className="hidden lg:block">
-            <BarberBookingActionBar
-              booking={booking}
-              bookingId={bookingId}
-              busy={busy}
-              onReject={() => runAction("reject")}
-              onAccept={() => runAction("accept")}
-              variant="inline"
-            />
-          </div>
-        ) : null}
-      </div>
-      {!wide ? (
-        <BarberBookingActionBar
-          booking={booking}
-          bookingId={bookingId}
-          busy={busy}
-          onReject={() => runAction("reject")}
-          onAccept={() => runAction("accept")}
-          variant="fixed"
-        />
-      ) : null}
+      <BookingDetailFlow
+        booking={booking}
+        bookingId={bookingId}
+        clientVisits={clientInfo.visits}
+        clientQuery={clientInfo.query}
+        onChat={() => void navigate({ to: "/barber/chat" })}
+        hasActionBar
+        wide={wide}
+      />
+      <BarberBookingActionBar
+        booking={booking}
+        bookingId={bookingId}
+        busy={busy}
+        maxWidthClass={wide ? "max-w-[1400px]" : "max-w-lg"}
+        onReject={() => runAction("reject")}
+        onAccept={() => runAction("accept")}
+        variant="fixed"
+      />
     </>
   );
 }
@@ -179,7 +164,7 @@ function BarberBookingOverviewPage() {
     <div
       className={
         wide
-          ? "booking-detail-page min-h-[calc(100dvh-4rem)] px-6 pb-10 pt-6 lg:px-10"
+          ? "booking-detail-page min-h-[calc(100dvh-4rem)] px-6 pb-28 pt-6 lg:px-10"
           : "booking-detail-page min-h-[calc(100dvh-4rem)] px-4 pb-28 pt-4 sm:px-6 sm:pt-6"
       }
     >

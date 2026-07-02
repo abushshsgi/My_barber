@@ -30,7 +30,7 @@ export function BookingCompletedSummary({
   const isDone = booking.status === "completed";
 
   return (
-    <div className={wide ? "mx-auto w-full max-w-4xl space-y-4" : "mx-auto w-full max-w-lg space-y-4"}>
+    <div className={wide ? "mx-auto w-full space-y-4" : "mx-auto w-full max-w-lg space-y-4"}>
       <BookingDetailSummary
         booking={booking}
         clientVisits={clientVisits}
@@ -38,15 +38,24 @@ export function BookingCompletedSummary({
         onChat={onChat}
       />
       {isDone ? (
+        <div className={wide ? "grid gap-4 lg:grid-cols-2 lg:items-start" : "space-y-4"}>
+          <div className="space-y-4">
+            <BookingServiceTimer booking={booking} className="w-full" />
+            {booking.result_image_url ? (
+              <BookingResultPreview url={booking.result_image_url} />
+            ) : null}
+          </div>
+          <div className="space-y-4">
+            <BookingNotesCard notes={booking.notes} />
+            <BookingPaymentCard booking={booking} />
+          </div>
+        </div>
+      ) : (
         <>
-          <BookingServiceTimer booking={booking} className="w-full" />
-          {booking.result_image_url ? (
-            <BookingResultPreview url={booking.result_image_url} />
-          ) : null}
+          <BookingNotesCard notes={booking.notes} />
+          <BookingPaymentCard booking={booking} />
         </>
-      ) : null}
-      <BookingNotesCard notes={booking.notes} />
-      <BookingPaymentCard booking={booking} />
+      )}
       <BookingOrderNumberBanner orderNumber={booking.order_number} />
       {booking.status_history?.length ? (
         <BookingStatusHistory history={booking.status_history} />

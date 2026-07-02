@@ -130,29 +130,45 @@ export function BookingUnifiedFlow({
     <div className={`booking-unified-flow mx-auto w-full ${maxW}`}>
       <AnimatePresence mode="wait">
         {stage === "qr" ? (
-          <motion.div key="qr" {...stageMotion} className="relative min-h-[min(480px,68vh)]">
-            <div
-              className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl opacity-[0.18] blur-[1px]"
-              aria-hidden
-            >
-              <div className="grid gap-4 lg:grid-cols-2">
-                <BookingDetailSummary
-                  booking={booking}
-                  clientVisits={clientVisits}
-                  clientQuery={clientQuery}
-                  onChat={onChat}
-                />
+          <motion.div key="qr" {...stageMotion}>
+            {wide ? (
+              <div className="grid gap-8 lg:grid-cols-[1fr_1.05fr] lg:items-stretch lg:min-h-[min(560px,72vh)]">
                 <div className="space-y-4">
+                  <BookingDetailSummary
+                    booking={booking}
+                    clientVisits={clientVisits}
+                    clientQuery={clientQuery}
+                    onChat={onChat}
+                  />
                   <BookingPaymentCard booking={booking} />
                   <BookingOrderNumberBanner orderNumber={booking.order_number} />
+                  <BookingNotesCard notes={booking.notes} />
+                </div>
+                <BookingQrCheckInPanel wide />
+              </div>
+            ) : (
+              <div className="relative min-h-[min(480px,68vh)]">
+                <div
+                  className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl opacity-[0.18] blur-[1px]"
+                  aria-hidden
+                >
+                  <div className="grid gap-4">
+                    <BookingDetailSummary
+                      booking={booking}
+                      clientVisits={clientVisits}
+                      clientQuery={clientQuery}
+                      onChat={onChat}
+                    />
+                    <BookingPaymentCard booking={booking} />
+                  </div>
+                </div>
+                <div className="relative z-10 flex min-h-[inherit] items-center justify-center px-1 py-4">
+                  <div className="w-full max-w-md">
+                    <BookingQrCheckInPanel />
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="relative z-10 flex min-h-[inherit] items-center justify-center px-1 py-4">
-              <div className="w-full max-w-md">
-                <BookingQrCheckInPanel />
-              </div>
-            </div>
+            )}
           </motion.div>
         ) : null}
 

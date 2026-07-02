@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Search, Phone } from "lucide-react";
 import { useState } from "react";
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
+import { EmptyBlock, UserAvatar } from "@/components/barber/primitives";
 import { ClientImpressionBadges } from "@/components/bookings/ClientImpressionBadges";
 
 export const Route = createFileRoute("/barber/clients")({
