@@ -8,7 +8,7 @@ import { BookingQueryError } from "@/components/bookings/BookingQueryError";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { useBookingClientInfo } from "@/hooks/use-booking-client-info";
 import { useBookingWorkflowActions } from "@/hooks/use-booking-workflow";
-import { useBarberBookingQuery } from "@/hooks/use-barber-queries";
+import { useSaveClientImpressionsMutation, useBarberBookingQuery } from "@/hooks/use-barber-queries";
 
 type BookingSearch = {
   finish?: boolean;
@@ -71,11 +71,21 @@ function BookingActiveFlowContent({
   const navigate = useNavigate();
   const clientInfo = useBookingClientInfo(booking);
   const { runAction, complete, busy } = useBookingWorkflowActions(bookingId);
+  const impressionsMut = useSaveClientImpressionsMutation();
   const [completeSuccess, setCompleteSuccess] = useState(false);
 
   const handleStart = useCallback(() => {
     runAction("start");
   }, [runAction]);
+
+  const handleFlowClosed = useCallback(
+    (wasComplete: boolean) => {
+      if (wasComplete) {
+        void navigate({ to: "/barber/bookings" });
+      }
+    },
+    [navigate],
+  );
 
   return (
     <BookingUnifiedFlow
@@ -86,19 +96,19 @@ function BookingActiveFlowContent({
       busy={busy}
       autoOpenComplete={autoOpenComplete}
       completeSuccess={completeSuccess}
+      impressionsBusy={impressionsMut.isPending}
       wide={wide}
       onChat={() => void navigate({ to: "/barber/chat" })}
       onStart={handleStart}
+      onSaveImpressions={(kinds) =>
+        impressionsMut.mutateAsync({ bookingId, kinds })
+      }
       onComplete={(opts) =>
         complete(opts, {
-          onSuccess: () => {
-            setCompleteSuccess(true);
-            window.setTimeout(() => {
-              void navigate({ to: "/barber/bookings" });
-            }, 2800);
-          },
+          onSuccess: () => setCompleteSuccess(true),
         })
       }
+      onFlowClosed={handleFlowClosed}
     />
   );
 }

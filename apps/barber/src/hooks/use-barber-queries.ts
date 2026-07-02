@@ -133,11 +133,22 @@ export function useBookingActionMutation() {
 
       let res: Response;
       if (action === "complete" && completeOptions) {
-        const fd = new FormData();
-        if (completeOptions.early_finish) fd.append("early_finish", "true");
-        if (completeOptions.portfolio_allowed) fd.append("portfolio_allowed", "true");
-        if (completeOptions.result_image) fd.append("result_image", completeOptions.result_image);
-        res = await apiFetch(`/api/v1/bookings/${id}/complete/`, { method: "POST", body: fd });
+        const hasFile = Boolean(completeOptions.result_image);
+        if (hasFile) {
+          const fd = new FormData();
+          if (completeOptions.early_finish) fd.append("early_finish", "true");
+          if (completeOptions.portfolio_allowed) fd.append("portfolio_allowed", "true");
+          if (completeOptions.result_image) fd.append("result_image", completeOptions.result_image);
+          res = await apiFetch(`/api/v1/bookings/${id}/complete/`, { method: "POST", body: fd });
+        } else {
+          res = await apiFetch(`/api/v1/bookings/${id}/complete/`, {
+            method: "POST",
+            body: JSON.stringify({
+              early_finish: completeOptions.early_finish ?? false,
+              portfolio_allowed: completeOptions.portfolio_allowed ?? false,
+            }),
+          });
+        }
       } else {
         res = await apiFetch(`/api/v1/bookings/${id}/${action}/`, { method: "POST" });
       }
@@ -149,6 +160,10 @@ export function useBookingActionMutation() {
             ? String((body as { detail: unknown }).detail)
             : "Amal bajarilmadi";
         throw new Error(detail);
+      }
+      if (action === "complete") {
+        const row = (await res.json()) as ApiBookingRow;
+        return { id, action, booking: mapApiBooking(row) };
       }
       return { id, action };
     },
@@ -167,6 +182,17 @@ export function useBookingActionMutation() {
         qc.setQueryData(barberQueryKeys.bookings(), ctx.prev);
       }
     },
+    onSuccess: (data) => {
+      if (data?.booking) {
+        const mapped = data.booking;
+        qc.setQueryData<Booking>([...barberQueryKeys.bookings(), mapped.id], mapped);
+        qc.setQueryData<Booking[]>(barberQueryKeys.bookings(), (old) => {
+          const next = (old ?? []).map((b) => (b.id === mapped.id ? mapped : b));
+          writeBookingsSnapshot(next);
+          return next;
+        });
+      }
+    },
     onSettled: (_data, _err, vars) => {
       void qc.invalidateQueries({ queryKey: barberQueryKeys.bookings() });
       if (vars?.id) {
@@ -175,6 +201,49 @@ export function useBookingActionMutation() {
       void qc.invalidateQueries({ queryKey: barberQueryKeys.finance() });
       void qc.invalidateQueries({ queryKey: barberQueryKeys.payoutBalance() });
       void qc.invalidateQueries({ queryKey: [...barberQueryKeys.all, "analytics"] });
+    },
+  });
+}
+
+export function useSaveClientImpressionsMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      bookingId,
+      kinds,
+    }: {
+      bookingId: string;
+      kinds: string[];
+    }) => {
+      return apiJson<{
+        kinds: string[];
+        customer_impression_stats: Record<string, number>;
+      }>(`/api/v1/bookings/${bookingId}/client-impressions/`, {
+        method: "POST",
+        body: JSON.stringify({ kinds }),
+      });
+    },
+    onSuccess: (data, vars) => {
+      qc.setQueryData<Booking>([...barberQueryKeys.bookings(), vars.bookingId], (old) =>
+        old
+          ? {
+              ...old,
+              booking_client_impressions: data.kinds,
+              customer_impression_stats: data.customer_impression_stats,
+            }
+          : old,
+      );
+      qc.setQueryData<Booking[]>(barberQueryKeys.bookings(), (old) =>
+        (old ?? []).map((b) =>
+          b.id === vars.bookingId
+            ? {
+                ...b,
+                booking_client_impressions: data.kinds,
+                customer_impression_stats: data.customer_impression_stats,
+              }
+            : b,
+        ),
+      );
     },
   });
 }

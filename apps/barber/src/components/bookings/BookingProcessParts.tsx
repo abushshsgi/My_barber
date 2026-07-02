@@ -38,6 +38,7 @@ import { paymentLabel } from "@/lib/payment-label";
 import { formatUzPhoneDisplay, formatUzPhoneE164 } from "@/lib/phone";
 import { cn } from "@/lib/utils";
 import { BookingRouteMap } from "@/components/bookings/BookingRouteMap";
+import { ClientImpressionBadges } from "@/components/bookings/ClientImpressionBadges";
 
 const fadeUp = {
   initial: { opacity: 0, y: 14 },
@@ -349,6 +350,7 @@ export function BookingDetailSummary({
           )}
           <div className="mt-1 flex flex-wrap items-center gap-2">
             {showVisitBadge ? <ClientVisitBadge visits={clientVisits as number} /> : null}
+            <ClientImpressionBadges stats={booking.customer_impression_stats} />
             {phone ? (
               <span className="text-sm tabular-nums text-muted-foreground">
                 {formatUzPhoneDisplay(phone)}

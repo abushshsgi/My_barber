@@ -35,6 +35,9 @@ type Props = {
   onStart: () => void;
   onComplete: (options: CompleteBookingOptions) => void;
   completeSuccess?: boolean;
+  onSaveImpressions?: (kinds: import("@/lib/client-impressions").ClientImpressionKind[]) => Promise<void> | void;
+  impressionsBusy?: boolean;
+  onFlowClosed?: (completed: boolean) => void;
   wide?: boolean;
 };
 
@@ -83,9 +86,13 @@ export function BookingUnifiedFlow({
   onStart,
   onComplete,
   completeSuccess = false,
+  onSaveImpressions,
+  impressionsBusy,
+  onFlowClosed,
   wide = false,
 }: Props) {
   const [completeOpen, setCompleteOpen] = useState(false);
+  const [flowCompleted, setFlowCompleted] = useState(false);
   const autoStartedRef = useRef(false);
 
   const checkedIn = !!booking.checked_in_at;
@@ -108,8 +115,18 @@ export function BookingUnifiedFlow({
   }, [autoOpenComplete]);
 
   useEffect(() => {
-    if (completeSuccess) setCompleteOpen(true);
+    if (completeSuccess) {
+      setFlowCompleted(true);
+      setCompleteOpen(true);
+    }
   }, [completeSuccess]);
+
+  const handleCompleteOpenChange = (open: boolean) => {
+    setCompleteOpen(open);
+    if (!open && flowCompleted) {
+      onFlowClosed?.(true);
+    }
+  };
 
   const handleCheckedIn = useCallback(() => {
     /* refetch via mutation invalidates booking query */
@@ -264,11 +281,13 @@ export function BookingUnifiedFlow({
 
       <CompleteBookingSheet
         open={completeOpen}
-        onOpenChange={setCompleteOpen}
+        onOpenChange={handleCompleteOpenChange}
         booking={booking}
         busy={busy}
         completed={completeSuccess}
         onConfirm={onComplete}
+        onSaveImpressions={onSaveImpressions}
+        impressionsBusy={impressionsBusy}
       />
     </div>
   );

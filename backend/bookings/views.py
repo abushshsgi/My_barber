@@ -32,7 +32,12 @@ from bookings.db_compat import (
     booking_queryset_compat,
 )
 from bookings.datetime_utils import parse_range_datetime
-from bookings.models import Booking, BookingCompletion, BookingLine, Review
+from bookings.models import Booking, BookingCompletion, BookingLine, ClientImpression, Review
+from bookings.client_impressions import (
+    VALID_KINDS,
+    booking_impression_kinds,
+    customer_impression_stats,
+)
 from bookings.earnings import (
     annotate_earnings_day,
     completed_bookings_qs,
@@ -502,18 +507,19 @@ class BookingViewSet(viewsets.ModelViewSet):
         elif booking.portfolio_consent is False:
             portfolio_allowed = False
         early_finish = str(request.data.get("early_finish", "")).lower() in ("1", "true", "yes")
-        actual_end = timezone.now()
-        if not early_finish:
-            actual_end = booking.end_at
+        now = timezone.now()
+        if not early_finish and booking.end_at and now < booking.end_at:
+            early_finish = True
+        actual_end = now
         comp_defaults = {
             "portfolio_allowed": bool(portfolio_allowed),
             "actual_end_at": actual_end,
+            "finished_early": early_finish,
         }
         if request.FILES.get("result_image"):
             comp_defaults["result_image"] = request.FILES["result_image"]
         booking.status = Booking.Status.COMPLETED
-        if early_finish:
-            booking.end_at = actual_end
+        booking.end_at = actual_end
         booking.save(update_fields=["status", "end_at", "updated_at"])
         BookingCompletion.objects.update_or_create(booking=booking, defaults=comp_defaults)
         from bookings.earnings import booking_counts_for_platform_earnings
@@ -543,6 +549,46 @@ class BookingViewSet(viewsets.ModelViewSet):
         )
         broadcast_booking_updated(booking=booking)
         return Response(self._booking_data(booking, request))
+
+    @action(detail=True, methods=["post"], url_path="client-impressions")
+    def client_impressions(self, request, pk=None):
+        booking = self.get_object()
+        if not self._barber_can_manage_booking(request, booking):
+            return Response(status=403)
+        if booking.status != Booking.Status.COMPLETED:
+            return Response({"detail": "Faqat yakunlangan bron uchun ifoda belgilanadi."}, status=400)
+
+        raw = request.data.get("kinds")
+        if raw is None and isinstance(request.data, list):
+            raw = request.data
+        if not isinstance(raw, (list, tuple)):
+            return Response({"detail": "kinds ro'yxati kerak."}, status=400)
+
+        kinds = []
+        for item in raw:
+            kind = str(item or "").strip().lower()
+            if kind and kind in VALID_KINDS and kind not in kinds:
+                kinds.append(kind)
+
+        bp = request_barber(request)
+        if bp is None:
+            return Response(status=403)
+
+        ClientImpression.objects.filter(booking=booking, barber=bp).exclude(kind__in=kinds).delete()
+        for kind in kinds:
+            ClientImpression.objects.get_or_create(
+                booking=booking,
+                barber=bp,
+                customer=booking.customer,
+                kind=kind,
+            )
+
+        return Response(
+            {
+                "kinds": booking_impression_kinds(booking.id, bp.id),
+                "customer_impression_stats": customer_impression_stats(booking.customer_id),
+            }
+        )
 
     def _mark_checked_in(self, booking):
         """Check-in qiladi va bir martalik tokenni ishlatilgan deb belgilaydi."""
@@ -868,6 +914,7 @@ class SalonClientsView(APIView):
                     "completed_bookings": cnt,
                     "total_spent": str(r["spent"] or Decimal("0")),
                     "classification": "new" if cnt == 1 else "returning",
+                    "impression_stats": customer_impression_stats(cid),
                 }
             )
         return Response(out)
@@ -919,6 +966,7 @@ class IndependentClientsView(APIView):
                     "completed_bookings": cnt,
                     "total_spent": str(r["spent"] or Decimal("0")),
                     "classification": "new" if cnt == 1 else "returning",
+                    "impression_stats": customer_impression_stats(cid),
                 }
             )
         return Response(out)

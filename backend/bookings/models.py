@@ -160,6 +160,54 @@ class BookingCompletion(models.Model):
     portfolio_allowed = models.BooleanField(default=False)
     completed_at = models.DateTimeField(auto_now_add=True)
     actual_end_at = models.DateTimeField(null=True, blank=True)
+    finished_early = models.BooleanField(
+        default=False,
+        help_text="Rejadan oldin tugatilgan (barber belgilagan yoki avtomatik).",
+    )
+
+
+class ClientImpression(models.Model):
+    """Sartarosh yakunlangan bron uchun mijoz haqida qisqa ifoda belgilaydi."""
+
+    class Kind(models.TextChoices):
+        POLITE = "polite", "Polite"
+        GREAT = "great", "Great session"
+        PUNCTUAL = "punctual", "Punctual"
+        FRIENDLY = "friendly", "Friendly"
+        VIP = "vip", "VIP client"
+
+    booking = models.ForeignKey(
+        Booking,
+        on_delete=models.CASCADE,
+        related_name="client_impressions",
+    )
+    barber = models.ForeignKey(
+        "barbers.Barber",
+        on_delete=models.CASCADE,
+        related_name="client_impressions_given",
+    )
+    customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="client_impressions_received",
+    )
+    kind = models.CharField(max_length=20, choices=Kind.choices, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["booking", "barber", "kind"],
+                name="uniq_client_impression_per_booking_barber_kind",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["customer", "kind"]),
+        ]
+
+    def __str__(self):
+        return f"{self.kind} booking={self.booking_id} customer={self.customer_id}"
 
 
 class Review(models.Model):

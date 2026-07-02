@@ -129,6 +129,9 @@ export type Booking = {
   salon_longitude?: number | null;
   checked_in_at?: string | null;
   created_at?: string;
+  status_history?: Array<{ key: string; label: string; at: string }>;
+  customer_impression_stats?: Record<string, number>;
+  booking_client_impressions?: string[];
 };
 
 export type Client = {
@@ -139,6 +142,7 @@ export type Client = {
   visits: number;
   last_visit: string;
   spent: number;
+  impression_stats?: Record<string, number>;
 };
 
 export type Notification = {
@@ -1469,6 +1473,7 @@ function mapApiClient(c: {
   avatar?: string;
   completed_bookings: number;
   total_spent: string;
+  impression_stats?: Record<string, number>;
 }): Client {
   const spent = Number(c.total_spent);
   return {
@@ -1479,6 +1484,7 @@ function mapApiClient(c: {
     visits: c.completed_bookings,
     last_visit: "",
     spent: Number.isFinite(spent) ? spent : 0,
+    impression_stats: c.impression_stats ?? {},
   };
 }
 

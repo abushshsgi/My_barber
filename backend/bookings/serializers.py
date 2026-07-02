@@ -23,6 +23,7 @@ from bookings.db_compat import (
     booking_review_fields,
 )
 from bookings.models import Booking, BookingCompletion, BookingLine, Review
+from bookings.client_impressions import booking_impression_kinds, customer_impression_stats
 from accounts.models import FamilyMember
 from barbers.models import Barber, BarberProfile
 from salons.models import Salon, SalonMembership
@@ -57,6 +58,8 @@ class BookingSerializer(serializers.ModelSerializer):
     order_number = serializers.SerializerMethodField()
     check_in_code = serializers.SerializerMethodField()
     check_in_short_code = serializers.SerializerMethodField()
+    customer_impression_stats = serializers.SerializerMethodField()
+    booking_client_impressions = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
@@ -92,6 +95,8 @@ class BookingSerializer(serializers.ModelSerializer):
             "check_in_code",
             "check_in_short_code",
             "status_history",
+            "customer_impression_stats",
+            "booking_client_impressions",
             "notes",
             "lines",
             "has_review",
@@ -241,6 +246,22 @@ class BookingSerializer(serializers.ModelSerializer):
         if not self._checkin_active(obj):
             return None
         return obj.check_in_short_code
+
+    def get_customer_impression_stats(self, obj):
+        if not self._is_request_barber():
+            return {}
+        return customer_impression_stats(obj.customer_id)
+
+    def get_booking_client_impressions(self, obj):
+        if not self._is_request_barber():
+            return []
+        request = self.context.get("request")
+        from accounts.auth_utils import request_barber
+
+        bp = request_barber(request) if request else None
+        if bp is None:
+            return []
+        return booking_impression_kinds(obj.id, bp.id)
 
     def get_status_history(self, obj):
         history = []

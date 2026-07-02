@@ -31,6 +31,8 @@ export type ApiBookingRow = {
   notes?: string | null;
   created_at?: string;
   status_history?: Array<{ key: string; label: string; at: string }>;
+  customer_impression_stats?: Record<string, number>;
+  booking_client_impressions?: string[];
   lines: Array<{ service_name: string; duration_minutes: number; price: string | number }>;
 };
 
@@ -98,6 +100,8 @@ export function mapApiBooking(b: ApiBookingRow): Booking {
     notes: (b.notes ?? "").trim() || undefined,
     created_at: b.created_at,
     status_history: b.status_history ?? [],
+    customer_impression_stats: b.customer_impression_stats ?? {},
+    booking_client_impressions: b.booking_client_impressions ?? [],
   };
 }
 
