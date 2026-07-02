@@ -1,6 +1,7 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { AuthLoginForm, AUTH_LOGIN_FORM_ID } from "@/components/auth/AuthLoginForm";
 import { AuthMobileStickyBar } from "@/components/auth/AuthMobileStickyBar";
 import { AuthShell } from "@/components/auth/AuthShell";
@@ -25,9 +26,17 @@ import { formatUzPhoneE164, looksLikeLoginEmail, validateUzPhoneField } from "@/
 import { saveSignupDraft } from "@/lib/signup-draft";
 import { submitEarlyFlowSignup } from "@/lib/barber-signup-flow";
 import { resolveBarberEntryPath } from "@/lib/onboarding-redirect";
+import { resetBarberAuthFailureGuard, resetBarberSessionBootstrap } from "@/lib/barber-auth-session";
 import { cn } from "@/lib/utils";
 
+type AuthSearch = {
+  session?: string;
+};
+
 export const Route = createFileRoute("/auth")({
+  validateSearch: (raw: Record<string, unknown>): AuthSearch => ({
+    session: typeof raw.session === "string" ? raw.session : undefined,
+  }),
   beforeLoad: async () => {
     if (typeof window === "undefined") return;
     if (!getBarberAccessToken()) return;
@@ -40,6 +49,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate({ from: Route.fullPath });
+  const { session } = Route.useSearch();
   const [tab, setTab] = useState<"login" | "signup">("login");
   const [signupStep, setSignupStep] = useState(0);
 
@@ -60,6 +70,14 @@ function AuthPage() {
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [loadingLogin, setLoadingLogin] = useState(false);
   const [loadingSignup, setLoadingSignup] = useState(false);
+
+  useEffect(() => {
+    if (session === "expired") {
+      toast.message("Sessiya tugadi", {
+        description: "Xavfsizlik uchun qayta kiring. «Meni eslab qol» ni belgilang.",
+      });
+    }
+  }, [session]);
 
   const onLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,6 +113,8 @@ function AuthPage() {
       }
       const data = body as { access?: string; refresh?: string };
       if (!data.access || !data.refresh) throw new Error("Token qaytmadi.");
+      resetBarberSessionBootstrap();
+      resetBarberAuthFailureGuard();
       setBarberTokens(data.access, data.refresh, rememberMe);
       const next = await resolveBarberEntryPath();
       await navigate({ to: next });

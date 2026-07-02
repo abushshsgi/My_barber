@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useCallback, useEffect } from "react";
 import { BookingConfirmFlow } from "@/components/bookings/BookingConfirmFlow";
+import { BookingQueryError } from "@/components/bookings/BookingQueryError";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { useBookingClientInfo } from "@/hooks/use-booking-client-info";
 import { useBookingLiveSync } from "@/hooks/use-booking-live-sync";
@@ -80,8 +81,8 @@ function BarberBookingCheckInPage() {
             <Loader2 className="size-7 animate-spin text-muted-foreground" />
           </div>
         ) : isError ? (
-          <div className="mt-5 rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-sm text-destructive">
-            {(error as Error).message || "Bron yuklanmadi"}
+          <div className="mt-5">
+            <BookingQueryError error={error} />
           </div>
         ) : booking?.status === "in_progress" ? (
           <div className="mt-5 flex h-40 items-center justify-center text-sm text-muted-foreground">

@@ -1,3 +1,10 @@
+import {
+  handleBarberAuthFailure,
+  isBarberAuthFailureStatus,
+  isBarberTokenExpired,
+  refreshBarberAccessToken,
+} from "@/lib/barber-auth-session";
+
 const ENV_API_BASE =
   (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_API_URL ||
   (import.meta as unknown as { env?: Record<string, string | undefined> }).env
@@ -11,7 +18,6 @@ const IS_MOBILE_SPA =
 function resolveWebApiBase(envBase: string): string {
   const trimmed = envBase.trim().replace(/\/+$/, "");
   if (IS_MOBILE_SPA) return trimmed;
-  // Production: VITE_API_URL=https://api.mysaloon.uz. Dev: bo'sh = Vite proxy.
   return trimmed;
 }
 
@@ -102,41 +108,21 @@ function mergeAbortSignals(parts: AbortSignal[]): AbortSignal {
 
 let refreshInFlight: Promise<string | null> | null = null;
 
-async function refreshBarberAccessOnce(): Promise<string | null> {
-  const refresh = getBarberRefreshToken();
-  if (!refresh) return null;
-  const res = await fetch(`${API_BASE}/api/v1/barber/auth/token/refresh/`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh }),
-  });
-  if (!res.ok) {
-    const access = getBarberAccessToken();
-    if (access && (res.status === 401 || res.status === 403)) {
-      const meRes = await fetch(`${API_BASE}/api/v1/barber/auth/me/`, {
-        headers: { Authorization: `Bearer ${access}` },
-      });
-      if (meRes.ok) return access;
-    }
-    if (res.status === 401 || res.status === 403) {
-      clearBarberTokens();
-    }
-    return null;
-  }
-  const body = (await res.json().catch(() => ({}))) as { access?: string; refresh?: string };
-  if (!body.access || !body.refresh) {
-    clearBarberTokens();
-    return null;
-  }
-  setBarberTokens(body.access, body.refresh, getRememberPreference());
-  return body.access;
-}
+async function ensureFreshAccessToken(): Promise<string | null> {
+  const token = getBarberAccessToken();
+  if (!token) return null;
+  if (!isBarberTokenExpired(token)) return token;
 
-async function refreshBarberAccess(): Promise<string | null> {
   if (refreshInFlight) return refreshInFlight;
-  refreshInFlight = refreshBarberAccessOnce().finally(() => {
-    refreshInFlight = null;
-  });
+  refreshInFlight = refreshBarberAccessToken()
+    .then((result) => {
+      if (result.access) return result.access;
+      if (result.revoked) handleBarberAuthFailure("expired");
+      return null;
+    })
+    .finally(() => {
+      refreshInFlight = null;
+    });
   return refreshInFlight;
 }
 
@@ -168,10 +154,18 @@ export async function apiFetch(
     parts.length === 0 ? undefined : parts.length === 1 ? parts[0] : mergeAbortSignals(parts);
 
   const headers = new Headers(fetchRest.headers);
-  const token = getBarberAccessToken();
+  let token = getBarberAccessToken();
+
   if (token && !shouldOmitBearerForPath(path)) {
-    headers.set("Authorization", `Bearer ${token}`);
+    if (isBarberTokenExpired(token)) {
+      const fresh = await ensureFreshAccessToken();
+      token = fresh;
+    }
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
   }
+
   if (!headers.has("Content-Type") && fetchRest.body && !(fetchRest.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
@@ -184,14 +178,17 @@ export async function apiFetch(
     );
 
   let res = await exec();
-  // 403 ko'pincha activation/permission — refresh faqat 401 (auth) uchun.
-  if (res.status === 401 && retry && token) {
-    const newAccess = await refreshBarberAccess();
-    if (newAccess) {
-      headers.set("Authorization", `Bearer ${newAccess}`);
+
+  if (isBarberAuthFailureStatus(res.status) && retry && token) {
+    const refreshed = await refreshBarberAccessToken();
+    if (refreshed.access) {
+      headers.set("Authorization", `Bearer ${refreshed.access}`);
       res = await exec();
+    } else if (refreshed.revoked) {
+      handleBarberAuthFailure("expired");
     }
   }
+
   return res;
 }
 
@@ -207,7 +204,17 @@ import { formatHttpApiError, parseResponseBody } from "@/lib/http-errors";
 export async function apiJson<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await apiFetch(path, options);
   const body = await parseResponseBody(res);
-  if (!res.ok) throw new Error(formatHttpApiError(res, body, res.statusText));
+  if (!res.ok) {
+    const message = formatHttpApiError(res, body, res.statusText);
+    if (
+      isBarberAuthFailureStatus(res.status) &&
+      getBarberAccessToken() &&
+      !shouldOmitBearerForPath(path)
+    ) {
+      handleBarberAuthFailure("expired");
+    }
+    throw new Error(message);
+  }
   return body as T;
 }
 

@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { notificationWebSocketUrl } from "@mybarber/shared/ws-url";
 import { getBarberAccessToken } from "@/lib/api";
 import { barberQueryKeys } from "@/hooks/use-barber-queries";
+import { BARBER_SESSION_REFRESHED_EVENT } from "@/lib/barber-auth-session";
 
 export type WsConnectionState = "connecting" | "open" | "closed";
 
@@ -173,7 +174,14 @@ export function useBookingLiveSync(bookingId?: string) {
     refCount += 1;
     openSocket(token);
 
+    const onSessionRefreshed = () => {
+      const next = getBarberAccessToken();
+      if (next) openSocket(next);
+    };
+    window.addEventListener(BARBER_SESSION_REFRESHED_EVENT, onSessionRefreshed);
+
     return () => {
+      window.removeEventListener(BARBER_SESSION_REFRESHED_EVENT, onSessionRefreshed);
       clients.delete(qc);
       refCount = Math.max(0, refCount - 1);
       if (refCount === 0) {

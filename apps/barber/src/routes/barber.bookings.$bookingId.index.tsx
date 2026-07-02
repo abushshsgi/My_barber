@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { BarberBookingActionBar } from "@/components/bookings/BarberBookingActionBar";
 import { BookingDetailFlow } from "@/components/bookings/BookingDetailFlow";
 import { CompleteBookingSheet } from "@/components/bookings/CompleteBookingSheet";
+import { BookingQueryError } from "@/components/bookings/BookingQueryError";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { useBookingClientInfo } from "@/hooks/use-booking-client-info";
 import { useBookingLiveSync } from "@/hooks/use-booking-live-sync";
@@ -123,9 +124,7 @@ function BarberBookingOverviewPage() {
             <Loader2 className="size-7 animate-spin text-muted-foreground" />
           </div>
         ) : isError ? (
-          <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-sm text-destructive">
-            {(error as Error).message || "Bron yuklanmadi"}
-          </div>
+          <BookingQueryError error={error} />
         ) : booking && booking.status === "pending" ? (
           <BookingDetailContent booking={booking} bookingId={bookingId} wide={wide} />
         ) : booking ? (

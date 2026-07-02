@@ -81,6 +81,9 @@ function mapKnownDetail(detail: string): string | null {
   if (lower.includes("noto‘g‘ri email") || lower.includes("noto'g'ri email")) {
     return detail;
   }
+  if (lower.includes("token expired") || lower.includes("token not valid")) {
+    return "Sessiya muddati tugadi. Qayta kiring.";
+  }
   return null;
 }
 
