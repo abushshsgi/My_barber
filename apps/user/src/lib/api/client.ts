@@ -1,4 +1,5 @@
 import { migrateFaceProfileOnLogout } from "@/lib/face-profile";
+import { resolveFetchBase } from "@/lib/api/base-url";
 import { isPublicCustomerApiPath } from "@/lib/public-api-paths";
 import { clearQueryClientCache } from "@/lib/query-client";
 import { migrateUserPrefsOnLogout } from "@/lib/user-prefs";
@@ -29,6 +30,10 @@ function resolveWebApiBase(envBase: string): string {
 }
 
 export const API_BASE = resolveWebApiBase(ENV_API_BASE);
+
+function fetchBase(): string {
+  return resolveFetchBase(API_BASE);
+}
 
 /** WebSocket REST bilan bir xil domen talab qilmaydi — to‘g‘ridan-to‘g‘ri API host. */
 export function getWsApiBase(): string {
@@ -236,7 +241,7 @@ async function refreshAccess(): Promise<RefreshResult> {
     return { access: null, revoked: true };
   }
   try {
-    const res = await fetch(`${API_BASE}/api/v1/auth/token/refresh/`, {
+    const res = await fetch(`${fetchBase()}/api/v1/auth/token/refresh/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh }),
@@ -286,13 +291,14 @@ export async function apiFetch(
     headers.set("Content-Type", "application/json");
   }
 
-  let res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const base = fetchBase();
+  let res = await fetch(`${base}${path}`, { ...options, headers });
 
   if (isAuthFailureStatus(res.status) && retry && token) {
     const refreshed = await refreshAccess();
     if (refreshed.access) {
       headers.set("Authorization", `Bearer ${refreshed.access}`);
-      res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+      res = await fetch(`${base}${path}`, { ...options, headers });
     } else if (refreshed.revoked) {
       handleAuthFailure();
     }

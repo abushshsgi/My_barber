@@ -7,12 +7,24 @@ import { useFavorites } from "@/hooks/use-favorites";
 import { SalonShareSheet } from "@/components/salon/SalonShareSheet";
 import { useShareSalon } from "@/hooks/use-share-salon";
 import { useSalonPage } from "@/hooks/use-salon-page";
+import { salonsQueryKey } from "@/hooks/use-salons";
+import { fetchSalon } from "@/lib/api/salons";
+import { mapSalonDetail } from "@/lib/mappers/salon";
 import { buildSalonHeadMeta, fetchSalonSeoMeta } from "@/lib/salon-seo.server";
 
 export const Route = createFileRoute("/salon/$id")({
   ssr: true,
-  loader: async ({ params }) => {
-    const seo = await fetchSalonSeoMeta(params.id);
+  preload: false,
+  loader: async ({ params, context }) => {
+    const { queryClient } = context;
+    const [seo] = await Promise.all([
+      fetchSalonSeoMeta(params.id),
+      queryClient.ensureQueryData({
+        queryKey: [...salonsQueryKey, "detail", params.id],
+        queryFn: async () => mapSalonDetail(await fetchSalon(params.id)),
+        staleTime: 60_000,
+      }),
+    ]);
     return { seo };
   },
   head: ({ loaderData, params }) => buildSalonHeadMeta(params.id, loaderData?.seo ?? null),

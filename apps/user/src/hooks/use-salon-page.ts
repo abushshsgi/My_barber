@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSalonPortfolio, fetchSalonRatingSummary, fetchSalonStaff } from "@/lib/api/salons";
 import { fetchSalonReviews } from "@/lib/api/reviews";
@@ -12,15 +13,18 @@ export function useSalonPage(id: string) {
   const detail = useSalonDetail(id);
   const lang = i18n.language?.split("-")[0] ?? "uz";
 
-  const staff = useQuery({
+  const staffRaw = useQuery({
     queryKey: ["salons", id, "staff"],
-    queryFn: async () => {
-      const rows = await fetchSalonStaff(id);
-      const services = detail.data?.services ?? [];
-      return rows.map((r) => mapStaffToBarber(r, id, services));
-    },
-    enabled: Boolean(id) && Boolean(detail.data),
+    queryFn: () => fetchSalonStaff(id),
+    enabled: Boolean(id),
+    staleTime: 60_000,
   });
+
+  const staffMapped = useMemo(() => {
+    const rows = staffRaw.data ?? [];
+    const services = detail.data?.services ?? [];
+    return rows.map((r) => mapStaffToBarber(r, id, services));
+  }, [staffRaw.data, detail.data?.services, id]);
 
   const reviews = useQuery({
     queryKey: ["reviews", "salon", id],
@@ -37,6 +41,7 @@ export function useSalonPage(id: string) {
       return rows.map((r) => r.image).filter(Boolean) as string[];
     },
     enabled: Boolean(id),
+    staleTime: 60_000,
   });
 
   const ratingSummary = useQuery({
@@ -64,7 +69,7 @@ export function useSalonPage(id: string) {
   const salon = base
     ? {
         ...base,
-        staff: staff.data ?? [],
+        staff: staffMapped,
         reviews: resolvedReviews,
         portfolio: portfolio.data?.length ? portfolio.data : base.portfolio,
         ratingSummary: resolvedSummary,
@@ -75,6 +80,6 @@ export function useSalonPage(id: string) {
     salon,
     reviewsAreMock: false,
     isLoading: detail.isLoading,
-    error: detail.error,
+    error: detail.error ?? staffRaw.error,
   };
 }

@@ -1,3 +1,5 @@
+import { resolveApiUpstream, resolveFetchBase } from "@/lib/api/base-url";
+
 type SalonSeoMeta = {
   name: string;
   about: string;
@@ -7,9 +9,11 @@ type SalonSeoMeta = {
 };
 
 const SITE_ORIGIN = "https://www.mysaloon.uz";
+const SEO_CACHE_MS = 15_000;
+const seoCache = new Map<string, { at: number; data: SalonSeoMeta | null }>();
 
 function apiBase(): string {
-  return (process.env.API_UPSTREAM_URL ?? "https://api.mysaloon.uz").replace(/\/+$/, "");
+  return resolveFetchBase("");
 }
 
 function absoluteMediaUrl(path: string | null | undefined): string | null {
@@ -26,7 +30,7 @@ function absoluteMediaUrl(path: string | null | undefined): string | null {
   }
 
   if (raw.startsWith("/")) return `${SITE_ORIGIN}${raw}`;
-  return `${apiBase()}/${raw.replace(/^\/+/, "")}`;
+  return `${resolveApiUpstream()}/${raw.replace(/^\/+/, "")}`;
 }
 
 function trimDescription(text: string, max = 160): string {
@@ -40,11 +44,17 @@ export function salonPublicPageUrl(salonId: string): string {
 }
 
 export async function fetchSalonSeoMeta(salonId: string): Promise<SalonSeoMeta | null> {
+  const cached = seoCache.get(salonId);
+  if (cached && Date.now() - cached.at < SEO_CACHE_MS) return cached.data;
+
   try {
     const res = await fetch(`${apiBase()}/api/v1/salons/${salonId}/`, {
       headers: { Accept: "application/json" },
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      seoCache.set(salonId, { at: Date.now(), data: null });
+      return null;
+    }
 
     const data = (await res.json()) as {
       name?: string;
@@ -59,14 +69,17 @@ export async function fetchSalonSeoMeta(salonId: string): Promise<SalonSeoMeta |
     const address = data.address?.trim() || "";
     const description = about || address || `${name} — mysaloon.uz orqali online band qiling.`;
 
-    return {
+    const meta: SalonSeoMeta = {
       name,
       about: trimDescription(description),
       address,
       image: absoluteMediaUrl(data.cover_image) ?? `${SITE_ORIGIN}/placeholder-salon.svg`,
       rating: data.rating_avg ?? 0,
     };
+    seoCache.set(salonId, { at: Date.now(), data: meta });
+    return meta;
   } catch {
+    seoCache.set(salonId, { at: Date.now(), data: null });
     return null;
   }
 }

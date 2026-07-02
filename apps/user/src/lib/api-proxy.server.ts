@@ -48,6 +48,19 @@ function sanitizeProxyResponseHeaders(headers: Headers): void {
   headers.delete("transfer-encoding");
 }
 
+const PUBLIC_GET_CACHE_SECONDS = 30;
+
+/** Ommaviy salon katalogi GET — brauzer/CDN qisqa vaqt keshlaydi. */
+function applyPublicCacheHeaders(request: Request, pathname: string, headers: Headers): void {
+  if (request.method !== "GET" && request.method !== "HEAD") return;
+  if (!pathname.startsWith("/api/v1/salons")) return;
+  if (/\/(book|favorite|claim)/i.test(pathname)) return;
+  headers.set(
+    "Cache-Control",
+    `public, max-age=${PUBLIC_GET_CACHE_SECONDS}, stale-while-revalidate=120`,
+  );
+}
+
 /** /api/v1, /media, /covers/pexels ni upstream ga yo‘naltirish (same-origin, Set-Cookie tozalangan). */
 export async function maybeProxyApi(request: Request): Promise<Response | null> {
   const url = new URL(request.url);
@@ -72,6 +85,7 @@ export async function maybeProxyApi(request: Request): Promise<Response | null> 
     const upstream = await fetch(target, init);
     const outHeaders = new Headers(upstream.headers);
     sanitizeProxyResponseHeaders(outHeaders);
+    applyPublicCacheHeaders(request, url.pathname, outHeaders);
 
     if (request.method === "HEAD") {
       return new Response(null, {

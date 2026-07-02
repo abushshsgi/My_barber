@@ -22,6 +22,7 @@ export function useSalonDetail(id: string) {
     queryKey: [...salonsQueryKey, "detail", id],
     queryFn: async () => mapSalonDetail(await fetchSalon(id)),
     enabled: catalogQueryEnabled(Boolean(id)),
+    staleTime: 60_000,
   });
 }
 
