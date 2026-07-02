@@ -4,13 +4,9 @@ const MOBILE_BREAKPOINT = 768;
 /** Tailwind `lg` — UserLayout va DesktopPageSplit bilan bir xil. */
 export const LG_BREAKPOINT = 1024;
 
-function readLgUp(): boolean {
-  if (typeof window === "undefined") return false;
-  return window.matchMedia(`(min-width: ${LG_BREAKPOINT}px)`).matches;
-}
-
 export function useIsLgUp() {
-  const [isLgUp, setIsLgUp] = React.useState(readLgUp);
+  // SSR va hydration bir xil bo'lishi uchun dastlab false; keyin clientda o'lchanadi.
+  const [isLgUp, setIsLgUp] = React.useState(false);
 
   React.useEffect(() => {
     const mql = window.matchMedia(`(min-width: ${LG_BREAKPOINT}px)`);

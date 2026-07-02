@@ -1,11 +1,13 @@
 import { useEffect, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  BARBER_SESSION_REFRESHED_EVENT,
   bootstrapBarberSession,
   handleBarberAuthFailure,
   resetBarberAuthFailureGuard,
   resetBarberSessionBootstrap,
 } from "@/lib/barber-auth-session";
+import { barberQueryKeys } from "@/hooks/use-barber-queries";
 import { getBarberAccessToken } from "@/lib/api";
 
 const AUTH_PATH = "/auth";
@@ -31,20 +33,23 @@ export function BarberSessionGuard({ children }: { children: ReactNode }) {
       void bootstrapBarberSession().then((ok) => {
         if (!ok && !getBarberAccessToken()) {
           handleBarberAuthFailure("expired");
-          return;
-        }
-        if (ok) {
-          void qc.invalidateQueries();
         }
       });
+    };
+
+    const onSessionRefreshed = () => {
+      void qc.invalidateQueries({ queryKey: barberQueryKeys.bookings() });
+      void qc.invalidateQueries({ queryKey: barberQueryKeys.notifications() });
     };
 
     verify();
     window.addEventListener("focus", verify);
     document.addEventListener("visibilitychange", verify);
+    window.addEventListener(BARBER_SESSION_REFRESHED_EVENT, onSessionRefreshed);
     return () => {
       window.removeEventListener("focus", verify);
       document.removeEventListener("visibilitychange", verify);
+      window.removeEventListener(BARBER_SESSION_REFRESHED_EVENT, onSessionRefreshed);
     };
   }, [qc]);
 
@@ -58,7 +63,7 @@ export function BarberSessionGuard({ children }: { children: ReactNode }) {
       }
       if (e.newValue !== e.oldValue) {
         resetBarberSessionBootstrap();
-        void qc.invalidateQueries();
+        void qc.invalidateQueries({ queryKey: barberQueryKeys.bookings() });
       }
     };
     window.addEventListener("storage", onStorage);

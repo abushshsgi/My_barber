@@ -586,28 +586,47 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshPromos = useCallback(async () => {
-    const rows = await apiList<{
-      id: number;
-      code: string;
-      description: string;
-      discount_pct: number;
-      uses: number;
-      max_uses: number;
-      is_active: boolean;
-      expires: string | null;
-    }>("/api/v1/barber/promos/");
-    setPromos(
-      rows.map((p) => ({
-        id: String(p.id),
-        code: p.code,
-        description: p.description,
-        discount_pct: p.discount_pct,
-        uses: p.uses,
-        max_uses: p.max_uses,
-        is_active: p.is_active,
-        expires: p.expires || "",
-      })),
-    );
+    try {
+      const res = await apiFetch("/api/v1/barber/promos/");
+      if (res.status === 429) return;
+      if (!res.ok) return;
+      const body = (await res.json()) as
+        | Array<{
+            id: number;
+            code: string;
+            description: string;
+            discount_pct: number;
+            uses: number;
+            max_uses: number;
+            is_active: boolean;
+            expires: string | null;
+          }>
+        | { results?: Array<{
+            id: number;
+            code: string;
+            description: string;
+            discount_pct: number;
+            uses: number;
+            max_uses: number;
+            is_active: boolean;
+            expires: string | null;
+          }> };
+      const rows = Array.isArray(body) ? body : (body.results ?? []);
+      setPromos(
+        rows.map((p) => ({
+          id: String(p.id),
+          code: p.code,
+          description: p.description,
+          discount_pct: p.discount_pct,
+          uses: p.uses,
+          max_uses: p.max_uses,
+          is_active: p.is_active,
+          expires: p.expires || "",
+        })),
+      );
+    } catch {
+      /* promos ixtiyoriy — rate limit yoki tarmoq xatosi dashboardni buzmasin */
+    }
   }, []);
 
   const refreshSettings = useCallback(async () => {

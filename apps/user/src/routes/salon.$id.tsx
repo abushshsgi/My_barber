@@ -1,12 +1,12 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { SalonDesktopPage } from "@/components/desktop/pages/SalonDesktopPage";
 import { SalonMobilePage } from "@/components/salon/SalonMobilePage";
 import { useFavorites } from "@/hooks/use-favorites";
 import { SalonShareSheet } from "@/components/salon/SalonShareSheet";
 import { useShareSalon } from "@/hooks/use-share-salon";
 import { useSalonPage } from "@/hooks/use-salon-page";
-import { useIsLgUp } from "@/hooks/use-mobile";
 import { buildSalonHeadMeta, fetchSalonSeoMeta } from "@/lib/salon-seo.server";
 
 export const Route = createFileRoute("/salon/$id")({
@@ -21,7 +21,6 @@ export const Route = createFileRoute("/salon/$id")({
 
 function SalonPage() {
   const { t } = useTranslation();
-  const isLgUp = useIsLgUp();
   const { id } = useParams({ from: "/salon/$id" });
   const { salon, isLoading, reviewsAreMock } = useSalonPage(id);
   const { isFav, toggle, isPending } = useFavorites();
@@ -48,7 +47,10 @@ function SalonPage() {
 
   return (
     <>
-      {isLgUp ? <SalonDesktopPage {...pageProps} /> : <SalonMobilePage {...pageProps} />}
+      <DesktopPageSplit
+        mobile={<SalonMobilePage {...pageProps} />}
+        desktop={<SalonDesktopPage {...pageProps} />}
+      />
       {shareSalon ? (
         <SalonShareSheet open={shareOpen} onOpenChange={setShareOpen} salon={shareSalon} />
       ) : null}
