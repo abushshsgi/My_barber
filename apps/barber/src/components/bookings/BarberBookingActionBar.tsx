@@ -27,18 +27,19 @@ export function BarberBookingActionBar({
     return null;
   }
 
-  const content = busy ? (
-    <div className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card py-3.5 text-sm text-muted-foreground">
-      <Loader2 className="size-4 animate-spin" />
-      Qabul qilinmoqda…
-    </div>
-  ) : (
+  const content = (
     <>
-      <GhostAction label="Rad etish" icon={<X className="size-4" />} onClick={onReject} />
+      <GhostAction
+        label="Rad etish"
+        icon={<X className="size-4" />}
+        onClick={onReject}
+        disabled={busy}
+      />
       <PrimaryAction
         label="Qabul qilish"
-        icon={<CheckCircle2 className="size-4" />}
+        icon={busy ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
         onClick={onAccept}
+        disabled={busy}
         className="flex-[1.6]"
       />
     </>
@@ -62,16 +63,19 @@ function GhostAction({
   label,
   icon,
   onClick,
+  disabled,
 }: {
   label: string;
   icon: ReactNode;
   onClick?: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex min-w-[7.5rem] flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+      disabled={disabled}
+      className="inline-flex min-w-[7.5rem] flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground disabled:opacity-50"
     >
       {icon}
       {label}
@@ -84,18 +88,21 @@ function PrimaryAction({
   icon,
   onClick,
   className,
+  disabled,
 }: {
   label: string;
   icon: ReactNode;
   onClick?: () => void;
   className?: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={cn(
-        "inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3.5 text-sm font-semibold text-background transition-opacity hover:opacity-90 active:opacity-80",
+        "inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3.5 text-sm font-semibold text-background transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-60",
         className,
       )}
     >

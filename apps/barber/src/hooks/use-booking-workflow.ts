@@ -36,18 +36,23 @@ export function useBookingWorkflowActions(bookingId: string) {
     );
   };
 
-  const complete = (options: CompleteBookingOptions, opts?: { onSuccess?: () => void }) => {
-    actionMut.mutate(
-      { id: bookingId, action: "complete", completeOptions: options },
-      {
-        onSuccess: () => {
-          toast.success("Xizmat yakunlandi");
-          opts?.onSuccess?.();
+  const complete = (options: CompleteBookingOptions, opts?: { onSuccess?: () => void }) =>
+    new Promise<void>((resolve, reject) => {
+      actionMut.mutate(
+        { id: bookingId, action: "complete", completeOptions: options },
+        {
+          onSuccess: () => {
+            toast.success("Xizmat yakunlandi");
+            opts?.onSuccess?.();
+            resolve();
+          },
+          onError: (e) => {
+            toast.error(e.message);
+            reject(e);
+          },
         },
-        onError: (e) => toast.error(e.message),
-      },
-    );
-  };
+      );
+    });
 
   return { runAction, complete, busy: actionMut.isPending };
 }

@@ -29,7 +29,7 @@ type Props = {
   busy?: boolean;
   autoOpenComplete?: boolean;
   onChat?: () => void;
-  onComplete: (options: CompleteBookingOptions) => void;
+  onComplete: (options: CompleteBookingOptions) => void | Promise<void>;
   completeSuccess?: boolean;
   onSaveImpressions?: (kinds: import("@/lib/client-impressions").ClientImpressionKind[]) => Promise<void> | void;
   impressionsBusy?: boolean;
@@ -258,7 +258,6 @@ export function BookingUnifiedFlow({
         onOpenChange={handleCompleteOpenChange}
         booking={booking}
         busy={busy}
-        completed={completeSuccess}
         onConfirm={onComplete}
         onSaveImpressions={onSaveImpressions}
         impressionsBusy={impressionsBusy}

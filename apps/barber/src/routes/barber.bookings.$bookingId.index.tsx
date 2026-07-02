@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { BarberBookingActionBar } from "@/components/bookings/BarberBookingActionBar";
+import { BookingFlowLoadingOverlay } from "@/components/bookings/BookingFlowLoadingOverlay";
 import { BookingCompletedSummary } from "@/components/bookings/BookingCompletedSummary";
 import { BookingDetailFlow } from "@/components/bookings/BookingDetailFlow";
 import { BookingUnifiedFlow } from "@/components/bookings/BookingUnifiedFlow";
@@ -45,6 +46,11 @@ function BookingPendingContent({
         onChat={() => void navigate({ to: "/barber/chat" })}
         hasActionBar
         wide={wide}
+      />
+      <BookingFlowLoadingOverlay
+        open={busy}
+        title="Qabul qilinmoqda…"
+        subtitle="Bir oz kuting"
       />
       <BarberBookingActionBar
         booking={booking}

@@ -178,16 +178,26 @@ export function useBookingActionMutation() {
     onMutate: async ({ id, action }) => {
       await qc.cancelQueries({ queryKey: barberQueryKeys.bookings() });
       const prev = qc.getQueryData<Booking[]>(barberQueryKeys.bookings());
+      const prevDetail = qc.getQueryData<Booking>([...barberQueryKeys.bookings(), id]);
       qc.setQueryData<Booking[]>(barberQueryKeys.bookings(), (old) =>
         (old ?? []).map((b) =>
           b.id === id ? { ...b, status: statusAfterAction(action, b.status) } : b,
         ),
       );
-      return { prev };
+      if (prevDetail) {
+        qc.setQueryData<Booking>([...barberQueryKeys.bookings(), id], {
+          ...prevDetail,
+          status: statusAfterAction(action, prevDetail.status),
+        });
+      }
+      return { prev, prevDetail };
     },
-    onError: (_err, _vars, ctx) => {
+    onError: (_err, vars, ctx) => {
       if (ctx?.prev) {
         qc.setQueryData(barberQueryKeys.bookings(), ctx.prev);
+      }
+      if (ctx?.prevDetail && vars?.id) {
+        qc.setQueryData([...barberQueryKeys.bookings(), vars.id], ctx.prevDetail);
       }
     },
     onSuccess: (data) => {
