@@ -1,10 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Play } from "lucide-react";
-import { BarberManualCheckInCard } from "@/components/bookings/BookingCheckInCard";
-import {
-  BookingDetailSummary,
-  BookingNotesCard,
-} from "@/components/bookings/BookingProcessParts";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { useCallback, useEffect } from "react";
+import { BookingConfirmFlow } from "@/components/bookings/BookingConfirmFlow";
+import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { useBookingClientInfo } from "@/hooks/use-booking-client-info";
 import { useBookingLiveSync } from "@/hooks/use-booking-live-sync";
 import { useBookingWorkflowActions } from "@/hooks/use-booking-workflow";
@@ -14,87 +12,103 @@ export const Route = createFileRoute("/barber/bookings/$bookingId/check-in")({
   component: BarberBookingCheckInPage,
 });
 
+function ConfirmPageContent({
+  booking,
+  bookingId,
+  wide,
+}: {
+  booking: NonNullable<ReturnType<typeof useBarberBookingQuery>["data"]>;
+  bookingId: string;
+  wide?: boolean;
+}) {
+  const navigate = useNavigate();
+  const clientInfo = useBookingClientInfo(booking);
+  const { runAction, busy } = useBookingWorkflowActions(bookingId);
+
+  const handleStart = useCallback(() => {
+    runAction("start", { navigateOnFlow: true });
+  }, [runAction]);
+
+  return (
+    <BookingConfirmFlow
+      booking={booking}
+      bookingId={bookingId}
+      clientVisits={clientInfo.visits}
+      clientQuery={clientInfo.query}
+      busy={busy}
+      onChat={() => void navigate({ to: "/barber/chat" })}
+      onStart={handleStart}
+    />
+  );
+}
+
 function BarberBookingCheckInPage() {
   const navigate = useNavigate();
   const { bookingId } = Route.useParams();
   const { data: booking, isLoading, isError, error } = useBarberBookingQuery(bookingId);
-  const clientInfo = useBookingClientInfo(booking);
-  const { runAction, busy } = useBookingWorkflowActions(bookingId);
   useBookingLiveSync(bookingId);
 
-  const checkedIn = !!booking?.checked_in_at;
+  useEffect(() => {
+    if (booking?.status === "in_progress") {
+      void navigate({
+        to: "/barber/bookings/$bookingId/session",
+        params: { bookingId },
+        replace: true,
+      });
+    }
+  }, [booking?.status, bookingId, navigate]);
 
-  return (
-    <div className="mx-auto max-w-[900px] space-y-5 p-4 pb-28 sm:p-6 lg:p-8">
-      <Link
-        to="/barber/bookings/$bookingId"
-        params={{ bookingId }}
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        Bron tafsilotlari
-      </Link>
+  const shell = (wide?: boolean) => (
+    <div
+      className={
+        wide
+          ? "min-h-[calc(100dvh-4rem)] space-y-5 px-6 pb-12 pt-6 lg:px-10"
+          : "min-h-[calc(100dvh-4rem)] space-y-5 p-4 pb-12 sm:p-6"
+      }
+    >
+      <div className={wide ? "mx-auto max-w-4xl" : "mx-auto max-w-lg"}>
+        <Link
+          to="/barber/bookings"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" />
+          Bronlar ro&apos;yxati
+        </Link>
 
-      {isLoading ? (
-        <div className="flex h-56 items-center justify-center rounded-2xl bg-card shadow-card">
-          <Loader2 className="size-7 animate-spin text-muted-foreground" />
-        </div>
-      ) : isError ? (
-        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-sm text-destructive">
-          {(error as Error).message || "Bron yuklanmadi"}
-        </div>
-      ) : booking ? (
-        <>
-          <BookingDetailSummary
-            booking={booking}
-            clientVisits={clientInfo.visits}
-            clientQuery={clientInfo.query}
-            onChat={() => void navigate({ to: "/barber/chat" })}
-          />
-
-          {booking.status === "in_progress" ? (
-            <Link
-              to="/barber/bookings/$bookingId/session"
-              params={{ bookingId }}
-              className="flex items-center justify-between gap-3 rounded-2xl bg-foreground px-4 py-3.5 text-background shadow-card transition-opacity hover:opacity-90"
+        {isLoading ? (
+          <div className="mt-5 flex h-56 items-center justify-center rounded-2xl bg-card shadow-card">
+            <Loader2 className="size-7 animate-spin text-muted-foreground" />
+          </div>
+        ) : isError ? (
+          <div className="mt-5 rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-sm text-destructive">
+            {(error as Error).message || "Bron yuklanmadi"}
+          </div>
+        ) : booking?.status === "in_progress" ? (
+          <div className="mt-5 flex h-40 items-center justify-center text-sm text-muted-foreground">
+            <Loader2 className="mr-2 size-5 animate-spin" />
+            Seans sahifasiga yo&apos;naltirilmoqda…
+          </div>
+        ) : booking?.status === "accepted" ? (
+          <div className="mt-5">
+            <ConfirmPageContent booking={booking} bookingId={bookingId} wide={wide} />
+          </div>
+        ) : booking ? (
+          <div className="mt-5 rounded-2xl bg-muted/40 p-4 text-sm text-muted-foreground">
+            Bu bron tasdiqlash bosqichida emas.{" "}
+            <button
+              type="button"
+              className="font-medium text-foreground underline-offset-2 hover:underline"
+              onClick={() =>
+                void navigate({ to: "/barber/bookings/$bookingId", params: { bookingId } })
+              }
             >
-              <span className="text-sm font-semibold">Xizmat boshlangan — jarayon sahifasi</span>
-              <ArrowRight className="size-4" />
-            </Link>
-          ) : null}
-
-          <BookingNotesCard notes={booking.notes} />
-
-          {booking.status === "accepted" ? (
-            checkedIn ? (
-              <div className="rounded-2xl bg-card p-4 shadow-card sm:p-5">
-                <p className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckCircle2 className="size-4" />
-                  Mijoz qabul qilindi
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Tayyor bo'lsangiz xizmatni boshlang.
-                </p>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => runAction("start")}
-                  className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-foreground py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60"
-                >
-                  {busy ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
-                  Xizmatni boshlash
-                </button>
-              </div>
-            ) : (
-              <BarberManualCheckInCard />
-            )
-          ) : booking.status === "pending" ? (
-            <div className="rounded-2xl bg-muted/40 p-4 text-sm text-muted-foreground">
-              Avval bronni tasdiqlang. Keyin mijozni qabul qilish ochiladi.
-            </div>
-          ) : null}
-        </>
-      ) : null}
+              Orqaga
+            </button>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
+
+  return <DesktopPageSplit mobile={shell()} desktop={shell(true)} />;
 }

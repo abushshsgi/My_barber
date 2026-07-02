@@ -29,6 +29,7 @@ export function useBookingWorkflowActions(bookingId: string) {
               void navigate({
                 to: "/barber/bookings/$bookingId/check-in",
                 params: { bookingId },
+                replace: true,
               });
             }
           }
@@ -38,6 +39,7 @@ export function useBookingWorkflowActions(bookingId: string) {
               void navigate({
                 to: "/barber/bookings/$bookingId/session",
                 params: { bookingId },
+                replace: true,
               });
             }
           }

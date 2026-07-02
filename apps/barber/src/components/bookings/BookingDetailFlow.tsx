@@ -2,13 +2,10 @@ import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
-  ArrowRight,
   BadgeCheck,
   ClipboardList,
   History,
   Image as ImageIcon,
-  ScanLine,
-  Scissors,
   Timer,
   User,
 } from "lucide-react";
@@ -17,8 +14,10 @@ import { BarberPendingResponseBanner } from "@/components/bookings/BarberPending
 import {
   BookingAddonHint,
   BookingDetailSummary,
+  BookingLocationCard,
   BookingNotesCard,
   BookingOrderNumberBanner,
+  BookingPaymentCard,
   BookingProcessSection,
   BookingResultPreview,
   BookingServiceTimer,
@@ -33,17 +32,9 @@ import {
 import type { Booking } from "@/components/barber/BarberContext";
 
 const STEPS_BY_STATUS: Record<Booking["status"], readonly BookingStepMeta[]> = {
-  pending: [
-    { id: "request", short: "So'rov", icon: ClipboardList },
-    { id: "timeline", short: "Jarayon", icon: Timer },
-  ],
-  accepted: [
-    { id: "client", short: "Mijoz", icon: User },
-    { id: "checkin", short: "Qabul", icon: ScanLine },
-    { id: "info", short: "Ma'lumot", icon: History },
-  ],
+  pending: [{ id: "request", short: "So'rov", icon: ClipboardList }],
+  accepted: [{ id: "client", short: "Mijoz", icon: User }],
   in_progress: [
-    { id: "client", short: "Mijoz", icon: User },
     { id: "process", short: "Jarayon", icon: Timer },
     { id: "extra", short: "Qo'shimcha", icon: History },
   ],
@@ -61,8 +52,8 @@ type Props = {
   clientVisits?: number;
   clientQuery?: string;
   onChat?: () => void;
-  /** Fixed action bar pastida bo'lsa step nav yuqoriroq */
   hasActionBar?: boolean;
+  wide?: boolean;
 };
 
 export function BookingDetailFlow({
@@ -72,13 +63,13 @@ export function BookingDetailFlow({
   clientQuery,
   onChat,
   hasActionBar = false,
+  wide = false,
 }: Props) {
   const steps = STEPS_BY_STATUS[booking.status] ?? STEPS_BY_STATUS.pending;
   const [step, setStep] = useState(0);
   const [entered, setEntered] = useState(false);
-  const isFirst = step === 0;
-  const isLast = step === steps.length - 1;
   const singleStep = steps.length === 1;
+  const hideStepNav = hasActionBar || booking.status === "pending" || singleStep;
 
   useEffect(() => {
     const id = window.requestAnimationFrame(() => setEntered(true));
@@ -93,104 +84,57 @@ export function BookingDetailFlow({
     const checkedIn = !!booking.checked_in_at;
 
     if (booking.status === "pending") {
-      if (step === 0) {
-        return (
-          <div className="space-y-4">
-            <BarberPendingResponseBanner booking={booking} />
-            <BookingDetailSummary
-              booking={booking}
-              clientVisits={clientVisits}
-              clientQuery={clientQuery}
-              onChat={onChat}
-            />
-          </div>
-        );
-      }
       return (
         <div className="space-y-4">
-          <BookingProcessSection status={booking.status} checkedIn={checkedIn} />
-          <BookingWaitCountdown booking={booking} />
-          <BookingOrderNumberBanner orderNumber={booking.order_number} />
-        </div>
-      );
-    }
-
-    if (booking.status === "accepted") {
-      if (step === 0) {
-        return (
+          <BarberPendingResponseBanner booking={booking} />
           <BookingDetailSummary
             booking={booking}
             clientVisits={clientVisits}
             clientQuery={clientQuery}
             onChat={onChat}
           />
-        );
-      }
-      if (step === 1) {
-        return (
-          <div className="space-y-4">
-            <BookingProcessSection status={booking.status} checkedIn={checkedIn} />
-            <BookingWaitCountdown booking={booking} />
-            <Link
-              to="/barber/bookings/$bookingId/check-in"
-              params={{ bookingId }}
-              className="flex items-center justify-between gap-3 rounded-2xl bg-foreground px-4 py-3.5 text-background shadow-card transition-opacity hover:opacity-90"
-            >
-              <span className="flex items-center gap-2 text-sm font-semibold">
-                <ScanLine className="size-4" />
-                {checkedIn ? "Xizmatni boshlash sahifasi" : "Mijozni qabul qilish sahifasi"}
-              </span>
-              <ArrowRight className="size-4" />
-            </Link>
-            <BookingOrderNumberBanner orderNumber={booking.order_number} />
-          </div>
-        );
-      }
-      return (
-        <div className="space-y-4">
           <BookingNotesCard notes={booking.notes} />
-          <BookingStatusHistory history={booking.status_history} />
+          <BookingLocationCard booking={booking} />
+          <BookingPaymentCard booking={booking} />
+          <BookingOrderNumberBanner orderNumber={booking.order_number} />
+          <BookingWaitCountdown booking={booking} />
+          <BookingProcessSection status={booking.status} checkedIn={checkedIn} />
         </div>
+      );
+    }
+
+    if (booking.status === "accepted") {
+      return (
+        <BookingDetailSummary
+          booking={booking}
+          clientVisits={clientVisits}
+          clientQuery={clientQuery}
+          onChat={onChat}
+        />
       );
     }
 
     if (booking.status === "in_progress") {
       if (step === 0) {
         return (
-          <BookingDetailSummary
-            booking={booking}
-            clientVisits={clientVisits}
-            clientQuery={clientQuery}
-            onChat={onChat}
-          />
-        );
-      }
-      if (step === 1) {
-        return (
           <div className="space-y-4">
             <BookingServiceTimer booking={booking} className="w-full" />
             <BookingProcessSection status={booking.status} checkedIn={checkedIn} />
-            <Link
-              to="/barber/bookings/$bookingId/session"
-              params={{ bookingId }}
-              className="flex items-center justify-between gap-3 rounded-2xl bg-foreground px-4 py-3.5 text-background shadow-card transition-opacity hover:opacity-90"
-            >
-              <span className="flex items-center gap-2 text-sm font-semibold">
-                <Scissors className="size-4" />
-                Kresloda — jarayon sahifasi
-              </span>
-              <ArrowRight className="size-4" />
-            </Link>
             <BookingOrderNumberBanner orderNumber={booking.order_number} />
           </div>
         );
       }
       return (
         <div className="space-y-4">
+          <BookingDetailSummary
+            booking={booking}
+            clientVisits={clientVisits}
+            clientQuery={clientQuery}
+            onChat={onChat}
+          />
           <BookingNotesCard notes={booking.notes} />
           <BookingStatusHistory history={booking.status_history} />
           <BookingAddonHint onChat={onChat} />
-          <BookingResultPreview url={booking.result_image_url} />
         </div>
       );
     }
@@ -226,16 +170,24 @@ export function BookingDetailFlow({
   }, [booking, bookingId, clientQuery, clientVisits, onChat, step]);
 
   return (
-    <div className="booking-detail-flow mx-auto w-full max-w-lg">
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={entered ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <BookingStepIndicator steps={steps} step={step} />
-      </motion.div>
+    <div
+      className={
+        wide
+          ? "booking-detail-flow mx-auto w-full max-w-lg lg:max-w-4xl"
+          : "booking-detail-flow mx-auto w-full max-w-lg"
+      }
+    >
+      {!hideStepNav && steps.length > 1 ? (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={entered ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <BookingStepIndicator steps={steps} step={step} />
+        </motion.div>
+      ) : null}
 
-      <div className="mt-5 min-h-[min(380px,52vh)] sm:min-h-[440px]">
+      <div className={hideStepNav ? "min-h-0" : "mt-5 min-h-[min(380px,52vh)] sm:min-h-[440px]"}>
         <AnimatePresence mode="wait">
           <motion.div
             key={`${booking.status}-${step}`}
@@ -247,7 +199,7 @@ export function BookingDetailFlow({
         </AnimatePresence>
       </div>
 
-      {!singleStep ? (
+      {!hideStepNav && steps.length > 1 ? (
         <div
           className={
             hasActionBar
@@ -255,8 +207,8 @@ export function BookingDetailFlow({
               : "fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 backdrop-blur-sm"
           }
         >
-          <div className="mx-auto flex max-w-lg items-stretch gap-2 px-4">
-            {!isFirst ? (
+          <div className="mx-auto flex max-w-lg items-stretch gap-2 px-4 lg:max-w-4xl">
+            {step > 0 ? (
               <button
                 type="button"
                 onClick={() => setStep((s) => s - 1)}
@@ -274,15 +226,13 @@ export function BookingDetailFlow({
                 <span className="hidden sm:inline">Ro&apos;yxat</span>
               </Link>
             )}
-
-            {!isLast ? (
+            {step < steps.length - 1 ? (
               <button
                 type="button"
                 onClick={() => setStep((s) => s + 1)}
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3.5 text-sm font-semibold text-background"
               >
-                Keyingi
-                <ArrowRight className="size-4" />
+                Davom etish
               </button>
             ) : (
               <button

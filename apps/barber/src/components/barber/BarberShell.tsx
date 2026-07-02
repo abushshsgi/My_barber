@@ -54,6 +54,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { RealtimeStatusBadge } from "@/components/barber/RealtimeStatusBadge";
+import { NewBookingAlertBanner } from "@/components/bookings/NewBookingAlertBanner";
 import { useBookingLiveSync } from "@/hooks/use-booking-live-sync";
 import { useBarberContext, type ViewMode } from "./BarberContext";
 import { UserAvatar } from "./primitives";
@@ -639,6 +640,7 @@ export function BarberShell() {
           onMobileMenu={() => setMobileOpen(true)}
           onCommandOpen={() => setCmdOpen(true)}
         />
+        <NewBookingAlertBanner />
         <div className="flex-1 overflow-y-auto">
           <Outlet />
         </div>

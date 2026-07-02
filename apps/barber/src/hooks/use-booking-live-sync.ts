@@ -14,6 +14,19 @@ let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let wsState: WsConnectionState = "closed";
 const clients = new Set<ReturnType<typeof useQueryClient>>();
 const wsListeners = new Set<(open: boolean) => void>();
+const newBookingListeners = new Set<(bookingId: number) => void>();
+
+/** Yangi bron WS hodisasi — global banner uchun. */
+export function subscribeNewBookingAlert(listener: (bookingId: number) => void) {
+  newBookingListeners.add(listener);
+  return () => {
+    newBookingListeners.delete(listener);
+  };
+}
+
+function emitNewBookingAlert(bookingId: number) {
+  for (const fn of newBookingListeners) fn(bookingId);
+}
 
 function setWsState(next: WsConnectionState) {
   wsState = next;
@@ -112,8 +125,9 @@ function openSocket(token: string) {
     try {
       const payload = JSON.parse(evt.data) as {
         event?: string;
+        type?: string;
         booking_id?: number;
-        payload?: { booking_id?: number };
+        payload?: { booking_id?: number; type?: string };
       };
       if (payload.event === "booking_updated") {
         for (const qc of clients) {
@@ -122,9 +136,13 @@ function openSocket(token: string) {
         return;
       }
       if (payload.event === "notification") {
+        const bid = payload.booking_id ?? payload.payload?.booking_id;
+        const notifType = payload.type ?? payload.payload?.type;
+        if (bid != null && notifType === "new_booking") {
+          emitNewBookingAlert(bid);
+        }
         for (const qc of clients) {
           void qc.invalidateQueries({ queryKey: barberQueryKeys.notifications() });
-          const bid = payload.booking_id ?? payload.payload?.booking_id;
           if (bid != null) invalidateBookings(qc, bid);
         }
       }

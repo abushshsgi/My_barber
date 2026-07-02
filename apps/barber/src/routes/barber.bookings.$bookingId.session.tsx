@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
+import { useState } from "react";
 import { BookingSessionFlow } from "@/components/bookings/BookingSessionFlow";
+import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { useBookingLiveSync } from "@/hooks/use-booking-live-sync";
 import { useBookingWorkflowActions } from "@/hooks/use-booking-workflow";
 import { useBarberBookingQuery } from "@/hooks/use-barber-queries";
@@ -16,28 +18,61 @@ export const Route = createFileRoute("/barber/bookings/$bookingId/session")({
   component: BarberBookingSessionPage,
 });
 
-function BarberBookingSessionPage() {
+function SessionPageContent({
+  booking,
+  bookingId,
+  autoOpenComplete,
+  wide,
+}: {
+  booking: NonNullable<ReturnType<typeof useBarberBookingQuery>["data"]>;
+  bookingId: string;
+  autoOpenComplete?: boolean;
+  wide?: boolean;
+}) {
   const navigate = useNavigate();
+  const { complete, busy } = useBookingWorkflowActions(bookingId);
+  const [completeSuccess, setCompleteSuccess] = useState(false);
+
+  return (
+    <BookingSessionFlow
+      booking={booking}
+      bookingId={bookingId}
+      busy={busy}
+      autoOpenComplete={autoOpenComplete}
+      completeSuccess={completeSuccess}
+      wide={wide}
+      onChat={() => void navigate({ to: "/barber/chat" })}
+      onComplete={(opts) =>
+        complete(opts, {
+          onSuccess: () => {
+            setCompleteSuccess(true);
+            window.setTimeout(() => {
+              void navigate({ to: "/barber/bookings" });
+            }, 2800);
+          },
+        })
+      }
+    />
+  );
+}
+
+function BarberBookingSessionPage() {
   const { bookingId } = Route.useParams();
   const { finish } = Route.useSearch();
   const { data: booking, isLoading, isError, error } = useBarberBookingQuery(bookingId);
-  const { complete, busy } = useBookingWorkflowActions(bookingId);
   useBookingLiveSync(bookingId);
 
   const inProgress = booking?.status === "in_progress";
-  const initialStep = finish ? 2 : 0;
 
-  return (
-    <div className="booking-session min-h-[calc(100dvh-4rem)] px-4 pb-32 pt-4 sm:px-6 sm:pt-6 lg:px-8">
-      <div className="mx-auto max-w-lg">
-        <Link
-          to="/barber/bookings/$bookingId"
-          params={{ bookingId }}
-          className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          Bron tafsilotlari
-        </Link>
-
+  const shell = (wide?: boolean) => (
+    <div
+      className={
+        wide
+          ? "booking-session min-h-[calc(100dvh-4rem)] px-6 pb-32 pt-6 lg:px-10"
+          : "booking-session min-h-[calc(100dvh-4rem)] px-4 pb-32 pt-4 sm:px-6 sm:pt-6"
+      }
+    >
+      <div className={wide ? "mx-auto max-w-4xl" : "mx-auto max-w-lg"}>
         {isLoading ? (
           <div className="flex h-56 items-center justify-center rounded-2xl bg-card shadow-card">
             <Loader2 className="size-7 animate-spin text-muted-foreground" />
@@ -47,23 +82,11 @@ function BarberBookingSessionPage() {
             {(error as Error).message || "Bron yuklanmadi"}
           </div>
         ) : booking && inProgress ? (
-          <BookingSessionFlow
+          <SessionPageContent
             booking={booking}
             bookingId={bookingId}
-            busy={busy}
-            initialStep={initialStep}
             autoOpenComplete={finish === true}
-            onChat={() => void navigate({ to: "/barber/chat" })}
-            onComplete={(opts) =>
-              complete(opts, {
-                onSuccess: () => {
-                  void navigate({
-                    to: "/barber/bookings/$bookingId",
-                    params: { bookingId },
-                  });
-                },
-              })
-            }
+            wide={wide}
           />
         ) : booking ? (
           <div className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-muted-foreground shadow-card">
@@ -80,4 +103,6 @@ function BarberBookingSessionPage() {
       </div>
     </div>
   );
+
+  return <DesktopPageSplit mobile={shell()} desktop={shell(true)} />;
 }
