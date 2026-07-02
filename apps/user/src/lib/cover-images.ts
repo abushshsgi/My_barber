@@ -2,6 +2,17 @@ import type { Category } from "@/lib/mock-data";
 
 const PLACEHOLDER_SALON = "/placeholder-salon.svg";
 
+const CATEGORY_PHOTOS: Record<Category, number> = {
+  barber: 3992859,
+  beauty: 3288365,
+  nails: 3992860,
+  spa: 2523210,
+};
+
+const SEED_PHOTO_IDS = [
+  3992859, 2523210, 3992860, 2866115, 1453001, 3992862, 3992863, 3992864,
+] as const;
+
 /** API yoki tashqi Pexels URL ni same-origin proxy yo‘liga aylantiradi. */
 export function normalizeCoverUrl(url: string | null | undefined): string | null {
   const raw = url?.trim();
@@ -11,27 +22,44 @@ export function normalizeCoverUrl(url: string | null | undefined): string | null
   return raw;
 }
 
-/** Salon kartochkasi uchun — faqat API URL yoki placeholder. */
-export function resolveCoverUrl(
-  apiUrl: string | null | undefined,
-  _seed?: string,
-  _category?: Category,
-): string {
-  const resolved = normalizeCoverUrl(apiUrl?.trim() ?? "") ?? "";
-  if (!resolved || resolved.endsWith("/media/")) {
-    return PLACEHOLDER_SALON;
+function photoIdForSeed(seed: string, category?: Category): number {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
   }
-  return resolved;
+  if (seed) {
+    return SEED_PHOTO_IDS[Math.abs(hash) % SEED_PHOTO_IDS.length]!;
+  }
+  return category ? CATEGORY_PHOTOS[category] : SEED_PHOTO_IDS[0]!;
 }
 
-/** @deprecated resolveCoverUrl yoki PLACEHOLDER_SALON ishlating */
+/** Katalog/kategoriya bo‘yicha vizual fallback — placeholder o‘rniga Pexels proxy. */
 export function getSalonCoverUrl(
-  _seed?: string,
-  _category?: Category,
-  _width = 900,
-  _height = 675,
+  seed?: string,
+  category?: Category,
+  width = 900,
 ): string {
-  return PLACEHOLDER_SALON;
+  const photoId = photoIdForSeed(seed?.trim() || "salon", category);
+  return pexelsCoverUrl(photoId, width);
+}
+
+/** Salon kartochkasi uchun — API media yoki seed asosida fallback. */
+export function resolveCoverUrl(
+  apiUrl: string | null | undefined,
+  seed?: string,
+  category?: Category,
+): string {
+  const raw = apiUrl?.trim() ?? "";
+  if (raw) {
+    const normalized = normalizeCoverUrl(raw) ?? raw;
+    if (normalized.startsWith("/media/") && normalized.length > "/media/".length) {
+      return normalized;
+    }
+    if (normalized.startsWith("/covers/") || normalized.startsWith("http")) {
+      return normalized;
+    }
+  }
+  return getSalonCoverUrl(seed, category);
 }
 
 const TREND_SEEDS = [
@@ -58,12 +86,12 @@ const TREND_COVERS: Record<string, string> = Object.fromEntries(
   ]),
 );
 
-export function getCategoryCoverUrl(_category: Category, _width = 900): string {
-  return PLACEHOLDER_SALON;
+export function getCategoryCoverUrl(category: Category, width = 900): string {
+  return pexelsCoverUrl(CATEGORY_PHOTOS[category], width);
 }
 
 export function getTrendCoverUrl(seed: string): string {
-  return TREND_COVERS[seed] ?? PLACEHOLDER_SALON;
+  return TREND_COVERS[seed] ?? getSalonCoverUrl(seed);
 }
 
 const AI_STYLE_HERO: Record<string, string> = {
@@ -74,3 +102,5 @@ const AI_STYLE_HERO: Record<string, string> = {
 export function getAiStyleHeroUrl(seed: string): string {
   return AI_STYLE_HERO[seed] ?? AI_STYLE_HERO["hero-men"];
 }
+
+export { PLACEHOLDER_SALON };

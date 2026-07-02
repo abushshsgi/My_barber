@@ -100,14 +100,14 @@ export function BazaarHeroBanner({ className }: Props) {
       <Carousel
         setApi={setApi}
         opts={{ loop: true }}
-        className="h-[clamp(280px,34vw,420px)] w-full overflow-hidden rounded-2xl border border-border shadow-[0_10px_36px_rgba(15,15,15,0.08)] [&>div]:h-full"
+        className="h-[clamp(180px,22vw,280px)] w-full overflow-hidden rounded-2xl border border-border shadow-[0_10px_36px_rgba(15,15,15,0.08)] [&>div]:h-full"
       >
         <CarouselContent className="-ml-0 h-full">
           {HERO_SLIDES.map((slide) => (
             <CarouselItem key={slide.to} className="h-full pl-0">
               <Link
                 to={slide.to}
-                className="group relative block h-full min-h-[280px] w-full overflow-hidden"
+                className="group relative block h-full min-h-[180px] w-full overflow-hidden"
               >
                 <img
                   src={pexelsCoverUrl(slide.photoId, 1200)}
@@ -127,19 +127,19 @@ export function BazaarHeroBanner({ className }: Props) {
                   </span>
                 ) : null}
 
-                <div className="absolute inset-0 z-10 flex flex-col justify-between p-5 xl:p-7">
-                  <span className="w-fit rounded-full bg-white px-3.5 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-foreground shadow-md">
+                <div className="absolute inset-0 z-10 flex flex-col justify-between p-4 xl:p-5">
+                  <span className="w-fit rounded-full bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-foreground shadow-md">
                     {t(slide.badgeKey)}
                   </span>
 
                   <div className="max-w-xl">
-                    <h2 className="text-2xl font-bold leading-tight tracking-tight text-white drop-shadow-sm xl:text-3xl 2xl:text-4xl">
+                    <h2 className="text-xl font-bold leading-tight tracking-tight text-white drop-shadow-sm xl:text-2xl">
                       {t(slide.titleKey)}
                     </h2>
-                    <p className="mt-2 line-clamp-2 max-w-lg text-sm font-medium leading-relaxed text-white/90 xl:text-base">
+                    <p className="mt-1.5 line-clamp-2 max-w-lg text-sm font-medium leading-relaxed text-white/90">
                       {t(slide.descKey)}
                     </p>
-                    <span className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-foreground shadow-md transition group-hover:bg-white/95 xl:mt-5 xl:px-5 xl:py-3">
+                    <span className="mt-3 inline-flex items-center gap-2 rounded-xl bg-white px-3.5 py-2 text-sm font-bold text-foreground shadow-md transition group-hover:bg-white/95">
                       {t(slide.ctaKey)}
                       <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                     </span>

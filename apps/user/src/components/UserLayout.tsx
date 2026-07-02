@@ -87,9 +87,10 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
             flags.isAiStyle && "h-[100dvh] lg:h-[calc(100dvh-4.25rem)]",
             flags.isFullBleed && !flags.isViewportLocked && "pb-0",
             !flags.isFullBleed && "pb-[calc(68px+env(safe-area-inset-bottom)+16px)] lg:pb-12",
-            "lg:mx-0 lg:max-w-none lg:pt-6",
+            flags.isHome ? "lg:pt-3" : "lg:pt-6",
             !flags.isFullBleed && !flags.bazaarInset && DESKTOP_SHELL_INSET,
             flags.bazaarInset && "lg:px-0",
+            "lg:mx-0 lg:max-w-none",
           )}
         >
           {flags.isFullBleed ? (

@@ -18,11 +18,6 @@ export function resolveMediaUrl(path: string | null | undefined): string | null 
     return raw;
   }
   if (raw.startsWith("/")) {
-    if (typeof window !== "undefined") {
-      return `${window.location.origin}${raw}`;
-    }
-    const apiOrigin = API_BASE.replace(/\/api\/v1\/?$/i, "");
-    if (apiOrigin) return `${apiOrigin}${raw}`;
     return raw;
   }
   const base = API_BASE.replace(/\/+$/, "");

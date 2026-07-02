@@ -23,7 +23,6 @@ import {
   BookingWaitCountdown,
 } from "@/components/bookings/BookingProcessParts";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
-import { useNotificationsWebSocket } from "@/hooks/use-notifications-websocket";
 import {
   useBooking,
   useCancelBooking,
@@ -53,7 +52,6 @@ function BookingProcessPage({ wide }: { wide?: boolean }) {
   const portfolioPhotoMut = usePortfolioPhotoMutation();
   const prevStatus = useRef<string | null>(null);
   const [surveyAutoOpen, setSurveyAutoOpen] = useState(false);
-  useNotificationsWebSocket();
 
   useEffect(() => {
     if (!booking) return;
