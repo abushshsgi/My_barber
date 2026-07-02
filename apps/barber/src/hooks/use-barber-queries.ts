@@ -92,12 +92,12 @@ export function useBarberBookingQuery(id: string, enabled = true) {
       const list = qc.getQueryData<Booking[]>(barberQueryKeys.bookings());
       return list?.find((b) => b.id === id);
     },
-    staleTime: 20_000,
+    staleTime: 30_000,
     refetchInterval: (q) => {
       if (getBarberWsState() === "open") return false;
       const status = q.state.data?.status;
-      if (status === "in_progress") return 10_000;
-      if (status === "pending" || status === "accepted") return 30_000;
+      if (status === "in_progress") return 30_000;
+      if (status === "pending" || status === "accepted") return 60_000;
       return false;
     },
   });
@@ -159,10 +159,18 @@ export function useBookingActionMutation() {
           typeof body === "object" && body && "detail" in body
             ? String((body as { detail: unknown }).detail)
             : "Amal bajarilmadi";
+        if (
+          action === "accept" &&
+          res.status === 400 &&
+          detail.toLowerCase().includes("invalid status")
+        ) {
+          const row = await apiJson<ApiBookingRow>(`/api/v1/bookings/${id}/`);
+          return { id, action, booking: mapApiBooking(row) };
+        }
         throw new Error(detail);
       }
-      if (action === "complete") {
-        const row = (await res.json()) as ApiBookingRow;
+      const row = (await res.json()) as ApiBookingRow;
+      if (action === "complete" || action === "accept" || action === "start") {
         return { id, action, booking: mapApiBooking(row) };
       }
       return { id, action };
@@ -194,13 +202,15 @@ export function useBookingActionMutation() {
       }
     },
     onSettled: (_data, _err, vars) => {
-      void qc.invalidateQueries({ queryKey: barberQueryKeys.bookings() });
-      if (vars?.id) {
-        void qc.invalidateQueries({ queryKey: [...barberQueryKeys.bookings(), vars.id] });
+      if (!vars) return;
+      if (vars.action === "complete") {
+        void qc.invalidateQueries({ queryKey: barberQueryKeys.finance() });
+        void qc.invalidateQueries({ queryKey: barberQueryKeys.payoutBalance() });
+        void qc.invalidateQueries({ queryKey: [...barberQueryKeys.all, "analytics"] });
       }
-      void qc.invalidateQueries({ queryKey: barberQueryKeys.finance() });
-      void qc.invalidateQueries({ queryKey: barberQueryKeys.payoutBalance() });
-      void qc.invalidateQueries({ queryKey: [...barberQueryKeys.all, "analytics"] });
+      if (_err || vars.action === "reject" || vars.action === "cancel") {
+        void qc.invalidateQueries({ queryKey: barberQueryKeys.bookings() });
+      }
     },
   });
 }

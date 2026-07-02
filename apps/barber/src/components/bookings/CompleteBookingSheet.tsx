@@ -18,9 +18,20 @@ type Props = {
   onConfirm: (options: CompleteBookingOptions) => void;
   onSaveImpressions?: (kinds: ClientImpressionKind[]) => Promise<void> | void;
   impressionsBusy?: boolean;
+  onFinished?: () => void;
 };
 
 type Phase = "confirm" | "submitting" | "impressions" | "done";
+
+const iconStagger = {
+  initial: { opacity: 0, scale: 0.7, y: 16 },
+  animate: (i: number) => ({
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: { delay: i * 0.08, duration: 0.35, ease: [0.22, 1, 0.36, 1] },
+  }),
+};
 
 export function CompleteBookingSheet({
   open,
@@ -31,6 +42,7 @@ export function CompleteBookingSheet({
   onConfirm,
   onSaveImpressions,
   impressionsBusy,
+  onFinished,
 }: Props) {
   const [phase, setPhase] = useState<Phase>("confirm");
   const [selected, setSelected] = useState<ClientImpressionKind[]>([]);
@@ -73,8 +85,9 @@ export function CompleteBookingSheet({
       setSaved(true);
     }
     setPhase("done");
-    window.setTimeout(() => onOpenChange(false), 1200);
-  }, [onOpenChange, onSaveImpressions, saved, selected]);
+    onFinished?.();
+    window.setTimeout(() => onOpenChange(false), 1100);
+  }, [onFinished, onOpenChange, onSaveImpressions, saved, selected]);
 
   const handleConfirm = () => {
     setPhase("submitting");
@@ -103,13 +116,15 @@ export function CompleteBookingSheet({
             transition={{ type: "spring", stiffness: 380, damping: 36 }}
             className={cn(
               "fixed inset-x-0 bottom-0 z-50 mx-auto w-full overflow-hidden rounded-t-3xl border border-border bg-background shadow-lg",
-              phase === "impressions" ? "max-h-[50dvh] max-w-2xl" : "max-h-[min(92dvh,640px)] max-w-lg lg:max-w-xl",
+              phase === "impressions" || phase === "done"
+                ? "max-h-[55dvh] max-w-2xl"
+                : "max-h-[min(92dvh,640px)] max-w-lg lg:max-w-xl",
             )}
           >
             <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-border" />
 
             {phase === "submitting" ? (
-              <div className="flex min-h-[min(50dvh,420px)] flex-col items-center justify-center px-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] pt-10">
+              <div className="flex min-h-[min(44dvh,380px)] flex-col items-center justify-center px-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] pt-10">
                 <Loader2 className="size-12 animate-spin text-foreground" />
                 <p className="mt-5 font-heading text-lg font-semibold">Tugatilmoqda…</p>
                 <p className="mt-1 text-sm text-muted-foreground">Bir oz kuting</p>
@@ -118,8 +133,8 @@ export function CompleteBookingSheet({
 
             {phase === "done" ? (
               <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, scale: 0.92 }}
+                animate={{ opacity: 1, scale: 1 }}
                 className="px-5 pb-[max(env(safe-area-inset-bottom),1.5rem)] pt-10 text-center"
               >
                 <div className="mx-auto grid size-16 place-items-center rounded-full bg-foreground text-background">
@@ -148,17 +163,21 @@ export function CompleteBookingSheet({
                   </button>
                 </div>
 
-                <div className="mt-6 grid grid-cols-5 gap-3 sm:gap-4">
-                  {CLIENT_IMPRESSION_OPTIONS.map(({ kind, icon: Icon }) => {
+                <div className="mt-5 grid grid-cols-5 gap-3 sm:gap-4">
+                  {CLIENT_IMPRESSION_OPTIONS.map(({ kind, icon: Icon }, index) => {
                     const active = selected.includes(kind);
                     return (
-                      <button
+                      <motion.button
                         key={kind}
                         type="button"
+                        custom={index}
+                        variants={iconStagger}
+                        initial="initial"
+                        animate="animate"
                         aria-pressed={active}
                         onClick={() => toggleKind(kind)}
                         className={cn(
-                          "relative flex aspect-square items-center justify-center rounded-2xl border-2 transition-all active:scale-95",
+                          "relative flex aspect-square items-center justify-center rounded-2xl border-2 transition-colors active:scale-95",
                           active
                             ? "border-foreground bg-foreground text-background shadow-md"
                             : "border-border bg-card text-foreground hover:border-foreground/30",
@@ -166,11 +185,15 @@ export function CompleteBookingSheet({
                       >
                         <Icon className="size-8 sm:size-9" strokeWidth={1.75} />
                         {active ? (
-                          <span className="absolute -right-1 -top-1 grid size-6 place-items-center rounded-full bg-emerald-500 text-white shadow-sm">
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="absolute -right-1 -top-1 grid size-6 place-items-center rounded-full bg-emerald-500 text-white shadow-sm"
+                          >
                             <Check className="size-3.5" strokeWidth={3} />
-                          </span>
+                          </motion.span>
                         ) : null}
-                      </button>
+                      </motion.button>
                     );
                   })}
                 </div>
@@ -207,8 +230,7 @@ export function CompleteBookingSheet({
                 </div>
 
                 <p className="mt-5 rounded-xl bg-muted/50 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
-                  Tugatgach mijoz ilovasida baholash so&apos;rovi ochiladi. Keyin mijoz haqida qisqa
-                  ifoda belgilashingiz mumkin.
+                  Tugatgach mijoz ifodalarini belgilaysiz — 5 ta icon, tez va oson.
                 </p>
 
                 <button

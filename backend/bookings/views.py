@@ -677,7 +677,21 @@ class BookingViewSet(viewsets.ModelViewSet):
                 {"detail": "Faqat tasdiqlangan bron uchun check-in."}, status=400
             )
         self._mark_checked_in(booking)
+        booking.refresh_from_db()
+        if booking.status == Booking.Status.ACCEPTED:
+            now = timezone.now()
+            booking.status = Booking.Status.IN_PROGRESS
+            booking.started_at = now
+            booking.save(update_fields=["status", "started_at", "updated_at"])
+            notify_user(
+                booking.customer,
+                "booking_started",
+                "Xizmat boshlandi",
+                "Sartarosh booking xizmatini boshladi.",
+                {"booking_id": booking.id},
+            )
         booking = qs.get(pk=booking.pk)
+        broadcast_booking_updated(booking=booking)
         return Response(self._booking_data(booking, request))
 
     @action(detail=True, methods=["post"])

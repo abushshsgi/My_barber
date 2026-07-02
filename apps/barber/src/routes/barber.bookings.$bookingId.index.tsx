@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { BarberBookingActionBar } from "@/components/bookings/BarberBookingActionBar";
+import { BookingCompletedSummary } from "@/components/bookings/BookingCompletedSummary";
 import { BookingDetailFlow } from "@/components/bookings/BookingDetailFlow";
 import { BookingUnifiedFlow } from "@/components/bookings/BookingUnifiedFlow";
 import { BookingQueryError } from "@/components/bookings/BookingQueryError";
@@ -36,23 +37,39 @@ function BookingPendingContent({
 
   return (
     <>
-      <BookingDetailFlow
-        booking={booking}
-        bookingId={bookingId}
-        clientVisits={clientInfo.visits}
-        clientQuery={clientInfo.query}
-        onChat={() => void navigate({ to: "/barber/chat" })}
-        hasActionBar
-        wide={wide}
-      />
-      <BarberBookingActionBar
-        booking={booking}
-        bookingId={bookingId}
-        busy={busy}
-        onReject={() => runAction("reject")}
-        onAccept={() => runAction("accept")}
-        maxWidthClass={wide ? "max-w-4xl" : "max-w-lg"}
-      />
+      <div className={wide ? "grid gap-6 lg:grid-cols-[1fr_280px] lg:items-start" : ""}>
+        <BookingDetailFlow
+          booking={booking}
+          bookingId={bookingId}
+          clientVisits={clientInfo.visits}
+          clientQuery={clientInfo.query}
+          onChat={() => void navigate({ to: "/barber/chat" })}
+          hasActionBar
+          wide={wide}
+        />
+        {wide ? (
+          <div className="hidden lg:block">
+            <BarberBookingActionBar
+              booking={booking}
+              bookingId={bookingId}
+              busy={busy}
+              onReject={() => runAction("reject")}
+              onAccept={() => runAction("accept")}
+              variant="inline"
+            />
+          </div>
+        ) : null}
+      </div>
+      {!wide ? (
+        <BarberBookingActionBar
+          booking={booking}
+          bookingId={bookingId}
+          busy={busy}
+          onReject={() => runAction("reject")}
+          onAccept={() => runAction("accept")}
+          variant="fixed"
+        />
+      ) : null}
     </>
   );
 }
@@ -62,30 +79,28 @@ function BookingActiveFlowContent({
   bookingId,
   autoOpenComplete,
   wide,
+  onFlowLockChange,
 }: {
   booking: NonNullable<ReturnType<typeof useBarberBookingQuery>["data"]>;
   bookingId: string;
   autoOpenComplete?: boolean;
   wide?: boolean;
+  onFlowLockChange: (locked: boolean) => void;
 }) {
   const navigate = useNavigate();
   const clientInfo = useBookingClientInfo(booking);
-  const { runAction, complete, busy } = useBookingWorkflowActions(bookingId);
+  const { complete, busy } = useBookingWorkflowActions(bookingId);
   const impressionsMut = useSaveClientImpressionsMutation();
   const [completeSuccess, setCompleteSuccess] = useState(false);
 
-  const handleStart = useCallback(() => {
-    runAction("start");
-  }, [runAction]);
+  useEffect(() => {
+    onFlowLockChange(completeSuccess);
+  }, [completeSuccess, onFlowLockChange]);
 
-  const handleFlowClosed = useCallback(
-    (wasComplete: boolean) => {
-      if (wasComplete) {
-        void navigate({ to: "/barber/bookings" });
-      }
-    },
-    [navigate],
-  );
+  const handleFlowClosed = useCallback(() => {
+    onFlowLockChange(false);
+    void navigate({ to: "/barber/bookings" });
+  }, [navigate, onFlowLockChange]);
 
   return (
     <BookingUnifiedFlow
@@ -99,10 +114,7 @@ function BookingActiveFlowContent({
       impressionsBusy={impressionsMut.isPending}
       wide={wide}
       onChat={() => void navigate({ to: "/barber/chat" })}
-      onStart={handleStart}
-      onSaveImpressions={(kinds) =>
-        impressionsMut.mutateAsync({ bookingId, kinds })
-      }
+      onSaveImpressions={(kinds) => impressionsMut.mutateAsync({ bookingId, kinds })}
       onComplete={(opts) =>
         complete(opts, {
           onSuccess: () => setCompleteSuccess(true),
@@ -113,17 +125,62 @@ function BookingActiveFlowContent({
   );
 }
 
+function BookingTerminalContent({
+  booking,
+  wide,
+}: {
+  booking: NonNullable<ReturnType<typeof useBarberBookingQuery>["data"]>;
+  wide?: boolean;
+}) {
+  const navigate = useNavigate();
+  const clientInfo = useBookingClientInfo(booking);
+  return (
+    <BookingCompletedSummary
+      booking={booking}
+      clientVisits={clientInfo.visits}
+      clientQuery={clientInfo.query}
+      onChat={() => void navigate({ to: "/barber/chat" })}
+      wide={wide}
+    />
+  );
+}
+
 function BarberBookingOverviewPage() {
+  const navigate = useNavigate();
   const { bookingId } = Route.useParams();
   const { finish } = Route.useSearch();
+  const [autoOpenComplete] = useState(() => finish === true);
   const { data: booking, isLoading, isError, error } = useBarberBookingQuery(bookingId);
+  const [flowLocked, setFlowLocked] = useState(false);
+
+  useEffect(() => {
+    if (finish === true) {
+      void navigate({
+        to: "/barber/bookings/$bookingId",
+        params: { bookingId },
+        search: {},
+        replace: true,
+      });
+    }
+  }, [bookingId, finish, navigate]);
+
+  const isTerminal =
+    booking?.status === "completed" ||
+    booking?.status === "cancelled" ||
+    booking?.status === "rejected";
+
+  const showActiveFlow =
+    !isTerminal &&
+    (booking?.status === "accepted" ||
+      booking?.status === "in_progress" ||
+      flowLocked);
 
   const shell = (wide?: boolean) => (
     <div
       className={
         wide
-          ? "booking-detail-page min-h-[calc(100dvh-4rem)] px-6 pb-32 pt-6 lg:px-10"
-          : "booking-detail-page min-h-[calc(100dvh-4rem)] px-4 pb-32 pt-4 sm:px-6 sm:pt-6"
+          ? "booking-detail-page min-h-[calc(100dvh-4rem)] px-6 pb-10 pt-6 lg:px-10"
+          : "booking-detail-page min-h-[calc(100dvh-4rem)] px-4 pb-28 pt-4 sm:px-6 sm:pt-6"
       }
     >
       <div className={wide ? "mx-auto w-full max-w-[1400px]" : "mx-auto w-full max-w-lg"}>
@@ -143,19 +200,18 @@ function BarberBookingOverviewPage() {
           <BookingQueryError error={error} />
         ) : booking?.status === "pending" ? (
           <BookingPendingContent booking={booking} bookingId={bookingId} wide={wide} />
-        ) : booking?.status === "accepted" || booking?.status === "in_progress" ? (
+        ) : showActiveFlow ? (
           <BookingActiveFlowContent
             booking={booking}
             bookingId={bookingId}
-            autoOpenComplete={finish === true}
+            autoOpenComplete={autoOpenComplete}
             wide={wide}
+            onFlowLockChange={setFlowLocked}
           />
+        ) : isTerminal ? (
+          <BookingTerminalContent booking={booking} wide={wide} />
         ) : booking ? (
-          <BookingDetailFlow
-            booking={booking}
-            bookingId={bookingId}
-            wide={wide}
-          />
+          <BookingDetailFlow booking={booking} bookingId={bookingId} wide={wide} />
         ) : null}
       </div>
     </div>

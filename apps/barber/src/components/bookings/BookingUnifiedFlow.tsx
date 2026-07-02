@@ -1,15 +1,12 @@
-import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  CheckCircle2,
-  Loader2,
-  MessageSquare,
-  Phone,
-  Scissors,
-} from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { CheckCircle2, Loader2, MessageSquare, Phone, Scissors } from "lucide-react";
+import { useEffect, useState } from "react";
 import { BookingQrCheckInPanel } from "@/components/bookings/BookingQrCheckInPanel";
 import { CompleteBookingSheet } from "@/components/bookings/CompleteBookingSheet";
+import {
+  BookingFlowActionRail,
+  BookingFlowExitLink,
+} from "@/components/bookings/BookingFlowActionRail";
 import {
   BookingDetailSummary,
   BookingNotesCard,
@@ -32,44 +29,48 @@ type Props = {
   busy?: boolean;
   autoOpenComplete?: boolean;
   onChat?: () => void;
-  onStart: () => void;
   onComplete: (options: CompleteBookingOptions) => void;
   completeSuccess?: boolean;
   onSaveImpressions?: (kinds: import("@/lib/client-impressions").ClientImpressionKind[]) => Promise<void> | void;
   impressionsBusy?: boolean;
-  onFlowClosed?: (completed: boolean) => void;
+  onFlowClosed?: () => void;
   wide?: boolean;
 };
 
-type FlowStage = "qr" | "starting" | "session";
+type FlowStage = "qr" | "session";
 
 const stageMotion = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1 },
-  exit: { opacity: 0 },
-  transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as const },
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -8 },
+  transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] as const },
 };
 
 function InChairHero({ active }: { active: boolean }) {
   return (
-    <div className="flex flex-col items-center gap-4 rounded-3xl bg-foreground px-8 py-8 text-background lg:py-10">
-      <div className="relative grid size-16 place-items-center sm:size-20">
-        {active ? (
-          <>
-            <span className="session-pulse-ring absolute inset-0 rounded-full bg-background/20" aria-hidden />
-            <span
-              className="session-pulse-ring session-pulse-ring--delay absolute inset-0 rounded-full bg-background/20"
-              aria-hidden
-            />
-          </>
-        ) : null}
-        <span className="relative grid size-12 place-items-center rounded-full bg-background text-foreground sm:size-14">
-          <Scissors className="size-6" />
-        </span>
+    <div className="flex flex-col items-center gap-3 rounded-3xl bg-foreground px-6 py-6 text-background lg:flex-row lg:justify-between lg:px-8 lg:py-7">
+      <div className="flex items-center gap-4">
+        <div className="relative grid size-14 place-items-center sm:size-16">
+          {active ? (
+            <>
+              <span className="session-pulse-ring absolute inset-0 rounded-full bg-background/20" aria-hidden />
+              <span
+                className="session-pulse-ring session-pulse-ring--delay absolute inset-0 rounded-full bg-background/20"
+                aria-hidden
+              />
+            </>
+          ) : null}
+          <span className="relative grid size-11 place-items-center rounded-full bg-background text-foreground sm:size-12">
+            <Scissors className="size-5" />
+          </span>
+        </div>
+        <div>
+          <p className="font-heading text-lg font-semibold sm:text-xl">Mijoz kresloda</p>
+          <p className="text-sm text-background/75">Xizmat davom etmoqda</p>
+        </div>
       </div>
-      <div className="text-center">
-        <p className="font-heading text-xl font-semibold sm:text-2xl">Xizmat davom etmoqda</p>
-        <p className="mt-1 text-sm text-background/70">Mijoz kresloda</p>
+      <div className="hidden rounded-xl bg-background/10 px-4 py-2 text-center text-sm text-background/80 lg:block">
+        Taymer va tugatish pastdagi panelda
       </div>
     </div>
   );
@@ -83,7 +84,6 @@ export function BookingUnifiedFlow({
   busy,
   autoOpenComplete = false,
   onChat,
-  onStart,
   onComplete,
   completeSuccess = false,
   onSaveImpressions,
@@ -92,64 +92,50 @@ export function BookingUnifiedFlow({
   wide = false,
 }: Props) {
   const [completeOpen, setCompleteOpen] = useState(false);
-  const [flowCompleted, setFlowCompleted] = useState(false);
-  const autoStartedRef = useRef(false);
+  const [flowDone, setFlowDone] = useState(false);
 
   const checkedIn = !!booking.checked_in_at;
   const isSession = booking.status === "in_progress";
-
-  const stage: FlowStage = isSession ? "session" : checkedIn ? "starting" : "qr";
-
-  useEffect(() => {
-    if (!checkedIn || autoStartedRef.current || busy) return;
-    if (booking.status !== "accepted") return;
-    autoStartedRef.current = true;
-    onStart();
-  }, [checkedIn, booking.status, busy, onStart]);
+  const stage: FlowStage = isSession ? "session" : "qr";
 
   useEffect(() => {
-    if (autoOpenComplete) {
-      const id = window.setTimeout(() => setCompleteOpen(true), 450);
+    if (autoOpenComplete && isSession) {
+      const id = window.setTimeout(() => setCompleteOpen(true), 300);
       return () => window.clearTimeout(id);
     }
-  }, [autoOpenComplete]);
+  }, [autoOpenComplete, isSession]);
 
   useEffect(() => {
     if (completeSuccess) {
-      setFlowCompleted(true);
       setCompleteOpen(true);
     }
   }, [completeSuccess]);
 
   const handleCompleteOpenChange = (open: boolean) => {
     setCompleteOpen(open);
-    if (!open && flowCompleted) {
-      onFlowClosed?.(true);
+    if (!open && flowDone) {
+      onFlowClosed?.();
     }
   };
 
-  const handleCheckedIn = useCallback(() => {
-    /* refetch via mutation invalidates booking query */
-  }, []);
+  const handleFlowFinished = () => {
+    setFlowDone(true);
+  };
 
   const phone = booking.client_phone?.trim();
   const phoneE164 = phone ? formatUzPhoneE164(phone) : null;
-
   const maxW = wide ? "max-w-[1400px]" : "max-w-lg";
-
-  const primaryLabel =
-    stage === "starting" ? "Kresloda" : stage === "session" ? "Xizmatni tugatish" : null;
 
   return (
     <div className={`booking-unified-flow mx-auto w-full ${maxW}`}>
       <AnimatePresence mode="wait">
         {stage === "qr" ? (
-          <motion.div key="qr" {...stageMotion} className="relative min-h-[min(560px,72vh)]">
+          <motion.div key="qr" {...stageMotion} className="relative min-h-[min(480px,68vh)]">
             <div
-              className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl opacity-[0.2] blur-[1.5px]"
+              className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl opacity-[0.18] blur-[1px]"
               aria-hidden
             >
-              <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
+              <div className="grid gap-4 lg:grid-cols-2">
                 <BookingDetailSummary
                   booking={booking}
                   clientVisits={clientVisits}
@@ -159,37 +145,23 @@ export function BookingUnifiedFlow({
                 <div className="space-y-4">
                   <BookingPaymentCard booking={booking} />
                   <BookingOrderNumberBanner orderNumber={booking.order_number} />
-                  <BookingNotesCard notes={booking.notes} />
                 </div>
               </div>
             </div>
-
-            <div className="relative z-10 flex min-h-[inherit] items-center justify-center px-1 py-6">
+            <div className="relative z-10 flex min-h-[inherit] items-center justify-center px-1 py-4">
               <div className="w-full max-w-md">
-                <BookingQrCheckInPanel onCheckedIn={handleCheckedIn} />
+                <BookingQrCheckInPanel />
               </div>
             </div>
-          </motion.div>
-        ) : null}
-
-        {stage === "starting" ? (
-          <motion.div
-            key="starting"
-            {...stageMotion}
-            className="flex min-h-[40vh] flex-col items-center justify-center rounded-3xl border border-border bg-card px-8 py-16 text-center shadow-card"
-          >
-            <Loader2 className="size-10 animate-spin text-foreground" />
-            <h2 className="mt-6 font-heading text-xl font-semibold">Mijoz kresloda</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Xizmat boshlanmoqda…</p>
           </motion.div>
         ) : null}
 
         {stage === "session" ? (
-          <motion.div key="session" {...stageMotion} className="space-y-6 pb-4">
-            <div className="grid gap-6 lg:grid-cols-2 lg:items-start lg:gap-10">
+          <motion.div key="session" {...stageMotion} className="space-y-5 pb-4">
+            <InChairHero active />
+            <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
               <div className="space-y-4">
-                <InChairHero active />
-                <div className="rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6">
+                <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
                   <div className="flex items-start gap-4">
                     <UserAvatar
                       src={booking.client_avatar}
@@ -250,34 +222,20 @@ export function BookingUnifiedFlow({
         ) : null}
       </AnimatePresence>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 backdrop-blur-sm">
-        <div className={`mx-auto flex items-stretch gap-2 px-4 ${maxW}`}>
-          <Link
-            to="/barber/bookings"
-            className="inline-flex min-w-[5.5rem] items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 py-3 text-sm font-medium text-muted-foreground"
+      <BookingFlowActionRail maxWidthClass={maxW}>
+        <BookingFlowExitLink />
+        {stage === "session" ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setCompleteOpen(true)}
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3.5 text-sm font-semibold text-background disabled:opacity-70"
           >
-            Chiqish
-          </Link>
-
-          {primaryLabel ? (
-            <button
-              type="button"
-              disabled={stage === "starting" || busy}
-              onClick={() => {
-                if (stage === "session") setCompleteOpen(true);
-              }}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3.5 text-sm font-semibold text-background disabled:opacity-70"
-            >
-              {stage === "starting" || busy ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <CheckCircle2 className="size-4" />
-              )}
-              {primaryLabel}
-            </button>
-          ) : null}
-        </div>
-      </div>
+            {busy ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
+            Xizmatni tugatish
+          </button>
+        ) : null}
+      </BookingFlowActionRail>
 
       <CompleteBookingSheet
         open={completeOpen}
@@ -288,6 +246,7 @@ export function BookingUnifiedFlow({
         onConfirm={onComplete}
         onSaveImpressions={onSaveImpressions}
         impressionsBusy={impressionsBusy}
+        onFinished={handleFlowFinished}
       />
     </div>
   );
