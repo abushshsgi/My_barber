@@ -5,17 +5,8 @@ import { PageHeader } from "@/components/barber/primitives";
 import { useBarberContext } from "@/components/barber/BarberContext";
 import { ServicesCatalogGrid } from "@/components/barber/services/ServicesCatalogGrid";
 import { ServicesPageSkeleton } from "@/components/barber/services/ServicesPageSkeleton";
+import { UnsavedChangesDialog } from "@/components/barber/UnsavedChangesDialog";
 import { useServicesPage } from "@/components/barber/services/use-services-page";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/barber/services")({
   component: ServicesSchedulePage,
@@ -86,33 +77,11 @@ function ServicesSchedulePage() {
         </div>
       </div>
 
-      <AlertDialog
-        open={blocker.status === "blocked"}
-        onOpenChange={(open) => {
-          if (!open) blocker.reset?.();
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Saqlanmagan o&apos;zgarishlar</AlertDialogTitle>
-            <AlertDialogDescription>
-              Sahifadan chiqsangiz, kiritilgan o&apos;zgarishlar yo&apos;qolishi mumkin.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel type="button" onClick={() => blocker.reset?.()}>
-              Sahifada qolish
-            </AlertDialogCancel>
-            <AlertDialogAction
-              type="button"
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => blocker.proceed?.()}
-            >
-              Chiqish
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <UnsavedChangesDialog
+        blocker={blocker}
+        stayLabel="Sahifada qolish"
+        description="Sahifadan chiqsangiz, kiritilgan o'zgarishlar yo'qolishi mumkin."
+      />
     </>
   );
 }

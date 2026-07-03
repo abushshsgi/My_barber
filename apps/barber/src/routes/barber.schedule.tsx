@@ -14,6 +14,7 @@ import { AdvanceDayPlanner } from "@/components/barber/AdvanceDayPlanner";
 import { BookingModePanel } from "@/components/barber/BookingModePanel";
 import { WorkingHoursEditor } from "@/components/barber/WorkingHoursEditor";
 import { ScheduleExceptionsEditor } from "@/components/barber/ScheduleExceptionsEditor";
+import { UnsavedChangesDialog } from "@/components/barber/UnsavedChangesDialog";
 import { useBarberContext } from "@/components/barber/BarberContext";
 import { invalidateOnboardingAfterActivationChange } from "@/lib/onboarding-status-cache";
 import {
@@ -29,16 +30,6 @@ import {
 } from "@/lib/barber-schedule";
 import { apiFetch, apiJson, apiList, formatApiError } from "@/lib/api";
 import { SIGNUP_FLOW_PATH } from "@/lib/barber-flow-config";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -230,65 +221,81 @@ function BarberSchedulePage() {
   const workingDays = days.filter((d) => !d.is_day_off).length;
 
   const tabs = useMemo(() => {
-    const base: { id: TabId; label: string; icon: typeof Sparkles }[] = [
-      { id: "mode", label: "Bron rejimi", icon: Sparkles },
+    const base: { id: TabId; label: string; shortLabel: string; icon: typeof Sparkles }[] = [
+      { id: "mode", label: "Bron rejimi", shortLabel: "Rejim", icon: Sparkles },
       {
         id: "weekly",
         label: isAdvance ? "Haftalik shablon" : "Haftalik jadval",
+        shortLabel: "Jadval",
         icon: CalendarClock,
       },
     ];
     if (isAdvance) {
-      base.push({ id: "advance", label: "Oldindan kunlar", icon: CalendarRange });
+      base.push({ id: "advance", label: "Oldindan kunlar", shortLabel: "Kunlar", icon: CalendarRange });
     } else {
-      base.push({ id: "exceptions", label: "Maxsus kunlar", icon: CalendarDays });
+      base.push({ id: "exceptions", label: "Maxsus kunlar", shortLabel: "Maxsus", icon: CalendarDays });
     }
     return base;
   }, [isAdvance]);
 
   const activeSave =
     activeTab === "mode"
-      ? { label: "Rejimni saqlash", onClick: () => void saveBookingMode(), saving: savingMode, disabled: !hasUnsavedMode }
+      ? {
+          label: "Saqlash",
+          onClick: () => void saveBookingMode(),
+          saving: savingMode,
+          disabled: !hasUnsavedMode,
+        }
       : activeTab === "weekly"
-        ? { label: "Jadvalni saqlash", onClick: () => void saveSchedule(), saving: savingSchedule, disabled: false }
+        ? {
+            label: "Saqlash",
+            onClick: () => void saveSchedule(),
+            saving: savingSchedule,
+            disabled: false,
+          }
         : null;
+
+  const switchTab = (tabId: TabId) => {
+    const leavingDirty =
+      (activeTab === "mode" && hasUnsavedMode) || (activeTab === "weekly" && hasUnsavedSchedule);
+    if (leavingDirty) {
+      const ok = window.confirm("Saqlanmagan o'zgarishlar bor. Davom etasizmi?");
+      if (!ok) return;
+    }
+    setActiveTab(tabId);
+  };
 
   return (
     <>
-      <div className="flex min-h-[calc(100dvh-3.5rem)] w-full flex-col">
-        {/* Page header — full width, no inner sidebar */}
-        <header className="border-b border-border bg-card/50 px-6 py-6 lg:px-10 lg:py-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                Bron sozlamalari
-              </p>
-              <h1 className="mt-1 font-heading text-3xl font-semibold tracking-tight lg:text-4xl">
+      <div className="flex min-h-[calc(100dvh-3.5rem)] w-full flex-col pb-20 md:pb-0">
+        <header className="sticky top-14 z-[5] border-b border-border bg-background/95 backdrop-blur-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-6 lg:px-8">
+            <div className="min-w-0">
+              <h1 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">
                 Ish jadvali
               </h1>
-              <p className="mt-2 max-w-2xl text-sm text-muted-foreground lg:text-base">
+              <p className="mt-0.5 truncate text-xs text-muted-foreground sm:text-sm">
                 {isAdvance
-                  ? "Oldindan rejim: mijozlar faqat belgilangan kunlarda va soatlarda bron qiladi."
-                  : "Har kunlik rejim: salon ochilishidan yopilishigacha bo'sh slotlarga bron qilinadi."}
+                  ? "Oldindan bron — belgilangan kun va soatlarda"
+                  : "Har kunlik — ochilishdan yopilishgacha"}
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium">
-                {scope === "salon" ? "Salon" : "Mustaqil usta"}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="rounded-md border border-border px-2 py-0.5 text-[10px] font-medium sm:text-xs">
+                {scope === "salon" ? "Salon" : "Mustaqil"}
               </span>
-              <span className="rounded-lg bg-foreground px-3 py-1.5 text-xs font-semibold text-background">
+              <span className="rounded-md bg-foreground px-2 py-0.5 text-[10px] font-semibold text-background sm:text-xs">
                 {isAdvance
-                  ? `Oldindan ${bookingSettings.advance_min_days}–${bookingSettings.advance_max_days} kun`
+                  ? `${bookingSettings.advance_min_days}–${bookingSettings.advance_max_days} kun`
                   : "Har kunlik"}
               </span>
-              <span className="rounded-lg border border-border px-3 py-1.5 text-xs tabular-nums text-muted-foreground">
-                {workingDays}/7 ish kuni
+              <span className="rounded-md border border-border px-2 py-0.5 text-[10px] tabular-nums text-muted-foreground sm:text-xs">
+                {workingDays}/7
               </span>
             </div>
           </div>
 
-          {/* Segmented tabs */}
-          <div className="mt-6 flex gap-1 overflow-x-auto rounded-xl border border-border bg-muted/40 p-1">
+          <div className="flex gap-1 overflow-x-auto px-4 pb-2 sm:px-6 lg:px-8">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const active = activeTab === tab.id;
@@ -299,80 +306,51 @@ function BarberSchedulePage() {
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => switchTab(tab.id)}
                   className={cn(
-                    "inline-flex min-w-fit flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all",
+                    "inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-colors sm:text-sm",
                     active
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
+                      ? "bg-foreground text-background"
+                      : "bg-muted/50 text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  <Icon className="size-4" />
-                  {tab.label}
-                  {dirty ? <span className="size-1.5 rounded-full bg-foreground" /> : null}
+                  <Icon className="size-3.5 sm:size-4" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.shortLabel}</span>
+                  {dirty ? <span className="size-1.5 rounded-full bg-destructive" /> : null}
                 </button>
               );
             })}
           </div>
         </header>
 
-        {/* Content */}
-        <div className="flex-1 px-6 py-8 lg:px-10 lg:py-10">
+        <div className="flex-1 px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
           {!fullyReady && activationSteps.services_ok && !activationSteps.schedule_ok ? (
-            <div className="mb-6 rounded-xl border border-primary/35 bg-primary/5 px-5 py-4 text-sm">
+            <div className="mb-4 rounded-lg border border-primary/35 bg-primary/5 px-4 py-3 text-sm">
               Jadvalni to&apos;ldiring va saqlang.
             </div>
           ) : null}
 
           {scheduleBlocked ? (
-            <div className="mb-6 rounded-xl border border-amber-500/40 bg-amber-500/10 px-5 py-4 text-sm">
+            <div className="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
               <p className="font-medium">Salon a&apos;zoligi kerak</p>
-              <Link to={SIGNUP_FLOW_PATH.employee} className="mt-2 inline-flex items-center gap-1 underline">
+              <Link to={SIGNUP_FLOW_PATH.employee} className="mt-1 inline-flex items-center gap-1 underline">
                 Salonga qo&apos;shilish <ArrowRight className="size-3.5" />
               </Link>
             </div>
           ) : null}
 
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">
-              {activeTab === "mode" && "Bron qabul qilish turini tanlang"}
-              {activeTab === "weekly" &&
-                (isAdvance
-                  ? "Standart ish vaqti — oldindan kunlar uchun asos"
-                  : "Ochilishdan yopilishgacha ish vaqti")}
-              {activeTab === "advance" && "Har bir oldindan kun uchun soat va band slotlar"}
-              {activeTab === "exceptions" && "Dam olish va maxsus kunlar"}
-            </p>
-            {activeSave ? (
-              <Button
-                type="button"
-                size="lg"
-                onClick={activeSave.onClick}
-                disabled={scheduleBlocked || activeSave.saving || activeSave.disabled}
-                className="h-11 gap-2 rounded-xl px-6"
-              >
-                {activeSave.saving ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Save className="size-4" />
-                )}
-                {activeSave.label}
-              </Button>
-            ) : null}
-          </div>
-
           {loading ? (
-            <div className="flex min-h-[40vh] items-center justify-center">
-              <Loader2 className="size-8 animate-spin text-muted-foreground" />
+            <div className="flex min-h-[30vh] items-center justify-center">
+              <Loader2 className="size-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="w-full">
+            <div className="mx-auto w-full max-w-5xl">
               {activeTab === "mode" ? (
                 <BookingModePanel
                   settings={bookingSettings}
                   onChange={setBookingSettings}
                   disabled={scheduleBlocked || savingMode}
-                  layout="wide"
                 />
               ) : null}
 
@@ -405,41 +383,35 @@ function BarberSchedulePage() {
             </div>
           )}
 
-          <p className="mt-12 text-center text-sm text-muted-foreground">
+          <p className="mx-auto mt-8 max-w-5xl text-center text-xs text-muted-foreground sm:text-sm">
             <Link to="/barber/calendar" className="font-medium text-foreground hover:underline">
               Kalendarda bronlarni ko&apos;rish
             </Link>
           </p>
         </div>
+
+        {activeSave ? (
+          <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 p-3 backdrop-blur-sm md:static md:mt-auto md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
+            <div className="mx-auto flex max-w-5xl justify-end px-1 md:px-0">
+              <Button
+                type="button"
+                onClick={activeSave.onClick}
+                disabled={scheduleBlocked || activeSave.saving || activeSave.disabled}
+                className="h-10 w-full gap-2 rounded-lg sm:w-auto sm:px-6"
+              >
+                {activeSave.saving ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Save className="size-4" />
+                )}
+                {activeSave.label}
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </div>
 
-      <AlertDialog
-        open={blocker.status === "blocked"}
-        onOpenChange={(open) => {
-          if (!open) blocker.reset?.();
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Saqlanmagan o&apos;zgarishlar</AlertDialogTitle>
-            <AlertDialogDescription>
-              Sahifadan chiqsangiz, o&apos;zgarishlar yo&apos;qolishi mumkin.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel type="button" onClick={() => blocker.reset?.()}>
-              Qolish
-            </AlertDialogCancel>
-            <AlertDialogAction
-              type="button"
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => blocker.proceed?.()}
-            >
-              Chiqish
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <UnsavedChangesDialog blocker={blocker} />
     </>
   );
 }

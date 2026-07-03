@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Moon } from "lucide-react";
+import { Copy, Moon, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -49,98 +49,106 @@ export function WorkingHoursEditor({ days, onChange, disabled }: WorkingHoursEdi
       days.map((d) =>
         d.is_day_off
           ? d
+          : { ...d, open_time: bulkOpen, close_time: bulkClose, breaksText: lunch },
+      ),
+    );
+  };
+
+  const copyMondayToAll = () => {
+    const mon = days.find((d) => d.weekday === 0 && !d.is_day_off);
+    if (!mon) return;
+    onChange(
+      days.map((d) =>
+        d.is_day_off
+          ? d
           : {
               ...d,
-              open_time: bulkOpen,
-              close_time: bulkClose,
-              breaksText: lunch,
+              open_time: mon.open_time,
+              close_time: mon.close_time,
+              breaksText: mon.breaksText,
             },
       ),
     );
   };
 
-  const setLunch = (weekday: number, start: string, end: string) => {
-    onChange(updateDay(days, weekday, { breaksText: breaksTextFromLunch(start, end) }));
-  };
-
   return (
-    <div className="space-y-6">
-      {/* Tez sozlash */}
-      <section className="rounded-2xl border border-border bg-muted/20 p-4 lg:p-5">
-        <p className="text-sm font-semibold text-foreground">Tez sozlash</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Bir xil vaqtni barcha ish kunlariga bir tugma bilan qo&apos;ying.
-        </p>
-        <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end">
-          <div className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="space-y-4">
+      {/* Tez sozlash — ixcham */}
+      <section className="rounded-xl border border-border bg-card">
+        <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
+          <Zap className="size-4 text-muted-foreground" />
+          <p className="text-sm font-semibold">Tez sozlash</p>
+        </div>
+        <div className="p-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <TimeField label="Ochilish" value={bulkOpen} onChange={setBulkOpen} disabled={disabled} />
             <TimeField label="Yopilish" value={bulkClose} onChange={setBulkClose} disabled={disabled} />
             <TimeField
-              label="Tushlik bosh"
+              label="Tushlik"
               value={bulkLunchStart}
               onChange={setBulkLunchStart}
               disabled={disabled}
             />
             <TimeField
-              label="Tushlik tugash"
+              label="Tushlik tug."
               value={bulkLunchEnd}
               onChange={setBulkLunchEnd}
               disabled={disabled}
             />
           </div>
-          <Button
-            type="button"
-            disabled={disabled}
-            onClick={applyBulkToAllWorking}
-            className="h-11 shrink-0 rounded-xl px-5"
-          >
-            Barcha ish kunlariga
-          </Button>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              disabled={disabled}
+              onClick={applyBulkToAllWorking}
+              className="h-9 rounded-lg"
+            >
+              <Copy className="size-3.5" />
+              Barcha ish kunlariga
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={disabled}
+              onClick={copyMondayToAll}
+              className="h-9 rounded-lg"
+            >
+              Dushanbadan nusxa
+            </Button>
+          </div>
         </div>
       </section>
 
       {/* Hafta jadvali */}
-      <section className="overflow-hidden rounded-2xl border border-border bg-card">
-        <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-3 lg:px-5">
+      <section className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
           <div>
-            <p className="font-heading text-base font-semibold">Hafta jadvali</p>
-            <p className="text-xs text-muted-foreground">
-              {workingCount} kun ishlaydi · mijozlar faqat ochiq vaqtlarda bron qiladi
-            </p>
+            <p className="text-sm font-semibold">Hafta jadvali</p>
+            <p className="text-xs text-muted-foreground">{workingCount} kun ishlaydi</p>
           </div>
         </div>
 
-        {/* Desktop table */}
-        <div className="hidden lg:block">
-          <div className="grid grid-cols-[minmax(8rem,1.2fr)_4rem_repeat(4,minmax(5.5rem,1fr))] gap-0 border-b border-border bg-muted/15 px-5 py-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+        {/* Desktop */}
+        <div className="hidden md:block">
+          <div className="grid grid-cols-[1fr_3rem_repeat(4,minmax(0,1fr))] gap-2 border-b border-border bg-muted/20 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
             <span>Kun</span>
             <span className="text-center">Ish</span>
             <span>Boshlanish</span>
             <span>Tugash</span>
             <span>Tushlik</span>
-            <span>Tushlik tug.</span>
+            <span>Tugash</span>
           </div>
           {days.map((day) => (
-            <DayTableRow
-              key={day.weekday}
-              day={day}
-              days={days}
-              onChange={onChange}
-              disabled={disabled}
-            />
+            <DayTableRow key={day.weekday} day={day} days={days} onChange={onChange} disabled={disabled} />
           ))}
         </div>
 
-        {/* Mobile cards */}
-        <div className="divide-y divide-border lg:hidden">
+        {/* Mobile */}
+        <div className="divide-y divide-border md:hidden">
           {days.map((day) => (
-            <DayMobileCard
-              key={day.weekday}
-              day={day}
-              days={days}
-              onChange={onChange}
-              disabled={disabled}
-            />
+            <DayMobileCard key={day.weekday} day={day} days={days} onChange={onChange} disabled={disabled} />
           ))}
         </div>
       </section>
@@ -161,13 +169,13 @@ function TimeField({
 }) {
   return (
     <label className="space-y-1">
-      <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
+      <span className="text-[10px] font-medium text-muted-foreground">{label}</span>
       <input
         type="time"
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm tabular-nums outline-none focus:border-foreground/40 disabled:opacity-50"
+        className="h-9 w-full rounded-lg border border-border bg-background px-2 text-sm tabular-nums outline-none focus:border-foreground/40 disabled:opacity-50"
       />
     </label>
   );
@@ -190,30 +198,25 @@ function DayTableRow({
   return (
     <div
       className={cn(
-        "grid grid-cols-[minmax(8rem,1.2fr)_4rem_repeat(4,minmax(5.5rem,1fr))] items-center gap-0 border-b border-border/80 px-5 py-3 last:border-b-0",
+        "grid grid-cols-[1fr_3rem_repeat(4,minmax(0,1fr))] items-center gap-2 border-b border-border/60 px-4 py-2 last:border-b-0",
         !working && "bg-muted/15",
       )}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 min-w-0">
         <span
           className={cn(
-            "grid size-9 shrink-0 place-items-center rounded-lg text-xs font-bold",
+            "grid size-7 shrink-0 place-items-center rounded-md text-[10px] font-bold",
             working ? "bg-foreground text-background" : "bg-muted text-muted-foreground",
           )}
         >
           {WEEKDAY_SHORT[day.weekday]}
         </span>
-        <div className="min-w-0">
-          <p className={cn("text-sm font-medium", !working && "text-muted-foreground")}>
-            {WEEKDAYS[day.weekday]}
-          </p>
+        <span className={cn("truncate text-sm", !working && "text-muted-foreground")}>
+          {WEEKDAYS[day.weekday]}
           {!working ? (
-            <p className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Moon className="size-3" />
-              Dam
-            </p>
+            <Moon className="ml-1 inline size-3 text-muted-foreground" />
           ) : null}
-        </div>
+        </span>
       </div>
 
       <div className="flex justify-center">
@@ -256,7 +259,7 @@ function DayTableRow({
           />
         </>
       ) : (
-        <div className="col-span-4 text-sm text-muted-foreground">—</div>
+        <div className="col-span-4 text-xs text-muted-foreground">Dam</div>
       )}
     </div>
   );
@@ -277,20 +280,20 @@ function DayMobileCard({
   const lunch = lunchFromBreaksText(day.breaksText);
 
   return (
-    <div className={cn("p-4", !working && "bg-muted/15")}>
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+    <div className={cn("p-3", !working && "bg-muted/15")}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
           <span
             className={cn(
-              "grid size-10 place-items-center rounded-xl text-sm font-bold",
+              "grid size-8 place-items-center rounded-lg text-xs font-bold",
               working ? "bg-foreground text-background" : "bg-muted text-muted-foreground",
             )}
           >
             {WEEKDAY_SHORT[day.weekday]}
           </span>
           <div>
-            <p className="font-medium">{WEEKDAYS[day.weekday]}</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm font-medium">{WEEKDAYS[day.weekday]}</p>
+            <p className="text-[11px] text-muted-foreground">
               {working ? `${day.open_time} – ${day.close_time}` : "Dam olish"}
             </p>
           </div>
@@ -310,7 +313,7 @@ function DayMobileCard({
       </div>
 
       {working ? (
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="mt-2 grid grid-cols-2 gap-2">
           <TimeField
             label="Boshlanish"
             value={day.open_time}
@@ -330,7 +333,7 @@ function DayMobileCard({
             onChange={(v) => setLunch(days, day.weekday, v, lunch.end, onChange)}
           />
           <TimeField
-            label="Tushlik tug."
+            label="Tugash"
             value={lunch.end}
             disabled={disabled}
             onChange={(v) => setLunch(days, day.weekday, lunch.start, v, onChange)}
@@ -356,7 +359,7 @@ function InlineTime({
       value={value}
       disabled={disabled}
       onChange={(e) => onChange(e.target.value)}
-      className="h-10 w-full max-w-[8rem] rounded-lg border border-border bg-background px-2 text-sm tabular-nums outline-none focus:border-foreground/40 disabled:opacity-50"
+      className="h-8 w-full rounded-md border border-border bg-background px-1.5 text-xs tabular-nums outline-none focus:border-foreground/40 disabled:opacity-50"
     />
   );
 }
