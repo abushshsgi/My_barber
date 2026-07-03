@@ -535,6 +535,65 @@ export function paymentStatusLabel(
   return "Naqd to'lov";
 }
 
+/** Yangi buyurtma — Yandex Go uslubidagi takrorlanuvchi signal (~8 s). To'xtatish uchun qaytarilgan funksiyani chaqiring. */
+export function playNewBookingAlertSound(durationMs = 8_000): () => void {
+  if (typeof window === "undefined") return () => {};
+
+  let stopped = false;
+  let ctx: AudioContext | null = null;
+  const timers: Array<ReturnType<typeof setTimeout> | ReturnType<typeof setInterval>> = [];
+
+  const stop = () => {
+    if (stopped) return;
+    stopped = true;
+    for (const t of timers) {
+      clearTimeout(t as ReturnType<typeof setTimeout>);
+      clearInterval(t as ReturnType<typeof setInterval>);
+    }
+    timers.length = 0;
+    void ctx?.close().catch(() => {});
+    ctx = null;
+  };
+
+  try {
+    const AC =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AC) return stop;
+
+    ctx = new AC();
+    const notes = [587.33, 739.99, 880.0, 987.77];
+
+    const playChime = () => {
+      if (stopped || !ctx) return;
+      const t0 = ctx.currentTime;
+      for (let i = 0; i < notes.length; i++) {
+        const freq = notes[i]!;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.value = freq;
+        const start = t0 + i * 0.16;
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.2, start + 0.025);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.2);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + 0.22);
+      }
+    };
+
+    playChime();
+    timers.push(setInterval(playChime, 1_350));
+    timers.push(setTimeout(stop, durationMs));
+  } catch {
+    stop();
+  }
+
+  return stop;
+}
+
 /** Xizmat tugaganda qisqa audio signal (brauzer ruxsati kerak bo'lishi mumkin). */
 export function playBookingCompletionChime(): void {
   if (typeof window === "undefined") return;
