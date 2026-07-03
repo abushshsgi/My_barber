@@ -191,10 +191,7 @@ function BarberActivationPage() {
           ? String((body as { detail?: string }).detail || "Tasdiq xati yuborildi")
           : "Tasdiq xati yuborildi. Pochtadagi havolani bosing.",
       );
-      void navigate({
-        to: "/check-email",
-        search: profile.email ? { email: profile.email } : {},
-      });
+      void refreshActivationStatus();
     } catch (e: unknown) {
       if (isFetchAbortError(e)) {
         toast.error(

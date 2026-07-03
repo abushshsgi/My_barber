@@ -6,10 +6,16 @@ import logging
 from django.conf import settings
 from django.core.mail import send_mail
 
+from accounts.email_utils import is_internal_email
 from barbers.email_verification import sign_barber_email_token
 from barbers.models import Barber
 
 logger = logging.getLogger(__name__)
+
+
+def barber_has_verifiable_email(barber: Barber) -> bool:
+    """Haqiqiy pochta — telefon-only ichki @phone.mysaloon.local emas."""
+    return bool((barber.email or "").strip()) and not is_internal_email(barber.email)
 
 _MAIL_EXECUTOR = concurrent.futures.ThreadPoolExecutor(
     max_workers=2,
@@ -24,6 +30,8 @@ def send_barber_email_verification(barber: Barber) -> tuple[bool, str | None]:
     """
     if barber.email_verified_at is not None:
         return True, None
+    if not barber_has_verifiable_email(barber):
+        return False, "Telefon orqali ro‘yxatdan o‘tgan akkaunt — email tasdiqlash talab qilinmaydi."
 
     base = getattr(settings, "BARBER_APP_PUBLIC_BASE", "").strip().rstrip("/")
     if not base:
@@ -87,15 +95,13 @@ def send_barber_email_verification_with_timeout(
     return future.result(timeout=timeout)
 
 
-def maybe_schedule_verification_email_when_setup_complete(barber_id: int) -> None:
+def maybe_schedule_verification_email_once(barber_id: int) -> None:
     """
-    Ro‘yxatdan o‘tishda emas: profil sozlamalari (signup + xizmatlar + jadval) tugaganda
-    bir marta tasdiq xatini yuborish.
+    Haqiqiy email bo‘lsa bir marta tasdiq xatini yuborish.
+    Ro‘yxatdan o‘tish yoki onboarding/status so‘rovi orqali chaqiriladi.
     """
     from django.db import transaction
     from django.utils import timezone
-
-    from barbers.readiness import compute_barber_readiness
 
     should_send = False
     with transaction.atomic():
@@ -106,10 +112,9 @@ def maybe_schedule_verification_email_when_setup_complete(barber_id: int) -> Non
         )
         if not b or b.email_verified_at is not None:
             return
-        if b.email_verification_invite_sent_at is not None:
+        if not barber_has_verifiable_email(b):
             return
-        r = compute_barber_readiness(b)
-        if not (r.signup_complete and r.services_ok and r.schedule_ok):
+        if b.email_verification_invite_sent_at is not None:
             return
         Barber.objects.filter(pk=b.pk).update(
             email_verification_invite_sent_at=timezone.now(),
@@ -118,5 +123,10 @@ def maybe_schedule_verification_email_when_setup_complete(barber_id: int) -> Non
 
     if should_send:
         b2 = Barber.objects.filter(pk=barber_id, is_active=True).first()
-        if b2 and b2.email_verified_at is None:
+        if b2 and b2.email_verified_at is None and barber_has_verifiable_email(b2):
             send_barber_email_verification_async(b2)
+
+
+def maybe_schedule_verification_email_when_setup_complete(barber_id: int) -> None:
+    """Eski nom — endi setup tugashini kutmay, bir marta yuboradi."""
+    maybe_schedule_verification_email_once(barber_id)

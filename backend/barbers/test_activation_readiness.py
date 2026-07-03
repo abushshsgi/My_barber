@@ -51,7 +51,7 @@ class BarberActivationReadinessTests(TestCase):
             is_day_off=False,
         )
 
-    def test_onboarding_status_sends_verification_email_when_setup_ready(self):
+    def test_onboarding_status_sends_verification_email_on_first_status_check(self):
         access, _ = encode_barber_tokens(self.barber.id)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
         mail.outbox.clear()
@@ -235,4 +235,37 @@ class BarberActivationReadinessTests(TestCase):
         mail.outbox.clear()
         res = self.client.post("/api/v1/barber/auth/resend-verification-email/", {}, format="json")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_phone_only_barber_email_step_skipped_in_readiness(self):
+        from barbers.readiness import compute_barber_readiness
+
+        phone_barber = Barber.objects.create(
+            email="998901112233@phone.mysaloon.local",
+            username="998901112233@phone.mysaloon.local",
+            full_name="Phone Barber",
+            phone="+998901112233",
+            work_mode=Barber.WorkMode.INDEPENDENT,
+            onboarding_flow=Barber.OnboardingFlow.INDEPENDENT,
+        )
+        r = compute_barber_readiness(phone_barber)
+        self.assertTrue(r.email_verified)
+
+    def test_onboarding_status_sends_email_before_setup_complete(self):
+        """Ro‘yxatdan o‘tishdan keyin setup tugamasdan ham xat yuboriladi."""
+        partial = Barber.objects.create(
+            email="partial@test.uz",
+            username="partial@test.uz",
+            full_name="Partial",
+            work_mode=Barber.WorkMode.SALON,
+            onboarding_flow=Barber.OnboardingFlow.OWNER,
+        )
+        partial.set_password("pass12345")
+        partial.save()
+        access, _ = encode_barber_tokens(partial.id)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+        mail.outbox.clear()
+        res = self.client.get("/api/v1/barber/onboarding/status/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertFalse(res.json()["fully_ready"])
         self.assertEqual(len(mail.outbox), 1)

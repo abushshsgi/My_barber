@@ -4,6 +4,7 @@ import {
   getBarberAccessToken,
   setBarberTokens,
 } from "@/lib/api";
+import { clearOnboardingStatusCache } from "@/lib/onboarding-status-cache";
 import {
   extractApiError,
   formatFetchError,
@@ -89,6 +90,7 @@ async function registerAndStoreTokens(
     refresh = tokens.refresh;
   }
   if (!access || !refresh) throw new Error("Token qaytmadi.");
+  clearOnboardingStatusCache();
   setBarberTokens(access, refresh);
   clearSignupDraft();
 }
@@ -185,6 +187,7 @@ export async function submitEmployeeRegisterAndJoin(payload: {
   }
   const tokens = body as { access?: string; refresh?: string };
   if (!tokens.access || !tokens.refresh) throw new Error("Token qaytmadi.");
+  clearOnboardingStatusCache();
   setBarberTokens(tokens.access, tokens.refresh);
   clearSignupDraft();
 }

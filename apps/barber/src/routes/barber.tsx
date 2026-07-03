@@ -29,10 +29,6 @@ export const Route = createFileRoute("/barber")({
     const path = location.pathname;
     const cached = readOnboardingStatusCache();
 
-    if (path.startsWith("/barber/activation") && cached?.fully_ready === true) {
-      throw redirect({ to: activationRedirectTarget(cached.owns_salon), replace: true });
-    }
-
     if (isBarberPathAllowedDuringActivation(path)) return;
     if (typeof window === "undefined") return;
     if (!getBarberAccessToken()) return;

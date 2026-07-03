@@ -9,6 +9,7 @@ import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { SignupWizard } from "@/components/auth/SignupWizard";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { apiFetch, getBarberAccessToken, setBarberTokens } from "@/lib/api";
+import { clearOnboardingStatusCache } from "@/lib/onboarding-status-cache";
 import { checkBarberAvailability, parseFieldErrors } from "@/lib/auth-errors";
 import {
   extractApiError,
@@ -115,6 +116,7 @@ function AuthPage() {
       if (!data.access || !data.refresh) throw new Error("Token qaytmadi.");
       resetBarberSessionBootstrap();
       resetBarberAuthFailureGuard();
+      clearOnboardingStatusCache();
       setBarberTokens(data.access, data.refresh, rememberMe);
       const next = await resolveBarberEntryPath();
       await navigate({ to: next });

@@ -1,4 +1,5 @@
 from django.conf import settings as django_settings
+from django.core import mail
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
@@ -106,9 +107,12 @@ class BarberAuthIntegrationTests(TestCase):
     def test_register_email_only_without_phone(self):
         payload = self._register_payload("owner", "emailonly@test.com")
         payload["phone"] = ""
-        res = self.client.post("/api/v1/auth/barber-register/", payload, format="json")
+        with override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend"):
+            mail.outbox.clear()
+            res = self.client.post("/api/v1/auth/barber-register/", payload, format="json")
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.json()["barber"]["email"], "emailonly@test.com")
+        self.assertEqual(len(mail.outbox), 1)
 
     def test_register_phone_only_without_email(self):
         res = self.client.post(

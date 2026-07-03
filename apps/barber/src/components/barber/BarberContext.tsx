@@ -402,9 +402,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   const [activeSalonId, setActiveSalonId] = useState<number | null>(null);
   const [barberWorkMode, setBarberWorkMode] = useState<"salon" | "independent">("independent");
   const [onboardingFlow, setOnboardingFlow] = useState<string | null>(null);
-  const [onboardingComplete, setOnboardingComplete] = useState(
-    () => bootCache?.fully_ready === true,
-  );
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [requiredNextPath, setRequiredNextPath] = useState<string | null>(
     () => bootCache?.required_next_path ?? null,
   );
@@ -416,7 +414,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     hasServices: false,
     hasWorkingHours: false,
   });
-  const [fullyReady, setFullyReady] = useState(() => bootCache?.fully_ready === true);
+  const [fullyReady, setFullyReady] = useState(false);
   const [activationHydrated, setActivationHydrated] = useState(false);
   const [readinessPercent, setReadinessPercent] = useState(0);
   const [activationSteps, setActivationSteps] = useState<ActivationSteps>({

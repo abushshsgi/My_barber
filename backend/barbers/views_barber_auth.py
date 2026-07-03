@@ -10,11 +10,14 @@ from accounts.models import User
 from accounts.phone_validation import validate_uz_mobile_phone
 from accounts.throttles import AuthIPThrottle
 from barbers.barber_auth import encode_barber_tokens, validate_and_rotate_barber_refresh
-from barbers.barber_email import send_barber_email_verification_with_timeout
+from barbers.barber_email import (
+    barber_has_verifiable_email,
+    maybe_schedule_verification_email_once,
+    send_barber_email_verification_with_timeout,
+)
 from barbers.email_verification import unsign_barber_email_token
 from barbers.models import Barber
 from barbers.permissions import IsBarber
-from barbers.barber_email import maybe_schedule_verification_email_when_setup_complete
 from barbers.readiness import build_onboarding_status_payload, compute_barber_readiness
 
 
@@ -182,6 +185,16 @@ class BarberEmailResendView(APIView):
         b = request.user.barber
         if b.email_verified_at is not None:
             return Response({"detail": "Email allaqachon tasdiqlangan."}, status=400)
+        if not barber_has_verifiable_email(b):
+            return Response(
+                {
+                    "detail": (
+                        "Telefon orqali ro‘yxatdan o‘tgansiz — email tasdiqlash shart emas. "
+                        "Aktivatsiya sahifasida keyingi qadamga o‘ting."
+                    ),
+                },
+                status=400,
+            )
         try:
             ok, err = send_barber_email_verification_with_timeout(b, timeout=25)
         except concurrent.futures.TimeoutError:
@@ -311,5 +324,5 @@ class BarberOnboardingStatusView(APIView):
         payload = build_onboarding_status_payload(b)
         if payload["is_complete"] and not b.onboarding_completed_at:
             Barber.objects.filter(pk=b.pk).update(onboarding_completed_at=timezone.now())
-        maybe_schedule_verification_email_when_setup_complete(b.pk)
+        maybe_schedule_verification_email_once(b.pk)
         return Response(payload)

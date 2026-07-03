@@ -124,9 +124,11 @@ def compute_barber_readiness(barber: Barber) -> ReadinessBreakdown:
         else:
             flow = "owner"
 
+    from accounts.email_utils import is_internal_email
+
     prof = BarberProfile.objects.filter(barber=barber).first()
     has_location = bool(prof and prof.latitude is not None and prof.longitude is not None)
-    email_verified = barber.email_verified_at is not None
+    email_verified = barber.email_verified_at is not None or is_internal_email(barber.email)
 
     owns_salon = Salon.objects.filter(owner_barber=barber).exists()
     active_mem = SalonMembership.objects.filter(

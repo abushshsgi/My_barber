@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from barbers.barber_auth import encode_barber_tokens
+from barbers.barber_email import maybe_schedule_verification_email_once
 from barbers.models import Barber
 from salons.models import SalonMembership
 
@@ -63,6 +64,7 @@ class BarberRegisterView(generics.CreateAPIView):
             return _conflict_response()
         access, refresh = encode_barber_tokens(barber.id)
         Barber.objects.filter(pk=barber.pk).update(last_login=timezone.now())
+        maybe_schedule_verification_email_once(barber.pk)
         rep = BarberSignupSerializer().to_representation(barber)
         return Response(
             {"access": access, "refresh": refresh, "barber": rep},
@@ -90,6 +92,7 @@ class BarberRegisterJoinSalonView(APIView):
             return _conflict_response()
         access, refresh = encode_barber_tokens(barber.id)
         Barber.objects.filter(pk=barber.pk).update(last_login=timezone.now())
+        maybe_schedule_verification_email_once(barber.pk)
         rep = BarberSignupSerializer().to_representation(barber)
         mem = None
         if salon_pk is not None:
