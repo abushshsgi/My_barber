@@ -26,7 +26,7 @@ function TrendingStyleCard({ style }: { style: TrendingHairstyle }) {
 
   return (
     <Link to="/explore/$styleId" params={{ styleId: style.id }} className="w-[140px] shrink-0">
-      <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-[#E8E8E8]">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-surface">
         <img
           src={src}
           alt=""

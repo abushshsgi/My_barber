@@ -14,14 +14,13 @@ export const Route = createFileRoute("/today")({
 function TodayHero() {
   const { t } = useTranslation();
   return (
-    <section className="relative overflow-hidden rounded-2xl border-2 border-border bg-primary px-5 py-6 text-primary-foreground shadow-card sm:px-7">
-      <div className="pointer-events-none absolute -right-6 top-0 h-36 w-36 rounded-full bg-amber-400/25 blur-3xl" aria-hidden />
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em]">
+    <section className="relative overflow-hidden rounded-2xl border border-border bg-surface px-5 py-6 sm:px-7">
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-foreground">
         <Flame className="h-3.5 w-3.5" />
         {t("todayPage.heroBadge")}
       </span>
-      <h2 className="mt-3 text-2xl font-bold tracking-tight sm:text-[28px]">{t("todayPage.heroTitle")}</h2>
-      <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/75">{t("todayPage.heroDesc")}</p>
+      <h2 className="mt-3 text-2xl font-bold tracking-tight text-foreground sm:text-[28px]">{t("todayPage.heroTitle")}</h2>
+      <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">{t("todayPage.heroDesc")}</p>
     </section>
   );
 }
@@ -42,7 +41,7 @@ function TodayContent() {
         action={
           <Link
             to="/"
-            className="neo-cta inline-flex items-center justify-center gap-2 bg-accent px-6 py-3.5 text-sm font-bold text-accent-foreground"
+            className="neo-cta inline-flex items-center justify-center gap-2 bg-primary px-6 py-3.5 text-sm font-bold text-primary-foreground"
           >
             {t("favorites.browseSalons", { defaultValue: "Salonlarni topish" })}
           </Link>

@@ -1,33 +1,38 @@
-/* Neo Brutal — faqat mobil viewport (lg dan kichik); desktop tokenlari o'zgarmaydi. */
+/* Mobil shell — faqat bej + qora (desktop :root bilan bir xil). lg+ o'zgarmaydi. */
 
 @media (max-width: 1023px) {
   .mobile-neo {
-    --radius: 0.55rem;
-    --background: oklch(0.95 0.06 95);
-    --foreground: oklch(0.23 0.09 264);
-    --surface: oklch(0.995 0.01 95);
-    --surface-foreground: oklch(0.23 0.09 264);
+    --radius: 0.875rem;
+
+    --background: oklch(0.972 0.011 85);
+    --foreground: oklch(0.145 0 0);
+    --surface: oklch(0.945 0.014 85);
+    --surface-2: oklch(0.905 0.02 85);
+    --surface-foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
-    --card-foreground: oklch(0.14 0.005 60);
-    --primary: oklch(0.67 0.21 24);
-    --primary-foreground: oklch(0.99 0 0);
-    --secondary: oklch(0.9 0.03 92);
-    --secondary-foreground: oklch(0.23 0.09 264);
-    --muted: oklch(0.92 0.025 97);
-    --muted-foreground: oklch(0.38 0.06 264);
-    --accent: oklch(0.83 0.19 87);
-    --accent-foreground: oklch(0.22 0.08 264);
-    --gold: oklch(0.83 0.19 87);
-    --gold-foreground: oklch(0.22 0.08 264);
-    --destructive: oklch(0.61 0.21 24);
-    --destructive-foreground: oklch(0.99 0 0);
-    --border: oklch(0.23 0.09 264);
-    --input: oklch(0.92 0.025 97);
-    --ring: oklch(0.67 0.21 24 / 0.6);
-    --shadow-card: 4px 4px 0 0 oklch(0.17 0.03 262 / 0.85);
-    --shadow-dock: 6px 6px 0 0 oklch(0.17 0.03 262 / 0.95);
-    --shadow-soft: 3px 3px 0 0 oklch(0.17 0.03 262 / 0.65);
-    --shadow-luxury: 6px 6px 0 0 oklch(0.17 0.03 262 / 0.95);
+    --card-foreground: oklch(0.145 0 0);
+    --muted: oklch(0.945 0.014 85);
+    --muted-foreground: oklch(0.45 0.012 70);
+
+    --primary: oklch(0.145 0 0);
+    --primary-foreground: oklch(0.972 0.011 85);
+    --secondary: oklch(0.945 0.014 85);
+    --secondary-foreground: oklch(0.145 0 0);
+    --accent: oklch(0.145 0 0);
+    --accent-foreground: oklch(0.972 0.011 85);
+    --gold: oklch(0.145 0 0);
+    --gold-foreground: oklch(0.972 0.011 85);
+
+    --destructive: oklch(0.55 0.18 28);
+    --destructive-foreground: oklch(0.98 0 0);
+    --border: oklch(0.88 0.018 85);
+    --input: oklch(0.88 0.018 85);
+    --ring: oklch(0.25 0 0);
+
+    --shadow-card: 4px 4px 0 0 oklch(0.145 0 0 / 0.12);
+    --shadow-dock: 0 8px 32px oklch(0.145 0 0 / 0.1);
+    --shadow-soft: 2px 2px 0 0 oklch(0.145 0 0 / 0.08);
+    --shadow-luxury: 4px 4px 0 0 oklch(0.145 0 0 / 0.14);
 
     background-color: var(--background);
     color: var(--foreground);
@@ -35,15 +40,23 @@
 
   .mobile-neo .bg-background { background-color: var(--background); }
   .mobile-neo .bg-surface { background-color: var(--surface); }
+  .mobile-neo .bg-surface-2 { background-color: var(--surface-2); }
   .mobile-neo .bg-card { background-color: var(--card); }
   .mobile-neo .bg-primary { background-color: var(--primary); }
   .mobile-neo .bg-muted { background-color: var(--muted); }
   .mobile-neo .bg-accent { background-color: var(--accent); }
+  .mobile-neo .bg-gold { background-color: var(--gold); }
   .mobile-neo .text-foreground { color: var(--foreground); }
+  .mobile-neo .text-background { color: var(--background); }
   .mobile-neo .text-muted-foreground { color: var(--muted-foreground); }
   .mobile-neo .text-primary { color: var(--primary); }
   .mobile-neo .text-primary-foreground { color: var(--primary-foreground); }
   .mobile-neo .text-accent-foreground { color: var(--accent-foreground); }
+  .mobile-neo .text-gold { color: var(--gold); }
+  .mobile-neo .fill-gold { fill: var(--gold); }
+  .mobile-neo .fill-primary { fill: var(--primary); }
+  .mobile-neo .fill-amber-400 { fill: var(--foreground); }
+  .mobile-neo .text-amber-400 { color: var(--foreground); }
   .mobile-neo .border-border { border-color: var(--border); }
 
   .mobile-neo .pb-safe {
@@ -61,45 +74,42 @@
   }
   .mobile-neo .gold-divider {
     background: var(--border);
-    height: 2px;
+    height: 1px;
   }
   .mobile-neo .shadow-dock { box-shadow: var(--shadow-dock); }
   .mobile-neo .shadow-card { box-shadow: var(--shadow-card); }
   .mobile-neo .shadow-soft { box-shadow: var(--shadow-soft); }
   .mobile-neo .shadow-luxury { box-shadow: var(--shadow-luxury); }
-  .mobile-neo .texture-grid {
-    background-image:
-      linear-gradient(oklch(0.23 0.09 264 / 0.11) 2px, transparent 2px),
-      linear-gradient(90deg, oklch(0.23 0.09 264 / 0.11) 2px, transparent 2px);
-    background-size: 30px 30px;
+
+  /* Oddiy bej fon — qizil/to'q sariq gradient yo'q */
+  .mobile-neo.texture-grid {
+    background-image: none;
   }
   .mobile-neo.neo-page {
-    background:
-      radial-gradient(70% 55% at 0% 0%, oklch(0.89 0.1 90 / 0.55), transparent 65%),
-      radial-gradient(70% 55% at 100% 0%, oklch(0.82 0.2 24 / 0.22), transparent 60%),
-      var(--background);
+    background: var(--background);
   }
+
   .mobile-neo .neo-panel {
-    border: 2px solid var(--border);
+    border: 1px solid var(--border);
     border-radius: calc(var(--radius) + 4px);
-    background: var(--surface);
-    box-shadow: var(--shadow-card);
-  }
-  .mobile-neo .neo-pill {
-    border: 2px solid var(--border);
-    border-radius: 999px;
     background: var(--surface);
     box-shadow: var(--shadow-soft);
   }
+  .mobile-neo .neo-pill {
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    box-shadow: none;
+  }
   .mobile-neo .neo-cta {
-    border: 2px solid var(--border);
+    border: 1px solid var(--border);
     border-radius: calc(var(--radius) + 2px);
-    box-shadow: var(--shadow-card);
-    transition: transform 120ms ease;
+    box-shadow: var(--shadow-soft);
+    transition: transform 120ms ease, opacity 120ms ease;
   }
   .mobile-neo .neo-cta:active {
-    transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0 0 oklch(0.17 0.03 262 / 0.9);
+    transform: scale(0.98);
+    box-shadow: none;
   }
   .mobile-neo .scrollbar-none {
     scrollbar-width: none;

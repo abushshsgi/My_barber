@@ -71,7 +71,7 @@ export function MobileDockNav({ unreadCount = 0 }: Props) {
     >
       <div className="pointer-events-auto relative w-full max-w-md">
         <div className="pointer-events-none absolute inset-x-10 -top-3 h-px gold-divider opacity-50" />
-        <div className="relative flex items-stretch justify-between rounded-[22px] border-2 border-border bg-surface px-1.5 py-1.5 shadow-dock">
+        <div className="relative flex items-stretch justify-between rounded-[22px] border border-border bg-surface px-1.5 py-1.5 shadow-dock">
           {tabs.map(({ to, icon: Icon, key }, idx) => {
             const active = idx === activeIndex;
             const showBadge = key === "chat" && unreadCount > 0;
@@ -89,7 +89,7 @@ export function MobileDockNav({ unreadCount = 0 }: Props) {
                   <motion.span
                     layoutId="user-dock-active"
                     transition={{ type: "spring", stiffness: 480, damping: 40 }}
-                    className="absolute inset-x-1 top-0.5 bottom-0.5 -z-0 rounded-xl border-2 border-border bg-primary"
+                    className="absolute inset-x-1 top-0.5 bottom-0.5 -z-0 rounded-xl border border-border bg-primary"
                   />
                 ) : null}
                 <span
@@ -100,7 +100,7 @@ export function MobileDockNav({ unreadCount = 0 }: Props) {
                 >
                   <Icon className="h-[18px] w-[18px]" strokeWidth={active ? 2.4 : 1.8} />
                   {showBadge ? (
-                    <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-md border border-border bg-accent px-1 text-[9px] font-bold leading-none text-accent-foreground">
+                    <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full border border-border bg-foreground px-1 text-[9px] font-bold leading-none text-background">
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   ) : null}
