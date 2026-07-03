@@ -12,11 +12,12 @@ import i18n from "@/i18n/config";
 export function useSalonPage(id: string) {
   const detail = useSalonDetail(id);
   const lang = i18n.language?.split("-")[0] ?? "uz";
+  const detailReady = Boolean(detail.data);
 
   const staffRaw = useQuery({
     queryKey: ["salons", id, "staff"],
     queryFn: () => fetchSalonStaff(id),
-    enabled: Boolean(id),
+    enabled: detailReady,
     staleTime: 60_000,
   });
 
@@ -29,7 +30,7 @@ export function useSalonPage(id: string) {
   const reviews = useQuery({
     queryKey: ["reviews", "salon", id],
     queryFn: async () => (await fetchSalonReviews(id)).map(mapReview),
-    enabled: Boolean(id),
+    enabled: detailReady,
     retry: 1,
     staleTime: 60_000,
   });
@@ -40,7 +41,7 @@ export function useSalonPage(id: string) {
       const rows = await fetchSalonPortfolio(id);
       return rows.map((r) => r.image).filter(Boolean) as string[];
     },
-    enabled: Boolean(id),
+    enabled: detailReady,
     staleTime: 60_000,
   });
 
@@ -53,7 +54,7 @@ export function useSalonPage(id: string) {
         return null;
       }
     },
-    enabled: Boolean(id),
+    enabled: detailReady,
     retry: false,
     staleTime: 60_000,
   });

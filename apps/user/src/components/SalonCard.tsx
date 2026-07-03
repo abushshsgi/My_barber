@@ -4,6 +4,7 @@ import type { Salon } from "@/lib/mock-data";
 import { shortPrice } from "@/lib/mock-data";
 import { SalonCoverImg } from "@/components/salon/SalonCoverImg";
 import { useFavorites } from "@/hooks/use-favorites";
+import { prefetchSalonDetail } from "@/lib/prefetch-salon";
 import { cn } from "@/lib/utils";
 
 const AUDIENCE_LABEL: Record<Salon["audience"], string> = {
@@ -25,6 +26,9 @@ export function SalonCard({ salon }: Props) {
       <Link
         to="/salon/$id"
         params={{ id: salon.id }}
+        preload="intent"
+        onPointerEnter={() => prefetchSalonDetail(salon.id)}
+        onTouchStart={() => prefetchSalonDetail(salon.id)}
         className="block shrink-0 active:scale-[0.98] transition-transform"
       >
         <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-surface">
@@ -56,7 +60,12 @@ export function SalonCard({ salon }: Props) {
       <div className="mt-3 flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <Link to="/salon/$id" params={{ id: salon.id }} className="min-w-0 truncate">
+            <Link
+              to="/salon/$id"
+              params={{ id: salon.id }}
+              preload="intent"
+              className="min-w-0 truncate"
+            >
               <h3 className="truncate text-base font-bold tracking-tight">{salon.name}</h3>
             </Link>
             <button

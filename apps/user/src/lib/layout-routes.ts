@@ -3,6 +3,10 @@ export type DesktopContentProfile = "discovery" | "standard" | "compact";
 const FOOTER_HIDDEN_EXACT = new Set(["/auth", "/onboarding", "/map", "/ai-style"]);
 const FOOTER_HIDDEN_PREFIX = ["/stories/", "/booking/"];
 
+/** Mobil dock sahifalarida pastki footer kerak emas. */
+const MOBILE_FOOTER_HIDDEN_EXACT = new Set(["/profile"]);
+const MOBILE_FOOTER_HIDDEN_PREFIX = ["/booking/", "/bookings", "/chat"];
+
 const DISCOVERY_EXACT = new Set([
   "/",
   "/explore",
@@ -46,6 +50,17 @@ const AUDIENCE_TOPBAR_EXACT = new Set(["/", "/explore", "/map", "/today", "/offe
 export function showsSiteFooter(pathname: string): boolean {
   if (FOOTER_HIDDEN_EXACT.has(pathname)) return false;
   if (FOOTER_HIDDEN_PREFIX.some((prefix) => pathname === prefix || pathname.startsWith(prefix))) {
+    return false;
+  }
+  return true;
+}
+
+export function showsMobileSiteFooter(pathname: string): boolean {
+  if (!showsSiteFooter(pathname)) return false;
+  if (MOBILE_FOOTER_HIDDEN_EXACT.has(pathname)) return false;
+  if (
+    MOBILE_FOOTER_HIDDEN_PREFIX.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+  ) {
     return false;
   }
   return true;

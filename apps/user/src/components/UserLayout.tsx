@@ -109,10 +109,12 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
           )}
           {flags.showFooter ? (
             <>
-              <SiteFooter
-                insetClassName="px-5 sm:px-6 lg:hidden"
-                className={cn("pb-2", flags.isHome ? "mt-12" : "mt-8")}
-              />
+              {flags.showMobileFooter ? (
+                <SiteFooter
+                  insetClassName="px-5 sm:px-6 lg:hidden"
+                  className={cn("pb-2", flags.isHome ? "mt-12" : "mt-8")}
+                />
+              ) : null}
               <SiteFooter
                 insetClassName={footerInset}
                 className={cn(

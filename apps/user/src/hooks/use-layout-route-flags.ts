@@ -1,4 +1,4 @@
-import { showsSiteFooter } from "@/lib/layout-routes";
+import { showsMobileSiteFooter, showsSiteFooter } from "@/lib/layout-routes";
 import { usesDesktopBazaarInset } from "@/lib/desktop-bazaar-layout";
 
 const FULL_BLEED_PREFIX = ["/map", "/stories/"];
@@ -12,6 +12,7 @@ export function useLayoutRouteFlags(pathname: string) {
     FULL_BLEED_PREFIX.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
   const isViewportLocked = isAiStyle || isMap;
   const showFooter = showsSiteFooter(pathname) && !isFullBleed;
+  const showMobileFooter = showsMobileSiteFooter(pathname) && !isFullBleed;
   const bazaarInset = usesDesktopBazaarInset(pathname);
   const isHome = pathname === "/";
   const isSalonPage = pathname.startsWith("/salon/");
@@ -22,6 +23,7 @@ export function useLayoutRouteFlags(pathname: string) {
     isFullBleed,
     isViewportLocked,
     showFooter,
+    showMobileFooter,
     bazaarInset,
     isHome,
     isSalonPage,

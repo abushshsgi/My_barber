@@ -13,6 +13,7 @@ export function SalonCardPremium({ salon, layout = "vertical" }: { salon: Salon;
       <Link
         to="/salon/$id"
         params={{ id: salon.id }}
+        preload="intent"
         className="group flex items-center gap-3 rounded-2xl border border-border/70 bg-surface p-3 shadow-soft transition active:scale-[0.99] hover:shadow-card hover:border-foreground/20"
       >
         <div className="relative h-[68px] w-[68px] shrink-0 overflow-hidden rounded-xl">
@@ -44,6 +45,7 @@ export function SalonCardPremium({ salon, layout = "vertical" }: { salon: Salon;
     <Link
       to="/salon/$id"
       params={{ id: salon.id }}
+      preload="intent"
       className="group block w-[260px] shrink-0 overflow-hidden rounded-3xl border border-border/70 bg-surface shadow-card transition active:scale-[0.98] hover:shadow-luxury"
     >
       <div className="relative aspect-[5/4] overflow-hidden">
