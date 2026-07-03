@@ -56,6 +56,7 @@ export function HomeBazaarClassic({ data }: Props) {
         </div>
       </div>
       <HomeSalonSectionsBlock data={data} rowClass={ROW} showCategoryStrip={!data.searchActive} />
+      <div className="hidden h-6 lg:block" aria-hidden />
     </div>
   );
 }

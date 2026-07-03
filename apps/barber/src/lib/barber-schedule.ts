@@ -37,8 +37,8 @@ export type BookingSettings = {
 
 export const DEFAULT_BOOKING_SETTINGS: BookingSettings = {
   booking_mode: "daily",
-  advance_min_days: 2,
-  advance_max_days: 3,
+  advance_min_days: 3,
+  advance_max_days: 5,
 };
 
 export const WEEKDAYS = [

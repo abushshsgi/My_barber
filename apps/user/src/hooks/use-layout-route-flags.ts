@@ -14,6 +14,7 @@ export function useLayoutRouteFlags(pathname: string) {
   const showFooter = showsSiteFooter(pathname) && !isFullBleed;
   const bazaarInset = usesDesktopBazaarInset(pathname);
   const isHome = pathname === "/";
+  const isSalonPage = pathname.startsWith("/salon/");
 
   return {
     isAiStyle,
@@ -23,5 +24,6 @@ export function useLayoutRouteFlags(pathname: string) {
     showFooter,
     bazaarInset,
     isHome,
+    isSalonPage,
   };
 }
