@@ -115,22 +115,6 @@ export function useBookingActionMutation() {
       action: BookingAction;
       completeOptions?: CompleteBookingOptions;
     }) => {
-      if (action === "complete") {
-        const rows = qc.getQueryData<Booking[]>(barberQueryKeys.bookings());
-        const current = rows?.find((b) => b.id === id);
-        if (current?.status === "accepted") {
-          const startRes = await apiFetch(`/api/v1/bookings/${id}/start/`, { method: "POST" });
-          if (!startRes.ok) {
-            const body = await startRes.json().catch(() => ({}));
-            const detail =
-              typeof body === "object" && body && "detail" in body
-                ? String((body as { detail: unknown }).detail)
-                : "Xizmatni boshlab bo'lmadi";
-            throw new Error(detail);
-          }
-        }
-      }
-
       let res: Response;
       if (action === "complete" && completeOptions) {
         const hasFile = Boolean(completeOptions.result_image);

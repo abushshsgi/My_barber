@@ -767,9 +767,8 @@ export function BarberProvider({ children }: { children: ReactNode }) {
 
       if (action === "complete") {
         const current = bookings.find((b) => b.id === id);
-        if (current && current.status !== "in_progress") {
-          const started = await runAction("start");
-          if (!started) return;
+        if (current?.status === "accepted") {
+          await runAction("start");
         }
       }
 

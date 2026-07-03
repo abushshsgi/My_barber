@@ -4,6 +4,7 @@ import { formatCancelCountdown } from "@mybarber/shared/booking-lifecycle";
 import { BookingBarberImpressions } from "@/components/bookings/BookingBarberImpressions";
 import { BookingChatButton } from "@/components/bookings/BookingChatButton";
 import { CustomerCancelNotice } from "@/components/bookings/CustomerCancelNotice";
+import { PostCompletionSurvey } from "@/components/bookings/PostCompletionSurvey";
 import {
   BookingAddonHint,
   BookingCheckInSection,

@@ -21,12 +21,17 @@ export function useBookingProcessPage(bookingId: string) {
 
   useEffect(() => {
     if (!booking) return;
-    if (prevStatus.current === "in_progress" && booking.status === "done") {
+    const prev = prevStatus.current;
+    const justCompleted =
+      booking.status === "done" &&
+      prev !== "done" &&
+      (prev === "in_progress" || prev === "accepted");
+    if (justCompleted) {
       playBookingCompletionChime();
       if (!booking.hasReview) setSurveyAutoOpen(true);
     }
     prevStatus.current = booking.status;
-  }, [booking?.status, booking]);
+  }, [booking?.status, booking?.hasReview, booking]);
 
   const cancelPolicies = useLiveCustomerCancelPolicy(booking ?? null);
   const cancelPolicy = cancelPolicies.cancel;

@@ -123,16 +123,21 @@ export function CompleteBookingSheet({
     setPhase("submitting");
     try {
       await onConfirm({});
-      if (selected.length && onSaveImpressions && !saved) {
-        await onSaveImpressions(selected);
-        setSaved(true);
-      }
-      setPhase("done");
-      onFinished?.();
-      window.setTimeout(() => onOpenChange(false), 1100);
     } catch {
       setPhase("form");
+      return;
     }
+    if (selected.length && onSaveImpressions && !saved) {
+      try {
+        await onSaveImpressions(selected);
+        setSaved(true);
+      } catch {
+        /* ifodalar ixtiyoriy — xizmat allaqachon yakunlangan */
+      }
+    }
+    setPhase("done");
+    onFinished?.();
+    window.setTimeout(() => onOpenChange(false), 1100);
   }, [onConfirm, onFinished, onOpenChange, onSaveImpressions, saved, selected]);
 
   const actionBusy = busy || impressionsBusy || phase === "submitting";
