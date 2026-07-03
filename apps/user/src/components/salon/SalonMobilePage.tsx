@@ -50,7 +50,7 @@ export function SalonMobilePage({
 
       <div
         className="fixed inset-x-0 bottom-0 z-30 border-t-2 border-border bg-surface/95 px-4 pt-3 backdrop-blur-md"
-        style={{ paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom))" }}
+        style={{ paddingBottom: "calc(4.75rem + env(safe-area-inset-bottom))" }}
       >
         <div className="mx-auto flex max-w-md items-center justify-end">
           <Link

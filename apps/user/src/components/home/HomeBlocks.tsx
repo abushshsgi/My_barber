@@ -46,7 +46,7 @@ function TrendingStyleCard({ style }: { style: TrendingHairstyle }) {
 
 export function HomeAudience() {
   return (
-    <div className="px-5 pt-2">
+    <div className="pt-1">
       <AudienceSwitch />
     </div>
   );
@@ -59,20 +59,20 @@ export function HomeSearchAndCategories({ query, setQuery, visibleCategoryKeys, 
 
   return (
     <>
-      <div className="px-5 pt-3">
+      <div className="pt-3">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("common.search")}
-            className="w-full rounded-2xl border-0 bg-surface py-3.5 pl-11 pr-4 text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground"
+            className="w-full rounded-xl border border-border bg-surface py-3 pl-10 pr-4 text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
           />
         </div>
       </div>
 
-      <div className="no-scrollbar mt-5 flex gap-2 overflow-x-auto px-5">
+      <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1">
         {visibleCategoryKeys.map((key) => {
           const active = effectiveCat === key;
           return (

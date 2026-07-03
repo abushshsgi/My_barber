@@ -1,7 +1,6 @@
 import { Link, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CalendarCheck, Home, Map, User, Wand2 } from "lucide-react";
-import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { isNavTabActive, isNavTabCurrent } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
@@ -48,27 +47,20 @@ function DockTab({
       onClick={onClick}
       aria-label={t(labelKey)}
       aria-current={active ? "page" : undefined}
-      className="group relative flex min-h-[44px] min-w-0 flex-1 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-1 outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+      className="group flex min-h-[44px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1 outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
     >
-      {active ? (
-        <motion.span
-          layoutId="user-dock-active"
-          transition={{ type: "spring", stiffness: 480, damping: 40 }}
-          className="absolute inset-x-0.5 top-0.5 bottom-0.5 -z-0 rounded-xl border border-border bg-primary"
-        />
-      ) : null}
       <span
         className={cn(
-          "relative z-10 grid h-7 w-7 place-items-center transition",
-          active ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground",
+          "grid size-9 place-items-center rounded-xl transition",
+          active ? "bg-foreground text-background" : "text-muted-foreground group-active:text-foreground",
         )}
       >
-        <Icon className="h-[18px] w-[18px]" strokeWidth={active ? 2.4 : 1.8} />
+        <Icon className="size-5" strokeWidth={active ? 2.25 : 2} />
       </span>
       <span
         className={cn(
-          "relative z-10 text-[9px] font-bold uppercase tracking-wide",
-          active ? "text-primary-foreground" : "text-muted-foreground",
+          "max-w-full truncate text-[10px] font-semibold leading-none",
+          active ? "text-foreground" : "text-muted-foreground",
         )}
         suppressHydrationWarning
       >
@@ -78,7 +70,7 @@ function DockTab({
   );
 }
 
-/** Mobil dock — markazda kattaroq AI Style tugmasi. */
+/** Mobil pastki navigatsiya — markazda AI tugmasi, bar bilan tekis. */
 export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -124,44 +116,13 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
 
   return (
     <nav
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-3 lg:hidden"
-      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 0.6rem)" }}
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 lg:hidden"
+      style={{ paddingBottom: "max(env(safe-area-inset-bottom, 0px), 0.5rem)" }}
       aria-label="Asosiy navigatsiya"
     >
       <div className="pointer-events-auto relative w-full max-w-md">
-        <div className="pointer-events-none absolute inset-x-10 -top-3 h-px gold-divider opacity-50" />
-
-        <Link
-          to={centerTab.to}
-          preload="intent"
-          onClick={handleTabClick(centerTab.to)}
-          aria-label={t(`nav.${centerTab.key}`)}
-          aria-current={aiActive ? "page" : undefined}
-          className="absolute left-1/2 top-0 z-20 flex -translate-x-1/2 -translate-y-[42%] flex-col items-center gap-1"
-        >
-          <span
-            className={cn(
-              "grid size-[58px] place-items-center rounded-full border-2 shadow-dock transition-transform active:scale-95",
-              aiActive
-                ? "border-foreground bg-foreground text-background"
-                : "border-border bg-foreground text-background",
-            )}
-          >
-            <CenterIcon className="size-[27px]" strokeWidth={2.25} />
-          </span>
-          <span
-            className={cn(
-              "rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide",
-              aiActive ? "bg-foreground text-background" : "bg-surface text-foreground",
-            )}
-            suppressHydrationWarning
-          >
-            {t(`nav.${centerTab.key}`)}
-          </span>
-        </Link>
-
-        <div className="relative flex items-stretch rounded-[24px] border border-border bg-surface px-1.5 pb-1.5 pt-2 shadow-dock">
-          <div className="flex min-w-0 flex-1 items-stretch pr-[34px]">
+        <div className="relative flex min-h-[58px] items-end rounded-[22px] border border-border bg-surface px-1 pb-1 pt-1 shadow-dock">
+          <div className="flex min-w-0 flex-1 items-stretch">
             {leftTabs.map(({ to, icon, key }) => (
               <DockTab
                 key={to}
@@ -173,8 +134,37 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
               />
             ))}
           </div>
-          <div className="w-[52px] shrink-0" aria-hidden />
-          <div className="flex min-w-0 flex-1 items-stretch pl-[34px]">
+
+          <Link
+            to={centerTab.to}
+            preload="intent"
+            onClick={handleTabClick(centerTab.to)}
+            aria-label={t(`nav.${centerTab.key}`)}
+            aria-current={aiActive ? "page" : undefined}
+            className="relative mx-0.5 flex w-[62px] shrink-0 flex-col items-center justify-end pb-0.5"
+          >
+            <span
+              className={cn(
+                "grid size-[46px] place-items-center rounded-full border-2 shadow-soft transition-transform active:scale-95",
+                aiActive
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border bg-foreground text-background",
+              )}
+            >
+              <CenterIcon className="size-[22px]" strokeWidth={2.25} />
+            </span>
+            <span
+              className={cn(
+                "mt-1 max-w-full truncate text-[10px] font-semibold leading-none",
+                aiActive ? "text-foreground" : "text-muted-foreground",
+              )}
+              suppressHydrationWarning
+            >
+              {t(`nav.${centerTab.key}`)}
+            </span>
+          </Link>
+
+          <div className="flex min-w-0 flex-1 items-stretch">
             {rightTabs.map(({ to, icon, key }) => (
               <DockTab
                 key={to}

@@ -18,8 +18,8 @@ export function HomeMobileTopBar() {
 
   return (
     <header
-      className="flex items-center justify-between px-5"
-      style={{ paddingTop: "calc(env(safe-area-inset-top) + 10px)" }}
+      className="flex items-center justify-between px-4"
+      style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}
     >
       <Link to="/" className="flex items-baseline gap-0.5">
         <span className="text-[1.35rem] font-bold tracking-tight text-foreground">mysaloon</span>

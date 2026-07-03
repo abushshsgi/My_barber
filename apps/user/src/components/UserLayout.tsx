@@ -81,7 +81,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
           className={cn(
             "mobile-neo neo-page texture-grid mx-auto flex w-full max-w-md flex-1 flex-col",
             flags.isMap &&
-              "fixed inset-x-0 top-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] z-10 max-w-none flex-none overflow-hidden overscroll-none lg:static lg:inset-auto lg:z-auto lg:h-[calc(100dvh-4.25rem)] lg:max-w-none lg:overflow-hidden",
+              "fixed inset-x-0 top-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] z-10 max-w-none flex-none overflow-hidden overscroll-none lg:static lg:inset-auto lg:z-auto lg:h-[calc(100dvh-4.25rem)] lg:max-w-none lg:overflow-hidden",
             flags.isViewportLocked &&
               !flags.isMap &&
               "fixed inset-x-0 top-0 z-10 h-[100dvh] overflow-hidden overscroll-none lg:static lg:z-auto lg:h-auto lg:overflow-visible",

@@ -4,16 +4,16 @@ export const DESKTOP_SIDEBAR_WIDTH_PX = 260;
 export const DESKTOP_SIDEBAR_OFFSET_CLASS = "lg:pl-[260px]" as const;
 export const DESKTOP_SIDEBAR_LEFT_CLASS = "lg:left-[260px]" as const;
 
-/** Floating neo dock — markazdagi AI tugma uchun biroz balandroq. */
-export const MOBILE_DOCK_OFFSET = "calc(6.25rem + env(safe-area-inset-bottom))" as const;
+/** Floating dock — bitta qatorda, markazdagi AI tugma bilan. */
+export const MOBILE_DOCK_OFFSET = "calc(4.75rem + env(safe-area-inset-bottom))" as const;
 
 /** Sahifa kontenti uchun standart pastki padding (dock + qo'shimcha bo'shliq). */
 export const MOBILE_CONTENT_PADDING_BOTTOM =
-  "calc(6.25rem + env(safe-area-inset-bottom) + 0.75rem)" as const;
+  "calc(4.75rem + env(safe-area-inset-bottom) + 0.5rem)" as const;
 
 /** Tailwind arbitrary value sifatida ishlatish uchun. */
 export const MOBILE_CONTENT_PADDING_CLASS =
-  "pb-[calc(6.25rem+env(safe-area-inset-bottom)+0.75rem)]" as const;
+  "pb-[calc(4.75rem+env(safe-area-inset-bottom)+0.5rem)]" as const;
 
 /** Sticky action bar + dock ustidagi joy. */
 export const MOBILE_STICKY_ACTIONS_OFFSET =
