@@ -35,10 +35,10 @@ import { Button } from "@/components/ui/button";
 import { readOnboardingStatusCache } from "@/lib/onboarding-status-cache";
 
 export const Route = createFileRoute("/barber/earnings")({
-  loader: async ({ context: { queryClient } }) => {
+  loader: ({ context: { queryClient } }) => {
     const cached = readOnboardingStatusCache();
     if (cached?.fully_ready !== true) return;
-    await prefetchEarningsPage(queryClient);
+    void prefetchEarningsPage(queryClient);
   },
   component: EarningsPage,
 });
@@ -86,14 +86,11 @@ function EarningsPage() {
     return buildLast7DaysChart(daily, []);
   }, [chartFinance?.daily]);
 
-  const pageLoading =
-    !fullyReady ||
-    balanceLoading ||
-    payoutsLoading ||
-    (financeLoading && finance === undefined) ||
-    (!chartUsesRange && chartLoading && chartFinanceExtra === undefined);
+  const pageLoading = !fullyReady;
 
   const rangeLoading = financeFetching && finance === undefined;
+  const balancePending = balanceLoading && balance === undefined;
+  const chartPending = !chartUsesRange && chartLoading && chartFinanceExtra === undefined;
 
   const exportCsv = () => {
     const header = "Sana,Mijoz,Xizmat,To'lov,Summa\n";
@@ -160,6 +157,7 @@ function EarningsPage() {
   const rangeHint = range.toLowerCase();
   const minWithdraw = balance ? Number(balance.min_withdrawal) : 50000;
   const payoutList = payouts ?? [];
+  const balanceValDisplay = balancePending ? "—" : formatUZS(balanceVal);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
@@ -195,7 +193,13 @@ function EarningsPage() {
           Hamyon balansi (karta / onlayn)
         </div>
         <div className="font-heading text-4xl sm:text-5xl font-semibold mt-2">
-          {formatUZS(balanceVal)}
+          {balancePending ? (
+            <span className="inline-flex items-center gap-2 text-3xl">
+              <Loader2 className="size-7 animate-spin opacity-70" />
+            </span>
+          ) : (
+            balanceValDisplay
+          )}
         </div>
         <div className="text-sm opacity-70 mt-2">
           Faqat onlayn to&apos;lovlar yechiladi
@@ -312,7 +316,12 @@ function EarningsPage() {
           </div>
         </div>
         <div className="flex h-48 items-end gap-2 sm:gap-3">
-          {!chart.hasData ? (
+          {chartPending ? (
+            <div className="flex h-full w-full items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" />
+              Grafik yuklanmoqda…
+            </div>
+          ) : !chart.hasData ? (
             <p className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
               Oxirgi 7 kunda daromad yo&apos;q.
             </p>

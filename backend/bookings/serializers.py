@@ -250,7 +250,13 @@ class BookingSerializer(serializers.ModelSerializer):
     def get_customer_impression_stats(self, obj):
         if not self._is_request_barber():
             return {}
-        return customer_impression_stats(obj.customer_id)
+        request = self.context.get("request")
+        from accounts.auth_utils import request_barber
+
+        bp = request_barber(request) if request else None
+        if bp is None:
+            return {}
+        return customer_impression_stats(obj.customer_id, barber_id=bp.id)
 
     def get_booking_client_impressions(self, obj):
         if not self._is_request_barber():

@@ -7,12 +7,11 @@ from bookings.models import ClientImpression
 VALID_KINDS = frozenset(k for k, _ in ClientImpression.Kind.choices)
 
 
-def customer_impression_stats(customer_id: int) -> dict[str, int]:
-    rows = (
-        ClientImpression.objects.filter(customer_id=customer_id)
-        .values("kind")
-        .annotate(count=Count("id"))
-    )
+def customer_impression_stats(customer_id: int, barber_id: int | None = None) -> dict[str, int]:
+    qs = ClientImpression.objects.filter(customer_id=customer_id)
+    if barber_id is not None:
+        qs = qs.filter(barber_id=barber_id)
+    rows = qs.values("kind").annotate(count=Count("id"))
     return {row["kind"]: row["count"] for row in rows}
 
 

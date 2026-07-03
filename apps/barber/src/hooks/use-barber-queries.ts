@@ -264,6 +264,7 @@ export function useSaveClientImpressionsMutation() {
             : b,
         ),
       );
+      void qc.invalidateQueries({ queryKey: [...barberQueryKeys.all, "clients"] });
     },
   });
 }
@@ -447,6 +448,54 @@ export function usePayoutBalanceQuery(enabled = true) {
     staleTime: 15_000,
     placeholderData: (prev) => prev,
   });
+}
+
+export type ApiBarberClient = {
+  id: number;
+  full_name: string;
+  email?: string;
+  phone: string;
+  avatar?: string;
+  completed_bookings: number;
+  total_spent: string;
+  classification?: "new" | "returning" | string;
+  impression_stats?: Record<string, number>;
+};
+
+export function barberClientsEndpoint(
+  workMode: "salon" | "independent",
+  salonId: number | null,
+): string {
+  return workMode === "salon" && salonId != null
+    ? `/api/v1/analytics/clients/?salon=${salonId}`
+    : "/api/v1/analytics/clients/independent/";
+}
+
+export function useBarberClientsQuery(
+  workMode: "salon" | "independent",
+  salonId: number | null,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: barberQueryKeys.clients(workMode, salonId),
+    queryFn: () => apiList<ApiBarberClient>(barberClientsEndpoint(workMode, salonId)),
+    enabled: enabled && (workMode === "independent" || salonId != null),
+    staleTime: 60_000,
+    gcTime: 300_000,
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function prefetchBarberClients(
+  qc: import("@tanstack/react-query").QueryClient,
+  workMode: "salon" | "independent",
+  salonId: number | null,
+) {
+  return qc.prefetchQuery({
+    queryKey: barberQueryKeys.clients(workMode, salonId),
+    queryFn: () => apiList<ApiBarberClient>(barberClientsEndpoint(workMode, salonId)),
+    staleTime: 60_000,
+  }).catch(() => undefined);
 }
 
 export function useBarberAnalyticsQuery(

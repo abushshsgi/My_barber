@@ -91,3 +91,30 @@ class ClientImpressionTests(TestCase):
             ClientImpression.objects.filter(customer=self.user).count(),
             2,
         )
+
+    def test_impression_stats_scoped_per_barber(self):
+        other = Barber.objects.create(
+            email="barber2@test.uz",
+            username="barber2@test.uz",
+            full_name="Barber Two",
+            phone="+998907778899",
+            work_mode=Barber.WorkMode.INDEPENDENT,
+            onboarding_flow=Barber.OnboardingFlow.INDEPENDENT,
+            email_verified_at=timezone.now(),
+        )
+        other.set_password("testpass12")
+        other.save()
+        self.booking.status = Booking.Status.COMPLETED
+        self.booking.save(update_fields=["status", "updated_at"])
+        self.barber_client.post(
+            f"/api/v1/bookings/{self.booking.id}/client-impressions/",
+            {"kinds": ["vip"]},
+            format="json",
+        )
+        other_client = APIClient()
+        other_client.force_authenticate(user=BarberPrincipal(other))
+        res = other_client.get("/api/v1/analytics/clients/independent/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        row = next((r for r in res.json() if r["id"] == self.user.id), None)
+        self.assertIsNotNone(row)
+        self.assertEqual(row.get("impression_stats") or {}, {})

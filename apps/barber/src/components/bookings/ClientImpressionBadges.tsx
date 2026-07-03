@@ -7,7 +7,7 @@ type Props = {
   size?: "sm" | "md";
 };
 
-/** Mijoz profilidagi sartaroshlar belgilagan ifodalar (soni bilan). */
+/** Sartarosh belgilagan mijoz ifodalari (faqat joriy sartarosh). */
 export function ClientImpressionBadges({ stats, className, size = "sm" }: Props) {
   const normalized = normalizeImpressionStats(stats);
   const items = CLIENT_IMPRESSION_OPTIONS.filter((opt) => (normalized[opt.kind] ?? 0) > 0);

@@ -586,7 +586,9 @@ class BookingViewSet(viewsets.ModelViewSet):
         return Response(
             {
                 "kinds": booking_impression_kinds(booking.id, bp.id),
-                "customer_impression_stats": customer_impression_stats(booking.customer_id),
+                "customer_impression_stats": customer_impression_stats(
+                    booking.customer_id, barber_id=bp.id
+                ),
             }
         )
 
@@ -928,7 +930,7 @@ class SalonClientsView(APIView):
                     "completed_bookings": cnt,
                     "total_spent": str(r["spent"] or Decimal("0")),
                     "classification": "new" if cnt == 1 else "returning",
-                    "impression_stats": customer_impression_stats(cid),
+                    "impression_stats": customer_impression_stats(cid, barber_id=bp.id),
                 }
             )
         return Response(out)
@@ -980,7 +982,7 @@ class IndependentClientsView(APIView):
                     "completed_bookings": cnt,
                     "total_spent": str(r["spent"] or Decimal("0")),
                     "classification": "new" if cnt == 1 else "returning",
-                    "impression_stats": customer_impression_stats(cid),
+                    "impression_stats": customer_impression_stats(cid, barber_id=bp.id),
                 }
             )
         return Response(out)
