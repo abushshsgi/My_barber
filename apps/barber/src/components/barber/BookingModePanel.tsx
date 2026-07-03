@@ -6,6 +6,7 @@ type BookingModePanelProps = {
   settings: BookingSettings;
   onChange: (next: BookingSettings) => void;
   disabled?: boolean;
+  layout?: "default" | "wide";
 };
 
 const MODES: {
@@ -13,32 +14,39 @@ const MODES: {
   title: string;
   subtitle: string;
   detail: string;
+  bullets: string[];
   icon: typeof CalendarClock;
 }[] = [
   {
     id: "daily",
     title: "Har kunlik bron",
     subtitle: "Bugundan boshlab",
-    detail:
-      "Haftalik jadvalingiz bo'yicha mijozlar bugun va keyingi kunlarda bo'sh vaqtlarga bron qiladi. Masalan: har kuni 09:00–22:00.",
+    detail: "Mijozlar haftalik jadvalingizdagi bo'sh vaqtlarga bugun va keyingi kunlarda bron qiladi.",
+    bullets: ["Masalan: har kuni 09:00 – 22:00", "Dam kunlari va tushlik avtomatik yopiladi"],
     icon: CalendarClock,
   },
   {
     id: "advance",
     title: "Oldindan bron",
-    subtitle: "Faqat belgilangan kunlar oldin",
-    detail:
-      "Mijozlar bugun yoki ertaga emas — faqat siz belgilagan oralig'da (masalan, 2–3 kun oldin) bron qila oladi.",
+    subtitle: "Faqat oldindan",
+    detail: "Mijozlar bugun yoki ertaga emas — faqat siz belgilagan kunlar oralig'ida bron qiladi.",
+    bullets: ["Masalan: 2–3 kun oldin", "Aniq reja bilan ishlaydigan ustalar uchun"],
     icon: CalendarRange,
   },
 ];
 
-export function BookingModePanel({ settings, onChange, disabled }: BookingModePanelProps) {
+export function BookingModePanel({
+  settings,
+  onChange,
+  disabled,
+  layout = "default",
+}: BookingModePanelProps) {
   const isAdvance = settings.booking_mode === "advance";
+  const wide = layout === "wide";
 
   return (
-    <div className="space-y-5">
-      <div className="grid gap-3 sm:grid-cols-2">
+    <div className={cn("space-y-6", wide && "space-y-8")}>
+      <div className={cn("grid gap-4", wide ? "lg:grid-cols-2" : "sm:grid-cols-2")}>
         {MODES.map((mode) => {
           const active = settings.booking_mode === mode.id;
           const Icon = mode.icon;
@@ -49,54 +57,87 @@ export function BookingModePanel({ settings, onChange, disabled }: BookingModePa
               disabled={disabled}
               onClick={() => onChange({ ...settings, booking_mode: mode.id })}
               className={cn(
-                "relative rounded-2xl border p-4 text-left transition-all sm:p-5",
+                "group relative rounded-2xl border text-left transition-all",
+                wide ? "min-h-[220px] p-6 lg:p-8" : "p-4 sm:p-5",
                 active
-                  ? "border-foreground bg-foreground text-background shadow-md"
-                  : "border-border bg-card hover:border-foreground/25 hover:bg-muted/30",
+                  ? "border-foreground bg-foreground text-background shadow-lg ring-1 ring-foreground"
+                  : "border-border bg-card hover:border-foreground/30 hover:shadow-md",
                 disabled && "pointer-events-none opacity-60",
               )}
             >
               {active ? (
-                <span className="absolute right-3 top-3 grid size-6 place-items-center rounded-full bg-background text-foreground">
-                  <Check className="size-3.5 stroke-[2.5]" />
+                <span className="absolute right-4 top-4 grid size-8 place-items-center rounded-full bg-background text-foreground">
+                  <Check className="size-4 stroke-[2.5]" />
                 </span>
               ) : null}
               <div
                 className={cn(
-                  "mb-3 inline-flex size-10 items-center justify-center rounded-xl",
-                  active ? "bg-background/15" : "bg-muted",
+                  "mb-4 inline-flex items-center justify-center rounded-2xl",
+                  wide ? "size-14" : "size-10",
+                  active ? "bg-background/15" : "bg-muted group-hover:bg-muted/80",
                 )}
               >
-                <Icon className={cn("size-5", active ? "text-background" : "text-foreground")} />
+                <Icon className={cn(wide ? "size-7" : "size-5", active ? "text-background" : "text-foreground")} />
               </div>
-              <p className="font-heading text-base font-semibold">{mode.title}</p>
-              <p className={cn("mt-0.5 text-xs font-medium", active ? "text-background/75" : "text-muted-foreground")}>
+              <p className={cn("font-heading font-semibold", wide ? "text-2xl" : "text-base")}>
+                {mode.title}
+              </p>
+              <p
+                className={cn(
+                  "mt-1 font-medium",
+                  wide ? "text-sm" : "text-xs",
+                  active ? "text-background/75" : "text-muted-foreground",
+                )}
+              >
                 {mode.subtitle}
               </p>
-              <p className={cn("mt-2 text-sm leading-relaxed", active ? "text-background/85" : "text-muted-foreground")}>
+              <p
+                className={cn(
+                  "mt-3 leading-relaxed",
+                  wide ? "text-base" : "text-sm",
+                  active ? "text-background/90" : "text-muted-foreground",
+                )}
+              >
                 {mode.detail}
               </p>
+              <ul className={cn("mt-4 space-y-1.5", wide ? "text-sm" : "text-xs")}>
+                {mode.bullets.map((b) => (
+                  <li
+                    key={b}
+                    className={cn(
+                      "flex items-center gap-2",
+                      active ? "text-background/80" : "text-muted-foreground",
+                    )}
+                  >
+                    <span className={cn("size-1.5 shrink-0 rounded-full", active ? "bg-background" : "bg-foreground/40")} />
+                    {b}
+                  </li>
+                ))}
+              </ul>
             </button>
           );
         })}
       </div>
 
       {isAdvance ? (
-        <div className="rounded-2xl border border-border bg-muted/20 p-4 sm:p-5">
-          <div className="mb-4 flex items-start gap-2">
-            <Sparkles className="mt-0.5 size-4 shrink-0 text-foreground" />
+        <div className={cn("rounded-2xl border border-border bg-muted/25", wide ? "p-6 lg:p-8" : "p-4 sm:p-5")}>
+          <div className="mb-6 flex items-start gap-3">
+            <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-foreground text-background">
+              <Sparkles className="size-5" />
+            </div>
             <div>
-              <p className="font-medium text-foreground">Oldindan bron oralig'i</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Mijozlar faqat shu kunlar oralig'ida bron qila oladi. Haftalik jadval va maxsus kunlar
-                shu sanalarda qo'llaniladi.
+              <p className={cn("font-heading font-semibold", wide ? "text-xl" : "text-base")}>
+                Oldindan bron oralig&apos;i
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground lg:text-base">
+                Mijozlar faqat shu kunlar oralig&apos;ida bron qila oladi.
               </p>
             </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Eng kam (kun)
+          <div className="grid gap-5 lg:grid-cols-2">
+            <label className="space-y-2.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Eng kam (kun oldin)
               </span>
               <select
                 disabled={disabled}
@@ -108,7 +149,7 @@ export function BookingModePanel({ settings, onChange, disabled }: BookingModePa
                     advance_max_days: Math.max(settings.advance_max_days, Number(e.target.value)),
                   })
                 }
-                className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-foreground/40"
+                className="h-12 w-full rounded-xl border border-border bg-background px-4 text-base outline-none focus:border-foreground/40"
               >
                 {[1, 2, 3, 4, 5, 6, 7].map((n) => (
                   <option key={n} value={n}>
@@ -117,9 +158,9 @@ export function BookingModePanel({ settings, onChange, disabled }: BookingModePa
                 ))}
               </select>
             </label>
-            <label className="space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Eng ko'p (kun)
+            <label className="space-y-2.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Eng ko&apos;p (kun oldin)
               </span>
               <select
                 disabled={disabled}
@@ -130,7 +171,7 @@ export function BookingModePanel({ settings, onChange, disabled }: BookingModePa
                     advance_max_days: Math.max(settings.advance_min_days, Number(e.target.value)),
                   })
                 }
-                className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-foreground/40"
+                className="h-12 w-full rounded-xl border border-border bg-background px-4 text-base outline-none focus:border-foreground/40"
               >
                 {[1, 2, 3, 4, 5, 6, 7, 10, 14].map((n) => (
                   <option key={n} value={n} disabled={n < settings.advance_min_days}>
@@ -140,17 +181,25 @@ export function BookingModePanel({ settings, onChange, disabled }: BookingModePa
               </select>
             </label>
           </div>
-          <p className="mt-3 rounded-lg bg-background px-3 py-2 text-sm text-muted-foreground">
-            Misol: {settings.advance_min_days === settings.advance_max_days
-              ? `faqat ${settings.advance_min_days} kun oldin`
-              : `${settings.advance_min_days}–${settings.advance_max_days} kun oldin`}{" "}
-            bron mumkin. Bugun va ertaga — yo'q.
+          <p className="mt-5 rounded-xl border border-border bg-background px-4 py-3 text-sm lg:text-base">
+            <span className="font-medium text-foreground">Natija: </span>
+            <span className="text-muted-foreground">
+              {settings.advance_min_days === settings.advance_max_days
+                ? `faqat ${settings.advance_min_days} kun oldin`
+                : `${settings.advance_min_days}–${settings.advance_max_days} kun oldin`}{" "}
+              bron mumkin. Bugun va ertaga — yo&apos;q.
+            </span>
           </p>
         </div>
       ) : (
-        <div className="rounded-2xl border border-dashed border-border bg-muted/10 px-4 py-3 text-sm text-muted-foreground">
-          Har kunlik rejimda mijozlar haftalik jadvalingizdagi bo'sh vaqtlarga bugundan boshlab bron
-          qiladi. Dam kunlari va tushlik tanaffuslari avtomatik yopiladi.
+        <div
+          className={cn(
+            "rounded-2xl border border-dashed border-border bg-muted/15 text-muted-foreground",
+            wide ? "px-6 py-5 text-base" : "px-4 py-3 text-sm",
+          )}
+        >
+          Har kunlik rejimda mijozlar haftalik jadvalingizdagi bo&apos;sh vaqtlarga bugundan boshlab bron
+          qiladi.
         </div>
       )}
     </div>
