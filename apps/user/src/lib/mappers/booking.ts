@@ -3,7 +3,12 @@ import type { BookingItem } from "@/lib/mock-data";
 
 function mapStatus(status: string): BookingItem["status"] {
   if (status === "completed") return "done";
-  if (status === "pending" || status === "accepted" || status === "cancelled" || status === "in_progress") {
+  if (
+    status === "pending" ||
+    status === "accepted" ||
+    status === "cancelled" ||
+    status === "in_progress"
+  ) {
     return status;
   }
   if (status === "rejected") return "cancelled";
@@ -51,6 +56,9 @@ export function mapBooking(api: ApiBooking): BookingItem {
     paymentStatus: api.payment_status,
     paidAt: api.paid_at ?? undefined,
     createdAt: api.created_at,
+    barberImpressions: api.booking_client_impressions?.length
+      ? api.booking_client_impressions
+      : undefined,
   };
 }
 

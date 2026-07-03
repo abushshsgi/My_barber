@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { formatCancelCountdown } from "@mybarber/shared/booking-lifecycle";
-import { PostCompletionSurvey } from "@/components/bookings/PostCompletionSurvey";
+import { BookingBarberImpressions } from "@/components/bookings/BookingBarberImpressions";
 import { BookingChatButton } from "@/components/bookings/BookingChatButton";
 import { CustomerCancelNotice } from "@/components/bookings/CustomerCancelNotice";
 import {
@@ -138,6 +138,13 @@ function BookingProcessMainColumn({ state }: { state: ProcessState }) {
       {booking.status === "in_progress" ? <BookingAddonHint /> : null}
 
       <BookingResultPreview url={booking.resultImageUrl} />
+
+      {booking.status === "done" ? (
+        <BookingBarberImpressions
+          barberName={booking.barberName}
+          kinds={booking.barberImpressions}
+        />
+      ) : null}
 
       {booking.status === "done" ? (
         <PostCompletionSurvey
@@ -287,6 +294,13 @@ export function BookingProcessMobilePage({ state }: { state: ProcessState }) {
           {booking.status === "in_progress" ? <BookingAddonHint /> : null}
 
           <BookingResultPreview url={booking.resultImageUrl} />
+
+          {booking.status === "done" ? (
+            <BookingBarberImpressions
+              barberName={booking.barberName}
+              kinds={booking.barberImpressions}
+            />
+          ) : null}
 
           {booking.status === "done" ? (
             <PostCompletionSurvey

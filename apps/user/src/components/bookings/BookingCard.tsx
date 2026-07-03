@@ -8,6 +8,7 @@ import { BookingChatButton } from "@/components/bookings/BookingChatButton";
 import { WriteReviewDialog } from "@/components/bookings/WriteReviewDialog";
 import { PageSpotlightEmpty } from "@/components/ui/PageSpotlightEmpty";
 import { useCancelBooking } from "@/hooks/use-bookings-api";
+import { resolveBookingImpressions } from "@/lib/client-impressions";
 import { formatPrice, type BookingItem } from "@/lib/mock-data";
 import { bookingLifecycleStatus } from "@/lib/bookings-utils";
 import { cn } from "@/lib/utils";
@@ -57,8 +58,9 @@ export function BookingCard({ booking: b, focused }: { booking: BookingItem; foc
     status: bookingLifecycleStatus(b),
     checkedInAt: b.checkedInAt,
   });
-  const canCancel =
-    (b.status === "pending" || b.status === "accepted") && cancelPolicy.allowed;
+  const canCancel = (b.status === "pending" || b.status === "accepted") && cancelPolicy.allowed;
+  const impressionPreview =
+    b.status === "done" ? resolveBookingImpressions(b.barberImpressions) : [];
 
   const onCancel = () => {
     if (!cancelPolicy.allowed) {
@@ -81,11 +83,7 @@ export function BookingCard({ booking: b, focused }: { booking: BookingItem; foc
         b.status === "in_progress" && "ring-1 ring-emerald-500/30",
       )}
     >
-      <Link
-        to="/bookings/$bookingId"
-        params={{ bookingId: b.id }}
-        className="group block"
-      >
+      <Link to="/bookings/$bookingId" params={{ bookingId: b.id }} className="group block">
         <div className="flex items-stretch gap-0">
           <div
             className="w-24 shrink-0 sm:w-28"
@@ -131,6 +129,12 @@ export function BookingCard({ booking: b, focused }: { booking: BookingItem; foc
             {b.orderNumber ? (
               <p className="mt-2 font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                 {b.orderNumber}
+              </p>
+            ) : null}
+
+            {impressionPreview.length ? (
+              <p className="mt-3 text-xs font-semibold text-emerald-700">
+                Sartarosh izohi: {impressionPreview.map((item) => item.customerLabel).join(" · ")}
               </p>
             ) : null}
 

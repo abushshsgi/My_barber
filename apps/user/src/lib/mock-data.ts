@@ -115,6 +115,8 @@ export interface BookingItem {
   paymentStatus?: string;
   paidAt?: string;
   createdAt?: string;
+  /** Sartarosh ushbu bron uchun belgilagan ijobiy ifodalar (faqat mijoz ko'radi). */
+  barberImpressions?: string[];
 }
 
 export interface ChatThread {

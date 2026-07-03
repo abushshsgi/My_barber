@@ -118,3 +118,17 @@ class ClientImpressionTests(TestCase):
         row = next((r for r in res.json() if r["id"] == self.user.id), None)
         self.assertIsNotNone(row)
         self.assertEqual(row.get("impression_stats") or {}, {})
+
+    def test_customer_sees_booking_impressions(self):
+        self.booking.status = Booking.Status.COMPLETED
+        self.booking.save(update_fields=["status", "updated_at"])
+        self.barber_client.post(
+            f"/api/v1/bookings/{self.booking.id}/client-impressions/",
+            {"kinds": ["polite", "friendly"]},
+            format="json",
+        )
+        user_client = APIClient()
+        user_client.force_authenticate(user=self.user)
+        res = user_client.get(f"/api/v1/bookings/{self.booking.id}/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(sorted(res.json()["booking_client_impressions"]), ["friendly", "polite"])

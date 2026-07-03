@@ -171,6 +171,7 @@ export type ApiBooking = {
   has_review: boolean;
   review_id: number | null;
   created_at: string;
+  booking_client_impressions?: string[];
 };
 
 export type ApiReview = {

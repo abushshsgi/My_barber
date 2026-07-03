@@ -259,15 +259,27 @@ class BookingSerializer(serializers.ModelSerializer):
         return customer_impression_stats(obj.customer_id, barber_id=bp.id)
 
     def get_booking_client_impressions(self, obj):
-        if not self._is_request_barber():
-            return []
         request = self.context.get("request")
-        from accounts.auth_utils import request_barber
-
-        bp = request_barber(request) if request else None
-        if bp is None:
+        if request is None:
             return []
-        return booking_impression_kinds(obj.id, bp.id)
+
+        if self._is_request_barber():
+            from accounts.auth_utils import request_barber
+
+            bp = request_barber(request)
+            if bp is None:
+                return []
+            return booking_impression_kinds(obj.id, bp.id)
+
+        user = getattr(request, "user", None)
+        if (
+            user
+            and getattr(user, "is_authenticated", False)
+            and obj.customer_id == getattr(user, "id", None)
+            and obj.barber_id
+        ):
+            return booking_impression_kinds(obj.id, obj.barber_id)
+        return []
 
     def get_status_history(self, obj):
         history = []
