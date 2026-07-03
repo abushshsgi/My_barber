@@ -23,6 +23,7 @@ import {
 import { DESKTOP_ACCOUNT_BG, DESKTOP_GLASS_PANEL } from "@/components/desktop/ui/desktop-glass";
 import { DesktopPageHeader } from "@/components/desktop/ui/DesktopPageHeader";
 import type { useBookingProcessPage } from "@/hooks/use-booking-process-page";
+import { MOBILE_DOCK_OFFSET } from "@/lib/layout-constants";
 import { cn } from "@/lib/utils";
 
 type ProcessState = ReturnType<typeof useBookingProcessPage>;
@@ -93,8 +94,11 @@ function BookingProcessActions({
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 shadow-[0_-4px_24px_rgba(41,38,36,0.06)] lg:hidden">
-      <div className="mx-auto flex max-w-2xl flex-col gap-2 px-4">{inner}</div>
+    <div
+      className="fixed inset-x-0 z-30 border-t-2 border-border bg-surface/95 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 backdrop-blur-md lg:hidden"
+      style={{ bottom: MOBILE_DOCK_OFFSET }}
+    >
+      <div className="mx-auto flex max-w-md flex-col gap-2 px-4">{inner}</div>
     </div>
   );
 }
@@ -235,7 +239,7 @@ export function BookingProcessMobilePage({ state }: { state: ProcessState }) {
   const { t, booking, isLoading, isError, error } = state;
 
   return (
-    <div className="px-4 py-5 pb-28 lg:hidden">
+    <div className="px-4 py-5 pb-[calc(5.5rem+env(safe-area-inset-bottom)+6rem)] lg:hidden">
       <Link
         to="/bookings"
         className="mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground"

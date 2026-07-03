@@ -17,6 +17,7 @@ import { SettingsAddressesPanel } from "@/components/settings/panels/SettingsAdd
 import { SettingsFamilyPanel } from "@/components/settings/panels/SettingsFamilyPanel";
 import { SettingsPrivacyPanel } from "@/components/settings/panels/SettingsPrivacyPanel";
 import { SettingsSessionsPanel } from "@/components/settings/panels/SettingsSessionsPanel";
+import { SettingsSupportPanel } from "@/components/settings/panels/SettingsSupportPanel";
 import { SettingsPaymentMethodsPanel } from "@/components/settings/panels/SettingsPaymentMethodsPanel";
 import { SettingsSubscriptionsPanel } from "@/components/settings/panels/SettingsSubscriptionsPanel";
 import type { SettingsPageState } from "@/components/settings/useSettingsPage";
