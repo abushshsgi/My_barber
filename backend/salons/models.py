@@ -213,6 +213,17 @@ class SalonMembership(models.Model):
     experience_years = models.PositiveSmallIntegerField(null=True, blank=True)
     invited_at = models.DateTimeField(null=True, blank=True)
     activated_at = models.DateTimeField(null=True, blank=True)
+    booking_mode = models.CharField(
+        max_length=16,
+        choices=(
+            ("daily", "Har kunlik"),
+            ("advance", "Oldindan"),
+        ),
+        default="daily",
+        help_text="Salon ichidagi ishchi bron qabul qilish rejimi.",
+    )
+    advance_min_days = models.PositiveSmallIntegerField(default=2)
+    advance_max_days = models.PositiveSmallIntegerField(default=3)
 
     class Meta:
         pass

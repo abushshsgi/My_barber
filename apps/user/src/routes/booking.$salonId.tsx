@@ -1,5 +1,5 @@
 import { createFileRoute, useParams, useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -11,7 +11,7 @@ import { BookingSummaryAside } from "@/components/booking/BookingSummaryAside";
 import { formatPrice } from "@/lib/mock-data";
 import { PageHeader } from "@/components/PageHeader";
 import { Stepper } from "@/components/Stepper";
-import { useCreateBooking, useBookingAvailability } from "@/hooks/use-bookings-api";
+import { useCreateBooking, useBookingAvailability, useAvailabilityMonth } from "@/hooks/use-bookings-api";
 import { useWalletBalance } from "@/hooks/use-wallet";
 import { useFamilyMembers } from "@/hooks/use-family";
 import { useDisplayUser } from "@/hooks/use-me";
@@ -35,7 +35,7 @@ export const Route = createFileRoute("/booking/$salonId")({
 
 const DAYS = ["Dush", "Sesh", "Chor", "Pay", "Juma", "Shan", "Yak"];
 
-function buildDayList(initialDate?: string) {
+function buildDayList(initialDate?: string, length = 14) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   let start = new Date(today);
@@ -45,7 +45,7 @@ function buildDayList(initialDate?: string) {
       start = parsed;
     }
   }
-  return Array.from({ length: 7 }).map((_, i) => {
+  return Array.from({ length }).map((_, i) => {
     const d = new Date(start);
     d.setDate(start.getDate() + i);
     return { date: d.getDate(), day: DAYS[d.getDay() === 0 ? 6 : d.getDay() - 1], full: d };
@@ -120,6 +120,38 @@ function useBookingSalonState(
   const slotsClosedReason =
     availability.data?.closed_reason ?? availability.data?.detail ?? null;
 
+  const serviceIdNums = serviceIds.map((id) => parseInt(id, 10)).filter(Number.isFinite);
+  const today = useMemo(() => new Date(), []);
+  const lastDayFull = dayList[dayList.length - 1]?.full ?? today;
+  const needsSecondMonth = lastDayFull.getMonth() !== today.getMonth();
+  const monthEnabled = step === 3 && Boolean(barberId) && serviceIdNums.length > 0;
+  const monthA = useAvailabilityMonth({
+    salon: parseInt(salonId, 10),
+    year: today.getFullYear(),
+    month: today.getMonth() + 1,
+    barber: barberId ? parseInt(barberId, 10) : undefined,
+    serviceIds: serviceIdNums,
+    enabled: monthEnabled,
+  });
+  const monthB = useAvailabilityMonth({
+    salon: parseInt(salonId, 10),
+    year: lastDayFull.getFullYear(),
+    month: lastDayFull.getMonth() + 1,
+    barber: barberId ? parseInt(barberId, 10) : undefined,
+    serviceIds: serviceIdNums,
+    enabled: monthEnabled && needsSecondMonth,
+  });
+  const availableDates = useMemo(() => {
+    const set = new Set<string>();
+    for (const data of [monthA.data, monthB.data]) {
+      data?.days.forEach((d) => {
+        if (d.available) set.add(d.date);
+      });
+    }
+    return set;
+  }, [monthA.data, monthB.data]);
+  const monthLoaded = !monthA.isLoading && (!needsSecondMonth || !monthB.isLoading);
+
   const selectedBarber = salon?.staff.find((b) => b.id === barberId);
   // Faqat tanlangan barberning xizmatlari (API'dan). Salon katalogi yoki
   // boshqa barber xizmatlari aralashmasligi uchun fallback ishlatilmaydi.
@@ -190,6 +222,8 @@ function useBookingSalonState(
     slotOptions,
     slotsLoading,
     slotsClosedReason,
+    availableDates,
+    monthLoaded,
     selectedServices,
     barberServiceOptions,
     barberServicesLoading: barberServicesQuery.isLoading,
@@ -217,7 +251,7 @@ function BookingStepContent({
   state: ReturnType<typeof useBookingSalonState>;
   t: ReturnType<typeof useTranslation>["t"];
 }) {
-  const { salon, step, familyMemberId, setFamilyMemberId, barberId, setBarberId, serviceIds, setServiceIds, dayIdx, setDayIdx, slot, setSlot, dayList, slotOptions, slotsLoading, slotsClosedReason, selectedServices, barberServiceOptions, barberServicesLoading, barberServicesError, retryBarberServices, selectedBarber, bookedForLabel, total, paymentMethod, setPaymentMethod, notes, setNotes, walletBalance, walletLoading } = state;
+  const { salon, step, familyMemberId, setFamilyMemberId, barberId, setBarberId, serviceIds, setServiceIds, dayIdx, setDayIdx, slot, setSlot, dayList, slotOptions, slotsLoading, slotsClosedReason, availableDates, monthLoaded, selectedServices, barberServiceOptions, barberServicesLoading, barberServicesError, retryBarberServices, selectedBarber, bookedForLabel, total, paymentMethod, setPaymentMethod, notes, setNotes, walletBalance, walletLoading } = state;
   if (!salon) return null;
 
   if (step === 1) {
@@ -328,12 +362,29 @@ function BookingStepContent({
       <div>
         <h2 className="text-xl font-bold">{t("booking.selectTime")}</h2>
         <div className="no-scrollbar mt-6 flex gap-2 overflow-x-auto">
-          {dayList.map((d, i) => (
-            <button key={i} type="button" onClick={() => setDayIdx(i)} className={cn("flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-xl", dayIdx === i ? "bg-foreground text-background" : "bg-surface")}>
+          {dayList.map((d, i) => {
+            const iso = d.full.toISOString().slice(0, 10);
+            const unavailable = monthLoaded && !availableDates.has(iso);
+            return (
+            <button
+              key={i}
+              type="button"
+              disabled={unavailable}
+              onClick={() => {
+                setDayIdx(i);
+                setSlot(null);
+              }}
+              className={cn(
+                "flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-xl",
+                dayIdx === i ? "bg-foreground text-background" : "bg-surface",
+                unavailable && "cursor-not-allowed opacity-40",
+              )}
+            >
               <span className="text-[10px] font-bold uppercase opacity-70">{d.day}</span>
               <span className="text-lg font-bold">{d.date}</span>
             </button>
-          ))}
+            );
+          })}
         </div>
         {slotsLoading ? (
           <div className="mt-6 grid grid-cols-3 gap-2">

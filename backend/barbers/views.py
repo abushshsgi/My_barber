@@ -56,6 +56,7 @@ from .serializers import (
     BarberPromoSerializer,
     BarberPublicDetailSerializer,
     BarberPublicListSerializer,
+    BarberBookingSettingsSerializer,
     BarberScheduleExceptionSerializer,
     BarberSettingSerializer,
     BarberServiceSerializer,
@@ -806,6 +807,58 @@ class MyBarberScheduleExceptionViewSet(viewsets.ModelViewSet):
         b = self.request.user.barber
         prof, _ = BarberProfile.objects.get_or_create(barber=b)
         serializer.save(profile=prof)
+
+
+def _booking_settings_target(barber: Barber, membership_id: int | None):
+    """Mustaqil profil yoki salon membership — booking policy manbasi."""
+    if membership_id:
+        mem = get_object_or_404(
+            SalonMembership,
+            pk=membership_id,
+            barber=barber,
+            invite_state=SalonMembership.InviteState.ACTIVE,
+        )
+        return mem
+    prof, _ = BarberProfile.objects.get_or_create(barber=barber)
+    return prof
+
+
+def _serialize_booking_settings(obj) -> dict:
+    return {
+        "booking_mode": getattr(obj, "booking_mode", "daily") or "daily",
+        "advance_min_days": int(getattr(obj, "advance_min_days", 2) or 2),
+        "advance_max_days": int(getattr(obj, "advance_max_days", 3) or 3),
+        "scope": "salon" if isinstance(obj, SalonMembership) else "independent",
+    }
+
+
+class MyBarberBookingSettingsView(APIView):
+    """Bron qabul qilish rejimi: har kunlik yoki oldindan (N kun)."""
+
+    permission_classes = [IsBarber]
+
+    def get(self, request):
+        b = request.user.barber
+        raw = str(request.query_params.get("membership", "") or "").strip()
+        membership_id = int(raw) if raw.isdigit() else None
+        target = _booking_settings_target(b, membership_id)
+        return Response(_serialize_booking_settings(target))
+
+    def patch(self, request):
+        b = request.user.barber
+        raw = str(request.query_params.get("membership", "") or "").strip()
+        membership_id = int(raw) if raw.isdigit() else None
+        target = _booking_settings_target(b, membership_id)
+        ser = BarberBookingSettingsSerializer(
+            instance=target,
+            data=request.data,
+            partial=True,
+        )
+        ser.is_valid(raise_exception=True)
+        for key, val in ser.validated_data.items():
+            setattr(target, key, val)
+        target.save(update_fields=list(ser.validated_data.keys()))
+        return Response(_serialize_booking_settings(target))
 
 
 class MyBarberServiceRecommendationsView(APIView):

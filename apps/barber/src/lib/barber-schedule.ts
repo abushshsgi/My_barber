@@ -27,6 +27,20 @@ export type ScheduleMembership = {
   invite_state: string;
 };
 
+export type BookingMode = "daily" | "advance";
+
+export type BookingSettings = {
+  booking_mode: BookingMode;
+  advance_min_days: number;
+  advance_max_days: number;
+};
+
+export const DEFAULT_BOOKING_SETTINGS: BookingSettings = {
+  booking_mode: "daily",
+  advance_min_days: 2,
+  advance_max_days: 3,
+};
+
 export const WEEKDAYS = [
   "Dushanba",
   "Seshanba",
@@ -43,7 +57,7 @@ export const defaultDays = (): DayForm[] =>
   WEEKDAYS.map((_, weekday) => ({
     weekday,
     open_time: "09:00",
-    close_time: "18:00",
+    close_time: "22:00",
     is_day_off: weekday === 6,
     breaksText: weekday === 6 ? "" : "12:00-13:00",
   }));

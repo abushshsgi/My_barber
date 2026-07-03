@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Iterable
 
 from django.db.models import Q
@@ -13,6 +13,60 @@ from bookings.models import Booking
 from salons.models import BarberScheduleException as SalonScheduleException
 from salons.models import BarberWorkingHours as SalonBarberWorkingHours
 from salons.models import Salon, SalonHours, SalonMembership, Service
+
+
+def _resolve_booking_policy(barber: Barber, salon: Salon | None = None):
+    """(mode, min_days, max_days) — salon membership yoki mustaqil profil."""
+    if salon is not None:
+        mem = SalonMembership.objects.filter(
+            barber=barber,
+            salon=salon,
+            invite_state=SalonMembership.InviteState.ACTIVE,
+        ).first()
+        if mem:
+            return (
+                mem.booking_mode or "daily",
+                int(mem.advance_min_days or 2),
+                int(mem.advance_max_days or 3),
+            )
+    prof = BarberProfile.objects.filter(barber=barber).first()
+    if prof:
+        return (
+            prof.booking_mode or "daily",
+            int(prof.advance_min_days or 2),
+            int(prof.advance_max_days or 3),
+        )
+    return "daily", 0, 365
+
+
+def _date_allowed_by_booking_policy(
+    target_date: date,
+    *,
+    mode: str,
+    min_days: int,
+    max_days: int,
+) -> tuple[bool, str | None]:
+    today = timezone.localdate()
+    delta = (target_date - today).days
+    if delta < 0:
+        return False, "O'tgan sanaga bron qilib bo'lmaydi."
+    if mode == "advance":
+        if delta < min_days:
+            if min_days == max_days:
+                return False, f"Bron faqat {min_days} kun oldindan mumkin."
+            return False, f"Bron kamida {min_days} kun oldindan qilinadi."
+        if delta > max_days:
+            return False, f"Bron {max_days} kundan ortiq oldindan qilinmaydi."
+    return True, None
+
+
+def booking_policy_payload(barber: Barber, salon: Salon | None = None) -> dict:
+    mode, min_d, max_d = _resolve_booking_policy(barber, salon)
+    return {
+        "booking_mode": mode,
+        "advance_min_days": min_d,
+        "advance_max_days": max_d,
+    }
 
 
 def _apply_schedule_exception(open_t, close_t, breaks_list, exc):
@@ -196,15 +250,35 @@ def _window_for_independent(barber: Barber, target_date):
 
 def build_available_slots(*, barber: Barber, services, target_date, salon: Salon | None = None):
     total_minutes = _total_minutes(services)
+    policy = booking_policy_payload(barber, salon)
     if total_minutes <= 0:
-        return {"slots": [], "total_minutes": 0, "closed_reason": "Xizmat davomiyligi noto'g'ri."}
+        return {
+            "slots": [],
+            "total_minutes": 0,
+            "closed_reason": "Xizmat davomiyligi noto'g'ri.",
+            **policy,
+        }
+
+    allowed, policy_reason = _date_allowed_by_booking_policy(
+        target_date,
+        mode=policy["booking_mode"],
+        min_days=policy["advance_min_days"],
+        max_days=policy["advance_max_days"],
+    )
+    if not allowed:
+        return {
+            "slots": [],
+            "total_minutes": total_minutes,
+            "closed_reason": policy_reason,
+            **policy,
+        }
 
     if salon is not None:
         open_t, close_t, breaks_list, reason = _window_for_salon(salon, barber, target_date)
     else:
         open_t, close_t, breaks_list, reason = _window_for_independent(barber, target_date)
     if reason:
-        return {"slots": [], "total_minutes": total_minutes, "closed_reason": reason}
+        return {"slots": [], "total_minutes": total_minutes, "closed_reason": reason, **policy}
 
     tz = timezone.get_current_timezone()
     slot_step = 15
@@ -228,7 +302,7 @@ def build_available_slots(*, barber: Barber, services, target_date, salon: Salon
             slots.append(t.strftime("%H:%M"))
         t += timedelta(minutes=slot_step)
 
-    return {"slots": slots, "total_minutes": total_minutes}
+    return {"slots": slots, "total_minutes": total_minutes, **policy}
 
 
 def default_service_ids_for_barber(salon: Salon, barber: Barber) -> list[int]:

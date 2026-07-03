@@ -47,7 +47,7 @@ function IndependentBookingFlow() {
   const { balance: walletBalance, isLoading: walletLoading } = useWalletBalance();
 
   const today = new Date();
-  const days = Array.from({ length: 7 }).map((_, i) => {
+  const days = Array.from({ length: 14 }).map((_, i) => {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
     return { date: d.getDate(), day: DAYS[d.getDay() === 0 ? 6 : d.getDay() - 1], full: d };
@@ -64,9 +64,16 @@ function IndependentBookingFlow() {
 
   // Faqat API qaytargan haqiqiy bo'sh vaqtlar — hardcoded fallback yo'q.
   const slotOptions =
-    availability.data?.slots?.map((s) =>
-      new Date(s.start).toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }),
-    ) ?? [];
+    availability.data?.slots?.map((s) => {
+      if (typeof s === "string") return s;
+      if (typeof s === "object" && s !== null && "start" in s) {
+        return new Date(String((s as { start: string }).start)).toLocaleTimeString("uz-UZ", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+      return "";
+    }).filter(Boolean) ?? [];
   const slotsLoading = step === 2 && availability.isLoading;
   const slotsClosedReason =
     availability.data?.closed_reason ?? availability.data?.detail ?? null;

@@ -287,6 +287,50 @@ class BookingCriticalTests(TestCase):
         self.assertEqual(availability.status_code, status.HTTP_200_OK)
         self.assertNotIn("12:00", availability.json()["slots"])
 
+    def test_independent_advance_booking_mode_blocks_today(self):
+        self.profile.booking_mode = "advance"
+        self.profile.advance_min_days = 2
+        self.profile.advance_max_days = 3
+        self.profile.save(update_fields=["booking_mode", "advance_min_days", "advance_max_days"])
+
+        self.client.force_authenticate(user=self.user)
+        today = timezone.localdate()
+        res_today = self.client.get(
+            "/api/v1/barbers/availability/",
+            {
+                "barber": self.barber.id,
+                "date": today.isoformat(),
+                "barber_service_ids": str(self.svc.id),
+            },
+        )
+        self.assertEqual(res_today.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_today.json()["slots"], [])
+        self.assertEqual(res_today.json().get("booking_mode"), "advance")
+
+        target = today + timedelta(days=2)
+        res_ok = self.client.get(
+            "/api/v1/barbers/availability/",
+            {
+                "barber": self.barber.id,
+                "date": target.isoformat(),
+                "barber_service_ids": str(self.svc.id),
+            },
+        )
+        self.assertEqual(res_ok.status_code, status.HTTP_200_OK)
+        self.assertTrue(res_ok.json()["slots"])
+
+        too_far = today + timedelta(days=5)
+        res_far = self.client.get(
+            "/api/v1/barbers/availability/",
+            {
+                "barber": self.barber.id,
+                "date": too_far.isoformat(),
+                "barber_service_ids": str(self.svc.id),
+            },
+        )
+        self.assertEqual(res_far.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_far.json()["slots"], [])
+
     def test_salon_booking_filters_services_by_selected_barber(self):
         self.barber.work_mode = Barber.WorkMode.SALON
         self.barber.onboarding_flow = Barber.OnboardingFlow.OWNER

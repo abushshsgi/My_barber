@@ -113,6 +113,24 @@ class BarberProfile(models.Model):
         blank=True,
         help_text="Mustaqil usta to'lov usullari: cash, card, payme, ...",
     )
+    class BookingMode(models.TextChoices):
+        DAILY = "daily", "Har kunlik"
+        ADVANCE = "advance", "Oldindan"
+
+    booking_mode = models.CharField(
+        max_length=16,
+        choices=BookingMode.choices,
+        default=BookingMode.DAILY,
+        help_text="daily — bugundan bron; advance — faqat N kun oldindan.",
+    )
+    advance_min_days = models.PositiveSmallIntegerField(
+        default=2,
+        help_text="Oldindan rejimda: eng kamida necha kun oldin bron qilish mumkin.",
+    )
+    advance_max_days = models.PositiveSmallIntegerField(
+        default=3,
+        help_text="Oldindan rejimda: eng ko'pi bilan necha kun oldin bron qilish mumkin.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

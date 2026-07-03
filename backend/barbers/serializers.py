@@ -366,6 +366,27 @@ class BarberProfileUpsertSerializer(serializers.ModelSerializer):
         return out
 
 
+class BarberBookingSettingsSerializer(serializers.Serializer):
+    booking_mode = serializers.ChoiceField(choices=["daily", "advance"])
+    advance_min_days = serializers.IntegerField(min_value=1, max_value=14)
+    advance_max_days = serializers.IntegerField(min_value=1, max_value=30)
+
+    def validate(self, attrs):
+        min_d = attrs.get(
+            "advance_min_days",
+            getattr(self.instance, "advance_min_days", 2) if self.instance else 2,
+        )
+        max_d = attrs.get(
+            "advance_max_days",
+            getattr(self.instance, "advance_max_days", 3) if self.instance else 3,
+        )
+        if min_d > max_d:
+            raise serializers.ValidationError(
+                {"advance_max_days": "Maksimal kun minimal kundan katta yoki teng bo'lishi kerak."}
+            )
+        return attrs
+
+
 class BarberWorkPhotoCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = BarberWorkPhoto
