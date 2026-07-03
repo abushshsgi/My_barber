@@ -160,11 +160,9 @@ function OnboardingFlow() {
   const busy = updateMe.isPending || locating || validating;
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-background px-6 py-8">
-      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-        Yangi profil
-      </p>
-      <h1 className="mt-2 text-2xl font-bold tracking-tight">Sizni tanishib olaylik</h1>
+    <div className="mobile-neo neo-page flex min-h-[100dvh] flex-col px-6 py-8 pt-safe">
+      <p className="label-eyebrow">Yangi profil</p>
+      <h1 className="mt-2 text-2xl font-extrabold tracking-tight">Sizni tanishib olaylik</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         Bir necha qadam — keyin sizga yaqin salon va ustalarni tavsiya qilamiz.
       </p>
@@ -306,7 +304,7 @@ function OnboardingFlow() {
             type="button"
             disabled={busy}
             onClick={() => setStep((s) => s - 1)}
-            className="flex-1 rounded-2xl border-2 border-foreground py-4 text-sm font-bold"
+            className="neo-cta flex-1 py-4 text-sm font-bold"
           >
             Orqaga
           </button>
@@ -316,7 +314,7 @@ function OnboardingFlow() {
           disabled={!canNext || busy}
           onClick={onPrimary}
           className={cn(
-            "rounded-2xl bg-foreground py-4 text-sm font-bold text-background disabled:opacity-50",
+            "neo-cta bg-primary py-4 text-sm font-bold text-primary-foreground disabled:opacity-50",
             step > 1 ? "flex-[2]" : "w-full",
           )}
         >

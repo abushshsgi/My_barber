@@ -450,7 +450,7 @@ function Auth() {
                   disabled={busy}
                   onClick={primaryAction}
                   className={cn(
-                    "auth-cta w-full rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background disabled:opacity-60",
+                    "auth-cta neo-cta w-full bg-primary py-4 text-sm font-bold tracking-wide text-primary-foreground disabled:opacity-60 lg:rounded-2xl lg:bg-foreground lg:text-background",
                   )}
                 >
                   {busy ? t("auth.loading") : primaryLabel}

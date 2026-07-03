@@ -52,7 +52,7 @@ export function WalletMobileOverview() {
         <header className="flex items-center gap-3 px-5 pt-[calc(env(safe-area-inset-top)+12px)]">
           <Link
             to="/profile"
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface"
+            className="neo-pill grid h-11 w-11 shrink-0 place-items-center"
             aria-label={t("common.back")}
           >
             <ChevronLeft className="h-5 w-5" strokeWidth={2.4} />

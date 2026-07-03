@@ -45,8 +45,8 @@ function VerifyEmailPage() {
   }, [token]);
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-background px-5 py-16">
-      <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center shadow-sm">
+    <div className="mobile-neo flex min-h-full items-center justify-center px-4 py-16">
+      <div className="neo-panel w-full max-w-md p-8 text-center">
         {!token ? (
           <>
             <XCircle className="mx-auto h-12 w-12 text-destructive" />
@@ -79,7 +79,7 @@ function VerifyEmailPage() {
         <Link
           to="/settings"
           search={{ section: "personal" }}
-          className="mt-6 inline-flex rounded-2xl bg-foreground px-5 py-3 text-sm font-bold text-background"
+          className="neo-cta mt-6 inline-flex bg-primary px-5 py-3 text-sm font-bold text-primary-foreground"
           onClick={() => {
             if (done) navigate({ to: "/settings", search: { section: "personal" } });
           }}

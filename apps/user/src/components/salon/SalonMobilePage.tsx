@@ -49,16 +49,16 @@ export function SalonMobilePage({
       </div>
 
       <div
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 pt-3 backdrop-blur-md"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 88px)" }}
+        className="fixed inset-x-0 bottom-0 z-30 border-t-2 border-border bg-surface/95 px-4 pt-3 backdrop-blur-md"
+        style={{ paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom))" }}
       >
-        <div className="mx-auto flex max-w-[480px] items-center justify-end">
+        <div className="mx-auto flex max-w-md items-center justify-end">
           <Link
             to="/booking/$salonId"
             params={{ salonId: salon.id }}
             className={cn(
-              "flex w-full items-center justify-center rounded-xl bg-foreground px-6 py-3.5",
-              "text-sm font-bold text-background",
+              "neo-cta flex w-full items-center justify-center bg-primary px-6 py-3.5",
+              "text-sm font-bold text-primary-foreground",
             )}
           >
             {t("salon.bookNow")}

@@ -3,7 +3,7 @@ import { CalendarPlus, Flame } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { AccountDesktopShell } from "@/components/desktop/pages/AccountDesktopShell";
-import { PageHeader } from "@/components/PageHeader";
+import { MobileListPage } from "@/components/mobile/MobileListPage";
 import { PageSpotlightEmpty } from "@/components/ui/PageSpotlightEmpty";
 
 export const Route = createFileRoute("/today")({
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/today")({
 function TodayHero() {
   const { t } = useTranslation();
   return (
-    <section className="relative overflow-hidden rounded-[28px] border border-border bg-[linear-gradient(135deg,#0f0f0f_0%,#2d2418_48%,#111_100%)] px-5 py-6 text-background sm:px-7">
+    <section className="relative overflow-hidden rounded-2xl border-2 border-border bg-primary px-5 py-6 text-primary-foreground shadow-card sm:px-7">
       <div className="pointer-events-none absolute -right-6 top-0 h-36 w-36 rounded-full bg-amber-400/25 blur-3xl" aria-hidden />
       <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em]">
         <Flame className="h-3.5 w-3.5" />
@@ -42,7 +42,7 @@ function TodayContent() {
         action={
           <Link
             to="/"
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-foreground px-6 py-3.5 text-sm font-bold text-background active:scale-[0.98]"
+            className="neo-cta inline-flex items-center justify-center gap-2 bg-accent px-6 py-3.5 text-sm font-bold text-accent-foreground"
           >
             {t("favorites.browseSalons", { defaultValue: "Salonlarni topish" })}
           </Link>
@@ -55,12 +55,9 @@ function TodayContent() {
 function TodayMobile() {
   const { t } = useTranslation();
   return (
-    <div className="min-h-full bg-surface pb-[calc(68px+env(safe-area-inset-bottom)+12px)]">
-      <PageHeader showBack title={t("todayPage.title")} subtitle={t("todayPage.pickerSubtitle")} />
-      <div className="rounded-t-[28px] bg-background px-5 py-6 shadow-[0_-8px_32px_-12px_rgba(0,0,0,0.08)]">
-        <TodayContent />
-      </div>
-    </div>
+    <MobileListPage title={t("todayPage.title")} subtitle={t("todayPage.pickerSubtitle")}>
+      <TodayContent />
+    </MobileListPage>
   );
 }
 

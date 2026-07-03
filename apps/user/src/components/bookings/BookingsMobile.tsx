@@ -5,6 +5,8 @@ import { BookingCard, BookingsEmptyState } from "@/components/bookings/BookingCa
 import { PagePillTabs } from "@/components/ui/PagePillTabs";
 import { useBookings } from "@/hooks/use-bookings-api";
 import { getUpcomingBookings, getHistoryBookings } from "@/lib/bookings-utils";
+import { MOBILE_CONTENT_PADDING_CLASS } from "@/lib/layout-constants";
+import { cn } from "@/lib/utils";
 
 type Props = { focus?: string };
 
@@ -26,7 +28,7 @@ export function BookingsMobile({ focus }: Props) {
   }, [focus, now, bookings]);
 
   return (
-    <div className="min-h-full bg-background pb-[calc(68px+env(safe-area-inset-bottom)+12px)]">
+    <div className={cn("min-h-full bg-background", MOBILE_CONTENT_PADDING_CLASS)}>
       <PageHeader
         title={t("bookings.title")}
         subtitle={t("bookings.subtitle", { defaultValue: "Kelayotgan va o'tgan tashriflar." })}

@@ -9,11 +9,12 @@ import { PageHeader } from "@/components/PageHeader";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
 import { getHairstyleDisplayUrl } from "@/lib/hairstyles/catalog";
-import { DESKTOP_SIDEBAR_LEFT_CLASS } from "@/lib/layout-constants";
 import { cn } from "@/lib/utils";
 
-const BOTTOM_NAV_OFFSET = "calc(68px + env(safe-area-inset-bottom))";
-const STICKY_ACTIONS_OFFSET = "calc(68px + env(safe-area-inset-bottom) + 4.25rem)";
+import { MOBILE_DOCK_OFFSET, MOBILE_STICKY_ACTIONS_OFFSET } from "@/lib/layout-constants";
+
+const BOTTOM_NAV_OFFSET = MOBILE_DOCK_OFFSET;
+const STICKY_ACTIONS_OFFSET = MOBILE_STICKY_ACTIONS_OFFSET;
 
 export const Route = createFileRoute("/explore_/$styleId")({
   head: () => ({ meta: [{ title: "Uslub — mysaloon.uz" }] }),
@@ -131,26 +132,25 @@ function ExploreStyleDetailPage() {
 
       <div
         className={cn(
-          "fixed inset-x-0 z-20 border-t border-border bg-background/95 px-5 pt-3 backdrop-blur-md bottom-[var(--explore-bottom-nav-offset)] lg:hidden",
-          DESKTOP_SIDEBAR_LEFT_CLASS,
+          "fixed inset-x-0 z-20 border-t-2 border-border bg-surface/95 px-4 pt-3 backdrop-blur-md bottom-[var(--explore-bottom-nav-offset)] lg:hidden",
         )}
         style={{
           ["--explore-bottom-nav-offset" as string]: BOTTOM_NAV_OFFSET,
           paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
         }}
       >
-        <div className="mx-auto grid max-w-[480px] grid-cols-2 gap-2 lg:max-w-[720px]">
+        <div className="mx-auto grid max-w-md grid-cols-2 gap-2">
           <Link
             to="/explore/$styleId/try"
             params={{ styleId: entry.id }}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-foreground py-3.5 text-xs font-bold text-background"
+            className="neo-cta inline-flex items-center justify-center gap-2 bg-primary py-3.5 text-xs font-bold text-primary-foreground"
           >
             <Sparkles className="h-4 w-4" />
             {t("explorePage.tryOnMe")}
           </Link>
           <Link
             to="/"
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-border bg-background py-3.5 text-xs font-bold text-foreground"
+            className="neo-cta inline-flex items-center justify-center gap-2 py-3.5 text-xs font-bold"
           >
             <CalendarPlus className="h-4 w-4" />
             {t("explorePage.findSalon")}

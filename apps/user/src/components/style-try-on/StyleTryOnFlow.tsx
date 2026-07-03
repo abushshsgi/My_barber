@@ -315,7 +315,7 @@ export function StyleTryOnFlow({ flow, entry }: Props) {
   }
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-background pb-[calc(68px+env(safe-area-inset-bottom)+1rem)] lg:pb-8">
+    <div className="flex min-h-[100dvh] flex-col bg-background pb-[calc(5.5rem+env(safe-area-inset-bottom)+1rem)] lg:pb-8">
       <div className="px-5 pt-2">
         <h1 className="text-xl font-bold leading-tight">{t("styleTryOnPage.headline")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{t("styleTryOnPage.uploadHint")}</p>

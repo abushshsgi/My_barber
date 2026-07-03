@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { SalonCard } from "@/components/SalonCard";
+import { MobileSalonCard } from "@/components/mobile/MobileSalonCard";
 import type { HomeData } from "@/components/home/useHomeData";
 import { getCategoryCoverUrl } from "@/lib/cover-images";
 import {
@@ -49,16 +49,19 @@ function HomeSalonRowCarousel({
 
   return (
     <section className="mt-8">
-      <div className="mb-4 flex items-end justify-between px-5">
-        <h2 className="text-lg font-bold tracking-tight">{t(titleKey)}</h2>
-        <Link to={viewAllTo} className="flex items-center text-[12px] font-bold text-foreground">
+      <div className="mb-4 flex items-end justify-between px-4">
+        <h2 className="text-lg font-extrabold tracking-tight">{t(titleKey)}</h2>
+        <Link
+          to={viewAllTo}
+          className="neo-pill flex items-center px-3 py-1.5 text-[11px] font-bold text-foreground"
+        >
           {t("common.viewAll")} <ChevronRight className="h-4 w-4" />
         </Link>
       </div>
-      <div className="no-scrollbar flex gap-4 overflow-x-auto px-5 pb-1">
+      <div className="scrollbar-none flex gap-3 overflow-x-auto px-4 pb-1">
         {preview.map((salon) => (
-          <div key={salon.id} className="w-[240px] shrink-0">
-            <SalonCard salon={salon} />
+          <div key={salon.id} className="w-[260px] shrink-0">
+            <MobileSalonCard salon={salon} layout="vertical" />
           </div>
         ))}
       </div>
@@ -70,8 +73,8 @@ function HomeCategoryStrip() {
   const { t } = useTranslation();
 
   return (
-    <section className="mt-8 px-5">
-      <h2 className="mb-4 text-lg font-bold tracking-tight">{t("home.sections.browseCategories")}</h2>
+    <section className="mt-8 px-4">
+      <h2 className="label-eyebrow mb-3">{t("home.sections.browseCategories")}</h2>
       <div className="grid grid-cols-2 gap-3">
         {HOME_CATEGORY_KEYS.map((category) => (
           <CategoryCard key={category} category={category} label={t(`home.categories.${category}`)} />
@@ -86,7 +89,7 @@ function CategoryCard({ category, label }: { category: Category; label: string }
     <Link
       to="/category/$category"
       params={{ category }}
-      className="group relative aspect-[4/3] overflow-hidden rounded-2xl bg-surface"
+      className="neo-panel group relative aspect-[4/3] overflow-hidden p-0 active:scale-[0.98]"
     >
       <img
         src={getCategoryCoverUrl(category, 640)}

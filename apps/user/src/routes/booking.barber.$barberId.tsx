@@ -18,7 +18,7 @@ import { useCreateBooking } from "@/hooks/use-bookings-api";
 import { useWalletBalance } from "@/hooks/use-wallet";
 import { useFamilyMembers } from "@/hooks/use-family";
 import { useDisplayUser } from "@/hooks/use-me";
-import { DESKTOP_SIDEBAR_LEFT_CLASS } from "@/lib/layout-constants";
+import { MOBILE_DOCK_OFFSET } from "@/lib/layout-constants";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/barber/$barberId")({
@@ -402,16 +402,15 @@ function IndependentBookingFlow() {
 
       <div
         className={cn(
-          "fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-5 pt-3 backdrop-blur-md lg:hidden",
-          DESKTOP_SIDEBAR_LEFT_CLASS,
+          "fixed inset-x-0 bottom-0 z-30 border-t-2 border-border bg-surface/95 px-4 pt-3 backdrop-blur-md lg:hidden",
         )}
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 88px)" }}
+        style={{ paddingBottom: `calc(${MOBILE_DOCK_OFFSET} + 0.5rem)` }}
       >
-        <div className="mx-auto flex max-w-[480px] gap-2 lg:max-w-[720px]">
+        <div className="mx-auto flex max-w-md gap-2">
           {step > 1 && (
             <button
               onClick={() => setStep((s) => s - 1)}
-              className="flex-1 rounded-2xl border-2 border-foreground py-4 text-sm font-bold"
+              className="neo-cta flex-1 py-4 text-sm font-bold"
             >
               {t("common.back")}
             </button>
@@ -421,10 +420,8 @@ function IndependentBookingFlow() {
               disabled={!canAdvance}
               onClick={() => canAdvance && setStep((s) => s + 1)}
               className={cn(
-                "flex-[2] rounded-2xl py-4 text-sm font-bold tracking-wide",
-                canAdvance
-                  ? "bg-foreground text-background"
-                  : "bg-surface-2 text-muted-foreground",
+                "neo-cta flex-[2] py-4 text-sm font-bold tracking-wide",
+                canAdvance ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
               )}
             >
               {t("common.next")}
@@ -433,7 +430,7 @@ function IndependentBookingFlow() {
             <button
               disabled={createBooking.isPending}
               onClick={() => void handleSubmit()}
-              className="flex-[2] rounded-2xl bg-foreground py-4 text-sm font-bold tracking-wide text-background disabled:opacity-60"
+              className="neo-cta flex-[2] bg-primary py-4 text-sm font-bold tracking-wide text-primary-foreground disabled:opacity-60"
             >
               {t("booking.confirm")}
             </button>

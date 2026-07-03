@@ -2,8 +2,8 @@ import { useEffect } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { ClientOnly } from "@/components/ClientOnly";
 import { DesktopAppHeader } from "@/components/desktop/shell/DesktopShellParts";
+import { MobileDockNav } from "@/components/mobile/MobileDockNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { UserBottomNav } from "@/components/UserBottomNav";
 import { ScrollToTopIndicator } from "@/components/ui/ScrollToTopIndicator";
 import { useLayoutRouteFlags } from "@/hooks/use-layout-route-flags";
 import { useNavBadges } from "@/hooks/use-nav-badges";
@@ -12,6 +12,7 @@ import {
   DESKTOP_HOME_INSET,
   DESKTOP_SHELL_INSET,
 } from "@/lib/desktop-bazaar-layout";
+import { MOBILE_CONTENT_PADDING_CLASS } from "@/lib/layout-constants";
 import { shouldShowScrollToTop } from "@/lib/scroll-to-top";
 import { cn } from "@/lib/utils";
 
@@ -78,15 +79,16 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
       <main className={cn("flex min-h-screen flex-col", flags.isFullBleed && "lg:min-h-0 lg:flex-1")}>
         <div
           className={cn(
-            "mx-auto flex w-full max-w-[480px] flex-1 flex-col",
+            "mobile-neo neo-page texture-grid mx-auto flex w-full max-w-md flex-1 flex-col",
             flags.isMap &&
-              "fixed inset-x-0 top-0 bottom-[calc(68px+env(safe-area-inset-bottom,0px))] z-10 max-w-none flex-none overflow-hidden overscroll-none lg:static lg:inset-auto lg:z-auto lg:h-[calc(100dvh-4.25rem)] lg:max-w-none lg:overflow-hidden",
+              "fixed inset-x-0 top-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] z-10 max-w-none flex-none overflow-hidden overscroll-none lg:static lg:inset-auto lg:z-auto lg:h-[calc(100dvh-4.25rem)] lg:max-w-none lg:overflow-hidden",
             flags.isViewportLocked &&
               !flags.isMap &&
               "fixed inset-x-0 top-0 z-10 h-[100dvh] overflow-hidden overscroll-none lg:static lg:z-auto lg:h-auto lg:overflow-visible",
             flags.isAiStyle && "h-[100dvh] lg:h-[calc(100dvh-4.25rem)]",
             flags.isFullBleed && !flags.isViewportLocked && "pb-0",
-            !flags.isFullBleed && "pb-[calc(68px+env(safe-area-inset-bottom)+16px)] lg:pb-12",
+            !flags.isFullBleed && MOBILE_CONTENT_PADDING_CLASS,
+            !flags.isFullBleed && "lg:pb-12",
             flags.isHome ? "lg:pt-3" : "lg:pt-6",
             !flags.isFullBleed && !flags.bazaarInset && DESKTOP_SHELL_INSET,
             flags.bazaarInset && "lg:px-0",
@@ -128,7 +130,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
       </main>
 
       <div className="lg:hidden">
-        <UserBottomNav unreadCount={chatUnread} />
+        <MobileDockNav unreadCount={chatUnread} />
       </div>
 
       {scrollTop}

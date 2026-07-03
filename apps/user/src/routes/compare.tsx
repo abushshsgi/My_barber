@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useMemo, useEffect, type ReactNode } from "react";
 import { Check, Plus, X, Star, MapPin, ArrowRight } from "lucide-react";
-import { PageHeader } from "@/components/PageHeader";
+import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
+import { MobileListPage } from "@/components/mobile/MobileListPage";
 import { useSalonsList } from "@/hooks/use-salons";
 import { shortPrice, type Salon } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -13,7 +14,7 @@ export const Route = createFileRoute("/compare")({
 
 const MAX = 3;
 
-function ComparePage() {
+function CompareContent({ variant }: { variant: "mobile" | "desktop" }) {
   const { data: salons = [], isLoading } = useSalonsList();
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -36,7 +37,6 @@ function ComparePage() {
     [selected, salons],
   );
 
-  // Collect all unique services across chosen salons (by name)
   const allServices = useMemo(() => {
     const map = new Map<string, true>();
     chosen.forEach((s) => s.services.forEach((sv) => map.set(sv.name, true)));
@@ -55,159 +55,215 @@ function ComparePage() {
     };
   }, [chosen]);
 
-  return (
-    <div className="pb-12">
-      <PageHeader title="Taqqoslash" subtitle={`Tanlangan ${chosen.length}/${MAX}`} />
-
+  const body = (
+    <>
       {isLoading ? (
-        <p className="px-5 py-8 text-center text-sm text-muted-foreground">Yuklanmoqda…</p>
+        <p className="py-8 text-center text-sm text-muted-foreground">Yuklanmoqda…</p>
       ) : salons.length < 2 ? (
-        <div className="mx-5 mt-8 rounded-2xl bg-surface p-8 text-center">
+        <div className="neo-panel p-8 text-center">
           <p className="text-sm font-bold">Taqqoslash uchun kamida 2 ta salon kerak</p>
         </div>
       ) : (
         <>
-      {/* Picker */}
-      <section className="px-5">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-          Salonlarni tanlang
-        </p>
-        <div className="mt-3 no-scrollbar -mx-5 flex gap-3 overflow-x-auto px-5 pb-1">
-          {salons.map((s) => {
-            const on = selected.includes(s.id);
-            const disabled = !on && selected.length >= MAX;
-            return (
-              <button
-                key={s.id}
-                onClick={() => toggle(s.id)}
-                disabled={disabled}
-                className={cn(
-                  "relative w-[140px] shrink-0 rounded-2xl border p-3 text-left transition-all",
-                  on
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-border bg-background",
-                  disabled && "opacity-40",
-                )}
-              >
-                <div className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-background/15">
-                  {on ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-                </div>
-                <div
-                  className="mb-2 h-16 rounded-xl"
-                  style={{
-                    background: `linear-gradient(135deg, oklch(0.78 0.03 ${(s.id.charCodeAt(0) * 30) % 360}), oklch(0.42 0.02 ${(s.id.charCodeAt(0) * 30 + 80) % 360}))`,
-                  }}
-                />
-                <p className="line-clamp-1 text-[12px] font-bold leading-tight">{s.name}</p>
-                <p className={cn("mt-0.5 text-[10px] font-bold uppercase tracking-wide", on ? "text-background/70" : "text-muted-foreground")}>
-                  {s.category}
-                </p>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      {chosen.length < 2 ? (
-        <div className="mx-5 mt-8 rounded-2xl bg-surface p-8 text-center">
-          <p className="text-sm font-bold">Kamida 2 ta salon tanlang</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Narx, reyting va xizmatlarni yonma-yon ko'ring
-          </p>
-        </div>
-      ) : (
-        <>
-          {/* Top comparison cards */}
-          <section className="mt-6 px-5">
-            <div className="grid gap-3">
-              {chosen.map((s) => (
-                <div key={s.id} className="rounded-2xl border border-border p-3">
-                  <div className="flex items-start justify-between gap-1">
-                    <p className="line-clamp-2 text-[13px] font-bold leading-tight">{s.name}</p>
-                    <button
-                      onClick={() => toggle(s.id)}
-                      className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-surface"
-                      aria-label="Remove"
+          <section>
+            <p className="label-eyebrow">Salonlarni tanlang</p>
+            <div className="scrollbar-none mt-3 flex gap-3 overflow-x-auto pb-1">
+              {salons.map((s) => {
+                const on = selected.includes(s.id);
+                const disabled = !on && selected.length >= MAX;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => toggle(s.id)}
+                    disabled={disabled}
+                    className={cn(
+                      "neo-panel relative w-[140px] shrink-0 p-3 text-left transition-all",
+                      on && "border-primary bg-primary text-primary-foreground",
+                      disabled && "opacity-40",
+                    )}
+                  >
+                    <div className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-background/15">
+                      {on ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                    </div>
+                    <div
+                      className="mb-2 h-16 rounded-xl"
+                      style={{
+                        background: `linear-gradient(135deg, oklch(0.78 0.03 ${(s.id.charCodeAt(0) * 30) % 360}), oklch(0.42 0.02 ${(s.id.charCodeAt(0) * 30 + 80) % 360}))`,
+                      }}
+                    />
+                    <p className="line-clamp-1 text-[12px] font-bold leading-tight">{s.name}</p>
+                    <p
+                      className={cn(
+                        "mt-0.5 text-[10px] font-bold uppercase tracking-wide",
+                        on ? "text-primary-foreground/70" : "text-muted-foreground",
+                      )}
                     >
-                      <X className="h-3 w-3" />
-                    </button>
+                      {s.category}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          {chosen.length < 2 ? (
+            <div className="neo-panel mt-6 p-8 text-center">
+              <p className="text-sm font-bold">Kamida 2 ta salon tanlang</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Narx, reyting va xizmatlarni yonma-yon ko&apos;ring
+              </p>
+            </div>
+          ) : (
+            <>
+              <section className="mt-6 space-y-3">
+                {chosen.map((s) => (
+                  <div key={s.id} className="neo-panel p-3">
+                    <div className="flex items-start justify-between gap-1">
+                      <p className="line-clamp-2 text-[13px] font-bold leading-tight">{s.name}</p>
+                      <button
+                        onClick={() => toggle(s.id)}
+                        className="neo-pill grid h-7 w-7 shrink-0 place-items-center"
+                        aria-label="Remove"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                    <p className="mt-1 line-clamp-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                      {s.category} · {s.audience}
+                    </p>
                   </div>
-                  <p className="mt-1 line-clamp-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                    {s.category} · {s.audience}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
+                ))}
+              </section>
 
-          {/* Metrics table */}
-          <section className="mt-5 px-5">
-            <MetricRow label="Reyting" salons={chosen} bestId={best.rating} render={(s) => (
-              <span className="inline-flex items-center gap-1">
-                <Star className="h-3.5 w-3.5 fill-current" /> {s.rating}
-              </span>
-            )} />
-            <MetricRow label="Sharhlar" salons={chosen} render={(s) => `${s.reviewCount}`} />
-            <MetricRow label="Narx (dan)" salons={chosen} bestId={best.price} render={(s) => shortPrice(s.priceFrom)} />
-            <MetricRow label="Narx (gacha)" salons={chosen} render={(s) => shortPrice(s.priceTo)} />
-            <MetricRow label="Masofa" salons={chosen} bestId={best.distance} render={(s) => (
-              <span className="inline-flex items-center gap-1">
-                <MapPin className="h-3.5 w-3.5" /> {s.distanceKm} km
-              </span>
-            )} />
-            <MetricRow label="Ustalar" salons={chosen} render={(s) => `${s.staff.length}`} />
-          </section>
-
-          {/* Services matrix */}
-          {allServices.length > 0 ? (
-          <section className="mt-8 px-5">
-            <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              Xizmatlar
-            </p>
-            <div className="overflow-hidden rounded-2xl border border-border">
-              {allServices.map((svcName, i) => (
-                <div
-                  key={svcName}
-                  className={cn(
-                    "grid items-center gap-2 px-3 py-3 text-[12px]",
-                    i !== 0 && "border-t border-border",
+              <section className="mt-5">
+                <MetricRow
+                  label="Reyting"
+                  salons={chosen}
+                  bestId={best.rating}
+                  vertical={variant === "mobile"}
+                  render={(s) => (
+                    <span className="inline-flex items-center gap-1">
+                      <Star className="h-3.5 w-3.5 fill-current" /> {s.rating}
+                    </span>
                   )}
-                  style={{ gridTemplateColumns: `1.4fr repeat(${chosen.length}, minmax(0, 1fr))` }}
-                >
-                  <span className="font-bold leading-tight">{svcName}</span>
-                  {chosen.map((s) => {
-                    const svc = s.services.find((x) => x.name === svcName);
-                    return (
-                      <span key={s.id} className="text-right font-bold tabular-nums">
-                        {svc ? shortPrice(svc.price) : <span className="text-muted-foreground">—</span>}
-                      </span>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-          </section>
-          ) : null}
+                />
+                <MetricRow label="Sharhlar" salons={chosen} vertical={variant === "mobile"} render={(s) => `${s.reviewCount}`} />
+                <MetricRow
+                  label="Narx (dan)"
+                  salons={chosen}
+                  bestId={best.price}
+                  vertical={variant === "mobile"}
+                  render={(s) => shortPrice(s.priceFrom)}
+                />
+                <MetricRow label="Narx (gacha)" salons={chosen} vertical={variant === "mobile"} render={(s) => shortPrice(s.priceTo)} />
+                <MetricRow
+                  label="Masofa"
+                  salons={chosen}
+                  bestId={best.distance}
+                  vertical={variant === "mobile"}
+                  render={(s) => (
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5" /> {s.distanceKm} km
+                    </span>
+                  )}
+                />
+                <MetricRow label="Ustalar" salons={chosen} vertical={variant === "mobile"} render={(s) => `${s.staff.length}`} />
+              </section>
 
-          {/* CTAs */}
-          <section className="mt-6 grid gap-2 px-5" style={{ gridTemplateColumns: `repeat(${chosen.length}, minmax(0, 1fr))` }}>
-            {chosen.map((s) => (
-              <Link
-                key={s.id}
-                to="/salon/$id"
-                params={{ id: s.id }}
-                className="flex items-center justify-center gap-1 rounded-2xl bg-foreground py-3 text-[12px] font-bold text-background active:scale-[0.98]"
+              {allServices.length > 0 ? (
+                <section className="mt-8">
+                  <p className="label-eyebrow mb-3">Xizmatlar</p>
+                  <div className="neo-panel overflow-hidden p-0">
+                    {allServices.map((svcName, i) => (
+                      <div
+                        key={svcName}
+                        className={cn(
+                          "grid items-center gap-2 px-3 py-3 text-[12px]",
+                          i !== 0 && "border-t-2 border-border",
+                          variant === "mobile" && "grid-cols-1",
+                        )}
+                        style={
+                          variant === "desktop"
+                            ? { gridTemplateColumns: `1.4fr repeat(${chosen.length}, minmax(0, 1fr))` }
+                            : undefined
+                        }
+                      >
+                        <span className="font-bold leading-tight">{svcName}</span>
+                        {variant === "mobile" ? (
+                          <div className="space-y-1">
+                            {chosen.map((s) => {
+                              const svc = s.services.find((x) => x.name === svcName);
+                              return (
+                                <div key={s.id} className="flex justify-between text-[11px]">
+                                  <span className="text-muted-foreground">{s.name}</span>
+                                  <span className="font-bold tabular-nums">
+                                    {svc ? shortPrice(svc.price) : "—"}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          chosen.map((s) => {
+                            const svc = s.services.find((x) => x.name === svcName);
+                            return (
+                              <span key={s.id} className="text-right font-bold tabular-nums">
+                                {svc ? shortPrice(svc.price) : <span className="text-muted-foreground">—</span>}
+                              </span>
+                            );
+                          })
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              <section
+                className={cn("mt-6 gap-2", variant === "mobile" ? "flex flex-col" : "grid")}
+                style={
+                  variant === "desktop"
+                    ? { gridTemplateColumns: `repeat(${chosen.length}, minmax(0, 1fr))` }
+                    : undefined
+                }
               >
-                Tanlash <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            ))}
-          </section>
+                {chosen.map((s) => (
+                  <Link
+                    key={s.id}
+                    to="/salon/$id"
+                    params={{ id: s.id }}
+                    className="neo-cta flex items-center justify-center gap-1 bg-primary py-3 text-[12px] font-bold text-primary-foreground"
+                  >
+                    Tanlash <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                ))}
+              </section>
+            </>
+          )}
         </>
       )}
-        </>
-      )}
+    </>
+  );
+
+  if (variant === "mobile") {
+    return (
+      <MobileListPage title="Taqqoslash" subtitle={`Tanlangan ${chosen.length}/${MAX}`}>
+        {body}
+      </MobileListPage>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-4xl px-6 py-10">
+      <h1 className="text-3xl font-bold">Taqqoslash</h1>
+      <p className="mt-1 text-sm text-muted-foreground">Tanlangan {chosen.length}/{MAX}</p>
+      <div className="mt-8">{body}</div>
     </div>
   );
+}
+
+function ComparePage() {
+  return <DesktopPageSplit mobile={<CompareContent variant="mobile" />} desktop={<CompareContent variant="desktop" />} />;
 }
 
 function MetricRow({
@@ -215,12 +271,37 @@ function MetricRow({
   salons: list,
   render,
   bestId,
+  vertical = false,
 }: {
   label: string;
   salons: Salon[];
   render: (s: Salon) => ReactNode;
   bestId?: string;
+  vertical?: boolean;
 }) {
+  if (vertical) {
+    return (
+      <div className="border-b-2 border-border py-3">
+        <p className="label-eyebrow mb-2">{label}</p>
+        <div className="space-y-2">
+          {list.map((s) => (
+            <div key={s.id} className="flex items-center justify-between text-[12px]">
+              <span className="truncate pr-2 font-semibold text-muted-foreground">{s.name}</span>
+              <span
+                className={cn(
+                  "font-bold tabular-nums",
+                  bestId === s.id && "neo-pill bg-primary px-2 py-0.5 text-primary-foreground",
+                )}
+              >
+                {render(s)}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="grid items-center gap-2 border-b border-border py-3 text-[12px]"

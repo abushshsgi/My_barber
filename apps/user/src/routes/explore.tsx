@@ -4,7 +4,7 @@ import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { ExploreDesktopPage } from "@/components/desktop/pages/ExploreDesktopPage";
 import { ExploreAiStyleBanner, ExploreStyleGrid } from "@/components/explore/ExploreStyleGrid";
 import { ExplorePageToolbar } from "@/components/explore/ExplorePageToolbar";
-import { PageHeader } from "@/components/PageHeader";
+import { MobileListPage } from "@/components/mobile/MobileListPage";
 import { PersonaPicker } from "@/components/PersonaPicker";
 import { useExplorePageData } from "@/hooks/use-explore-page-data";
 
@@ -27,27 +27,19 @@ function ExploreMobile() {
   } = useExplorePageData();
 
   return (
-    <div className="pb-8">
-      <PageHeader showBack title={t("explorePage.title")} />
-      <div className="px-5">
-        {audience === "men" ? <PersonaPicker value={personaId} onChange={setPersonaId} /> : null}
-        <ExplorePageToolbar
-          styleCount={visibleList.length}
-          ageGroup={ageGroup}
-          className="mt-3"
-        />
-        <ExploreAiStyleBanner className="mt-4" />
-      </div>
-
+    <MobileListPage title={t("explorePage.title")}>
+      {audience === "men" ? <PersonaPicker value={personaId} onChange={setPersonaId} /> : null}
+      <ExplorePageToolbar styleCount={visibleList.length} ageGroup={ageGroup} className="mt-3" />
+      <ExploreAiStyleBanner className="mt-4" />
       <ExploreStyleGrid
         items={visibleList}
         personaKey={menPersona}
         isLoading={isLoading}
         isError={isError}
         compact
-        className="mt-5 px-5"
+        className="mt-5"
       />
-    </div>
+    </MobileListPage>
   );
 }
 

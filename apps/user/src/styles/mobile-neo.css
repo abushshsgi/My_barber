@@ -1,0 +1,110 @@
+/* Neo Brutal — faqat mobil viewport (lg dan kichik); desktop tokenlari o'zgarmaydi. */
+
+@media (max-width: 1023px) {
+  .mobile-neo {
+    --radius: 0.55rem;
+    --background: oklch(0.95 0.06 95);
+    --foreground: oklch(0.23 0.09 264);
+    --surface: oklch(0.995 0.01 95);
+    --surface-foreground: oklch(0.23 0.09 264);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.14 0.005 60);
+    --primary: oklch(0.67 0.21 24);
+    --primary-foreground: oklch(0.99 0 0);
+    --secondary: oklch(0.9 0.03 92);
+    --secondary-foreground: oklch(0.23 0.09 264);
+    --muted: oklch(0.92 0.025 97);
+    --muted-foreground: oklch(0.38 0.06 264);
+    --accent: oklch(0.83 0.19 87);
+    --accent-foreground: oklch(0.22 0.08 264);
+    --gold: oklch(0.83 0.19 87);
+    --gold-foreground: oklch(0.22 0.08 264);
+    --destructive: oklch(0.61 0.21 24);
+    --destructive-foreground: oklch(0.99 0 0);
+    --border: oklch(0.23 0.09 264);
+    --input: oklch(0.92 0.025 97);
+    --ring: oklch(0.67 0.21 24 / 0.6);
+    --shadow-card: 4px 4px 0 0 oklch(0.17 0.03 262 / 0.85);
+    --shadow-dock: 6px 6px 0 0 oklch(0.17 0.03 262 / 0.95);
+    --shadow-soft: 3px 3px 0 0 oklch(0.17 0.03 262 / 0.65);
+    --shadow-luxury: 6px 6px 0 0 oklch(0.17 0.03 262 / 0.95);
+
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+
+  .mobile-neo .bg-background { background-color: var(--background); }
+  .mobile-neo .bg-surface { background-color: var(--surface); }
+  .mobile-neo .bg-card { background-color: var(--card); }
+  .mobile-neo .bg-primary { background-color: var(--primary); }
+  .mobile-neo .bg-muted { background-color: var(--muted); }
+  .mobile-neo .bg-accent { background-color: var(--accent); }
+  .mobile-neo .text-foreground { color: var(--foreground); }
+  .mobile-neo .text-muted-foreground { color: var(--muted-foreground); }
+  .mobile-neo .text-primary { color: var(--primary); }
+  .mobile-neo .text-primary-foreground { color: var(--primary-foreground); }
+  .mobile-neo .text-accent-foreground { color: var(--accent-foreground); }
+  .mobile-neo .border-border { border-color: var(--border); }
+
+  .mobile-neo .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+  .mobile-neo .pt-safe {
+    padding-top: max(env(safe-area-inset-top), 0.5rem);
+  }
+  .mobile-neo .label-eyebrow {
+    font-size: 0.64rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  .mobile-neo .gold-divider {
+    background: var(--border);
+    height: 2px;
+  }
+  .mobile-neo .shadow-dock { box-shadow: var(--shadow-dock); }
+  .mobile-neo .shadow-card { box-shadow: var(--shadow-card); }
+  .mobile-neo .shadow-soft { box-shadow: var(--shadow-soft); }
+  .mobile-neo .shadow-luxury { box-shadow: var(--shadow-luxury); }
+  .mobile-neo .texture-grid {
+    background-image:
+      linear-gradient(oklch(0.23 0.09 264 / 0.11) 2px, transparent 2px),
+      linear-gradient(90deg, oklch(0.23 0.09 264 / 0.11) 2px, transparent 2px);
+    background-size: 30px 30px;
+  }
+  .mobile-neo.neo-page {
+    background:
+      radial-gradient(70% 55% at 0% 0%, oklch(0.89 0.1 90 / 0.55), transparent 65%),
+      radial-gradient(70% 55% at 100% 0%, oklch(0.82 0.2 24 / 0.22), transparent 60%),
+      var(--background);
+  }
+  .mobile-neo .neo-panel {
+    border: 2px solid var(--border);
+    border-radius: calc(var(--radius) + 4px);
+    background: var(--surface);
+    box-shadow: var(--shadow-card);
+  }
+  .mobile-neo .neo-pill {
+    border: 2px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    box-shadow: var(--shadow-soft);
+  }
+  .mobile-neo .neo-cta {
+    border: 2px solid var(--border);
+    border-radius: calc(var(--radius) + 2px);
+    box-shadow: var(--shadow-card);
+    transition: transform 120ms ease;
+  }
+  .mobile-neo .neo-cta:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 0 oklch(0.17 0.03 262 / 0.9);
+  }
+  .mobile-neo .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .mobile-neo .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}

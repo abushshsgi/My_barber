@@ -7,6 +7,8 @@ import { SettingsPanelContent } from "@/components/settings/SettingsPanelContent
 import { SettingsTopBar } from "@/components/settings/SettingsTopBar";
 import { useSettingsPage } from "@/components/settings/useSettingsPage";
 import { parseSettingsEdit, parseSettingsSection, type SettingsSection } from "@/lib/settings-nav";
+import { MOBILE_CONTENT_PADDING_CLASS } from "@/lib/layout-constants";
+import { cn } from "@/lib/utils";
 
 const settingsSearchSchema = z.object({
   section: z.string().optional(),
@@ -48,13 +50,13 @@ function SettingsMobile({
   const { t } = state;
 
   return (
-    <div className="min-h-full bg-background pb-[calc(68px+env(safe-area-inset-bottom)+12px)]">
-      <div className="border-b border-border px-5 pb-4 pt-[calc(env(safe-area-inset-top)+12px)]">
+    <div className={cn("min-h-full bg-background", MOBILE_CONTENT_PADDING_CLASS)}>
+      <div className="border-b-2 border-border px-4 pb-4 pt-safe">
         <SettingsTopBar
           backLabel={t("common.back", { defaultValue: "Orqaga" })}
           doneLabel={t("settings.done", { defaultValue: "Tayyor" })}
         />
-        <h1 className="mt-4 text-2xl font-semibold tracking-tight">
+        <h1 className="mt-4 text-2xl font-extrabold tracking-tight">
           {t("settings.pageTitle", { defaultValue: "Hisob sozlamalari" })}
         </h1>
       </div>

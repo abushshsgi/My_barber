@@ -2,8 +2,8 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { CategorySalonsDesktopPage } from "@/components/desktop/pages/CategorySalonsDesktopPage";
-import { PageHeader } from "@/components/PageHeader";
-import { SalonCard } from "@/components/SalonCard";
+import { MobileListPage } from "@/components/mobile/MobileListPage";
+import { MobileSalonCard } from "@/components/mobile/MobileSalonCard";
 import { useCategorySalons } from "@/hooks/use-category-salons";
 import type { Category } from "@/lib/mock-data";
 
@@ -25,24 +25,22 @@ function CategorySalonsMobile({ category }: { category: Category }) {
   const { salons, loading } = useCategorySalons(category);
 
   return (
-    <div className="pb-8">
-      <PageHeader
-        showBack
-        title={t(`home.categories.${category}`)}
-        subtitle={t("categorySalonsPage.subtitle")}
-      />
+    <MobileListPage
+      title={t(`home.categories.${category}`)}
+      subtitle={t("categorySalonsPage.subtitle")}
+    >
       {loading ? (
-        <p className="px-5 py-8 text-center text-sm text-muted-foreground">{t("common.loading")}</p>
+        <p className="py-8 text-center text-sm text-muted-foreground">{t("common.loading")}</p>
       ) : salons.length === 0 ? (
-        <p className="px-5 py-8 text-center text-sm text-muted-foreground">{t("categorySalonsPage.empty")}</p>
+        <p className="py-8 text-center text-sm text-muted-foreground">{t("categorySalonsPage.empty")}</p>
       ) : (
-        <div className="mt-2 space-y-3 px-5">
+        <div className="space-y-3">
           {salons.map((salon) => (
-            <SalonCard key={salon.id} salon={salon} />
+            <MobileSalonCard key={salon.id} salon={salon} />
           ))}
         </div>
       )}
-    </div>
+    </MobileListPage>
   );
 }
 

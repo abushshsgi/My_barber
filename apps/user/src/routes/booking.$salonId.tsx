@@ -18,6 +18,7 @@ import { useDisplayUser } from "@/hooks/use-me";
 import { useSalonBarberServices } from "@/hooks/use-salon-barber-services";
 import { useSalonPage } from "@/hooks/use-salon-page";
 import { resolveDefaultSalonBarberId } from "@/lib/salon-services";
+import { MOBILE_DOCK_OFFSET } from "@/lib/layout-constants";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/$salonId")({
@@ -518,8 +519,8 @@ function BookingMobile() {
       <div className="px-5 pt-8 pb-32">
         <BookingStepContent state={state} t={t} />
       </div>
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-5 pt-3 backdrop-blur-md" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 88px)" }}>
-        <div className="mx-auto flex max-w-[480px] gap-2">
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t-2 border-border bg-surface/95 px-4 pt-3 backdrop-blur-md" style={{ paddingBottom: `calc(${MOBILE_DOCK_OFFSET} + 0.5rem)` }}>
+        <div className="mx-auto flex max-w-md gap-2">
           <BookingNavButtons state={state} t={t} />
         </div>
       </div>

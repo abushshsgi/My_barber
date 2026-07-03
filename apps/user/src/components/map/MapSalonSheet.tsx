@@ -86,8 +86,8 @@ function SalonGridCell({
       aria-pressed={isActive}
       aria-label={salon.name}
       className={cn(
-        "relative w-full overflow-hidden rounded-xl bg-[#E8E8E8] ring-1 ring-black/5 active:scale-[0.98]",
-        isActive && "ring-2 ring-foreground ring-offset-2 ring-offset-background",
+        "relative w-full overflow-hidden rounded-xl border-2 border-border bg-surface shadow-soft active:scale-[0.98]",
+        isActive && "ring-2 ring-primary ring-offset-2 ring-offset-background",
       )}
       style={{ height: GRID_CELL_H }}
     >
@@ -144,7 +144,7 @@ function SalonPeekCard({ salon }: { salon: Salon }) {
 
   return (
     <div
-      className="flex shrink-0 overflow-hidden rounded-2xl bg-background shadow-[0_6px_24px_rgba(0,0,0,0.1)] ring-1 ring-black/5"
+      className="neo-panel flex shrink-0 overflow-hidden p-0 shadow-card"
       style={{ height: PEEK_HEIGHT }}
     >
       <div className="h-full w-[108px] shrink-0 overflow-hidden">
@@ -174,7 +174,7 @@ function SalonPeekCard({ salon }: { salon: Salon }) {
         <Link
           to="/booking/$salonId"
           params={{ salonId: salon.id }}
-          className="flex w-full items-center justify-center rounded-xl bg-foreground py-2 text-[12px] font-bold text-background active:scale-[0.98]"
+          className="neo-cta flex w-full items-center justify-center bg-primary py-2 text-[12px] font-bold text-primary-foreground"
         >
           {t("map.bookNow")}
         </Link>
@@ -310,7 +310,7 @@ export function MapSalonSheet({
       <motion.div
         ref={sheetRef}
         style={{ height: sheetHeight }}
-        className="absolute inset-x-0 bottom-0 z-30 flex flex-col overflow-hidden rounded-t-[22px] bg-background pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-12px_48px_rgba(0,0,0,0.18)] ring-1 ring-border/30"
+        className="absolute inset-x-0 bottom-0 z-30 flex flex-col overflow-hidden rounded-t-[22px] border-t-2 border-border bg-surface pb-[env(safe-area-inset-bottom,0px)] shadow-dock"
       >
         <motion.div
           ref={headerRef}

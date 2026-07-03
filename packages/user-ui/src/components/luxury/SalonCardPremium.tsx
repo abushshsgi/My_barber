@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import type { Salon } from "@/types/salon";
-import { formatKm } from "@/lib/format";
+import type { Salon } from "../../types/salon";
+import { formatKm } from "../../lib/format";
 import { RatingStars } from "./RatingStars";
 import { MapPin } from "lucide-react";
 

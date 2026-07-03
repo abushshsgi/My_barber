@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { ChatDesktopInbox } from "@/components/desktop/pages/ChatDesktopPage";
-import { PageHeader } from "@/components/PageHeader";
+import { MobileListPage } from "@/components/mobile/MobileListPage";
 import { ChatThreadList } from "@/components/chat/ChatThreadList";
 
 export const Route = createFileRoute("/chat")({
@@ -16,10 +16,9 @@ function ChatList() {
   return (
     <DesktopPageSplit
       mobile={
-        <>
-          <PageHeader title={t("chat.title")} />
+        <MobileListPage title={t("chat.title")} showBack={false}>
           <ChatThreadList hideMobileTitle />
-        </>
+        </MobileListPage>
       }
       desktop={<ChatDesktopInbox />}
     />

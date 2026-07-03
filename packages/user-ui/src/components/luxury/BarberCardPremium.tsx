@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { formatKm } from "@/lib/format";
+import { formatKm } from "../../lib/format";
 import { RatingStars } from "./RatingStars";
 
 export type PremiumBarber = {

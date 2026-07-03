@@ -27,7 +27,7 @@ export function BookingsEmptyState() {
       action={
         <Link
           to="/"
-          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-foreground px-6 py-3.5 text-sm font-bold text-background transition-transform active:scale-[0.98] hover:opacity-95 sm:w-auto"
+          className="neo-cta inline-flex w-full items-center justify-center gap-2 bg-primary px-6 py-3.5 text-sm font-bold text-primary-foreground sm:w-auto"
         >
           <CalendarPlus className="h-4 w-4" />
           {t("bookings.browseSalons", { defaultValue: "Bron qilish" })}
@@ -78,7 +78,7 @@ export function BookingCard({ booking: b, focused }: { booking: BookingItem; foc
     <article
       id={`booking-${b.id}`}
       className={cn(
-        "overflow-hidden rounded-[24px] border border-border bg-background shadow-[0_8px_30px_-18px_rgba(0,0,0,0.18)]",
+        "neo-panel overflow-hidden p-0 lg:rounded-[24px] lg:border lg:border-border lg:bg-background lg:shadow-[0_8px_30px_-18px_rgba(0,0,0,0.18)]",
         focused && "ring-2 ring-foreground",
         b.status === "in_progress" && "ring-1 ring-emerald-500/30",
       )}
