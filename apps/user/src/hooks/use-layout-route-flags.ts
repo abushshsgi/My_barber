@@ -1,4 +1,4 @@
-import { showsMobileSiteFooter, showsSiteFooter } from "@/lib/layout-routes";
+import { isMobileFlushPage, showsMobileSiteFooter, showsSiteFooter } from "@/lib/layout-routes";
 import { usesDesktopBazaarInset } from "@/lib/desktop-bazaar-layout";
 
 const FULL_BLEED_PREFIX = ["/map", "/stories/"];
@@ -16,6 +16,7 @@ export function useLayoutRouteFlags(pathname: string) {
   const bazaarInset = usesDesktopBazaarInset(pathname);
   const isHome = pathname === "/";
   const isSalonPage = pathname.startsWith("/salon/");
+  const isMobileFlush = isMobileFlushPage(pathname);
 
   return {
     isAiStyle,
@@ -27,5 +28,6 @@ export function useLayoutRouteFlags(pathname: string) {
     bazaarInset,
     isHome,
     isSalonPage,
+    isMobileFlush,
   };
 }

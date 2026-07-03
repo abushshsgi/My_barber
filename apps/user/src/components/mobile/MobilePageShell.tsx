@@ -11,9 +11,11 @@ type Props = {
   className?: string;
   right?: ReactNode;
   backTo?: string;
+  /** To'liq ekran — panel va yon chegaralar yo'q, scroll ichkarida. */
+  flush?: boolean;
 };
 
-/** Neo Brutal mobil sahifa shell — orqaga tugma + neo-panel kontent. */
+/** Mobil sahifa shell — panel yoki to'liq ekran variant. */
 export function MobilePageShell({
   title,
   subtitle,
@@ -21,7 +23,35 @@ export function MobilePageShell({
   className,
   right,
   backTo = "/profile",
+  flush = false,
 }: Props) {
+  if (flush) {
+    return (
+      <div
+        className={cn(
+          "flex min-h-[calc(100dvh-4.75rem-env(safe-area-inset-bottom,0px))] flex-col lg:min-h-full",
+          className,
+        )}
+      >
+        <header className="shrink-0 border-b border-border bg-background px-4 pb-3 pt-safe">
+          <div className="flex items-center gap-3">
+            <Link
+              to={backTo}
+              className="grid size-10 shrink-0 place-items-center rounded-full border border-border bg-surface active:scale-95"
+              aria-label="Orqaga"
+            >
+              <ChevronLeft className="size-5" strokeWidth={2.25} />
+            </Link>
+            <h1 className="min-w-0 flex-1 truncate text-lg font-bold tracking-tight">{title}</h1>
+            {right ? <div className="shrink-0">{right}</div> : null}
+          </div>
+          {subtitle ? <p className="mt-2 pl-[52px] text-xs text-muted-foreground">{subtitle}</p> : null}
+        </header>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn("min-h-full", MOBILE_CONTENT_PADDING_CLASS, className)}>
       <div className="px-4 pb-4 pt-safe">

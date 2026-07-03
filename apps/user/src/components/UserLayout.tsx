@@ -90,7 +90,8 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
             !flags.isFullBleed && MOBILE_CONTENT_PADDING_CLASS,
             !flags.isFullBleed && "lg:pb-12",
             flags.isHome ? "lg:pt-3" : "lg:pt-6",
-            !flags.isFullBleed && !flags.bazaarInset && DESKTOP_SHELL_INSET,
+            !flags.isFullBleed && !flags.bazaarInset && !flags.isMobileFlush && DESKTOP_SHELL_INSET,
+            flags.isMobileFlush && "px-0 lg:px-10",
             flags.bazaarInset && "lg:px-0",
             "lg:mx-0 lg:max-w-none",
           )}

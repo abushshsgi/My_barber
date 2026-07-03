@@ -4,7 +4,7 @@ const FOOTER_HIDDEN_EXACT = new Set(["/auth", "/onboarding", "/map", "/ai-style"
 const FOOTER_HIDDEN_PREFIX = ["/stories/", "/booking/"];
 
 /** Mobil dock sahifalarida pastki footer kerak emas. */
-const MOBILE_FOOTER_HIDDEN_EXACT = new Set(["/profile"]);
+const MOBILE_FOOTER_HIDDEN_EXACT = new Set(["/profile", "/notifications"]);
 const MOBILE_FOOTER_HIDDEN_PREFIX = ["/booking/", "/bookings", "/chat"];
 
 const DISCOVERY_EXACT = new Set([
@@ -53,6 +53,13 @@ export function showsSiteFooter(pathname: string): boolean {
     return false;
   }
   return true;
+}
+
+/** Mobil to'liq ekran sahifalar — yon padding va panel yo'q. */
+const MOBILE_FLUSH_EXACT = new Set(["/notifications"]);
+
+export function isMobileFlushPage(pathname: string): boolean {
+  return MOBILE_FLUSH_EXACT.has(pathname);
 }
 
 export function showsMobileSiteFooter(pathname: string): boolean {

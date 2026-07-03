@@ -10,22 +10,23 @@ type Props = {
   className?: string;
   right?: React.ReactNode;
   backTo?: string;
+  flush?: boolean;
 };
 
-function ProfileSubpageMobile({ title, subtitle, children, className, right, backTo = "/profile" }: Props) {
+function ProfileSubpageMobile({ title, subtitle, children, className, right, backTo = "/profile", flush }: Props) {
   return (
-    <MobilePageShell title={title} subtitle={subtitle} className={className} right={right} backTo={backTo}>
+    <MobilePageShell title={title} subtitle={subtitle} className={className} right={right} backTo={backTo} flush={flush}>
       {children}
     </MobilePageShell>
   );
 }
 
 /** Ichki sahifalar — mobil neo shell; desktop: sidebar + glass panel. */
-export function ProfileSubpageLayout({ title, subtitle, children, className, right, backTo = "/profile" }: Props) {
+export function ProfileSubpageLayout({ title, subtitle, children, className, right, backTo = "/profile", flush }: Props) {
   return (
     <DesktopPageSplit
       mobile={
-        <ProfileSubpageMobile title={title} subtitle={subtitle} className={className} right={right} backTo={backTo}>
+        <ProfileSubpageMobile title={title} subtitle={subtitle} className={className} right={right} backTo={backTo} flush={flush}>
           {children}
         </ProfileSubpageMobile>
       }
