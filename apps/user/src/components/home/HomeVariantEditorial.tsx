@@ -1,30 +1,34 @@
 import type { HomeData } from "@/components/home/useHomeData";
 import {
-  HomeAiPromo,
   HomeAudience,
   HomeOfferBanner,
+  HomeSalonCarousel,
   HomeSearchAndCategories,
   HomeTrendingStrip,
   HomeUnifiedSearchResults,
 } from "@/components/home/HomeBlocks";
 import { HomeDiscoverySections } from "@/components/home/HomeDiscoverySections";
+import { HomeMobileTopBar } from "@/components/home/HomeMobileTopBar";
+import { HomeQuickAccessChips } from "@/components/home/HomeQuickAccessChips";
 
 type Props = { data: HomeData };
 
-/** v03 — Editorial: katta hero, featured carousel, to'liq ro'yxat (faqat mobil). */
+/** Mobil bosh sahifa — qidiruv birinchi, tez kirish, keyin kashfiyot qatorlari. */
 export function HomeVariantEditorial({ data }: Props) {
+  const nearbyPreview = data.filtered.slice(0, 8);
+
   return (
     <div className="page-stagger">
-      <header
-        className="pt-4"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 12px)" }}
-      />
+      <HomeMobileTopBar />
       <HomeAudience />
-      {data.topOffer ? <HomeOfferBanner offer={data.topOffer} /> : null}
-      <HomeDiscoverySections filtered={data.filtered} />
-      <HomeTrendingStrip trending={data.trending} />
-      <HomeAiPromo />
       <HomeSearchAndCategories {...data} />
+      <HomeQuickAccessChips />
+      {data.topOffer ? <HomeOfferBanner offer={data.topOffer} /> : null}
+      {!data.searchActive && nearbyPreview.length > 0 ? (
+        <HomeSalonCarousel salons={nearbyPreview} titleKey="home.nearby" />
+      ) : null}
+      {!data.searchActive ? <HomeTrendingStrip trending={data.trending} /> : null}
+      {!data.searchActive ? <HomeDiscoverySections filtered={data.filtered} /> : null}
       <HomeUnifiedSearchResults
         searchActive={data.searchActive}
         salons={data.filtered}

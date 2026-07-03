@@ -2,6 +2,7 @@
   "nav": {
     "home": "Home",
     "map": "Map",
+    "aiStyle": "AI Style",
     "bookings": "Bookings",
     "chat": "Chat",
     "notifications": "Inbox",

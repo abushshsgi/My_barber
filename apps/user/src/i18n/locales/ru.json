@@ -2,6 +2,7 @@
   "nav": {
     "home": "Главная",
     "map": "Карта",
+    "aiStyle": "AI Style",
     "bookings": "Записи",
     "chat": "Чат",
     "notifications": "Уведомления",
