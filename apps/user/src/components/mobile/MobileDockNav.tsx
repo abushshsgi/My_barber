@@ -19,7 +19,7 @@ const centerTab = { to: "/ai-style", icon: Wand2, key: "aiStyle" } as const;
 
 const allRoutes = [...leftTabs, centerTab, ...rightTabs];
 
-const HIDE_ON = ["/auth", "/ai-style"];
+import { shouldShowMobileDock } from "@/lib/layout-routes";
 
 type Props = {
   unreadCount?: number;
@@ -52,7 +52,9 @@ function DockTab({
       <span
         className={cn(
           "grid size-9 place-items-center rounded-xl transition",
-          active ? "bg-foreground text-background" : "text-muted-foreground group-active:text-foreground",
+          active
+            ? "bg-foreground text-background"
+            : "text-muted-foreground group-active:text-foreground",
         )}
       >
         <Icon className="size-5" strokeWidth={active ? 2.25 : 2} />
@@ -97,7 +99,7 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
     return () => observer.disconnect();
   }, []);
 
-  if (HIDE_ON.includes(pathname) || faceCameraOpen) return null;
+  if (!shouldShowMobileDock(pathname) || faceCameraOpen) return null;
 
   const handleTabClick = (to: string) => (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (isNavTabCurrent(pathname, to)) {

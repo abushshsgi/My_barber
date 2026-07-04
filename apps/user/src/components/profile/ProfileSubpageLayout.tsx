@@ -13,20 +13,50 @@ type Props = {
   flush?: boolean;
 };
 
-function ProfileSubpageMobile({ title, subtitle, children, className, right, backTo = "/profile", flush }: Props) {
+function ProfileSubpageMobile({
+  title,
+  subtitle,
+  children,
+  className,
+  right,
+  backTo = "/",
+  flush,
+}: Props) {
   return (
-    <MobilePageShell title={title} subtitle={subtitle} className={className} right={right} backTo={backTo} flush={flush}>
+    <MobilePageShell
+      title={title}
+      subtitle={subtitle}
+      className={className}
+      right={right}
+      backTo={backTo}
+      flush={flush}
+    >
       {children}
     </MobilePageShell>
   );
 }
 
 /** Ichki sahifalar — mobil neo shell; desktop: sidebar + glass panel. */
-export function ProfileSubpageLayout({ title, subtitle, children, className, right, backTo = "/profile", flush }: Props) {
+export function ProfileSubpageLayout({
+  title,
+  subtitle,
+  children,
+  className,
+  right,
+  backTo = "/",
+  flush,
+}: Props) {
   return (
     <DesktopPageSplit
       mobile={
-        <ProfileSubpageMobile title={title} subtitle={subtitle} className={className} right={right} backTo={backTo} flush={flush}>
+        <ProfileSubpageMobile
+          title={title}
+          subtitle={subtitle}
+          className={className}
+          right={right}
+          backTo={backTo}
+          flush={flush}
+        >
           {children}
         </ProfileSubpageMobile>
       }

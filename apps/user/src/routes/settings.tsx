@@ -7,7 +7,8 @@ import { SettingsPanelContent } from "@/components/settings/SettingsPanelContent
 import { SettingsTopBar } from "@/components/settings/SettingsTopBar";
 import { useSettingsPage } from "@/components/settings/useSettingsPage";
 import { parseSettingsEdit, parseSettingsSection, type SettingsSection } from "@/lib/settings-nav";
-import { MOBILE_CONTENT_PADDING_CLASS } from "@/lib/layout-constants";
+import { getMobileContentPaddingClass } from "@/lib/layout-constants";
+import { useRouterState } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 
 const settingsSearchSchema = z.object({
@@ -48,9 +49,10 @@ function SettingsMobile({
   onAddressEditorClose: () => void;
 }) {
   const { t } = state;
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <div className={cn("min-h-full bg-background", MOBILE_CONTENT_PADDING_CLASS)}>
+    <div className={cn("min-h-full bg-background", getMobileContentPaddingClass(pathname))}>
       <div className="border-b-2 border-border px-4 pb-4 pt-safe">
         <SettingsTopBar
           backLabel={t("common.back", { defaultValue: "Orqaga" })}

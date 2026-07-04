@@ -1,3 +1,5 @@
+import { shouldShowMobileDock } from "@/lib/layout-routes";
+
 /** Fixed desktop sidebar width — keep in sync with Tailwind arbitrary values. */
 export const DESKTOP_SIDEBAR_WIDTH_PX = 260;
 
@@ -6,6 +8,8 @@ export const DESKTOP_SIDEBAR_LEFT_CLASS = "lg:left-[260px]" as const;
 
 /** Floating dock — bitta qatorda, markazdagi AI tugma bilan. */
 export const MOBILE_DOCK_OFFSET = "calc(4.75rem + env(safe-area-inset-bottom))" as const;
+
+export const MOBILE_SAFE_BOTTOM = "env(safe-area-inset-bottom, 0px)" as const;
 
 /** Sahifa kontenti uchun standart pastki padding (dock + qo'shimcha bo'shliq). */
 export const MOBILE_CONTENT_PADDING_BOTTOM =
@@ -18,3 +22,13 @@ export const MOBILE_CONTENT_PADDING_CLASS =
 /** Sticky action bar + dock ustidagi joy. */
 export const MOBILE_STICKY_ACTIONS_OFFSET =
   "calc(5.5rem + env(safe-area-inset-bottom) + 4.25rem)" as const;
+
+export function getMobileBottomInset(pathname: string): string {
+  return shouldShowMobileDock(pathname) ? MOBILE_DOCK_OFFSET : MOBILE_SAFE_BOTTOM;
+}
+
+export function getMobileContentPaddingClass(pathname: string): string {
+  return shouldShowMobileDock(pathname)
+    ? MOBILE_CONTENT_PADDING_CLASS
+    : "pb-[env(safe-area-inset-bottom,0px)]";
+}

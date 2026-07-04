@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { Loader2, MapPin, Navigation } from "lucide-react";
 import { formatCancelCountdown } from "@mybarber/shared/booking-lifecycle";
 import { BookingBarberImpressions } from "@/components/bookings/BookingBarberImpressions";
@@ -15,7 +15,8 @@ import {
 } from "@/components/bookings/BookingProcessParts";
 import { MobilePageShell } from "@/components/mobile/MobilePageShell";
 import type { useBookingProcessPage } from "@/hooks/use-booking-process-page";
-import { MOBILE_DOCK_OFFSET } from "@/lib/layout-constants";
+import { getMobileBottomInset, getMobileContentPaddingClass } from "@/lib/layout-constants";
+import { shouldShowMobileDock } from "@/lib/layout-routes";
 import { formatPrice, type BookingItem } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -89,6 +90,8 @@ function BookingLocationRow({ booking }: { booking: BookingItem }) {
 
 function BookingProcessActions({ state, sticky }: { state: ProcessState; sticky?: boolean }) {
   const { booking, t, showCancel, cancelPolicy, cancelMut, onCancel } = state;
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const bottomInset = getMobileBottomInset(pathname);
   if (!booking) return null;
   if (booking.status === "done" || booking.status === "cancelled") return null;
 
@@ -116,7 +119,7 @@ function BookingProcessActions({ state, sticky }: { state: ProcessState; sticky?
   return (
     <div
       className="fixed inset-x-0 z-30 bg-background/95 px-4 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 backdrop-blur-md lg:static lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
-      style={{ bottom: MOBILE_DOCK_OFFSET }}
+      style={{ bottom: bottomInset }}
     >
       <div className="mx-auto max-w-lg space-y-2">
         {showCancel && cancelPolicy.secondsUntilCutoff != null ? (
@@ -230,6 +233,8 @@ function ErrorBlock({ message }: { message: string }) {
 
 export function BookingProcessMobilePage({ state }: { state: ProcessState }) {
   const { t, booking, isLoading, isError, error } = state;
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const showDock = shouldShowMobileDock(pathname);
 
   return (
     <MobilePageShell
@@ -239,7 +244,14 @@ export function BookingProcessMobilePage({ state }: { state: ProcessState }) {
       subtitle={booking?.salonName}
       className="lg:hidden"
     >
-      <div className="space-y-6 px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom)+5rem)] pt-4">
+      <div
+        className={cn(
+          "space-y-6 px-4 pt-4",
+          showDock
+            ? "pb-[calc(5.5rem+env(safe-area-inset-bottom)+5rem)]"
+            : "pb-[calc(5.5rem+env(safe-area-inset-bottom))]",
+        )}
+      >
         {isLoading ? (
           <LoadingBlock />
         ) : isError ? (

@@ -12,7 +12,8 @@ import {
   DESKTOP_HOME_INSET,
   DESKTOP_SHELL_INSET,
 } from "@/lib/desktop-bazaar-layout";
-import { MOBILE_CONTENT_PADDING_CLASS } from "@/lib/layout-constants";
+import { shouldShowMobileDock } from "@/lib/layout-routes";
+import { getMobileContentPaddingClass } from "@/lib/layout-constants";
 import { shouldShowScrollToTop } from "@/lib/scroll-to-top";
 import { cn } from "@/lib/utils";
 
@@ -45,6 +46,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { chatUnread, notificationsUnread } = useNavBadges();
   const flags = useLayoutRouteFlags(pathname);
+  const showMobileDock = shouldShowMobileDock(pathname);
   const isAuth = pathname === "/auth";
   const showScrollTop = shouldShowScrollToTop(pathname);
 
@@ -76,7 +78,9 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
         />
       </div>
 
-      <main className={cn("flex min-h-screen flex-col", flags.isFullBleed && "lg:min-h-0 lg:flex-1")}>
+      <main
+        className={cn("flex min-h-screen flex-col", flags.isFullBleed && "lg:min-h-0 lg:flex-1")}
+      >
         <div
           className={cn(
             "mobile-neo neo-page texture-grid mx-auto flex w-full max-w-md flex-1 flex-col",
@@ -87,7 +91,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
               "fixed inset-x-0 top-0 z-10 h-[100dvh] overflow-hidden overscroll-none lg:static lg:z-auto lg:h-auto lg:overflow-visible",
             flags.isAiStyle && "h-[100dvh] lg:h-[calc(100dvh-4.25rem)]",
             flags.isFullBleed && !flags.isViewportLocked && "pb-0",
-            !flags.isFullBleed && MOBILE_CONTENT_PADDING_CLASS,
+            !flags.isFullBleed && getMobileContentPaddingClass(pathname),
             !flags.isFullBleed && "lg:pb-12",
             flags.isHome ? "lg:pt-3" : "lg:pt-6",
             !flags.isFullBleed && !flags.bazaarInset && !flags.isMobileFlush && DESKTOP_SHELL_INSET,
@@ -133,7 +137,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
       </main>
 
       <div className="lg:hidden">
-        <MobileDockNav unreadCount={chatUnread} />
+        {showMobileDock ? <MobileDockNav unreadCount={chatUnread} /> : null}
       </div>
 
       {scrollTop}

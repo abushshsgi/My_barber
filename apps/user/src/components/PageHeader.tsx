@@ -1,5 +1,6 @@
-import { ChevronLeft } from "lucide-react";
 import { useRouter } from "@tanstack/react-router";
+import { ChevronLeft } from "lucide-react";
+import { navigateBack } from "@/lib/mobile-back";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -10,9 +11,19 @@ interface Props {
   sticky?: boolean;
   transparent?: boolean;
   className?: string;
+  backFallback?: string;
 }
 
-export function PageHeader({ title, subtitle, showBack, right, sticky, transparent, className }: Props) {
+export function PageHeader({
+  title,
+  subtitle,
+  showBack,
+  right,
+  sticky,
+  transparent,
+  className,
+  backFallback = "/",
+}: Props) {
   const router = useRouter();
   return (
     <header
@@ -27,7 +38,8 @@ export function PageHeader({ title, subtitle, showBack, right, sticky, transpare
       <div className="flex items-center gap-3">
         {showBack && (
           <button
-            onClick={() => router.history.back()}
+            type="button"
+            onClick={() => navigateBack(router, backFallback)}
             className="neo-pill grid h-11 w-11 place-items-center active:scale-95 lg:rounded-full lg:border lg:border-border lg:bg-surface lg:shadow-none"
             aria-label="Back"
           >
@@ -37,7 +49,9 @@ export function PageHeader({ title, subtitle, showBack, right, sticky, transpare
         {(title || subtitle) && (
           <div>
             {title && (
-              <h1 className="text-xl font-extrabold leading-tight tracking-tight lg:font-bold">{title}</h1>
+              <h1 className="text-xl font-extrabold leading-tight tracking-tight lg:font-bold">
+                {title}
+              </h1>
             )}
             {subtitle && (
               <p className="label-eyebrow mt-0.5 lg:text-[11px] lg:font-bold lg:normal-case lg:tracking-[0.14em]">

@@ -1,3 +1,13 @@
+/** Asosiy tab sahifalarida pastki dock ko'rsatiladi. */
+const MOBILE_DOCK_TAB_EXACT = new Set(["/", "/map", "/bookings", "/profile"]);
+
+export function shouldShowMobileDock(pathname: string): boolean {
+  if (pathname === "/auth" || pathname === "/onboarding" || pathname === "/ai-style") {
+    return false;
+  }
+  return MOBILE_DOCK_TAB_EXACT.has(pathname);
+}
+
 export type DesktopContentProfile = "discovery" | "standard" | "compact";
 
 const FOOTER_HIDDEN_EXACT = new Set(["/auth", "/onboarding", "/map", "/ai-style"]);
@@ -7,14 +17,7 @@ const FOOTER_HIDDEN_PREFIX = ["/stories/", "/booking/"];
 const MOBILE_FOOTER_HIDDEN_EXACT = new Set(["/profile", "/notifications"]);
 const MOBILE_FOOTER_HIDDEN_PREFIX = ["/booking/", "/bookings", "/chat"];
 
-const DISCOVERY_EXACT = new Set([
-  "/",
-  "/explore",
-  "/offers",
-  "/map",
-  "/today",
-  "/compare",
-]);
+const DISCOVERY_EXACT = new Set(["/", "/explore", "/offers", "/map", "/today", "/compare"]);
 
 const DISCOVERY_PREFIX = ["/salon/"];
 
@@ -66,7 +69,9 @@ export function showsMobileSiteFooter(pathname: string): boolean {
   if (!showsSiteFooter(pathname)) return false;
   if (MOBILE_FOOTER_HIDDEN_EXACT.has(pathname)) return false;
   if (
-    MOBILE_FOOTER_HIDDEN_PREFIX.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+    MOBILE_FOOTER_HIDDEN_PREFIX.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    )
   ) {
     return false;
   }
