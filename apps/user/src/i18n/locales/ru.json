@@ -55,8 +55,7 @@
       "all": "Все",
       "barber": "Барбер",
       "beauty": "Красота",
-      "nails": "Маникюр",
-      "spa": "Спа"
+      "nails": "Маникюр"
     },
     "mapPreview": {
       "nearbyCount": "{{count}} салонов рядом",

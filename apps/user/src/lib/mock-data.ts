@@ -1,6 +1,6 @@
 // Typed mock data for mysaloon.uz UI. UI-only — no backend.
 
-export type Category = "barber" | "beauty" | "nails" | "spa";
+export type Category = "barber" | "beauty" | "nails";
 export type Audience = "men" | "women" | "unisex";
 
 export interface Service {

@@ -62,8 +62,18 @@ def _match_catalog(row_name: str, normalized_map: dict[str, CatalogService]) -> 
     return matches[0][1]
 
 
+_CATALOG_SEED_READY = False
+
+
 @transaction.atomic
 def ensure_default_catalog_seeded() -> None:
+    global _CATALOG_SEED_READY
+    if _CATALOG_SEED_READY:
+        return
+    if CatalogService.objects.filter(is_active=True).count() >= len(SERVICE_ROWS):
+        _CATALOG_SEED_READY = True
+        return
+
     category_map: dict[str, Category] = {}
     for row in CATEGORY_ROWS:
         category, _ = Category.objects.get_or_create(
@@ -145,3 +155,5 @@ def ensure_default_catalog_seeded() -> None:
         row.duration_minutes = catalog.duration_minutes
         row.save(update_fields=["catalog_service", "name", "duration_minutes"])
         row.categories.set(catalog.categories.all())
+
+    _CATALOG_SEED_READY = True

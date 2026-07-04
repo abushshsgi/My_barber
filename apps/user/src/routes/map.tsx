@@ -621,7 +621,7 @@ function MapView() {
           ) : (
             <div
               className="flex h-full shrink-0 flex-col overflow-hidden border-r border-border bg-background"
-              style={{ width: 420 }}
+              style={{ width: 380 }}
             >
               <div className="border-b border-border px-4 py-4 space-y-3">
                 <MapDiscoveryTabs value={discoveryTab} onChange={setDiscoveryTab} />

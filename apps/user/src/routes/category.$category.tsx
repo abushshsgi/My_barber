@@ -7,7 +7,7 @@ import { MobileSalonCard } from "@/components/mobile/MobileSalonCard";
 import { useCategorySalons } from "@/hooks/use-category-salons";
 import type { Category } from "@/lib/mock-data";
 
-const CATEGORY_VALUES = ["barber", "beauty", "nails", "spa"] as const;
+const CATEGORY_VALUES = ["barber", "beauty", "nails"] as const;
 
 function parseCategory(value: string): Category | null {
   return (CATEGORY_VALUES as readonly string[]).includes(value) ? (value as Category) : null;

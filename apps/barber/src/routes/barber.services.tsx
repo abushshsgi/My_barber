@@ -7,8 +7,15 @@ import { ServicesCatalogGrid } from "@/components/barber/services/ServicesCatalo
 import { ServicesPageSkeleton } from "@/components/barber/services/ServicesPageSkeleton";
 import { UnsavedChangesDialog } from "@/components/barber/UnsavedChangesDialog";
 import { useServicesPage } from "@/components/barber/services/use-services-page";
+import { prefetchServicesPage } from "@/hooks/use-barber-queries";
+import { readOnboardingStatusCache } from "@/lib/onboarding-status-cache";
 
 export const Route = createFileRoute("/barber/services")({
+  loader: ({ context: { queryClient } }) => {
+    const cached = readOnboardingStatusCache();
+    if (cached?.fully_ready !== true) return;
+    void prefetchServicesPage(queryClient);
+  },
   component: ServicesSchedulePage,
 });
 

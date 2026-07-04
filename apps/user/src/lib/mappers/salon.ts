@@ -11,15 +11,16 @@ function toNum(v: string | number | null | undefined, fallback = 0): number {
 
 function audienceForCategory(category: Category): Audience {
   if (category === "barber") return "men";
-  if (category === "beauty" || category === "nails" || category === "spa") return "women";
+  if (category === "beauty" || category === "nails") return "women";
   return "unisex";
 }
 
 function resolveCategory(api: ApiSalonList): Category {
   const name = api.name.toLowerCase();
   if (/nail|gel pro|manicure|polish/i.test(name)) return "nails";
-  if (/spa|wellness|harmony|zen|oasis|serenity|retreat|calm|hammom|massaj/i.test(name)) return "spa";
-  if (/glow|beauty|silk|luxe|chic|rose|elite|viva|pearl|femme|studio/i.test(name)) return "beauty";
+  if (/spa|wellness|harmony|zen|oasis|serenity|retreat|calm|hammom|massaj|glow|beauty|silk|luxe|chic|rose|elite|viva|pearl|femme|studio/i.test(name)) {
+    return "beauty";
+  }
   return "barber";
 }
 

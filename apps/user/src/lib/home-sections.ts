@@ -10,7 +10,7 @@ export type HomeSalonSection = {
   variant?: "salons" | "explore";
 };
 
-export const HOME_CATEGORY_KEYS: Category[] = ["barber", "beauty", "nails", "spa"];
+export const HOME_CATEGORY_KEYS: Category[] = ["barber", "beauty", "nails"];
 
 export const HOME_SALON_ROW_PREVIEW = 5;
 export const HOME_CATEGORY_ROW_AFTER = 2;

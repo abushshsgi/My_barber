@@ -6,7 +6,7 @@ export type MapRouteSearch = {
   category: MapCategoryFilter;
 };
 
-const CATEGORIES: Category[] = ["barber", "beauty", "nails", "spa"];
+const CATEGORIES: Category[] = ["barber", "beauty", "nails"];
 
 export function parseMapRouteSearch(search: Record<string, unknown>): MapRouteSearch {
   const q = typeof search.q === "string" ? search.q.trim() : "";

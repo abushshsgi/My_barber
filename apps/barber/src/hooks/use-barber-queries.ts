@@ -595,6 +595,23 @@ export async function prefetchEarningsPage(qc: import("@tanstack/react-query").Q
   ]);
 }
 
+/** Parallel prefetch for services page — katalog + barber xizmatlari. */
+export async function prefetchServicesPage(qc: import("@tanstack/react-query").QueryClient) {
+  const servicesApiBase = "/api/v1/barber/services";
+  await Promise.all([
+    qc.prefetchQuery({
+      queryKey: barberQueryKeys.catalogServices(),
+      queryFn: () => apiList<ApiCatalogService>("/api/v1/barber/catalog-services/"),
+      staleTime: 300_000,
+    }),
+    qc.prefetchQuery({
+      queryKey: barberQueryKeys.servicesScope(servicesApiBase),
+      queryFn: () => apiList<ApiBarberService>(`${servicesApiBase}/`),
+      staleTime: 60_000,
+    }),
+  ]).catch(() => undefined);
+}
+
 export function prefetchBarberAnalytics(
   qc: import("@tanstack/react-query").QueryClient,
   params: { start: string; end: string },

@@ -22,7 +22,7 @@ const MEN_HINT = /barber|barbershop|soqol|erkak|fade|cut|trim|baraka|usta/i;
 /** API audience bo'lmasa — nom va kategoriyadan taxmin. */
 export function inferSalonAudience(salon: Salon): Audience {
   if (salon.audience === "men" || salon.audience === "women") return salon.audience;
-  if (salon.category === "beauty" || salon.category === "nails" || salon.category === "spa") {
+  if (salon.category === "beauty" || salon.category === "nails") {
     return "women";
   }
   if (salon.category === "barber") return "men";

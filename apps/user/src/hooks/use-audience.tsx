@@ -174,8 +174,8 @@ export function matchAudience(itemAudience: Audience, filter: AudienceFilter): b
 
 export function categoriesForAudience(a: AudienceFilter): (Category | "all")[] {
   if (a === "men") return ["all", "barber"];
-  if (a === "women") return ["all", "beauty", "nails", "spa"];
-  return ["all", "barber", "beauty", "nails", "spa"];
+  if (a === "women") return ["all", "beauty", "nails"];
+  return ["all", "barber", "beauty", "nails"];
 }
 
 /** Settings sahifasi uchun user-scoped prefs kaliti */

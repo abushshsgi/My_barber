@@ -42,7 +42,8 @@ export function useServicesPage() {
 
   const servicesQuery = useScopedServicesQuery(servicesApiBase);
   const catalogQuery = useCatalogServicesQuery();
-  const recommendationsQuery = useServiceRecommendationsQuery();
+  // Tavsiyalar faqat ServicesBlocks da — asosiy grid kutmaydi.
+  const recommendationsQuery = useServiceRecommendationsQuery(false);
 
   const [services, setServices] = useState<ServiceForm[]>([]);
   const [savingServices, setSavingServices] = useState(false);
@@ -58,11 +59,9 @@ export function useServicesPage() {
   const catalogServices = (catalogQuery.data ?? []) as CatalogServiceOption[];
   const recommendations = (recommendationsQuery.data ?? []) as Recommendation[];
 
-  const hasCachedData =
-    servicesQuery.data != null || catalogQuery.data != null || recommendationsQuery.data != null;
-  const isBootstrapping =
-    !hasCachedData &&
-    (servicesQuery.isPending || catalogQuery.isPending || recommendationsQuery.isPending);
+  const hasCachedCatalog = catalogQuery.data != null;
+  // Katalog kelishi bilan grid darhol ko'rinadi; barber xizmatlari fon da yuklanadi.
+  const isBootstrapping = !hasCachedCatalog && catalogQuery.isPending;
 
   useEffect(() => {
     if (!servicesQuery.data) return;
@@ -455,8 +454,8 @@ export function useServicesPage() {
   }, [queryError]);
 
   const isRefreshing =
-    hasCachedData &&
-    (servicesQuery.isFetching || catalogQuery.isFetching || recommendationsQuery.isFetching);
+    hasCachedCatalog &&
+    (servicesQuery.isFetching || catalogQuery.isFetching);
 
   return {
     scope,

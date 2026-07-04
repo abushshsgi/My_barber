@@ -55,8 +55,7 @@
       "all": "All",
       "barber": "Barber",
       "beauty": "Beauty",
-      "nails": "Nails",
-      "spa": "Spa"
+      "nails": "Nails"
     },
     "mapPreview": {
       "nearbyCount": "{{count}} salons nearby",

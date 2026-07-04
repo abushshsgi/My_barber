@@ -6,7 +6,6 @@ const CATEGORY_PHOTOS: Record<Category, number> = {
   barber: 3992859,
   beauty: 3288365,
   nails: 3992860,
-  spa: 2523210,
 };
 
 const SEED_PHOTO_IDS = [

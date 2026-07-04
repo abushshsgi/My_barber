@@ -60,8 +60,7 @@
       "all": "Barchasi",
       "barber": "Barber",
       "beauty": "Go'zallik",
-      "nails": "Manikyur",
-      "spa": "Spa"
+      "nails": "Manikyur"
     },
     "mapPreview": {
       "nearbyCount": "{{count}} ta salon yaqinda",

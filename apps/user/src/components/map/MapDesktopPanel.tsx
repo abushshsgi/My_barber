@@ -16,7 +16,7 @@ import { formatDistanceKm } from "@/lib/map-utils";
 import type { MapFiltersState } from "@/lib/map-filters";
 import { cn } from "@/lib/utils";
 
-const PANEL_WIDTH = 780;
+const PANEL_WIDTH = 480;
 
 type Props = {
   salons: Salon[];
