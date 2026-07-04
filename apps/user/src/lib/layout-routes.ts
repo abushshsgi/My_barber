@@ -13,20 +13,6 @@ export type DesktopContentProfile = "discovery" | "standard" | "compact";
 const FOOTER_HIDDEN_EXACT = new Set(["/auth", "/onboarding", "/map", "/ai-style"]);
 const FOOTER_HIDDEN_PREFIX = ["/stories/", "/booking/"];
 
-/** Mobil dock sahifalarida pastki footer kerak emas. */
-const MOBILE_FOOTER_HIDDEN_EXACT = new Set([
-  "/profile",
-  "/notifications",
-  "/settings",
-  "/addresses",
-  "/reviews",
-  "/favorites",
-  "/favorite-stylists",
-  "/giftcard",
-  "/wallet",
-]);
-const MOBILE_FOOTER_HIDDEN_PREFIX = ["/booking/", "/bookings", "/chat", "/account/"];
-
 const DISCOVERY_EXACT = new Set(["/", "/explore", "/offers", "/map", "/today", "/compare"]);
 
 const DISCOVERY_PREFIX = ["/salon/"];
@@ -73,19 +59,6 @@ const MOBILE_FLUSH_EXACT = new Set(["/notifications"]);
 
 export function isMobileFlushPage(pathname: string): boolean {
   return MOBILE_FLUSH_EXACT.has(pathname);
-}
-
-export function showsMobileSiteFooter(pathname: string): boolean {
-  if (!showsSiteFooter(pathname)) return false;
-  if (MOBILE_FOOTER_HIDDEN_EXACT.has(pathname)) return false;
-  if (
-    MOBILE_FOOTER_HIDDEN_PREFIX.some(
-      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-    )
-  ) {
-    return false;
-  }
-  return true;
 }
 
 /** @deprecated Use getDesktopContentProfile */

@@ -114,25 +114,17 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
             children
           )}
           {flags.showFooter ? (
-            <>
-              {flags.showMobileFooter ? (
-                <SiteFooter
-                  insetClassName="px-5 sm:px-6 lg:hidden"
-                  className={cn("pb-2", flags.isHome ? "mt-12" : "mt-8")}
-                />
-              ) : null}
-              <SiteFooter
-                insetClassName={footerInset}
-                className={cn(
-                  "hidden lg:block",
-                  flags.isHome
-                    ? "mt-20 border-t border-border/50 pt-12 lg:mt-24 lg:pt-14"
-                    : flags.isSalonPage
-                      ? "mt-16 border-t border-border/50 pt-10 lg:mt-20 lg:pt-12"
-                      : "mt-10",
-                )}
-              />
-            </>
+            <SiteFooter
+              insetClassName={footerInset}
+              className={cn(
+                "hidden lg:block",
+                flags.isHome
+                  ? "mt-20 border-t border-border/50 pt-12 lg:mt-24 lg:pt-14"
+                  : flags.isSalonPage
+                    ? "mt-16 border-t border-border/50 pt-10 lg:mt-20 lg:pt-12"
+                    : "mt-10",
+              )}
+            />
           ) : null}
         </div>
       </main>

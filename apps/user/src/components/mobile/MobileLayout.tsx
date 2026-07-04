@@ -1,7 +1,5 @@
 import { useRouterState } from "@tanstack/react-router";
-import { SiteFooter } from "@/components/SiteFooter";
 import { UserBottomNav } from "@/components/UserBottomNav";
-import { showsSiteFooter } from "@/lib/layout-routes";
 import { cn } from "@/lib/utils";
 
 const FULL_BLEED_PREFIX = ["/map", "/stories/"];
@@ -20,7 +18,6 @@ export function MobileLayout({ children, unreadCount = 0 }: Props) {
     isMap ||
     FULL_BLEED_PREFIX.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
   const isViewportLocked = isAiStyle || isMap;
-  const showFooter = showsSiteFooter(pathname) && !isFullBleed;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -39,7 +36,6 @@ export function MobileLayout({ children, unreadCount = 0 }: Props) {
           )}
         >
           {children}
-          {showFooter ? <SiteFooter insetClassName="px-5 sm:px-6" className="mt-8 pb-2" /> : null}
         </div>
       </main>
       <UserBottomNav unreadCount={unreadCount} />
