@@ -14,8 +14,13 @@ const FOOTER_HIDDEN_EXACT = new Set(["/auth", "/onboarding", "/map", "/ai-style"
 const FOOTER_HIDDEN_PREFIX = ["/stories/", "/booking/"];
 
 /** Mobil dock sahifalarida pastki footer kerak emas. */
-const MOBILE_FOOTER_HIDDEN_EXACT = new Set(["/profile", "/notifications"]);
-const MOBILE_FOOTER_HIDDEN_PREFIX = ["/booking/", "/bookings", "/chat"];
+const MOBILE_FOOTER_HIDDEN_EXACT = new Set([
+  "/profile",
+  "/notifications",
+  "/settings",
+  "/addresses",
+]);
+const MOBILE_FOOTER_HIDDEN_PREFIX = ["/booking/", "/bookings", "/chat", "/account/"];
 
 const DISCOVERY_EXACT = new Set(["/", "/explore", "/offers", "/map", "/today", "/compare"]);
 

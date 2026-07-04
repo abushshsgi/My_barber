@@ -8,6 +8,7 @@ type Props = {
   action?: React.ReactNode;
   className?: string;
   tone?: "warm" | "cool" | "neutral";
+  borderless?: boolean;
 };
 
 const toneRing: Record<NonNullable<Props["tone"]>, string> = {
@@ -23,12 +24,15 @@ export function PageSpotlightEmpty({
   action,
   className,
   tone = "neutral",
+  borderless = false,
 }: Props) {
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-[28px] border border-border bg-background px-6 py-14 text-center",
-        "lg:px-10 lg:py-16",
+        "relative overflow-hidden text-center",
+        borderless
+          ? "px-2 py-8"
+          : "rounded-[28px] border border-border bg-background px-6 py-14 lg:px-10 lg:py-16",
         className,
       )}
     >
@@ -41,7 +45,10 @@ export function PageSpotlightEmpty({
       />
       <div className="relative mx-auto flex max-w-sm flex-col items-center">
         <div className="relative mb-6">
-          <div className="absolute inset-0 scale-150 rounded-full bg-foreground/[0.03] blur-xl" aria-hidden />
+          <div
+            className="absolute inset-0 scale-150 rounded-full bg-foreground/[0.03] blur-xl"
+            aria-hidden
+          />
           <div className="grid h-20 w-20 place-items-center rounded-[24px] border border-border/60 bg-surface shadow-[0_12px_40px_-16px_rgba(0,0,0,0.25)]">
             <Icon className="h-9 w-9 text-foreground" strokeWidth={1.8} />
           </div>

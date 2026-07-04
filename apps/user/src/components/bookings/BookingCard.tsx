@@ -13,11 +13,12 @@ import { formatPrice, type BookingItem } from "@/lib/mock-data";
 import { bookingLifecycleStatus } from "@/lib/bookings-utils";
 import { cn } from "@/lib/utils";
 
-export function BookingsEmptyState() {
+export function BookingsEmptyState({ borderless = false }: { borderless?: boolean }) {
   const { t } = useTranslation();
 
   return (
     <PageSpotlightEmpty
+      borderless={borderless}
       icon={CalendarPlus}
       tone="warm"
       title={t("bookings.emptyTitle", { defaultValue: "Hali bron yo'q" })}

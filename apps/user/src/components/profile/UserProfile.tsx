@@ -13,7 +13,11 @@ import {
   Sparkles,
   Tag,
 } from "lucide-react";
-import { ProfileGoMenuGroup, ProfileGoQuickRow, ProfileWalletCard } from "@/components/profile/ProfileGroupedMenu";
+import {
+  ProfileGoMenuGroup,
+  ProfileGoQuickRow,
+  ProfileWalletCard,
+} from "@/components/profile/ProfileGroupedMenu";
 import { useAppTranslation } from "@/hooks/use-app-translation";
 import { useProfileScreen } from "@/components/profile/useProfileScreen";
 import { useNotificationsApi } from "@/hooks/use-notifications-api";
@@ -29,7 +33,11 @@ export function UserProfile() {
   const { data: notifications = [] } = useNotificationsApi();
   const unreadCount = notifications.filter((n) => !n.read).length;
   const audienceLabel = t(`audience.${audience}`);
-  const initials = user.name.split(" ").map((n) => n[0]).join("").slice(0, 2);
+  const initials = user.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2);
   const when = nextBooking ? formatBookingWhen(nextBooking.date) : null;
 
   const quickItems = [
@@ -71,21 +79,16 @@ export function UserProfile() {
       </div>
 
       <div className="mt-6 px-4">
-        <ProfileWalletCard title={t("profile.wallet")} balance={walletLoading ? "…" : formatPrice(balance)} />
+        <ProfileWalletCard
+          title={t("profile.wallet")}
+          balance={walletLoading ? "…" : formatPrice(balance)}
+        />
       </div>
 
       <div className="mt-6 space-y-3 px-4">
         <ProfileGoMenuGroup
-          items={[
-            {
-              icon: CalendarCheck,
-              title: t("account.hubs.activity.title"),
-              subtitle: t("account.hubs.activity.desc"),
-              to: "/account/activity",
-            },
-          ]}
+          items={[{ icon: Tag, title: t("profile.offers"), subtitle: "Tez orada", to: "/offers" }]}
         />
-        <ProfileGoMenuGroup items={[{ icon: Tag, title: t("profile.offers"), subtitle: "Tez orada", to: "/offers" }]} />
         {nextBooking && when ? (
           <ProfileGoMenuGroup
             dark
@@ -100,7 +103,17 @@ export function UserProfile() {
             ]}
           />
         ) : (
-          <ProfileGoMenuGroup dark items={[{ icon: Sparkles, title: t("profile.loyalty"), subtitle: "Tez orada", to: "/loyalty" }]} />
+          <ProfileGoMenuGroup
+            dark
+            items={[
+              {
+                icon: Sparkles,
+                title: t("profile.loyalty"),
+                subtitle: "Tez orada",
+                to: "/loyalty",
+              },
+            ]}
+          />
         )}
         <ProfileGoMenuGroup
           items={[

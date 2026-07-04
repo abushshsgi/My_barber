@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { CalendarCheck, Home, Map, User, Wand2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { isNavTabActive, isNavTabCurrent } from "@/lib/navigation";
+import { shouldShowMobileDock } from "@/lib/layout-routes";
 import { cn } from "@/lib/utils";
 
 const leftTabs = [
@@ -18,8 +19,6 @@ const rightTabs = [
 const centerTab = { to: "/ai-style", icon: Wand2, key: "aiStyle" } as const;
 
 const allRoutes = [...leftTabs, centerTab, ...rightTabs];
-
-import { shouldShowMobileDock } from "@/lib/layout-routes";
 
 type Props = {
   unreadCount?: number;
@@ -47,7 +46,7 @@ function DockTab({
       onClick={onClick}
       aria-label={t(labelKey)}
       aria-current={active ? "page" : undefined}
-      className="group flex min-h-[44px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1 outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+      className="group flex min-h-[44px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1 outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
     >
       <span
         className={cn(
@@ -72,7 +71,7 @@ function DockTab({
   );
 }
 
-/** Mobil pastki navigatsiya — markazda AI tugmasi, bar bilan tekis. */
+/** Mobil pastki navigatsiya — ekran kengligi, pastga yopishgan. */
 export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -118,66 +117,63 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
 
   return (
     <nav
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 lg:hidden"
-      style={{ paddingBottom: "max(env(safe-area-inset-bottom, 0px), 0.5rem)" }}
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 backdrop-blur-xl lg:hidden"
       aria-label="Asosiy navigatsiya"
     >
-      <div className="pointer-events-auto relative w-full max-w-md">
-        <div className="relative flex min-h-[58px] items-end rounded-[22px] border border-border bg-surface px-1 pb-1 pt-1 shadow-dock">
-          <div className="flex min-w-0 flex-1 items-stretch">
-            {leftTabs.map(({ to, icon, key }) => (
-              <DockTab
-                key={to}
-                to={to}
-                icon={icon}
-                labelKey={`nav.${key}`}
-                active={isNavTabActive(pathname, to)}
-                onClick={handleTabClick(to)}
-              />
-            ))}
-          </div>
+      <div className="relative flex min-h-[56px] items-end px-1 pb-[env(safe-area-inset-bottom,0px)] pt-1">
+        <div className="flex min-w-0 flex-1 items-stretch">
+          {leftTabs.map(({ to, icon, key }) => (
+            <DockTab
+              key={to}
+              to={to}
+              icon={icon}
+              labelKey={`nav.${key}`}
+              active={isNavTabActive(pathname, to)}
+              onClick={handleTabClick(to)}
+            />
+          ))}
+        </div>
 
-          <Link
-            to={centerTab.to}
-            preload="intent"
-            onClick={handleTabClick(centerTab.to)}
-            aria-label={t(`nav.${centerTab.key}`)}
-            aria-current={aiActive ? "page" : undefined}
-            className="relative mx-0.5 flex w-[62px] shrink-0 flex-col items-center justify-end pb-0.5"
+        <Link
+          to={centerTab.to}
+          preload="intent"
+          onClick={handleTabClick(centerTab.to)}
+          aria-label={t(`nav.${centerTab.key}`)}
+          aria-current={aiActive ? "page" : undefined}
+          className="relative mx-0.5 flex w-[62px] shrink-0 flex-col items-center justify-end pb-0.5"
+        >
+          <span
+            className={cn(
+              "grid size-[46px] place-items-center rounded-full border-2 shadow-soft transition-transform active:scale-95",
+              aiActive
+                ? "border-foreground bg-foreground text-background"
+                : "border-border bg-foreground text-background",
+            )}
           >
-            <span
-              className={cn(
-                "grid size-[46px] place-items-center rounded-full border-2 shadow-soft transition-transform active:scale-95",
-                aiActive
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-border bg-foreground text-background",
-              )}
-            >
-              <CenterIcon className="size-[22px]" strokeWidth={2.25} />
-            </span>
-            <span
-              className={cn(
-                "mt-1 max-w-full truncate text-[10px] font-semibold leading-none",
-                aiActive ? "text-foreground" : "text-muted-foreground",
-              )}
-              suppressHydrationWarning
-            >
-              {t(`nav.${centerTab.key}`)}
-            </span>
-          </Link>
+            <CenterIcon className="size-[22px]" strokeWidth={2.25} />
+          </span>
+          <span
+            className={cn(
+              "mt-1 max-w-full truncate text-[10px] font-semibold leading-none",
+              aiActive ? "text-foreground" : "text-muted-foreground",
+            )}
+            suppressHydrationWarning
+          >
+            {t(`nav.${centerTab.key}`)}
+          </span>
+        </Link>
 
-          <div className="flex min-w-0 flex-1 items-stretch">
-            {rightTabs.map(({ to, icon, key }) => (
-              <DockTab
-                key={to}
-                to={to}
-                icon={icon}
-                labelKey={`nav.${key}`}
-                active={isNavTabActive(pathname, to)}
-                onClick={handleTabClick(to)}
-              />
-            ))}
-          </div>
+        <div className="flex min-w-0 flex-1 items-stretch">
+          {rightTabs.map(({ to, icon, key }) => (
+            <DockTab
+              key={to}
+              to={to}
+              icon={icon}
+              labelKey={`nav.${key}`}
+              active={isNavTabActive(pathname, to)}
+              onClick={handleTabClick(to)}
+            />
+          ))}
         </div>
       </div>
     </nav>

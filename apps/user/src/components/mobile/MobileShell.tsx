@@ -36,7 +36,7 @@ export function MobileShell({
         )}
         style={
           isMap
-            ? ({ "--mobile-dock-offset": "calc(4.75rem + env(safe-area-inset-bottom, 0px))" } as React.CSSProperties)
+            ? ({ "--mobile-dock-offset": "calc(3.5rem + env(safe-area-inset-bottom, 0px))" } as React.CSSProperties)
             : undefined
         }
       >

@@ -52,7 +52,7 @@ export function MobilePageShell({
       <div
         className={cn(
           "flex flex-col lg:min-h-full",
-          showDock ? "min-h-[calc(100dvh-4.75rem-env(safe-area-inset-bottom,0px))]" : "min-h-dvh",
+          showDock ? "min-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px))]" : "min-h-dvh",
           className,
         )}
       >

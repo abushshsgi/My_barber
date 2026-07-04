@@ -56,7 +56,7 @@ export function ScrollToTopIndicator({ className }: Props) {
           aria-label={t("scrollToTop.label", { defaultValue: "Yuqoriga" })}
           className={cn(
             "fixed z-40 grid place-items-center rounded-full border border-border bg-background/95 text-foreground shadow-[0_10px_32px_-12px_rgba(0,0,0,0.35)] backdrop-blur-md transition-transform active:scale-95",
-            "bottom-[calc(4.75rem+env(safe-area-inset-bottom)+12px)] right-4",
+            "bottom-[calc(3.5rem+env(safe-area-inset-bottom)+12px)] right-4",
             "lg:bottom-8 lg:right-8",
             className,
           )}

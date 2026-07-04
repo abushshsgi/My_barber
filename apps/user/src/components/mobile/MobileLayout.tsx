@@ -29,13 +29,13 @@ export function MobileLayout({ children, unreadCount = 0 }: Props) {
           className={cn(
             "mx-auto w-full max-w-[480px] flex-1",
             isMap &&
-              "fixed inset-x-0 top-0 bottom-[calc(68px+env(safe-area-inset-bottom,0px))] z-10 max-w-none flex-none overflow-hidden overscroll-none",
+              "fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] z-10 max-w-none flex-none overflow-hidden overscroll-none",
             isViewportLocked &&
               !isMap &&
               "fixed inset-x-0 top-0 z-10 h-[100dvh] overflow-hidden overscroll-none",
             isAiStyle && "h-[100dvh]",
             isFullBleed && !isViewportLocked && "pb-0",
-            !isFullBleed && "pb-[calc(68px+env(safe-area-inset-bottom)+16px)]",
+            !isFullBleed && "pb-[calc(3.5rem+env(safe-area-inset-bottom))]",
           )}
         >
           {children}
