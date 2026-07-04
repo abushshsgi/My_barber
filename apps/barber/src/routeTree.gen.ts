@@ -19,6 +19,7 @@ import { Route as SalonJoinRouteImport } from './routes/salon.join'
 import { Route as SalonCreateRouteImport } from './routes/salon.create'
 import { Route as MybarberSetupRouteImport } from './routes/mybarber.setup'
 import { Route as IndependentSetupRouteImport } from './routes/independent.setup'
+import { Route as BarberWithdrawalsRouteImport } from './routes/barber.withdrawals'
 import { Route as BarberStatsRouteImport } from './routes/barber.stats'
 import { Route as BarberSettingsRouteImport } from './routes/barber.settings'
 import { Route as BarberServicesRouteImport } from './routes/barber.services'
@@ -102,6 +103,11 @@ const IndependentSetupRoute = IndependentSetupRouteImport.update({
   id: '/independent/setup',
   path: '/independent/setup',
   getParentRoute: () => rootRouteImport,
+} as any)
+const BarberWithdrawalsRoute = BarberWithdrawalsRouteImport.update({
+  id: '/withdrawals',
+  path: '/withdrawals',
+  getParentRoute: () => BarberRoute,
 } as any)
 const BarberStatsRoute = BarberStatsRouteImport.update({
   id: '/stats',
@@ -298,6 +304,7 @@ export interface FileRoutesByFullPath {
   '/barber/services': typeof BarberServicesRoute
   '/barber/settings': typeof BarberSettingsRoute
   '/barber/stats': typeof BarberStatsRouteWithChildren
+  '/barber/withdrawals': typeof BarberWithdrawalsRoute
   '/independent/setup': typeof IndependentSetupRoute
   '/mybarber/setup': typeof MybarberSetupRoute
   '/salon/create': typeof SalonCreateRoute
@@ -341,6 +348,7 @@ export interface FileRoutesByTo {
   '/barber/schedule': typeof BarberScheduleRoute
   '/barber/services': typeof BarberServicesRoute
   '/barber/settings': typeof BarberSettingsRoute
+  '/barber/withdrawals': typeof BarberWithdrawalsRoute
   '/independent/setup': typeof IndependentSetupRoute
   '/mybarber/setup': typeof MybarberSetupRoute
   '/salon/create': typeof SalonCreateRoute
@@ -385,6 +393,7 @@ export interface FileRoutesById {
   '/barber/services': typeof BarberServicesRoute
   '/barber/settings': typeof BarberSettingsRoute
   '/barber/stats': typeof BarberStatsRouteWithChildren
+  '/barber/withdrawals': typeof BarberWithdrawalsRoute
   '/independent/setup': typeof IndependentSetupRoute
   '/mybarber/setup': typeof MybarberSetupRoute
   '/salon/create': typeof SalonCreateRoute
@@ -432,6 +441,7 @@ export interface FileRouteTypes {
     | '/barber/services'
     | '/barber/settings'
     | '/barber/stats'
+    | '/barber/withdrawals'
     | '/independent/setup'
     | '/mybarber/setup'
     | '/salon/create'
@@ -475,6 +485,7 @@ export interface FileRouteTypes {
     | '/barber/schedule'
     | '/barber/services'
     | '/barber/settings'
+    | '/barber/withdrawals'
     | '/independent/setup'
     | '/mybarber/setup'
     | '/salon/create'
@@ -518,6 +529,7 @@ export interface FileRouteTypes {
     | '/barber/services'
     | '/barber/settings'
     | '/barber/stats'
+    | '/barber/withdrawals'
     | '/independent/setup'
     | '/mybarber/setup'
     | '/salon/create'
@@ -621,6 +633,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/independent/setup'
       preLoaderRoute: typeof IndependentSetupRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/barber/withdrawals': {
+      id: '/barber/withdrawals'
+      path: '/withdrawals'
+      fullPath: '/barber/withdrawals'
+      preLoaderRoute: typeof BarberWithdrawalsRouteImport
+      parentRoute: typeof BarberRoute
     }
     '/barber/stats': {
       id: '/barber/stats'
@@ -921,6 +940,7 @@ interface BarberRouteChildren {
   BarberServicesRoute: typeof BarberServicesRoute
   BarberSettingsRoute: typeof BarberSettingsRoute
   BarberStatsRoute: typeof BarberStatsRouteWithChildren
+  BarberWithdrawalsRoute: typeof BarberWithdrawalsRoute
   BarberIndexRoute: typeof BarberIndexRoute
   BarberSalonViewGalleryRoute: typeof BarberSalonViewGalleryRoute
   BarberSalonViewMembersRoute: typeof BarberSalonViewMembersRoute
@@ -950,6 +970,7 @@ const BarberRouteChildren: BarberRouteChildren = {
   BarberServicesRoute: BarberServicesRoute,
   BarberSettingsRoute: BarberSettingsRoute,
   BarberStatsRoute: BarberStatsRouteWithChildren,
+  BarberWithdrawalsRoute: BarberWithdrawalsRoute,
   BarberIndexRoute: BarberIndexRoute,
   BarberSalonViewGalleryRoute: BarberSalonViewGalleryRoute,
   BarberSalonViewMembersRoute: BarberSalonViewMembersRoute,

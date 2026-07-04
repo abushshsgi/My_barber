@@ -27,6 +27,8 @@ import {
   type BookingSettings,
   type DayForm,
   type ScheduleMembership,
+  WEEKDAYS,
+  WEEKDAY_SHORT,
 } from "@/lib/barber-schedule";
 import { apiFetch, apiJson, apiList, formatApiError } from "@/lib/api";
 import { SIGNUP_FLOW_PATH } from "@/lib/barber-flow-config";
@@ -267,35 +269,58 @@ function BarberSchedulePage() {
 
   return (
     <>
-      <div className="flex min-h-[calc(100dvh-3.5rem)] w-full flex-col pb-20 md:pb-0">
-        <header className="sticky top-14 z-[5] border-b border-border bg-background/95 backdrop-blur-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-6 lg:px-8">
-            <div className="min-w-0">
-              <h1 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">
-                Ish jadvali
-              </h1>
-              <p className="mt-0.5 truncate text-xs text-muted-foreground sm:text-sm">
-                {isAdvance
-                  ? "Oldindan bron — belgilangan kun va soatlarda"
-                  : "Har kunlik — ochilishdan yopilishgacha"}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="rounded-md border border-border px-2 py-0.5 text-[10px] font-medium sm:text-xs">
+      <div className="flex min-h-[calc(100dvh-3.5rem)] w-full flex-col lg:flex-row">
+        {/* Chap panel — hafta + bo'limlar */}
+        <aside className="shrink-0 border-b border-border bg-muted/30 lg:w-[300px] lg:border-b-0 lg:border-r">
+          <div className="p-4 sm:p-5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+              Ish vaqti
+            </p>
+            <h1 className="mt-1 font-heading text-2xl font-bold tracking-tight">Ish jadvali</h1>
+            <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+              {isAdvance
+                ? "Oldindan bron — faqat ochiq kun va soatlarda"
+                : "Har kuni ochiq vaqt oralig'ida bron qabul qilinadi"}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              <span className="rounded-full border border-border bg-background px-2.5 py-0.5 text-[10px] font-semibold">
                 {scope === "salon" ? "Salon" : "Mustaqil"}
               </span>
-              <span className="rounded-md bg-foreground px-2 py-0.5 text-[10px] font-semibold text-background sm:text-xs">
-                {isAdvance
-                  ? `${bookingSettings.advance_min_days}–${bookingSettings.advance_max_days} kun`
-                  : "Har kunlik"}
-              </span>
-              <span className="rounded-md border border-border px-2 py-0.5 text-[10px] tabular-nums text-muted-foreground sm:text-xs">
-                {workingDays}/7
+              <span className="rounded-full bg-foreground px-2.5 py-0.5 text-[10px] font-semibold text-background">
+                {workingDays}/7 kun ochiq
               </span>
             </div>
           </div>
 
-          <div className="flex gap-1 overflow-x-auto px-4 pb-2 sm:px-6 lg:px-8">
+          {/* Hafta ko'rinishi */}
+          <div className="grid grid-cols-7 gap-1 px-4 pb-4 lg:px-5">
+            {days.map((day) => {
+              const label = WEEKDAY_SHORT[day.weekday] ?? "?";
+              const open = !day.is_day_off;
+              return (
+                <div
+                  key={day.weekday}
+                  className={cn(
+                    "flex flex-col items-center rounded-xl border py-2 text-center transition-colors",
+                    open
+                      ? "border-foreground/20 bg-background shadow-sm"
+                      : "border-dashed border-border/80 bg-muted/40 opacity-60",
+                  )}
+                  title={open ? `${day.open_time} – ${day.close_time}` : "Dam olish"}
+                >
+                  <span className="text-[9px] font-bold uppercase text-muted-foreground">{label}</span>
+                  <span
+                    className={cn(
+                      "mt-0.5 size-2 rounded-full",
+                      open ? "bg-emerald-500" : "bg-muted-foreground/30",
+                    )}
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          <nav className="flex gap-1 overflow-x-auto px-4 pb-4 lg:flex-col lg:gap-1.5 lg:px-5 lg:pb-6">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const active = activeTab === tab.id;
@@ -308,107 +333,124 @@ function BarberSchedulePage() {
                   type="button"
                   onClick={() => switchTab(tab.id)}
                   className={cn(
-                    "inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-colors sm:text-sm",
+                    "inline-flex min-w-[7.5rem] shrink-0 items-center gap-2.5 rounded-xl border px-3 py-3 text-left text-sm font-semibold transition-all lg:min-w-0 lg:w-full",
                     active
-                      ? "bg-foreground text-background"
-                      : "bg-muted/50 text-muted-foreground hover:text-foreground",
+                      ? "border-foreground bg-foreground text-background shadow-md"
+                      : "border-border bg-background text-muted-foreground hover:border-foreground/25 hover:text-foreground",
                   )}
                 >
-                  <Icon className="size-3.5 sm:size-4" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                  <span className="sm:hidden">{tab.shortLabel}</span>
-                  {dirty ? <span className="size-1.5 rounded-full bg-destructive" /> : null}
+                  <Icon className="size-4 shrink-0" />
+                  <span className="min-w-0 flex-1 truncate">{tab.label}</span>
+                  {dirty ? <span className="size-2 shrink-0 rounded-full bg-destructive" /> : null}
                 </button>
               );
             })}
-          </div>
-        </header>
+          </nav>
 
-        <div className="flex-1 px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
-          {!fullyReady && activationSteps.services_ok && !activationSteps.schedule_ok ? (
-            <div className="mb-4 rounded-lg border border-primary/35 bg-primary/5 px-4 py-3 text-sm">
-              Jadvalni to&apos;ldiring va saqlang.
-            </div>
-          ) : null}
-
-          {scheduleBlocked ? (
-            <div className="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
-              <p className="font-medium">Salon a&apos;zoligi kerak</p>
-              <Link to={SIGNUP_FLOW_PATH.employee} className="mt-1 inline-flex items-center gap-1 underline">
-                Salonga qo&apos;shilish <ArrowRight className="size-3.5" />
-              </Link>
-            </div>
-          ) : null}
-
-          {loading ? (
-            <div className="flex min-h-[30vh] items-center justify-center">
-              <Loader2 className="size-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <div className="mx-auto w-full max-w-5xl">
-              {activeTab === "mode" ? (
-                <BookingModePanel
-                  settings={bookingSettings}
-                  onChange={setBookingSettings}
-                  disabled={scheduleBlocked || savingMode}
-                />
-              ) : null}
-
-              {activeTab === "weekly" ? (
-                <WorkingHoursEditor
-                  days={days}
-                  onChange={setDays}
-                  disabled={scheduleBlocked || savingSchedule}
-                />
-              ) : null}
-
-              {activeTab === "advance" && isAdvance ? (
-                <AdvanceDayPlanner
-                  scope={scope}
-                  membershipId={membershipId}
-                  weeklyDays={days}
-                  advanceMinDays={bookingSettings.advance_min_days}
-                  advanceMaxDays={bookingSettings.advance_max_days}
-                  disabled={scheduleBlocked}
-                />
-              ) : null}
-
-              {activeTab === "exceptions" && !isAdvance ? (
-                <ScheduleExceptionsEditor
-                  scope={scope}
-                  membershipId={membershipId}
-                  disabled={scheduleBlocked || savingSchedule}
-                />
-              ) : null}
-            </div>
-          )}
-
-          <p className="mx-auto mt-8 max-w-5xl text-center text-xs text-muted-foreground sm:text-sm">
-            <Link to="/barber/calendar" className="font-medium text-foreground hover:underline">
-              Kalendarda bronlarni ko&apos;rish
+          <div className="hidden border-t border-border p-4 lg:block lg:p-5">
+            <Link
+              to="/barber/calendar"
+              className="flex items-center justify-between rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-medium transition-colors hover:bg-muted/50"
+            >
+              Kalendarda bronlar
+              <ArrowRight className="size-4" />
             </Link>
-          </p>
-        </div>
-
-        {activeSave ? (
-          <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 p-3 backdrop-blur-sm md:static md:mt-auto md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
-            <div className="mx-auto flex max-w-5xl justify-end px-1 md:px-0">
-              <Button
-                type="button"
-                onClick={activeSave.onClick}
-                disabled={scheduleBlocked || activeSave.saving || activeSave.disabled}
-                className="h-10 w-full gap-2 rounded-lg sm:w-auto sm:px-6"
-              >
-                {activeSave.saving ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Save className="size-4" />
-                )}
-                {activeSave.label}
-              </Button>
-            </div>
           </div>
-        ) : null}
+        </aside>
+
+        {/* O'ng — kontent */}
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-10 lg:py-8">
+            {!fullyReady && activationSteps.services_ok && !activationSteps.schedule_ok ? (
+              <div className="mb-5 rounded-2xl border border-primary/35 bg-primary/5 px-4 py-3 text-sm">
+                Jadvalni to&apos;ldiring va saqlang — mijozlar bron qila oladi.
+              </div>
+            ) : null}
+
+            {scheduleBlocked ? (
+              <div className="mb-5 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+                <p className="font-medium">Salon a&apos;zoligi kerak</p>
+                <Link to={SIGNUP_FLOW_PATH.employee} className="mt-1 inline-flex items-center gap-1 underline">
+                  Salonga qo&apos;shilish <ArrowRight className="size-3.5" />
+                </Link>
+              </div>
+            ) : null}
+
+            {loading ? (
+              <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3">
+                <Loader2 className="size-8 animate-spin text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Jadval yuklanmoqda…</p>
+              </div>
+            ) : (
+              <div className="mx-auto w-full max-w-3xl">
+                <div className="rounded-2xl border border-border bg-card p-1 shadow-card">
+                  <div className="rounded-[14px] bg-background p-4 sm:p-6">
+                    {activeTab === "mode" ? (
+                      <BookingModePanel
+                        settings={bookingSettings}
+                        onChange={setBookingSettings}
+                        disabled={scheduleBlocked || savingMode}
+                      />
+                    ) : null}
+
+                    {activeTab === "weekly" ? (
+                      <WorkingHoursEditor
+                        days={days}
+                        onChange={setDays}
+                        disabled={scheduleBlocked || savingSchedule}
+                      />
+                    ) : null}
+
+                    {activeTab === "advance" && isAdvance ? (
+                      <AdvanceDayPlanner
+                        scope={scope}
+                        membershipId={membershipId}
+                        weeklyDays={days}
+                        advanceMinDays={bookingSettings.advance_min_days}
+                        advanceMaxDays={bookingSettings.advance_max_days}
+                        disabled={scheduleBlocked}
+                      />
+                    ) : null}
+
+                    {activeTab === "exceptions" && !isAdvance ? (
+                      <ScheduleExceptionsEditor
+                        scope={scope}
+                        membershipId={membershipId}
+                        disabled={scheduleBlocked || savingSchedule}
+                      />
+                    ) : null}
+                  </div>
+                </div>
+
+                <p className="mt-6 text-center text-xs text-muted-foreground lg:hidden">
+                  <Link to="/barber/calendar" className="font-medium text-foreground hover:underline">
+                    Kalendarda bronlarni ko&apos;rish
+                  </Link>
+                </p>
+              </div>
+            )}
+          </div>
+
+          {activeSave ? (
+            <div className="sticky bottom-0 border-t border-border bg-background/95 p-4 backdrop-blur-md">
+              <div className="mx-auto flex max-w-3xl justify-end">
+                <Button
+                  type="button"
+                  onClick={activeSave.onClick}
+                  disabled={scheduleBlocked || activeSave.saving || activeSave.disabled}
+                  className="h-11 w-full gap-2 rounded-xl sm:w-auto sm:px-8"
+                >
+                  {activeSave.saving ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Save className="size-4" />
+                  )}
+                  {activeSave.label}
+                </Button>
+              </div>
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <UnsavedChangesDialog blocker={blocker} />

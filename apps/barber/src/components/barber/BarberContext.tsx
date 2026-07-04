@@ -1491,8 +1491,9 @@ export function useBarberContext() {
   return ctx;
 }
 
+/** UZS — minglik ajratgich nuqta: 1.000 · 10.000 · 1.000.000 so'm */
 export function formatUZS(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M so'm`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K so'm`;
-  return `${n} so'm`;
+  const rounded = Math.round(Number(n) || 0);
+  const grouped = new Intl.NumberFormat("de-DE").format(rounded);
+  return `${grouped} so'm`;
 }

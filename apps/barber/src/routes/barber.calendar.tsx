@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Clock,
   Loader2,
+  TrendingUp,
   Users,
 } from "lucide-react";
 import { formatUZS, type Booking } from "@/components/barber/BarberContext";
@@ -37,12 +38,12 @@ const HOUR_LABELS = Array.from(
 const GRID_HEIGHT = (CALENDAR_END_HOUR - CALENDAR_START_HOUR) * CALENDAR_PX_PER_HOUR;
 
 const STATUS_BLOCK: Record<Booking["status"], string> = {
-  pending: "border-foreground/25 bg-muted/90 text-foreground",
-  accepted: "border-foreground/35 bg-foreground/10 text-foreground",
-  in_progress: "border-foreground bg-foreground text-background shadow-sm",
-  completed: "border-border bg-muted/50 text-muted-foreground",
-  cancelled: "border-border bg-muted/40 text-muted-foreground",
-  rejected: "border-border bg-muted/40 text-muted-foreground",
+  pending: "border-amber-400/50 bg-amber-50 text-amber-950 dark:bg-amber-950/30 dark:text-amber-100",
+  accepted: "border-sky-400/50 bg-sky-50 text-sky-950 dark:bg-sky-950/30 dark:text-sky-100",
+  in_progress: "border-foreground bg-foreground text-background shadow-md ring-2 ring-foreground/20",
+  completed: "border-border/80 bg-muted/60 text-muted-foreground",
+  cancelled: "border-border bg-muted/30 text-muted-foreground line-through opacity-60",
+  rejected: "border-border bg-muted/30 text-muted-foreground opacity-60",
 };
 
 function CalendarPage() {
@@ -56,6 +57,13 @@ function CalendarPage() {
   const weekBookings = useMemo(
     () => filterBookingsForWeek(bookings, weekDays),
     [bookings, weekDays],
+  );
+  const weekRevenue = useMemo(
+    () =>
+      weekBookings
+        .filter((b) => b.status === "completed" || b.status === "in_progress" || b.status === "accepted")
+        .reduce((s, b) => s + b.price, 0),
+    [weekBookings],
   );
   const byDay = useMemo(
     () => groupBookingsByDay(weekBookings, weekDays),
@@ -93,12 +101,26 @@ function CalendarPage() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
-        <StatChip
-          icon={CalendarDays}
-          label="Shu hafta"
-          value={weekBookings.length}
-        />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-foreground/15 bg-gradient-to-br from-foreground to-foreground/90 p-4 text-background shadow-lg sm:col-span-1">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-background/70">
+                Shu hafta
+              </p>
+              <p className="mt-1 font-heading text-3xl font-bold tabular-nums">{weekBookings.length}</p>
+              <p className="mt-0.5 text-sm text-background/75">mijoz · bron</p>
+            </div>
+            <CalendarDays className="size-5 shrink-0 stroke-[1.5] text-background/60" />
+          </div>
+          <div className="mt-4 flex items-center gap-2 border-t border-background/15 pt-3">
+            <TrendingUp className="size-4 text-background/70" />
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-background/60">Xizmatlar jami</p>
+              <p className="font-heading text-lg font-semibold tabular-nums">{formatUZS(weekRevenue)}</p>
+            </div>
+          </div>
+        </div>
         <StatChip
           icon={Users}
           label="Bugungi mijozlar"
@@ -205,8 +227,8 @@ function CalendarPage() {
       ) : (
         <>
           {/* Desktop week grid */}
-          <div className="hidden overflow-hidden rounded-xl border border-border bg-card shadow-card lg:block">
-            <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b border-border bg-muted/30">
+          <div className="hidden overflow-hidden rounded-2xl border border-border bg-card shadow-card lg:block">
+            <div className="grid grid-cols-[3.75rem_repeat(7,minmax(0,1fr))] border-b border-border bg-muted/40">
               <div className="px-2 py-3" />
               {weekDays.map((day) => (
                 <button
@@ -215,8 +237,8 @@ function CalendarPage() {
                   onClick={() => setSelectedDayKey(day.key)}
                   className={cn(
                     "border-l border-border px-2 py-3 text-center transition-colors",
-                    day.isToday && "bg-foreground text-background",
-                    selectedDayKey === day.key && !day.isToday && "bg-muted/60",
+                    day.isToday && "bg-foreground text-background shadow-inner",
+                    selectedDayKey === day.key && !day.isToday && "bg-muted",
                   )}
                 >
                   <div className="text-[10px] font-medium uppercase tracking-wider opacity-80">
@@ -385,7 +407,7 @@ function CalendarBookingBlock({
       params={{ bookingId: b.id }}
       title={`${b.client} — ${b.service}`}
       className={cn(
-        "absolute inset-x-1 z-10 overflow-hidden rounded-md border px-1.5 py-1 transition-opacity hover:z-20 hover:opacity-95",
+        "absolute inset-x-1 z-10 overflow-hidden rounded-lg border px-1.5 py-1 shadow-sm transition-all hover:z-20 hover:scale-[1.01] hover:shadow-md",
         STATUS_BLOCK[b.status],
         b.status === "in_progress" && "ring-1 ring-background/30",
       )}
@@ -403,6 +425,11 @@ function CalendarBookingBlock({
           </p>
           {!compact ? (
             <p className="truncate text-[10px] opacity-75">{b.service}</p>
+          ) : null}
+          {!compact ? (
+            <p className="truncate text-[10px] font-semibold tabular-nums opacity-90">
+              {formatUZS(b.price)}
+            </p>
           ) : null}
           <p className={cn("tabular-nums opacity-80", compact ? "text-[9px]" : "text-[10px]")}>
             {b.time}

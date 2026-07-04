@@ -21,7 +21,6 @@ import { StatusPill, UserAvatar } from "@/components/barber/primitives";
 import { getFlowMeta } from "@/lib/barber-flow-config";
 import {
   bookingEarningsAt,
-  filterCompletedBookingsByRange,
   isBookingScheduledToday,
   rangeToIsoParams,
 } from "@/lib/finance-range";
@@ -92,23 +91,24 @@ function BarberDashboard() {
     return ids.size;
   }, [bookings]);
 
-  const localMonthCompleted = useMemo(
-    () => filterCompletedBookingsByRange(bookings, "Oy"),
+  const localAllCompleted = useMemo(
+    () => bookings.filter((b) => b.status === "completed"),
     [bookings],
   );
-  const localMonthCash = localMonthCompleted
+  const localAllCash = localAllCompleted
     .filter((b) => b.payment_method === "cash")
     .reduce((s, b) => s + b.price, 0);
-  const localMonthOnline = localMonthCompleted
+  const localAllOnline = localAllCompleted
     .filter((b) => b.payment_method === "online")
     .reduce((s, b) => s + b.price, 0);
-  const apiMonthTotal = Number(monthFinance?.total_income ?? 0);
-  const apiMonthCash = Number(monthFinance?.cash_total ?? 0);
-  const apiMonthOnline = Number(monthFinance?.online_total ?? 0);
-  const useLocalMonth = apiMonthTotal <= 0 && localMonthCompleted.length > 0;
-  const monthCash = useLocalMonth ? localMonthCash : apiMonthCash;
-  const monthOnline = useLocalMonth ? localMonthOnline : apiMonthOnline;
-  const earnings = useLocalMonth ? localMonthCash + localMonthOnline : apiMonthTotal;
+  const localAllTotal = localAllCash + localAllOnline;
+  const apiAllTimeTotal = Number(monthFinance?.all_time_total_income ?? 0);
+  const apiAllTimeCash = Number(monthFinance?.all_time_cash_total ?? 0);
+  const apiAllTimeOnline = Number(monthFinance?.all_time_online_total ?? 0);
+  const useLocalAllTime = apiAllTimeTotal <= 0 && localAllCompleted.length > 0;
+  const allTimeCash = useLocalAllTime ? localAllCash : apiAllTimeCash;
+  const allTimeOnline = useLocalAllTime ? localAllOnline : apiAllTimeOnline;
+  const earnings = useLocalAllTime ? localAllTotal : apiAllTimeTotal;
 
   const active = bookings.find((b) => b.status === "in_progress");
   const avgRating = reviews.reduce((s, r) => s + r.rating, 0) / Math.max(1, reviews.length);
@@ -146,7 +146,7 @@ function BarberDashboard() {
           icon={<TrendingUp className="size-4" />}
           label="Daromad"
           value={formatUZS(earnings)}
-          hint={`Bu oy · naqd ${formatUZS(monthCash)} · onlayn ${formatUZS(monthOnline)}`}
+          hint={`Butun davr · naqd ${formatUZS(allTimeCash)} · onlayn ${formatUZS(allTimeOnline)}`}
         />
         <KPI
           icon={<Users className="size-4" />}

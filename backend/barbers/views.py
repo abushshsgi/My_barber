@@ -639,6 +639,12 @@ class MyBarberFinanceSummaryView(APIView):
         all_time_expenses = (
             BarberExpense.objects.filter(barber=barber).aggregate(t=Sum("amount"))["t"] or 0
         )
+        all_time_completed = booking_queryset_compat(
+            completed_bookings_qs(
+                Booking.objects.filter(barber=barber)
+            )
+        )
+        all_time_breakdown = payment_breakdown(all_time_completed)
 
         transactions = []
         for b in completed_base.order_by("-start_at")[:200]:
@@ -703,6 +709,9 @@ class MyBarberFinanceSummaryView(APIView):
                 "expense_total": str(expenses_total),
                 "net_total": str(income_total - expenses_total),
                 "all_time_net_total": str(all_time_income - all_time_expenses),
+                "all_time_total_income": str(all_time_breakdown["total_income"]),
+                "all_time_cash_total": str(all_time_breakdown["cash_total"]),
+                "all_time_online_total": str(all_time_breakdown["online_total"]),
                 "transactions": transactions,
                 "daily": daily,
             }

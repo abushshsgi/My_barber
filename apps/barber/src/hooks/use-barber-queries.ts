@@ -382,6 +382,9 @@ export function useBarberFinanceQuery(
         expense_total: string | number;
         net_total: string | number;
         all_time_net_total?: string | number;
+        all_time_total_income?: string | number;
+        all_time_cash_total?: string | number;
+        all_time_online_total?: string | number;
         transactions: Array<{
           id: string;
           date: string;

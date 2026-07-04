@@ -1,8 +1,12 @@
 /** Minimal xizmat narxi (so'm) — barber panel va API. */
 export const MIN_SERVICE_PRICE_UZS = 10_000;
 
+function formatSomGrouped(n: number): string {
+  return new Intl.NumberFormat("de-DE").format(Math.round(n));
+}
+
 export function formatSom(n: number): string {
-  return new Intl.NumberFormat("uz-UZ").format(Math.round(n)) + " so'm";
+  return `${formatSomGrouped(n)} so'm`;
 }
 
 /** Matndan faqat raqamlarni ajratib, butun son qaytaradi. */
@@ -17,13 +21,13 @@ export function parseSomDigits(value: string): number {
 export function formatSomDigits(digits: string): string {
   const n = parseSomDigits(digits);
   if (n === 0) return "";
-  return new Intl.NumberFormat("uz-UZ").format(n);
+  return formatSomGrouped(n);
 }
 
 /** Input placeholder / yordamchi matn. */
 export function formatSomInputDisplay(n: number): string {
   if (!n) return "";
-  return new Intl.NumberFormat("uz-UZ").format(Math.round(n));
+  return formatSomGrouped(n);
 }
 
 /** Frontend validatsiya — xato matni yoki null (OK). */

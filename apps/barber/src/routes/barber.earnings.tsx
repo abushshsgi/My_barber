@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Wallet, TrendingUp, Download, ArrowDownToLine, Receipt, Loader2 } from "lucide-react";
+import { Wallet, TrendingUp, Download, ArrowDownToLine, History, Loader2 } from "lucide-react";
 import { formatUZS, useBarberContext } from "@/components/barber/BarberContext";
 import { PageHeader, StatCard } from "@/components/barber/primitives";
 import { EarningsPageSkeleton } from "@/components/barber/EarningsPageSkeleton";
@@ -33,6 +33,12 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { readOnboardingStatusCache } from "@/lib/onboarding-status-cache";
+import {
+  filterPayoutsInRange,
+  payoutStatusClass,
+  payoutStatusLabel,
+  sumPaidPayouts,
+} from "@/lib/payout-status";
 
 export const Route = createFileRoute("/barber/earnings")({
   loader: ({ context: { queryClient } }) => {
@@ -72,9 +78,10 @@ function EarningsPage() {
   const totalIncome = Number(finance?.total_income ?? onlineIncome + cashTotal);
   const cashCount = finance?.cash_count ?? 0;
   const onlineCount = finance?.online_count ?? 0;
-  const rangeExpenses = Number(finance?.expense_total ?? 0);
-  const net = Number(finance?.net_total ?? 0);
-  const transactions = finance?.transactions ?? [];
+  const bookingTransactions = useMemo(
+    () => (finance?.transactions ?? []).filter((t) => t.kind === "booking"),
+    [finance?.transactions],
+  );
 
   const { data: balance, isLoading: balanceLoading } = usePayoutBalanceQuery(fullyReady);
   const { data: payouts, isLoading: payoutsLoading } = useBarberPayoutsQuery(fullyReady);
@@ -94,8 +101,7 @@ function EarningsPage() {
 
   const exportCsv = () => {
     const header = "Sana,Mijoz,Xizmat,To'lov,Summa\n";
-    const rows = transactions
-      .filter((t) => t.kind === "booking")
+    const rows = bookingTransactions
       .map((t) =>
         [
           t.date ?? "",
@@ -157,6 +163,12 @@ function EarningsPage() {
   const rangeHint = range.toLowerCase();
   const minWithdraw = balance ? Number(balance.min_withdrawal) : 50000;
   const payoutList = payouts ?? [];
+  const rangePayouts = useMemo(
+    () => filterPayoutsInRange(payoutList, rangeParams.start, rangeParams.end),
+    [payoutList, rangeParams.start, rangeParams.end],
+  );
+  const withdrawnInRange = sumPaidPayouts(rangePayouts);
+  const totalWithdrawnAll = sumPaidPayouts(payoutList);
   const balanceValDisplay = balancePending ? "—" : formatUZS(balanceVal);
 
   return (
@@ -169,7 +181,7 @@ function EarningsPage() {
             <button
               type="button"
               onClick={exportCsv}
-              disabled={transactions.length === 0}
+              disabled={bookingTransactions.length === 0}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-card text-sm font-medium disabled:opacity-50"
             >
               <Download className="size-4" />
@@ -295,10 +307,10 @@ function EarningsPage() {
             hint={`${onlineCount} ta · yechish mumkin`}
           />
           <StatCard
-            icon={<Receipt className="size-4" />}
-            label="Xarajatlar"
-            value={formatUZS(rangeExpenses)}
-            hint={`${rangeHint} · sof onlayn ${formatUZS(net)}`}
+            icon={<History className="size-4" />}
+            label="Yechilgan pul"
+            value={formatUZS(withdrawnInRange)}
+            hint={`${rangeHint} · jami ${formatUZS(totalWithdrawnAll)}`}
           />
         </div>
       )}
@@ -347,23 +359,57 @@ function EarningsPage() {
         </div>
       </div>
 
-      {payoutList.length > 0 ? (
-        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-card">
-          <div className="px-5 py-4 border-b border-border">
-            <h2 className="font-heading text-lg font-semibold">Pul yechish tarixi</h2>
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-card">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
+          <div>
+            <h2 className="font-heading text-lg font-semibold">Onlayn pul yechish tarixi</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Karta yoki hamyonga yuborilgan onlayn to&apos;lovlar
+            </p>
           </div>
-          {payoutList.map((p) => (
+          <Link
+            to="/barber/withdrawals"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted/50"
+          >
+            To&apos;liq tarix
+            <ArrowDownToLine className="size-3.5" />
+          </Link>
+        </div>
+        {payoutsLoading ? (
+          <div className="flex items-center justify-center gap-2 px-5 py-10 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            Tarix yuklanmoqda…
+          </div>
+        ) : payoutList.length === 0 ? (
+          <div className="px-5 py-10 text-center text-sm text-muted-foreground">
+            Hali onlayn pul yechilmagan. Onlayn to&apos;lovlar kelgach, yuqoridagi &quot;Pul yechish&quot; orqali so&apos;rov yuboring.
+          </div>
+        ) : (
+          payoutList.slice(0, 8).map((p) => (
             <div
               key={p.id}
-              className="grid grid-cols-12 gap-4 px-5 py-3 items-center border-b border-border last:border-b-0"
+              className="grid grid-cols-12 gap-4 border-b border-border px-5 py-3 items-center last:border-b-0 hover:bg-muted/20"
             >
-              <div className="col-span-4 text-sm">{p.created_at.slice(0, 10)}</div>
-              <div className="col-span-4 text-sm font-medium">{formatUZS(Number(p.amount))}</div>
-              <div className="col-span-4 text-sm text-muted-foreground capitalize">{p.status}</div>
+              <div className="col-span-4 text-sm text-muted-foreground">
+                {formatFinanceDate(p.created_at)}
+              </div>
+              <div className="col-span-4 text-sm font-semibold tabular-nums">
+                {formatUZS(Number(p.amount))}
+              </div>
+              <div className="col-span-4">
+                <span
+                  className={cn(
+                    "inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold",
+                    payoutStatusClass(p.status),
+                  )}
+                >
+                  {payoutStatusLabel(p.status)}
+                </span>
+              </div>
             </div>
-          ))}
-        </div>
-      ) : null}
+          ))
+        )}
+      </div>
 
       <div className="rounded-xl border border-border bg-card overflow-hidden shadow-card">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
@@ -383,12 +429,12 @@ function EarningsPage() {
             <Loader2 className="size-4 animate-spin" />
             Tranzaksiyalar yuklanmoqda…
           </div>
-        ) : transactions.length === 0 ? (
+        ) : bookingTransactions.length === 0 ? (
           <div className="px-5 py-10 text-center text-sm text-muted-foreground">
             Tanlangan davrda tranzaksiyalar yo&apos;q.
           </div>
         ) : (
-          transactions.map((t) => {
+          bookingTransactions.map((t) => {
             const amount = Number(t.amount);
             return (
               <div
@@ -402,15 +448,8 @@ function EarningsPage() {
                 <div className="col-span-3 text-sm text-muted-foreground truncate">{t.service}</div>
                 <div className="col-span-2 text-sm">{paymentLabel(t.payment_method)}</div>
                 <div className="col-span-2">
-                  <span
-                    className={cn(
-                      "inline-flex items-center rounded-md border px-2 py-0.5 text-xs",
-                      t.kind === "booking" &&
-                        "bg-foreground/10 text-foreground border-foreground/20",
-                      t.kind === "expense" && "bg-muted text-muted-foreground border-border",
-                    )}
-                  >
-                    {t.kind === "booking" ? "Bron" : t.kind === "expense" ? "Xarajat" : t.status}
+                  <span className="inline-flex items-center rounded-md border border-foreground/20 bg-foreground/10 px-2 py-0.5 text-xs text-foreground">
+                    Bron
                   </span>
                 </div>
                 <div
