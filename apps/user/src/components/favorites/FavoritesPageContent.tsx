@@ -80,6 +80,8 @@ export function FavoriteSalonsPanel({
     return (
       <PageSpotlightEmpty
         borderless={borderless}
+        centered
+        centeredMinHeightClass="flex min-h-[calc(100dvh-15rem-env(safe-area-inset-top,0px))] flex-col justify-center lg:min-h-0 lg:block lg:py-14"
         icon={Heart}
         tone="warm"
         title={t("favorites.empty")}
@@ -117,6 +119,8 @@ export function FavoriteStylistsPanel({ borderless = false }: { borderless?: boo
     return (
       <PageSpotlightEmpty
         borderless={borderless}
+        centered
+        centeredMinHeightClass="flex min-h-[calc(100dvh-15rem-env(safe-area-inset-top,0px))] flex-col justify-center lg:min-h-0 lg:block lg:py-14"
         icon={Award}
         tone="cool"
         title={t("favoriteStylists.empty")}

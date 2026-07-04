@@ -101,6 +101,7 @@ function ReviewsBody({
     return (
       <PageSpotlightEmpty
         borderless
+        centered
         icon={Star}
         tone="cool"
         title={t("reviews.empty")}

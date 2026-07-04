@@ -9,6 +9,10 @@ type Props = {
   className?: string;
   tone?: "warm" | "cool" | "neutral";
   borderless?: boolean;
+  /** Mobil bo'sh holat — vertikal markazda (desktopda oddiy). */
+  centered?: boolean;
+  /** centered uchun min-height override (masalan tab qatori bor sahifalar). */
+  centeredMinHeightClass?: string;
 };
 
 const toneRing: Record<NonNullable<Props["tone"]>, string> = {
@@ -25,14 +29,19 @@ export function PageSpotlightEmpty({
   className,
   tone = "neutral",
   borderless = false,
+  centered = false,
+  centeredMinHeightClass,
 }: Props) {
   return (
     <div
       className={cn(
         "relative overflow-hidden text-center",
-        borderless
-          ? "px-2 py-8"
-          : "rounded-[28px] border border-border bg-background px-6 py-14 lg:px-10 lg:py-16",
+        borderless && !centered && "px-2 py-8",
+        borderless && centered && "px-4 py-0",
+        !borderless && "rounded-[28px] border border-border bg-background px-6 py-14 lg:px-10 lg:py-16",
+        centered &&
+          (centeredMinHeightClass ??
+            "flex min-h-[calc(100dvh-11rem-env(safe-area-inset-top,0px))] flex-col justify-center lg:min-h-0 lg:block lg:py-14"),
         className,
       )}
     >
