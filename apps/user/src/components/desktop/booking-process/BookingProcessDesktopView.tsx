@@ -32,7 +32,8 @@ type Phase =
   | "done"
   | "cancelled";
 
-const CARD = "rounded-2xl border border-border bg-background p-6 shadow-sm";
+const CARD =
+  "rounded-2xl border border-border/80 bg-background p-6 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.08)]";
 
 function getPhase(booking: BookingItem): Phase {
   if (booking.status === "cancelled") return "cancelled";
@@ -155,16 +156,16 @@ function DesktopQrCard({ booking }: { booking: BookingItem }) {
 function DesktopTimerCard({ booking }: { booking: BookingItem }) {
   const timer = useLiveBookingTimer(booking);
   const live = booking.status === "in_progress";
-  const radius = 68;
-  const stroke = 8;
+  const radius = 44;
+  const stroke = 5;
   const c = 2 * Math.PI * radius;
   const size = radius * 2 + stroke * 2;
   const dashOffset = c * (1 - timer.progress / 100);
 
   return (
     <CheckoutCard title={live ? "Xizmat vaqti" : "Jami vaqt"}>
-      <div className="flex flex-col items-center py-2">
-        <div className="relative" style={{ width: size, height: size }}>
+      <div className="flex flex-wrap items-center gap-8">
+        <div className="relative shrink-0" style={{ width: size, height: size }}>
           <svg width={size} height={size} className="-rotate-90" viewBox={`0 0 ${size} ${size}`}>
             <circle
               cx={size / 2}
@@ -189,13 +190,27 @@ function DesktopTimerCard({ booking }: { booking: BookingItem }) {
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="font-mono text-4xl font-bold tabular-nums">{timer.elapsedLabel}</span>
-            {live ? (
-              <span className="mt-1 text-sm text-muted-foreground">−{timer.remainingLabel}</span>
-            ) : null}
+            <span className="font-mono text-xl font-bold tabular-nums">{timer.elapsedLabel}</span>
           </div>
         </div>
-        <p className="mt-4 text-sm text-muted-foreground">Reja: {booking.duration} daqiqa</p>
+
+        <div className="min-w-[12rem] flex-1 space-y-3">
+          {live ? (
+            <p className="text-sm text-muted-foreground">
+              Qolgan vaqt:{" "}
+              <span className="font-mono font-semibold text-foreground">
+                −{timer.remainingLabel}
+              </span>
+            </p>
+          ) : null}
+          <div className="h-2 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-foreground transition-all duration-700"
+              style={{ width: `${Math.min(100, timer.progress)}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">Reja: {booking.duration} daqiqa</p>
+        </div>
       </div>
     </CheckoutCard>
   );
@@ -369,7 +384,7 @@ export function BookingProcessDesktopView({ state }: { state: ProcessState }) {
       ];
 
   return (
-    <div className="hidden min-h-[calc(100dvh-4.25rem)] w-full bg-muted/20 lg:block">
+    <div className="hidden min-h-[calc(100dvh-4.25rem)] w-full bg-muted/45 lg:block">
       <div className={cn("mx-auto w-full max-w-[1280px] py-8", DESKTOP_SHELL_INSET)}>
         <Link
           to="/bookings"
@@ -402,7 +417,7 @@ export function BookingProcessDesktopView({ state }: { state: ProcessState }) {
                   {[booking.barberName, shortDate, time].map((chip) => (
                     <span
                       key={chip}
-                      className="rounded-lg border border-border bg-surface/40 px-3 py-1.5 text-xs font-medium"
+                      className="rounded-lg border border-border/80 bg-muted/30 px-3 py-1.5 text-xs font-medium"
                     >
                       {chip}
                     </span>
@@ -413,6 +428,17 @@ export function BookingProcessDesktopView({ state }: { state: ProcessState }) {
 
             {showQr ? <DesktopQrCard booking={booking} /> : null}
             {showTimer ? <DesktopTimerCard booking={booking} /> : null}
+
+            {showPortfolioConsent ? (
+              <CheckoutCard title="Portfolio ruxsati">
+                <BookingPortfolioConsent
+                  plain
+                  consent={booking.portfolioConsent}
+                  busy={consentMut.isPending}
+                  onChange={onPortfolioConsent}
+                />
+              </CheckoutCard>
+            ) : null}
 
             {phase !== "cancelled" ? (
               <div className="grid gap-4 md:grid-cols-2">
@@ -446,16 +472,6 @@ export function BookingProcessDesktopView({ state }: { state: ProcessState }) {
                   src={booking.resultImageUrl}
                   alt="Xizmat natijasi"
                   className="max-h-80 w-full rounded-xl object-cover"
-                />
-              </CheckoutCard>
-            ) : null}
-
-            {showPortfolioConsent ? (
-              <CheckoutCard>
-                <BookingPortfolioConsent
-                  consent={booking.portfolioConsent}
-                  busy={consentMut.isPending}
-                  onChange={onPortfolioConsent}
                 />
               </CheckoutCard>
             ) : null}

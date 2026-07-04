@@ -452,41 +452,64 @@ export function BookingPortfolioConsent({
   consent,
   onChange,
   busy,
+  plain,
 }: {
   consent: boolean | null | undefined;
   onChange: (value: boolean) => void;
   busy?: boolean;
+  plain?: boolean;
 }) {
+  const answered = consent !== null && consent !== undefined;
+
   return (
-    <div className="rounded-2xl bg-muted/30 p-4">
-      <h2 className="text-base font-bold">Portfolio ruxsati</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
+    <div className={cn(plain ? "" : "rounded-2xl bg-muted/30 p-4")}>
+      {!plain ? <h2 className="text-base font-bold">Portfolio ruxsati</h2> : null}
+      <p className={cn("text-sm text-muted-foreground", !plain && "mt-1")}>
         Natija rasmingiz salon portfolio&apos;sida ko&apos;rinsinmi?
       </p>
-      <div className="mt-4 flex gap-2">
+      <div className="relative z-10 mt-4 grid grid-cols-2 gap-3">
         <button
           type="button"
-          disabled={busy || consent === true}
+          disabled={busy || answered}
+          aria-pressed={consent === true}
           onClick={() => onChange(true)}
           className={cn(
-            "flex-1 rounded-2xl py-3 text-sm font-bold",
-            consent === true ? "bg-foreground text-background" : "bg-background/80",
+            "cursor-pointer rounded-xl border-2 px-3 py-3 text-sm font-semibold transition-all",
+            "hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60",
+            consent === true
+              ? "border-foreground bg-foreground text-background"
+              : "border-border bg-background text-foreground hover:border-foreground/40",
           )}
         >
           Ruxsat beraman
         </button>
         <button
           type="button"
-          disabled={busy || consent === false}
+          disabled={busy || answered}
+          aria-pressed={consent === false}
           onClick={() => onChange(false)}
           className={cn(
-            "flex-1 rounded-2xl py-3 text-sm font-bold",
-            consent === false ? "bg-muted text-foreground" : "bg-background/80",
+            "cursor-pointer rounded-xl border-2 px-3 py-3 text-sm font-semibold transition-all",
+            "hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60",
+            consent === false
+              ? "border-foreground bg-muted text-foreground"
+              : "border-border bg-background text-foreground hover:border-foreground/40",
           )}
         >
           Rad etaman
         </button>
       </div>
+      {busy && !answered ? (
+        <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="size-3.5 animate-spin" />
+          Saqlanmoqda…
+        </p>
+      ) : null}
+      {answered ? (
+        <p className="mt-3 text-xs text-muted-foreground">
+          {consent ? "Ruxsat saqlandi." : "Rad etish saqlandi."}
+        </p>
+      ) : null}
     </div>
   );
 }
