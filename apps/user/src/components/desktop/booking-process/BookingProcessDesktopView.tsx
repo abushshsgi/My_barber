@@ -5,7 +5,7 @@ import {
   formatCancelCountdown,
   formatHistoryWhen,
 } from "@mybarber/shared/booking-lifecycle";
-import { ArrowLeft, Loader2, MapPin, Navigation } from "lucide-react";
+import { ArrowLeft, Loader2, MapPin, Navigation, Scissors } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BookingBarberImpressions } from "@/components/bookings/BookingBarberImpressions";
 import { BookingChatButton } from "@/components/bookings/BookingChatButton";
@@ -14,7 +14,6 @@ import {
   BookingLifecycleTimeline,
   BookingPortfolioConsent,
   BookingPortfolioUpload,
-  BookingResultPreview,
   useLiveBookingTimer,
 } from "@/components/bookings/BookingProcessParts";
 import type { useBookingProcessPage } from "@/hooks/use-booking-process-page";
@@ -33,6 +32,8 @@ type Phase =
   | "done"
   | "cancelled";
 
+const CARD = "rounded-2xl border border-border bg-background p-6 shadow-sm";
+
 function getPhase(booking: BookingItem): Phase {
   if (booking.status === "cancelled") return "cancelled";
   if (booking.status === "done") return "done";
@@ -48,6 +49,7 @@ function formatLabels(booking: BookingItem) {
   return {
     date: d.toLocaleDateString("uz-UZ", { weekday: "long", day: "numeric", month: "long" }),
     time: d.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }),
+    shortDate: d.toLocaleDateString("uz-UZ", { day: "numeric", month: "short" }),
   };
 }
 
@@ -60,15 +62,9 @@ function statusCopy(phase: Phase, booking: BookingItem) {
         body: `${booking.barberName} broningizni qabul qildi. Salonga kelganingizda QR kodni ko'rsating.`,
       };
     case "checked_in":
-      return {
-        title: "Keldingiz",
-        body: "Sartarosh tez orada xizmatni boshlaydi.",
-      };
+      return { title: "Keldingiz", body: "Sartarosh tez orada xizmatni boshlaydi." };
     case "in_progress":
-      return {
-        title: "Xizmat davom etmoqda",
-        body: `${booking.barberName} bilan xizmat vaqti.`,
-      };
+      return { title: "Xizmat davom etmoqda", body: `${booking.barberName} bilan xizmat vaqti.` };
     case "done":
       return {
         title: "Xizmat yakunlandi",
@@ -87,71 +83,87 @@ function statusCopy(phase: Phase, booking: BookingItem) {
   }
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-      {children}
-    </p>
-  );
+function CardTitle({ children }: { children: React.ReactNode }) {
+  return <h2 className="mb-5 text-lg font-bold tracking-tight">{children}</h2>;
 }
 
-function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
+function Row({ label, value, last }: { label: string; value: React.ReactNode; last?: boolean }) {
   return (
-    <div className="flex items-baseline justify-between gap-6 py-2.5 text-sm">
+    <div
+      className={cn(
+        "flex items-center justify-between gap-4 py-3.5 text-sm",
+        !last && "border-b border-border/70",
+      )}
+    >
       <span className="text-muted-foreground">{label}</span>
       <span className="text-right font-medium tabular-nums">{value}</span>
     </div>
   );
 }
 
-function DesktopQrPanel({ booking }: { booking: BookingItem }) {
+function CheckoutCard({
+  title,
+  children,
+  className,
+}: {
+  title?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={cn(CARD, className)}>
+      {title ? <CardTitle>{title}</CardTitle> : null}
+      {children}
+    </section>
+  );
+}
+
+function DesktopQrCard({ booking }: { booking: BookingItem }) {
   const loading = !booking.checkInCode;
 
   return (
-    <section>
-      <SectionLabel>Kelish QR kodi</SectionLabel>
-      <div className="flex flex-wrap items-center gap-10 xl:gap-16">
-        <div className="grid size-52 shrink-0 place-items-center bg-surface/60 xl:size-60">
+    <CheckoutCard title="Kelish QR kodi">
+      <div className="flex flex-wrap items-center gap-8">
+        <div className="grid size-48 shrink-0 place-items-center rounded-xl border border-border bg-surface/40 xl:size-52">
           {loading ? (
-            <div className="flex flex-col items-center gap-3 text-muted-foreground">
+            <div className="flex flex-col items-center gap-2 text-muted-foreground">
               <Loader2 className="size-7 animate-spin" />
               <span className="text-xs">QR tayyorlanmoqda…</span>
             </div>
           ) : (
             <img
-              src={buildCheckInQrUrl(booking.checkInCode!, 256)}
+              src={buildCheckInQrUrl(booking.checkInCode!, 220)}
               alt="Kelish QR kodi"
-              className="size-full object-contain p-3"
+              className="size-full rounded-lg object-contain p-2"
             />
           )}
         </div>
-        <div className="min-w-[12rem] flex-1">
-          <p className="text-xs text-muted-foreground">Zaxira kod</p>
-          <p className="mt-2 font-mono text-4xl font-bold tracking-[0.3em] xl:text-5xl">
+        <div className="min-w-[10rem] flex-1">
+          <p className="text-xs font-medium text-muted-foreground">Zaxira kod</p>
+          <p className="mt-2 font-mono text-3xl font-bold tracking-[0.28em]">
             {loading ? "————" : (booking.checkInShortCode ?? "----")}
           </p>
-          <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
             Kod bir martalik. Muammo bo&apos;lsa, raqamni sartaroshga ayting.
           </p>
         </div>
       </div>
-    </section>
+    </CheckoutCard>
   );
 }
 
-function DesktopTimer({ booking, compact }: { booking: BookingItem; compact?: boolean }) {
+function DesktopTimerCard({ booking }: { booking: BookingItem }) {
   const timer = useLiveBookingTimer(booking);
   const live = booking.status === "in_progress";
-  const radius = compact ? 52 : 72;
-  const stroke = compact ? 6 : 8;
+  const radius = 68;
+  const stroke = 8;
   const c = 2 * Math.PI * radius;
   const size = radius * 2 + stroke * 2;
   const dashOffset = c * (1 - timer.progress / 100);
 
   return (
-    <section className={compact ? "" : "py-2"}>
-      {!compact ? <SectionLabel>{live ? "Xizmat vaqti" : "Jami vaqt"}</SectionLabel> : null}
-      <div className={cn("flex flex-col items-start", compact && "items-center")}>
+    <CheckoutCard title={live ? "Xizmat vaqti" : "Jami vaqt"}>
+      <div className="flex flex-col items-center py-2">
         <div className="relative" style={{ width: size, height: size }}>
           <svg width={size} height={size} className="-rotate-90" viewBox={`0 0 ${size} ${size}`}>
             <circle
@@ -161,7 +173,7 @@ function DesktopTimer({ booking, compact }: { booking: BookingItem; compact?: bo
               fill="none"
               stroke="currentColor"
               strokeWidth={stroke}
-              className="text-muted/30"
+              className="text-border"
             />
             <circle
               cx={size / 2}
@@ -177,25 +189,19 @@ function DesktopTimer({ booking, compact }: { booking: BookingItem; compact?: bo
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span
-              className={cn("font-mono font-bold tabular-nums", compact ? "text-xl" : "text-4xl")}
-            >
-              {timer.elapsedLabel}
-            </span>
+            <span className="font-mono text-4xl font-bold tabular-nums">{timer.elapsedLabel}</span>
             {live ? (
-              <span className="mt-1 text-xs text-muted-foreground">−{timer.remainingLabel}</span>
+              <span className="mt-1 text-sm text-muted-foreground">−{timer.remainingLabel}</span>
             ) : null}
           </div>
         </div>
-        {!compact ? (
-          <p className="mt-4 text-sm text-muted-foreground">Reja: {booking.duration} daqiqa</p>
-        ) : null}
+        <p className="mt-4 text-sm text-muted-foreground">Reja: {booking.duration} daqiqa</p>
       </div>
-    </section>
+    </CheckoutCard>
   );
 }
 
-function DesktopWaitCountdown({ booking }: { booking: BookingItem }) {
+function DesktopWaitCountdownCard({ booking }: { booking: BookingItem }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (booking.status !== "pending" && booking.status !== "accepted") return;
@@ -208,14 +214,14 @@ function DesktopWaitCountdown({ booking }: { booking: BookingItem }) {
   if (!cd.isUpcoming) return null;
 
   return (
-    <div>
-      <SectionLabel>Bron vaqtigacha</SectionLabel>
+    <CheckoutCard title="Bron vaqtigacha">
       <p className="font-mono text-3xl font-bold tabular-nums">{cd.label}</p>
-    </div>
+      <p className="mt-1 text-sm text-muted-foreground">qoldi</p>
+    </CheckoutCard>
   );
 }
 
-function DesktopCancelHint({ seconds }: { seconds: number }) {
+function DesktopCancelCard({ seconds }: { seconds: number }) {
   const [left, setLeft] = useState(seconds);
   useEffect(() => {
     setLeft(seconds);
@@ -224,37 +230,16 @@ function DesktopCancelHint({ seconds }: { seconds: number }) {
   }, [seconds]);
 
   return (
-    <div>
-      <SectionLabel>Bekor qilish</SectionLabel>
+    <CheckoutCard title="Bekor qilish oynasi">
       <p className="text-sm text-muted-foreground">5 daqiqa ichida bepul bekor qilish mumkin</p>
-      <p className="mt-1 font-mono text-2xl font-bold tabular-nums">
+      <p className="mt-2 font-mono text-2xl font-bold tabular-nums">
         {formatCancelCountdown(left)}
       </p>
-    </div>
+    </CheckoutCard>
   );
 }
 
-function DesktopHistory({ history }: { history?: BookingItem["statusHistory"] }) {
-  const rows = history ?? [];
-  if (!rows.length) return null;
-  return (
-    <div>
-      <SectionLabel>Tarix</SectionLabel>
-      <ul className="space-y-2">
-        {rows.map((row) => (
-          <li key={`${row.key}-${row.at}`} className="flex justify-between gap-4 text-sm">
-            <span>{row.label}</span>
-            <span className="shrink-0 text-muted-foreground tabular-nums">
-              {formatHistoryWhen(row.at)}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function DesktopAddress({ booking }: { booking: BookingItem }) {
+function DesktopAddressCard({ booking }: { booking: BookingItem }) {
   const address = booking.salonAddress?.trim();
   const lat = booking.salonLatitude;
   const lng = booking.salonLongitude;
@@ -266,24 +251,60 @@ function DesktopAddress({ booking }: { booking: BookingItem }) {
       : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address || "")}`;
 
   return (
-    <section>
-      <SectionLabel>Manzil</SectionLabel>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex min-w-0 gap-3">
-          <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          {address ? <p className="text-sm leading-relaxed">{address}</p> : null}
-        </div>
-        <a
-          href={url}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-2 text-sm font-semibold underline-offset-4 hover:underline"
-        >
-          <Navigation className="size-4" />
-          Yo&apos;nalish
-        </a>
+    <CheckoutCard title="Manzil">
+      <div className="mb-4 flex gap-3 rounded-xl border border-border/70 bg-surface/30 p-4">
+        <MapPin className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
+        {address ? <p className="text-sm leading-relaxed">{address}</p> : null}
       </div>
-    </section>
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border py-3 text-sm font-semibold transition-colors hover:bg-surface/50"
+      >
+        <Navigation className="size-4" />
+        Yo&apos;nalish olish
+      </a>
+    </CheckoutCard>
+  );
+}
+
+function DesktopPaymentCard({ booking }: { booking: BookingItem }) {
+  const isCash = booking.paymentMethod === "cash" || !booking.paymentMethod;
+  const paid = booking.paymentStatus === "paid" || !!booking.paidAt;
+
+  return (
+    <CheckoutCard title="To'lov">
+      <Row label="Usul" value={isCash ? "Naqd pul" : "Onlayn to'lov"} />
+      <Row label="Holat" value={paid ? "To'langan" : "To'lanmagan"} />
+      <Row label="Summa" value={formatPrice(booking.price)} last />
+    </CheckoutCard>
+  );
+}
+
+function DesktopHistoryCard({ history }: { history?: BookingItem["statusHistory"] }) {
+  const rows = history ?? [];
+  if (!rows.length) return null;
+
+  return (
+    <CheckoutCard title="Tarix">
+      <ul>
+        {rows.map((row, i) => (
+          <li
+            key={`${row.key}-${row.at}`}
+            className={cn(
+              "flex justify-between gap-4 py-3 text-sm",
+              i < rows.length - 1 && "border-b border-border/70",
+            )}
+          >
+            <span>{row.label}</span>
+            <span className="shrink-0 text-muted-foreground tabular-nums">
+              {formatHistoryWhen(row.at)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </CheckoutCard>
   );
 }
 
@@ -321,7 +342,9 @@ export function BookingProcessDesktopView({ state }: { state: ProcessState }) {
 
   if (isError) {
     return (
-      <div className="hidden p-8 text-sm text-destructive lg:block">{(error as Error).message}</div>
+      <div className={cn("hidden lg:block", CARD, "m-8 text-sm text-destructive")}>
+        {(error as Error).message}
+      </div>
     );
   }
 
@@ -329,13 +352,11 @@ export function BookingProcessDesktopView({ state }: { state: ProcessState }) {
 
   const phase = getPhase(booking);
   const copy = statusCopy(phase, booking);
-  const { date, time } = formatLabels(booking);
+  const { date, time, shortDate } = formatLabels(booking);
   const showQr = phase === "accepted_qr" || phase === "accepted_loading";
   const showTimer = phase === "in_progress" || phase === "done";
   const showCancelHint =
     showCancel && cancelPolicy.secondsUntilCutoff != null && (phase === "pending" || showQr);
-  const isCash = booking.paymentMethod === "cash" || !booking.paymentMethod;
-  const paid = booking.paymentStatus === "paid" || !!booking.paidAt;
 
   const lines = booking.lines?.length
     ? booking.lines
@@ -348,13 +369,8 @@ export function BookingProcessDesktopView({ state }: { state: ProcessState }) {
       ];
 
   return (
-    <div
-      className={cn(
-        "hidden min-h-[calc(100dvh-4.25rem)] w-full bg-background lg:flex lg:flex-col",
-        DESKTOP_SHELL_INSET,
-      )}
-    >
-      <header className="flex shrink-0 items-center justify-between gap-6 py-8">
+    <div className="hidden min-h-[calc(100dvh-4.25rem)] w-full bg-muted/20 lg:block">
+      <div className={cn("mx-auto w-full max-w-[1280px] py-8", DESKTOP_SHELL_INSET)}>
         <Link
           to="/bookings"
           search={{}}
@@ -363,65 +379,85 @@ export function BookingProcessDesktopView({ state }: { state: ProcessState }) {
           <ArrowLeft className="size-4" />
           {t("bookings.title", { defaultValue: "Buyurtmalarim" })}
         </Link>
-        <p className="font-mono text-xs text-muted-foreground">
-          #{booking.orderNumber ?? booking.id.slice(0, 8)}
-        </p>
-      </header>
 
-      <div className="flex flex-1 flex-col pb-16">
-        <div className="mb-10 max-w-3xl">
-          <p className="label-eyebrow mb-2">
-            {t("bookings.processTitle", { defaultValue: "Bron jarayoni" })}
-          </p>
-          <h1 className="text-4xl font-bold tracking-tight xl:text-5xl">{copy.title}</h1>
-          <p className="mt-3 max-w-2xl text-base text-muted-foreground">{copy.body}</p>
-          {phase !== "cancelled" ? (
-            <p className="mt-4 text-sm text-muted-foreground">
-              {booking.salonName} · {date} · {time}
+        <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{copy.title}</h1>
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              {t("bookings.processTitle", { defaultValue: "Bron jarayoni" })} · {booking.salonName}
             </p>
-          ) : null}
+          </div>
+          <p className="font-mono text-sm text-muted-foreground">
+            #{booking.orderNumber ?? booking.id.slice(0, 8)}
+          </p>
         </div>
 
-        <div className="grid flex-1 items-start gap-16 xl:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] 2xl:gap-24">
-          <div className="space-y-12">
-            {showQr ? <DesktopQrPanel booking={booking} /> : null}
-            {showTimer ? <DesktopTimer booking={booking} /> : null}
+        <div className="mt-8 grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+          {/* Chap ustun — asosiy kartalar */}
+          <div className="space-y-4">
+            <CheckoutCard title="Holat">
+              <p className="text-sm leading-relaxed text-muted-foreground">{copy.body}</p>
+              {phase !== "cancelled" ? (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {[booking.barberName, shortDate, time].map((chip) => (
+                    <span
+                      key={chip}
+                      className="rounded-lg border border-border bg-surface/40 px-3 py-1.5 text-xs font-medium"
+                    >
+                      {chip}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </CheckoutCard>
+
+            {showQr ? <DesktopQrCard booking={booking} /> : null}
+            {showTimer ? <DesktopTimerCard booking={booking} /> : null}
 
             {phase !== "cancelled" ? (
-              <div className="grid gap-12 md:grid-cols-2">
-                <section>
-                  <SectionLabel>To&apos;lov</SectionLabel>
-                  <MetaRow label="Usul" value={isCash ? "Naqd pul" : "Onlayn"} />
-                  <MetaRow label="Holat" value={paid ? "To'langan" : "To'lanmagan"} />
-                  <MetaRow label="Summa" value={formatPrice(booking.price)} />
-                </section>
-                <DesktopAddress booking={booking} />
+              <div className="grid gap-4 md:grid-cols-2">
+                <DesktopPaymentCard booking={booking} />
+                <DesktopAddressCard booking={booking} />
               </div>
             ) : null}
 
             {booking.status === "done" ? (
-              <BookingBarberImpressions
-                barberName={booking.barberName}
-                kinds={booking.barberImpressions}
-                plain
-              />
+              <CheckoutCard>
+                <BookingBarberImpressions
+                  barberName={booking.barberName}
+                  kinds={booking.barberImpressions}
+                  plain
+                />
+              </CheckoutCard>
             ) : null}
 
             {showPortfolioUpload ? (
-              <BookingPortfolioUpload
-                busy={portfolioPhotoMut.isPending}
-                onUpload={onPortfolioPhoto}
-              />
+              <CheckoutCard>
+                <BookingPortfolioUpload
+                  busy={portfolioPhotoMut.isPending}
+                  onUpload={onPortfolioPhoto}
+                />
+              </CheckoutCard>
             ) : null}
 
-            <BookingResultPreview url={booking.resultImageUrl} />
+            {booking.resultImageUrl ? (
+              <CheckoutCard title="Natija">
+                <img
+                  src={booking.resultImageUrl}
+                  alt="Xizmat natijasi"
+                  className="max-h-80 w-full rounded-xl object-cover"
+                />
+              </CheckoutCard>
+            ) : null}
 
             {showPortfolioConsent ? (
-              <BookingPortfolioConsent
-                consent={booking.portfolioConsent}
-                busy={consentMut.isPending}
-                onChange={onPortfolioConsent}
-              />
+              <CheckoutCard>
+                <BookingPortfolioConsent
+                  consent={booking.portfolioConsent}
+                  busy={consentMut.isPending}
+                  onChange={onPortfolioConsent}
+                />
+              </CheckoutCard>
             ) : null}
 
             {booking.status === "done" ? (
@@ -439,71 +475,88 @@ export function BookingProcessDesktopView({ state }: { state: ProcessState }) {
             ) : null}
 
             {phase === "cancelled" ? (
-              <Link
-                to="/"
-                className="inline-flex text-sm font-semibold underline-offset-4 hover:underline"
-              >
-                Qayta bron qilish
-              </Link>
+              <CheckoutCard>
+                <Link
+                  to="/"
+                  className="flex w-full items-center justify-center rounded-xl bg-foreground py-3.5 text-sm font-semibold text-background"
+                >
+                  Qayta bron qilish
+                </Link>
+              </CheckoutCard>
             ) : null}
           </div>
 
-          <aside className="space-y-10 xl:sticky xl:top-8 xl:self-start">
-            <div>
-              <SectionLabel>Bron ma&apos;lumotlari</SectionLabel>
-              <p className="text-lg font-semibold">{booking.salonName}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{booking.barberName}</p>
-              <div className="mt-6 space-y-0">
+          {/* O'ng ustun — xulosa (Uzum checkout sidebar) */}
+          <aside className="space-y-4 xl:sticky xl:top-8">
+            <section className={cn(CARD, "p-0")}>
+              <div className="border-b border-border/70 p-6">
+                <CardTitle>Sizning broningiz</CardTitle>
+                <div className="flex items-center gap-3">
+                  <div className="grid size-11 shrink-0 place-items-center rounded-xl border border-border bg-surface/50">
+                    <Scissors className="size-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{booking.salonName}</p>
+                    <p className="text-sm text-muted-foreground">{booking.barberName}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-6">
                 {lines.map((line, i) => (
-                  <MetaRow
+                  <Row
                     key={i}
                     label={i === 0 ? "Xizmat" : line.service_name}
                     value={i === 0 ? line.service_name : formatPrice(line.price)}
                   />
                 ))}
-                <MetaRow label="Davomiylik" value={`${booking.duration} daq`} />
-                <MetaRow label="Sana" value={date} />
-                <MetaRow label="Vaqt" value={time} />
-                <div className="pt-4">
-                  <MetaRow label="Jami" value={formatPrice(booking.price)} />
-                </div>
+                <Row label="Davomiylik" value={`${booking.duration} daqiqa`} />
+                <Row label="Sana" value={date} />
+                <Row label="Vaqt" value={time} last />
               </div>
-            </div>
 
-            {showCancelHint ? (
-              <DesktopCancelHint seconds={cancelPolicy.secondsUntilCutoff!} />
-            ) : null}
-            <DesktopWaitCountdown booking={booking} />
+              <div className="border-t border-border/70 px-6 py-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-base font-bold">Jami</span>
+                  <span className="text-2xl font-bold tabular-nums">
+                    {formatPrice(booking.price)}
+                  </span>
+                </div>
 
-            <div>
-              <SectionLabel>Jarayon</SectionLabel>
-              <BookingLifecycleTimeline status={booking.status} checkedIn={!!booking.checkedInAt} />
-            </div>
-
-            <DesktopHistory history={booking.statusHistory} />
-
-            {phase === "in_progress" ? <DesktopTimer booking={booking} compact /> : null}
-
-            {booking.status !== "done" && booking.status !== "cancelled" ? (
-              <div className="space-y-4 pt-2">
-                <BookingChatButton
-                  barberId={booking.barberId}
-                  className="w-full flex-none rounded-none bg-foreground py-3.5 text-sm font-semibold text-background"
-                />
-                {showCancel ? (
-                  <button
-                    type="button"
-                    disabled={cancelMut.isPending}
-                    onClick={onCancel}
-                    className="w-full text-sm font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60"
-                  >
-                    {cancelMut.isPending
-                      ? "…"
-                      : t("common.cancel", { defaultValue: "Bekor qilish" })}
-                  </button>
+                {booking.status !== "done" && booking.status !== "cancelled" ? (
+                  <div className="mt-5 space-y-3">
+                    <BookingChatButton
+                      barberId={booking.barberId}
+                      className="w-full flex-none rounded-xl bg-foreground py-3.5 text-sm font-semibold text-background shadow-sm"
+                    />
+                    {showCancel ? (
+                      <button
+                        type="button"
+                        disabled={cancelMut.isPending}
+                        onClick={onCancel}
+                        className="w-full rounded-xl border border-border py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface/50 disabled:opacity-60"
+                      >
+                        {cancelMut.isPending
+                          ? "…"
+                          : t("common.cancel", { defaultValue: "Bekor qilish" })}
+                      </button>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
+            </section>
+
+            {showCancelHint ? (
+              <DesktopCancelCard seconds={cancelPolicy.secondsUntilCutoff!} />
             ) : null}
+
+            <DesktopWaitCountdownCard booking={booking} />
+
+            <CheckoutCard title="Jarayon">
+              <BookingLifecycleTimeline status={booking.status} checkedIn={!!booking.checkedInAt} />
+            </CheckoutCard>
+
+            <DesktopHistoryCard history={booking.statusHistory} />
           </aside>
         </div>
       </div>
