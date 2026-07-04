@@ -8,7 +8,22 @@ import {
   paymentStatusLabel,
   type BookingLifecycleStatus,
 } from "@mybarber/shared/booking-lifecycle";
-import { Camera, Check, Circle, Clock3, History, ImagePlus, Loader2, MapPin, MessageSquare, Navigation, QrCode, Scissors, Users, Wallet } from "lucide-react";
+import {
+  Camera,
+  Check,
+  Circle,
+  Clock3,
+  History,
+  ImagePlus,
+  Loader2,
+  MapPin,
+  MessageSquare,
+  Navigation,
+  QrCode,
+  Scissors,
+  Users,
+  Wallet,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { BookingItem } from "@/lib/mock-data";
 import { formatPrice } from "@/lib/mock-data";
@@ -55,11 +70,12 @@ export function BookingLifecycleTimeline({
           <div className="flex flex-col items-center">
             <span
               className={cn(
-                "flex size-8 shrink-0 items-center justify-center rounded-full border-2",
-                step.state === "done" && "border-foreground bg-foreground text-background",
-                step.state === "current" && "border-foreground bg-background text-foreground",
-                step.state === "upcoming" && "border-border bg-surface text-muted-foreground",
-                step.state === "skipped" && "border-transparent bg-transparent text-transparent",
+                "flex size-8 shrink-0 items-center justify-center rounded-full",
+                step.state === "done" && "bg-foreground text-background",
+                step.state === "current" &&
+                  "bg-foreground/10 text-foreground ring-2 ring-foreground/30",
+                step.state === "upcoming" && "bg-muted/60 text-muted-foreground",
+                step.state === "skipped" && "bg-transparent text-transparent",
               )}
             >
               {step.state === "done" ? (
@@ -123,7 +139,15 @@ export function BookingServiceTimer({
     >
       <div className="relative size-36">
         <svg className="size-full -rotate-90" viewBox="0 0 120 120" aria-hidden>
-          <circle cx="60" cy="60" r={radius} fill="none" stroke="currentColor" strokeWidth="8" className="text-border" />
+          <circle
+            cx="60"
+            cy="60"
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="8"
+            className="text-border"
+          />
           <circle
             cx="60"
             cy="60"
@@ -139,7 +163,9 @@ export function BookingServiceTimer({
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <Clock3 className="mb-1 size-4 text-muted-foreground" />
-          <span className="text-3xl font-bold tabular-nums tracking-tight">{timer.elapsedLabel}</span>
+          <span className="text-3xl font-bold tabular-nums tracking-tight">
+            {timer.elapsedLabel}
+          </span>
           {timer.isRunning ? (
             <span className="mt-0.5 text-xs text-muted-foreground tabular-nums">
               −{timer.remainingLabel} qoldi
@@ -163,7 +189,13 @@ export function BookingDetailSummary({ booking }: { booking: BookingItem }) {
   const timeStr = d.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
   const lines = booking.lines?.length
     ? booking.lines
-    : [{ service_name: booking.serviceName, duration_minutes: booking.duration, price: booking.price }];
+    : [
+        {
+          service_name: booking.serviceName,
+          duration_minutes: booking.duration,
+          price: booking.price,
+        },
+      ];
 
   const statusStyles: Record<BookingItem["status"], string> = {
     pending: "bg-amber-100 text-amber-900",
@@ -208,11 +240,15 @@ export function BookingDetailSummary({ booking }: { booking: BookingItem }) {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl border border-border bg-surface/50 p-3">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Sana</p>
+          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+            Sana
+          </p>
           <p className="mt-1 text-sm font-bold">{dateStr}</p>
         </div>
         <div className="rounded-2xl border border-border bg-surface/50 p-3">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Vaqt</p>
+          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+            Vaqt
+          </p>
           <p className="mt-1 text-sm font-bold tabular-nums">{timeStr}</p>
         </div>
       </div>
@@ -264,11 +300,7 @@ export function BookingWaitCountdown({
   );
 }
 
-export function BookingStatusHistory({
-  history,
-}: {
-  history?: BookingItem["statusHistory"];
-}) {
+export function BookingStatusHistory({ history }: { history?: BookingItem["statusHistory"] }) {
   const rows = history ?? [];
   if (!rows.length) return null;
   return (
@@ -279,9 +311,14 @@ export function BookingStatusHistory({
       </h2>
       <ul className="space-y-3">
         {rows.map((row) => (
-          <li key={`${row.key}-${row.at}`} className="flex items-center justify-between gap-3 text-sm">
+          <li
+            key={`${row.key}-${row.at}`}
+            className="flex items-center justify-between gap-3 text-sm"
+          >
             <span className="font-semibold">{row.label}</span>
-            <span className="text-xs text-muted-foreground tabular-nums">{formatHistoryWhen(row.at)}</span>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {formatHistoryWhen(row.at)}
+            </span>
           </li>
         ))}
       </ul>
@@ -330,7 +367,9 @@ export function BookingPaymentCard({ booking }: { booking: BookingItem }) {
       </p>
       <p className="mt-1 text-2xl font-bold tabular-nums">{formatPrice(booking.price)}</p>
       {booking.paidAt ? (
-        <p className="mt-1 text-xs text-muted-foreground">To'langan: {formatHistoryWhen(booking.paidAt)}</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          To'langan: {formatHistoryWhen(booking.paidAt)}
+        </p>
       ) : null}
     </div>
   );
@@ -399,7 +438,9 @@ export function BookingCheckInSection({ booking }: { booking: BookingItem }) {
       <div className="flex flex-col items-center justify-center rounded-[24px] border border-border bg-background p-6 text-center sm:col-span-2">
         <Loader2 className="mb-2 size-7 animate-spin text-muted-foreground" />
         <p className="text-sm font-bold">QR tayyorlanmoqda…</p>
-        <p className="mt-1 text-xs text-muted-foreground">Bir necha soniya kuting yoki sahifani yangilang.</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Bir necha soniya kuting yoki sahifani yangilang.
+        </p>
       </div>
     );
   }
@@ -417,10 +458,10 @@ export function BookingPortfolioConsent({
   busy?: boolean;
 }) {
   return (
-    <div className="rounded-[24px] border border-border bg-background p-5 shadow-[0_8px_30px_-18px_rgba(0,0,0,0.18)]">
+    <div className="rounded-2xl bg-muted/30 p-4">
       <h2 className="text-base font-bold">Portfolio ruxsati</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Natija rasmingiz salon portfolio'sida ko'rinsinmi?
+        Natija rasmingiz salon portfolio&apos;sida ko&apos;rinsinmi?
       </p>
       <div className="mt-4 flex gap-2">
         <button
@@ -429,7 +470,7 @@ export function BookingPortfolioConsent({
           onClick={() => onChange(true)}
           className={cn(
             "flex-1 rounded-2xl py-3 text-sm font-bold",
-            consent === true ? "bg-foreground text-background" : "border border-border",
+            consent === true ? "bg-foreground text-background" : "bg-background/80",
           )}
         >
           Ruxsat beraman
@@ -440,7 +481,7 @@ export function BookingPortfolioConsent({
           onClick={() => onChange(false)}
           className={cn(
             "flex-1 rounded-2xl py-3 text-sm font-bold",
-            consent === false ? "bg-muted text-foreground" : "border border-border",
+            consent === false ? "bg-muted text-foreground" : "bg-background/80",
           )}
         >
           Rad etaman
@@ -467,7 +508,7 @@ export function BookingPortfolioUpload({
   };
 
   return (
-    <div className="rounded-[24px] border border-border bg-background p-5 shadow-[0_8px_30px_-18px_rgba(0,0,0,0.18)]">
+    <div className="rounded-2xl bg-muted/30 p-4">
       <h2 className="text-base font-bold">Natija rasmini ulashing</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Siz portfolio uchun ruxsat berdingiz. Yangi obrazingiz rasmini joylashingiz mumkin.
@@ -486,7 +527,7 @@ export function BookingPortfolioUpload({
           type="button"
           disabled={busy}
           onClick={() => galleryRef.current?.click()}
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-border py-3 text-sm font-bold disabled:opacity-60"
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-muted/60 py-3 text-sm font-bold disabled:opacity-60"
         >
           <ImagePlus className="size-4" />
           Galereyadan
@@ -508,7 +549,7 @@ export function BookingPortfolioUpload({
 export function BookingResultPreview({ url }: { url?: string }) {
   if (!url) return null;
   return (
-    <div className="overflow-hidden rounded-[24px] border border-border bg-background p-5 shadow-[0_8px_30px_-18px_rgba(0,0,0,0.18)]">
+    <div className="overflow-hidden rounded-2xl bg-muted/30 p-4">
       <h2 className="mb-3 text-base font-bold">Natija</h2>
       <img src={url} alt="Xizmat natijasi" className="max-h-72 w-full rounded-2xl object-cover" />
     </div>
@@ -517,7 +558,7 @@ export function BookingResultPreview({ url }: { url?: string }) {
 
 export function BookingAddonHint() {
   return (
-    <div className="rounded-[24px] border border-dashed border-border bg-surface/40 p-4">
+    <div className="rounded-2xl bg-muted/25 p-4">
       <p className="text-sm font-bold">Qo'shimcha xizmat kerakmi?</p>
       <p className="mt-1 text-xs text-muted-foreground">
         Chat orqali sartarosh bilan kelishib, qo'shimcha xizmat so'rashingiz mumkin.

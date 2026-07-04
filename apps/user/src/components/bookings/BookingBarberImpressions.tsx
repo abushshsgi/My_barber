@@ -14,12 +14,7 @@ export function BookingBarberImpressions({ barberName, kinds, className }: Props
   if (!items.length) return null;
 
   return (
-    <div
-      className={cn(
-        "rounded-[24px] border border-emerald-200/70 bg-gradient-to-br from-emerald-50/80 to-background p-5 shadow-[0_8px_30px_-18px_rgba(0,0,0,0.12)]",
-        className,
-      )}
-    >
+    <div className={cn("rounded-2xl bg-emerald-50/80 p-5", className)}>
       <div className="mb-3 flex items-start gap-2.5">
         <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-emerald-600 text-white">
           <Sparkles className="size-4" />
@@ -36,7 +31,7 @@ export function BookingBarberImpressions({ barberName, kinds, className }: Props
         {items.map(({ kind, icon: Icon, customerLabel }) => (
           <span
             key={kind}
-            className="inline-flex items-center gap-2 rounded-full border border-emerald-200/80 bg-background/90 px-3 py-2 text-sm font-semibold text-foreground shadow-sm"
+            className="inline-flex items-center gap-2 rounded-full bg-background/90 px-3 py-2 text-sm font-semibold text-foreground shadow-sm"
           >
             <Icon className="size-4 text-emerald-700" strokeWidth={1.75} />
             {customerLabel}
