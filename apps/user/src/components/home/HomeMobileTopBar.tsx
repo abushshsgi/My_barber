@@ -12,40 +12,40 @@ function IconBadge({ count }: { count: number }) {
   );
 }
 
-/** Mobil bosh sahifa — logo + chat/bildirishnomalar (dockda chat yo‘q). */
+/** Mobil bosh sahifa — logo + chat/bildirishnomalar. */
 export function HomeMobileTopBar() {
   const { chatUnread, notificationsUnread } = useNavBadges();
 
   return (
     <header
-      className="flex items-center justify-between px-4"
-      style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}
+      className="flex items-center justify-between px-4 pb-1"
+      style={{ paddingTop: "calc(env(safe-area-inset-top) + 10px)" }}
     >
       <Link to="/" className="flex items-baseline gap-0.5">
-        <span className="text-[1.35rem] font-bold tracking-tight text-foreground">mysaloon</span>
-        <span className="text-sm font-bold text-muted-foreground">.uz</span>
+        <span className="text-xl font-extrabold tracking-tight text-foreground">mysaloon</span>
+        <span className="text-xs font-bold text-muted-foreground">.uz</span>
       </Link>
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-2">
         <Link
           to="/chat"
           aria-label="Chat"
           className={cn(
-            "relative grid size-10 place-items-center rounded-full border border-border bg-surface",
+            "relative grid size-9 place-items-center rounded-full bg-surface",
             "active:scale-95 transition-transform",
           )}
         >
-          <MessageSquare className="size-[18px] text-foreground" strokeWidth={2} />
+          <MessageSquare className="size-[17px] text-foreground" strokeWidth={2} />
           <IconBadge count={chatUnread} />
         </Link>
         <Link
           to="/notifications"
           aria-label="Bildirishnomalar"
           className={cn(
-            "relative grid size-10 place-items-center rounded-full border border-border bg-surface",
+            "relative grid size-9 place-items-center rounded-full bg-surface",
             "active:scale-95 transition-transform",
           )}
         >
-          <Bell className="size-[18px] text-foreground" strokeWidth={2} />
+          <Bell className="size-[17px] text-foreground" strokeWidth={2} />
           <IconBadge count={notificationsUnread} />
         </Link>
       </div>

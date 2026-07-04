@@ -110,14 +110,14 @@ export function HomeUnifiedSearchResults({
 
   if (loading) {
     return (
-      <div className="px-5 py-8 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
+      <div className="px-4 py-10 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
     );
   }
 
   if (salons.length === 0 && barbers.length === 0) {
     return (
-      <section className="mt-6 px-5">
-        <p className="rounded-2xl bg-surface p-8 text-center text-sm font-medium text-muted-foreground">
+      <section className="mt-4 px-4">
+        <p className="rounded-2xl bg-surface px-6 py-10 text-center text-sm text-muted-foreground">
           {t("homePage.emptyTitle")}
         </p>
       </section>
@@ -125,7 +125,7 @@ export function HomeUnifiedSearchResults({
   }
 
   return (
-    <section className="mt-6 space-y-8 px-5">
+    <section className="mt-4 space-y-6 px-4">
       {salons.length > 0 ? (
         <div>
           <h2 className="mb-4 text-lg font-bold tracking-tight">
