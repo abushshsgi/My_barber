@@ -19,6 +19,11 @@ const MOBILE_FOOTER_HIDDEN_EXACT = new Set([
   "/notifications",
   "/settings",
   "/addresses",
+  "/reviews",
+  "/favorites",
+  "/favorite-stylists",
+  "/giftcard",
+  "/wallet",
 ]);
 const MOBILE_FOOTER_HIDDEN_PREFIX = ["/booking/", "/bookings", "/chat", "/account/"];
 

@@ -1,12 +1,17 @@
 import {
+  Award,
   Bell,
+  CalendarCheck,
   CreditCard,
+  Gift,
+  Heart,
   HelpCircle,
   MapPin,
   Repeat,
   Settings,
   Shield,
   Sparkles,
+  Star,
   Tag,
   Users,
   Wallet,
@@ -14,7 +19,7 @@ import {
 } from "lucide-react";
 import type { ProfileMenuItem } from "@/components/profile/ProfileMenuSection";
 
-export type AccountHubKey = "payments" | "household" | "preferences";
+export type AccountHubKey = "activity" | "payments" | "household" | "preferences";
 
 export type AccountHubMeta = {
   key: AccountHubKey;
@@ -27,6 +32,20 @@ export type AccountHubMeta = {
 };
 
 export const ACCOUNT_HUBS: AccountHubMeta[] = [
+  {
+    key: "activity",
+    to: "/account/activity",
+    icon: CalendarCheck,
+    titleKey: "account.hubs.activity.title",
+    descKey: "account.hubs.activity.desc",
+    pageTitleKey: "account.hubs.activity.pageTitle",
+    items: [
+      { icon: Star, label: "", to: "/reviews" },
+      { icon: Heart, label: "", to: "/favorites" },
+      { icon: Award, label: "", to: "/favorite-stylists" },
+      { icon: Gift, label: "", to: "/wallet", search: { section: "gift" } },
+    ],
+  },
   {
     key: "payments",
     to: "/account/payments",
@@ -72,6 +91,7 @@ export const ACCOUNT_HUBS: AccountHubMeta[] = [
 
 /** i18n label keys for hub menu items (order matches items[] above). */
 export const ACCOUNT_HUB_LABEL_KEYS: Record<AccountHubKey, string[]> = {
+  activity: ["reviews.title", "favorites.title", "favoriteStylists.title", "profile.giftcard"],
   payments: [
     "profile.wallet",
     "profile.loyalty",

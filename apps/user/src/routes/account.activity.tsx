@@ -1,8 +1,7 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { AccountHubPage } from "@/components/profile/AccountHubPage";
 
 export const Route = createFileRoute("/account/activity")({
-  beforeLoad: () => {
-    throw redirect({ to: "/profile", replace: true });
-  },
-  head: () => ({ meta: [{ title: "Profil — mysaloon.uz" }] }),
+  head: () => ({ meta: [{ title: "Faoliyatim — mysaloon.uz" }] }),
+  component: () => <AccountHubPage hubKey="activity" />,
 });

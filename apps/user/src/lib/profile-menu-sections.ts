@@ -1,4 +1,5 @@
 import {
+  Award,
   Bell,
   CreditCard,
   Gift,
@@ -22,6 +23,16 @@ export const PROFILE_MENU_SECTIONS: {
   labelKeys: string[];
   items: Omit<ProfileMenuItem, "label">[];
 }[] = [
+  {
+    titleKey: "settings.sections.activity",
+    labelKeys: ["reviews.title", "favorites.title", "favoriteStylists.title", "profile.giftcard"],
+    items: [
+      { icon: Star, to: "/reviews" },
+      { icon: Heart, to: "/favorites" },
+      { icon: Award, to: "/favorite-stylists" },
+      { icon: Gift, to: "/wallet", search: { section: "gift" } },
+    ],
+  },
   {
     titleKey: "settings.sections.payments",
     labelKeys: [

@@ -87,6 +87,16 @@ export function UserProfile() {
 
       <div className="mt-6 space-y-3 px-4">
         <ProfileGoMenuGroup
+          items={[
+            {
+              icon: CalendarCheck,
+              title: t("account.hubs.activity.title"),
+              subtitle: t("account.hubs.activity.desc"),
+              to: "/account/activity",
+            },
+          ]}
+        />
+        <ProfileGoMenuGroup
           items={[{ icon: Tag, title: t("profile.offers"), subtitle: "Tez orada", to: "/offers" }]}
         />
         {nextBooking && when ? (
