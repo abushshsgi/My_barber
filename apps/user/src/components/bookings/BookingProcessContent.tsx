@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { useRouterState } from "@tanstack/react-router";
 import { Loader2, MapPin, Navigation } from "lucide-react";
 import { formatCancelCountdown } from "@mybarber/shared/booking-lifecycle";
 import { BookingBarberImpressions } from "@/components/bookings/BookingBarberImpressions";
@@ -261,37 +261,5 @@ export function BookingProcessMobilePage({ state }: { state: ProcessState }) {
         ) : null}
       </div>
     </MobilePageShell>
-  );
-}
-
-export function BookingProcessDesktopPage({ state }: { state: ProcessState }) {
-  const { t, booking, isLoading, isError, error } = state;
-
-  return (
-    <div className="mx-auto hidden w-full max-w-lg px-6 py-8 pb-12 lg:block">
-      <Link
-        to="/bookings"
-        className="mb-6 inline-flex text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
-      >
-        ← {t("bookings.title", { defaultValue: "Buyurtmalarim" })}
-      </Link>
-
-      <h1 className="text-2xl font-bold tracking-tight">
-        {t("bookings.processTitle", { defaultValue: "Bron jarayoni" })}
-      </h1>
-      {booking?.salonName ? (
-        <p className="mt-1 text-sm text-muted-foreground">{booking.salonName}</p>
-      ) : null}
-
-      <div className={cn("mt-8")}>
-        {isLoading ? (
-          <LoadingBlock />
-        ) : isError ? (
-          <ErrorBlock message={(error as Error).message} />
-        ) : booking ? (
-          <BookingProcessBody state={state} />
-        ) : null}
-      </div>
-    </div>
   );
 }
