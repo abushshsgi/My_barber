@@ -54,7 +54,13 @@ function BrowseSalonsButton({ className }: { className?: string }) {
   );
 }
 
-export function FavoriteSalonsPanel({ variant = "mobile" }: { variant?: "mobile" | "desktop" }) {
+export function FavoriteSalonsPanel({
+  variant = "mobile",
+  borderless = false,
+}: {
+  variant?: "mobile" | "desktop";
+  borderless?: boolean;
+}) {
   const { t } = useTranslation();
   const { ids, loading: favLoading } = useFavorites();
   const { data: favs = [], isLoading } = useSalonsByIds(ids);
@@ -73,6 +79,7 @@ export function FavoriteSalonsPanel({ variant = "mobile" }: { variant?: "mobile"
   if (favs.length === 0) {
     return (
       <PageSpotlightEmpty
+        borderless={borderless}
         icon={Heart}
         tone="warm"
         title={t("favorites.empty")}
@@ -95,7 +102,7 @@ export function FavoriteSalonsPanel({ variant = "mobile" }: { variant?: "mobile"
   }
 
   return (
-    <div className="space-y-4">
+    <div className={borderless ? "space-y-5" : "space-y-4"}>
       {favs.map((salon) => (
         <SalonCard key={salon.id} salon={salon} />
       ))}
@@ -103,12 +110,13 @@ export function FavoriteSalonsPanel({ variant = "mobile" }: { variant?: "mobile"
   );
 }
 
-export function FavoriteStylistsPanel() {
+export function FavoriteStylistsPanel({ borderless = false }: { borderless?: boolean }) {
   const { t } = useTranslation();
 
   if (favoriteStylists.length === 0) {
     return (
       <PageSpotlightEmpty
+        borderless={borderless}
         icon={Award}
         tone="cool"
         title={t("favoriteStylists.empty")}

@@ -18,6 +18,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { ProfileMenuItem } from "@/components/profile/ProfileMenuSection";
+import { activityHubBackSearch } from "@/lib/activity-nav";
 
 export type AccountHubKey = "activity" | "payments" | "household" | "preferences";
 
@@ -40,10 +41,15 @@ export const ACCOUNT_HUBS: AccountHubMeta[] = [
     descKey: "account.hubs.activity.desc",
     pageTitleKey: "account.hubs.activity.pageTitle",
     items: [
-      { icon: Star, label: "", to: "/reviews" },
-      { icon: Heart, label: "", to: "/favorites" },
-      { icon: Award, label: "", to: "/favorite-stylists" },
-      { icon: Gift, label: "", to: "/wallet", search: { section: "gift" } },
+      { icon: Star, label: "", to: "/reviews", search: activityHubBackSearch() },
+      { icon: Heart, label: "", to: "/favorites", search: activityHubBackSearch() },
+      {
+        icon: Award,
+        label: "",
+        to: "/favorites",
+        search: activityHubBackSearch({ tab: "stylists" }),
+      },
+      { icon: Gift, label: "", to: "/wallet", search: activityHubBackSearch({ section: "gift" }) },
     ],
   },
   {
@@ -89,6 +95,19 @@ export const ACCOUNT_HUBS: AccountHubMeta[] = [
   },
 ];
 
+/** i18n hint keys for hub menu items (order matches items[] above). */
+export const ACCOUNT_HUB_HINT_KEYS: Record<AccountHubKey, string[]> = {
+  activity: [
+    "account.hubs.activity.hints.reviews",
+    "account.hubs.activity.hints.favorites",
+    "account.hubs.activity.hints.stylists",
+    "account.hubs.activity.hints.gift",
+  ],
+  payments: ["", "", "", "", ""],
+  household: ["", ""],
+  preferences: ["", "", "", ""],
+};
+
 /** i18n label keys for hub menu items (order matches items[] above). */
 export const ACCOUNT_HUB_LABEL_KEYS: Record<AccountHubKey, string[]> = {
   activity: ["reviews.title", "favorites.title", "favoriteStylists.title", "profile.giftcard"],
@@ -114,8 +133,10 @@ export function resolveHubItems(
   t: (key: string) => string,
 ): ProfileMenuItem[] {
   const labelKeys = ACCOUNT_HUB_LABEL_KEYS[hub.key];
+  const hintKeys = ACCOUNT_HUB_HINT_KEYS[hub.key];
   return hub.items.map((item, i) => ({
     ...item,
     label: t(labelKeys[i] ?? item.label),
+    hint: hintKeys[i] ? t(hintKeys[i]) : undefined,
   }));
 }

@@ -1,11 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { CalendarPlus, ChevronRight, Star } from "lucide-react";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { getCustomerCancelPolicy, formatCancelCountdown } from "@mybarber/shared/booking-lifecycle";
 import { BookingChatButton } from "@/components/bookings/BookingChatButton";
-import { WriteReviewDialog } from "@/components/bookings/WriteReviewDialog";
 import { PageSpotlightEmpty } from "@/components/ui/PageSpotlightEmpty";
 import { useCancelBooking } from "@/hooks/use-bookings-api";
 import { resolveBookingImpressions } from "@/lib/client-impressions";
@@ -48,7 +46,6 @@ const statusStyles: Record<BookingItem["status"], string> = {
 
 export function BookingCard({ booking: b, focused }: { booking: BookingItem; focused?: boolean }) {
   const { t } = useTranslation();
-  const [reviewOpen, setReviewOpen] = useState(false);
   const cancelMut = useCancelBooking();
   const d = new Date(b.date);
   const dateStr = d.toLocaleDateString("uz-UZ", { day: "numeric", month: "short" });
@@ -84,7 +81,12 @@ export function BookingCard({ booking: b, focused }: { booking: BookingItem; foc
         b.status === "in_progress" && "ring-1 ring-emerald-500/30",
       )}
     >
-      <Link to="/bookings/$bookingId" params={{ bookingId: b.id }} className="group block">
+      <Link
+        to="/bookings/$bookingId"
+        params={{ bookingId: b.id }}
+        search={{}}
+        className="group block"
+      >
         <div className="flex items-stretch gap-0">
           <div
             className="w-24 shrink-0 sm:w-28"
@@ -175,25 +177,14 @@ export function BookingCard({ booking: b, focused }: { booking: BookingItem; foc
               {t("bookings.alreadyReviewed", { defaultValue: "Sharh qoldirilgan" })}
             </Link>
           ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => setReviewOpen(true)}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-background py-2.5 text-xs font-bold shadow-sm"
-              >
-                <Star className="h-3.5 w-3.5" /> {t("bookings.writeReview")}
-              </button>
-              <WriteReviewDialog
-                open={reviewOpen}
-                onOpenChange={setReviewOpen}
-                booking={{
-                  id: b.id,
-                  salonName: b.salonName,
-                  serviceName: b.serviceName,
-                  barberName: b.barberName,
-                }}
-              />
-            </>
+            <Link
+              to="/bookings/$bookingId"
+              params={{ bookingId: b.id }}
+              search={{ survey: 1, focus: undefined }}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-background py-2.5 text-xs font-bold shadow-sm"
+            >
+              <Star className="h-3.5 w-3.5" /> {t("bookings.writeReview")}
+            </Link>
           )
         ) : (
           <BookingChatButton barberId={b.barberId} />

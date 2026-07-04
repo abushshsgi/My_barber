@@ -540,7 +540,13 @@
       "activity": {
         "title": "Faoliyatim",
         "desc": "Sharhlar, sevimlilar, ustalar, sovg'a",
-        "pageTitle": "Faoliyatim"
+        "pageTitle": "Faoliyatim",
+        "hints": {
+          "reviews": "Tashriflardan keyin qoldirilgan baholar",
+          "favorites": "Saqlangan salonlar ro'yxati",
+          "stylists": "Sevimli ustalar va barberlar",
+          "gift": "Do'stlarga sovg'a yuborish"
+        }
       },
       "payments": {
         "title": "To'lov va bonus",

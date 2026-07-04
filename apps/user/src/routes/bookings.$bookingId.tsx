@@ -7,6 +7,9 @@ import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { useBookingProcessPage } from "@/hooks/use-booking-process-page";
 
 export const Route = createFileRoute("/bookings/$bookingId")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    survey: search.survey === 1 || search.survey === "1" ? 1 : undefined,
+  }),
   head: ({ params }) => ({
     meta: [{ title: `Bron #${params.bookingId} — mysaloon.uz` }],
   }),
@@ -15,7 +18,8 @@ export const Route = createFileRoute("/bookings/$bookingId")({
 
 function BookingProcessRoute() {
   const { bookingId } = Route.useParams();
-  const state = useBookingProcessPage(bookingId);
+  const { survey } = Route.useSearch();
+  const state = useBookingProcessPage(bookingId, { forceSurveyOpen: survey === 1 });
 
   return (
     <DesktopPageSplit

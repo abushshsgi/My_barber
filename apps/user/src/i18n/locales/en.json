@@ -535,7 +535,13 @@
       "activity": {
         "title": "My activity",
         "desc": "Reviews, favorites, stylists, gift cards",
-        "pageTitle": "My activity"
+        "pageTitle": "My activity",
+        "hints": {
+          "reviews": "Ratings from your past visits",
+          "favorites": "Your saved salons",
+          "stylists": "Favorite barbers and stylists",
+          "gift": "Send gifts to friends"
+        }
       },
       "payments": {
         "title": "Payments & rewards",

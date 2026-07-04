@@ -10,7 +10,7 @@ import {
   usePortfolioPhotoMutation,
 } from "@/hooks/use-bookings-api";
 
-export function useBookingProcessPage(bookingId: string) {
+export function useBookingProcessPage(bookingId: string, options?: { forceSurveyOpen?: boolean }) {
   const { t } = useTranslation();
   const { data: booking, isLoading, isError, error } = useBooking(bookingId);
   const cancelMut = useCancelBooking();
@@ -32,6 +32,12 @@ export function useBookingProcessPage(bookingId: string) {
     }
     prevStatus.current = booking.status;
   }, [booking?.status, booking?.hasReview, booking]);
+
+  useEffect(() => {
+    if (options?.forceSurveyOpen && booking?.status === "done" && !booking.hasReview) {
+      setSurveyAutoOpen(true);
+    }
+  }, [options?.forceSurveyOpen, booking?.status, booking?.hasReview, booking]);
 
   const cancelPolicies = useLiveCustomerCancelPolicy(booking ?? null);
   const cancelPolicy = cancelPolicies.cancel;

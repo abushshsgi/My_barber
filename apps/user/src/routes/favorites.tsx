@@ -11,9 +11,11 @@ import {
 } from "@/components/favorites/FavoritesPageContent";
 import { ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { useFavorites } from "@/hooks/use-favorites";
+import { ACTIVITY_HUB_PATH, resolveActivityBackTo } from "@/lib/activity-nav";
 
 const favoritesSearchSchema = z.object({
   tab: z.enum(["salons", "stylists"]).optional().catch("salons"),
+  backTo: z.string().optional(),
 });
 
 export const Route = createFileRoute("/favorites")({
@@ -22,7 +24,15 @@ export const Route = createFileRoute("/favorites")({
   component: Favorites,
 });
 
-function FavoritesMobile({ tab, setTab }: { tab: FavoritesTab; setTab: (tab: FavoritesTab) => void }) {
+function FavoritesMobile({
+  tab,
+  setTab,
+  backTo,
+}: {
+  tab: FavoritesTab;
+  setTab: (tab: FavoritesTab) => void;
+  backTo: string;
+}) {
   const { t } = useTranslation();
   const { ids } = useFavorites();
 
@@ -32,10 +42,15 @@ function FavoritesMobile({ tab, setTab }: { tab: FavoritesTab; setTab: (tab: Fav
       subtitle={t("favorites.subtitle", {
         defaultValue: "Saqlangan salonlar va ustalar — tez kirish uchun.",
       })}
+      backTo={backTo}
+      strictBack
+      flush
     >
-      <FavoritesTabs tab={tab} onTabChange={setTab} salonCount={ids.length} />
-      <div className="mt-5">
-        {tab === "salons" ? <FavoriteSalonsPanel /> : <FavoriteStylistsPanel />}
+      <div className="px-4 pb-3">
+        <FavoritesTabs tab={tab} onTabChange={setTab} salonCount={ids.length} />
+      </div>
+      <div className="px-4 pb-6">
+        {tab === "salons" ? <FavoriteSalonsPanel borderless /> : <FavoriteStylistsPanel borderless />}
       </div>
     </ProfileSubpageLayout>
   );
@@ -43,7 +58,9 @@ function FavoritesMobile({ tab, setTab }: { tab: FavoritesTab; setTab: (tab: Fav
 
 function Favorites() {
   const navigate = useNavigate({ from: Route.fullPath });
-  const { tab = "salons" } = Route.useSearch();
+  const search = Route.useSearch();
+  const { tab = "salons" } = search;
+  const backTo = resolveActivityBackTo(search, ACTIVITY_HUB_PATH);
 
   const setTab = (next: FavoritesTab) => {
     void navigate({ search: { tab: next }, replace: true });
@@ -51,7 +68,7 @@ function Favorites() {
 
   return (
     <DesktopPageSplit
-      mobile={<FavoritesMobile tab={tab} setTab={setTab} />}
+      mobile={<FavoritesMobile tab={tab} setTab={setTab} backTo={backTo} />}
       desktop={<FavoritesDesktopPage tab={tab} onTabChange={setTab} />}
     />
   );

@@ -178,8 +178,13 @@ export type ApiReview = {
   id: number;
   booking?: number;
   author_name: string;
+  salon_name?: string;
+  barber_name?: string;
+  service_name?: string;
   rating: number;
+  salon_rating?: number | null;
   text: string;
+  salon_text?: string;
   photo: string | null;
   barber_reply: string;
   barber_replied_at: string | null;

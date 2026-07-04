@@ -31,22 +31,35 @@ export function AccountHubPage({ hubKey }: Props) {
   if (isLgUp) return null;
 
   return (
-    <ProfileSubpageLayout title={t(hub.pageTitleKey)} subtitle={t(hub.descKey)}>
-      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-background">
+    <ProfileSubpageLayout
+      title={t(hub.pageTitleKey)}
+      subtitle={t(hub.descKey)}
+      backTo="/profile"
+      strictBack
+      flush
+    >
+      <ul className="divide-y divide-border/70">
         {items.map((item) => {
           const Icon = item.icon;
           return (
-            <li key={item.to + item.label}>
+            <li key={item.to + item.label + JSON.stringify(item.search ?? {})}>
               <Link
                 to={item.to as never}
                 params={item.params as never}
                 search={item.search as never}
-                className="flex items-center gap-4 px-4 py-4 transition-colors active:bg-surface/80"
+                className="flex items-center gap-4 px-4 py-4 transition-colors active:bg-surface/60"
               >
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface">
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-surface">
                   <Icon className="h-[18px] w-[18px]" strokeWidth={2.2} />
                 </div>
-                <span className="min-w-0 flex-1 text-sm font-bold">{item.label}</span>
+                <div className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold">{item.label}</span>
+                  {item.hint ? (
+                    <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                      {item.hint}
+                    </span>
+                  ) : null}
+                </div>
                 {item.badge ? (
                   <span className="rounded-full bg-foreground px-2 py-0.5 text-[10px] font-bold text-background">
                     {item.badge}

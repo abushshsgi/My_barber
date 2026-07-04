@@ -5,10 +5,11 @@ import { WALLET_SECTION_TITLE_KEYS, type WalletSection } from "@/lib/wallet-nav"
 
 type Props = {
   section: WalletSection;
+  backTo?: string;
 };
 
-/** Mobil hamyon ichki bo'limi — neo shell. */
-export function WalletMobileSubpage({ section }: Props) {
+/** Mobil hamyon ichki bo'limi — to'liq ekran shell. */
+export function WalletMobileSubpage({ section, backTo = "/wallet" }: Props) {
   const { t } = useTranslation();
   const meta = WALLET_SECTION_TITLE_KEYS[section];
 
@@ -16,9 +17,13 @@ export function WalletMobileSubpage({ section }: Props) {
     <MobilePageShell
       title={t("walletPage.title")}
       subtitle={t(meta.titleKey, { defaultValue: meta.defaultTitle })}
-      backTo="/wallet"
+      backTo={backTo}
+      strictBack
+      flush
     >
-      <WalletPanelContent section={section} hideTitle />
+      <div className="px-4 pb-8">
+        <WalletPanelContent section={section} hideTitle />
+      </div>
     </MobilePageShell>
   );
 }

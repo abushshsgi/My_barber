@@ -13,6 +13,8 @@ type Props = {
   right?: React.ReactNode;
   /** Tarix bo'sh bo'lsa shu sahifaga qaytadi. */
   backTo?: string;
+  /** true bo'lsa doim backTo ga o'tadi (activity hub oqimi). */
+  strictBack?: boolean;
   /** To'liq ekran — panel va yon chegaralar yo'q, scroll ichkarida. */
   flush?: boolean;
 };
@@ -25,6 +27,7 @@ export function MobilePageShell({
   className,
   right,
   backTo = "/",
+  strictBack = false,
   flush = false,
 }: Props) {
   const router = useRouter();
@@ -39,7 +42,7 @@ export function MobilePageShell({
   const backButton = (
     <button
       type="button"
-      onClick={() => navigateBack(router, backTo)}
+      onClick={() => navigateBack(router, backTo, strictBack)}
       className={backButtonClass}
       aria-label="Orqaga"
     >

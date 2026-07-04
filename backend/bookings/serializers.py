@@ -710,7 +710,29 @@ class ReviewDimensionScoreSerializer(serializers.Serializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source="author.full_name", read_only=True)
+    salon_name = serializers.SerializerMethodField()
+    barber_name = serializers.SerializerMethodField()
+    service_name = serializers.SerializerMethodField()
     dimensions = ReviewDimensionScoreSerializer(many=True, required=False)
+
+    def get_salon_name(self, obj):
+        if obj.salon_id and obj.salon:
+            return obj.salon.name or ""
+        return ""
+
+    def get_barber_name(self, obj):
+        if obj.barber_id and obj.barber:
+            return obj.barber.full_name or ""
+        return ""
+
+    def get_service_name(self, obj):
+        booking = getattr(obj, "booking", None)
+        if not booking:
+            return ""
+        line = booking.lines.first()
+        if line and line.service_name:
+            return line.service_name
+        return ""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -732,6 +754,9 @@ class ReviewSerializer(serializers.ModelSerializer):
             "id",
             "booking",
             "author_name",
+            "salon_name",
+            "barber_name",
+            "service_name",
             "rating",
             "text",
             "salon_rating",
@@ -742,7 +767,14 @@ class ReviewSerializer(serializers.ModelSerializer):
             "barber_replied_at",
             "created_at",
         )
-        read_only_fields = ("id", "created_at", "author_name")
+        read_only_fields = (
+            "id",
+            "created_at",
+            "author_name",
+            "salon_name",
+            "barber_name",
+            "service_name",
+        )
 
     def validate_booking(self, booking):
         user = self.context["request"].user

@@ -789,6 +789,7 @@ class SalonPortfolioView(APIView):
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticatedBarberAware]
+    http_method_names = ["get", "post", "head", "options"]
 
     def get_permissions(self):
         if self.action in ("list", "retrieve"):
@@ -805,7 +806,10 @@ class ReviewViewSet(viewsets.ModelViewSet):
             if not self.request.user.is_authenticated:
                 return Review.objects.none()
             return self._defer_review_compat(
-                Review.objects.filter(author=self.request.user).select_related("author")
+                Review.objects.filter(author=self.request.user)
+                .select_related("author", "salon", "barber", "booking")
+                .prefetch_related("booking__lines")
+                .order_by("-created_at")
             )
         salon = self.request.query_params.get("salon")
         bp = request_barber(self.request)
