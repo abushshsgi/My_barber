@@ -80,15 +80,85 @@ export type AiStyleTryOnResponse = {
   style_title: string;
 };
 
+type AiStyleTryOnJobResponse = {
+  job_id: string;
+  status: "queued" | "processing" | "completed" | "failed";
+  style_id: string;
+  style_title: string;
+  preview_image?: string;
+  detail?: string;
+  queue_position?: number;
+};
+
+const TRYON_POLL_MS = 2000;
+const TRYON_POLL_TIMEOUT_MS = 120_000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function pollAiStyleTryOnJob(jobId: string): Promise<AiStyleTryOnResponse> {
+  const deadline = Date.now() + TRYON_POLL_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    await sleep(TRYON_POLL_MS);
+    const job = await apiJson<AiStyleTryOnJobResponse>(`/api/v1/ai/style-tryon/${jobId}/`);
+    if (job.status === "completed" && job.preview_image) {
+      return {
+        preview_image: job.preview_image,
+        style_id: job.style_id,
+        style_title: job.style_title,
+      };
+    }
+    if (job.status === "failed") {
+      throw new Error(job.detail ?? "Rasm yaratishda xatolik");
+    }
+  }
+  throw new Error("Rasm yaratish juda uzoq davom etdi. Qayta urinib ko'ring.");
+}
+
 export async function generateAiStyleTryOn(
   image: string,
   styleId: string,
   personaId?: ExplorePersonaId,
 ): Promise<AiStyleTryOnResponse> {
-  return apiJson<AiStyleTryOnResponse>("/api/v1/ai/style-tryon/", {
+  const res = await apiFetch("/api/v1/ai/style-tryon/", {
     method: "POST",
     body: JSON.stringify({ image, style_id: styleId, persona: personaId }),
   });
+  const body = (await res.json().catch(() => null)) as
+    | AiStyleTryOnResponse
+    | AiStyleTryOnJobResponse
+    | { detail?: string }
+    | null;
+
+  if (!res.ok) {
+    const detail =
+      body && typeof body === "object" && typeof body.detail === "string"
+        ? body.detail
+        : "Rasm yaratishda xatolik";
+    throw new Error(detail);
+  }
+
+  if (
+    res.status === 202 &&
+    body &&
+    typeof body === "object" &&
+    "job_id" in body &&
+    typeof body.job_id === "string"
+  ) {
+    return pollAiStyleTryOnJob(body.job_id);
+  }
+
+  if (
+    body &&
+    typeof body === "object" &&
+    "preview_image" in body &&
+    typeof body.preview_image === "string"
+  ) {
+    return body as AiStyleTryOnResponse;
+  }
+
+  throw new Error("Rasm yaratishda xatolik");
 }
 
 export type AiStyleHistoryEntryApi = {

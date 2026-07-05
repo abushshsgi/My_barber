@@ -99,15 +99,43 @@ class AiStyleAnalyzeTests(TestCase):
     @patch("ai.views.generate_tryon_preview")
     def test_style_tryon_returns_preview(self, mock_tryon):
         mock_tryon.return_value = "data:image/png;base64,abc"
-        res = self.client.post(
-            "/api/v1/ai/style-tryon/",
-            {"image": self.tiny_png, "style_id": "men-mid-fade"},
-            format="json",
-        )
+        with patch("ai.views.is_queue_enabled", return_value=False):
+            res = self.client.post(
+                "/api/v1/ai/style-tryon/",
+                {"image": self.tiny_png, "style_id": "men-mid-fade"},
+                format="json",
+            )
         self.assertEqual(res.status_code, 200)
         body = res.json()
         self.assertEqual(body["style_id"], "men-mid-fade")
         self.assertTrue(body["preview_image"].startswith("data:image/"))
+
+    @patch("ai.views.enqueue_tryon_job", return_value="abc123job")
+    def test_style_tryon_queues_with_redis(self, mock_enqueue):
+        with patch("ai.views.is_queue_enabled", return_value=True):
+            res = self.client.post(
+                "/api/v1/ai/style-tryon/",
+                {"image": self.tiny_png, "style_id": "men-mid-fade"},
+                format="json",
+            )
+        self.assertEqual(res.status_code, 202)
+        body = res.json()
+        self.assertEqual(body["job_id"], "abc123job")
+        self.assertEqual(body["status"], "queued")
+        mock_enqueue.assert_called_once()
+
+    @patch("ai.views.get_tryon_job")
+    def test_style_tryon_job_status(self, mock_get_job):
+        mock_get_job.return_value = {
+            "job_id": "abc123job",
+            "status": "completed",
+            "style_id": "men-mid-fade",
+            "style_title": "Mid Fade",
+            "preview_image": "data:image/png;base64,abc",
+        }
+        res = self.client.get("/api/v1/ai/style-tryon/abc123job/")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["status"], "completed")
 
     def test_style_tryon_requires_style_id(self):
         res = self.client.post(

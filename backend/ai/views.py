@@ -24,6 +24,7 @@ from .style_recommend import (
     resolve_ai_style_audience,
 )
 from .services.gemini_tryon import generate_tryon_preview
+from .services.tryon_queue import enqueue_tryon_job, get_tryon_job, is_queue_enabled
 from .services.gemini_style import (
     NO_FACE_MESSAGE,
     AiStyleError,
@@ -209,6 +210,26 @@ class AiStyleTryOnView(APIView):
         )
 
         try:
+            if is_queue_enabled():
+                job_id = enqueue_tryon_job(
+                    user_id=user.pk,
+                    image=str(image),
+                    style_id=style.style_id,
+                    style_title=style.title_uz,
+                    audience=style.audience,
+                    slug=style.slug,
+                    reference_image_url=reference_url,
+                )
+                return Response(
+                    {
+                        "job_id": job_id,
+                        "status": "queued",
+                        "style_id": style.style_id,
+                        "style_title": style.title_uz,
+                    },
+                    status=status.HTTP_202_ACCEPTED,
+                )
+
             preview_image = generate_tryon_preview(
                 selfie_data_url=str(image),
                 audience=style.audience,
@@ -225,6 +246,23 @@ class AiStyleTryOnView(APIView):
             )
         except AiStyleError as exc:
             return Response({"detail": exc.message}, status=exc.status)
+
+
+class AiStyleTryOnJobView(APIView):
+    """GET /ai/style-tryon/{job_id}/ — navbat holati va natija."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [AuthIPThrottle]
+
+    def get(self, request, job_id: str):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+
+        job = get_tryon_job(job_id.strip(), user_id=user.pk)
+        if job is None:
+            return Response({"detail": "Topilmadi yoki muddati tugagan."}, status=404)
+        return Response(job)
 
 
 class AiFaceCheckView(APIView):

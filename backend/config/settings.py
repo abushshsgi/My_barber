@@ -111,6 +111,15 @@ VERTEX_IMAGE_LOCATION = os.environ.get("VERTEX_IMAGE_LOCATION", "global").strip(
 VERTEX_SERVICE_ACCOUNT_JSON = os.environ.get("VERTEX_SERVICE_ACCOUNT_JSON", "").strip()
 GOOGLE_APPLICATION_CREDENTIALS = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
 
+# Try-on Redis navbat (REDIS_URL bo'lsa yoqiladi)
+TRYON_QUEUE_ENABLED = os.environ.get("TRYON_QUEUE_ENABLED", "true").lower() in (
+    "1",
+    "true",
+    "yes",
+)
+TRYON_QUEUE_MAX_DEPTH = int(os.environ.get("TRYON_QUEUE_MAX_DEPTH", "200"))
+TRYON_JOB_TTL_SECONDS = int(os.environ.get("TRYON_JOB_TTL_SECONDS", "3600"))
+
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",

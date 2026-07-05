@@ -1,6 +1,7 @@
 # Railway: Root Directory = backend bo‘lsa, bu fayl avtomatik o‘qiladi.
 # Start: backend/Procfile → bin/start.sh (migrate + daphne ASGI)
-# Redis: “New” → Redis → REDIS_URL env avtomatik; WebSocket bir nechta replikada ishlaydi.
+# Redis: “New” → Redis → REDIS_URL env avtomatik; WebSocket + try-on navbat.
+# Alohida worker servis: Procfile → worker: python manage.py run_tryon_worker
 # Cron: “Cron Jobs” yoki alohida servis — remind_bookings, sync_exchange_rates:
 #   schedule: 0 6 * * *
 #   command:  python manage.py sync_exchange_rates --if-stale

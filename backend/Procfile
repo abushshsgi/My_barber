@@ -1,1 +1,2 @@
 web: bash bin/start.sh
+worker: python manage.py run_tryon_worker --poll-seconds 5

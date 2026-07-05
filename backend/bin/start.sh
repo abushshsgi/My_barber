@@ -13,6 +13,11 @@ if python manage.py showmigrations --plan 2>/dev/null | grep -q '^\[ \]'; then
   exit 1
 fi
 
+if [ -n "${REDIS_URL:-}" ] && [ "${TRYON_QUEUE_ENABLED:-true}" != "false" ]; then
+  echo "[start] Starting try-on Redis worker..."
+  python manage.py run_tryon_worker --poll-seconds 5 &
+fi
+
 echo "[start] Syncing exchange rates (if stale)..."
 python manage.py sync_exchange_rates --if-stale
 
