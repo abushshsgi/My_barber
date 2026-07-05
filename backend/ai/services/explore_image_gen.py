@@ -32,6 +32,21 @@ logger = logging.getLogger(__name__)
 PUBLIC_ROOT = Path(settings.BASE_DIR).parent / "apps" / "user" / "public"
 OUTPUT_W, OUTPUT_H = 768, 1024
 
+
+def _uses_public_output() -> bool:
+    return PUBLIC_ROOT.is_dir()
+
+
+def output_mode() -> str:
+    return "public" if _uses_public_output() else "media"
+
+
+def asset_file_path(*, persona_id: str, slug: str) -> Path:
+    rel = _relative_asset_path(persona_id=persona_id, slug=slug)
+    if _uses_public_output():
+        return PUBLIC_ROOT / rel
+    return Path(settings.MEDIA_ROOT) / rel
+
 STYLE_NEGATIVE = (
     "different person, changed face, changed age, changed skin tone, "
     "passport photo, ID photo, cartoon, watermark, text, busy background, gradient"
@@ -60,8 +75,16 @@ def _relative_asset_path(*, persona_id: str, slug: str) -> str:
     return url.lstrip("/")
 
 
-def _asset_file(*, persona_id: str, slug: str) -> Path:
-    return PUBLIC_ROOT / _relative_asset_path(persona_id=persona_id, slug=slug)
+def _public_url_for(*, persona_id: str, slug: str, path: Path) -> str:
+    rel = _relative_asset_path(persona_id=persona_id, slug=slug)
+    if _uses_public_output() and path.is_relative_to(PUBLIC_ROOT):
+        return f"/{rel}"
+    return ""
+
+
+def _download_path(*, persona_id: str, slug: str) -> str:
+    pid = normalize_persona_id(persona_id) or persona_id
+    return f"/api/v1/ai/dev/explore-gen/download/?persona_id={pid}&slug={slug}"
 
 
 def _persona_order() -> tuple[str, ...]:
@@ -69,12 +92,14 @@ def _persona_order() -> tuple[str, ...]:
 
 
 def list_explore_gen_jobs() -> list[dict[str, Any]]:
+    mode = output_mode()
     jobs: list[dict[str, Any]] = []
     for persona_id in _persona_order():
         persona = EXPLORE_PERSONAS[persona_id]
         for slug in ("reference", *sorted(MEN_CATALOG_STYLE_SLUGS)):
             rel = _relative_asset_path(persona_id=persona_id, slug=slug)
-            path = PUBLIC_ROOT / rel
+            path = asset_file_path(persona_id=persona_id, slug=slug)
+            public_url = _public_url_for(persona_id=persona_id, slug=slug, path=path)
             jobs.append(
                 {
                     "persona_id": persona_id,
@@ -82,8 +107,10 @@ def list_explore_gen_jobs() -> list[dict[str, Any]]:
                     "slug": slug,
                     "kind": "reference" if slug == "reference" else "style",
                     "relative_path": rel,
-                    "public_url": f"/{rel}",
+                    "public_url": public_url or None,
+                    "download_path": _download_path(persona_id=persona_id, slug=slug),
                     "exists": path.is_file(),
+                    "output_mode": mode,
                     "prompt": build_explore_gen_prompt(persona_id=persona_id, slug=slug),
                 }
             )
@@ -226,7 +253,7 @@ def generate_explore_asset(
     if slug != "reference" and slug not in MEN_CATALOG_STYLE_SLUGS:
         raise AiStyleError("Noto'g'ri slug.", 400)
 
-    dest = _asset_file(persona_id=pid, slug=slug)
+    dest = asset_file_path(persona_id=pid, slug=slug)
     rel = _relative_asset_path(persona_id=pid, slug=slug)
 
     if dest.is_file() and not force:
@@ -235,7 +262,9 @@ def generate_explore_asset(
             "persona_id": pid,
             "slug": slug,
             "relative_path": rel,
-            "public_url": f"/{rel}",
+            "public_url": _public_url_for(persona_id=pid, slug=slug, path=dest) or None,
+            "download_path": _download_path(persona_id=pid, slug=slug),
+            "output_mode": output_mode(),
             "message": "Fayl allaqachon mavjud (--force yo'q).",
         }
 
@@ -246,7 +275,7 @@ def generate_explore_asset(
         raw = _generate_imagen(prompt)
         method = "imagen"
     else:
-        ref_path = _asset_file(persona_id=pid, slug="reference")
+        ref_path = asset_file_path(persona_id=pid, slug="reference")
         if ref_path.is_file() and vertex_image_configured():
             raw = _generate_vertex_style_edit(
                 persona_id=pid,
@@ -266,7 +295,9 @@ def generate_explore_asset(
         "persona_id": pid,
         "slug": slug,
         "relative_path": rel,
-        "public_url": f"/{rel}",
+        "public_url": _public_url_for(persona_id=pid, slug=slug, path=dest) or None,
+        "download_path": _download_path(persona_id=pid, slug=slug),
+        "output_mode": output_mode(),
         "method": method,
         "elapsed_ms": elapsed_ms,
         "prompt": prompt,

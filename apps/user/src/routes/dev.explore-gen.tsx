@@ -1,7 +1,7 @@
-import { useCallback, useMemo, useState } from "react";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ImageIcon, Loader2, RefreshCw, Sparkles, Wand2 } from "lucide-react";
+import { Download, ImageIcon, Loader2, Lock, RefreshCw, Sparkles, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -10,35 +10,56 @@ import {
   type ExplorePersonaId,
 } from "@/lib/explore-personas";
 import {
+  exploreGenDownloadUrl,
   fetchExploreGenStatus,
   generateExploreAsset,
+  readExploreGenSecret,
+  resolveExploreGenImageUrl,
+  saveExploreGenSecret,
   type ExploreGenJob,
 } from "@/lib/api/explore-gen";
 import { cn } from "@/lib/utils";
 
+type ExploreGenSearch = {
+  key?: string;
+};
+
 export const Route = createFileRoute("/dev/explore-gen")({
-  beforeLoad: () => {
-    if (!import.meta.env.DEV) {
-      throw redirect({ to: "/" });
-    }
-  },
-  head: () => ({ meta: [{ title: "Explore generatsiya (dev) — mysaloon.uz" }] }),
+  validateSearch: (search: Record<string, unknown>): ExploreGenSearch => ({
+    key: typeof search.key === "string" ? search.key : undefined,
+  }),
+  head: () => ({ meta: [{ title: "Explore generatsiya — mysaloon.uz" }] }),
   component: ExploreGenDevPage,
 });
 
 type QueueItem = { personaId: string; slug: string; force: boolean };
 
 function ExploreGenDevPage() {
+  const { key: urlKey } = Route.useSearch();
   const queryClient = useQueryClient();
+  const isDev = import.meta.env.DEV;
   const [personaId, setPersonaId] = useState<ExplorePersonaId>("britan");
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [running, setRunning] = useState(false);
   const [expandedPrompt, setExpandedPrompt] = useState<string | null>(null);
+  const [keyInput, setKeyInput] = useState("");
+  const [unlocked, setUnlocked] = useState(isDev);
+
+  useEffect(() => {
+    if (urlKey) {
+      saveExploreGenSecret(urlKey);
+      setUnlocked(true);
+    } else if (readExploreGenSecret()) {
+      setUnlocked(true);
+    }
+  }, [urlKey]);
 
   const statusQuery = useQuery({
-    queryKey: ["explore-gen-status"],
+    queryKey: ["explore-gen-status", unlocked],
     queryFn: fetchExploreGenStatus,
+    enabled: unlocked,
     refetchInterval: running ? false : 30_000,
+    retry: false,
   });
 
   const generateMutation = useMutation({
@@ -58,6 +79,7 @@ function ExploreGenDevPage() {
 
   const jobs = statusQuery.data?.jobs ?? [];
   const configured = statusQuery.data?.configured;
+  const outputMode = statusQuery.data?.output_mode ?? "media";
 
   const personaJobs = useMemo(
     () => jobs.filter((job) => job.persona_id === personaId),
@@ -111,6 +133,44 @@ function ExploreGenDevPage() {
     void runQueue(items);
   };
 
+  const handleUnlock = () => {
+    if (!keyInput.trim()) return;
+    saveExploreGenSecret(keyInput.trim());
+    setUnlocked(true);
+    void queryClient.invalidateQueries({ queryKey: ["explore-gen-status"] });
+  };
+
+  if (!unlocked) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-neutral-100 px-4">
+        <div className="w-full max-w-md rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <Lock className="size-5 text-neutral-700" />
+            <h1 className="text-lg font-bold">Explore generatsiya</h1>
+          </div>
+          <p className="mt-3 text-sm text-neutral-600">
+            Maxfiy kalit kiriting yoki havolada{" "}
+            <code className="rounded bg-neutral-100 px-1">?key=...</code> bilan kiring.
+          </p>
+          <input
+            type="password"
+            value={keyInput}
+            onChange={(event) => setKeyInput(event.target.value)}
+            placeholder="EXPLORE_GEN_SECRET"
+            className="mt-4 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm"
+          />
+          <button
+            type="button"
+            onClick={handleUnlock}
+            className="mt-3 w-full rounded-2xl bg-neutral-900 py-3 text-sm font-semibold text-white"
+          >
+            Kirish
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-neutral-100 px-4 py-8 text-neutral-900">
       <div className="mx-auto max-w-6xl">
@@ -118,15 +178,12 @@ function ExploreGenDevPage() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-700">
-                Vaqtinchalik dev
+                Vaqtinchalik
               </p>
               <h1 className="mt-2 text-2xl font-bold tracking-tight">Explore rasm generatsiyasi</h1>
               <p className="mt-2 max-w-2xl text-sm text-neutral-600">
-                4 personaj × reference + 12 uslub. Rasmlar{" "}
-                <code className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs">
-                  apps/user/public/hairstyles/men/personas/
-                </code>{" "}
-                ga saqlanadi.
+                4 personaj × reference + 12 uslub. Rasmlar generatsiyadan keyin Explore uchun git
+                ga qo&apos;yiladi.
               </p>
             </div>
             <button
@@ -144,26 +201,31 @@ function ExploreGenDevPage() {
             </button>
           </div>
 
+          {outputMode === "media" ? (
+            <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+              <strong>Production (Railway):</strong> rasmlar server media papkasiga saqlanadi.
+              Har bir rasmni <strong>Yuklab olish</strong> tugmasi bilan oling va{" "}
+              <code className="rounded bg-white/80 px-1">
+                apps/user/public/hairstyles/men/personas/
+              </code>{" "}
+              ga qo&apos;yib push qiling.
+            </div>
+          ) : null}
+
           <div className="mt-6 flex flex-wrap gap-2">
             <ConfigBadge ok={configured?.gemini_api_key} label="GEMINI_API_KEY (reference)" />
             <ConfigBadge ok={configured?.vertex_image} label="Vertex rasm (uslub edit)" />
             <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-700">
               {statusQuery.data?.existing ?? 0} / {statusQuery.data?.total ?? 52} tayyor
             </span>
+            <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-700">
+              output: {outputMode}
+            </span>
           </div>
 
           {!configured?.gemini_api_key ? (
             <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              <strong>GEMINI_API_KEY</strong> kerak — reference rasmlar uchun.{" "}
-              <a
-                href="https://aistudio.google.com/apikey"
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
-                AI Studio
-              </a>{" "}
-              dan oling va <code>backend/.env</code>mda qo&apos;ying.
+              Railway Variables da <strong>GEMINI_API_KEY</strong> qo&apos;ying (reference uchun).
             </div>
           ) : null}
 
@@ -222,8 +284,8 @@ function ExploreGenDevPage() {
 
         {statusQuery.isError ? (
           <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-            Backend ulanmadi. <code>python manage.py runserver</code> va{" "}
-            <code>DJANGO_DEBUG=true</code> ni tekshiring.
+            API xato — kalit noto&apos;g&apos;ri yoki backend sozlanmagan. Railway da{" "}
+            <code>EXPLORE_GEN_SECRET</code> va <code>GEMINI_API_KEY</code> ni tekshiring.
           </div>
         ) : null}
 
@@ -302,13 +364,13 @@ function JobCard({
   onTogglePrompt: () => void;
   onGenerate: (force: boolean) => void;
 }) {
-  const cacheBust = job.exists ? `?v=${Date.now()}` : "";
+  const imageUrl = resolveExploreGenImageUrl(job);
   return (
     <div className="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm">
       <div className="relative aspect-[3/4] bg-neutral-100">
-        {job.exists ? (
+        {job.exists && imageUrl ? (
           <img
-            src={`${job.public_url}${cacheBust}`}
+            src={imageUrl}
             alt={`${job.persona_label} ${job.slug}`}
             className="h-full w-full object-cover"
           />
@@ -344,6 +406,16 @@ function JobCard({
           >
             Qayta
           </button>
+          {job.exists ? (
+            <a
+              href={exploreGenDownloadUrl(job)}
+              download
+              className="inline-flex items-center gap-1 rounded-xl border border-neutral-200 px-3 py-2 text-xs font-semibold"
+            >
+              <Download className="size-3.5" />
+              Yuklab olish
+            </a>
+          ) : null}
           <button
             type="button"
             onClick={onTogglePrompt}
