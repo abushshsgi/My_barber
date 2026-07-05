@@ -108,6 +108,23 @@ function StepRail({ step }: { step: 1 | 2 | 3 }) {
   );
 }
 
+function ResultsHero({ photo }: { photo: string }) {
+  return (
+    <div className="relative h-full w-full overflow-hidden">
+      <img
+        src={photo}
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover object-top"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-transparent" />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black/85 via-black/55 to-transparent"
+      />
+    </div>
+  );
+}
+
 function HeroCarousel({ audience, hintActive }: { audience: Audience; hintActive: boolean }) {
   const { t } = useTranslation();
   const slides = HERO_SLIDES[audience === "women" ? "women" : "men"];
@@ -543,6 +560,8 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
       >
         {isGalleryValidating ? (
           <GalleryValidatingHero previewUrl={props.validatingPreview!} />
+        ) : showResults && props.photo ? (
+          <ResultsHero photo={props.photo} />
         ) : (
           <HeroCarousel audience={props.audience} hintActive={showHistoryHint} />
         )}
