@@ -6,6 +6,7 @@ from typing import Any
 
 from django.conf import settings
 
+from .vertex_auth import vertex_image_configured
 from .vertex_client import generate_content
 
 VERTEX_IMAGE_MODEL = "gemini-3.1-flash-lite-image"
