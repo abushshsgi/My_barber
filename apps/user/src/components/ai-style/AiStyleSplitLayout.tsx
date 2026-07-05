@@ -664,10 +664,9 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
           initial={{ y: "100%" }}
           animate={{ y: 0 }}
           transition={{ type: "spring", damping: 36, stiffness: 170, mass: 1.15 }}
-          className="relative -mt-10 flex min-h-0 flex-1 flex-col overflow-y-auto rounded-t-[28px] bg-white px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-4 text-black"
+          className="relative -mt-10 flex min-h-0 flex-1 flex-col overflow-y-auto rounded-t-[28px] bg-white px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 text-black"
         >
-          <StepRail step={props.step} />
-          <div className="mt-4 min-h-0 flex-1 text-left">
+          <div className="min-h-0 flex-1 text-left">
             <AiStyleResultsBlock
               result={props.result!}
               saved={props.saved}
