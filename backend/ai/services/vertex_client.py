@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import logging
+import random
+import time
 import urllib.error
 import urllib.request
 from typing import Any
@@ -42,6 +44,13 @@ def _map_vertex_http_error(status: int, body: str, *, kind: str = "general") -> 
         )
     if "billing" in lowered or "account disabled" in lowered:
         return "Google Cloud billing yoqilmagan yoki $300 kredit tugagan."
+    if status == 429 or "resource_exhausted" in lowered or "resource has been exhausted" in lowered:
+        if kind == "image":
+            return (
+                "Rasm generatsiya vaqtincha band (Google limit). "
+                "1–2 daqiqadan keyin qayta urinib ko'ring."
+            )
+        return "AI vaqtincha band. Biroz kutib qayta urinib ko'ring."
     if status == 404:
         if kind == "image":
             return (
@@ -67,29 +76,49 @@ def generate_content(
         )
 
     token = get_vertex_access_token()
-    req = urllib.request.Request(
-        _vertex_generate_url(model, location=location),
-        data=json.dumps(body).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {token}",
-        },
-        method="POST",
-    )
+    url = _vertex_generate_url(model, location=location)
+    payload_bytes = json.dumps(body).encode("utf-8")
+    max_attempts = 3 if kind == "image" else 1
 
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as res:
-            return json.loads(res.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        err_body = read_http_error_body(exc)
-        logger.warning("Vertex HTTP %s (%s): %s", exc.code, model, err_body[:800])
-        message = _map_vertex_http_error(exc.code, err_body, kind=kind)
-        raise AiStyleError(message, 502 if exc.code >= 500 else 400) from exc
-    except urllib.error.URLError as exc:
-        logger.warning("Vertex network error (%s): %s", model, exc)
-        raise AiStyleError("Vertex AI serveriga ulanib bo'lmadi.", 502) from exc
-    except TimeoutError as exc:
-        raise AiStyleError("AI so'rov juda uzoq davom etdi. Qayta urinib ko'ring.", 504) from exc
-    except RuntimeError as exc:
-        logger.warning("Vertex auth error: %s", exc)
-        raise AiStyleError("Vertex AI autentifikatsiya xatosi.", 503) from exc
+    for attempt in range(max_attempts):
+        req = urllib.request.Request(
+            url,
+            data=payload_bytes,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}",
+            },
+            method="POST",
+        )
+
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as res:
+                return json.loads(res.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            err_body = read_http_error_body(exc)
+            if exc.code == 429 and attempt < max_attempts - 1:
+                delay = (2**attempt) + random.uniform(0.5, 1.5)
+                logger.warning(
+                    "Vertex HTTP 429 (%s), retry %s/%s in %.1fs",
+                    model,
+                    attempt + 1,
+                    max_attempts,
+                    delay,
+                )
+                time.sleep(delay)
+                token = get_vertex_access_token()
+                continue
+            logger.warning("Vertex HTTP %s (%s): %s", exc.code, model, err_body[:800])
+            message = _map_vertex_http_error(exc.code, err_body, kind=kind)
+            http_status = 429 if exc.code == 429 else (502 if exc.code >= 500 else 400)
+            raise AiStyleError(message, http_status) from exc
+        except urllib.error.URLError as exc:
+            logger.warning("Vertex network error (%s): %s", model, exc)
+            raise AiStyleError("Vertex AI serveriga ulanib bo'lmadi.", 502) from exc
+        except TimeoutError as exc:
+            raise AiStyleError("AI so'rov juda uzoq davom etdi. Qayta urinib ko'ring.", 504) from exc
+        except RuntimeError as exc:
+            logger.warning("Vertex auth error: %s", exc)
+            raise AiStyleError("Vertex AI autentifikatsiya xatosi.", 503) from exc
+
+    raise AiStyleError("AI so'rov muvaffaqiyatsiz tugadi.", 502)
