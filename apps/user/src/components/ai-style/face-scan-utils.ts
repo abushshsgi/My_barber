@@ -11,13 +11,7 @@ export type ScanPhase =
   | "countdown"
   | "capture";
 
-export const SCAN_SEQUENCE: ScanPhase[] = [
-  "turn_left",
-  "turn_right",
-  "turn_up",
-  "turn_down",
-  "center",
-];
+export const SCAN_SEQUENCE: ScanPhase[] = ["center"];
 
 export type FaceLandmark = { x: number; y: number; z?: number };
 
@@ -164,10 +158,10 @@ export function phaseSatisfied(phase: ScanPhase, metrics: FaceFrameMetrics): boo
 }
 
 export function nextPhase(phase: ScanPhase): ScanPhase {
-  if (phase === "searching") return "turn_left";
-  const idx = SCAN_SEQUENCE.indexOf(phase);
-  if (idx >= 0 && idx < SCAN_SEQUENCE.length - 1) return SCAN_SEQUENCE[idx + 1];
-  if (phase === "center") return "countdown";
+  if (phase === "searching") return SCAN_SEQUENCE[0] ?? "center";
+  const idx = SCAN_SEQUENCE.indexOf(phase as (typeof SCAN_SEQUENCE)[number]);
+  if (idx >= 0 && idx < SCAN_SEQUENCE.length - 1) return SCAN_SEQUENCE[idx + 1]!;
+  if (phase === "center" || idx === SCAN_SEQUENCE.length - 1) return "capture";
   return phase;
 }
 
