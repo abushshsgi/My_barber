@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AiStyleCamera } from "@/components/ai-style/AiStyleCamera";
@@ -9,6 +9,11 @@ import type { useAiStyleFlow } from "@/components/ai-style/useAiStyleFlow";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
+import {
+  loadSavedAiStyleIds,
+  removeSavedAiStyle,
+  saveAiStyle,
+} from "@/lib/saved-ai-styles";
 import type { Audience } from "@/lib/mock-data";
 
 type Flow = ReturnType<typeof useAiStyleFlow>;
@@ -70,7 +75,7 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
   } = flow;
   const { personaId } = useExplorePersona();
   const { data: focusHairstyle } = useHairstyle(focusStyleId ?? "", personaId);
-  const [saved, setSaved] = useState<string[]>([]);
+  const [saved, setSaved] = useState<string[]>(() => loadSavedAiStyleIds());
 
   const displayResult = useMemo(() => {
     if (!result || !focusStyleId || !focusHairstyle) return result;
@@ -101,11 +106,37 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
     }
   }, [photo, faceHint, t]);
 
+  useEffect(() => {
+    if (done) setSaved(loadSavedAiStyleIds());
+  }, [done]);
+
   const step: 1 | 2 | 3 = !photo ? 1 : analyzing || validating ? 2 : done ? 3 : 2;
 
-  const toggleSave = (id: string) => {
-    setSaved((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  };
+  const toggleSave = useCallback(
+    (id: string, meta?: { title: string; previewImage?: string }) => {
+      const previewImage = meta?.previewImage ?? flow.tryOnByStyle[id];
+      const title = meta?.title;
+
+      if (saved.includes(id)) {
+        removeSavedAiStyle(id);
+        setSaved((prev) => prev.filter((x) => x !== id));
+        toast.message(t("aiStylePage.unsaved"));
+        return;
+      }
+
+      if (previewImage && title) {
+        saveAiStyle({
+          styleId: id,
+          title,
+          previewImage,
+          savedAt: new Date().toISOString(),
+        });
+      }
+      setSaved((prev) => (prev.includes(id) ? prev : [...prev, id]));
+      toast.success(t("aiStylePage.savedToast"));
+    },
+    [saved, flow.tryOnByStyle, t],
+  );
 
   return (
     <>

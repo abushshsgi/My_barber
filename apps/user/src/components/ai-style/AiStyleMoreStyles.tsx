@@ -107,7 +107,7 @@ export function AiStyleMoreStyles({
   if (!onGenerateTryOn) return null;
 
   return (
-    <div className="mt-8 space-y-3 pt-2">
+    <div id="ai-style-more-styles" className="mt-8 space-y-3 pt-2">
       <div>
         <h3 className="text-sm font-bold text-black">{t("aiStylePage.moreStylesTitle")}</h3>
         <p className="mt-1 text-[11px] text-neutral-500">{t("aiStylePage.moreStylesHint")}</p>

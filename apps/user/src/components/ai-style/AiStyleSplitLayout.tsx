@@ -40,7 +40,7 @@ export type AiStyleSplitLayoutProps = {
   result: AiAnalysisResult | null;
   focusStyleId?: string;
   saved: string[];
-  onToggleSave: (id: string) => void;
+  onToggleSave: (styleId: string, meta?: { title: string; previewImage?: string }) => void;
   onReset: () => void;
   openFile: () => void;
   openCamera: () => void;
@@ -546,7 +546,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
         className={cn(
           "relative shrink-0 overflow-hidden",
           isUploadStep && "min-h-0",
-          showResults && "h-[24dvh]",
+          showResults && "h-[14dvh]",
         )}
         style={
           isUploadStep
@@ -664,7 +664,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
           initial={{ y: "100%" }}
           animate={{ y: 0 }}
           transition={{ type: "spring", damping: 36, stiffness: 170, mass: 1.15 }}
-          className="relative -mt-10 flex min-h-0 flex-1 flex-col overflow-y-auto rounded-t-[28px] bg-white px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 text-black"
+          className="relative -mt-14 flex min-h-0 flex-1 flex-col overflow-y-auto rounded-t-[28px] bg-white px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 text-black"
         >
           <div className="min-h-0 flex-1 text-left">
             <AiStyleResultsBlock

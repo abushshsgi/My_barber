@@ -5,11 +5,17 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { AiStyleMoreStyles } from "@/components/ai-style/AiStyleMoreStyles";
+import { AiStylePreviewSheet } from "@/components/ai-style/AiStylePreviewSheet";
 import { isCatalogStyleId, styleCoverGradient } from "@/components/ai-style/ai-style-shared";
 import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 type Suggestion = AiAnalysisResult["suggestions"][number];
+
+export type AiStyleSaveHandler = (
+  styleId: string,
+  meta?: { title: string; previewImage?: string },
+) => void;
 
 function StylePreview({
   suggestion,
@@ -150,18 +156,24 @@ function SpotlightCard({
   tryOnPreview,
   tryOnLoading,
   onGenerateTryOn,
+  onOpenPreview,
 }: {
   suggestion: Suggestion;
   index: number;
   saved: boolean;
-  onToggleSave: (id: string) => void;
+  onToggleSave: AiStyleSaveHandler;
   tryOnPreview?: string;
   tryOnLoading?: boolean;
   onGenerateTryOn?: (styleId: string) => void;
+  onOpenPreview: () => void;
 }) {
   const { t } = useTranslation();
   const canTryOn = Boolean(onGenerateTryOn && isCatalogStyleId(suggestion.id));
   const reason = suggestion.reason ?? (suggestion.reasonKey ? t(suggestion.reasonKey) : "");
+  const saveMeta = {
+    title: suggestion.title,
+    previewImage: tryOnPreview || suggestion.imageUrl,
+  };
 
   return (
     <article
@@ -169,8 +181,16 @@ function SpotlightCard({
       data-index={index}
       className="w-full"
     >
-      <div className="relative aspect-[4/5] overflow-hidden rounded-[24px] bg-neutral-100">
-        <StylePreview suggestion={suggestion} tryOnPreview={tryOnPreview} />
+      <button
+        type="button"
+        onClick={onOpenPreview}
+        className="relative block w-full overflow-hidden rounded-[24px] bg-neutral-100 text-left"
+      >
+        <div className="relative min-h-[min(48dvh,400px)] w-full">
+          <div className="absolute inset-0">
+            <StylePreview suggestion={suggestion} tryOnPreview={tryOnPreview} />
+          </div>
+        </div>
 
         {tryOnLoading ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/50 backdrop-blur-[2px]">
@@ -198,7 +218,7 @@ function SpotlightCard({
             </span>
           </div>
         </div>
-      </div>
+      </button>
 
       {reason ? (
         <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-neutral-600">{reason}</p>
@@ -238,19 +258,17 @@ function SpotlightCard({
         <IconActionButton
           label={t("aiStylePage.save")}
           active={saved}
-          onClick={() => onToggleSave(suggestion.id)}
+          onClick={() => onToggleSave(suggestion.id, saveMeta)}
         >
           <Bookmark className={cn("h-4 w-4", saved && "fill-current")} />
         </IconActionButton>
         {isCatalogStyleId(suggestion.id) ? (
-          <Link
-            to="/explore/$styleId"
-            params={{ styleId: suggestion.id }}
-            aria-label={t("aiStylePage.viewStyle")}
-            className="grid h-12 w-12 place-items-center rounded-full bg-neutral-100 text-black transition-colors active:opacity-80"
+          <IconActionButton
+            label={t("aiStylePage.viewStyle")}
+            onClick={onOpenPreview}
           >
             <ExternalLink className="h-4 w-4" />
-          </Link>
+          </IconActionButton>
         ) : null}
       </div>
     </article>
@@ -265,14 +283,16 @@ function AiStyleSuggestionsSpotlight({
   tryOnLoadingId,
   onGenerateTryOn,
   focusStyleId,
+  onOpenPreview,
 }: {
   suggestions: Suggestion[];
   saved: string[];
-  onToggleSave: (id: string) => void;
+  onToggleSave: AiStyleSaveHandler;
   tryOnByStyle?: Record<string, string>;
   tryOnLoadingId?: string | null;
   onGenerateTryOn?: (styleId: string) => void;
   focusStyleId?: string;
+  onOpenPreview: (styleId: string) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
@@ -327,6 +347,7 @@ function AiStyleSuggestionsSpotlight({
               tryOnPreview={tryOnByStyle?.[suggestion.id]}
               tryOnLoading={tryOnLoadingId === suggestion.id}
               onGenerateTryOn={onGenerateTryOn}
+              onOpenPreview={() => onOpenPreview(suggestion.id)}
             />
           </motion.div>
         ))}
@@ -437,15 +458,17 @@ export function AiStyleSuggestionsCarousel({
   onGenerateTryOn,
   focusStyleId,
   minimal = false,
+  onOpenPreview,
 }: {
   suggestions: Suggestion[];
   saved: string[];
-  onToggleSave: (id: string) => void;
+  onToggleSave: AiStyleSaveHandler;
   tryOnByStyle?: Record<string, string>;
   tryOnLoadingId?: string | null;
   onGenerateTryOn?: (styleId: string) => void;
   focusStyleId?: string;
   minimal?: boolean;
+  onOpenPreview: (styleId: string) => void;
 }) {
   const { t } = useTranslation();
 
@@ -465,6 +488,7 @@ export function AiStyleSuggestionsCarousel({
         tryOnLoadingId={tryOnLoadingId}
         onGenerateTryOn={onGenerateTryOn}
         focusStyleId={focusStyleId}
+        onOpenPreview={onOpenPreview}
       />
     );
   }
@@ -603,7 +627,7 @@ export function AiStyleResultsBlock({
 }: {
   result: AiAnalysisResult;
   saved: string[];
-  onToggleSave: (id: string) => void;
+  onToggleSave: AiStyleSaveHandler;
   onReset: () => void;
   layout?: "carousel" | "stack";
   summaryTone?: "light" | "dark";
@@ -617,6 +641,13 @@ export function AiStyleResultsBlock({
   const { t } = useTranslation();
   const minimal = variant === "minimal";
   const suggestedIds = result.suggestions.map((s) => s.id);
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const previewSuggestion =
+    result.suggestions.find((suggestion) => suggestion.id === previewId) ?? null;
+
+  const scrollToMoreStyles = () => {
+    document.getElementById("ai-style-more-styles")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
     <div className="space-y-5">
@@ -644,6 +675,7 @@ export function AiStyleResultsBlock({
           onGenerateTryOn={onGenerateTryOn}
           focusStyleId={focusStyleId}
           minimal={minimal}
+          onOpenPreview={setPreviewId}
         />
       ) : (
         <AiStyleSuggestionsStack
@@ -664,6 +696,22 @@ export function AiStyleResultsBlock({
           onGenerateTryOn={onGenerateTryOn}
         />
       ) : null}
+
+      <AiStylePreviewSheet
+        open={previewId !== null}
+        onOpenChange={(open) => {
+          if (!open) setPreviewId(null);
+        }}
+        suggestion={previewSuggestion}
+        previewImage={
+          previewId ? tryOnByStyle?.[previewId] : undefined
+        }
+        saved={previewId ? saved.includes(previewId) : false}
+        tryOnLoading={previewId ? tryOnLoadingId === previewId : false}
+        onToggleSave={onToggleSave}
+        onGenerateTryOn={onGenerateTryOn}
+        onTryMoreStyles={scrollToMoreStyles}
+      />
     </div>
   );
 }
