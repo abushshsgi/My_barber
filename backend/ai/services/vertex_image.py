@@ -1,4 +1,4 @@
-"""Vertex AI — Gemini image generation (Nano Banana / Flash Image)."""
+"""Vertex AI — gemini-3.1-flash-lite-image (Nano Banana 2 Lite) try-on."""
 
 from __future__ import annotations
 
@@ -15,31 +15,12 @@ from .vertex_auth import get_vertex_access_token, vertex_image_configured
 
 logger = logging.getLogger(__name__)
 
-IMAGE_MODEL_FALLBACKS = (
-    "gemini-3.1-flash-lite-image",
-    "gemini-2.5-flash-image",
-    "gemini-3.1-flash-image",
-)
+VERTEX_IMAGE_MODEL = "gemini-3.1-flash-lite-image"
 
 
-def use_vertex_for_images() -> bool:
-    provider = (getattr(settings, "AI_IMAGE_PROVIDER", None) or "").strip().lower()
-    if provider == "gemini":
-        return False
-    if provider == "vertex":
-        return vertex_image_configured()
-    return vertex_image_configured()
-
-
-def _image_models() -> tuple[str, ...]:
-    preferred = (getattr(settings, "VERTEX_IMAGE_MODEL", None) or "").strip()
-    if not preferred:
-        preferred = (getattr(settings, "GEMINI_IMAGE_MODEL", None) or "").strip()
-    ordered: list[str] = []
-    for model in (preferred, *IMAGE_MODEL_FALLBACKS):
-        if model and model not in ordered:
-            ordered.append(model)
-    return tuple(ordered)
+def vertex_image_model() -> str:
+    configured = (getattr(settings, "VERTEX_IMAGE_MODEL", None) or "").strip()
+    return configured or VERTEX_IMAGE_MODEL
 
 
 def _vertex_generate_url(model: str) -> str:
@@ -51,7 +32,14 @@ def _vertex_generate_url(model: str) -> str:
     )
 
 
-def post_vertex_image(model: str, body: dict[str, Any]) -> dict[str, Any]:
+def generate_image_content(body: dict[str, Any]) -> dict[str, Any]:
+    if not vertex_image_configured():
+        raise AiStyleError(
+            "Vertex AI sozlanmagan. VERTEX_PROJECT_ID va VERTEX_SERVICE_ACCOUNT_JSON kerak.",
+            503,
+        )
+
+    model = vertex_image_model()
     token = get_vertex_access_token()
     req = urllib.request.Request(
         _vertex_generate_url(model),
@@ -62,44 +50,26 @@ def post_vertex_image(model: str, body: dict[str, Any]) -> dict[str, Any]:
         },
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=120) as res:
-        return json.loads(res.read().decode("utf-8"))
 
-
-def generate_image_content(body: dict[str, Any]) -> dict[str, Any]:
-    if not vertex_image_configured():
+    try:
+        with urllib.request.urlopen(req, timeout=120) as res:
+            return json.loads(res.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        err_body = _read_http_error_body(exc)
+        logger.warning("Vertex image HTTP %s (%s): %s", exc.code, model, err_body[:800])
+        message = _map_vertex_http_error(exc.code, err_body)
+        raise AiStyleError(message, 502 if exc.code >= 500 else 400) from exc
+    except urllib.error.URLError as exc:
+        logger.warning("Vertex image network error (%s): %s", model, exc)
+        raise AiStyleError("Vertex AI serveriga ulanib bo'lmadi.", 502) from exc
+    except TimeoutError as exc:
         raise AiStyleError(
-            "Vertex AI sozlanmagan. VERTEX_PROJECT_ID va service account JSON kerak.",
-            503,
-        )
-
-    last_error: AiStyleError | None = None
-    for model in _image_models():
-        try:
-            return post_vertex_image(model, body)
-        except urllib.error.HTTPError as exc:
-            err_body = _read_http_error_body(exc)
-            logger.warning("Vertex image HTTP %s (%s): %s", exc.code, model, err_body[:800])
-            message = _map_vertex_http_error(exc.code, err_body)
-            last_error = AiStyleError(message, 502 if exc.code >= 500 else 400)
-            if exc.code == 404:
-                continue
-            raise last_error from exc
-        except urllib.error.URLError as exc:
-            logger.warning("Vertex image network error (%s): %s", model, exc)
-            raise AiStyleError("Vertex AI serveriga ulanib bo'lmadi.", 502) from exc
-        except TimeoutError as exc:
-            raise AiStyleError(
-                "Rasm yaratish juda uzoq davom etdi. Qayta urinib ko'ring.",
-                504,
-            ) from exc
-        except RuntimeError as exc:
-            logger.warning("Vertex auth error: %s", exc)
-            raise AiStyleError("Vertex AI autentifikatsiya xatosi.", 503) from exc
-
-    if last_error:
-        raise last_error
-    raise AiStyleError("Rasm yaratish vaqtincha ishlamayapti. Keyinroq urinib ko'ring.", 502)
+            "Rasm yaratish juda uzoq davom etdi. Qayta urinib ko'ring.",
+            504,
+        ) from exc
+    except RuntimeError as exc:
+        logger.warning("Vertex auth error: %s", exc)
+        raise AiStyleError("Vertex AI autentifikatsiya xatosi.", 503) from exc
 
 
 def _map_vertex_http_error(status: int, body: str) -> str:
@@ -111,4 +81,9 @@ def _map_vertex_http_error(status: int, body: str) -> str:
         )
     if "billing" in lowered or "account disabled" in lowered:
         return "Google Cloud billing yoqilmagan yoki limit tugagan."
+    if status == 404:
+        return (
+            f"Rasm modeli topilmadi ({vertex_image_model()}). "
+            "VERTEX_IMAGE_MODEL va Vertex AI API ni tekshiring."
+        )
     return _map_gemini_http_error(status, body, kind="image")

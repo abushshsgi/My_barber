@@ -54,10 +54,10 @@ export function GalleryValidatingHero({ previewUrl }: { previewUrl: string }) {
             </div>
             <div className="min-w-0 flex-1 text-left">
               <p className="text-[15px] font-bold leading-tight text-white">
-                {t("aiStylePage.faceChecking")}
+                {t("aiStylePage.preparingPhoto")}
               </p>
               <p className="mt-1 text-xs leading-relaxed text-white/65">
-                {t("aiStylePage.galleryValidatingHint")}
+                {t("aiStylePage.preparingPhotoHint")}
               </p>
             </div>
           </div>

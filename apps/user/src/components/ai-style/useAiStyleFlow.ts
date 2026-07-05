@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { analyzeAiStyle, checkAiStyleFace, generateAiStyleTryOn, persistAiStyleHistory } from "@/lib/api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { analyzeAiStyle, generateAiStyleTryOn, persistAiStyleHistory } from "@/lib/api";
 import type { CameraCapturePayload } from "@/components/ai-style/AiStyleCamera";
 import { mapAiStyleResponse, type AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import {
@@ -8,17 +8,9 @@ import {
   saveFaceProfile,
 } from "@/lib/face-profile";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
+import { prepareSelfieDataUrl, prepareSelfieFromFile } from "@/lib/selfie-image";
 import type { Audience } from "@/lib/mock-data";
 import type { AiFaceHint } from "@/lib/api/ai";
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error("Rasm o'qib bo'lmadi."));
-    reader.readAsDataURL(file);
-  });
-}
 
 type UseAiStyleFlowOptions = {
   menPersonaId?: ExplorePersonaId | null;
@@ -29,8 +21,8 @@ type UseAiStyleFlowOptions = {
 export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
   const { menPersonaId, focusStyleId, audience } = options;
   const [photo, setPhoto] = useState<string | null>(null);
-  const [validatingPreview, setValidatingPreview] = useState<string | null>(null);
-  const [validating, setValidating] = useState(false);
+  const [preparingPhoto, setPreparingPhoto] = useState(false);
+  const [preparingPreview, setPreparingPreview] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [done, setDone] = useState(false);
   const [result, setResult] = useState<AiAnalysisResult | null>(null);
@@ -40,51 +32,59 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
   const [tryOnByStyle, setTryOnByStyle] = useState<Record<string, string>>({});
   const [tryOnLoadingId, setTryOnLoadingId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const autoTriggeredRef = useRef(false);
+  const analyzeTriggeredRef = useRef(false);
+  const autoTryOnRef = useRef<string | null>(null);
 
   useEffect(() => {
-    autoTriggeredRef.current = false;
+    analyzeTriggeredRef.current = false;
+    autoTryOnRef.current = null;
   }, [focusStyleId]);
 
+  const storePhoto = useCallback(async (dataUrl: string, source: "gallery" | "camera_scan") => {
+    const prepared = await prepareSelfieDataUrl(dataUrl);
+    setPhoto(prepared);
+    setDone(false);
+    setResult(null);
+    setTryOnByStyle({});
+    setTryOnLoadingId(null);
+    analyzeTriggeredRef.current = false;
+    autoTryOnRef.current = null;
+
+    const scannedAt = new Date().toISOString();
+    appendFaceProfileHistory({
+      photoDataUrl: prepared,
+      scannedAt,
+      source: source === "camera_scan" ? "camera_scan" : "gallery",
+    });
+    void persistAiStyleHistory({
+      image: prepared,
+      source: source === "camera_scan" ? "camera_scan" : "gallery",
+    });
+  }, []);
+
   const applyPhoto = async (dataUrl: string) => {
-    setValidatingPreview(dataUrl);
-    setValidating(true);
+    setPreparingPreview(dataUrl);
+    setPreparingPhoto(true);
     setError(null);
     try {
-      const check = await checkAiStyleFace(dataUrl);
-      if (!check.has_face) {
-        throw new Error(check.detail ?? "Iltimos, yuz shakli rasmini yuklang.");
-      }
-      setPhoto(dataUrl);
-      const scannedAt = new Date().toISOString();
-      appendFaceProfileHistory({
-        photoDataUrl: dataUrl,
-        scannedAt,
-        source: "gallery",
-      });
-      void persistAiStyleHistory({
-        image: dataUrl,
-        source: "gallery",
-      });
+      await storePhoto(dataUrl, "gallery");
       setFaceHint(null);
-      setDone(false);
-      setResult(null);
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Yuz tekshirilmadi.";
+      const message = e instanceof Error ? e.message : "Rasm yuklanmadi.";
       setError(message);
       setPhoto(null);
       setDone(false);
       setResult(null);
     } finally {
-      setValidating(false);
-      setValidatingPreview(null);
+      setPreparingPhoto(false);
+      setPreparingPreview(null);
     }
   };
 
   const onFile = async (file: File | null | undefined) => {
     if (!file) return;
     try {
-      const dataUrl = await readFileAsDataUrl(file);
+      const dataUrl = await prepareSelfieFromFile(file);
       await applyPhoto(dataUrl);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Rasm yuklanmadi.");
@@ -93,7 +93,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     }
   };
 
-  const onCameraCapture = (payload: CameraCapturePayload) => {
+  const onCameraCapture = async (payload: CameraCapturePayload) => {
     setError(null);
     setFaceHint({
       shape: payload.faceShapeKey,
@@ -122,105 +122,122 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
       face_shape_key: payload.faceShapeKey,
       source: "camera_scan",
     });
-    setPhoto(payload.dataUrl);
-    setDone(false);
-    setResult(null);
-    setValidating(false);
     setCameraOpen(false);
+    try {
+      await storePhoto(payload.dataUrl, "camera_scan");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Rasm yuklanmadi.");
+    }
   };
 
   const openFile = () => fileRef.current?.click();
   const openCamera = () => setCameraOpen(true);
   const closeCamera = () => setCameraOpen(false);
 
-  const analyze = async (audience: Audience) => {
-    if (!photo) return;
-    setAnalyzing(true);
-    setDone(false);
-    setError(null);
-    try {
-      const data = await analyzeAiStyle(
-        photo,
-        audience,
-        faceHint,
-        audience === "men" ? (menPersonaId ?? undefined) : undefined,
-      );
-      const mapped = mapAiStyleResponse(data);
-      if (faceHint) {
-        mapped.faceShapeKey = faceHint.shape;
-      }
-      const scannedAt = new Date().toISOString();
-      const source = faceHint ? "camera_scan" : "ai_analysis";
-      saveFaceProfile({
-        faceShapeKey: mapped.faceShapeKey,
-        hairTypeKey: mapped.hairTypeKey,
-        ratios: {
-          widthToHeight: faceHint?.width_to_height ?? 0,
-          jawToForehead: faceHint?.jaw_to_forehead ?? 0,
-        },
-        scannedAt,
-        source,
-      });
-      enrichLatestFaceProfileHistory(photo, {
-        faceShapeKey: mapped.faceShapeKey,
-        hairTypeKey: mapped.hairTypeKey,
-        scannedAt,
-        source,
-      });
-      void persistAiStyleHistory({
-        face_shape_key: mapped.faceShapeKey,
-        hair_type_key: mapped.hairTypeKey,
-        source,
-        replace_latest: true,
-      });
-      setResult(mapped);
-      setDone(true);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "AI tahlil xatosi");
+  const analyze = useCallback(
+    async (targetAudience: Audience) => {
+      if (!photo) return;
+      setAnalyzing(true);
       setDone(false);
-      setResult(null);
-    } finally {
-      setAnalyzing(false);
-    }
-  };
+      setError(null);
+      try {
+        const data = await analyzeAiStyle(
+          photo,
+          targetAudience,
+          faceHint,
+          targetAudience === "men" ? (menPersonaId ?? undefined) : undefined,
+        );
+        const mapped = mapAiStyleResponse(data);
+        if (faceHint) {
+          mapped.faceShapeKey = faceHint.shape;
+        }
+        const scannedAt = new Date().toISOString();
+        const source = faceHint ? "camera_scan" : "ai_analysis";
+        saveFaceProfile({
+          faceShapeKey: mapped.faceShapeKey,
+          hairTypeKey: mapped.hairTypeKey,
+          ratios: {
+            widthToHeight: faceHint?.width_to_height ?? 0,
+            jawToForehead: faceHint?.jaw_to_forehead ?? 0,
+          },
+          scannedAt,
+          source,
+        });
+        enrichLatestFaceProfileHistory(photo, {
+          faceShapeKey: mapped.faceShapeKey,
+          hairTypeKey: mapped.hairTypeKey,
+          scannedAt,
+          source,
+        });
+        void persistAiStyleHistory({
+          face_shape_key: mapped.faceShapeKey,
+          hair_type_key: mapped.hairTypeKey,
+          source,
+          replace_latest: true,
+        });
+        setResult(mapped);
+        setDone(true);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "AI tahlil xatosi");
+        setDone(false);
+        setResult(null);
+      } finally {
+        setAnalyzing(false);
+      }
+    },
+    [photo, faceHint, menPersonaId],
+  );
 
-  const generateTryOn = async (styleId: string) => {
-    if (!photo) return;
-    if (tryOnByStyle[styleId]) return;
-    setTryOnLoadingId(styleId);
-    setError(null);
-    try {
-      const data = await generateAiStyleTryOn(
-        photo,
-        styleId,
-        menPersonaId ?? undefined,
-      );
-      setTryOnByStyle((prev) => ({ ...prev, [styleId]: data.preview_image }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Rasm yaratishda xatolik");
-    } finally {
-      setTryOnLoadingId(null);
-    }
-  };
+  const generateTryOn = useCallback(
+    async (styleId: string) => {
+      if (!photo || tryOnByStyle[styleId]) return;
+      setTryOnLoadingId(styleId);
+      setError(null);
+      try {
+        const data = await generateAiStyleTryOn(
+          photo,
+          styleId,
+          menPersonaId ?? undefined,
+        );
+        setTryOnByStyle((prev) => ({ ...prev, [styleId]: data.preview_image }));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Rasm yaratishda xatolik");
+      } finally {
+        setTryOnLoadingId(null);
+      }
+    },
+    [photo, tryOnByStyle, menPersonaId],
+  );
 
   useEffect(() => {
-    if (!focusStyleId || !photo || validating || autoTriggeredRef.current) return;
-    autoTriggeredRef.current = true;
+    if (!photo || !audience || analyzing || done || analyzeTriggeredRef.current) return;
+    analyzeTriggeredRef.current = true;
+    void analyze(audience);
+  }, [photo, audience, analyzing, done, analyze]);
+
+  useEffect(() => {
+    if (!focusStyleId || !photo || autoTryOnRef.current === focusStyleId) return;
+    autoTryOnRef.current = focusStyleId;
     void generateTryOn(focusStyleId);
-    if (audience) {
-      void analyze(audience);
-    }
-  }, [focusStyleId, photo, validating, audience]);
+  }, [focusStyleId, photo, generateTryOn]);
+
+  useEffect(() => {
+    if (!done || !result?.suggestions.length) return;
+    const primaryId = focusStyleId ?? result.suggestions[0]?.id;
+    if (!primaryId || tryOnByStyle[primaryId] || tryOnLoadingId === primaryId) return;
+    void generateTryOn(primaryId);
+  }, [done, result, focusStyleId, tryOnByStyle, tryOnLoadingId, generateTryOn]);
 
   const reset = () => {
-    autoTriggeredRef.current = false;
+    analyzeTriggeredRef.current = false;
+    autoTryOnRef.current = null;
     setPhoto(null);
     setDone(false);
     setResult(null);
     setError(null);
     setAnalyzing(false);
-    setValidating(false);
-    setValidatingPreview(null);
+    setPreparingPhoto(false);
+    setPreparingPreview(null);
     setCameraOpen(false);
     setFaceHint(null);
     setTryOnByStyle({});
@@ -230,8 +247,8 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
 
   return {
     photo,
-    validatingPreview,
-    validating,
+    validatingPreview: preparingPreview,
+    validating: preparingPhoto,
     analyzing,
     done,
     result,

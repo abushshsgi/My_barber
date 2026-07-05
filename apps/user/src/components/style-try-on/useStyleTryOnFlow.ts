@@ -2,15 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CameraCapturePayload } from "@/components/ai-style/AiStyleCamera";
 import { generateAiStyleTryOn } from "@/lib/api";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error("Rasm o'qib bo'lmadi."));
-    reader.readAsDataURL(file);
-  });
-}
+import { prepareSelfieDataUrl, prepareSelfieFromFile } from "@/lib/selfie-image";
 
 type UseStyleTryOnFlowOptions = {
   styleId: string;
@@ -19,8 +11,8 @@ type UseStyleTryOnFlowOptions = {
 
 export function useStyleTryOnFlow({ styleId, personaId }: UseStyleTryOnFlowOptions) {
   const [photo, setPhoto] = useState<string | null>(null);
-  const [validatingPreview, setValidatingPreview] = useState<string | null>(null);
-  const [validating, setValidating] = useState(false);
+  const [preparingPreview, setPreparingPreview] = useState<string | null>(null);
+  const [preparing, setPreparing] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [tryOnPreview, setTryOnPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -47,21 +39,32 @@ export function useStyleTryOnFlow({ styleId, personaId }: UseStyleTryOnFlowOptio
   };
 
   const applyPhoto = async (dataUrl: string) => {
+    setPreparingPreview(dataUrl);
+    setPreparing(true);
     setError(null);
     setTryOnPreview(null);
-    setPhoto(dataUrl);
+    try {
+      const prepared = await prepareSelfieDataUrl(dataUrl);
+      setPhoto(prepared);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Rasm yuklanmadi.");
+      setPhoto(null);
+    } finally {
+      setPreparing(false);
+      setPreparingPreview(null);
+    }
   };
 
   useEffect(() => {
-    if (!styleId || !photo || validating || autoTriggeredRef.current) return;
+    if (!styleId || !photo || preparing || autoTriggeredRef.current) return;
     autoTriggeredRef.current = true;
     void runTryOn(photo);
-  }, [styleId, photo, validating]);
+  }, [styleId, photo, preparing]);
 
   const onFile = async (file: File | null | undefined) => {
     if (!file) return;
     try {
-      const dataUrl = await readFileAsDataUrl(file);
+      const dataUrl = await prepareSelfieFromFile(file);
       await applyPhoto(dataUrl);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Rasm yuklanmadi.");
@@ -71,11 +74,8 @@ export function useStyleTryOnFlow({ styleId, personaId }: UseStyleTryOnFlowOptio
   };
 
   const onCameraCapture = (payload: CameraCapturePayload) => {
-    setError(null);
-    setTryOnPreview(null);
-    setPhoto(payload.dataUrl);
-    setValidating(false);
     setCameraOpen(false);
+    void applyPhoto(payload.dataUrl);
   };
 
   const openFile = () => fileRef.current?.click();
@@ -87,8 +87,8 @@ export function useStyleTryOnFlow({ styleId, personaId }: UseStyleTryOnFlowOptio
     setPhoto(null);
     setTryOnPreview(null);
     setError(null);
-    setValidating(false);
-    setValidatingPreview(null);
+    setPreparing(false);
+    setPreparingPreview(null);
     setGenerating(false);
     setCameraOpen(false);
     if (fileRef.current) fileRef.current.value = "";
@@ -104,8 +104,8 @@ export function useStyleTryOnFlow({ styleId, personaId }: UseStyleTryOnFlowOptio
 
   return {
     photo,
-    validatingPreview,
-    validating,
+    validatingPreview: preparingPreview,
+    validating: preparing,
     generating,
     tryOnPreview,
     error,

@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, animate, motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
-import { Check, ChevronLeft, ChevronsUp, ScanFace, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronsUp, Loader2, ScanFace, X } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
-import { AiStyleAnalyzeCta, AiStyleScanLine, GalleryValidatingHero } from "@/components/ai-style/AiStyleUi";
+import { AiStyleScanLine, GalleryValidatingHero } from "@/components/ai-style/AiStyleUi";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { getAiStyleHeroUrl } from "@/lib/cover-images";
 import { refreshAiStyleHistoryCache } from "@/lib/api";
@@ -510,17 +510,18 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
             >
               {t("aiStylePage.retake")}
             </button>
-          ) : null}
-          <AiStyleAnalyzeCta
-            analyzing={props.analyzing || tryOnBusy}
-            validating={props.validating}
-            onAnalyze={props.onAnalyze}
-            label={
-              autoTryOn && busy && !props.done
-                ? t("aiStylePage.tryOnAutoRunning")
-                : undefined
-            }
-          />
+          ) : (
+            <div className="overflow-hidden rounded-2xl border border-white/15 bg-black/35 backdrop-blur-md">
+              <div className="flex items-center justify-center gap-2 px-5 py-4 text-sm font-bold text-white">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {props.analyzing
+                  ? t("aiStylePage.analyzing")
+                  : tryOnBusy
+                    ? t("aiStylePage.tryOnGenerating")
+                    : t("aiStylePage.preparingPhoto")}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );

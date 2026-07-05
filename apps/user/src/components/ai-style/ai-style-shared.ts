@@ -33,6 +33,11 @@ export function styleCoverGradient(seed: string) {
 
 export const ANALYZE_MS = 1800;
 
+/** Backend katalog style_id: masalan men-mid-fade */
+export function isCatalogStyleId(id: string): boolean {
+  return /^(men|women)-/.test(id);
+}
+
 export function mapAiStyleResponse(data: AiStyleAnalyzeResponse): AiAnalysisResult {
   return {
     faceShapeKey: data.face_shape,

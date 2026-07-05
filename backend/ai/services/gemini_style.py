@@ -19,7 +19,7 @@ ALLOWED_MIME = frozenset({"image/jpeg", "image/png", "image/webp"})
 FACE_SHAPES = frozenset({"oval", "round", "square"})
 HAIR_TYPES = frozenset({"short", "medium", "long"})
 DETECTED_GENDERS = frozenset({"male", "female", "unclear"})
-MODEL_FALLBACKS = ("gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash")
+GEMINI_VISION_MODEL = "gemini-2.5-flash"
 NO_FACE_MESSAGE = "Iltimos, yuz shakli rasmini yuklang."
 
 
@@ -30,13 +30,9 @@ class AiStyleError(Exception):
         self.status = status
 
 
-def _gemini_models() -> tuple[str, ...]:
-    preferred = (getattr(settings, "GEMINI_MODEL", None) or "").strip()
-    ordered: list[str] = []
-    for model in (preferred, *MODEL_FALLBACKS):
-        if model and model not in ordered:
-            ordered.append(model)
-    return tuple(ordered)
+def _vision_model() -> str:
+    configured = (getattr(settings, "GEMINI_MODEL", None) or "").strip()
+    return configured or GEMINI_VISION_MODEL
 
 
 def _read_http_error_body(exc: urllib.error.HTTPError) -> str:
@@ -70,9 +66,9 @@ def _map_gemini_http_error(status: int, body: str, *, kind: str = "general") -> 
         if kind == "image":
             return (
                 "Rasm generatsiya modeli topilmadi. "
-                "GEMINI_IMAGE_MODEL ni tekshiring (masalan: gemini-2.5-flash-image)."
+                "VERTEX_IMAGE_MODEL=gemini-3.1-flash-lite-image ni tekshiring."
             )
-        return "AI model topilmadi. Backend GEMINI_MODEL sozlamasini tekshiring."
+        return f"AI model topilmadi ({_vision_model()}). GEMINI_MODEL ni tekshiring."
     return "AI tahlil vaqtincha ishlamayapti. Keyinroq urinib ko'ring."
 
 
@@ -269,40 +265,30 @@ def _gemini_vision_json(prompt: str, mime: str, image_bytes: bytes) -> dict[str,
         },
     }
 
-    last_error: AiStyleError | None = None
-    for model in _gemini_models():
-        try:
-            payload = _post_gemini(model, api_key, body)
-        except urllib.error.HTTPError as exc:
-            err_body = _read_http_error_body(exc)
-            logger.warning("Gemini HTTP %s (%s): %s", exc.code, model, err_body[:800])
-            message = _map_gemini_http_error(exc.code, err_body)
-            last_error = AiStyleError(message, 502 if exc.code >= 500 else 400)
-            if exc.code == 404:
-                continue
-            raise last_error from exc
-        except urllib.error.URLError as exc:
-            logger.warning("Gemini network error (%s): %s", model, exc)
-            raise AiStyleError("AI serveriga ulanib bo'lmadi.", 502) from exc
-        except TimeoutError as exc:
-            raise AiStyleError("AI tahlil juda uzoq davom etdi. Qayta urinib ko'ring.", 504) from exc
+    model = _vision_model()
+    try:
+        payload = _post_gemini(model, api_key, body)
+    except urllib.error.HTTPError as exc:
+        err_body = _read_http_error_body(exc)
+        logger.warning("Gemini HTTP %s (%s): %s", exc.code, model, err_body[:800])
+        message = _map_gemini_http_error(exc.code, err_body)
+        raise AiStyleError(message, 502 if exc.code >= 500 else 400) from exc
+    except urllib.error.URLError as exc:
+        logger.warning("Gemini network error (%s): %s", model, exc)
+        raise AiStyleError("AI serveriga ulanib bo'lmadi.", 502) from exc
+    except TimeoutError as exc:
+        raise AiStyleError("AI tahlil juda uzoq davom etdi. Qayta urinib ko'ring.", 504) from exc
 
-        candidates = payload.get("candidates") or []
-        if not candidates:
-            last_error = AiStyleError("AI javob bermadi.", 502)
-            continue
+    candidates = payload.get("candidates") or []
+    if not candidates:
+        raise AiStyleError("AI javob bermadi.", 502)
 
-        parts = (candidates[0].get("content") or {}).get("parts") or []
-        text_parts = [p.get("text", "") for p in parts if isinstance(p, dict) and p.get("text")]
-        if not text_parts:
-            last_error = AiStyleError("AI javob bermadi.", 502)
-            continue
+    parts = (candidates[0].get("content") or {}).get("parts") or []
+    text_parts = [p.get("text", "") for p in parts if isinstance(p, dict) and p.get("text")]
+    if not text_parts:
+        raise AiStyleError("AI javob bermadi.", 502)
 
-        return _extract_json("".join(text_parts))
-
-    if last_error:
-        raise last_error
-    raise AiStyleError("AI tahlil vaqtincha ishlamayapti. Keyinroq urinib ko'ring.", 502)
+    return _extract_json("".join(text_parts))
 
 
 def check_face_in_data_url(data_url: str) -> bool:

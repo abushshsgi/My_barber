@@ -15,9 +15,9 @@ class StylePromptTests(SimpleTestCase):
         self.assertEqual(style_detail_for("women", "unknown"), "unknown")
 
 
-@override_settings(GEMINI_API_KEY="")
+@override_settings(VERTEX_PROJECT_ID="")
 class TryOnServiceTests(SimpleTestCase):
-    def test_requires_api_key(self):
+    def test_requires_vertex(self):
         from ai.services.gemini_tryon import generate_tryon_preview
 
         tiny = (
@@ -40,36 +40,6 @@ class TryOnServiceTests(SimpleTestCase):
         self.assertEqual(mime, "image/png")
         self.assertTrue(raw)
 
-    @patch("ai.services.gemini_tryon._post_gemini_image")
-    def test_generate_tryon_success(self, mock_post):
-        from ai.services.gemini_tryon import generate_tryon_preview
-
-        fake_png = (
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
-        )
-        mock_post.return_value = {
-            "candidates": [
-                {
-                    "content": {
-                        "parts": [
-                            {"inlineData": {"mimeType": "image/png", "data": fake_png}},
-                        ]
-                    }
-                }
-            ]
-        }
-        with override_settings(GEMINI_API_KEY="test-key", AI_IMAGE_PROVIDER="gemini"):
-            result = generate_tryon_preview(
-                selfie_data_url=(
-                    "data:image/png;base64,"
-                    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
-                ),
-                audience="men",
-                slug="mid-fade",
-                title="Mid Fade",
-            )
-        self.assertTrue(result.startswith("data:image/png;base64,"))
-
     @patch("ai.services.gemini_tryon.generate_image_content")
     def test_generate_tryon_vertex(self, mock_vertex):
         from ai.services.gemini_tryon import generate_tryon_preview
@@ -89,7 +59,6 @@ class TryOnServiceTests(SimpleTestCase):
             ]
         }
         with override_settings(
-            AI_IMAGE_PROVIDER="vertex",
             VERTEX_PROJECT_ID="test-project",
             VERTEX_SERVICE_ACCOUNT_JSON='{"type":"service_account","project_id":"test"}',
         ):

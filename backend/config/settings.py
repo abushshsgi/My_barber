@@ -96,11 +96,10 @@ INSTALLED_APPS = [
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 DGIS_API_KEY = os.environ.get("DGIS_API_KEY", "").strip()
+# Scan + tahlil: faqat gemini-2.5-flash (AI Studio kalit)
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash"
-GEMINI_IMAGE_MODEL = os.environ.get("GEMINI_IMAGE_MODEL", "gemini-2.5-flash-image").strip() or "gemini-2.5-flash-image"
 
-# Vertex AI — try-on rasm generatsiya (billing GCP $300 kredit uchun)
-AI_IMAGE_PROVIDER = os.environ.get("AI_IMAGE_PROVIDER", "").strip().lower()
+# Try-on rasm: faqat Vertex AI + gemini-3.1-flash-lite-image
 VERTEX_PROJECT_ID = os.environ.get("VERTEX_PROJECT_ID", "").strip()
 VERTEX_LOCATION = os.environ.get("VERTEX_LOCATION", "us-central1").strip() or "us-central1"
 VERTEX_IMAGE_MODEL = (

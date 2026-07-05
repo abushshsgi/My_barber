@@ -122,7 +122,7 @@ function GeneratingOverlay({
 }) {
   const { t } = useTranslation();
   const message = validating
-    ? t("styleTryOnPage.generatingFaceCheck")
+    ? t("styleTryOnPage.preparingPhoto")
     : t("styleTryOnPage.generating", { style: entry.titleUz });
 
   return (

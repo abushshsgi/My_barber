@@ -4,7 +4,7 @@ import { Bookmark, CalendarPlus, Loader2, Sparkles } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
-import { styleCoverGradient } from "@/components/ai-style/ai-style-shared";
+import { isCatalogStyleId, styleCoverGradient } from "@/components/ai-style/ai-style-shared";
 import { cn } from "@/lib/utils";
 
 type Suggestion = AiAnalysisResult["suggestions"][number];
@@ -105,17 +105,17 @@ function SuggestionActions({
   onGenerateTryOn?: (styleId: string) => void;
 }) {
   const { t } = useTranslation();
-  const canTryOn = Boolean(onGenerateTryOn && suggestion.id.includes("-"));
+  const canTryOn = Boolean(onGenerateTryOn && isCatalogStyleId(suggestion.id));
 
   return (
-    <div className={cn("grid gap-1.5", compact ? "mt-2 grid-cols-2" : "mt-3 grid-cols-2")}>
+    <div className={cn("mt-3 flex flex-wrap gap-1.5", compact && "mt-2")}>
       {canTryOn ? (
         <button
           type="button"
           disabled={tryOnLoading || Boolean(tryOnPreview)}
           onClick={() => onGenerateTryOn?.(suggestion.id)}
           className={cn(
-            "inline-flex items-center justify-center gap-1 rounded-lg border py-2 text-[10px] font-bold",
+            "inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-1 rounded-lg border px-2 py-2 text-[10px] font-bold",
             tryOnPreview
               ? "border-foreground bg-foreground text-background"
               : "border-border bg-surface",
@@ -133,18 +133,18 @@ function SuggestionActions({
         type="button"
         onClick={() => onToggleSave(suggestion.id)}
         className={cn(
-          "inline-flex items-center justify-center gap-1 rounded-lg border py-2 text-[10px] font-bold",
+          "inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-1 rounded-lg border px-2 py-2 text-[10px] font-bold",
           saved ? "border-foreground bg-foreground text-background" : "border-border bg-surface",
         )}
       >
         <Bookmark className="h-3 w-3" />
         {t("aiStylePage.save")}
       </button>
-      {suggestion.id.includes("-") ? (
+      {isCatalogStyleId(suggestion.id) ? (
         <Link
           to="/explore/$styleId"
           params={{ styleId: suggestion.id }}
-          className="inline-flex items-center justify-center gap-1 rounded-lg border border-border bg-surface py-2 text-[10px] font-bold"
+          className="inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-1 rounded-lg border border-border bg-surface px-2 py-2 text-[10px] font-bold"
         >
           {t("aiStylePage.viewStyle")}
         </Link>
@@ -153,13 +153,13 @@ function SuggestionActions({
         <Link
           to="/booking/$salonId"
           params={{ salonId: suggestion.salonId }}
-          className="inline-flex items-center justify-center gap-1 rounded-lg bg-foreground py-2 text-[10px] font-bold text-background"
+          className="inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-1 rounded-lg bg-foreground px-2 py-2 text-[10px] font-bold text-background"
         >
           <CalendarPlus className="h-3 w-3" />
           {t("aiStylePage.bookShort")}
         </Link>
       ) : (
-        <span className="inline-flex items-center justify-center gap-1 rounded-lg bg-muted py-2 text-[10px] font-bold text-muted-foreground">
+        <span className="inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-1 rounded-lg bg-muted px-2 py-2 text-[10px] font-bold text-muted-foreground">
           <CalendarPlus className="h-3 w-3" />
           {t("aiStylePage.bookShort")}
         </span>
@@ -214,9 +214,11 @@ export function AiStyleSuggestionsCarousel({
                 tryOnPreview={tryOnByStyle?.[suggestion.id]}
               />
               <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-1 text-[10px] font-bold backdrop-blur-sm">
-                {tryOnByStyle?.[suggestion.id]
-                  ? t("aiStylePage.tryOnBadge")
-                  : t("aiStylePage.matchPct", { value: suggestion.match })}
+                {tryOnLoadingId === suggestion.id
+                  ? t("aiStylePage.tryOnGenerating")
+                  : tryOnByStyle?.[suggestion.id]
+                    ? t("aiStylePage.tryOnBadge")
+                    : t("aiStylePage.matchPct", { value: suggestion.match })}
               </span>
             </div>
             <div className="p-3">
