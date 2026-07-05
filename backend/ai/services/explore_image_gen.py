@@ -60,10 +60,13 @@ def _gemini_api_key() -> str:
 
 
 def explore_gen_configured() -> dict[str, bool]:
+    has_gemini = bool(_gemini_api_key())
+    has_vertex = vertex_configured()
     return {
-        "gemini_api_key": bool(_gemini_api_key()),
+        "gemini_api_key": has_gemini,
         "vertex_image": vertex_image_configured(),
-        "vertex": vertex_configured(),
+        "vertex": has_vertex,
+        "imagen": has_gemini or has_vertex,
     }
 
 
@@ -158,7 +161,24 @@ def _resize_webp(raw: bytes, dest: Path) -> None:
     img.save(dest, "WEBP", quality=85)
 
 
-def _generate_imagen(prompt: str) -> bytes:
+def _parse_imagen_predict_response(data: dict[str, Any]) -> bytes:
+    predictions = data.get("predictions") or []
+    if predictions:
+        encoded = predictions[0].get("bytesBase64Encoded") or predictions[0].get("bytes_base64_encoded")
+        if encoded:
+            return base64.b64decode(encoded)
+
+    images = data.get("generatedImages") or data.get("generated_images") or []
+    if images:
+        image_obj = images[0].get("image") or images[0]
+        encoded = image_obj.get("imageBytes") or image_obj.get("image_bytes")
+        if encoded:
+            return base64.b64decode(encoded)
+
+    raise AiStyleError("Imagen rasm qaytarmadi.", 502)
+
+
+def _generate_imagen_gemini(prompt: str) -> bytes:
     api_key = _gemini_api_key()
     if not api_key:
         raise AiStyleError(
@@ -168,14 +188,14 @@ def _generate_imagen(prompt: str) -> bytes:
 
     url = (
         f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{IMAGEN_MODEL}:generateImages"
+        f"{IMAGEN_MODEL}:predict"
     )
     payload = {
-        "prompt": f"{prompt}. Avoid: {STYLE_NEGATIVE}",
-        "config": {
-            "numberOfImages": 1,
+        "instances": [{"prompt": f"{prompt}. Avoid: {STYLE_NEGATIVE}"}],
+        "parameters": {
+            "sampleCount": 1,
             "aspectRatio": "3:4",
-            "outputMimeType": "image/jpeg",
+            "personGeneration": "allow_adult",
         },
     }
     try:
@@ -195,16 +215,75 @@ def _generate_imagen(prompt: str) -> bytes:
             raise AiStyleError("Imagen limiti. 1–2 daqiqa kutib qayta urinib ko'ring.", 429)
         raise AiStyleError(f"Imagen xato ({res.status_code}).", 502)
 
-    data = res.json()
-    images = data.get("generatedImages") or data.get("generated_images") or []
-    if not images:
-        raise AiStyleError("Imagen rasm qaytarmadi.", 502)
+    return _parse_imagen_predict_response(res.json())
 
-    image_obj = images[0].get("image") or {}
-    encoded = image_obj.get("imageBytes") or image_obj.get("image_bytes")
-    if not encoded:
-        raise AiStyleError("Imagen rasm ma'lumoti bo'sh.", 502)
-    return base64.b64decode(encoded)
+
+def _vertex_imagen_predict_url() -> str:
+    project = (getattr(settings, "VERTEX_PROJECT_ID", None) or "").strip()
+    loc = (getattr(settings, "VERTEX_LOCATION", None) or "us-central1").strip() or "us-central1"
+    path = (
+        f"/v1/projects/{project}/locations/{loc}/publishers/google/models/"
+        f"{IMAGEN_MODEL}:predict"
+    )
+    if loc == "global":
+        return f"https://aiplatform.googleapis.com{path}"
+    return f"https://{loc}-aiplatform.googleapis.com{path}"
+
+
+def _generate_imagen_vertex(prompt: str) -> bytes:
+    if not vertex_configured():
+        raise AiStyleError(
+            "Vertex AI sozlanmagan. VERTEX_PROJECT_ID va service account kerak.",
+            503,
+        )
+
+    from ai.services.vertex_auth import get_vertex_access_token
+
+    payload = {
+        "instances": [{"prompt": f"{prompt}. Avoid: {STYLE_NEGATIVE}"}],
+        "parameters": {
+            "sampleCount": 1,
+            "aspectRatio": "3:4",
+            "personGeneration": "allow_adult",
+        },
+    }
+    try:
+        res = requests.post(
+            _vertex_imagen_predict_url(),
+            headers={
+                "Authorization": f"Bearer {get_vertex_access_token()}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=120,
+        )
+    except requests.RequestException as exc:
+        raise AiStyleError("Vertex Imagen API ga ulanib bo'lmadi.", 502) from exc
+
+    if res.status_code >= 400:
+        body = res.text[:800]
+        logger.warning("Vertex Imagen HTTP %s: %s", res.status_code, body)
+        if res.status_code == 429:
+            raise AiStyleError("Imagen limiti. 1–2 daqiqa kutib qayta urinib ko'ring.", 429)
+        raise AiStyleError(f"Vertex Imagen xato ({res.status_code}).", 502)
+
+    return _parse_imagen_predict_response(res.json())
+
+
+def _generate_reference_image(prompt: str) -> tuple[bytes, str]:
+    if _gemini_api_key():
+        try:
+            return _generate_imagen_gemini(prompt), "imagen_gemini"
+        except AiStyleError as exc:
+            if vertex_configured() and exc.status >= 500:
+                return _generate_imagen_vertex(prompt), "imagen_vertex"
+            raise
+    if vertex_configured():
+        return _generate_imagen_vertex(prompt), "imagen_vertex"
+    raise AiStyleError(
+        "Reference uchun GEMINI_API_KEY yoki Vertex AI (VERTEX_PROJECT_ID) kerak.",
+        503,
+    )
 
 
 def _generate_vertex_style_edit(*, persona_id: str, slug: str, ref_bytes: bytes) -> bytes:
@@ -272,8 +351,7 @@ def generate_explore_asset(
     started = time.monotonic()
 
     if slug == "reference":
-        raw = _generate_imagen(prompt)
-        method = "imagen"
+        raw, method = _generate_reference_image(prompt)
     else:
         ref_path = asset_file_path(persona_id=pid, slug="reference")
         if ref_path.is_file() and vertex_image_configured():
@@ -284,8 +362,7 @@ def generate_explore_asset(
             )
             method = "vertex_edit"
         else:
-            raw = _generate_imagen(prompt)
-            method = "imagen"
+            raw, method = _generate_reference_image(prompt)
 
     _resize_webp(raw, dest)
     elapsed_ms = int((time.monotonic() - started) * 1000)

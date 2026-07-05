@@ -20,6 +20,7 @@ export type ExploreGenStatus = {
     gemini_api_key: boolean;
     vertex_image: boolean;
     vertex: boolean;
+    imagen: boolean;
   };
   jobs: ExploreGenJob[];
   total: number;
@@ -74,7 +75,11 @@ export async function generateExploreAsset(input: {
   slug: string;
   force?: boolean;
 }): Promise<ExploreGenResult> {
-  return apiJson<ExploreGenResult>("/api/v1/ai/dev/explore-gen/generate/", {
+  const secret = readExploreGenSecret();
+  const url = secret
+    ? `/api/v1/ai/dev/explore-gen/generate/?key=${encodeURIComponent(secret)}`
+    : "/api/v1/ai/dev/explore-gen/generate/";
+  return apiJson<ExploreGenResult>(url, {
     method: "POST",
     headers: exploreGenHeaders(),
     body: JSON.stringify({

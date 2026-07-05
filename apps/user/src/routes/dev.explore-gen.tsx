@@ -213,7 +213,7 @@ function ExploreGenDevPage() {
           ) : null}
 
           <div className="mt-6 flex flex-wrap gap-2">
-            <ConfigBadge ok={configured?.gemini_api_key} label="GEMINI_API_KEY (reference)" />
+            <ConfigBadge ok={configured?.imagen} label="Imagen (reference)" />
             <ConfigBadge ok={configured?.vertex_image} label="Vertex rasm (uslub edit)" />
             <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-700">
               {statusQuery.data?.existing ?? 0} / {statusQuery.data?.total ?? 52} tayyor
@@ -223,9 +223,10 @@ function ExploreGenDevPage() {
             </span>
           </div>
 
-          {!configured?.gemini_api_key ? (
+          {!configured?.imagen ? (
             <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              Railway Variables da <strong>GEMINI_API_KEY</strong> qo&apos;ying (reference uchun).
+              Reference uchun <strong>GEMINI_API_KEY</strong> yoki{" "}
+              <strong>VERTEX_PROJECT_ID</strong> + service account qo&apos;ying.
             </div>
           ) : null}
 
@@ -284,8 +285,9 @@ function ExploreGenDevPage() {
 
         {statusQuery.isError ? (
           <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-            API xato — kalit noto&apos;g&apos;ri yoki backend sozlanmagan. Railway da{" "}
-            <code>EXPLORE_GEN_SECRET</code> va <code>GEMINI_API_KEY</code> ni tekshiring.
+            API xato — kalit noto&apos;g&apos;ri yoki backend sozlanmagan. Lokalda{" "}
+            <code>DEBUG=true</code>, productionda <code>EXPLORE_GEN_SECRET</code> va Vertex/Gemini
+            kalitlarini tekshiring.
           </div>
         ) : null}
 

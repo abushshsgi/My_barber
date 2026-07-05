@@ -384,7 +384,7 @@ def _cors_allowed_origins():
 CORS_ALLOWED_ORIGINS = _cors_allowed_origins()
 CORS_ALLOW_CREDENTIALS = True
 # Frontend JWT so'rovlarida X-Session-Id yuboradi — preflight uchun ruxsat kerak.
-CORS_ALLOW_HEADERS = (*default_headers, "x-session-id")
+CORS_ALLOW_HEADERS = (*default_headers, "x-session-id", "x-explore-gen-secret")
 # Devda (lokal) Vite/Next preview portlari tez-tez o'zgaradi — CORS bilan blok bo'lmasin.
 # Productionda esa yuqoridagi allowlist (FRONTEND_* / CORS_ALLOWED_ORIGINS) ishlaydi.
 CORS_ALLOW_ALL_ORIGINS = DEBUG
