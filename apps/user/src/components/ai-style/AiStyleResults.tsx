@@ -186,7 +186,7 @@ function SpotlightCard({
         onClick={onOpenPreview}
         className="relative block w-full overflow-hidden rounded-[24px] bg-neutral-100 text-left"
       >
-        <div className="relative min-h-[min(48dvh,400px)] w-full">
+        <div className="relative min-h-[min(48dvh,420px)] w-full">
           <div className="absolute inset-0">
             <StylePreview suggestion={suggestion} tryOnPreview={tryOnPreview} />
           </div>

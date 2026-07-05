@@ -6,28 +6,32 @@ import { useHairstyles } from "@/hooks/use-hairstyles";
 import { getTrendCoverUrl } from "@/lib/cover-images";
 import {
   getHairstyleDisplayUrl,
-  hasDisplayableHairstyleImage,
+  resolveCatalogImageUrl,
   type HairstyleEntry,
 } from "@/lib/hairstyles/catalog";
-import { hasPersonaStyleAsset } from "@/lib/explore-personas";
+import type { ExplorePersonaId } from "@/lib/explore-personas";
 import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 function MoreStyleCard({
   entry,
+  personaId,
   preview,
   loading,
   busy,
   onGenerate,
 }: {
   entry: HairstyleEntry;
+  personaId: ExplorePersonaId;
   preview?: string;
   loading: boolean;
   busy: boolean;
   onGenerate: (styleId: string) => void;
 }) {
   const { t } = useTranslation();
-  const [fallbackSrc, setFallbackSrc] = useState(() => getHairstyleDisplayUrl(entry));
+  const [fallbackSrc, setFallbackSrc] = useState(
+    () => resolveCatalogImageUrl(entry, personaId) ?? getHairstyleDisplayUrl(entry),
+  );
   const imageSrc = preview || fallbackSrc;
 
   return (
@@ -90,19 +94,14 @@ export function AiStyleMoreStyles({
 }) {
   const { t } = useTranslation();
   const { personaId } = useExplorePersona();
-  const { data: list = [], isLoading } = useHairstyles(audience, personaId);
+  const { data: list = [], isLoading } = useHairstyles(audience, personaId, {
+    ignoreAgeGroup: true,
+  });
 
   const items = useMemo(() => {
     const exclude = new Set(excludeIds);
-    return list.filter((entry) => {
-      if (exclude.has(entry.id)) return false;
-      if (!hasDisplayableHairstyleImage(entry)) return false;
-      if (entry.audience === "men" && personaId) {
-        return hasPersonaStyleAsset(personaId, entry.slug);
-      }
-      return true;
-    });
-  }, [list, excludeIds, personaId]);
+    return list.filter((entry) => !exclude.has(entry.id));
+  }, [list, excludeIds]);
 
   if (!onGenerateTryOn) return null;
 
@@ -130,6 +129,7 @@ export function AiStyleMoreStyles({
             <MoreStyleCard
               key={entry.id}
               entry={entry}
+              personaId={personaId}
               preview={tryOnByStyle[entry.id]}
               loading={tryOnLoadingId === entry.id}
               busy={Boolean(tryOnLoadingId)}
