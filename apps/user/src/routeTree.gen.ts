@@ -32,6 +32,7 @@ import { Route as GiftcardRouteImport } from './routes/giftcard'
 import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as FavoriteStylistsRouteImport } from './routes/favorite-stylists'
 import { Route as FamilyRouteImport } from './routes/family'
+import { Route as ExploreGenRouteImport } from './routes/explore-gen'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as ChatRouteImport } from './routes/chat'
@@ -173,6 +174,11 @@ const FamilyRoute = FamilyRouteImport.update({
   path: '/family',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ExploreGenRoute = ExploreGenRouteImport.update({
+  id: '/explore-gen',
+  path: '/explore-gen',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ExploreRoute = ExploreRouteImport.update({
   id: '/explore',
   path: '/explore',
@@ -308,6 +314,7 @@ export interface FileRoutesByFullPath {
   '/chat': typeof ChatRouteWithChildren
   '/compare': typeof CompareRoute
   '/explore': typeof ExploreRoute
+  '/explore-gen': typeof ExploreGenRoute
   '/family': typeof FamilyRoute
   '/favorite-stylists': typeof FavoriteStylistsRoute
   '/favorites': typeof FavoritesRoute
@@ -358,6 +365,7 @@ export interface FileRoutesByTo {
   '/chat': typeof ChatRouteWithChildren
   '/compare': typeof CompareRoute
   '/explore': typeof ExploreRoute
+  '/explore-gen': typeof ExploreGenRoute
   '/family': typeof FamilyRoute
   '/favorite-stylists': typeof FavoriteStylistsRoute
   '/favorites': typeof FavoritesRoute
@@ -409,6 +417,7 @@ export interface FileRoutesById {
   '/chat': typeof ChatRouteWithChildren
   '/compare': typeof CompareRoute
   '/explore': typeof ExploreRoute
+  '/explore-gen': typeof ExploreGenRoute
   '/family': typeof FamilyRoute
   '/favorite-stylists': typeof FavoriteStylistsRoute
   '/favorites': typeof FavoritesRoute
@@ -461,6 +470,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/compare'
     | '/explore'
+    | '/explore-gen'
     | '/family'
     | '/favorite-stylists'
     | '/favorites'
@@ -511,6 +521,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/compare'
     | '/explore'
+    | '/explore-gen'
     | '/family'
     | '/favorite-stylists'
     | '/favorites'
@@ -561,6 +572,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/compare'
     | '/explore'
+    | '/explore-gen'
     | '/family'
     | '/favorite-stylists'
     | '/favorites'
@@ -612,6 +624,7 @@ export interface RootRouteChildren {
   ChatRoute: typeof ChatRouteWithChildren
   CompareRoute: typeof CompareRoute
   ExploreRoute: typeof ExploreRoute
+  ExploreGenRoute: typeof ExploreGenRoute
   FamilyRoute: typeof FamilyRoute
   FavoriteStylistsRoute: typeof FavoriteStylistsRoute
   FavoritesRoute: typeof FavoritesRoute
@@ -812,6 +825,13 @@ declare module '@tanstack/react-router' {
       path: '/family'
       fullPath: '/family'
       preLoaderRoute: typeof FamilyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/explore-gen': {
+      id: '/explore-gen'
+      path: '/explore-gen'
+      fullPath: '/explore-gen'
+      preLoaderRoute: typeof ExploreGenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/explore': {
@@ -1034,6 +1054,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChatRoute: ChatRouteWithChildren,
   CompareRoute: CompareRoute,
   ExploreRoute: ExploreRoute,
+  ExploreGenRoute: ExploreGenRoute,
   FamilyRoute: FamilyRoute,
   FavoriteStylistsRoute: FavoriteStylistsRoute,
   FavoritesRoute: FavoritesRoute,
