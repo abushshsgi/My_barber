@@ -12,6 +12,7 @@ from django.conf import settings
 from ai.style_prompts import style_detail_for
 
 from .gemini_style import AiStyleError, parse_data_url, _map_gemini_http_error, _read_http_error_body
+from .vertex_image import generate_image_content, use_vertex_for_images
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +124,12 @@ def load_public_image(relative_url: str) -> tuple[str, bytes] | None:
     return mime, path.read_bytes()
 
 
+def _tryon_image_available() -> bool:
+    if use_vertex_for_images():
+        return True
+    return bool((getattr(settings, "GEMINI_API_KEY", None) or "").strip())
+
+
 def generate_tryon_preview(
     *,
     selfie_data_url: str,
@@ -131,8 +138,7 @@ def generate_tryon_preview(
     title: str,
     reference_image_url: str | None = None,
 ) -> str:
-    api_key = (getattr(settings, "GEMINI_API_KEY", None) or "").strip()
-    if not api_key:
+    if not _tryon_image_available():
         raise AiStyleError("AI xizmati hozircha ulanmagan.", 503)
 
     mime, selfie_bytes = parse_data_url(selfie_data_url)
@@ -170,13 +176,19 @@ def generate_tryon_preview(
         )
 
     body = {
-        "contents": [{"parts": parts}],
+        "contents": [{"role": "user", "parts": parts}],
         "generationConfig": {
             "responseModalities": ["IMAGE"],
             "imageConfig": {"aspectRatio": "3:4"},
         },
     }
 
+    if use_vertex_for_images():
+        payload = generate_image_content(body)
+        out_mime, out_bytes = _extract_image_bytes(payload)
+        return _to_data_url(out_mime, out_bytes)
+
+    api_key = (getattr(settings, "GEMINI_API_KEY", "") or "").strip()
     import urllib.error
 
     last_error: AiStyleError | None = None
@@ -190,7 +202,6 @@ def generate_tryon_preview(
             last_error = AiStyleError(message, 502 if exc.code >= 500 else 400)
             if exc.code == 404:
                 continue
-            # Quota / overload — boshqa model sinash foydasiz, limit umumiy.
             raise last_error from exc
         except urllib.error.URLError as exc:
             logger.warning("Gemini try-on network error (%s): %s", model, exc)
