@@ -4,7 +4,9 @@ import { Bookmark, CalendarPlus, ExternalLink, Loader2, Sparkles } from "lucide-
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
+import { AiStyleMoreStyles } from "@/components/ai-style/AiStyleMoreStyles";
 import { isCatalogStyleId, styleCoverGradient } from "@/components/ai-style/ai-style-shared";
+import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 type Suggestion = AiAnalysisResult["suggestions"][number];
@@ -593,6 +595,7 @@ export function AiStyleResultsBlock({
   layout = "carousel",
   summaryTone = "light",
   variant = "default",
+  audience,
   tryOnByStyle,
   tryOnLoadingId,
   onGenerateTryOn,
@@ -605,6 +608,7 @@ export function AiStyleResultsBlock({
   layout?: "carousel" | "stack";
   summaryTone?: "light" | "dark";
   variant?: "default" | "minimal";
+  audience?: Audience;
   tryOnByStyle?: Record<string, string>;
   tryOnLoadingId?: string | null;
   onGenerateTryOn?: (styleId: string) => void;
@@ -612,6 +616,7 @@ export function AiStyleResultsBlock({
 }) {
   const { t } = useTranslation();
   const minimal = variant === "minimal";
+  const suggestedIds = result.suggestions.map((s) => s.id);
 
   return (
     <div className="space-y-5">
@@ -650,6 +655,15 @@ export function AiStyleResultsBlock({
           onGenerateTryOn={onGenerateTryOn}
         />
       )}
+      {minimal && audience ? (
+        <AiStyleMoreStyles
+          audience={audience}
+          excludeIds={suggestedIds}
+          tryOnByStyle={tryOnByStyle}
+          tryOnLoadingId={tryOnLoadingId}
+          onGenerateTryOn={onGenerateTryOn}
+        />
+      ) : null}
     </div>
   );
 }

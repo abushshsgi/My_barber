@@ -674,6 +674,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
               onReset={props.onReset}
               layout="carousel"
               variant="minimal"
+              audience={props.audience}
               focusStyleId={props.focusStyleId}
               tryOnByStyle={props.tryOnByStyle}
               tryOnLoadingId={props.tryOnLoadingId}
