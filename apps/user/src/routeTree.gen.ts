@@ -45,6 +45,7 @@ import { Route as WalletHistoryRouteImport } from './routes/wallet_.history'
 import { Route as StoriesSalonIdRouteImport } from './routes/stories.$salonId'
 import { Route as SalonIdRouteImport } from './routes/salon.$id'
 import { Route as ExploreStyleIdRouteImport } from './routes/explore_.$styleId'
+import { Route as DevExploreGenRouteImport } from './routes/dev.explore-gen'
 import { Route as ChatIdRouteImport } from './routes/chat.$id'
 import { Route as CategoryCategoryRouteImport } from './routes/category.$category'
 import { Route as BookingsBookingIdRouteImport } from './routes/bookings.$bookingId'
@@ -237,6 +238,11 @@ const ExploreStyleIdRoute = ExploreStyleIdRouteImport.update({
   path: '/explore/$styleId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevExploreGenRoute = DevExploreGenRouteImport.update({
+  id: '/dev/explore-gen',
+  path: '/dev/explore-gen',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChatIdRoute = ChatIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -334,6 +340,7 @@ export interface FileRoutesByFullPath {
   '/bookings/$bookingId': typeof BookingsBookingIdRoute
   '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
+  '/dev/explore-gen': typeof DevExploreGenRoute
   '/explore/$styleId': typeof ExploreStyleIdRoute
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
@@ -383,6 +390,7 @@ export interface FileRoutesByTo {
   '/bookings/$bookingId': typeof BookingsBookingIdRoute
   '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
+  '/dev/explore-gen': typeof DevExploreGenRoute
   '/explore/$styleId': typeof ExploreStyleIdRoute
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
@@ -433,6 +441,7 @@ export interface FileRoutesById {
   '/bookings/$bookingId': typeof BookingsBookingIdRoute
   '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
+  '/dev/explore-gen': typeof DevExploreGenRoute
   '/explore_/$styleId': typeof ExploreStyleIdRoute
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
@@ -484,6 +493,7 @@ export interface FileRouteTypes {
     | '/bookings/$bookingId'
     | '/category/$category'
     | '/chat/$id'
+    | '/dev/explore-gen'
     | '/explore/$styleId'
     | '/salon/$id'
     | '/stories/$salonId'
@@ -533,6 +543,7 @@ export interface FileRouteTypes {
     | '/bookings/$bookingId'
     | '/category/$category'
     | '/chat/$id'
+    | '/dev/explore-gen'
     | '/explore/$styleId'
     | '/salon/$id'
     | '/stories/$salonId'
@@ -582,6 +593,7 @@ export interface FileRouteTypes {
     | '/bookings/$bookingId'
     | '/category/$category'
     | '/chat/$id'
+    | '/dev/explore-gen'
     | '/explore_/$styleId'
     | '/salon/$id'
     | '/stories/$salonId'
@@ -630,6 +642,7 @@ export interface RootRouteChildren {
   BarberBarberIdRoute: typeof BarberBarberIdRoute
   BookingSalonIdRoute: typeof BookingSalonIdRoute
   CategoryCategoryRoute: typeof CategoryCategoryRoute
+  DevExploreGenRoute: typeof DevExploreGenRoute
   ExploreStyleIdRoute: typeof ExploreStyleIdRoute
   SalonIdRoute: typeof SalonIdRoute
   WalletHistoryRoute: typeof WalletHistoryRoute
@@ -892,6 +905,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExploreStyleIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dev/explore-gen': {
+      id: '/dev/explore-gen'
+      path: '/dev/explore-gen'
+      fullPath: '/dev/explore-gen'
+      preLoaderRoute: typeof DevExploreGenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/chat/$id': {
       id: '/chat/$id'
       path: '/$id'
@@ -1044,6 +1064,7 @@ const rootRouteChildren: RootRouteChildren = {
   BarberBarberIdRoute: BarberBarberIdRoute,
   BookingSalonIdRoute: BookingSalonIdRoute,
   CategoryCategoryRoute: CategoryCategoryRoute,
+  DevExploreGenRoute: DevExploreGenRoute,
   ExploreStyleIdRoute: ExploreStyleIdRoute,
   SalonIdRoute: SalonIdRoute,
   WalletHistoryRoute: WalletHistoryRoute,

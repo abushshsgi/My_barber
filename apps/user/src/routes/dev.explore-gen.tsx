@@ -1,0 +1,363 @@
+import { useCallback, useMemo, useState } from "react";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ImageIcon, Loader2, RefreshCw, Sparkles, Wand2 } from "lucide-react";
+import { toast } from "sonner";
+
+import {
+  EXPLORE_PERSONAS,
+  MEN_CATALOG_STYLE_SLUGS,
+  type ExplorePersonaId,
+} from "@/lib/explore-personas";
+import {
+  fetchExploreGenStatus,
+  generateExploreAsset,
+  type ExploreGenJob,
+} from "@/lib/api/explore-gen";
+import { cn } from "@/lib/utils";
+
+export const Route = createFileRoute("/dev/explore-gen")({
+  beforeLoad: () => {
+    if (!import.meta.env.DEV) {
+      throw redirect({ to: "/" });
+    }
+  },
+  head: () => ({ meta: [{ title: "Explore generatsiya (dev) — mysaloon.uz" }] }),
+  component: ExploreGenDevPage,
+});
+
+type QueueItem = { personaId: string; slug: string; force: boolean };
+
+function ExploreGenDevPage() {
+  const queryClient = useQueryClient();
+  const [personaId, setPersonaId] = useState<ExplorePersonaId>("britan");
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [running, setRunning] = useState(false);
+  const [expandedPrompt, setExpandedPrompt] = useState<string | null>(null);
+
+  const statusQuery = useQuery({
+    queryKey: ["explore-gen-status"],
+    queryFn: fetchExploreGenStatus,
+    refetchInterval: running ? false : 30_000,
+  });
+
+  const generateMutation = useMutation({
+    mutationFn: generateExploreAsset,
+    onSuccess: (result) => {
+      if (result.status === "skipped") {
+        toast.message(result.message ?? "O'tkazib yuborildi");
+      } else {
+        toast.success(`${result.slug} yaratildi (${result.method ?? "ai"})`);
+      }
+      void queryClient.invalidateQueries({ queryKey: ["explore-gen-status"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Generatsiya xato");
+    },
+  });
+
+  const jobs = statusQuery.data?.jobs ?? [];
+  const configured = statusQuery.data?.configured;
+
+  const personaJobs = useMemo(
+    () => jobs.filter((job) => job.persona_id === personaId),
+    [jobs, personaId],
+  );
+
+  const runQueue = useCallback(
+    async (items: QueueItem[]) => {
+      if (!items.length || running) return;
+      setRunning(true);
+      setQueue(items);
+      for (let i = 0; i < items.length; i += 1) {
+        const item = items[i];
+        setQueue(items.slice(i));
+        try {
+          await generateMutation.mutateAsync({
+            personaId: item.personaId,
+            slug: item.slug,
+            force: item.force,
+          });
+        } catch {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+      setQueue([]);
+      setRunning(false);
+    },
+    [generateMutation, running],
+  );
+
+  const enqueuePersona = (force: boolean, onlyMissing: boolean) => {
+    const items: QueueItem[] = [];
+    const ref = personaJobs.find((job) => job.slug === "reference");
+    if (ref && (!onlyMissing || !ref.exists || force)) {
+      items.push({ personaId, slug: "reference", force });
+    }
+    for (const slug of MEN_CATALOG_STYLE_SLUGS) {
+      const job = personaJobs.find((entry) => entry.slug === slug);
+      if (!job) continue;
+      if (onlyMissing && job.exists && !force) continue;
+      items.push({ personaId, slug, force });
+    }
+    void runQueue(items);
+  };
+
+  const enqueueAllMissing = () => {
+    const items: QueueItem[] = jobs
+      .filter((job) => !job.exists)
+      .map((job) => ({ personaId: job.persona_id, slug: job.slug, force: false }));
+    void runQueue(items);
+  };
+
+  return (
+    <div className="min-h-screen bg-neutral-100 px-4 py-8 text-neutral-900">
+      <div className="mx-auto max-w-6xl">
+        <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-700">
+                Vaqtinchalik dev
+              </p>
+              <h1 className="mt-2 text-2xl font-bold tracking-tight">Explore rasm generatsiyasi</h1>
+              <p className="mt-2 max-w-2xl text-sm text-neutral-600">
+                4 personaj × reference + 12 uslub. Rasmlar{" "}
+                <code className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs">
+                  apps/user/public/hairstyles/men/personas/
+                </code>{" "}
+                ga saqlanadi.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void statusQuery.refetch()}
+              disabled={statusQuery.isFetching}
+              className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold hover:bg-neutral-50"
+            >
+              {statusQuery.isFetching ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <RefreshCw className="size-4" />
+              )}
+              Yangilash
+            </button>
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-2">
+            <ConfigBadge ok={configured?.gemini_api_key} label="GEMINI_API_KEY (reference)" />
+            <ConfigBadge ok={configured?.vertex_image} label="Vertex rasm (uslub edit)" />
+            <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-700">
+              {statusQuery.data?.existing ?? 0} / {statusQuery.data?.total ?? 52} tayyor
+            </span>
+          </div>
+
+          {!configured?.gemini_api_key ? (
+            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              <strong>GEMINI_API_KEY</strong> kerak — reference rasmlar uchun.{" "}
+              <a
+                href="https://aistudio.google.com/apikey"
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                AI Studio
+              </a>{" "}
+              dan oling va <code>backend/.env</code>mda qo&apos;ying.
+            </div>
+          ) : null}
+
+          <div className="mt-6 flex flex-wrap gap-2">
+            {EXPLORE_PERSONAS.map((persona) => (
+              <button
+                key={persona.id}
+                type="button"
+                onClick={() => setPersonaId(persona.id)}
+                className={cn(
+                  "rounded-2xl px-4 py-2 text-sm font-semibold transition",
+                  personaId === persona.id
+                    ? "bg-neutral-900 text-white"
+                    : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200",
+                )}
+              >
+                {persona.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <ActionButton
+              icon={Sparkles}
+              label="Reference generatsiya"
+              disabled={running}
+              onClick={() => void runQueue([{ personaId, slug: "reference", force: true }])}
+            />
+            <ActionButton
+              icon={Wand2}
+              label="Personaj — yo'q bo'lganlar"
+              disabled={running}
+              onClick={() => enqueuePersona(false, true)}
+            />
+            <ActionButton
+              icon={RefreshCw}
+              label="Personaj — hammasi (force)"
+              disabled={running}
+              onClick={() => enqueuePersona(true, false)}
+            />
+            <ActionButton
+              icon={ImageIcon}
+              label="Barcha yo'q bo'lganlar"
+              disabled={running}
+              onClick={enqueueAllMissing}
+            />
+          </div>
+
+          {running ? (
+            <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+              Navbat: {queue.length} ta qoldi
+              {queue[0] ? ` — hozir: ${queue[0].personaId} / ${queue[0].slug}` : ""}
+            </div>
+          ) : null}
+        </div>
+
+        {statusQuery.isError ? (
+          <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            Backend ulanmadi. <code>python manage.py runserver</code> va{" "}
+            <code>DJANGO_DEBUG=true</code> ni tekshiring.
+          </div>
+        ) : null}
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {personaJobs.map((job) => (
+            <JobCard
+              key={`${job.persona_id}-${job.slug}`}
+              job={job}
+              busy={running || generateMutation.isPending}
+              expanded={expandedPrompt === `${job.persona_id}-${job.slug}`}
+              onTogglePrompt={() =>
+                setExpandedPrompt((current) =>
+                  current === `${job.persona_id}-${job.slug}`
+                    ? null
+                    : `${job.persona_id}-${job.slug}`,
+                )
+              }
+              onGenerate={(force) =>
+                void runQueue([{ personaId: job.persona_id, slug: job.slug, force }])
+              }
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConfigBadge({ ok, label }: { ok?: boolean; label: string }) {
+  return (
+    <span
+      className={cn(
+        "rounded-full px-3 py-1 text-xs font-semibold",
+        ok ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800",
+      )}
+    >
+      {ok ? "✓" : "✗"} {label}
+    </span>
+  );
+}
+
+function ActionButton({
+  icon: Icon,
+  label,
+  disabled,
+  onClick,
+}: {
+  icon: typeof Sparkles;
+  label: string;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="inline-flex items-center gap-2 rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+    >
+      <Icon className="size-4" />
+      {label}
+    </button>
+  );
+}
+
+function JobCard({
+  job,
+  busy,
+  expanded,
+  onTogglePrompt,
+  onGenerate,
+}: {
+  job: ExploreGenJob;
+  busy: boolean;
+  expanded: boolean;
+  onTogglePrompt: () => void;
+  onGenerate: (force: boolean) => void;
+}) {
+  const cacheBust = job.exists ? `?v=${Date.now()}` : "";
+  return (
+    <div className="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm">
+      <div className="relative aspect-[3/4] bg-neutral-100">
+        {job.exists ? (
+          <img
+            src={`${job.public_url}${cacheBust}`}
+            alt={`${job.persona_label} ${job.slug}`}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-neutral-400">
+            <ImageIcon className="size-8" />
+            <span className="text-xs font-semibold uppercase tracking-wide">Yo&apos;q</span>
+          </div>
+        )}
+        <span className="absolute left-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+          {job.kind === "reference" ? "Reference" : job.slug}
+        </span>
+      </div>
+      <div className="space-y-3 p-4">
+        <div>
+          <p className="text-sm font-bold">{job.persona_label}</p>
+          <p className="text-xs text-neutral-500">{job.relative_path}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onGenerate(false)}
+            className="rounded-xl bg-neutral-900 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+          >
+            Generatsiya
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onGenerate(true)}
+            className="rounded-xl border border-neutral-200 px-3 py-2 text-xs font-semibold disabled:opacity-50"
+          >
+            Qayta
+          </button>
+          <button
+            type="button"
+            onClick={onTogglePrompt}
+            className="rounded-xl border border-neutral-200 px-3 py-2 text-xs font-semibold"
+          >
+            Prompt
+          </button>
+        </div>
+        {expanded ? (
+          <pre className="max-h-40 overflow-auto rounded-xl bg-neutral-50 p-3 text-[10px] leading-relaxed text-neutral-700">
+            {job.prompt}
+          </pre>
+        ) : null}
+      </div>
+    </div>
+  );
+}

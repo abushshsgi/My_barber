@@ -138,6 +138,7 @@ from salons.views import (
     SalonViewSet,
 )
 from salons.amenity_views import AmenityCatalogView, BarberSalonAmenitiesView
+from ai.explore_gen_views import ExploreGenGenerateView, ExploreGenStatusView
 from ai.views import (
     AiFaceCheckView,
     AiStyleAnalyzeView,
@@ -261,6 +262,8 @@ api_routes = [
     path("ai/style-tryon/<str:job_id>/", AiStyleTryOnJobView.as_view()),
     path("ai/face-check/", AiFaceCheckView.as_view()),
     path("ai/style-history/", AiStyleHistoryListCreateView.as_view()),
+    path("ai/dev/explore-gen/", ExploreGenStatusView.as_view()),
+    path("ai/dev/explore-gen/generate/", ExploreGenGenerateView.as_view()),
     path("explore/personas/", ExplorePersonaListView.as_view()),
     path("hairstyles/", HairstyleListView.as_view()),
     path("hairstyles/<str:style_id>/", HairstyleDetailView.as_view()),
