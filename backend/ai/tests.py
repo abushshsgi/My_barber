@@ -126,7 +126,7 @@ class AiStyleAnalyzeTests(TestCase):
         )
         self.assertIn(res.status_code, (401, 403))
 
-    @override_settings(GEMINI_API_KEY="")
+    @override_settings(GEMINI_API_KEY="", VERTEX_PROJECT_ID="", VERTEX_SERVICE_ACCOUNT_JSON="")
     def test_style_analyze_without_api_key(self):
         from ai.services.gemini_style import AiStyleError, analyze_style_from_data_url
 

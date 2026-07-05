@@ -12,6 +12,10 @@ from typing import Any
 
 from django.conf import settings
 
+from .errors import AiStyleError, map_gemini_http_error, read_http_error_body
+from .vertex_auth import vertex_configured
+from .vertex_client import generate_content
+
 logger = logging.getLogger(__name__)
 
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
@@ -23,53 +27,17 @@ GEMINI_VISION_MODEL = "gemini-2.5-flash"
 NO_FACE_MESSAGE = "Iltimos, yuz shakli rasmini yuklang."
 
 
-class AiStyleError(Exception):
-    def __init__(self, message: str, status: int = 400):
-        super().__init__(message)
-        self.message = message
-        self.status = status
-
-
 def _vision_model() -> str:
     configured = (getattr(settings, "GEMINI_MODEL", None) or "").strip()
     return configured or GEMINI_VISION_MODEL
 
 
 def _read_http_error_body(exc: urllib.error.HTTPError) -> str:
-    try:
-        return exc.read().decode("utf-8", errors="replace")
-    except Exception:
-        return ""
+    return read_http_error_body(exc)
 
 
 def _map_gemini_http_error(status: int, body: str, *, kind: str = "general") -> str:
-    lowered = body.lower()
-    if status in (401, 403) or "api key" in lowered or "permission" in lowered:
-        return (
-            "GEMINI API kaliti noto'g'ri yoki ruxsat yo'q. "
-            "aistudio.google.com/apikey dan yangi kalit oling."
-        )
-    if status == 429 or "quota" in lowered or "rate" in lowered or "exceeded" in lowered:
-        if kind == "image":
-            return (
-                "Rasm generatsiya limiti tugadi (Google AI). "
-                "Bepul rejada tez tugaydi — aistudio.google.com da billing yoqing "
-                "yoki 30–60 daqiqadan keyin qayta urinib ko'ring."
-            )
-        return (
-            "AI so'rov limiti tugadi (Google). "
-            "Biroz kuting yoki aistudio.google.com da billing/limitni tekshiring."
-        )
-    if status == 503 or "unavailable" in lowered or "high demand" in lowered:
-        return "AI hozir juda yuklangan. 1–2 daqiqadan keyin qayta urinib ko'ring."
-    if status == 404:
-        if kind == "image":
-            return (
-                "Rasm generatsiya modeli topilmadi. "
-                "VERTEX_IMAGE_MODEL=gemini-3.1-flash-lite-image ni tekshiring."
-            )
-        return f"AI model topilmadi ({_vision_model()}). GEMINI_MODEL ni tekshiring."
-    return "AI tahlil vaqtincha ishlamayapti. Keyinroq urinib ko'ring."
+    return map_gemini_http_error(status, body, kind=kind, model=_vision_model())
 
 
 def parse_data_url(data_url: str) -> tuple[str, bytes]:
@@ -245,18 +213,15 @@ def call_gemini_style_analysis(
 
 
 def _gemini_vision_json(prompt: str, mime: str, image_bytes: bytes) -> dict[str, Any]:
-    api_key = (getattr(settings, "GEMINI_API_KEY", None) or "").strip()
-    if not api_key:
-        raise AiStyleError("AI xizmati hozircha ulanmagan.", 503)
-
     b64 = base64.b64encode(image_bytes).decode("ascii")
     body = {
         "contents": [
             {
+                "role": "user",
                 "parts": [
                     {"text": prompt},
                     {"inline_data": {"mime_type": mime, "data": b64}},
-                ]
+                ],
             }
         ],
         "generationConfig": {
@@ -266,18 +231,46 @@ def _gemini_vision_json(prompt: str, mime: str, image_bytes: bytes) -> dict[str,
     }
 
     model = _vision_model()
-    try:
-        payload = _post_gemini(model, api_key, body)
-    except urllib.error.HTTPError as exc:
-        err_body = _read_http_error_body(exc)
-        logger.warning("Gemini HTTP %s (%s): %s", exc.code, model, err_body[:800])
-        message = _map_gemini_http_error(exc.code, err_body)
-        raise AiStyleError(message, 502 if exc.code >= 500 else 400) from exc
-    except urllib.error.URLError as exc:
-        logger.warning("Gemini network error (%s): %s", model, exc)
-        raise AiStyleError("AI serveriga ulanib bo'lmadi.", 502) from exc
-    except TimeoutError as exc:
-        raise AiStyleError("AI tahlil juda uzoq davom etdi. Qayta urinib ko'ring.", 504) from exc
+
+    if vertex_configured():
+        try:
+            payload = generate_content(model, body, timeout=45, kind="general")
+        except AiStyleError:
+            raise
+        except Exception as exc:
+            logger.warning("Vertex vision error (%s): %s", model, exc)
+            raise AiStyleError("AI tahlil vaqtincha ishlamayapti.", 502) from exc
+    else:
+        api_key = (getattr(settings, "GEMINI_API_KEY", None) or "").strip()
+        if not api_key:
+            raise AiStyleError(
+                "AI xizmati hozircha ulanmagan. "
+                "VERTEX_SERVICE_ACCOUNT_JSON yoki GEMINI_API_KEY kerak.",
+                503,
+            )
+        body_legacy = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": prompt},
+                        {"inline_data": {"mime_type": mime, "data": b64}},
+                    ]
+                }
+            ],
+            "generationConfig": body["generationConfig"],
+        }
+        try:
+            payload = _post_gemini(model, api_key, body_legacy)
+        except urllib.error.HTTPError as exc:
+            err_body = _read_http_error_body(exc)
+            logger.warning("Gemini HTTP %s (%s): %s", exc.code, model, err_body[:800])
+            message = _map_gemini_http_error(exc.code, err_body)
+            raise AiStyleError(message, 502 if exc.code >= 500 else 400) from exc
+        except urllib.error.URLError as exc:
+            logger.warning("Gemini network error (%s): %s", model, exc)
+            raise AiStyleError("AI serveriga ulanib bo'lmadi.", 502) from exc
+        except TimeoutError as exc:
+            raise AiStyleError("AI tahlil juda uzoq davom etdi. Qayta urinib ko'ring.", 504) from exc
 
     candidates = payload.get("candidates") or []
     if not candidates:

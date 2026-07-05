@@ -38,11 +38,15 @@ def _load_service_account_info() -> dict[str, Any] | None:
     return None
 
 
-def vertex_image_configured() -> bool:
+def vertex_configured() -> bool:
     project = (getattr(settings, "VERTEX_PROJECT_ID", None) or "").strip()
     if not project:
         return False
     return _load_service_account_info() is not None
+
+
+def vertex_image_configured() -> bool:
+    return vertex_configured()
 
 
 @lru_cache(maxsize=1)
