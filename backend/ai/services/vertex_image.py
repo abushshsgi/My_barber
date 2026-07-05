@@ -16,9 +16,9 @@ from .vertex_auth import get_vertex_access_token, vertex_image_configured
 logger = logging.getLogger(__name__)
 
 IMAGE_MODEL_FALLBACKS = (
+    "gemini-3.1-flash-lite-image",
     "gemini-2.5-flash-image",
     "gemini-3.1-flash-image",
-    "gemini-3.1-flash-image-preview",
 )
 
 

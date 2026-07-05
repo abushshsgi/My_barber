@@ -17,9 +17,9 @@ from .vertex_image import generate_image_content, use_vertex_for_images
 logger = logging.getLogger(__name__)
 
 IMAGE_MODEL_FALLBACKS = (
+    "gemini-3.1-flash-lite-image",
     "gemini-2.5-flash-image",
-    "gemini-3.1-flash-image-preview",
-    "gemini-3-pro-image-preview",
+    "gemini-3.1-flash-image",
 )
 PUBLIC_ROOT = Path(settings.BASE_DIR).parent / "apps" / "user" / "public"
 
