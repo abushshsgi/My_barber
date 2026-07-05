@@ -10,11 +10,17 @@ from .vertex_auth import vertex_image_configured
 from .vertex_client import generate_content
 
 VERTEX_IMAGE_MODEL = "gemini-3.1-flash-lite-image"
+VERTEX_IMAGE_LOCATION = "global"
 
 
 def vertex_image_model() -> str:
     configured = (getattr(settings, "VERTEX_IMAGE_MODEL", None) or "").strip()
     return configured or VERTEX_IMAGE_MODEL
+
+
+def vertex_image_location() -> str:
+    configured = (getattr(settings, "VERTEX_IMAGE_LOCATION", None) or "").strip()
+    return configured or VERTEX_IMAGE_LOCATION
 
 
 def generate_image_content(body: dict[str, Any]) -> dict[str, Any]:
@@ -23,4 +29,5 @@ def generate_image_content(body: dict[str, Any]) -> dict[str, Any]:
         body,
         timeout=120,
         kind="image",
+        location=vertex_image_location(),
     )

@@ -78,3 +78,20 @@ class TryOnServiceTests(SimpleTestCase):
 class PublicImageLoaderTests(SimpleTestCase):
     def test_missing_file_returns_none(self):
         self.assertIsNone(load_public_image("/hairstyles/men/not-real.webp"))
+
+
+class VertexImageEndpointTests(SimpleTestCase):
+    def test_global_image_endpoint_url(self):
+        from ai.services.vertex_client import build_vertex_generate_url
+
+        with override_settings(VERTEX_PROJECT_ID="my-project"):
+            url = build_vertex_generate_url(
+                "gemini-3.1-flash-lite-image",
+                location="global",
+            )
+        self.assertEqual(
+            url,
+            "https://aiplatform.googleapis.com/v1/projects/my-project/locations/global/"
+            "publishers/google/models/gemini-3.1-flash-lite-image:generateContent",
+        )
+        self.assertNotIn("global-aiplatform", url)

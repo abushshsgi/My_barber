@@ -16,13 +16,21 @@ from .vertex_auth import get_vertex_access_token, vertex_configured
 logger = logging.getLogger(__name__)
 
 
-def _vertex_generate_url(model: str) -> str:
+def build_vertex_generate_url(model: str, *, location: str | None = None) -> str:
     project = (getattr(settings, "VERTEX_PROJECT_ID", None) or "").strip()
-    location = (getattr(settings, "VERTEX_LOCATION", None) or "us-central1").strip()
-    return (
-        f"https://{location}-aiplatform.googleapis.com/v1/projects/{project}"
-        f"/locations/{location}/publishers/google/models/{model}:generateContent"
+    loc = (location or getattr(settings, "VERTEX_LOCATION", None) or "us-central1").strip()
+    if not loc:
+        loc = "us-central1"
+    path = (
+        f"/v1/projects/{project}/locations/{loc}/publishers/google/models/{model}:generateContent"
     )
+    if loc == "global":
+        return f"https://aiplatform.googleapis.com{path}"
+    return f"https://{loc}-aiplatform.googleapis.com{path}"
+
+
+def _vertex_generate_url(model: str, *, location: str | None = None) -> str:
+    return build_vertex_generate_url(model, location=location)
 
 
 def _map_vertex_http_error(status: int, body: str, *, kind: str = "general") -> str:
@@ -36,7 +44,10 @@ def _map_vertex_http_error(status: int, body: str, *, kind: str = "general") -> 
         return "Google Cloud billing yoqilmagan yoki $300 kredit tugagan."
     if status == 404:
         if kind == "image":
-            return "Rasm modeli topilmadi. VERTEX_IMAGE_MODEL ni tekshiring."
+            return (
+                "Rasm modeli topilmadi. "
+                "VERTEX_IMAGE_LOCATION=global va VERTEX_IMAGE_MODEL=gemini-3.1-flash-lite-image ni tekshiring."
+            )
         return "AI model topilmadi. GEMINI_MODEL ni tekshiring."
     return map_gemini_http_error(status, body, kind=kind)
 
@@ -47,6 +58,7 @@ def generate_content(
     *,
     timeout: int = 60,
     kind: str = "general",
+    location: str | None = None,
 ) -> dict[str, Any]:
     if not vertex_configured():
         raise AiStyleError(
@@ -56,7 +68,7 @@ def generate_content(
 
     token = get_vertex_access_token()
     req = urllib.request.Request(
-        _vertex_generate_url(model),
+        _vertex_generate_url(model, location=location),
         data=json.dumps(body).encode("utf-8"),
         headers={
             "Content-Type": "application/json",

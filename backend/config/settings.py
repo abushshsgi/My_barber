@@ -106,6 +106,8 @@ VERTEX_IMAGE_MODEL = (
     os.environ.get("VERTEX_IMAGE_MODEL", "gemini-3.1-flash-lite-image").strip()
     or "gemini-3.1-flash-lite-image"
 )
+# gemini-3.1-flash-lite-image faqat global endpoint da (us-central1 da 404)
+VERTEX_IMAGE_LOCATION = os.environ.get("VERTEX_IMAGE_LOCATION", "global").strip() or "global"
 VERTEX_SERVICE_ACCOUNT_JSON = os.environ.get("VERTEX_SERVICE_ACCOUNT_JSON", "").strip()
 GOOGLE_APPLICATION_CREDENTIALS = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
 
