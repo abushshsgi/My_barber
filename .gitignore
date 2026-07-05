@@ -13,6 +13,7 @@ apps/**/.next/
 packages/**/node_modules/
 .env
 .env.local
+backend/secrets/
 .cursor/
 .git.broken-*/
 *.tsbuildinfo
