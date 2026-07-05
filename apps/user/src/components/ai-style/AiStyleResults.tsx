@@ -35,9 +35,11 @@ function StylePreview({
 export function AiStyleResultsSummary({
   result,
   tone = "light",
+  minimal = false,
 }: {
   result: AiAnalysisResult;
   tone?: "light" | "dark";
+  minimal?: boolean;
 }) {
   const { t } = useTranslation();
   const dark = tone === "dark";
@@ -46,13 +48,17 @@ export function AiStyleResultsSummary({
     <div
       className={cn(
         "rounded-2xl p-4",
-        dark ? "bg-background/10 text-background" : "border border-border bg-background",
+        minimal
+          ? "bg-neutral-50"
+          : dark
+            ? "bg-background/10 text-background"
+            : "border border-border bg-background",
       )}
     >
       <p
         className={cn(
           "text-[10px] font-bold uppercase tracking-[0.16em]",
-          dark ? "text-background/55" : "text-muted-foreground",
+          minimal ? "text-neutral-500" : dark ? "text-background/55" : "text-muted-foreground",
         )}
       >
         {t("aiStylePage.analysisTitle")}
@@ -61,7 +67,7 @@ export function AiStyleResultsSummary({
         <span
           className={cn(
             "rounded-full px-3 py-1.5 text-xs font-bold",
-            dark ? "bg-background/15" : "bg-surface",
+            minimal ? "bg-black text-white" : dark ? "bg-background/15" : "bg-surface",
           )}
         >
           {t(`aiStylePage.faceShapes.${result.faceShapeKey}`)}
@@ -69,7 +75,7 @@ export function AiStyleResultsSummary({
         <span
           className={cn(
             "rounded-full px-3 py-1.5 text-xs font-bold",
-            dark ? "bg-background/15" : "bg-surface",
+            minimal ? "bg-black text-white" : dark ? "bg-background/15" : "bg-surface",
           )}
         >
           {t(`aiStylePage.hairTypes.${result.hairTypeKey}`)}
@@ -78,7 +84,7 @@ export function AiStyleResultsSummary({
       <p
         className={cn(
           "mt-3 text-xs leading-relaxed",
-          dark ? "text-background/75" : "text-muted-foreground",
+          minimal ? "text-neutral-600" : dark ? "text-background/75" : "text-muted-foreground",
         )}
       >
         {result.summaryUz ?? t("aiStylePage.resultDesc")}
@@ -95,6 +101,7 @@ function SuggestionActions({
   tryOnPreview,
   tryOnLoading,
   onGenerateTryOn,
+  minimal = false,
 }: {
   suggestion: Suggestion;
   saved: boolean;
@@ -103,9 +110,14 @@ function SuggestionActions({
   tryOnPreview?: string;
   tryOnLoading?: boolean;
   onGenerateTryOn?: (styleId: string) => void;
+  minimal?: boolean;
 }) {
   const { t } = useTranslation();
   const canTryOn = Boolean(onGenerateTryOn && isCatalogStyleId(suggestion.id));
+  const inactiveBtn = minimal
+    ? "bg-neutral-100 text-black"
+    : "border-border bg-surface";
+  const activeBtn = minimal ? "bg-black text-white" : "border-foreground bg-foreground text-background";
 
   return (
     <div className={cn("mt-3 flex flex-wrap gap-1.5", compact && "mt-2")}>
@@ -115,10 +127,9 @@ function SuggestionActions({
           disabled={tryOnLoading || Boolean(tryOnPreview)}
           onClick={() => onGenerateTryOn?.(suggestion.id)}
           className={cn(
-            "inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-1 rounded-lg border px-2 py-2 text-[10px] font-bold",
-            tryOnPreview
-              ? "border-foreground bg-foreground text-background"
-              : "border-border bg-surface",
+            "inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-1 rounded-xl px-2 py-2.5 text-[10px] font-bold",
+            !minimal && "border",
+            tryOnPreview ? activeBtn : inactiveBtn,
           )}
         >
           {tryOnLoading ? (
@@ -133,8 +144,9 @@ function SuggestionActions({
         type="button"
         onClick={() => onToggleSave(suggestion.id)}
         className={cn(
-          "inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-1 rounded-lg border px-2 py-2 text-[10px] font-bold",
-          saved ? "border-foreground bg-foreground text-background" : "border-border bg-surface",
+          "inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-1 rounded-xl px-2 py-2.5 text-[10px] font-bold",
+          !minimal && "border",
+          saved ? activeBtn : inactiveBtn,
         )}
       >
         <Bookmark className="h-3 w-3" />
@@ -144,7 +156,10 @@ function SuggestionActions({
         <Link
           to="/explore/$styleId"
           params={{ styleId: suggestion.id }}
-          className="inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-1 rounded-lg border border-border bg-surface px-2 py-2 text-[10px] font-bold"
+          className={cn(
+            "inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-1 rounded-xl px-2 py-2.5 text-[10px] font-bold",
+            minimal ? "bg-neutral-100 text-black" : "border border-border bg-surface",
+          )}
         >
           {t("aiStylePage.viewStyle")}
         </Link>
@@ -153,13 +168,13 @@ function SuggestionActions({
         <Link
           to="/booking/$salonId"
           params={{ salonId: suggestion.salonId }}
-          className="inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-1 rounded-lg bg-foreground px-2 py-2 text-[10px] font-bold text-background"
+          className="inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-1 rounded-xl bg-black px-2 py-2.5 text-[10px] font-bold text-white"
         >
           <CalendarPlus className="h-3 w-3" />
           {t("aiStylePage.bookShort")}
         </Link>
       ) : (
-        <span className="inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-1 rounded-lg bg-muted px-2 py-2 text-[10px] font-bold text-muted-foreground">
+        <span className="inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-1 rounded-xl bg-neutral-100 px-2 py-2.5 text-[10px] font-bold text-neutral-400">
           <CalendarPlus className="h-3 w-3" />
           {t("aiStylePage.bookShort")}
         </span>
@@ -176,6 +191,7 @@ export function AiStyleSuggestionsCarousel({
   tryOnLoadingId,
   onGenerateTryOn,
   focusStyleId,
+  minimal = false,
 }: {
   suggestions: Suggestion[];
   saved: string[];
@@ -184,6 +200,7 @@ export function AiStyleSuggestionsCarousel({
   tryOnLoadingId?: string | null;
   onGenerateTryOn?: (styleId: string) => void;
   focusStyleId?: string;
+  minimal?: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -194,7 +211,7 @@ export function AiStyleSuggestionsCarousel({
   }, [focusStyleId, suggestions]);
 
   return (
-    <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2">
+    <div className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 no-scrollbar">
       {suggestions.map((suggestion, index) => (
         <motion.article
           key={suggestion.id}
@@ -203,17 +220,27 @@ export function AiStyleSuggestionsCarousel({
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: index * 0.06 }}
           className={cn(
-            "w-[200px] shrink-0 snap-center",
-            focusStyleId === suggestion.id && "ring-2 ring-foreground ring-offset-2 rounded-2xl",
+            "w-[min(72vw,220px)] shrink-0 snap-center",
+            focusStyleId === suggestion.id && "rounded-2xl ring-2 ring-black ring-offset-2",
           )}
         >
-          <div className="overflow-hidden rounded-2xl border border-border bg-background">
+          <div
+            className={cn(
+              "overflow-hidden rounded-2xl",
+              minimal ? "bg-neutral-50" : "border border-border bg-background",
+            )}
+          >
             <div className="relative aspect-[3/4] overflow-hidden">
               <StylePreview
                 suggestion={suggestion}
                 tryOnPreview={tryOnByStyle?.[suggestion.id]}
               />
-              <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-1 text-[10px] font-bold backdrop-blur-sm">
+              <span
+                className={cn(
+                  "absolute left-2 top-2 rounded-full px-2 py-1 text-[10px] font-bold backdrop-blur-sm",
+                  minimal ? "bg-white/95 text-black" : "bg-background/90",
+                )}
+              >
                 {tryOnLoadingId === suggestion.id
                   ? t("aiStylePage.tryOnGenerating")
                   : tryOnByStyle?.[suggestion.id]
@@ -222,11 +249,21 @@ export function AiStyleSuggestionsCarousel({
               </span>
             </div>
             <div className="p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+              <p
+                className={cn(
+                  "text-[10px] font-bold uppercase tracking-wide",
+                  minimal ? "text-neutral-400" : "text-muted-foreground",
+                )}
+              >
                 #{index + 1}
               </p>
-              <h3 className="mt-0.5 text-sm font-bold leading-tight">{suggestion.title}</h3>
-              <p className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
+              <h3 className="mt-0.5 text-sm font-bold leading-tight text-black">{suggestion.title}</h3>
+              <p
+                className={cn(
+                  "mt-1.5 line-clamp-2 text-[11px] leading-relaxed",
+                  minimal ? "text-neutral-500" : "text-muted-foreground",
+                )}
+              >
                 {suggestion.reason ?? (suggestion.reasonKey ? t(suggestion.reasonKey) : "")}
               </p>
               <SuggestionActions
@@ -236,6 +273,7 @@ export function AiStyleSuggestionsCarousel({
                 tryOnPreview={tryOnByStyle?.[suggestion.id]}
                 tryOnLoading={tryOnLoadingId === suggestion.id}
                 onGenerateTryOn={onGenerateTryOn}
+                minimal={minimal}
               />
             </div>
           </div>
@@ -318,6 +356,7 @@ export function AiStyleResultsBlock({
   onReset,
   layout = "carousel",
   summaryTone = "light",
+  variant = "default",
   tryOnByStyle,
   tryOnLoadingId,
   onGenerateTryOn,
@@ -329,27 +368,32 @@ export function AiStyleResultsBlock({
   onReset: () => void;
   layout?: "carousel" | "stack";
   summaryTone?: "light" | "dark";
+  variant?: "default" | "minimal";
   tryOnByStyle?: Record<string, string>;
   tryOnLoadingId?: string | null;
   onGenerateTryOn?: (styleId: string) => void;
   focusStyleId?: string;
 }) {
   const { t } = useTranslation();
+  const minimal = variant === "minimal";
 
   return (
-    <div className="space-y-4">
-      <AiStyleResultsSummary result={result} tone={summaryTone} />
+    <div className="space-y-5">
+      <AiStyleResultsSummary result={result} tone={summaryTone} minimal={minimal} />
       <div className="flex items-end justify-between gap-3">
         <div>
-          <h2 className="text-base font-bold">{t("aiStylePage.resultsTitle")}</h2>
-          <p className="mt-1 text-[11px] text-muted-foreground">
+          <h2 className="text-base font-bold text-black">{t("aiStylePage.resultsTitle")}</h2>
+          <p className={cn("mt-1 text-[11px]", minimal ? "text-neutral-500" : "text-muted-foreground")}>
             {layout === "carousel" ? t("aiStylePage.swipeHint") : t("aiStylePage.resultsHint")}
           </p>
         </div>
         <button
           type="button"
           onClick={onReset}
-          className="shrink-0 rounded-full border border-border bg-background px-3 py-1.5 text-[10px] font-bold"
+          className={cn(
+            "shrink-0 rounded-full px-3.5 py-2 text-[10px] font-bold",
+            minimal ? "bg-black text-white" : "border border-border bg-background",
+          )}
         >
           {t("aiStylePage.tryAgain")}
         </button>
@@ -363,6 +407,7 @@ export function AiStyleResultsBlock({
           tryOnLoadingId={tryOnLoadingId}
           onGenerateTryOn={onGenerateTryOn}
           focusStyleId={focusStyleId}
+          minimal={minimal}
         />
       ) : (
         <AiStyleSuggestionsStack

@@ -73,9 +73,9 @@ function StepRail({ step }: { step: 1 | 2 | 3 }) {
                 className={cn(
                   "grid h-8 w-8 place-items-center rounded-full text-[11px] font-bold transition-all",
                   reached
-                    ? "bg-foreground text-white shadow-sm"
-                    : "border border-border bg-neutral-50 text-muted-foreground",
-                  current && "ring-4 ring-foreground/10",
+                    ? "bg-black text-white"
+                    : "bg-neutral-100 text-neutral-400",
+                  current && "ring-4 ring-black/8",
                 )}
               >
                 {done ? <Check className="h-4 w-4" strokeWidth={2.5} /> : n}
@@ -83,11 +83,7 @@ function StepRail({ step }: { step: 1 | 2 | 3 }) {
               <p
                 className={cn(
                   "max-w-[72px] text-center text-[10px] font-bold leading-tight",
-                  current
-                    ? "text-foreground"
-                    : reached
-                      ? "text-foreground/70"
-                      : "text-muted-foreground",
+                  current ? "text-black" : reached ? "text-black/60" : "text-neutral-400",
                 )}
               >
                 {label}
@@ -97,7 +93,7 @@ function StepRail({ step }: { step: 1 | 2 | 3 }) {
               <div
                 className={cn(
                   "mt-4 h-0.5 w-full max-w-[48px] flex-1 rounded-full transition-colors",
-                  step > n ? "bg-foreground" : "bg-border",
+                  step > n ? "bg-black" : "bg-neutral-200",
                 )}
               />
             ) : null}
@@ -668,16 +664,17 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
           initial={{ y: "100%" }}
           animate={{ y: 0 }}
           transition={{ type: "spring", damping: 36, stiffness: 170, mass: 1.15 }}
-          className="relative -mt-16 flex min-h-0 flex-1 flex-col overflow-y-auto rounded-t-[28px] bg-white px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]"
+          className="relative -mt-10 flex min-h-0 flex-1 flex-col overflow-y-auto rounded-t-[28px] bg-white px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-4 text-black"
         >
           <StepRail step={props.step} />
-          <div className="mt-5 min-h-0 flex-1 overflow-y-auto text-left">
+          <div className="mt-4 min-h-0 flex-1 text-left">
             <AiStyleResultsBlock
               result={props.result!}
               saved={props.saved}
               onToggleSave={props.onToggleSave}
               onReset={props.onReset}
               layout="carousel"
+              variant="minimal"
               focusStyleId={props.focusStyleId}
               tryOnByStyle={props.tryOnByStyle}
               tryOnLoadingId={props.tryOnLoadingId}
