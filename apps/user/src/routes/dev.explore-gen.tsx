@@ -35,6 +35,20 @@ export const Route = createFileRoute("/dev/explore-gen")({
 
 type QueueItem = { personaId: string; slug: string; force: boolean };
 
+const QUEUE_GAP_MS = 8_000;
+const RATE_LIMIT_COOLDOWN_MS = 45_000;
+const MAX_QUEUE_RETRIES = 3;
+
+function isRateLimitError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const msg = error.message.toLowerCase();
+  return msg.includes("limit") || msg.includes("band") || msg.includes("429");
+}
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function ExploreGenDevPage() {
   const { key: urlKey } = Route.useSearch();
   const queryClient = useQueryClient();
@@ -95,16 +109,30 @@ function ExploreGenDevPage() {
       for (let i = 0; i < items.length; i += 1) {
         const item = items[i];
         setQueue(items.slice(i));
-        try {
-          await generateMutation.mutateAsync({
-            personaId: item.personaId,
-            slug: item.slug,
-            force: item.force,
-          });
-        } catch {
-          break;
+        let retries = 0;
+        while (retries <= MAX_QUEUE_RETRIES) {
+          try {
+            await generateMutation.mutateAsync({
+              personaId: item.personaId,
+              slug: item.slug,
+              force: item.force,
+            });
+            break;
+          } catch (error) {
+            if (isRateLimitError(error) && retries < MAX_QUEUE_RETRIES) {
+              retries += 1;
+              toast.message(`Limit — ${Math.round(RATE_LIMIT_COOLDOWN_MS / 1000)}s kutamiz (${retries}/${MAX_QUEUE_RETRIES})…`);
+              await sleep(RATE_LIMIT_COOLDOWN_MS);
+              continue;
+            }
+            setQueue([]);
+            setRunning(false);
+            return;
+          }
         }
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        if (i < items.length - 1) {
+          await sleep(QUEUE_GAP_MS);
+        }
       }
       setQueue([]);
       setRunning(false);

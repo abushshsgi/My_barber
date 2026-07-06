@@ -78,7 +78,7 @@ def generate_content(
     token = get_vertex_access_token()
     url = _vertex_generate_url(model, location=location)
     payload_bytes = json.dumps(body).encode("utf-8")
-    max_attempts = 3 if kind == "image" else 1
+    max_attempts = 6 if kind == "image" else 1
 
     for attempt in range(max_attempts):
         req = urllib.request.Request(
@@ -97,7 +97,7 @@ def generate_content(
         except urllib.error.HTTPError as exc:
             err_body = read_http_error_body(exc)
             if exc.code == 429 and attempt < max_attempts - 1:
-                delay = (2**attempt) + random.uniform(0.5, 1.5)
+                delay = min(90.0, (2**attempt) * 4 + random.uniform(1.0, 3.0))
                 logger.warning(
                     "Vertex HTTP 429 (%s), retry %s/%s in %.1fs",
                     model,
