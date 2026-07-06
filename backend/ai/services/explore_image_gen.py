@@ -9,7 +9,6 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
-import requests
 from django.conf import settings
 from PIL import Image
 
@@ -31,6 +30,14 @@ logger = logging.getLogger(__name__)
 
 PUBLIC_ROOT = Path(settings.BASE_DIR).parent / "apps" / "user" / "public"
 OUTPUT_W, OUTPUT_H = 768, 1024
+WEBP_QUALITY = 90
+
+STYLE_NEGATIVE = (
+    "different person, changed face, changed age, changed skin tone, "
+    "passport photo, ID photo, mugshot, stiff front-facing, cartoon, anime, "
+    "watermark, text, logo, busy background, gradient, vignette, plastic skin, "
+    "over-smoothed face, deformed face, multiple people"
+)
 
 
 def _uses_public_output() -> bool:
@@ -47,20 +54,12 @@ def asset_file_path(*, persona_id: str, slug: str) -> Path:
         return PUBLIC_ROOT / rel
     return Path(settings.MEDIA_ROOT) / rel
 
-STYLE_NEGATIVE = (
-    "different person, changed face, changed age, changed skin tone, "
-    "passport photo, ID photo, cartoon, watermark, text, busy background, gradient"
-)
-
-IMAGEN_MODEL = "imagen-4.0-generate-001"
-
 
 def explore_gen_configured() -> dict[str, bool]:
-    has_vertex = vertex_configured()
+    has_image = vertex_image_configured()
     return {
-        "vertex": has_vertex,
-        "vertex_imagen": has_vertex,
-        "vertex_image": vertex_image_configured(),
+        "vertex": vertex_configured(),
+        "vertex_image": has_image,
     }
 
 
@@ -117,17 +116,58 @@ def list_explore_gen_jobs() -> list[dict[str, Any]]:
 def build_explore_gen_prompt(*, persona_id: str, slug: str) -> str:
     pid = normalize_persona_id(persona_id) or "evro"
     if slug == "reference":
-        return persona_reference_prompt(persona_id=pid)
+        return _build_reference_generation_prompt(persona_id=pid)
 
     persona = EXPLORE_PERSONAS[pid]
     style_detail = style_detail_for("men", slug)
-    return (
-        f"Professional barber studio portrait. Same exact person: {persona['description']}. "
-        f"Identical face, skin tone, eyes, expression, pose, plain white t-shirt, "
-        f"solid flat #E8E8E8 background, soft studio lighting. "
-        f"Hairstyle: {style_detail}. Ultra sharp photorealistic, 3:4 vertical, 768x1024. "
-        f"ONLY the hairstyle changes."
+    return _build_style_text_prompt(
+        persona_description=persona["description"],
+        style_detail=style_detail,
     )
+
+
+def _build_reference_generation_prompt(*, persona_id: str) -> str:
+    pid = normalize_persona_id(persona_id) or "evro"
+    persona = EXPLORE_PERSONAS[pid]
+    scene = persona_reference_prompt(persona_id=pid)
+    return f"""You are a professional barber catalog photographer for mysaloon.uz.
+
+Create ONE ultra-sharp photorealistic studio portrait for a men's hairstyle reference catalog.
+
+Person: {persona['description']}
+
+Creative direction:
+{scene}
+
+Technical requirements:
+- Three-quarter portrait, candid barber moment, natural relaxed expression
+- Plain white crew-neck t-shirt, solid flat #E8E8E8 background
+- Soft even studio lighting, 85mm portrait lens look
+- Realistic skin texture and hair detail, no airbrushing
+- 3:4 vertical, shoulders visible, catalog-ready quality
+
+AVOID: {STYLE_NEGATIVE}
+
+Output a single high-quality reference portrait photo."""
+
+
+def _build_style_text_prompt(*, persona_description: str, style_detail: str) -> str:
+    return f"""You are a professional barber catalog photographer for mysaloon.uz.
+
+Create ONE ultra-sharp photorealistic studio portrait.
+
+Person: {persona_description}
+Hairstyle: {style_detail}
+
+Scene:
+- Three-quarter portrait, same person identity throughout the catalog
+- Plain white crew-neck t-shirt, solid flat #E8E8E8 background
+- Soft studio lighting, fresh professional barber result
+- 3:4 vertical, 768x1024, catalog-ready quality
+
+AVOID: {STYLE_NEGATIVE}
+
+Output a single portrait photo with only this hairstyle."""
 
 
 def _build_style_edit_prompt(*, persona_id: str, slug: str) -> str:
@@ -141,124 +181,53 @@ Edit the portrait photo to show this hairstyle on the SAME person: "{style_detai
 CRITICAL:
 - Keep the EXACT same face, identity, skin tone, age, and facial features ({persona['description']})
 - Keep pose, camera angle, expression, white t-shirt, and solid flat #E8E8E8 background
-- ONLY change the hair to a photorealistic fresh barber result
-- Do NOT add text, watermarks, or extra people
+- ONLY change the hair to a photorealistic fresh barber result with natural texture
+- Ultra sharp catalog quality, realistic lighting on hair
+- Do NOT add text, watermarks, logos, or extra people
 - 3:4 vertical portrait
+
+AVOID: {STYLE_NEGATIVE}
 
 Output a single edited portrait photo."""
 
 
-def _resize_webp(raw: bytes, dest: Path) -> None:
-    img = Image.open(BytesIO(raw)).convert("RGB")
-    img = img.resize((OUTPUT_W, OUTPUT_H), Image.Resampling.LANCZOS)
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    img.save(dest, "WEBP", quality=85)
-
-
-def _parse_imagen_predict_response(data: dict[str, Any]) -> bytes:
-    predictions = data.get("predictions") or []
-    if predictions:
-        encoded = predictions[0].get("bytesBase64Encoded") or predictions[0].get("bytes_base64_encoded")
-        if encoded:
-            return base64.b64decode(encoded)
-
-    images = data.get("generatedImages") or data.get("generated_images") or []
-    if images:
-        image_obj = images[0].get("image") or images[0]
-        encoded = image_obj.get("imageBytes") or image_obj.get("image_bytes")
-        if encoded:
-            return base64.b64decode(encoded)
-
-    raise AiStyleError("Imagen rasm qaytarmadi.", 502)
-
-
-def _vertex_imagen_predict_url() -> str:
-    project = (getattr(settings, "VERTEX_PROJECT_ID", None) or "").strip()
-    loc = (getattr(settings, "VERTEX_LOCATION", None) or "us-central1").strip() or "us-central1"
-    path = (
-        f"/v1/projects/{project}/locations/{loc}/publishers/google/models/"
-        f"{IMAGEN_MODEL}:predict"
-    )
-    if loc == "global":
-        return f"https://aiplatform.googleapis.com{path}"
-    return f"https://{loc}-aiplatform.googleapis.com{path}"
-
-
-def _generate_imagen_vertex(prompt: str) -> bytes:
-    if not vertex_configured():
-        raise AiStyleError(
-            "Vertex AI sozlanmagan. VERTEX_PROJECT_ID va service account kerak.",
-            503,
+def _vertex_image_body(*, prompt: str, ref_bytes: bytes | None = None) -> dict[str, Any]:
+    parts: list[dict[str, Any]] = [{"text": prompt}]
+    if ref_bytes is not None:
+        parts.append(
+            {
+                "inline_data": {
+                    "mime_type": "image/webp",
+                    "data": base64.b64encode(ref_bytes).decode("ascii"),
+                }
+            }
         )
-
-    from ai.services.vertex_auth import get_vertex_access_token
-
-    payload = {
-        "instances": [{"prompt": f"{prompt}. Avoid: {STYLE_NEGATIVE}"}],
-        "parameters": {
-            "sampleCount": 1,
-            "aspectRatio": "3:4",
-            "personGeneration": "allow_adult",
+    return {
+        "contents": [{"role": "user", "parts": parts}],
+        "generationConfig": {
+            "responseModalities": ["IMAGE"],
+            "imageConfig": {"aspectRatio": "3:4"},
         },
     }
-    try:
-        res = requests.post(
-            _vertex_imagen_predict_url(),
-            headers={
-                "Authorization": f"Bearer {get_vertex_access_token()}",
-                "Content-Type": "application/json",
-            },
-            json=payload,
-            timeout=120,
-        )
-    except requests.RequestException as exc:
-        raise AiStyleError("Vertex Imagen API ga ulanib bo'lmadi.", 502) from exc
-
-    if res.status_code >= 400:
-        body = res.text[:800]
-        logger.warning("Vertex Imagen HTTP %s: %s", res.status_code, body)
-        if res.status_code == 429:
-            raise AiStyleError("Vertex limiti. 1–2 daqiqa kutib qayta urinib ko'ring.", 429)
-        raise AiStyleError(f"Vertex Imagen xato ({res.status_code}).", 502)
-
-    return _parse_imagen_predict_response(res.json())
 
 
-def _generate_reference_image(prompt: str) -> tuple[bytes, str]:
-    return _generate_imagen_vertex(prompt), "vertex_imagen"
-
-
-def _generate_vertex_style_edit(*, persona_id: str, slug: str, ref_bytes: bytes) -> bytes:
+def _generate_vertex_image(*, prompt: str, ref_bytes: bytes | None = None) -> bytes:
     if not vertex_image_configured():
         raise AiStyleError(
             "Vertex rasm modeli sozlanmagan. VERTEX_PROJECT_ID va service account kerak.",
             503,
         )
 
-    prompt = _build_style_edit_prompt(persona_id=persona_id, slug=slug)
-    body = {
-        "contents": [
-            {
-                "role": "user",
-                "parts": [
-                    {"text": prompt},
-                    {
-                        "inline_data": {
-                            "mime_type": "image/webp",
-                            "data": base64.b64encode(ref_bytes).decode("ascii"),
-                        }
-                    },
-                ],
-            }
-        ],
-        "generationConfig": {
-            "responseModalities": ["IMAGE"],
-            "imageConfig": {"aspectRatio": "3:4"},
-        },
-    }
-    payload = generate_image_content(body)
+    payload = generate_image_content(_vertex_image_body(prompt=prompt, ref_bytes=ref_bytes))
     _mime, out_bytes = extract_image_bytes(payload)
     return out_bytes
+
+
+def _resize_webp(raw: bytes, dest: Path) -> None:
+    img = Image.open(BytesIO(raw)).convert("RGB")
+    img = img.resize((OUTPUT_W, OUTPUT_H), Image.Resampling.LANCZOS)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    img.save(dest, "WEBP", quality=WEBP_QUALITY)
 
 
 def generate_explore_asset(
@@ -293,18 +262,19 @@ def generate_explore_asset(
     started = time.monotonic()
 
     if slug == "reference":
-        raw, method = _generate_reference_image(prompt)
+        raw = _generate_vertex_image(prompt=prompt)
+        method = "vertex_generate"
     else:
         ref_path = asset_file_path(persona_id=pid, slug="reference")
-        if ref_path.is_file() and vertex_image_configured():
-            raw = _generate_vertex_style_edit(
-                persona_id=pid,
-                slug=slug,
+        if ref_path.is_file():
+            raw = _generate_vertex_image(
+                prompt=_build_style_edit_prompt(persona_id=pid, slug=slug),
                 ref_bytes=ref_path.read_bytes(),
             )
             method = "vertex_edit"
         else:
-            raw, method = _generate_reference_image(prompt)
+            raw = _generate_vertex_image(prompt=prompt)
+            method = "vertex_generate"
 
     _resize_webp(raw, dest)
     elapsed_ms = int((time.monotonic() - started) * 1000)

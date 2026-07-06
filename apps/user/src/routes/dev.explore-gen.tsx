@@ -218,8 +218,10 @@ function ExploreGenDevPage() {
           )}
 
           <div className="mt-6 flex flex-wrap gap-2">
-            <ConfigBadge ok={configured?.vertex_imagen} label="Vertex Imagen (reference)" />
-            <ConfigBadge ok={configured?.vertex_image} label="Vertex rasm (uslub edit)" />
+            <ConfigBadge
+              ok={configured?.vertex_image}
+              label="Gemini 3.1 Flash Lite Image (reference + uslub)"
+            />
             <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-700">
               {statusQuery.data?.existing ?? 0} / {statusQuery.data?.total ?? 52} tayyor
             </span>
@@ -228,10 +230,10 @@ function ExploreGenDevPage() {
             </span>
           </div>
 
-          {!configured?.vertex ? (
+          {!configured?.vertex_image ? (
             <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              <strong>VERTEX_PROJECT_ID</strong> va <strong>VERTEX_SERVICE_ACCOUNT_JSON</strong>{" "}
-              Railway Variables ga qo&apos;ying.
+              <strong>VERTEX_PROJECT_ID</strong>, <strong>VERTEX_SERVICE_ACCOUNT_JSON</strong> va{" "}
+              <strong>VERTEX_IMAGE_MODEL=gemini-3.1-flash-lite-image</strong> ni tekshiring.
             </div>
           ) : null}
 

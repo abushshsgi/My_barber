@@ -18,7 +18,6 @@ export type ExploreGenJob = {
 export type ExploreGenStatus = {
   configured: {
     vertex: boolean;
-    vertex_imagen: boolean;
     vertex_image: boolean;
   };
   jobs: ExploreGenJob[];
