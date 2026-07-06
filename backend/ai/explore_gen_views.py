@@ -75,4 +75,13 @@ class ExploreGenDownloadView(APIView):
         if not path.is_file():
             raise Http404("Fayl topilmadi.")
 
-        return FileResponse(path.open("rb"), filename=path.name, content_type="image/webp")
+        from ai.explore_personas import normalize_persona_id
+
+        pid = normalize_persona_id(persona_id) or persona_id
+        filename = f"{pid}-{slug}.webp"
+        return FileResponse(
+            path.open("rb"),
+            filename=filename,
+            content_type="image/webp",
+            as_attachment=True,
+        )

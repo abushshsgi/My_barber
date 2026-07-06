@@ -96,8 +96,27 @@ export function resolveExploreGenImageUrl(job: ExploreGenJob): string | null {
   return `${job.download_path}&key=${encodeURIComponent(secret)}`;
 }
 
+export function exploreGenDownloadFilename(job: Pick<ExploreGenJob, "persona_id" | "slug">): string {
+  return `${job.persona_id}-${job.slug}.webp`;
+}
+
 export function exploreGenDownloadUrl(job: ExploreGenJob): string {
   const secret = readExploreGenSecret();
   const base = job.download_path;
   return secret ? `${base}${base.includes("?") ? "&" : "?"}key=${encodeURIComponent(secret)}` : base;
+}
+
+export async function downloadExploreGenAsset(job: ExploreGenJob): Promise<void> {
+  const url = exploreGenDownloadUrl(job);
+  const res = await fetch(url, { headers: exploreGenHeaders() });
+  if (!res.ok) {
+    throw new Error(`Yuklab olish xato (${res.status})`);
+  }
+  const blob = await res.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = exploreGenDownloadFilename(job);
+  anchor.click();
+  URL.revokeObjectURL(objectUrl);
 }

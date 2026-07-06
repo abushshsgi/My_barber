@@ -10,7 +10,8 @@ import {
   type ExplorePersonaId,
 } from "@/lib/explore-personas";
 import {
-  exploreGenDownloadUrl,
+  downloadExploreGenAsset,
+  exploreGenDownloadFilename,
   fetchExploreGenStatus,
   generateExploreAsset,
   readExploreGenSecret,
@@ -204,13 +205,17 @@ function ExploreGenDevPage() {
           {outputMode === "media" ? (
             <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
               <strong>Production (Railway):</strong> rasmlar server media papkasiga saqlanadi.
-              Har bir rasmni <strong>Yuklab olish</strong> tugmasi bilan oling va{" "}
-              <code className="rounded bg-white/80 px-1">
-                apps/user/public/hairstyles/men/personas/
-              </code>{" "}
-              ga qo&apos;yib push qiling.
+              Har bir rasmni <strong>Yuklab olish</strong> bilan oling — fayl nomi{" "}
+              <code className="rounded bg-white/80 px-1">persona-uslub.webp</code> (masalan{" "}
+              <code className="rounded bg-white/80 px-1">britan-buzz-cut.webp</code>). Bitta papkada
+              yig&apos;ib berishingiz mumkin; keyin Explore papkasiga joylashtiramiz.
             </div>
-          ) : null}
+          ) : (
+            <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+              Yuklab olish nomi: <code className="rounded bg-white/80 px-1">persona-uslub.webp</code>{" "}
+              (masalan <code className="rounded bg-white/80 px-1">britan-reference.webp</code>).
+            </div>
+          )}
 
           <div className="mt-6 flex flex-wrap gap-2">
             <ConfigBadge ok={configured?.vertex_imagen} label="Vertex Imagen (reference)" />
@@ -366,7 +371,21 @@ function JobCard({
   onTogglePrompt: () => void;
   onGenerate: (force: boolean) => void;
 }) {
+  const [downloading, setDownloading] = useState(false);
   const imageUrl = resolveExploreGenImageUrl(job);
+  const downloadName = exploreGenDownloadFilename(job);
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      await downloadExploreGenAsset(job);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Yuklab olishda xatolik");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm">
       <div className="relative aspect-[3/4] bg-neutral-100">
@@ -389,7 +408,7 @@ function JobCard({
       <div className="space-y-3 p-4">
         <div>
           <p className="text-sm font-bold">{job.persona_label}</p>
-          <p className="text-xs text-neutral-500">{job.relative_path}</p>
+          <p className="text-xs text-neutral-500">{downloadName}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -409,14 +428,19 @@ function JobCard({
             Qayta
           </button>
           {job.exists ? (
-            <a
-              href={exploreGenDownloadUrl(job)}
-              download
-              className="inline-flex items-center gap-1 rounded-xl border border-neutral-200 px-3 py-2 text-xs font-semibold"
+            <button
+              type="button"
+              disabled={busy || downloading}
+              onClick={() => void handleDownload()}
+              className="inline-flex items-center gap-1 rounded-xl border border-neutral-200 px-3 py-2 text-xs font-semibold disabled:opacity-50"
             >
-              <Download className="size-3.5" />
+              {downloading ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Download className="size-3.5" />
+              )}
               Yuklab olish
-            </a>
+            </button>
           ) : null}
           <button
             type="button"
