@@ -43,9 +43,11 @@ export const Route = createFileRoute("/dev/explore-gen")({
 
 type QueueItem = { personaId: string; slug: string; view: ExploreViewId; force: boolean };
 
-const QUEUE_GAP_MS = 12_000;
-const RATE_LIMIT_COOLDOWN_MS = 60_000;
-const MAX_QUEUE_RETRIES = 8;
+/** Navbat orasidagi kutish — oldin 12s edi, 429 oldini olish uchun; dev da qisqaroq. */
+const QUEUE_GAP_NORMAL_MS = 2_000;
+const QUEUE_GAP_SAFE_MS = 8_000;
+const RATE_LIMIT_COOLDOWN_MS = 15_000;
+const MAX_QUEUE_RETRIES = 6;
 
 function isRateLimitError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
@@ -63,6 +65,7 @@ function ExploreGenDevPage() {
   const isDev = import.meta.env.DEV;
   const [personaId, setPersonaId] = useState<ExplorePersonaId>("britan");
   const [viewAngle, setViewAngle] = useState<ExploreViewId>("front");
+  const [turboMode, setTurboMode] = useState(true);
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [running, setRunning] = useState(false);
   const [expandedPrompt, setExpandedPrompt] = useState<string | null>(null);
@@ -141,6 +144,8 @@ function ExploreGenDevPage() {
     label: EXPLORE_VIEW_LABELS[id],
   }));
 
+  const queueGapMs = turboMode ? 0 : isDev ? QUEUE_GAP_NORMAL_MS : QUEUE_GAP_SAFE_MS;
+
   const runQueue = useCallback(
     async (items: QueueItem[]) => {
       if (!items.length || running) return;
@@ -152,17 +157,22 @@ function ExploreGenDevPage() {
         let retries = 0;
         while (retries <= MAX_QUEUE_RETRIES) {
           try {
-            await generateMutation.mutateAsync({
+            const result = await generateMutation.mutateAsync({
               personaId: item.personaId,
               slug: item.slug,
               view: item.view,
               force: item.force,
             });
+            if (result.status === "created" && result.elapsed_ms) {
+              toast.message(`${result.slug} — ${Math.round(result.elapsed_ms / 1000)}s`);
+            }
             break;
           } catch (error) {
             if (isRateLimitError(error) && retries < MAX_QUEUE_RETRIES) {
               retries += 1;
-              toast.message(`Limit — ${Math.round(RATE_LIMIT_COOLDOWN_MS / 1000)}s kutamiz (${retries}/${MAX_QUEUE_RETRIES})…`);
+              toast.message(
+                `Limit — ${Math.round(RATE_LIMIT_COOLDOWN_MS / 1000)}s kutamiz (${retries}/${MAX_QUEUE_RETRIES})…`,
+              );
               await sleep(RATE_LIMIT_COOLDOWN_MS);
               continue;
             }
@@ -171,14 +181,14 @@ function ExploreGenDevPage() {
             return;
           }
         }
-        if (i < items.length - 1) {
-          await sleep(QUEUE_GAP_MS);
+        if (i < items.length - 1 && queueGapMs > 0) {
+          await sleep(queueGapMs);
         }
       }
       setQueue([]);
       setRunning(false);
     },
-    [generateMutation, running],
+    [generateMutation, queueGapMs, running],
   );
 
   const enqueuePersona = (force: boolean, onlyMissing: boolean) => {
@@ -278,6 +288,27 @@ function ExploreGenDevPage() {
               )}
               Yangilash
             </button>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
+            <strong>Tezlik:</strong> har bir rasm AI da odatda <strong>15–45 soniya</strong> oladi
+            (model javob vaqti). Navbat orasida{" "}
+            {turboMode ? (
+              <strong>0s</strong>
+            ) : (
+              <strong>{Math.round(queueGapMs / 1000)}s</strong>
+            )}{" "}
+            kutish. 429 limit bo&apos;lsa 15s pauza.{" "}
+            <label className="ml-1 inline-flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={turboMode}
+                onChange={(event) => setTurboMode(event.target.checked)}
+                className="size-4 rounded border-neutral-300"
+              />
+              <span className="font-semibold">Turbo</span>
+              <span className="text-neutral-500">(navbat orasida kutmaslik)</span>
+            </label>
           </div>
 
           {outputMode === "media" ? (
