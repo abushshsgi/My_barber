@@ -211,8 +211,8 @@ function ExploreGenDevPage() {
               </p>
               <h1 className="mt-2 text-2xl font-bold tracking-tight">Explore rasm generatsiyasi</h1>
               <p className="mt-2 max-w-2xl text-sm text-neutral-600">
-                4 personaj × reference + 12 uslub. Rasmlar generatsiyadan keyin Explore uchun git
-                ga qo&apos;yiladi.
+                4 personaj × reference + 12 uslub. Avval <strong>reference</strong>, keyin uslublar —
+                har biri shu portretdan edit + katalog uslub namunasi (Explore bilan bir xil uslub).
               </p>
             </div>
             <button
@@ -438,7 +438,7 @@ function JobCard({
       <div className="relative aspect-[3/4] bg-neutral-100">
         {job.exists && imageUrl ? (
           <img
-            src={imageUrl}
+            src={`${imageUrl}${imageUrl.includes("?") ? "&" : "?"}t=${job.slug}`}
             alt={`${job.persona_label} ${job.slug}`}
             className="h-full w-full object-cover"
           />

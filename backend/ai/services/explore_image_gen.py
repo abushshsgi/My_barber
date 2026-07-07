@@ -31,7 +31,36 @@ logger = logging.getLogger(__name__)
 
 PUBLIC_ROOT = Path(settings.BASE_DIR).parent / "apps" / "user" / "public"
 OUTPUT_W, OUTPUT_H = 768, 1024
-WEBP_QUALITY = 90
+WEBP_QUALITY = 92
+
+def _detect_image_mime(raw: bytes, path: Path | None = None) -> str:
+    if path is not None:
+        suffix = path.suffix.lower()
+        if suffix in {".jpg", ".jpeg"}:
+            return "image/jpeg"
+        if suffix == ".png":
+            return "image/png"
+    if raw[:3] == b"\xff\xd8\xff":
+        return "image/jpeg"
+    if raw[:8] == b"\x89PNG\r\n\x1a\n":
+        return "image/png"
+    return "image/webp"
+
+
+def _load_public_image(relative_url: str) -> tuple[str, bytes] | None:
+    rel = (relative_url or "").lstrip("/")
+    if not rel:
+        return None
+    path = PUBLIC_ROOT / rel
+    if not path.is_file():
+        return None
+    raw = path.read_bytes()
+    return _detect_image_mime(raw, path), raw
+
+
+def _catalog_style_image_path(slug: str) -> str:
+    return f"/hairstyles/men/{slug}.webp"
+
 
 STYLE_NEGATIVE = (
     "different person, changed face, changed age, changed skin tone, "
@@ -173,38 +202,70 @@ AVOID: {STYLE_NEGATIVE}
 Output a single portrait photo with only this hairstyle."""
 
 
-def _build_style_edit_prompt(*, persona_id: str, slug: str) -> str:
+def _build_style_edit_prompt(*, persona_id: str, slug: str, has_catalog_ref: bool) -> str:
     pid = normalize_persona_id(persona_id) or "evro"
     persona = EXPLORE_PERSONAS[pid]
     style_detail = style_detail_for("men", slug)
-    return f"""You are a professional barber catalog AI for mysaloon.uz.
+    catalog_hint = (
+        "A second reference photo shows the target hairstyle on a model — "
+        "match that exact hair shape, length, and fade on the person in the first photo."
+        if has_catalog_ref
+        else ""
+    )
+    return f"""You are a professional barber catalog AI for mysaloon.uz Explore.
 
-Edit the portrait photo to show this hairstyle on the SAME person: "{style_detail}".
+Edit the FIRST portrait photo (persona reference) to show this hairstyle: "{style_detail}".
+{catalog_hint}
 
-CRITICAL:
+CRITICAL — same catalog series as Explore page:
 - Keep the EXACT same face, identity, skin tone, age, and facial features ({persona['description']})
-- Keep pose, camera angle, expression, white t-shirt, and solid flat #E8E8E8 background
+- Keep the same three-quarter pose, camera angle, expression, white crew-neck t-shirt
+- Keep solid flat #E8E8E8 studio background — no props, no gradient
 - ONLY change the hair to a photorealistic fresh barber result with natural texture
-- Ultra sharp catalog quality, realistic lighting on hair
+- Match mysaloon.uz Explore catalog quality: sharp, clean, consistent lighting
 - Do NOT add text, watermarks, logos, or extra people
-- 3:4 vertical portrait
+- 3:4 vertical portrait, shoulders visible
 
 AVOID: {STYLE_NEGATIVE}
 
 Output a single edited portrait photo."""
 
 
-def _image_body(*, prompt: str, ref_bytes: bytes | None = None) -> dict[str, Any]:
-    parts: list[dict[str, Any]] = [{"text": prompt}]
-    if ref_bytes is not None:
+def _image_body(
+    *,
+    prompt: str,
+    persona_bytes: bytes | None = None,
+    persona_mime: str = "image/webp",
+    catalog_bytes: bytes | None = None,
+    catalog_mime: str = "image/webp",
+) -> dict[str, Any]:
+    parts: list[dict[str, Any]] = []
+    if persona_bytes is not None:
         parts.append(
             {
                 "inline_data": {
-                    "mime_type": "image/webp",
-                    "data": base64.b64encode(ref_bytes).decode("ascii"),
+                    "mime_type": persona_mime,
+                    "data": base64.b64encode(persona_bytes).decode("ascii"),
                 }
             }
         )
+    if catalog_bytes is not None:
+        parts.append(
+            {
+                "text": (
+                    "Target hairstyle reference from catalog — match this haircut on the person above:"
+                )
+            }
+        )
+        parts.append(
+            {
+                "inline_data": {
+                    "mime_type": catalog_mime,
+                    "data": base64.b64encode(catalog_bytes).decode("ascii"),
+                }
+            }
+        )
+    parts.append({"text": prompt})
     return {
         "contents": [{"role": "user", "parts": parts}],
         "generationConfig": {
@@ -214,14 +275,29 @@ def _image_body(*, prompt: str, ref_bytes: bytes | None = None) -> dict[str, Any
     }
 
 
-def _generate_image(*, prompt: str, ref_bytes: bytes | None = None) -> bytes:
+def _generate_image(
+    *,
+    prompt: str,
+    persona_bytes: bytes | None = None,
+    persona_mime: str = "image/webp",
+    catalog_bytes: bytes | None = None,
+    catalog_mime: str = "image/webp",
+) -> bytes:
     if not image_generation_configured():
         raise AiStyleError(
             "Rasm generatsiya sozlanmagan. GEMINI_API_KEY (AI Studio) qo'ying.",
             503,
         )
 
-    payload = generate_image_content(_image_body(prompt=prompt, ref_bytes=ref_bytes))
+    payload = generate_image_content(
+        _image_body(
+            prompt=prompt,
+            persona_bytes=persona_bytes,
+            persona_mime=persona_mime,
+            catalog_bytes=catalog_bytes,
+            catalog_mime=catalog_mime,
+        )
+    )
     _mime, out_bytes = extract_image_bytes(payload)
     return out_bytes
 
@@ -274,15 +350,28 @@ def generate_explore_asset(
         method = _generation_method(edit=False)
     else:
         ref_path = asset_file_path(persona_id=pid, slug="reference")
-        if ref_path.is_file():
-            raw = _generate_image(
-                prompt=_build_style_edit_prompt(persona_id=pid, slug=slug),
-                ref_bytes=ref_path.read_bytes(),
+        if not ref_path.is_file():
+            raise AiStyleError(
+                "Avval reference generatsiya qiling. Uslub faqat shu portretdan edit qilinadi.",
+                400,
             )
-            method = _generation_method(edit=True)
-        else:
-            raw = _generate_image(prompt=prompt)
-            method = _generation_method(edit=False)
+        ref_bytes = ref_path.read_bytes()
+        ref_mime = _detect_image_mime(ref_bytes, ref_path)
+        catalog = _load_public_image(_catalog_style_image_path(slug))
+        catalog_bytes = catalog[1] if catalog else None
+        catalog_mime = catalog[0] if catalog else "image/webp"
+        raw = _generate_image(
+            prompt=_build_style_edit_prompt(
+                persona_id=pid,
+                slug=slug,
+                has_catalog_ref=catalog is not None,
+            ),
+            persona_bytes=ref_bytes,
+            persona_mime=ref_mime,
+            catalog_bytes=catalog_bytes,
+            catalog_mime=catalog_mime,
+        )
+        method = _generation_method(edit=True)
 
     _resize_webp(raw, dest)
     elapsed_ms = int((time.monotonic() - started) * 1000)
