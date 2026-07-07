@@ -25,6 +25,10 @@ class ExplorePublishedTests(TestCase):
                     path.rmdir()
         self.media_root.mkdir(parents=True, exist_ok=True)
 
+    def test_resolve_url_does_not_recurse(self):
+        url = resolve_explore_asset_url(audience="men", persona_id="britan", slug="reference")
+        self.assertEqual(url, "/hairstyles/men/personas/britan/reference.webp")
+
     def test_publish_copies_draft_and_updates_manifest(self):
         draft = self.media_root / "explore_gen" / "britan" / "buzz-cut.webp"
         draft.parent.mkdir(parents=True, exist_ok=True)

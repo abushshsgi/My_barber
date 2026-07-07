@@ -123,6 +123,16 @@ def normalize_persona_id(raw: str | None) -> str | None:
     return None
 
 
+def static_persona_ref_image_path(*, audience: str, persona_id: str) -> str:
+    pid = normalize_persona_id(persona_id) or persona_id
+    return f"/hairstyles/{audience}/personas/{pid}/reference.webp"
+
+
+def static_persona_style_image_path(*, audience: str, persona_id: str, slug: str) -> str:
+    pid = normalize_persona_id(persona_id) or persona_id
+    return f"/hairstyles/{audience}/personas/{pid}/{slug}.webp"
+
+
 def list_explore_personas() -> list[dict]:
     from ai.explore_published import explore_asset_available, resolve_explore_asset_url
 

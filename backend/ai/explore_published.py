@@ -15,8 +15,8 @@ from ai.explore_personas import (
     MEN_CATALOG_STYLE_SLUGS,
     PERSONA_READY_ASSETS,
     normalize_persona_id,
-    resolve_persona_ref_image,
-    resolve_persona_style_image,
+    static_persona_ref_image_path,
+    static_persona_style_image_path,
 )
 from ai.explore_views import (
     explore_asset_storage_slug,
@@ -74,9 +74,9 @@ def live_asset_path(*, persona_id: str, slug: str, view: str = "front") -> Path:
     pid = normalize_persona_id(persona_id) or persona_id
     normalized_view = normalize_explore_view(view)
     if slug == "reference":
-        rel = resolve_persona_ref_image(audience="men", persona_id=pid)
+        rel = static_persona_ref_image_path(audience="men", persona_id=pid)
     else:
-        base = resolve_persona_style_image(audience="men", persona_id=pid, slug=slug)
+        base = static_persona_style_image_path(audience="men", persona_id=pid, slug=slug)
         rel = resolve_style_image_path_with_view(
             base_path=base,
             slug=slug,
@@ -129,15 +129,26 @@ def explore_media_base_url() -> str:
     return ""
 
 
-def resolve_explore_asset_url(*, audience: str, persona_id: str, slug: str) -> str:
+def resolve_explore_asset_url(
+    *,
+    audience: str,
+    persona_id: str,
+    slug: str,
+    view: str = "front",
+) -> str:
     pid = normalize_persona_id(persona_id) or persona_id
-    rel = (
-        resolve_persona_ref_image(audience=audience, persona_id=pid)
-        if slug == "reference"
-        else resolve_persona_style_image(audience=audience, persona_id=pid, slug=slug)
-    )
-    if is_explore_asset_published(pid, slug):
-        live = live_asset_path(persona_id=pid, slug=slug)
+    normalized_view = normalize_explore_view(view)
+    if slug == "reference":
+        rel = static_persona_ref_image_path(audience=audience, persona_id=pid)
+    else:
+        base = static_persona_style_image_path(audience=audience, persona_id=pid, slug=slug)
+        rel = resolve_style_image_path_with_view(
+            base_path=base,
+            slug=slug,
+            view=normalized_view,
+        )
+    if is_explore_asset_published(pid, slug, view=normalized_view):
+        live = live_asset_path(persona_id=pid, slug=slug, view=normalized_view)
         if live.is_file() and not (PUBLIC_ROOT.is_dir() and live.is_relative_to(PUBLIC_ROOT)):
             base = explore_media_base_url()
             media_rel = rel.lstrip("/")
@@ -171,9 +182,9 @@ def publish_explore_asset(*, persona_id: str, slug: str, view: str = "front") ->
     _save_manifest(manifest)
 
     if slug == "reference":
-        rel = resolve_persona_ref_image(audience="men", persona_id=pid)
+        rel = static_persona_ref_image_path(audience="men", persona_id=pid)
     else:
-        base = resolve_persona_style_image(audience="men", persona_id=pid, slug=slug)
+        base = static_persona_style_image_path(audience="men", persona_id=pid, slug=slug)
         rel = resolve_style_image_path_with_view(
             base_path=base,
             slug=slug,
@@ -186,7 +197,12 @@ def publish_explore_asset(*, persona_id: str, slug: str, view: str = "front") ->
         "published": True,
         "relative_path": rel.lstrip("/"),
         "public_url": rel if PUBLIC_ROOT.is_dir() and live.is_relative_to(PUBLIC_ROOT) else None,
-        "live_url": resolve_explore_asset_url(audience="men", persona_id=pid, slug=slug),
+        "live_url": resolve_explore_asset_url(
+            audience="men",
+            persona_id=pid,
+            slug=slug,
+            view=normalized_view,
+        ),
         "published_at": datetime.now(UTC).isoformat(),
     }
 
