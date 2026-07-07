@@ -21,6 +21,12 @@ import {
   saveExploreGenSecret,
   type ExploreGenJob,
 } from "@/lib/api/explore-gen";
+import {
+  EXPLORE_VIEW_IDS,
+  EXPLORE_VIEW_LABELS,
+  type ExploreViewId,
+  viewsForJobSlug,
+} from "@/lib/explore-views";
 import { cn } from "@/lib/utils";
 
 type ExploreGenSearch = {
@@ -35,7 +41,7 @@ export const Route = createFileRoute("/dev/explore-gen")({
   component: ExploreGenDevPage,
 });
 
-type QueueItem = { personaId: string; slug: string; force: boolean };
+type QueueItem = { personaId: string; slug: string; view: ExploreViewId; force: boolean };
 
 const QUEUE_GAP_MS = 12_000;
 const RATE_LIMIT_COOLDOWN_MS = 60_000;
@@ -56,6 +62,7 @@ function ExploreGenDevPage() {
   const queryClient = useQueryClient();
   const isDev = import.meta.env.DEV;
   const [personaId, setPersonaId] = useState<ExplorePersonaId>("britan");
+  const [viewAngle, setViewAngle] = useState<ExploreViewId>("front");
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [running, setRunning] = useState(false);
   const [expandedPrompt, setExpandedPrompt] = useState<string | null>(null);
@@ -85,7 +92,7 @@ function ExploreGenDevPage() {
       if (result.status === "skipped") {
         toast.message(result.message ?? "O'tkazib yuborildi");
       } else {
-        toast.success(`${result.slug} yaratildi (${result.method ?? "ai"})`);
+        toast.success(`${result.slug} (${result.view}) yaratildi (${result.method ?? "ai"})`);
       }
       void queryClient.invalidateQueries({ queryKey: ["explore-gen-status"] });
     },
@@ -125,9 +132,14 @@ function ExploreGenDevPage() {
   const outputMode = statusQuery.data?.output_mode ?? "media";
 
   const personaJobs = useMemo(
-    () => jobs.filter((job) => job.persona_id === personaId),
-    [jobs, personaId],
+    () => jobs.filter((job) => job.persona_id === personaId && job.view === viewAngle),
+    [jobs, personaId, viewAngle],
   );
+
+  const viewOptions = statusQuery.data?.views ?? EXPLORE_VIEW_IDS.map((id) => ({
+    id,
+    label: EXPLORE_VIEW_LABELS[id],
+  }));
 
   const runQueue = useCallback(
     async (items: QueueItem[]) => {
@@ -143,6 +155,7 @@ function ExploreGenDevPage() {
             await generateMutation.mutateAsync({
               personaId: item.personaId,
               slug: item.slug,
+              view: item.view,
               force: item.force,
             });
             break;
@@ -172,13 +185,17 @@ function ExploreGenDevPage() {
     const items: QueueItem[] = [];
     const ref = personaJobs.find((job) => job.slug === "reference");
     if (ref && (!onlyMissing || !ref.exists || force)) {
-      items.push({ personaId, slug: "reference", force });
+      items.push({ personaId, slug: "reference", view: "front", force });
     }
     for (const slug of MEN_CATALOG_STYLE_SLUGS) {
-      const job = personaJobs.find((entry) => entry.slug === slug);
-      if (!job) continue;
-      if (onlyMissing && job.exists && !force) continue;
-      items.push({ personaId, slug, force });
+      for (const view of viewsForJobSlug(slug)) {
+        const job = jobs.find(
+          (entry) => entry.persona_id === personaId && entry.slug === slug && entry.view === view,
+        );
+        if (!job) continue;
+        if (onlyMissing && job.exists && !force) continue;
+        items.push({ personaId, slug, view, force });
+      }
     }
     void runQueue(items);
   };
@@ -186,7 +203,12 @@ function ExploreGenDevPage() {
   const enqueueAllMissing = () => {
     const items: QueueItem[] = jobs
       .filter((job) => !job.exists)
-      .map((job) => ({ personaId: job.persona_id, slug: job.slug, force: false }));
+      .map((job) => ({
+        personaId: job.persona_id,
+        slug: job.slug,
+        view: job.view,
+        force: false,
+      }));
     void runQueue(items);
   };
 
@@ -239,8 +261,8 @@ function ExploreGenDevPage() {
               </p>
               <h1 className="mt-2 text-2xl font-bold tracking-tight">Explore rasm generatsiyasi</h1>
               <p className="mt-2 max-w-2xl text-sm text-neutral-600">
-                4 personaj × reference + 12 uslub. Avval <strong>reference</strong>, keyin uslublar —
-                har biri shu portretdan edit + katalog uslub namunasi (Explore bilan bir xil uslub).
+                4 personaj × reference + 12 uslub × 4 ko&apos;rinish (old, chap, o&apos;ng, orqa).
+                Avval <strong>reference</strong>, keyin har bir uslubni tanlangan tomondan generatsiya qiling.
               </p>
             </div>
             <button
@@ -287,7 +309,7 @@ function ExploreGenDevPage() {
               </span>
             ) : null}
             <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-700">
-              {statusQuery.data?.existing ?? 0} / {statusQuery.data?.total ?? 52} tayyor
+              {statusQuery.data?.existing ?? 0} / {statusQuery.data?.total ?? 196} tayyor
             </span>
             <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-700">
               output: {outputMode}
@@ -327,18 +349,54 @@ function ExploreGenDevPage() {
             ))}
           </div>
 
+          <div className="mt-4">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-neutral-500">
+              Ko&apos;rinish
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {viewOptions.map((view) => (
+                <button
+                  key={view.id}
+                  type="button"
+                  onClick={() => setViewAngle(view.id)}
+                  className={cn(
+                    "rounded-2xl px-4 py-2 text-sm font-semibold transition",
+                    viewAngle === view.id
+                      ? "bg-amber-600 text-white"
+                      : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200",
+                  )}
+                >
+                  {view.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="mt-4 flex flex-wrap gap-2">
             <ActionButton
               icon={Sparkles}
               label="Reference generatsiya"
               disabled={running}
-              onClick={() => void runQueue([{ personaId, slug: "reference", force: true }])}
+              onClick={() => void runQueue([{ personaId, slug: "reference", view: "front", force: true }])}
             />
             <ActionButton
               icon={Wand2}
-              label="Personaj — yo'q bo'lganlar"
+              label={`Personaj — yo'q (${EXPLORE_VIEW_LABELS[viewAngle]})`}
               disabled={running}
-              onClick={() => enqueuePersona(false, true)}
+              onClick={() => {
+                const items: QueueItem[] = [];
+                for (const slug of MEN_CATALOG_STYLE_SLUGS) {
+                  const job = jobs.find(
+                    (entry) =>
+                      entry.persona_id === personaId &&
+                      entry.slug === slug &&
+                      entry.view === viewAngle,
+                  );
+                  if (!job || job.exists) continue;
+                  items.push({ personaId, slug, view: viewAngle, force: false });
+                }
+                void runQueue(items);
+              }}
             />
             <ActionButton
               icon={RefreshCw}
@@ -363,7 +421,9 @@ function ExploreGenDevPage() {
           {running ? (
             <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
               Navbat: {queue.length} ta qoldi
-              {queue[0] ? ` — hozir: ${queue[0].personaId} / ${queue[0].slug}` : ""}
+              {queue[0]
+                ? ` — hozir: ${queue[0].personaId} / ${queue[0].slug} / ${EXPLORE_VIEW_LABELS[queue[0].view]}`
+                : ""}
             </div>
           ) : null}
         </div>
@@ -379,22 +439,30 @@ function ExploreGenDevPage() {
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {personaJobs.map((job) => (
             <JobCard
-              key={`${job.persona_id}-${job.slug}`}
+              key={`${job.persona_id}-${job.slug}-${job.view}`}
               job={job}
               busy={running || generateMutation.isPending || publishMutation.isPending}
               publishing={publishMutation.isPending}
-              expanded={expandedPrompt === `${job.persona_id}-${job.slug}`}
+              expanded={expandedPrompt === `${job.persona_id}-${job.slug}-${job.view}`}
               onTogglePrompt={() =>
                 setExpandedPrompt((current) =>
-                  current === `${job.persona_id}-${job.slug}`
+                  current === `${job.persona_id}-${job.slug}-${job.view}`
                     ? null
-                    : `${job.persona_id}-${job.slug}`,
+                    : `${job.persona_id}-${job.slug}-${job.view}`,
                 )
               }
               onGenerate={(force) =>
-                void runQueue([{ personaId: job.persona_id, slug: job.slug, force }])
+                void runQueue([
+                  { personaId: job.persona_id, slug: job.slug, view: job.view, force },
+                ])
               }
-              onPublish={() => publishMutation.mutate({ personaId: job.persona_id, slug: job.slug })}
+              onPublish={() =>
+                publishMutation.mutate({
+                  personaId: job.persona_id,
+                  slug: job.slug,
+                  view: job.view,
+                })
+              }
             />
           ))}
         </div>
@@ -477,7 +545,7 @@ function JobCard({
       <div className="relative aspect-[3/4] bg-neutral-100">
         {job.exists && imageUrl ? (
           <img
-            src={`${imageUrl}${imageUrl.includes("?") ? "&" : "?"}t=${job.slug}`}
+            src={`${imageUrl}${imageUrl.includes("?") ? "&" : "?"}t=${job.slug}-${job.view}`}
             alt={`${job.persona_label} ${job.slug}`}
             className="h-full w-full object-cover"
           />
@@ -489,6 +557,9 @@ function JobCard({
         )}
         <span className="absolute left-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
           {job.kind === "reference" ? "Reference" : job.slug}
+        </span>
+        <span className="absolute left-3 top-10 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+          {job.view_label}
         </span>
         {job.published ? (
           <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-emerald-600/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">

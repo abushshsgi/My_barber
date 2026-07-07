@@ -30,6 +30,13 @@ from ai.services.image_response import extract_image_bytes
 from ai.services.studio_image import image_generation_provider, studio_image_configured
 from ai.services.vertex_auth import vertex_configured
 from ai.services.vertex_image import generate_image_content, image_generation_configured
+from ai.explore_views import (
+    EXPLORE_VIEW_LABELS,
+    normalize_explore_view,
+    view_pose_line,
+    views_for_job_slug,
+)
+from ai.services.gemini_style import AiStyleError
 from ai.style_prompts import style_detail_for
 
 logger = logging.getLogger(__name__)
@@ -83,8 +90,8 @@ def output_mode() -> str:
     return "public" if _uses_public_output() else "media"
 
 
-def asset_file_path(*, persona_id: str, slug: str) -> Path:
-    return draft_asset_path(persona_id=persona_id, slug=slug)
+def asset_file_path(*, persona_id: str, slug: str, view: str = "front") -> Path:
+    return draft_asset_path(persona_id=persona_id, slug=slug, view=view)
 
 
 def explore_gen_configured() -> dict[str, bool | str | None]:
@@ -97,26 +104,32 @@ def explore_gen_configured() -> dict[str, bool | str | None]:
     }
 
 
-def _relative_asset_path(*, persona_id: str, slug: str) -> str:
+def _relative_asset_path(*, persona_id: str, slug: str, view: str = "front") -> str:
     if slug == "reference":
         url = resolve_persona_ref_image(audience="men", persona_id=persona_id)
     else:
-        url = resolve_persona_style_image(audience="men", persona_id=persona_id, slug=slug)
+        from ai.explore_views import resolve_style_image_path_with_view
+
+        base = resolve_persona_style_image(audience="men", persona_id=persona_id, slug=slug)
+        url = resolve_style_image_path_with_view(base_path=base, slug=slug, view=view)
     return url.lstrip("/")
 
 
-def _public_url_for(*, persona_id: str, slug: str, path: Path) -> str:
-    if is_explore_asset_published(persona_id, slug):
+def _public_url_for(*, persona_id: str, slug: str, path: Path, view: str = "front") -> str:
+    if is_explore_asset_published(persona_id, slug, view=view):
         return resolve_explore_asset_url(audience="men", persona_id=persona_id, slug=slug)
-    rel = _relative_asset_path(persona_id=persona_id, slug=slug)
+    rel = _relative_asset_path(persona_id=persona_id, slug=slug, view=view)
     if _uses_public_output() and path.is_relative_to(PUBLIC_ROOT):
         return f"/{rel}"
     return ""
 
 
-def _download_path(*, persona_id: str, slug: str) -> str:
+def _download_path(*, persona_id: str, slug: str, view: str = "front") -> str:
     pid = normalize_persona_id(persona_id) or persona_id
-    return f"/api/v1/ai/dev/explore-gen/download/?persona_id={pid}&slug={slug}"
+    normalized_view = normalize_explore_view(view)
+    return (
+        f"/api/v1/ai/dev/explore-gen/download/?persona_id={pid}&slug={slug}&view={normalized_view}"
+    )
 
 
 def _persona_order() -> tuple[str, ...]:
@@ -129,49 +142,64 @@ def list_explore_gen_jobs() -> list[dict[str, Any]]:
     for persona_id in _persona_order():
         persona = EXPLORE_PERSONAS[persona_id]
         for slug in ("reference", *sorted(MEN_CATALOG_STYLE_SLUGS)):
-            rel = _relative_asset_path(persona_id=persona_id, slug=slug)
-            path = asset_file_path(persona_id=persona_id, slug=slug)
-            live = live_asset_path(persona_id=persona_id, slug=slug)
-            public_url = _public_url_for(persona_id=persona_id, slug=slug, path=path)
-            published = is_explore_asset_published(persona_id, slug)
-            jobs.append(
-                {
-                    "persona_id": persona_id,
-                    "persona_label": persona["label"],
-                    "slug": slug,
-                    "kind": "reference" if slug == "reference" else "style",
-                    "relative_path": rel,
-                    "public_url": public_url or None,
-                    "download_path": _download_path(persona_id=persona_id, slug=slug),
-                    "exists": path.is_file() or live.is_file(),
-                    "published": published,
-                    "live_url": resolve_explore_asset_url(audience="men", persona_id=persona_id, slug=slug)
-                    if published
-                    else None,
-                    "output_mode": mode,
-                    "prompt": build_explore_gen_prompt(persona_id=persona_id, slug=slug),
-                }
-            )
+            for view in views_for_job_slug(slug):
+                rel = _relative_asset_path(persona_id=persona_id, slug=slug, view=view)
+                path = asset_file_path(persona_id=persona_id, slug=slug, view=view)
+                live = live_asset_path(persona_id=persona_id, slug=slug, view=view)
+                public_url = _public_url_for(
+                    persona_id=persona_id,
+                    slug=slug,
+                    path=path,
+                    view=view,
+                )
+                published = is_explore_asset_published(persona_id, slug, view=view)
+                jobs.append(
+                    {
+                        "persona_id": persona_id,
+                        "persona_label": persona["label"],
+                        "slug": slug,
+                        "view": view,
+                        "view_label": EXPLORE_VIEW_LABELS[view],
+                        "kind": "reference" if slug == "reference" else "style",
+                        "relative_path": rel,
+                        "public_url": public_url or None,
+                        "download_path": _download_path(persona_id=persona_id, slug=slug, view=view),
+                        "exists": path.is_file() or live.is_file(),
+                        "published": published,
+                        "live_url": resolve_explore_asset_url(
+                            audience="men",
+                            persona_id=persona_id,
+                            slug=slug,
+                        )
+                        if published and view == "front"
+                        else None,
+                        "output_mode": mode,
+                        "prompt": build_explore_gen_prompt(persona_id=persona_id, slug=slug, view=view),
+                    }
+                )
     return jobs
 
 
-def build_explore_gen_prompt(*, persona_id: str, slug: str) -> str:
+def build_explore_gen_prompt(*, persona_id: str, slug: str, view: str = "front") -> str:
     pid = normalize_persona_id(persona_id) or "evro"
+    normalized_view = normalize_explore_view(view)
     if slug == "reference":
-        return _build_reference_generation_prompt(persona_id=pid)
+        return _build_reference_generation_prompt(persona_id=pid, view=normalized_view)
 
     persona = EXPLORE_PERSONAS[pid]
     style_detail = style_detail_for("men", slug)
     return _build_style_text_prompt(
         persona_description=persona["description"],
         style_detail=style_detail,
+        view=normalized_view,
     )
 
 
-def _build_reference_generation_prompt(*, persona_id: str) -> str:
+def _build_reference_generation_prompt(*, persona_id: str, view: str = "front") -> str:
     pid = normalize_persona_id(persona_id) or "evro"
     persona = EXPLORE_PERSONAS[pid]
     scene = persona_reference_prompt(persona_id=pid)
+    pose = view_pose_line(view)
     return f"""You are a professional barber catalog photographer for mysaloon.uz.
 
 Create ONE ultra-sharp photorealistic studio portrait for a men's hairstyle reference catalog.
@@ -181,8 +209,10 @@ Person: {persona['description']}
 Creative direction:
 {scene}
 
+Pose / camera angle (CRITICAL):
+{pose}
+
 Technical requirements:
-- Three-quarter portrait, candid barber moment, natural relaxed expression
 - Plain white crew-neck t-shirt, solid flat #E8E8E8 background
 - Soft even studio lighting, 85mm portrait lens look
 - Realistic skin texture and hair detail, no airbrushing
@@ -193,7 +223,8 @@ AVOID: {STYLE_NEGATIVE}
 Output a single high-quality reference portrait photo."""
 
 
-def _build_style_text_prompt(*, persona_description: str, style_detail: str) -> str:
+def _build_style_text_prompt(*, persona_description: str, style_detail: str, view: str = "front") -> str:
+    pose = view_pose_line(view)
     return f"""You are a professional barber catalog photographer for mysaloon.uz.
 
 Create ONE ultra-sharp photorealistic studio portrait.
@@ -201,8 +232,11 @@ Create ONE ultra-sharp photorealistic studio portrait.
 Person: {persona_description}
 Hairstyle: {style_detail}
 
+Pose / camera angle (CRITICAL):
+{pose}
+
 Scene:
-- Three-quarter portrait, same person identity throughout the catalog
+- Same person identity throughout the catalog
 - Plain white crew-neck t-shirt, solid flat #E8E8E8 background
 - Soft studio lighting, fresh professional barber result
 - 3:4 vertical, 768x1024, catalog-ready quality
@@ -212,10 +246,17 @@ AVOID: {STYLE_NEGATIVE}
 Output a single portrait photo with only this hairstyle."""
 
 
-def _build_style_edit_prompt(*, persona_id: str, slug: str, has_catalog_ref: bool) -> str:
+def _build_style_edit_prompt(
+    *,
+    persona_id: str,
+    slug: str,
+    has_catalog_ref: bool,
+    view: str = "front",
+) -> str:
     pid = normalize_persona_id(persona_id) or "evro"
     persona = EXPLORE_PERSONAS[pid]
     style_detail = style_detail_for("men", slug)
+    pose = view_pose_line(view)
     catalog_hint = (
         "A second reference photo shows the target hairstyle on a model — "
         "match that exact hair shape, length, and fade on the person in the first photo."
@@ -227,11 +268,14 @@ def _build_style_edit_prompt(*, persona_id: str, slug: str, has_catalog_ref: boo
 Edit the FIRST portrait photo (persona reference) to show this hairstyle: "{style_detail}".
 {catalog_hint}
 
+Pose / camera angle (CRITICAL — must match this view):
+{pose}
+
 CRITICAL — same catalog series as Explore page:
 - Keep the EXACT same face, identity, skin tone, age, and facial features ({persona['description']})
-- Keep the same three-quarter pose, camera angle, expression, white crew-neck t-shirt
-- Keep solid flat #E8E8E8 studio background — no props, no gradient
+- Keep white crew-neck t-shirt and solid flat #E8E8E8 studio background — no props, no gradient
 - ONLY change the hair to a photorealistic fresh barber result with natural texture
+- Adjust head rotation to match the required view angle exactly
 - Match mysaloon.uz Explore catalog quality: sharp, clean, consistent lighting
 - Do NOT add text, watermarks, logos, or extra people
 - 3:4 vertical portrait, shoulders visible
@@ -329,6 +373,7 @@ def generate_explore_asset(
     persona_id: str,
     slug: str,
     force: bool = False,
+    view: str = "front",
 ) -> dict[str, Any]:
     pid = normalize_persona_id(persona_id)
     if not pid:
@@ -337,31 +382,39 @@ def generate_explore_asset(
     if slug != "reference" and slug not in MEN_CATALOG_STYLE_SLUGS:
         raise AiStyleError("Noto'g'ri slug.", 400)
 
-    dest = asset_file_path(persona_id=pid, slug=slug)
-    rel = _relative_asset_path(persona_id=pid, slug=slug)
+    normalized_view = normalize_explore_view(view)
+    dest = asset_file_path(persona_id=pid, slug=slug, view=normalized_view)
+    rel = _relative_asset_path(persona_id=pid, slug=slug, view=normalized_view)
 
     if dest.is_file() and not force:
         return {
             "status": "skipped",
             "persona_id": pid,
             "slug": slug,
+            "view": normalized_view,
             "relative_path": rel,
-            "public_url": _public_url_for(persona_id=pid, slug=slug, path=dest) or None,
-            "download_path": _download_path(persona_id=pid, slug=slug),
+            "public_url": _public_url_for(
+                persona_id=pid,
+                slug=slug,
+                path=dest,
+                view=normalized_view,
+            )
+            or None,
+            "download_path": _download_path(persona_id=pid, slug=slug, view=normalized_view),
             "output_mode": output_mode(),
             "message": "Fayl allaqachon mavjud (--force yo'q).",
         }
 
-    prompt = build_explore_gen_prompt(persona_id=pid, slug=slug)
+    prompt = build_explore_gen_prompt(persona_id=pid, slug=slug, view=normalized_view)
     started = time.monotonic()
 
     if slug == "reference":
         raw = _generate_image(prompt=prompt)
         method = _generation_method(edit=False)
     else:
-        ref_path = asset_file_path(persona_id=pid, slug="reference")
+        ref_path = asset_file_path(persona_id=pid, slug="reference", view="front")
         if not ref_path.is_file():
-            live_ref = live_asset_path(persona_id=pid, slug="reference")
+            live_ref = live_asset_path(persona_id=pid, slug="reference", view="front")
             if live_ref.is_file():
                 ref_path = live_ref
             else:
@@ -379,6 +432,7 @@ def generate_explore_asset(
                 persona_id=pid,
                 slug=slug,
                 has_catalog_ref=catalog is not None,
+                view=normalized_view,
             ),
             persona_bytes=ref_bytes,
             persona_mime=ref_mime,
@@ -394,9 +448,16 @@ def generate_explore_asset(
         "status": "created",
         "persona_id": pid,
         "slug": slug,
+        "view": normalized_view,
         "relative_path": rel,
-        "public_url": _public_url_for(persona_id=pid, slug=slug, path=dest) or None,
-        "download_path": _download_path(persona_id=pid, slug=slug),
+        "public_url": _public_url_for(
+            persona_id=pid,
+            slug=slug,
+            path=dest,
+            view=normalized_view,
+        )
+        or None,
+        "download_path": _download_path(persona_id=pid, slug=slug, view=normalized_view),
         "output_mode": output_mode(),
         "method": method,
         "elapsed_ms": elapsed_ms,

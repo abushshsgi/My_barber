@@ -1,11 +1,15 @@
 import { apiJson } from "@/lib/api/client";
 
+import type { ExploreViewId } from "@/lib/explore-views";
+
 const SECRET_STORAGE_KEY = "mysaloon.explore-gen.secret";
 
 export type ExploreGenJob = {
   persona_id: string;
   persona_label: string;
   slug: string;
+  view: ExploreViewId;
+  view_label: string;
   kind: "reference" | "style";
   relative_path: string;
   public_url: string | null;
@@ -28,12 +32,14 @@ export type ExploreGenStatus = {
   total: number;
   existing: number;
   output_mode: "public" | "media";
+  views: Array<{ id: ExploreViewId; label: string }>;
 };
 
 export type ExploreGenResult = {
   status: "created" | "skipped";
   persona_id: string;
   slug: string;
+  view: ExploreViewId;
   relative_path: string;
   public_url: string | null;
   download_path: string;
@@ -75,6 +81,7 @@ export async function fetchExploreGenStatus(): Promise<ExploreGenStatus> {
 export async function generateExploreAsset(input: {
   personaId: string;
   slug: string;
+  view?: ExploreViewId;
   force?: boolean;
 }): Promise<ExploreGenResult> {
   const secret = readExploreGenSecret();
@@ -87,6 +94,7 @@ export async function generateExploreAsset(input: {
     body: JSON.stringify({
       persona_id: input.personaId,
       slug: input.slug,
+      view: input.view ?? "front",
       force: input.force ?? false,
     }),
   });
@@ -95,6 +103,7 @@ export async function generateExploreAsset(input: {
 export async function publishExploreAsset(input: {
   personaId: string;
   slug: string;
+  view?: ExploreViewId;
 }): Promise<ExploreGenPublishResult> {
   const secret = readExploreGenSecret();
   const url = secret
@@ -106,6 +115,7 @@ export async function publishExploreAsset(input: {
     body: JSON.stringify({
       persona_id: input.personaId,
       slug: input.slug,
+      view: input.view ?? "front",
     }),
   });
 }
@@ -130,6 +140,7 @@ export async function publishExplorePersona(input: {
 export type ExploreGenPublishResult = {
   persona_id: string;
   slug: string;
+  view: ExploreViewId;
   published: boolean;
   relative_path: string;
   public_url: string | null;
@@ -151,8 +162,11 @@ export function resolveExploreGenImageUrl(job: ExploreGenJob): string | null {
   return `${job.download_path}&key=${encodeURIComponent(secret)}`;
 }
 
-export function exploreGenDownloadFilename(job: Pick<ExploreGenJob, "persona_id" | "slug">): string {
-  return `${job.persona_id}-${job.slug}.webp`;
+export function exploreGenDownloadFilename(
+  job: Pick<ExploreGenJob, "persona_id" | "slug" | "view">,
+): string {
+  const suffix = job.view === "front" ? job.slug : `${job.slug}__${job.view}`;
+  return `${job.persona_id}-${suffix}.webp`;
 }
 
 export function exploreGenDownloadUrl(job: ExploreGenJob): string {

@@ -18,6 +18,12 @@ from ai.explore_personas import (
     resolve_persona_ref_image,
     resolve_persona_style_image,
 )
+from ai.explore_views import (
+    explore_asset_storage_slug,
+    normalize_explore_view,
+    resolve_style_image_path_with_view,
+    views_for_job_slug,
+)
 from ai.services.gemini_style import AiStyleError
 
 logger = logging.getLogger(__name__)
@@ -58,29 +64,36 @@ def _save_manifest(data: dict[str, list[str]]) -> None:
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def draft_asset_path(*, persona_id: str, slug: str) -> Path:
+def draft_asset_path(*, persona_id: str, slug: str, view: str = "front") -> Path:
     pid = normalize_persona_id(persona_id) or persona_id
-    return Path(settings.MEDIA_ROOT) / "explore_gen" / pid / f"{slug}.webp"
+    storage = explore_asset_storage_slug(slug, view)
+    return Path(settings.MEDIA_ROOT) / "explore_gen" / pid / f"{storage}.webp"
 
 
-def live_asset_path(*, persona_id: str, slug: str) -> Path:
+def live_asset_path(*, persona_id: str, slug: str, view: str = "front") -> Path:
     pid = normalize_persona_id(persona_id) or persona_id
-    rel = (
-        resolve_persona_ref_image(audience="men", persona_id=pid)
-        if slug == "reference"
-        else resolve_persona_style_image(audience="men", persona_id=pid, slug=slug)
-    )
+    normalized_view = normalize_explore_view(view)
+    if slug == "reference":
+        rel = resolve_persona_ref_image(audience="men", persona_id=pid)
+    else:
+        base = resolve_persona_style_image(audience="men", persona_id=pid, slug=slug)
+        rel = resolve_style_image_path_with_view(
+            base_path=base,
+            slug=slug,
+            view=normalized_view,
+        )
     rel_path = rel.lstrip("/")
     if PUBLIC_ROOT.is_dir():
         return PUBLIC_ROOT / rel_path
     return Path(settings.MEDIA_ROOT) / rel_path
 
 
-def is_explore_asset_published(persona_id: str | None, slug: str) -> bool:
+def is_explore_asset_published(persona_id: str | None, slug: str, view: str = "front") -> bool:
     pid = normalize_persona_id(persona_id)
     if not pid:
         return False
-    return slug in _load_manifest().get(pid, [])
+    storage = explore_asset_storage_slug(slug, view)
+    return storage in _load_manifest().get(pid, [])
 
 
 def published_slugs_for_persona(persona_id: str | None) -> frozenset[str]:
@@ -134,15 +147,17 @@ def resolve_explore_asset_url(*, audience: str, persona_id: str, slug: str) -> s
     return rel
 
 
-def publish_explore_asset(*, persona_id: str, slug: str) -> dict[str, Any]:
+def publish_explore_asset(*, persona_id: str, slug: str, view: str = "front") -> dict[str, Any]:
     pid = normalize_persona_id(persona_id)
     if not pid:
         raise AiStyleError("Noto'g'ri persona_id.", 400)
     if slug != "reference" and slug not in MEN_CATALOG_STYLE_SLUGS:
         raise AiStyleError("Noto'g'ri slug.", 400)
 
-    draft = draft_asset_path(persona_id=pid, slug=slug)
-    live = live_asset_path(persona_id=pid, slug=slug)
+    normalized_view = normalize_explore_view(view)
+    storage = explore_asset_storage_slug(slug, normalized_view)
+    draft = draft_asset_path(persona_id=pid, slug=slug, view=normalized_view)
+    live = live_asset_path(persona_id=pid, slug=slug, view=normalized_view)
     if draft.is_file():
         live.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(draft, live)
@@ -151,18 +166,23 @@ def publish_explore_asset(*, persona_id: str, slug: str) -> dict[str, Any]:
 
     manifest = _load_manifest()
     slugs = set(manifest.get(pid, []))
-    slugs.add(slug)
+    slugs.add(storage)
     manifest[pid] = sorted(slugs)
     _save_manifest(manifest)
 
-    rel = (
-        resolve_persona_ref_image(audience="men", persona_id=pid)
-        if slug == "reference"
-        else resolve_persona_style_image(audience="men", persona_id=pid, slug=slug)
-    )
+    if slug == "reference":
+        rel = resolve_persona_ref_image(audience="men", persona_id=pid)
+    else:
+        base = resolve_persona_style_image(audience="men", persona_id=pid, slug=slug)
+        rel = resolve_style_image_path_with_view(
+            base_path=base,
+            slug=slug,
+            view=normalized_view,
+        )
     return {
         "persona_id": pid,
         "slug": slug,
+        "view": normalized_view,
         "published": True,
         "relative_path": rel.lstrip("/"),
         "public_url": rel if PUBLIC_ROOT.is_dir() and live.is_relative_to(PUBLIC_ROOT) else None,
@@ -179,11 +199,12 @@ def publish_explore_persona(*, persona_id: str) -> dict[str, Any]:
     published: list[dict[str, Any]] = []
     slugs = ["reference", *sorted(MEN_CATALOG_STYLE_SLUGS)]
     for slug in slugs:
-        draft = draft_asset_path(persona_id=pid, slug=slug)
-        live = live_asset_path(persona_id=pid, slug=slug)
-        if not draft.is_file() and not live.is_file():
-            continue
-        published.append(publish_explore_asset(persona_id=pid, slug=slug))
+        for view in views_for_job_slug(slug):
+            draft = draft_asset_path(persona_id=pid, slug=slug, view=view)
+            live = live_asset_path(persona_id=pid, slug=slug, view=view)
+            if not draft.is_file() and not live.is_file():
+                continue
+            published.append(publish_explore_asset(persona_id=pid, slug=slug, view=view))
 
     if not published:
         raise AiStyleError("Joylashtirish uchun tayyor rasm yo'q.", 400)
