@@ -15,9 +15,9 @@ class StylePromptTests(SimpleTestCase):
         self.assertEqual(style_detail_for("women", "unknown"), "unknown")
 
 
-@override_settings(VERTEX_PROJECT_ID="")
+@override_settings(GEMINI_API_KEY="", VERTEX_PROJECT_ID="")
 class TryOnServiceTests(SimpleTestCase):
-    def test_requires_vertex(self):
+    def test_requires_image_config(self):
         from ai.services.gemini_tryon import generate_tryon_preview
 
         tiny = (
@@ -58,10 +58,7 @@ class TryOnServiceTests(SimpleTestCase):
                 }
             ]
         }
-        with override_settings(
-            VERTEX_PROJECT_ID="test-project",
-            VERTEX_SERVICE_ACCOUNT_JSON='{"type":"service_account","project_id":"test"}',
-        ):
+        with override_settings(GEMINI_API_KEY="test-studio-key"):
             result = generate_tryon_preview(
                 selfie_data_url=(
                     "data:image/png;base64,"

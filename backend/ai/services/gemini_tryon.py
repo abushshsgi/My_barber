@@ -69,7 +69,10 @@ def generate_tryon_preview(
     reference_image_url: str | None = None,
 ) -> str:
     if not vertex_image_configured():
-        raise AiStyleError("AI rasm xizmati hozircha ulanmagan.", 503)
+        raise AiStyleError(
+            "AI rasm xizmati hozircha ulanmagan. GEMINI_API_KEY qo'ying.",
+            503,
+        )
 
     mime, selfie_bytes = parse_data_url(selfie_data_url)
     style_detail = style_detail_for(audience, slug)

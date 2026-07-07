@@ -17,8 +17,10 @@ export type ExploreGenJob = {
 
 export type ExploreGenStatus = {
   configured: {
+    gemini_api_key: boolean;
+    studio_image: boolean;
+    provider: "studio" | "vertex" | null;
     vertex: boolean;
-    vertex_image: boolean;
   };
   jobs: ExploreGenJob[];
   total: number;

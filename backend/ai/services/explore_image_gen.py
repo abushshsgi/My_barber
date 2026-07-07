@@ -22,8 +22,9 @@ from ai.explore_personas import (
 )
 from ai.services.gemini_style import AiStyleError
 from ai.services.image_response import extract_image_bytes
-from ai.services.vertex_auth import vertex_configured, vertex_image_configured
-from ai.services.vertex_image import generate_image_content
+from ai.services.studio_image import image_generation_provider, studio_image_configured
+from ai.services.vertex_auth import vertex_configured
+from ai.services.vertex_image import generate_image_content, image_generation_configured
 from ai.style_prompts import style_detail_for
 
 logger = logging.getLogger(__name__)
@@ -55,11 +56,13 @@ def asset_file_path(*, persona_id: str, slug: str) -> Path:
     return Path(settings.MEDIA_ROOT) / rel
 
 
-def explore_gen_configured() -> dict[str, bool]:
-    has_image = vertex_image_configured()
+def explore_gen_configured() -> dict[str, bool | str | None]:
+    provider = image_generation_provider()
     return {
+        "gemini_api_key": studio_image_configured(),
+        "studio_image": image_generation_configured(),
+        "provider": provider,
         "vertex": vertex_configured(),
-        "vertex_image": has_image,
     }
 
 
@@ -191,7 +194,7 @@ AVOID: {STYLE_NEGATIVE}
 Output a single edited portrait photo."""
 
 
-def _vertex_image_body(*, prompt: str, ref_bytes: bytes | None = None) -> dict[str, Any]:
+def _image_body(*, prompt: str, ref_bytes: bytes | None = None) -> dict[str, Any]:
     parts: list[dict[str, Any]] = [{"text": prompt}]
     if ref_bytes is not None:
         parts.append(
@@ -211,16 +214,21 @@ def _vertex_image_body(*, prompt: str, ref_bytes: bytes | None = None) -> dict[s
     }
 
 
-def _generate_vertex_image(*, prompt: str, ref_bytes: bytes | None = None) -> bytes:
-    if not vertex_image_configured():
+def _generate_image(*, prompt: str, ref_bytes: bytes | None = None) -> bytes:
+    if not image_generation_configured():
         raise AiStyleError(
-            "Vertex rasm modeli sozlanmagan. VERTEX_PROJECT_ID va service account kerak.",
+            "Rasm generatsiya sozlanmagan. GEMINI_API_KEY (AI Studio) qo'ying.",
             503,
         )
 
-    payload = generate_image_content(_vertex_image_body(prompt=prompt, ref_bytes=ref_bytes))
+    payload = generate_image_content(_image_body(prompt=prompt, ref_bytes=ref_bytes))
     _mime, out_bytes = extract_image_bytes(payload)
     return out_bytes
+
+
+def _generation_method(*, edit: bool) -> str:
+    provider = image_generation_provider() or "studio"
+    return f"{provider}_{'edit' if edit else 'generate'}"
 
 
 def _resize_webp(raw: bytes, dest: Path) -> None:
@@ -262,19 +270,19 @@ def generate_explore_asset(
     started = time.monotonic()
 
     if slug == "reference":
-        raw = _generate_vertex_image(prompt=prompt)
-        method = "vertex_generate"
+        raw = _generate_image(prompt=prompt)
+        method = _generation_method(edit=False)
     else:
         ref_path = asset_file_path(persona_id=pid, slug="reference")
         if ref_path.is_file():
-            raw = _generate_vertex_image(
+            raw = _generate_image(
                 prompt=_build_style_edit_prompt(persona_id=pid, slug=slug),
                 ref_bytes=ref_path.read_bytes(),
             )
-            method = "vertex_edit"
+            method = _generation_method(edit=True)
         else:
-            raw = _generate_vertex_image(prompt=prompt)
-            method = "vertex_generate"
+            raw = _generate_image(prompt=prompt)
+            method = _generation_method(edit=False)
 
     _resize_webp(raw, dest)
     elapsed_ms = int((time.monotonic() - started) * 1000)
