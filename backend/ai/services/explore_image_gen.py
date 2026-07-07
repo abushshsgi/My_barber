@@ -20,7 +20,12 @@ from ai.explore_personas import (
     resolve_persona_ref_image,
     resolve_persona_style_image,
 )
-from ai.services.gemini_style import AiStyleError
+from ai.explore_published import (
+    draft_asset_path,
+    is_explore_asset_published,
+    live_asset_path,
+    resolve_explore_asset_url,
+)
 from ai.services.image_response import extract_image_bytes
 from ai.services.studio_image import image_generation_provider, studio_image_configured
 from ai.services.vertex_auth import vertex_configured
@@ -79,10 +84,7 @@ def output_mode() -> str:
 
 
 def asset_file_path(*, persona_id: str, slug: str) -> Path:
-    rel = _relative_asset_path(persona_id=persona_id, slug=slug)
-    if _uses_public_output():
-        return PUBLIC_ROOT / rel
-    return Path(settings.MEDIA_ROOT) / rel
+    return draft_asset_path(persona_id=persona_id, slug=slug)
 
 
 def explore_gen_configured() -> dict[str, bool | str | None]:
@@ -104,6 +106,8 @@ def _relative_asset_path(*, persona_id: str, slug: str) -> str:
 
 
 def _public_url_for(*, persona_id: str, slug: str, path: Path) -> str:
+    if is_explore_asset_published(persona_id, slug):
+        return resolve_explore_asset_url(audience="men", persona_id=persona_id, slug=slug)
     rel = _relative_asset_path(persona_id=persona_id, slug=slug)
     if _uses_public_output() and path.is_relative_to(PUBLIC_ROOT):
         return f"/{rel}"
@@ -127,7 +131,9 @@ def list_explore_gen_jobs() -> list[dict[str, Any]]:
         for slug in ("reference", *sorted(MEN_CATALOG_STYLE_SLUGS)):
             rel = _relative_asset_path(persona_id=persona_id, slug=slug)
             path = asset_file_path(persona_id=persona_id, slug=slug)
+            live = live_asset_path(persona_id=persona_id, slug=slug)
             public_url = _public_url_for(persona_id=persona_id, slug=slug, path=path)
+            published = is_explore_asset_published(persona_id, slug)
             jobs.append(
                 {
                     "persona_id": persona_id,
@@ -137,7 +143,11 @@ def list_explore_gen_jobs() -> list[dict[str, Any]]:
                     "relative_path": rel,
                     "public_url": public_url or None,
                     "download_path": _download_path(persona_id=persona_id, slug=slug),
-                    "exists": path.is_file(),
+                    "exists": path.is_file() or live.is_file(),
+                    "published": published,
+                    "live_url": resolve_explore_asset_url(audience="men", persona_id=persona_id, slug=slug)
+                    if published
+                    else None,
                     "output_mode": mode,
                     "prompt": build_explore_gen_prompt(persona_id=persona_id, slug=slug),
                 }
@@ -351,10 +361,14 @@ def generate_explore_asset(
     else:
         ref_path = asset_file_path(persona_id=pid, slug="reference")
         if not ref_path.is_file():
-            raise AiStyleError(
-                "Avval reference generatsiya qiling. Uslub faqat shu portretdan edit qilinadi.",
-                400,
-            )
+            live_ref = live_asset_path(persona_id=pid, slug="reference")
+            if live_ref.is_file():
+                ref_path = live_ref
+            else:
+                raise AiStyleError(
+                    "Avval reference generatsiya qiling. Uslub faqat shu portretdan edit qilinadi.",
+                    400,
+                )
         ref_bytes = ref_path.read_bytes()
         ref_mime = _detect_image_mime(ref_bytes, ref_path)
         catalog = _load_public_image(_catalog_style_image_path(slug))

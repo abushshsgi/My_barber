@@ -11,6 +11,8 @@ export type ExploreGenJob = {
   public_url: string | null;
   download_path: string;
   exists: boolean;
+  published: boolean;
+  live_url: string | null;
   output_mode: "public" | "media";
   prompt: string;
 };
@@ -90,7 +92,59 @@ export async function generateExploreAsset(input: {
   });
 }
 
+export async function publishExploreAsset(input: {
+  personaId: string;
+  slug: string;
+}): Promise<ExploreGenPublishResult> {
+  const secret = readExploreGenSecret();
+  const url = secret
+    ? `/api/v1/ai/dev/explore-gen/publish/?key=${encodeURIComponent(secret)}`
+    : "/api/v1/ai/dev/explore-gen/publish/";
+  return apiJson<ExploreGenPublishResult>(url, {
+    method: "POST",
+    headers: exploreGenHeaders(),
+    body: JSON.stringify({
+      persona_id: input.personaId,
+      slug: input.slug,
+    }),
+  });
+}
+
+export async function publishExplorePersona(input: {
+  personaId: string;
+}): Promise<ExploreGenPublishPersonaResult> {
+  const secret = readExploreGenSecret();
+  const url = secret
+    ? `/api/v1/ai/dev/explore-gen/publish/?key=${encodeURIComponent(secret)}`
+    : "/api/v1/ai/dev/explore-gen/publish/";
+  return apiJson<ExploreGenPublishPersonaResult>(url, {
+    method: "POST",
+    headers: exploreGenHeaders(),
+    body: JSON.stringify({
+      persona_id: input.personaId,
+      all: true,
+    }),
+  });
+}
+
+export type ExploreGenPublishResult = {
+  persona_id: string;
+  slug: string;
+  published: boolean;
+  relative_path: string;
+  public_url: string | null;
+  live_url: string;
+  published_at: string;
+};
+
+export type ExploreGenPublishPersonaResult = {
+  persona_id: string;
+  count: number;
+  items: ExploreGenPublishResult[];
+};
+
 export function resolveExploreGenImageUrl(job: ExploreGenJob): string | null {
+  if (job.live_url) return job.live_url;
   if (job.public_url) return job.public_url;
   const secret = readExploreGenSecret();
   if (!secret) return null;

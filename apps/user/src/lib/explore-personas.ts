@@ -4,6 +4,7 @@ export type ExplorePersona = {
   id: ExplorePersonaId;
   label: string;
   code: string;
+  reference_url?: string;
 };
 
 /** Foydalanuvchi tasdiqlagan 4 ta reference prompt tartibi */

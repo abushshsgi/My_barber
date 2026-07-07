@@ -97,6 +97,13 @@ INSTALLED_APPS = [
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 # Vaqtinchalik Explore rasm generatsiya (production: DEBUG=false + secret)
 EXPLORE_GEN_SECRET = os.environ.get("EXPLORE_GEN_SECRET", "").strip()
+
+_api_public_base = os.environ.get("API_PUBLIC_BASE_URL", "").strip().strip('"').strip("'").rstrip("/")
+if not _api_public_base:
+    _api_host = os.environ.get("API_PUBLIC_HOST", "").strip().strip('"').strip("'")
+    if _api_host:
+        _api_public_base = f"https://{_api_host.lstrip('.')}"
+API_PUBLIC_BASE_URL = _api_public_base
 DGIS_API_KEY = os.environ.get("DGIS_API_KEY", "").strip()
 # Scan + tahlil: faqat gemini-2.5-flash (AI Studio kalit)
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash"

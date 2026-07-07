@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from ai.explore_gen_auth import ExploreGenAuthMixin, explore_gen_is_allowed
+from ai.explore_published import publish_explore_asset, publish_explore_persona
 from ai.services.explore_image_gen import (
     asset_file_path,
     explore_gen_configured,
@@ -57,6 +58,32 @@ class ExploreGenGenerateView(ExploreGenAuthMixin, APIView):
         return Response(result)
 
 
+class ExploreGenPublishView(ExploreGenAuthMixin, APIView):
+    """POST — tasdiqlangan rasmni haqiqiy Explore katalogiga joylash."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        persona_id = (request.data.get("persona_id") or "").strip()
+        slug = (request.data.get("slug") or "").strip()
+        publish_all = bool(request.data.get("all"))
+
+        if not persona_id:
+            return Response({"detail": "persona_id kerak."}, status=400)
+
+        try:
+            if publish_all:
+                result = publish_explore_persona(persona_id=persona_id)
+            else:
+                if not slug:
+                    return Response({"detail": "slug kerak."}, status=400)
+                result = publish_explore_asset(persona_id=persona_id, slug=slug)
+        except AiStyleError as exc:
+            return Response({"detail": exc.message}, status=exc.status)
+
+        return Response(result)
+
+
 class ExploreGenDownloadView(APIView):
     """GET — generatsiya qilingan faylni yuklab olish (production media)."""
 
@@ -72,6 +99,10 @@ class ExploreGenDownloadView(APIView):
             return Response({"detail": "persona_id va slug kerak."}, status=400)
 
         path = asset_file_path(persona_id=persona_id, slug=slug)
+        if not path.is_file():
+            from ai.explore_published import live_asset_path
+
+            path = live_asset_path(persona_id=persona_id, slug=slug)
         if not path.is_file():
             raise Http404("Fayl topilmadi.")
 

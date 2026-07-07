@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, ImageIcon, Loader2, Lock, RefreshCw, Sparkles, Wand2 } from "lucide-react";
+import { Download, Globe, ImageIcon, Loader2, Lock, RefreshCw, Sparkles, Upload, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -14,6 +14,8 @@ import {
   exploreGenDownloadFilename,
   fetchExploreGenStatus,
   generateExploreAsset,
+  publishExploreAsset,
+  publishExplorePersona,
   readExploreGenSecret,
   resolveExploreGenImageUrl,
   saveExploreGenSecret,
@@ -89,6 +91,32 @@ function ExploreGenDevPage() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Generatsiya xato");
+    },
+  });
+
+  const publishMutation = useMutation({
+    mutationFn: publishExploreAsset,
+    onSuccess: (result) => {
+      toast.success(`${result.slug} Explore'da jonli`);
+      void queryClient.invalidateQueries({ queryKey: ["explore-gen-status"] });
+      void queryClient.invalidateQueries({ queryKey: ["explore-personas"] });
+      void queryClient.invalidateQueries({ queryKey: ["hairstyles"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Joylashtirish xato");
+    },
+  });
+
+  const publishPersonaMutation = useMutation({
+    mutationFn: publishExplorePersona,
+    onSuccess: (result) => {
+      toast.success(`${result.persona_id}: ${result.count} ta Explore'ga joylandi`);
+      void queryClient.invalidateQueries({ queryKey: ["explore-gen-status"] });
+      void queryClient.invalidateQueries({ queryKey: ["explore-personas"] });
+      void queryClient.invalidateQueries({ queryKey: ["hairstyles"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Joylashtirish xato");
     },
   });
 
@@ -233,10 +261,9 @@ function ExploreGenDevPage() {
           {outputMode === "media" ? (
             <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
               <strong>Production (Railway):</strong> rasmlar server media papkasiga saqlanadi.
-              Har bir rasmni <strong>Yuklab olish</strong> bilan oling — fayl nomi{" "}
-              <code className="rounded bg-white/80 px-1">persona-uslub.webp</code> (masalan{" "}
-              <code className="rounded bg-white/80 px-1">britan-buzz-cut.webp</code>). Bitta papkada
-              yig&apos;ib berishingiz mumkin; keyin Explore papkasiga joylashtiramiz.
+              Tayyor bo&apos;lgach <strong>Explore&apos;ga joylash</strong> tugmasini bosing — foydalanuvchilar
+              shu trumakni tanlaganda haqiqiy Explore&apos;da ko&apos;radi. Yuklab olish ixtiyoriy (
+              <code className="rounded bg-white/80 px-1">persona-uslub.webp</code>).
             </div>
           ) : (
             <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
@@ -325,6 +352,12 @@ function ExploreGenDevPage() {
               disabled={running}
               onClick={enqueueAllMissing}
             />
+            <ActionButton
+              icon={Upload}
+              label="Personaj — Explore'ga joylash"
+              disabled={running || publishPersonaMutation.isPending}
+              onClick={() => publishPersonaMutation.mutate({ personaId })}
+            />
           </div>
 
           {running ? (
@@ -348,7 +381,8 @@ function ExploreGenDevPage() {
             <JobCard
               key={`${job.persona_id}-${job.slug}`}
               job={job}
-              busy={running || generateMutation.isPending}
+              busy={running || generateMutation.isPending || publishMutation.isPending}
+              publishing={publishMutation.isPending}
               expanded={expandedPrompt === `${job.persona_id}-${job.slug}`}
               onTogglePrompt={() =>
                 setExpandedPrompt((current) =>
@@ -360,6 +394,7 @@ function ExploreGenDevPage() {
               onGenerate={(force) =>
                 void runQueue([{ personaId: job.persona_id, slug: job.slug, force }])
               }
+              onPublish={() => publishMutation.mutate({ personaId: job.persona_id, slug: job.slug })}
             />
           ))}
         </div>
@@ -408,15 +443,19 @@ function ActionButton({
 function JobCard({
   job,
   busy,
+  publishing,
   expanded,
   onTogglePrompt,
   onGenerate,
+  onPublish,
 }: {
   job: ExploreGenJob;
   busy: boolean;
+  publishing: boolean;
   expanded: boolean;
   onTogglePrompt: () => void;
   onGenerate: (force: boolean) => void;
+  onPublish: () => void;
 }) {
   const [downloading, setDownloading] = useState(false);
   const imageUrl = resolveExploreGenImageUrl(job);
@@ -451,6 +490,12 @@ function JobCard({
         <span className="absolute left-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
           {job.kind === "reference" ? "Reference" : job.slug}
         </span>
+        {job.published ? (
+          <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-emerald-600/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+            <Globe className="size-3" />
+            Live
+          </span>
+        ) : null}
       </div>
       <div className="space-y-3 p-4">
         <div>
@@ -475,19 +520,36 @@ function JobCard({
             Qayta
           </button>
           {job.exists ? (
-            <button
-              type="button"
-              disabled={busy || downloading}
-              onClick={() => void handleDownload()}
-              className="inline-flex items-center gap-1 rounded-xl border border-neutral-200 px-3 py-2 text-xs font-semibold disabled:opacity-50"
-            >
-              {downloading ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Download className="size-3.5" />
-              )}
-              Yuklab olish
-            </button>
+            <>
+              <button
+                type="button"
+                disabled={busy || downloading}
+                onClick={() => void handleDownload()}
+                className="inline-flex items-center gap-1 rounded-xl border border-neutral-200 px-3 py-2 text-xs font-semibold disabled:opacity-50"
+              >
+                {downloading ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Download className="size-3.5" />
+                )}
+                Yuklab olish
+              </button>
+              {!job.published ? (
+                <button
+                  type="button"
+                  disabled={busy || publishing}
+                  onClick={onPublish}
+                  className="inline-flex items-center gap-1 rounded-xl bg-emerald-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                >
+                  {publishing ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Upload className="size-3.5" />
+                  )}
+                  Explore&apos;ga
+                </button>
+              ) : null}
+            </>
           ) : null}
           <button
             type="button"

@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { listReadyExplorePersonas, type ExplorePersonaId } from "@/lib/explore-personas";
+import { useExplorePersonaList } from "@/hooks/use-explore-personas";
+import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { PersonaVariantB } from "./persona-picker/variants";
 
 type Props = {
@@ -9,7 +10,7 @@ type Props = {
 
 export function PersonaPicker({ value, onChange }: Props) {
   const { t } = useTranslation();
-  const readyPersonas = listReadyExplorePersonas();
+  const { personas: readyPersonas } = useExplorePersonaList();
   const activePersona = readyPersonas.find((persona) => persona.id === value);
 
   if (readyPersonas.length === 0) return null;

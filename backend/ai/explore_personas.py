@@ -124,30 +124,55 @@ def normalize_persona_id(raw: str | None) -> str | None:
 
 
 def list_explore_personas() -> list[dict]:
+    from ai.explore_published import explore_asset_available, resolve_explore_asset_url
+
     order = ("britan", "irland", "slavyan", "evro")
-    return [EXPLORE_PERSONAS[pid] for pid in order if has_persona_reference(pid)]
+    rows: list[dict] = []
+    for pid in order:
+        if not explore_asset_available(pid, "reference"):
+            continue
+        persona = EXPLORE_PERSONAS[pid]
+        rows.append(
+            {
+                **persona,
+                "reference_url": resolve_explore_asset_url(
+                    audience="men",
+                    persona_id=pid,
+                    slug="reference",
+                ),
+            }
+        )
+    return rows
 
 
 def resolve_persona_style_image(*, audience: str, persona_id: str, slug: str) -> str:
-    return f"/hairstyles/{audience}/personas/{persona_id}/{slug}.webp"
+    from ai.explore_published import resolve_explore_asset_url
+
+    return resolve_explore_asset_url(audience=audience, persona_id=persona_id, slug=slug)
 
 
 def resolve_persona_ref_image(*, audience: str, persona_id: str) -> str:
-    return f"/hairstyles/{audience}/personas/{persona_id}/reference.webp"
+    from ai.explore_published import resolve_explore_asset_url
+
+    return resolve_explore_asset_url(audience=audience, persona_id=persona_id, slug="reference")
 
 
 def has_persona_reference(persona_id: str | None) -> bool:
+    from ai.explore_published import explore_asset_available
+
     pid = normalize_persona_id(persona_id)
     if not pid:
         return False
-    return "reference" in PERSONA_READY_ASSETS.get(pid, frozenset())
+    return explore_asset_available(pid, "reference")
 
 
 def has_persona_style_asset(persona_id: str | None, slug: str) -> bool:
+    from ai.explore_published import explore_asset_available
+
     pid = normalize_persona_id(persona_id)
     if not pid:
         return False
-    return slug in PERSONA_READY_ASSETS.get(pid, frozenset())
+    return explore_asset_available(pid, slug)
 
 
 def persona_reference_prompt(*, persona_id: str) -> str:

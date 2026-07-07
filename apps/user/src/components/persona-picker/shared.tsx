@@ -38,7 +38,7 @@ export function PersonaPhoto({
   return (
     <div className={cn("relative overflow-hidden bg-muted", className)}>
       <img
-        src={getPersonaRefImageUrl(persona.id)}
+        src={persona.reference_url ?? getPersonaRefImageUrl(persona.id)}
         alt={persona.label}
         loading="lazy"
         decoding="async"
