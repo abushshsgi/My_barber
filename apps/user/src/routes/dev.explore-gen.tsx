@@ -35,9 +35,9 @@ export const Route = createFileRoute("/dev/explore-gen")({
 
 type QueueItem = { personaId: string; slug: string; force: boolean };
 
-const QUEUE_GAP_MS = 8_000;
-const RATE_LIMIT_COOLDOWN_MS = 45_000;
-const MAX_QUEUE_RETRIES = 3;
+const QUEUE_GAP_MS = 12_000;
+const RATE_LIMIT_COOLDOWN_MS = 60_000;
+const MAX_QUEUE_RETRIES = 8;
 
 function isRateLimitError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;

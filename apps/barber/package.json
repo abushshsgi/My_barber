@@ -4,7 +4,7 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
+    "dev": "node scripts/write-build-version.mjs && vite dev",
     "build": "node scripts/write-build-version.mjs && vite build",
     "build:mobile": "vite build",
     "build:dev": "vite build --mode development",

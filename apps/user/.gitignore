@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Generated at build (write-build-version.mjs)
+src/lib/app-build-id.ts
+src/lib/client-boot-script.ts

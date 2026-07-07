@@ -5,7 +5,7 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
+    "dev": "node scripts/write-build-version.mjs && vite dev",
     "build": "node scripts/write-build-version.mjs && vite build && node scripts/prepare-vercel-output.mjs",
     "build:dev": "vite build --mode development",
     "build:mobile": "node scripts/write-build-version.mjs && vite build --config vite.mobile.config.ts --mode production",
