@@ -18,6 +18,7 @@ export type ExploreGenJob = {
   published: boolean;
   live_url: string | null;
   output_mode: "public" | "media";
+  asset_version?: number;
   prompt: string;
 };
 

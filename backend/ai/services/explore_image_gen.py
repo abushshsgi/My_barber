@@ -137,6 +137,17 @@ def _persona_order() -> tuple[str, ...]:
     return tuple(EXPLORE_PERSONAS.keys())
 
 
+def _asset_version(*, draft: Path, live: Path, published: bool) -> int:
+    """Ko'rsatiladigan fayl mtime — brauzer keshini yangilash uchun."""
+    target = live if (published and live.is_file()) else draft
+    if not target.is_file():
+        target = live if live.is_file() else draft
+    try:
+        return int(target.stat().st_mtime)
+    except OSError:
+        return 0
+
+
 def list_explore_gen_jobs() -> list[dict[str, Any]]:
     mode = output_mode()
     jobs: list[dict[str, Any]] = []
@@ -168,6 +179,7 @@ def list_explore_gen_jobs() -> list[dict[str, Any]]:
                         "download_path": _download_path(persona_id=persona_id, slug=slug, view=view),
                         "exists": path.is_file() or live.is_file(),
                         "published": published,
+                        "asset_version": _asset_version(draft=path, live=live, published=published),
                         "live_url": resolve_explore_asset_url(
                             audience="men",
                             persona_id=persona_id,

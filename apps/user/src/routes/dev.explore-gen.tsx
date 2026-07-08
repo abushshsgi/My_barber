@@ -620,7 +620,7 @@ function JobCard({
       <div className="relative aspect-[3/4] bg-neutral-100">
         {job.exists && imageUrl ? (
           <img
-            src={`${imageUrl}${imageUrl.includes("?") ? "&" : "?"}t=${job.slug}-${job.view}`}
+            src={`${imageUrl}${imageUrl.includes("?") ? "&" : "?"}v=${job.asset_version ?? 0}`}
             alt={`${job.persona_label} ${job.slug}`}
             className="h-full w-full object-cover"
           />
