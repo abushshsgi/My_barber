@@ -19,6 +19,7 @@ import {
   readExploreGenSecret,
   resolveExploreGenImageUrl,
   saveExploreGenSecret,
+  setExplorePersonaLabel,
   type ExploreGenJob,
 } from "@/lib/api/explore-gen";
 import {
@@ -66,6 +67,7 @@ function ExploreGenDevPage() {
   const [personaId, setPersonaId] = useState<ExplorePersonaId>("britan");
   const [viewAngle, setViewAngle] = useState<ExploreViewId>("front");
   const [turboMode, setTurboMode] = useState(true);
+  const [personaLabelDraft, setPersonaLabelDraft] = useState("");
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [running, setRunning] = useState(false);
   const [expandedPrompt, setExpandedPrompt] = useState<string | null>(null);
@@ -143,6 +145,24 @@ function ExploreGenDevPage() {
     id,
     label: EXPLORE_VIEW_LABELS[id],
   }));
+
+  const personaLabels = statusQuery.data?.persona_labels ?? {};
+  const activePersonaLabel =
+    personaLabels[personaId] ?? EXPLORE_PERSONAS.find((persona) => persona.id === personaId)?.label ?? personaId;
+
+  useEffect(() => {
+    setPersonaLabelDraft(activePersonaLabel);
+  }, [activePersonaLabel, personaId]);
+
+  const labelMutation = useMutation({
+    mutationFn: setExplorePersonaLabel,
+    onSuccess: (result) => {
+      toast.success(`Nom yangilandi: ${result.label}`);
+      void queryClient.invalidateQueries({ queryKey: ["explore-gen-status"] });
+      void queryClient.invalidateQueries({ queryKey: ["explore-personas"] });
+    },
+    onError: (error: Error) => toast.error(error.message || "Nom saqlanmadi"),
+  });
 
   const queueGapMs = turboMode ? 0 : isDev ? QUEUE_GAP_NORMAL_MS : QUEUE_GAP_SAFE_MS;
 
@@ -375,9 +395,33 @@ function ExploreGenDevPage() {
                     : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200",
                 )}
               >
-                {persona.label}
+                {personaLabels[persona.id] ?? persona.label}
               </button>
             ))}
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-end gap-2">
+            <label className="min-w-[220px] flex-1">
+              <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.18em] text-neutral-500">
+                Personaj nomi (Explore&apos;da)
+              </span>
+              <input
+                value={personaLabelDraft}
+                onChange={(event) => setPersonaLabelDraft(event.target.value)}
+                placeholder="Masalan: Klassik"
+                className="w-full rounded-2xl border border-neutral-200 px-4 py-2.5 text-sm"
+              />
+            </label>
+            <button
+              type="button"
+              disabled={labelMutation.isPending || !personaLabelDraft.trim()}
+              onClick={() =>
+                labelMutation.mutate({ personaId, label: personaLabelDraft.trim() })
+              }
+              className="rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              Nomni saqlash
+            </button>
           </div>
 
           <div className="mt-4">

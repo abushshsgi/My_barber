@@ -13,6 +13,7 @@ from django.conf import settings
 
 from ai.explore_personas import (
     MEN_CATALOG_STYLE_SLUGS,
+    PERSONA_READY_ASSETS,
     normalize_persona_id,
     static_persona_ref_image_path,
     static_persona_style_image_path,
@@ -137,8 +138,15 @@ def view_asset_file_exists(*, persona_id: str, slug: str, view: str = "front") -
         return False
     normalized_view = normalize_explore_view(view)
     if is_explore_asset_published(pid, slug, view=normalized_view):
-        return live_asset_path(persona_id=pid, slug=slug, view=normalized_view).is_file()
-    return _static_file_exists(audience="men", persona_id=pid, slug=slug, view=normalized_view)
+        live = live_asset_path(persona_id=pid, slug=slug, view=normalized_view)
+        if live.is_file():
+            return True
+    if _static_file_exists(audience="men", persona_id=pid, slug=slug, view=normalized_view):
+        return True
+    ready = PERSONA_READY_ASSETS.get(pid, frozenset())
+    if normalized_view == "front" and slug in ready:
+        return True
+    return False
 
 
 def published_views_for_style(persona_id: str | None, slug: str) -> tuple[str, ...]:
@@ -158,6 +166,8 @@ def explore_asset_available(persona_id: str | None, slug: str) -> bool:
         return False
     if slug != "reference" and slug not in MEN_CATALOG_STYLE_SLUGS:
         return False
+    if slug in PERSONA_READY_ASSETS.get(pid, frozenset()):
+        return True
     if slug == "reference":
         return view_asset_file_exists(persona_id=pid, slug="reference", view="front")
     return bool(published_views_for_style(pid, slug))
@@ -180,30 +190,35 @@ def resolve_explore_asset_url(
     pid = normalize_persona_id(persona_id) or persona_id
     normalized_view = normalize_explore_view(view)
     if slug == "reference":
-        rel = static_persona_ref_image_path(audience=audience, persona_id=pid)
-    else:
-        base = static_persona_style_image_path(audience=audience, persona_id=pid, slug=slug)
-        rel = resolve_style_image_path_with_view(
-            base_path=base,
-            slug=slug,
-            view=normalized_view,
-        )
-    if is_explore_asset_published(pid, slug, view=normalized_view):
-        live = live_asset_path(persona_id=pid, slug=slug, view=normalized_view)
-        if live.is_file() and not (PUBLIC_ROOT.is_dir() and live.is_relative_to(PUBLIC_ROOT)):
-            base = explore_media_base_url()
-            media_rel = rel.lstrip("/")
-            if base:
-                return f"{base}/media/{media_rel}"
-            return f"/media/{media_rel}"
+        return static_persona_ref_image_path(audience=audience, persona_id=pid)
+
+    base = static_persona_style_image_path(audience=audience, persona_id=pid, slug=slug)
+    rel = resolve_style_image_path_with_view(
+        base_path=base,
+        slug=slug,
+        view=normalized_view,
+    )
+    if normalized_view == "front":
+        return rel
+
+    published = is_explore_asset_published(pid, slug, view=normalized_view)
+    live = live_asset_path(persona_id=pid, slug=slug, view=normalized_view)
+    if published and live.is_file() and not (PUBLIC_ROOT.is_dir() and live.is_relative_to(PUBLIC_ROOT)):
+        media_rel = rel.lstrip("/")
+        api_base = explore_media_base_url()
+        if api_base:
+            return f"{api_base}/media/{media_rel}"
+        return f"/media/{media_rel}"
     return rel
 
 
 def list_persona_style_gallery(*, audience: str, persona_id: str, slug: str) -> list[dict[str, str]]:
-    """Har bir uslub — mavjud barcha ko'rinishlar (old, chap, o'ng, orqa)."""
+    """Git (Vercel) + publish qilingan barcha ko'rinishlar."""
     pid = normalize_persona_id(persona_id) or persona_id
     rows: list[dict[str, str]] = []
-    for view in published_views_for_style(pid, slug):
+    for view in EXPLORE_VIEW_IDS:
+        if not view_asset_file_exists(persona_id=pid, slug=slug, view=view):
+            continue
         rows.append(
             {
                 "view": view,

@@ -9,6 +9,8 @@ from rest_framework.views import APIView
 
 from ai.explore_gen_auth import ExploreGenAuthMixin, explore_gen_is_allowed
 from ai.explore_published import publish_explore_asset, publish_explore_persona
+from ai.explore_persona_labels import persona_display_label, set_persona_display_label
+from ai.explore_personas import EXPLORE_PERSONAS
 from ai.explore_views import EXPLORE_VIEW_IDS, EXPLORE_VIEW_LABELS, normalize_explore_view
 from ai.services.explore_image_gen import (
     asset_file_path,
@@ -27,6 +29,10 @@ class ExploreGenStatusView(ExploreGenAuthMixin, APIView):
 
     def get(self, request):
         jobs = list_explore_gen_jobs()
+        persona_labels = {
+            pid: persona_display_label(pid)
+            for pid in EXPLORE_PERSONAS
+        }
         return Response(
             {
                 "configured": explore_gen_configured(),
@@ -37,6 +43,7 @@ class ExploreGenStatusView(ExploreGenAuthMixin, APIView):
                 "views": [
                     {"id": view_id, "label": EXPLORE_VIEW_LABELS[view_id]} for view_id in EXPLORE_VIEW_IDS
                 ],
+                "persona_labels": persona_labels,
             }
         )
 
@@ -92,6 +99,23 @@ class ExploreGenPublishView(ExploreGenAuthMixin, APIView):
         except AiStyleError as exc:
             return Response({"detail": exc.message}, status=exc.status)
 
+        return Response(result)
+
+
+class ExploreGenPersonaLabelView(ExploreGenAuthMixin, APIView):
+    """POST — personaj ko'rinish nomini o'zgartirish."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        persona_id = (request.data.get("persona_id") or "").strip()
+        label = (request.data.get("label") or "").strip()
+        if not persona_id:
+            return Response({"detail": "persona_id kerak."}, status=400)
+        try:
+            result = set_persona_display_label(persona_id=persona_id, label=label)
+        except AiStyleError as exc:
+            return Response({"detail": exc.message}, status=exc.status)
         return Response(result)
 
 

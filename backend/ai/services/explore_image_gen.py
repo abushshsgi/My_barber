@@ -20,6 +20,7 @@ from ai.explore_personas import (
     resolve_persona_ref_image,
     resolve_persona_style_image,
 )
+from ai.explore_persona_labels import persona_display_label
 from ai.explore_published import (
     draft_asset_path,
     is_explore_asset_published,
@@ -141,6 +142,7 @@ def list_explore_gen_jobs() -> list[dict[str, Any]]:
     jobs: list[dict[str, Any]] = []
     for persona_id in _persona_order():
         persona = EXPLORE_PERSONAS[persona_id]
+        display_label = persona_display_label(persona_id)
         for slug in ("reference", *sorted(MEN_CATALOG_STYLE_SLUGS)):
             for view in views_for_job_slug(slug):
                 rel = _relative_asset_path(persona_id=persona_id, slug=slug, view=view)
@@ -156,7 +158,7 @@ def list_explore_gen_jobs() -> list[dict[str, Any]]:
                 jobs.append(
                     {
                         "persona_id": persona_id,
-                        "persona_label": persona["label"],
+                        "persona_label": display_label,
                         "slug": slug,
                         "view": view,
                         "view_label": EXPLORE_VIEW_LABELS[view],

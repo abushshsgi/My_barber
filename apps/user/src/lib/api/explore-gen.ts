@@ -33,6 +33,7 @@ export type ExploreGenStatus = {
   existing: number;
   output_mode: "public" | "media";
   views: Array<{ id: ExploreViewId; label: string }>;
+  persona_labels?: Record<string, string>;
 };
 
 export type ExploreGenResult = {
@@ -133,6 +134,24 @@ export async function publishExplorePersona(input: {
     body: JSON.stringify({
       persona_id: input.personaId,
       all: true,
+    }),
+  });
+}
+
+export async function setExplorePersonaLabel(input: {
+  personaId: string;
+  label: string;
+}): Promise<{ persona_id: string; label: string }> {
+  const secret = readExploreGenSecret();
+  const url = secret
+    ? `/api/v1/ai/dev/explore-gen/persona-label/?key=${encodeURIComponent(secret)}`
+    : "/api/v1/ai/dev/explore-gen/persona-label/";
+  return apiJson(url, {
+    method: "POST",
+    headers: exploreGenHeaders(),
+    body: JSON.stringify({
+      persona_id: input.personaId,
+      label: input.label,
     }),
   });
 }

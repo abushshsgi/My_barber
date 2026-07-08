@@ -141,6 +141,7 @@ from salons.amenity_views import AmenityCatalogView, BarberSalonAmenitiesView
 from ai.explore_gen_views import (
     ExploreGenDownloadView,
     ExploreGenGenerateView,
+    ExploreGenPersonaLabelView,
     ExploreGenPublishView,
     ExploreGenStatusView,
 )
@@ -271,6 +272,7 @@ api_routes = [
     path("ai/dev/explore-gen/generate/", ExploreGenGenerateView.as_view()),
     path("ai/dev/explore-gen/download/", ExploreGenDownloadView.as_view()),
     path("ai/dev/explore-gen/publish/", ExploreGenPublishView.as_view()),
+    path("ai/dev/explore-gen/persona-label/", ExploreGenPersonaLabelView.as_view()),
     path("explore/personas/", ExplorePersonaListView.as_view()),
     path("hairstyles/", HairstyleListView.as_view()),
     path("hairstyles/<str:style_id>/", HairstyleDetailView.as_view()),

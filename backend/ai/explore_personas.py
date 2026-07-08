@@ -134,7 +134,8 @@ def static_persona_style_image_path(*, audience: str, persona_id: str, slug: str
 
 
 def list_explore_personas() -> list[dict]:
-    from ai.explore_published import explore_asset_available, resolve_explore_asset_url
+    from ai.explore_persona_labels import persona_display_label
+    from ai.explore_published import explore_asset_available
 
     order = ("britan", "irland", "slavyan", "evro")
     rows: list[dict] = []
@@ -145,28 +146,22 @@ def list_explore_personas() -> list[dict]:
         rows.append(
             {
                 **persona,
-                "reference_url": resolve_explore_asset_url(
-                    audience="men",
-                    persona_id=pid,
-                    slug="reference",
-                ),
+                "label": persona_display_label(pid),
+                "reference_url": static_persona_ref_image_path(audience="men", persona_id=pid),
             }
         )
     return rows
 
 
 def resolve_persona_style_image(*, audience: str, persona_id: str, slug: str) -> str:
-    from ai.explore_published import resolve_explore_asset_url, view_asset_file_exists
+    from ai.explore_published import resolve_explore_asset_url
 
-    pid = normalize_persona_id(persona_id) or persona_id
-    if view_asset_file_exists(persona_id=pid, slug=slug, view="front"):
-        return resolve_explore_asset_url(
-            audience=audience,
-            persona_id=persona_id,
-            slug=slug,
-            view="front",
-        )
-    return static_persona_style_image_path(audience=audience, persona_id=pid, slug=slug)
+    return resolve_explore_asset_url(
+        audience=audience,
+        persona_id=persona_id,
+        slug=slug,
+        view="front",
+    )
 
 
 def list_persona_style_gallery(*, audience: str, persona_id: str, slug: str) -> list[dict[str, str]]:
@@ -176,9 +171,7 @@ def list_persona_style_gallery(*, audience: str, persona_id: str, slug: str) -> 
 
 
 def resolve_persona_ref_image(*, audience: str, persona_id: str) -> str:
-    from ai.explore_published import resolve_explore_asset_url
-
-    return resolve_explore_asset_url(audience=audience, persona_id=persona_id, slug="reference")
+    return static_persona_ref_image_path(audience=audience, persona_id=persona_id)
 
 
 def has_persona_reference(persona_id: str | None) -> bool:
