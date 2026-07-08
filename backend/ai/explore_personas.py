@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-EXPLORE_PERSONA_IDS = frozenset({"britan", "irland", "slavyan", "evro"})
+EXPLORE_PERSONA_IDS = frozenset({"britan", "irland", "slavyan", "evro", "niki"})
 
 # Har bir personaj — bitta three-quarter reference (foydalanuvchi tasdiqlagan promptlar).
 PERSONA_REFERENCE_PROMPTS: dict[str, str] = {
@@ -46,6 +46,19 @@ solid flat background #E8E8E8, soft studio lighting,
 ultra sharp photorealistic, 85mm portrait, 8K detail,
 3:4 vertical, 768x1024
 """.strip(),
+    "niki": """
+Professional barber studio portrait, young European man age 25,
+fair skin with light freckles, green-hazel eyes, light sandy-brown wavy hair,
+neutral short textured cut, defined jawline, light stubble,
+
+three-quarter view, head turned slightly toward camera, subtle natural smile,
+relaxed candid barber moment, NOT front-facing passport pose,
+
+plain white crew-neck t-shirt,
+solid flat #E8E8E8 background, soft studio lighting,
+ultra sharp photorealistic, 85mm portrait, 8K detail,
+3:4 vertical, 768x1024
+""".strip(),
 }
 
 EXPLORE_PERSONAS: dict[str, dict] = {
@@ -85,6 +98,15 @@ EXPLORE_PERSONAS: dict[str, dict] = {
             "defined jawline with light stubble, thick dark brown wavy hair, neutral short length"
         ),
     },
+    "niki": {
+        "id": "niki",
+        "label": "Niki",
+        "code": "EU-9",
+        "description": (
+            "young European man age 25, fair skin with light freckles, green-hazel eyes, "
+            "light sandy-brown wavy hair, neutral short textured cut, defined jawline, light stubble"
+        ),
+    },
 }
 
 DEFAULT_MEN_PERSONA = "evro"
@@ -107,9 +129,14 @@ MEN_CATALOG_STYLE_SLUGS = frozenset(
 )
 
 # Generatsiya qilingan assetlar — persona papkasida bo'lmasa flat katalog fallback.
+# Niki uchun hozircha low-fade yo'q (front rasmlari keyin qo'shiladi).
+NIKI_READY_SLUGS = frozenset(MEN_CATALOG_STYLE_SLUGS - {"low-fade"})
 PERSONA_READY_ASSETS: dict[str, frozenset[str]] = {
-    pid: frozenset({"reference", *MEN_CATALOG_STYLE_SLUGS})
-    for pid in ("britan", "irland", "slavyan", "evro")
+    **{
+        pid: frozenset({"reference", *MEN_CATALOG_STYLE_SLUGS})
+        for pid in ("britan", "irland", "slavyan", "evro")
+    },
+    "niki": frozenset({"reference", *NIKI_READY_SLUGS}),
 }
 
 
@@ -137,7 +164,7 @@ def list_explore_personas() -> list[dict]:
     from ai.explore_persona_labels import persona_display_label
     from ai.explore_published import explore_asset_available
 
-    order = ("britan", "irland", "slavyan", "evro")
+    order = ("britan", "irland", "slavyan", "evro", "niki")
     rows: list[dict] = []
     for pid in order:
         if not explore_asset_available(pid, "reference"):

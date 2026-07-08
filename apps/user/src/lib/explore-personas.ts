@@ -1,4 +1,4 @@
-export type ExplorePersonaId = "britan" | "irland" | "slavyan" | "evro";
+export type ExplorePersonaId = "britan" | "irland" | "slavyan" | "evro" | "niki";
 
 export type ExplorePersona = {
   id: ExplorePersonaId;
@@ -13,6 +13,7 @@ export const EXPLORE_PERSONAS: ExplorePersona[] = [
   { id: "irland", label: "Irland", code: "EU-8" },
   { id: "slavyan", label: "Slavyan", code: "EU-6" },
   { id: "evro", label: "Evro", code: "EU-2" },
+  { id: "niki", label: "Niki", code: "EU-9" },
 ];
 
 export const DEFAULT_EXPLORE_PERSONA: ExplorePersonaId = "evro";
@@ -34,6 +35,11 @@ export const MEN_CATALOG_STYLE_SLUGS = [
 ] as const;
 
 /** Generatsiya qilingan persona assetlari */
+/** Niki uchun hozircha low-fade yo'q (front rasmlari keyin qo'shiladi). */
+export const NIKI_READY_SLUGS = MEN_CATALOG_STYLE_SLUGS.filter(
+  (slug) => slug !== "low-fade",
+);
+
 export const PERSONA_READY_ASSETS: Record<
   ExplorePersonaId,
   { reference: boolean; slugs: readonly string[] }
@@ -42,6 +48,7 @@ export const PERSONA_READY_ASSETS: Record<
   irland: { reference: true, slugs: MEN_CATALOG_STYLE_SLUGS },
   slavyan: { reference: true, slugs: MEN_CATALOG_STYLE_SLUGS },
   evro: { reference: true, slugs: MEN_CATALOG_STYLE_SLUGS },
+  niki: { reference: true, slugs: NIKI_READY_SLUGS },
 };
 
 export function hasPersonaReference(personaId: ExplorePersonaId): boolean {
