@@ -15,9 +15,13 @@ function ExploreStyleCard({
 }) {
   const { t } = useTranslation();
   const imageUrl = getHairstyleDisplayUrl(entry);
+  const frontItem = useMemo(
+    () => entry.gallery.find((item) => item.view === "front"),
+    [entry.gallery],
+  );
   const galleryItems = useMemo(
-    () => (entry.gallery.length > 0 ? entry.gallery : [{ view: "front", label: "Old", url: imageUrl }]),
-    [entry.gallery, imageUrl],
+    () => [frontItem ?? { view: "front", label: "Old", url: imageUrl }],
+    [frontItem, imageUrl],
   );
 
   return (
@@ -29,7 +33,7 @@ function ExploreStyleCard({
       <ExploreStyleGallery
         items={galleryItems}
         title={entry.titleUz}
-        autoPlay={galleryItems.length > 1}
+        autoPlay={false}
         showThumbs={false}
         badge={
           <span className="rounded-full bg-background/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide backdrop-blur-sm">
