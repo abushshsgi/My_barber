@@ -20,6 +20,7 @@ function MoreStyleCard({
   loading,
   busy,
   onGenerate,
+  onOpenPreview,
 }: {
   entry: HairstyleEntry;
   personaId: ExplorePersonaId;
@@ -27,6 +28,7 @@ function MoreStyleCard({
   loading: boolean;
   busy: boolean;
   onGenerate: (styleId: string) => void;
+  onOpenPreview?: (entry: HairstyleEntry) => void;
 }) {
   const { t } = useTranslation();
   const [fallbackSrc, setFallbackSrc] = useState(
@@ -37,14 +39,17 @@ function MoreStyleCard({
   return (
     <button
       type="button"
-      disabled={busy}
+      disabled={busy && !preview}
       onClick={() => {
-        if (!preview && !loading) onGenerate(entry.id);
+        if (preview) {
+          onOpenPreview?.(entry);
+          return;
+        }
+        if (!loading) onGenerate(entry.id);
       }}
       className={cn(
         "min-w-0 text-left transition-opacity active:opacity-90",
-        busy && !loading && "opacity-50",
-        preview && "cursor-default",
+        busy && !loading && !preview && "opacity-50",
       )}
     >
       <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-neutral-100">
@@ -85,12 +90,14 @@ export function AiStyleMoreStyles({
   tryOnByStyle = {},
   tryOnLoadingId,
   onGenerateTryOn,
+  onOpenPreview,
 }: {
   audience: Audience;
   excludeIds: string[];
   tryOnByStyle?: Record<string, string>;
   tryOnLoadingId?: string | null;
   onGenerateTryOn?: (styleId: string) => void;
+  onOpenPreview?: (entry: HairstyleEntry) => void;
 }) {
   const { t } = useTranslation();
   const { personaId } = useExplorePersona();
@@ -134,6 +141,7 @@ export function AiStyleMoreStyles({
               loading={tryOnLoadingId === entry.id}
               busy={Boolean(tryOnLoadingId)}
               onGenerate={onGenerateTryOn}
+              onOpenPreview={onOpenPreview}
             />
           ))}
         </div>

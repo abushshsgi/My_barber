@@ -3,14 +3,28 @@ import { motion } from "framer-motion";
 import { Bookmark, CalendarPlus, ExternalLink, Loader2, Sparkles } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
+import type { AiAnalysisResult, AiSuggestion } from "@/components/ai-style/ai-style-shared";
 import { AiStyleMoreStyles } from "@/components/ai-style/AiStyleMoreStyles";
 import { AiStylePreviewSheet } from "@/components/ai-style/AiStylePreviewSheet";
 import { isCatalogStyleId, styleCoverGradient } from "@/components/ai-style/ai-style-shared";
 import type { Audience } from "@/lib/mock-data";
+import type { HairstyleEntry } from "@/lib/hairstyles/catalog";
 import { cn } from "@/lib/utils";
 
 type Suggestion = AiAnalysisResult["suggestions"][number];
+
+function hairstyleEntryToSuggestion(entry: HairstyleEntry): AiSuggestion {
+  return {
+    id: entry.id,
+    title: entry.titleUz,
+    match: 0,
+    seed: entry.slug,
+    imageUrl: entry.imageUrl,
+    barberName: "—",
+    salonId: "",
+    salonName: "—",
+  };
+}
 
 export type AiStyleSaveHandler = (
   styleId: string,
@@ -642,8 +656,25 @@ export function AiStyleResultsBlock({
   const minimal = variant === "minimal";
   const suggestedIds = result.suggestions.map((s) => s.id);
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [previewExtraSuggestion, setPreviewExtraSuggestion] = useState<AiSuggestion | null>(null);
   const previewSuggestion =
-    result.suggestions.find((suggestion) => suggestion.id === previewId) ?? null;
+    result.suggestions.find((suggestion) => suggestion.id === previewId) ??
+    previewExtraSuggestion;
+
+  const handleOpenPreview = (styleId: string) => {
+    setPreviewExtraSuggestion(null);
+    setPreviewId(styleId);
+  };
+
+  const handleOpenMoreStylePreview = (entry: HairstyleEntry) => {
+    setPreviewExtraSuggestion(hairstyleEntryToSuggestion(entry));
+    setPreviewId(entry.id);
+  };
+
+  const handleClosePreview = () => {
+    setPreviewId(null);
+    setPreviewExtraSuggestion(null);
+  };
 
   const scrollToMoreStyles = () => {
     document.getElementById("ai-style-more-styles")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -675,7 +706,7 @@ export function AiStyleResultsBlock({
           onGenerateTryOn={onGenerateTryOn}
           focusStyleId={focusStyleId}
           minimal={minimal}
-          onOpenPreview={setPreviewId}
+          onOpenPreview={handleOpenPreview}
         />
       ) : (
         <AiStyleSuggestionsStack
@@ -694,13 +725,14 @@ export function AiStyleResultsBlock({
           tryOnByStyle={tryOnByStyle}
           tryOnLoadingId={tryOnLoadingId}
           onGenerateTryOn={onGenerateTryOn}
+          onOpenPreview={handleOpenMoreStylePreview}
         />
       ) : null}
 
       <AiStylePreviewSheet
         open={previewId !== null}
         onOpenChange={(open) => {
-          if (!open) setPreviewId(null);
+          if (!open) handleClosePreview();
         }}
         suggestion={previewSuggestion}
         previewImage={
