@@ -475,6 +475,27 @@ function ExploreGenDevPage() {
             />
             <ActionButton
               icon={RefreshCw}
+              label="O'ng + Orqa — barcha uslub"
+              disabled={running}
+              onClick={() => {
+                const items: QueueItem[] = [];
+                for (const slug of MEN_CATALOG_STYLE_SLUGS) {
+                  for (const view of ["right", "back"] as ExploreViewId[]) {
+                    const job = jobs.find(
+                      (entry) =>
+                        entry.persona_id === personaId &&
+                        entry.slug === slug &&
+                        entry.view === view,
+                    );
+                    if (!job) continue;
+                    items.push({ personaId, slug, view, force: true });
+                  }
+                }
+                void runQueue(items);
+              }}
+            />
+            <ActionButton
+              icon={RefreshCw}
               label="Personaj — hammasi (force)"
               disabled={running}
               onClick={() => enqueuePersona(true, false)}

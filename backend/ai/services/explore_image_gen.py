@@ -200,6 +200,9 @@ def build_explore_gen_prompt(*, persona_id: str, slug: str, view: str = "front")
     if slug == "reference":
         return _build_reference_generation_prompt(persona_id=pid, view=normalized_view)
 
+    if normalized_view != "front":
+        return _build_view_rotation_prompt(persona_id=pid, slug=slug, view=normalized_view)
+
     persona = EXPLORE_PERSONAS[pid]
     style_detail = style_detail_for("men", slug)
     return _build_style_text_prompt(
@@ -258,6 +261,47 @@ Scene:
 AVOID: {STYLE_NEGATIVE}
 
 Output a single portrait photo with only this hairstyle."""
+
+
+def _build_view_rotation_prompt(*, persona_id: str, slug: str, view: str) -> str:
+    """O'sha uslubning front rasmidan boshqa burchakni chizish — yuz + soch aynan saqlanadi."""
+    pid = normalize_persona_id(persona_id) or "evro"
+    persona = EXPLORE_PERSONAS[pid]
+    style_detail = style_detail_for("men", slug)
+    pose = view_pose_line(view)
+    return f"""You are a professional barber catalog AI for mysaloon.uz Explore.
+
+The provided photo shows the SAME person with their FINAL finished hairstyle ("{style_detail}").
+Re-render THIS EXACT person with THIS EXACT hairstyle, changing ONLY the camera/head angle to this view:
+
+Pose / camera angle (CRITICAL — must match exactly):
+{pose}
+
+KEEP 100% IDENTICAL — do NOT reinvent the person:
+- Same face and identity, same bone structure, same skin tone, same age: {persona['description']}
+- Same facial hair EXACTLY as in the photo — do NOT add or remove any beard, stubble, or mustache
+- Same haircut: identical length, shape, fade, parting, texture, and hair color
+- Same plain white crew-neck t-shirt, same solid flat #E8E8E8 background, same soft studio lighting
+- ONLY the head rotation / camera angle changes to the requested view
+- 3:4 vertical portrait, shoulders visible, sharp Explore catalog quality
+
+AVOID: {STYLE_NEGATIVE}
+
+Output a single photo of the SAME person and SAME hairstyle, from the new angle only."""
+
+
+def _persona_style_front_bytes(*, persona_id: str, slug: str) -> tuple[str, bytes] | None:
+    """Personajning o'sha uslub bilan tushgan FRONT rasmini topish (draft → live → public)."""
+    draft = asset_file_path(persona_id=persona_id, slug=slug, view="front")
+    if draft.is_file():
+        raw = draft.read_bytes()
+        return _detect_image_mime(raw, draft), raw
+    live = live_asset_path(persona_id=persona_id, slug=slug, view="front")
+    if live.is_file():
+        raw = live.read_bytes()
+        return _detect_image_mime(raw, live), raw
+    rel = _relative_asset_path(persona_id=persona_id, slug=slug, view="front")
+    return _load_public_image(rel)
 
 
 def _build_style_edit_prompt(
@@ -426,34 +470,53 @@ def generate_explore_asset(
         raw = _generate_image(prompt=prompt)
         method = _generation_method(edit=False)
     else:
-        ref_path = asset_file_path(persona_id=pid, slug="reference", view="front")
-        if not ref_path.is_file():
-            live_ref = live_asset_path(persona_id=pid, slug="reference", view="front")
-            if live_ref.is_file():
-                ref_path = live_ref
-            else:
-                raise AiStyleError(
-                    "Avval reference generatsiya qiling. Uslub faqat shu portretdan edit qilinadi.",
-                    400,
-                )
-        ref_bytes = ref_path.read_bytes()
-        ref_mime = _detect_image_mime(ref_bytes, ref_path)
-        catalog = _load_public_image(_catalog_style_image_path(slug))
-        catalog_bytes = catalog[1] if catalog else None
-        catalog_mime = catalog[0] if catalog else "image/webp"
-        raw = _generate_image(
-            prompt=_build_style_edit_prompt(
-                persona_id=pid,
-                slug=slug,
-                has_catalog_ref=catalog is not None,
-                view=normalized_view,
-            ),
-            persona_bytes=ref_bytes,
-            persona_mime=ref_mime,
-            catalog_bytes=catalog_bytes,
-            catalog_mime=catalog_mime,
+        # Chap/o'ng/orqa uchun: agar o'sha uslubning FRONT rasmi bo'lsa, undan
+        # faqat burchakni aylantirib chizamiz — yuz va soch turmagi aynan saqlanadi.
+        front_style = (
+            _persona_style_front_bytes(persona_id=pid, slug=slug)
+            if normalized_view != "front"
+            else None
         )
-        method = _generation_method(edit=True)
+        if front_style is not None:
+            raw = _generate_image(
+                prompt=_build_view_rotation_prompt(
+                    persona_id=pid,
+                    slug=slug,
+                    view=normalized_view,
+                ),
+                persona_bytes=front_style[1],
+                persona_mime=front_style[0],
+            )
+            method = _generation_method(edit=True)
+        else:
+            ref_path = asset_file_path(persona_id=pid, slug="reference", view="front")
+            if not ref_path.is_file():
+                live_ref = live_asset_path(persona_id=pid, slug="reference", view="front")
+                if live_ref.is_file():
+                    ref_path = live_ref
+                else:
+                    raise AiStyleError(
+                        "Avval reference generatsiya qiling. Uslub faqat shu portretdan edit qilinadi.",
+                        400,
+                    )
+            ref_bytes = ref_path.read_bytes()
+            ref_mime = _detect_image_mime(ref_bytes, ref_path)
+            catalog = _load_public_image(_catalog_style_image_path(slug))
+            catalog_bytes = catalog[1] if catalog else None
+            catalog_mime = catalog[0] if catalog else "image/webp"
+            raw = _generate_image(
+                prompt=_build_style_edit_prompt(
+                    persona_id=pid,
+                    slug=slug,
+                    has_catalog_ref=catalog is not None,
+                    view=normalized_view,
+                ),
+                persona_bytes=ref_bytes,
+                persona_mime=ref_mime,
+                catalog_bytes=catalog_bytes,
+                catalog_mime=catalog_mime,
+            )
+            method = _generation_method(edit=True)
 
     _resize_webp(raw, dest)
     elapsed_ms = int((time.monotonic() - started) * 1000)
