@@ -9,6 +9,7 @@ import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { getAiStyleHeroUrl } from "@/lib/cover-images";
 import { refreshAiStyleHistoryCache } from "@/lib/api";
 import { FACE_HISTORY_UPDATED_EVENT, getActiveUserId, type FaceProfileHistoryEntry } from "@/lib/face-profile";
+import type { ExplorePersonaId } from "@/lib/explore-personas";
 import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -47,7 +48,8 @@ export type AiStyleSplitLayoutProps = {
   onAnalyze: () => void;
   tryOnByStyle: Record<string, string>;
   tryOnLoadingId: string | null;
-  onGenerateTryOn: (styleId: string) => void;
+  onGenerateTryOn: (styleId: string, personaId?: ExplorePersonaId) => void;
+  menPersonaId?: ExplorePersonaId | null;
 };
 
 function StepRail({ step }: { step: 1 | 2 | 3 }) {
@@ -676,6 +678,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
               variant="minimal"
               audience={props.audience}
               focusStyleId={props.focusStyleId}
+              menPersonaId={props.menPersonaId}
               tryOnByStyle={props.tryOnByStyle}
               tryOnLoadingId={props.tryOnLoadingId}
               onGenerateTryOn={props.onGenerateTryOn}

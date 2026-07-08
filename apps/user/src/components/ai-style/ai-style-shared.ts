@@ -1,4 +1,7 @@
 import type { AiStyleAnalyzeResponse } from "@/lib/api/ai";
+import type { ExplorePersonaId } from "@/lib/explore-personas";
+import { scoreHairstyleForTrending } from "@/lib/hairstyles/trending";
+import type { HairstyleEntry } from "@/lib/hairstyles/catalog";
 import type { Audience } from "@/lib/mock-data";
 
 export type FaceShapeKey = "oval" | "round" | "square";
@@ -36,6 +39,30 @@ export const ANALYZE_MS = 1800;
 /** Backend katalog style_id: masalan men-mid-fade */
 export function isCatalogStyleId(id: string): boolean {
   return /^(men|women)-/.test(id);
+}
+
+/** Try-on cache: persona + style (masalan `evro:men-mid-fade`). */
+export function tryOnCacheKey(styleId: string, personaId?: ExplorePersonaId | null): string {
+  return personaId ? `${personaId}:${styleId}` : styleId;
+}
+
+export function resolveTryOnPreview(
+  tryOnByStyle: Record<string, string>,
+  styleId: string,
+  personaId?: ExplorePersonaId | null,
+): string | undefined {
+  const keyed = tryOnCacheKey(styleId, personaId);
+  return tryOnByStyle[keyed] ?? tryOnByStyle[styleId];
+}
+
+/** Yuz shakli va soch uzunligiga qarab moslik foizi (backend score_hairstyle bilan mos). */
+export function computeStyleMatchPercent(
+  entry: Pick<HairstyleEntry, "faceShapes" | "hairLength">,
+  faceShapeKey: FaceShapeKey,
+  hairTypeKey: HairTypeKey,
+): number {
+  const raw = scoreHairstyleForTrending(entry, { faceShape: faceShapeKey, hairType: hairTypeKey });
+  return Math.min(96, Math.max(74, 74 + Math.round((raw / 50) * 22)));
 }
 
 export function mapAiStyleResponse(data: AiStyleAnalyzeResponse): AiAnalysisResult {

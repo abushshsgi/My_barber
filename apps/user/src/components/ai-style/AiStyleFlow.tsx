@@ -156,9 +156,10 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
         openFile={openFile}
         openCamera={openCamera}
         onAnalyze={() => void analyze(audience)}
+        menPersonaId={personaId}
         tryOnByStyle={flow.tryOnByStyle}
         tryOnLoadingId={flow.tryOnLoadingId}
-        onGenerateTryOn={(styleId) => void generateTryOn(styleId)}
+        onGenerateTryOn={(styleId, personaId) => void generateTryOn(styleId, personaId)}
       />
 
       <AiStylePhotoInput fileRef={fileRef} onFile={onFile} />

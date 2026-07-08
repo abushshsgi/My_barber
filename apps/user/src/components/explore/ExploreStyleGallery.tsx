@@ -10,6 +10,8 @@ type Props = {
   className?: string;
   autoPlay?: boolean;
   showThumbs?: boolean;
+  /** Mobile explore detail — keng, chegarasiz rasm */
+  variant?: "default" | "mobileHero";
 };
 
 export function ExploreStyleGallery({
@@ -19,7 +21,9 @@ export function ExploreStyleGallery({
   className,
   autoPlay = true,
   showThumbs = true,
+  variant = "default",
 }: Props) {
+  const isMobileHero = variant === "mobileHero";
   const slides = useMemo(() => items.filter((item) => item.url), [items]);
   const { activeIndex, setActiveIndex } = useGalleryCarousel(autoPlay ? slides.length : 1);
   const active = slides[activeIndex] ?? slides[0];
@@ -34,20 +38,25 @@ export function ExploreStyleGallery({
   if (!slides.length) return null;
 
   return (
-    <div className={cn("space-y-3", className)}>
-      <div className="overflow-hidden rounded-3xl border border-border bg-[#E8E8E8]">
-        <div className="relative aspect-[3/4]">
+    <div className={cn(isMobileHero ? "space-y-0" : "space-y-3", className)}>
+      <div
+        className={cn(
+          "overflow-hidden bg-[#E8E8E8]",
+          isMobileHero ? "rounded-none" : "rounded-3xl border border-border",
+        )}
+      >
+        <div className={cn(isMobileHero ? "relative min-h-[min(62dvh,560px)]" : "relative aspect-[3/4]")}>
           <img
             key={active?.url}
             src={active?.url}
             alt={`${title} — ${active?.label ?? ""}`}
             className={cn(
-              "absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-500",
+              "absolute inset-0 h-full w-full object-cover object-top transition-opacity duration-500",
               fade ? "opacity-100" : "opacity-0",
             )}
           />
-          {badge ? <div className="absolute left-3 top-3">{badge}</div> : null}
-          {active?.label ? (
+          {!isMobileHero && badge ? <div className="absolute left-3 top-3">{badge}</div> : null}
+          {!isMobileHero && active?.label ? (
             <span className="absolute right-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
               {active.label}
             </span>

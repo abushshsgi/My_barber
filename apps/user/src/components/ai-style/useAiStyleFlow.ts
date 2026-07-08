@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { analyzeAiStyle, generateAiStyleTryOn, persistAiStyleHistory } from "@/lib/api";
 import type { CameraCapturePayload } from "@/components/ai-style/AiStyleCamera";
-import { mapAiStyleResponse, type AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
+import {
+  mapAiStyleResponse,
+  tryOnCacheKey,
+  type AiAnalysisResult,
+} from "@/components/ai-style/ai-style-shared";
 import {
   appendFaceProfileHistory,
   enrichLatestFaceProfileHistory,
@@ -189,17 +193,15 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
   );
 
   const generateTryOn = useCallback(
-    async (styleId: string) => {
-      if (!photo || tryOnByStyle[styleId]) return;
-      setTryOnLoadingId(styleId);
+    async (styleId: string, personaId?: ExplorePersonaId) => {
+      const effectivePersona = personaId ?? menPersonaId ?? undefined;
+      const cacheKey = tryOnCacheKey(styleId, effectivePersona);
+      if (!photo || tryOnByStyle[cacheKey]) return;
+      setTryOnLoadingId(cacheKey);
       setError(null);
       try {
-        const data = await generateAiStyleTryOn(
-          photo,
-          styleId,
-          menPersonaId ?? undefined,
-        );
-        setTryOnByStyle((prev) => ({ ...prev, [styleId]: data.preview_image }));
+        const data = await generateAiStyleTryOn(photo, styleId, effectivePersona);
+        setTryOnByStyle((prev) => ({ ...prev, [cacheKey]: data.preview_image }));
       } catch (e) {
         setError(e instanceof Error ? e.message : "Rasm yaratishda xatolik");
       } finally {
@@ -224,7 +226,8 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
   useEffect(() => {
     if (!done || !result?.suggestions.length) return;
     const primaryId = focusStyleId ?? result.suggestions[0]?.id;
-    if (!primaryId || tryOnByStyle[primaryId] || tryOnLoadingId === primaryId) return;
+    const primaryKey = tryOnCacheKey(primaryId, menPersonaId);
+    if (!primaryId || tryOnByStyle[primaryKey] || tryOnLoadingId === primaryKey) return;
     void generateTryOn(primaryId);
   }, [done, result, focusStyleId, tryOnByStyle, tryOnLoadingId, generateTryOn]);
 

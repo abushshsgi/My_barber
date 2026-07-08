@@ -4,20 +4,34 @@ import { Bookmark, CalendarPlus, ExternalLink, Loader2, Sparkles } from "lucide-
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AiAnalysisResult, AiSuggestion } from "@/components/ai-style/ai-style-shared";
-import { AiStyleMoreStyles } from "@/components/ai-style/AiStyleMoreStyles";
+import { AiStyleMoreStyles, type MoreStyleItem } from "@/components/ai-style/AiStyleMoreStyles";
 import { AiStylePreviewSheet } from "@/components/ai-style/AiStylePreviewSheet";
-import { isCatalogStyleId, styleCoverGradient } from "@/components/ai-style/ai-style-shared";
+import {
+  isCatalogStyleId,
+  resolveTryOnPreview,
+  styleCoverGradient,
+  tryOnCacheKey,
+} from "@/components/ai-style/ai-style-shared";
+import type { ExplorePersonaId } from "@/lib/explore-personas";
+import { EXPLORE_PERSONAS } from "@/lib/explore-personas";
 import type { Audience } from "@/lib/mock-data";
 import type { HairstyleEntry } from "@/lib/hairstyles/catalog";
 import { cn } from "@/lib/utils";
 
 type Suggestion = AiAnalysisResult["suggestions"][number];
 
-function hairstyleEntryToSuggestion(entry: HairstyleEntry): AiSuggestion {
+function hairstyleEntryToSuggestion(
+  entry: HairstyleEntry,
+  match: number,
+  personaId?: ExplorePersonaId,
+): AiSuggestion {
+  const personaLabel = personaId
+    ? EXPLORE_PERSONAS.find((persona) => persona.id === personaId)?.label
+    : undefined;
   return {
     id: entry.id,
-    title: entry.titleUz,
-    match: 0,
+    title: personaLabel ? `${entry.titleUz} · ${personaLabel}` : entry.titleUz,
+    match,
     seed: entry.slug,
     imageUrl: entry.imageUrl,
     barberName: "—",
@@ -178,7 +192,7 @@ function SpotlightCard({
   onToggleSave: AiStyleSaveHandler;
   tryOnPreview?: string;
   tryOnLoading?: boolean;
-  onGenerateTryOn?: (styleId: string) => void;
+  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId) => void;
   onOpenPreview: () => void;
 }) {
   const { t } = useTranslation();
@@ -298,15 +312,17 @@ function AiStyleSuggestionsSpotlight({
   onGenerateTryOn,
   focusStyleId,
   onOpenPreview,
+  menPersonaId,
 }: {
   suggestions: Suggestion[];
   saved: string[];
   onToggleSave: AiStyleSaveHandler;
   tryOnByStyle?: Record<string, string>;
   tryOnLoadingId?: string | null;
-  onGenerateTryOn?: (styleId: string) => void;
+  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId) => void;
   focusStyleId?: string;
   onOpenPreview: (styleId: string) => void;
+  menPersonaId?: ExplorePersonaId | null;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
@@ -358,8 +374,8 @@ function AiStyleSuggestionsSpotlight({
               index={index}
               saved={saved.includes(suggestion.id)}
               onToggleSave={onToggleSave}
-              tryOnPreview={tryOnByStyle?.[suggestion.id]}
-              tryOnLoading={tryOnLoadingId === suggestion.id}
+              tryOnPreview={resolveTryOnPreview(tryOnByStyle ?? {}, suggestion.id, menPersonaId)}
+              tryOnLoading={tryOnLoadingId === tryOnCacheKey(suggestion.id, menPersonaId)}
               onGenerateTryOn={onGenerateTryOn}
               onOpenPreview={() => onOpenPreview(suggestion.id)}
             />
@@ -473,16 +489,18 @@ export function AiStyleSuggestionsCarousel({
   focusStyleId,
   minimal = false,
   onOpenPreview,
+  menPersonaId,
 }: {
   suggestions: Suggestion[];
   saved: string[];
   onToggleSave: AiStyleSaveHandler;
   tryOnByStyle?: Record<string, string>;
   tryOnLoadingId?: string | null;
-  onGenerateTryOn?: (styleId: string) => void;
+  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId) => void;
   focusStyleId?: string;
   minimal?: boolean;
   onOpenPreview: (styleId: string) => void;
+  menPersonaId?: ExplorePersonaId | null;
 }) {
   const { t } = useTranslation();
 
@@ -503,6 +521,7 @@ export function AiStyleSuggestionsCarousel({
         onGenerateTryOn={onGenerateTryOn}
         focusStyleId={focusStyleId}
         onOpenPreview={onOpenPreview}
+        menPersonaId={menPersonaId}
       />
     );
   }
@@ -525,12 +544,12 @@ export function AiStyleSuggestionsCarousel({
             <div className="relative aspect-[3/4] overflow-hidden">
               <StylePreview
                 suggestion={suggestion}
-                tryOnPreview={tryOnByStyle?.[suggestion.id]}
+                tryOnPreview={resolveTryOnPreview(tryOnByStyle ?? {}, suggestion.id, menPersonaId)}
               />
               <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-1 text-[10px] font-bold backdrop-blur-sm">
-                {tryOnLoadingId === suggestion.id
+                {tryOnLoadingId === tryOnCacheKey(suggestion.id, menPersonaId)
                   ? t("aiStylePage.tryOnGenerating")
-                  : tryOnByStyle?.[suggestion.id]
+                  : resolveTryOnPreview(tryOnByStyle ?? {}, suggestion.id, menPersonaId)
                     ? t("aiStylePage.tryOnBadge")
                     : t("aiStylePage.matchPct", { value: suggestion.match })}
               </span>
@@ -547,8 +566,8 @@ export function AiStyleSuggestionsCarousel({
                 suggestion={suggestion}
                 saved={saved.includes(suggestion.id)}
                 onToggleSave={onToggleSave}
-                tryOnPreview={tryOnByStyle?.[suggestion.id]}
-                tryOnLoading={tryOnLoadingId === suggestion.id}
+                tryOnPreview={resolveTryOnPreview(tryOnByStyle ?? {}, suggestion.id, menPersonaId)}
+                tryOnLoading={tryOnLoadingId === tryOnCacheKey(suggestion.id, menPersonaId)}
                 onGenerateTryOn={onGenerateTryOn}
               />
             </div>
@@ -566,13 +585,15 @@ export function AiStyleSuggestionsStack({
   tryOnByStyle,
   tryOnLoadingId,
   onGenerateTryOn,
+  menPersonaId,
 }: {
   suggestions: Suggestion[];
   saved: string[];
   onToggleSave: (id: string) => void;
   tryOnByStyle?: Record<string, string>;
   tryOnLoadingId?: string | null;
-  onGenerateTryOn?: (styleId: string) => void;
+  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId) => void;
+  menPersonaId?: ExplorePersonaId | null;
 }) {
   const { t } = useTranslation();
 
@@ -589,7 +610,7 @@ export function AiStyleSuggestionsStack({
           <div className="relative h-32 overflow-hidden">
             <StylePreview
               suggestion={suggestion}
-              tryOnPreview={tryOnByStyle?.[suggestion.id]}
+              tryOnPreview={resolveTryOnPreview(tryOnByStyle ?? {}, suggestion.id, menPersonaId)}
             />
           </div>
           <div className="p-4">
@@ -614,8 +635,8 @@ export function AiStyleSuggestionsStack({
               suggestion={suggestion}
               saved={saved.includes(suggestion.id)}
               onToggleSave={onToggleSave}
-              tryOnPreview={tryOnByStyle?.[suggestion.id]}
-              tryOnLoading={tryOnLoadingId === suggestion.id}
+              tryOnPreview={resolveTryOnPreview(tryOnByStyle ?? {}, suggestion.id, menPersonaId)}
+              tryOnLoading={tryOnLoadingId === tryOnCacheKey(suggestion.id, menPersonaId)}
               onGenerateTryOn={onGenerateTryOn}
             />
           </div>
@@ -634,6 +655,7 @@ export function AiStyleResultsBlock({
   summaryTone = "light",
   variant = "default",
   audience,
+  menPersonaId,
   tryOnByStyle,
   tryOnLoadingId,
   onGenerateTryOn,
@@ -647,9 +669,10 @@ export function AiStyleResultsBlock({
   summaryTone?: "light" | "dark";
   variant?: "default" | "minimal";
   audience?: Audience;
+  menPersonaId?: ExplorePersonaId | null;
   tryOnByStyle?: Record<string, string>;
   tryOnLoadingId?: string | null;
-  onGenerateTryOn?: (styleId: string) => void;
+  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId) => void;
   focusStyleId?: string;
 }) {
   const { t } = useTranslation();
@@ -658,17 +681,20 @@ export function AiStyleResultsBlock({
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [previewExtraSuggestion, setPreviewExtraSuggestion] = useState<AiSuggestion | null>(null);
   const previewSuggestion =
+    result.suggestions.find(
+      (suggestion) => tryOnCacheKey(suggestion.id, menPersonaId) === previewId,
+    ) ??
     result.suggestions.find((suggestion) => suggestion.id === previewId) ??
     previewExtraSuggestion;
 
   const handleOpenPreview = (styleId: string) => {
     setPreviewExtraSuggestion(null);
-    setPreviewId(styleId);
+    setPreviewId(tryOnCacheKey(styleId, menPersonaId));
   };
 
-  const handleOpenMoreStylePreview = (entry: HairstyleEntry) => {
-    setPreviewExtraSuggestion(hairstyleEntryToSuggestion(entry));
-    setPreviewId(entry.id);
+  const handleOpenMoreStylePreview = (item: MoreStyleItem, match: number) => {
+    setPreviewExtraSuggestion(hairstyleEntryToSuggestion(item.entry, match, item.personaId));
+    setPreviewId(item.cacheKey);
   };
 
   const handleClosePreview = () => {
@@ -707,6 +733,7 @@ export function AiStyleResultsBlock({
           focusStyleId={focusStyleId}
           minimal={minimal}
           onOpenPreview={handleOpenPreview}
+          menPersonaId={menPersonaId}
         />
       ) : (
         <AiStyleSuggestionsStack
@@ -716,12 +743,14 @@ export function AiStyleResultsBlock({
           tryOnByStyle={tryOnByStyle}
           tryOnLoadingId={tryOnLoadingId}
           onGenerateTryOn={onGenerateTryOn}
+          menPersonaId={menPersonaId}
         />
       )}
       {minimal && audience ? (
         <AiStyleMoreStyles
           audience={audience}
           excludeIds={suggestedIds}
+          result={result}
           tryOnByStyle={tryOnByStyle}
           tryOnLoadingId={tryOnLoadingId}
           onGenerateTryOn={onGenerateTryOn}
@@ -738,7 +767,7 @@ export function AiStyleResultsBlock({
         previewImage={
           previewId ? tryOnByStyle?.[previewId] : undefined
         }
-        saved={previewId ? saved.includes(previewId) : false}
+        saved={previewSuggestion ? saved.includes(previewSuggestion.id) : false}
         tryOnLoading={previewId ? tryOnLoadingId === previewId : false}
         onToggleSave={onToggleSave}
         onGenerateTryOn={onGenerateTryOn}

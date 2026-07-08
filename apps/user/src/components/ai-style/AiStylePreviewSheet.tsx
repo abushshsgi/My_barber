@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { isCatalogStyleId } from "@/components/ai-style/ai-style-shared";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { downloadAiStyleImage, shareAiStyleImage } from "@/lib/ai-style-image";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +28,7 @@ type Props = {
   saved: boolean;
   tryOnLoading?: boolean;
   onToggleSave: (styleId: string, meta: { title: string; previewImage?: string }) => void;
-  onGenerateTryOn?: (styleId: string) => void;
+  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId) => void;
   onTryMoreStyles?: () => void;
 };
 

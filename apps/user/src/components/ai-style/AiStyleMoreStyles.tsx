@@ -1,38 +1,54 @@
 import { Loader2, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useExplorePersona } from "@/hooks/use-explore-persona";
+import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
+import {
+  computeStyleMatchPercent,
+  resolveTryOnPreview,
+  tryOnCacheKey,
+} from "@/components/ai-style/ai-style-shared";
 import { useHairstyles } from "@/hooks/use-hairstyles";
 import { getTrendCoverUrl } from "@/lib/cover-images";
 import {
-  getHairstyleDisplayUrl,
-  resolveCatalogImageUrl,
+  EXPLORE_PERSONAS,
+  getPersonaStyleImageUrl,
+  hasPersonaStyleAsset,
+  listReadyExplorePersonas,
+  type ExplorePersonaId,
+} from "@/lib/explore-personas";
+import {
   type HairstyleEntry,
 } from "@/lib/hairstyles/catalog";
-import type { ExplorePersonaId } from "@/lib/explore-personas";
 import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
+export type MoreStyleItem = {
+  entry: HairstyleEntry;
+  personaId: ExplorePersonaId;
+  cacheKey: string;
+};
+
 function MoreStyleCard({
-  entry,
-  personaId,
+  item,
   preview,
+  match,
   loading,
   busy,
   onGenerate,
   onOpenPreview,
 }: {
-  entry: HairstyleEntry;
-  personaId: ExplorePersonaId;
+  item: MoreStyleItem;
   preview?: string;
+  match?: number;
   loading: boolean;
   busy: boolean;
-  onGenerate: (styleId: string) => void;
-  onOpenPreview?: (entry: HairstyleEntry) => void;
+  onGenerate: (styleId: string, personaId: ExplorePersonaId) => void;
+  onOpenPreview?: (item: MoreStyleItem, match: number) => void;
 }) {
   const { t } = useTranslation();
-  const [fallbackSrc, setFallbackSrc] = useState(
-    () => resolveCatalogImageUrl(entry, personaId) ?? getHairstyleDisplayUrl(entry),
+  const personaLabel = EXPLORE_PERSONAS.find((persona) => persona.id === item.personaId)?.label ?? item.personaId;
+  const [fallbackSrc, setFallbackSrc] = useState(() =>
+    getPersonaStyleImageUrl(item.personaId, item.entry.slug),
   );
   const imageSrc = preview || fallbackSrc;
 
@@ -41,11 +57,11 @@ function MoreStyleCard({
       type="button"
       disabled={busy && !preview}
       onClick={() => {
-        if (preview) {
-          onOpenPreview?.(entry);
+        if (preview && match != null) {
+          onOpenPreview?.(item, match);
           return;
         }
-        if (!loading) onGenerate(entry.id);
+        if (!loading) onGenerate(item.entry.id, item.personaId);
       }}
       className={cn(
         "min-w-0 text-left transition-opacity active:opacity-90",
@@ -55,10 +71,10 @@ function MoreStyleCard({
       <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-neutral-100">
         <img
           src={imageSrc}
-          alt={entry.titleUz}
+          alt={item.entry.titleUz}
           loading="lazy"
           className="h-full w-full object-cover object-top"
-          onError={() => setFallbackSrc(getTrendCoverUrl(entry.slug))}
+          onError={() => setFallbackSrc(getTrendCoverUrl(item.entry.slug))}
         />
 
         {loading ? (
@@ -69,9 +85,16 @@ function MoreStyleCard({
             </span>
           </div>
         ) : preview ? (
-          <span className="absolute left-2 top-2 rounded-full bg-white px-2 py-0.5 text-[9px] font-bold text-black">
-            {t("aiStylePage.tryOnBadge")}
-          </span>
+          <>
+            <span className="absolute left-2 top-2 rounded-full bg-white px-2 py-0.5 text-[9px] font-bold text-black">
+              {t("aiStylePage.tryOnBadge")}
+            </span>
+            {match != null ? (
+              <span className="absolute right-2 top-2 rounded-full bg-black px-2 py-0.5 text-[9px] font-bold text-white">
+                {t("aiStylePage.matchPct", { value: match })}
+              </span>
+            ) : null}
+          </>
         ) : (
           <span className="absolute inset-x-2 bottom-2 flex items-center justify-center gap-1 rounded-xl bg-black py-2 text-[10px] font-bold text-white">
             <Sparkles className="h-3 w-3" />
@@ -79,7 +102,8 @@ function MoreStyleCard({
           </span>
         )}
       </div>
-      <p className="mt-2 truncate text-xs font-bold text-black">{entry.titleUz}</p>
+      <p className="mt-2 truncate text-xs font-bold text-black">{item.entry.titleUz}</p>
+      <p className="truncate text-[10px] font-semibold text-neutral-500">{personaLabel}</p>
     </button>
   );
 }
@@ -87,6 +111,7 @@ function MoreStyleCard({
 export function AiStyleMoreStyles({
   audience,
   excludeIds,
+  result,
   tryOnByStyle = {},
   tryOnLoadingId,
   onGenerateTryOn,
@@ -94,20 +119,53 @@ export function AiStyleMoreStyles({
 }: {
   audience: Audience;
   excludeIds: string[];
+  result: AiAnalysisResult;
   tryOnByStyle?: Record<string, string>;
   tryOnLoadingId?: string | null;
-  onGenerateTryOn?: (styleId: string) => void;
-  onOpenPreview?: (entry: HairstyleEntry) => void;
+  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId) => void;
+  onOpenPreview?: (item: MoreStyleItem, match: number) => void;
 }) {
   const { t } = useTranslation();
-  const { personaId } = useExplorePersona();
-  const { data: list = [], isLoading } = useHairstyles(audience, personaId, {
+  const { data: list = [], isLoading } = useHairstyles(audience, null, {
     ignoreAgeGroup: true,
   });
 
+  const suggestionMatchById = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const suggestion of result.suggestions) {
+      map.set(suggestion.id, suggestion.match);
+    }
+    return map;
+  }, [result.suggestions]);
+
+  const resolveMatch = (entry: HairstyleEntry): number =>
+    suggestionMatchById.get(entry.id) ??
+    computeStyleMatchPercent(entry, result.faceShapeKey, result.hairTypeKey);
+
   const items = useMemo(() => {
     const exclude = new Set(excludeIds);
-    return list.filter((entry) => !exclude.has(entry.id));
+    const personas = listReadyExplorePersonas();
+    const out: MoreStyleItem[] = [];
+
+    for (const persona of personas) {
+      for (const entry of list) {
+        if (exclude.has(entry.id)) continue;
+        if (!hasPersonaStyleAsset(persona.id, entry.slug)) continue;
+        out.push({
+          entry,
+          personaId: persona.id,
+          cacheKey: tryOnCacheKey(entry.id, persona.id),
+        });
+      }
+    }
+
+    return out.sort((a, b) => {
+      const personaOrder =
+        personas.findIndex((persona) => persona.id === a.personaId) -
+        personas.findIndex((persona) => persona.id === b.personaId);
+      if (personaOrder !== 0) return personaOrder;
+      return a.entry.titleUz.localeCompare(b.entry.titleUz, "uz");
+    });
   }, [list, excludeIds]);
 
   if (!onGenerateTryOn) return null;
@@ -132,18 +190,22 @@ export function AiStyleMoreStyles({
         <p className="text-xs text-neutral-500">{t("aiStylePage.moreStylesEmpty")}</p>
       ) : (
         <div className="grid grid-cols-2 gap-3">
-          {items.map((entry) => (
-            <MoreStyleCard
-              key={entry.id}
-              entry={entry}
-              personaId={personaId}
-              preview={tryOnByStyle[entry.id]}
-              loading={tryOnLoadingId === entry.id}
-              busy={Boolean(tryOnLoadingId)}
-              onGenerate={onGenerateTryOn}
-              onOpenPreview={onOpenPreview}
-            />
-          ))}
+          {items.map((item) => {
+            const preview = resolveTryOnPreview(tryOnByStyle, item.entry.id, item.personaId);
+            const match = preview ? resolveMatch(item.entry) : undefined;
+            return (
+              <MoreStyleCard
+                key={item.cacheKey}
+                item={item}
+                preview={preview}
+                match={match}
+                loading={tryOnLoadingId === item.cacheKey}
+                busy={Boolean(tryOnLoadingId)}
+                onGenerate={onGenerateTryOn}
+                onOpenPreview={onOpenPreview}
+              />
+            );
+          })}
         </div>
       )}
     </div>
