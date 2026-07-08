@@ -139,6 +139,21 @@ PERSONA_READY_ASSETS: dict[str, frozenset[str]] = {
     "niki": frozenset({"reference", *NIKI_READY_SLUGS}),
 }
 
+# Git (public) ga qo'yilgan qo'shimcha ko'rinishlar. Front doim ready deb hisoblanadi;
+# bu yerda faqat chap/o'ng/orqa kabi qo'shimcha ko'rinishlar e'lon qilinadi. Production
+# backend (Railway) da public papka bo'lmagani uchun fayl tizimiga tayanmaymiz.
+PERSONA_READY_VIEWS: dict[str, dict[str, tuple[str, ...]]] = {
+    "niki": {slug: ("left",) for slug in NIKI_READY_SLUGS},
+}
+
+
+def persona_static_extra_views(persona_id: str | None, slug: str) -> tuple[str, ...]:
+    """Personaj uchun git'ga qo'yilgan qo'shimcha (non-front) ko'rinishlar."""
+    pid = normalize_persona_id(persona_id)
+    if not pid:
+        return ()
+    return PERSONA_READY_VIEWS.get(pid, {}).get(slug, ())
+
 
 def normalize_persona_id(raw: str | None) -> str | None:
     value = (raw or "").strip().lower()

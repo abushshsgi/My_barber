@@ -15,6 +15,7 @@ from ai.explore_personas import (
     MEN_CATALOG_STYLE_SLUGS,
     PERSONA_READY_ASSETS,
     normalize_persona_id,
+    persona_static_extra_views,
     static_persona_ref_image_path,
     static_persona_style_image_path,
 )
@@ -145,6 +146,8 @@ def view_asset_file_exists(*, persona_id: str, slug: str, view: str = "front") -
         return True
     ready = PERSONA_READY_ASSETS.get(pid, frozenset())
     if normalized_view == "front" and slug in ready:
+        return True
+    if normalized_view != "front" and normalized_view in persona_static_extra_views(pid, slug):
         return True
     return False
 
