@@ -11,6 +11,12 @@ import type { Audience, Category } from "@/lib/mock-data";
 import type { AudienceFilter } from "@/hooks/use-audience";
 import { matchAudience } from "@/hooks/use-audience";
 
+export type HairstyleGalleryItem = {
+  view: string;
+  label: string;
+  url: string;
+};
+
 export type HairstyleEntry = {
   id: string;
   slug: string;
@@ -21,6 +27,7 @@ export type HairstyleEntry = {
   faceShapes: FaceShapeKey[];
   hairLength: HairTypeKey;
   imageUrl: string;
+  gallery: HairstyleGalleryItem[];
   descriptionUz: string;
   tags: string[];
 };
@@ -36,6 +43,7 @@ export function mapApiHairstyle(api: ApiHairstyle): HairstyleEntry {
     faceShapes: api.face_shapes,
     hairLength: api.hair_length,
     imageUrl: api.image_url,
+    gallery: api.gallery ?? [],
     descriptionUz: api.description_uz,
     tags: api.tags,
   };

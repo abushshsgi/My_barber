@@ -45,3 +45,16 @@ class ExplorePublishedTests(TestCase):
             "https://api.test.local/media/hairstyles/men/personas/britan/buzz-cut.webp",
         )
         self.assertTrue(explore_asset_available("britan", "buzz-cut"))
+
+    def test_gallery_includes_multiple_published_views(self):
+        for view, name in [("front", "buzz-cut.webp"), ("right", "buzz-cut__right.webp")]:
+            draft = self.media_root / "explore_gen" / "britan" / name
+            draft.parent.mkdir(parents=True, exist_ok=True)
+            draft.write_bytes(b"fake-webp")
+            publish_explore_asset(persona_id="britan", slug="buzz-cut", view=view)
+
+        from ai.explore_personas import list_persona_style_gallery
+
+        gallery = list_persona_style_gallery(audience="men", persona_id="britan", slug="buzz-cut")
+        views = [item["view"] for item in gallery]
+        self.assertEqual(views, ["front", "right"])

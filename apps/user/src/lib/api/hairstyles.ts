@@ -3,6 +3,12 @@ import type { AgeGroup } from "@/lib/age-groups";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { apiJson } from "./client";
 
+export type ApiHairstyleGalleryItem = {
+  view: string;
+  label: string;
+  url: string;
+};
+
 export type ApiHairstyle = {
   id: string;
   slug: string;
@@ -13,6 +19,7 @@ export type ApiHairstyle = {
   face_shapes: FaceShapeKey[];
   hair_length: HairTypeKey;
   image_url: string;
+  gallery?: ApiHairstyleGalleryItem[];
   description_uz: string;
   tags: string[];
   age_groups: AgeGroup[];

@@ -3,8 +3,8 @@ import { CalendarPlus, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   HairstylePreviewFrame,
-  HairstylePreviewImage,
 } from "@/components/hairstyles/HairstylePreviewImage";
+import { ExploreStyleGallery } from "@/components/explore/ExploreStyleGallery";
 import { PageHeader } from "@/components/PageHeader";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
@@ -41,6 +41,7 @@ function ExploreStyleDetailPage() {
   }
 
   const imageUrl = getHairstyleDisplayUrl(entry);
+  const galleryItems = entry.gallery.length > 0 ? entry.gallery : [{ view: "front", label: "Old", url: imageUrl }];
 
   return (
     <div
@@ -55,17 +56,16 @@ function ExploreStyleDetailPage() {
         <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{t("explorePage.tryOnDesc")}</p>
 
         <HairstylePreviewFrame className="mt-4">
-          <div className="overflow-hidden rounded-3xl border border-border bg-surface shadow-sm">
-            <HairstylePreviewImage
-              src={imageUrl}
-              alt={entry.titleUz}
-              variant="card"
-              badge={
-                <span className="rounded-full bg-background/90 px-2.5 py-1 text-[10px] font-bold backdrop-blur-sm">
-                  {t("explorePage.sampleBadge")}
-                </span>
-              }
-            />
+          <ExploreStyleGallery
+            items={galleryItems}
+            title={entry.titleUz}
+            badge={
+              <span className="rounded-full bg-background/90 px-2.5 py-1 text-[10px] font-bold backdrop-blur-sm">
+                {t("explorePage.sampleBadge")}
+              </span>
+            }
+          />
+          <div className="mt-3 overflow-hidden rounded-3xl border border-border bg-surface shadow-sm">
             <div className="border-t border-border/70 bg-surface px-4 py-3">
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
                 {t("styleTryOnPage.selectedStyle")}

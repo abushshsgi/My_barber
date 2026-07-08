@@ -156,9 +156,23 @@ def list_explore_personas() -> list[dict]:
 
 
 def resolve_persona_style_image(*, audience: str, persona_id: str, slug: str) -> str:
-    from ai.explore_published import resolve_explore_asset_url
+    from ai.explore_published import resolve_explore_asset_url, view_asset_file_exists
 
-    return resolve_explore_asset_url(audience=audience, persona_id=persona_id, slug=slug)
+    pid = normalize_persona_id(persona_id) or persona_id
+    if view_asset_file_exists(persona_id=pid, slug=slug, view="front"):
+        return resolve_explore_asset_url(
+            audience=audience,
+            persona_id=persona_id,
+            slug=slug,
+            view="front",
+        )
+    return static_persona_style_image_path(audience=audience, persona_id=pid, slug=slug)
+
+
+def list_persona_style_gallery(*, audience: str, persona_id: str, slug: str) -> list[dict[str, str]]:
+    from ai.explore_published import list_persona_style_gallery as _gallery
+
+    return _gallery(audience=audience, persona_id=persona_id, slug=slug)
 
 
 def resolve_persona_ref_image(*, audience: str, persona_id: str) -> str:

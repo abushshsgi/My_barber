@@ -9,6 +9,7 @@ from .models import AiStyleHistoryEntry, Hairstyle
 class HairstyleSerializer(serializers.ModelSerializer):
     id = serializers.CharField(source="style_id", read_only=True)
     image_url = serializers.SerializerMethodField()
+    gallery = serializers.SerializerMethodField()
 
     class Meta:
         model = Hairstyle
@@ -22,6 +23,7 @@ class HairstyleSerializer(serializers.ModelSerializer):
             "face_shapes",
             "hair_length",
             "image_url",
+            "gallery",
             "description_uz",
             "tags",
             "age_groups",
@@ -38,6 +40,18 @@ class HairstyleSerializer(serializers.ModelSerializer):
             audience=obj.audience,
             age_group=age_group,
             persona_id=persona_id,
+        )
+
+    def get_gallery(self, obj: Hairstyle) -> list[dict[str, str]]:
+        persona_id = self.context.get("persona_id")
+        if obj.audience != "men" or not persona_id:
+            return []
+        from ai.explore_personas import list_persona_style_gallery
+
+        return list_persona_style_gallery(
+            audience=obj.audience,
+            persona_id=persona_id,
+            slug=obj.slug,
         )
 
 
