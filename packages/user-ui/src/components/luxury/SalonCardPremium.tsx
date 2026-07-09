@@ -46,7 +46,7 @@ export function SalonCardPremium({ salon, layout = "vertical" }: { salon: Salon;
       to="/salon/$id"
       params={{ id: salon.id }}
       preload="intent"
-      className="group block w-[260px] shrink-0 overflow-hidden rounded-3xl border border-border/70 bg-surface shadow-card transition active:scale-[0.98] hover:shadow-luxury"
+      className="group block w-full shrink-0 overflow-hidden rounded-3xl border border-border/70 bg-surface shadow-card transition active:scale-[0.98] hover:shadow-luxury"
     >
       <div className="relative aspect-[5/4] overflow-hidden">
         <img src={salon.coverImage} alt={salon.name} loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />

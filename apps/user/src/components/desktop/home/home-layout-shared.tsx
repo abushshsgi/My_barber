@@ -10,13 +10,14 @@ import {
 } from "@/lib/home-sections";
 
 export function useHomeLayoutSlice(data: HomeData) {
-  const { filtered, mapSalons, loading, exploreRow } = data;
+  const { filtered, mapSalons, loading, exploreLoading, exploreRow } = data;
   const salonSections = useMemo(() => buildHomeSalonSections(filtered), [filtered]);
 
   return {
     filtered,
     mapSalons,
     loading,
+    exploreLoading,
     exploreRow,
     salonSections,
   };
@@ -31,7 +32,7 @@ export function HomeSalonSectionsBlock({
   rowClass?: string;
   showCategoryStrip?: boolean;
 }) {
-  const { loading, exploreRow, salonSections } = useHomeLayoutSlice(data);
+  const { loading, exploreLoading, exploreRow, salonSections } = useHomeLayoutSlice(data);
 
   return (
     <>
@@ -40,7 +41,15 @@ export function HomeSalonSectionsBlock({
           <div className={rowClass}>
             {loading ? (
               section.variant === "explore" ? (
-                <BazaarExploreRowSectionSkeleton />
+                exploreLoading ? (
+                  <BazaarExploreRowSectionSkeleton />
+                ) : (
+                  <BazaarExploreRowSection
+                    titleKey={section.titleKey}
+                    styles={exploreRow}
+                    viewAllTo={section.viewAllTo}
+                  />
+                )
               ) : (
                 <BazaarSalonRowSectionSkeleton />
               )

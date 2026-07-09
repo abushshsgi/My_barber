@@ -171,7 +171,7 @@ export function HomeMobileFeatured({ salons }: { salons: Salon[] }) {
       </div>
       <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-1">
         {preview.map((salon) => (
-          <div key={salon.id} className="w-[168px] shrink-0">
+          <div key={salon.id} className="w-[168px] shrink-0 sm:w-[200px]">
             <MobileSalonCard salon={salon} layout="vertical" />
           </div>
         ))}
@@ -189,7 +189,7 @@ function HomeMixedBarberCard({ item }: { item: Extract<HomeDiscoveryItem, { type
       : `/booking/barber/${barber.barberId}`;
 
   return (
-    <div className="flex w-[168px] shrink-0 flex-col rounded-2xl bg-surface p-3">
+    <div className="flex w-[168px] shrink-0 flex-col rounded-2xl bg-surface p-3 sm:w-[200px] lg:w-[220px]">
       <Link to="/barber/$barberId" params={{ barberId: barber.barberId }} preload="intent" className="min-w-0">
         <div className="relative mb-2 aspect-[4/3] overflow-hidden rounded-xl bg-muted">
           {barber.avatar ? (
@@ -234,8 +234,8 @@ export function HomeMobileMixedDiscovery({ items }: { items: HomeDiscoveryItem[]
   if (items.length === 0) return null;
 
   return (
-    <section>
-      <div className="mb-3 flex items-center justify-between gap-3 px-4">
+    <section className="min-w-0">
+      <div className="mb-3 flex items-center justify-between gap-3 px-4 lg:px-0">
         <h2 className="text-base font-bold">
           {t("home.mixedDiscovery.title", { defaultValue: "Salonlar va ustalar" })}
         </h2>
@@ -244,10 +244,10 @@ export function HomeMobileMixedDiscovery({ items }: { items: HomeDiscoveryItem[]
           <ChevronRight className="size-4" />
         </Link>
       </div>
-      <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-1">
+      <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 lg:mx-0 lg:px-0">
         {items.map((item) =>
           item.type === "salon" ? (
-            <div key={`s-${item.salon.id}`} className="w-[168px] shrink-0">
+            <div key={`s-${item.salon.id}`} className="w-[168px] shrink-0 sm:w-[200px] lg:w-[220px]">
               <MobileSalonCard salon={item.salon} layout="vertical" />
             </div>
           ) : (

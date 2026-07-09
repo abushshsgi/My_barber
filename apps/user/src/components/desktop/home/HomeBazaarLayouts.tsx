@@ -56,7 +56,11 @@ export function HomeBazaarClassic({ data }: Props) {
           )}
         </div>
       </div>
-      {!data.searchActive ? <HomeMobileMixedDiscovery items={data.mixedDiscovery} /> : null}
+      {!data.searchActive ? (
+        <div className="min-w-0 overflow-hidden">
+          <HomeMobileMixedDiscovery items={data.mixedDiscovery} />
+        </div>
+      ) : null}
       <HomeSalonSectionsBlock data={data} rowClass={ROW} showCategoryStrip={!data.searchActive} />
       <div className="hidden h-6 lg:block" aria-hidden />
     </div>

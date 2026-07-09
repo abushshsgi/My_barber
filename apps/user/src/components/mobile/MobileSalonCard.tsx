@@ -11,7 +11,7 @@ type Props = {
 export function MobileSalonCard({ salon, layout = "horizontal" }: Props) {
   return (
     <div
-      className="contents"
+      className="block w-full min-w-0"
       onPointerEnter={() => prefetchSalonDetail(salon.id)}
       onTouchStart={() => prefetchSalonDetail(salon.id)}
     >

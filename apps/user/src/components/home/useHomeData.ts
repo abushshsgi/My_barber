@@ -168,13 +168,12 @@ export function useHomeData() {
     topOffer,
     featuredSalons,
     personalized,
+    exploreLoading: menExploreLoading || womenExploreLoading,
     loading:
       nearbyLoading ||
       listLoading ||
       nearbyBarbersLoading ||
       listBarbersLoading ||
-      menExploreLoading ||
-      womenExploreLoading ||
       (searchActive && (searchSalonsLoading || searchBarbersLoading)),
     error,
   };
