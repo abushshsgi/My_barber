@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { useRouter } from "@tanstack/react-router";
 import { AnimatePresence, animate, motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
 import { Check, ChevronLeft, ChevronsUp, Loader2, ScanFace, X } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
@@ -11,6 +11,7 @@ import { refreshAiStyleHistoryCache } from "@/lib/api";
 import { FACE_HISTORY_UPDATED_EVENT, getActiveUserId, type FaceProfileHistoryEntry } from "@/lib/face-profile";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import type { Audience } from "@/lib/mock-data";
+import { navigateBack } from "@/lib/mobile-back";
 import { cn } from "@/lib/utils";
 
 const HERO_SLIDES: Record<"men" | "women", readonly string[]> = {
@@ -24,6 +25,23 @@ const HISTORY_HINT_MS = 6000;
 const HISTORY_HINT_NUDGE_MS = 1500;
 const HISTORY_HINT_NUDGE_OFFSET = -14;
 const HERO_TEXT_ABOVE_PANEL = 22;
+
+function AiStyleBackButton({ className }: { className?: string }) {
+  const router = useRouter();
+  return (
+    <button
+      type="button"
+      onClick={() => navigateBack(router, "/")}
+      className={cn(
+        "absolute left-5 top-[calc(env(safe-area-inset-top)+12px)] z-10 grid size-10 place-items-center rounded-full bg-black/35 text-white backdrop-blur-md active:opacity-80",
+        className,
+      )}
+      aria-label="Orqaga"
+    >
+      <ChevronLeft className="size-5" strokeWidth={2.25} />
+    </button>
+  );
+}
 
 function getHistoryRevealHeight() {
   if (typeof window === "undefined") return 400;
@@ -507,12 +525,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 h-[38%] bg-gradient-to-t from-black/75 via-black/35 to-transparent"
         />
-        <Link
-          to="/profile"
-          className="absolute left-5 top-[calc(env(safe-area-inset-top)+12px)] z-10 grid h-10 w-10 place-items-center rounded-full bg-black/35 text-white backdrop-blur-md"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Link>
+        <AiStyleBackButton />
         <div
           className="absolute inset-x-0 bottom-0 z-10 space-y-3 px-5"
           style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
@@ -563,12 +576,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
         ) : (
           <HeroCarousel audience={props.audience} hintActive={showHistoryHint} />
         )}
-        <Link
-          to="/profile"
-          className="absolute left-5 top-[calc(env(safe-area-inset-top)+12px)] z-10 grid h-10 w-10 place-items-center rounded-full bg-black/35 text-white backdrop-blur-md"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Link>
+        <AiStyleBackButton />
       </div>
 
       {isUploadStep ? (

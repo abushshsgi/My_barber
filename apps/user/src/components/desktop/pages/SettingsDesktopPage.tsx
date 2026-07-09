@@ -55,7 +55,6 @@ export function SettingsDesktopPage({
               addressAdd={addressAdd}
               manage={manage}
               onAddressEditorClose={onAddressEditorClose}
-              showBack
             />
           </main>
         </div>

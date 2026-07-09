@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { ClientOnly } from "@/components/ClientOnly";
+import { mobileBackButtonClass } from "@/components/mobile/MobileBackButton";
 import { PlasticCard } from "@/components/wallet/PlasticCard";
 import { WalletEmptyTransactions } from "@/components/wallet/WalletEmptyTransactions";
 import { WalletHubLinks } from "@/components/wallet/WalletHubLinks";
@@ -52,10 +53,10 @@ export function WalletMobileOverview() {
         <header className="flex items-center gap-3 px-5 pt-[calc(env(safe-area-inset-top)+12px)]">
           <Link
             to="/profile"
-            className="neo-pill grid h-11 w-11 shrink-0 place-items-center"
+            className={mobileBackButtonClass}
             aria-label={t("common.back")}
           >
-            <ChevronLeft className="h-5 w-5" strokeWidth={2.4} />
+            <ChevronLeft className="size-5" strokeWidth={2.25} />
           </Link>
           <div className="min-w-0 flex-1">
             <h1 className="text-lg font-bold">{t("walletPage.title")}</h1>

@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Send } from "lucide-react";
+import { ChevronLeft, Send } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import { mobileBackButtonClass } from "@/components/mobile/MobileBackButton";
 import {
   useChatMessages,
   useConversations,
@@ -85,9 +86,10 @@ export function ChatThreadView({ threadId, embedded }: Props) {
       >
         <Link
           to="/chat"
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface active:scale-95 lg:hidden"
+          className={cn(mobileBackButtonClass, "lg:hidden")}
+          aria-label={t("common.back")}
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ChevronLeft className="size-5" strokeWidth={2.25} />
         </Link>
         <div className="relative shrink-0">
           {thread.avatarUrl ? (

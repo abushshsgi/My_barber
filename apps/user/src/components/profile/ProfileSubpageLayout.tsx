@@ -9,6 +9,7 @@ type Props = {
   children: React.ReactNode;
   className?: string;
   right?: React.ReactNode;
+  headerExtra?: React.ReactNode;
   backTo?: string;
   strictBack?: boolean;
   flush?: boolean;
@@ -20,6 +21,7 @@ function ProfileSubpageMobile({
   children,
   className,
   right,
+  headerExtra,
   backTo = "/",
   strictBack,
   flush,
@@ -30,6 +32,7 @@ function ProfileSubpageMobile({
       subtitle={subtitle}
       className={className}
       right={right}
+      headerExtra={headerExtra}
       backTo={backTo}
       strictBack={strictBack}
       flush={flush}
@@ -46,6 +49,7 @@ export function ProfileSubpageLayout({
   children,
   className,
   right,
+  headerExtra,
   backTo = "/",
   strictBack,
   flush,
@@ -58,6 +62,7 @@ export function ProfileSubpageLayout({
           subtitle={subtitle}
           className={className}
           right={right}
+          headerExtra={headerExtra}
           backTo={backTo}
           strictBack={strictBack}
           flush={flush}

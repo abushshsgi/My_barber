@@ -119,6 +119,9 @@ type Props = {
   addressAdd?: boolean;
   manage?: boolean;
   onAddressEditorClose: () => void;
+  /** Mobil shell sarlavhasi bo'lsa panel sarlavhasini yashirish. */
+  hideTitle?: boolean;
+  /** @deprecated Mobil header orqaga tugmasi ishlatiladi */
   showBack?: boolean;
 };
 
@@ -130,7 +133,7 @@ export function SettingsPanelContent({
   addressAdd,
   manage,
   onAddressEditorClose,
-  showBack,
+  hideTitle,
 }: Props) {
   const {
     t,
@@ -302,19 +305,11 @@ export function SettingsPanelContent({
 
   return (
     <div>
-      {showBack ? (
-        <Link
-          to="/profile"
-          className="mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-foreground transition-opacity hover:opacity-80 lg:hidden"
-        >
-          <ChevronLeft className="h-4 w-4" strokeWidth={2.2} />
-          {t("common.back", { defaultValue: "Orqaga" })}
-        </Link>
+      {!hideTitle ? (
+        <h2 className="text-[22px] font-semibold tracking-tight text-foreground">
+          {t(titleMeta.titleKey, { defaultValue: titleMeta.defaultTitle })}
+        </h2>
       ) : null}
-
-      <h2 className="text-[22px] font-semibold tracking-tight text-foreground">
-        {t(titleMeta.titleKey, { defaultValue: titleMeta.defaultTitle })}
-      </h2>
 
       <div className="mt-2">
         {section === "personal" && (

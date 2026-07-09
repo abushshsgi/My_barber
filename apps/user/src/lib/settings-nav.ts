@@ -30,11 +30,16 @@ export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 export const SETTINGS_EDIT_FIELDS = ["name", "email", "password", "language", "audience"] as const;
 export type SettingsEditField = (typeof SETTINGS_EDIT_FIELDS)[number];
 
-export function parseSettingsSection(value: unknown): SettingsSection {
+export function parseSettingsSectionOptional(value: unknown): SettingsSection | null {
   if (typeof value === "string" && SETTINGS_SECTIONS.includes(value as SettingsSection)) {
     return value as SettingsSection;
   }
-  return "personal";
+  return null;
+}
+
+/** Desktop — bo'lim tanlanmagan bo'lsa `personal`. */
+export function parseSettingsSection(value: unknown): SettingsSection {
+  return parseSettingsSectionOptional(value) ?? "personal";
 }
 
 export function parseSettingsEdit(value: unknown): SettingsEditField | undefined {

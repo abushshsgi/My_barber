@@ -4,12 +4,15 @@ import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { SettingsDesktopPage } from "@/components/desktop/pages/SettingsDesktopPage";
 import { SettingsAirbnbSidebar } from "@/components/settings/SettingsAirbnbSidebar";
 import { SettingsPanelContent } from "@/components/settings/SettingsPanelContent";
-import { SettingsTopBar } from "@/components/settings/SettingsTopBar";
 import { useSettingsPage } from "@/components/settings/useSettingsPage";
-import { parseSettingsEdit, parseSettingsSection, type SettingsSection } from "@/lib/settings-nav";
-import { getMobileContentPaddingClass } from "@/lib/layout-constants";
-import { useRouterState } from "@tanstack/react-router";
-import { cn } from "@/lib/utils";
+import { ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
+import {
+  parseSettingsEdit,
+  parseSettingsSection,
+  parseSettingsSectionOptional,
+  SETTINGS_SECTION_TITLE_KEYS,
+  type SettingsSection,
+} from "@/lib/settings-nav";
 
 const settingsSearchSchema = z.object({
   section: z.string().optional(),
@@ -31,15 +34,7 @@ export const Route = createFileRoute("/settings")({
   component: Settings,
 });
 
-function SettingsMobile({
-  state,
-  section,
-  initialEdit,
-  addressEditId,
-  addressAdd,
-  manage,
-  onAddressEditorClose,
-}: {
+type PanelProps = {
   state: ReturnType<typeof useSettingsPage>;
   section: SettingsSection;
   initialEdit?: ReturnType<typeof parseSettingsEdit>;
@@ -47,27 +42,52 @@ function SettingsMobile({
   addressAdd?: boolean;
   manage?: boolean;
   onAddressEditorClose: () => void;
-}) {
+};
+
+function settingsSectionBackTo(
+  section: SettingsSection,
+  opts: { manage?: boolean; addressEditId?: number; addressAdd?: boolean },
+): string {
+  if (opts.manage || opts.addressEditId != null || opts.addressAdd) {
+    return `/settings?section=${section}`;
+  }
+  return "/settings";
+}
+
+function SettingsMobileIndex({ state }: { state: ReturnType<typeof useSettingsPage> }) {
   const { t } = state;
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <div className={cn("min-h-full bg-background", getMobileContentPaddingClass(pathname))}>
-      <div className="border-b-2 border-border px-4 pb-4 pt-safe">
-        <SettingsTopBar
-          backLabel={t("common.back", { defaultValue: "Orqaga" })}
-          doneLabel={t("settings.done", { defaultValue: "Tayyor" })}
-        />
-        <h1 className="mt-4 text-2xl font-extrabold tracking-tight">
-          {t("settings.pageTitle", { defaultValue: "Hisob sozlamalari" })}
-        </h1>
-      </div>
+    <ProfileSubpageLayout
+      title={t("settings.pageTitle", { defaultValue: "Hisob sozlamalari" })}
+      backTo="/profile"
+      flush
+    >
+      <SettingsAirbnbSidebar mobileList t={t} />
+    </ProfileSubpageLayout>
+  );
+}
 
-      <div className="px-3 py-4">
-        <SettingsAirbnbSidebar active={section} t={t} compact />
-      </div>
+function SettingsMobileSection({
+  state,
+  section,
+  initialEdit,
+  addressEditId,
+  addressAdd,
+  manage,
+  onAddressEditorClose,
+}: PanelProps) {
+  const { t } = state;
+  const titleMeta = SETTINGS_SECTION_TITLE_KEYS[section];
 
-      <div className="border-t border-border px-5 py-6">
+  return (
+    <ProfileSubpageLayout
+      title={t(titleMeta.titleKey, { defaultValue: titleMeta.defaultTitle })}
+      backTo={settingsSectionBackTo(section, { manage, addressEditId, addressAdd })}
+      strictBack
+      flush
+    >
+      <div className="px-4 pb-8 pt-2">
         <SettingsPanelContent
           section={section}
           state={state}
@@ -76,11 +96,18 @@ function SettingsMobile({
           addressAdd={addressAdd}
           manage={manage}
           onAddressEditorClose={onAddressEditorClose}
-          showBack
+          hideTitle
         />
       </div>
-    </div>
+    </ProfileSubpageLayout>
   );
+}
+
+function SettingsMobile(props: PanelProps & { showIndex: boolean }) {
+  if (props.showIndex) {
+    return <SettingsMobileIndex state={props.state} />;
+  }
+  return <SettingsMobileSection {...props} />;
 }
 
 function Settings() {
@@ -93,6 +120,13 @@ function Settings() {
   const addressAdd = search.addressAdd;
   const manage = search.manage;
 
+  const hasMobileDetail =
+    parseSettingsSectionOptional(search.section) != null ||
+    initialEdit != null ||
+    manage === true ||
+    addressEditId != null ||
+    addressAdd === true;
+
   const onAddressEditorClose = () => {
     void navigate({
       to: "/settings",
@@ -101,7 +135,7 @@ function Settings() {
     });
   };
 
-  const panelProps = {
+  const panelProps: PanelProps = {
     state,
     section,
     initialEdit,
@@ -113,7 +147,7 @@ function Settings() {
 
   return (
     <DesktopPageSplit
-      mobile={<SettingsMobile {...panelProps} />}
+      mobile={<SettingsMobile {...panelProps} showIndex={!hasMobileDetail} />}
       desktop={<SettingsDesktopPage {...panelProps} />}
     />
   );

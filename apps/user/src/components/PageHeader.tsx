@@ -1,5 +1,6 @@
 import { useRouter } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
+import { mobileBackButtonClass } from "@/components/mobile/MobileBackButton";
 import { navigateBack } from "@/lib/mobile-back";
 import { cn } from "@/lib/utils";
 
@@ -40,10 +41,10 @@ export function PageHeader({
           <button
             type="button"
             onClick={() => navigateBack(router, backFallback)}
-            className="neo-pill grid h-11 w-11 place-items-center active:scale-95 lg:rounded-full lg:border lg:border-border lg:bg-surface lg:shadow-none"
+            className={cn(mobileBackButtonClass, "lg:shadow-none")}
             aria-label="Back"
           >
-            <ChevronLeft className="h-5 w-5" strokeWidth={2.4} />
+            <ChevronLeft className="size-5" strokeWidth={2.25} />
           </button>
         )}
         {(title || subtitle) && (

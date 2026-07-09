@@ -1,3 +1,4 @@
+export { MobileBackButton, mobileBackButtonClass } from "./MobileBackButton";
 export { MobileDockNav } from "./MobileDockNav";
 export { MobileListPage } from "./MobileListPage";
 export { MobilePageShell } from "./MobilePageShell";

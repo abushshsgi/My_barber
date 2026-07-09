@@ -1,9 +1,9 @@
 import { useRouter, useRouterState } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
 import { getMobileContentPaddingClass } from "@/lib/layout-constants";
 import { navigateBack } from "@/lib/mobile-back";
 import { shouldShowMobileDock } from "@/lib/layout-routes";
 import { cn } from "@/lib/utils";
+import { MobileBackButton } from "@/components/mobile/MobileBackButton";
 
 type Props = {
   title: string;
@@ -11,6 +11,8 @@ type Props = {
   children: React.ReactNode;
   className?: string;
   right?: React.ReactNode;
+  /** Header ostida, scrolldan tashqarida qoladigan qo'shimcha blok (masalan tablar). */
+  headerExtra?: React.ReactNode;
   /** Tarix bo'sh bo'lsa shu sahifaga qaytadi. */
   backTo?: string;
   /** true bo'lsa doim backTo ga o'tadi (activity hub oqimi). */
@@ -26,6 +28,7 @@ export function MobilePageShell({
   children,
   className,
   right,
+  headerExtra,
   backTo = "/",
   strictBack = false,
   flush = false,
@@ -35,39 +38,44 @@ export function MobilePageShell({
   const showDock = shouldShowMobileDock(pathname);
   const contentPadding = getMobileContentPaddingClass(pathname);
 
-  const backButtonClass = flush
-    ? "grid size-10 shrink-0 place-items-center rounded-full border border-border bg-surface active:scale-95"
-    : "neo-pill mt-0.5 grid h-11 w-11 shrink-0 place-items-center";
-
   const backButton = (
-    <button
-      type="button"
-      onClick={() => navigateBack(router, backTo, strictBack)}
-      className={backButtonClass}
-      aria-label="Orqaga"
-    >
-      <ChevronLeft className={flush ? "size-5" : "h-5 w-5"} strokeWidth={flush ? 2.25 : 2.4} />
-    </button>
+    <MobileBackButton onClick={() => navigateBack(router, backTo, strictBack)} />
+  );
+
+  const titleBlock = (
+    <div className="min-w-0 flex-1 pt-0.5">
+      <h1
+        className={cn(
+          "truncate font-bold tracking-tight",
+          flush ? "text-lg" : "text-2xl font-extrabold leading-tight",
+        )}
+      >
+        {title}
+      </h1>
+      {subtitle ? (
+        <p className={cn("mt-1 text-xs text-muted-foreground", !flush && "font-semibold")}>{subtitle}</p>
+      ) : null}
+    </div>
   );
 
   if (flush) {
     return (
       <div
         className={cn(
-          "flex flex-col lg:min-h-full",
-          showDock ? "min-h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px))]" : "min-h-dvh",
+          "flex flex-col overflow-hidden lg:min-h-full",
+          showDock
+            ? "h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px))]"
+            : "h-dvh",
           className,
         )}
       >
         <header className="shrink-0 border-b border-border bg-background px-4 pb-3 pt-safe">
-          <div className="flex items-center gap-3">
+          <div className="flex items-start gap-3">
             {backButton}
-            <h1 className="min-w-0 flex-1 truncate text-lg font-bold tracking-tight">{title}</h1>
+            {titleBlock}
             {right ? <div className="shrink-0">{right}</div> : null}
           </div>
-          {subtitle ? (
-            <p className="mt-2 pl-[52px] text-xs text-muted-foreground">{subtitle}</p>
-          ) : null}
+          {headerExtra}
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
       </div>
@@ -79,12 +87,7 @@ export function MobilePageShell({
       <div className="px-4 pb-4 pt-safe">
         <div className="flex items-start gap-3">
           {backButton}
-          <div className="min-w-0 flex-1 pt-1">
-            <h1 className="text-2xl font-extrabold leading-tight tracking-tight">{title}</h1>
-            {subtitle ? (
-              <p className="mt-1 text-xs font-semibold text-muted-foreground">{subtitle}</p>
-            ) : null}
-          </div>
+          {titleBlock}
           {right}
         </div>
       </div>

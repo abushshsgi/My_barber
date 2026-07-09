@@ -45,10 +45,12 @@ function FavoritesMobile({
       backTo={backTo}
       strictBack
       flush
+      headerExtra={
+        <div className="mt-3">
+          <FavoritesTabs tab={tab} onTabChange={setTab} salonCount={ids.length} />
+        </div>
+      }
     >
-      <div className="px-4 pb-3">
-        <FavoritesTabs tab={tab} onTabChange={setTab} salonCount={ids.length} />
-      </div>
       <div className="px-4 pb-6">
         {tab === "salons" ? <FavoriteSalonsPanel borderless /> : <FavoriteStylistsPanel borderless />}
       </div>
