@@ -36,7 +36,7 @@ export type ExploreGenStatus = {
   output_mode: "public" | "media";
   views: Array<{ id: ExploreViewId; label: string }>;
   persona_labels?: Record<string, string>;
-  scope?: { persona_id: string; view: ExploreViewId };
+  scope?: { persona_ids: string[]; views: ExploreViewId[] };
 };
 
 export type ExploreGenResult = {
@@ -98,7 +98,7 @@ export async function generateExploreAsset(input: {
     body: JSON.stringify({
       persona_id: input.personaId,
       slug: input.slug,
-      view: input.view ?? "right",
+      view: input.view ?? "front",
       force: input.force ?? false,
     }),
   });
@@ -119,7 +119,7 @@ export async function publishExploreAsset(input: {
     body: JSON.stringify({
       persona_id: input.personaId,
       slug: input.slug,
-      view: input.view ?? "right",
+      view: input.view ?? "front",
     }),
   });
 }

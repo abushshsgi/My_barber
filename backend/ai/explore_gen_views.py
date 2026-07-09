@@ -10,10 +10,9 @@ from rest_framework.views import APIView
 from ai.explore_gen_auth import ExploreGenAuthMixin, explore_gen_is_allowed
 from ai.explore_published import publish_explore_asset, publish_explore_persona
 from ai.explore_persona_labels import persona_display_label, set_persona_display_label
-from ai.explore_views import EXPLORE_VIEW_LABELS, normalize_explore_view
+from ai.explore_views import EXPLORE_VIEW_IDS, EXPLORE_VIEW_LABELS, normalize_explore_view
 from ai.services.explore_image_gen import (
-    DEV_EXPLORE_PERSONA_ID,
-    DEV_EXPLORE_VIEW,
+    DEV_EXPLORE_PERSONA_IDS,
     asset_file_path,
     explore_gen_configured,
     generate_explore_asset,
@@ -31,7 +30,7 @@ class ExploreGenStatusView(ExploreGenAuthMixin, APIView):
     def get(self, request):
         jobs = list_explore_gen_jobs()
         persona_labels = {
-            DEV_EXPLORE_PERSONA_ID: persona_display_label(DEV_EXPLORE_PERSONA_ID),
+            pid: persona_display_label(pid) for pid in sorted(DEV_EXPLORE_PERSONA_IDS)
         }
         return Response(
             {
@@ -40,11 +39,14 @@ class ExploreGenStatusView(ExploreGenAuthMixin, APIView):
                 "total": len(jobs),
                 "existing": sum(1 for job in jobs if job["exists"]),
                 "output_mode": output_mode(),
-                "views": [{"id": DEV_EXPLORE_VIEW, "label": EXPLORE_VIEW_LABELS[DEV_EXPLORE_VIEW]}],
+                "views": [
+                    {"id": view_id, "label": EXPLORE_VIEW_LABELS[view_id]}
+                    for view_id in EXPLORE_VIEW_IDS
+                ],
                 "persona_labels": persona_labels,
                 "scope": {
-                    "persona_id": DEV_EXPLORE_PERSONA_ID,
-                    "view": DEV_EXPLORE_VIEW,
+                    "persona_ids": sorted(DEV_EXPLORE_PERSONA_IDS),
+                    "views": list(EXPLORE_VIEW_IDS),
                 },
             }
         )

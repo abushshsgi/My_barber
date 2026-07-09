@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, Globe, ImageIcon, Loader2, Lock, RefreshCw, Upload, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
-  NIKI_READY_SLUGS,
+  EXPLORE_PERSONAS,
+  MEN_CATALOG_STYLE_SLUGS,
 } from "@/lib/explore-personas";
 import {
   downloadExploreGenAsset,
@@ -17,11 +18,14 @@ import {
   readExploreGenSecret,
   resolveExploreGenImageUrl,
   saveExploreGenSecret,
+  setExplorePersonaLabel,
   type ExploreGenJob,
 } from "@/lib/api/explore-gen";
 import {
+  EXPLORE_VIEW_IDS,
   EXPLORE_VIEW_LABELS,
   type ExploreViewId,
+  viewsForJobSlug,
 } from "@/lib/explore-views";
 import { cn } from "@/lib/utils";
 
@@ -39,17 +43,19 @@ export const Route = createFileRoute("/dev/explore-gen")({
 
 type QueueItem = { personaId: string; slug: string; view: ExploreViewId; force: boolean };
 
-const DEV_EXPLORE_PERSONA_ID = "niki" as const;
-const DEV_EXPLORE_VIEW = "right" as const;
-
 /** Navbat orasidagi kutish — oldin 12s edi, 429 oldini olish uchun; dev da qisqaroq. */
 const QUEUE_GAP_NORMAL_MS = 2_000;
 const QUEUE_GAP_SAFE_MS = 8_000;
 const RATE_LIMIT_COOLDOWN_MS = 15_000;
 const MAX_QUEUE_RETRIES = 6;
 
-const SLUG_ORDER = [...NIKI_READY_SLUGS] as const;
-const VIEW_ORDER: ExploreViewId[] = [DEV_EXPLORE_VIEW];
+const DEV_EXPLORE_PERSONAS = EXPLORE_PERSONAS.filter((persona) =>
+  (["irland", "slavyan"] as const).includes(persona.id as "irland" | "slavyan"),
+);
+type DevExplorePersonaId = (typeof DEV_EXPLORE_PERSONAS)[number]["id"];
+
+const SLUG_ORDER = [...MEN_CATALOG_STYLE_SLUGS] as const;
+const VIEW_ORDER: ExploreViewId[] = ["front", "left", "right", "back"];
 
 function queueSortKey(item: QueueItem): string {
   const slugIdx = SLUG_ORDER.indexOf(item.slug as (typeof SLUG_ORDER)[number]);
@@ -75,8 +81,10 @@ function ExploreGenDevPage() {
   const { key: urlKey } = Route.useSearch();
   const queryClient = useQueryClient();
   const isDev = import.meta.env.DEV;
-  const personaId = DEV_EXPLORE_PERSONA_ID;
+  const [personaId, setPersonaId] = useState<DevExplorePersonaId>("irland");
+  const [viewAngle, setViewAngle] = useState<ExploreViewId>("front");
   const [turboMode, setTurboMode] = useState(true);
+  const [personaLabelDraft, setPersonaLabelDraft] = useState("");
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [running, setRunning] = useState(false);
   const [expandedPrompt, setExpandedPrompt] = useState<string | null>(null);
@@ -145,6 +153,34 @@ function ExploreGenDevPage() {
   const configured = statusQuery.data?.configured;
   const outputMode = statusQuery.data?.output_mode ?? "media";
 
+  const personaJobs = useMemo(
+    () => jobs.filter((job) => job.persona_id === personaId && job.view === viewAngle),
+    [jobs, personaId, viewAngle],
+  );
+
+  const viewOptions = statusQuery.data?.views ?? EXPLORE_VIEW_IDS.map((id) => ({
+    id,
+    label: EXPLORE_VIEW_LABELS[id],
+  }));
+
+  const personaLabels = statusQuery.data?.persona_labels ?? {};
+  const activePersonaLabel =
+    personaLabels[personaId] ?? EXPLORE_PERSONAS.find((persona) => persona.id === personaId)?.label ?? personaId;
+
+  useEffect(() => {
+    setPersonaLabelDraft(activePersonaLabel);
+  }, [activePersonaLabel, personaId]);
+
+  const labelMutation = useMutation({
+    mutationFn: setExplorePersonaLabel,
+    onSuccess: (result) => {
+      toast.success(`Nom yangilandi: ${result.label}`);
+      void queryClient.invalidateQueries({ queryKey: ["explore-gen-status"] });
+      void queryClient.invalidateQueries({ queryKey: ["explore-personas"] });
+    },
+    onError: (error: Error) => toast.error(error.message || "Nom saqlanmadi"),
+  });
+
   const queueGapMs = turboMode ? 0 : isDev ? QUEUE_GAP_NORMAL_MS : QUEUE_GAP_SAFE_MS;
 
   const runQueue = useCallback(
@@ -193,13 +229,45 @@ function ExploreGenDevPage() {
     [generateMutation, queueGapMs, running],
   );
 
-  const enqueueMissingRight = (force: boolean) => {
-    const items: QueueItem[] = NIKI_READY_SLUGS.flatMap((slug) => {
-      const job = jobs.find((entry) => entry.slug === slug);
-      if (!job) return [];
-      if (!force && job.exists) return [];
-      return [{ personaId, slug, view: DEV_EXPLORE_VIEW, force }];
-    });
+  const enqueuePersona = (force: boolean, onlyMissing: boolean) => {
+    const items: QueueItem[] = [];
+    for (const slug of MEN_CATALOG_STYLE_SLUGS) {
+      for (const view of viewsForJobSlug(slug)) {
+        const job = jobs.find(
+          (entry) => entry.persona_id === personaId && entry.slug === slug && entry.view === view,
+        );
+        if (!job) continue;
+        if (onlyMissing && job.exists && !force) continue;
+        items.push({ personaId, slug, view, force });
+      }
+    }
+    void runQueue(items);
+  };
+
+  const enqueueMissingAltViews = (force: boolean) => {
+    const items: QueueItem[] = [];
+    for (const slug of MEN_CATALOG_STYLE_SLUGS) {
+      for (const view of ["left", "right", "back"] as ExploreViewId[]) {
+        const job = jobs.find(
+          (entry) => entry.persona_id === personaId && entry.slug === slug && entry.view === view,
+        );
+        if (!job) continue;
+        if (!force && job.exists) continue;
+        items.push({ personaId, slug, view, force });
+      }
+    }
+    void runQueue(items);
+  };
+
+  const enqueueAllMissing = () => {
+    const items: QueueItem[] = jobs
+      .filter((job) => !job.exists)
+      .map((job) => ({
+        personaId: job.persona_id,
+        slug: job.slug,
+        view: job.view,
+        force: false,
+      }));
     void runQueue(items);
   };
 
@@ -250,11 +318,12 @@ function ExploreGenDevPage() {
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-700">
                 Vaqtinchalik
               </p>
-              <h1 className="mt-2 text-2xl font-bold tracking-tight">Niki — o&apos;ng ko&apos;rinish</h1>
+              <h1 className="mt-2 text-2xl font-bold tracking-tight">Irland &amp; Slavyan — 12 uslub</h1>
               <p className="mt-2 max-w-2xl text-sm text-neutral-600">
-                Faqat <strong>Niki</strong> personaji uchun <strong>O&apos;ng (right)</strong> profil generatsiyasi.
-                Yuz va soch Explore&apos;dagi mavjud <strong>old / chap / orqa</strong> rasmlardan olinadi — ularni
-                bu yerda yaratish shart emas.
+                <strong>Irland</strong> va <strong>Slavyan</strong> uchun 12 uslub × 4 ko&apos;rinish (old, chap,
+                o&apos;ng, orqa). Tartib: har uslubda <strong>old (front)</strong> mavjud bo&apos;lsa → chap/o&apos;ng/orqa
+                shu frontdan aylantiriladi. Yuz va soqol Explore&apos;dagi mavjud personaj bilan bir xil bo&apos;lishi
+                shart.
               </p>
             </div>
             <button
@@ -345,21 +414,117 @@ function ExploreGenDevPage() {
           ) : null}
 
           <div className="mt-6 flex flex-wrap gap-2">
+            {DEV_EXPLORE_PERSONAS.map((persona) => (
+              <button
+                key={persona.id}
+                type="button"
+                onClick={() => setPersonaId(persona.id)}
+                className={cn(
+                  "rounded-2xl px-4 py-2 text-sm font-semibold transition",
+                  personaId === persona.id
+                    ? "bg-neutral-900 text-white"
+                    : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200",
+                )}
+              >
+                {personaLabels[persona.id] ?? persona.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-end gap-2">
+            <label className="min-w-[220px] flex-1">
+              <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.18em] text-neutral-500">
+                Personaj nomi (Explore&apos;da)
+              </span>
+              <input
+                value={personaLabelDraft}
+                onChange={(event) => setPersonaLabelDraft(event.target.value)}
+                placeholder="Masalan: Klassik"
+                className="w-full rounded-2xl border border-neutral-200 px-4 py-2.5 text-sm"
+              />
+            </label>
+            <button
+              type="button"
+              disabled={labelMutation.isPending || !personaLabelDraft.trim()}
+              onClick={() =>
+                labelMutation.mutate({ personaId, label: personaLabelDraft.trim() })
+              }
+              className="rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              Nomni saqlash
+            </button>
+          </div>
+
+          <div className="mt-4">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-neutral-500">
+              Ko&apos;rinish
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {viewOptions.map((view) => (
+                <button
+                  key={view.id}
+                  type="button"
+                  onClick={() => setViewAngle(view.id)}
+                  className={cn(
+                    "rounded-2xl px-4 py-2 text-sm font-semibold transition",
+                    viewAngle === view.id
+                      ? "bg-amber-600 text-white"
+                      : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200",
+                  )}
+                >
+                  {view.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
             <ActionButton
               icon={Wand2}
-              label="Yo'q bo'lgan o'ng ko'rinishlar"
+              label={`Yo'q bo'lganlar (${EXPLORE_VIEW_LABELS[viewAngle]})`}
               disabled={running}
-              onClick={() => enqueueMissingRight(false)}
+              onClick={() => {
+                const items: QueueItem[] = [];
+                for (const slug of MEN_CATALOG_STYLE_SLUGS) {
+                  const job = jobs.find(
+                    (entry) =>
+                      entry.persona_id === personaId &&
+                      entry.slug === slug &&
+                      entry.view === viewAngle,
+                  );
+                  if (!job || job.exists) continue;
+                  items.push({ personaId, slug, view: viewAngle, force: false });
+                }
+                void runQueue(items);
+              }}
+            />
+            <ActionButton
+              icon={Wand2}
+              label="Chap + O'ng + Orqa — yo'q bo'lganlar"
+              disabled={running}
+              onClick={() => enqueueMissingAltViews(false)}
             />
             <ActionButton
               icon={RefreshCw}
-              label="Barcha o'ng — qayta (force)"
+              label="Chap + O'ng + Orqa — force"
               disabled={running}
-              onClick={() => enqueueMissingRight(true)}
+              onClick={() => enqueueMissingAltViews(true)}
+            />
+            <ActionButton
+              icon={RefreshCw}
+              label="Personaj — hammasi (force)"
+              disabled={running}
+              onClick={() => enqueuePersona(true, false)}
+            />
+            <ActionButton
+              icon={ImageIcon}
+              label="Barcha yo'q bo'lganlar (ikkala personaj)"
+              disabled={running}
+              onClick={enqueueAllMissing}
             />
             <ActionButton
               icon={Upload}
-              label="Niki o'ng — Explore'ga joylash"
+              label="Personaj — Explore'ga joylash"
               disabled={running || publishPersonaMutation.isPending}
               onClick={() => publishPersonaMutation.mutate({ personaId })}
             />
@@ -384,7 +549,7 @@ function ExploreGenDevPage() {
         ) : null}
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {jobs.map((job) => (
+          {personaJobs.map((job) => (
             <JobCard
               key={`${job.persona_id}-${job.slug}-${job.view}`}
               job={job}
@@ -521,10 +686,11 @@ function JobCard({
           <p className="text-xs text-neutral-500">{downloadName}</p>
           {job.explore_anchors ? (
             <p className="mt-1 text-[10px] text-neutral-500">
-              Explore:{" "}
-              {["front", "left", "back", "reference"]
-                .filter((key) => job.explore_anchors?.[key])
-                .join(" · ") || "anchor yo'q"}
+              Anchor:{" "}
+              {Object.entries(job.explore_anchors)
+                .filter(([, ok]) => ok)
+                .map(([key]) => key)
+                .join(" · ") || "yo'q"}
             </p>
           ) : null}
         </div>
