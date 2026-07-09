@@ -200,6 +200,14 @@ export function Map2GIS({
     const el = containerRef.current;
     if (!el) return;
 
+    const apiKey = getDgisApiKey();
+    if (!apiKey) {
+      const message = "Xarita yuklanmadi. 2GIS API kaliti sozlanmagan.";
+      setMapError(message);
+      onMapErrorRef.current?.(message);
+      return;
+    }
+
     let destroyed = false;
     let map: mapgl.Map | undefined;
 
@@ -280,7 +288,7 @@ export function Map2GIS({
         map = new mapglAPI.Map(containerRef.current, {
           center: toMapGlCoords(TASHKENT_CENTER.lat, TASHKENT_CENTER.lng),
           zoom: DEFAULT_ZOOM,
-          key: getDgisApiKey(),
+          key: apiKey,
           zoomControl: false,
           enableTrackResize: true,
           disableRotationByUserInteraction: true,

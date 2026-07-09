@@ -204,7 +204,7 @@ class BarberPublicDiscoveryTests(APITestCase):
             address="Toshkent",
             is_published=True,
         )
-        for code, _, _ in DEFAULT_AMENITIES[:2]:
+        for code, *_rest in DEFAULT_AMENITIES[:2]:
             amenity = Amenity.objects.get(code=code)
             SalonAmenity.objects.get_or_create(salon=salon, amenity=amenity)
         owner_membership = SalonMembership.objects.create(
@@ -246,6 +246,27 @@ class BarberPublicDiscoveryTests(APITestCase):
         self.assertEqual(res.status_code, 200)
         row = next((item for item in res.data if item["barber_id"] == owner.id), None)
         self.assertIsNotNone(row)
+
+    def test_list_by_region_returns_booking_context_fields(self):
+        owner, salon = self._create_salon_owner_with_amenities()
+        owner.region = "TOSHKENT_SH"
+        owner.save(update_fields=["region"])
+        owner_membership = SalonMembership.objects.get(barber=owner, salon=salon)
+        owner_membership.invite_state = SalonMembership.InviteState.ACTIVE
+        owner_membership.save(update_fields=["invite_state"])
+        BarberProfile.objects.create(
+            barber=owner,
+            location_text="Toshkent",
+            latitude=41.311500,
+            longitude=69.280100,
+        )
+        res = self.client.get("/api/v1/barbers/", {"region": "TOSHKENT_SH"})
+        self.assertEqual(res.status_code, 200)
+        results = res.data.get("results", res.data)
+        row = next((item for item in results if item["barber_id"] == owner.id), None)
+        self.assertIsNotNone(row)
+        self.assertEqual(row["booking_kind"], "salon")
+        self.assertEqual(row["salon_id"], salon.id)
 
     def test_independent_barber_amenities_empty(self):
         barber = Barber.objects.create(

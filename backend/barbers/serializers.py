@@ -172,7 +172,9 @@ from barbers.barber_work_prefs import (
 from salons.amenity_public import amenity_lang_from_request, barber_booking_context
 
 
-class BarberPublicContextMixin:
+class BarberPublicContextMixin(serializers.Serializer):
+    """DRF ModelSerializer mixin — oddiy class emas, aks holda method fieldlar ko'rinmaydi."""
+
     booking_kind = serializers.SerializerMethodField()
     salon_id = serializers.SerializerMethodField()
     salon_name = serializers.SerializerMethodField()
