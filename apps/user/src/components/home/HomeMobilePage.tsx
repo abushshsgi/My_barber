@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import type { HomeData } from "@/components/home/useHomeData";
-import { HomeUnifiedSearchResults } from "@/components/home/HomeBlocks";
+import { HomeUnifiedSearchResults, HomeTrendingStrip } from "@/components/home/HomeBlocks";
 import { HomeMobileTopBar } from "@/components/home/HomeMobileTopBar";
 import {
   HomeMobileBookingsCta,
@@ -48,6 +48,10 @@ export function HomeMobilePage({ data }: Props) {
 
           <MotionSection>
             <HomeMobileQuickActions />
+          </MotionSection>
+
+          <MotionSection>
+            <HomeTrendingStrip trending={data.exploreRow} />
           </MotionSection>
 
           <MotionSection>

@@ -28,8 +28,19 @@ export function useHomeData() {
   const catalogRegion = me?.region?.trim() || undefined;
   const { personaId } = useExplorePersona();
   const ageGroup = useUserAgeGroup();
-  const menPersona = audience === "men" ? personaId : null;
-  const { data: hairstyles = [] } = useHairstyles(audience, menPersona, { ignoreAgeGroup: true });
+  const { data: menHairstyles = [], isLoading: menExploreLoading } = useHairstyles("men", personaId, {
+    ignoreAgeGroup: true,
+    enabled: audience === "all" || audience === "men",
+  });
+  const { data: womenHairstyles = [], isLoading: womenExploreLoading } = useHairstyles("women", null, {
+    ignoreAgeGroup: true,
+    enabled: audience === "all" || audience === "women",
+  });
+  const hairstyles = useMemo(() => {
+    if (audience === "men") return menHairstyles;
+    if (audience === "women") return womenHairstyles;
+    return [...menHairstyles, ...womenHairstyles];
+  }, [audience, menHairstyles, womenHairstyles]);
   const ctx = useRecommendContext();
   const hasCoords = ctx.lat != null && ctx.lng != null;
   const { data: nearbySalons = [], isLoading: nearbyLoading, isError: nearbyError } = useSalonsNearby(
@@ -120,7 +131,7 @@ export function useHomeData() {
       ...hints,
       ageGroup,
       audience,
-      preferredPersonaId: audience === "men" ? personaId : null,
+      preferredPersonaId: personaId,
     });
   }, [hairstyles, ageGroup, personaId, audience]);
 
@@ -162,6 +173,8 @@ export function useHomeData() {
       listLoading ||
       nearbyBarbersLoading ||
       listBarbersLoading ||
+      menExploreLoading ||
+      womenExploreLoading ||
       (searchActive && (searchSalonsLoading || searchBarbersLoading)),
     error,
   };

@@ -24,6 +24,7 @@ function audienceParam(audience?: AudienceFilter): "men" | "women" | undefined {
 type UseHairstylesOptions = {
   /** Home trending kabi joylarda barqaror /hairstyles/{audience}/{slug}.webp yo'llari */
   ignoreAgeGroup?: boolean;
+  enabled?: boolean;
 };
 
 export function useHairstyles(
@@ -33,6 +34,7 @@ export function useHairstyles(
 ) {
   const profileAgeGroup = useUserAgeGroup();
   const ageGroup = options?.ignoreAgeGroup ? null : profileAgeGroup;
+  const enabled = options?.enabled ?? true;
   return useQuery({
     queryKey: hairstylesQueryKey(audience, ageGroup, personaId),
     queryFn: async () => {
@@ -40,6 +42,7 @@ export function useHairstyles(
       return rows.map(mapApiHairstyle);
     },
     staleTime: 10 * 60 * 1000,
+    enabled,
   });
 }
 

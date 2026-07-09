@@ -12,17 +12,18 @@ import { cn } from "@/lib/utils";
 import type { HomeData } from "@/components/home/useHomeData";
 import { SalonCard } from "@/components/SalonCard";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
-import { getTrendCoverUrl } from "@/lib/cover-images";
 import { getHairstyleDisplayUrl, type TrendingHairstyle } from "@/lib/hairstyles/catalog";
 import type { Offer } from "@/lib/mock-data";
 import type { BarberDiscovery } from "@/lib/mappers/barber";
 
 function TrendingStyleCard({ style }: { style: TrendingHairstyle }) {
   const { t } = useTranslation();
-  const [src, setSrc] = useState(() =>
-    getHairstyleDisplayUrl({ imageUrl: style.imageUrl, slug: style.seed }),
-  );
-  if (!src) return null;
+  const [failed, setFailed] = useState(false);
+  const src = style.imageUrl
+    ? getHairstyleDisplayUrl({ imageUrl: style.imageUrl, slug: style.seed })
+    : "";
+
+  if (!src || failed) return null;
 
   return (
     <Link to="/explore/$styleId" params={{ styleId: style.id }} className="w-[140px] shrink-0">
@@ -32,7 +33,7 @@ function TrendingStyleCard({ style }: { style: TrendingHairstyle }) {
           alt=""
           loading="lazy"
           decoding="async"
-          onError={() => setSrc(getTrendCoverUrl(style.seed))}
+          onError={() => setFailed(true)}
           className="absolute inset-0 h-full w-full object-cover object-center"
         />
       </div>

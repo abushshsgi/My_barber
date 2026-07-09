@@ -111,11 +111,34 @@ export function resolveCatalogImageUrl(
   return primary || getTrendCoverUrl(entry.slug);
 }
 
+export function isGeneratedPersonaImageUrl(url: string): boolean {
+  return /\/hairstyles\/men\/personas\/[^/]+\/[^/]+\.webp$/i.test(url);
+}
+
+export function isGeneratedWomenImageUrl(url: string): boolean {
+  const trimmed = url.trim();
+  if (!trimmed || trimmed.includes("pexels") || trimmed.includes("/covers/")) return false;
+  if (trimmed.includes("placeholder")) return false;
+  return /\/hairstyles\/women\/.+\.webp$/i.test(trimmed);
+}
+
+/** Faqat generatsiya qilingan (persona / katalog) rasmlar — placeholder va Pexels emas. */
+export function hasGeneratedHairstyleImage(
+  entry: Pick<HairstyleEntry, "audience" | "slug" | "imageUrl">,
+): boolean {
+  if (entry.audience === "men") {
+    const fromApi = getHairstyleImageUrl(entry);
+    if (fromApi && isGeneratedPersonaImageUrl(fromApi)) return true;
+    return hasCatalogImageAsset(entry);
+  }
+  const url = getHairstyleImageUrl(entry);
+  return Boolean(url && isGeneratedWomenImageUrl(url));
+}
+
 export function hasDisplayableHairstyleImage(
   entry: Pick<HairstyleEntry, "audience" | "slug" | "imageUrl">,
 ): boolean {
-  if (entry.audience === "men") return hasCatalogImageAsset(entry);
-  return Boolean(getHairstyleImageUrl(entry)) || Boolean(entry.slug);
+  return hasGeneratedHairstyleImage(entry);
 }
 
 export function getHairstyleImageUrl(entry: Pick<HairstyleEntry, "imageUrl">): string {
