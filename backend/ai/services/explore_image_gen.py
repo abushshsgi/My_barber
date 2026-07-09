@@ -16,6 +16,7 @@ from ai.explore_personas import (
     EXPLORE_PERSONAS,
     MEN_CATALOG_STYLE_SLUGS,
     normalize_persona_id,
+    persona_facial_hair_line,
     persona_reference_prompt,
     resolve_persona_ref_image,
     resolve_persona_style_image,
@@ -79,8 +80,28 @@ STYLE_NEGATIVE = (
     "different person, changed face, changed age, changed skin tone, "
     "passport photo, ID photo, mugshot, stiff front-facing, cartoon, anime, "
     "watermark, text, logo, busy background, gradient, vignette, plastic skin, "
-    "over-smoothed face, deformed face, multiple people"
+    "over-smoothed face, deformed face, multiple people, "
+    "added beard, thicker stubble, full beard, changed fade, missing fade on profile side"
 )
+
+_VIEW_ANCHOR_LABELS: dict[str, str] = {
+    "front": (
+        "PRIMARY ANCHOR — finished hairstyle FRONT view. "
+        "Keep this exact haircut length, fade depth, parting, texture, and color:"
+    ),
+    "left": (
+        "SECONDARY ANCHOR — LEFT profile of the SAME person and SAME finished haircut. "
+        "Use for mirror-consistent fade on the opposite temple:"
+    ),
+    "right": (
+        "SECONDARY ANCHOR — RIGHT profile of the SAME person and SAME finished haircut. "
+        "Use for mirror-consistent fade on the opposite temple:"
+    ),
+    "reference": (
+        "IDENTITY ANCHOR — persona face reference. Same person only — "
+        "do NOT change bone structure, age, freckles, or eye color:"
+    ),
+}
 
 
 def _uses_public_output() -> bool:
@@ -263,24 +284,61 @@ AVOID: {STYLE_NEGATIVE}
 Output a single portrait photo with only this hairstyle."""
 
 
-def _build_view_rotation_prompt(*, persona_id: str, slug: str, view: str) -> str:
+def _style_side_consistency_hint(*, slug: str, view: str) -> str:
+    """Fade/taper uslublarda profil ko'rinishlarida ikkala chet bir xil bo'lishi kerak."""
+    if "fade" not in slug and slug != "undercut":
+        return ""
+    if view == "right":
+        return (
+            "CRITICAL fade symmetry: the RIGHT temple taper/fade must match the LEFT side "
+            "visible in the front/left anchors — same clipper guard, same skin fade depth, "
+            "same line-up curve. Do NOT leave the right side longer or un-faded."
+        )
+    if view == "left":
+        return (
+            "CRITICAL fade symmetry: the LEFT temple taper/fade must match the RIGHT side "
+            "visible in the front/right anchors — same clipper guard, same skin fade depth, "
+            "same line-up curve. Do NOT leave the left side longer or un-faded."
+        )
+    if view == "back":
+        return (
+            "CRITICAL: nape and side fade must continue cleanly around the back — "
+            "same fade depth as visible in the front anchor, no uneven bulk at the crown."
+        )
+    return ""
+
+
+def _build_view_rotation_prompt(
+    *,
+    persona_id: str,
+    slug: str,
+    view: str,
+    anchor_views: tuple[str, ...] = ("front",),
+) -> str:
     """O'sha uslubning front rasmidan boshqa burchakni chizish — yuz + soch aynan saqlanadi."""
     pid = normalize_persona_id(persona_id) or "evro"
     persona = EXPLORE_PERSONAS[pid]
     style_detail = style_detail_for("men", slug)
     pose = view_pose_line(view)
+    facial_hair = persona_facial_hair_line(pid)
+    side_hint = _style_side_consistency_hint(slug=slug, view=view)
+    anchor_note = ", ".join(anchor_views)
+    side_block = f"\n{side_hint}\n" if side_hint else ""
     return f"""You are a professional barber catalog AI for mysaloon.uz Explore.
 
-The provided photo shows the SAME person with their FINAL finished hairstyle ("{style_detail}").
-Re-render THIS EXACT person with THIS EXACT hairstyle, changing ONLY the camera/head angle to this view:
+The attached photo(s) show the SAME person with their FINAL finished hairstyle ("{style_detail}").
+Re-render THIS EXACT person with THIS EXACT hairstyle, changing ONLY the camera/head angle to this view.
+
+Reference order: {anchor_note}
 
 Pose / camera angle (CRITICAL — must match exactly):
 {pose}
-
-KEEP 100% IDENTICAL — do NOT reinvent the person:
+{side_block}
+KEEP 100% IDENTICAL — do NOT reinvent the person or haircut:
 - Same face and identity, same bone structure, same skin tone, same age: {persona['description']}
-- Same facial hair EXACTLY as in the photo — do NOT add or remove any beard, stubble, or mustache
-- Same haircut: identical length, shape, fade, parting, texture, and hair color
+- Facial hair MUST stay: {facial_hair}. Match the anchor photos — do NOT add thicker beard or stubble
+- Same haircut on ALL sides: identical length, shape, fade/taper depth, parting, texture, and hair color
+- Profile views must show the SAME fade/taper on the visible temple as the opposite side in the anchors
 - Same plain white crew-neck t-shirt, same solid flat #E8E8E8 background, same soft studio lighting
 - ONLY the head rotation / camera angle changes to the requested view
 - 3:4 vertical portrait, shoulders visible, sharp Explore catalog quality
@@ -290,18 +348,65 @@ AVOID: {STYLE_NEGATIVE}
 Output a single photo of the SAME person and SAME hairstyle, from the new angle only."""
 
 
-def _persona_style_front_bytes(*, persona_id: str, slug: str) -> tuple[str, bytes] | None:
-    """Personajning o'sha uslub bilan tushgan FRONT rasmini topish (draft → live → public)."""
-    draft = asset_file_path(persona_id=persona_id, slug=slug, view="front")
+def _persona_style_view_bytes(*, persona_id: str, slug: str, view: str) -> tuple[str, bytes] | None:
+    """Personaj uslub rasmini topish (draft → live → public)."""
+    normalized_view = normalize_explore_view(view)
+    draft = asset_file_path(persona_id=persona_id, slug=slug, view=normalized_view)
     if draft.is_file():
         raw = draft.read_bytes()
         return _detect_image_mime(raw, draft), raw
-    live = live_asset_path(persona_id=persona_id, slug=slug, view="front")
+    live = live_asset_path(persona_id=persona_id, slug=slug, view=normalized_view)
     if live.is_file():
         raw = live.read_bytes()
         return _detect_image_mime(raw, live), raw
-    rel = _relative_asset_path(persona_id=persona_id, slug=slug, view="front")
+    rel = _relative_asset_path(persona_id=persona_id, slug=slug, view=normalized_view)
     return _load_public_image(rel)
+
+
+def _persona_style_front_bytes(*, persona_id: str, slug: str) -> tuple[str, bytes] | None:
+    """Personajning o'sha uslub bilan tushgan FRONT rasmini topish (draft → live → public)."""
+    return _persona_style_view_bytes(persona_id=persona_id, slug=slug, view="front")
+
+
+def _persona_reference_bytes(*, persona_id: str) -> tuple[str, bytes] | None:
+    draft = asset_file_path(persona_id=persona_id, slug="reference", view="front")
+    if draft.is_file():
+        raw = draft.read_bytes()
+        return _detect_image_mime(raw, draft), raw
+    live = live_asset_path(persona_id=persona_id, slug="reference", view="front")
+    if live.is_file():
+        raw = live.read_bytes()
+        return _detect_image_mime(raw, live), raw
+    rel = _relative_asset_path(persona_id=persona_id, slug="reference", view="front")
+    return _load_public_image(rel)
+
+
+def _collect_view_rotation_anchors(
+    *,
+    persona_id: str,
+    slug: str,
+    target_view: str,
+) -> list[tuple[str, str, bytes]]:
+    """Front majburiy; qo'shimcha profil + reference identifikatsiyani mustahkamlaydi."""
+    anchors: list[tuple[str, str, bytes]] = []
+    front = _persona_style_view_bytes(persona_id=persona_id, slug=slug, view="front")
+    if front is None:
+        return anchors
+    anchors.append((_VIEW_ANCHOR_LABELS["front"], front[0], front[1]))
+
+    if target_view in {"right", "back"}:
+        left = _persona_style_view_bytes(persona_id=persona_id, slug=slug, view="left")
+        if left is not None:
+            anchors.append((_VIEW_ANCHOR_LABELS["left"], left[0], left[1]))
+    if target_view in {"left", "back"}:
+        right = _persona_style_view_bytes(persona_id=persona_id, slug=slug, view="right")
+        if right is not None:
+            anchors.append((_VIEW_ANCHOR_LABELS["right"], right[0], right[1]))
+
+    reference = _persona_reference_bytes(persona_id=persona_id)
+    if reference is not None:
+        anchors.append((_VIEW_ANCHOR_LABELS["reference"], reference[0], reference[1]))
+    return anchors
 
 
 def _build_style_edit_prompt(
@@ -331,6 +436,7 @@ Pose / camera angle (CRITICAL — must match this view):
 
 CRITICAL — same catalog series as Explore page:
 - Keep the EXACT same face, identity, skin tone, age, and facial features ({persona['description']})
+- Facial hair MUST stay: {persona_facial_hair_line(pid)} — do NOT add or remove stubble/beard
 - Keep white crew-neck t-shirt and solid flat #E8E8E8 studio background — no props, no gradient
 - ONLY change the hair to a photorealistic fresh barber result with natural texture
 - Adjust head rotation to match the required view angle exactly
@@ -346,13 +452,26 @@ Output a single edited portrait photo."""
 def _image_body(
     *,
     prompt: str,
+    reference_images: list[tuple[str, str, bytes]] | None = None,
     persona_bytes: bytes | None = None,
     persona_mime: str = "image/webp",
     catalog_bytes: bytes | None = None,
     catalog_mime: str = "image/webp",
 ) -> dict[str, Any]:
     parts: list[dict[str, Any]] = []
-    if persona_bytes is not None:
+    if reference_images:
+        for label, mime, raw in reference_images:
+            if label:
+                parts.append({"text": label})
+            parts.append(
+                {
+                    "inline_data": {
+                        "mime_type": mime,
+                        "data": base64.b64encode(raw).decode("ascii"),
+                    }
+                }
+            )
+    elif persona_bytes is not None:
         parts.append(
             {
                 "inline_data": {
@@ -390,6 +509,7 @@ def _image_body(
 def _generate_image(
     *,
     prompt: str,
+    reference_images: list[tuple[str, str, bytes]] | None = None,
     persona_bytes: bytes | None = None,
     persona_mime: str = "image/webp",
     catalog_bytes: bytes | None = None,
@@ -404,6 +524,7 @@ def _generate_image(
     payload = generate_image_content(
         _image_body(
             prompt=prompt,
+            reference_images=reference_images,
             persona_bytes=persona_bytes,
             persona_mime=persona_mime,
             catalog_bytes=catalog_bytes,
@@ -470,37 +591,56 @@ def generate_explore_asset(
         raw = _generate_image(prompt=prompt)
         method = _generation_method(edit=False)
     else:
-        # Chap/o'ng/orqa uchun: agar o'sha uslubning FRONT rasmi bo'lsa, undan
-        # faqat burchakni aylantirib chizamiz — yuz va soch turmagi aynan saqlanadi.
-        front_style = (
-            _persona_style_front_bytes(persona_id=pid, slug=slug)
-            if normalized_view != "front"
-            else None
-        )
-        if front_style is not None:
+        if normalized_view != "front":
+            anchors = _collect_view_rotation_anchors(
+                persona_id=pid,
+                slug=slug,
+                target_view=normalized_view,
+            )
+            if not anchors:
+                raise AiStyleError(
+                    f"Avval «{slug}» uslubining OLD (front) ko'rinishini generatsiya qiling. "
+                    "Chap/o'ng/orqa faqat shu front rasmdan aylantiriladi — reference yetarli emas.",
+                    400,
+                )
+            anchor_view_ids = ("front",)
+            if any("LEFT profile" in label for label, _, _ in anchors):
+                anchor_view_ids = (*anchor_view_ids, "left")
+            if any("RIGHT profile" in label for label, _, _ in anchors):
+                anchor_view_ids = (*anchor_view_ids, "right")
+            if any("IDENTITY ANCHOR" in label for label, _, _ in anchors):
+                anchor_view_ids = (*anchor_view_ids, "reference")
+            rotation_prompt = _build_view_rotation_prompt(
+                persona_id=pid,
+                slug=slug,
+                view=normalized_view,
+                anchor_views=anchor_view_ids,
+            )
             raw = _generate_image(
-                prompt=_build_view_rotation_prompt(
-                    persona_id=pid,
-                    slug=slug,
-                    view=normalized_view,
-                ),
-                persona_bytes=front_style[1],
-                persona_mime=front_style[0],
+                prompt=rotation_prompt,
+                reference_images=anchors,
             )
             method = _generation_method(edit=True)
         else:
+            ref_bytes: bytes
+            ref_mime: str
             ref_path = asset_file_path(persona_id=pid, slug="reference", view="front")
-            if not ref_path.is_file():
+            if ref_path.is_file():
+                ref_bytes = ref_path.read_bytes()
+                ref_mime = _detect_image_mime(ref_bytes, ref_path)
+            else:
                 live_ref = live_asset_path(persona_id=pid, slug="reference", view="front")
                 if live_ref.is_file():
-                    ref_path = live_ref
+                    ref_bytes = live_ref.read_bytes()
+                    ref_mime = _detect_image_mime(ref_bytes, live_ref)
                 else:
-                    raise AiStyleError(
-                        "Avval reference generatsiya qiling. Uslub faqat shu portretdan edit qilinadi.",
-                        400,
-                    )
-            ref_bytes = ref_path.read_bytes()
-            ref_mime = _detect_image_mime(ref_bytes, ref_path)
+                    public_ref = _persona_reference_bytes(persona_id=pid)
+                    if public_ref is None:
+                        raise AiStyleError(
+                            "Avval reference generatsiya qiling. Uslub faqat shu portretdan edit qilinadi.",
+                            400,
+                        )
+                    ref_mime, ref_bytes = public_ref
             catalog = _load_public_image(_catalog_style_image_path(slug))
             catalog_bytes = catalog[1] if catalog else None
             catalog_mime = catalog[0] if catalog else "image/webp"

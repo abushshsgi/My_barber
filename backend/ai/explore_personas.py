@@ -111,6 +111,20 @@ EXPLORE_PERSONAS: dict[str, dict] = {
 
 DEFAULT_MEN_PERSONA = "evro"
 
+# Dev generatsiya — soqol darajasi (profil ko'rinishlarda bir xil bo'lishi shart).
+PERSONA_FACIAL_HAIR: dict[str, str] = {
+    "britan": "clean-shaven — absolutely no beard, stubble, or mustache",
+    "irland": "light ginger stubble only — faint short shadow, NOT a full beard",
+    "slavyan": "clean-shaven — no facial hair at all",
+    "evro": "light stubble only — very short subtle shadow, NOT a full beard",
+    "niki": "light stubble only — faint short shadow on jaw, barely visible, NOT a full beard, NOT thick stubble",
+}
+
+
+def persona_facial_hair_line(persona_id: str | None) -> str:
+    pid = normalize_persona_id(persona_id) or DEFAULT_MEN_PERSONA
+    return PERSONA_FACIAL_HAIR.get(pid, "match facial hair exactly as in the reference photos")
+
 MEN_CATALOG_STYLE_SLUGS = frozenset(
     {
         "mid-fade",
@@ -143,7 +157,7 @@ PERSONA_READY_ASSETS: dict[str, frozenset[str]] = {
 # bu yerda faqat chap/o'ng/orqa kabi qo'shimcha ko'rinishlar e'lon qilinadi. Production
 # backend (Railway) da public papka bo'lmagani uchun fayl tizimiga tayanmaymiz.
 PERSONA_READY_VIEWS: dict[str, dict[str, tuple[str, ...]]] = {
-    "niki": {slug: ("left", "back") for slug in NIKI_READY_SLUGS},
+    "niki": {slug: ("left", "right", "back") for slug in NIKI_READY_SLUGS},
 }
 
 

@@ -50,6 +50,19 @@ const QUEUE_GAP_SAFE_MS = 8_000;
 const RATE_LIMIT_COOLDOWN_MS = 15_000;
 const MAX_QUEUE_RETRIES = 6;
 
+const SLUG_ORDER = ["reference", ...MEN_CATALOG_STYLE_SLUGS] as const;
+const VIEW_ORDER: ExploreViewId[] = ["front", "left", "right", "back"];
+
+function queueSortKey(item: QueueItem): string {
+  const slugIdx = SLUG_ORDER.indexOf(item.slug as (typeof SLUG_ORDER)[number]);
+  const viewIdx = VIEW_ORDER.indexOf(item.view);
+  return `${item.personaId}:${String(slugIdx).padStart(2, "0")}:${String(viewIdx).padStart(2, "0")}`;
+}
+
+function sortQueueItems(items: QueueItem[]): QueueItem[] {
+  return [...items].sort((a, b) => queueSortKey(a).localeCompare(queueSortKey(b)));
+}
+
 function isRateLimitError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
   const msg = error.message.toLowerCase();
@@ -168,12 +181,13 @@ function ExploreGenDevPage() {
 
   const runQueue = useCallback(
     async (items: QueueItem[]) => {
-      if (!items.length || running) return;
+      const ordered = sortQueueItems(items);
+      if (!ordered.length || running) return;
       setRunning(true);
-      setQueue(items);
-      for (let i = 0; i < items.length; i += 1) {
-        const item = items[i];
-        setQueue(items.slice(i));
+      setQueue(ordered);
+      for (let i = 0; i < ordered.length; i += 1) {
+        const item = ordered[i];
+        setQueue(ordered.slice(i));
         let retries = 0;
         while (retries <= MAX_QUEUE_RETRIES) {
           try {
@@ -201,7 +215,7 @@ function ExploreGenDevPage() {
             return;
           }
         }
-        if (i < items.length - 1 && queueGapMs > 0) {
+        if (i < ordered.length - 1 && queueGapMs > 0) {
           await sleep(queueGapMs);
         }
       }
@@ -292,7 +306,8 @@ function ExploreGenDevPage() {
               <h1 className="mt-2 text-2xl font-bold tracking-tight">Explore rasm generatsiyasi</h1>
               <p className="mt-2 max-w-2xl text-sm text-neutral-600">
                 4 personaj × reference + 12 uslub × 4 ko&apos;rinish (old, chap, o&apos;ng, orqa).
-                Avval <strong>reference</strong>, keyin har bir uslubni tanlangan tomondan generatsiya qiling.
+                Tartib: <strong>reference</strong> → har uslubda <strong>old (front)</strong> → chap/o&apos;ng/orqa.
+                Chap/o&apos;ng/orqa faqat shu uslubning front rasmdan aylantiriladi.
               </p>
             </div>
             <button
