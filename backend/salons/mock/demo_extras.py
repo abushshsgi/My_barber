@@ -6,14 +6,14 @@ DEMO_USER_MARKER = "demo-user"
 DEMO_USER_PASSWORD = "DemoUser2026!"
 
 DEMO_USERS: list[dict] = [
-    {"slug": "demo-user-01", "full_name": "Dilshod Karimov", "phone": "+998901220101"},
-    {"slug": "demo-user-02", "full_name": "Malika Tosheva", "phone": "+998901220102"},
-    {"slug": "demo-user-03", "full_name": "Sardor Aliyev", "phone": "+998901220103"},
-    {"slug": "demo-user-04", "full_name": "Aziza Rakhimova", "phone": "+998901220104"},
-    {"slug": "demo-user-05", "full_name": "Jasur Normatov", "phone": "+998901220105"},
-    {"slug": "demo-user-06", "full_name": "Nilufar Saidova", "phone": "+998901220106"},
-    {"slug": "demo-user-07", "full_name": "Timur Khasanov", "phone": "+998901220107"},
-    {"slug": "demo-user-08", "full_name": "Madina Erkinova", "phone": "+998901220108"},
+    {"slug": "demo-user-01", "full_name": "Dilshod Karimov", "phone": "+998901220101", "region": "TOSHKENT_SH"},
+    {"slug": "demo-user-02", "full_name": "Malika Tosheva", "phone": "+998901220102", "region": "TOSHKENT_SH"},
+    {"slug": "demo-user-03", "full_name": "Sardor Aliyev", "phone": "+998901220103", "region": "TOSHKENT_SH"},
+    {"slug": "demo-user-04", "full_name": "Aziza Rakhimova", "phone": "+998901220104", "region": "TOSHKENT_SH"},
+    {"slug": "demo-user-05", "full_name": "Jasur Normatov", "phone": "+998901220105", "region": "BUXORO"},
+    {"slug": "demo-user-06", "full_name": "Nilufar Saidova", "phone": "+998901220106", "region": "BUXORO"},
+    {"slug": "demo-user-07", "full_name": "Timur Khasanov", "phone": "+998901220107", "region": "BUXORO"},
+    {"slug": "demo-user-08", "full_name": "Madina Erkinova", "phone": "+998901220108", "region": "BUXORO"},
 ]
 
 DEMO_CHAT_THREADS: list[list[tuple[str, str]]] = [

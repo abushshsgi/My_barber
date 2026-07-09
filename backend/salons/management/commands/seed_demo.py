@@ -30,6 +30,7 @@ from salons.mock.demo_seed import (
     DEMO_SALON_COUNT,
     DEMO_SALONS,
     DEMO_SERVICE_TEMPLATES,
+    demo_barber_profile_location,
 )
 from salons.mock.mock_reviews import _ensure_mock_customers, purge_mock_review_users, seed_reviews_for_salon
 from salons.models import BarberWorkingHours, Salon, SalonHours, SalonMembership, Service
@@ -79,13 +80,15 @@ class Command(BaseCommand):
         rng = random.Random(2026)
 
         for entry in DEMO_BARBERS:
+            barber_region = entry.get("region") or UzRegion.TOSHKENT_SH
+            profile_lat, profile_lng, location_text = demo_barber_profile_location(barber_region)
             barber, created = Barber.objects.update_or_create(
                 email=entry["email"],
                 defaults={
                     "username": entry["username"],
                     "full_name": entry["full_name"],
                     "phone": entry["phone"],
-                    "region": UzRegion.TOSHKENT_SH,
+                    "region": barber_region,
                     "work_mode": Barber.WorkMode.SALON,
                     "onboarding_flow": Barber.OnboardingFlow.OWNER,
                     "email_verified_at": now,
@@ -98,9 +101,9 @@ class Command(BaseCommand):
             BarberProfile.objects.update_or_create(
                 barber=barber,
                 defaults={
-                    "location_text": "Toshkent",
-                    "latitude": Decimal("41.299500"),
-                    "longitude": Decimal("69.240100"),
+                    "location_text": location_text,
+                    "latitude": Decimal(str(profile_lat)),
+                    "longitude": Decimal(str(profile_lng)),
                 },
             )
             barbers_by_slug[entry["slug"]] = barber
@@ -120,11 +123,14 @@ class Command(BaseCommand):
                     "latitude": Decimal(str(entry["lat"])),
                     "longitude": Decimal(str(entry["lng"])),
                     "address": entry["address"],
-                    "description": f"{DEMO_MARKER}: investor demo salon — Toshkent.",
+                    "description": (
+                        f"{DEMO_MARKER}: investor demo salon — {entry.get('city_label', 'Toshkent')}."
+                    ),
                     "is_published": True,
                     "owner_barber": owner,
                     "phone": owner.phone or "",
-                    "premium": entry["slug"] in {"demo-salon-01", "demo-salon-05", "demo-salon-10"},
+                    "premium": entry["slug"]
+                    in {"demo-salon-01", "demo-salon-05", "demo-salon-10", "demo-salon-16", "demo-salon-20"},
                 },
             )
             salons_by_slug[entry["slug"]] = salon
@@ -209,7 +215,7 @@ class Command(BaseCommand):
                     "username": email,
                     "phone": entry["phone"],
                     "full_name": entry["full_name"],
-                    "region": UzRegion.TOSHKENT_SH,
+                    "region": entry.get("region") or UzRegion.TOSHKENT_SH,
                     "onboarding_completed": True,
                 },
             )
