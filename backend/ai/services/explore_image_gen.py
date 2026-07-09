@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import base64
 import logging
+import os
 import time
+import urllib.error
+import urllib.request
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -74,6 +77,53 @@ def _load_public_image(relative_url: str) -> tuple[str, bytes] | None:
         return None
     raw = path.read_bytes()
     return _detect_image_mime(raw, path), raw
+
+
+def _user_web_static_origins() -> tuple[str, ...]:
+    """Railway backend'da apps/user/public yo'q — Vercel static'dan yuklash."""
+    origins: list[str] = []
+    raw = os.environ.get("FRONTEND_USER_ORIGIN", "").strip()
+    if raw:
+        for part in raw.split(","):
+            origin = part.strip().rstrip("/")
+            if origin and origin not in origins:
+                origins.append(origin)
+    for fallback in (
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://www.mysaloon.uz",
+        "https://mysaloon.uz",
+    ):
+        if fallback not in origins:
+            origins.append(fallback)
+    return tuple(origins)
+
+
+def _fetch_remote_static_image(relative_url: str) -> tuple[str, bytes] | None:
+    rel = (relative_url or "").lstrip("/")
+    if not rel:
+        return None
+    for origin in _user_web_static_origins():
+        url = f"{origin}/{rel}"
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={"User-Agent": "MySaloon/1.0 (explore-gen)"},
+            )
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                raw = resp.read()
+        except (urllib.error.URLError, TimeoutError, ValueError) as exc:
+            logger.debug("Remote explore anchor miss %s: %s", url, exc)
+            continue
+        if len(raw) < 128:
+            continue
+        logger.info("Loaded explore anchor from %s", url)
+        return _detect_image_mime(raw), raw
+    return None
+
+
+def _load_explore_static_image(relative_url: str) -> tuple[str, bytes] | None:
+    return _load_public_image(relative_url) or _fetch_remote_static_image(relative_url)
 
 
 def _catalog_style_image_path(slug: str) -> str:
@@ -381,7 +431,7 @@ def _persona_style_view_bytes(*, persona_id: str, slug: str, view: str) -> tuple
         raw = live.read_bytes()
         return _detect_image_mime(raw, live), raw
     rel = _relative_asset_path(persona_id=persona_id, slug=slug, view=normalized_view)
-    return _load_public_image(rel)
+    return _load_explore_static_image(rel)
 
 
 def _persona_style_front_bytes(*, persona_id: str, slug: str) -> tuple[str, bytes] | None:
@@ -399,7 +449,7 @@ def _persona_reference_bytes(*, persona_id: str) -> tuple[str, bytes] | None:
         raw = live.read_bytes()
         return _detect_image_mime(raw, live), raw
     rel = _relative_asset_path(persona_id=persona_id, slug="reference", view="front")
-    return _load_public_image(rel)
+    return _load_explore_static_image(rel)
 
 
 def _collect_view_rotation_anchors(

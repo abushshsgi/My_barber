@@ -66,6 +66,29 @@ class ExploreImageGenPromptTests(SimpleTestCase):
         self.assertGreaterEqual(len(anchors), 1)
         self.assertIn("PRIMARY ANCHOR", anchors[0][0])
 
+    def test_collects_anchors_from_remote_when_public_missing(self):
+        fake = (b"RIFF" + b"\x00" * 200,)
+
+        def fake_fetch(rel: str):
+            if rel.endswith("mid-fade.webp"):
+                return ("image/webp", fake[0])
+            return None
+
+        with patch(
+            "ai.services.explore_image_gen._load_public_image",
+            return_value=None,
+        ), patch(
+            "ai.services.explore_image_gen._fetch_remote_static_image",
+            side_effect=fake_fetch,
+        ):
+            anchors = _collect_view_rotation_anchors(
+                persona_id="niki",
+                slug="mid-fade",
+                target_view="right",
+            )
+        self.assertGreaterEqual(len(anchors), 1)
+        self.assertIn("PRIMARY ANCHOR", anchors[0][0])
+
     def test_missing_explore_front_raises_clear_error(self):
         with patch(
             "ai.services.explore_image_gen._collect_view_rotation_anchors",
