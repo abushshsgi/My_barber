@@ -14,7 +14,7 @@ from PIL import Image
 
 from ai.explore_personas import (
     EXPLORE_PERSONAS,
-    MEN_CATALOG_STYLE_SLUGS,
+    NIKI_READY_SLUGS,
     normalize_persona_id,
     persona_facial_hair_line,
     persona_reference_prompt,
@@ -36,7 +36,6 @@ from ai.explore_views import (
     EXPLORE_VIEW_LABELS,
     normalize_explore_view,
     view_pose_line,
-    views_for_job_slug,
 )
 from ai.services.gemini_style import AiStyleError
 from ai.style_prompts import style_detail_for
@@ -46,6 +45,11 @@ logger = logging.getLogger(__name__)
 PUBLIC_ROOT = Path(settings.BASE_DIR).parent / "apps" / "user" / "public"
 OUTPUT_W, OUTPUT_H = 768, 1024
 WEBP_QUALITY = 92
+
+# Dev Explore — faqat Niki o'ng ko'rinish (front/chap/orqa Explore public'dan olinadi).
+DEV_EXPLORE_PERSONA_ID = "niki"
+DEV_EXPLORE_VIEW = "right"
+DEV_EXPLORE_ANCHOR_VIEWS: tuple[str, ...] = ("front", "left", "back")
 
 def _detect_image_mime(raw: bytes, path: Path | None = None) -> str:
     if path is not None:
@@ -101,6 +105,10 @@ _VIEW_ANCHOR_LABELS: dict[str, str] = {
         "IDENTITY ANCHOR — persona face reference. Same person only — "
         "do NOT change bone structure, age, freckles, or eye color:"
     ),
+    "back": (
+        "SECONDARY ANCHOR — BACK view of the SAME finished haircut. "
+        "Use for nape shape and side fade continuity:"
+    ),
 }
 
 
@@ -155,7 +163,32 @@ def _download_path(*, persona_id: str, slug: str, view: str = "front") -> str:
 
 
 def _persona_order() -> tuple[str, ...]:
-    return tuple(EXPLORE_PERSONAS.keys())
+    return (DEV_EXPLORE_PERSONA_ID,)
+
+
+def _explore_anchor_status(*, persona_id: str, slug: str) -> dict[str, bool]:
+    return {
+        view: _persona_style_view_bytes(persona_id=persona_id, slug=slug, view=view) is not None
+        for view in DEV_EXPLORE_ANCHOR_VIEWS
+    } | {
+        "reference": _persona_reference_bytes(persona_id=persona_id) is not None,
+    }
+
+
+def _assert_dev_explore_job(*, persona_id: str, slug: str, view: str) -> str:
+    pid = normalize_persona_id(persona_id)
+    if pid != DEV_EXPLORE_PERSONA_ID:
+        raise AiStyleError("Dev Explore faqat Niki personaji uchun.", 400)
+    if slug not in NIKI_READY_SLUGS:
+        raise AiStyleError(f"Dev Explore uchun noto'g'ri uslub: {slug}", 400)
+    normalized_view = normalize_explore_view(view)
+    if normalized_view != DEV_EXPLORE_VIEW:
+        raise AiStyleError(
+            "Dev Explore faqat O'ng (right) ko'rinish generatsiya qiladi. "
+            "Old/chap/orqa Explore katalogidan avtomatik olinadi.",
+            400,
+        )
+    return normalized_view
 
 
 def _asset_version(*, draft: Path, live: Path, published: bool) -> int:
@@ -172,64 +205,52 @@ def _asset_version(*, draft: Path, live: Path, published: bool) -> int:
 def list_explore_gen_jobs() -> list[dict[str, Any]]:
     mode = output_mode()
     jobs: list[dict[str, Any]] = []
-    for persona_id in _persona_order():
-        persona = EXPLORE_PERSONAS[persona_id]
-        display_label = persona_display_label(persona_id)
-        for slug in ("reference", *sorted(MEN_CATALOG_STYLE_SLUGS)):
-            for view in views_for_job_slug(slug):
-                rel = _relative_asset_path(persona_id=persona_id, slug=slug, view=view)
-                path = asset_file_path(persona_id=persona_id, slug=slug, view=view)
-                live = live_asset_path(persona_id=persona_id, slug=slug, view=view)
-                public_url = _public_url_for(
-                    persona_id=persona_id,
-                    slug=slug,
-                    path=path,
-                    view=view,
-                )
-                published = is_explore_asset_published(persona_id, slug, view=view)
-                jobs.append(
-                    {
-                        "persona_id": persona_id,
-                        "persona_label": display_label,
-                        "slug": slug,
-                        "view": view,
-                        "view_label": EXPLORE_VIEW_LABELS[view],
-                        "kind": "reference" if slug == "reference" else "style",
-                        "relative_path": rel,
-                        "public_url": public_url or None,
-                        "download_path": _download_path(persona_id=persona_id, slug=slug, view=view),
-                        "exists": path.is_file() or live.is_file(),
-                        "published": published,
-                        "asset_version": _asset_version(draft=path, live=live, published=published),
-                        "live_url": resolve_explore_asset_url(
-                            audience="men",
-                            persona_id=persona_id,
-                            slug=slug,
-                        )
-                        if published and view == "front"
-                        else None,
-                        "output_mode": mode,
-                        "prompt": build_explore_gen_prompt(persona_id=persona_id, slug=slug, view=view),
-                    }
-                )
+    persona_id = DEV_EXPLORE_PERSONA_ID
+    persona = EXPLORE_PERSONAS[persona_id]
+    display_label = persona_display_label(persona_id)
+    for slug in sorted(NIKI_READY_SLUGS):
+        view = DEV_EXPLORE_VIEW
+        rel = _relative_asset_path(persona_id=persona_id, slug=slug, view=view)
+        path = asset_file_path(persona_id=persona_id, slug=slug, view=view)
+        live = live_asset_path(persona_id=persona_id, slug=slug, view=view)
+        public_url = _public_url_for(
+            persona_id=persona_id,
+            slug=slug,
+            path=path,
+            view=view,
+        )
+        published = is_explore_asset_published(persona_id, slug, view=view)
+        jobs.append(
+            {
+                "persona_id": persona_id,
+                "persona_label": display_label,
+                "slug": slug,
+                "view": view,
+                "view_label": EXPLORE_VIEW_LABELS[view],
+                "kind": "style",
+                "relative_path": rel,
+                "public_url": public_url or None,
+                "download_path": _download_path(persona_id=persona_id, slug=slug, view=view),
+                "exists": path.is_file() or live.is_file(),
+                "published": published,
+                "asset_version": _asset_version(draft=path, live=live, published=published),
+                "live_url": None,
+                "output_mode": mode,
+                "explore_anchors": _explore_anchor_status(persona_id=persona_id, slug=slug),
+                "prompt": build_explore_gen_prompt(persona_id=persona_id, slug=slug, view=view),
+            }
+        )
     return jobs
 
 
 def build_explore_gen_prompt(*, persona_id: str, slug: str, view: str = "front") -> str:
-    pid = normalize_persona_id(persona_id) or "evro"
+    pid = normalize_persona_id(persona_id) or DEV_EXPLORE_PERSONA_ID
     normalized_view = normalize_explore_view(view)
-    if slug == "reference":
-        return _build_reference_generation_prompt(persona_id=pid, view=normalized_view)
-
-    if normalized_view != "front":
-        return _build_view_rotation_prompt(persona_id=pid, slug=slug, view=normalized_view)
-
-    persona = EXPLORE_PERSONAS[pid]
-    style_detail = style_detail_for("men", slug)
-    return _build_style_text_prompt(
-        persona_description=persona["description"],
-        style_detail=style_detail,
+    return _build_view_rotation_prompt(
+        persona_id=pid,
+        slug=slug,
         view=normalized_view,
+        anchor_views=("front", "left", "back", "reference"),
     )
 
 
@@ -387,21 +408,20 @@ def _collect_view_rotation_anchors(
     slug: str,
     target_view: str,
 ) -> list[tuple[str, str, bytes]]:
-    """Front majburiy; qo'shimcha profil + reference identifikatsiyani mustahkamlaydi."""
+    """Explore public'dagi front/chap/orqa + reference — dev Niki o'ng uchun."""
     anchors: list[tuple[str, str, bytes]] = []
-    front = _persona_style_view_bytes(persona_id=persona_id, slug=slug, view="front")
-    if front is None:
-        return anchors
-    anchors.append((_VIEW_ANCHOR_LABELS["front"], front[0], front[1]))
+    has_front = False
+    for view in DEV_EXPLORE_ANCHOR_VIEWS:
+        loaded = _persona_style_view_bytes(persona_id=persona_id, slug=slug, view=view)
+        if loaded is None:
+            continue
+        if view == "front":
+            has_front = True
+        label_key = view if view in _VIEW_ANCHOR_LABELS else "front"
+        anchors.append((_VIEW_ANCHOR_LABELS[label_key], loaded[0], loaded[1]))
 
-    if target_view in {"right", "back"}:
-        left = _persona_style_view_bytes(persona_id=persona_id, slug=slug, view="left")
-        if left is not None:
-            anchors.append((_VIEW_ANCHOR_LABELS["left"], left[0], left[1]))
-    if target_view in {"left", "back"}:
-        right = _persona_style_view_bytes(persona_id=persona_id, slug=slug, view="right")
-        if right is not None:
-            anchors.append((_VIEW_ANCHOR_LABELS["right"], right[0], right[1]))
+    if not has_front:
+        return []
 
     reference = _persona_reference_bytes(persona_id=persona_id)
     if reference is not None:
@@ -554,14 +574,9 @@ def generate_explore_asset(
     force: bool = False,
     view: str = "front",
 ) -> dict[str, Any]:
-    pid = normalize_persona_id(persona_id)
-    if not pid:
-        raise AiStyleError("Noto'g'ri persona_id.", 400)
+    normalized_view = _assert_dev_explore_job(persona_id=persona_id, slug=slug, view=view)
+    pid = DEV_EXPLORE_PERSONA_ID
 
-    if slug != "reference" and slug not in MEN_CATALOG_STYLE_SLUGS:
-        raise AiStyleError("Noto'g'ri slug.", 400)
-
-    normalized_view = normalize_explore_view(view)
     dest = asset_file_path(persona_id=pid, slug=slug, view=normalized_view)
     rel = _relative_asset_path(persona_id=pid, slug=slug, view=normalized_view)
 
@@ -587,76 +602,37 @@ def generate_explore_asset(
     prompt = build_explore_gen_prompt(persona_id=pid, slug=slug, view=normalized_view)
     started = time.monotonic()
 
-    if slug == "reference":
-        raw = _generate_image(prompt=prompt)
-        method = _generation_method(edit=False)
-    else:
-        if normalized_view != "front":
-            anchors = _collect_view_rotation_anchors(
-                persona_id=pid,
-                slug=slug,
-                target_view=normalized_view,
-            )
-            if not anchors:
-                raise AiStyleError(
-                    f"Avval «{slug}» uslubining OLD (front) ko'rinishini generatsiya qiling. "
-                    "Chap/o'ng/orqa faqat shu front rasmdan aylantiriladi — reference yetarli emas.",
-                    400,
-                )
-            anchor_view_ids = ("front",)
-            if any("LEFT profile" in label for label, _, _ in anchors):
-                anchor_view_ids = (*anchor_view_ids, "left")
-            if any("RIGHT profile" in label for label, _, _ in anchors):
-                anchor_view_ids = (*anchor_view_ids, "right")
-            if any("IDENTITY ANCHOR" in label for label, _, _ in anchors):
-                anchor_view_ids = (*anchor_view_ids, "reference")
-            rotation_prompt = _build_view_rotation_prompt(
-                persona_id=pid,
-                slug=slug,
-                view=normalized_view,
-                anchor_views=anchor_view_ids,
-            )
-            raw = _generate_image(
-                prompt=rotation_prompt,
-                reference_images=anchors,
-            )
-            method = _generation_method(edit=True)
-        else:
-            ref_bytes: bytes
-            ref_mime: str
-            ref_path = asset_file_path(persona_id=pid, slug="reference", view="front")
-            if ref_path.is_file():
-                ref_bytes = ref_path.read_bytes()
-                ref_mime = _detect_image_mime(ref_bytes, ref_path)
-            else:
-                live_ref = live_asset_path(persona_id=pid, slug="reference", view="front")
-                if live_ref.is_file():
-                    ref_bytes = live_ref.read_bytes()
-                    ref_mime = _detect_image_mime(ref_bytes, live_ref)
-                else:
-                    public_ref = _persona_reference_bytes(persona_id=pid)
-                    if public_ref is None:
-                        raise AiStyleError(
-                            "Avval reference generatsiya qiling. Uslub faqat shu portretdan edit qilinadi.",
-                            400,
-                        )
-                    ref_mime, ref_bytes = public_ref
-            catalog = _load_public_image(_catalog_style_image_path(slug))
-            catalog_bytes = catalog[1] if catalog else None
-            catalog_mime = catalog[0] if catalog else "image/webp"
-            raw = _generate_image(
-                prompt=_build_style_edit_prompt(
-                    persona_id=pid,
-                    slug=slug,
-                    has_catalog_ref=catalog is not None,
-                    view=normalized_view,
-                ),
-                persona_bytes=ref_bytes,
-                persona_mime=ref_mime,
-                catalog_bytes=catalog_bytes,
-                catalog_mime=catalog_mime,
-            )
-            method = _generation_method(edit=True)
+    anchors = _collect_view_rotation_anchors(
+        persona_id=pid,
+        slug=slug,
+        target_view=normalized_view,
+    )
+    if not anchors:
+        raise AiStyleError(
+            f"Explore'da «{slug}» uchun old (front) rasm topilmadi. "
+            "O'ng ko'rinish faqat Explore'dagi front/chap/orqa rasmlardan yaratiladi.",
+            400,
+        )
+
+    anchor_view_ids: tuple[str, ...] = ("front",)
+    if any("LEFT profile" in label for label, _, _ in anchors):
+        anchor_view_ids = (*anchor_view_ids, "left")
+    if any("BACK view" in label for label, _, _ in anchors):
+        anchor_view_ids = (*anchor_view_ids, "back")
+    if any("IDENTITY ANCHOR" in label for label, _, _ in anchors):
+        anchor_view_ids = (*anchor_view_ids, "reference")
+
+    rotation_prompt = _build_view_rotation_prompt(
+        persona_id=pid,
+        slug=slug,
+        view=normalized_view,
+        anchor_views=anchor_view_ids,
+    )
+    raw = _generate_image(
+        prompt=rotation_prompt,
+        reference_images=anchors,
+    )
+    method = _generation_method(edit=True)
 
     _resize_webp(raw, dest)
     elapsed_ms = int((time.monotonic() - started) * 1000)

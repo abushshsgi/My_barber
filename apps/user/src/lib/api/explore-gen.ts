@@ -19,6 +19,7 @@ export type ExploreGenJob = {
   live_url: string | null;
   output_mode: "public" | "media";
   asset_version?: number;
+  explore_anchors?: Record<string, boolean>;
   prompt: string;
 };
 
@@ -35,6 +36,7 @@ export type ExploreGenStatus = {
   output_mode: "public" | "media";
   views: Array<{ id: ExploreViewId; label: string }>;
   persona_labels?: Record<string, string>;
+  scope?: { persona_id: string; view: ExploreViewId };
 };
 
 export type ExploreGenResult = {
@@ -96,7 +98,7 @@ export async function generateExploreAsset(input: {
     body: JSON.stringify({
       persona_id: input.personaId,
       slug: input.slug,
-      view: input.view ?? "front",
+      view: input.view ?? "right",
       force: input.force ?? false,
     }),
   });
@@ -117,7 +119,7 @@ export async function publishExploreAsset(input: {
     body: JSON.stringify({
       persona_id: input.personaId,
       slug: input.slug,
-      view: input.view ?? "front",
+      view: input.view ?? "right",
     }),
   });
 }
