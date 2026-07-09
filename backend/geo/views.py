@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,6 +16,16 @@ def _parse_coords(request):
     except (KeyError, TypeError, ValueError):
         return None, None
     return lat, lng
+
+
+class MapConfigView(APIView):
+    """2GIS MapGL kaliti — domen cheklangan, mijoz xaritasi uchun."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        key = getattr(settings, "DGIS_MAPGL_KEY", "") or getattr(settings, "DGIS_API_KEY", "")
+        return Response({"dgis_api_key": key.strip()})
 
 
 class GeocodeView(APIView):

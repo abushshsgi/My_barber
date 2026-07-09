@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { load } from "@2gis/mapgl";
-import { getDgisApiKey } from "./api-key";
+import { resolveDgisApiKey } from "./api-key";
 import { fromMapGlCoords, TASHKENT_CENTER, toMapGlCoords } from "./constants";
 
 export type MapPickerProps = {
@@ -39,12 +39,16 @@ export function MapPicker({
     let destroyed = false;
     let map: mapgl.Map | undefined;
 
-    void load().then((mapglAPI) => {
+    void (async () => {
+      const apiKey = await resolveDgisApiKey();
+      if (destroyed || !containerRef.current || !apiKey) return;
+
+      const mapglAPI = await load();
       if (destroyed || !containerRef.current) return;
       map = new mapglAPI.Map(containerRef.current, {
         center: toMapGlCoords(initialLat, initialLng),
         zoom,
-        key: getDgisApiKey(),
+        key: apiKey,
         zoomControl: true,
         disableRotationByUserInteraction: true,
         disablePitchByUserInteraction: true,
@@ -60,7 +64,7 @@ export function MapPicker({
         const { lat: nextLat, lng: nextLng } = fromMapGlCoords(center);
         onCoordsRef.current(nextLat, nextLng);
       });
-    });
+    })();
 
     return () => {
       destroyed = true;

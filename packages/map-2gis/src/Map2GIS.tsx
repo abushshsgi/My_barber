@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { load } from "@2gis/mapgl";
-import { getDgisApiKey } from "./api-key";
+import { resolveDgisApiKey } from "./api-key";
 import {
   DEFAULT_ZOOM,
   FIT_MAX_ZOOM,
@@ -200,16 +200,18 @@ export function Map2GIS({
     const el = containerRef.current;
     if (!el) return;
 
-    const apiKey = getDgisApiKey();
-    if (!apiKey) {
-      const message = "Xarita yuklanmadi. 2GIS API kaliti sozlanmagan.";
-      setMapError(message);
-      onMapErrorRef.current?.(message);
-      return;
-    }
-
     let destroyed = false;
     let map: mapgl.Map | undefined;
+
+    void (async () => {
+      const apiKey = await resolveDgisApiKey();
+      if (destroyed) return;
+      if (!apiKey) {
+        const message = "Xarita yuklanmadi. 2GIS API kaliti sozlanmagan.";
+        setMapError(message);
+        onMapErrorRef.current?.(message);
+        return;
+      }
 
     const notifyResize = () => {
       const m = mapRef.current as (mapgl.Map & { invalidateSize?: () => void }) | null;
@@ -351,6 +353,7 @@ export function Map2GIS({
         setMapError(message);
         onMapErrorRef.current?.(message);
       });
+    })();
 
     return () => {
       destroyed = true;

@@ -156,7 +156,7 @@ from ai.views import (
     HairstyleListView,
 )
 from chat.views import ConversationListCreateView, ConversationMarkReadView, ConversationMessagesView
-from geo.views import CurrencyRatesView, GeocodeView, ReverseGeocodeView, ValidateLocationView
+from geo.views import CurrencyRatesView, GeocodeView, MapConfigView, ReverseGeocodeView, ValidateLocationView
 from notifications.push_views import BarberPushTokenView
 from wallet.payment_confirm import PaymentConfirmView
 from wallet.payment_views import PaymentCheckoutView, PaymentProvidersView
@@ -252,6 +252,7 @@ api_routes = [
     path("admin/admins/", AdminAdminAccountListCreateView.as_view()),
     path("admin/admins/<int:pk>/", AdminAdminAccountDetailView.as_view()),
     path("regions/", UzRegionsView.as_view()),
+    path("geo/map-config/", MapConfigView.as_view()),
     path("geo/geocode/", GeocodeView.as_view()),
     path("geo/reverse/", ReverseGeocodeView.as_view()),
     path("geo/validate/", ValidateLocationView.as_view()),

@@ -11,7 +11,7 @@ from geo.region_resolver import (
     _match_region_from_text,
 )
 from geo.services.dgis import DgisGeocoderError, GeocodeResult, geocode_query, reverse_geocode
-from geo.views import GeocodeView, ReverseGeocodeView, ValidateLocationView
+from geo.views import GeocodeView, MapConfigView, ReverseGeocodeView, ValidateLocationView
 
 
 class RegionResolverTests(SimpleTestCase):
@@ -208,3 +208,21 @@ class GeocodeViewTests(SimpleTestCase):
         self.assertTrue(response.data["matches_selected"])
         self.assertTrue(response.data["has_coverage"])
         self.assertEqual(response.data["salons_published"], 5)
+
+
+class MapConfigViewTests(SimpleTestCase):
+    @override_settings(DGIS_API_KEY="mapgl-test-key")
+    def test_map_config_returns_key(self):
+        factory = APIRequestFactory()
+        request = factory.get("/api/v1/geo/map-config/")
+        response = MapConfigView.as_view()(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["dgis_api_key"], "mapgl-test-key")
+
+    @override_settings(DGIS_API_KEY="")
+    def test_map_config_empty_when_unset(self):
+        factory = APIRequestFactory()
+        request = factory.get("/api/v1/geo/map-config/")
+        response = MapConfigView.as_view()(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["dgis_api_key"], "")

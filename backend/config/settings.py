@@ -105,6 +105,7 @@ if not _api_public_base:
         _api_public_base = f"https://{_api_host.lstrip('.')}"
 API_PUBLIC_BASE_URL = _api_public_base
 DGIS_API_KEY = os.environ.get("DGIS_API_KEY", "").strip()
+DGIS_MAPGL_KEY = os.environ.get("DGIS_MAPGL_KEY", "").strip() or DGIS_API_KEY
 # Scan + tahlil: faqat gemini-2.5-flash (AI Studio kalit)
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash"
 

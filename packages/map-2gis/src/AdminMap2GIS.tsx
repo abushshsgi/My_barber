@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { load } from "@2gis/mapgl";
-import { getDgisApiKey } from "./api-key";
+import { resolveDgisApiKey } from "./api-key";
 import { UZ_CENTER, toMapGlCoords } from "./constants";
 import { buildAdminPinHtml, buildPopupHtml } from "./markers";
 import { bindHtmlMarkerClick } from "./html-marker-events";
@@ -37,18 +37,22 @@ export function AdminMap2GIS({ salons, barbers, className, style }: AdminMap2GIS
     let destroyed = false;
     let map: mapgl.Map | undefined;
 
-    void load().then((mapglAPI) => {
+    void (async () => {
+      const apiKey = await resolveDgisApiKey();
+      if (destroyed || !containerRef.current || !apiKey) return;
+
+      const mapglAPI = await load();
       if (destroyed || !containerRef.current) return;
       mapglRef.current = mapglAPI;
       map = new mapglAPI.Map(containerRef.current, {
         center: toMapGlCoords(UZ_CENTER.lat, UZ_CENTER.lng),
         zoom: 6,
-        key: getDgisApiKey(),
+        key: apiKey,
         zoomControl: true,
       });
       mapRef.current = map;
       setMapReady(true);
-    });
+    })();
 
     return () => {
       destroyed = true;
