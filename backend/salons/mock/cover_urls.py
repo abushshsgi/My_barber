@@ -5,8 +5,10 @@ from __future__ import annotations
 import re
 
 from salons.mock.pexels import BUNDLED_PHOTO_IDS, pexels_cdn_url
+from salons.mock.demo_seed import DEMO_MARKER
 from salons.mock.tashkent_salons import MOCK_MARKER
 
+_DEMO_SLUG_RE = re.compile(r"^demo-salon-\d{2}$")
 _MOCK_SLUG_RE = re.compile(r"^mock-tashkent-(\d{3})$")
 _KINDS = ("barber", "barber", "barber", "beauty", "nails", "spa")
 
@@ -14,10 +16,17 @@ _KINDS = ("barber", "barber", "barber", "beauty", "nails", "spa")
 def is_mock_salon(salon) -> bool:
     desc = getattr(salon, "description", "") or ""
     slug = getattr(salon, "slug", "") or ""
-    return desc.startswith(MOCK_MARKER) or slug.startswith("mock-tashkent-")
+    return (
+        desc.startswith(MOCK_MARKER)
+        or desc.startswith(DEMO_MARKER)
+        or slug.startswith("mock-tashkent-")
+        or bool(_DEMO_SLUG_RE.match(slug))
+    )
 
 
 def mock_kind_from_slug(slug: str) -> str:
+    if _DEMO_SLUG_RE.match(slug or ""):
+        return "barber"
     m = _MOCK_SLUG_RE.match(slug or "")
     if not m:
         return "barber"
@@ -29,7 +38,14 @@ def mock_cover_photo_id(slug: str, offset: int = 0) -> int:
     kind = mock_kind_from_slug(slug)
     pool = BUNDLED_PHOTO_IDS.get(kind, BUNDLED_PHOTO_IDS["barber"])
     m = _MOCK_SLUG_RE.match(slug or "")
-    idx = (int(m.group(1)) - 1 if m else 0) + offset
+    if m:
+        idx = int(m.group(1)) - 1 + offset
+        return pool[idx % len(pool)]
+    dm = _DEMO_SLUG_RE.match(slug or "")
+    if dm:
+        idx = int(slug.rsplit("-", 1)[-1]) - 1 + offset
+        return pool[idx % len(pool)]
+    idx = offset
     return pool[idx % len(pool)]
 
 
