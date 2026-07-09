@@ -189,39 +189,49 @@ function HomeMixedBarberCard({ item }: { item: Extract<HomeDiscoveryItem, { type
       : `/booking/barber/${barber.barberId}`;
 
   return (
-    <div className="flex w-[168px] shrink-0 flex-col rounded-2xl bg-surface p-3 sm:w-[200px] lg:w-[220px]">
-      <Link to="/barber/$barberId" params={{ barberId: barber.barberId }} preload="intent" className="min-w-0">
-        <div className="relative mb-2 aspect-[4/3] overflow-hidden rounded-xl bg-muted">
+    <div className="flex w-[168px] shrink-0 flex-col sm:w-[200px] lg:w-[220px]">
+      <Link
+        to="/barber/$barberId"
+        params={{ barberId: barber.barberId }}
+        preload="intent"
+        className="group relative block aspect-[3/4] overflow-hidden rounded-3xl shadow-[0_12px_40px_-16px_rgba(0,0,0,0.35)] transition duration-300 active:scale-[0.98]"
+      >
+        <div className="absolute inset-0 bg-muted">
           {barber.avatar ? (
-            <img src={barber.avatar} alt="" className="size-full object-cover" loading="lazy" />
+            <img src={barber.avatar} alt="" className="size-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
           ) : (
-            <div className="grid size-full place-items-center">
-              <User className="size-8 text-muted-foreground" />
+            <div className="grid size-full place-items-center bg-gradient-to-br from-muted to-muted-foreground/20">
+              <User className="size-10 text-muted-foreground/60" />
             </div>
           )}
-          <span className="absolute left-2 top-2 rounded-full bg-foreground px-2 py-0.5 text-[10px] font-bold text-background">
-            {t("map.tabBarbers", { defaultValue: "Usta" })}
-          </span>
         </div>
-        <p className="truncate text-sm font-bold">{barber.name}</p>
-        {barber.salonName ? (
-          <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{barber.salonName}</p>
-        ) : null}
-        <div className="mt-1 flex items-center justify-between gap-2 text-[11px]">
-          {barber.rating > 0 ? (
-            <span className="inline-flex items-center gap-0.5 font-semibold">
-              <Star className="size-3 fill-foreground" />
-              {barber.rating.toFixed(1)}
-            </span>
-          ) : (
-            <span />
-          )}
-          {barber.priceFrom > 0 ? <span className="font-bold">{shortPrice(barber.priceFrom)}</span> : null}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/5" />
+        <span className="absolute left-3 top-3 rounded-full border border-white/25 bg-white/15 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-md">
+          {t("map.tabBarbers", { defaultValue: "Usta" })}
+        </span>
+        <div className="absolute inset-x-3 bottom-3 rounded-2xl border border-white/20 bg-white/10 p-3 backdrop-blur-xl">
+          <p className="truncate text-sm font-bold text-white">{barber.name}</p>
+          {barber.salonName ? (
+            <p className="mt-0.5 truncate text-[11px] text-white/80">{barber.salonName}</p>
+          ) : null}
+          <div className="mt-2.5 flex items-center justify-between gap-2 text-xs">
+            {barber.rating > 0 ? (
+              <span className="inline-flex items-center gap-1 font-semibold text-white">
+                <Star className="size-3.5 fill-gold text-gold" />
+                {barber.rating.toFixed(1)}
+              </span>
+            ) : (
+              <span />
+            )}
+            {barber.priceFrom > 0 ? (
+              <span className="font-bold text-white/90">{shortPrice(barber.priceFrom)}</span>
+            ) : null}
+          </div>
         </div>
       </Link>
       <Link
         to={bookTo}
-        className="mt-2 rounded-xl bg-foreground px-3 py-2 text-center text-[11px] font-bold text-background"
+        className="mt-2.5 rounded-2xl border border-foreground/10 bg-foreground/5 px-3 py-2.5 text-center text-[11px] font-bold text-foreground backdrop-blur-sm transition hover:bg-foreground/10"
       >
         {t("map.bookBarber", { defaultValue: "Bron qilish" })}
       </Link>
@@ -244,11 +254,11 @@ export function HomeMobileMixedDiscovery({ items }: { items: HomeDiscoveryItem[]
           <ChevronRight className="size-4" />
         </Link>
       </div>
-      <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 lg:mx-0 lg:px-0">
+      <div className="no-scrollbar -mx-4 flex gap-4 overflow-x-auto px-4 pb-2 lg:mx-0 lg:gap-5 lg:px-0">
         {items.map((item) =>
           item.type === "salon" ? (
             <div key={`s-${item.salon.id}`} className="w-[168px] shrink-0 sm:w-[200px] lg:w-[220px]">
-              <MobileSalonCard salon={item.salon} layout="vertical" />
+              <MobileSalonCard salon={item.salon} layout="vertical" variant="glass" />
             </div>
           ) : (
             <HomeMixedBarberCard key={`b-${item.barber.id}`} item={item} />

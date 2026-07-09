@@ -6,16 +6,17 @@ import { prefetchSalonDetail } from "@/lib/prefetch-salon";
 type Props = {
   salon: Salon;
   layout?: "vertical" | "horizontal";
+  variant?: "solid" | "glass";
 };
 
-export function MobileSalonCard({ salon, layout = "horizontal" }: Props) {
+export function MobileSalonCard({ salon, layout = "horizontal", variant = "solid" }: Props) {
   return (
     <div
       className="block w-full min-w-0"
       onPointerEnter={() => prefetchSalonDetail(salon.id)}
       onTouchStart={() => prefetchSalonDetail(salon.id)}
     >
-      <SalonCardPremium salon={toUiSalon(salon)} layout={layout} />
+      <SalonCardPremium salon={toUiSalon(salon)} layout={layout} variant={variant} />
     </div>
   );
 }
