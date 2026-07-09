@@ -10,7 +10,8 @@ type Props = {
   className?: string;
   autoPlay?: boolean;
   showThumbs?: boolean;
-  /** Mobile explore detail — keng, chegarasiz rasm */
+  description?: string;
+  /** Mobile explore detail */
   variant?: "default" | "mobileHero";
 };
 
@@ -21,6 +22,7 @@ export function ExploreStyleGallery({
   className,
   autoPlay = true,
   showThumbs = true,
+  description,
   variant = "default",
 }: Props) {
   const isMobileHero = variant === "mobileHero";
@@ -37,15 +39,71 @@ export function ExploreStyleGallery({
 
   if (!slides.length) return null;
 
+  const thumbRow =
+    showThumbs && slides.length > 1 ? (
+      <div
+        className={cn(
+          "grid gap-2",
+          isMobileHero
+            ? "mt-4 grid-cols-4"
+            : slides.length > 1
+              ? "grid-cols-4"
+              : "hidden",
+        )}
+      >
+        {slides.map((item, index) => (
+          <button
+            key={`${item.view}-${item.url}`}
+            type="button"
+            onClick={() => setActiveIndex(index)}
+            className={cn(
+              "min-w-0 text-left transition",
+              index === activeIndex ? "opacity-100" : "opacity-70 active:opacity-100",
+            )}
+          >
+            <div
+              className={cn(
+                "relative aspect-[3/4] overflow-hidden bg-[#E8E8E8]",
+                isMobileHero ? "rounded-xl" : "rounded-xl",
+                index === activeIndex
+                  ? "ring-2 ring-foreground ring-offset-2 ring-offset-background"
+                  : "ring-1 ring-border/60",
+              )}
+            >
+              <img
+                src={item.url}
+                alt={`${title} ${item.label}`}
+                className="absolute inset-0 h-full w-full object-cover object-top"
+              />
+            </div>
+            <p
+              className={cn(
+                "truncate text-center font-bold uppercase tracking-wide text-muted-foreground",
+                isMobileHero ? "mt-1.5 text-[9px]" : "py-1 text-[10px]",
+              )}
+            >
+              {item.label}
+            </p>
+          </button>
+        ))}
+      </div>
+    ) : null;
+
   return (
     <div className={cn(isMobileHero ? "space-y-0" : "space-y-3", className)}>
       <div
         className={cn(
           "overflow-hidden bg-[#E8E8E8]",
-          isMobileHero ? "rounded-none" : "rounded-3xl border border-border",
+          isMobileHero ? "rounded-[20px]" : "rounded-3xl border border-border",
         )}
       >
-        <div className={cn(isMobileHero ? "relative min-h-[min(62dvh,560px)]" : "relative aspect-[3/4]")}>
+        <div
+          className={cn(
+            isMobileHero
+              ? "relative aspect-[3/4] w-full max-h-[min(52dvh,460px)]"
+              : "relative aspect-[3/4]",
+          )}
+        >
           <img
             key={active?.url}
             src={active?.url}
@@ -61,7 +119,7 @@ export function ExploreStyleGallery({
               {active.label}
             </span>
           ) : null}
-          {slides.length > 1 ? (
+          {!isMobileHero && slides.length > 1 ? (
             <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
               {slides.map((item, index) => (
                 <span
@@ -77,32 +135,11 @@ export function ExploreStyleGallery({
         </div>
       </div>
 
-      {showThumbs && slides.length > 1 ? (
-        <div className="grid grid-cols-4 gap-2">
-          {slides.map((item, index) => (
-            <button
-              key={`${item.view}-${item.url}`}
-              type="button"
-              onClick={() => setActiveIndex(index)}
-              className={cn(
-                "overflow-hidden rounded-xl border-2 transition",
-                index === activeIndex ? "border-foreground" : "border-transparent opacity-80 hover:opacity-100",
-              )}
-            >
-              <div className="relative aspect-[3/4] bg-[#E8E8E8]">
-                <img
-                  src={item.url}
-                  alt={`${title} ${item.label}`}
-                  className="absolute inset-0 h-full w-full object-cover object-center"
-                />
-              </div>
-              <p className="py-1 text-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                {item.label}
-              </p>
-            </button>
-          ))}
-        </div>
+      {isMobileHero && description ? (
+        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{description}</p>
       ) : null}
+
+      {thumbRow}
     </div>
   );
 }
