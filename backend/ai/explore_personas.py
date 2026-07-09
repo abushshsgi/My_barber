@@ -143,7 +143,7 @@ PERSONA_READY_ASSETS: dict[str, frozenset[str]] = {
 # bu yerda faqat chap/o'ng/orqa kabi qo'shimcha ko'rinishlar e'lon qilinadi. Production
 # backend (Railway) da public papka bo'lmagani uchun fayl tizimiga tayanmaymiz.
 PERSONA_READY_VIEWS: dict[str, dict[str, tuple[str, ...]]] = {
-    "niki": {slug: ("left",) for slug in NIKI_READY_SLUGS},
+    "niki": {slug: ("left", "back") for slug in NIKI_READY_SLUGS},
 }
 
 
