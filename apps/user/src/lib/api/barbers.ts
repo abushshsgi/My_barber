@@ -30,6 +30,16 @@ export async function findBarbers(q: string): Promise<import("./types").ApiBarbe
   return apiJson(`/api/v1/barbers/find/${qs({ q })}`);
 }
 
+export async function fetchBarbersList(params?: {
+  region?: string;
+}): Promise<import("./types").ApiBarberPublic[]> {
+  const body = await apiJson<
+    import("./types").ApiBarberPublic[] | import("./types").Paginated<import("./types").ApiBarberPublic>
+  >(`/api/v1/barbers/${qs({ region: params?.region })}`);
+  if (Array.isArray(body)) return body;
+  return Array.isArray(body.results) ? body.results : [];
+}
+
 export async function fetchIndependentAvailability(params: {
   barber: number;
   date: string;

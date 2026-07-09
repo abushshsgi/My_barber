@@ -17,13 +17,15 @@ import { useHairstyles } from "@/hooks/use-hairstyles";
 import { useMe } from "@/hooks/use-me";
 import { useRecommendContext } from "@/hooks/use-recommend-context";
 import { useSalonsList, useSalonsNearby, useSalonSearch } from "@/hooks/use-salons";
-import { useBarberFind } from "@/hooks/use-barbers";
+import { useBarberFind, useBarbersList, useBarbersNearby } from "@/hooks/use-barbers";
+import { buildMixedDiscoveryItems } from "@/lib/home-discovery";
 import { hasValidMapCoords } from "@/lib/map-utils";
-import { rankSalonsForUser } from "@/lib/recommendations";
+import { rankBarbersForUser, rankSalonsForUser } from "@/lib/recommendations";
 
 export function useHomeData() {
   const { audience } = useAudience();
   const { data: me } = useMe();
+  const catalogRegion = me?.region?.trim() || undefined;
   const { personaId } = useExplorePersona();
   const ageGroup = useUserAgeGroup();
   const menPersona = audience === "men" ? personaId : null;
@@ -53,6 +55,16 @@ export function useHomeData() {
     searchActive ? query : "",
     searchActive,
   );
+  const { data: nearbyBarbers = [], isLoading: nearbyBarbersLoading } = useBarbersNearby(
+    hasCoords ? ctx.lat! : undefined,
+    hasCoords ? ctx.lng! : undefined,
+    25,
+    !searchActive,
+  );
+  const { data: listBarbers = [], isLoading: listBarbersLoading } = useBarbersList(
+    catalogRegion,
+    !searchActive,
+  );
 
   useEffect(() => {
     setCat(audienceToCategory(audience));
@@ -80,10 +92,18 @@ export function useHomeData() {
     );
   }, [salons, searchSalons, searchActive, audience, effectiveCat, query]);
 
-  const filteredBarbers = useMemo(() => {
-    if (!searchActive) return [];
-    return searchBarbers;
-  }, [searchActive, searchBarbers]);
+  const browseBarbers = useMemo(() => {
+    if (searchActive) return searchBarbers;
+    const base = hasCoords && nearbyBarbers.length > 0 ? nearbyBarbers : listBarbers;
+    return rankBarbersForUser(base, ctx);
+  }, [searchActive, searchBarbers, hasCoords, nearbyBarbers, listBarbers, ctx]);
+
+  const filteredBarbers = browseBarbers;
+
+  const mixedDiscovery = useMemo(
+    () => buildMixedDiscoveryItems(filtered.slice(0, 10), browseBarbers.slice(0, 10), 14),
+    [filtered, browseBarbers],
+  );
 
   const trending = useMemo(() => {
     const hints = readTrendingFaceHints();
@@ -111,6 +131,10 @@ export function useHomeData() {
     () => salons.filter((s) => hasValidMapCoords(s.lat, s.lng)),
     [salons],
   );
+  const mapBarbers = useMemo(
+    () => browseBarbers.filter((b) => hasValidMapCoords(b.lat, b.lng)),
+    [browseBarbers],
+  );
   const personalized = hasCoords || Boolean(me?.region);
 
   return {
@@ -123,14 +147,22 @@ export function useHomeData() {
     visibleCategoryKeys,
     filtered,
     filteredBarbers,
+    browseBarbers,
+    mixedDiscovery,
     searchActive,
     mapSalons,
+    mapBarbers,
     trending,
     exploreRow,
     topOffer,
     featuredSalons,
     personalized,
-    loading: nearbyLoading || listLoading || (searchActive && (searchSalonsLoading || searchBarbersLoading)),
+    loading:
+      nearbyLoading ||
+      listLoading ||
+      nearbyBarbersLoading ||
+      listBarbersLoading ||
+      (searchActive && (searchSalonsLoading || searchBarbersLoading)),
     error,
   };
 }

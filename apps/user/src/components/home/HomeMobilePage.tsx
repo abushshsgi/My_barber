@@ -8,6 +8,7 @@ import {
   HomeMobileFeatured,
   HomeMobileHero,
   HomeMobileMapTeaser,
+  HomeMobileMixedDiscovery,
   HomeMobileNearby,
   HomeMobileQuickActions,
   MotionSection,
@@ -50,7 +51,11 @@ export function HomeMobilePage({ data }: Props) {
           </MotionSection>
 
           <MotionSection>
-            <HomeMobileMapTeaser count={data.mapSalons.length} />
+            <HomeMobileMapTeaser count={data.mapSalons.length + data.mapBarbers.length} />
+          </MotionSection>
+
+          <MotionSection>
+            <HomeMobileMixedDiscovery items={data.mixedDiscovery} />
           </MotionSection>
 
           <MotionSection>

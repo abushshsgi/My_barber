@@ -1,70 +1,187 @@
-"""Uzcombinator / investor demo — 30 salon (15 Toshkent + 15 Buxoro), 10 barber."""
+"""Uzcombinator / investor demo — Toshkent (40+20) va Buxoro (15+5)."""
 
 from __future__ import annotations
 
 from salons.mock.tashkent_salons import SERVICE_TEMPLATES
 
 DEMO_MARKER = "DEMO_MYSALOON"
-DEMO_SALON_COUNT = 30
-DEMO_BARBER_COUNT = 10
-DEMO_SALONS_PER_CITY = 15
-DEMO_BARBERS_PER_CITY = 5
+DEMO_TOSHKENT_SALON_COUNT = 40
+DEMO_TOSHKENT_BARBER_COUNT = 20
+DEMO_BUXORO_SALON_COUNT = 15
+DEMO_BUXORO_BARBER_COUNT = 5
+DEMO_SALON_COUNT = DEMO_TOSHKENT_SALON_COUNT + DEMO_BUXORO_SALON_COUNT
+DEMO_BARBER_COUNT = DEMO_TOSHKENT_BARBER_COUNT + DEMO_BUXORO_BARBER_COUNT
 DEMO_BARBER_PASSWORD = "DemoBarber2026!"
 
 DEMO_REGION_TOSHKENT = "TOSHKENT_SH"
 DEMO_REGION_BUXORO = "BUXORO"
 
+# Eski testlar uchun
+DEMO_SALONS_PER_CITY = DEMO_TOSHKENT_SALON_COUNT
+DEMO_BARBERS_PER_CITY = DEMO_TOSHKENT_BARBER_COUNT
+
 _TOSHKENT_CENTER = (41.2995, 69.2401)
 _BUXORO_CENTER = (39.7747, 64.4286)
 
-_DEMO_BARBERS: list[dict] = [
-    {"slug": "demo-barber-01", "full_name": "Jasur Rahimov", "phone": "+998901110101", "region": DEMO_REGION_TOSHKENT},
-    {"slug": "demo-barber-02", "full_name": "Bobur Tursunov", "phone": "+998901110102", "region": DEMO_REGION_TOSHKENT},
-    {"slug": "demo-barber-03", "full_name": "Sardor Karimov", "phone": "+998901110103", "region": DEMO_REGION_TOSHKENT},
-    {"slug": "demo-barber-04", "full_name": "Timur Nazarov", "phone": "+998901110104", "region": DEMO_REGION_TOSHKENT},
-    {"slug": "demo-barber-05", "full_name": "Rustam Alimov", "phone": "+998901110105", "region": DEMO_REGION_TOSHKENT},
-    {"slug": "demo-barber-06", "full_name": "Shahzod Yusupov", "phone": "+998901110106", "region": DEMO_REGION_BUXORO},
-    {"slug": "demo-barber-07", "full_name": "Otabek Mirzayev", "phone": "+998901110107", "region": DEMO_REGION_BUXORO},
-    {"slug": "demo-barber-08", "full_name": "Bekzod Ismoilov", "phone": "+998901110108", "region": DEMO_REGION_BUXORO},
-    {"slug": "demo-barber-09", "full_name": "Farhod Ergashev", "phone": "+998901110109", "region": DEMO_REGION_BUXORO},
-    {"slug": "demo-barber-10", "full_name": "Ulug'bek Qodirov", "phone": "+998901110110", "region": DEMO_REGION_BUXORO},
+_BARBER_FIRST_NAMES = [
+    "Jasur",
+    "Bobur",
+    "Sardor",
+    "Timur",
+    "Rustam",
+    "Shahzod",
+    "Otabek",
+    "Bekzod",
+    "Farhod",
+    "Ulug'bek",
+    "Aziz",
+    "Dilshod",
+    "Javohir",
+    "Kamol",
+    "Mirzo",
+    "Nodir",
+    "Parviz",
+    "Ravshan",
+    "Sanjar",
+    "Temur",
+    "Umid",
+    "Vohid",
+    "Yusuf",
+    "Zafar",
+    "Alisher",
 ]
 
-# (name, district, lat, lng, street)
-_TOSHKENT_SALON_BLUEPRINTS: list[tuple[str, str, float, float, str]] = [
-    ("Black Blade", "Yunusobod", 41.3542, 69.2891, "Amir Temur ko'chasi, 12"),
-    ("Gentleman's Cut", "Chilonzor", 41.2745, 69.2043, "Navoiy ko'chasi, 45"),
-    ("Urban Fade", "Mirzo Ulug'bek", 41.3418, 69.3347, "Bobur ko'chasi, 8"),
-    ("Classic Barbers", "Yakkasaroy", 41.2921, 69.2712, "Mustaqillik shoh ko'chasi, 101"),
-    ("Premium Fade", "Sergeli", 41.2256, 69.2189, "Shota Rustaveli ko'chasi, 33"),
-    ("Barber House", "Olmazor", 41.3189, 69.1987, "Buyuk Ipak yo'li, 77"),
-    ("Iron Comb", "Shayxontohur", 41.3124, 69.2418, "Farobiy ko'chasi, 19"),
-    ("Sharp Line", "Uchtepa", 41.3087, 69.1789, "Bunyodkor ko'chasi, 56"),
-    ("Master Cut", "Yashnobod", 41.3156, 69.3021, "Oybek ko'chasi, 24"),
-    ("Royal Barber", "Mirobod", 41.2995, 69.2789, "Qoratosh ko'chasi, 61"),
-    ("Street Style", "Bektemir", 41.2334, 69.3342, "Afrosiyob ko'chasi, 5"),
-    ("Fade Kings", "Qibray", 41.3891, 69.4653, "Yangi Qo'yliq ko'chasi, 88"),
-    ("Barber Pro", "Zangiota", 41.2567, 69.1456, "Temur Malik ko'chasi, 14"),
-    ("Toshkent Cut", "Yunusobod", 41.3610, 69.2950, "Registon ko'chasi, 3"),
-    ("Elite Barber", "Chilonzor", 41.2680, 69.2110, "Chorsu bozori yonida, 9"),
+_BARBER_LAST_NAMES = [
+    "Rahimov",
+    "Tursunov",
+    "Karimov",
+    "Nazarov",
+    "Alimov",
+    "Yusupov",
+    "Mirzayev",
+    "Ismoilov",
+    "Ergashev",
+    "Qodirov",
+    "Saidov",
+    "Normatov",
+    "Khasanov",
+    "Erkinov",
+    "Toshev",
 ]
 
-_BUXORO_SALON_BLUEPRINTS: list[tuple[str, str, float, float, str]] = [
-    ("Registon Barber", "Markaz", 39.7681, 64.4556, "Mustaqillik ko'chasi, 18"),
-    ("Minorai Kalon Cut", "Eski shahar", 39.7756, 64.4223, "Poi Kalon yo'li, 4"),
-    ("Nasaf Fade", "Markaz", 39.7710, 64.4310, "Navoiy ko'chasi, 56"),
-    ("Ark Barbers", "Eski shahar", 39.7785, 64.4158, "Ark qal'asi yonida, 2"),
-    ("Buxoro Gentleman", "Alpomish", 39.7800, 64.4400, "Alpomish ko'chasi, 31"),
-    ("Silk Road Cut", "Markaz", 39.7620, 64.4480, "Ibn Sino ko'chasi, 77"),
-    ("Lyabi Hauz Style", "Eski shahar", 39.7740, 64.4195, "Lyabi Hauz maydoni, 1"),
-    ("Bahouddin Barber", "Bahouddin", 39.7835, 64.4520, "Bahouddin Naqshband ko'chasi, 9"),
-    ("Qorako'l Fade", "Yoshlar", 39.7590, 64.4620, "Yoshlar ko'chasi, 44"),
-    ("Amir Temur Cut", "Markaz", 39.7665, 64.4375, "Amir Temur ko'chasi, 102"),
-    ("Chor Minor Barber", "Tarixiy markaz", 39.7703, 64.4262, "Chor Minor ko'chasi, 6"),
-    ("Sitorai Mohi Cut", "Mikrorayon", 39.7555, 64.4410, "Sitorai Mohi ko'chasi, 15"),
-    ("Buxoro Pro", "Markaz", 39.7728, 64.4498, "Nasaf ko'chasi, 28"),
-    ("Old City Fade", "Eski shahar", 39.7768, 64.4172, "Toqi Sarrofon, 11"),
-    ("Samani Barber", "Markaz", 39.7642, 64.4533, "Ismoil Somoniy ko'chasi, 63"),
+_TOSHKENT_DISTRICTS: list[tuple[str, float, float]] = [
+    ("Yunusobod", 41.3542, 69.2891),
+    ("Chilonzor", 41.2745, 69.2043),
+    ("Mirzo Ulug'bek", 41.3418, 69.3347),
+    ("Yakkasaroy", 41.2921, 69.2712),
+    ("Sergeli", 41.2256, 69.2189),
+    ("Olmazor", 41.3189, 69.1987),
+    ("Shayxontohur", 41.3124, 69.2418),
+    ("Uchtepa", 41.3087, 69.1789),
+    ("Yashnobod", 41.3156, 69.3021),
+    ("Mirobod", 41.2995, 69.2789),
+    ("Bektemir", 41.2334, 69.3342),
+    ("Qibray", 41.3891, 69.4653),
+    ("Zangiota", 41.2567, 69.1456),
+    ("Qorasuv", 41.3123, 69.4567),
+    ("Toshkent tuman", 41.3012, 69.2123),
+]
+
+_TOSHKENT_STREETS = [
+    "Amir Temur ko'chasi",
+    "Navoiy ko'chasi",
+    "Bobur ko'chasi",
+    "Mustaqillik shoh ko'chasi",
+    "Shota Rustaveli ko'chasi",
+    "Buyuk Ipak yo'li",
+    "Farobiy ko'chasi",
+    "Bunyodkor ko'chasi",
+    "Oybek ko'chasi",
+    "Qoratosh ko'chasi",
+    "Registon ko'chasi",
+    "Tinchlik ko'chasi",
+    "Beruniy ko'chasi",
+    "Ko'kcha ko'chasi",
+    "Labzak ko'chasi",
+]
+
+_TOSHKENT_SALON_NAMES = [
+    "Black Blade",
+    "Gentleman's Cut",
+    "Urban Fade",
+    "Classic Barbers",
+    "Premium Fade",
+    "Barber House",
+    "Iron Comb",
+    "Sharp Line",
+    "Master Cut",
+    "Royal Barber",
+    "Street Style",
+    "Fade Kings",
+    "Barber Pro",
+    "Toshkent Cut",
+    "Elite Barber",
+    "Modern Fade",
+    "Sartarosh Markazi",
+    "Gold Comb",
+    "Prime Barber",
+    "Fresh Cut",
+    "Style Lab",
+    "Navoiy Barber",
+    "Brothers Cut",
+    "Old School",
+    "Barber Studio",
+    "Gentlemen Club",
+    "Fade Factory",
+    "Cut & Style",
+    "Barber Lounge",
+    "Top Fade",
+    "City Fade",
+    "Metro Barber",
+    "Capital Cut",
+    "Silk Fade",
+    "Nomad Barber",
+    "Vertex Cut",
+    "Line Up Pro",
+    "Craft Barber",
+    "Studio 41",
+    "Usta Markazi",
+]
+
+_BUXORO_DISTRICTS: list[tuple[str, float, float]] = [
+    ("Markaz", 39.7681, 64.4556),
+    ("Eski shahar", 39.7756, 64.4223),
+    ("Alpomish", 39.7800, 64.4400),
+    ("Yoshlar", 39.7590, 64.4620),
+    ("Tarixiy markaz", 39.7703, 64.4262),
+]
+
+_BUXORO_STREETS = [
+    "Mustaqillik ko'chasi",
+    "Navoiy ko'chasi",
+    "Poi Kalon yo'li",
+    "Ibn Sino ko'chasi",
+    "Amir Temur ko'chasi",
+    "Nasaf ko'chasi",
+    "Ismoil Somoniy ko'chasi",
+]
+
+_BUXORO_SALON_NAMES = [
+    "Registon Barber",
+    "Minorai Kalon Cut",
+    "Nasaf Fade",
+    "Ark Barbers",
+    "Buxoro Gentleman",
+    "Silk Road Cut",
+    "Lyabi Hauz Style",
+    "Bahouddin Barber",
+    "Qorako'l Fade",
+    "Amir Temur Cut",
+    "Chor Minor Barber",
+    "Sitorai Mohi Cut",
+    "Buxoro Pro",
+    "Old City Fade",
+    "Samani Barber",
 ]
 
 
@@ -72,26 +189,45 @@ def demo_barber_email(slug: str) -> str:
     return f"{slug}@mysaloon.demo"
 
 
-def _barber_slugs_for_region(region: str) -> list[str]:
-    return [b["slug"] for b in _DEMO_BARBERS if b["region"] == region]
+def _build_barbers(*, start_index: int, count: int, region: str) -> list[dict]:
+    barbers: list[dict] = []
+    for offset in range(count):
+        idx = start_index + offset
+        barbers.append(
+            {
+                "slug": f"demo-barber-{idx:02d}",
+                "full_name": (
+                    f"{_BARBER_FIRST_NAMES[idx % len(_BARBER_FIRST_NAMES)]} "
+                    f"{_BARBER_LAST_NAMES[(idx + 3) % len(_BARBER_LAST_NAMES)]}"
+                ),
+                "phone": f"+99890111{idx:04d}",
+                "region": region,
+            }
+        )
+    return barbers
 
 
-def _append_city_salons(
-    salons: list[dict],
-    blueprints: list[tuple[str, str, float, float, str]],
+def _build_city_salons(
     *,
+    count: int,
+    slug_start: int,
     region: str,
     city_label: str,
     barber_slugs: list[str],
-    slug_start: int,
-) -> None:
-    for idx, (name, district, lat, lng, street) in enumerate(blueprints):
+    names: list[str],
+    districts: list[tuple[str, float, float]],
+    streets: list[str],
+) -> list[dict]:
+    salons: list[dict] = []
+    for idx in range(count):
         global_idx = slug_start + idx
+        district, lat, lng = districts[idx % len(districts)]
+        street = streets[idx % len(streets)]
         owner_slug = barber_slugs[idx % len(barber_slugs)]
         salons.append(
             {
                 "slug": f"demo-salon-{global_idx + 1:02d}",
-                "name": f"{name} — {district}",
+                "name": f"{names[idx % len(names)]} — {district}",
                 "kind": "barber",
                 "region": region,
                 "city_label": city_label,
@@ -101,25 +237,43 @@ def _append_city_salons(
                 "owner_slug": owner_slug,
             }
         )
+    return salons
 
 
 def build_demo_salons() -> list[dict]:
-    salons: list[dict] = []
-    _append_city_salons(
-        salons,
-        _TOSHKENT_SALON_BLUEPRINTS,
-        region=DEMO_REGION_TOSHKENT,
-        city_label="Toshkent",
-        barber_slugs=_barber_slugs_for_region(DEMO_REGION_TOSHKENT),
-        slug_start=0,
-    )
-    _append_city_salons(
-        salons,
-        _BUXORO_SALON_BLUEPRINTS,
+    toshkent_barbers = _build_barbers(start_index=1, count=DEMO_TOSHKENT_BARBER_COUNT, region=DEMO_REGION_TOSHKENT)
+    buxoro_barbers = _build_barbers(
+        start_index=DEMO_TOSHKENT_BARBER_COUNT + 1,
+        count=DEMO_BUXORO_BARBER_COUNT,
         region=DEMO_REGION_BUXORO,
-        city_label="Buxoro",
-        barber_slugs=_barber_slugs_for_region(DEMO_REGION_BUXORO),
-        slug_start=DEMO_SALONS_PER_CITY,
+    )
+    toshkent_slugs = [b["slug"] for b in toshkent_barbers]
+    buxoro_slugs = [b["slug"] for b in buxoro_barbers]
+
+    salons: list[dict] = []
+    salons.extend(
+        _build_city_salons(
+            count=DEMO_TOSHKENT_SALON_COUNT,
+            slug_start=0,
+            region=DEMO_REGION_TOSHKENT,
+            city_label="Toshkent",
+            barber_slugs=toshkent_slugs,
+            names=_TOSHKENT_SALON_NAMES,
+            districts=_TOSHKENT_DISTRICTS,
+            streets=_TOSHKENT_STREETS,
+        )
+    )
+    salons.extend(
+        _build_city_salons(
+            count=DEMO_BUXORO_SALON_COUNT,
+            slug_start=DEMO_TOSHKENT_SALON_COUNT,
+            region=DEMO_REGION_BUXORO,
+            city_label="Buxoro",
+            barber_slugs=buxoro_slugs,
+            names=_BUXORO_SALON_NAMES,
+            districts=_BUXORO_DISTRICTS,
+            streets=_BUXORO_STREETS,
+        )
     )
     return salons
 
@@ -132,13 +286,19 @@ def demo_barber_profile_location(region: str) -> tuple[float, float, str]:
     return lat, lng, "Toshkent"
 
 
+_DEMO_BARBERS_RAW = _build_barbers(start_index=1, count=DEMO_TOSHKENT_BARBER_COUNT, region=DEMO_REGION_TOSHKENT) + _build_barbers(
+    start_index=DEMO_TOSHKENT_BARBER_COUNT + 1,
+    count=DEMO_BUXORO_BARBER_COUNT,
+    region=DEMO_REGION_BUXORO,
+)
+
 DEMO_BARBERS: list[dict] = [
     {
         **barber,
         "email": demo_barber_email(barber["slug"]),
         "username": barber["slug"].replace("-", "_"),
     }
-    for barber in _DEMO_BARBERS
+    for barber in _DEMO_BARBERS_RAW
 ]
 
 DEMO_SALONS: list[dict] = build_demo_salons()
@@ -146,7 +306,9 @@ DEMO_SALONS: list[dict] = build_demo_salons()
 assert len(DEMO_SALONS) == DEMO_SALON_COUNT
 assert len(DEMO_BARBERS) == DEMO_BARBER_COUNT
 assert len({s["name"] for s in DEMO_SALONS}) == DEMO_SALON_COUNT
-assert len([s for s in DEMO_SALONS if s["region"] == DEMO_REGION_TOSHKENT]) == DEMO_SALONS_PER_CITY
-assert len([s for s in DEMO_SALONS if s["region"] == DEMO_REGION_BUXORO]) == DEMO_SALONS_PER_CITY
+assert len([s for s in DEMO_SALONS if s["region"] == DEMO_REGION_TOSHKENT]) == DEMO_TOSHKENT_SALON_COUNT
+assert len([s for s in DEMO_SALONS if s["region"] == DEMO_REGION_BUXORO]) == DEMO_BUXORO_SALON_COUNT
+assert len([b for b in DEMO_BARBERS if b["region"] == DEMO_REGION_TOSHKENT]) == DEMO_TOSHKENT_BARBER_COUNT
+assert len([b for b in DEMO_BARBERS if b["region"] == DEMO_REGION_BUXORO]) == DEMO_BUXORO_BARBER_COUNT
 
 DEMO_SERVICE_TEMPLATES = SERVICE_TEMPLATES["barber"]

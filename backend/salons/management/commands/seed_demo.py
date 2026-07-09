@@ -12,7 +12,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from accounts.uz_regions import UzRegion
-from barbers.models import Barber, BarberProfile
+from barbers.models import Barber, BarberProfile, BarberService
 from bookings.models import Booking
 from chat.models import Conversation, Message
 from notifications.models import Notification
@@ -34,6 +34,7 @@ from salons.mock.demo_seed import (
 )
 from salons.mock.mock_reviews import _ensure_mock_customers, purge_mock_review_users, seed_reviews_for_salon
 from salons.models import BarberWorkingHours, Salon, SalonHours, SalonMembership, Service
+from salons.owner_setup import sync_owner_profile_location_from_salon
 
 User = get_user_model()
 
@@ -166,7 +167,7 @@ class Command(BaseCommand):
             for svc_name, price, duration in DEMO_SERVICE_TEMPLATES:
                 Service.objects.update_or_create(
                     salon=salon,
-                    barber=None,
+                    barber=owner,
                     name=svc_name,
                     defaults={
                         "price": Decimal(str(price)),
@@ -174,6 +175,19 @@ class Command(BaseCommand):
                         "is_active": True,
                     },
                 )
+
+            profile = BarberProfile.objects.get(barber=owner)
+            for svc_name, price, duration in DEMO_SERVICE_TEMPLATES:
+                BarberService.objects.update_or_create(
+                    profile=profile,
+                    name=svc_name,
+                    defaults={
+                        "price": Decimal(str(price)),
+                        "duration_minutes": duration,
+                        "is_active": True,
+                    },
+                )
+            sync_owner_profile_location_from_salon(owner, salon)
 
             if review_customers:
                 reviews_created += seed_reviews_for_salon(salon, owner, entry["kind"], review_customers, rng)

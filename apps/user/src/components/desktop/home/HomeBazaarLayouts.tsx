@@ -9,6 +9,7 @@ import {
 } from "./bazaar/BazaarParts";
 import { HomeSalonSectionsBlock, useHomeLayoutSlice } from "./home-layout-shared";
 import { HomeUnifiedSearchResults } from "@/components/home/HomeBlocks";
+import { HomeMobileMixedDiscovery } from "@/components/home/HomeMobileSections";
 
 type Props = { data: HomeData };
 
@@ -55,6 +56,7 @@ export function HomeBazaarClassic({ data }: Props) {
           )}
         </div>
       </div>
+      {!data.searchActive ? <HomeMobileMixedDiscovery items={data.mixedDiscovery} /> : null}
       <HomeSalonSectionsBlock data={data} rowClass={ROW} showCategoryStrip={!data.searchActive} />
       <div className="hidden h-6 lg:block" aria-hidden />
     </div>

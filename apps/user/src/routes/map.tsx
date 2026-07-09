@@ -14,7 +14,8 @@ import { resolveMapAudienceFilter, useAudience } from "@/hooks/use-audience";
 import { useIsLgUp } from "@/hooks/use-mobile";
 import { useRecommendContext } from "@/hooks/use-recommend-context";
 import { useSalonsList, useSalonsNearby, useSalonSearch } from "@/hooks/use-salons";
-import { useBarbersNearby, useBarberFind } from "@/hooks/use-barbers";
+import { useBarbersNearby, useBarberFind, useBarbersList } from "@/hooks/use-barbers";
+import { useMe } from "@/hooks/use-me";
 import { shortPrice, type Salon } from "@/lib/mock-data";
 import { applyMapBarberFilters } from "@/lib/map-barber-filters";
 import {
@@ -147,6 +148,8 @@ function MapView() {
   useEffect(() => setMounted(true), []);
 
   const ctx = useRecommendContext();
+  const { data: me } = useMe();
+  const catalogRegion = me?.region?.trim() || undefined;
   const hasCoords = ctx.lat != null && ctx.lng != null;
   const [discoveryTab, setDiscoveryTab] = useState<MapDiscoveryTab>("salons");
   const [query, setQuery] = useState(routeQ);
@@ -180,6 +183,12 @@ function MapView() {
     25,
     discoveryTab === "barbers",
   );
+  const {
+    data: listBarbers = [],
+    isLoading: listBarbersLoading,
+    isError: listBarbersError,
+    refetch: refetchListBarbers,
+  } = useBarbersList(catalogRegion, discoveryTab === "barbers");
 
   const baseSalons = useMemo(() => {
     let base =
@@ -260,7 +269,7 @@ function MapView() {
   }, []);
 
   const baseBarbers = useMemo(() => {
-    let barbers = nearbyBarbers;
+    let barbers = nearbyBarbers.length > 0 ? nearbyBarbers : listBarbers;
     if (apiSearchActive && apiSearchBarbers.length > 0) {
       const byId = new Map(barbers.map((b) => [b.id, b]));
       for (const b of apiSearchBarbers) byId.set(b.id, b);
@@ -269,7 +278,7 @@ function MapView() {
     return rankBarbersForUser(barbers.map(withBarberCoords), ctx).filter((b) =>
       hasValidMapCoords(b.lat, b.lng),
     );
-  }, [nearbyBarbers, apiSearchActive, apiSearchBarbers, ctx]);
+  }, [nearbyBarbers, listBarbers, apiSearchActive, apiSearchBarbers, ctx]);
 
   const catalogHasData =
     discoveryTab === "salons" ? salonsWithCoords.length > 0 : baseBarbers.length > 0;
@@ -277,9 +286,9 @@ function MapView() {
     !catalogHasData &&
     (discoveryTab === "salons"
       ? listLoading || (hasCoords && nearbyLoading)
-      : barbersLoading);
+      : barbersLoading || listBarbersLoading);
   const catalogError =
-    discoveryTab === "salons" ? nearbyError || listError : barbersError;
+    discoveryTab === "salons" ? nearbyError || listError : barbersError || listBarbersError;
 
   const filteredBarbers = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -495,9 +504,10 @@ function MapView() {
       void refetchList();
       if (hasCoords) void refetchNearby();
     } else {
-      void refetchBarbers();
+      if (hasCoords) void refetchBarbers();
+      void refetchListBarbers();
     }
-  }, [discoveryTab, refetchList, refetchNearby, refetchBarbers, hasCoords]);
+  }, [discoveryTab, refetchList, refetchNearby, refetchBarbers, refetchListBarbers, hasCoords]);
 
   const mapCanvas = mounted ? (
     <>

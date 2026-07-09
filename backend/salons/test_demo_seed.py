@@ -4,12 +4,14 @@ from salons.mock.cover_urls import is_mock_salon, mock_cover_cdn_url
 from salons.mock.demo_seed import (
     DEMO_BARBERS,
     DEMO_BARBER_COUNT,
-    DEMO_BARBERS_PER_CITY,
+    DEMO_BUXORO_BARBER_COUNT,
+    DEMO_BUXORO_SALON_COUNT,
     DEMO_REGION_BUXORO,
     DEMO_REGION_TOSHKENT,
     DEMO_SALON_COUNT,
     DEMO_SALONS,
-    DEMO_SALONS_PER_CITY,
+    DEMO_TOSHKENT_BARBER_COUNT,
+    DEMO_TOSHKENT_SALON_COUNT,
     demo_barber_email,
 )
 
@@ -18,6 +20,8 @@ class DemoSeedDataTests(SimpleTestCase):
     def test_counts(self):
         self.assertEqual(len(DEMO_SALONS), DEMO_SALON_COUNT)
         self.assertEqual(len(DEMO_BARBERS), DEMO_BARBER_COUNT)
+        self.assertEqual(DEMO_SALON_COUNT, DEMO_TOSHKENT_SALON_COUNT + DEMO_BUXORO_SALON_COUNT)
+        self.assertEqual(DEMO_BARBER_COUNT, DEMO_TOSHKENT_BARBER_COUNT + DEMO_BUXORO_BARBER_COUNT)
 
     def test_unique_salon_names_and_slugs(self):
         self.assertEqual(len({s["slug"] for s in DEMO_SALONS}), DEMO_SALON_COUNT)
@@ -30,16 +34,16 @@ class DemoSeedDataTests(SimpleTestCase):
     def test_salons_split_between_toshkent_and_buxoro(self):
         toshkent = [s for s in DEMO_SALONS if s["region"] == DEMO_REGION_TOSHKENT]
         buxoro = [s for s in DEMO_SALONS if s["region"] == DEMO_REGION_BUXORO]
-        self.assertEqual(len(toshkent), DEMO_SALONS_PER_CITY)
-        self.assertEqual(len(buxoro), DEMO_SALONS_PER_CITY)
+        self.assertEqual(len(toshkent), DEMO_TOSHKENT_SALON_COUNT)
+        self.assertEqual(len(buxoro), DEMO_BUXORO_SALON_COUNT)
         self.assertTrue(all(s["lat"] > 41 for s in toshkent))
         self.assertTrue(all(39.5 < s["lat"] < 40.0 for s in buxoro))
 
     def test_barbers_split_between_toshkent_and_buxoro(self):
         toshkent = [b for b in DEMO_BARBERS if b["region"] == DEMO_REGION_TOSHKENT]
         buxoro = [b for b in DEMO_BARBERS if b["region"] == DEMO_REGION_BUXORO]
-        self.assertEqual(len(toshkent), DEMO_BARBERS_PER_CITY)
-        self.assertEqual(len(buxoro), DEMO_BARBERS_PER_CITY)
+        self.assertEqual(len(toshkent), DEMO_TOSHKENT_BARBER_COUNT)
+        self.assertEqual(len(buxoro), DEMO_BUXORO_BARBER_COUNT)
 
     def test_salon_owners_match_city(self):
         barber_region = {b["slug"]: b["region"] for b in DEMO_BARBERS}
