@@ -57,6 +57,11 @@
       "beauty": "Beauty",
       "nails": "Nails"
     },
+    "categoriesHint": {
+      "barber": "Barbershops & men's grooming",
+      "beauty": "Hair, makeup & care",
+      "nails": "Manicure & pedicure"
+    },
     "mapPreview": {
       "nearbyCount": "{{count}} salons nearby",
       "explore": "Find salons near you",

@@ -4,8 +4,8 @@ const PLACEHOLDER_SALON = "/placeholder-salon.svg";
 
 const CATEGORY_PHOTOS: Record<Category, number> = {
   barber: 3992859,
-  beauty: 3288365,
-  nails: 3992860,
+  beauty: 3738349,
+  nails: 4968391,
 };
 
 const SEED_PHOTO_IDS = [

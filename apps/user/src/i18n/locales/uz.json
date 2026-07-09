@@ -62,6 +62,11 @@
       "beauty": "Go'zallik",
       "nails": "Manikyur"
     },
+    "categoriesHint": {
+      "barber": "Sartaroshxona va erkaklar stili",
+      "beauty": "Soch, makiyaj va parvarish",
+      "nails": "Manikyur va pedikyur"
+    },
     "mapPreview": {
       "nearbyCount": "{{count}} ta salon yaqinda",
       "explore": "Yaqin salonlarni toping",

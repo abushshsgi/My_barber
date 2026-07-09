@@ -4,14 +4,12 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { MobileSalonCard } from "@/components/mobile/MobileSalonCard";
 import type { HomeData } from "@/components/home/useHomeData";
-import { getCategoryCoverUrl } from "@/lib/cover-images";
+import { HomeCategoryGrid } from "@/components/home/HomeCategoryGrid";
 import {
-  HOME_CATEGORY_KEYS,
   HOME_CATEGORY_ROW_AFTER,
   HOME_SALON_ROW_PREVIEW,
   buildHomeSalonSections,
 } from "@/lib/home-sections";
-import type { Category } from "@/lib/mock-data";
 
 type Props = Pick<HomeData, "filtered">;
 
@@ -70,35 +68,5 @@ function HomeSalonRowCarousel({
 }
 
 function HomeCategoryStrip() {
-  const { t } = useTranslation();
-
-  return (
-    <section className="mt-8 px-4">
-      <h2 className="label-eyebrow mb-3">{t("home.sections.browseCategories")}</h2>
-      <div className="grid grid-cols-2 gap-3">
-        {HOME_CATEGORY_KEYS.map((category) => (
-          <CategoryCard key={category} category={category} label={t(`home.categories.${category}`)} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function CategoryCard({ category, label }: { category: Category; label: string }) {
-  return (
-    <Link
-      to="/category/$category"
-      params={{ category }}
-      className="neo-panel group relative aspect-[4/3] overflow-hidden p-0 active:scale-[0.98]"
-    >
-      <img
-        src={getCategoryCoverUrl(category, 640)}
-        alt=""
-        loading="lazy"
-        className="h-full w-full object-cover transition-transform group-active:scale-[1.02]"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
-      <p className="absolute bottom-3 left-3 right-3 text-sm font-bold text-white">{label}</p>
-    </Link>
-  );
+  return <HomeCategoryGrid className="mt-8 px-4" compact />;
 }
