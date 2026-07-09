@@ -19,8 +19,7 @@ export function resolveFetchBase(apiBase: string, requestHost?: string | null): 
   const trimmed = apiBase.trim().replace(/\/+$/, "");
   if (trimmed) return trimmed;
   if (typeof window !== "undefined") {
-    const demo = resolveDemoApiOrigin(window.location.hostname);
-    if (demo) return demo.replace(/\/+$/, "");
+    // Web brauzer: same-origin /api/v1 proxy (server hostname bo'yicha demo yoki prod upstream).
     return "";
   }
   return resolveApiUpstream(requestHost);
