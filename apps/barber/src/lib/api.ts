@@ -4,6 +4,7 @@ import {
   isBarberTokenExpired,
   refreshBarberAccessToken,
 } from "@/lib/barber-auth-session";
+import { resolveDemoApiOrigin } from "@mybarber/shared/demo-env";
 
 const ENV_API_BASE =
   (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_API_URL ||
@@ -18,6 +19,10 @@ const IS_MOBILE_SPA =
 function resolveWebApiBase(envBase: string): string {
   const trimmed = envBase.trim().replace(/\/+$/, "");
   if (IS_MOBILE_SPA) return trimmed;
+  if (typeof window !== "undefined") {
+    const demo = resolveDemoApiOrigin(window.location.hostname);
+    if (demo) return demo.replace(/\/+$/, "");
+  }
   return trimmed;
 }
 

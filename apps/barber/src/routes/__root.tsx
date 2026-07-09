@@ -2,6 +2,7 @@ import { Outlet, Link, createRootRouteWithContext } from "@tanstack/react-router
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { DeployRecovery } from "@/components/DeployRecovery";
+import { DemoEnvironmentBanner } from "@/components/DemoEnvironmentBanner";
 import { BarberSessionGuard } from "@/components/barber/BarberSessionGuard";
 import { PwaInstallHint } from "@/components/PwaInstallHint";
 
@@ -41,6 +42,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <BarberSessionGuard>
+        <DemoEnvironmentBanner />
         <DeployRecovery />
         <PwaInstallHint />
         <Outlet />

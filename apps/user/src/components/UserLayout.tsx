@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { ClientOnly } from "@/components/ClientOnly";
+import { DemoEnvironmentBanner } from "@/components/DemoEnvironmentBanner";
 import { DesktopAppHeader } from "@/components/desktop/shell/DesktopShellParts";
 import { MobileDockNav } from "@/components/mobile/MobileDockNav";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -70,6 +71,9 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <ClientOnly>
+        <DemoEnvironmentBanner />
+      </ClientOnly>
       <div className="hidden lg:block">
         <DesktopAppHeader
           chatUnread={chatUnread}

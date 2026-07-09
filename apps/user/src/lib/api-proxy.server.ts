@@ -1,8 +1,13 @@
-const DEV_API_TARGET = process.env.DEV_API_TARGET ?? "http://127.0.0.1:8000";
-const PROD_API_TARGET = process.env.API_UPSTREAM_URL ?? "https://api.mysaloon.uz";
+import { resolveDemoApiOrigin } from "@mybarber/shared/demo-env";
 
-function upstreamBase(): string {
-  return process.env.NODE_ENV === "production" ? PROD_API_TARGET : DEV_API_TARGET;
+const DEV_API_TARGET = process.env.DEV_API_TARGET ?? "http://127.0.0.1:8000";
+
+function upstreamBase(requestHost?: string | null): string {
+  if (process.env.NODE_ENV !== "production") return DEV_API_TARGET;
+  const demo = resolveDemoApiOrigin(requestHost);
+  if (demo) return demo.replace(/\/+$/, "");
+  const fromEnv = process.env.API_UPSTREAM_URL?.trim();
+  return (fromEnv || "https://api.mysaloon.uz").replace(/\/+$/, "");
 }
 
 function isProxyPath(pathname: string): boolean {
@@ -21,7 +26,7 @@ function resolveUpstreamUrl(url: URL): string | null {
     const w = url.searchParams.get("w") ?? "800";
     return `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
   }
-  return `${upstreamBase()}${url.pathname}${url.search}`;
+  return `${upstreamBase(url.hostname)}${url.pathname}${url.search}`;
 }
 
 function stripHopByHopHeaders(headers: Headers): void {

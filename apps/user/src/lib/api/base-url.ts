@@ -1,5 +1,9 @@
+import { resolveDemoApiOrigin } from "@mybarber/shared/demo-env";
+
 /** SSR / Nitro proxy upstream — brauzerda ishlatilmaydi. */
-export function resolveApiUpstream(): string {
+export function resolveApiUpstream(requestHost?: string | null): string {
+  const demo = resolveDemoApiOrigin(requestHost);
+  if (demo) return demo.replace(/\/+$/, "");
   const fromProcess =
     typeof process !== "undefined" ? process.env.API_UPSTREAM_URL?.trim() : undefined;
   return (fromProcess || "https://api.mysaloon.uz").replace(/\/+$/, "");
@@ -11,9 +15,13 @@ export function resolveApiUpstream(): string {
  * - Capacitor / to'g'ridan-to'g'ri API: ENV bazasi
  * - SSR / server loader: upstream API
  */
-export function resolveFetchBase(apiBase: string): string {
+export function resolveFetchBase(apiBase: string, requestHost?: string | null): string {
   const trimmed = apiBase.trim().replace(/\/+$/, "");
   if (trimmed) return trimmed;
-  if (typeof window !== "undefined") return "";
-  return resolveApiUpstream();
+  if (typeof window !== "undefined") {
+    const demo = resolveDemoApiOrigin(window.location.hostname);
+    if (demo) return demo.replace(/\/+$/, "");
+    return "";
+  }
+  return resolveApiUpstream(requestHost);
 }

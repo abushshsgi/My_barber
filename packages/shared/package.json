@@ -5,6 +5,7 @@
   "exports": {
     "./booking-lifecycle": "./src/booking-lifecycle.ts",
     "./currency": "./src/currency.ts",
+    "./demo-env": "./src/demo-env.ts",
     "./format": "./src/format.ts",
     "./geolocation": "./src/geolocation.ts",
     "./http-errors": "./src/http-errors.ts",

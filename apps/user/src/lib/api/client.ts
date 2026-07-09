@@ -1,3 +1,4 @@
+import { resolveDemoApiOrigin } from "@mybarber/shared/demo-env";
 import { migrateFaceProfileOnLogout } from "@/lib/face-profile";
 import { resolveFetchBase } from "@/lib/api/base-url";
 import { isPublicCustomerApiPath } from "@/lib/public-api-paths";
@@ -38,6 +39,10 @@ function fetchBase(): string {
 /** WebSocket REST bilan bir xil domen talab qilmaydi — to‘g‘ridan-to‘g‘ri API host. */
 export function getWsApiBase(): string {
   if (API_BASE) return API_BASE;
+  if (typeof window !== "undefined") {
+    const demo = resolveDemoApiOrigin(window.location.hostname);
+    if (demo) return demo.replace(/\/+$/, "");
+  }
   if (import.meta.env.DEV) return "http://127.0.0.1:8000";
   const override =
     (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_WS_API_URL ||
