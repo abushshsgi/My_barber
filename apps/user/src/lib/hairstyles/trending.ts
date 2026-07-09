@@ -5,10 +5,12 @@ import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { loadFaceProfile, loadFaceProfileHistory } from "@/lib/face-profile";
 import type { HairstyleEntry } from "@/lib/hairstyles/catalog";
 import {
-  getHairstyleImageUrl,
   hasGeneratedHairstyleImage,
+  hasHomeTrendHairstyleImage,
   pickCatalogPersonaForSlug,
+  pickHomeTrendPersonaForSlug,
   resolveCatalogImageUrl,
+  resolveHomeTrendImageUrl,
   toTrendingStyle,
   type TrendingHairstyle,
 } from "@/lib/hairstyles/catalog";
@@ -85,14 +87,15 @@ export function readTrendingFaceHints(): Pick<TrendingContext, "faceShape" | "ha
  * 2) Kategoriya bo‘yicha xilma-xillik
  * 3) Erkaklar uchun har slot — boshqa persona (turli odamlar, turli uslublar)
  */
-/** Home explore qatori — barcha generatsiya qilingan uslublar (limit yo'q). */
+/** Home explore qatori — faqat Irland / Niki generatsiya rasmlari. */
 export function pickHomeExploreRowStyles(
   entries: HairstyleEntry[],
   ctx: TrendingContext & { audience: AudienceFilter },
 ): TrendingHairstyle[] {
-  let pool = entries.filter(hasGeneratedHairstyleImage);
-  if (ctx.audience === "men" || ctx.audience === "women") {
-    pool = pool.filter((entry) => entry.audience === ctx.audience);
+  let pool = entries.filter(hasHomeTrendHairstyleImage);
+  if (ctx.audience === "women") return [];
+  if (ctx.audience === "men") {
+    pool = pool.filter((entry) => entry.audience === "men");
   }
 
   const ranked = [...pool].sort((a, b) => {
@@ -103,15 +106,9 @@ export function pickHomeExploreRowStyles(
   });
 
   return ranked.flatMap((entry, index) => {
-    const personaId =
-      entry.audience === "men"
-        ? pickCatalogPersonaForSlug(entry.slug, index, ctx.preferredPersonaId)
-        : null;
-    const imageUrl =
-      entry.audience === "men"
-        ? resolveCatalogImageUrl(entry, personaId)
-        : getHairstyleImageUrl(entry);
-    if (!imageUrl) return [];
+    const personaId = pickHomeTrendPersonaForSlug(entry.slug, index, ctx.preferredPersonaId);
+    const imageUrl = resolveHomeTrendImageUrl(entry, personaId);
+    if (!personaId || !imageUrl) return [];
     return [{ ...toTrendingStyle(entry), personaId, imageUrl }];
   });
 }

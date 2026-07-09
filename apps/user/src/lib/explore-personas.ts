@@ -16,6 +16,15 @@ export const EXPLORE_PERSONAS: ExplorePersona[] = [
 
 export const DEFAULT_EXPLORE_PERSONA: ExplorePersonaId = "irland";
 
+/** Home «Trendlar» qatori — faqat shu personaj rasmlari. */
+export const HOME_TREND_PERSONA_IDS = ["irland", "niki"] as const satisfies readonly ExplorePersonaId[];
+
+export type HomeTrendPersonaId = (typeof HOME_TREND_PERSONA_IDS)[number];
+
+export function isHomeTrendPersonaId(value: ExplorePersonaId): value is HomeTrendPersonaId {
+  return (HOME_TREND_PERSONA_IDS as readonly ExplorePersonaId[]).includes(value);
+}
+
 /** Erkaklar katalogidagi barcha uslub sluglari. */
 export const MEN_CATALOG_STYLE_SLUGS = [
   "mid-fade",

@@ -2,8 +2,11 @@ import type { FaceShapeKey, HairTypeKey } from "@/components/ai-style/ai-style-s
 import {
   getPersonaStyleImageUrl,
   hasPersonaStyleAsset,
+  HOME_TREND_PERSONA_IDS,
+  isHomeTrendPersonaId,
   listReadyExplorePersonas,
   type ExplorePersonaId,
+  type HomeTrendPersonaId,
 } from "@/lib/explore-personas";
 import { getTrendCoverUrl } from "@/lib/cover-images";
 import type { ApiHairstyle } from "@/lib/api/hairstyles";
@@ -75,6 +78,50 @@ export function hairstyleImageFallbacks(imageUrl: string): string[] {
 export function hasCatalogImageAsset(entry: Pick<HairstyleEntry, "audience" | "slug">): boolean {
   if (entry.audience !== "men") return false;
   return listReadyExplorePersonas().some((persona) => hasPersonaStyleAsset(persona.id, entry.slug));
+}
+
+/** Home trendlar — faqat Irland / Niki generatsiya rasmlari. */
+export function hasHomeTrendPersonaAsset(slug: string): boolean {
+  return HOME_TREND_PERSONA_IDS.some((personaId) => hasPersonaStyleAsset(personaId, slug));
+}
+
+export function pickHomeTrendPersonaForSlug(
+  slug: string,
+  index: number,
+  preferred?: ExplorePersonaId | null,
+): HomeTrendPersonaId | null {
+  const ordered: HomeTrendPersonaId[] =
+    preferred && isHomeTrendPersonaId(preferred)
+      ? [preferred, ...HOME_TREND_PERSONA_IDS.filter((id) => id !== preferred)]
+      : [...HOME_TREND_PERSONA_IDS];
+  const withAsset = ordered.filter((personaId) => hasPersonaStyleAsset(personaId, slug));
+  if (!withAsset.length) return null;
+  return withAsset[index % withAsset.length]!;
+}
+
+export function resolveHomeTrendImageUrl(
+  entry: Pick<HairstyleEntry, "audience" | "slug">,
+  personaId?: ExplorePersonaId | null,
+): string | null {
+  if (entry.audience !== "men") return null;
+  const persona =
+    personaId && isHomeTrendPersonaId(personaId) && hasPersonaStyleAsset(personaId, entry.slug)
+      ? personaId
+      : pickHomeTrendPersonaForSlug(entry.slug, 0, personaId);
+  if (!persona) return null;
+  return getPersonaStyleImageUrl(persona, entry.slug);
+}
+
+export function hasHomeTrendHairstyleImage(
+  entry: Pick<HairstyleEntry, "audience" | "slug" | "imageUrl">,
+): boolean {
+  if (entry.audience !== "men") return false;
+  const fromApi = getHairstyleImageUrl(entry);
+  if (fromApi && isGeneratedPersonaImageUrl(fromApi)) {
+    const persona = fromApi.match(/\/personas\/([^/]+)\//)?.[1];
+    return persona === "irland" || persona === "niki";
+  }
+  return hasHomeTrendPersonaAsset(entry.slug);
 }
 
 export function pickCatalogPersonaForSlug(
