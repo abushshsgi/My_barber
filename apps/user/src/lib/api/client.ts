@@ -240,29 +240,47 @@ async function parseJsonBody(res: Response): Promise<unknown> {
 
 type RefreshResult = { access: string | null; revoked: boolean };
 
+let refreshInFlight: Promise<RefreshResult> | null = null;
+
 async function refreshAccess(): Promise<RefreshResult> {
-  const refresh = getUserRefreshToken();
-  if (!refresh || isTokenExpired(refresh)) {
-    return { access: null, revoked: true };
-  }
-  try {
-    const res = await fetch(`${fetchBase()}/api/v1/auth/token/refresh/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh }),
-    });
-    if (!res.ok) {
-      return { access: null, revoked: isAuthFailureStatus(res.status) };
-    }
-    const data = (await parseJsonBody(res)) as { access?: string; refresh?: string } | null;
-    if (!data?.access || jwtPayloadType(data.access) !== "user") {
+  if (refreshInFlight) return refreshInFlight;
+
+  refreshInFlight = (async () => {
+    const refresh = getUserRefreshToken();
+    if (!refresh || isTokenExpired(refresh)) {
       return { access: null, revoked: true };
     }
-    setUserTokens(data.access, data.refresh ?? refresh);
-    return { access: data.access, revoked: false };
-  } catch {
+    const base = fetchBase();
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const res = await fetch(`${base}/api/v1/auth/token/refresh/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh }),
+        });
+        if (!res.ok) {
+          return { access: null, revoked: isAuthFailureStatus(res.status) };
+        }
+        const data = (await parseJsonBody(res)) as { access?: string; refresh?: string } | null;
+        if (!data?.access || jwtPayloadType(data.access) !== "user") {
+          return { access: null, revoked: true };
+        }
+        setUserTokens(data.access, data.refresh ?? refresh);
+        return { access: data.access, revoked: false };
+      } catch {
+        if (attempt < 2) {
+          await new Promise((resolve) => window.setTimeout(resolve, 400 * (attempt + 1)));
+          continue;
+        }
+        return { access: null, revoked: false };
+      }
+    }
     return { access: null, revoked: false };
-  }
+  })().finally(() => {
+    refreshInFlight = null;
+  });
+
+  return refreshInFlight;
 }
 
 function formatApiError(body: unknown, fallback: string): string {
@@ -390,8 +408,12 @@ export async function bootstrapUserSession(): Promise<boolean> {
       const refreshed = await refreshAccess();
       sessionBootstrapped = true;
       if (refreshed.access) return true;
-      if (refreshed.revoked) clearUserTokens();
-      return false;
+      if (refreshed.revoked) {
+        clearUserTokens();
+        return false;
+      }
+      // Tarmoq xatosi — refresh token hali amalda, ilova ochilsin.
+      return true;
     }
 
     clearUserTokens();

@@ -49,7 +49,24 @@ try{
   var stored=localStorage.getItem(CK);
   if(stored&&stored!==BUILD){
     if(sessionStorage.getItem(BOOT_KEY)){
-      localStorage.setItem(CK,BUILD);
+      fetch("/version.json",{cache:"no-store"})
+        .then(function(r){return r.ok?r.json():null})
+        .then(function(d){
+          if(d&&d.buildId===BUILD){
+            localStorage.setItem(CK,BUILD);
+            sessionStorage.removeItem(BOOT_KEY);
+          }else{
+            sessionStorage.removeItem(BOOT_KEY);
+            purge(function(){
+              var u=new URL(location.href);
+              u.searchParams.set("_boot",Date.now().toString(36));
+              location.replace(u.toString());
+            });
+          }
+        })
+        .catch(function(){
+          sessionStorage.removeItem(BOOT_KEY);
+        });
       return;
     }
     sessionStorage.setItem(BOOT_KEY,"1");

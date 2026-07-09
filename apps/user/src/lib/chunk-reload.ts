@@ -1,4 +1,5 @@
 const CHUNK_RELOAD_KEY = "mysaloon-chunk-reload";
+const MAX_CHUNK_RELOADS = 3;
 
 export function isChunkLoadError(reason: unknown): boolean {
   const message =
@@ -16,8 +17,9 @@ export function isChunkLoadError(reason: unknown): boolean {
 
 export function reloadForChunkError(): boolean {
   if (typeof window === "undefined") return false;
-  if (sessionStorage.getItem(CHUNK_RELOAD_KEY)) return false;
-  sessionStorage.setItem(CHUNK_RELOAD_KEY, "1");
+  const attempts = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY) || "0");
+  if (attempts >= MAX_CHUNK_RELOADS) return false;
+  sessionStorage.setItem(CHUNK_RELOAD_KEY, String(attempts + 1));
   const url = new URL(window.location.href);
   url.searchParams.set("_chunk", Date.now().toString(36));
   window.location.replace(url.toString());
@@ -47,7 +49,7 @@ function isAssetChunkFailure(event: ErrorEvent): boolean {
   return false;
 }
 
-/** React mountdan oldin chunk xatolarida bir marta reload. */
+/** React mountdan oldin chunk xatolarida avtomatik reload (3 urinishgacha). */
 export function installChunkReloadGuard() {
   if (typeof window === "undefined") return;
 
