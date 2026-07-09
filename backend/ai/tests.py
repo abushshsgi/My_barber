@@ -217,7 +217,7 @@ class HairstyleApiTests(TestCase):
     def test_hairstyles_list_with_persona_only_ready_assets(self):
         res = self.client.get(
             "/api/v1/hairstyles/",
-            {"audience": "men", "persona": "evro"},
+            {"audience": "men", "persona": "irland"},
         )
         self.assertEqual(res.status_code, 200)
         body = res.json()
@@ -228,8 +228,8 @@ class HairstyleApiTests(TestCase):
 
     def test_hairstyles_detail_missing_persona_asset_returns_404(self):
         res = self.client.get(
-            "/api/v1/hairstyles/men-mid-fade/",
-            {"persona": "britan"},
+            "/api/v1/hairstyles/men-low-fade/",
+            {"persona": "niki"},
         )
         self.assertEqual(res.status_code, 404)
 

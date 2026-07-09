@@ -332,7 +332,7 @@ def build_explore_gen_prompt(*, persona_id: str, slug: str, view: str = "front")
 
 
 def _build_reference_generation_prompt(*, persona_id: str, view: str = "front") -> str:
-    pid = normalize_persona_id(persona_id) or "evro"
+    pid = normalize_persona_id(persona_id) or "irland"
     persona = EXPLORE_PERSONAS[pid]
     scene = persona_reference_prompt(persona_id=pid)
     pose = view_pose_line(view)
@@ -414,7 +414,7 @@ def _build_view_rotation_prompt(
     anchor_views: tuple[str, ...] = ("front",),
 ) -> str:
     """O'sha uslubning front rasmidan boshqa burchakni chizish — yuz + soch aynan saqlanadi."""
-    pid = normalize_persona_id(persona_id) or "evro"
+    pid = normalize_persona_id(persona_id) or "irland"
     persona = EXPLORE_PERSONAS[pid]
     style_detail = style_detail_for("men", slug)
     pose = view_pose_line(view)
@@ -514,7 +514,7 @@ def _build_style_edit_prompt(
     has_catalog_ref: bool,
     view: str = "front",
 ) -> str:
-    pid = normalize_persona_id(persona_id) or "evro"
+    pid = normalize_persona_id(persona_id) or "irland"
     persona = EXPLORE_PERSONAS[pid]
     style_detail = style_detail_for("men", slug)
     pose = view_pose_line(view)

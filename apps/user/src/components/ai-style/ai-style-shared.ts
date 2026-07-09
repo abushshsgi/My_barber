@@ -41,7 +41,7 @@ export function isCatalogStyleId(id: string): boolean {
   return /^(men|women)-/.test(id);
 }
 
-/** Try-on cache: persona + style (masalan `evro:men-mid-fade`). */
+/** Try-on cache: persona + style (masalan `irland:men-mid-fade`). */
 export function tryOnCacheKey(styleId: string, personaId?: ExplorePersonaId | null): string {
   return personaId ? `${personaId}:${styleId}` : styleId;
 }

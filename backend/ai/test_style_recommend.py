@@ -32,17 +32,17 @@ class AgeGroupTests(SimpleTestCase):
         )
         self.assertEqual(path, "/hairstyles/men/personas/evro/mid-fade.webp")
 
-    def test_persona_evro_ready_asset(self):
+    def test_persona_irland_ready_asset(self):
         path = resolve_hairstyle_image_path(
-            image_path="/hairstyles/men/personas/evro/mid-fade.webp",
+            image_path="/hairstyles/men/personas/irland/mid-fade.webp",
             slug="mid-fade",
             audience="men",
             age_group="young",
-            persona_id="evro",
+            persona_id="irland",
         )
-        self.assertEqual(path, "/hairstyles/men/personas/evro/mid-fade.webp")
+        self.assertEqual(path, "/hairstyles/men/personas/irland/mid-fade.webp")
 
-    def test_persona_irland_ready_asset(self):
+    def test_persona_irland_ready_asset_from_legacy_evro_path(self):
         path = resolve_hairstyle_image_path(
             image_path="/hairstyles/men/personas/evro/mid-fade.webp",
             slug="mid-fade",
@@ -106,7 +106,7 @@ class TrendingStylesTests(TestCase):
             audience="men",
             face_shape="oval",
             hair_type="short",
-            preferred_persona_id="evro",
+            preferred_persona_id="irland",
             limit=3,
         )
         self.assertGreaterEqual(len(trending), 2)
@@ -120,12 +120,12 @@ class TrendingStylesTests(TestCase):
             hair_type="short",
             limit=6,
         )
-        evro_mid = next(
-            (item for item in trending if item["seed"] == "mid-fade" and item["persona_id"] == "evro"),
+        irland_mid = next(
+            (item for item in trending if item["seed"] == "mid-fade" and item["persona_id"] == "irland"),
             None,
         )
-        if evro_mid:
-            self.assertEqual(evro_mid["image_url"], "/hairstyles/men/personas/evro/mid-fade.webp")
+        if irland_mid:
+            self.assertEqual(irland_mid["image_url"], "/hairstyles/men/personas/irland/mid-fade.webp")
 
     def test_trending_returns_unique_styles(self):
         trending = pick_trending_styles(

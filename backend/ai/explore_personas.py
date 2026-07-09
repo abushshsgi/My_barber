@@ -1,20 +1,11 @@
-"""Explore erkak personajlari — 4 ta model, har biri uchun bitta reference + 12 uslub."""
+"""Explore erkak personajlari — 3 ta model, har biri uchun bitta reference + 12 uslub."""
 
 from __future__ import annotations
 
-EXPLORE_PERSONA_IDS = frozenset({"britan", "irland", "slavyan", "evro", "niki"})
+EXPLORE_PERSONA_IDS = frozenset({"irland", "slavyan", "niki"})
 
 # Har bir personaj — bitta three-quarter reference (foydalanuvchi tasdiqlagan promptlar).
 PERSONA_REFERENCE_PROMPTS: dict[str, str] = {
-    "britan": """
-Professional barber studio portrait, young British European man age 24,
-fair skin with light freckles, green-hazel eyes, sandy brown hair,
-neutral short textured cut, clean-shaven,
-
-three-quarter view, subtle natural smile suppressed, candid barber moment,
-plain white t-shirt, solid flat #E8E8E8 background, bright soft lighting,
-ultra sharp photorealistic, 3:4 vertical, 768x1024
-""".strip(),
     "irland": """
 Professional barber studio portrait, young Irish European man age 24,
 fair skin with warm undertone, light green eyes, reddish-brown hair,
@@ -33,19 +24,6 @@ three-quarter profile looking slightly away, neutral expression,
 plain white t-shirt, solid flat #E8E8E8, even studio light,
 photorealistic, 85mm portrait, 3:4 vertical, 768x1024
 """.strip(),
-    "evro": """
-Professional barber studio portrait, young man age 24, Caucasian European,
-fair skin, light brown eyes, defined jawline with light stubble,
-thick dark brown wavy hair, neutral short length, natural texture,
-
-three-quarter profile, head turned slightly right, looking off-camera,
-relaxed candid expression, NOT front-facing passport pose,
-
-plain white crew-neck t-shirt,
-solid flat background #E8E8E8, soft studio lighting,
-ultra sharp photorealistic, 85mm portrait, 8K detail,
-3:4 vertical, 768x1024
-""".strip(),
     "niki": """
 Professional barber studio portrait, young European man age 25,
 fair skin with light freckles, green-hazel eyes, light sandy-brown wavy hair,
@@ -62,15 +40,6 @@ ultra sharp photorealistic, 85mm portrait, 8K detail,
 }
 
 EXPLORE_PERSONAS: dict[str, dict] = {
-    "britan": {
-        "id": "britan",
-        "label": "Britan",
-        "code": "EU-3",
-        "description": (
-            "young British European man age 24, fair skin with light freckles, "
-            "green-hazel eyes, sandy brown hair, neutral short textured cut, clean-shaven"
-        ),
-    },
     "irland": {
         "id": "irland",
         "label": "Irland",
@@ -89,15 +58,6 @@ EXPLORE_PERSONAS: dict[str, dict] = {
             "straight dark ash-brown hair, neutral short cut, clean-shaven, defined Slavic jawline"
         ),
     },
-    "evro": {
-        "id": "evro",
-        "label": "Evro",
-        "code": "EU-2",
-        "description": (
-            "young Caucasian European man age 24, fair skin, light brown eyes, "
-            "defined jawline with light stubble, thick dark brown wavy hair, neutral short length"
-        ),
-    },
     "niki": {
         "id": "niki",
         "label": "Niki",
@@ -109,14 +69,12 @@ EXPLORE_PERSONAS: dict[str, dict] = {
     },
 }
 
-DEFAULT_MEN_PERSONA = "evro"
+DEFAULT_MEN_PERSONA = "irland"
 
 # Dev generatsiya — soqol darajasi (profil ko'rinishlarda bir xil bo'lishi shart).
 PERSONA_FACIAL_HAIR: dict[str, str] = {
-    "britan": "clean-shaven — absolutely no beard, stubble, or mustache",
     "irland": "light ginger stubble only — faint short shadow, NOT a full beard",
     "slavyan": "clean-shaven — no facial hair at all",
-    "evro": "light stubble only — very short subtle shadow, NOT a full beard",
     "niki": "light stubble only — faint short shadow on jaw, barely visible, NOT a full beard, NOT thick stubble",
 }
 
@@ -148,7 +106,7 @@ NIKI_READY_SLUGS = frozenset(MEN_CATALOG_STYLE_SLUGS - {"low-fade"})
 PERSONA_READY_ASSETS: dict[str, frozenset[str]] = {
     **{
         pid: frozenset({"reference", *MEN_CATALOG_STYLE_SLUGS})
-        for pid in ("britan", "irland", "slavyan", "evro")
+        for pid in ("irland", "slavyan")
     },
     "niki": frozenset({"reference", *NIKI_READY_SLUGS}),
 }
@@ -174,9 +132,9 @@ def normalize_persona_id(raw: str | None) -> str | None:
     value = (raw or "").strip().lower()
     if value in EXPLORE_PERSONA_IDS:
         return value
-    # Eski saqlangan idlar → evro
-    if value in {"skandinav", "fransuz"}:
-        return "evro"
+    # Eski saqlangan idlar → irland
+    if value in {"skandinav", "fransuz", "britan", "evro"}:
+        return "irland"
     return None
 
 
@@ -194,7 +152,7 @@ def list_explore_personas() -> list[dict]:
     from ai.explore_persona_labels import persona_display_label
     from ai.explore_published import explore_asset_available
 
-    order = ("britan", "irland", "slavyan", "evro", "niki")
+    order = ("irland", "slavyan", "niki")
     rows: list[dict] = []
     for pid in order:
         if not explore_asset_available(pid, "reference"):
