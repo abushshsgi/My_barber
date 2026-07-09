@@ -70,12 +70,22 @@ function StoryRingChip({
 }
 
 export function PersonaVariantB(props: PersonaVariantProps) {
-  const { value, onChange, readyPersonas, label, activeCaption } = props;
+  const { value, onChange, readyPersonas, label, activeCaption, compact } = props;
+  const groupLabel = label ?? "Model";
 
   return (
     <section>
-      <VariantHeader label={label} activeCaption={activeCaption} count={readyPersonas.length} />
-      <div role="radiogroup" aria-label={label} className="no-scrollbar -mx-5 mt-3 flex gap-4 overflow-x-auto px-5 pb-1">
+      {!compact && label ? (
+        <VariantHeader label={label} activeCaption={activeCaption} count={readyPersonas.length} />
+      ) : null}
+      <div
+        role="radiogroup"
+        aria-label={groupLabel}
+        className={cn(
+          "no-scrollbar flex gap-3 overflow-x-auto pb-1",
+          compact ? "-mx-2 mt-0 px-2" : "-mx-5 mt-3 gap-4 px-5",
+        )}
+      >
         {readyPersonas.map((persona) => (
           <StoryRingChip
             key={persona.id}

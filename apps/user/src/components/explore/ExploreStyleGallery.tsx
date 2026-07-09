@@ -12,7 +12,7 @@ type Props = {
   showThumbs?: boolean;
   description?: string;
   /** Mobile explore detail */
-  variant?: "default" | "mobileHero";
+  variant?: "default" | "mobileHero" | "gridCard";
 };
 
 export function ExploreStyleGallery({
@@ -26,6 +26,7 @@ export function ExploreStyleGallery({
   variant = "default",
 }: Props) {
   const isMobileHero = variant === "mobileHero";
+  const isGridCard = variant === "gridCard";
   const slides = useMemo(() => items.filter((item) => item.url), [items]);
   const { activeIndex, setActiveIndex } = useGalleryCarousel(autoPlay ? slides.length : 1);
   const active = slides[activeIndex] ?? slides[0];
@@ -94,7 +95,9 @@ export function ExploreStyleGallery({
       <div
         className={cn(
           "overflow-hidden bg-[#E8E8E8]",
-          isMobileHero ? "rounded-[20px]" : "rounded-3xl border border-border",
+          isGridCard && "rounded-2xl",
+          isMobileHero && "rounded-[20px]",
+          !isMobileHero && !isGridCard && "rounded-3xl border border-border",
         )}
       >
         <div
@@ -113,8 +116,8 @@ export function ExploreStyleGallery({
               fade ? "opacity-100" : "opacity-0",
             )}
           />
-          {!isMobileHero && badge ? <div className="absolute left-3 top-3">{badge}</div> : null}
-          {!isMobileHero && active?.label ? (
+          {!isMobileHero && !isGridCard && badge ? <div className="absolute left-3 top-3">{badge}</div> : null}
+          {!isMobileHero && !isGridCard && active?.label ? (
             <span className="absolute right-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
               {active.label}
             </span>

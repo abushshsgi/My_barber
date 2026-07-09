@@ -6,9 +6,11 @@ import { PersonaVariantB } from "./persona-picker/variants";
 type Props = {
   value: ExplorePersonaId;
   onChange: (personaId: ExplorePersonaId) => void;
+  /** Explore mobil — faqat avatar qatori */
+  compact?: boolean;
 };
 
-export function PersonaPicker({ value, onChange }: Props) {
+export function PersonaPicker({ value, onChange, compact }: Props) {
   const { t } = useTranslation();
   const { personas: readyPersonas } = useExplorePersonaList();
   const activePersona = readyPersonas.find((persona) => persona.id === value);
@@ -16,21 +18,22 @@ export function PersonaPicker({ value, onChange }: Props) {
   if (readyPersonas.length === 0) return null;
 
   return (
-    <div className="mt-4">
+    <div className={compact ? "mt-1" : "mt-4"}>
       <PersonaVariantB
         value={value}
         onChange={onChange}
         readyPersonas={readyPersonas}
         activePersona={activePersona}
-        label={t("explorePage.personaLabel")}
+        label={compact ? undefined : t("explorePage.personaLabel")}
         activeCaption={
-          activePersona
-            ? t("explorePage.personaActive", {
+          compact || !activePersona
+            ? undefined
+            : t("explorePage.personaActive", {
                 name: activePersona.label,
                 code: activePersona.code,
               })
-            : undefined
         }
+        compact={compact}
       />
     </div>
   );

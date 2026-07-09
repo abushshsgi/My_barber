@@ -13,7 +13,6 @@ function ExploreStyleCard({
   entry: HairstyleEntry;
   compact?: boolean;
 }) {
-  const { t } = useTranslation();
   const imageUrl = getHairstyleDisplayUrl(entry);
   const frontItem = useMemo(
     () => entry.gallery.find((item) => item.view === "front"),
@@ -35,19 +34,17 @@ function ExploreStyleCard({
         title={entry.titleUz}
         autoPlay={false}
         showThumbs={false}
-        badge={
-          <span className="rounded-full bg-background/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide backdrop-blur-sm">
-            {t("explorePage.sampleBadge")}
-          </span>
-        }
+        variant="gridCard"
         className="pointer-events-none space-y-0"
       />
-      <p className={cn("mt-2.5 truncate font-bold leading-tight", compact ? "text-sm" : "text-sm lg:text-[15px]")}>
+      <p className={cn("mt-2 truncate font-bold leading-tight", compact ? "text-sm" : "text-sm lg:text-[15px]")}>
         {entry.titleUz}
       </p>
-      <p className="mt-0.5 truncate text-[10px] font-bold uppercase tracking-wide text-muted-foreground lg:text-[11px]">
-        {t(`homePage.audience.${entry.audience}`)} · {entry.category}
-      </p>
+      {!compact ? (
+        <p className="mt-0.5 truncate text-[10px] font-bold uppercase tracking-wide text-muted-foreground lg:text-[11px]">
+          {entry.category}
+        </p>
+      ) : null}
     </Link>
   );
 }
@@ -56,8 +53,8 @@ function ExploreStyleSkeleton({ compact }: { compact?: boolean }) {
   return (
     <div className="min-w-0 animate-pulse">
       <div className="aspect-[3/4] rounded-2xl bg-surface" />
-      <div className="mt-2.5 h-4 w-3/4 rounded bg-surface" />
-      <div className="mt-1.5 h-3 w-1/2 rounded bg-surface" />
+      <div className="mt-2 h-4 w-3/4 rounded bg-surface" />
+      {!compact ? <div className="mt-1.5 h-3 w-1/2 rounded bg-surface" /> : null}
     </div>
   );
 }
@@ -86,7 +83,9 @@ export function ExploreStyleGrid({
     return (
       <div
         className={cn(
-          "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 lg:gap-4",
+          compact
+            ? "grid grid-cols-2 gap-2"
+            : "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 lg:gap-4",
           className,
         )}
       >
@@ -116,7 +115,9 @@ export function ExploreStyleGrid({
   return (
     <div
       className={cn(
-        "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 lg:gap-4",
+        compact
+          ? "grid grid-cols-2 gap-2"
+          : "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 lg:gap-4",
         className,
       )}
     >

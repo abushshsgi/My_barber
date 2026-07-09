@@ -7,8 +7,9 @@ export type PersonaVariantProps = {
   onChange: (personaId: ExplorePersonaId) => void;
   readyPersonas: ExplorePersona[];
   activePersona?: ExplorePersona;
-  label: string;
+  label?: string;
   activeCaption?: string;
+  compact?: boolean;
 };
 
 export function useScrollActiveIntoView(active: boolean) {
