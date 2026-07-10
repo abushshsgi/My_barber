@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { WalletDesktopTransactionTable } from "@/components/desktop/wallet/WalletDesktopTransactionTable";
-import { WalletHubLinks } from "@/components/wallet/WalletHubLinks";
 import { DESKTOP_GLASS_PANEL } from "@/components/desktop/ui/desktop-glass";
 import { useCurrency } from "@/hooks/use-currency";
 import { useWalletBalance, useWalletMe, useWalletTransactions, walletMeQueryKeyFor } from "@/hooks/use-wallet";
@@ -145,13 +144,6 @@ export function WalletDesktopOverviewPanel() {
         loading={txLoading}
         hasAny={hasAnyTransactions}
       />
-
-      <section>
-        <h3 className="mb-3 text-sm font-semibold text-foreground">
-          {t("walletPage.moreServices", { defaultValue: "Hamyon va to'lov" })}
-        </h3>
-        <WalletHubLinks compact />
-      </section>
     </div>
   );
 }
