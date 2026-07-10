@@ -5,7 +5,10 @@ export type MapMarker = {
   label: string;
   priceLabel?: string;
   coverUrl?: string;
+  /** Preview karusel rasmlari (bo'sh bo'lsa coverUrl ishlatiladi). */
+  imageUrls?: string[];
   address?: string;
+  rating?: number;
   ctaLabel?: string;
 };
 

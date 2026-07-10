@@ -17,6 +17,7 @@ import { useSalonsList, useSalonsNearby, useSalonSearch } from "@/hooks/use-salo
 import { useBarbersNearby, useBarberFind, useBarbersList } from "@/hooks/use-barbers";
 import { useMe } from "@/hooks/use-me";
 import { shortPrice, type Salon } from "@/lib/mock-data";
+import { getSalonCoverUrl } from "@/lib/cover-images";
 import { applyMapBarberFilters } from "@/lib/map-barber-filters";
 import {
   DEFAULT_MAP_FILTERS,
@@ -53,13 +54,21 @@ function mapPinLabel(salon: Salon): string {
   return "—";
 }
 function toMapMarker(salon: Salon, ctaLabel: string): SalonMapMarker {
+  const fallback = getSalonCoverUrl(salon.coverSeed, salon.category);
+  const alt = getSalonCoverUrl(`${salon.coverSeed}-alt`, salon.category);
+  const cover = salon.coverUrl?.trim() || fallback;
+  const portfolio = (salon.portfolio ?? []).map((u) => u.trim()).filter(Boolean);
+  const imageUrls = [cover, ...portfolio, alt].filter((url, i, arr) => arr.indexOf(url) === i);
+
   return {
     id: salon.id,
     lat: salon.lat,
     lng: salon.lng,
     label: salon.name,
-    coverUrl: salon.coverUrl,
+    coverUrl: cover,
+    imageUrls,
     address: salon.address,
+    rating: salon.rating,
     ctaLabel,
     priceLabel: mapPinLabel(salon),
   };
@@ -67,13 +76,16 @@ function toMapMarker(salon: Salon, ctaLabel: string): SalonMapMarker {
 
 function toBarberMarker(barber: BarberDiscovery, ctaLabel: string): SalonMapMarker {
   const initial = barber.name.trim().split(/\s+/)[0]?.slice(0, 8) || "U";
+  const cover = barber.avatar?.trim() || undefined;
   return {
     id: barber.id,
     lat: barber.lat,
     lng: barber.lng,
     label: barber.name,
-    coverUrl: barber.avatar,
+    coverUrl: cover,
+    imageUrls: cover ? [cover] : [],
     address: barber.salonName ?? "",
+    rating: barber.rating,
     ctaLabel,
     priceLabel: barber.rating > 0 ? `★ ${barber.rating.toFixed(1)}` : initial,
   };

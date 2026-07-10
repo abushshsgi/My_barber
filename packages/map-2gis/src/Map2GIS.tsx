@@ -11,7 +11,7 @@ import {
   USER_RADIUS_M,
 } from "./constants";
 import { buildPricePillHtml, buildSalonPreviewHtml, buildUserDotHtml } from "./markers";
-import { bindHtmlMarkerClick, bindHtmlMarkerHover, bindSalonPreviewNavigate } from "./html-marker-events";
+import { bindHtmlMarkerClick, bindHtmlMarkerHover, bindSalonPreviewInteractions } from "./html-marker-events";
 import { fitMapToPoints } from "./bounds";
 import { readMapViewport, type MapViewport } from "./viewport";
 import type { MapMarker } from "./types";
@@ -181,8 +181,10 @@ export function Map2GIS({
     hidePreview();
     const html = buildSalonPreviewHtml({
       coverUrl: m.coverUrl,
+      imageUrls: m.imageUrls,
       name: m.label,
       address: m.address,
+      rating: m.rating,
       ctaLabel: m.ctaLabel ?? "Salonni ko'rish",
     });
     const preview = new mapglAPI.HtmlMarker(map, {
@@ -192,7 +194,10 @@ export function Map2GIS({
       preventMapInteractions: true,
       zIndex: 20,
     });
-    bindSalonPreviewNavigate(preview, () => onMarkerNavigateRef.current?.(m.id));
+    bindSalonPreviewInteractions(preview, {
+      onNavigate: () => onMarkerNavigateRef.current?.(m.id),
+      onClose: () => onMarkerSelectRef.current?.(null),
+    });
     previewRef.current = preview;
   };
 
