@@ -108,7 +108,7 @@ function Notifications() {
 
   if (!userId) {
     return (
-      <ProfileSubpageLayout title={t("notifications.title")} flush>
+      <ProfileSubpageLayout title={t("notifications.title")} backTo="/profile" flush>
         <div className="px-4 py-6">
           <EmptyState
             icon={<Bell className="h-7 w-7" />}
@@ -134,6 +134,7 @@ function Notifications() {
     <ProfileSubpageLayout
       flush
       title={t("notifications.title")}
+      backTo="/profile"
       right={
         <button
           onClick={() => setShowSettings((s) => !s)}

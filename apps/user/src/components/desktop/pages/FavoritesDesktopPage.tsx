@@ -21,6 +21,7 @@ export function FavoritesDesktopPage({ tab, onTabChange }: Props) {
     <AccountDesktopShell
       wide
       bare
+      backTo="/profile"
       title={t("favorites.hubTitle", { defaultValue: "Sevimlilar" })}
       subtitle={t("favorites.subtitle", {
         defaultValue: "Saqlangan salonlar va ustalar — tez kirish uchun.",

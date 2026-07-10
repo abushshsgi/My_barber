@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useMyReviews } from "@/hooks/use-reviews-api";
 import { ReviewsPageShell } from "@/components/reviews/ReviewsPageContent";
-import { ACTIVITY_HUB_PATH, resolveActivityBackTo } from "@/lib/activity-nav";
+import { resolveActivityBackTo } from "@/lib/activity-nav";
 
 type ReviewsSearch = { focus?: string; backTo?: string };
 
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/reviews")({
 function ReviewsPage() {
   const search = Route.useSearch();
   const { focus } = search;
-  const backTo = resolveActivityBackTo(search, ACTIVITY_HUB_PATH);
+  const backTo = resolveActivityBackTo(search, "/profile");
   const { data: userReviews = [], isLoading } = useMyReviews();
 
   useEffect(() => {

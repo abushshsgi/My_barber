@@ -31,6 +31,7 @@ export function BookingsDesktopPage({ focus }: Props) {
     <AccountDesktopShell
       wide
       bare
+      backTo="/profile"
       title={t("bookings.title")}
       subtitle={t("bookings.subtitle", { defaultValue: "Kelayotgan va o'tgan tashriflar." })}
     >

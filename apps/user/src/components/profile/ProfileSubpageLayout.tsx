@@ -22,7 +22,7 @@ function ProfileSubpageMobile({
   className,
   right,
   headerExtra,
-  backTo = "/",
+  backTo = "/profile",
   strictBack,
   flush,
 }: Props) {
@@ -50,8 +50,8 @@ export function ProfileSubpageLayout({
   className,
   right,
   headerExtra,
-  backTo = "/",
-  strictBack,
+  backTo = "/profile",
+  strictBack = true,
   flush,
 }: Props) {
   return (
@@ -71,7 +71,12 @@ export function ProfileSubpageLayout({
         </ProfileSubpageMobile>
       }
       desktop={
-        <AccountDesktopShell title={title} subtitle={subtitle}>
+        <AccountDesktopShell
+          title={title}
+          subtitle={subtitle}
+          backTo={backTo}
+          strictBack={strictBack}
+        >
           {children}
         </AccountDesktopShell>
       }

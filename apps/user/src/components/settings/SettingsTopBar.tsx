@@ -17,7 +17,7 @@ export function SettingsTopBar({ backTo = "/profile", backLabel, doneLabel, clas
       <div className="flex items-center justify-between gap-4">
         <button
           type="button"
-          onClick={() => navigateBack(router, backTo)}
+          onClick={() => navigateBack(router, backTo, true)}
           className="inline-flex items-center gap-1.5 rounded-lg py-1.5 text-sm font-semibold text-foreground transition-colors hover:opacity-80"
         >
           <ChevronLeft className="h-5 w-5" strokeWidth={2} />

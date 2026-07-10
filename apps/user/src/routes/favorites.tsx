@@ -11,7 +11,7 @@ import {
 } from "@/components/favorites/FavoritesPageContent";
 import { ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { useFavorites } from "@/hooks/use-favorites";
-import { ACTIVITY_HUB_PATH, resolveActivityBackTo } from "@/lib/activity-nav";
+import { resolveActivityBackTo } from "@/lib/activity-nav";
 
 const favoritesSearchSchema = z.object({
   tab: z.enum(["salons", "stylists"]).optional().catch("salons"),
@@ -62,7 +62,7 @@ function Favorites() {
   const navigate = useNavigate({ from: Route.fullPath });
   const search = Route.useSearch();
   const { tab = "salons" } = search;
-  const backTo = resolveActivityBackTo(search, ACTIVITY_HUB_PATH);
+  const backTo = resolveActivityBackTo(search, "/profile");
 
   const setTab = (next: FavoritesTab) => {
     void navigate({ search: { tab: next }, replace: true });

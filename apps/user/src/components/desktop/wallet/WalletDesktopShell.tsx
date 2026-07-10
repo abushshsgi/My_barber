@@ -1,3 +1,4 @@
+import { AccountBackButton } from "@/components/desktop/ui/AccountBackButton";
 import { DESKTOP_ACCOUNT_BG } from "@/components/desktop/ui/desktop-glass";
 import { WalletPanelContent } from "@/components/wallet/WalletPanelContent";
 import { WalletSectionNav } from "@/components/wallet/WalletSectionNav";
@@ -14,6 +15,9 @@ export function WalletDesktopShell({ section, t }: Props) {
   return (
     <div className={cn("w-full", DESKTOP_ACCOUNT_BG)}>
       <div className="lg:pl-8 xl:pl-14">
+        <div className="mb-6 border-b border-border/70 pb-4">
+          <AccountBackButton to="/profile" />
+        </div>
         <div className="flex flex-col gap-10 lg:flex-row lg:gap-10 xl:gap-14 lg:pb-12">
           <aside className="lg:w-[380px] xl:w-[420px] lg:shrink-0">
             <h1 className="text-[32px] font-semibold tracking-tight text-foreground xl:text-[36px]">

@@ -169,6 +169,7 @@ export function ReviewsDesktopPage({
     <AccountDesktopShell
       wide
       bare
+      backTo="/profile"
       title={t("reviews.title")}
       subtitle={t("reviews.subtitle", { defaultValue: "Tashriflaringizdan keyin qoldirgan baholar." })}
     >

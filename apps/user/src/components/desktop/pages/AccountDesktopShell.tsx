@@ -1,3 +1,4 @@
+import { AccountBackButton } from "@/components/desktop/ui/AccountBackButton";
 import { DESKTOP_ACCOUNT_BG, DESKTOP_GLASS_PANEL } from "@/components/desktop/ui/desktop-glass";
 import { cn } from "@/lib/utils";
 
@@ -7,12 +8,31 @@ type Props = {
   children: React.ReactNode;
   bare?: boolean;
   wide?: boolean;
+  /** Ko'rsatilsa Orqaga chiqadi (default /profile, strict). */
+  backTo?: string | false;
+  strictBack?: boolean;
 };
 
 /** Desktop account pages — content only; nav lives in header dropdown. */
-export function AccountDesktopShell({ title, subtitle, children, bare, wide }: Props) {
+export function AccountDesktopShell({
+  title,
+  subtitle,
+  children,
+  bare,
+  wide,
+  backTo,
+  strictBack = true,
+}: Props) {
+  const showBack = backTo !== false && backTo !== undefined;
+
   return (
     <div className={cn("mx-auto w-full", wide ? "max-w-6xl" : "max-w-3xl", DESKTOP_ACCOUNT_BG)}>
+      {showBack ? (
+        <div className="mb-4">
+          <AccountBackButton to={backTo || "/profile"} strict={strictBack} />
+        </div>
+      ) : null}
+
       {title ? (
         <header className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight lg:text-3xl">{title}</h1>
