@@ -15,8 +15,43 @@ const fieldClass = {
   mobile:
     "w-full rounded-2xl border-2 border-border bg-background px-4 py-3.5 text-sm font-bold focus:border-foreground focus:outline-none",
   desktop:
-    "w-full rounded-[1.35rem] border border-border/80 bg-background px-5 py-4 text-[15px] font-semibold tracking-tight text-foreground placeholder:text-muted-foreground/55 focus:border-foreground focus:outline-none transition-colors",
+    "w-full rounded-[1.25rem] border border-border/80 bg-background px-5 py-3.5 text-[15px] font-semibold tracking-tight text-foreground placeholder:text-muted-foreground/55 focus:border-foreground focus:outline-none transition-colors",
 } as const;
+
+function GpsButton({
+  isDesktop,
+  busy,
+  locating,
+  hasLocation,
+  onClick,
+}: {
+  isDesktop: boolean;
+  busy: boolean;
+  locating: boolean;
+  hasLocation: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center justify-center gap-2 text-sm font-bold disabled:opacity-50",
+        isDesktop
+          ? "rounded-[1.25rem] border border-border/80 bg-background px-4 py-2.5 transition-colors hover:bg-muted/40"
+          : "w-full rounded-2xl border-2 border-dashed border-foreground/40 py-3.5",
+      )}
+    >
+      <MapPin className="h-4 w-4" />
+      {locating
+        ? "Aniqlanmoqda…"
+        : hasLocation
+          ? "Joylashuvni qayta aniqlash"
+          : "GPS orqali aniqlash"}
+    </button>
+  );
+}
 
 export function OnboardingSteps({ state, variant = "mobile" }: Props) {
   const {
@@ -55,7 +90,7 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
 
   if (step === 1) {
     return (
-      <div className={cn("space-y-4", isDesktop && "mx-auto w-full max-w-md space-y-5")}>
+      <div className={cn("space-y-4", isDesktop && "mx-auto w-full max-w-md space-y-4")}>
         <div className={sectionLabel}>
           <User className={isDesktop ? "h-[18px] w-[18px]" : "h-4 w-4"} />
           Ism va familiya
@@ -80,7 +115,7 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
 
   if (step === 2) {
     return (
-      <div className={cn("space-y-4", isDesktop && "mx-auto w-full max-w-sm space-y-5")}>
+      <div className={cn("space-y-4", isDesktop && "mx-auto w-full max-w-sm space-y-4")}>
         <div className={sectionLabel}>
           <Calendar className={isDesktop ? "h-[18px] w-[18px]" : "h-4 w-4"} />
           Yoshingiz
@@ -108,47 +143,40 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
   }
 
   return (
-    <div className={cn("space-y-4", isDesktop && "space-y-5")}>
-      <div className={sectionLabel}>
-        <MapPin className={isDesktop ? "h-[18px] w-[18px]" : "h-4 w-4"} />
-        Joylashuv
+    <div className={cn("space-y-3", isDesktop && "space-y-4")}>
+      <div className={cn("flex items-center gap-3", isDesktop && "justify-between")}>
+        <div className={sectionLabel}>
+          <MapPin className={isDesktop ? "h-[18px] w-[18px]" : "h-4 w-4"} />
+          Joylashuv
+        </div>
+        {isDesktop ? (
+          <GpsButton
+            isDesktop
+            busy={busy}
+            locating={locating}
+            hasLocation={lat != null}
+            onClick={() => void detectLocation()}
+          />
+        ) : null}
       </div>
 
-      <div className={cn(isDesktop && "grid grid-cols-[minmax(0,260px)_1fr] items-end gap-4")}>
-        <div>
-          <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-            Viloyat
-          </label>
-          <select
-            value={region}
-            disabled={regionsLoading || locating}
-            onChange={(e) => setRegion(e.target.value)}
-            className={inputClass}
-          >
-            <option value="">Tanlang…</option>
-            {regions.map((r) => (
-              <option key={r.value} value={r.value}>
-                {r.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {isDesktop ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void detectLocation()}
-            className="flex h-[3.35rem] items-center justify-center gap-2 rounded-[1.35rem] border border-border/80 bg-background px-5 text-sm font-bold transition-colors hover:bg-muted/40 disabled:opacity-50"
-          >
-            <MapPin className="h-4 w-4" />
-            {locating
-              ? "Aniqlanmoqda…"
-              : lat != null
-                ? "Qayta aniqlash"
-                : "GPS orqali aniqlash"}
-          </button>
-        ) : null}
+      <div>
+        <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+          Viloyat
+        </label>
+        <select
+          value={region}
+          disabled={regionsLoading || locating}
+          onChange={(e) => setRegion(e.target.value)}
+          className={cn(inputClass, isDesktop && "max-w-md")}
+        >
+          <option value="">Tanlang…</option>
+          {regions.map((r) => (
+            <option key={r.value} value={r.value}>
+              {r.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {regionMismatch ? (
@@ -177,24 +205,18 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
           if (Number.isFinite(n)) setLng(n);
         }}
         onRegionSuggestion={(code) => setRegion((prev) => prev || code)}
-        mapClassName={isDesktop ? "h-[380px] xl:h-[440px]" : undefined}
-        className={isDesktop ? "[&>div]:rounded-[1.35rem]" : undefined}
+        mapClassName={isDesktop ? "h-[280px] xl:h-[320px]" : undefined}
+        className={isDesktop ? "[&>div]:rounded-[1.25rem]" : undefined}
       />
 
       {!isDesktop ? (
-        <button
-          type="button"
-          disabled={busy}
+        <GpsButton
+          isDesktop={false}
+          busy={busy}
+          locating={locating}
+          hasLocation={lat != null}
           onClick={() => void detectLocation()}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-foreground/40 py-3.5 text-sm font-bold"
-        >
-          <MapPin className="h-4 w-4" />
-          {locating
-            ? "Aniqlanmoqda…"
-            : lat != null
-              ? "Joylashuvni qayta aniqlash"
-              : "GPS orqali aniqlash"}
-        </button>
+        />
       ) : null}
 
       {noCoverage && !interestSubmitted ? (
@@ -205,6 +227,7 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
           cityLabel={validation?.city_label}
           source="onboarding"
           onSubmitted={() => setInterestSubmitted(true)}
+          className={isDesktop ? "p-3" : undefined}
         />
       ) : null}
 
@@ -215,8 +238,7 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
             isDesktop ? "text-sm" : "text-center text-[11px]",
           )}
         >
-          Davom etish uchun GPS orqali joylashuv talab qilinadi. Xaritadan pinni ham siljitishingiz
-          mumkin.
+          Davom etish uchun joylashuvni aniqlang yoki xaritadan pinni siljiting.
         </p>
       ) : null}
     </div>

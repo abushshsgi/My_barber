@@ -42,7 +42,7 @@ const STANDARD_PREFIX = [
   "/onboarding",
 ];
 
-const COMPACT_EXACT = new Set(["/auth", "/onboarding"]);
+const COMPACT_EXACT = new Set(["/auth"]);
 
 const AUDIENCE_TOPBAR_EXACT = new Set(["/", "/explore", "/map", "/today", "/offers"]);
 
