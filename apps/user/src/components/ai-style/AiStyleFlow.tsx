@@ -2,10 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AiStyleCamera } from "@/components/ai-style/AiStyleCamera";
+import { AiStyleDesktopLayout } from "@/components/ai-style/AiStyleDesktopLayout";
 import { AiStyleSplitLayout } from "@/components/ai-style/AiStyleSplitLayout";
 import { AiStylePhotoInput } from "@/components/ai-style/AiStyleUi";
 import type { AiAnalysisResult, AiSuggestion } from "@/components/ai-style/ai-style-shared";
 import type { useAiStyleFlow } from "@/components/ai-style/useAiStyleFlow";
+import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
@@ -138,28 +140,34 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
     [saved, flow.tryOnByStyle, t],
   );
 
+  const layoutProps = {
+    audience,
+    step,
+    photo,
+    validatingPreview,
+    validating,
+    analyzing,
+    done,
+    result: displayResult,
+    focusStyleId,
+    saved,
+    onToggleSave: toggleSave,
+    onReset: reset,
+    openFile,
+    openCamera,
+    onAnalyze: () => void analyze(audience),
+    menPersonaId: personaId,
+    tryOnByStyle: flow.tryOnByStyle,
+    tryOnLoadingId: flow.tryOnLoadingId,
+    onGenerateTryOn: (styleId: string, nextPersonaId?: Parameters<typeof generateTryOn>[1]) =>
+      void generateTryOn(styleId, nextPersonaId),
+  };
+
   return (
     <>
-      <AiStyleSplitLayout
-        audience={audience}
-        step={step}
-        photo={photo}
-        validatingPreview={validatingPreview}
-        validating={validating}
-        analyzing={analyzing}
-        done={done}
-        result={displayResult}
-        focusStyleId={focusStyleId}
-        saved={saved}
-        onToggleSave={toggleSave}
-        onReset={reset}
-        openFile={openFile}
-        openCamera={openCamera}
-        onAnalyze={() => void analyze(audience)}
-        menPersonaId={personaId}
-        tryOnByStyle={flow.tryOnByStyle}
-        tryOnLoadingId={flow.tryOnLoadingId}
-        onGenerateTryOn={(styleId, personaId) => void generateTryOn(styleId, personaId)}
+      <DesktopPageSplit
+        mobile={<AiStyleSplitLayout {...layoutProps} />}
+        desktop={<AiStyleDesktopLayout {...layoutProps} />}
       />
 
       <AiStylePhotoInput fileRef={fileRef} onFile={onFile} />
