@@ -46,17 +46,18 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
     busy,
   } = state;
 
+  const isDesktop = variant === "desktop";
   const inputClass = fieldClass[variant];
   const sectionLabel = cn(
     "flex items-center gap-2 font-bold",
-    variant === "desktop" ? "text-[15px]" : "text-sm",
+    isDesktop ? "text-[15px]" : "text-sm",
   );
 
   if (step === 1) {
     return (
-      <div className={cn("space-y-4", variant === "desktop" && "space-y-5")}>
+      <div className={cn("space-y-4", isDesktop && "mx-auto w-full max-w-md space-y-5")}>
         <div className={sectionLabel}>
-          <User className={variant === "desktop" ? "h-[18px] w-[18px]" : "h-4 w-4"} />
+          <User className={isDesktop ? "h-[18px] w-[18px]" : "h-4 w-4"} />
           Ism va familiya
         </div>
         <input
@@ -79,22 +80,27 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
 
   if (step === 2) {
     return (
-      <div className={cn("space-y-4", variant === "desktop" && "space-y-5")}>
+      <div className={cn("space-y-4", isDesktop && "mx-auto w-full max-w-sm space-y-5")}>
         <div className={sectionLabel}>
-          <Calendar className={variant === "desktop" ? "h-[18px] w-[18px]" : "h-4 w-4"} />
+          <Calendar className={isDesktop ? "h-[18px] w-[18px]" : "h-4 w-4"} />
           Yoshingiz
         </div>
         <input
-          type="number"
+          type="text"
           inputMode="numeric"
-          min={10}
-          max={100}
+          pattern="[0-9]*"
+          maxLength={2}
           value={age}
           onChange={(e) => setAge(e.target.value.replace(/\D/g, "").slice(0, 2))}
           placeholder="Masalan: 25"
-          className={inputClass}
+          className={cn(inputClass, isDesktop && "text-center text-2xl tracking-wide tabular-nums")}
         />
-        <p className={cn("text-muted-foreground", variant === "desktop" ? "text-sm" : "text-xs")}>
+        <p
+          className={cn(
+            "text-muted-foreground",
+            isDesktop ? "text-center text-sm leading-relaxed" : "text-xs",
+          )}
+        >
           Xizmatlar va tavsiyalar yoshga mos tanlanadi.
         </p>
       </div>
@@ -102,27 +108,49 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
   }
 
   return (
-    <div className={cn("space-y-4", variant === "desktop" && "space-y-5")}>
+    <div className={cn("space-y-4", isDesktop && "space-y-5")}>
       <div className={sectionLabel}>
-        <MapPin className={variant === "desktop" ? "h-[18px] w-[18px]" : "h-4 w-4"} />
+        <MapPin className={isDesktop ? "h-[18px] w-[18px]" : "h-4 w-4"} />
         Joylashuv
       </div>
-      <label className="block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-        Viloyat
-      </label>
-      <select
-        value={region}
-        disabled={regionsLoading || locating}
-        onChange={(e) => setRegion(e.target.value)}
-        className={inputClass}
-      >
-        <option value="">Tanlang…</option>
-        {regions.map((r) => (
-          <option key={r.value} value={r.value}>
-            {r.label}
-          </option>
-        ))}
-      </select>
+
+      <div className={cn(isDesktop && "grid grid-cols-[minmax(0,260px)_1fr] items-end gap-4")}>
+        <div>
+          <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+            Viloyat
+          </label>
+          <select
+            value={region}
+            disabled={regionsLoading || locating}
+            onChange={(e) => setRegion(e.target.value)}
+            className={inputClass}
+          >
+            <option value="">Tanlang…</option>
+            {regions.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {isDesktop ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void detectLocation()}
+            className="flex h-[3.35rem] items-center justify-center gap-2 rounded-[1.35rem] border border-border/80 bg-background px-5 text-sm font-bold transition-colors hover:bg-muted/40 disabled:opacity-50"
+          >
+            <MapPin className="h-4 w-4" />
+            {locating
+              ? "Aniqlanmoqda…"
+              : lat != null
+                ? "Qayta aniqlash"
+                : "GPS orqali aniqlash"}
+          </button>
+        ) : null}
+      </div>
+
       {regionMismatch ? (
         <p className="text-xs font-semibold text-destructive">
           Joylashuvingiz tanlangan viloyatga mos emas
@@ -137,6 +165,7 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
         region={region}
         regionLabel={regionLabel}
         regionSyncMode="fill-empty"
+        showGpsButton={false}
         latitude={lat != null ? String(lat) : ""}
         longitude={lng != null ? String(lng) : ""}
         setLatitude={(v) => {
@@ -148,26 +177,25 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
           if (Number.isFinite(n)) setLng(n);
         }}
         onRegionSuggestion={(code) => setRegion((prev) => prev || code)}
+        mapClassName={isDesktop ? "h-[380px] xl:h-[440px]" : undefined}
+        className={isDesktop ? "[&>div]:rounded-[1.35rem]" : undefined}
       />
 
-      <button
-        type="button"
-        disabled={busy}
-        onClick={() => void detectLocation()}
-        className={cn(
-          "flex w-full items-center justify-center gap-2 border-2 border-dashed border-foreground/40 text-sm font-bold",
-          variant === "desktop"
-            ? "rounded-[1.35rem] py-4 transition-colors hover:bg-muted/40"
-            : "rounded-2xl py-3.5",
-        )}
-      >
-        <MapPin className="h-4 w-4" />
-        {locating
-          ? "Aniqlanmoqda…"
-          : lat != null
-            ? "Joylashuvni qayta aniqlash"
-            : "GPS orqali aniqlash"}
-      </button>
+      {!isDesktop ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void detectLocation()}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-foreground/40 py-3.5 text-sm font-bold"
+        >
+          <MapPin className="h-4 w-4" />
+          {locating
+            ? "Aniqlanmoqda…"
+            : lat != null
+              ? "Joylashuvni qayta aniqlash"
+              : "GPS orqali aniqlash"}
+        </button>
+      ) : null}
 
       {noCoverage && !interestSubmitted ? (
         <CoverageWaitlistCard
@@ -181,8 +209,14 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
       ) : null}
 
       {lat == null || lng == null ? (
-        <p className="text-center text-[11px] text-muted-foreground">
-          Davom etish uchun GPS orqali joylashuv talab qilinadi.
+        <p
+          className={cn(
+            "text-muted-foreground",
+            isDesktop ? "text-sm" : "text-center text-[11px]",
+          )}
+        >
+          Davom etish uchun GPS orqali joylashuv talab qilinadi. Xaritadan pinni ham siljitishingiz
+          mumkin.
         </p>
       ) : null}
     </div>

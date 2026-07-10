@@ -12,6 +12,7 @@ type Props = {
 
 export function OnboardingDesktopPage({ state }: Props) {
   const { step, setStep, canNext, onPrimary, busy } = state;
+  const isLocationStep = step === 3;
 
   return (
     <div className="relative min-h-[calc(100dvh-4.5rem)] overflow-hidden bg-background">
@@ -24,12 +25,24 @@ export function OnboardingDesktopPage({ state }: Props) {
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent"
       />
 
-      <div className="relative mx-auto flex min-h-[calc(100dvh-4.5rem)] w-full max-w-[560px] flex-col px-8 py-14 xl:max-w-[600px] xl:px-10 xl:py-16">
+      <div
+        className={cn(
+          "relative mx-auto flex min-h-[calc(100dvh-4.5rem)] w-full flex-col px-8 py-12 xl:px-10 xl:py-14",
+          isLocationStep ? "max-w-[920px]" : "max-w-[560px] xl:max-w-[600px]",
+        )}
+      >
         <header className="animate-in fade-in slide-in-from-bottom-2 duration-500">
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
             Yangi profil
           </p>
-          <h1 className="mt-3 text-[2.35rem] font-extrabold leading-[1.1] tracking-tight text-foreground xl:text-[2.6rem]">
+          <h1
+            className={cn(
+              "mt-3 font-extrabold leading-[1.1] tracking-tight text-foreground",
+              isLocationStep
+                ? "text-[2rem] xl:text-[2.25rem]"
+                : "text-[2.35rem] xl:text-[2.6rem]",
+            )}
+          >
             Sizni tanishib olaylik
           </h1>
           <p className="mt-3 max-w-[34rem] text-[15px] leading-relaxed text-muted-foreground">
@@ -37,18 +50,26 @@ export function OnboardingDesktopPage({ state }: Props) {
           </p>
         </header>
 
-        <div className="mt-10 animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both [animation-delay:80ms]">
+        <div className="mt-8 max-w-[560px] animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both [animation-delay:80ms]">
           <Stepper steps={[...ONBOARDING_STEPS]} current={step} />
         </div>
 
         <div
           key={step}
-          className="flex flex-1 flex-col justify-center py-12 animate-in fade-in slide-in-from-bottom-2 duration-400"
+          className={cn(
+            "flex flex-1 flex-col animate-in fade-in slide-in-from-bottom-2 duration-400",
+            isLocationStep ? "justify-start py-8" : "justify-center py-12",
+          )}
         >
           <OnboardingSteps state={state} variant="desktop" />
         </div>
 
-        <div className="flex gap-3 animate-in fade-in duration-500 fill-mode-both [animation-delay:120ms]">
+        <div
+          className={cn(
+            "flex gap-3 animate-in fade-in duration-500 fill-mode-both [animation-delay:120ms]",
+            isLocationStep ? "max-w-[560px]" : undefined,
+          )}
+        >
           {step > 1 ? (
             <button
               type="button"

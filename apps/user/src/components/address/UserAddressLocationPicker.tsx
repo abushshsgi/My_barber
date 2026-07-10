@@ -31,6 +31,8 @@ type Props = {
   regionSyncMode?: "fill-empty" | "always";
   /** Shahar tanlanmaguncha GPS va xarita bloklanadi. */
   requireRegion?: boolean;
+  /** false: faqat xarita (onboarding — tashqi GPS tugmasi yo'q). */
+  showGpsButton?: boolean;
   className?: string;
   mapClassName?: string;
 };
@@ -47,6 +49,7 @@ export function UserAddressLocationPicker({
   onRegionSuggestion,
   regionSyncMode = "fill-empty",
   requireRegion = false,
+  showGpsButton = true,
   className,
   mapClassName,
 }: Props) {
@@ -192,16 +195,18 @@ export function UserAddressLocationPicker({
           />
         </Suspense>
       </div>
-      <button
-        type="button"
-        disabled={locating || regionMissing}
-        onClick={() => void detectGps()}
-        className="w-full rounded-xl border border-border bg-surface py-2.5 text-xs font-bold disabled:opacity-60"
-      >
-        {locating
-          ? t("addresses.locating", { defaultValue: "Aniqlanmoqda…" })
-          : t("addresses.detectGps", { defaultValue: "GPS orqali aniqlash" })}
-      </button>
+      {showGpsButton ? (
+        <button
+          type="button"
+          disabled={locating || regionMissing}
+          onClick={() => void detectGps()}
+          className="w-full rounded-xl border border-border bg-surface py-2.5 text-xs font-bold disabled:opacity-60"
+        >
+          {locating
+            ? t("addresses.locating", { defaultValue: "Aniqlanmoqda…" })
+            : t("addresses.detectGps", { defaultValue: "GPS orqali aniqlash" })}
+        </button>
+      ) : null}
     </div>
   );
 }
