@@ -17,16 +17,16 @@ import {
 
 type Props = { data: HomeData };
 
-/** Mobil bosh sahifa — salom, qidiruv, tez kirish va salon kashfiyoti. */
+/** Mobil bosh sahifa — sticky brand, inverted hero, kashfiyot lente. */
 export function HomeMobilePage({ data }: Props) {
   const nearby = data.filtered.slice(0, 12);
 
   return (
-    <div className="pb-3">
+    <div className="min-w-0">
       <HomeMobileTopBar />
 
       {data.searchActive ? (
-        <div className="px-4 pt-2">
+        <div className="pt-1">
           <HomeMobileHero {...data} />
           <HomeUnifiedSearchResults
             searchActive={data.searchActive}
@@ -37,7 +37,7 @@ export function HomeMobilePage({ data }: Props) {
         </div>
       ) : (
         <motion.div
-          className="space-y-5 pt-1"
+          className="space-y-6 pb-2 pt-1"
           variants={stagger}
           initial="hidden"
           animate="show"
@@ -51,7 +51,7 @@ export function HomeMobilePage({ data }: Props) {
           </MotionSection>
 
           <MotionSection>
-            <HomeTrendingStrip trending={data.exploreRow} />
+            <HomeMobileFeatured salons={data.filtered} />
           </MotionSection>
 
           <MotionSection>
@@ -63,7 +63,7 @@ export function HomeMobilePage({ data }: Props) {
           </MotionSection>
 
           <MotionSection>
-            <HomeMobileFeatured salons={data.filtered} />
+            <HomeTrendingStrip trending={data.exploreRow} compact />
           </MotionSection>
 
           <MotionSection>

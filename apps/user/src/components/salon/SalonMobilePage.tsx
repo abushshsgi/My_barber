@@ -25,7 +25,7 @@ export function SalonMobilePage({
   const { t } = useTranslation();
 
   return (
-    <div className="pb-28">
+    <div className="min-w-0 pb-[calc(5.75rem+env(safe-area-inset-bottom,0px))]">
       <div className="relative">
         <SalonHeroGallery salon={salon} variant="mobile" />
         <div className="absolute inset-x-0 top-0">
@@ -44,13 +44,13 @@ export function SalonMobilePage({
         />
       </div>
 
-      <div className="mt-6 px-4">
+      <div className="mt-6 min-w-0 px-4">
         <SalonPageSections salon={salon} calendarMonths={1} showCalendar reviewsAreMock={reviewsAreMock} />
       </div>
 
       <div
-        className="fixed inset-x-0 bottom-0 z-30 border-t-2 border-border bg-surface/95 px-4 pt-3 backdrop-blur-md"
-        style={{ paddingBottom: "calc(4.75rem + env(safe-area-inset-bottom))" }}
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 px-4 pt-3 backdrop-blur-md"
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0px))" }}
       >
         <div className="mx-auto flex max-w-md items-center justify-end">
           <Link

@@ -1,7 +1,6 @@
 import { useRouter, useRouterState } from "@tanstack/react-router";
-import { getMobileContentPaddingClass } from "@/lib/layout-constants";
-import { navigateBack } from "@/lib/mobile-back";
 import { shouldShowMobileDock } from "@/lib/layout-routes";
+import { navigateBack } from "@/lib/mobile-back";
 import { cn } from "@/lib/utils";
 import { MobileBackButton } from "@/components/mobile/MobileBackButton";
 
@@ -11,13 +10,13 @@ type Props = {
   children: React.ReactNode;
   className?: string;
   right?: React.ReactNode;
-  /** Header ostida, scrolldan tashqarida qoladigan qo'shimcha blok (masalan tablar). */
+  /** Header ostida, sticky header ichida qoladigan qo'shimcha blok (masalan tablar). */
   headerExtra?: React.ReactNode;
   /** Tarix bo'sh bo'lsa shu sahifaga qaytadi. */
   backTo?: string;
   /** true bo'lsa doim backTo ga o'tadi (activity hub oqimi). */
   strictBack?: boolean;
-  /** To'liq ekran — panel va yon chegaralar yo'q, scroll ichkarida. */
+  /** To'liq ekran — panel yo'q; document scroll + sticky header. */
   flush?: boolean;
 };
 
@@ -36,7 +35,6 @@ export function MobilePageShell({
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const showDock = shouldShowMobileDock(pathname);
-  const contentPadding = getMobileContentPaddingClass(pathname);
 
   const backButton = (
     <MobileBackButton onClick={() => navigateBack(router, backTo, strictBack)} />
@@ -60,16 +58,8 @@ export function MobilePageShell({
 
   if (flush) {
     return (
-      <div
-        className={cn(
-          "flex flex-col overflow-hidden lg:min-h-full",
-          showDock
-            ? "h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px))]"
-            : "h-dvh",
-          className,
-        )}
-      >
-        <header className="shrink-0 border-b border-border bg-background px-4 pb-3 pt-safe">
+      <div className={cn("min-h-full min-w-0", className)}>
+        <header className="sticky top-0 z-20 border-b border-border/70 bg-background/95 px-4 pb-3 pt-safe backdrop-blur-md">
           <div className="flex items-start gap-3">
             {backButton}
             {titleBlock}
@@ -77,13 +67,21 @@ export function MobilePageShell({
           </div>
           {headerExtra}
         </header>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
+        <div
+          className={cn(
+            "min-w-0",
+            /* UserLayout dock padding qiladi; dock yo'q sahifalarda pastki safe-area. */
+            !showDock && "pb-[max(1rem,env(safe-area-inset-bottom,0px))]",
+          )}
+        >
+          {children}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={cn("min-h-full", contentPadding, className)}>
+    <div className={cn("min-h-full min-w-0", className)}>
       <div className="px-4 pb-4 pt-safe">
         <div className="flex items-start gap-3">
           {backButton}

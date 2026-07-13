@@ -9,10 +9,8 @@ import { useHairstyle } from "@/hooks/use-hairstyles";
 import { getHairstyleDisplayUrl } from "@/lib/hairstyles/catalog";
 import { cn } from "@/lib/utils";
 
-import { MOBILE_DOCK_OFFSET, MOBILE_STICKY_ACTIONS_OFFSET } from "@/lib/layout-constants";
-
-const BOTTOM_NAV_OFFSET = MOBILE_DOCK_OFFSET;
-const STICKY_ACTIONS_OFFSET = MOBILE_STICKY_ACTIONS_OFFSET;
+/** Pastki CTA balandligi — dock yo'q sahifa (explore detail). */
+const ACTIONS_OFFSET = "calc(5.5rem + env(safe-area-inset-bottom, 0px))";
 
 export const Route = createFileRoute("/explore_/$styleId")({
   head: () => ({ meta: [{ title: "Uslub — mysaloon.uz" }] }),
@@ -44,7 +42,7 @@ function ExploreStyleDetailPage() {
   return (
     <div
       className="pb-[var(--explore-style-actions-offset)] lg:px-6 lg:pb-8"
-      style={{ ["--explore-style-actions-offset" as string]: STICKY_ACTIONS_OFFSET }}
+      style={{ ["--explore-style-actions-offset" as string]: ACTIONS_OFFSET }}
     >
       {/* Mobile */}
       <div className="lg:hidden">
@@ -144,11 +142,10 @@ function ExploreStyleDetailPage() {
 
       <div
         className={cn(
-          "fixed inset-x-0 z-20 border-t border-border/80 bg-background/95 px-4 pt-3 shadow-[0_-8px_24px_rgba(0,0,0,0.06)] backdrop-blur-md bottom-[var(--explore-bottom-nav-offset)] lg:hidden",
+          "fixed inset-x-0 bottom-0 z-20 border-t border-border/80 bg-background/95 px-4 pt-3 shadow-[0_-8px_24px_rgba(0,0,0,0.06)] backdrop-blur-md lg:hidden",
         )}
         style={{
-          ["--explore-bottom-nav-offset" as string]: BOTTOM_NAV_OFFSET,
-          paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
+          paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0px))",
         }}
       >
         <div className="mx-auto flex max-w-md gap-2.5">

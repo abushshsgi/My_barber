@@ -47,8 +47,8 @@ export function SalonSectionNav({ salon }: { salon: Salon }) {
   }, [items]);
 
   return (
-    <nav className="sticky top-[4.25rem] z-10 -mx-1 border-b border-border bg-background/95 py-3 backdrop-blur-md">
-      <div className="no-scrollbar flex gap-2 overflow-x-auto px-1">
+    <nav className="sticky top-0 z-10 -mx-1 border-b border-border bg-background/95 py-3 backdrop-blur-md lg:top-[4.25rem]">
+      <div className="no-scrollbar flex touch-pan-x gap-2 overflow-x-auto overscroll-x-contain px-1 [-webkit-overflow-scrolling:touch]">
         {items.map((item) => (
           <button
             key={item.id}

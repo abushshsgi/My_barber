@@ -21,7 +21,7 @@ export function MobileStickyActionBar({ children, className }: Props) {
       )}
       style={{ bottom: bottomInset }}
     >
-      <div className="mx-auto flex max-w-md items-center gap-2 px-4 py-2.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <div className="mx-auto flex max-w-md items-center gap-2 px-4 py-2.5">
         {children}
       </div>
     </div>

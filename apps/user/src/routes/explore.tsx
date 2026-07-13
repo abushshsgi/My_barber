@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { ExploreDesktopPage } from "@/components/desktop/pages/ExploreDesktopPage";
@@ -7,8 +6,6 @@ import { ExploreStyleGrid } from "@/components/explore/ExploreStyleGrid";
 import { PageHeader } from "@/components/PageHeader";
 import { PersonaPicker } from "@/components/PersonaPicker";
 import { useExplorePageData } from "@/hooks/use-explore-page-data";
-import { getMobileContentPaddingClass } from "@/lib/layout-constants";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/explore")({
   head: () => ({ meta: [{ title: "Trend uslublar — mysaloon.uz" }] }),
@@ -17,7 +14,6 @@ export const Route = createFileRoute("/explore")({
 
 function ExploreMobile() {
   const { t } = useTranslation();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const {
     audience,
     personaId,
@@ -29,7 +25,7 @@ function ExploreMobile() {
   } = useExplorePageData();
 
   return (
-    <div className={cn("min-h-full", getMobileContentPaddingClass(pathname))}>
+    <div className="min-h-full min-w-0">
       <PageHeader showBack title={t("explorePage.title")} transparent />
       <div className="px-2 pb-3">
         {audience === "men" ? (

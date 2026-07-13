@@ -26,13 +26,20 @@ import { prefetchSalonDetail } from "@/lib/prefetch-salon";
 import { useDisplayUser } from "@/hooks/use-me";
 import { cn } from "@/lib/utils";
 
+const H_SCROLL =
+  "no-scrollbar touch-pan-x overscroll-x-contain overflow-x-auto [-webkit-overflow-scrolling:touch]";
+
 const fadeUp = {
-  hidden: { opacity: 0, y: 14 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.34, ease: [0.22, 1, 0.36, 1] } },
+  hidden: { opacity: 0, y: 12 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] as const },
+  },
 };
 
 const stagger = {
-  show: { transition: { staggerChildren: 0.055, delayChildren: 0.03 } },
+  show: { transition: { staggerChildren: 0.05, delayChildren: 0.02 } },
 };
 
 export function MotionSection({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -50,8 +57,7 @@ function greetingLabel(firstName: string): string {
   return firstName ? `Xayrli kech, ${firstName}` : "Xayrli kech";
 }
 
-const QUICK_ACTIONS = [
-  { to: "/map", icon: Map, labelKey: "nav.map" },
+const QUICK_SIDE = [
   { to: "/ai-style", icon: Wand2, labelKey: "nav.aiStyle" },
   { to: "/offers", icon: Tag, labelKey: "nav.offers" },
   { to: "/explore", icon: Compass, labelKey: "nav.explore" },
@@ -62,31 +68,58 @@ type SearchProps = Pick<
   "query" | "setQuery" | "visibleCategoryKeys" | "effectiveCat" | "setCat"
 >;
 
+function SectionHead({
+  title,
+  to,
+  linkLabel,
+}: {
+  title: string;
+  to?: string;
+  linkLabel?: string;
+}) {
+  return (
+    <div className="mb-3 flex items-center justify-between gap-3 px-4">
+      <h2 className="text-[15px] font-extrabold tracking-tight">{title}</h2>
+      {to && linkLabel ? (
+        <Link to={to} className="flex items-center gap-0.5 text-xs font-semibold text-muted-foreground">
+          {linkLabel}
+          <ChevronRight className="size-3.5" />
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
 export function HomeMobileHero({ query, setQuery, visibleCategoryKeys, effectiveCat, setCat }: SearchProps) {
   const { t } = useTranslation();
   const { firstName } = useDisplayUser();
 
   return (
-    <div className="px-4 pt-2">
-      <h1 className="text-[1.65rem] font-extrabold leading-tight tracking-tight">{greetingLabel(firstName)}</h1>
-      <p className="mt-1 text-sm text-muted-foreground">{t("home.title")}</p>
+    <div className="px-4">
+      <div className="overflow-hidden rounded-[1.35rem] bg-foreground px-4 pb-4 pt-5 text-background">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-background/55">mysaloon.uz</p>
+        <h1 className="mt-1.5 text-[1.55rem] font-extrabold leading-[1.15] tracking-tight">
+          {greetingLabel(firstName)}
+        </h1>
+        <p className="mt-1 text-[13px] text-background/70">{t("home.title")}</p>
 
-      <div className="relative mt-4">
-        <Search className="absolute left-4 top-1/2 size-[18px] -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={t("home.filters.title")}
-          className="w-full rounded-2xl bg-surface py-3.5 pl-11 pr-4 text-sm font-medium shadow-soft placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/15"
-        />
+        <div className="relative mt-4">
+          <Search className="absolute left-3.5 top-1/2 size-[17px] -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t("home.filters.title")}
+            className="w-full rounded-2xl bg-background py-3.5 pl-10 pr-4 text-sm font-medium text-foreground shadow-none placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-background/40"
+          />
+        </div>
+
+        <div className="mt-3">
+          <AudienceSwitch variant="compact" showProfileHint={false} />
+        </div>
       </div>
 
-      <div className="mt-3">
-        <AudienceSwitch variant="compact" showProfileHint={false} />
-      </div>
-
-      <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-0.5">
+      <div className={cn(H_SCROLL, "mt-3 flex gap-2 pb-0.5")}>
         {visibleCategoryKeys.map((key) => {
           const active = effectiveCat === key;
           return (
@@ -112,20 +145,36 @@ export function HomeMobileQuickActions() {
   const { t } = useTranslation();
 
   return (
-    <div className="grid grid-cols-4 gap-2 px-4">
-      {QUICK_ACTIONS.map(({ to, icon: Icon, labelKey }) => (
-        <Link
-          key={to}
-          to={to}
-          preload="intent"
-          className="flex flex-col items-center gap-1.5 rounded-2xl bg-surface px-2 py-3 active:scale-95"
-        >
-          <span className="grid size-10 place-items-center rounded-xl bg-foreground text-background">
-            <Icon className="size-[18px]" strokeWidth={2.1} />
-          </span>
-          <span className="text-center text-[10px] font-semibold leading-tight">{t(labelKey)}</span>
-        </Link>
-      ))}
+    <div className="grid grid-cols-2 gap-2.5 px-4">
+      <Link
+        to="/map"
+        preload="intent"
+        className="relative flex min-h-[112px] flex-col justify-between overflow-hidden rounded-[1.25rem] bg-foreground p-3.5 text-background active:scale-[0.98]"
+      >
+        <span className="grid size-10 place-items-center rounded-xl bg-background/15">
+          <Map className="size-5" strokeWidth={2.1} />
+        </span>
+        <div>
+          <p className="text-sm font-extrabold">{t("nav.map")}</p>
+          <p className="mt-0.5 text-[11px] text-background/70">{t("common.viewMap")}</p>
+        </div>
+      </Link>
+
+      <div className="grid grid-rows-3 gap-2">
+        {QUICK_SIDE.map(({ to, icon: Icon, labelKey }) => (
+          <Link
+            key={to}
+            to={to}
+            preload="intent"
+            className="flex items-center gap-2.5 rounded-2xl bg-surface px-3 py-2 active:scale-[0.98]"
+          >
+            <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-foreground text-background">
+              <Icon className="size-3.5" strokeWidth={2.2} />
+            </span>
+            <span className="truncate text-[11px] font-bold">{t(labelKey)}</span>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }
@@ -138,18 +187,21 @@ export function HomeMobileMapTeaser({ count }: { count: number }) {
     <Link
       to="/map"
       preload="intent"
-      className="mx-4 flex items-center gap-3 rounded-2xl bg-foreground px-4 py-3.5 text-background active:scale-[0.99]"
+      className="mx-4 flex items-stretch overflow-hidden rounded-[1.25rem] border border-border bg-surface active:scale-[0.99]"
     >
-      <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-background/15">
-        <Map className="size-5" strokeWidth={2.1} />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-bold">{t("home.mapPreview.explore")}</p>
-        <p className="text-xs text-background/75">
-          {t("home.mapPreview.nearbyCount", { count })}
-        </p>
+      <div className="flex w-16 shrink-0 flex-col items-center justify-center gap-1 bg-foreground text-background">
+        <MapPin className="size-5" strokeWidth={2.1} />
+        <span className="text-[10px] font-bold">{count}</span>
       </div>
-      <ChevronRight className="size-5 shrink-0 text-background/80" />
+      <div className="flex min-w-0 flex-1 items-center gap-2 px-3.5 py-3.5">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold">{t("home.mapPreview.explore")}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {t("home.mapPreview.nearbyCount", { count })}
+          </p>
+        </div>
+        <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
+      </div>
     </Link>
   );
 }
@@ -162,16 +214,10 @@ export function HomeMobileFeatured({ salons }: { salons: Salon[] }) {
 
   return (
     <section>
-      <div className="mb-3 flex items-center justify-between gap-3 px-4">
-        <h2 className="text-base font-bold">{t("home.topSalons.title")}</h2>
-        <Link to="/top" className="flex items-center gap-0.5 text-xs font-semibold text-muted-foreground">
-          {t("common.viewAll")}
-          <ChevronRight className="size-4" />
-        </Link>
-      </div>
-      <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-1">
+      <SectionHead title={t("home.topSalons.title")} to="/top" linkLabel={t("common.viewAll")} />
+      <div className={cn(H_SCROLL, "flex gap-3 px-4 pb-1")}>
         {preview.map((salon) => (
-          <div key={salon.id} className="w-[168px] shrink-0 sm:w-[200px]">
+          <div key={salon.id} className="w-[158px] shrink-0 sm:w-[188px]">
             <MobileSalonCard salon={salon} layout="vertical" />
           </div>
         ))}
@@ -189,32 +235,32 @@ function HomeMixedBarberCard({ item }: { item: Extract<HomeDiscoveryItem, { type
       : `/booking/barber/${barber.barberId}`;
 
   return (
-    <div className="flex w-[168px] shrink-0 flex-col sm:w-[200px] lg:w-[220px]">
+    <div className="flex w-[158px] shrink-0 flex-col sm:w-[188px] lg:w-[220px]">
       <Link
         to="/barber/$barberId"
         params={{ barberId: barber.barberId }}
         preload="intent"
-        className="group relative block aspect-[3/4] overflow-hidden rounded-3xl shadow-[0_12px_40px_-16px_rgba(0,0,0,0.35)] transition duration-300 active:scale-[0.98]"
+        className="group relative block aspect-[3/4] overflow-hidden rounded-3xl bg-muted active:scale-[0.98]"
       >
-        <div className="absolute inset-0 bg-muted">
+        <div className="absolute inset-0">
           {barber.avatar ? (
-            <img src={barber.avatar} alt="" className="size-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
+            <img src={barber.avatar} alt="" className="size-full object-cover" loading="lazy" />
           ) : (
             <div className="grid size-full place-items-center bg-gradient-to-br from-muted to-muted-foreground/20">
               <User className="size-10 text-muted-foreground/60" />
             </div>
           )}
         </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/5" />
-        <span className="absolute left-3 top-3 rounded-full border border-white/25 bg-white/15 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-md">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+        <span className="absolute left-2.5 top-2.5 rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-bold text-foreground">
           {t("map.tabBarbers", { defaultValue: "Usta" })}
         </span>
-        <div className="absolute inset-x-3 bottom-3 rounded-2xl border border-white/20 bg-white/10 p-3 backdrop-blur-xl">
+        <div className="absolute inset-x-2.5 bottom-2.5">
           <p className="truncate text-sm font-bold text-white">{barber.name}</p>
           {barber.salonName ? (
-            <p className="mt-0.5 truncate text-[11px] text-white/80">{barber.salonName}</p>
+            <p className="mt-0.5 truncate text-[11px] text-white/75">{barber.salonName}</p>
           ) : null}
-          <div className="mt-2.5 flex items-center justify-between gap-2 text-xs">
+          <div className="mt-1.5 flex items-center justify-between gap-2 text-xs">
             {barber.rating > 0 ? (
               <span className="inline-flex items-center gap-1 font-semibold text-white">
                 <Star className="size-3.5 fill-gold text-gold" />
@@ -231,7 +277,7 @@ function HomeMixedBarberCard({ item }: { item: Extract<HomeDiscoveryItem, { type
       </Link>
       <Link
         to={bookTo}
-        className="mt-2.5 rounded-2xl border border-foreground/10 bg-foreground/5 px-3 py-2.5 text-center text-[11px] font-bold text-foreground backdrop-blur-sm transition hover:bg-foreground/10"
+        className="mt-2 rounded-2xl bg-foreground/5 px-3 py-2.5 text-center text-[11px] font-bold text-foreground active:bg-foreground/10"
       >
         {t("map.bookBarber", { defaultValue: "Bron qilish" })}
       </Link>
@@ -245,19 +291,15 @@ export function HomeMobileMixedDiscovery({ items }: { items: HomeDiscoveryItem[]
 
   return (
     <section className="min-w-0">
-      <div className="mb-3 flex items-center justify-between gap-3 px-4 lg:px-0">
-        <h2 className="text-base font-bold">
-          {t("home.mixedDiscovery.title", { defaultValue: "Salonlar va ustalar" })}
-        </h2>
-        <Link to="/map" className="flex items-center gap-0.5 text-xs font-semibold text-muted-foreground">
-          {t("common.viewMap")}
-          <ChevronRight className="size-4" />
-        </Link>
-      </div>
-      <div className="no-scrollbar -mx-4 flex gap-4 overflow-x-auto px-4 pb-2 lg:mx-0 lg:gap-5 lg:px-0">
+      <SectionHead
+        title={t("home.mixedDiscovery.title", { defaultValue: "Salonlar va ustalar" })}
+        to="/map"
+        linkLabel={t("common.viewMap")}
+      />
+      <div className={cn(H_SCROLL, "flex gap-3 px-4 pb-1")}>
         {items.map((item) =>
           item.type === "salon" ? (
-            <div key={`s-${item.salon.id}`} className="w-[168px] shrink-0 sm:w-[200px] lg:w-[220px]">
+            <div key={`s-${item.salon.id}`} className="w-[158px] shrink-0 sm:w-[188px] lg:w-[220px]">
               <MobileSalonCard salon={item.salon} layout="vertical" variant="glass" />
             </div>
           ) : (
@@ -281,7 +323,7 @@ function HomeSalonRow({ salon }: { salon: Salon }) {
       preload="intent"
       onPointerEnter={() => prefetchSalonDetail(salon.id)}
       onTouchStart={() => prefetchSalonDetail(salon.id)}
-      className="flex gap-3 rounded-2xl bg-surface p-3 active:scale-[0.99]"
+      className="flex gap-3 rounded-2xl bg-surface p-2.5 active:scale-[0.99]"
     >
       <SalonCoverImg
         src={salon.coverUrl}
@@ -289,7 +331,7 @@ function HomeSalonRow({ salon }: { salon: Salon }) {
         category={salon.category}
         alt=""
         loading="lazy"
-        className="size-[76px] shrink-0 rounded-xl object-cover"
+        className="size-[72px] shrink-0 rounded-xl object-cover"
       />
       <div className="min-w-0 flex-1 py-0.5">
         <div className="flex items-start justify-between gap-2">
@@ -303,7 +345,7 @@ function HomeSalonRow({ salon }: { salon: Salon }) {
           <MapPin className="size-3 shrink-0" />
           {salon.address}
         </p>
-        <div className="mt-2 flex items-center justify-between gap-2">
+        <div className="mt-1.5 flex items-center justify-between gap-2">
           <span className="text-[11px] font-medium text-muted-foreground">{salon.distanceKm} km</span>
           <span className="text-xs font-bold">dan {shortPrice(salon.priceFrom)}</span>
         </div>
@@ -326,10 +368,10 @@ export function HomeMobileNearby({ salons }: { salons: Salon[] }) {
   return (
     <section className="px-4">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-base font-bold">{t("home.nearby")}</h2>
+        <h2 className="text-[15px] font-extrabold tracking-tight">{t("home.nearby")}</h2>
         <Link to="/map" className="flex items-center gap-0.5 text-xs font-semibold text-muted-foreground">
           {t("common.viewMap")}
-          <ChevronRight className="size-4" />
+          <ChevronRight className="size-3.5" />
         </Link>
       </div>
       <ul className="space-y-2">
@@ -350,14 +392,16 @@ export function HomeMobileBookingsCta() {
     <Link
       to="/bookings"
       preload="intent"
-      className="mx-4 flex items-center gap-3 rounded-2xl bg-surface px-4 py-3.5 active:scale-[0.99]"
+      className="mx-4 flex items-center gap-3 rounded-[1.25rem] border border-border bg-surface px-4 py-3.5 active:scale-[0.99]"
     >
       <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-foreground text-background">
         <CalendarCheck className="size-[18px]" strokeWidth={2.1} />
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-bold">{t("nav.bookings")}</p>
-        <p className="text-xs text-muted-foreground">{t("bookings.emptyHint", { defaultValue: "Bronlaringizni boshqaring" })}</p>
+        <p className="text-xs text-muted-foreground">
+          {t("bookings.emptyHint", { defaultValue: "Bronlaringizni boshqaring" })}
+        </p>
       </div>
       <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
     </Link>

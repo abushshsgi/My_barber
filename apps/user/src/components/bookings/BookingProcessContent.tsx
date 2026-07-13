@@ -15,7 +15,7 @@ import {
 } from "@/components/bookings/BookingProcessParts";
 import { MobilePageShell } from "@/components/mobile/MobilePageShell";
 import type { useBookingProcessPage } from "@/hooks/use-booking-process-page";
-import { getMobileBottomInset, getMobileContentPaddingClass } from "@/lib/layout-constants";
+import { getMobileBottomInset } from "@/lib/layout-constants";
 import { shouldShowMobileDock } from "@/lib/layout-routes";
 import { formatPrice, type BookingItem } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";

@@ -1,18 +1,14 @@
 import { useEffect, useState } from "react";
-import { useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { BookingCard, BookingsEmptyState } from "@/components/bookings/BookingCard";
 import { PagePillTabs } from "@/components/ui/PagePillTabs";
 import { useBookings } from "@/hooks/use-bookings-api";
 import { getUpcomingBookings, getHistoryBookings } from "@/lib/bookings-utils";
-import { getMobileContentPaddingClass } from "@/lib/layout-constants";
-import { cn } from "@/lib/utils";
 
 type Props = { focus?: string };
 
 export function BookingsMobile({ focus }: Props) {
   const { t } = useTranslation();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [tab, setTab] = useState<"upcoming" | "history">("upcoming");
   const { data: bookings = [], isLoading } = useBookings();
   const now = Date.now();
@@ -31,12 +27,7 @@ export function BookingsMobile({ focus }: Props) {
   }, [focus, now, bookings]);
 
   return (
-    <div
-      className={cn(
-        "flex min-h-dvh flex-col bg-background",
-        getMobileContentPaddingClass(pathname),
-      )}
-    >
+    <div className="flex min-h-full min-w-0 flex-col bg-background">
       <header className="shrink-0 px-4 pb-2 pt-[max(env(safe-area-inset-top),0.75rem)]">
         <h1 className="text-[28px] font-extrabold leading-tight tracking-tight">
           {t("bookings.title")}

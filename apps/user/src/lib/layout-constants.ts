@@ -18,9 +18,9 @@ export const MOBILE_CONTENT_PADDING_BOTTOM = "calc(3.5rem + env(safe-area-inset-
 export const MOBILE_CONTENT_PADDING_CLASS =
   "pb-[calc(3.5rem+env(safe-area-inset-bottom))]" as const;
 
-/** Sticky action bar + dock ustidagi joy. */
+/** Sticky action bar balandligi (dock yo'q sahifalar). */
 export const MOBILE_STICKY_ACTIONS_OFFSET =
-  "calc(5.5rem + env(safe-area-inset-bottom) + 4.25rem)" as const;
+  "calc(5.5rem + env(safe-area-inset-bottom, 0px))" as const;
 
 export function getMobileBottomInset(pathname: string): string {
   return shouldShowMobileDock(pathname) ? MOBILE_DOCK_OFFSET : MOBILE_SAFE_BOTTOM;

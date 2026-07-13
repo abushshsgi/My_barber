@@ -219,19 +219,48 @@ export function HomeOfferBanner({ offer }: { offer: Offer }) {
   );
 }
 
-export function HomeTrendingStrip({ trending }: { trending: TrendingHairstyle[] }) {
+export function HomeTrendingStrip({
+  trending,
+  compact = false,
+}: {
+  trending: TrendingHairstyle[];
+  compact?: boolean;
+}) {
   const { t } = useTranslation();
   if (trending.length === 0) return null;
 
   return (
-    <section className="mt-8">
-      <div className="mb-4 flex items-end justify-between px-5">
-        <h2 className="text-lg font-bold tracking-tight">{t("homePage.quick.trends")}</h2>
-        <Link to="/explore" className="flex items-center text-[12px] font-bold text-foreground">
+    <section className={compact ? undefined : "mt-8"}>
+      <div
+        className={cn(
+          "mb-3 flex items-end justify-between",
+          compact ? "px-4" : "mb-4 px-5",
+        )}
+      >
+        <h2
+          className={cn(
+            "font-bold tracking-tight",
+            compact ? "text-[15px] font-extrabold" : "text-lg",
+          )}
+        >
+          {t("homePage.quick.trends")}
+        </h2>
+        <Link
+          to="/explore"
+          className={cn(
+            "flex items-center font-bold text-foreground",
+            compact ? "text-xs font-semibold text-muted-foreground" : "text-[12px]",
+          )}
+        >
           {t("common.viewAll")} <ChevronRight className="h-4 w-4" />
         </Link>
       </div>
-      <div className="no-scrollbar flex gap-3 overflow-x-auto px-5">
+      <div
+        className={cn(
+          "no-scrollbar flex touch-pan-x gap-3 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]",
+          compact ? "px-4 pb-1" : "px-5",
+        )}
+      >
         {trending.map((s) => (
           <TrendingStyleCard key={s.id} style={s} />
         ))}

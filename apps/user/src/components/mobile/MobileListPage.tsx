@@ -1,6 +1,4 @@
 import type { ReactNode } from "react";
-import { useRouterState } from "@tanstack/react-router";
-import { getMobileContentPaddingClass } from "@/lib/layout-constants";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
 
@@ -13,7 +11,8 @@ type Props = {
   className?: string;
 };
 
-/** Standart mobil ro'yxat sahifasi — neo header + panel kontent. */
+/** Standart mobil ro'yxat sahifasi — neo header + panel kontent.
+ *  Pastki padding UserLayout orqali keladi (ikki marta qo'ymaymiz). */
 export function MobileListPage({
   title,
   subtitle,
@@ -22,10 +21,8 @@ export function MobileListPage({
   children,
   className,
 }: Props) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-
   return (
-    <div className={cn("min-h-full", getMobileContentPaddingClass(pathname), className)}>
+    <div className={cn("min-h-full min-w-0", className)}>
       <PageHeader showBack={showBack} title={title} subtitle={subtitle} right={right} transparent />
       <div className="page-stagger mx-3 mb-3 rounded-2xl neo-panel px-4 py-5">{children}</div>
     </div>

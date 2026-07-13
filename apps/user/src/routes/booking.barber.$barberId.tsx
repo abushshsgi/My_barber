@@ -18,7 +18,6 @@ import { useCreateBooking } from "@/hooks/use-bookings-api";
 import { useWalletBalance } from "@/hooks/use-wallet";
 import { useFamilyMembers } from "@/hooks/use-family";
 import { useDisplayUser } from "@/hooks/use-me";
-import { MOBILE_DOCK_OFFSET } from "@/lib/layout-constants";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/barber/$barberId")({
@@ -188,7 +187,7 @@ function IndependentBookingFlow() {
       </div>
 
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:items-start lg:gap-8">
-        <div className="px-5 pt-6 pb-32 lg:px-0 lg:pb-8">
+        <div className="px-5 pt-6 pb-[calc(5.75rem+env(safe-area-inset-bottom,0px))] lg:px-0 lg:pb-8">
         {step === 1 && (
           <div className="space-y-8">
             <BookingForPicker value={familyMemberId} onChange={setFamilyMemberId} />
@@ -236,7 +235,7 @@ function IndependentBookingFlow() {
         {step === 2 && (
           <div>
             <h2 className="text-xl font-bold tracking-tight">{t("booking.selectTime")}</h2>
-            <div className="no-scrollbar mt-6 flex gap-2 overflow-x-auto">
+            <div className="no-scrollbar mt-6 flex touch-pan-x gap-2 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
               {days.map((d, i) => {
                 const iso = d.full.toISOString().slice(0, 10);
                 const unavailable = monthLoaded && !availableDates.has(iso);
@@ -402,9 +401,9 @@ function IndependentBookingFlow() {
 
       <div
         className={cn(
-          "fixed inset-x-0 bottom-0 z-30 border-t-2 border-border bg-surface/95 px-4 pt-3 backdrop-blur-md lg:hidden",
+          "fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 px-4 pt-3 backdrop-blur-md lg:hidden",
         )}
-        style={{ paddingBottom: `calc(${MOBILE_DOCK_OFFSET} + 0.5rem)` }}
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0px))" }}
       >
         <div className="mx-auto flex max-w-md gap-2">
           {step > 1 && (

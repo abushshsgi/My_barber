@@ -36,7 +36,7 @@ function CategoryGlassCard({
       preload="intent"
       className={cn(
         "group relative block min-w-0 overflow-hidden rounded-3xl shadow-[0_14px_36px_-18px_rgba(0,0,0,0.45)] transition duration-300 active:scale-[0.98] hover:shadow-[0_18px_44px_-16px_rgba(0,0,0,0.5)]",
-        compact ? "aspect-[4/5]" : "aspect-[5/6] sm:aspect-[4/5]",
+        compact ? "aspect-[3/4]" : "aspect-[5/6] sm:aspect-[4/5]",
       )}
     >
       <img
@@ -46,15 +46,31 @@ function CategoryGlassCard({
         className="absolute inset-0 size-full object-cover transition duration-500 group-hover:scale-105"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/5" />
-      <div className="absolute inset-x-3 bottom-3 rounded-2xl border border-white/20 bg-white/10 px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-xl sm:inset-x-4 sm:bottom-4 sm:px-4 sm:py-3">
-        <div className="flex items-end justify-between gap-2">
+      <div
+        className={cn(
+          "absolute inset-x-2 bottom-2 rounded-xl border border-white/20 bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-xl",
+          compact ? "px-2 py-1.5" : "inset-x-3 bottom-3 rounded-2xl px-3 py-2.5 sm:inset-x-4 sm:bottom-4 sm:px-4 sm:py-3",
+        )}
+      >
+        <div className="flex items-end justify-between gap-1.5">
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-white sm:text-base">{label}</p>
-            <p className="mt-0.5 truncate text-[11px] text-white/75 sm:text-xs">{hint}</p>
+            <p
+              className={cn(
+                "truncate font-bold text-white",
+                compact ? "text-[11px] leading-tight" : "text-sm sm:text-base",
+              )}
+            >
+              {label}
+            </p>
+            {!compact ? (
+              <p className="mt-0.5 truncate text-[11px] text-white/75 sm:text-xs">{hint}</p>
+            ) : null}
           </div>
-          <span className="grid size-8 shrink-0 place-items-center rounded-full border border-white/20 bg-white/10 text-white transition group-hover:bg-white/20">
-            <ChevronRight className="size-4" strokeWidth={2.5} />
-          </span>
+          {!compact ? (
+            <span className="grid size-8 shrink-0 place-items-center rounded-full border border-white/20 bg-white/10 text-white transition group-hover:bg-white/20">
+              <ChevronRight className="size-4" strokeWidth={2.5} />
+            </span>
+          ) : null}
         </div>
       </div>
     </Link>
@@ -75,7 +91,12 @@ export function HomeCategoryGrid({ className, titleClassName, compact }: Props) 
       >
         {t("home.sections.browseCategories")}
       </h2>
-      <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+      <div
+        className={cn(
+          "grid w-full gap-3",
+          compact ? "grid-cols-3 gap-2.5" : "grid-cols-1 sm:grid-cols-3 sm:gap-4",
+        )}
+      >
         {HOME_CATEGORY_KEYS.map((category) => (
           <CategoryGlassCard
             key={category}

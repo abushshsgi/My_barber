@@ -18,7 +18,6 @@ import { useDisplayUser } from "@/hooks/use-me";
 import { useSalonBarberServices } from "@/hooks/use-salon-barber-services";
 import { useSalonPage } from "@/hooks/use-salon-page";
 import { resolveDefaultSalonBarberId } from "@/lib/salon-services";
-import { MOBILE_DOCK_OFFSET } from "@/lib/layout-constants";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/$salonId")({
@@ -362,7 +361,7 @@ function BookingStepContent({
     return (
       <div>
         <h2 className="text-xl font-bold">{t("booking.selectTime")}</h2>
-        <div className="no-scrollbar mt-6 flex gap-2 overflow-x-auto">
+        <div className="no-scrollbar mt-6 flex touch-pan-x gap-2 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
           {dayList.map((d, i) => {
             const iso = d.full.toISOString().slice(0, 10);
             const unavailable = monthLoaded && !availableDates.has(iso);
@@ -516,10 +515,13 @@ function BookingMobile() {
     <div>
       <PageHeader showBack title={t("booking.title")} />
       <div className="px-5 pt-2"><Stepper steps={stepLabels} current={state.step} /></div>
-      <div className="px-5 pt-8 pb-32">
+      <div className="px-5 pt-8 pb-[calc(5.75rem+env(safe-area-inset-bottom,0px))]">
         <BookingStepContent state={state} t={t} />
       </div>
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t-2 border-border bg-surface/95 px-4 pt-3 backdrop-blur-md" style={{ paddingBottom: `calc(${MOBILE_DOCK_OFFSET} + 0.5rem)` }}>
+      <div
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 px-4 pt-3 backdrop-blur-md"
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0px))" }}
+      >
         <div className="mx-auto flex max-w-md gap-2">
           <BookingNavButtons state={state} t={t} />
         </div>

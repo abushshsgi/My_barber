@@ -26,20 +26,30 @@ function shouldLockMobileViewport(pathname: string): boolean {
   );
 }
 
-/** Eski route'lardan qolgan `overflow: hidden` ni tozalash. */
+/** Eski route'lardan qolgan `overflow: hidden` ni tozalash (map/AI chiqqanda scroll qotib qolmasin). */
 function useReleaseStuckDocumentScroll(pathname: string) {
   useEffect(() => {
     const releaseIfNeeded = () => {
       const isLgUp = window.matchMedia("(min-width: 1024px)").matches;
-      if (!shouldLockMobileViewport(pathname) || isLgUp) {
-        document.documentElement.style.overflow = "";
-        document.body.style.overflow = "";
+      const shouldLock = shouldLockMobileViewport(pathname) && !isLgUp;
+      if (!shouldLock) {
+        document.documentElement.style.removeProperty("overflow");
+        document.body.style.removeProperty("overflow");
+        document.documentElement.style.removeProperty("touch-action");
+        document.body.style.removeProperty("touch-action");
+        document.documentElement.style.removeProperty("overscroll-behavior");
+        document.body.style.removeProperty("overscroll-behavior");
       }
     };
     releaseIfNeeded();
+    // Router o'tishidan keyin bfcache/late layout uchun qayta tekshiruv.
+    const t = window.setTimeout(releaseIfNeeded, 0);
     const mql = window.matchMedia("(min-width: 1024px)");
     mql.addEventListener("change", releaseIfNeeded);
-    return () => mql.removeEventListener("change", releaseIfNeeded);
+    return () => {
+      window.clearTimeout(t);
+      mql.removeEventListener("change", releaseIfNeeded);
+    };
   }, [pathname]);
 }
 
