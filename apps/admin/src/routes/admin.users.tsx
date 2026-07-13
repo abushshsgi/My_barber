@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -19,8 +19,16 @@ import {
 } from "@/components/ui/select";
 
 export const Route = createFileRoute("/admin/users")({
-  component: UsersPage,
+  component: UsersRoute,
 });
+
+function UsersRoute() {
+  const { pathname } = useLocation();
+  if (pathname !== "/admin/users") {
+    return <Outlet />;
+  }
+  return <UsersPage />;
+}
 
 function UsersPage() {
   const search = Route.useSearch() as { q?: unknown; region?: unknown; page?: unknown };

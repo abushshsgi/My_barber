@@ -151,6 +151,20 @@ function findActiveSection(pathname: string): Section {
   return best?.sec ?? SECTIONS[0];
 }
 
+function findActiveNavItem(items: NavItem[], pathname: string): NavItem {
+  let best: NavItem | null = null;
+  for (const item of items) {
+    const matches =
+      item.to === "/admin"
+        ? pathname === "/admin"
+        : pathname === item.to || pathname.startsWith(item.to + "/");
+    if (matches && (!best || item.to.length > best.to.length)) {
+      best = item;
+    }
+  }
+  return best ?? items[0];
+}
+
 // ============= Icon rail =============
 function IconRail({
   activeKey,
@@ -198,6 +212,7 @@ function IconRail({
 // ============= Sub nav =============
 function SubNav({ section, onNavigate }: { section: Section; onNavigate?: () => void }) {
   const { pathname } = useLocation();
+  const activeItem = findActiveNavItem(section.items, pathname);
   return (
     <div className="flex flex-col h-full bg-sidebar">
       <div className="h-14 px-5 flex items-center border-b border-sidebar-border">
@@ -208,10 +223,7 @@ function SubNav({ section, onNavigate }: { section: Section; onNavigate?: () => 
       <nav className="flex-1 p-3 flex flex-col gap-0.5 overflow-y-auto">
         {section.items.map((item) => {
           const Icon = item.icon;
-          const active =
-            item.to === "/admin"
-              ? pathname === "/admin"
-              : pathname === item.to || pathname.startsWith(item.to + "/");
+          const active = item.to === activeItem.to;
           return (
             <Link
               key={item.to}
@@ -264,10 +276,7 @@ function Topbar({
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
-  const currentItem =
-    section.items.find(
-      (i) => pathname === i.to || (i.to !== "/admin" && pathname.startsWith(i.to + "/")),
-    ) ?? section.items[0];
+  const currentItem = findActiveNavItem(section.items, pathname);
 
   return (
     <header className="h-14 shrink-0 flex items-center justify-between gap-4 px-4 sm:px-6 bg-card border-b border-border">
