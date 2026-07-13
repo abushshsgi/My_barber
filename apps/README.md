@@ -68,11 +68,9 @@ npm run build:frontends
 
 |--------|----------------|-----|
 
-| mijoz | `https://www.mysaloon.uz` | `NEXT_PUBLIC_API_URL=https://api.mysaloon.uz` |
-
-| admin | `https://admin.mysaloon.uz` | `VITE_API_URL=https://api.mysaloon.uz` |
-
-| barber | `https://partner.mysaloon.uz` | `VITE_API_URL=https://api.mysaloon.uz` |
+| mijoz | `https://www.mysaloon.uz` | `VITE_API_URL` **o‘chirish** (same-origin `/api/v1` proxy) |
+| admin | `https://admin.mysaloon.uz` | `VITE_API_URL` **o‘chirish** (same-origin `/api/v1` proxy) |
+| barber | `https://partner.mysaloon.uz` | Web: `VITE_API_URL` **o‘chirish**; Capacitor: `VITE_API_URL=https://api.mysaloon.uz` |
 
 
 

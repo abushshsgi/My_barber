@@ -19,6 +19,8 @@ const IS_MOBILE_SPA =
 function resolveWebApiBase(envBase: string): string {
   const trimmed = envBase.trim().replace(/\/+$/, "");
   if (IS_MOBILE_SPA) return trimmed;
+  // Web production: same-origin Vercel rewrite — avoids CORS false-positives on CF/Railway 502.
+  if (import.meta.env.PROD) return "";
   if (typeof window !== "undefined") {
     const demo = resolveDemoApiOrigin(window.location.hostname);
     if (demo) return demo.replace(/\/+$/, "");

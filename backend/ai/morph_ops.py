@@ -459,8 +459,12 @@ def build_gallery(*, limit: int = 40, request=None) -> dict[str, Any]:
             try:
                 if row.photo.storage.exists(row.photo.name):
                     photo_url = row.photo.url
-                    if photo_url and not photo_url.startswith("http") and request is not None:
-                        photo_url = request.build_absolute_uri(photo_url)
+                    # Prefer relative /media/… so admin/user same-origin proxies work.
+                    if photo_url and photo_url.startswith("http"):
+                        marker = "/media/"
+                        idx = photo_url.find(marker)
+                        if idx >= 0:
+                            photo_url = photo_url[idx:]
                 else:
                     missing += 1
             except Exception:

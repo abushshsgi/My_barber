@@ -4,8 +4,19 @@ function readEnv(name: string): string | undefined {
 }
 
 const ENV_API_BASE = readEnv("VITE_API_URL") || readEnv("NEXT_PUBLIC_API_URL") || "";
-const FALLBACK_DEV_BASE = import.meta.env.DEV ? "http://localhost:8000" : "";
-const API_BASE = (ENV_API_BASE.trim() ? ENV_API_BASE : FALLBACK_DEV_BASE).replace(/\/+$/, "");
+
+/**
+ * Web production: always same-origin (`/api/v1` via Vercel rewrite).
+ * Direct `api.mysaloon.uz` hits cause CORS false-positives when CF/Railway returns 502.
+ * Local: empty base uses Vite proxy; optional VITE_API_URL still allowed for direct Django.
+ */
+function resolveWebApiBase(envBase: string): string {
+  const trimmed = envBase.trim().replace(/\/+$/, "");
+  if (import.meta.env.PROD) return "";
+  return trimmed;
+}
+
+const API_BASE = resolveWebApiBase(ENV_API_BASE);
 
 const TOKEN_KEY_ADMIN = "mybarber_admin_access";
 const REFRESH_KEY_ADMIN = "mybarber_admin_refresh";

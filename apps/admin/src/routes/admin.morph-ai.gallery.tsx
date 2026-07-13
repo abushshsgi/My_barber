@@ -8,17 +8,11 @@ import { CardSkeleton } from "@/components/admin/Skeletons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { fetchMorphAiGallery } from "@/lib/admin-api";
-import { API_BASE } from "@/lib/api";
+import { resolveMediaUrl } from "@/lib/media-url";
 
 export const Route = createFileRoute("/admin/morph-ai/gallery")({
   component: MorphGalleryPage,
 });
-
-function photoSrc(url: string | null): string | null {
-  if (!url) return null;
-  if (url.startsWith("http")) return url;
-  return `${API_BASE}${url.startsWith("/") ? url : `/${url}`}`;
-}
 
 function GalleryImage({ src, alt }: { src: string | null; alt: string }) {
   const [failed, setFailed] = useState(false);
@@ -65,6 +59,15 @@ function MorphGalleryPage() {
         </Alert>
       ) : null}
 
+      {q.isError ? (
+        <Alert variant="destructive">
+          <AlertTitle>Yuklash xatosi</AlertTitle>
+          <AlertDescription>
+            {(q.error as Error)?.message || "Gallery ma'lumotlari olinmadi. Qayta urinib ko'ring."}
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       {q.isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
@@ -76,7 +79,7 @@ function MorphGalleryPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {items.map((item) => {
-            const src = photoSrc(item.photo_url);
+            const src = item.photo_missing ? null : resolveMediaUrl(item.photo_url);
             return (
               <figure
                 key={item.id}
