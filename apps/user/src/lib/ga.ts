@@ -41,3 +41,20 @@ export function trackAuthSuccess(opts: {
 }) {
   trackEvent(opts.isNewUser ? "sign_up" : "login", { method: opts.method });
 }
+
+export type AuthFunnelStep =
+  | "view"
+  | "phone_continue"
+  | "otp_sent"
+  | "otp_verified"
+  | "password_step"
+  | "set_password_step"
+  | "abandoned";
+
+/** Ro'yxat/login funnel — chala (tugallanmagan) jarayonni ham ko'rish uchun. */
+export function trackAuthFunnel(
+  step: AuthFunnelStep,
+  params?: { intent?: "login" | "register"; method?: string },
+) {
+  trackEvent("auth_funnel", { funnel_step: step, ...params });
+}

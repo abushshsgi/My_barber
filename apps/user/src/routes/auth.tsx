@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { OtpResendTimer } from "@/components/auth/OtpResendTimer";
 import { AuthMarketingPanel } from "@/components/auth/AuthMarketingPanel";
@@ -20,7 +20,7 @@ import {
   verifyPhoneCode,
 } from "@/lib/api";
 import { getLastPhone, setSession } from "@/lib/auth";
-import { trackAuthSuccess } from "@/lib/ga";
+import { trackAuthFunnel, trackAuthSuccess } from "@/lib/ga";
 import { clearQueryClientCache } from "@/lib/query-client";
 import { getStoredOtpCooldownSeconds, storeOtpCooldown } from "@/lib/otp-cooldown";
 import { formatUzLocalPhone, parseUzLocalPhone } from "@/lib/phone";
@@ -63,6 +63,32 @@ function Auth() {
   const [authIntent, setAuthIntent] = useState<PhoneAuthIntent>("register");
   const [resendSeconds, setResendSeconds] = useState(() => getStoredOtpCooldownSeconds(phone));
   const [googleBusy, setGoogleBusy] = useState(false);
+  const authCompleted = useRef(false);
+  const furthestStep = useRef<Step>("phone");
+  const intentRef = useRef<PhoneAuthIntent>(authIntent);
+  intentRef.current = authIntent;
+
+  useEffect(() => {
+    trackAuthFunnel("view", { method: phoneAuthEnabled ? "phone" : "google" });
+    let abandonedSent = false;
+    const markAbandoned = () => {
+      if (authCompleted.current || abandonedSent) return;
+      abandonedSent = true;
+      trackAuthFunnel("abandoned", {
+        intent: intentRef.current,
+        method: furthestStep.current,
+      });
+    };
+    window.addEventListener("pagehide", markAbandoned);
+    return () => {
+      window.removeEventListener("pagehide", markAbandoned);
+      markAbandoned();
+    };
+  }, []);
+
+  useEffect(() => {
+    furthestStep.current = step;
+  }, [step]);
 
   useEffect(() => {
     const stored = getStoredOtpCooldownSeconds(phone);
@@ -100,6 +126,7 @@ function Auth() {
     data: PhoneVerifyResponse,
     method: "google" | "phone" | "password" = "phone",
   ) => {
+    authCompleted.current = true;
     trackAuthSuccess({ isNewUser: Boolean(data.is_new_user), method });
     setSession(data.access, data.refresh, data.user, data.session_id);
     clearQueryClientCache();
@@ -115,6 +142,7 @@ function Auth() {
   const goToOtp = useMutation({
     mutationFn: () => sendPhoneCode(phone, authIntent),
     onSuccess: (data) => {
+      trackAuthFunnel("otp_sent", { intent: authIntent, method: "phone" });
       setStep("code");
       setAppDeliveryCode(null);
       setDeliveryMode(data.delivery === "app" ? "app" : "sms");
@@ -138,8 +166,11 @@ function Auth() {
   const continuePhone = useMutation({
     mutationFn: () => checkPhone(phone),
     onSuccess: (data) => {
-      setAuthIntent(data.registered ? "login" : "register");
+      const intent: PhoneAuthIntent = data.registered ? "login" : "register";
+      setAuthIntent(intent);
+      trackAuthFunnel("phone_continue", { intent, method: "phone" });
       if (data.has_password) {
+        trackAuthFunnel("password_step", { intent, method: "password" });
         setStep("password");
         return;
       }
@@ -156,6 +187,9 @@ function Auth() {
         return;
       }
       finishLogin(data, "password");
+    },
+    onError: (e: Error) => {
+      if (e instanceof AuthRateLimitError) {
         startResendCooldown(e.retryAfter);
         toast.error(t("auth.resendTimerHint", { seconds: e.retryAfter }));
         return;
@@ -172,7 +206,15 @@ function Auth() {
         return;
       }
       setSession(data.access, data.refresh, data.user, data.session_id);
+      trackAuthFunnel("otp_verified", {
+        intent: authIntent,
+        method: "phone",
+      });
       if (data.user.has_password === false) {
+        trackAuthFunnel("set_password_step", {
+          intent: data.is_new_user ? "register" : authIntent,
+          method: "phone",
+        });
         setPendingAuth(data);
         setStep("set-password");
         return;
@@ -187,6 +229,7 @@ function Auth() {
     onSuccess: (res) => {
       toast.success(res.detail);
       if (!pendingAuth) return;
+      authCompleted.current = true;
       trackAuthSuccess({
         isNewUser: Boolean(pendingAuth.is_new_user),
         method: "phone",
