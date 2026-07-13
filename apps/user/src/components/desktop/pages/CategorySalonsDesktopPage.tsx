@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { DesktopSalonCard } from "@/components/desktop/ui/DesktopSalonCard";
+import { NoSalonsEmpty } from "@/components/NoSalonsEmpty";
 import { DESKTOP_BAZAAR_INSET } from "@/lib/desktop-bazaar-layout";
 import type { Category, Salon } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -32,7 +33,9 @@ export function CategorySalonsDesktopPage({ category, salons, loading }: Props) 
           ))}
         </div>
       ) : salons.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("categorySalonsPage.empty")}</p>
+        <div className="max-w-md">
+          <NoSalonsEmpty />
+        </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
           {salons.map((salon) => (

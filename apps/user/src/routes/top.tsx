@@ -4,6 +4,7 @@ import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { TopSalonsDesktopPage } from "@/components/desktop/pages/TopSalonsDesktopPage";
 import { MobileListPage } from "@/components/mobile/MobileListPage";
 import { MobileSalonCard } from "@/components/mobile/MobileSalonCard";
+import { NoSalonsEmpty } from "@/components/NoSalonsEmpty";
 import { useTopSalons } from "@/hooks/use-top-salons";
 
 export const Route = createFileRoute("/top")({
@@ -25,7 +26,7 @@ function TopSalonsMobile() {
       {loading ? (
         <p className="py-8 text-center text-sm text-muted-foreground">{t("common.loading")}</p>
       ) : salons.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">{t("topSalonsPage.empty")}</p>
+        <NoSalonsEmpty compact />
       ) : (
         <div className="space-y-3">
           {salons.map((salon) => (

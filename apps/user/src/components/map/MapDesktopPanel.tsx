@@ -3,6 +3,7 @@ import { Heart, Search, Star } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { MapFilters } from "@/components/map/MapFilters";
+import { NoSalonsEmpty } from "@/components/NoSalonsEmpty";
 import {
   MapLoadingIndicator,
   MapPanelSkeleton,
@@ -265,9 +266,9 @@ export function MapDesktopPanel({
         ) : null}
 
         {!loading && salons.length === 0 ? (
-          <p className="py-8 text-center text-sm font-medium text-muted-foreground">
-            {listEmptyMessage}
-          </p>
+          <div className="px-1 py-4">
+            <NoSalonsEmpty compact />
+          </div>
         ) : null}
 
         {salons.length > 0 ? (

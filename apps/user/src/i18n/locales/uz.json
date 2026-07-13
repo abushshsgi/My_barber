@@ -116,18 +116,22 @@
   },
   "categorySalonsPage": {
     "subtitle": "Tanlangan kategoriyadagi salonlar",
-    "empty": "Bu kategoriyada salon topilmadi"
+    "empty": "Bu kategoriyada hozircha salon yo'q"
   },
   "topSalonsPage": {
     "title": "Top salonlar",
     "subtitle": "Reytingi 4.8 va undan yuqori — mehmonlar tanlovi",
-    "empty": "Hozircha top maqomli salon topilmadi"
+    "empty": "Hozircha top salonlar yo'q"
   },
   "homePage": {
     "featuredOffer": "Bugungi taklif",
     "validUntil": "{{date}} gacha",
-    "emptyTitle": "Mos salon topilmadi",
-    "emptyHint": "Filtr yoki auditoriyani o'zgartirib ko'ring",
+    "emptyTitle": "Hozircha salonlar yo'q",
+    "emptyHint": "Tez orada yangi salonlar qo'shiladi. Hozir Morph AI bilan o'zingizga mos uslubni tanlang.",
+    "noSalonsYet": "Hozircha salonlar yo'q",
+    "noSalonsYetHint": "Platformaga hali salonlar qo'shilmagan. Morph AI orqali selfieda uslub sinab ko'ring yoki trend uslublarni ko'ring.",
+    "tryMorphAi": "Morph AI — uslub tanlash",
+    "browseStyles": "Trend uslublar",
     "editorialTagline": "Salon toping, uslub tanlang, bir zumda bron qiling.",
     "pickedForYou": "Siz uchun tanlangan",
     "nearYou": "Yaqiningizdagi salonlar",

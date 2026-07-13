@@ -4,6 +4,7 @@ import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { CategorySalonsDesktopPage } from "@/components/desktop/pages/CategorySalonsDesktopPage";
 import { MobileListPage } from "@/components/mobile/MobileListPage";
 import { MobileSalonCard } from "@/components/mobile/MobileSalonCard";
+import { NoSalonsEmpty } from "@/components/NoSalonsEmpty";
 import { useCategorySalons } from "@/hooks/use-category-salons";
 import type { Category } from "@/lib/mock-data";
 
@@ -32,7 +33,11 @@ function CategorySalonsMobile({ category }: { category: Category }) {
       {loading ? (
         <p className="py-8 text-center text-sm text-muted-foreground">{t("common.loading")}</p>
       ) : salons.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">{t("categorySalonsPage.empty")}</p>
+        <NoSalonsEmpty
+          compact
+          titleKey="homePage.noSalonsYet"
+          descriptionKey="homePage.noSalonsYetHint"
+        />
       ) : (
         <div className="space-y-3">
           {salons.map((salon) => (

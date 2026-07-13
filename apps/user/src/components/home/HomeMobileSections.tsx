@@ -17,6 +17,7 @@ import { AudienceSwitch } from "@/components/AudienceSwitch";
 import { MobileSalonCard } from "@/components/mobile/MobileSalonCard";
 import { SalonCoverImg } from "@/components/salon/SalonCoverImg";
 import { HomeCategoryGrid } from "@/components/home/HomeCategoryGrid";
+import { NoSalonsEmpty } from "@/components/NoSalonsEmpty";
 import type { HomeData } from "@/components/home/useHomeData";
 import type { HomeDiscoveryItem } from "@/lib/home-discovery";
 import { filterTopSalons } from "@/lib/salon-top";
@@ -317,9 +318,7 @@ export function HomeMobileNearby({ salons }: { salons: Salon[] }) {
   if (salons.length === 0) {
     return (
       <section className="px-4">
-        <p className="rounded-2xl bg-surface px-6 py-10 text-center text-sm text-muted-foreground">
-          {t("homePage.emptyTitle")}
-        </p>
+        <NoSalonsEmpty compact />
       </section>
     );
   }
