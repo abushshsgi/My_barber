@@ -45,6 +45,7 @@ from control_panel.views import (
 from control_panel.statistics_views import (
     AdminStatisticsBookingsView,
     AdminStatisticsExportView,
+    AdminStatisticsLiveView,
     AdminStatisticsOverviewView,
     AdminStatisticsRevenueView,
     AdminStatisticsSalonsView,
@@ -230,6 +231,7 @@ router.register(r"barber/support", MyBarberSupportTicketViewSet, basename="barbe
 # Shared API routes (mounted at both /api/v1/ and /api/ for compatibility).
 api_routes = [
     path("admin/stats/", AdminStatsView.as_view()),
+    path("admin/statistics/live/", AdminStatisticsLiveView.as_view()),
     path("admin/statistics/overview/", AdminStatisticsOverviewView.as_view()),
     path("admin/statistics/revenue/", AdminStatisticsRevenueView.as_view()),
     path("admin/statistics/users/", AdminStatisticsUsersView.as_view()),

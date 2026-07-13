@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import {
   downloadStatisticsCsv,
+  fetchPlatformLiveStats,
   fetchPlatformOverview,
 } from "@/lib/admin-api";
 import { formatAdminUzs } from "@/lib/admin-analytics";
@@ -21,6 +22,9 @@ import {
   StatsPageHeader,
   useStatsRange,
 } from "@/components/admin/StatisticsShell";
+import { CombinedSignupAreaChart } from "@/components/admin/StatsCharts";
+import { LivePulseBadge } from "@/components/admin/LiveMetricHero";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/admin/statistics/")({
   component: StatisticsOverviewPage,
@@ -32,6 +36,13 @@ function StatisticsOverviewPage() {
   const q = useQuery({
     queryKey: ["admin", "stats-overview", range.start, range.end],
     queryFn: () => fetchPlatformOverview(range),
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: true,
+  });
+
+  const liveQ = useQuery({
+    queryKey: ["admin", "stats-live-mini"],
+    queryFn: () => fetchPlatformLiveStats(20),
     refetchInterval: 10_000,
     refetchIntervalInBackground: true,
   });
@@ -49,7 +60,14 @@ function StatisticsOverviewPage() {
         rangeKey={rangeKey}
         onRangeChange={setRangeKey}
         onExport={() => downloadStatisticsCsv("overview", { range })}
-      />
+      >
+        <Link
+          to="/admin/statistics/live"
+          className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium shadow-card transition-colors hover:bg-muted"
+        >
+          <LivePulseBadge label="Live" />
+        </Link>
+      </StatsPageHeader>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {q.isLoading || !d ? (
@@ -120,8 +138,8 @@ function StatisticsOverviewPage() {
             <p className="text-sm text-muted-foreground mt-1">Yakunlangan bronlar bo'yicha naqd va onlayn</p>
             <div className="mt-5 h-4 w-full overflow-hidden rounded-full bg-muted">
               <div className="flex h-full">
-                <div className="bg-emerald-500/80" style={{ width: `${cashPct}%` }} />
-                <div className="bg-blue-500/80" style={{ width: `${onlinePct}%` }} />
+                <div className="bg-emerald-500/80 transition-all duration-700" style={{ width: `${cashPct}%` }} />
+                <div className="bg-blue-500/80 transition-all duration-700" style={{ width: `${onlinePct}%` }} />
               </div>
             </div>
             <div className="mt-4 flex flex-wrap gap-6 text-sm">
@@ -138,6 +156,25 @@ function StatisticsOverviewPage() {
                 <span className="text-muted-foreground">({onlinePct}%)</span>
               </div>
             </div>
+          </div>
+
+          <div className="bg-card rounded-2xl border border-border shadow-card p-5 sm:p-6">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="font-heading text-lg font-semibold">Ro'yxatdan o'tish trendi</h2>
+                <p className="text-sm text-muted-foreground mt-1">So'nggi 7 kun — mijoz, sartarosh, salon</p>
+              </div>
+              <Link to="/admin/statistics/live" className="text-sm font-semibold text-primary hover:underline">
+                Real vaqt →
+              </Link>
+            </div>
+            {liveQ.isLoading || !liveQ.data ? (
+              <div className="mt-6 h-56 animate-pulse rounded-xl bg-muted/40" />
+            ) : (
+              <div className="mt-4">
+                <CombinedSignupAreaChart data={liveQ.data.combinedDaily} />
+              </div>
+            )}
           </div>
         </>
       )}

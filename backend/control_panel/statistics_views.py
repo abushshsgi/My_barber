@@ -11,6 +11,7 @@ from accounts.permissions import IsAdmin
 from bookings.serializers import BookingSerializer
 
 from .export_csv import build_csv_response
+from .live_analytics import build_live_platform_analytics
 from .platform_analytics import (
     build_bookings_analytics,
     build_bookings_rows,
@@ -36,6 +37,16 @@ class AdminStatisticsOverviewView(APIView):
     def get(self, request):
         start_dt, end_dt = _range_from_request(request)
         return Response(build_platform_overview(start_dt, end_dt))
+
+
+class AdminStatisticsLiveView(APIView):
+    """GET — mijoz / sartarosh / salon ro'yxatdan o'tish real vaqt."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        limit = _safe_limit(request.query_params.get("limit"), default=50)
+        return Response(build_live_platform_analytics(recent_limit=limit))
 
 
 class AdminStatisticsRevenueView(APIView):

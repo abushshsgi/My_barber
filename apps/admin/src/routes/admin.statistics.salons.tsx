@@ -8,6 +8,7 @@ import { CardSkeleton, TableSkeleton } from "@/components/admin/Skeletons";
 import { EmptyState } from "@/components/admin/EmptyState";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { StatsPageHeader } from "@/components/admin/StatisticsShell";
+import { DonutChart, DualBarChart } from "@/components/admin/StatsCharts";
 
 export const Route = createFileRoute("/admin/statistics/salons")({
   component: StatisticsSalonsPage,
@@ -23,7 +24,6 @@ function StatisticsSalonsPage() {
 
   const salons = q.data?.salons;
   const summary = salons?.summary;
-  const maxDaily = Math.max(1, ...(salons?.daily.map((x) => x.total) ?? [1]));
 
   return (
     <div className="space-y-6">
@@ -48,35 +48,32 @@ function StatisticsSalonsPage() {
         )}
       </div>
 
-      <div className="bg-card rounded-2xl border border-border shadow-card p-5 sm:p-6">
-        <h2 className="font-heading text-lg font-semibold">So'nggi 7 kun</h2>
-        <p className="text-sm text-muted-foreground mt-1">Qo'shilgan salonlar (chiqarilgan vs tekshiruvda)</p>
-        {q.isLoading || !salons ? (
-          <div className="mt-6 h-40 animate-pulse rounded-xl bg-muted/40" />
-        ) : (
-          <div className="mt-6 grid grid-cols-7 gap-2 sm:gap-3">
-            {salons.daily.map((day) => (
-              <div key={day.date} className="flex flex-col items-center gap-2">
-                <div className="flex h-36 w-full max-w-[72px] items-end justify-center gap-1">
-                  <div
-                    className="w-3 rounded-t bg-emerald-500/80"
-                    style={{ height: `${Math.max(8, (day.published / maxDaily) * 100)}%` }}
-                    title={`Chiqarilgan: ${day.published}`}
-                  />
-                  <div
-                    className="w-3 rounded-t bg-amber-500/80"
-                    style={{ height: `${Math.max(8, (day.pending / maxDaily) * 100)}%` }}
-                    title={`Tekshiruvda: ${day.pending}`}
-                  />
-                </div>
-                <div className="text-center">
-                  <p className="text-xs font-semibold tabular-nums">{day.total}</p>
-                  <p className="text-[10px] text-muted-foreground">{format(parseISO(day.date), "dd.MM")}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="bg-card rounded-2xl border border-border shadow-card p-5 sm:p-6 lg:col-span-2">
+          <h2 className="font-heading text-lg font-semibold">So'nggi 7 kun</h2>
+          <p className="text-sm text-muted-foreground mt-1">Qo'shilgan salonlar (chiqarilgan vs tekshiruvda)</p>
+          {q.isLoading || !salons ? (
+            <div className="mt-6 h-56 animate-pulse rounded-xl bg-muted/40" />
+          ) : (
+            <div className="mt-4">
+              <DualBarChart data={salons.daily} keys={["published", "pending"]} />
+            </div>
+          )}
+        </div>
+        <div className="bg-card rounded-2xl border border-border shadow-card p-5 sm:p-6">
+          <h2 className="font-heading text-lg font-semibold">Holat bo'yicha</h2>
+          <p className="text-sm text-muted-foreground mt-1">Jami salonlar taqsimoti</p>
+          {q.isLoading || !summary ? (
+            <div className="mt-6 h-48 animate-pulse rounded-xl bg-muted/40" />
+          ) : (
+            <DonutChart
+              slices={[
+                { name: "Chiqarilgan", value: summary.published, color: "hsl(142 55% 38%)" },
+                { name: "Tekshiruvda", value: summary.pending, color: "hsl(38 92% 50%)" },
+              ]}
+            />
+          )}
+        </div>
       </div>
 
       <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">

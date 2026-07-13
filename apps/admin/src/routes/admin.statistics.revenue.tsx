@@ -7,6 +7,7 @@ import { KPICard } from "@/components/admin/KPICard";
 import { CardSkeleton } from "@/components/admin/Skeletons";
 import { EmptyState } from "@/components/admin/EmptyState";
 import { StatsPageHeader, useStatsRange } from "@/components/admin/StatisticsShell";
+import { RevenueStackedBarChart } from "@/components/admin/StatsCharts";
 
 export const Route = createFileRoute("/admin/statistics/revenue")({
   component: StatisticsRevenuePage,
@@ -22,7 +23,6 @@ function StatisticsRevenuePage() {
   });
 
   const d = q.data;
-  const maxTotal = Math.max(1, ...(d?.series.map((s) => s.total) ?? [1]));
 
   return (
     <div className="space-y-6">
@@ -58,32 +58,8 @@ function StatisticsRevenuePage() {
         ) : d.series.length === 0 ? (
           <EmptyState title="Ma'lumot yo'q" description="Tanlangan davrda daromad qayd etilmagan." />
         ) : (
-          <div className="mt-6 flex items-end gap-2 overflow-x-auto pb-2 sm:gap-4">
-            {d.series.map((point) => {
-              const totalPct = Math.max(4, (point.total / maxTotal) * 100);
-              const cashPortion = point.total > 0 ? (point.cash / point.total) * 100 : 0;
-              const onlinePortion = point.total > 0 ? 100 - cashPortion : 0;
-              return (
-                <div key={point.key} className="flex min-w-[52px] flex-1 flex-col items-center gap-2">
-                  <div className="flex h-48 w-full items-end">
-                    <div
-                      className="flex w-full flex-col overflow-hidden rounded-t-lg"
-                      style={{ height: `${totalPct}%` }}
-                      title={`${point.label}: ${formatAdminUzs(point.total)}`}
-                    >
-                      <div className="bg-blue-500/80" style={{ height: `${onlinePortion}%` }} />
-                      <div className="bg-emerald-500/80" style={{ height: `${cashPortion}%` }} />
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[11px] font-semibold tabular-nums">
-                      {(point.total / 1_000_000).toFixed(1)}M
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">{point.label}</p>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="mt-4">
+            <RevenueStackedBarChart series={d.series} />
           </div>
         )}
         <div className="mt-4 flex flex-wrap gap-4 text-xs text-muted-foreground">

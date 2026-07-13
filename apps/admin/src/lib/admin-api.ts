@@ -106,6 +106,62 @@ export type AdminSalonPlatformAnalytics = {
   }>;
 };
 
+export type AdminBarberPlatformAnalytics = {
+  summary: {
+    total: number;
+    independent: number;
+    mybarberSalon: number;
+    salonOwner: number;
+    salonEmployee: number;
+    other: number;
+    todayTotal: number;
+    todayIndependent: number;
+    todaySalon: number;
+    weekTotal: number;
+    weekIndependent: number;
+    weekSalon: number;
+  };
+  daily: Array<{
+    date: string;
+    total: number;
+    independent: number;
+    salon: number;
+  }>;
+  recent: Array<{
+    id: number;
+    fullName: string;
+    phone: string;
+    region: string;
+    regionLabel: string;
+    segment: string;
+    createdAt: string | null;
+  }>;
+};
+
+export type PlatformLiveAnalytics = {
+  generatedAt: string;
+  summary: {
+    clientsTotal: number;
+    barbersTotal: number;
+    salonsTotal: number;
+    todaySignups: number;
+    weekSignups: number;
+    todayClients: number;
+    todayBarbers: number;
+    todaySalons: number;
+  };
+  combinedDaily: Array<{
+    date: string;
+    users: number;
+    salons: number;
+    barbers: number;
+    total: number;
+  }>;
+  users: Omit<AdminUserSignupAnalytics, "salons">;
+  barbers: AdminBarberPlatformAnalytics;
+  salons: AdminSalonPlatformAnalytics;
+};
+
 /** Admin barbers ro‘yxati / segment filtri (backend `segment` query bilan mos). */
 export type AdminBarberAccountSegment =
   | "independent"
@@ -912,6 +968,195 @@ export async function fetchAdminUserSignupAnalytics(limit = 100): Promise<AdminU
       },
       daily: salons.daily,
       recent: salons.recent.map((row) => ({
+        id: row.id,
+        name: row.name,
+        address: row.address,
+        phone: row.phone,
+        region: row.region,
+        regionLabel: row.region_label,
+        isPublished: row.is_published,
+        ownerName: row.owner_name,
+        createdAt: row.created_at,
+      })),
+    },
+  };
+}
+
+export async function fetchPlatformLiveStats(limit = 50): Promise<PlatformLiveAnalytics> {
+  const sp = new URLSearchParams({ limit: String(limit) });
+  const data = await apiJson<{
+    generated_at: string;
+    summary: {
+      clients_total: number;
+      barbers_total: number;
+      salons_total: number;
+      today_signups: number;
+      week_signups: number;
+      today_clients: number;
+      today_barbers: number;
+      today_salons: number;
+    };
+    combined_daily: Array<{
+      date: string;
+      users: number;
+      salons: number;
+      barbers: number;
+      total: number;
+    }>;
+    users: {
+      generated_at: string;
+      summary: {
+        total: number;
+        google: number;
+        phone: number;
+        other: number;
+        today_total: number;
+        today_google: number;
+        today_phone: number;
+        week_total: number;
+        week_google: number;
+        week_phone: number;
+      };
+      daily: Array<{ date: string; total: number; google: number; phone: number }>;
+      recent: Array<{
+        id: number;
+        full_name: string;
+        phone: string | null;
+        display_email: string | null;
+        signup_method: UserSignupMethod;
+        date_joined: string | null;
+      }>;
+    };
+    barbers: {
+      summary: {
+        total: number;
+        independent: number;
+        mybarber_salon: number;
+        salon_owner: number;
+        salon_employee: number;
+        other: number;
+        today_total: number;
+        today_independent: number;
+        today_salon: number;
+        week_total: number;
+        week_independent: number;
+        week_salon: number;
+      };
+      daily: Array<{ date: string; total: number; independent: number; salon: number }>;
+      recent: Array<{
+        id: number;
+        full_name: string;
+        phone: string;
+        region: string;
+        region_label: string;
+        segment: string;
+        created_at: string | null;
+      }>;
+    };
+    salons: {
+      summary: {
+        total: number;
+        published: number;
+        pending: number;
+        today_total: number;
+        today_published: number;
+        today_pending: number;
+        week_total: number;
+        week_published: number;
+        week_pending: number;
+      };
+      daily: Array<{ date: string; total: number; published: number; pending: number }>;
+      recent: Array<{
+        id: number;
+        name: string;
+        address: string;
+        phone: string;
+        region: string;
+        region_label: string;
+        is_published: boolean;
+        owner_name: string;
+        created_at: string | null;
+      }>;
+    };
+  }>(`/api/v1/admin/statistics/live/?${sp}`);
+
+  return {
+    generatedAt: data.generated_at,
+    summary: {
+      clientsTotal: data.summary.clients_total,
+      barbersTotal: data.summary.barbers_total,
+      salonsTotal: data.summary.salons_total,
+      todaySignups: data.summary.today_signups,
+      weekSignups: data.summary.week_signups,
+      todayClients: data.summary.today_clients,
+      todayBarbers: data.summary.today_barbers,
+      todaySalons: data.summary.today_salons,
+    },
+    combinedDaily: data.combined_daily,
+    users: {
+      generatedAt: data.users.generated_at,
+      summary: {
+        total: data.users.summary.total,
+        google: data.users.summary.google,
+        phone: data.users.summary.phone,
+        other: data.users.summary.other,
+        todayTotal: data.users.summary.today_total,
+        todayGoogle: data.users.summary.today_google,
+        todayPhone: data.users.summary.today_phone,
+        weekTotal: data.users.summary.week_total,
+        weekGoogle: data.users.summary.week_google,
+        weekPhone: data.users.summary.week_phone,
+      },
+      daily: data.users.daily,
+      recent: data.users.recent.map((row) => ({
+        id: row.id,
+        fullName: row.full_name,
+        phone: row.phone,
+        displayEmail: row.display_email,
+        signupMethod: row.signup_method,
+        dateJoined: row.date_joined,
+      })),
+    },
+    barbers: {
+      summary: {
+        total: data.barbers.summary.total,
+        independent: data.barbers.summary.independent,
+        mybarberSalon: data.barbers.summary.mybarber_salon,
+        salonOwner: data.barbers.summary.salon_owner,
+        salonEmployee: data.barbers.summary.salon_employee,
+        other: data.barbers.summary.other,
+        todayTotal: data.barbers.summary.today_total,
+        todayIndependent: data.barbers.summary.today_independent,
+        todaySalon: data.barbers.summary.today_salon,
+        weekTotal: data.barbers.summary.week_total,
+        weekIndependent: data.barbers.summary.week_independent,
+        weekSalon: data.barbers.summary.week_salon,
+      },
+      daily: data.barbers.daily,
+      recent: data.barbers.recent.map((row) => ({
+        id: row.id,
+        fullName: row.full_name,
+        phone: row.phone,
+        region: row.region,
+        regionLabel: row.region_label,
+        segment: row.segment,
+        createdAt: row.created_at,
+      })),
+    },
+    salons: {
+      summary: {
+        total: data.salons.summary.total,
+        published: data.salons.summary.published,
+        pending: data.salons.summary.pending,
+        todayTotal: data.salons.summary.today_total,
+        todayPublished: data.salons.summary.today_published,
+        todayPending: data.salons.summary.today_pending,
+        weekTotal: data.salons.summary.week_total,
+        weekPublished: data.salons.summary.week_published,
+        weekPending: data.salons.summary.week_pending,
+      },
+      daily: data.salons.daily,
+      recent: data.salons.recent.map((row) => ({
         id: row.id,
         name: row.name,
         address: row.address,

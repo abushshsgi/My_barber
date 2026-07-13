@@ -8,6 +8,7 @@ import { statsRangeToIsoParams } from "@/lib/admin-analytics";
 import type { StatDateRange } from "@/lib/admin-api";
 
 const TABS = [
+  { to: "/admin/statistics/live" as const, label: "Real vaqt" },
   { to: "/admin/statistics" as const, label: "Umumiy", exact: true },
   { to: "/admin/statistics/revenue" as const, label: "Daromad" },
   { to: "/admin/statistics/users" as const, label: "Mijozlar" },

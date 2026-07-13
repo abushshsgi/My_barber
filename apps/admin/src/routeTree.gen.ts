@@ -36,6 +36,7 @@ import { Route as AdminStatisticsWalletRouteImport } from './routes/admin.statis
 import { Route as AdminStatisticsUsersRouteImport } from './routes/admin.statistics.users'
 import { Route as AdminStatisticsSalonsRouteImport } from './routes/admin.statistics.salons'
 import { Route as AdminStatisticsRevenueRouteImport } from './routes/admin.statistics.revenue'
+import { Route as AdminStatisticsLiveRouteImport } from './routes/admin.statistics.live'
 import { Route as AdminStatisticsBookingsRouteImport } from './routes/admin.statistics.bookings'
 import { Route as AdminServicesAnalyticsRouteImport } from './routes/admin.services.analytics'
 import { Route as AdminSalonsSalonIdRouteImport } from './routes/admin.salons.$salonId'
@@ -188,6 +189,11 @@ const AdminStatisticsRevenueRoute = AdminStatisticsRevenueRouteImport.update({
   path: '/revenue',
   getParentRoute: () => AdminStatisticsRoute,
 } as any)
+const AdminStatisticsLiveRoute = AdminStatisticsLiveRouteImport.update({
+  id: '/live',
+  path: '/live',
+  getParentRoute: () => AdminStatisticsRoute,
+} as any)
 const AdminStatisticsBookingsRoute = AdminStatisticsBookingsRouteImport.update({
   id: '/bookings',
   path: '/bookings',
@@ -304,6 +310,7 @@ export interface FileRoutesByFullPath {
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/statistics/bookings': typeof AdminStatisticsBookingsRoute
+  '/admin/statistics/live': typeof AdminStatisticsLiveRoute
   '/admin/statistics/revenue': typeof AdminStatisticsRevenueRoute
   '/admin/statistics/salons': typeof AdminStatisticsSalonsRoute
   '/admin/statistics/users': typeof AdminStatisticsUsersRoute
@@ -345,6 +352,7 @@ export interface FileRoutesByTo {
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/statistics/bookings': typeof AdminStatisticsBookingsRoute
+  '/admin/statistics/live': typeof AdminStatisticsLiveRoute
   '/admin/statistics/revenue': typeof AdminStatisticsRevenueRoute
   '/admin/statistics/salons': typeof AdminStatisticsSalonsRoute
   '/admin/statistics/users': typeof AdminStatisticsUsersRoute
@@ -390,6 +398,7 @@ export interface FileRoutesById {
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/statistics/bookings': typeof AdminStatisticsBookingsRoute
+  '/admin/statistics/live': typeof AdminStatisticsLiveRoute
   '/admin/statistics/revenue': typeof AdminStatisticsRevenueRoute
   '/admin/statistics/salons': typeof AdminStatisticsSalonsRoute
   '/admin/statistics/users': typeof AdminStatisticsUsersRoute
@@ -437,6 +446,7 @@ export interface FileRouteTypes {
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
     | '/admin/statistics/bookings'
+    | '/admin/statistics/live'
     | '/admin/statistics/revenue'
     | '/admin/statistics/salons'
     | '/admin/statistics/users'
@@ -478,6 +488,7 @@ export interface FileRouteTypes {
     | '/admin/finance/transactions'
     | '/admin/services/analytics'
     | '/admin/statistics/bookings'
+    | '/admin/statistics/live'
     | '/admin/statistics/revenue'
     | '/admin/statistics/salons'
     | '/admin/statistics/users'
@@ -522,6 +533,7 @@ export interface FileRouteTypes {
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
     | '/admin/statistics/bookings'
+    | '/admin/statistics/live'
     | '/admin/statistics/revenue'
     | '/admin/statistics/salons'
     | '/admin/statistics/users'
@@ -735,6 +747,13 @@ declare module '@tanstack/react-router' {
       path: '/revenue'
       fullPath: '/admin/statistics/revenue'
       preLoaderRoute: typeof AdminStatisticsRevenueRouteImport
+      parentRoute: typeof AdminStatisticsRoute
+    }
+    '/admin/statistics/live': {
+      id: '/admin/statistics/live'
+      path: '/live'
+      fullPath: '/admin/statistics/live'
+      preLoaderRoute: typeof AdminStatisticsLiveRouteImport
       parentRoute: typeof AdminStatisticsRoute
     }
     '/admin/statistics/bookings': {
@@ -964,6 +983,7 @@ const AdminServicesRouteWithChildren = AdminServicesRoute._addFileChildren(
 
 interface AdminStatisticsRouteChildren {
   AdminStatisticsBookingsRoute: typeof AdminStatisticsBookingsRoute
+  AdminStatisticsLiveRoute: typeof AdminStatisticsLiveRoute
   AdminStatisticsRevenueRoute: typeof AdminStatisticsRevenueRoute
   AdminStatisticsSalonsRoute: typeof AdminStatisticsSalonsRoute
   AdminStatisticsUsersRoute: typeof AdminStatisticsUsersRoute
@@ -973,6 +993,7 @@ interface AdminStatisticsRouteChildren {
 
 const AdminStatisticsRouteChildren: AdminStatisticsRouteChildren = {
   AdminStatisticsBookingsRoute: AdminStatisticsBookingsRoute,
+  AdminStatisticsLiveRoute: AdminStatisticsLiveRoute,
   AdminStatisticsRevenueRoute: AdminStatisticsRevenueRoute,
   AdminStatisticsSalonsRoute: AdminStatisticsSalonsRoute,
   AdminStatisticsUsersRoute: AdminStatisticsUsersRoute,

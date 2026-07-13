@@ -25,6 +25,7 @@ import {
   ChevronRight,
   Menu,
   Sparkles,
+  Radio,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,7 @@ const SECTIONS: Section[] = [
     icon: BarChart3,
     matchPrefixes: ["/admin/statistics"],
     items: [
+      { to: "/admin/statistics/live", label: "Real vaqt", icon: Radio },
       { to: "/admin/statistics", label: "Umumiy", icon: BarChart3 },
       { to: "/admin/statistics/revenue", label: "Daromad", icon: TrendingUp },
       { to: "/admin/statistics/users", label: "Mijozlar", icon: Users },
