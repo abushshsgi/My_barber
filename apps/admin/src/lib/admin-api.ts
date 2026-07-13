@@ -73,6 +73,7 @@ export type AdminUserSignupAnalytics = {
     dateJoined: string | null;
   }>;
   salons: AdminSalonPlatformAnalytics;
+  barbers?: AdminBarberPlatformAnalytics;
 };
 
 export type AdminSalonPlatformAnalytics = {
@@ -157,7 +158,7 @@ export type PlatformLiveAnalytics = {
     barbers: number;
     total: number;
   }>;
-  users: Omit<AdminUserSignupAnalytics, "salons">;
+  users: Omit<AdminUserSignupAnalytics, "salons" | "barbers">;
   barbers: AdminBarberPlatformAnalytics;
   salons: AdminSalonPlatformAnalytics;
 };
@@ -913,6 +914,32 @@ export async function fetchAdminUserSignupAnalytics(limit = 100): Promise<AdminU
         created_at: string | null;
       }>;
     };
+    barbers?: {
+      summary: {
+        total: number;
+        independent: number;
+        mybarber_salon: number;
+        salon_owner: number;
+        salon_employee: number;
+        other: number;
+        today_total: number;
+        today_independent: number;
+        today_salon: number;
+        week_total: number;
+        week_independent: number;
+        week_salon: number;
+      };
+      daily: Array<{ date: string; total: number; independent: number; salon: number }>;
+      recent: Array<{
+        id: number;
+        full_name: string;
+        phone: string;
+        region: string;
+        region_label: string;
+        segment: string;
+        created_at: string | null;
+      }>;
+    };
   }>(`/api/v1/admin/users/signup-analytics/?${sp}`);
 
   const salons = data.salons ?? {
@@ -979,12 +1006,136 @@ export async function fetchAdminUserSignupAnalytics(limit = 100): Promise<AdminU
         createdAt: row.created_at,
       })),
     },
+    barbers: parseBarberPlatformAnalytics(data.barbers),
+  };
+}
+
+const EMPTY_BARBERS: AdminBarberPlatformAnalytics = {
+  summary: {
+    total: 0,
+    independent: 0,
+    mybarberSalon: 0,
+    salonOwner: 0,
+    salonEmployee: 0,
+    other: 0,
+    todayTotal: 0,
+    todayIndependent: 0,
+    todaySalon: 0,
+    weekTotal: 0,
+    weekIndependent: 0,
+    weekSalon: 0,
+  },
+  daily: [],
+  recent: [],
+};
+
+function parseBarberPlatformAnalytics(
+  raw?: {
+    summary: {
+      total: number;
+      independent: number;
+      mybarber_salon: number;
+      salon_owner: number;
+      salon_employee: number;
+      other: number;
+      today_total: number;
+      today_independent: number;
+      today_salon: number;
+      week_total: number;
+      week_independent: number;
+      week_salon: number;
+    };
+    daily: Array<{ date: string; total: number; independent: number; salon: number }>;
+    recent: Array<{
+      id: number;
+      full_name: string;
+      phone: string;
+      region: string;
+      region_label: string;
+      segment: string;
+      created_at: string | null;
+    }>;
+  } | null,
+): AdminBarberPlatformAnalytics {
+  if (!raw) return EMPTY_BARBERS;
+  return {
+    summary: {
+      total: raw.summary.total,
+      independent: raw.summary.independent,
+      mybarberSalon: raw.summary.mybarber_salon,
+      salonOwner: raw.summary.salon_owner,
+      salonEmployee: raw.summary.salon_employee,
+      other: raw.summary.other,
+      todayTotal: raw.summary.today_total,
+      todayIndependent: raw.summary.today_independent,
+      todaySalon: raw.summary.today_salon,
+      weekTotal: raw.summary.week_total,
+      weekIndependent: raw.summary.week_independent,
+      weekSalon: raw.summary.week_salon,
+    },
+    daily: raw.daily,
+    recent: raw.recent.map((row) => ({
+      id: row.id,
+      fullName: row.full_name,
+      phone: row.phone,
+      region: row.region,
+      regionLabel: row.region_label,
+      segment: row.segment,
+      createdAt: row.created_at,
+    })),
+  };
+}
+
+function composeLiveFromSignup(data: AdminUserSignupAnalytics): PlatformLiveAnalytics {
+  const barbers = data.barbers ?? EMPTY_BARBERS;
+  const todaySignups =
+    data.summary.todayTotal + barbers.summary.todayTotal + data.salons.summary.todayTotal;
+  const weekSignups =
+    data.summary.weekTotal + barbers.summary.weekTotal + data.salons.summary.weekTotal;
+
+  const combinedDaily = Array.from(
+    { length: Math.max(data.daily.length, data.salons.daily.length, barbers.daily.length) },
+    (_, i) => {
+      const u = data.daily[i];
+      const s = data.salons.daily[i];
+      const b = barbers.daily[i];
+      const users = u?.total ?? 0;
+      const salons = s?.total ?? 0;
+      const barbersN = b?.total ?? 0;
+      return {
+        date: u?.date ?? s?.date ?? b?.date ?? "",
+        users,
+        salons,
+        barbers: barbersN,
+        total: users + salons + barbersN,
+      };
+    },
+  );
+
+  const { salons: _s, barbers: _b, ...users } = data;
+  return {
+    generatedAt: data.generatedAt,
+    summary: {
+      clientsTotal: data.summary.total,
+      barbersTotal: barbers.summary.total,
+      salonsTotal: data.salons.summary.total,
+      todaySignups,
+      weekSignups,
+      todayClients: data.summary.todayTotal,
+      todayBarbers: barbers.summary.todayTotal,
+      todaySalons: data.salons.summary.todayTotal,
+    },
+    combinedDaily,
+    users,
+    barbers,
+    salons: data.salons,
   };
 }
 
 export async function fetchPlatformLiveStats(limit = 50): Promise<PlatformLiveAnalytics> {
   const sp = new URLSearchParams({ limit: String(limit) });
-  const data = await apiJson<{
+  try {
+    const data = await apiJson<{
     generated_at: string;
     summary: {
       clients_total: number;
@@ -1080,8 +1231,8 @@ export async function fetchPlatformLiveStats(limit = 50): Promise<PlatformLiveAn
     };
   }>(`/api/v1/admin/statistics/live/?${sp}`);
 
-  return {
-    generatedAt: data.generated_at,
+    return {
+      generatedAt: data.generated_at,
     summary: {
       clientsTotal: data.summary.clients_total,
       barbersTotal: data.summary.barbers_total,
@@ -1168,7 +1319,11 @@ export async function fetchPlatformLiveStats(limit = 50): Promise<PlatformLiveAn
         createdAt: row.created_at,
       })),
     },
-  };
+    };
+  } catch {
+    const signup = await fetchAdminUserSignupAnalytics(limit);
+    return composeLiveFromSignup(signup);
+  }
 }
 
 export async function fetchAdminUsers(params?: {

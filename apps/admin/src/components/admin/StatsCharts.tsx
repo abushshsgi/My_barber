@@ -56,9 +56,16 @@ export function CombinedSignupAreaChart({
     ...d,
     label: formatDayLabel(d.date),
   }));
+  const hasActivity = chartData.some((d) => d.users + d.barbers + d.salons > 0);
 
   return (
-    <ChartContainer config={stackedConfig} className={cn("aspect-auto h-[280px] w-full", className)}>
+    <div className="relative">
+      {!hasActivity ? (
+        <p className="absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 text-center text-sm text-muted-foreground">
+          So'nggi 7 kunda ro'yxatdan o'tish yo'q
+        </p>
+      ) : null}
+      <ChartContainer config={stackedConfig} className={cn("aspect-auto h-[280px] w-full", className)}>
       <AreaChart data={chartData} margin={{ top: 12, right: 12, left: -8, bottom: 0 }}>
         <defs>
           <linearGradient id="fillUsers" x1="0" y1="0" x2="0" y2="1">
@@ -108,6 +115,7 @@ export function CombinedSignupAreaChart({
         />
       </AreaChart>
     </ChartContainer>
+    </div>
   );
 }
 

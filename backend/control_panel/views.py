@@ -49,6 +49,7 @@ from .serializers import (
 
 from .user_signups import build_user_signup_analytics
 from .salon_growth import build_salon_platform_analytics
+from .barber_growth import build_barber_platform_analytics
 from .models import (
     AuditLog,
     BroadcastCampaign,
@@ -285,6 +286,7 @@ class AdminUserSignupAnalyticsView(APIView):
             {
                 **build_user_signup_analytics(recent_limit=limit),
                 "salons": build_salon_platform_analytics(recent_limit=limit),
+                "barbers": build_barber_platform_analytics(recent_limit=limit),
             }
         )
 

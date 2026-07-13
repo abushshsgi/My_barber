@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { fetchPlatformLiveStats } from "@/lib/admin-api";
 import { CardSkeleton } from "@/components/admin/Skeletons";
+import { EmptyState } from "@/components/admin/EmptyState";
 import { LiveMetricHero, LivePulseBadge } from "@/components/admin/LiveMetricHero";
 import {
   CombinedSignupAreaChart,
@@ -60,9 +61,11 @@ function StatisticsLivePage() {
     queryFn: () => fetchPlatformLiveStats(60),
     refetchInterval: 5_000,
     refetchIntervalInBackground: true,
+    retry: 2,
   });
 
   const d = q.data;
+  const isInitial = q.isPending && !d;
   const todayAnimated = useAnimatedNumber(d?.summary.todaySignups ?? 0, 600);
 
   const feed = useMemo<FeedItem[]>(() => {
@@ -127,6 +130,22 @@ function StatisticsLivePage() {
         <LivePulseBadge />
       </StatsPageHeader>
 
+      {q.isError ? (
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 px-5 py-4">
+          <p className="text-sm font-medium text-destructive">Ma'lumotlarni yuklab bo'lmadi</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {q.error instanceof Error ? q.error.message : "Noma'lum xatolik"}
+          </p>
+          <button
+            type="button"
+            onClick={() => q.refetch()}
+            className="mt-3 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
+          >
+            Qayta urinish
+          </button>
+        </div>
+      ) : null}
+
       {/* Bugun jami — markaziy banner */}
       <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-foreground/[0.03] via-card to-card p-6 sm:p-8 shadow-card">
         <div className="pointer-events-none absolute -right-8 -top-8 size-40 rounded-full bg-emerald-500/10 blur-3xl" />
@@ -138,7 +157,7 @@ function StatisticsLivePage() {
               Bugun platformaga qo'shilgan
             </div>
             <p className="mt-2 font-heading text-6xl font-bold tabular-nums tracking-tight sm:text-7xl lg:text-8xl">
-              {q.isLoading ? "—" : todayAnimated.toLocaleString()}
+              {isInitial ? "—" : todayAnimated.toLocaleString()}
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
               Mijoz {d?.summary.todayClients ?? 0} · Sartarosh {d?.summary.todayBarbers ?? 0} · Salon{" "}
@@ -146,7 +165,7 @@ function StatisticsLivePage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <MiniStat label="7 kun" value={d?.summary.weekSignups} loading={q.isLoading} />
+            <MiniStat label="7 kun" value={d?.summary.weekSignups} loading={isInitial} />
             <MiniStat
               label="Yangilangan"
               valueLabel={
@@ -154,7 +173,7 @@ function StatisticsLivePage() {
                   ? format(parseISO(d.generatedAt), "HH:mm:ss")
                   : "—"
               }
-              loading={q.isLoading}
+              loading={isInitial}
             />
           </div>
         </div>
@@ -162,13 +181,13 @@ function StatisticsLivePage() {
 
       {/* Katta KPI kartalar */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {q.isLoading || !d ? (
+        {isInitial ? (
           <>
             <CardSkeleton className="min-h-[200px]" />
             <CardSkeleton className="min-h-[200px]" />
             <CardSkeleton className="min-h-[200px]" />
           </>
-        ) : (
+        ) : d ? (
           <>
             <LiveMetricHero
               label="Jami mijozlar"
@@ -195,7 +214,7 @@ function StatisticsLivePage() {
               accent="emerald"
             />
           </>
-        )}
+        ) : null}
       </div>
 
       {/* Grafiklar */}
@@ -205,7 +224,7 @@ function StatisticsLivePage() {
           description="So'nggi 7 kun — mijoz, sartarosh, salon"
           icon={<Sparkles className="size-4" />}
           className="xl:col-span-2"
-          loading={q.isLoading}
+          loading={isInitial}
         >
           {d ? <CombinedSignupAreaChart data={d.combinedDaily} /> : null}
         </ChartCard>
@@ -214,7 +233,7 @@ function StatisticsLivePage() {
           title="Mijoz usullari"
           description="Ro'yxatdan o'tish manbasi"
           icon={<Users className="size-4" />}
-          loading={q.isLoading}
+          loading={isInitial}
         >
           {d ? (
             <DonutChart
@@ -233,7 +252,7 @@ function StatisticsLivePage() {
           title="Mijozlar — kunlik"
           description="Google vs telefon"
           icon={<Chrome className="size-4" />}
-          loading={q.isLoading}
+          loading={isInitial}
         >
           {d ? <DualBarChart data={d.users.daily} keys={["google", "phone"]} /> : null}
         </ChartCard>
@@ -241,7 +260,7 @@ function StatisticsLivePage() {
           title="Sartaroshlar — kunlik"
           description="Mustaqil vs salon bilan"
           icon={<Scissors className="size-4" />}
-          loading={q.isLoading}
+          loading={isInitial}
         >
           {d ? <DualBarChart data={d.barbers.daily} keys={["independent", "salon"]} /> : null}
         </ChartCard>
@@ -256,12 +275,14 @@ function StatisticsLivePage() {
           </div>
           <LivePulseBadge label="Live" />
         </div>
-        {q.isLoading ? (
+        {isInitial ? (
           <div className="space-y-3 p-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="h-14 animate-pulse rounded-xl bg-muted/40" />
             ))}
           </div>
+        ) : q.isError ? (
+          <EmptyState title="Oqim yuklanmadi" description="Yuqoridagi Qayta urinish tugmasini bosing." />
         ) : feed.length === 0 ? (
           <p className="p-8 text-center text-sm text-muted-foreground">Hali ro'yxatdan o'tish yo'q</p>
         ) : (
