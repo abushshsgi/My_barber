@@ -26,8 +26,19 @@ import { AudienceProvider } from "../hooks/use-audience";
 import { CurrencyProvider } from "../hooks/use-currency";
 import { AuthSessionGuard } from "../components/AuthSessionGuard";
 import { OnboardingGuard } from "../components/OnboardingGuard";
+import { GoogleAnalytics } from "../components/GoogleAnalytics";
+import { GA_ENABLED, GA_MEASUREMENT_ID } from "../lib/ga";
 
 const IS_MOBILE_SPA = import.meta.env.VITE_MOBILE_SPA === "true";
+
+const GA_BOOTSTRAP = GA_ENABLED
+  ? `
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '${GA_MEASUREMENT_ID}', { send_page_view: false });
+`.trim()
+  : "";
 
 function NotFoundComponent() {
   return (
@@ -167,6 +178,15 @@ function RootShell({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
         <script dangerouslySetInnerHTML={{ __html: CLIENT_BOOT_SCRIPT }} />
+        {GA_ENABLED ? (
+          <>
+            <script
+              async
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+            />
+            <script dangerouslySetInnerHTML={{ __html: GA_BOOTSTRAP }} />
+          </>
+        ) : null}
       </head>
       <body>
         {children}
@@ -191,6 +211,7 @@ function AppShell() {
             </OnboardingGuard>
           </AuthSessionGuard>
           <ClientOnly>
+            <GoogleAnalytics />
             <DeployRecovery />
             <Toaster position="top-center" />
           </ClientOnly>
