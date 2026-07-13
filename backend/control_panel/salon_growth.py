@@ -12,28 +12,28 @@ from accounts.uz_regions import UzRegion
 from salons.models import Salon
 
 
-def _salon_region_label(salon: Salon) -> str:
-    owner = getattr(salon, "owner_barber", None)
-    if not owner or not owner.region:
-        return ""
-    return dict(UzRegion.choices).get(owner.region, owner.region)
-
-
 def build_salon_platform_analytics(*, recent_limit: int = 100) -> dict:
     now = timezone.now()
     today_start = timezone.localtime(now).replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today_start - timedelta(days=6)
 
-    base = Salon.objects.select_related("owner_barber")
+    base = Salon.objects.all()
     published_q = Q(is_published=True)
     pending_q = Q(is_published=False)
+    today_q = Q(created_at__gte=today_start)
+    week_q = Q(created_at__gte=week_start)
 
-    total = base.count()
-    published_total = base.filter(published_q).count()
-    pending_total = base.filter(pending_q).count()
-
-    today = base.filter(created_at__gte=today_start)
-    week = base.filter(created_at__gte=week_start)
+    agg = base.aggregate(
+        total=Count("id"),
+        published=Count("id", filter=published_q),
+        pending=Count("id", filter=pending_q),
+        today_total=Count("id", filter=today_q),
+        today_published=Count("id", filter=today_q & published_q),
+        today_pending=Count("id", filter=today_q & pending_q),
+        week_total=Count("id", filter=week_q),
+        week_published=Count("id", filter=week_q & published_q),
+        week_pending=Count("id", filter=week_q & pending_q),
+    )
 
     daily_rows = (
         base.filter(created_at__gte=week_start)
@@ -61,22 +61,26 @@ def build_salon_platform_analytics(*, recent_limit: int = 100) -> dict:
             }
         )
 
-    recent_salons = base.order_by("-created_at").only(
-        "id",
-        "name",
-        "address",
-        "phone",
-        "is_published",
-        "created_at",
-        "owner_barber_id",
-    )[:recent_limit]
+    recent_salons = list(
+        base.order_by("-created_at").only(
+            "id",
+            "name",
+            "address",
+            "phone",
+            "is_published",
+            "created_at",
+            "owner_barber_id",
+        )[:recent_limit]
+    )
 
     owner_ids = {s.owner_barber_id for s in recent_salons if s.owner_barber_id}
     owners: dict[int, object] = {}
     if owner_ids:
         from barbers.models import Barber
 
-        owners = {b.id: b for b in Barber.objects.filter(id__in=owner_ids).only("id", "full_name", "region")}
+        owners = {
+            b.id: b for b in Barber.objects.filter(id__in=owner_ids).only("id", "full_name", "region")
+        }
 
     recent = []
     for salon in recent_salons:
@@ -98,15 +102,15 @@ def build_salon_platform_analytics(*, recent_limit: int = 100) -> dict:
 
     return {
         "summary": {
-            "total": total,
-            "published": published_total,
-            "pending": pending_total,
-            "today_total": today.count(),
-            "today_published": today.filter(published_q).count(),
-            "today_pending": today.filter(pending_q).count(),
-            "week_total": week.count(),
-            "week_published": week.filter(published_q).count(),
-            "week_pending": week.filter(pending_q).count(),
+            "total": int(agg["total"] or 0),
+            "published": int(agg["published"] or 0),
+            "pending": int(agg["pending"] or 0),
+            "today_total": int(agg["today_total"] or 0),
+            "today_published": int(agg["today_published"] or 0),
+            "today_pending": int(agg["today_pending"] or 0),
+            "week_total": int(agg["week_total"] or 0),
+            "week_published": int(agg["week_published"] or 0),
+            "week_pending": int(agg["week_pending"] or 0),
         },
         "daily": daily,
         "recent": recent,

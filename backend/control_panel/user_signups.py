@@ -44,16 +44,25 @@ def build_user_signup_analytics(*, recent_limit: int = 100) -> dict:
     week_start = today_start - timedelta(days=6)
 
     base = _client_users_qs()
-    google_q = _google_filter()
-    phone_q = _phone_filter()
 
-    total = base.count()
-    google_total = base.filter(google_q).count()
-    phone_total = base.filter(phone_q).count()
-    other_total = max(0, total - google_total - phone_total)
-
-    today = base.filter(date_joined__gte=today_start)
-    week = base.filter(date_joined__gte=week_start)
+    # Django: bir nechta Filtered Count + bo'sh string Q bir agregatda to'qnashishi mumkin.
+    # Shuning uchun ikkiga bo'lamiz (baribir 10 ta alohida COUNT dan ancha tez).
+    totals = base.aggregate(
+        total=Count("id"),
+        google=Count("id", filter=_google_filter()),
+        phone=Count("id", filter=_phone_filter()),
+        today_total=Count("id", filter=Q(date_joined__gte=today_start)),
+        week_total=Count("id", filter=Q(date_joined__gte=week_start)),
+    )
+    period = base.aggregate(
+        today_google=Count("id", filter=Q(date_joined__gte=today_start) & _google_filter()),
+        today_phone=Count("id", filter=Q(date_joined__gte=today_start) & _phone_filter()),
+        week_google=Count("id", filter=Q(date_joined__gte=week_start) & _google_filter()),
+        week_phone=Count("id", filter=Q(date_joined__gte=week_start) & _phone_filter()),
+    )
+    total = int(totals["total"] or 0)
+    google_total = int(totals["google"] or 0)
+    phone_total = int(totals["phone"] or 0)
 
     daily_rows = (
         base.filter(date_joined__gte=week_start)
@@ -61,8 +70,8 @@ def build_user_signup_analytics(*, recent_limit: int = 100) -> dict:
         .values("day")
         .annotate(
             total=Count("id"),
-            google=Count("id", filter=google_q),
-            phone=Count("id", filter=phone_q),
+            google=Count("id", filter=_google_filter()),
+            phone=Count("id", filter=_phone_filter()),
         )
         .order_by("day")
     )
@@ -114,13 +123,13 @@ def build_user_signup_analytics(*, recent_limit: int = 100) -> dict:
             "total": total,
             "google": google_total,
             "phone": phone_total,
-            "other": other_total,
-            "today_total": today.count(),
-            "today_google": today.filter(google_q).count(),
-            "today_phone": today.filter(phone_q).count(),
-            "week_total": week.count(),
-            "week_google": week.filter(google_q).count(),
-            "week_phone": week.filter(phone_q).count(),
+            "other": max(0, total - google_total - phone_total),
+            "today_total": int(totals["today_total"] or 0),
+            "today_google": int(period["today_google"] or 0),
+            "today_phone": int(period["today_phone"] or 0),
+            "week_total": int(totals["week_total"] or 0),
+            "week_google": int(period["week_google"] or 0),
+            "week_phone": int(period["week_phone"] or 0),
         },
         "daily": daily,
         "recent": recent,

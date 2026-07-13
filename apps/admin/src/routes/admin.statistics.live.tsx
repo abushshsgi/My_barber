@@ -58,10 +58,11 @@ type FeedItem = {
 function StatisticsLivePage() {
   const q = useQuery({
     queryKey: ["admin", "stats-live"],
-    queryFn: () => fetchPlatformLiveStats(60),
-    refetchInterval: 5_000,
+    queryFn: () => fetchPlatformLiveStats(30),
+    refetchInterval: 15_000,
     refetchIntervalInBackground: true,
     retry: 2,
+    staleTime: 10_000,
   });
 
   const d = q.data;
@@ -125,7 +126,7 @@ function StatisticsLivePage() {
     <div className="space-y-6">
       <StatsPageHeader
         title="Real vaqt"
-        description="Platformaga ro'yxatdan o'tishlar — har 5 soniyada yangilanadi."
+        description="Platformaga ro'yxatdan o'tishlar — har 15 soniyada yangilanadi."
       >
         <LivePulseBadge />
       </StatsPageHeader>
