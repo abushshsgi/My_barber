@@ -33,3 +33,11 @@ export function trackEvent(name: string, params?: Record<string, unknown>) {
   if (!GA_ENABLED) return;
   gtag("event", name, params);
 }
+
+/** Yangi foydalanuvchi → sign_up; mavjud → login (GA4 recommended events). */
+export function trackAuthSuccess(opts: {
+  isNewUser: boolean;
+  method: "google" | "phone" | "password";
+}) {
+  trackEvent(opts.isNewUser ? "sign_up" : "login", { method: opts.method });
+}

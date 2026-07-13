@@ -20,6 +20,7 @@ import {
   verifyPhoneCode,
 } from "@/lib/api";
 import { getLastPhone, setSession } from "@/lib/auth";
+import { trackAuthSuccess } from "@/lib/ga";
 import { clearQueryClientCache } from "@/lib/query-client";
 import { getStoredOtpCooldownSeconds, storeOtpCooldown } from "@/lib/otp-cooldown";
 import { formatUzLocalPhone, parseUzLocalPhone } from "@/lib/phone";
@@ -95,7 +96,11 @@ function Auth() {
     setCode(digits.split("").concat(["", "", "", ""]).slice(0, 4));
   };
 
-  const finishLogin = (data: PhoneVerifyResponse) => {
+  const finishLogin = (
+    data: PhoneVerifyResponse,
+    method: "google" | "phone" | "password" = "phone",
+  ) => {
+    trackAuthSuccess({ isNewUser: Boolean(data.is_new_user), method });
     setSession(data.access, data.refresh, data.user, data.session_id);
     clearQueryClientCache();
     toast.success(data.is_new_user ? t("auth.welcomeNew") : t("auth.welcomeBack"));
@@ -150,10 +155,7 @@ function Auth() {
         toast.error(t("auth.errBadResponse"));
         return;
       }
-      finishLogin(data);
-    },
-    onError: (e: Error) => {
-      if (e instanceof AuthRateLimitError) {
+      finishLogin(data, "password");
         startResendCooldown(e.retryAfter);
         toast.error(t("auth.resendTimerHint", { seconds: e.retryAfter }));
         return;
@@ -175,7 +177,7 @@ function Auth() {
         setStep("set-password");
         return;
       }
-      finishLogin(data);
+      finishLogin(data, "phone");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -185,6 +187,10 @@ function Auth() {
     onSuccess: (res) => {
       toast.success(res.detail);
       if (!pendingAuth) return;
+      trackAuthSuccess({
+        isNewUser: Boolean(pendingAuth.is_new_user),
+        method: "phone",
+      });
       setSession(pendingAuth.access, pendingAuth.refresh, res.user);
       void router
         .navigate({
@@ -197,7 +203,7 @@ function Auth() {
   });
 
   const skipPasswordSetup = () => {
-    if (pendingAuth) finishLogin(pendingAuth);
+    if (pendingAuth) finishLogin(pendingAuth, "phone");
   };
 
   const busy =
@@ -307,7 +313,7 @@ function Auth() {
                           toast.error(t("auth.errBadResponse"));
                           return;
                         }
-                        finishLogin(data);
+                        finishLogin(data, "google");
                       }}
                     />
                   ) : (
