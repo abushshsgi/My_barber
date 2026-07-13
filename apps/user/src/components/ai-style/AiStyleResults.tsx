@@ -405,6 +405,7 @@ function SuggestionActions({
   saved,
   onToggleSave,
   compact,
+  desktop,
   tryOnPreview,
   tryOnLoading,
   onGenerateTryOn,
@@ -413,6 +414,7 @@ function SuggestionActions({
   saved: boolean;
   onToggleSave: (id: string) => void;
   compact?: boolean;
+  desktop?: boolean;
   tryOnPreview?: string;
   tryOnLoading?: boolean;
   onGenerateTryOn?: (styleId: string) => void;
@@ -421,21 +423,30 @@ function SuggestionActions({
   const canTryOn = Boolean(onGenerateTryOn && isCatalogStyleId(suggestion.id));
 
   return (
-    <div className={cn("mt-3 flex flex-wrap gap-1.5", compact && "mt-2")}>
+    <div
+      className={cn(
+        "mt-3 flex flex-wrap gap-2",
+        compact && "mt-2",
+        desktop && "mt-auto grid grid-cols-2 gap-2 pt-3",
+      )}
+    >
       {canTryOn ? (
         <button
           type="button"
           disabled={tryOnLoading || Boolean(tryOnPreview)}
           onClick={() => onGenerateTryOn?.(suggestion.id)}
           className={cn(
-            "inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-1 rounded-xl border px-2 py-2.5 text-[10px] font-bold",
+            "inline-flex items-center justify-center gap-1.5 rounded-xl border font-bold transition-colors",
+            desktop
+              ? "min-h-[42px] px-3 py-2.5 text-xs"
+              : "min-w-[calc(50%-0.25rem)] flex-1 px-2 py-2.5 text-[10px]",
             tryOnPreview ? "border-foreground bg-foreground text-background" : "border-border bg-surface",
           )}
         >
           {tryOnLoading ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
+            <Loader2 className={cn("animate-spin", desktop ? "h-3.5 w-3.5" : "h-3 w-3")} />
           ) : (
-            <Sparkles className="h-3 w-3" />
+            <Sparkles className={cn(desktop ? "h-3.5 w-3.5" : "h-3 w-3")} />
           )}
           {tryOnPreview ? t("aiStylePage.tryOnDone") : t("aiStylePage.tryOnMe")}
         </button>
@@ -444,18 +455,26 @@ function SuggestionActions({
         type="button"
         onClick={() => onToggleSave(suggestion.id)}
         className={cn(
-          "inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-1 rounded-xl border px-2 py-2.5 text-[10px] font-bold",
+          "inline-flex items-center justify-center gap-1.5 rounded-xl border font-bold transition-colors",
+          desktop
+            ? "min-h-[42px] px-3 py-2.5 text-xs"
+            : "min-w-[calc(50%-0.25rem)] flex-1 px-2 py-2.5 text-[10px]",
           saved ? "border-foreground bg-foreground text-background" : "border-border bg-surface",
         )}
       >
-        <Bookmark className="h-3 w-3" />
+        <Bookmark className={cn(desktop ? "h-3.5 w-3.5" : "h-3 w-3")} />
         {t("aiStylePage.save")}
       </button>
       {isCatalogStyleId(suggestion.id) ? (
         <Link
           to="/explore/$styleId"
           params={{ styleId: suggestion.id }}
-          className="inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-1 rounded-xl border border-border bg-surface px-2 py-2.5 text-[10px] font-bold"
+          className={cn(
+            "inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-surface font-bold transition-colors",
+            desktop
+              ? "min-h-[42px] px-3 py-2.5 text-xs"
+              : "min-w-[calc(50%-0.25rem)] flex-1 px-2 py-2.5 text-[10px]",
+          )}
         >
           {t("aiStylePage.viewStyle")}
         </Link>
@@ -464,14 +483,26 @@ function SuggestionActions({
         <Link
           to="/booking/$salonId"
           params={{ salonId: suggestion.salonId }}
-          className="inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-1 rounded-xl bg-foreground px-2 py-2.5 text-[10px] font-bold text-background"
+          className={cn(
+            "inline-flex items-center justify-center gap-1.5 rounded-xl bg-foreground font-bold text-background transition-colors",
+            desktop
+              ? "min-h-[42px] px-3 py-2.5 text-xs"
+              : "min-w-[calc(50%-0.25rem)] flex-1 px-2 py-2.5 text-[10px]",
+          )}
         >
-          <CalendarPlus className="h-3 w-3" />
+          <CalendarPlus className={cn(desktop ? "h-3.5 w-3.5" : "h-3 w-3")} />
           {t("aiStylePage.bookShort")}
         </Link>
       ) : (
-        <span className="inline-flex min-w-[calc(50%-0.25rem)] flex-1 items-center justify-center gap-1 rounded-xl bg-muted px-2 py-2.5 text-[10px] font-bold text-muted-foreground">
-          <CalendarPlus className="h-3 w-3" />
+        <span
+          className={cn(
+            "inline-flex items-center justify-center gap-1.5 rounded-xl bg-muted font-bold text-muted-foreground",
+            desktop
+              ? "min-h-[42px] px-3 py-2.5 text-xs"
+              : "min-w-[calc(50%-0.25rem)] flex-1 px-2 py-2.5 text-[10px]",
+          )}
+        >
+          <CalendarPlus className={cn(desktop ? "h-3.5 w-3.5" : "h-3 w-3")} />
           {t("aiStylePage.bookShort")}
         </span>
       )}
@@ -598,7 +629,7 @@ export function AiStyleSuggestionsStack({
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {suggestions.map((suggestion, index) => (
         <motion.article
           key={suggestion.id}
@@ -607,38 +638,53 @@ export function AiStyleSuggestionsStack({
           transition={{ delay: index * 0.06 }}
           className="overflow-hidden rounded-[22px] border border-border bg-background"
         >
-          <div className="relative h-32 overflow-hidden">
-            <StylePreview
-              suggestion={suggestion}
-              tryOnPreview={resolveTryOnPreview(tryOnByStyle ?? {}, suggestion.id, menPersonaId)}
-            />
-          </div>
-          <div className="p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                  #{index + 1}
-                </p>
-                <h3 className="mt-0.5 text-base font-bold">{suggestion.title}</h3>
-              </div>
-              <span className="shrink-0 rounded-full bg-foreground px-2.5 py-1 text-[10px] font-bold text-background">
-                {t("aiStylePage.matchPct", { value: suggestion.match })}
-              </span>
+          <div className="flex min-h-[168px]">
+            <div className="relative w-[132px] shrink-0 overflow-hidden sm:w-[148px]">
+              <StylePreview
+                suggestion={suggestion}
+                tryOnPreview={resolveTryOnPreview(tryOnByStyle ?? {}, suggestion.id, menPersonaId)}
+              />
+              {tryOnLoadingId === tryOnCacheKey(suggestion.id, menPersonaId) ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/45">
+                  <Loader2 className="h-5 w-5 animate-spin text-white" />
+                </div>
+              ) : null}
+              {resolveTryOnPreview(tryOnByStyle ?? {}, suggestion.id, menPersonaId) ? (
+                <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-bold backdrop-blur-sm">
+                  {t("aiStylePage.tryOnBadge")}
+                </span>
+              ) : null}
             </div>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              {suggestion.reason ?? (suggestion.reasonKey ? t(suggestion.reasonKey) : "")}
-            </p>
-            <p className="mt-2 text-[10px] font-bold text-muted-foreground">
-              {suggestion.barberName} · {suggestion.salonName}
-            </p>
-            <SuggestionActions
-              suggestion={suggestion}
-              saved={saved.includes(suggestion.id)}
-              onToggleSave={onToggleSave}
-              tryOnPreview={resolveTryOnPreview(tryOnByStyle ?? {}, suggestion.id, menPersonaId)}
-              tryOnLoading={tryOnLoadingId === tryOnCacheKey(suggestion.id, menPersonaId)}
-              onGenerateTryOn={onGenerateTryOn}
-            />
+            <div className="flex min-w-0 flex-1 flex-col p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                    #{index + 1}
+                  </p>
+                  <h3 className="mt-0.5 text-base font-bold leading-snug">{suggestion.title}</h3>
+                </div>
+                <span className="shrink-0 rounded-full bg-foreground px-2.5 py-1 text-[11px] font-bold text-background">
+                  {t("aiStylePage.matchPct", { value: suggestion.match })}
+                </span>
+              </div>
+              <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                {suggestion.reason ?? (suggestion.reasonKey ? t(suggestion.reasonKey) : "")}
+              </p>
+              {(suggestion.barberName !== "—" || suggestion.salonName !== "—") && (
+                <p className="mt-1.5 text-[10px] font-bold text-muted-foreground">
+                  {suggestion.barberName} · {suggestion.salonName}
+                </p>
+              )}
+              <SuggestionActions
+                suggestion={suggestion}
+                saved={saved.includes(suggestion.id)}
+                onToggleSave={onToggleSave}
+                desktop
+                tryOnPreview={resolveTryOnPreview(tryOnByStyle ?? {}, suggestion.id, menPersonaId)}
+                tryOnLoading={tryOnLoadingId === tryOnCacheKey(suggestion.id, menPersonaId)}
+                onGenerateTryOn={onGenerateTryOn}
+              />
+            </div>
           </div>
         </motion.article>
       ))}
@@ -654,6 +700,8 @@ export function AiStyleResultsBlock({
   layout = "carousel",
   summaryTone = "light",
   variant = "default",
+  hideSectionTitle = false,
+  hideResetButton = false,
   audience,
   menPersonaId,
   tryOnByStyle,
@@ -668,6 +716,8 @@ export function AiStyleResultsBlock({
   layout?: "carousel" | "stack";
   summaryTone?: "light" | "dark";
   variant?: "default" | "minimal";
+  hideSectionTitle?: boolean;
+  hideResetButton?: boolean;
   audience?: Audience;
   menPersonaId?: ExplorePersonaId | null;
   tryOnByStyle?: Record<string, string>;
@@ -707,21 +757,25 @@ export function AiStyleResultsBlock({
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <AiStyleResultsSummary result={result} tone={summaryTone} minimal={minimal} />
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-bold text-black">{t("aiStylePage.resultsTitle")}</h2>
-        <button
-          type="button"
-          onClick={onReset}
-          className={cn(
-            "shrink-0 text-[11px] font-bold",
-            minimal ? "text-neutral-500 underline underline-offset-2" : "rounded-full border border-border bg-background px-3.5 py-2 text-[10px]",
-          )}
-        >
-          {t("aiStylePage.tryAgain")}
-        </button>
-      </div>
+      {!hideSectionTitle ? (
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base font-bold text-black">{t("aiStylePage.resultsTitle")}</h2>
+          {!hideResetButton ? (
+            <button
+              type="button"
+              onClick={onReset}
+              className={cn(
+                "shrink-0 text-[11px] font-bold",
+                minimal ? "text-neutral-500 underline underline-offset-2" : "rounded-full border border-border bg-background px-3.5 py-2 text-[10px]",
+              )}
+            >
+              {t("aiStylePage.tryAgain")}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {layout === "carousel" ? (
         <AiStyleSuggestionsCarousel
           suggestions={result.suggestions}

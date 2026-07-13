@@ -46,7 +46,7 @@ function DesktopStepRail({ step }: { step: 1 | 2 | 3 }) {
   ];
 
   return (
-    <div className="flex max-w-md items-start">
+    <div className="flex w-full items-start">
       {steps.map((label, index) => {
         const n = (index + 1) as 1 | 2 | 3;
         const done = step > n;
@@ -210,14 +210,21 @@ export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_10%_0%,oklch(0.94_0.02_85)_0%,transparent_50%),radial-gradient(ellipse_at_95%_40%,oklch(0.95_0.012_70)_0%,transparent_40%)]"
       />
 
-      <div className="relative mx-auto grid h-full w-full max-w-[1280px] grid-cols-[minmax(0,1.15fr)_minmax(380px,0.85fr)] gap-8 px-8 py-6 xl:gap-10 xl:px-10 xl:py-7">
+      <div className="relative mx-auto grid h-full w-full max-w-[1360px] grid-cols-[minmax(0,0.92fr)_minmax(440px,1.08fr)] gap-6 px-6 py-5 xl:max-w-[1440px] xl:grid-cols-[minmax(0,0.88fr)_minmax(480px,1.12fr)] xl:gap-8 xl:px-10 xl:py-6">
         {/* Left visual */}
-        <section className="relative min-h-0 overflow-hidden">
-          <div className="absolute left-4 top-4 z-20">
+        <section className="relative flex min-h-0 items-center justify-center overflow-hidden">
+          <div className="absolute left-0 top-0 z-20">
             <DesktopBackButton />
           </div>
 
-          <div className="h-full overflow-hidden rounded-[28px] border border-border/50 bg-surface shadow-[0_20px_60px_-24px_rgba(15,15,15,0.25)]">
+          <div
+            className={cn(
+              "relative w-full overflow-hidden rounded-[28px] border border-border/50 bg-surface shadow-[0_20px_60px_-24px_rgba(15,15,15,0.25)]",
+              isPhotoPreview || showResults
+                ? "aspect-[3/4] max-h-full max-w-[min(100%,520px)]"
+                : "h-full min-h-[420px]",
+            )}
+          >
             {isGalleryValidating ? (
               <GalleryValidatingHero previewUrl={props.validatingPreview!} />
             ) : isPhotoPreview || showResults ? (
@@ -249,31 +256,44 @@ export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
         </section>
 
         {/* Right panel */}
-        <aside className="flex min-h-0 flex-col overflow-hidden rounded-[28px] border border-border/60 bg-background/90 shadow-[0_12px_40px_-16px_rgba(15,15,15,0.12)] backdrop-blur-sm">
-          <div className="shrink-0 border-b border-border/50 px-7 pb-5 pt-6 xl:px-8">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              {t("aiStylePage.title")}
-            </p>
-            <h1 className="mt-2 text-[1.75rem] font-extrabold tracking-tight text-foreground xl:text-[2rem]">
-              {showResults
-                ? t("aiStylePage.resultsTitle")
-                : isPhotoPreview
-                  ? t("aiStylePage.photoReadyTitle")
-                  : t("aiStylePage.uploadTitle")}
-            </h1>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              {showResults
-                ? t("aiStylePage.resultsHint")
-                : isPhotoPreview
-                  ? t("aiStylePage.photoReadyDesc")
-                  : t("aiStylePage.uploadHint")}
-            </p>
-            <div className="mt-5">
+        <aside className="flex min-h-0 flex-col overflow-hidden rounded-[28px] border border-border/60 bg-background/95 shadow-[0_12px_40px_-16px_rgba(15,15,15,0.12)] backdrop-blur-sm">
+          <div className="shrink-0 border-b border-border/50 px-6 pb-4 pt-5 xl:px-7 xl:pb-5 xl:pt-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                  {t("aiStylePage.title")}
+                </p>
+                <h1 className="mt-1.5 text-2xl font-extrabold tracking-tight text-foreground xl:text-[1.85rem]">
+                  {showResults
+                    ? t("aiStylePage.resultsTitle")
+                    : isPhotoPreview
+                      ? t("aiStylePage.photoReadyTitle")
+                      : t("aiStylePage.uploadTitle")}
+                </h1>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                  {showResults
+                    ? t("aiStylePage.resultsHint")
+                    : isPhotoPreview
+                      ? t("aiStylePage.photoReadyDesc")
+                      : t("aiStylePage.uploadHint")}
+                </p>
+              </div>
+              {showResults ? (
+                <button
+                  type="button"
+                  onClick={props.onReset}
+                  className="shrink-0 rounded-full border border-border bg-background px-3.5 py-2 text-[11px] font-bold text-muted-foreground transition-colors hover:bg-surface"
+                >
+                  {t("aiStylePage.tryAgain")}
+                </button>
+              ) : null}
+            </div>
+            <div className="mt-4 xl:mt-5">
               <DesktopStepRail step={props.step} />
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-7 py-6 xl:px-8">
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 xl:px-7 xl:py-6">
             {isUploadStep ? (
               <div className="flex h-full flex-col gap-8">
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -352,6 +372,8 @@ export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
                 onReset={props.onReset}
                 layout="stack"
                 variant="default"
+                hideSectionTitle
+                hideResetButton
                 audience={props.audience}
                 focusStyleId={props.focusStyleId}
                 menPersonaId={props.menPersonaId}
