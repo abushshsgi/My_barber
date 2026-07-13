@@ -1,6 +1,6 @@
 /** Google Analytics 4 — www.mysaloon.uz web stream. Measurement ID is public. */
 export const GA_MEASUREMENT_ID =
-  (import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined)?.trim() || "G-N8Z1S2Y0KZ";
+  (import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined)?.trim() || "G-38UNBFBNZG";
 
 /** Production web only — skip local/dev and Capacitor mobile SPA. */
 export const GA_ENABLED =
