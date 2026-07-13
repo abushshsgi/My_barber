@@ -48,6 +48,7 @@ from .serializers import (
 )
 
 from .user_signups import build_user_signup_analytics
+from .salon_growth import build_salon_platform_analytics
 from .models import (
     AuditLog,
     BroadcastCampaign,
@@ -280,7 +281,12 @@ class AdminUserSignupAnalyticsView(APIView):
             limit = max(1, min(500, int(limit_raw)))
         except (TypeError, ValueError):
             limit = 100
-        return Response(build_user_signup_analytics(recent_limit=limit))
+        return Response(
+            {
+                **build_user_signup_analytics(recent_limit=limit),
+                "salons": build_salon_platform_analytics(recent_limit=limit),
+            }
+        )
 
 
 def _admin_salon_queryset():

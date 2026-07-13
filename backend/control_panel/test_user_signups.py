@@ -5,7 +5,9 @@ from django.test import TestCase
 from django.utils import timezone
 
 from accounts.models import User
+from control_panel.salon_growth import build_salon_platform_analytics
 from control_panel.user_signups import build_user_signup_analytics, detect_signup_method
+from salons.models import Salon
 
 
 class UserSignupAnalyticsTests(TestCase):
@@ -48,3 +50,24 @@ class UserSignupAnalyticsTests(TestCase):
         self.assertEqual(summary["phone"], 1)
         self.assertEqual(len(payload["recent"]), 2)
         self.assertEqual(payload["recent"][0]["signup_method"], "google")
+
+    def test_build_salon_platform_analytics_counts(self):
+        Salon.objects.create(
+            name="Salon Alpha",
+            latitude=41.31,
+            longitude=69.24,
+            is_published=True,
+        )
+        Salon.objects.create(
+            name="Salon Beta",
+            latitude=41.32,
+            longitude=69.25,
+            is_published=False,
+        )
+
+        payload = build_salon_platform_analytics(recent_limit=10)
+        summary = payload["summary"]
+        self.assertEqual(summary["total"], 2)
+        self.assertEqual(summary["published"], 1)
+        self.assertEqual(summary["pending"], 1)
+        self.assertEqual(len(payload["recent"]), 2)

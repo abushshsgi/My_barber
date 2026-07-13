@@ -8,6 +8,7 @@ export function KPICard({
   hint,
   icon: Icon,
   className,
+  size = "default",
 }: {
   label: string;
   value: string | number;
@@ -15,23 +16,40 @@ export function KPICard({
   hint?: string;
   icon?: LucideIcon;
   className?: string;
+  size?: "default" | "hero";
 }) {
   const trend =
     typeof delta === "number" ? (delta > 0 ? "up" : delta < 0 ? "down" : "flat") : "flat";
+  const isHero = size === "hero";
 
   return (
     <div
       className={cn(
-        "bg-card rounded-2xl p-5 border border-border shadow-card flex flex-col justify-between min-h-[120px]",
+        "bg-card rounded-2xl border border-border shadow-card flex flex-col justify-between",
+        isHero ? "min-h-[168px] p-6 sm:p-7" : "min-h-[120px] p-5",
         className,
       )}
     >
       <div className="flex items-center justify-between gap-2">
-        <div className="text-sm font-medium text-muted-foreground">{label}</div>
-        {Icon && <Icon className="size-4 text-muted-foreground" />}
+        <div
+          className={cn(
+            "font-medium text-muted-foreground",
+            isHero ? "text-sm sm:text-base" : "text-sm",
+          )}
+        >
+          {label}
+        </div>
+        {Icon && (
+          <Icon className={cn("text-muted-foreground", isHero ? "size-5 sm:size-6" : "size-4")} />
+        )}
       </div>
-      <div className="mt-3">
-        <div className="font-heading text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+      <div className={cn(isHero ? "mt-4" : "mt-3")}>
+        <div
+          className={cn(
+            "font-heading font-semibold tracking-tight tabular-nums text-foreground",
+            isHero ? "text-5xl sm:text-6xl lg:text-7xl" : "text-3xl",
+          )}
+        >
           {value}
         </div>
         <div className="mt-2 flex items-center gap-2">

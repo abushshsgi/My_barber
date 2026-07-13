@@ -72,6 +72,38 @@ export type AdminUserSignupAnalytics = {
     signupMethod: UserSignupMethod;
     dateJoined: string | null;
   }>;
+  salons: AdminSalonPlatformAnalytics;
+};
+
+export type AdminSalonPlatformAnalytics = {
+  summary: {
+    total: number;
+    published: number;
+    pending: number;
+    todayTotal: number;
+    todayPublished: number;
+    todayPending: number;
+    weekTotal: number;
+    weekPublished: number;
+    weekPending: number;
+  };
+  daily: Array<{
+    date: string;
+    total: number;
+    published: number;
+    pending: number;
+  }>;
+  recent: Array<{
+    id: number;
+    name: string;
+    address: string;
+    phone: string;
+    region: string;
+    regionLabel: string;
+    isPublished: boolean;
+    ownerName: string;
+    createdAt: string | null;
+  }>;
 };
 
 /** Admin barbers ro‘yxati / segment filtri (backend `segment` query bilan mos). */
@@ -792,7 +824,48 @@ export async function fetchAdminUserSignupAnalytics(limit = 100): Promise<AdminU
       signup_method: UserSignupMethod;
       date_joined: string | null;
     }>;
+    salons: {
+      summary: {
+        total: number;
+        published: number;
+        pending: number;
+        today_total: number;
+        today_published: number;
+        today_pending: number;
+        week_total: number;
+        week_published: number;
+        week_pending: number;
+      };
+      daily: Array<{ date: string; total: number; published: number; pending: number }>;
+      recent: Array<{
+        id: number;
+        name: string;
+        address: string;
+        phone: string;
+        region: string;
+        region_label: string;
+        is_published: boolean;
+        owner_name: string;
+        created_at: string | null;
+      }>;
+    };
   }>(`/api/v1/admin/users/signup-analytics/?${sp}`);
+
+  const salons = data.salons ?? {
+    summary: {
+      total: 0,
+      published: 0,
+      pending: 0,
+      today_total: 0,
+      today_published: 0,
+      today_pending: 0,
+      week_total: 0,
+      week_published: 0,
+      week_pending: 0,
+    },
+    daily: [],
+    recent: [],
+  };
 
   return {
     generatedAt: data.generated_at,
@@ -817,6 +890,31 @@ export async function fetchAdminUserSignupAnalytics(limit = 100): Promise<AdminU
       signupMethod: row.signup_method,
       dateJoined: row.date_joined,
     })),
+    salons: {
+      summary: {
+        total: salons.summary.total,
+        published: salons.summary.published,
+        pending: salons.summary.pending,
+        todayTotal: salons.summary.today_total,
+        todayPublished: salons.summary.today_published,
+        todayPending: salons.summary.today_pending,
+        weekTotal: salons.summary.week_total,
+        weekPublished: salons.summary.week_published,
+        weekPending: salons.summary.week_pending,
+      },
+      daily: salons.daily,
+      recent: salons.recent.map((row) => ({
+        id: row.id,
+        name: row.name,
+        address: row.address,
+        phone: row.phone,
+        region: row.region,
+        regionLabel: row.region_label,
+        isPublished: row.is_published,
+        ownerName: row.owner_name,
+        createdAt: row.created_at,
+      })),
+    },
   };
 }
 
