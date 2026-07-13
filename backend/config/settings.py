@@ -281,7 +281,7 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "accounts.admin_auth.AdminJWTAuthentication",
         "barbers.barber_auth.BarberJWTAuthentication",
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "accounts.soft_jwt.SoftUserJWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),

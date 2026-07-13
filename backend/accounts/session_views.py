@@ -74,9 +74,11 @@ class UserSessionRevokeOthersView(APIView):
 
 
 class UserTokenRefreshView(TokenRefreshView):
-    """SimpleJWT refresh — bekor qilingan sessiyalarni rad etadi."""
+    """SimpleJWT refresh — bekor qilingan / o'chirilgan sessiyalarni 401 bilan rad etadi."""
 
     def post(self, request, *args, **kwargs):
+        from django.contrib.auth import get_user_model
+        from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
         from rest_framework_simplejwt.tokens import RefreshToken
 
         refresh_raw = request.data.get("refresh")
@@ -90,7 +92,19 @@ class UserTokenRefreshView(TokenRefreshView):
             except Exception:
                 pass
 
-        response = super().post(request, *args, **kwargs)
+        try:
+            response = super().post(request, *args, **kwargs)
+        except (InvalidToken, TokenError, get_user_model().DoesNotExist) as exc:
+            return Response(
+                {"detail": getattr(exc, "detail", None) or "Sessiya yaroqsiz. Qayta kiring."},
+                status=401,
+            )
+        except Exception as exc:
+            # SimpleJWT ba'zan Serializer.validate ichida DoesNotExist ni ushlamaydi.
+            if exc.__class__.__name__ == "DoesNotExist" or "matching query does not exist" in str(exc):
+                return Response({"detail": "Sessiya yaroqsiz. Qayta kiring."}, status=401)
+            raise
+
         if response.status_code == 200 and old_jti:
             new_refresh = response.data.get("refresh")
             if isinstance(new_refresh, str) and new_refresh.strip():

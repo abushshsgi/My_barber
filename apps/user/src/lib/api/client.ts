@@ -260,7 +260,10 @@ async function refreshAccess(): Promise<RefreshResult> {
           body: JSON.stringify({ refresh }),
         });
         if (!res.ok) {
-          return { access: null, revoked: isAuthFailureStatus(res.status) };
+          // 401/403 = yaroqsiz sessiya; 404/500 after wipe = o'chirilgan user token
+          const revoked =
+            isAuthFailureStatus(res.status) || res.status === 404 || res.status >= 500;
+          return { access: null, revoked };
         }
         const data = (await parseJsonBody(res)) as { access?: string; refresh?: string } | null;
         if (!data?.access || jwtPayloadType(data.access) !== "user") {

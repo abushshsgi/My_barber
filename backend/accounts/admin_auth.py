@@ -52,7 +52,7 @@ class AdminJWTAuthentication(BaseAuthentication):
         try:
             account = AdminAccount.objects.get(pk=admin_id, is_active=True)
         except AdminAccount.DoesNotExist:
-            raise AuthenticationFailed("Admin not found or inactive.")
+            return None
         return (AdminPrincipal(account), None)
 
 

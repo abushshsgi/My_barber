@@ -12,6 +12,8 @@ export function isPublicCustomerApiPath(path: string): boolean {
   }
   if (p.startsWith("/api/v1/bookings/availability")) return true;
   if (p === "/api/v1/geo/map-config") return true;
+  if (p === "/api/v1/regions") return true;
+  if (p === "/api/v1/hairstyles" || p.startsWith("/api/v1/hairstyles/")) return true;
   if (p.startsWith("/api/v1/ai/dev/explore-gen")) return true;
   if (p === "/api/v1/reviews" || (p.startsWith("/api/v1/reviews/") && !p.includes("mine"))) {
     return true;

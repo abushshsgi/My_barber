@@ -60,7 +60,7 @@ class BarberJWTAuthentication(BaseAuthentication):
         try:
             b = Barber.objects.get(pk=barber_id, is_active=True)
         except Barber.DoesNotExist:
-            raise AuthenticationFailed("Barber not found or inactive.")
+            return None
         return (BarberPrincipal(b), None)
 
 
