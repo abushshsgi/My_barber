@@ -5,6 +5,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { OtpResendTimer } from "@/components/auth/OtpResendTimer";
 import { AuthMarketingPanel } from "@/components/auth/AuthMarketingPanel";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { AuthMethodDivider, PhoneSignInComingSoon } from "@/components/auth/PhoneSignInComingSoon";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -313,6 +314,8 @@ function Auth() {
                       {t("auth.googleNotConfigured")}
                     </div>
                   )}
+                  <AuthMethodDivider />
+                  <PhoneSignInComingSoon />
                 </div>
               ) : null}
 
