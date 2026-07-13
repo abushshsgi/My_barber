@@ -27,6 +27,7 @@ import { Route as AdminBookingsRouteImport } from './routes/admin.bookings'
 import { Route as AdminBarbersRouteImport } from './routes/admin.barbers'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminAdminsRouteImport } from './routes/admin.admins'
+import { Route as AdminUsersSignupsRouteImport } from './routes/admin.users.signups'
 import { Route as AdminUsersUserIdRouteImport } from './routes/admin.users.$userId'
 import { Route as AdminSupportTicketIdRouteImport } from './routes/admin.support.$ticketId'
 import { Route as AdminServicesAnalyticsRouteImport } from './routes/admin.services.analytics'
@@ -134,6 +135,11 @@ const AdminAdminsRoute = AdminAdminsRouteImport.update({
   id: '/admins',
   path: '/admins',
   getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersSignupsRoute = AdminUsersSignupsRouteImport.update({
+  id: '/signups',
+  path: '/signups',
+  getParentRoute: () => AdminUsersRoute,
 } as any)
 const AdminUsersUserIdRoute = AdminUsersUserIdRouteImport.update({
   id: '/$userId',
@@ -256,6 +262,7 @@ export interface FileRoutesByFullPath {
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
+  '/admin/users/signups': typeof AdminUsersSignupsRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
   '/admin/barbers/$barberId/stats': typeof AdminBarbersBarberIdStatsRouteWithChildren
@@ -290,6 +297,7 @@ export interface FileRoutesByTo {
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
+  '/admin/users/signups': typeof AdminUsersSignupsRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
   '/admin/salons/$salonId/team': typeof AdminSalonsSalonIdTeamRoute
@@ -327,6 +335,7 @@ export interface FileRoutesById {
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
+  '/admin/users/signups': typeof AdminUsersSignupsRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
   '/admin/barbers/$barberId/stats': typeof AdminBarbersBarberIdStatsRouteWithChildren
@@ -366,6 +375,7 @@ export interface FileRouteTypes {
     | '/admin/services/analytics'
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
+    | '/admin/users/signups'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
     | '/admin/barbers/$barberId/stats'
@@ -400,6 +410,7 @@ export interface FileRouteTypes {
     | '/admin/services/analytics'
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
+    | '/admin/users/signups'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
     | '/admin/salons/$salonId/team'
@@ -436,6 +447,7 @@ export interface FileRouteTypes {
     | '/admin/services/analytics'
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
+    | '/admin/users/signups'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
     | '/admin/barbers/$barberId/stats'
@@ -579,6 +591,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/admins'
       preLoaderRoute: typeof AdminAdminsRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/admin/users/signups': {
+      id: '/admin/users/signups'
+      path: '/signups'
+      fullPath: '/admin/users/signups'
+      preLoaderRoute: typeof AdminUsersSignupsRouteImport
+      parentRoute: typeof AdminUsersRoute
     }
     '/admin/users/$userId': {
       id: '/admin/users/$userId'
@@ -826,10 +845,12 @@ const AdminSupportRouteWithChildren = AdminSupportRoute._addFileChildren(
 
 interface AdminUsersRouteChildren {
   AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
+  AdminUsersSignupsRoute: typeof AdminUsersSignupsRoute
 }
 
 const AdminUsersRouteChildren: AdminUsersRouteChildren = {
   AdminUsersUserIdRoute: AdminUsersUserIdRoute,
+  AdminUsersSignupsRoute: AdminUsersSignupsRoute,
 }
 
 const AdminUsersRouteWithChildren = AdminUsersRoute._addFileChildren(

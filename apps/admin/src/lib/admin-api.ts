@@ -42,6 +42,38 @@ export type AdminUser = {
   bookings_count: number;
 };
 
+export type UserSignupMethod = "google" | "phone" | "email" | "unknown";
+
+export type AdminUserSignupAnalytics = {
+  generatedAt: string;
+  summary: {
+    total: number;
+    google: number;
+    phone: number;
+    other: number;
+    todayTotal: number;
+    todayGoogle: number;
+    todayPhone: number;
+    weekTotal: number;
+    weekGoogle: number;
+    weekPhone: number;
+  };
+  daily: Array<{
+    date: string;
+    total: number;
+    google: number;
+    phone: number;
+  }>;
+  recent: Array<{
+    id: number;
+    fullName: string;
+    phone: string | null;
+    displayEmail: string | null;
+    signupMethod: UserSignupMethod;
+    dateJoined: string | null;
+  }>;
+};
+
 /** Admin barbers ro‘yxati / segment filtri (backend `segment` query bilan mos). */
 export type AdminBarberAccountSegment =
   | "independent"
@@ -733,6 +765,59 @@ export async function fetchAdminBarberAnalytics(
 ): Promise<import("./admin-analytics").AdminAnalyticsResponse> {
   const sp = new URLSearchParams({ start: params.start, end: params.end });
   return apiJson(`/api/v1/admin/barbers/${barberId}/analytics/?${sp}`);
+}
+
+export async function fetchAdminUserSignupAnalytics(limit = 100): Promise<AdminUserSignupAnalytics> {
+  const sp = new URLSearchParams({ limit: String(limit) });
+  const data = await apiJson<{
+    generated_at: string;
+    summary: {
+      total: number;
+      google: number;
+      phone: number;
+      other: number;
+      today_total: number;
+      today_google: number;
+      today_phone: number;
+      week_total: number;
+      week_google: number;
+      week_phone: number;
+    };
+    daily: Array<{ date: string; total: number; google: number; phone: number }>;
+    recent: Array<{
+      id: number;
+      full_name: string;
+      phone: string | null;
+      display_email: string | null;
+      signup_method: UserSignupMethod;
+      date_joined: string | null;
+    }>;
+  }>(`/api/v1/admin/users/signup-analytics/?${sp}`);
+
+  return {
+    generatedAt: data.generated_at,
+    summary: {
+      total: data.summary.total,
+      google: data.summary.google,
+      phone: data.summary.phone,
+      other: data.summary.other,
+      todayTotal: data.summary.today_total,
+      todayGoogle: data.summary.today_google,
+      todayPhone: data.summary.today_phone,
+      weekTotal: data.summary.week_total,
+      weekGoogle: data.summary.week_google,
+      weekPhone: data.summary.week_phone,
+    },
+    daily: data.daily,
+    recent: data.recent.map((row) => ({
+      id: row.id,
+      fullName: row.full_name,
+      phone: row.phone,
+      displayEmail: row.display_email,
+      signupMethod: row.signup_method,
+      dateJoined: row.date_joined,
+    })),
+  };
 }
 
 export async function fetchAdminUsers(params?: {

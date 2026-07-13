@@ -47,6 +47,7 @@ from .serializers import (
     salon_schedule_summary,
 )
 
+from .user_signups import build_user_signup_analytics
 from .models import (
     AuditLog,
     BroadcastCampaign,
@@ -266,6 +267,20 @@ class AdminUserDetailView(generics.RetrieveUpdateAPIView):
             "is_active": updated.is_active,
         }
         _audit(self.request, "update", "user", updated.id, updated.email, before=before, after=after)
+
+
+class AdminUserSignupAnalyticsView(APIView):
+    """GET — mijoz ro'yxatdan o'tish (telefon / Google) real vaqt analitikasi."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        limit_raw = request.query_params.get("limit", "100")
+        try:
+            limit = max(1, min(500, int(limit_raw)))
+        except (TypeError, ValueError):
+            limit = 100
+        return Response(build_user_signup_analytics(recent_limit=limit))
 
 
 def _admin_salon_queryset():
