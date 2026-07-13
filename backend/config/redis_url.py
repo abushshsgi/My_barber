@@ -55,10 +55,22 @@ def redis_client_kwargs() -> dict:
     }
 
 
-def redis_channel_layer_kwargs() -> dict:
-    """Channels pub/sub uzoq kutadi — socket_timeout qo'ymaymiz (WS idle holatda)."""
+def redis_blocking_client_kwargs() -> dict:
+    """BRPOP va boshqa blocking buyruqlar — socket_timeout bo'lmasa Redis javobini kutadi."""
     return {
         "socket_connect_timeout": 10,
+        "socket_timeout": None,
+        "retry_on_timeout": True,
+        "health_check_interval": 30,
+    }
+
+
+def redis_channel_layer_kwargs() -> dict:
+    """Channels pub/sub uzoq kutadi — socket_timeout yo'q (WS idle / BRPOP)."""
+    return {
+        "socket_connect_timeout": 10,
+        "socket_timeout": None,
+        "socket_keepalive": True,
         "retry_on_timeout": True,
     }
 

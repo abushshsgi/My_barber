@@ -10,7 +10,7 @@ from typing import Any
 
 from django.conf import settings
 
-from config.redis_url import get_redis_url, redis_client_kwargs
+from config.redis_url import get_redis_url, redis_blocking_client_kwargs, redis_client_kwargs
 
 from .gemini_style import AiStyleError
 from .gemini_tryon import generate_tryon_preview
@@ -44,13 +44,14 @@ def is_queue_enabled() -> bool:
     return bool(get_redis_url())
 
 
-def _redis_client():
+def _redis_client(*, blocking: bool = False):
     url = get_redis_url()
     if not url:
         return None
     import redis
 
-    return redis.Redis.from_url(url, decode_responses=True, **redis_client_kwargs())
+    kwargs = redis_blocking_client_kwargs() if blocking else redis_client_kwargs()
+    return redis.Redis.from_url(url, decode_responses=True, **kwargs)
 
 
 def _job_key(job_id: str) -> str:
@@ -151,11 +152,20 @@ def get_tryon_job(job_id: str, *, user_id: int) -> dict[str, Any] | None:
 
 def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
     """Worker: navbatdan 1 ta ishni olib Vertex ga yuboradi."""
-    client = _redis_client()
+    client = _redis_client(blocking=True)
     if client is None:
         return False
 
-    popped = client.brpop(QUEUE_KEY, timeout=max(1, block_seconds))
+    try:
+        popped = client.brpop(QUEUE_KEY, timeout=max(1, block_seconds))
+    except Exception as exc:
+        # Navbat bo'sh bo'lganda socket_timeout noto'g'ri sozlangan bo'lsa ham worker tushmasin.
+        from redis.exceptions import TimeoutError as RedisTimeoutError
+
+        if isinstance(exc, (RedisTimeoutError, TimeoutError)):
+            logger.debug("Try-on BRPOP timeout (navbat bo'sh yoki Redis sekin): %s", exc)
+            return False
+        raise
     if not popped:
         return False
 

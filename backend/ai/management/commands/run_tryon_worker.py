@@ -38,5 +38,9 @@ class Command(BaseCommand):
                 self.stdout.write("Try-on worker to'xtatildi.")
                 return
             except Exception as exc:
+                from redis.exceptions import TimeoutError as RedisTimeoutError
+
+                if isinstance(exc, (RedisTimeoutError, TimeoutError)):
+                    continue
                 logger.exception("Try-on worker loop error: %s", exc)
                 time.sleep(2)
