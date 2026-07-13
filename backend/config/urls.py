@@ -42,6 +42,15 @@ from control_panel.views import (
     AdminUserSignupAnalyticsView,
     UserSupportTicketListCreateView,
 )
+from control_panel.statistics_views import (
+    AdminStatisticsBookingsView,
+    AdminStatisticsExportView,
+    AdminStatisticsOverviewView,
+    AdminStatisticsRevenueView,
+    AdminStatisticsSalonsView,
+    AdminStatisticsUsersView,
+    AdminStatisticsWalletView,
+)
 
 from accounts.address_views import (
     UserAddressDetailView,
@@ -221,6 +230,13 @@ router.register(r"barber/support", MyBarberSupportTicketViewSet, basename="barbe
 # Shared API routes (mounted at both /api/v1/ and /api/ for compatibility).
 api_routes = [
     path("admin/stats/", AdminStatsView.as_view()),
+    path("admin/statistics/overview/", AdminStatisticsOverviewView.as_view()),
+    path("admin/statistics/revenue/", AdminStatisticsRevenueView.as_view()),
+    path("admin/statistics/users/", AdminStatisticsUsersView.as_view()),
+    path("admin/statistics/salons/", AdminStatisticsSalonsView.as_view()),
+    path("admin/statistics/wallet/", AdminStatisticsWalletView.as_view()),
+    path("admin/statistics/bookings/", AdminStatisticsBookingsView.as_view()),
+    path("admin/statistics/export/<str:export_type>/", AdminStatisticsExportView.as_view()),
     path("admin/users/signup-analytics/", AdminUserSignupAnalyticsView.as_view()),
     path("admin/users/", AdminUserListView.as_view()),
     path("admin/users/<int:pk>/", AdminUserDetailView.as_view()),

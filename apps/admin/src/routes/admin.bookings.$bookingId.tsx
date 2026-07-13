@@ -10,6 +10,18 @@ export const Route = createFileRoute("/admin/bookings/$bookingId")({
   component: BookingDetailPage,
 });
 
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  cash: "Naqd",
+  online: "Onlayn",
+};
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  not_applicable: "Talab qilinmaydi",
+  pending: "Kutilmoqda",
+  paid: "To'langan",
+  refunded: "Qaytarilgan",
+};
+
 function BookingDetailPage() {
   const { bookingId } = Route.useParams();
 
@@ -38,6 +50,9 @@ function BookingDetailPage() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h1 className="font-heading text-2xl font-semibold">Bron #{b.id}</h1>
+              <p className="mt-1 font-mono text-sm font-semibold text-muted-foreground">
+                {b.order_number}
+              </p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {format(new Date(b.start_at), "dd MMMM yyyy, HH:mm")}
               </p>
@@ -49,6 +64,9 @@ function BookingDetailPage() {
             <div>
               <dt className="text-xs uppercase tracking-wide text-muted-foreground">Mijoz</dt>
               <dd className="mt-1 font-medium">{b.client_name}</dd>
+              {b.client_phone ? (
+                <dd className="text-xs text-muted-foreground">{b.client_phone}</dd>
+              ) : null}
             </div>
             <div>
               <dt className="text-xs uppercase tracking-wide text-muted-foreground">Sartarosh</dt>
@@ -61,6 +79,19 @@ function BookingDetailPage() {
             <div>
               <dt className="text-xs uppercase tracking-wide text-muted-foreground">Jami narx</dt>
               <dd className="mt-1 font-medium tabular-nums">{b.price.toLocaleString("uz-UZ")} so'm</dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase tracking-wide text-muted-foreground">To'lov usuli</dt>
+              <dd className="mt-1 font-medium">{PAYMENT_METHOD_LABELS[b.payment_method] || b.payment_method || "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase tracking-wide text-muted-foreground">To'lov holati</dt>
+              <dd className="mt-1 font-medium">{PAYMENT_STATUS_LABELS[b.payment_status] || b.payment_status || "—"}</dd>
+              {b.paid_at ? (
+                <dd className="text-xs text-muted-foreground">
+                  {format(new Date(b.paid_at), "dd.MM.yyyy HH:mm")}
+                </dd>
+              ) : null}
             </div>
           </dl>
 

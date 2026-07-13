@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminSupportRouteImport } from './routes/admin.support'
+import { Route as AdminStatisticsRouteImport } from './routes/admin.statistics'
 import { Route as AdminServicesRouteImport } from './routes/admin.services'
 import { Route as AdminSalonsRouteImport } from './routes/admin.salons'
 import { Route as AdminReviewsRouteImport } from './routes/admin.reviews'
@@ -27,9 +28,15 @@ import { Route as AdminBookingsRouteImport } from './routes/admin.bookings'
 import { Route as AdminBarbersRouteImport } from './routes/admin.barbers'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminAdminsRouteImport } from './routes/admin.admins'
+import { Route as AdminStatisticsIndexRouteImport } from './routes/admin.statistics.index'
 import { Route as AdminUsersSignupsRouteImport } from './routes/admin.users.signups'
 import { Route as AdminUsersUserIdRouteImport } from './routes/admin.users.$userId'
 import { Route as AdminSupportTicketIdRouteImport } from './routes/admin.support.$ticketId'
+import { Route as AdminStatisticsWalletRouteImport } from './routes/admin.statistics.wallet'
+import { Route as AdminStatisticsUsersRouteImport } from './routes/admin.statistics.users'
+import { Route as AdminStatisticsSalonsRouteImport } from './routes/admin.statistics.salons'
+import { Route as AdminStatisticsRevenueRouteImport } from './routes/admin.statistics.revenue'
+import { Route as AdminStatisticsBookingsRouteImport } from './routes/admin.statistics.bookings'
 import { Route as AdminServicesAnalyticsRouteImport } from './routes/admin.services.analytics'
 import { Route as AdminSalonsSalonIdRouteImport } from './routes/admin.salons.$salonId'
 import { Route as AdminFinanceTransactionsRouteImport } from './routes/admin.finance.transactions'
@@ -74,6 +81,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
 const AdminSupportRoute = AdminSupportRouteImport.update({
   id: '/support',
   path: '/support',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminStatisticsRoute = AdminStatisticsRouteImport.update({
+  id: '/statistics',
+  path: '/statistics',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminServicesRoute = AdminServicesRouteImport.update({
@@ -136,6 +148,11 @@ const AdminAdminsRoute = AdminAdminsRouteImport.update({
   path: '/admins',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminStatisticsIndexRoute = AdminStatisticsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminStatisticsRoute,
+} as any)
 const AdminUsersSignupsRoute = AdminUsersSignupsRouteImport.update({
   id: '/signups',
   path: '/signups',
@@ -150,6 +167,31 @@ const AdminSupportTicketIdRoute = AdminSupportTicketIdRouteImport.update({
   id: '/$ticketId',
   path: '/$ticketId',
   getParentRoute: () => AdminSupportRoute,
+} as any)
+const AdminStatisticsWalletRoute = AdminStatisticsWalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => AdminStatisticsRoute,
+} as any)
+const AdminStatisticsUsersRoute = AdminStatisticsUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminStatisticsRoute,
+} as any)
+const AdminStatisticsSalonsRoute = AdminStatisticsSalonsRouteImport.update({
+  id: '/salons',
+  path: '/salons',
+  getParentRoute: () => AdminStatisticsRoute,
+} as any)
+const AdminStatisticsRevenueRoute = AdminStatisticsRevenueRouteImport.update({
+  id: '/revenue',
+  path: '/revenue',
+  getParentRoute: () => AdminStatisticsRoute,
+} as any)
+const AdminStatisticsBookingsRoute = AdminStatisticsBookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
+  getParentRoute: () => AdminStatisticsRoute,
 } as any)
 const AdminServicesAnalyticsRoute = AdminServicesAnalyticsRouteImport.update({
   id: '/analytics',
@@ -250,6 +292,7 @@ export interface FileRoutesByFullPath {
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/salons': typeof AdminSalonsRouteWithChildren
   '/admin/services': typeof AdminServicesRouteWithChildren
+  '/admin/statistics': typeof AdminStatisticsRouteWithChildren
   '/admin/support': typeof AdminSupportRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/': typeof AdminIndexRoute
@@ -260,9 +303,15 @@ export interface FileRoutesByFullPath {
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
+  '/admin/statistics/bookings': typeof AdminStatisticsBookingsRoute
+  '/admin/statistics/revenue': typeof AdminStatisticsRevenueRoute
+  '/admin/statistics/salons': typeof AdminStatisticsSalonsRoute
+  '/admin/statistics/users': typeof AdminStatisticsUsersRoute
+  '/admin/statistics/wallet': typeof AdminStatisticsWalletRoute
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
+  '/admin/statistics/': typeof AdminStatisticsIndexRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
   '/admin/barbers/$barberId/stats': typeof AdminBarbersBarberIdStatsRouteWithChildren
@@ -295,9 +344,15 @@ export interface FileRoutesByTo {
   '/admin/finance/promotions': typeof AdminFinancePromotionsRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
+  '/admin/statistics/bookings': typeof AdminStatisticsBookingsRoute
+  '/admin/statistics/revenue': typeof AdminStatisticsRevenueRoute
+  '/admin/statistics/salons': typeof AdminStatisticsSalonsRoute
+  '/admin/statistics/users': typeof AdminStatisticsUsersRoute
+  '/admin/statistics/wallet': typeof AdminStatisticsWalletRoute
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
+  '/admin/statistics': typeof AdminStatisticsIndexRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
   '/admin/salons/$salonId/team': typeof AdminSalonsSalonIdTeamRoute
@@ -323,6 +378,7 @@ export interface FileRoutesById {
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/salons': typeof AdminSalonsRouteWithChildren
   '/admin/services': typeof AdminServicesRouteWithChildren
+  '/admin/statistics': typeof AdminStatisticsRouteWithChildren
   '/admin/support': typeof AdminSupportRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/': typeof AdminIndexRoute
@@ -333,9 +389,15 @@ export interface FileRoutesById {
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
+  '/admin/statistics/bookings': typeof AdminStatisticsBookingsRoute
+  '/admin/statistics/revenue': typeof AdminStatisticsRevenueRoute
+  '/admin/statistics/salons': typeof AdminStatisticsSalonsRoute
+  '/admin/statistics/users': typeof AdminStatisticsUsersRoute
+  '/admin/statistics/wallet': typeof AdminStatisticsWalletRoute
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
+  '/admin/statistics/': typeof AdminStatisticsIndexRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
   '/admin/barbers/$barberId/stats': typeof AdminBarbersBarberIdStatsRouteWithChildren
@@ -363,6 +425,7 @@ export interface FileRouteTypes {
     | '/admin/reviews'
     | '/admin/salons'
     | '/admin/services'
+    | '/admin/statistics'
     | '/admin/support'
     | '/admin/users'
     | '/admin/'
@@ -373,9 +436,15 @@ export interface FileRouteTypes {
     | '/admin/finance/transactions'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
+    | '/admin/statistics/bookings'
+    | '/admin/statistics/revenue'
+    | '/admin/statistics/salons'
+    | '/admin/statistics/users'
+    | '/admin/statistics/wallet'
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
     | '/admin/users/signups'
+    | '/admin/statistics/'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
     | '/admin/barbers/$barberId/stats'
@@ -408,9 +477,15 @@ export interface FileRouteTypes {
     | '/admin/finance/promotions'
     | '/admin/finance/transactions'
     | '/admin/services/analytics'
+    | '/admin/statistics/bookings'
+    | '/admin/statistics/revenue'
+    | '/admin/statistics/salons'
+    | '/admin/statistics/users'
+    | '/admin/statistics/wallet'
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
     | '/admin/users/signups'
+    | '/admin/statistics'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
     | '/admin/salons/$salonId/team'
@@ -435,6 +510,7 @@ export interface FileRouteTypes {
     | '/admin/reviews'
     | '/admin/salons'
     | '/admin/services'
+    | '/admin/statistics'
     | '/admin/support'
     | '/admin/users'
     | '/admin/'
@@ -445,9 +521,15 @@ export interface FileRouteTypes {
     | '/admin/finance/transactions'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
+    | '/admin/statistics/bookings'
+    | '/admin/statistics/revenue'
+    | '/admin/statistics/salons'
+    | '/admin/statistics/users'
+    | '/admin/statistics/wallet'
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
     | '/admin/users/signups'
+    | '/admin/statistics/'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
     | '/admin/barbers/$barberId/stats'
@@ -506,6 +588,13 @@ declare module '@tanstack/react-router' {
       path: '/support'
       fullPath: '/admin/support'
       preLoaderRoute: typeof AdminSupportRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/statistics': {
+      id: '/admin/statistics'
+      path: '/statistics'
+      fullPath: '/admin/statistics'
+      preLoaderRoute: typeof AdminStatisticsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/services': {
@@ -592,6 +681,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/statistics/': {
+      id: '/admin/statistics/'
+      path: '/'
+      fullPath: '/admin/statistics/'
+      preLoaderRoute: typeof AdminStatisticsIndexRouteImport
+      parentRoute: typeof AdminStatisticsRoute
+    }
     '/admin/users/signups': {
       id: '/admin/users/signups'
       path: '/signups'
@@ -612,6 +708,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/support/$ticketId'
       preLoaderRoute: typeof AdminSupportTicketIdRouteImport
       parentRoute: typeof AdminSupportRoute
+    }
+    '/admin/statistics/wallet': {
+      id: '/admin/statistics/wallet'
+      path: '/wallet'
+      fullPath: '/admin/statistics/wallet'
+      preLoaderRoute: typeof AdminStatisticsWalletRouteImport
+      parentRoute: typeof AdminStatisticsRoute
+    }
+    '/admin/statistics/users': {
+      id: '/admin/statistics/users'
+      path: '/users'
+      fullPath: '/admin/statistics/users'
+      preLoaderRoute: typeof AdminStatisticsUsersRouteImport
+      parentRoute: typeof AdminStatisticsRoute
+    }
+    '/admin/statistics/salons': {
+      id: '/admin/statistics/salons'
+      path: '/salons'
+      fullPath: '/admin/statistics/salons'
+      preLoaderRoute: typeof AdminStatisticsSalonsRouteImport
+      parentRoute: typeof AdminStatisticsRoute
+    }
+    '/admin/statistics/revenue': {
+      id: '/admin/statistics/revenue'
+      path: '/revenue'
+      fullPath: '/admin/statistics/revenue'
+      preLoaderRoute: typeof AdminStatisticsRevenueRouteImport
+      parentRoute: typeof AdminStatisticsRoute
+    }
+    '/admin/statistics/bookings': {
+      id: '/admin/statistics/bookings'
+      path: '/bookings'
+      fullPath: '/admin/statistics/bookings'
+      preLoaderRoute: typeof AdminStatisticsBookingsRouteImport
+      parentRoute: typeof AdminStatisticsRoute
     }
     '/admin/services/analytics': {
       id: '/admin/services/analytics'
@@ -831,6 +962,28 @@ const AdminServicesRouteWithChildren = AdminServicesRoute._addFileChildren(
   AdminServicesRouteChildren,
 )
 
+interface AdminStatisticsRouteChildren {
+  AdminStatisticsBookingsRoute: typeof AdminStatisticsBookingsRoute
+  AdminStatisticsRevenueRoute: typeof AdminStatisticsRevenueRoute
+  AdminStatisticsSalonsRoute: typeof AdminStatisticsSalonsRoute
+  AdminStatisticsUsersRoute: typeof AdminStatisticsUsersRoute
+  AdminStatisticsWalletRoute: typeof AdminStatisticsWalletRoute
+  AdminStatisticsIndexRoute: typeof AdminStatisticsIndexRoute
+}
+
+const AdminStatisticsRouteChildren: AdminStatisticsRouteChildren = {
+  AdminStatisticsBookingsRoute: AdminStatisticsBookingsRoute,
+  AdminStatisticsRevenueRoute: AdminStatisticsRevenueRoute,
+  AdminStatisticsSalonsRoute: AdminStatisticsSalonsRoute,
+  AdminStatisticsUsersRoute: AdminStatisticsUsersRoute,
+  AdminStatisticsWalletRoute: AdminStatisticsWalletRoute,
+  AdminStatisticsIndexRoute: AdminStatisticsIndexRoute,
+}
+
+const AdminStatisticsRouteWithChildren = AdminStatisticsRoute._addFileChildren(
+  AdminStatisticsRouteChildren,
+)
+
 interface AdminSupportRouteChildren {
   AdminSupportTicketIdRoute: typeof AdminSupportTicketIdRoute
 }
@@ -870,6 +1023,7 @@ interface AdminRouteChildren {
   AdminReviewsRoute: typeof AdminReviewsRoute
   AdminSalonsRoute: typeof AdminSalonsRouteWithChildren
   AdminServicesRoute: typeof AdminServicesRouteWithChildren
+  AdminStatisticsRoute: typeof AdminStatisticsRouteWithChildren
   AdminSupportRoute: typeof AdminSupportRouteWithChildren
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
@@ -888,6 +1042,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminReviewsRoute: AdminReviewsRoute,
   AdminSalonsRoute: AdminSalonsRouteWithChildren,
   AdminServicesRoute: AdminServicesRouteWithChildren,
+  AdminStatisticsRoute: AdminStatisticsRouteWithChildren,
   AdminSupportRoute: AdminSupportRouteWithChildren,
   AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,

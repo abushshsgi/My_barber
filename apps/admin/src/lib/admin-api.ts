@@ -292,12 +292,16 @@ export type AdminBooking = {
   order_number: string;
   client_name: string;
   client_avatar: string;
+  client_phone: string;
   barber_name: string;
   salon_name: string;
   service: string;
   price: number;
   start_at: string;
   status: string;
+  payment_method: string;
+  payment_status: string;
+  paid_at: string | null;
   region: RegionCode;
 };
 
@@ -512,10 +516,14 @@ type BackendBookingRow = {
   order_number?: string | null;
   salon_name?: string;
   customer_name?: string;
+  customer_phone?: string;
   barber_name?: string;
   start_at: string;
   status: string;
   total_price: string;
+  payment_method?: string;
+  payment_status?: string;
+  paid_at?: string | null;
   lines?: Array<{ service_name?: string; price?: string | number }>;
 };
 
@@ -1099,12 +1107,16 @@ function mapAdminBookingRow(b: BackendBookingRow): AdminBooking {
     order_number: b.order_number ?? `MS-${b.id}`,
     client_name: b.customer_name ?? "—",
     client_avatar: avatarFor(`c${b.id}`),
+    client_phone: b.customer_phone ?? "",
     barber_name: b.barber_name ?? "—",
     salon_name: b.salon_name ?? "—",
     service: b.lines?.[0]?.service_name ?? "—",
     price: Math.max(0, toInt(b.total_price, 0)),
     start_at: b.start_at,
     status: b.status,
+    payment_method: b.payment_method ?? "",
+    payment_status: b.payment_status ?? "",
+    paid_at: b.paid_at ?? null,
     region: "",
   };
 }
@@ -1830,4 +1842,179 @@ export async function downloadAdminReport(type: "stats" | "finance"): Promise<{ 
     throw new Error(j.detail || "Hisobot olinmadi");
   }
   return { ok: true };
+}
+
+// ============= Platform statistika (B2B / B2C) =============
+
+export type StatDateRange = { start: string; end: string };
+
+export type PlatformOverview = {
+  range: StatDateRange;
+  b2c: {
+    clients_total: number;
+    active_clients: number;
+    total_bookings: number;
+    completed_bookings: number;
+    cancelled_bookings: number;
+    success_rate: number;
+    cash_count: number;
+    online_count: number;
+  };
+  b2b: {
+    barbers_total: number;
+    barbers_independent: number;
+    barbers_salon_owner: number;
+    barbers_salon_employee: number;
+    barbers_mybarber_salon: number;
+    salons_total: number;
+    salons_published: number;
+    pending_payouts: number;
+  };
+  revenue: {
+    gmv: number;
+    cash_total: number;
+    online_total: number;
+    cash_count: number;
+    online_count: number;
+  };
+};
+
+export type RevenueSeriesPoint = {
+  key: string;
+  label: string;
+  cash: number;
+  online: number;
+  total: number;
+  count: number;
+};
+
+export type RevenueAnalytics = {
+  granularity: "day" | "week" | "month";
+  series: RevenueSeriesPoint[];
+  summary: {
+    gmv: number;
+    cash_total: number;
+    online_total: number;
+    cash_count: number;
+    online_count: number;
+  };
+  top_barbers: Array<{ id: number; name: string; revenue: number; count: number }>;
+  top_salons: Array<{ id: number; name: string; revenue: number; count: number }>;
+};
+
+export type WalletAnalytics = {
+  summary: {
+    topup_total: number;
+    topup_users: number;
+    spend_total: number;
+    spend_users: number;
+    gift_total: number;
+    gift_count: number;
+    refund_total: number;
+  };
+  topup_sources: Array<{ source: string; amount: number; count: number }>;
+  spend_types: Array<{ type: string; label: string; amount: number; count: number }>;
+  recent: Array<{
+    id: string;
+    user_name: string;
+    entry_type: string;
+    amount: number;
+    balance_after: number;
+    source: string;
+    created_at: string | null;
+  }>;
+};
+
+export type BookingsAnalytics = {
+  summary: {
+    total: number;
+    completed: number;
+    cancelled: number;
+    success_rate: number;
+    cash_count: number;
+    online_count: number;
+    cash_barbers: number;
+    cash_salons: number;
+  };
+  funnel: Array<{ status: string; label: string; count: number }>;
+  results: any[];
+  count: number;
+  page: number;
+  total_pages: number;
+};
+
+function rangeQuery(range?: Partial<StatDateRange>): string {
+  const sp = new URLSearchParams();
+  if (range?.start) sp.set("start", range.start);
+  if (range?.end) sp.set("end", range.end);
+  const s = sp.toString();
+  return s ? `?${s}` : "";
+}
+
+export async function fetchPlatformOverview(range?: StatDateRange): Promise<PlatformOverview> {
+  return apiJson<PlatformOverview>(`/api/v1/admin/statistics/overview/${rangeQuery(range)}`);
+}
+
+export async function fetchPlatformRevenue(
+  range?: StatDateRange,
+  granularity: "day" | "week" | "month" = "month",
+): Promise<RevenueAnalytics> {
+  const sp = new URLSearchParams();
+  if (range?.start) sp.set("start", range.start);
+  if (range?.end) sp.set("end", range.end);
+  sp.set("granularity", granularity);
+  return apiJson<RevenueAnalytics>(`/api/v1/admin/statistics/revenue/?${sp}`);
+}
+
+export async function fetchPlatformWallet(range?: StatDateRange): Promise<WalletAnalytics> {
+  return apiJson<WalletAnalytics>(`/api/v1/admin/statistics/wallet/${rangeQuery(range)}`);
+}
+
+export async function fetchPlatformBookings(params: {
+  range?: StatDateRange;
+  status?: string;
+  paymentMethod?: string;
+  page?: number;
+}): Promise<BookingsAnalytics> {
+  const sp = new URLSearchParams();
+  if (params.range?.start) sp.set("start", params.range.start);
+  if (params.range?.end) sp.set("end", params.range.end);
+  if (params.status) sp.set("status", params.status);
+  if (params.paymentMethod) sp.set("payment_method", params.paymentMethod);
+  if (params.page) sp.set("page", String(params.page));
+  return apiJson<BookingsAnalytics>(`/api/v1/admin/statistics/bookings/?${sp}`);
+}
+
+export async function downloadStatisticsCsv(
+  type: "overview" | "revenue" | "users" | "salons" | "wallet" | "bookings",
+  params: {
+    range?: StatDateRange;
+    granularity?: "day" | "week" | "month";
+    status?: string;
+    paymentMethod?: string;
+  } = {},
+): Promise<void> {
+  const sp = new URLSearchParams();
+  if (params.range?.start) sp.set("start", params.range.start);
+  if (params.range?.end) sp.set("end", params.range.end);
+  if (params.granularity) sp.set("granularity", params.granularity);
+  if (params.status) sp.set("status", params.status);
+  if (params.paymentMethod) sp.set("payment_method", params.paymentMethod);
+  const res = await apiFetch(`/api/v1/admin/statistics/export/${type}/?${sp}`);
+  if (!res.ok) {
+    const j = (await res.json().catch(() => ({}))) as { detail?: string };
+    throw new Error(j.detail || "Yuklab olishda xatolik");
+  }
+  const blob = await res.blob();
+  const disposition = res.headers.get("Content-Disposition") || "";
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match?.[1] || `${type}.csv`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
