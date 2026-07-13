@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AiStyleHistoryEntry, Hairstyle
+from .models import AiGenerationUsage, AiStyleHistoryEntry, Hairstyle
 
 
 @admin.register(Hairstyle)
@@ -25,3 +25,22 @@ class AiStyleHistoryEntryAdmin(admin.ModelAdmin):
     list_filter = ("source",)
     search_fields = ("user__phone", "user__email")
     raw_id_fields = ("user",)
+
+
+@admin.register(AiGenerationUsage)
+class AiGenerationUsageAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "kind",
+        "status",
+        "user",
+        "style_id",
+        "total_tokens",
+        "cost_usd",
+        "model",
+        "created_at",
+    )
+    list_filter = ("kind", "status", "provider", "tokens_estimated")
+    search_fields = ("user__phone", "user__email", "style_id", "job_id", "prompt")
+    raw_id_fields = ("user",)
+    readonly_fields = ("created_at",)

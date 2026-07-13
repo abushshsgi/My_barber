@@ -2418,3 +2418,89 @@ export async function downloadStatisticsCsv(
   a.remove();
   URL.revokeObjectURL(url);
 }
+
+export type MorphAiAnalytics = {
+  generated_at: string;
+  range: { start: string; end: string };
+  live: {
+    active_users_15m: number;
+    generations_15m: number;
+    tryon_15m: number;
+    queue: { enabled: boolean; depth: number };
+  };
+  summary: {
+    generations: number;
+    success: number;
+    failed: number;
+    success_rate: number;
+    tryon: number;
+    analyze: number;
+    face_check: number;
+    unique_users: number;
+    total_tokens: number;
+    total_cost_usd: string;
+    avg_cost_usd: string;
+    avg_tokens: number;
+    avg_latency_ms: number;
+    tryon_avg_cost_usd: string;
+    tryon_min_cost_usd: string;
+    tryon_max_cost_usd: string;
+    tryon_total_cost_usd: string;
+    tryon_total_tokens: number;
+  };
+  daily: Array<{
+    date: string;
+    generations: number;
+    tryon: number;
+    analyze: number;
+    tokens: number;
+    cost_usd: string;
+    users: number;
+  }>;
+  top_users: Array<{
+    user_id: number;
+    name: string;
+    phone: string;
+    email: string;
+    generations: number;
+    tryon: number;
+    tokens: number;
+    cost_usd: string;
+    last_at: string | null;
+  }>;
+  recent: Array<{
+    id: number;
+    user_id: number | null;
+    user_name: string;
+    kind: string;
+    status: string;
+    style_id: string;
+    style_title: string;
+    prompt: string;
+    model: string;
+    provider: string;
+    prompt_tokens: number;
+    candidates_tokens: number;
+    total_tokens: number;
+    cost_usd: string;
+    tokens_estimated: boolean;
+    latency_ms: number;
+    error_detail: string;
+    job_id: string;
+    created_at: string;
+  }>;
+};
+
+export async function fetchMorphAiAnalytics(params?: {
+  range?: StatDateRange;
+  limit?: number;
+  top?: number;
+}): Promise<MorphAiAnalytics> {
+  const sp = new URLSearchParams();
+  if (params?.range?.start) sp.set("start", params.range.start);
+  if (params?.range?.end) sp.set("end", params.range.end);
+  if (params?.limit) sp.set("limit", String(params.limit));
+  if (params?.top) sp.set("top", String(params.top));
+  const q = sp.toString();
+  return apiJson<MorphAiAnalytics>(`/api/v1/admin/morph-ai/${q ? `?${q}` : ""}`);
+}

@@ -20,6 +20,7 @@ import { Route as AdminServicesRouteImport } from './routes/admin.services'
 import { Route as AdminSalonsRouteImport } from './routes/admin.salons'
 import { Route as AdminReviewsRouteImport } from './routes/admin.reviews'
 import { Route as AdminProfileRouteImport } from './routes/admin.profile'
+import { Route as AdminMorphAiRouteImport } from './routes/admin.morph-ai'
 import { Route as AdminMapRouteImport } from './routes/admin.map'
 import { Route as AdminFinanceRouteImport } from './routes/admin.finance'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
@@ -107,6 +108,11 @@ const AdminReviewsRoute = AdminReviewsRouteImport.update({
 const AdminProfileRoute = AdminProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMorphAiRoute = AdminMorphAiRouteImport.update({
+  id: '/morph-ai',
+  path: '/morph-ai',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminMapRoute = AdminMapRouteImport.update({
@@ -294,6 +300,7 @@ export interface FileRoutesByFullPath {
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/finance': typeof AdminFinanceRouteWithChildren
   '/admin/map': typeof AdminMapRoute
+  '/admin/morph-ai': typeof AdminMorphAiRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/salons': typeof AdminSalonsRouteWithChildren
@@ -339,6 +346,7 @@ export interface FileRoutesByTo {
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/finance': typeof AdminFinanceRouteWithChildren
   '/admin/map': typeof AdminMapRoute
+  '/admin/morph-ai': typeof AdminMorphAiRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/salons': typeof AdminSalonsRouteWithChildren
@@ -382,6 +390,7 @@ export interface FileRoutesById {
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/finance': typeof AdminFinanceRouteWithChildren
   '/admin/map': typeof AdminMapRoute
+  '/admin/morph-ai': typeof AdminMorphAiRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/salons': typeof AdminSalonsRouteWithChildren
@@ -430,6 +439,7 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/finance'
     | '/admin/map'
+    | '/admin/morph-ai'
     | '/admin/profile'
     | '/admin/reviews'
     | '/admin/salons'
@@ -475,6 +485,7 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/finance'
     | '/admin/map'
+    | '/admin/morph-ai'
     | '/admin/profile'
     | '/admin/reviews'
     | '/admin/salons'
@@ -517,6 +528,7 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/finance'
     | '/admin/map'
+    | '/admin/morph-ai'
     | '/admin/profile'
     | '/admin/reviews'
     | '/admin/salons'
@@ -635,6 +647,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/admin/profile'
       preLoaderRoute: typeof AdminProfileRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/morph-ai': {
+      id: '/admin/morph-ai'
+      path: '/morph-ai'
+      fullPath: '/admin/morph-ai'
+      preLoaderRoute: typeof AdminMorphAiRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/map': {
@@ -1040,6 +1059,7 @@ interface AdminRouteChildren {
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminFinanceRoute: typeof AdminFinanceRouteWithChildren
   AdminMapRoute: typeof AdminMapRoute
+  AdminMorphAiRoute: typeof AdminMorphAiRoute
   AdminProfileRoute: typeof AdminProfileRoute
   AdminReviewsRoute: typeof AdminReviewsRoute
   AdminSalonsRoute: typeof AdminSalonsRouteWithChildren
@@ -1059,6 +1079,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminFinanceRoute: AdminFinanceRouteWithChildren,
   AdminMapRoute: AdminMapRoute,
+  AdminMorphAiRoute: AdminMorphAiRoute,
   AdminProfileRoute: AdminProfileRoute,
   AdminReviewsRoute: AdminReviewsRoute,
   AdminSalonsRoute: AdminSalonsRouteWithChildren,

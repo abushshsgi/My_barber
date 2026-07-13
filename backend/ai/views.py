@@ -31,6 +31,7 @@ from .services.gemini_style import (
     analyze_style_from_data_url,
     check_face_in_data_url,
 )
+from .usage_log import record_ai_generation
 
 
 def _require_customer_user(request) -> User | Response:
@@ -156,6 +157,22 @@ class AiStyleAnalyzeView(APIView):
                 request_audience,
                 face_hint=face_hint if isinstance(face_hint, dict) else None,
             )
+            usage = analysis.pop("_usage", None) or {}
+            record_ai_generation(
+                user_id=user.pk,
+                kind="analyze",
+                status="success",
+                prompt=str(usage.get("prompt") or ""),
+                model=str(usage.get("model") or ""),
+                provider=str(usage.get("provider") or ""),
+                prompt_tokens=int(usage.get("prompt_tokens") or 0),
+                candidates_tokens=int(usage.get("candidates_tokens") or 0),
+                thoughts_tokens=int(usage.get("thoughts_tokens") or 0),
+                total_tokens=int(usage.get("total_tokens") or 0),
+                cost_usd=usage.get("cost_usd") or 0,
+                tokens_estimated=bool(usage.get("tokens_estimated")),
+                latency_ms=int(usage.get("latency_ms") or 0),
+            )
             resolved_audience = resolve_ai_style_audience(
                 request_audience,
                 analysis,
@@ -177,6 +194,12 @@ class AiStyleAnalyzeView(APIView):
                 }
             )
         except AiStyleError as exc:
+            record_ai_generation(
+                user_id=user.pk,
+                kind="analyze",
+                status="failed",
+                error_detail=exc.message,
+            )
             return Response({"detail": exc.message}, status=exc.status)
 
 
@@ -230,21 +253,46 @@ class AiStyleTryOnView(APIView):
                     status=status.HTTP_202_ACCEPTED,
                 )
 
-            preview_image = generate_tryon_preview(
+            result = generate_tryon_preview(
                 selfie_data_url=str(image),
                 audience=style.audience,
                 slug=style.slug,
                 title=style.title_uz,
                 reference_image_url=reference_url,
             )
+            record_ai_generation(
+                user_id=user.pk,
+                kind="tryon",
+                status="success",
+                prompt=result.prompt,
+                style_id=style.style_id,
+                style_title=style.title_uz,
+                model=result.model,
+                provider=result.provider,
+                prompt_tokens=result.prompt_tokens,
+                candidates_tokens=result.candidates_tokens,
+                thoughts_tokens=result.thoughts_tokens,
+                total_tokens=result.total_tokens,
+                cost_usd=result.cost_usd,
+                tokens_estimated=result.tokens_estimated,
+                latency_ms=result.latency_ms,
+            )
             return Response(
                 {
-                    "preview_image": preview_image,
+                    "preview_image": result.preview_image,
                     "style_id": style.style_id,
                     "style_title": style.title_uz,
                 }
             )
         except AiStyleError as exc:
+            record_ai_generation(
+                user_id=user.pk,
+                kind="tryon",
+                status="failed",
+                style_id=style.style_id,
+                style_title=style.title_uz,
+                error_detail=exc.message,
+            )
             return Response({"detail": exc.message}, status=exc.status)
 
 
@@ -280,11 +328,33 @@ class AiFaceCheckView(APIView):
         if not image:
             return Response({"detail": "Selfie rasmini yuboring."}, status=400)
         try:
-            has_face = check_face_in_data_url(str(image))
+            has_face, usage = check_face_in_data_url(str(image))
+            record_ai_generation(
+                user_id=user.pk,
+                kind="face_check",
+                status="success" if has_face else "failed",
+                prompt=str(usage.get("prompt") or ""),
+                model=str(usage.get("model") or ""),
+                provider=str(usage.get("provider") or ""),
+                prompt_tokens=int(usage.get("prompt_tokens") or 0),
+                candidates_tokens=int(usage.get("candidates_tokens") or 0),
+                thoughts_tokens=int(usage.get("thoughts_tokens") or 0),
+                total_tokens=int(usage.get("total_tokens") or 0),
+                cost_usd=usage.get("cost_usd") or 0,
+                tokens_estimated=bool(usage.get("tokens_estimated")),
+                latency_ms=int(usage.get("latency_ms") or 0),
+                error_detail="" if has_face else NO_FACE_MESSAGE,
+            )
             if not has_face:
                 return Response({"has_face": False, "detail": NO_FACE_MESSAGE}, status=400)
             return Response({"has_face": True})
         except AiStyleError as exc:
+            record_ai_generation(
+                user_id=user.pk,
+                kind="face_check",
+                status="failed",
+                error_detail=exc.message,
+            )
             return Response({"has_face": False, "detail": exc.message}, status=exc.status)
 
 

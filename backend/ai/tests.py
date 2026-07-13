@@ -98,7 +98,22 @@ class AiStyleAnalyzeTests(TestCase):
 
     @patch("ai.views.generate_tryon_preview")
     def test_style_tryon_returns_preview(self, mock_tryon):
-        mock_tryon.return_value = "data:image/png;base64,abc"
+        from decimal import Decimal
+        from ai.services.gemini_tryon import TryOnResult
+
+        mock_tryon.return_value = TryOnResult(
+            preview_image="data:image/png;base64,abc",
+            prompt="test prompt",
+            model="gemini-3.1-flash-lite-image",
+            provider="studio",
+            prompt_tokens=100,
+            candidates_tokens=1120,
+            thoughts_tokens=0,
+            total_tokens=1220,
+            cost_usd=Decimal("0.033600"),
+            tokens_estimated=False,
+            latency_ms=1200,
+        )
         with patch("ai.views.is_queue_enabled", return_value=False):
             res = self.client.post(
                 "/api/v1/ai/style-tryon/",
@@ -162,7 +177,7 @@ class AiStyleAnalyzeTests(TestCase):
             analyze_style_from_data_url(self.tiny_png, "men")
         self.assertEqual(ctx.exception.status, 503)
 
-    @patch("ai.views.check_face_in_data_url", return_value=False)
+    @patch("ai.views.check_face_in_data_url", return_value=(False, {}))
     def test_face_check_rejects_non_face(self, _mock_check):
         res = self.client.post(
             "/api/v1/ai/face-check/",
@@ -173,7 +188,7 @@ class AiStyleAnalyzeTests(TestCase):
         self.assertFalse(res.json()["has_face"])
         self.assertIn("yuz", res.json()["detail"].lower())
 
-    @patch("ai.views.check_face_in_data_url", return_value=True)
+    @patch("ai.views.check_face_in_data_url", return_value=(True, {}))
     def test_face_check_accepts_face(self, _mock_check):
         res = self.client.post(
             "/api/v1/ai/face-check/",

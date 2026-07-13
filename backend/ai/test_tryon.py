@@ -68,9 +68,10 @@ class TryOnServiceTests(SimpleTestCase):
                 slug="mid-fade",
                 title="Mid Fade",
             )
-        self.assertTrue(result.startswith("data:image/png;base64,"))
+        self.assertTrue(result.preview_image.startswith("data:image/png;base64,"))
         mock_vertex.assert_called_once()
-
+        self.assertTrue(result.prompt)
+        self.assertGreaterEqual(result.total_tokens, 0)
 
 class PublicImageLoaderTests(SimpleTestCase):
     def test_missing_file_returns_none(self):

@@ -68,10 +68,26 @@ class TryOnQueueOpsTests(SimpleTestCase):
         self.assertEqual(job["status"], STATUS_QUEUED)
         self.assertEqual(job["queue_position"], 3)
 
-    @patch("ai.services.tryon_queue.generate_tryon_preview", return_value="data:image/png;base64,out")
+    @patch("ai.services.tryon_queue.generate_tryon_preview")
     @patch("ai.services.tryon_queue.get_redis_url", return_value="redis://localhost:6379/0")
     @patch("ai.services.tryon_queue._redis_client")
-    def test_process_job_completes(self, mock_client_fn, _redis_url, _mock_tryon):
+    def test_process_job_completes(self, mock_client_fn, _redis_url, mock_tryon):
+        from decimal import Decimal
+        from ai.services.gemini_tryon import TryOnResult
+
+        mock_tryon.return_value = TryOnResult(
+            preview_image="data:image/png;base64,out",
+            prompt="p",
+            model="m",
+            provider="studio",
+            prompt_tokens=10,
+            candidates_tokens=20,
+            thoughts_tokens=0,
+            total_tokens=30,
+            cost_usd=Decimal("0.01"),
+            tokens_estimated=True,
+            latency_ms=500,
+        )
         client = MagicMock()
         mock_client_fn.return_value = client
         client.brpop.return_value = ("mysaloon:tryon:queue", "job123")
@@ -80,7 +96,8 @@ class TryOnQueueOpsTests(SimpleTestCase):
             '{"image":"data:image/png;base64,x","audience":"men","slug":"mid-fade","title":"Mid Fade","reference_image_url":null}',
         ]
 
-        processed = process_next_tryon_job(block_seconds=1)
+        with patch("ai.services.tryon_queue.record_ai_generation"):
+            processed = process_next_tryon_job(block_seconds=1)
         self.assertTrue(processed)
         saved = client.setex.call_args_list[-1][0][2]
         self.assertIn(STATUS_COMPLETED, saved)

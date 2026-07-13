@@ -14,6 +14,7 @@ from config.redis_url import get_redis_url, redis_blocking_client_kwargs, redis_
 
 from .gemini_style import AiStyleError
 from .gemini_tryon import generate_tryon_preview
+from ..usage_log import record_ai_generation
 
 logger = logging.getLogger(__name__)
 
@@ -188,7 +189,7 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
     _save_job(client, job_id, meta)
 
     try:
-        preview_image = generate_tryon_preview(
+        result = generate_tryon_preview(
             selfie_data_url=str(payload.get("image") or ""),
             audience=str(payload.get("audience") or "unisex"),
             slug=str(payload.get("slug") or ""),
@@ -196,17 +197,53 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
             reference_image_url=payload.get("reference_image_url"),
         )
         meta["status"] = STATUS_COMPLETED
-        meta["preview_image"] = preview_image
+        meta["preview_image"] = result.preview_image
         meta.pop("detail", None)
+        record_ai_generation(
+            user_id=int(meta.get("user_id") or 0) or None,
+            kind="tryon",
+            status="success",
+            prompt=result.prompt,
+            style_id=str(meta.get("style_id") or ""),
+            style_title=str(meta.get("style_title") or ""),
+            model=result.model,
+            provider=result.provider,
+            job_id=job_id,
+            prompt_tokens=result.prompt_tokens,
+            candidates_tokens=result.candidates_tokens,
+            thoughts_tokens=result.thoughts_tokens,
+            total_tokens=result.total_tokens,
+            cost_usd=result.cost_usd,
+            tokens_estimated=result.tokens_estimated,
+            latency_ms=result.latency_ms,
+        )
     except AiStyleError as exc:
         meta["status"] = STATUS_FAILED
         meta["detail"] = exc.message
         meta.pop("preview_image", None)
+        record_ai_generation(
+            user_id=int(meta.get("user_id") or 0) or None,
+            kind="tryon",
+            status="failed",
+            style_id=str(meta.get("style_id") or ""),
+            style_title=str(meta.get("style_title") or ""),
+            job_id=job_id,
+            error_detail=exc.message,
+        )
         logger.warning("Try-on job failed (%s): %s", job_id, exc.message)
     except Exception as exc:
         meta["status"] = STATUS_FAILED
         meta["detail"] = "Rasm yaratishda xatolik."
         meta.pop("preview_image", None)
+        record_ai_generation(
+            user_id=int(meta.get("user_id") or 0) or None,
+            kind="tryon",
+            status="failed",
+            style_id=str(meta.get("style_id") or ""),
+            style_title=str(meta.get("style_title") or ""),
+            job_id=job_id,
+            error_detail="Rasm yaratishda xatolik.",
+        )
         logger.exception("Try-on job error (%s): %s", job_id, exc)
     finally:
         client.delete(_payload_key(job_id))

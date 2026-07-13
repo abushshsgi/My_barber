@@ -157,6 +157,7 @@ from ai.explore_gen_views import (
     ExploreGenPublishView,
     ExploreGenStatusView,
 )
+from ai.admin_views import AdminMorphAiAnalyticsView
 from ai.views import (
     AiFaceCheckView,
     AiStyleAnalyzeView,
@@ -239,6 +240,7 @@ api_routes = [
     path("admin/statistics/wallet/", AdminStatisticsWalletView.as_view()),
     path("admin/statistics/bookings/", AdminStatisticsBookingsView.as_view()),
     path("admin/statistics/export/<str:export_type>/", AdminStatisticsExportView.as_view()),
+    path("admin/morph-ai/", AdminMorphAiAnalyticsView.as_view()),
     path("admin/users/signup-analytics/", AdminUserSignupAnalyticsView.as_view()),
     path("admin/users/", AdminUserListView.as_view()),
     path("admin/users/<int:pk>/", AdminUserDetailView.as_view()),

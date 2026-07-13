@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.conf import settings
 from django.db import models
 
@@ -76,3 +78,52 @@ class AiStyleHistoryEntry(models.Model):
 
     def __str__(self) -> str:
         return f"AiStyleHistory({self.user_id}, {self.source}, {self.created_at})"
+
+
+class AiGenerationUsage(models.Model):
+    """Morph AI (AI Style / try-on) — har bir generatsiya/token/xarajat yozuvi."""
+
+    class Kind(models.TextChoices):
+        TRYON = "tryon", "Try-on"
+        ANALYZE = "analyze", "Style analyze"
+        FACE_CHECK = "face_check", "Face check"
+
+    class Status(models.TextChoices):
+        SUCCESS = "success", "Success"
+        FAILED = "failed", "Failed"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="ai_generations",
+    )
+    kind = models.CharField(max_length=16, choices=Kind.choices, db_index=True)
+    status = models.CharField(max_length=16, choices=Status.choices, db_index=True)
+    prompt = models.TextField(blank=True, default="")
+    style_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    style_title = models.CharField(max_length=120, blank=True, default="")
+    model = models.CharField(max_length=80, blank=True, default="")
+    provider = models.CharField(max_length=32, blank=True, default="")
+    job_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    prompt_tokens = models.PositiveIntegerField(default=0)
+    candidates_tokens = models.PositiveIntegerField(default=0)
+    thoughts_tokens = models.PositiveIntegerField(default=0)
+    total_tokens = models.PositiveIntegerField(default=0)
+    cost_usd = models.DecimalField(max_digits=12, decimal_places=6, default=Decimal("0"))
+    tokens_estimated = models.BooleanField(default=False)
+    latency_ms = models.PositiveIntegerField(default=0)
+    error_detail = models.CharField(max_length=500, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["kind", "-created_at"]),
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["status", "-created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"AiGeneration({self.kind}, {self.status}, user={self.user_id})"

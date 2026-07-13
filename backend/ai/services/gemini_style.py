@@ -6,11 +6,14 @@ import base64
 import json
 import logging
 import re
+import time
 import urllib.error
 import urllib.request
 from typing import Any
 
 from django.conf import settings
+
+from ai.usage_pricing import finalize_usage
 
 from .errors import AiStyleError, map_gemini_http_error, read_http_error_body
 from .vertex_auth import vertex_configured
@@ -205,14 +208,20 @@ def call_gemini_style_analysis(
     audience: str,
     face_hint: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    data = _gemini_vision_json(_build_prompt(audience, face_hint), mime, image_bytes)
+    prompt = _build_prompt(audience, face_hint)
+    data, usage = _gemini_vision_json(prompt, mime, image_bytes)
     normalized = _normalize_analysis(data)
     if face_hint and face_hint.get("shape") in FACE_SHAPES:
         normalized["face_shape"] = str(face_hint["shape"])
+    normalized["_usage"] = usage
     return normalized
 
 
-def _gemini_vision_json(prompt: str, mime: str, image_bytes: bytes) -> dict[str, Any]:
+def _gemini_vision_json(
+    prompt: str,
+    mime: str,
+    image_bytes: bytes,
+) -> tuple[dict[str, Any], dict[str, Any]]:
     b64 = base64.b64encode(image_bytes).decode("ascii")
     body = {
         "contents": [
@@ -231,6 +240,8 @@ def _gemini_vision_json(prompt: str, mime: str, image_bytes: bytes) -> dict[str,
     }
 
     model = _vision_model()
+    provider = "vertex" if vertex_configured() else "studio"
+    started = time.perf_counter()
 
     if vertex_configured():
         try:
@@ -272,6 +283,7 @@ def _gemini_vision_json(prompt: str, mime: str, image_bytes: bytes) -> dict[str,
         except TimeoutError as exc:
             raise AiStyleError("AI tahlil juda uzoq davom etdi. Qayta urinib ko'ring.", 504) from exc
 
+    latency_ms = int((time.perf_counter() - started) * 1000)
     candidates = payload.get("candidates") or []
     if not candidates:
         raise AiStyleError("AI javob bermadi.", 502)
@@ -281,13 +293,26 @@ def _gemini_vision_json(prompt: str, mime: str, image_bytes: bytes) -> dict[str,
     if not text_parts:
         raise AiStyleError("AI javob bermadi.", 502)
 
-    return _extract_json("".join(text_parts))
+    usage_nums = finalize_usage(payload, kind="analyze")
+    usage = {
+        "prompt": prompt,
+        "model": model,
+        "provider": provider,
+        "latency_ms": latency_ms,
+        "prompt_tokens": usage_nums["prompt_tokens"],
+        "candidates_tokens": usage_nums["candidates_tokens"],
+        "thoughts_tokens": usage_nums["thoughts_tokens"],
+        "total_tokens": usage_nums["total_tokens"],
+        "cost_usd": usage_nums["cost_usd"],
+        "tokens_estimated": usage_nums["tokens_estimated"],
+    }
+    return _extract_json("".join(text_parts)), usage
 
 
-def check_face_in_data_url(data_url: str) -> bool:
+def check_face_in_data_url(data_url: str) -> tuple[bool, dict[str, Any]]:
     mime, image_bytes = parse_data_url(data_url)
-    data = _gemini_vision_json(_build_face_check_prompt(), mime, image_bytes)
-    return _parse_has_face(data)
+    data, usage = _gemini_vision_json(_build_face_check_prompt(), mime, image_bytes)
+    return _parse_has_face(data), usage
 
 
 def analyze_style_from_data_url(
