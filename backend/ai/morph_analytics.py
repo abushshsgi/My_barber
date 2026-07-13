@@ -31,11 +31,14 @@ def _money(value: Decimal | float | int | None) -> str:
 
 
 def _user_label(row: dict[str, Any]) -> str:
-    first = (row.get("user__first_name") or "").strip()
-    last = (row.get("user__last_name") or "").strip()
-    name = f"{first} {last}".strip()
+    name = (row.get("user__full_name") or "").strip()
     if name:
         return name
+    first = (row.get("user__first_name") or "").strip()
+    last = (row.get("user__last_name") or "").strip()
+    combined = f"{first} {last}".strip()
+    if combined:
+        return combined
     phone = (row.get("user__phone") or "").strip()
     if phone:
         return phone
@@ -73,6 +76,8 @@ def build_morph_ai_analytics(
     now = timezone.now()
     active_since = now - ACTIVE_WINDOW
 
+    # Alias must not reuse field names referenced by other aggregates in the same call
+    # (e.g. total_tokens=Sum(...) breaks Avg("total_tokens")).
     totals = qs.aggregate(
         generations=Count("id"),
         success=Count("id", filter=Q(status=AiGenerationUsage.Status.SUCCESS)),
@@ -81,7 +86,7 @@ def build_morph_ai_analytics(
         analyze=Count("id", filter=Q(kind=AiGenerationUsage.Kind.ANALYZE)),
         face_check=Count("id", filter=Q(kind=AiGenerationUsage.Kind.FACE_CHECK)),
         unique_users=Count("user_id", distinct=True),
-        total_tokens=Sum("total_tokens"),
+        sum_tokens=Sum("total_tokens"),
         total_cost=Sum("cost_usd"),
         avg_cost=Avg("cost_usd"),
         avg_latency=Avg("latency_ms"),
@@ -128,6 +133,7 @@ def build_morph_ai_analytics(
         qs.filter(user_id__isnull=False)
         .values(
             "user_id",
+            "user__full_name",
             "user__first_name",
             "user__last_name",
             "user__phone",
@@ -175,7 +181,7 @@ def build_morph_ai_analytics(
             "analyze": int(totals["analyze"] or 0),
             "face_check": int(totals["face_check"] or 0),
             "unique_users": int(totals["unique_users"] or 0),
-            "total_tokens": int(totals["total_tokens"] or 0),
+            "total_tokens": int(totals["sum_tokens"] or 0),
             "total_cost_usd": _money(totals["total_cost"]),
             "avg_cost_usd": _money(avg_cost),
             "avg_tokens": int(round(float(totals["avg_tokens"] or 0))),
@@ -217,7 +223,8 @@ def build_morph_ai_analytics(
                 "id": item.id,
                 "user_id": item.user_id,
                 "user_name": (
-                    f"{(item.user.first_name or '').strip()} {(item.user.last_name or '').strip()}".strip()
+                    (item.user.full_name or "").strip()
+                    or f"{(item.user.first_name or '').strip()} {(item.user.last_name or '').strip()}".strip()
                     or (item.user.phone or item.user.email or f"User #{item.user_id}")
                     if item.user_id and item.user
                     else "—"
