@@ -32,6 +32,7 @@ from .services.gemini_style import (
     check_face_in_data_url,
 )
 from .usage_log import record_ai_generation
+from .morph_ops import check_user_can_generate
 
 
 def _require_customer_user(request) -> User | Response:
@@ -144,6 +145,9 @@ class AiStyleAnalyzeView(APIView):
         user = _require_customer_user(request)
         if isinstance(user, Response):
             return user
+        blocked = check_user_can_generate(user_id=user.pk, kind="analyze")
+        if blocked:
+            return Response({"detail": blocked}, status=429)
 
         image = request.data.get("image")
         request_audience = normalize_request_audience(request.data.get("audience"))
@@ -213,6 +217,9 @@ class AiStyleTryOnView(APIView):
         user = _require_customer_user(request)
         if isinstance(user, Response):
             return user
+        blocked = check_user_can_generate(user_id=user.pk, kind="tryon")
+        if blocked:
+            return Response({"detail": blocked}, status=429)
 
         image = request.data.get("image")
         style_id = (request.data.get("style_id") or "").strip()
@@ -323,6 +330,9 @@ class AiFaceCheckView(APIView):
         user = _require_customer_user(request)
         if isinstance(user, Response):
             return user
+        blocked = check_user_can_generate(user_id=user.pk, kind="face_check")
+        if blocked:
+            return Response({"detail": blocked}, status=429)
 
         image = request.data.get("image")
         if not image:

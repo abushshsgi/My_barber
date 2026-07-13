@@ -98,6 +98,15 @@ const SECTIONS: Section[] = [
     matchPrefixes: ["/admin/morph-ai"],
     items: [
       { to: "/admin/morph-ai", label: "Analytics", icon: Sparkles },
+      { to: "/admin/morph-ai/catalog", label: "Katalog", icon: Tag },
+      { to: "/admin/morph-ai/errors", label: "Xatolar", icon: ShieldCheck },
+      { to: "/admin/morph-ai/limits", label: "Limitlar", icon: Users },
+      { to: "/admin/morph-ai/queue", label: "Navbat", icon: Radio },
+      { to: "/admin/morph-ai/budget", label: "Byudjet", icon: Wallet },
+      { to: "/admin/morph-ai/popularity", label: "Uslublar", icon: Star },
+      { to: "/admin/morph-ai/conversion", label: "Konversiya", icon: TrendingUp },
+      { to: "/admin/morph-ai/gallery", label: "Gallery", icon: Search },
+      { to: "/admin/morph-ai/settings", label: "Sozlamalar", icon: UserCog },
     ],
   },
   {

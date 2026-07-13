@@ -127,3 +127,70 @@ class AiGenerationUsage(models.Model):
 
     def __str__(self) -> str:
         return f"AiGeneration({self.kind}, {self.status}, user={self.user_id})"
+
+
+class MorphAiSettings(models.Model):
+    """Singleton — Morph AI limit, byudjet, prompt va A/B sozlamalari."""
+
+    daily_tryon_limit_per_user = models.PositiveIntegerField(
+        default=20,
+        help_text="0 = cheklov yo'q. User uchun kunlik try-on limiti.",
+    )
+    daily_analyze_limit_per_user = models.PositiveIntegerField(
+        default=30,
+        help_text="0 = cheklov yo'q.",
+    )
+    daily_budget_usd = models.DecimalField(
+        max_digits=12,
+        decimal_places=4,
+        default=Decimal("50"),
+        help_text="0 = byudjet cheklovi yo'q. Kunlik soft-cap (USD).",
+    )
+    budget_enforce = models.BooleanField(
+        default=False,
+        help_text="True bo'lsa byudjet yetganda yangi generatsiya to'xtatiladi.",
+    )
+    alert_success_rate_below = models.PositiveSmallIntegerField(
+        default=80,
+        help_text="Success rate shu foizdan past bo'lsa ogohlantirish.",
+    )
+    tryon_enabled = models.BooleanField(default=True)
+    analyze_enabled = models.BooleanField(default=True)
+    custom_tryon_prompt = models.TextField(
+        blank=True,
+        default="",
+        help_text="Bo'sh bo'lsa default prompt ishlatiladi.",
+    )
+    custom_tryon_prompt_b = models.TextField(
+        blank=True,
+        default="",
+        help_text="A/B variant B prompti.",
+    )
+    ab_enabled = models.BooleanField(default=False)
+    ab_traffic_percent_b = models.PositiveSmallIntegerField(
+        default=50,
+        help_text="0–100. Variant B ga yo'naltiriladigan so'rovlar foizi.",
+    )
+    preferred_model = models.CharField(
+        max_length=80,
+        blank=True,
+        default="",
+        help_text="Bo'sh = env / Django settings modeli.",
+    )
+    gallery_public = models.BooleanField(
+        default=False,
+        help_text="Admin galleryda faqat opt-in tarix (hozir history yozuvlari).",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Morph AI settings"
+        verbose_name_plural = "Morph AI settings"
+
+    def __str__(self) -> str:
+        return "Morph AI settings"
+
+    @classmethod
+    def load(cls) -> "MorphAiSettings":
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj

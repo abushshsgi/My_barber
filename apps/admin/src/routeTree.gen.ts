@@ -30,6 +30,7 @@ import { Route as AdminBarbersRouteImport } from './routes/admin.barbers'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminAdminsRouteImport } from './routes/admin.admins'
 import { Route as AdminStatisticsIndexRouteImport } from './routes/admin.statistics.index'
+import { Route as AdminMorphAiIndexRouteImport } from './routes/admin.morph-ai.index'
 import { Route as AdminUsersSignupsRouteImport } from './routes/admin.users.signups'
 import { Route as AdminUsersUserIdRouteImport } from './routes/admin.users.$userId'
 import { Route as AdminSupportTicketIdRouteImport } from './routes/admin.support.$ticketId'
@@ -41,6 +42,15 @@ import { Route as AdminStatisticsLiveRouteImport } from './routes/admin.statisti
 import { Route as AdminStatisticsBookingsRouteImport } from './routes/admin.statistics.bookings'
 import { Route as AdminServicesAnalyticsRouteImport } from './routes/admin.services.analytics'
 import { Route as AdminSalonsSalonIdRouteImport } from './routes/admin.salons.$salonId'
+import { Route as AdminMorphAiSettingsRouteImport } from './routes/admin.morph-ai.settings'
+import { Route as AdminMorphAiQueueRouteImport } from './routes/admin.morph-ai.queue'
+import { Route as AdminMorphAiPopularityRouteImport } from './routes/admin.morph-ai.popularity'
+import { Route as AdminMorphAiLimitsRouteImport } from './routes/admin.morph-ai.limits'
+import { Route as AdminMorphAiGalleryRouteImport } from './routes/admin.morph-ai.gallery'
+import { Route as AdminMorphAiErrorsRouteImport } from './routes/admin.morph-ai.errors'
+import { Route as AdminMorphAiConversionRouteImport } from './routes/admin.morph-ai.conversion'
+import { Route as AdminMorphAiCatalogRouteImport } from './routes/admin.morph-ai.catalog'
+import { Route as AdminMorphAiBudgetRouteImport } from './routes/admin.morph-ai.budget'
 import { Route as AdminFinanceTransactionsRouteImport } from './routes/admin.finance.transactions'
 import { Route as AdminFinancePromotionsRouteImport } from './routes/admin.finance.promotions'
 import { Route as AdminFinancePayoutsRouteImport } from './routes/admin.finance.payouts'
@@ -160,6 +170,11 @@ const AdminStatisticsIndexRoute = AdminStatisticsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminStatisticsRoute,
 } as any)
+const AdminMorphAiIndexRoute = AdminMorphAiIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
 const AdminUsersSignupsRoute = AdminUsersSignupsRouteImport.update({
   id: '/signups',
   path: '/signups',
@@ -214,6 +229,51 @@ const AdminSalonsSalonIdRoute = AdminSalonsSalonIdRouteImport.update({
   id: '/$salonId',
   path: '/$salonId',
   getParentRoute: () => AdminSalonsRoute,
+} as any)
+const AdminMorphAiSettingsRoute = AdminMorphAiSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
+const AdminMorphAiQueueRoute = AdminMorphAiQueueRouteImport.update({
+  id: '/queue',
+  path: '/queue',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
+const AdminMorphAiPopularityRoute = AdminMorphAiPopularityRouteImport.update({
+  id: '/popularity',
+  path: '/popularity',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
+const AdminMorphAiLimitsRoute = AdminMorphAiLimitsRouteImport.update({
+  id: '/limits',
+  path: '/limits',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
+const AdminMorphAiGalleryRoute = AdminMorphAiGalleryRouteImport.update({
+  id: '/gallery',
+  path: '/gallery',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
+const AdminMorphAiErrorsRoute = AdminMorphAiErrorsRouteImport.update({
+  id: '/errors',
+  path: '/errors',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
+const AdminMorphAiConversionRoute = AdminMorphAiConversionRouteImport.update({
+  id: '/conversion',
+  path: '/conversion',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
+const AdminMorphAiCatalogRoute = AdminMorphAiCatalogRouteImport.update({
+  id: '/catalog',
+  path: '/catalog',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
+const AdminMorphAiBudgetRoute = AdminMorphAiBudgetRouteImport.update({
+  id: '/budget',
+  path: '/budget',
+  getParentRoute: () => AdminMorphAiRoute,
 } as any)
 const AdminFinanceTransactionsRoute =
   AdminFinanceTransactionsRouteImport.update({
@@ -300,7 +360,7 @@ export interface FileRoutesByFullPath {
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/finance': typeof AdminFinanceRouteWithChildren
   '/admin/map': typeof AdminMapRoute
-  '/admin/morph-ai': typeof AdminMorphAiRoute
+  '/admin/morph-ai': typeof AdminMorphAiRouteWithChildren
   '/admin/profile': typeof AdminProfileRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/salons': typeof AdminSalonsRouteWithChildren
@@ -314,6 +374,15 @@ export interface FileRoutesByFullPath {
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/promotions': typeof AdminFinancePromotionsRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
+  '/admin/morph-ai/budget': typeof AdminMorphAiBudgetRoute
+  '/admin/morph-ai/catalog': typeof AdminMorphAiCatalogRoute
+  '/admin/morph-ai/conversion': typeof AdminMorphAiConversionRoute
+  '/admin/morph-ai/errors': typeof AdminMorphAiErrorsRoute
+  '/admin/morph-ai/gallery': typeof AdminMorphAiGalleryRoute
+  '/admin/morph-ai/limits': typeof AdminMorphAiLimitsRoute
+  '/admin/morph-ai/popularity': typeof AdminMorphAiPopularityRoute
+  '/admin/morph-ai/queue': typeof AdminMorphAiQueueRoute
+  '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/statistics/bookings': typeof AdminStatisticsBookingsRoute
@@ -325,6 +394,7 @@ export interface FileRoutesByFullPath {
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
+  '/admin/morph-ai/': typeof AdminMorphAiIndexRoute
   '/admin/statistics/': typeof AdminStatisticsIndexRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
@@ -346,7 +416,6 @@ export interface FileRoutesByTo {
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/finance': typeof AdminFinanceRouteWithChildren
   '/admin/map': typeof AdminMapRoute
-  '/admin/morph-ai': typeof AdminMorphAiRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/salons': typeof AdminSalonsRouteWithChildren
@@ -358,6 +427,15 @@ export interface FileRoutesByTo {
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/promotions': typeof AdminFinancePromotionsRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
+  '/admin/morph-ai/budget': typeof AdminMorphAiBudgetRoute
+  '/admin/morph-ai/catalog': typeof AdminMorphAiCatalogRoute
+  '/admin/morph-ai/conversion': typeof AdminMorphAiConversionRoute
+  '/admin/morph-ai/errors': typeof AdminMorphAiErrorsRoute
+  '/admin/morph-ai/gallery': typeof AdminMorphAiGalleryRoute
+  '/admin/morph-ai/limits': typeof AdminMorphAiLimitsRoute
+  '/admin/morph-ai/popularity': typeof AdminMorphAiPopularityRoute
+  '/admin/morph-ai/queue': typeof AdminMorphAiQueueRoute
+  '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/statistics/bookings': typeof AdminStatisticsBookingsRoute
   '/admin/statistics/live': typeof AdminStatisticsLiveRoute
@@ -368,6 +446,7 @@ export interface FileRoutesByTo {
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
+  '/admin/morph-ai': typeof AdminMorphAiIndexRoute
   '/admin/statistics': typeof AdminStatisticsIndexRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
@@ -390,7 +469,7 @@ export interface FileRoutesById {
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/finance': typeof AdminFinanceRouteWithChildren
   '/admin/map': typeof AdminMapRoute
-  '/admin/morph-ai': typeof AdminMorphAiRoute
+  '/admin/morph-ai': typeof AdminMorphAiRouteWithChildren
   '/admin/profile': typeof AdminProfileRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/salons': typeof AdminSalonsRouteWithChildren
@@ -404,6 +483,15 @@ export interface FileRoutesById {
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/promotions': typeof AdminFinancePromotionsRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
+  '/admin/morph-ai/budget': typeof AdminMorphAiBudgetRoute
+  '/admin/morph-ai/catalog': typeof AdminMorphAiCatalogRoute
+  '/admin/morph-ai/conversion': typeof AdminMorphAiConversionRoute
+  '/admin/morph-ai/errors': typeof AdminMorphAiErrorsRoute
+  '/admin/morph-ai/gallery': typeof AdminMorphAiGalleryRoute
+  '/admin/morph-ai/limits': typeof AdminMorphAiLimitsRoute
+  '/admin/morph-ai/popularity': typeof AdminMorphAiPopularityRoute
+  '/admin/morph-ai/queue': typeof AdminMorphAiQueueRoute
+  '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/statistics/bookings': typeof AdminStatisticsBookingsRoute
@@ -415,6 +503,7 @@ export interface FileRoutesById {
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
+  '/admin/morph-ai/': typeof AdminMorphAiIndexRoute
   '/admin/statistics/': typeof AdminStatisticsIndexRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
@@ -453,6 +542,15 @@ export interface FileRouteTypes {
     | '/admin/finance/payouts'
     | '/admin/finance/promotions'
     | '/admin/finance/transactions'
+    | '/admin/morph-ai/budget'
+    | '/admin/morph-ai/catalog'
+    | '/admin/morph-ai/conversion'
+    | '/admin/morph-ai/errors'
+    | '/admin/morph-ai/gallery'
+    | '/admin/morph-ai/limits'
+    | '/admin/morph-ai/popularity'
+    | '/admin/morph-ai/queue'
+    | '/admin/morph-ai/settings'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
     | '/admin/statistics/bookings'
@@ -464,6 +562,7 @@ export interface FileRouteTypes {
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
     | '/admin/users/signups'
+    | '/admin/morph-ai/'
     | '/admin/statistics/'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
@@ -485,7 +584,6 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/finance'
     | '/admin/map'
-    | '/admin/morph-ai'
     | '/admin/profile'
     | '/admin/reviews'
     | '/admin/salons'
@@ -497,6 +595,15 @@ export interface FileRouteTypes {
     | '/admin/finance/payouts'
     | '/admin/finance/promotions'
     | '/admin/finance/transactions'
+    | '/admin/morph-ai/budget'
+    | '/admin/morph-ai/catalog'
+    | '/admin/morph-ai/conversion'
+    | '/admin/morph-ai/errors'
+    | '/admin/morph-ai/gallery'
+    | '/admin/morph-ai/limits'
+    | '/admin/morph-ai/popularity'
+    | '/admin/morph-ai/queue'
+    | '/admin/morph-ai/settings'
     | '/admin/services/analytics'
     | '/admin/statistics/bookings'
     | '/admin/statistics/live'
@@ -507,6 +614,7 @@ export interface FileRouteTypes {
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
     | '/admin/users/signups'
+    | '/admin/morph-ai'
     | '/admin/statistics'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
@@ -542,6 +650,15 @@ export interface FileRouteTypes {
     | '/admin/finance/payouts'
     | '/admin/finance/promotions'
     | '/admin/finance/transactions'
+    | '/admin/morph-ai/budget'
+    | '/admin/morph-ai/catalog'
+    | '/admin/morph-ai/conversion'
+    | '/admin/morph-ai/errors'
+    | '/admin/morph-ai/gallery'
+    | '/admin/morph-ai/limits'
+    | '/admin/morph-ai/popularity'
+    | '/admin/morph-ai/queue'
+    | '/admin/morph-ai/settings'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
     | '/admin/statistics/bookings'
@@ -553,6 +670,7 @@ export interface FileRouteTypes {
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
     | '/admin/users/signups'
+    | '/admin/morph-ai/'
     | '/admin/statistics/'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
@@ -719,6 +837,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminStatisticsIndexRouteImport
       parentRoute: typeof AdminStatisticsRoute
     }
+    '/admin/morph-ai/': {
+      id: '/admin/morph-ai/'
+      path: '/'
+      fullPath: '/admin/morph-ai/'
+      preLoaderRoute: typeof AdminMorphAiIndexRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
     '/admin/users/signups': {
       id: '/admin/users/signups'
       path: '/signups'
@@ -795,6 +920,69 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/salons/$salonId'
       preLoaderRoute: typeof AdminSalonsSalonIdRouteImport
       parentRoute: typeof AdminSalonsRoute
+    }
+    '/admin/morph-ai/settings': {
+      id: '/admin/morph-ai/settings'
+      path: '/settings'
+      fullPath: '/admin/morph-ai/settings'
+      preLoaderRoute: typeof AdminMorphAiSettingsRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/morph-ai/queue': {
+      id: '/admin/morph-ai/queue'
+      path: '/queue'
+      fullPath: '/admin/morph-ai/queue'
+      preLoaderRoute: typeof AdminMorphAiQueueRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/morph-ai/popularity': {
+      id: '/admin/morph-ai/popularity'
+      path: '/popularity'
+      fullPath: '/admin/morph-ai/popularity'
+      preLoaderRoute: typeof AdminMorphAiPopularityRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/morph-ai/limits': {
+      id: '/admin/morph-ai/limits'
+      path: '/limits'
+      fullPath: '/admin/morph-ai/limits'
+      preLoaderRoute: typeof AdminMorphAiLimitsRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/morph-ai/gallery': {
+      id: '/admin/morph-ai/gallery'
+      path: '/gallery'
+      fullPath: '/admin/morph-ai/gallery'
+      preLoaderRoute: typeof AdminMorphAiGalleryRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/morph-ai/errors': {
+      id: '/admin/morph-ai/errors'
+      path: '/errors'
+      fullPath: '/admin/morph-ai/errors'
+      preLoaderRoute: typeof AdminMorphAiErrorsRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/morph-ai/conversion': {
+      id: '/admin/morph-ai/conversion'
+      path: '/conversion'
+      fullPath: '/admin/morph-ai/conversion'
+      preLoaderRoute: typeof AdminMorphAiConversionRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/morph-ai/catalog': {
+      id: '/admin/morph-ai/catalog'
+      path: '/catalog'
+      fullPath: '/admin/morph-ai/catalog'
+      preLoaderRoute: typeof AdminMorphAiCatalogRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/morph-ai/budget': {
+      id: '/admin/morph-ai/budget'
+      path: '/budget'
+      fullPath: '/admin/morph-ai/budget'
+      preLoaderRoute: typeof AdminMorphAiBudgetRouteImport
+      parentRoute: typeof AdminMorphAiRoute
     }
     '/admin/finance/transactions': {
       id: '/admin/finance/transactions'
@@ -963,6 +1151,36 @@ const AdminFinanceRouteWithChildren = AdminFinanceRoute._addFileChildren(
   AdminFinanceRouteChildren,
 )
 
+interface AdminMorphAiRouteChildren {
+  AdminMorphAiBudgetRoute: typeof AdminMorphAiBudgetRoute
+  AdminMorphAiCatalogRoute: typeof AdminMorphAiCatalogRoute
+  AdminMorphAiConversionRoute: typeof AdminMorphAiConversionRoute
+  AdminMorphAiErrorsRoute: typeof AdminMorphAiErrorsRoute
+  AdminMorphAiGalleryRoute: typeof AdminMorphAiGalleryRoute
+  AdminMorphAiLimitsRoute: typeof AdminMorphAiLimitsRoute
+  AdminMorphAiPopularityRoute: typeof AdminMorphAiPopularityRoute
+  AdminMorphAiQueueRoute: typeof AdminMorphAiQueueRoute
+  AdminMorphAiSettingsRoute: typeof AdminMorphAiSettingsRoute
+  AdminMorphAiIndexRoute: typeof AdminMorphAiIndexRoute
+}
+
+const AdminMorphAiRouteChildren: AdminMorphAiRouteChildren = {
+  AdminMorphAiBudgetRoute: AdminMorphAiBudgetRoute,
+  AdminMorphAiCatalogRoute: AdminMorphAiCatalogRoute,
+  AdminMorphAiConversionRoute: AdminMorphAiConversionRoute,
+  AdminMorphAiErrorsRoute: AdminMorphAiErrorsRoute,
+  AdminMorphAiGalleryRoute: AdminMorphAiGalleryRoute,
+  AdminMorphAiLimitsRoute: AdminMorphAiLimitsRoute,
+  AdminMorphAiPopularityRoute: AdminMorphAiPopularityRoute,
+  AdminMorphAiQueueRoute: AdminMorphAiQueueRoute,
+  AdminMorphAiSettingsRoute: AdminMorphAiSettingsRoute,
+  AdminMorphAiIndexRoute: AdminMorphAiIndexRoute,
+}
+
+const AdminMorphAiRouteWithChildren = AdminMorphAiRoute._addFileChildren(
+  AdminMorphAiRouteChildren,
+)
+
 interface AdminSalonsSalonIdRouteChildren {
   AdminSalonsSalonIdTeamRoute: typeof AdminSalonsSalonIdTeamRoute
   AdminSalonsSalonIdIndexRoute: typeof AdminSalonsSalonIdIndexRoute
@@ -1059,7 +1277,7 @@ interface AdminRouteChildren {
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminFinanceRoute: typeof AdminFinanceRouteWithChildren
   AdminMapRoute: typeof AdminMapRoute
-  AdminMorphAiRoute: typeof AdminMorphAiRoute
+  AdminMorphAiRoute: typeof AdminMorphAiRouteWithChildren
   AdminProfileRoute: typeof AdminProfileRoute
   AdminReviewsRoute: typeof AdminReviewsRoute
   AdminSalonsRoute: typeof AdminSalonsRouteWithChildren
@@ -1079,7 +1297,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminFinanceRoute: AdminFinanceRouteWithChildren,
   AdminMapRoute: AdminMapRoute,
-  AdminMorphAiRoute: AdminMorphAiRoute,
+  AdminMorphAiRoute: AdminMorphAiRouteWithChildren,
   AdminProfileRoute: AdminProfileRoute,
   AdminReviewsRoute: AdminReviewsRoute,
   AdminSalonsRoute: AdminSalonsRouteWithChildren,

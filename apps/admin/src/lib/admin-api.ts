@@ -2504,3 +2504,253 @@ export async function fetchMorphAiAnalytics(params?: {
   const q = sp.toString();
   return apiJson<MorphAiAnalytics>(`/api/v1/admin/morph-ai/${q ? `?${q}` : ""}`);
 }
+
+export type MorphHairstyle = {
+  style_id: string;
+  slug: string;
+  audience: string;
+  category: string;
+  title: string;
+  title_uz: string;
+  face_shapes: string[];
+  hair_length: string;
+  image_path: string;
+  description_uz: string;
+  tags: string[];
+  age_groups: string[];
+  is_published: boolean;
+  sort_order: number;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+export type MorphAiSettings = {
+  daily_tryon_limit_per_user: number;
+  daily_analyze_limit_per_user: number;
+  daily_budget_usd: string;
+  budget_enforce: boolean;
+  alert_success_rate_below: number;
+  tryon_enabled: boolean;
+  analyze_enabled: boolean;
+  custom_tryon_prompt: string;
+  custom_tryon_prompt_b: string;
+  ab_enabled: boolean;
+  ab_traffic_percent_b: number;
+  preferred_model: string;
+  gallery_public: boolean;
+  runtime_model: string;
+  updated_at: string | null;
+};
+
+function morphRangeQs(range?: StatDateRange, extra?: Record<string, string | number | undefined>) {
+  const sp = new URLSearchParams();
+  if (range?.start) sp.set("start", range.start);
+  if (range?.end) sp.set("end", range.end);
+  if (extra) {
+    for (const [k, v] of Object.entries(extra)) {
+      if (v !== undefined && v !== "") sp.set(k, String(v));
+    }
+  }
+  const q = sp.toString();
+  return q ? `?${q}` : "";
+}
+
+export async function downloadMorphAiCsv(range?: StatDateRange): Promise<void> {
+  const res = await apiFetch(`/api/v1/admin/morph-ai/export/${morphRangeQs(range)}`);
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}));
+    throw new Error((j as { detail?: string }).detail || "CSV yuklab bo'lmadi");
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "morph-ai-usage.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function fetchMorphHairstyles(params?: {
+  audience?: string;
+  q?: string;
+  published?: string;
+}): Promise<MorphHairstyle[]> {
+  const sp = new URLSearchParams();
+  if (params?.audience) sp.set("audience", params.audience);
+  if (params?.q) sp.set("q", params.q);
+  if (params?.published) sp.set("published", params.published);
+  const q = sp.toString();
+  return apiJson(`/api/v1/admin/morph-ai/catalog/${q ? `?${q}` : ""}`);
+}
+
+export async function createMorphHairstyle(
+  body: Partial<MorphHairstyle> & { title: string },
+): Promise<MorphHairstyle> {
+  return apiJson("/api/v1/admin/morph-ai/catalog/", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function patchMorphHairstyle(
+  styleId: string,
+  body: Partial<MorphHairstyle>,
+): Promise<MorphHairstyle> {
+  return apiJson(`/api/v1/admin/morph-ai/catalog/${encodeURIComponent(styleId)}/`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function fetchMorphAiErrors(params?: { range?: StatDateRange; limit?: number }) {
+  return apiJson<{
+    summary: {
+      total: number;
+      failed: number;
+      success: number;
+      success_rate: number;
+      alert: boolean;
+      alert_threshold: number;
+    };
+    top_errors: Array<{ detail: string; count: number; last_at: string | null }>;
+    by_kind: Array<{ kind: string; count: number }>;
+    recent: Array<{
+      id: number;
+      user_id: number | null;
+      user_name: string;
+      kind: string;
+      style_title: string;
+      error_detail: string;
+      created_at: string;
+    }>;
+  }>(`/api/v1/admin/morph-ai/errors/${morphRangeQs(params?.range, { limit: params?.limit })}`);
+}
+
+export async function fetchMorphAiPopularity(params?: { range?: StatDateRange; limit?: number }) {
+  return apiJson<{
+    styles: Array<{
+      style_id: string;
+      style_title: string;
+      generations: number;
+      success: number;
+      failed: number;
+      users: number;
+      tokens: number;
+      cost_usd: string;
+      is_published: boolean | null;
+    }>;
+  }>(`/api/v1/admin/morph-ai/popularity/${morphRangeQs(params?.range, { limit: params?.limit })}`);
+}
+
+export async function fetchMorphAiConversion(params?: { range?: StatDateRange }) {
+  return apiJson<{
+    summary: {
+      tryon_users: number;
+      booked_users: number;
+      conversion_rate: number;
+      same_day_bookings: number;
+    };
+  }>(`/api/v1/admin/morph-ai/conversion/${morphRangeQs(params?.range)}`);
+}
+
+export async function fetchMorphAiBudget(params?: { range?: StatDateRange }) {
+  return apiJson<{
+    settings: { daily_budget_usd: string; budget_enforce: boolean };
+    period: {
+      start: string;
+      end: string;
+      spent_usd: string;
+      remaining_usd: string | null;
+      percent_used: number;
+      blocked: boolean;
+      generations: number;
+      tryon: number;
+    };
+    today: { spent_usd: string };
+    daily: Array<{ date: string; cost_usd: string; generations: number }>;
+  }>(`/api/v1/admin/morph-ai/budget/${morphRangeQs(params?.range)}`);
+}
+
+export async function fetchMorphAiLimits() {
+  return apiJson<{
+    settings: MorphAiSettings;
+    heavy_users_today: Array<{
+      user_id: number;
+      name: string;
+      phone: string;
+      tryon_today: number;
+      cost_usd: string;
+      over_limit: boolean;
+    }>;
+  }>("/api/v1/admin/morph-ai/limits/");
+}
+
+export async function fetchMorphAiQueue() {
+  return apiJson<{
+    enabled: boolean;
+    depth: number;
+    max_depth: number;
+    queued_sample: Array<{
+      job_id: string;
+      user_id: number | null;
+      style_title: string;
+      status: string;
+      created_at?: string;
+    }>;
+    processing_sample: Array<{
+      job_id: string;
+      user_id?: number;
+      style_title: string;
+      updated_at?: string;
+    }>;
+  }>("/api/v1/admin/morph-ai/queue/");
+}
+
+export async function clearMorphAiQueue() {
+  return apiJson<{ ok: boolean; cleared: number; detail?: string }>("/api/v1/admin/morph-ai/queue/", {
+    method: "POST",
+    body: JSON.stringify({ action: "clear" }),
+  });
+}
+
+export async function fetchMorphAiGallery(limit = 40) {
+  return apiJson<{
+    items: Array<{
+      id: number;
+      user_id: number;
+      user_name: string;
+      source: string;
+      face_shape_key: string;
+      hair_type_key: string;
+      photo_url: string | null;
+      created_at: string;
+    }>;
+  }>(`/api/v1/admin/morph-ai/gallery/?limit=${limit}`);
+}
+
+export async function fetchMorphAiSettings(): Promise<MorphAiSettings> {
+  return apiJson("/api/v1/admin/morph-ai/settings/");
+}
+
+export async function patchMorphAiSettings(
+  body: Partial<{
+    daily_tryon_limit_per_user: number;
+    daily_analyze_limit_per_user: number;
+    daily_budget_usd: string | number;
+    budget_enforce: boolean;
+    alert_success_rate_below: number;
+    tryon_enabled: boolean;
+    analyze_enabled: boolean;
+    custom_tryon_prompt: string;
+    custom_tryon_prompt_b: string;
+    ab_enabled: boolean;
+    ab_traffic_percent_b: number;
+    preferred_model: string;
+    gallery_public: boolean;
+  }>,
+): Promise<MorphAiSettings> {
+  return apiJson("/api/v1/admin/morph-ai/settings/", {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
