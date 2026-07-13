@@ -68,6 +68,7 @@ from accounts.views import (
     UserSearchView,
     UzRegionsView,
 )
+from accounts.views_google_auth import GoogleLoginView
 from accounts.views_phone_auth import (
     PhoneChangePasswordView,
     PhoneCheckView,
@@ -258,6 +259,7 @@ api_routes = [
     path("geo/validate/", ValidateLocationView.as_view()),
     path("currencies/", CurrencyRatesView.as_view()),
     path("launch-interest/", LaunchInterestCreateView.as_view()),
+    path("auth/google/", GoogleLoginView.as_view()),
     path("auth/phone/send-code/", PhoneSendCodeView.as_view()),
     path("auth/phone/verify/", PhoneVerifyView.as_view()),
     path("auth/phone/check/", PhoneCheckView.as_view()),

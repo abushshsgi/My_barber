@@ -31,6 +31,9 @@ class User(AbstractUser):
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     onboarding_completed = models.BooleanField(default=False, db_index=True)
     email_verified_at = models.DateTimeField(null=True, blank=True)
+    google_sub = models.CharField(
+        max_length=64, blank=True, null=True, unique=True, db_index=True
+    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]

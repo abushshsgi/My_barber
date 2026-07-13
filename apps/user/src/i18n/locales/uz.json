@@ -1271,6 +1271,7 @@
     "sendCode": "Kod yuborish",
     "title": "Xush kelibsiz",
     "subtitlePhone": "Telefon raqamingizni kiriting",
+    "subtitleGoogle": "Google akkauntingiz bilan kiring",
     "continue": "Davom etish",
     "verify": "Tasdiqlash",
     "password": "Parol",
@@ -1301,7 +1302,9 @@
     "errPasswordShort": "Parol kamida 8 belgidan iborat bo'lishi kerak",
     "errBadResponse": "Kirish javobi noto'g'ri. Qayta urinib ko'ring.",
     "loading": "Kutilmoqda…",
-    "debugCode": "Vaqtinchalik kod (SMS ulanmagan)",
+    "googleNotConfigured": "Google kirish hozircha sozlanmagan. Administrator bilan bog'laning.",
+    "googleErrGeneric": "Google orqali kirish amalga oshmadi. Qayta urinib ko'ring.",
+    "googleErrNoToken": "Google token olinmadi.",
     "privacyPrefix": "Davom etish orqali siz",
     "privacyLink": "maxfiylik siyosati",
     "marketing": {

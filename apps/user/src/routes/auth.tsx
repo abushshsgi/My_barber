@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { OtpResendTimer } from "@/components/auth/OtpResendTimer";
 import { AuthMarketingPanel } from "@/components/auth/AuthMarketingPanel";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,14 @@ export const Route = createFileRoute("/auth")({
 
 type Step = "phone" | "password" | "code" | "set-password";
 
+const phoneAuthEnabled =
+  (import.meta as unknown as { env?: Record<string, string | undefined> }).env
+    ?.VITE_PHONE_AUTH_ENABLED === "true";
+const googleClientId = (
+  (import.meta as unknown as { env?: Record<string, string | undefined> }).env
+    ?.VITE_GOOGLE_CLIENT_ID || ""
+).trim();
+
 function Auth() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -51,6 +60,7 @@ function Auth() {
   const [pendingAuth, setPendingAuth] = useState<PhoneVerifyResponse | null>(null);
   const [authIntent, setAuthIntent] = useState<PhoneAuthIntent>("register");
   const [resendSeconds, setResendSeconds] = useState(() => getStoredOtpCooldownSeconds(phone));
+  const [googleBusy, setGoogleBusy] = useState(false);
 
   useEffect(() => {
     const stored = getStoredOtpCooldownSeconds(phone);
@@ -190,33 +200,40 @@ function Auth() {
   };
 
   const busy =
+    googleBusy ||
     continuePhone.isPending ||
     goToOtp.isPending ||
     passwordLogin.isPending ||
     verify.isPending ||
     savePassword.isPending;
 
-  const header = {
-    phone: { kicker: t("auth.login"), title: t("auth.title"), desc: t("auth.subtitlePhone") },
-    password: {
-      kicker: t("auth.login"),
-      title: t("auth.passwordTitle"),
-      desc: t("auth.passwordSubtitle", { phone: `+998 ${formatUzLocalPhone(phone)}` }),
-    },
-    code: {
-      kicker: t("auth.verify"),
-      title: t("auth.codeTitle"),
-      desc:
-        deliveryMode === "app"
-          ? t("auth.codeSubtitleApp", { phone: `+998 ${formatUzLocalPhone(phone)}` })
-          : t("auth.codeSubtitleSms", { phone: `+998 ${formatUzLocalPhone(phone)}` }),
-    },
-    "set-password": {
-      kicker: t("auth.optional"),
-      title: t("auth.setPasswordTitle"),
-      desc: t("auth.setPasswordSubtitle"),
-    },
-  }[step];
+  const header = phoneAuthEnabled
+    ? {
+        phone: { kicker: t("auth.login"), title: t("auth.title"), desc: t("auth.subtitlePhone") },
+        password: {
+          kicker: t("auth.login"),
+          title: t("auth.passwordTitle"),
+          desc: t("auth.passwordSubtitle", { phone: `+998 ${formatUzLocalPhone(phone)}` }),
+        },
+        code: {
+          kicker: t("auth.verify"),
+          title: t("auth.codeTitle"),
+          desc:
+            deliveryMode === "app"
+              ? t("auth.codeSubtitleApp", { phone: `+998 ${formatUzLocalPhone(phone)}` })
+              : t("auth.codeSubtitleSms", { phone: `+998 ${formatUzLocalPhone(phone)}` }),
+        },
+        "set-password": {
+          kicker: t("auth.optional"),
+          title: t("auth.setPasswordTitle"),
+          desc: t("auth.setPasswordSubtitle"),
+        },
+      }[step]
+    : {
+        kicker: t("auth.login"),
+        title: t("auth.title"),
+        desc: t("auth.subtitleGoogle"),
+      };
 
   const primaryAction = () => {
     if (step === "phone") {
@@ -276,7 +293,30 @@ function Auth() {
             <p className="mt-2 text-sm text-muted-foreground">{header.desc}</p>
 
             <div className="mt-8">
-              {step === "phone" ? (
+              {!phoneAuthEnabled ? (
+                <div className="space-y-4">
+                  {googleClientId ? (
+                    <GoogleSignInButton
+                      clientId={googleClientId}
+                      busy={busy}
+                      onBusyChange={setGoogleBusy}
+                      onSuccess={(data) => {
+                        if (!data?.access || !data?.refresh || !data?.user) {
+                          toast.error(t("auth.errBadResponse"));
+                          return;
+                        }
+                        finishLogin(data);
+                      }}
+                    />
+                  ) : (
+                    <div className="rounded-2xl border-2 border-dashed border-border bg-surface px-4 py-5 text-sm text-muted-foreground">
+                      {t("auth.googleNotConfigured")}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
+              {phoneAuthEnabled && step === "phone" ? (
                 <div>
                   <label
                     htmlFor="auth-phone"
@@ -302,7 +342,7 @@ function Auth() {
                 </div>
               ) : null}
 
-              {step === "password" ? (
+              {phoneAuthEnabled && step === "password" ? (
                 <div className="space-y-4">
                   <div>
                     <label
@@ -348,7 +388,7 @@ function Auth() {
                 </div>
               ) : null}
 
-              {step === "code" ? (
+              {phoneAuthEnabled && step === "code" ? (
                 <div>
                   {appDeliveryCode ? (
                     <div className="mb-6 rounded-2xl border-2 border-dashed border-foreground/30 bg-surface px-4 py-4 text-center">
@@ -402,7 +442,7 @@ function Auth() {
                 </div>
               ) : null}
 
-              {step === "set-password" ? (
+              {phoneAuthEnabled && step === "set-password" ? (
                 <div className="space-y-4">
                   <div>
                     <label
@@ -444,7 +484,7 @@ function Auth() {
             </div>
 
             <div className="mt-8">
-              {step !== "set-password" ? (
+              {phoneAuthEnabled && step !== "set-password" ? (
                 <button
                   type="button"
                   disabled={busy}
@@ -455,7 +495,8 @@ function Auth() {
                 >
                   {busy ? t("auth.loading") : primaryLabel}
                 </button>
-              ) : (
+              ) : null}
+              {phoneAuthEnabled && step === "set-password" ? (
                 <div className="space-y-3">
                   <button
                     type="button"
@@ -474,7 +515,7 @@ function Auth() {
                     {t("auth.skipPassword")}
                   </button>
                 </div>
-              )}
+              ) : null}
             </div>
 
             <p className="mt-4 text-center text-[11px] text-muted-foreground">

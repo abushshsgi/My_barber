@@ -1229,6 +1229,7 @@
     "sendCode": "Send code",
     "title": "Welcome",
     "subtitlePhone": "Enter your phone number",
+    "subtitleGoogle": "Continue with your Google account",
     "continue": "Continue",
     "verify": "Verify",
     "password": "Password",
@@ -1259,7 +1260,9 @@
     "errPasswordShort": "Password must be at least 8 characters",
     "errBadResponse": "Invalid sign-in response. Please try again.",
     "loading": "Please wait…",
-    "debugCode": "Temporary code (SMS not connected)",
+    "googleNotConfigured": "Google sign-in is not configured yet. Please contact support.",
+    "googleErrGeneric": "Google sign-in failed. Please try again.",
+    "googleErrNoToken": "Google token was not received.",
     "privacyPrefix": "By continuing you agree to our",
     "privacyLink": "privacy policy",
     "marketing": {

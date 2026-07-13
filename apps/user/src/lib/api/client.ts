@@ -178,6 +178,7 @@ export function clearUserTokens() {
 function shouldOmitBearerForPath(path: string): boolean {
   const p = path.split("?")[0].replace(/\/+$/, "");
   return (
+    p === "/api/v1/auth/google/" ||
     p === "/api/v1/auth/phone/send-code" ||
     p === "/api/v1/auth/phone/verify" ||
     p === "/api/v1/auth/phone/check" ||

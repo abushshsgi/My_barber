@@ -116,6 +116,25 @@ export async function loginWithPassword(
   return body as PhoneVerifyResponse;
 }
 
+export async function loginWithGoogle(idToken: string): Promise<PhoneVerifyResponse> {
+  const res = await apiFetch("/api/v1/auth/google/", {
+    method: "POST",
+    body: JSON.stringify({ id_token: idToken }),
+  });
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    const detail =
+      body && typeof body === "object" && typeof (body as { detail?: unknown }).detail === "string"
+        ? (body as { detail: string }).detail
+        : res.statusText || "Xatolik";
+    throw new Error(detail);
+  }
+  if (body == null || typeof body !== "object") {
+    throw new Error("Server noto'g'ri javob qaytardi. Sahifani yangilab qayta urinib ko'ring.");
+  }
+  return body as PhoneVerifyResponse;
+}
+
 export async function setPassword(password: string): Promise<{ detail: string; user: ApiUser }> {
   return apiJson("/api/v1/auth/phone/set-password/", {
     method: "POST",

@@ -1236,6 +1236,7 @@
     "sendCode": "Отправить код",
     "title": "Добро пожаловать",
     "subtitlePhone": "Введите номер телефона",
+    "subtitleGoogle": "Войдите через Google аккаунт",
     "continue": "Продолжить",
     "verify": "Подтвердить",
     "password": "Пароль",
@@ -1266,7 +1267,9 @@
     "errPasswordShort": "Пароль должен быть не короче 8 символов",
     "errBadResponse": "Неверный ответ сервера. Попробуйте снова.",
     "loading": "Подождите…",
-    "debugCode": "Временный код (SMS не подключён)",
+    "googleNotConfigured": "Вход через Google пока не настроен. Обратитесь к администратору.",
+    "googleErrGeneric": "Не удалось войти через Google. Попробуйте снова.",
+    "googleErrNoToken": "Токен Google не получен.",
     "privacyPrefix": "Продолжая, вы соглашаетесь с",
     "privacyLink": "политикой конфиденциальности",
     "marketing": {

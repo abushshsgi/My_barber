@@ -14,6 +14,7 @@ export {
   sendPhoneCode,
   verifyPhoneCode,
   loginWithPassword,
+  loginWithGoogle,
   setPassword,
   changePassword,
   analyzeAiStyle,
