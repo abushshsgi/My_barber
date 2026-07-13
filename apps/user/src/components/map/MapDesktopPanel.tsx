@@ -210,10 +210,6 @@ export function MapDesktopPanel({
     el?.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
   }, [scrollToId]);
 
-  const listEmptyMessage = viewportEmpty
-    ? t("map.emptyViewport", { defaultValue: "Bu hududda salon topilmadi. Xaritani siljiting yoki zoom qiling." })
-    : (emptyMessage ?? t("map.empty"));
-
   return (
     <aside
       className="flex h-full shrink-0 flex-col border-r border-border/60 bg-surface/40"
