@@ -32,12 +32,12 @@ def build_barber_platform_analytics(*, recent_limit: int = 100) -> dict:
     employee_total = base.filter(employee_q).count()
     other_total = max(0, total - independent_total - mybarber_total - owner_total - employee_total)
 
-    today = base.filter(created_at__gte=today_start)
-    week = base.filter(created_at__gte=week_start)
+    today = base.filter(date_joined__gte=today_start)
+    week = base.filter(date_joined__gte=week_start)
 
     daily_rows = (
-        base.filter(created_at__gte=week_start)
-        .annotate(day=TruncDate("created_at"))
+        base.filter(date_joined__gte=week_start)
+        .annotate(day=TruncDate("date_joined"))
         .values("day")
         .annotate(
             total=Count("id"),
@@ -61,14 +61,14 @@ def build_barber_platform_analytics(*, recent_limit: int = 100) -> dict:
             }
         )
 
-    recent_barbers = base.order_by("-created_at").only(
+    recent_barbers = base.order_by("-date_joined").only(
         "id",
         "full_name",
         "phone",
         "region",
         "work_mode",
         "onboarding_flow",
-        "created_at",
+        "date_joined",
     )[:recent_limit]
 
     recent = []
@@ -83,7 +83,7 @@ def build_barber_platform_analytics(*, recent_limit: int = 100) -> dict:
                 if barber.region
                 else "",
                 "segment": segment_for_barber(barber),
-                "created_at": barber.created_at.isoformat() if barber.created_at else None,
+                "created_at": barber.date_joined.isoformat() if barber.date_joined else None,
             }
         )
 
