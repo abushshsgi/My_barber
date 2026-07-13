@@ -10,6 +10,7 @@ import {
 import { HomeSalonSectionsBlock, useHomeLayoutSlice } from "./home-layout-shared";
 import { HomeUnifiedSearchResults } from "@/components/home/HomeBlocks";
 import { HomeMobileMixedDiscovery } from "@/components/home/HomeMobileSections";
+import { NoSalonsEmpty } from "@/components/NoSalonsEmpty";
 
 type Props = { data: HomeData };
 
@@ -41,6 +42,10 @@ export function HomeBazaarClassic({ data }: Props) {
                 barbers={data.filteredBarbers}
                 loading={data.loading}
               />
+            </div>
+          ) : featuredSalons.length === 0 && !loading ? (
+            <div className="col-span-full">
+              <NoSalonsEmpty />
             </div>
           ) : (
             <>

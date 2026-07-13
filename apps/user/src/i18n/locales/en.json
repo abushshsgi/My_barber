@@ -64,6 +64,8 @@
     },
     "mapPreview": {
       "nearbyCount": "{{count}} salons nearby",
+      "emptyTitle": "No salons yet",
+      "emptyHint": "Coming soon. Meanwhile, pick a look with Morph AI.",
       "explore": "Find salons near you",
       "hint": "Search by distance and direction",
       "openMap": "Open map",

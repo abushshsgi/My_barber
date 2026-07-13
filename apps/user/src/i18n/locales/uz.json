@@ -69,6 +69,8 @@
     },
     "mapPreview": {
       "nearbyCount": "{{count}} ta salon yaqinda",
+      "emptyTitle": "Hozircha salonlar yo'q",
+      "emptyHint": "Tez orada qo'shiladi. Hozir Morph AI bilan uslub tanlang.",
       "explore": "Yaqin salonlarni toping",
       "hint": "Masofa va yo'nalish bilan qulay qidiruv",
       "openMap": "Xaritani ochish",
