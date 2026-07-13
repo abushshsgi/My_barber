@@ -299,6 +299,7 @@ function Auth() {
                   {googleClientId ? (
                     <GoogleSignInButton
                       clientId={googleClientId}
+                      emphasized
                       busy={busy}
                       onBusyChange={setGoogleBusy}
                       onSuccess={(data) => {
@@ -315,7 +316,9 @@ function Auth() {
                     </div>
                   )}
                   <AuthMethodDivider />
-                  <PhoneSignInComingSoon />
+                  <div className="opacity-55 saturate-50">
+                    <PhoneSignInComingSoon />
+                  </div>
                 </div>
               ) : null}
 
