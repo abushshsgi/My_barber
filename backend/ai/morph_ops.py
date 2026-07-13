@@ -444,7 +444,7 @@ def clear_tryon_queue() -> dict[str, Any]:
     return {"ok": True, "cleared": depth}
 
 
-def build_gallery(*, limit: int = 40) -> dict[str, Any]:
+def build_gallery(*, limit: int = 40, request=None) -> dict[str, Any]:
     qs = (
         AiStyleHistoryEntry.objects.filter(photo__isnull=False)
         .exclude(photo="")
@@ -452,8 +452,19 @@ def build_gallery(*, limit: int = 40) -> dict[str, Any]:
         .order_by("-created_at")[: max(1, min(100, limit))]
     )
     items = []
+    missing = 0
     for row in qs:
-        photo_url = row.photo.url if row.photo else None
+        photo_url = None
+        if row.photo:
+            try:
+                if row.photo.storage.exists(row.photo.name):
+                    photo_url = row.photo.url
+                    if photo_url and not photo_url.startswith("http") and request is not None:
+                        photo_url = request.build_absolute_uri(photo_url)
+                else:
+                    missing += 1
+            except Exception:
+                missing += 1
         items.append(
             {
                 "id": row.id,
@@ -463,10 +474,19 @@ def build_gallery(*, limit: int = 40) -> dict[str, Any]:
                 "face_shape_key": row.face_shape_key,
                 "hair_type_key": row.hair_type_key,
                 "photo_url": photo_url,
+                "photo_missing": photo_url is None,
                 "created_at": row.created_at.isoformat(),
             }
         )
-    return {"items": items}
+    return {
+        "items": items,
+        "media_note": (
+            "Ba'zi rasmlar diskda topilmadi. Productionda doimiy saqlash uchun USE_S3_MEDIA yoqing — "
+            "Railway lokal disk redeployda tozalanadi."
+            if missing
+            else None
+        ),
+    }
 
 
 def build_export_csv(start_raw: str | None, end_raw: str | None) -> HttpResponse:

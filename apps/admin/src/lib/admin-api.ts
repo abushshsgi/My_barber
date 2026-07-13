@@ -2723,8 +2723,10 @@ export async function fetchMorphAiGallery(limit = 40) {
       face_shape_key: string;
       hair_type_key: string;
       photo_url: string | null;
+      photo_missing?: boolean;
       created_at: string;
     }>;
+    media_note?: string | null;
   }>(`/api/v1/admin/morph-ai/gallery/?limit=${limit}`);
 }
 

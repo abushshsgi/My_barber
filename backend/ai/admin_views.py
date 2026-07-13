@@ -120,7 +120,10 @@ class AdminMorphAiGalleryView(APIView):
 
     def get(self, request):
         return Response(
-            build_gallery(limit=_int_param(request.query_params.get("limit"), 40, hi=100))
+            build_gallery(
+                limit=_int_param(request.query_params.get("limit"), 40, hi=100),
+                request=request,
+            )
         )
 
 
