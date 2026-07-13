@@ -247,7 +247,7 @@ def batch_publicly_visible_barber_ids(barber_ids: list[int]) -> set[int]:
         return set()
     out: set[int] = set()
     qs = Barber.objects.filter(pk__in=barber_ids).select_related("profile")
-    for b in qs.iterator(chunk_size=200):
+    for b in qs:
         if compute_barber_readiness(b).fully_ready:
             out.add(b.id)
     return out

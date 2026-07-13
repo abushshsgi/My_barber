@@ -202,6 +202,8 @@ else:
 
 if os.environ.get("DATABASE_URL"):
     DATABASES = {"default": dj_database_url.config(conn_max_age=600)}
+    # Railway / PgBouncer: server-side cursor xatoliklarini oldini oladi.
+    DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
 else:
     DATABASES = {
         "default": {
