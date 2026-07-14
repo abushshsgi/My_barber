@@ -80,7 +80,9 @@ def user_app_public_base() -> str:
 
 
 def build_invite_url(code: str) -> str:
-    return f"{user_app_public_base()}/auth?ref={code}"
+    from urllib.parse import quote
+
+    return f"{user_app_public_base()}/auth?ref={quote(code, safe='')}"
 
 
 def apply_referral(*, new_user: User, code: object) -> ReferralAttribution | None:

@@ -1309,6 +1309,8 @@
     "referralOptional": "необязательно",
     "referralPlaceholder": "8-значный код",
     "referralHint": "Введите 8-значный код друга или откройте его ссылку-приглашение.",
+    "referralFromLinkHint": "Код автоматически подставлен из ссылки друга.",
+    "referralHide": "Скрыть",
     "googleRecommended": "Рекомендуется",
     "googleContinue": "Продолжить с Google",
     "googleContinueHint": "Войдите в один клик",

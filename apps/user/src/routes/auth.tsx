@@ -26,17 +26,28 @@ import { clearQueryClientCache } from "@/lib/query-client";
 import { getStoredOtpCooldownSeconds, storeOtpCooldown } from "@/lib/otp-cooldown";
 import { formatUzLocalPhone, parseUzLocalPhone } from "@/lib/phone";
 import { needsOnboarding } from "@/lib/recommendations";
-import { clearStashedReferralCode, stashReferralCode } from "@/lib/referral-storage";
+import {
+  clearStashedReferralCode,
+  parseReferralFromSearch,
+  safeAuthRedirectPath,
+  stashReferralCode,
+} from "@/lib/referral-storage";
 import { redirectIfAuthenticated } from "@/lib/require-auth";
 import type { PhoneAuthIntent, PhoneVerifyResponse } from "@/lib/api/types";
 
 export const Route = createFileRoute("/auth")({
-  beforeLoad: async () => {
+  validateSearch: (search: Record<string, unknown>) => {
+    const ref = parseReferralFromSearch(search) || undefined;
+    const redirectTo = safeAuthRedirectPath(search.redirect);
+    return {
+      ...(ref ? { ref } : {}),
+      ...(redirectTo ? { redirect: redirectTo } : {}),
+    };
+  },
+  beforeLoad: async ({ search }) => {
+    if (search.ref) stashReferralCode(search.ref);
     await redirectIfAuthenticated();
   },
-  validateSearch: (search: Record<string, unknown>) => ({
-    ref: typeof search.ref === "string" ? search.ref : undefined,
-  }),
   head: () => ({ meta: [{ title: "Kirish — mysaloon.uz" }] }),
   component: Auth,
 });
@@ -55,7 +66,7 @@ function Auth() {
   const { t } = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { ref: refFromSearch } = Route.useSearch();
+  const { ref: refFromSearch, redirect: redirectTo } = Route.useSearch();
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState(() => getLastPhone());
   const [password, setPasswordInput] = useState("");
@@ -132,6 +143,11 @@ function Auth() {
     setCode(digits.split("").concat(["", "", "", ""]).slice(0, 4));
   };
 
+  const postAuthPath = (user: PhoneVerifyResponse["user"]) => {
+    if (needsOnboarding(user)) return "/onboarding";
+    return safeAuthRedirectPath(redirectTo) ?? "/";
+  };
+
   const finishLogin = (
     data: PhoneVerifyResponse,
     method: "google" | "phone" | "password" = "phone",
@@ -143,9 +159,7 @@ function Auth() {
     clearQueryClientCache();
     toast.success(data.is_new_user ? t("auth.welcomeNew") : t("auth.welcomeBack"));
     void router
-      .navigate({
-        to: needsOnboarding(data.user) ? "/onboarding" : "/",
-      })
+      .navigate({ to: postAuthPath(data.user) })
       .then(() => queryClient.invalidateQueries())
       .catch(() => queryClient.invalidateQueries());
   };
@@ -248,9 +262,7 @@ function Auth() {
       clearStashedReferralCode();
       setSession(pendingAuth.access, pendingAuth.refresh, res.user);
       void router
-        .navigate({
-          to: needsOnboarding(res.user) ? "/onboarding" : "/",
-        })
+        .navigate({ to: postAuthPath(res.user) })
         .then(() => queryClient.invalidateQueries())
         .catch(() => queryClient.invalidateQueries());
     },

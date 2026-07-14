@@ -1306,6 +1306,8 @@
     "referralOptional": "optional",
     "referralPlaceholder": "8-character code",
     "referralHint": "Enter the 8-character code from a friend, or open their invite link.",
+    "referralFromLinkHint": "Code applied automatically from your friend's invite link.",
+    "referralHide": "Hide",
     "googleRecommended": "Recommended",
     "googleContinue": "Continue with Google",
     "googleContinueHint": "Sign in with one tap",

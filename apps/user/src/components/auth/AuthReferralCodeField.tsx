@@ -1,34 +1,31 @@
+import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  getStashedReferralCode,
+  clearStashedReferralCode,
   normalizeReferralCode,
   stashReferralCode,
-  clearStashedReferralCode,
 } from "@/lib/referral-storage";
 
 type Props = {
   disabled?: boolean;
-  /** URL ?ref= dan kelgan bo'lsa, avval shu qiymatni ko'rsatadi. */
+  /** URL ?ref= dan kelgan bo'lsa — maydon ochiq va kod to'ldiriladi. */
   initialFromUrl?: string | null;
 };
 
 export function AuthReferralCodeField({ disabled, initialFromUrl }: Props) {
   const { t } = useTranslation();
-  const [value, setValue] = useState(() => {
-    const fromUrl = normalizeReferralCode(initialFromUrl ?? "");
-    if (fromUrl) return fromUrl;
-    return getStashedReferralCode() ?? "";
-  });
-  const [open, setOpen] = useState(() =>
-    Boolean(normalizeReferralCode(initialFromUrl ?? "") || getStashedReferralCode()),
-  );
+  const fromUrl = normalizeReferralCode(initialFromUrl ?? "");
+  const fromLink = Boolean(fromUrl);
+
+  const [value, setValue] = useState(() => fromUrl);
+  const [open, setOpen] = useState(() => fromLink);
 
   useEffect(() => {
-    const fromUrl = normalizeReferralCode(initialFromUrl ?? "");
-    if (!fromUrl) return;
-    setValue(fromUrl);
-    stashReferralCode(fromUrl);
+    const next = normalizeReferralCode(initialFromUrl ?? "");
+    if (!next) return;
+    setValue(next);
+    stashReferralCode(next);
     setOpen(true);
   }, [initialFromUrl]);
 
@@ -40,6 +37,11 @@ export function AuthReferralCodeField({ disabled, initialFromUrl }: Props) {
     } else {
       clearStashedReferralCode();
     }
+  };
+
+  const closeManual = () => {
+    if (fromLink) return;
+    setOpen(false);
   };
 
   if (!open) {
@@ -57,15 +59,28 @@ export function AuthReferralCodeField({ disabled, initialFromUrl }: Props) {
 
   return (
     <div className="rounded-2xl border border-border/80 bg-surface/40 px-4 py-4">
-      <label
-        htmlFor="auth-referral-code"
-        className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground"
-      >
-        {t("auth.referralCode", { defaultValue: "Taklif kodi" })}{" "}
-        <span className="font-medium normal-case tracking-normal text-muted-foreground/80">
-          ({t("auth.referralOptional", { defaultValue: "ixtiyoriy" })})
-        </span>
-      </label>
+      <div className="flex items-start justify-between gap-3">
+        <label
+          htmlFor="auth-referral-code"
+          className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground"
+        >
+          {t("auth.referralCode", { defaultValue: "Taklif kodi" })}{" "}
+          <span className="font-medium normal-case tracking-normal text-muted-foreground/80">
+            ({t("auth.referralOptional", { defaultValue: "ixtiyoriy" })})
+          </span>
+        </label>
+        {!fromLink ? (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={closeManual}
+            className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground disabled:opacity-60"
+            aria-label={t("auth.referralHide", { defaultValue: "Yashirish" })}
+          >
+            <X className="size-3.5" />
+          </button>
+        ) : null}
+      </div>
       <input
         id="auth-referral-code"
         type="text"
@@ -81,9 +96,13 @@ export function AuthReferralCodeField({ disabled, initialFromUrl }: Props) {
         className="mt-2.5 h-12 w-full rounded-xl border border-border bg-background px-4 text-center font-mono text-lg font-bold tracking-[0.28em] uppercase shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] transition-[border-color,box-shadow] placeholder:tracking-normal placeholder:font-sans placeholder:text-sm placeholder:font-medium placeholder:text-muted-foreground/45 focus:border-foreground/40 focus:outline-none focus:ring-4 focus:ring-foreground/[0.06] disabled:opacity-60"
       />
       <p className="mt-2.5 text-[11px] leading-relaxed text-muted-foreground">
-        {t("auth.referralHint", {
-          defaultValue: "Do'stingiz ulashgan 8 belgilik kodni kiriting yoki havoladan oching.",
-        })}
+        {fromLink
+          ? t("auth.referralFromLinkHint", {
+              defaultValue: "Do'stingiz havolasidan kod avtomatik qo'yildi.",
+            })
+          : t("auth.referralHint", {
+              defaultValue: "Do'stingiz ulashgan 8 belgilik kodni kiriting yoki havoladan oching.",
+            })}
       </p>
     </div>
   );
