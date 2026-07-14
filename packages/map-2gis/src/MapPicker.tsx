@@ -14,6 +14,16 @@ export type MapPickerProps = {
   style?: React.CSSProperties;
 };
 
+function isUsableMap(map: mapgl.Map | null | undefined): map is mapgl.Map {
+  if (!map) return false;
+  try {
+    map.getCenter();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function MapPicker({
   lat,
   lng,
@@ -26,6 +36,7 @@ export function MapPicker({
   const mapRef = useRef<mapgl.Map | null>(null);
   const onCoordsRef = useRef(onCoordsChange);
   const skipMoveRef = useRef(false);
+  const lastSyncedRef = useRef<{ lat: number; lng: number } | null>(null);
 
   onCoordsRef.current = onCoordsChange;
 
@@ -45,40 +56,71 @@ export function MapPicker({
 
       const mapglAPI = await load();
       if (destroyed || !containerRef.current) return;
+
       map = new mapglAPI.Map(containerRef.current, {
         center: toMapGlCoords(initialLat, initialLng),
         zoom,
         key: apiKey,
         zoomControl: true,
+        enableTrackResize: true,
         disableRotationByUserInteraction: true,
         disablePitchByUserInteraction: true,
       });
+
+      if (destroyed) {
+        map.destroy();
+        return;
+      }
+
       mapRef.current = map;
+      lastSyncedRef.current = { lat: initialLat, lng: initialLng };
 
       map.on("moveend", () => {
         if (skipMoveRef.current) {
           skipMoveRef.current = false;
           return;
         }
-        const center = map!.getCenter();
-        const { lat: nextLat, lng: nextLng } = fromMapGlCoords(center);
-        onCoordsRef.current(nextLat, nextLng);
+        if (!isUsableMap(map)) return;
+        try {
+          const center = map.getCenter();
+          const { lat: nextLat, lng: nextLng } = fromMapGlCoords(center);
+          lastSyncedRef.current = { lat: nextLat, lng: nextLng };
+          onCoordsRef.current(nextLat, nextLng);
+        } catch {
+          // Map destroyed mid-gesture (Strict Mode / remount).
+        }
       });
     })();
 
     return () => {
       destroyed = true;
-      map?.destroy();
+      const active = map ?? mapRef.current;
       mapRef.current = null;
+      try {
+        active?.destroy();
+      } catch {
+        // ignore double-destroy
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- init once
   }, []);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || lat == null || lng == null) return;
+    if (!isUsableMap(map) || lat == null || lng == null) return;
+
+    const prev = lastSyncedRef.current;
+    if (prev && Math.abs(prev.lat - lat) < 1e-6 && Math.abs(prev.lng - lng) < 1e-6) {
+      return;
+    }
+
     skipMoveRef.current = true;
-    map.setCenter(toMapGlCoords(lat, lng), { animate: true, duration: 400 });
+    lastSyncedRef.current = { lat, lng };
+    try {
+      map.setCenter(toMapGlCoords(lat, lng), { animate: true, duration: 400 });
+    } catch {
+      skipMoveRef.current = false;
+    }
   }, [lat, lng]);
 
   return (
