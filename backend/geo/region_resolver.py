@@ -147,10 +147,30 @@ def resolve_region_from_coords(lat: float, lng: float) -> ResolvedLocation:
             in_uzbekistan=True,
         )
     code = _match_region_from_text(result.city, result.full_name, result.address)
+    if not code:
+        code = _region_from_nearest_center(lat, lng)
     return ResolvedLocation(
         region_code=code,
         region_label=_region_label(code),
         city_label=result.city or (result.full_name.split(",")[0].strip() if result.full_name else ""),
+        in_uzbekistan=True,
+    )
+
+
+def resolve_region_from_coords_fast(lat: float, lng: float) -> ResolvedLocation:
+    """2GIS chaqirmasdan — faqat bbox + eng yaqin markaz (admin ro'yxat uchun)."""
+    if not is_in_uzbekistan(lat, lng):
+        return ResolvedLocation(
+            region_code=None,
+            region_label="",
+            city_label="",
+            in_uzbekistan=False,
+        )
+    code = _region_from_nearest_center(lat, lng)
+    return ResolvedLocation(
+        region_code=code,
+        region_label=_region_label(code),
+        city_label="",
         in_uzbekistan=True,
     )
 

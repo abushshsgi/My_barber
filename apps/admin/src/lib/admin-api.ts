@@ -36,6 +36,9 @@ export type AdminUser = {
   emailVerifiedAt: string | null;
   region: RegionCode;
   regionLabel: string;
+  latitude: string;
+  longitude: string;
+  locationCity: string;
   birthYear: number | null;
   defaultAddress: string;
   familyMembersCount: number;
@@ -468,6 +471,9 @@ type BackendUserRow = {
   phone: string | null;
   region: string;
   region_label?: string;
+  latitude?: string;
+  longitude?: string;
+  location_city?: string;
   birth_year?: number | null;
   default_address?: string;
   family_members_count?: number;
@@ -748,6 +754,9 @@ function mapUser(u: BackendUserRow): AdminUser {
     emailVerifiedAt: u.email_verified_at ?? null,
     region: u.region,
     regionLabel: (u.region_label || "").trim() || uzRegionLabel(u.region),
+    latitude: (u.latitude || "").trim(),
+    longitude: (u.longitude || "").trim(),
+    locationCity: (u.location_city || "").trim(),
     birthYear: u.birth_year ?? null,
     defaultAddress: u.default_address?.trim() || "",
     familyMembersCount: toInt(u.family_members_count, 0),

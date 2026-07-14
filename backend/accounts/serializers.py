@@ -158,11 +158,6 @@ class UserSerializer(serializers.ModelSerializer):
                 if "birth_year" in attrs
                 else getattr(self.instance, "birth_year", None)
             )
-            region = (
-                attrs.get("region")
-                if "region" in attrs
-                else getattr(self.instance, "region", "")
-            )
             has_name = bool((first_name or "").strip() and (last_name or "").strip()) or bool(
                 (full_name or "").strip()
             )
@@ -188,11 +183,10 @@ class UserSerializer(serializers.ModelSerializer):
                         ),
                     }
                 )
-            # Viloyat tanlash shart emas: GPS dan avtomatik aniqlanadi (backend foydasi uchun).
-            if not (region or "").strip():
-                resolved = resolve_region_from_coords(float(lat), float(lng))
-                if resolved.region_code:
-                    attrs["region"] = resolved.region_code
+            # Viloyat tanlash shart emas: GPS dan har doim aniqlanadi.
+            resolved = resolve_region_from_coords(float(lat), float(lng))
+            if resolved.region_code:
+                attrs["region"] = resolved.region_code
         return attrs
 
     def _apply_name_fields(self, validated_data: dict, instance: User | None = None) -> dict:

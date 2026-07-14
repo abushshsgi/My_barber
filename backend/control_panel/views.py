@@ -240,6 +240,21 @@ class AdminUserListView(generics.ListAPIView):
             )
         return qs
 
+    def list(self, request, *args, **kwargs):
+        from accounts.location_sync import sync_user_region_from_gps
+
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        users = page if page is not None else list(queryset)
+        for user in users:
+            if user.latitude is not None and user.longitude is not None:
+                sync_user_region_from_gps(user, persist=True, full_resolve=False)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(users, many=True)
+        return Response(serializer.data)
+
 
 class AdminUserDetailView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAdmin]
@@ -253,6 +268,15 @@ class AdminUserDetailView(generics.RetrieveUpdateAPIView):
         if self.request.method in ("PATCH", "PUT"):
             return AdminUserUpdateSerializer
         return AdminUserDetailSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        from accounts.location_sync import sync_user_region_from_gps
+
+        instance = self.get_object()
+        # GPS bor bo'lsa profil viloyatini joylashuvga moslab to'ldiramiz/yangilaymiz.
+        sync_user_region_from_gps(instance, persist=True, full_resolve=True)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     def perform_update(self, serializer):
         obj = self.get_object()

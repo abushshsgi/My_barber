@@ -70,7 +70,11 @@ def salon_schedule_summary(obj: Salon) -> str:
 
 
 class AdminUserSerializer(serializers.ModelSerializer):
+    region = serializers.SerializerMethodField()
     region_label = serializers.SerializerMethodField()
+    latitude = serializers.SerializerMethodField()
+    longitude = serializers.SerializerMethodField()
+    location_city = serializers.SerializerMethodField()
     bookings_count = serializers.SerializerMethodField()
     display_email = serializers.SerializerMethodField()
     email_verified = serializers.SerializerMethodField()
@@ -93,6 +97,9 @@ class AdminUserSerializer(serializers.ModelSerializer):
             "role",
             "region",
             "region_label",
+            "latitude",
+            "longitude",
+            "location_city",
             "birth_year",
             "is_active",
             "is_staff",
@@ -105,13 +112,27 @@ class AdminUserSerializer(serializers.ModelSerializer):
             "id",
             "date_joined",
             "username",
+            "region",
             "region_label",
+            "latitude",
+            "longitude",
+            "location_city",
             "display_email",
             "email_verified",
             "email_verified_at",
             "default_address",
             "family_members_count",
         )
+
+    def _location_tuple(self, obj: User) -> tuple[str, str, str]:
+        from accounts.location_sync import user_location_region
+
+        cache: dict = self.context.setdefault("_user_loc_cache", {})
+        prefer_full = bool(self.context.get("prefer_full_region_resolve"))
+        key = (obj.pk, prefer_full)
+        if key not in cache:
+            cache[key] = user_location_region(obj, prefer_full_resolve=prefer_full)
+        return cache[key]
 
     def get_display_email(self, obj: User) -> str | None:
         from accounts.email_utils import is_internal_email
@@ -142,10 +163,27 @@ class AdminUserSerializer(serializers.ModelSerializer):
     def get_family_members_count(self, obj: User) -> int:
         return int(getattr(obj, "family_members_count", obj.family_members.count()))
 
+    def get_region(self, obj: User) -> str:
+        code, _, _ = self._location_tuple(obj)
+        return code
+
     def get_region_label(self, obj: User) -> str:
-        if not obj.region:
+        _, label, _ = self._location_tuple(obj)
+        return label
+
+    def get_latitude(self, obj: User) -> str:
+        if obj.latitude is None:
             return ""
-        return dict(UzRegion.choices).get(obj.region, obj.region)
+        return str(obj.latitude)
+
+    def get_longitude(self, obj: User) -> str:
+        if obj.longitude is None:
+            return ""
+        return str(obj.longitude)
+
+    def get_location_city(self, obj: User) -> str:
+        _, _, city = self._location_tuple(obj)
+        return city
 
     def get_bookings_count(self, obj: User) -> int:
         return int(getattr(obj, "bookings_count", obj.customer_bookings.count()))
@@ -198,6 +236,10 @@ class AdminUserDetailSerializer(AdminUserSerializer):
             "family_members",
             "booking_regions",
         )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.context["prefer_full_region_resolve"] = True
 
     def get_signup_method(self, obj: User) -> str:
         from control_panel.user_signups import detect_signup_method

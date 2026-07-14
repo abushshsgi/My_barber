@@ -86,7 +86,19 @@ function UserDetailPage() {
               <Info term="Telefon">
                 <span className="tabular-nums">{u.phone || "—"}</span>
               </Info>
-              <Info term="Hudud (profil)">{u.regionLabel || uzRegionLabel(u.region)}</Info>
+              <Info term="Viloyat (joylashuv)">{u.regionLabel || uzRegionLabel(u.region)}</Info>
+              <Info term="Shahar / joy">
+                {u.locationCity || u.defaultAddress || "—"}
+              </Info>
+              <Info term="GPS koordinatalar">
+                {u.latitude && u.longitude ? (
+                  <span className="tabular-nums">
+                    {u.latitude}, {u.longitude}
+                  </span>
+                ) : (
+                  "—"
+                )}
+              </Info>
               <Info term="Asosiy manzil">{u.defaultAddress || "—"}</Info>
               <Info term="Tug'ilgan yil">
                 <span className="tabular-nums">{u.birthYear ?? "—"}</span>
