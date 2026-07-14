@@ -157,6 +157,12 @@ from ai.explore_gen_views import (
     ExploreGenPublishView,
     ExploreGenStatusView,
 )
+from ai.assets_studio_views import (
+    AssetsStudioDownloadView,
+    AssetsStudioGenerateView,
+    AssetsStudioSelectView,
+    AssetsStudioStatusView,
+)
 from ai.admin_views import (
     AdminMorphAiAnalyticsView,
     AdminMorphAiBudgetView,
@@ -322,6 +328,10 @@ api_routes = [
     path("ai/dev/explore-gen/download/", ExploreGenDownloadView.as_view()),
     path("ai/dev/explore-gen/publish/", ExploreGenPublishView.as_view()),
     path("ai/dev/explore-gen/persona-label/", ExploreGenPersonaLabelView.as_view()),
+    path("ai/dev/explore-gen/assets/", AssetsStudioStatusView.as_view()),
+    path("ai/dev/explore-gen/assets/generate/", AssetsStudioGenerateView.as_view()),
+    path("ai/dev/explore-gen/assets/select/", AssetsStudioSelectView.as_view()),
+    path("ai/dev/explore-gen/assets/download/", AssetsStudioDownloadView.as_view()),
     path("explore/personas/", ExplorePersonaListView.as_view()),
     path("hairstyles/", HairstyleListView.as_view()),
     path("hairstyles/<str:style_id>/", HairstyleDetailView.as_view()),

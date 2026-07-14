@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, Globe, ImageIcon, Loader2, Lock, RefreshCw, Upload, Wand2 } from "lucide-react";
 import { toast } from "sonner";
@@ -326,19 +326,29 @@ function ExploreGenDevPage() {
                 shart.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => void statusQuery.refetch()}
-              disabled={statusQuery.isFetching}
-              className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold hover:bg-neutral-50"
-            >
-              {statusQuery.isFetching ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <RefreshCw className="size-4" />
-              )}
-              Yangilash
-            </button>
+            <div className="flex flex-wrap items-start gap-2">
+              <Link
+                to="/dev/explore-gen/assets"
+                search={(prev) => prev}
+                className="inline-flex items-center gap-2 rounded-2xl bg-violet-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-800"
+              >
+                <ImageIcon className="size-4" />
+                Assets Studio
+              </Link>
+              <button
+                type="button"
+                onClick={() => void statusQuery.refetch()}
+                disabled={statusQuery.isFetching}
+                className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold hover:bg-neutral-50"
+              >
+                {statusQuery.isFetching ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="size-4" />
+                )}
+                Yangilash
+              </button>
+            </div>
           </div>
 
           <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">

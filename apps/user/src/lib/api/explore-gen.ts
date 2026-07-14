@@ -72,6 +72,8 @@ function exploreGenHeaders(): HeadersInit {
   return secret ? { "X-Explore-Gen-Secret": secret } : {};
 }
 
+export { exploreGenHeaders };
+
 export async function fetchExploreGenStatus(): Promise<ExploreGenStatus> {
   const secret = readExploreGenSecret();
   const url = secret

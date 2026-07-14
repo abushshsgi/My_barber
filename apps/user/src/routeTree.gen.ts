@@ -58,6 +58,7 @@ import { Route as AccountPaymentsRouteImport } from './routes/account.payments'
 import { Route as AccountHouseholdRouteImport } from './routes/account.household'
 import { Route as AccountActivityRouteImport } from './routes/account.activity'
 import { Route as ExploreStyleIdTryRouteImport } from './routes/explore_.$styleId_.try'
+import { Route as DevExploreGenAssetsRouteImport } from './routes/dev.explore-gen.assets'
 import { Route as BookingBarberBarberIdRouteImport } from './routes/booking.barber.$barberId'
 
 const WalletRoute = WalletRouteImport.update({
@@ -305,6 +306,11 @@ const ExploreStyleIdTryRoute = ExploreStyleIdTryRouteImport.update({
   path: '/explore/$styleId/try',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevExploreGenAssetsRoute = DevExploreGenAssetsRouteImport.update({
+  id: '/assets',
+  path: '/assets',
+  getParentRoute: () => DevExploreGenRoute,
+} as any)
 const BookingBarberBarberIdRoute = BookingBarberBarberIdRouteImport.update({
   id: '/booking/barber/$barberId',
   path: '/booking/barber/$barberId',
@@ -354,13 +360,14 @@ export interface FileRoutesByFullPath {
   '/bookings/$bookingId': typeof BookingsBookingIdRoute
   '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
-  '/dev/explore-gen': typeof DevExploreGenRoute
+  '/dev/explore-gen': typeof DevExploreGenRouteWithChildren
   '/explore/$styleId': typeof ExploreStyleIdRoute
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
   '/wallet/history': typeof WalletHistoryRoute
   '/wallet/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
+  '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
   '/explore/$styleId/try': typeof ExploreStyleIdTryRoute
 }
 export interface FileRoutesByTo {
@@ -406,13 +413,14 @@ export interface FileRoutesByTo {
   '/bookings/$bookingId': typeof BookingsBookingIdRoute
   '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
-  '/dev/explore-gen': typeof DevExploreGenRoute
+  '/dev/explore-gen': typeof DevExploreGenRouteWithChildren
   '/explore/$styleId': typeof ExploreStyleIdRoute
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
   '/wallet/history': typeof WalletHistoryRoute
   '/wallet/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
+  '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
   '/explore/$styleId/try': typeof ExploreStyleIdTryRoute
 }
 export interface FileRoutesById {
@@ -459,13 +467,14 @@ export interface FileRoutesById {
   '/bookings/$bookingId': typeof BookingsBookingIdRoute
   '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
-  '/dev/explore-gen': typeof DevExploreGenRoute
+  '/dev/explore-gen': typeof DevExploreGenRouteWithChildren
   '/explore_/$styleId': typeof ExploreStyleIdRoute
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
   '/wallet_/history': typeof WalletHistoryRoute
   '/wallet_/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
+  '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
   '/explore_/$styleId_/try': typeof ExploreStyleIdTryRoute
 }
 export interface FileRouteTypes {
@@ -520,6 +529,7 @@ export interface FileRouteTypes {
     | '/wallet/history'
     | '/wallet/top-up'
     | '/booking/barber/$barberId'
+    | '/dev/explore-gen/assets'
     | '/explore/$styleId/try'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -572,6 +582,7 @@ export interface FileRouteTypes {
     | '/wallet/history'
     | '/wallet/top-up'
     | '/booking/barber/$barberId'
+    | '/dev/explore-gen/assets'
     | '/explore/$styleId/try'
   id:
     | '__root__'
@@ -624,6 +635,7 @@ export interface FileRouteTypes {
     | '/wallet_/history'
     | '/wallet_/top-up'
     | '/booking/barber/$barberId'
+    | '/dev/explore-gen/assets'
     | '/explore_/$styleId_/try'
   fileRoutesById: FileRoutesById
 }
@@ -668,7 +680,7 @@ export interface RootRouteChildren {
   BarberBarberIdRoute: typeof BarberBarberIdRoute
   BookingSalonIdRoute: typeof BookingSalonIdRoute
   CategoryCategoryRoute: typeof CategoryCategoryRoute
-  DevExploreGenRoute: typeof DevExploreGenRoute
+  DevExploreGenRoute: typeof DevExploreGenRouteWithChildren
   ExploreStyleIdRoute: typeof ExploreStyleIdRoute
   SalonIdRoute: typeof SalonIdRoute
   WalletHistoryRoute: typeof WalletHistoryRoute
@@ -1022,6 +1034,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExploreStyleIdTryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dev/explore-gen/assets': {
+      id: '/dev/explore-gen/assets'
+      path: '/assets'
+      fullPath: '/dev/explore-gen/assets'
+      preLoaderRoute: typeof DevExploreGenAssetsRouteImport
+      parentRoute: typeof DevExploreGenRoute
+    }
     '/booking/barber/$barberId': {
       id: '/booking/barber/$barberId'
       path: '/booking/barber/$barberId'
@@ -1065,6 +1084,18 @@ const StoriesRouteChildren: StoriesRouteChildren = {
 const StoriesRouteWithChildren =
   StoriesRoute._addFileChildren(StoriesRouteChildren)
 
+interface DevExploreGenRouteChildren {
+  DevExploreGenAssetsRoute: typeof DevExploreGenAssetsRoute
+}
+
+const DevExploreGenRouteChildren: DevExploreGenRouteChildren = {
+  DevExploreGenAssetsRoute: DevExploreGenAssetsRoute,
+}
+
+const DevExploreGenRouteWithChildren = DevExploreGenRoute._addFileChildren(
+  DevExploreGenRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AddressesRoute: AddressesRoute,
@@ -1106,7 +1137,7 @@ const rootRouteChildren: RootRouteChildren = {
   BarberBarberIdRoute: BarberBarberIdRoute,
   BookingSalonIdRoute: BookingSalonIdRoute,
   CategoryCategoryRoute: CategoryCategoryRoute,
-  DevExploreGenRoute: DevExploreGenRoute,
+  DevExploreGenRoute: DevExploreGenRouteWithChildren,
   ExploreStyleIdRoute: ExploreStyleIdRoute,
   SalonIdRoute: SalonIdRoute,
   WalletHistoryRoute: WalletHistoryRoute,
@@ -1117,13 +1148,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
