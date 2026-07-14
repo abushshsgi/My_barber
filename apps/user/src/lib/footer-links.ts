@@ -51,6 +51,7 @@ export const FOOTER_SECTIONS: FooterSection[] = [
       { to: "/notifications", labelKey: "nav.notifications", defaultValue: "Bildirishnomalar" },
       { to: "/chat", labelKey: "nav.chat", defaultValue: "Chat" },
       { to: "/addresses", labelKey: "profile.addresses", defaultValue: "Manzillar" },
+      { to: "/referrals", labelKey: "referral.title", defaultValue: "Referrals" },
       { to: "/reviews", labelKey: "profile.reviews", defaultValue: "Sharhlar" },
     ],
   },

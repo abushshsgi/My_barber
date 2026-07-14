@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Bell, CalendarCheck, Heart, MessageSquare, Settings, Wallet } from "lucide-react";
+import { Bell, CalendarCheck, Heart, MessageSquare, Settings, UserPlus, Wallet } from "lucide-react";
 import { AccountDesktopShell } from "@/components/desktop/pages/AccountDesktopShell";
 import { ProfileAccountHubGrid, type AccountHubTile } from "@/components/desktop/profile/ProfileAccountHubGrid";
 import { useProfileScreen } from "@/components/profile/useProfileScreen";
@@ -99,6 +99,15 @@ export function ProfileDesktopPage() {
             })
           : t("profile.desktop.allRead", { defaultValue: "Hammasi o'qilgan" }),
       badge: unreadCount > 0 ? (unreadCount > 9 ? "9+" : String(unreadCount)) : undefined,
+    },
+    {
+      icon: UserPlus,
+      title: t("referral.title", { defaultValue: "Referrals" }),
+      description: t("referral.subtitle", {
+        defaultValue: "Do'st va oilangizni MySaloon'ga taklif qiling.",
+      }),
+      to: "/referrals",
+      meta: t("referral.share", { defaultValue: "Havolani ulashish" }),
     },
     {
       icon: Settings,

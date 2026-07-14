@@ -8,7 +8,7 @@ export const Route = createFileRoute("/referrals")({
   validateSearch: (search: Record<string, unknown>) => ({
     backTo: typeof search.backTo === "string" ? search.backTo : undefined,
   }),
-  head: () => ({ meta: [{ title: "Do'stni taklif qilish — mysaloon.uz" }] }),
+  head: () => ({ meta: [{ title: "Referrals — mysaloon.uz" }] }),
   component: ReferralsPage,
 });
 
@@ -19,7 +19,7 @@ function ReferralsPage() {
 
   return (
     <ProfileSubpageLayout
-      title={t("referral.title", { defaultValue: "Do'stni taklif qilish" })}
+      title={t("referral.title", { defaultValue: "Referrals" })}
       subtitle={t("referral.subtitle", { defaultValue: "Do'st va oilangizni MySaloon'ga taklif qiling." })}
       backTo={backTo}
     >

@@ -4,7 +4,6 @@ import {
   Calendar,
   CalendarCheck,
   ChevronRight,
-  Headphones,
   Info,
   LogOut,
   MapPin,
@@ -12,6 +11,7 @@ import {
   Shield,
   Sparkles,
   Tag,
+  UserPlus,
 } from "lucide-react";
 import {
   ProfileGoMenuGroup,
@@ -42,7 +42,11 @@ export function UserProfile() {
 
   const quickItems = [
     { icon: CalendarCheck, label: t("profile.bookings"), to: "/bookings" },
-    { icon: Headphones, label: t("profile.support"), to: "/support" },
+    {
+      icon: UserPlus,
+      label: t("referral.title", { defaultValue: "Referrals" }),
+      to: "/referrals",
+    },
     { icon: MapPin, label: t("profile.addresses"), to: "/addresses" },
     { icon: Settings, label: t("profile.settings"), to: "/settings" },
   ];
