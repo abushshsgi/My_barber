@@ -2,7 +2,7 @@
 const MOBILE_DOCK_TAB_EXACT = new Set(["/", "/map", "/bookings", "/profile"]);
 
 export function shouldShowMobileDock(pathname: string): boolean {
-  if (pathname === "/auth" || pathname === "/onboarding" || pathname === "/ai-style") {
+  if (pathname === "/auth" || pathname === "/onboarding" || pathname === "/ai-style" || pathname.startsWith("/ai-style/")) {
     return false;
   }
   return MOBILE_DOCK_TAB_EXACT.has(pathname);
@@ -101,7 +101,7 @@ export function getPageTitleKey(pathname: string): string | null {
   if (pathname === "/today") return "home.quick.today";
   if (pathname === "/compare") return "home.quick.compare";
   if (pathname === "/wallet" || pathname.startsWith("/wallet/")) return "nav.wallet";
-  if (pathname === "/ai-style") return "home.quick.aiStyle";
+  if (pathname === "/ai-style" || pathname.startsWith("/ai-style/")) return "home.quick.aiStyle";
   if (pathname === "/notifications") return "nav.notifications";
   if (pathname === "/settings") return "profile.settings";
   if (pathname === "/favorites") return "profile.favorites";

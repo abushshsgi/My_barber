@@ -1,6 +1,6 @@
-import { useRouter } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronLeft, ImagePlus, Loader2, ScanFace } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ImagePlus, Loader2, ScanFace } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AiStyleSplitLayoutProps } from "@/components/ai-style/AiStyleSplitLayout";
@@ -8,6 +8,7 @@ import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
 import { AiStyleScanLine, GalleryValidatingHero } from "@/components/ai-style/AiStyleUi";
 import { getAiStyleHeroUrl } from "@/lib/cover-images";
 import { refreshAiStyleHistoryCache } from "@/lib/api";
+import { DESKTOP_VIEWPORT_BELOW_HEADER } from "@/lib/desktop-bazaar-layout";
 import { FACE_HISTORY_UPDATED_EVENT, getActiveUserId, type FaceProfileHistoryEntry } from "@/lib/face-profile";
 import { navigateBack } from "@/lib/mobile-back";
 import { cn } from "@/lib/utils";
@@ -17,22 +18,22 @@ const HERO_SLIDES: Record<"men" | "women", readonly string[]> = {
   women: ["hero-women", "hero-men"],
 };
 const SLIDE_MS = 5000;
-const HISTORY_SLOTS = 6;
 
 function DesktopBackButton({ className }: { className?: string }) {
   const router = useRouter();
+  const { t } = useTranslation();
   return (
     <button
       type="button"
       onClick={() => navigateBack(router, "/", true)}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-background/90 px-3 py-2 text-sm font-semibold text-foreground shadow-sm backdrop-blur-md transition-colors hover:bg-surface",
+        "inline-flex items-center gap-1 rounded-full border border-white/25 bg-black/45 px-3.5 py-2 text-sm font-semibold text-white shadow-lg backdrop-blur-md transition-colors hover:bg-black/60",
         className,
       )}
-      aria-label="Orqaga"
+      aria-label={t("common.back", { defaultValue: "Orqaga" })}
     >
       <ChevronLeft className="h-4 w-4" strokeWidth={2.25} />
-      Orqaga
+      {t("common.back", { defaultValue: "Orqaga" })}
     </button>
   );
 }
@@ -156,8 +157,6 @@ function DesktopHistoryGrid() {
     };
   }, [userId]);
 
-  const slots = Array.from({ length: HISTORY_SLOTS }, (_, i) => entries[i] ?? null);
-
   return (
     <div>
       <div className="flex items-end justify-between gap-3">
@@ -167,21 +166,44 @@ function DesktopHistoryGrid() {
           </p>
           <p className="mt-1 text-sm font-bold text-foreground">{t("aiStylePage.historySubtitle")}</p>
         </div>
+        {entries.length > 0 ? (
+          <Link
+            to="/ai-style/history"
+            className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-foreground hover:opacity-80"
+          >
+            {t("aiStylePage.historyViewAll", { defaultValue: "Hammasi" })}
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
+        ) : null}
       </div>
 
       {entries.length > 0 ? (
-        <div className="mt-4 grid grid-cols-3 gap-2.5">
-          {slots.map((entry, i) => (
-            <div
-              key={entry?.id ?? `empty-${i}`}
-              className="aspect-square overflow-hidden rounded-2xl border border-border/60 bg-surface"
-            >
-              {entry ? (
-                <img src={entry.photoDataUrl} alt="" className="h-full w-full object-cover object-top" />
-              ) : null}
-            </div>
-          ))}
-        </div>
+        <Link
+          to="/ai-style/history"
+          className="mt-4 block rounded-2xl outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-foreground/30"
+          aria-label={t("aiStylePage.historyButton")}
+        >
+          <div className="flex gap-2.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {entries.map((entry) => (
+              <div
+                key={entry.id}
+                className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-border/60 bg-surface shadow-sm"
+              >
+                <img
+                  src={entry.photoDataUrl}
+                  alt=""
+                  className="h-full w-full object-cover object-top"
+                />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-black/50 to-transparent" />
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-center text-[11px] font-medium text-muted-foreground">
+            {t("aiStylePage.historyOpenHint", {
+              defaultValue: "Bosib to'liq tarixni oching · gorizontal suring",
+            })}
+          </p>
+        </Link>
       ) : (
         <div className="mt-4 rounded-2xl border border-dashed border-border bg-surface/50 px-4 py-8 text-center">
           <p className="text-sm font-semibold text-foreground">{t("aiStylePage.historyEmpty")}</p>
@@ -204,19 +226,20 @@ export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
   const isGalleryValidating = props.validating && !!props.validatingPreview;
 
   return (
-    <div className="relative flex h-[calc(100dvh-5.5rem)] min-h-[640px] overflow-hidden bg-background">
+    <div
+      className={cn(
+        "relative flex min-h-[640px] overflow-hidden bg-background",
+        DESKTOP_VIEWPORT_BELOW_HEADER,
+      )}
+    >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_10%_0%,oklch(0.94_0.02_85)_0%,transparent_50%),radial-gradient(ellipse_at_95%_40%,oklch(0.95_0.012_70)_0%,transparent_40%)]"
       />
 
-      <div className="relative mx-auto grid h-full w-full max-w-[1360px] grid-cols-[minmax(0,0.92fr)_minmax(440px,1.08fr)] gap-6 px-6 py-5 xl:max-w-[1440px] xl:grid-cols-[minmax(0,0.88fr)_minmax(480px,1.12fr)] xl:gap-8 xl:px-10 xl:py-6">
+      <div className="relative mx-auto grid h-full w-full max-w-[1360px] grid-cols-[minmax(0,0.92fr)_minmax(440px,1.08fr)] gap-6 px-6 py-4 xl:max-w-[1440px] xl:grid-cols-[minmax(0,0.88fr)_minmax(480px,1.12fr)] xl:gap-8 xl:px-10 xl:py-5">
         {/* Left visual */}
         <section className="relative flex min-h-0 items-center justify-center overflow-hidden">
-          <div className="absolute left-0 top-0 z-20">
-            <DesktopBackButton />
-          </div>
-
           <div
             className={cn(
               "relative w-full overflow-hidden rounded-[28px] border border-border/50 bg-surface shadow-[0_20px_60px_-24px_rgba(15,15,15,0.25)]",
@@ -225,6 +248,10 @@ export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
                 : "h-full min-h-[420px]",
             )}
           >
+            <div className="absolute left-3 top-3 z-20 sm:left-4 sm:top-4">
+              <DesktopBackButton />
+            </div>
+
             {isGalleryValidating ? (
               <GalleryValidatingHero previewUrl={props.validatingPreview!} />
             ) : isPhotoPreview || showResults ? (

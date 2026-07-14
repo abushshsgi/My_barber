@@ -1,6 +1,6 @@
-import { useRouter } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { AnimatePresence, animate, motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
-import { Check, ChevronLeft, ChevronsUp, Loader2, ScanFace, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ChevronsUp, Loader2, ScanFace, X } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
@@ -306,8 +306,6 @@ function useHistorySwipeHint(isUploadStep: boolean, historyOpen: boolean) {
   return isUploadStep && !historyOpen && !hintDismissed;
 }
 
-const HISTORY_GRID_SLOTS = 6;
-
 function UploadHistorySheet({ open }: { open: boolean }) {
   const { t } = useTranslation();
   const [entries, setEntries] = useState<FaceProfileHistoryEntry[]>([]);
@@ -341,36 +339,52 @@ function UploadHistorySheet({ open }: { open: boolean }) {
     };
   }, [open, userId]);
 
-  const slots = Array.from({ length: HISTORY_GRID_SLOTS }, (_, index) => entries[index] ?? null);
-
   return (
     <div className="flex h-full flex-col pb-6 pt-1">
-      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-        {t("aiStylePage.historyTitle")}
-      </p>
-      <p className="mt-1 text-base font-bold text-foreground">{t("aiStylePage.historySubtitle")}</p>
+      <div className="flex items-end justify-between gap-2">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+            {t("aiStylePage.historyTitle")}
+          </p>
+          <p className="mt-1 text-base font-bold text-foreground">{t("aiStylePage.historySubtitle")}</p>
+        </div>
+        {entries.length > 0 ? (
+          <Link
+            to="/ai-style/history"
+            className="inline-flex items-center gap-0.5 text-xs font-bold text-foreground"
+          >
+            {t("aiStylePage.historyViewAll", { defaultValue: "Hammasi" })}
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
+        ) : null}
+      </div>
 
       {entries.length > 0 ? (
-        <div className="mt-4 flex flex-col gap-2">
-          {[0, 1].map((row) => (
-            <div key={row} className="flex gap-2">
-              {slots.slice(row * 3, row * 3 + 3).map((entry, col) => (
-                <div
-                  key={entry?.id ?? `empty-${row}-${col}`}
-                  className="aspect-square min-w-0 flex-1 overflow-hidden rounded-2xl border border-border/60 bg-neutral-100"
-                >
-                  {entry ? (
-                    <img
-                      src={entry.photoDataUrl}
-                      alt=""
-                      className="h-full w-full object-cover object-top"
-                    />
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
+        <Link
+          to="/ai-style/history"
+          className="mt-4 block min-h-0 flex-1 outline-none"
+          aria-label={t("aiStylePage.historyButton")}
+        >
+          <div className="flex max-h-full gap-2.5 overflow-x-auto pb-1">
+            {entries.map((entry) => (
+              <div
+                key={entry.id}
+                className="relative h-28 w-24 shrink-0 overflow-hidden rounded-2xl border border-border/60 bg-neutral-100"
+              >
+                <img
+                  src={entry.photoDataUrl}
+                  alt=""
+                  className="h-full w-full object-cover object-top"
+                />
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-center text-[11px] font-medium text-muted-foreground">
+            {t("aiStylePage.historyOpenHint", {
+              defaultValue: "Bosib to'liq tarixni oching · gorizontal suring",
+            })}
+          </p>
+        </Link>
       ) : (
         <div className="mt-6 flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-border/70 bg-neutral-50/80 px-4 py-8 text-center">
           <p className="text-sm font-semibold text-foreground">{t("aiStylePage.historyEmpty")}</p>

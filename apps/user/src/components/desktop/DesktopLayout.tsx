@@ -5,6 +5,7 @@ import {
   DESKTOP_BAZAAR_INSET,
   DESKTOP_HOME_INSET,
   DESKTOP_SHELL_INSET,
+  DESKTOP_VIEWPORT_BELOW_HEADER,
   usesDesktopBazaarInset,
 } from "@/lib/desktop-bazaar-layout";
 import { showsSiteFooter } from "@/lib/layout-routes";
@@ -23,9 +24,9 @@ export function DesktopLayout({ children, chatUnread = 0, notificationsUnread = 
   const isMap = pathname === "/map";
   const bazaarInset = usesDesktopBazaarInset(pathname);
   const isHome = pathname === "/";
-  const isAiStyle = pathname === "/ai-style";
+  const isAiStylePage = pathname === "/ai-style";
   const isFullBleed =
-    isAiStyle ||
+    isAiStylePage ||
     isMap ||
     FULL_BLEED_PREFIX.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
   const showFooter = showsSiteFooter(pathname) && !isFullBleed;
@@ -42,8 +43,8 @@ export function DesktopLayout({ children, chatUnread = 0, notificationsUnread = 
         {isFullBleed ? (
           <div
             className={cn(
-              (isMap || isAiStyle) &&
-                "flex min-h-0 flex-col overflow-hidden h-[calc(100dvh-5.5rem)]",
+              (isMap || isAiStylePage) &&
+                cn("flex min-h-0 flex-col overflow-hidden", DESKTOP_VIEWPORT_BELOW_HEADER),
             )}
           >
             {children}

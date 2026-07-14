@@ -44,7 +44,7 @@ export function ExploreDesktopPage() {
           </div>
         </div>
 
-        <MorfAiExploreCard className="lg:sticky lg:top-[6.25rem]" />
+        <MorfAiExploreCard className="lg:sticky lg:top-[5.25rem]" />
       </div>
 
       <ExploreStyleGrid

@@ -52,6 +52,7 @@ import { Route as CategoryCategoryRouteImport } from './routes/category.$categor
 import { Route as BookingsBookingIdRouteImport } from './routes/bookings.$bookingId'
 import { Route as BookingSalonIdRouteImport } from './routes/booking.$salonId'
 import { Route as BarberBarberIdRouteImport } from './routes/barber.$barberId'
+import { Route as AiStyleHistoryRouteImport } from './routes/ai-style_.history'
 import { Route as AccountPreferencesRouteImport } from './routes/account.preferences'
 import { Route as AccountPaymentsRouteImport } from './routes/account.payments'
 import { Route as AccountHouseholdRouteImport } from './routes/account.household'
@@ -274,6 +275,11 @@ const BarberBarberIdRoute = BarberBarberIdRouteImport.update({
   path: '/barber/$barberId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AiStyleHistoryRoute = AiStyleHistoryRouteImport.update({
+  id: '/ai-style_/history',
+  path: '/ai-style/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AccountPreferencesRoute = AccountPreferencesRouteImport.update({
   id: '/account/preferences',
   path: '/account/preferences',
@@ -342,6 +348,7 @@ export interface FileRoutesByFullPath {
   '/account/household': typeof AccountHouseholdRoute
   '/account/payments': typeof AccountPaymentsRoute
   '/account/preferences': typeof AccountPreferencesRoute
+  '/ai-style/history': typeof AiStyleHistoryRoute
   '/barber/$barberId': typeof BarberBarberIdRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/bookings/$bookingId': typeof BookingsBookingIdRoute
@@ -393,6 +400,7 @@ export interface FileRoutesByTo {
   '/account/household': typeof AccountHouseholdRoute
   '/account/payments': typeof AccountPaymentsRoute
   '/account/preferences': typeof AccountPreferencesRoute
+  '/ai-style/history': typeof AiStyleHistoryRoute
   '/barber/$barberId': typeof BarberBarberIdRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/bookings/$bookingId': typeof BookingsBookingIdRoute
@@ -445,6 +453,7 @@ export interface FileRoutesById {
   '/account/household': typeof AccountHouseholdRoute
   '/account/payments': typeof AccountPaymentsRoute
   '/account/preferences': typeof AccountPreferencesRoute
+  '/ai-style_/history': typeof AiStyleHistoryRoute
   '/barber/$barberId': typeof BarberBarberIdRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/bookings/$bookingId': typeof BookingsBookingIdRoute
@@ -498,6 +507,7 @@ export interface FileRouteTypes {
     | '/account/household'
     | '/account/payments'
     | '/account/preferences'
+    | '/ai-style/history'
     | '/barber/$barberId'
     | '/booking/$salonId'
     | '/bookings/$bookingId'
@@ -549,6 +559,7 @@ export interface FileRouteTypes {
     | '/account/household'
     | '/account/payments'
     | '/account/preferences'
+    | '/ai-style/history'
     | '/barber/$barberId'
     | '/booking/$salonId'
     | '/bookings/$bookingId'
@@ -600,6 +611,7 @@ export interface FileRouteTypes {
     | '/account/household'
     | '/account/payments'
     | '/account/preferences'
+    | '/ai-style_/history'
     | '/barber/$barberId'
     | '/booking/$salonId'
     | '/bookings/$bookingId'
@@ -652,6 +664,7 @@ export interface RootRouteChildren {
   AccountHouseholdRoute: typeof AccountHouseholdRoute
   AccountPaymentsRoute: typeof AccountPaymentsRoute
   AccountPreferencesRoute: typeof AccountPreferencesRoute
+  AiStyleHistoryRoute: typeof AiStyleHistoryRoute
   BarberBarberIdRoute: typeof BarberBarberIdRoute
   BookingSalonIdRoute: typeof BookingSalonIdRoute
   CategoryCategoryRoute: typeof CategoryCategoryRoute
@@ -967,6 +980,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BarberBarberIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ai-style_/history': {
+      id: '/ai-style_/history'
+      path: '/ai-style/history'
+      fullPath: '/ai-style/history'
+      preLoaderRoute: typeof AiStyleHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/account/preferences': {
       id: '/account/preferences'
       path: '/account/preferences'
@@ -1082,6 +1102,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountHouseholdRoute: AccountHouseholdRoute,
   AccountPaymentsRoute: AccountPaymentsRoute,
   AccountPreferencesRoute: AccountPreferencesRoute,
+  AiStyleHistoryRoute: AiStyleHistoryRoute,
   BarberBarberIdRoute: BarberBarberIdRoute,
   BookingSalonIdRoute: BookingSalonIdRoute,
   CategoryCategoryRoute: CategoryCategoryRoute,

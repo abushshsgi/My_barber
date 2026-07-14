@@ -4,7 +4,7 @@ const FACE_PROFILE_KEY_PREFIX = "mysaloon.ai.faceProfile";
 const FACE_HISTORY_KEY_PREFIX = "mysaloon.ai.faceHistory";
 const LEGACY_FACE_PROFILE_KEY = "mysaloon.ai.faceProfile";
 const LEGACY_FACE_HISTORY_KEY = "mysaloon.ai.faceHistory";
-const FACE_HISTORY_MAX = 6;
+const FACE_HISTORY_MAX = 40;
 export const FACE_HISTORY_UPDATED_EVENT = "mysaloon:face-history-updated";
 
 const USER_KEY = "mysaloon.auth.user";
