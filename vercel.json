@@ -1,5 +1,13 @@
 {
   "rewrites": [
+    {
+      "source": "/api/v1/:path*",
+      "destination": "https://api.mysaloon.uz/api/v1/:path*"
+    },
+    {
+      "source": "/media/:path*",
+      "destination": "https://api.mysaloon.uz/media/:path*"
+    },
     { "source": "/assets/(.*)", "destination": "/assets/$1" },
     { "source": "/favicon.ico", "destination": "/favicon.ico" },
     { "source": "/(.*\\..*)", "destination": "/$1" },

@@ -69,7 +69,7 @@ npm run build:frontends
 |--------|----------------|-----|
 
 | mijoz | `https://www.mysaloon.uz` | `VITE_API_URL` **o‘chirish** (same-origin `/api/v1` proxy) |
-| admin | `https://admin.mysaloon.uz` | `VITE_API_URL` **o‘chirish** (same-origin `/api/v1` proxy) |
+| admin | `https://admin.mysaloon.uz` | default `https://api.mysaloon.uz` (CORS); ixtiyoriy `VITE_API_URL` |
 | barber | `https://partner.mysaloon.uz` | Web: `VITE_API_URL` **o‘chirish**; Capacitor: `VITE_API_URL=https://api.mysaloon.uz` |
 
 

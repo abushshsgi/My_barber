@@ -57,10 +57,20 @@ function DashboardPage() {
         </div>
       </div>
 
+      {(statsQ.isError || bookingsQ.isError) && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {statsQ.error instanceof Error
+            ? statsQ.error.message
+            : bookingsQ.error instanceof Error
+              ? bookingsQ.error.message
+              : "Ma'lumotlarni yuklashda xatolik"}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {statsQ.isLoading || !stats ? (
+        {statsQ.isLoading ? (
           Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
-        ) : (
+        ) : stats ? (
           <>
             <KPICard
               label="Jami mijozlar"
@@ -98,7 +108,7 @@ function DashboardPage() {
               icon={TrendingUp}
             />
           </>
-        )}
+        ) : null}
       </div>
 
       {/* Two-column section */}

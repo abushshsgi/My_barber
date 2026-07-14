@@ -4,16 +4,19 @@ function readEnv(name: string): string | undefined {
 }
 
 const ENV_API_BASE = readEnv("VITE_API_URL") || readEnv("NEXT_PUBLIC_API_URL") || "";
+const PROD_API_ORIGIN = "https://api.mysaloon.uz";
 
 /**
- * Web production: always same-origin (`/api/v1` via Vercel rewrite).
- * Direct `api.mysaloon.uz` hits cause CORS false-positives when CF/Railway returns 502.
- * Local: empty base uses Vite proxy; optional VITE_API_URL still allowed for direct Django.
+ * Prefer explicit VITE_API_URL.
+ * Production SPA: direct API origin — Vercel `/api/v1` rewrites are unreliable for this
+ * static Vite deploy (they fall through to index.html and break the dashboard).
+ * Local: empty base uses Vite proxy to Django.
  */
 function resolveWebApiBase(envBase: string): string {
   const trimmed = envBase.trim().replace(/\/+$/, "");
-  if (import.meta.env.PROD) return "";
-  return trimmed;
+  if (trimmed) return trimmed;
+  if (import.meta.env.PROD) return PROD_API_ORIGIN;
+  return "";
 }
 
 const API_BASE = resolveWebApiBase(ENV_API_BASE);
