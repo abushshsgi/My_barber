@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError
@@ -13,10 +14,20 @@ MAX_NAME_PARTS = 4
 
 _NAME_SEPARATORS = {" ", "-", "'", "\u02bb", "\u2019"}
 _MULTI_SPACE = re.compile(r"\s+")
+# Avtomatik tuzatish: en/em dash, turli apostroflar.
+_DASH_CHARS = "\u2010\u2011\u2012\u2013\u2014\u2212\uFE58\uFE63\uFF0D"
+_APOSTROPHE_CHARS = "'\u02bc\u02b9\u02bb\u2018\u2019\u201b\u2032\uff07"
 
 
 def normalize_display_name(value: str) -> str:
-    return _MULTI_SPACE.sub(" ", (value or "").strip())
+    text = unicodedata.normalize("NFKC", value or "")
+    for ch in _DASH_CHARS:
+        text = text.replace(ch, "-")
+    for ch in _APOSTROPHE_CHARS:
+        text = text.replace(ch, "'")
+    # Yashirin belgilarni (zero-width va h.k.) olib tashlash.
+    text = "".join(ch for ch in text if unicodedata.category(ch) != "Cf")
+    return _MULTI_SPACE.sub(" ", text.strip())
 
 
 def _char_allowed(ch: str) -> bool:

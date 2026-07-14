@@ -2,7 +2,7 @@ const MIN_PART_LEN = 2;
 const MAX_PARTS = 4;
 const MAX_LEN = 255;
 
-const ALLOWED_INPUT = /[\p{L}\s\-'\u02bb\u2019]/u;
+const ALLOWED_INPUT = /[\p{L}\s\-'\u02bb\u2019\u2010\u2011\u2013\u2014\u2018]/u;
 
 export type DisplayNameErrorKey =
   | "nameRequired"
@@ -17,7 +17,13 @@ export type DisplayNameValidation =
   | { ok: false; errorKey: DisplayNameErrorKey };
 
 export function normalizeDisplayName(raw: string): string {
-  return raw.trim().replace(/\s+/g, " ");
+  return raw
+    .normalize("NFKC")
+    .replace(/[\u2010\u2011\u2012\u2013\u2014\u2212\ufe58\ufe63\uff0d]/g, "-")
+    .replace(/[\u02bc\u02b9\u02bb\u2018\u2019\u201b\u2032\uff07]/g, "'")
+    .replace(/[\u200b-\u200d\ufeff]/g, "")
+    .trim()
+    .replace(/\s+/g, " ");
 }
 
 /** Klaviaturadan faqat ruxsat etilgan belgilarni qoldiradi. */

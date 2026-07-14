@@ -68,6 +68,7 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
     locating,
     detectLocation,
     busy,
+    nameError,
   } = state;
 
   const isDesktop = variant === "desktop";
@@ -89,6 +90,7 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
           onChange={(e) => setFirstName(e.target.value)}
           placeholder="Ism"
           autoComplete="given-name"
+          spellCheck={false}
           className={inputClass}
         />
         <input
@@ -96,8 +98,21 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
           onChange={(e) => setLastName(e.target.value)}
           placeholder="Familiya"
           autoComplete="family-name"
+          spellCheck={false}
           className={inputClass}
         />
+        {nameError ? (
+          <p className="text-xs font-semibold text-destructive">{nameError}</p>
+        ) : (
+          <p
+            className={cn(
+              "text-muted-foreground",
+              isDesktop ? "text-sm" : "text-xs",
+            )}
+          >
+            Faqat harflar, bo&apos;sh joy, defis (-) va apostrof (&apos;).
+          </p>
+        )}
       </div>
     );
   }

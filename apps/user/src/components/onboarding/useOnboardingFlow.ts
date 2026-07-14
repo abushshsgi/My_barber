@@ -1,24 +1,59 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { GeolocationError, getAccuratePosition } from "@mybarber/shared/geolocation";
 import { useUpdateMe } from "@/hooks/use-me";
 import { roundCoord } from "@/lib/api/list-utils";
+import {
+  sanitizeDisplayNameInput,
+  validateDisplayName,
+  type DisplayNameErrorKey,
+} from "@/lib/validate-display-name";
 
 export const ONBOARDING_STEPS = ["Ism", "Yosh", "Joylashuv"] as const;
+
+const NAME_ERROR_DEFAULTS: Record<DisplayNameErrorKey, string> = {
+  nameRequired: "Ism va familiyani kiriting",
+  nameInvalidChars: "Faqat harflar, bo'sh joy, defis (-) va apostrof (') ishlatiladi.",
+  nameNeedsFull: "Ism va familiyani to'liq kiriting",
+  namePartTooShort: "Har bir qism kamida 2 ta harfdan iborat bo'lishi kerak",
+  nameTooLong: "Ism juda uzun",
+  nameTooManyParts: "Ismda so'zlar soni juda ko'p",
+};
 
 export function useOnboardingFlow() {
   const navigate = useNavigate();
   const updateMe = useUpdateMe();
 
   const [step, setStep] = useState(1);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [firstName, setFirstNameRaw] = useState("");
+  const [lastName, setLastNameRaw] = useState("");
   const [age, setAge] = useState("");
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const [locating, setLocating] = useState(false);
   const [gpsAttempted, setGpsAttempted] = useState(false);
+  const [nameTouched, setNameTouched] = useState(false);
+
+  const setFirstName = useCallback((value: string) => {
+    setNameTouched(true);
+    setFirstNameRaw(sanitizeDisplayNameInput(value));
+  }, []);
+
+  const setLastName = useCallback((value: string) => {
+    setNameTouched(true);
+    setLastNameRaw(sanitizeDisplayNameInput(value));
+  }, []);
+
+  const nameValidation = useMemo(
+    () => validateDisplayName(`${firstName} ${lastName}`),
+    [firstName, lastName],
+  );
+
+  const nameError =
+    nameTouched && !nameValidation.ok
+      ? NAME_ERROR_DEFAULTS[nameValidation.errorKey]
+      : null;
 
   const detectLocation = useCallback(async () => {
     setLocating(true);
@@ -52,7 +87,7 @@ export function useOnboardingFlow() {
   }, [step, gpsAttempted, detectLocation]);
 
   const canNext =
-    (step === 1 && firstName.trim().length >= 2 && lastName.trim().length >= 2) ||
+    (step === 1 && nameValidation.ok) ||
     (step === 2 && parseInt(age, 10) >= 10 && parseInt(age, 10) <= 100) ||
     (step === 3 && lat != null && lng != null && !locating);
 
@@ -61,12 +96,20 @@ export function useOnboardingFlow() {
       toast.error("GPS orqali joylashuvni aniqlang");
       return;
     }
+    const checked = validateDisplayName(`${firstName} ${lastName}`);
+    if (!checked.ok) {
+      setNameTouched(true);
+      setStep(1);
+      toast.error(NAME_ERROR_DEFAULTS[checked.errorKey]);
+      return;
+    }
     const ageNum = parseInt(age, 10);
     const birthYear = new Date().getFullYear() - ageNum;
+    const [first, ...rest] = checked.value.split(" ");
     try {
       await updateMe.mutateAsync({
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
+        first_name: first ?? "",
+        last_name: rest.join(" "),
         birth_year: birthYear,
         latitude: roundCoord(lat),
         longitude: roundCoord(lng),
@@ -80,6 +123,11 @@ export function useOnboardingFlow() {
   };
 
   const onPrimary = () => {
+    if (step === 1 && !nameValidation.ok) {
+      setNameTouched(true);
+      toast.error(NAME_ERROR_DEFAULTS[nameValidation.errorKey]);
+      return;
+    }
     if (step < 3) {
       if (canNext) setStep((s) => s + 1);
       return;
@@ -107,6 +155,7 @@ export function useOnboardingFlow() {
     canNext,
     onPrimary,
     busy,
+    nameError,
   };
 }
 
