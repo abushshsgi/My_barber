@@ -16,7 +16,7 @@ from .email_utils import is_internal_email
 from .name_validation import validate_display_name
 from .phone_utils import normalize_phone_field
 from .uz_regions import UzRegion
-from geo.region_resolver import REGION_MISMATCH_MSG, region_matches_gps
+from geo.region_resolver import resolve_region_from_coords
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -166,11 +166,11 @@ class UserSerializer(serializers.ModelSerializer):
             has_name = bool((first_name or "").strip() and (last_name or "").strip()) or bool(
                 (full_name or "").strip()
             )
-            if not has_name or not (region or "").strip():
+            if not has_name:
                 raise serializers.ValidationError(
                     {
                         "onboarding_completed": (
-                            "Profil to'liq emas — ism, familiya va viloyat talab qilinadi."
+                            "Profil to'liq emas — ism va familiya talab qilinadi."
                         ),
                     }
                 )
@@ -180,11 +180,19 @@ class UserSerializer(serializers.ModelSerializer):
                         "onboarding_completed": "Profil to'liq emas — yosh talab qilinadi.",
                     }
                 )
-            if lat is not None and lng is not None and region:
-                if not region_matches_gps(region, float(lat), float(lng)):
-                    raise serializers.ValidationError(
-                        {"region": REGION_MISMATCH_MSG},
-                    )
+            if lat is None or lng is None:
+                raise serializers.ValidationError(
+                    {
+                        "onboarding_completed": (
+                            "Profil to'liq emas — joylashuv (GPS) talab qilinadi."
+                        ),
+                    }
+                )
+            # Viloyat tanlash shart emas: GPS dan avtomatik aniqlanadi (backend foydasi uchun).
+            if not (region or "").strip():
+                resolved = resolve_region_from_coords(float(lat), float(lng))
+                if resolved.region_code:
+                    attrs["region"] = resolved.region_code
         return attrs
 
     def _apply_name_fields(self, validated_data: dict, instance: User | None = None) -> dict:

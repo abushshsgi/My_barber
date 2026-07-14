@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { GeolocationError, getCurrentPosition } from "@mybarber/shared/geolocation";
+import { GeolocationError, getAccuratePosition } from "@mybarber/shared/geolocation";
 import { geocodeAddress, reverseGeocodeAddress, validateLocation } from "@/lib/api/geo";
 import { cn } from "@/lib/utils";
 
@@ -110,11 +110,13 @@ export function UserAddressLocationPicker({
           setAddress?.(result.full_name || result.address);
         })
         .catch(() => undefined);
-      void validateLocation(nextLat, nextLng, region || undefined)
-        .then((v) => {
-          if (v.region_from_gps) suggestRegionFromGps(v.region_from_gps);
-        })
-        .catch(() => undefined);
+      if (onRegionSuggestion) {
+        void validateLocation(nextLat, nextLng, region || undefined)
+          .then((v) => {
+            if (v.region_from_gps) suggestRegionFromGps(v.region_from_gps);
+          })
+          .catch(() => undefined);
+      }
     }, MAP_DEBOUNCE_MS);
   };
 
@@ -138,16 +140,23 @@ export function UserAddressLocationPicker({
     }
     setLocating(true);
     try {
-      const pos = await getCurrentPosition();
+      const pos = await getAccuratePosition({
+        enableHighAccuracy: true,
+        desiredAccuracyMeters: 35,
+        maxWatchMs: 12_000,
+        maximumAge: 0,
+      });
       setLatitude(pos.lat.toFixed(6));
       setLongitude(pos.lng.toFixed(6));
       const result = await reverseGeocodeAddress(pos.lat, pos.lng);
       if (result) {
         setAddress?.(result.full_name || result.address);
       }
-      const validation = await validateLocation(pos.lat, pos.lng, region || undefined);
-      if (validation.region_from_gps) {
-        suggestRegionFromGps(validation.region_from_gps);
+      if (onRegionSuggestion) {
+        const validation = await validateLocation(pos.lat, pos.lng, region || undefined);
+        if (validation.region_from_gps) {
+          suggestRegionFromGps(validation.region_from_gps);
+        }
       }
       toast.success(t("addresses.gpsDetected", { defaultValue: "Joylashuv aniqlandi" }));
     } catch (e) {

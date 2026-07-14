@@ -1,5 +1,4 @@
 import { Calendar, MapPin, User } from "lucide-react";
-import { CoverageWaitlistCard } from "@/components/coverage/CoverageWaitlistCard";
 import { UserAddressLocationPicker } from "@/components/address/UserAddressLocationPicker";
 import { cn } from "@/lib/utils";
 import type { OnboardingFlowState } from "./useOnboardingFlow";
@@ -62,21 +61,11 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
     setLastName,
     age,
     setAge,
-    region,
-    setRegion,
     lat,
     setLat,
     lng,
     setLng,
     locating,
-    validation,
-    interestSubmitted,
-    setInterestSubmitted,
-    regions,
-    regionsLoading,
-    regionLabel,
-    regionMismatch,
-    noCoverage,
     detectLocation,
     busy,
   } = state;
@@ -160,40 +149,9 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
         ) : null}
       </div>
 
-      <div>
-        <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-          Viloyat
-        </label>
-        <select
-          value={region}
-          disabled={regionsLoading || locating}
-          onChange={(e) => setRegion(e.target.value)}
-          className={cn(inputClass, isDesktop && "max-w-md")}
-        >
-          <option value="">Tanlang…</option>
-          {regions.map((r) => (
-            <option key={r.value} value={r.value}>
-              {r.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {regionMismatch ? (
-        <p className="text-xs font-semibold text-destructive">
-          Joylashuvingiz tanlangan viloyatga mos emas
-        </p>
-      ) : validation?.region_from_gps_label && region ? (
-        <p className="text-[11px] text-muted-foreground">
-          GPS: {validation.city_label || validation.region_from_gps_label}
-        </p>
-      ) : null}
-
       <UserAddressLocationPicker
-        region={region}
-        regionLabel={regionLabel}
-        regionSyncMode="fill-empty"
         showGpsButton={false}
+        requireRegion={false}
         latitude={lat != null ? String(lat) : ""}
         longitude={lng != null ? String(lng) : ""}
         setLatitude={(v) => {
@@ -204,8 +162,7 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
           const n = parseFloat(v);
           if (Number.isFinite(n)) setLng(n);
         }}
-        onRegionSuggestion={(code) => setRegion((prev) => prev || code)}
-        mapClassName={isDesktop ? "h-[280px] xl:h-[320px]" : undefined}
+        mapClassName={isDesktop ? "h-[280px] xl:h-[320px]" : "h-56 sm:h-64"}
         className={isDesktop ? "[&>div]:rounded-[1.25rem]" : undefined}
       />
 
@@ -216,18 +173,6 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
           locating={locating}
           hasLocation={lat != null}
           onClick={() => void detectLocation()}
-        />
-      ) : null}
-
-      {noCoverage && !interestSubmitted ? (
-        <CoverageWaitlistCard
-          region={region}
-          lat={lat}
-          lng={lng}
-          cityLabel={validation?.city_label}
-          source="onboarding"
-          onSubmitted={() => setInterestSubmitted(true)}
-          className={isDesktop ? "p-3" : undefined}
         />
       ) : null}
 
