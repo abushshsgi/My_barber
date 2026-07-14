@@ -3,20 +3,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fetchAdminUsers, patchAdminUser, PAGE_SIZE } from "@/lib/admin-api";
-import { UZ_REGIONS } from "@/lib/uz-regions";
+import { uzRegionLabel } from "@/lib/uz-regions";
 import { FilterToolbar } from "@/components/admin/FilterToolbar";
 import { Pagination } from "@/components/admin/Pagination";
 import { TableSkeleton } from "@/components/admin/Skeletons";
 import { EmptyState } from "@/components/admin/EmptyState";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 export const Route = createFileRoute("/admin/users")({
   component: UsersRoute,
@@ -64,7 +57,11 @@ function UsersPage() {
           Mijozlar
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Platforma orqali xizmat olgan barcha foydalanuvchilar.
+          Har bir mijozning telefoni, hududi, bronlari va boshqa ma&apos;lumotlari. Statistika uchun{" "}
+          <Link to="/admin/statistics/users" className="underline underline-offset-2 hover:text-foreground">
+            Statistikalar → Mijozlar
+          </Link>{" "}
+          sahifasiga o&apos;ting.
         </p>
       </div>
 
@@ -98,7 +95,7 @@ function UsersPage() {
                     <th className="px-6 py-3 font-medium">Telefon</th>
                     <th className="px-6 py-3 font-medium">Hudud</th>
                     <th className="px-6 py-3 font-medium text-right">Bronlar</th>
-                    <th className="px-6 py-3 font-medium">Ro'yxatdan o'tdi</th>
+                    <th className="px-6 py-3 font-medium">Ro&apos;yxatdan o&apos;tdi</th>
                     <th className="px-6 py-3 font-medium">Holat</th>
                   </tr>
                 </thead>
@@ -114,32 +111,12 @@ function UsersPage() {
                           {u.name}
                         </Link>
                         <div className="text-xs text-muted-foreground">
-                          {u.displayEmail || u.phone || "Email qo'shilmagan"}
+                          {u.displayEmail || "Email qo'shilmagan"}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-foreground tabular-nums">{u.phone}</td>
-                      <td className="px-6 py-4">
-                        <Select
-                          value={u.region || "__UNSET__"}
-                          onValueChange={(v) =>
-                            patchUser.mutate({
-                              id: u.id,
-                              body: { region: v === "__UNSET__" ? "" : v },
-                            })
-                          }
-                        >
-                          <SelectTrigger className="h-8 w-36 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__UNSET__">Ko'rsatilmagan</SelectItem>
-                            {UZ_REGIONS.map((r) => (
-                              <SelectItem key={r.value} value={r.value}>
-                                {r.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                      <td className="px-6 py-4 text-foreground">
+                        {u.regionLabel || uzRegionLabel(u.region)}
                       </td>
                       <td className="px-6 py-4 text-right tabular-nums text-foreground">
                         {u.bookings_count}

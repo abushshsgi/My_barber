@@ -42,6 +42,7 @@ from .serializers import (
     AdminSupportTicketDetailSerializer,
     AdminSupportTicketSerializer,
     AdminUserSerializer,
+    AdminUserDetailSerializer,
     AdminUserUpdateSerializer,
     AdminAuditLogSerializer,
     salon_schedule_summary,
@@ -246,26 +247,24 @@ class AdminUserDetailView(generics.RetrieveUpdateAPIView):
         bookings_count=Count("customer_bookings"),
         family_members_count=Count("family_members"),
     )
-    serializer_class = AdminUserSerializer
+    serializer_class = AdminUserDetailSerializer
 
     def get_serializer_class(self):
         if self.request.method in ("PATCH", "PUT"):
             return AdminUserUpdateSerializer
-        return AdminUserSerializer
+        return AdminUserDetailSerializer
 
     def perform_update(self, serializer):
         obj = self.get_object()
         before = {
             "full_name": obj.full_name,
             "phone": obj.phone,
-            "region": obj.region,
             "is_active": obj.is_active,
         }
         updated = serializer.save()
         after = {
             "full_name": updated.full_name,
             "phone": updated.phone,
-            "region": updated.region,
             "is_active": updated.is_active,
         }
         _audit(self.request, "update", "user", updated.id, updated.email, before=before, after=after)
@@ -433,9 +432,13 @@ class AdminBarberDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def perform_update(self, serializer):
         obj = self.get_object()
-        before = {"full_name": obj.full_name, "phone": obj.phone, "region": obj.region, "is_active": obj.is_active}
+        before = {"full_name": obj.full_name, "phone": obj.phone, "is_active": obj.is_active}
         updated = serializer.save()
-        after = {"full_name": updated.full_name, "phone": updated.phone, "region": updated.region, "is_active": updated.is_active}
+        after = {
+            "full_name": updated.full_name,
+            "phone": updated.phone,
+            "is_active": updated.is_active,
+        }
         _audit(self.request, "update", "barber", updated.id, updated.email, before=before, after=after)
 
     def perform_destroy(self, instance):

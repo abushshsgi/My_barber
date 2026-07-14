@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from django.db.models import Avg, Count, Sum
+from django.db.models import Avg, Count, Max, Q, Sum
 from django.db.utils import OperationalError, ProgrammingError
 
 from accounts.models import AdminAccount, User
@@ -152,9 +152,11 @@ class AdminUserSerializer(serializers.ModelSerializer):
 
 
 class AdminUserUpdateSerializer(serializers.ModelSerializer):
+    """Hudud mijoz profilidan olinadi — admin o'zgartira olmaydi."""
+
     class Meta:
         model = User
-        fields = ("role", "is_active", "full_name", "phone", "region")
+        fields = ("role", "is_active", "full_name", "phone")
 
     def validate_role(self, value):
         allowed = {User.Role.USER}
@@ -162,13 +164,227 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Faqat mijoz roliga ruxsat.")
         return value
 
-    def validate_region(self, value):
-        if value in (None, ""):
-            return ""
-        allowed = {c[0] for c in UzRegion.choices}
-        if value not in allowed:
-            raise serializers.ValidationError("Noto'g'ri viloyat.")
-        return value
+
+class AdminUserDetailSerializer(AdminUserSerializer):
+    """Mijoz kartochkasi — bronlar, Morph AI, hamyon (faqat o'qish)."""
+
+    signup_method = serializers.SerializerMethodField()
+    bookings_summary = serializers.SerializerMethodField()
+    recent_bookings = serializers.SerializerMethodField()
+    morph_ai = serializers.SerializerMethodField()
+    recent_styles = serializers.SerializerMethodField()
+    wallet = serializers.SerializerMethodField()
+    family_members = serializers.SerializerMethodField()
+    booking_regions = serializers.SerializerMethodField()
+
+    class Meta(AdminUserSerializer.Meta):
+        fields = AdminUserSerializer.Meta.fields + (
+            "signup_method",
+            "bookings_summary",
+            "recent_bookings",
+            "morph_ai",
+            "recent_styles",
+            "wallet",
+            "family_members",
+            "booking_regions",
+        )
+        read_only_fields = AdminUserSerializer.Meta.read_only_fields + (
+            "signup_method",
+            "bookings_summary",
+            "recent_bookings",
+            "morph_ai",
+            "recent_styles",
+            "wallet",
+            "family_members",
+            "booking_regions",
+        )
+
+    def get_signup_method(self, obj: User) -> str:
+        from control_panel.user_signups import detect_signup_method
+
+        return detect_signup_method(obj)
+
+    def get_bookings_summary(self, obj: User):
+        qs = Booking.objects.filter(customer=obj)
+        total = qs.count()
+        by_status = dict(qs.values("status").annotate(c=Count("id")).values_list("status", "c"))
+        spent = (
+            qs.filter(status=Booking.Status.COMPLETED)
+            .aggregate(s=Sum("total_price"))
+            .get("s")
+        )
+        return {
+            "total": total,
+            "by_status": by_status,
+            "spent_completed_uzs": str(spent or 0),
+        }
+
+    def get_recent_bookings(self, obj: User):
+        rows = (
+            Booking.objects.filter(customer=obj)
+            .select_related("barber", "salon")
+            .prefetch_related("lines")
+            .order_by("-created_at")[:20]
+        )
+        region_labels = dict(UzRegion.choices)
+        out = []
+        for bk in rows:
+            line_list = list(bk.lines.all())[:8]
+            svc = ", ".join(el.service_name for el in line_list) if line_list else "—"
+            barber = bk.barber
+            bname = ""
+            bregion = ""
+            if barber is not None:
+                bname = (barber.full_name or "").strip() or (barber.email or "")
+                bregion = region_labels.get(barber.region or "", barber.region or "")
+            out.append(
+                {
+                    "id": bk.id,
+                    "barber_name": bname or "—",
+                    "salon_name": bk.salon.name if bk.salon_id else "—",
+                    "region": getattr(barber, "region", "") or "",
+                    "region_label": bregion or "",
+                    "start_at": bk.start_at,
+                    "status": bk.status,
+                    "total_price": str(bk.total_price),
+                    "services_preview": svc[:400],
+                    "customer_phone": bk.customer_phone or "",
+                    "created_at": bk.created_at,
+                }
+            )
+        return out
+
+    def get_booking_regions(self, obj: User):
+        """Mijoz bron qilgan hududlar (sartarosh region bo'yicha)."""
+        region_labels = dict(UzRegion.choices)
+        rows = (
+            Booking.objects.filter(customer=obj)
+            .exclude(barber__region="")
+            .values("barber__region")
+            .annotate(c=Count("id"))
+            .order_by("-c")
+        )
+        return [
+            {
+                "region": r["barber__region"],
+                "label": region_labels.get(r["barber__region"], r["barber__region"]),
+                "bookings": r["c"],
+            }
+            for r in rows
+            if r["barber__region"]
+        ]
+
+    def get_morph_ai(self, obj: User):
+        empty = {
+            "generations": 0,
+            "tryon": 0,
+            "analyze": 0,
+            "face_check": 0,
+            "success": 0,
+            "failed": 0,
+            "cost_usd": "0",
+            "last_at": None,
+        }
+        try:
+            from ai.models import AiGenerationUsage
+        except Exception:
+            return empty
+        agg = AiGenerationUsage.objects.filter(user=obj).aggregate(
+            generations=Count("id"),
+            tryon=Count("id", filter=Q(kind=AiGenerationUsage.Kind.TRYON)),
+            analyze=Count("id", filter=Q(kind=AiGenerationUsage.Kind.ANALYZE)),
+            face_check=Count("id", filter=Q(kind=AiGenerationUsage.Kind.FACE_CHECK)),
+            success=Count("id", filter=Q(status=AiGenerationUsage.Status.SUCCESS)),
+            failed=Count("id", filter=Q(status=AiGenerationUsage.Status.FAILED)),
+            cost=Sum("cost_usd"),
+            last_at=Max("created_at"),
+        )
+        return {
+            "generations": int(agg["generations"] or 0),
+            "tryon": int(agg["tryon"] or 0),
+            "analyze": int(agg["analyze"] or 0),
+            "face_check": int(agg["face_check"] or 0),
+            "success": int(agg["success"] or 0),
+            "failed": int(agg["failed"] or 0),
+            "cost_usd": str(agg["cost"] or 0),
+            "last_at": agg["last_at"],
+        }
+
+    def get_recent_styles(self, obj: User):
+        out = []
+        try:
+            from ai.models import AiGenerationUsage, AiStyleHistoryEntry
+        except Exception:
+            return out
+
+        for row in AiGenerationUsage.objects.filter(user=obj).exclude(style_id="").order_by(
+            "-created_at"
+        )[:15]:
+            out.append(
+                {
+                    "kind": row.kind,
+                    "style_id": row.style_id,
+                    "style_title": row.style_title or row.style_id,
+                    "status": row.status,
+                    "created_at": row.created_at,
+                    "source": "generation",
+                }
+            )
+        if len(out) < 8:
+            for row in AiStyleHistoryEntry.objects.filter(user=obj).order_by("-created_at")[:8]:
+                out.append(
+                    {
+                        "kind": "history",
+                        "style_id": row.face_shape_key or "",
+                        "style_title": f"{row.face_shape_key or '—'} / {row.hair_type_key or '—'}",
+                        "status": "success",
+                        "created_at": row.created_at,
+                        "source": row.source,
+                    }
+                )
+        return out[:20]
+
+    def get_wallet(self, obj: User):
+        try:
+            from wallet.models import LedgerEntry, Wallet
+        except Exception:
+            return None
+        wallet = Wallet.objects.filter(user=obj).first()
+        if wallet is None:
+            return None
+        entries = list(
+            LedgerEntry.objects.filter(wallet=wallet).order_by("-created_at")[:10]
+        )
+        return {
+            "wallet_number": wallet.wallet_number,
+            "balance": str(wallet.balance),
+            "recent_entries": [
+                {
+                    "id": str(e.id),
+                    "entry_type": e.entry_type,
+                    "amount": str(e.amount),
+                    "balance_after": str(e.balance_after),
+                    "created_at": e.created_at,
+                }
+                for e in entries
+            ],
+        }
+
+    def get_family_members(self, obj: User):
+        from accounts.models import FamilyMember
+
+        return [
+            {
+                "id": m.id,
+                "full_name": m.name or "",
+                "relation": m.relation or "",
+                "relation_label": m.get_relation_display(),
+                "phone": m.phone or "",
+            }
+            for m in FamilyMember.objects.filter(user=obj).order_by("sort_order", "name", "id")[
+                :30
+            ]
+        ]
 
 
 class AdminSalonListSerializer(serializers.ModelSerializer):
@@ -491,17 +707,11 @@ class AdminBarberSerializer(serializers.ModelSerializer):
 
 
 class AdminBarberUpdateSerializer(serializers.ModelSerializer):
+    """Hudud sartarosh profilidan olinadi — admin o'zgartira olmaydi."""
+
     class Meta:
         model = Barber
-        fields = ("full_name", "phone", "region", "is_active")
-
-    def validate_region(self, value):
-        if value in (None, ""):
-            return ""
-        allowed = {c[0] for c in UzRegion.choices}
-        if value not in allowed:
-            raise serializers.ValidationError("Noto'g'ri viloyat.")
-        return value
+        fields = ("full_name", "phone", "is_active")
 
 
 class AdminBarberDetailSerializer(AdminBarberSerializer):

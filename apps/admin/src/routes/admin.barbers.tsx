@@ -12,7 +12,7 @@ import {
   deleteAdminBarber,
   PAGE_SIZE,
 } from "@/lib/admin-api";
-import { UZ_REGIONS } from "@/lib/uz-regions";
+import { uzRegionLabel } from "@/lib/uz-regions";
 import type {
   AdminBarber,
   AdminBarberAccountSegment,
@@ -28,13 +28,6 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -172,7 +165,8 @@ function BarbersListPage() {
           Sartaroshlar
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Tarmoqdagi barcha sartaroshlar va ularning faolligi.
+          Har bir sartaroshning profili, bronlari va sharhlari. Hudud faqat ko'rsatiladi (tahrirlab
+          bo'lmaydi) — batafsil uchun ism ustiga bosing.
         </p>
       </div>
 
@@ -292,28 +286,8 @@ function BarbersListPage() {
                           <span className="text-muted-foreground italic">Mustaqil</span>
                         )}
                       </td>
-                      <td className="px-6 py-4">
-                        <Select
-                          value={b.region || "__UNSET__"}
-                          onValueChange={(v) =>
-                            patchBarber.mutate({
-                              id: b.id,
-                              body: { region: v === "__UNSET__" ? "" : v },
-                            })
-                          }
-                        >
-                          <SelectTrigger className="h-8 w-36 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__UNSET__">Ko'rsatilmagan</SelectItem>
-                            {UZ_REGIONS.map((r) => (
-                              <SelectItem key={r.value} value={r.value}>
-                                {r.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                      <td className="px-6 py-4 text-foreground text-sm">
+                        {uzRegionLabel(b.region)}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1.5 text-foreground">

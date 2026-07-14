@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { apiFetch, apiJson } from "./api";
+import { uzRegionLabel } from "./uz-regions";
 
 export const PAGE_SIZE = 50;
 
@@ -34,6 +35,7 @@ export type AdminUser = {
   emailVerified: boolean;
   emailVerifiedAt: string | null;
   region: RegionCode;
+  regionLabel: string;
   birthYear: number | null;
   defaultAddress: string;
   familyMembersCount: number;
@@ -43,6 +45,64 @@ export type AdminUser = {
 };
 
 export type UserSignupMethod = "google" | "phone" | "email" | "unknown";
+
+export type AdminUserDetail = AdminUser & {
+  signupMethod: UserSignupMethod;
+  bookingsSummary: {
+    total: number;
+    byStatus: Record<string, number>;
+    spentCompletedUzs: number;
+  };
+  recentBookings: Array<{
+    id: string;
+    barberName: string;
+    salonName: string;
+    region: string;
+    regionLabel: string;
+    startAt: string;
+    status: string;
+    totalPrice: number;
+    servicesPreview: string;
+    customerPhone: string;
+  }>;
+  bookingRegions: Array<{ region: string; label: string; bookings: number }>;
+  morphAi: {
+    generations: number;
+    tryon: number;
+    analyze: number;
+    faceCheck: number;
+    success: number;
+    failed: number;
+    costUsd: number;
+    lastAt: string | null;
+  };
+  recentStyles: Array<{
+    kind: string;
+    styleId: string;
+    styleTitle: string;
+    status: string;
+    createdAt: string;
+    source: string;
+  }>;
+  wallet: {
+    walletNumber: string;
+    balance: number;
+    recentEntries: Array<{
+      id: string;
+      entryType: string;
+      amount: number;
+      balanceAfter: number;
+      createdAt: string;
+    }>;
+  } | null;
+  familyMembers: Array<{
+    id: string;
+    fullName: string;
+    relation: string;
+    relationLabel: string;
+    phone: string;
+  }>;
+};
 
 export type AdminUserSignupAnalytics = {
   generatedAt: string;
@@ -414,6 +474,62 @@ type BackendUserRow = {
   is_active: boolean;
   date_joined: string;
   bookings_count?: number;
+  signup_method?: string;
+  bookings_summary?: {
+    total?: number;
+    by_status?: Record<string, number>;
+    spent_completed_uzs?: string | number;
+  };
+  recent_bookings?: Array<{
+    id: number;
+    barber_name?: string;
+    salon_name?: string;
+    region?: string;
+    region_label?: string;
+    start_at?: string;
+    status?: string;
+    total_price?: string | number;
+    services_preview?: string;
+    customer_phone?: string;
+    created_at?: string;
+  }>;
+  booking_regions?: Array<{ region?: string; label?: string; bookings?: number }>;
+  morph_ai?: {
+    generations?: number;
+    tryon?: number;
+    analyze?: number;
+    face_check?: number;
+    success?: number;
+    failed?: number;
+    cost_usd?: string | number;
+    last_at?: string | null;
+  };
+  recent_styles?: Array<{
+    kind?: string;
+    style_id?: string;
+    style_title?: string;
+    status?: string;
+    created_at?: string;
+    source?: string;
+  }>;
+  wallet?: {
+    wallet_number?: string;
+    balance?: string | number;
+    recent_entries?: Array<{
+      id?: string;
+      entry_type?: string;
+      amount?: string | number;
+      balance_after?: string | number;
+      created_at?: string;
+    }>;
+  } | null;
+  family_members?: Array<{
+    id?: number;
+    full_name?: string;
+    relation?: string;
+    relation_label?: string;
+    phone?: string;
+  }>;
 };
 
 type BackendBarberSignupSnapshot = {
@@ -613,6 +729,12 @@ type BackendStats = {
   }>;
 };
 
+function mapSignupMethod(raw: string | undefined): UserSignupMethod {
+  const v = (raw || "").trim();
+  if (v === "google" || v === "phone" || v === "email" || v === "unknown") return v;
+  return "unknown";
+}
+
 function mapUser(u: BackendUserRow): AdminUser {
   return {
     id: String(u.id),
@@ -625,12 +747,83 @@ function mapUser(u: BackendUserRow): AdminUser {
     emailVerified: Boolean(u.email_verified),
     emailVerifiedAt: u.email_verified_at ?? null,
     region: u.region,
+    regionLabel: (u.region_label || "").trim() || uzRegionLabel(u.region),
     birthYear: u.birth_year ?? null,
     defaultAddress: u.default_address?.trim() || "",
     familyMembersCount: toInt(u.family_members_count, 0),
     is_active: !!u.is_active,
     created_at: u.date_joined,
     bookings_count: toInt(u.bookings_count, 0),
+  };
+}
+
+function mapUserDetail(u: BackendUserRow): AdminUserDetail {
+  const base = mapUser(u);
+  const morph = u.morph_ai ?? {};
+  const summary = u.bookings_summary ?? {};
+  return {
+    ...base,
+    signupMethod: mapSignupMethod(u.signup_method),
+    bookingsSummary: {
+      total: toInt(summary.total, base.bookings_count),
+      byStatus: summary.by_status ?? {},
+      spentCompletedUzs: toInt(summary.spent_completed_uzs, 0),
+    },
+    recentBookings: (u.recent_bookings ?? []).map((b) => ({
+      id: String(b.id),
+      barberName: b.barber_name || "—",
+      salonName: b.salon_name || "—",
+      region: b.region || "",
+      regionLabel: b.region_label || "—",
+      startAt: b.start_at || "",
+      status: b.status || "",
+      totalPrice: toInt(b.total_price, 0),
+      servicesPreview: b.services_preview || "—",
+      customerPhone: b.customer_phone || "",
+    })),
+    bookingRegions: (u.booking_regions ?? []).map((r) => ({
+      region: r.region || "",
+      label: r.label || r.region || "—",
+      bookings: toInt(r.bookings, 0),
+    })),
+    morphAi: {
+      generations: toInt(morph.generations, 0),
+      tryon: toInt(morph.tryon, 0),
+      analyze: toInt(morph.analyze, 0),
+      faceCheck: toInt(morph.face_check, 0),
+      success: toInt(morph.success, 0),
+      failed: toInt(morph.failed, 0),
+      costUsd: Number(morph.cost_usd ?? 0) || 0,
+      lastAt: morph.last_at ?? null,
+    },
+    recentStyles: (u.recent_styles ?? []).map((s) => ({
+      kind: s.kind || "",
+      styleId: s.style_id || "",
+      styleTitle: s.style_title || s.style_id || "—",
+      status: s.status || "",
+      createdAt: s.created_at || "",
+      source: s.source || "",
+    })),
+    wallet: u.wallet
+      ? {
+          walletNumber: u.wallet.wallet_number || "—",
+          balance: toInt(u.wallet.balance, 0),
+          recentEntries: (u.wallet.recent_entries ?? []).map((e) => ({
+            id: String(e.id ?? ""),
+            entryType: e.entry_type || "",
+            amount: toInt(e.amount, 0),
+            balanceAfter: toInt(e.balance_after, 0),
+            createdAt: e.created_at || "",
+          })),
+        }
+      : null,
+    familyMembers: (u.family_members ?? []).map((m) => ({
+      id: String(m.id ?? ""),
+      fullName: m.full_name || "—",
+      relation: m.relation || "",
+      relationLabel: m.relation_label || m.relation || "—",
+      phone: m.phone || "",
+    })),
   };
 }
 
@@ -1359,14 +1552,14 @@ export async function fetchAdminUsers(params?: {
   };
 }
 
-export async function fetchAdminUserDetail(id: string): Promise<AdminUser> {
+export async function fetchAdminUserDetail(id: string): Promise<AdminUserDetail> {
   const row = await apiJson<BackendUserRow>(`/api/v1/admin/users/${id}/`);
-  return mapUser(row);
+  return mapUserDetail(row);
 }
 
 export async function patchAdminUser(
   id: string,
-  body: Partial<{ is_active: boolean; region: string }>,
+  body: Partial<{ is_active: boolean; full_name: string; phone: string }>,
 ): Promise<AdminUser> {
   const row = await apiJson<BackendUserRow>(`/api/v1/admin/users/${id}/`, {
     method: "PATCH",
@@ -1416,7 +1609,7 @@ export async function fetchAdminBarbers(params?: {
 
 export async function patchAdminBarber(
   id: string,
-  body: Partial<{ full_name: string; phone: string; region: string; is_active: boolean }>,
+  body: Partial<{ full_name: string; phone: string; is_active: boolean }>,
 ): Promise<AdminBarber> {
   const row = await apiJson<BackendBarberRow>(`/api/v1/admin/barbers/${id}/`, {
     method: "PATCH",

@@ -40,9 +40,16 @@ function StatisticsUsersPage() {
     <div className="space-y-6">
       <StatsPageHeader
         title="Mijozlar"
-        description="Ro'yxatdan o'tish — Google va telefon (10 soniyada yangilanadi)."
+        description="Faqat statistika: ro'yxatdan o'tish (Google / telefon). Har bir mijozning batafsil profili — Mijozlar sahifasida."
         onExport={() => downloadStatisticsCsv("users")}
-      />
+      >
+        <Link
+          to="/admin/users"
+          className="inline-flex h-9 items-center rounded-md border border-border bg-background px-3 text-sm font-medium hover:bg-muted"
+        >
+          Mijozlar ro'yxati →
+        </Link>
+      </StatsPageHeader>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
         {q.isLoading || !summary ? (
