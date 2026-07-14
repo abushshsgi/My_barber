@@ -5,6 +5,7 @@ const ENTRY_TITLES: Record<string, string> = {
   topup: "Hamyon to'ldirish",
   gift_out: "Sovg'a yuborildi",
   gift_in: "Sovg'a qabul qilindi",
+  gift_design_fee: "Sovg'a karta dizayni",
   booking_pay: "Bron to'lovi",
   refund: "Qaytarim",
   adjustment: "Tuzatish",
@@ -42,6 +43,10 @@ export function mapLedgerEntry(entry: ApiLedgerEntry): WalletTransaction {
   }
   if (entry.entry_type === "gift_in") {
     title = "Sovg'a qabul qilindi";
+  }
+  if (entry.entry_type === "gift_design_fee" && entry.kind === "out") {
+    const designId = typeof meta.design_id === "string" ? meta.design_id : "";
+    title = designId ? `Dizayn · ${designId}` : "Sovg'a karta dizayni";
   }
 
   return {

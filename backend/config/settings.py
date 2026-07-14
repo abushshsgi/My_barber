@@ -277,6 +277,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "accounts.User"
 
+# Sovg'a karta dizayn to'lovi tushadigan platforma hisobi (email).
+PLATFORM_WALLET_EMAIL = os.environ.get(
+    "PLATFORM_WALLET_EMAIL", "platform-wallet@mysaloon.internal"
+).strip()
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "accounts.admin_auth.AdminJWTAuthentication",

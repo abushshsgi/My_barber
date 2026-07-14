@@ -1,9 +1,12 @@
-from decimal import Decimal
+from decimal import Decimal, ROUND_DOWN
+from uuid import uuid4
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
 from accounts.models import User
+from wallet.gift_designs import get_gift_design
 from wallet.models import GiftTransfer, LedgerEntry, Wallet, WalletCard
 from wallet.services.ledger import (
     canonical_entry_payload,
@@ -18,7 +21,8 @@ from wallet.services.wallet_number import (
     normalize_wallet_number,
 )
 
-MIN_GIFT_AMOUNT = Decimal("10000")
+MIN_GIFT_AMOUNT = Decimal("5000")
+MAX_GIFT_AMOUNT = Decimal("1000000")
 MIN_TOPUP_AMOUNT = Decimal("10000")
 
 
@@ -69,6 +73,26 @@ class WalletService:
                 if Wallet.objects.filter(user=user).exists():
                     return Wallet.objects.get(user=user)
         raise WalletServiceError("Hamyon yaratib bo'lmadi.")
+
+    @classmethod
+    def ensure_platform_wallet(cls) -> Wallet:
+        """Dizayn to'lovlari tushadigan platforma hamyoni."""
+        email = (getattr(settings, "PLATFORM_WALLET_EMAIL", "") or "").strip().lower()
+        if not email:
+            email = "platform-wallet@mysaloon.internal"
+        user, _created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                "username": f"platform_{uuid4().hex[:12]}",
+                "full_name": "MySaloon Platform",
+                "role": User.Role.USER,
+                "onboarding_completed": True,
+            },
+        )
+        if not user.has_usable_password():
+            user.set_unusable_password()
+            user.save(update_fields=["password"])
+        return cls.ensure_wallet(user)
 
     @classmethod
     def _sync_cardholder(cls, wallet: Wallet) -> None:
@@ -186,21 +210,39 @@ class WalletService:
 
         raise WalletServiceError("Qabul qiluvchini ko'rsating.")
 
+    @staticmethod
+    def _normalize_gift_amount(raw: Decimal) -> Decimal:
+        amount = Decimal(raw).quantize(Decimal("1"), rounding=ROUND_DOWN)
+        if amount < MIN_GIFT_AMOUNT:
+            raise WalletServiceError(f"Minimal sovg'a: {MIN_GIFT_AMOUNT} so'm.")
+        if amount > MAX_GIFT_AMOUNT:
+            raise WalletServiceError(f"Maksimal sovg'a: {MAX_GIFT_AMOUNT} so'm.")
+        return amount
+
     @classmethod
     @transaction.atomic
     def send_gift(
         cls,
         *,
         sender: User,
-        amount: Decimal,
+        gift_amount: Decimal,
+        design_id: str,
         idempotency_key: str,
         message: str = "",
         recipient_user_id: int | None = None,
         recipient_phone: str | None = None,
         recipient_wallet_number: str | None = None,
     ) -> GiftTransfer:
-        if amount < MIN_GIFT_AMOUNT:
-            raise WalletServiceError(f"Minimal sovg'a: {MIN_GIFT_AMOUNT} so'm.")
+        if not (idempotency_key or "").strip():
+            raise WalletServiceError("Idempotency-Key majburiy.")
+
+        design = get_gift_design(design_id)
+        if design is None:
+            raise WalletServiceError("Noto'g'ri sovg'a karta dizayni.")
+
+        gift_amount = cls._normalize_gift_amount(gift_amount)
+        design_fee = design.fee
+        total = gift_amount + design_fee
 
         sender_wallet = cls.ensure_wallet(sender)
         recipient_wallet = cls.resolve_recipient(
@@ -208,15 +250,20 @@ class WalletService:
             recipient_phone=recipient_phone,
             recipient_wallet_number=recipient_wallet_number,
         )
+        platform_wallet = cls.ensure_platform_wallet()
 
         if sender_wallet.pk == recipient_wallet.pk:
             raise WalletServiceError("O'zingizga sovg'a yuborib bo'lmaydi.")
+        if sender_wallet.pk == platform_wallet.pk:
+            raise WalletServiceError("Platforma hisobidan sovg'a yuborib bo'lmaydi.")
+        if recipient_wallet.pk == platform_wallet.pk:
+            raise WalletServiceError("Platforma hisobiga sovg'a yuborib bo'lmaydi.")
 
         existing = GiftTransfer.objects.filter(idempotency_key=idempotency_key).first()
         if existing:
             return existing
 
-        ids = sorted([sender_wallet.pk, recipient_wallet.pk])
+        ids = sorted({sender_wallet.pk, recipient_wallet.pk, platform_wallet.pk})
         locked = {
             w.pk: w
             for w in Wallet.objects.select_for_update()
@@ -225,47 +272,84 @@ class WalletService:
         }
         sender_wallet = locked[sender_wallet.pk]
         recipient_wallet = locked[recipient_wallet.pk]
+        platform_wallet = locked[platform_wallet.pk]
 
-        if sender_wallet.balance < amount:
+        if sender_wallet.balance < total:
             raise InsufficientBalanceError(
-                f"Balans yetarli emas. Kamida {amount} so'm kerak."
+                f"Balans yetarli emas. Kamida {total} so'm kerak "
+                f"(sovg'a {gift_amount} + dizayn {design_fee})."
             )
 
+        clean_message = (message or "")[:500]
         gift = GiftTransfer.objects.create(
             sender_wallet=sender_wallet,
             recipient_wallet=recipient_wallet,
-            amount=amount,
-            message=(message or "")[:500],
+            amount=gift_amount,
+            design_id=design.id,
+            design_fee=design_fee,
+            total_charged=total,
+            message=clean_message,
             status=GiftTransfer.Status.COMPLETED,
             idempotency_key=idempotency_key,
         )
 
+        fee_out_key = f"{idempotency_key}:fee-out"
+        fee_in_key = f"{idempotency_key}:fee-in"
         out_key = f"{idempotency_key}:out"
         in_key = f"{idempotency_key}:in"
         ref_id = str(gift.id)
+        meta = {
+            "message": clean_message[:200] if clean_message else "",
+            "design_id": design.id,
+            "design_fee": str(design_fee),
+            "gift_amount": str(gift_amount),
+            "total_charged": str(total),
+        }
 
+        # 1) Dizayn narxi — senderdan platformaga
+        fee_out_entry = cls.post_entry(
+            wallet=sender_wallet,
+            entry_type=LedgerEntry.EntryType.GIFT_DESIGN_FEE,
+            amount=-design_fee,
+            idempotency_key=fee_out_key,
+            reference_type="gift_transfer",
+            reference_id=ref_id,
+            metadata=meta,
+        )
+        cls.post_entry(
+            wallet=platform_wallet,
+            entry_type=LedgerEntry.EntryType.GIFT_DESIGN_FEE,
+            amount=design_fee,
+            idempotency_key=fee_in_key,
+            reference_type="gift_transfer",
+            reference_id=ref_id,
+            metadata=meta,
+        )
+
+        # 2) Sovg'a summasi — senderdan qabul qiluvchiga
         sender_entry = cls.post_entry(
             wallet=sender_wallet,
             entry_type=LedgerEntry.EntryType.GIFT_OUT,
-            amount=-amount,
+            amount=-gift_amount,
             idempotency_key=out_key,
             reference_type="gift_transfer",
             reference_id=ref_id,
-            metadata={"message": message[:200] if message else ""},
+            metadata=meta,
         )
         recipient_entry = cls.post_entry(
             wallet=recipient_wallet,
             entry_type=LedgerEntry.EntryType.GIFT_IN,
-            amount=amount,
+            amount=gift_amount,
             idempotency_key=in_key,
             reference_type="gift_transfer",
             reference_id=ref_id,
-            metadata={"message": message[:200] if message else ""},
+            metadata=meta,
         )
 
         gift.sender_entry = sender_entry
         gift.recipient_entry = recipient_entry
-        gift.save(update_fields=["sender_entry", "recipient_entry"])
+        gift.design_fee_entry = fee_out_entry
+        gift.save(update_fields=["sender_entry", "recipient_entry", "design_fee_entry"])
 
         return gift
 

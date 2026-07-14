@@ -34,11 +34,28 @@ export type ApiWalletRecipient = {
   wallet_number: string;
 };
 
+export type ApiGiftDesign = {
+  id: string;
+  name: string;
+  name_uz: string;
+  fee: string | number;
+  preview: {
+    from: string;
+    to: string;
+    accent: string;
+    pattern: string;
+  };
+};
+
 export type ApiGiftSendResponse = {
   balance: string | number;
   gift: {
     id: string;
     amount: string | number;
+    gift_amount: string | number;
+    design_id: string;
+    design_fee: string | number;
+    total_charged: string | number;
     message: string;
     status: string;
     recipient_name: string;
@@ -89,7 +106,11 @@ export async function fetchWalletTransactionsList(params?: {
 }
 
 function idempotencyKey(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const rand =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  return `${prefix}-${rand}`.slice(0, 128);
 }
 
 export async function topUpWallet(amount: number): Promise<ApiTopUpResponse> {
@@ -106,8 +127,13 @@ export async function searchWalletRecipients(q: string): Promise<ApiWalletRecipi
   return apiJson<ApiWalletRecipient[]>(`/api/v1/wallet/recipients/search/?q=${query}`);
 }
 
+export async function fetchGiftDesigns(): Promise<ApiGiftDesign[]> {
+  return apiJson<ApiGiftDesign[]>("/api/v1/wallet/gift/designs/");
+}
+
 export type SendGiftPayload = {
-  amount: number;
+  design_id: string;
+  gift_amount: number;
   message?: string;
   recipient_user_id?: number;
   recipient_phone?: string;
@@ -125,4 +151,8 @@ export async function sendGift(payload: SendGiftPayload): Promise<ApiGiftSendRes
 export function parseWalletBalance(value: string | number): number {
   const n = typeof value === "number" ? value : parseFloat(value);
   return Number.isFinite(n) ? n : 0;
+}
+
+export function parseGiftDesignFee(value: string | number): number {
+  return parseWalletBalance(value);
 }

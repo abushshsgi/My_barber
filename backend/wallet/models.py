@@ -41,6 +41,7 @@ class LedgerEntry(models.Model):
         TOPUP = "topup", "Top-up"
         GIFT_OUT = "gift_out", "Gift sent"
         GIFT_IN = "gift_in", "Gift received"
+        GIFT_DESIGN_FEE = "gift_design_fee", "Gift card design fee"
         BOOKING_PAY = "booking_pay", "Booking payment"
         REFUND = "refund", "Refund"
         ADJUSTMENT = "adjustment", "Adjustment"
@@ -96,7 +97,10 @@ class GiftTransfer(models.Model):
         on_delete=models.PROTECT,
         related_name="gifts_received",
     )
-    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    amount = models.DecimalField(max_digits=14, decimal_places=2)  # qabul qiluvchiga
+    design_id = models.CharField(max_length=32, blank=True, default="", db_index=True)
+    design_fee = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    total_charged = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     message = models.TextField(blank=True, default="")
     status = models.CharField(
         max_length=16,
@@ -117,6 +121,13 @@ class GiftTransfer(models.Model):
         null=True,
         blank=True,
         related_name="gift_as_recipient",
+    )
+    design_fee_entry = models.ForeignKey(
+        LedgerEntry,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="gift_as_design_fee",
     )
     idempotency_key = models.CharField(max_length=128, unique=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)

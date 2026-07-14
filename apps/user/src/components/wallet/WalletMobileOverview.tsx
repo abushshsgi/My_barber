@@ -75,7 +75,6 @@ export function WalletMobileOverview() {
                   cardholderName={card?.cardholder_name}
                   walletNumber={walletNumber}
                   refreshing={refreshing}
-                  monthTrend={t("walletPage.monthTrend")}
                 />
               )}
             </ClientOnly>

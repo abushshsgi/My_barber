@@ -1,6 +1,8 @@
 from rest_framework import serializers
 
+from wallet.gift_designs import get_gift_design
 from wallet.models import GiftTransfer, LedgerEntry, Wallet, WalletCard
+from wallet.services.wallet_service import MAX_GIFT_AMOUNT, MIN_GIFT_AMOUNT
 
 
 class WalletCardSerializer(serializers.ModelSerializer):
@@ -44,11 +46,23 @@ class WalletTopUpSerializer(serializers.Serializer):
 
 
 class GiftSendSerializer(serializers.Serializer):
-    amount = serializers.DecimalField(max_digits=14, decimal_places=2, min_value=10000)
+    design_id = serializers.CharField(max_length=32)
+    gift_amount = serializers.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        min_value=MIN_GIFT_AMOUNT,
+        max_value=MAX_GIFT_AMOUNT,
+    )
     message = serializers.CharField(required=False, allow_blank=True, max_length=500)
     recipient_user_id = serializers.IntegerField(required=False)
     recipient_phone = serializers.CharField(required=False, allow_blank=True)
     recipient_wallet_number = serializers.CharField(required=False, allow_blank=True)
+
+    def validate_design_id(self, value: str) -> str:
+        design = get_gift_design(value)
+        if design is None:
+            raise serializers.ValidationError("Noto'g'ri sovg'a karta dizayni.")
+        return design.id
 
     def validate(self, attrs):
         has_id = attrs.get("recipient_user_id") is not None
@@ -68,12 +82,19 @@ class GiftTransferSerializer(serializers.ModelSerializer):
         source="recipient_wallet.wallet_number",
         read_only=True,
     )
+    gift_amount = serializers.DecimalField(
+        source="amount", max_digits=14, decimal_places=2, read_only=True
+    )
 
     class Meta:
         model = GiftTransfer
         fields = (
             "id",
             "amount",
+            "gift_amount",
+            "design_id",
+            "design_fee",
+            "total_charged",
             "message",
             "status",
             "recipient_name",

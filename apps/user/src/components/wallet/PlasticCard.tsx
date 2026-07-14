@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
 import { animate, motion, useMotionValue, useReducedMotion } from "framer-motion";
-import { Nfc, TrendingUp } from "lucide-react";
+import { Nfc } from "lucide-react";
 import { useDisplayUser } from "@/hooks/use-me";
 import { cn } from "@/lib/utils";
 
@@ -34,13 +34,11 @@ export function PlasticCard({
   cardholderName,
   walletNumber,
   refreshing = false,
-  monthTrend,
 }: {
   balance: number;
   cardholderName?: string;
   walletNumber?: string;
   refreshing?: boolean;
-  monthTrend?: string;
 }) {
   const { name } = useDisplayUser();
   const displayName = (cardholderName || name || "FOYDALANUVCHI").toUpperCase();
@@ -100,15 +98,6 @@ export function PlasticCard({
 
   return (
     <div className="w-full max-w-[340px]" style={{ perspective: 1100 }}>
-      {monthTrend ? (
-        <div className="mb-3 flex justify-center">
-          <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2.5 py-1 text-[10px] font-bold text-foreground shadow-sm">
-            <TrendingUp className="h-3 w-3" strokeWidth={2.4} />
-            {monthTrend}
-          </span>
-        </div>
-      ) : null}
-
       <motion.article
         ref={cardRef}
         className={cn(

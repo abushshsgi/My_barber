@@ -1,10 +1,16 @@
 import hashlib
 import json
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 from wallet.models import LedgerEntry
 
 GENESIS_HASH = "0" * 64
+
+
+def _money_str(value: Decimal | int | str) -> str:
+    """Hash uchun barqaror pul satri (har doim 2 kasr)."""
+    quantized = Decimal(value).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    return format(quantized, "f")
 
 
 def canonical_entry_payload(
@@ -20,8 +26,8 @@ def canonical_entry_payload(
     return {
         "wallet_id": str(wallet_id),
         "entry_type": entry_type,
-        "amount": str(amount),
-        "balance_after": str(balance_after),
+        "amount": _money_str(amount),
+        "balance_after": _money_str(balance_after),
         "reference_type": reference_type or "",
         "reference_id": reference_id or "",
         "idempotency_key": idempotency_key,
@@ -36,7 +42,7 @@ def compute_entry_hash(prev_hash: str, payload: dict) -> str:
 def last_entry_hash(wallet_id) -> str:
     last = (
         LedgerEntry.objects.filter(wallet_id=wallet_id)
-        .order_by("-created_at")
+        .order_by("-created_at", "-pk")
         .only("entry_hash")
         .first()
     )
@@ -44,7 +50,7 @@ def last_entry_hash(wallet_id) -> str:
 
 
 def verify_wallet_chain(wallet_id) -> tuple[bool, str | None]:
-    entries = LedgerEntry.objects.filter(wallet_id=wallet_id).order_by("created_at")
+    entries = LedgerEntry.objects.filter(wallet_id=wallet_id).order_by("created_at", "pk")
     prev = GENESIS_HASH
     for entry in entries:
         if entry.prev_hash != prev:

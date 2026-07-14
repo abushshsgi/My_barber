@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Gift, Plus, RefreshCw, TrendingUp, Wallet as WalletIcon } from "lucide-react";
+import { Gift, Plus, RefreshCw, Wallet as WalletIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
@@ -70,10 +70,6 @@ export function WalletDesktopOverviewPanel() {
             {walletNumber ? (
               <p className="mt-2 font-mono text-xs tracking-wide text-muted-foreground">{walletNumber}</p>
             ) : null}
-            <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 text-xs font-semibold text-foreground">
-              <TrendingUp className="h-3.5 w-3.5" strokeWidth={2.2} />
-              {t("walletPage.monthTrend")}
-            </span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">

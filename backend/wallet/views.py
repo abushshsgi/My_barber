@@ -13,6 +13,7 @@ from accounts.models import User
 from accounts.permissions import IsAdmin
 from accounts.phone_auth import normalize_uz_phone
 from accounts.throttles import AuthIPThrottle, WalletGiftThrottle, WalletTopUpThrottle
+from wallet.gift_designs import gift_design_to_dict, list_gift_designs
 from wallet.models import LedgerEntry, Wallet
 from wallet.serializers import (
     GiftSendSerializer,
@@ -29,9 +30,13 @@ from wallet.services.wallet_service import (
 )
 
 
-def _idempotency_key(request) -> str:
-    key = (request.headers.get("Idempotency-Key") or request.headers.get("idempotency-key") or "").strip()
+def _idempotency_key(request, *, required: bool = False) -> str:
+    key = (
+        request.headers.get("Idempotency-Key") or request.headers.get("idempotency-key") or ""
+    ).strip()
     if not key:
+        if required:
+            raise WalletServiceError("Idempotency-Key header majburiy.")
         key = f"req-{request.user.pk}-{request.path}"
     return key[:128]
 
@@ -108,6 +113,13 @@ class WalletTopUpView(APIView):
         )
 
 
+class WalletGiftDesignsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response([gift_design_to_dict(d) for d in list_gift_designs()])
+
+
 class WalletGiftSendView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [WalletGiftThrottle, AuthIPThrottle]
@@ -119,9 +131,10 @@ class WalletGiftSendView(APIView):
         try:
             gift = WalletService.send_gift(
                 sender=request.user,
-                amount=data["amount"],
+                gift_amount=data["gift_amount"],
+                design_id=data["design_id"],
                 message=data.get("message") or "",
-                idempotency_key=_idempotency_key(request),
+                idempotency_key=_idempotency_key(request, required=True),
                 recipient_user_id=data.get("recipient_user_id"),
                 recipient_phone=data.get("recipient_phone"),
                 recipient_wallet_number=data.get("recipient_wallet_number"),

@@ -19,6 +19,7 @@ const ENTRY_META: Record<string, { label: string; className: string }> = {
   booking_pay: { label: "Bron to'lovi", className: "bg-blue-500/10 text-blue-700" },
   gift_out: { label: "Sovg'a (chiqim)", className: "bg-purple-500/10 text-purple-700" },
   gift_in: { label: "Sovg'a (kirim)", className: "bg-purple-500/10 text-purple-700" },
+  gift_design_fee: { label: "Sovg'a dizayn", className: "bg-purple-500/10 text-purple-700" },
   refund: { label: "Qaytarish", className: "bg-amber-500/10 text-amber-700" },
   adjustment: { label: "Tuzatish", className: "bg-muted text-muted-foreground" },
 };
