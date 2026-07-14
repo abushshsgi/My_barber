@@ -375,6 +375,30 @@
     transform: scale(0.985);
   }
 
+  .auth-google-card {
+    transition:
+      border-color 0.25s ease,
+      box-shadow 0.25s ease,
+      transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .auth-google-card:hover {
+    border-color: color-mix(in oklab, #1a73e8 22%, var(--border));
+    box-shadow: 0 28px 64px -36px rgba(26, 115, 232, 0.28);
+  }
+
+  .auth-google-cta {
+    transition:
+      transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.18s ease,
+      filter 0.18s ease;
+  }
+
+  .auth-google-card:hover .auth-google-cta {
+    filter: brightness(1.04);
+    box-shadow: 0 16px 32px -12px rgba(26, 115, 232, 0.62);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .auth-marketing-stagger > *,
     .auth-feature-stagger > *,
@@ -386,6 +410,11 @@
 
     .auth-cta:active:not(:disabled) {
       transform: none;
+    }
+
+    .auth-google-card,
+    .auth-google-cta {
+      transition: none;
     }
   }
 

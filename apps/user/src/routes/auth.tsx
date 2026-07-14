@@ -340,23 +340,45 @@ function Auth() {
     <div className="flex min-h-[100dvh] flex-col bg-background lg:grid lg:grid-cols-2">
       <AuthMarketingPanel />
 
-      <div className="flex min-h-[100dvh] flex-col justify-center px-6 py-10 lg:px-12 xl:px-16">
-        <div className="mx-auto w-full max-w-md">
-          <div className="mb-8 flex items-baseline gap-1 lg:hidden">
-            <span className="text-2xl font-bold tracking-tight">mysaloon</span>
-            <span className="text-base font-bold text-muted-foreground">.uz</span>
+      <div className="relative flex min-h-[100dvh] flex-col justify-center overflow-hidden px-6 py-10 lg:px-12 xl:px-16">
+        <div
+          className="auth-blob-drift pointer-events-none absolute -right-24 top-8 h-64 w-64 rounded-full bg-foreground/[0.035] blur-3xl lg:hidden"
+          aria-hidden
+        />
+        <div
+          className="auth-blob-drift-slow pointer-events-none absolute -left-20 bottom-16 h-52 w-52 rounded-full bg-foreground/[0.03] blur-3xl"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,color-mix(in_oklab,var(--surface)_70%,transparent),transparent_55%)]"
+          aria-hidden
+        />
+
+        <div className="relative mx-auto w-full max-w-md">
+          <div className="mb-9 lg:hidden">
+            <div className="flex items-baseline gap-0.5">
+              <span className="font-display text-[2rem] font-bold leading-none tracking-tight">
+                mysaloon
+              </span>
+              <span className="text-lg font-bold text-muted-foreground">.uz</span>
+            </div>
+            <div className="mt-3 h-px w-12 bg-foreground/20" aria-hidden />
           </div>
 
           <div key={step} className="auth-form-stagger">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
               {header.kicker}
             </p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight">{header.title}</h1>
-            <p className="mt-2 text-sm text-muted-foreground">{header.desc}</p>
+            <h1 className="mt-2.5 font-display text-[2rem] font-bold leading-[1.1] tracking-tight sm:text-[2.25rem]">
+              {header.title}
+            </h1>
+            <p className="mt-2.5 max-w-sm text-[15px] leading-relaxed text-muted-foreground">
+              {header.desc}
+            </p>
 
-            <div className="mt-8">
+            <div className="mt-9">
               {!phoneAuthEnabled ? (
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {googleClientId ? (
                     <GoogleSignInButton
                       clientId={googleClientId}
@@ -372,15 +394,13 @@ function Auth() {
                       }}
                     />
                   ) : (
-                    <div className="rounded-2xl border-2 border-dashed border-border bg-surface px-4 py-5 text-sm text-muted-foreground">
+                    <div className="rounded-2xl border-2 border-dashed border-border bg-surface/80 px-4 py-5 text-sm text-muted-foreground">
                       {t("auth.googleNotConfigured")}
                     </div>
                   )}
                   <AuthReferralCodeField disabled={busy} initialFromUrl={refFromSearch} />
                   <AuthMethodDivider />
-                  <div className="opacity-55 saturate-50">
-                    <PhoneSignInComingSoon />
-                  </div>
+                  <PhoneSignInComingSoon />
                 </div>
               ) : null}
 
@@ -393,8 +413,8 @@ function Auth() {
                     >
                       {t("auth.phone")}
                     </label>
-                    <div className="mt-2 flex h-14 items-stretch overflow-hidden rounded-2xl border-2 border-border bg-background focus-within:border-foreground">
-                      <span className="flex shrink-0 items-center border-r border-border px-4 text-sm font-bold tabular-nums">
+                    <div className="mt-2.5 flex h-12 items-stretch overflow-hidden rounded-xl border border-border bg-background shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] transition-[border-color,box-shadow] focus-within:border-foreground/40 focus-within:ring-4 focus-within:ring-foreground/[0.06]">
+                      <span className="flex shrink-0 items-center border-r border-border px-3.5 text-sm font-bold tabular-nums">
                         +998
                       </span>
                       <input
@@ -405,7 +425,7 @@ function Auth() {
                         disabled={busy}
                         onChange={(e) => setPhone(parseUzLocalPhone(e.target.value))}
                         placeholder="90-123-45-67"
-                        className="min-w-0 flex-1 border-0 bg-transparent px-4 text-sm font-bold leading-none placeholder:text-muted-foreground/50 focus:outline-none disabled:opacity-60"
+                        className="min-w-0 flex-1 border-0 bg-transparent px-4 text-sm font-bold leading-none placeholder:text-muted-foreground/45 focus:outline-none disabled:opacity-60"
                       />
                     </div>
                   </div>
@@ -422,7 +442,7 @@ function Auth() {
                     >
                       {t("auth.password")}
                     </label>
-                    <div className="mt-2 flex h-14 items-stretch overflow-hidden rounded-2xl border-2 border-border bg-background focus-within:border-foreground">
+                    <div className="mt-2.5 flex h-12 items-stretch overflow-hidden rounded-xl border border-border bg-background shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] transition-[border-color,box-shadow] focus-within:border-foreground/40 focus-within:ring-4 focus-within:ring-foreground/[0.06]">
                       <input
                         id="auth-password"
                         type={showPassword ? "text" : "password"}
@@ -435,7 +455,7 @@ function Auth() {
                       <button
                         type="button"
                         onClick={() => setShowPassword((s) => !s)}
-                        className="flex shrink-0 items-center px-4 text-muted-foreground"
+                        className="flex shrink-0 cursor-pointer items-center px-4 text-muted-foreground transition-colors hover:text-foreground"
                         aria-label="Toggle password"
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -486,7 +506,7 @@ function Auth() {
                           if (v && i < 3) document.getElementById(`otp-${i + 1}`)?.focus();
                         }}
                         id={`otp-${i}`}
-                        className="h-16 w-14 rounded-2xl border-2 border-border bg-background text-center text-2xl font-bold focus:border-foreground focus:outline-none disabled:opacity-60"
+                        className="h-14 w-12 rounded-xl border border-border bg-background text-center text-2xl font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] transition-[border-color,box-shadow] focus:border-foreground/40 focus:outline-none focus:ring-4 focus:ring-foreground/[0.06] disabled:opacity-60"
                       />
                     ))}
                   </div>
@@ -522,7 +542,7 @@ function Auth() {
                     >
                       {t("auth.newPassword")}
                     </label>
-                    <div className="mt-2 flex h-14 items-stretch overflow-hidden rounded-2xl border-2 border-border bg-background focus-within:border-foreground">
+                    <div className="mt-2.5 flex h-12 items-stretch overflow-hidden rounded-xl border border-border bg-background shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] transition-[border-color,box-shadow] focus-within:border-foreground/40 focus-within:ring-4 focus-within:ring-foreground/[0.06]">
                       <input
                         id="auth-new-password"
                         type={showNewPassword ? "text" : "password"}
@@ -535,7 +555,7 @@ function Auth() {
                       <button
                         type="button"
                         onClick={() => setShowNewPassword((s) => !s)}
-                        className="flex shrink-0 items-center px-4 text-muted-foreground"
+                        className="flex shrink-0 cursor-pointer items-center px-4 text-muted-foreground transition-colors hover:text-foreground"
                       >
                         {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
@@ -589,9 +609,12 @@ function Auth() {
               ) : null}
             </div>
 
-            <p className="mt-4 text-center text-[11px] text-muted-foreground">
+            <p className="mt-6 text-center text-[11px] leading-relaxed text-muted-foreground">
               {t("auth.privacyPrefix")}{" "}
-              <a href="/privacy" className="font-bold underline transition-opacity hover:opacity-80">
+              <a
+                href="/privacy"
+                className="font-semibold text-foreground/80 underline decoration-foreground/25 underline-offset-2 transition-colors hover:text-foreground hover:decoration-foreground/50"
+              >
                 {t("auth.privacyLink")}
               </a>
             </p>

@@ -38,7 +38,6 @@ function GoogleGlyph({ className }: { className?: string }) {
 }
 
 function GoogleSignInButtonInner({
-  clientId,
   busy = false,
   emphasized = false,
   onBusyChange,
@@ -101,32 +100,45 @@ function GoogleSignInButtonInner({
   return (
     <div
       className={cn(
-        "rounded-3xl border-2 border-foreground/10 bg-gradient-to-br from-background via-background to-blue-500/5 p-4 shadow-[0_18px_50px_-28px_rgba(37,99,235,0.55)] sm:p-5",
+        "auth-google-card relative overflow-hidden rounded-[1.65rem] border border-foreground/[0.08] bg-background/90 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.35)] ring-1 ring-inset ring-white/60 backdrop-blur-sm sm:p-6",
         busy && "pointer-events-none opacity-70",
       )}
     >
-      <p className="text-center text-[11px] font-bold uppercase tracking-[0.18em] text-blue-600">
-        {t("auth.googleRecommended")}
-      </p>
-      <p className="mt-2 text-center text-lg font-bold tracking-tight text-foreground sm:text-xl">
-        {t("auth.googleContinue")}
-      </p>
-      <p className="mt-1 text-center text-xs text-muted-foreground sm:text-sm">
-        {t("auth.googleContinueHint")}
-      </p>
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#1a73e8]/[0.07] to-transparent"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[#1a73e8]/[0.08] blur-2xl"
+        aria-hidden
+      />
 
-      <div ref={containerRef} className="relative mt-5 w-full">
-        <div
-          aria-hidden
-          className="pointer-events-none flex min-h-[60px] items-center justify-center gap-3 rounded-2xl border-2 border-[#1a73e8] bg-[#1a73e8] px-5 text-white shadow-lg shadow-blue-500/25"
-        >
-          <span className="flex size-10 items-center justify-center rounded-full bg-white">
-            <GoogleGlyph className="size-5" />
+      <div className="relative">
+        <div className="flex justify-center">
+          <span className="inline-flex items-center rounded-full bg-[#1a73e8]/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#1a73e8]">
+            {t("auth.googleRecommended")}
           </span>
-          <span className="text-base font-bold sm:text-lg">{t("auth.googleContinue")}</span>
         </div>
-        <div className="absolute inset-0 overflow-hidden rounded-2xl opacity-[0.01] [&_iframe]:!h-full [&_iframe]:!min-h-[60px] [&_iframe]:!w-full">
-          {button}
+        <p className="mt-3 text-center text-lg font-bold tracking-tight text-foreground sm:text-xl">
+          {t("auth.googleContinue")}
+        </p>
+        <p className="mt-1 text-center text-xs leading-relaxed text-muted-foreground sm:text-sm">
+          {t("auth.googleContinueHint")}
+        </p>
+
+        <div ref={containerRef} className="relative mt-5 w-full">
+          <div
+            aria-hidden
+            className="auth-google-cta pointer-events-none flex min-h-[58px] items-center justify-center gap-3 rounded-2xl bg-[#1a73e8] px-5 text-white shadow-[0_14px_28px_-12px_rgba(26,115,232,0.55)]"
+          >
+            <span className="flex size-9 items-center justify-center rounded-full bg-white shadow-sm">
+              <GoogleGlyph className="size-[18px]" />
+            </span>
+            <span className="text-[15px] font-bold sm:text-base">{t("auth.googleContinue")}</span>
+          </div>
+          <div className="absolute inset-0 overflow-hidden rounded-2xl opacity-[0.01] [&_iframe]:!h-full [&_iframe]:!min-h-[58px] [&_iframe]:!w-full">
+            {button}
+          </div>
         </div>
       </div>
     </div>
