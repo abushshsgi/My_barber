@@ -204,7 +204,7 @@ export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
   const isGalleryValidating = props.validating && !!props.validatingPreview;
 
   return (
-    <div className="relative flex h-[calc(100dvh-4.25rem)] min-h-[640px] overflow-hidden bg-background">
+    <div className="relative flex h-[calc(100dvh-5.5rem)] min-h-[640px] overflow-hidden bg-background">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_10%_0%,oklch(0.94_0.02_85)_0%,transparent_50%),radial-gradient(ellipse_at_95%_40%,oklch(0.95_0.012_70)_0%,transparent_40%)]"

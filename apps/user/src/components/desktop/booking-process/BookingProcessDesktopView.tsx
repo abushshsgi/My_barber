@@ -384,7 +384,7 @@ export function BookingProcessDesktopView({ state }: { state: ProcessState }) {
       ];
 
   return (
-    <div className="hidden min-h-[calc(100dvh-4.25rem)] w-full bg-muted/45 lg:block">
+    <div className="hidden min-h-[calc(100dvh-5.5rem)] w-full bg-muted/45 lg:block">
       <div className={cn("mx-auto w-full max-w-[1280px] py-8", DESKTOP_SHELL_INSET)}>
         <Link
           to="/bookings"

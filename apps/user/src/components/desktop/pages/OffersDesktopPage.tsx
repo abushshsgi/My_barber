@@ -1,27 +1,32 @@
 import { useTranslation } from "react-i18next";
-import { DESKTOP_ACCOUNT_BG } from "@/components/desktop/ui/desktop-glass";
 import { OffersPageContent } from "@/components/offers/OffersPageContent";
+import { DESKTOP_BAZAAR_INSET } from "@/lib/desktop-bazaar-layout";
 import { cn } from "@/lib/utils";
 
+/** Desktop aksiyalar — to'liq kenglik, yangi bento layout. */
 export function OffersDesktopPage() {
   const { t } = useTranslation();
 
   return (
-    <div className={cn("w-full", DESKTOP_ACCOUNT_BG)}>
-      <div className="lg:pl-8 xl:pl-14">
-        <div className="lg:max-w-4xl lg:pb-12">
-          <h1 className="text-[32px] font-semibold tracking-tight text-foreground xl:text-[36px]">
+    <div className={cn("w-full min-w-0 pb-10", DESKTOP_BAZAAR_INSET)}>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            mysaloon
+          </p>
+          <h1 className="mt-2 text-[2.5rem] font-extrabold tracking-tight xl:text-[2.85rem]">
             {t("nav.offers", { defaultValue: "Aksiyalar" })}
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2 max-w-2xl text-[15px] text-muted-foreground">
             {t("offersPage.desktopSubtitle", {
               defaultValue: "Promokodlar, kuponlar va yaqin orada qo'shiladigan salon aksiyalari.",
             })}
           </p>
-          <div className="mt-7">
-            <OffersPageContent />
-          </div>
         </div>
+      </div>
+
+      <div className="mt-8">
+        <OffersPageContent desktop />
       </div>
     </div>
   );

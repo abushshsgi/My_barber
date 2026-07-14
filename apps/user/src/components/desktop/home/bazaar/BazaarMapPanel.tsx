@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowUpRight, Wand2 } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { lazy, Suspense, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { MapStaticPreview } from "@/components/map/MapStaticPreview";
@@ -59,7 +59,7 @@ export function BazaarMapPanel({ salons = [], nearbyCount, className }: Props) {
             <SalonMap
               markers={markers}
               autoFitMarkers
-              fitPadding={{ top: 20, right: 16, bottom: 112, left: 16 }}
+              fitPadding={{ top: 20, right: 16, bottom: empty ? 88 : 112, left: 16 }}
               fitMaxZoom={14}
               onMarkerSelect={() => {}}
               onMarkerNavigate={() => {}}
@@ -72,30 +72,24 @@ export function BazaarMapPanel({ salons = [], nearbyCount, className }: Props) {
           aria-hidden
         />
 
-        <div className="absolute inset-x-0 bottom-0 space-y-2 px-4 pb-4 pt-10">
+        <div className="absolute inset-x-0 bottom-0 space-y-2.5 px-4 pb-4 pt-10">
           {empty ? (
             <>
               <p className="relative z-10 text-center text-base font-black tracking-tight text-foreground">
                 {t("home.mapPreview.emptyTitle")}
               </p>
               <p className="relative z-10 text-center text-xs leading-snug text-muted-foreground">
-                {t("home.mapPreview.emptyHint")}
+                {t("home.mapPreview.emptyMapOnly", {
+                  defaultValue: "Tez orada shu yerda salonlar paydo bo'ladi.",
+                })}
               </p>
               <Link
-                to="/ai-style"
+                to="/map"
                 preload="intent"
                 className="relative z-10 flex w-full items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-sm font-bold text-background shadow-lg transition hover:opacity-95"
               >
-                <Wand2 className="size-4" strokeWidth={2.2} />
-                {t("homePage.tryMorphAi")}
-              </Link>
-              <Link
-                to="/explore"
-                preload="intent"
-                className="relative z-10 flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-background/95 py-2.5 text-xs font-bold transition hover:bg-background"
-              >
-                {t("homePage.browseStyles")}
-                <ArrowUpRight className="size-3.5" />
+                {t("home.mapPreview.openMap", { defaultValue: "Xaritani ochish" })}
+                <ArrowUpRight className="h-4 w-4" />
               </Link>
             </>
           ) : (

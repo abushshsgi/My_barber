@@ -568,7 +568,7 @@ function MapView() {
           (discoveryTab === "salons" ? filtered.length === 0 : filteredBarbers.length === 0) ? (
           <div className="absolute inset-x-0 bottom-0 z-30 max-h-[48%] overflow-y-auto rounded-t-[22px] border-t border-border/50 bg-background p-4">
             {discoveryTab === "salons" ? (
-              <NoSalonsEmpty compact />
+              <NoSalonsEmpty compact hideStyleCtas />
             ) : (
               <p className="text-center text-sm font-medium text-muted-foreground">{emptyMessage}</p>
             )}

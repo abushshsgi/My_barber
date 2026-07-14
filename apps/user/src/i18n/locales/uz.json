@@ -2,7 +2,7 @@
   "nav": {
     "home": "Asosiy",
     "map": "Xarita",
-    "aiStyle": "AI Style",
+    "aiStyle": "Morf AI",
     "bookings": "Buyurtma",
     "chat": "Chat",
     "notifications": "Xabar",
@@ -70,11 +70,12 @@
     "mapPreview": {
       "nearbyCount": "{{count}} ta salon yaqinda",
       "emptyTitle": "Hozircha salonlar yo'q",
-      "emptyHint": "Tez orada qo'shiladi. Hozir Morph AI bilan uslub tanlang.",
+      "emptyHint": "Tez orada qo'shiladi.",
       "explore": "Yaqin salonlarni toping",
       "hint": "Masofa va yo'nalish bilan qulay qidiruv",
       "openMap": "Xaritani ochish",
-      "seeMore": "Ko'proq"
+      "seeMore": "Ko'proq",
+      "emptyMapOnly": "Tez orada shu yerda salonlar paydo bo'ladi."
     },
     "discovery": {
       "weekendDeals": {
@@ -129,15 +130,15 @@
     "featuredOffer": "Bugungi taklif",
     "validUntil": "{{date}} gacha",
     "emptyTitle": "Hozircha salonlar yo'q",
-    "emptyHint": "Tez orada yangi salonlar qo'shiladi. Hozir Morph AI bilan o'zingizga mos uslubni tanlang.",
+    "emptyHint": "Tez orada yangi salonlar qo'shiladi.",
     "noSalonsYet": "Hozircha salonlar yo'q",
-    "noSalonsYetHint": "Platformaga hali salonlar qo'shilmagan. Morph AI orqali selfieda uslub sinab ko'ring yoki trend uslublarni ko'ring.",
-    "tryMorphAi": "Morph AI — uslub tanlash",
+    "noSalonsYetHint": "Platformaga hali salonlar qo'shilmagan. Tez orada shu yerda paydo bo'ladi.",
+    "tryMorphAi": "Morf AI — uslub tanlash",
     "browseStyles": "Trend uslublar",
     "editorialTagline": "Salon toping, uslub tanlang, bir zumda bron qiling.",
     "pickedForYou": "Siz uchun tanlangan",
     "nearYou": "Yaqiningizdagi salonlar",
-    "aiPromoTitle": "AI stil maslahatchi",
+    "aiPromoTitle": "Morf AI maslahatchi",
     "aiPromoHint": "Selfie yuklang — mos uslub tavsiyasi",
     "audience": {
       "men": "Erkaklar",
@@ -148,7 +149,7 @@
       "today": "Bugungi vaqtlar",
       "map": "Xarita",
       "offers": "Aksiyalar",
-      "aiStyle": "AI stil",
+      "aiStyle": "Morf AI",
       "stylists": "Top ustalar",
       "trends": "Trend uslublar",
       "gift": "Sovg'a karta",
@@ -159,7 +160,8 @@
       "salons": "Salon",
       "barbers": "Usta",
       "rating": "Reyting"
-    }
+    },
+    "noSalonsMapHint": "Tez orada shu yerda salonlar paydo bo'ladi."
   },
   "map": {
     "salons": "Salonlar",
@@ -910,13 +912,13 @@
     "desktopDesc": "Model tanlang, uslubni ko'ring va selfieda sinab ko'ring.",
     "styleCount": "{{count}} ta uslub",
     "aiStyleCtaTitle": "Selfieda sinab ko'ring",
-    "aiStyleCtaDesc": "AI Stil maslahatchi yuzingizga mos uslubni tavsiya qiladi.",
+    "aiStyleCtaDesc": "Morf AI yuzingizga mos uslubni tavsiya qiladi.",
     "empty": "Bu filtr uchun uslub topilmadi.",
-    "sampleBadge": "AI namuna",
+    "sampleBadge": "Morf namuna",
     "personaLabel": "Model",
     "personaActive": "{{name}} ({{code}}) — uslub rasmlari shu modelda",
     "personaMenHint": "Personaj rasmlari uchun yuqorida «Erkaklar» ni tanlang.",
-    "tryAiStyle": "AI Style da sinash",
+    "tryAiStyle": "Morf AI da sinash",
     "tryOnMe": "O'zingizda ko'ring",
     "findSalon": "Salon topish",
     "tryOnTitle": "{{style}}",
@@ -944,7 +946,7 @@
     }
   },
   "aiStylePage": {
-    "title": "AI Stil maslahatchi",
+    "title": "Morf AI",
     "subtitle": "Selfie · shaxsiy tavsiya",
     "steps": {
       "upload": "Selfie",
@@ -952,7 +954,7 @@
       "results": "Natija"
     },
     "introTitle": "Yuz shaklingizga mos uslub",
-    "introDesc": "Selfie yuklang — AI 3 ta eng mos turmag va kesimni tavsiya qiladi.",
+    "introDesc": "Selfie yuklang — Morf AI 3 ta eng mos turmag va kesimni tavsiya qiladi.",
     "uploadTitle": "Selfie yuklang",
     "uploadHint": "Yuz aniq ko'rinsin · yaxshi yorug'lik",
     "uploadFeatures": {

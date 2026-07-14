@@ -43,7 +43,7 @@ export function DesktopLayout({ children, chatUnread = 0, notificationsUnread = 
           <div
             className={cn(
               (isMap || isAiStyle) &&
-                "flex min-h-0 flex-col overflow-hidden h-[calc(100dvh-4.25rem)]",
+                "flex min-h-0 flex-col overflow-hidden h-[calc(100dvh-5.5rem)]",
             )}
           >
             {children}

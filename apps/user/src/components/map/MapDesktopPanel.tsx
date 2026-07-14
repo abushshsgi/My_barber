@@ -263,7 +263,7 @@ export function MapDesktopPanel({
 
         {!loading && salons.length === 0 ? (
           <div className="px-1 py-4">
-            <NoSalonsEmpty compact />
+            <NoSalonsEmpty compact hideStyleCtas />
           </div>
         ) : null}
 

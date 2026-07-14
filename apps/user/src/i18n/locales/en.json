@@ -2,7 +2,7 @@
   "nav": {
     "home": "Home",
     "map": "Map",
-    "aiStyle": "AI Style",
+    "aiStyle": "Morf AI",
     "bookings": "Bookings",
     "chat": "Chat",
     "notifications": "Inbox",
@@ -15,7 +15,12 @@
     "discovery": "Discover",
     "account": "Account"
   },
-  "audience": { "all": "All", "men": "Men", "women": "Women", "profileHint": "Based on profile" },
+  "audience": {
+    "all": "All",
+    "men": "Men",
+    "women": "Women",
+    "profileHint": "Based on profile"
+  },
   "common": {
     "search": "Search salons and barbers",
     "all": "All",
@@ -65,11 +70,12 @@
     "mapPreview": {
       "nearbyCount": "{{count}} salons nearby",
       "emptyTitle": "No salons yet",
-      "emptyHint": "Coming soon. Meanwhile, pick a look with Morph AI.",
+      "emptyHint": "Coming soon.",
       "explore": "Find salons near you",
       "hint": "Search by distance and direction",
       "openMap": "Open map",
-      "seeMore": "More"
+      "seeMore": "More",
+      "emptyMapOnly": "Salons will appear here soon."
     },
     "discovery": {
       "weekendDeals": {
@@ -124,15 +130,15 @@
     "featuredOffer": "Today's deal",
     "validUntil": "Until {{date}}",
     "emptyTitle": "No salons yet",
-    "emptyHint": "New salons are coming soon. Meanwhile, try Morph AI to pick a style that fits you.",
+    "emptyHint": "New salons are coming soon.",
     "noSalonsYet": "No salons yet",
-    "noSalonsYetHint": "Salons haven't joined the platform yet. Try Morph AI for a selfie style match, or browse trending looks.",
-    "tryMorphAi": "Morph AI — pick a style",
+    "noSalonsYetHint": "Salons haven't joined the platform yet. Check back soon.",
+    "tryMorphAi": "Morf AI — pick a style",
     "browseStyles": "Trending styles",
     "editorialTagline": "Find a salon, pick a style, book in seconds.",
     "pickedForYou": "Picked for you",
     "nearYou": "Salons near you",
-    "aiPromoTitle": "AI style advisor",
+    "aiPromoTitle": "Morf AI advisor",
     "aiPromoHint": "Upload a selfie — get style picks",
     "audience": {
       "men": "Men",
@@ -143,7 +149,7 @@
       "today": "Today's slots",
       "map": "Map",
       "offers": "Offers",
-      "aiStyle": "AI style",
+      "aiStyle": "Morf AI",
       "stylists": "Top stylists",
       "trends": "Trending styles",
       "gift": "Gift card",
@@ -154,7 +160,8 @@
       "salons": "Salons",
       "barbers": "Pros",
       "rating": "Rating"
-    }
+    },
+    "noSalonsMapHint": "Salons will appear here soon."
   },
   "map": {
     "salons": "Salons",
@@ -613,7 +620,11 @@
     "linePlaceholder": "Street, building, landmark…",
     "labelType": "Address type",
     "customLabel": "Label (e.g. Friend's place)",
-    "labels": { "home": "Home", "work": "Work", "other": "Other" },
+    "labels": {
+      "home": "Home",
+      "work": "Work",
+      "other": "Other"
+    },
     "validation": "Address and city are required",
     "coordsPair": "GPS requires both coordinates",
     "saved": "Address saved",
@@ -661,7 +672,10 @@
     "empty": "No family members yet",
     "emptyHint": "Add family members to book faster for them.",
     "deleted": "Removed",
-    "form": { "name": "Name", "phoneOptional": "Phone (optional)" },
+    "form": {
+      "name": "Name",
+      "phoneOptional": "Phone (optional)"
+    },
     "relations": {
       "spouse": "Spouse",
       "child": "Child",
@@ -669,7 +683,11 @@
       "sibling": "Sibling",
       "other": "Other"
     },
-    "audiences": { "men": "Men", "women": "Women", "unisex": "Everyone" }
+    "audiences": {
+      "men": "Men",
+      "women": "Women",
+      "unisex": "Everyone"
+    }
   },
   "sessions": {
     "title": "Active sessions",
@@ -788,7 +806,10 @@
       "body": "Some details only appear in their related section. For full control, go to the privacy page."
     },
     "hubs": {
-      "personal": { "title": "Personal information", "desc": "Name, phone, and profile details." },
+      "personal": {
+        "title": "Personal information",
+        "desc": "Name, phone, and profile details."
+      },
       "security": {
         "title": "Login & security",
         "desc": "Update your password and secure your account.",
@@ -796,15 +817,27 @@
         "metaSms": "Sign in with SMS",
         "metaDefault": "Sign-in method"
       },
-      "addresses": { "title": "Addresses", "desc": "Home, work, and other saved locations.", "meta": "{{count}} addresses" },
-      "family": { "title": "Family profile", "desc": "Book quickly for family members.", "meta": "Manage family members", "metaCount": "{{count}} members" },
+      "addresses": {
+        "title": "Addresses",
+        "desc": "Home, work, and other saved locations.",
+        "meta": "{{count}} addresses"
+      },
+      "family": {
+        "title": "Family profile",
+        "desc": "Book quickly for family members.",
+        "meta": "Manage family members",
+        "metaCount": "{{count}} members"
+      },
       "notifications": {
         "title": "Notification preferences",
         "desc": "Reminders and chat alerts.",
         "metaOn": "Reminders on",
         "metaOff": "Reminders off"
       },
-      "preferences": { "title": "Language & preferences", "desc": "Language, salon type, and display options." },
+      "preferences": {
+        "title": "Language & preferences",
+        "desc": "Language, salon type, and display options."
+      },
       "payments": {
         "title": "Payment methods",
         "desc": "Click, Payme, and mysaloon wallet.",
@@ -816,8 +849,16 @@
         "desc": "Plans and recurring payments.",
         "meta": "Subscription plans coming soon"
       },
-      "privacy": { "title": "Privacy", "desc": "Manage and download your data.", "meta": "Data & permissions" },
-      "help": { "title": "Help center", "desc": "Questions, issues, and contact.", "meta": "Get in touch" }
+      "privacy": {
+        "title": "Privacy",
+        "desc": "Manage and download your data.",
+        "meta": "Data & permissions"
+      },
+      "help": {
+        "title": "Help center",
+        "desc": "Questions, issues, and contact.",
+        "meta": "Get in touch"
+      }
     },
     "sections": {
       "account": "Account",
@@ -831,7 +872,10 @@
     "title": "Favorite salons",
     "hubTitle": "Saved",
     "subtitle": "Saved salons and stylists — quick access.",
-    "tabs": { "salons": "Salons", "stylists": "Stylists" },
+    "tabs": {
+      "salons": "Salons",
+      "stylists": "Stylists"
+    },
     "browseSalons": "Find salons",
     "empty": "No favorites yet",
     "emptyHint": "Save salons you like — find them again in one tap."
@@ -868,13 +912,13 @@
     "desktopDesc": "Pick a model, browse styles, and try them on your selfie.",
     "styleCount": "{{count}} styles",
     "aiStyleCtaTitle": "Try on your selfie",
-    "aiStyleCtaDesc": "AI Style advisor suggests looks tailored to your face.",
+    "aiStyleCtaDesc": "Morf AI suggests looks tailored to your face.",
     "empty": "No styles for this filter.",
-    "sampleBadge": "AI sample",
+    "sampleBadge": "Morf sample",
     "personaLabel": "Model",
     "personaActive": "{{name}} ({{code}}) — styles shown on this model",
     "personaMenHint": "Select «Men» above to see persona-specific style photos.",
-    "tryAiStyle": "Try in AI Style",
+    "tryAiStyle": "Try in Morf AI",
     "tryOnMe": "See on yourself",
     "findSalon": "Find a salon",
     "tryOnTitle": "{{style}}",
@@ -902,7 +946,7 @@
     }
   },
   "aiStylePage": {
-    "title": "AI Style advisor",
+    "title": "Morf AI",
     "subtitle": "Selfie · personal picks",
     "steps": {
       "upload": "Photo",
@@ -910,7 +954,7 @@
       "results": "Results"
     },
     "introTitle": "Styles that fit your face",
-    "introDesc": "Upload a selfie — AI suggests 3 cuts and shapes that suit you.",
+    "introDesc": "Upload a selfie — Morf AI suggests 3 cuts and shapes that suit you.",
     "uploadTitle": "Upload a selfie",
     "uploadHint": "Face clearly visible · good lighting",
     "uploadFeatures": {

@@ -134,21 +134,22 @@ export function ExploreAiStyleBanner({ className }: { className?: string }) {
   return (
     <Link
       to="/ai-style"
+      preload="intent"
       className={cn(
-        "group flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3.5 transition-colors",
-        "hover:border-foreground/20 hover:bg-surface/80",
+        "group relative flex items-stretch overflow-hidden rounded-[1.35rem] bg-foreground text-background",
+        "transition active:scale-[0.99]",
         className,
       )}
     >
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-foreground text-background">
-        <Sparkles className="h-5 w-5" strokeWidth={2.2} />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-bold">{t("explorePage.aiStyleCtaTitle")}</span>
-        <span className="mt-0.5 block text-xs text-muted-foreground">{t("explorePage.aiStyleCtaDesc")}</span>
-      </span>
-      <span className="shrink-0 text-xs font-bold text-muted-foreground transition group-hover:text-foreground">
-        {t("explorePage.tryAiStyle")} →
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 px-4 py-4 pr-2">
+        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-background/55">
+          Morf AI
+        </span>
+        <span className="text-sm font-extrabold leading-tight">{t("explorePage.aiStyleCtaTitle")}</span>
+        <span className="text-xs text-background/70">{t("explorePage.tryAiStyle")}</span>
+      </div>
+      <span className="flex shrink-0 items-center justify-center border-l border-background/15 px-4">
+        <Sparkles className="size-5 transition group-hover:rotate-12" strokeWidth={2.2} />
       </span>
     </Link>
   );

@@ -35,7 +35,7 @@ export const FOOTER_SECTIONS: FooterSection[] = [
       { to: "/today", labelKey: "home.quick.today", defaultValue: "Bugungi vaqtlar" },
       { to: "/offers", labelKey: "home.quick.offers", defaultValue: "Aksiyalar" },
       { to: "/compare", labelKey: "home.quick.compare", defaultValue: "Taqqoslash" },
-      { to: "/ai-style", labelKey: "home.quick.aiStyle", defaultValue: "AI stil" },
+      { to: "/ai-style", labelKey: "home.quick.aiStyle", defaultValue: "Morf AI" },
       { to: "/top", labelKey: "home.quick.stylists", defaultValue: "Top ustalar" },
     ],
   },

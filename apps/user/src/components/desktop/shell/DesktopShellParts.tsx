@@ -10,7 +10,10 @@ import {
 import { useTranslation } from "react-i18next";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
 import { DesktopHeaderActions } from "@/components/desktop/shell/DesktopHeaderActions";
-import { DESKTOP_SHELL_INSET } from "@/lib/desktop-bazaar-layout";
+import {
+  DESKTOP_HEADER_HEIGHT_CLASS,
+  DESKTOP_SHELL_INSET,
+} from "@/lib/desktop-bazaar-layout";
 import { isNavTabActive } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -62,14 +65,22 @@ export function DesktopAppHeader({
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md">
-      <div className={cn("flex h-[4.25rem] w-full min-w-0 items-center gap-2 sm:gap-4", headerInsetClassName)}>
-        <Link to="/" className="flex shrink-0 items-baseline gap-0.5">
-          <span className="text-lg font-bold tracking-tight text-foreground sm:text-xl">mysaloon</span>
-          <span className="text-xs font-bold text-muted-foreground sm:text-sm">.uz</span>
+    <header className="sticky top-0 z-40 border-b border-border/80 bg-background/95 shadow-[0_1px_0_rgba(0,0,0,0.03)] backdrop-blur-md">
+      <div
+        className={cn(
+          "flex w-full min-w-0 items-center gap-3 sm:gap-5",
+          DESKTOP_HEADER_HEIGHT_CLASS,
+          headerInsetClassName,
+        )}
+      >
+        <Link to="/" className="flex shrink-0 items-baseline gap-0.5 py-1">
+          <span className="text-[1.45rem] font-extrabold tracking-tight text-foreground sm:text-[1.65rem]">
+            mysaloon
+          </span>
+          <span className="text-sm font-bold text-muted-foreground sm:text-base">.uz</span>
         </Link>
 
-        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 overflow-x-auto lg:flex xl:gap-1">
+        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-1 overflow-x-auto lg:flex xl:gap-1.5">
           {MAIN_NAV.map(({ to, key, icon: Icon }) => {
             const active = isNavTabActive(pathname, to);
             const label = t(key);
@@ -81,14 +92,14 @@ export function DesktopAppHeader({
                 aria-label={label}
                 title={label}
                 className={cn(
-                  "flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-2 text-[13px] font-bold transition-colors 2xl:px-3.5",
+                  "flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2.5 text-[14px] font-bold transition-colors xl:px-4",
                   active
-                    ? "bg-foreground text-background"
+                    ? "bg-foreground text-background shadow-sm"
                     : "text-muted-foreground hover:bg-surface hover:text-foreground",
                 )}
               >
-                <Icon className="h-3.5 w-3.5" strokeWidth={active ? 2.4 : 2} />
-                <span className="hidden 2xl:inline" suppressHydrationWarning>
+                <Icon className="h-4 w-4" strokeWidth={active ? 2.4 : 2} />
+                <span className="hidden xl:inline" suppressHydrationWarning>
                   {label}
                 </span>
               </Link>
@@ -96,7 +107,7 @@ export function DesktopAppHeader({
           })}
         </nav>
 
-        <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+        <div className="ml-auto flex shrink-0 items-center gap-2.5 sm:gap-3.5">
           <div className="hidden xl:block">
             <AudienceSwitch variant="header" showProfileHint={false} />
           </div>
@@ -104,7 +115,12 @@ export function DesktopAppHeader({
         </div>
       </div>
 
-      <nav className={cn("flex gap-1 overflow-x-auto border-t border-border/60 py-2 lg:hidden", headerInsetClassName)}>
+      <nav
+        className={cn(
+          "flex gap-1.5 overflow-x-auto border-t border-border/60 py-2.5 lg:hidden",
+          headerInsetClassName,
+        )}
+      >
         {MAIN_NAV.map(({ to, key, icon: Icon }) => {
           const active = isNavTabActive(pathname, to);
           return (
@@ -112,7 +128,7 @@ export function DesktopAppHeader({
               key={to}
               to={to}
               className={cn(
-                "flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-bold",
+                "flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-bold",
                 active ? "bg-foreground text-background" : "text-muted-foreground",
               )}
             >

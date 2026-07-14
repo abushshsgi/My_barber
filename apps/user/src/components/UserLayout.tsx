@@ -101,11 +101,11 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
             showMobileDock || pathname === "/onboarding" ? "max-w-none" : "max-w-md",
             pathname === "/onboarding" && "lg:pt-3",
             flags.isMap &&
-              "fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] z-10 max-w-none flex-none overflow-hidden overscroll-none lg:static lg:inset-auto lg:z-auto lg:h-[calc(100dvh-4.25rem)] lg:max-w-none lg:overflow-hidden",
+              "fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] z-10 max-w-none flex-none overflow-hidden overscroll-none lg:static lg:inset-auto lg:z-auto lg:h-[calc(100dvh-5.5rem)] lg:max-w-none lg:overflow-hidden",
             flags.isViewportLocked &&
               !flags.isMap &&
               "fixed inset-x-0 top-0 z-10 h-[100dvh] overflow-hidden overscroll-none lg:static lg:z-auto lg:h-auto lg:overflow-visible",
-            flags.isAiStyle && "h-[100dvh] lg:h-[calc(100dvh-4.25rem)]",
+            flags.isAiStyle && "h-[100dvh] lg:h-[calc(100dvh-5.5rem)]",
             flags.isFullBleed && !flags.isViewportLocked && "pb-0",
             !flags.isFullBleed && getMobileContentPaddingClass(pathname),
             !flags.isFullBleed && "lg:pb-12",
@@ -134,10 +134,10 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
               className={cn(
                 "hidden lg:block",
                 flags.isHome
-                  ? "mt-20 border-t border-border/50 pt-12 lg:mt-24 lg:pt-14"
+                  ? "mt-24 border-t border-border/50 pt-14 lg:mt-36 lg:pt-20"
                   : flags.isSalonPage
-                    ? "mt-16 border-t border-border/50 pt-10 lg:mt-20 lg:pt-12"
-                    : "mt-10",
+                    ? "mt-20 border-t border-border/50 pt-12 lg:mt-28 lg:pt-16"
+                    : "mt-14 border-t border-border/40 pt-10 lg:mt-24 lg:pt-14",
               )}
             />
           ) : null}

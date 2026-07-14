@@ -12,10 +12,13 @@ type Props = {
   /** Override description */
   descriptionKey?: string;
   centered?: boolean;
+  /** Xarita uchun — Morf AI / trend CTA larsiz */
+  hideStyleCtas?: boolean;
 };
 
 /**
- * Salonlar yo'q (yoki filtrlarda topilmadi) — Morph AI / uslub tavsiyasi CTA.
+ * Salonlar yo'q (yoki filtrlarda topilmadi).
+ * `hideStyleCtas` — map/xarita overlay (faqat matn).
  */
 export function NoSalonsEmpty({
   className,
@@ -23,10 +26,12 @@ export function NoSalonsEmpty({
   titleKey = "homePage.noSalonsYet",
   descriptionKey = "homePage.noSalonsYetHint",
   centered = false,
+  hideStyleCtas = false,
 }: Props) {
   const { t } = useTranslation();
+  const mapHintKey = hideStyleCtas ? "homePage.noSalonsMapHint" : descriptionKey;
 
-  const actions = (
+  const actions = hideStyleCtas ? undefined : (
     <div className={cn("flex w-full flex-col gap-2 sm:flex-row sm:justify-center", compact && "gap-1.5")}>
       <Link
         to="/ai-style"
@@ -65,8 +70,8 @@ export function NoSalonsEmpty({
           <Store className="size-5 text-foreground" strokeWidth={1.8} />
         </div>
         <p className="mt-3 text-sm font-bold tracking-tight">{t(titleKey)}</p>
-        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t(descriptionKey)}</p>
-        <div className="mt-4">{actions}</div>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t(mapHintKey)}</p>
+        {actions ? <div className="mt-4">{actions}</div> : null}
       </div>
     );
   }
@@ -75,7 +80,7 @@ export function NoSalonsEmpty({
     <PageSpotlightEmpty
       icon={Store}
       title={t(titleKey)}
-      description={t(descriptionKey)}
+      description={t(mapHintKey)}
       action={actions}
       tone="warm"
       borderless
