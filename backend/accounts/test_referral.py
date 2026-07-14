@@ -5,8 +5,10 @@ from accounts.models import ReferralAttribution, User
 from accounts.phone_auth import store_otp
 from accounts.referral import (
     apply_referral,
+    build_invite_url,
     ensure_referral_code,
     normalize_referral_code,
+    user_app_public_base,
 )
 
 
@@ -39,6 +41,32 @@ class ReferralServiceTests(TestCase):
         self.assertEqual(normalize_referral_code("ab-23"), "AB23")
         self.assertEqual(normalize_referral_code("ab10oi"), "AB")  # 1,0,O,I tashlab yuboriladi
         self.assertEqual(normalize_referral_code(None), "")
+
+    def test_invite_url_skips_localhost_origin(self):
+        import os
+        from unittest import mock
+
+        with mock.patch.dict(
+            os.environ,
+            {"FRONTEND_USER_ORIGIN": "http://localhost:3000,https://www.mysaloon.uz"},
+            clear=False,
+        ):
+            self.assertEqual(user_app_public_base(), "https://www.mysaloon.uz")
+            self.assertEqual(
+                build_invite_url("HE8AER5M"),
+                "https://www.mysaloon.uz/auth?ref=HE8AER5M",
+            )
+
+        with mock.patch.dict(
+            os.environ,
+            {"FRONTEND_USER_ORIGIN": "http://localhost:3000"},
+            clear=False,
+        ):
+            self.assertEqual(user_app_public_base(), "https://mysaloon.uz")
+            self.assertEqual(
+                build_invite_url("HE8AER5M"),
+                "https://mysaloon.uz/auth?ref=HE8AER5M",
+            )
 
     def test_apply_referral_attributes_new_user(self):
         referrer = _make_user("1112201")

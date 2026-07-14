@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ProfileSubpageCard } from "@/components/profile/ProfileSubpageLayout";
 import { useMyReferral } from "@/hooks/use-referral";
+import { resolveShareInviteUrl } from "@/lib/referral-storage";
 
 async function copyText(text: string): Promise<boolean> {
   if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
@@ -21,6 +22,7 @@ export function SettingsReferralPanel() {
   const { t } = useTranslation();
   const { data, isLoading, isError } = useMyReferral();
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
+  const inviteUrl = data ? resolveShareInviteUrl(data.code, data.invite_url) : "";
 
   const handleCopy = async (value: string, which: "code" | "link") => {
     const ok = await copyText(value);
@@ -34,19 +36,21 @@ export function SettingsReferralPanel() {
   };
 
   const handleShare = async () => {
-    if (!data) return;
+    if (!data || !inviteUrl) return;
     const message = t("referral.shareMessage", {
-      defaultValue: "MySaloon'ga qo'shil — salonlarni top va onlayn bron qil!",
+      code: data.code,
+      defaultValue:
+        "MySaloon'ga qo'shil — salonlarni top va onlayn bron qil! Mening kodim: {{code}}",
     });
     if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
       try {
-        await navigator.share({ title: "MySaloon", text: message, url: data.invite_url });
+        await navigator.share({ title: "MySaloon", text: message, url: inviteUrl });
         return;
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
       }
     }
-    await handleCopy(data.invite_url, "link");
+    await handleCopy(inviteUrl, "link");
   };
 
   if (isLoading) {
@@ -75,7 +79,7 @@ export function SettingsReferralPanel() {
         <p className="text-sm text-muted-foreground">
           {t("referral.intro", {
             defaultValue:
-              "Kodingizni do'stlaringiz va oila a'zolaringizga ulashing. Ular ro'yxatdan o'tsa, sizning taklifingiz sifatida qayd etiladi.",
+              "8 belgilik kodingizni yoki havolani ulashing. Do'stingiz ro'yxatdan o'tishda shu kodni kiritadi (yoki havola avtomatik qo'llaydi).",
           })}
         </p>
       </ProfileSubpageCard>
@@ -104,6 +108,15 @@ export function SettingsReferralPanel() {
           </div>
         </div>
 
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+            {t("referral.yourLink", { defaultValue: "Taklif havolasi" })}
+          </p>
+          <p className="mt-2 break-all rounded-xl border border-border bg-surface px-3 py-3 text-xs text-muted-foreground">
+            {inviteUrl}
+          </p>
+        </div>
+
         <div className="flex flex-col gap-2 sm:flex-row">
           <button
             type="button"
@@ -115,7 +128,7 @@ export function SettingsReferralPanel() {
           </button>
           <button
             type="button"
-            onClick={() => handleCopy(data.invite_url, "link")}
+            onClick={() => handleCopy(inviteUrl, "link")}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border py-3 text-sm font-bold"
           >
             {copied === "link" ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}

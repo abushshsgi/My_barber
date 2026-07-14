@@ -54,12 +54,28 @@ def ensure_referral_code(user: User) -> str:
     raise RuntimeError("Referral kod yaratib bo'lmadi.")
 
 
+def _is_local_origin(origin: str) -> bool:
+    lower = origin.lower()
+    return (
+        "localhost" in lower
+        or "127.0.0.1" in lower
+        or "0.0.0.0" in lower
+        or "[::1]" in lower
+    )
+
+
 def user_app_public_base() -> str:
+    """Ulashish uchun ochiq domen — localhost CORS originlari taklif havolasiga tushmaydi."""
     raw = os.environ.get("FRONTEND_USER_ORIGIN", "").strip()
+    candidates: list[str] = []
     if raw:
-        part = raw.split(",")[0].strip().strip('"').strip("'")
-        if part:
-            return part.rstrip("/")
+        for part in raw.split(","):
+            cleaned = part.strip().strip('"').strip("'").rstrip("/")
+            if cleaned:
+                candidates.append(cleaned)
+    for origin in candidates:
+        if not _is_local_origin(origin):
+            return origin
     return "https://mysaloon.uz"
 
 

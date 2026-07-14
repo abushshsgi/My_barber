@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { OtpResendTimer } from "@/components/auth/OtpResendTimer";
 import { AuthMarketingPanel } from "@/components/auth/AuthMarketingPanel";
+import { AuthReferralCodeField } from "@/components/auth/AuthReferralCodeField";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { AuthMethodDivider, PhoneSignInComingSoon } from "@/components/auth/PhoneSignInComingSoon";
 import { useTranslation } from "react-i18next";
@@ -33,6 +34,9 @@ export const Route = createFileRoute("/auth")({
   beforeLoad: async () => {
     await redirectIfAuthenticated();
   },
+  validateSearch: (search: Record<string, unknown>) => ({
+    ref: typeof search.ref === "string" ? search.ref : undefined,
+  }),
   head: () => ({ meta: [{ title: "Kirish — mysaloon.uz" }] }),
   component: Auth,
 });
@@ -51,6 +55,7 @@ function Auth() {
   const { t } = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { ref: refFromSearch } = Route.useSearch();
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState(() => getLastPhone());
   const [password, setPasswordInput] = useState("");
@@ -88,10 +93,8 @@ function Auth() {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const ref = new URLSearchParams(window.location.search).get("ref");
-    if (ref) stashReferralCode(ref);
-  }, []);
+    if (refFromSearch) stashReferralCode(refFromSearch);
+  }, [refFromSearch]);
 
   useEffect(() => {
     furthestStep.current = step;
@@ -373,6 +376,7 @@ function Auth() {
                       {t("auth.googleNotConfigured")}
                     </div>
                   )}
+                  <AuthReferralCodeField disabled={busy} initialFromUrl={refFromSearch} />
                   <AuthMethodDivider />
                   <div className="opacity-55 saturate-50">
                     <PhoneSignInComingSoon />
@@ -381,28 +385,31 @@ function Auth() {
               ) : null}
 
               {phoneAuthEnabled && step === "phone" ? (
-                <div>
-                  <label
-                    htmlFor="auth-phone"
-                    className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground"
-                  >
-                    {t("auth.phone")}
-                  </label>
-                  <div className="mt-2 flex h-14 items-stretch overflow-hidden rounded-2xl border-2 border-border bg-background focus-within:border-foreground">
-                    <span className="flex shrink-0 items-center border-r border-border px-4 text-sm font-bold tabular-nums">
-                      +998
-                    </span>
-                    <input
-                      id="auth-phone"
-                      type="tel"
-                      inputMode="numeric"
-                      value={formatUzLocalPhone(phone)}
-                      disabled={busy}
-                      onChange={(e) => setPhone(parseUzLocalPhone(e.target.value))}
-                      placeholder="90-123-45-67"
-                      className="min-w-0 flex-1 border-0 bg-transparent px-4 text-sm font-bold leading-none placeholder:text-muted-foreground/50 focus:outline-none disabled:opacity-60"
-                    />
+                <div className="space-y-4">
+                  <div>
+                    <label
+                      htmlFor="auth-phone"
+                      className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground"
+                    >
+                      {t("auth.phone")}
+                    </label>
+                    <div className="mt-2 flex h-14 items-stretch overflow-hidden rounded-2xl border-2 border-border bg-background focus-within:border-foreground">
+                      <span className="flex shrink-0 items-center border-r border-border px-4 text-sm font-bold tabular-nums">
+                        +998
+                      </span>
+                      <input
+                        id="auth-phone"
+                        type="tel"
+                        inputMode="numeric"
+                        value={formatUzLocalPhone(phone)}
+                        disabled={busy}
+                        onChange={(e) => setPhone(parseUzLocalPhone(e.target.value))}
+                        placeholder="90-123-45-67"
+                        className="min-w-0 flex-1 border-0 bg-transparent px-4 text-sm font-bold leading-none placeholder:text-muted-foreground/50 focus:outline-none disabled:opacity-60"
+                      />
+                    </div>
                   </div>
+                  <AuthReferralCodeField disabled={busy} initialFromUrl={refFromSearch} />
                 </div>
               ) : null}
 
