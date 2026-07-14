@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ClipboardEvent } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -15,10 +15,12 @@ import { toast } from "sonner";
 
 import {
   downloadAssetsStudioItem,
+  fetchAssetsStudioBlobUrl,
   fetchAssetsStudioStatus,
   generateAssetsStudioItem,
-  resolveAssetsStudioImageUrl,
+  LOGO_PROMPT_PRESETS,
   selectAssetsStudioItem,
+  type AssetsStudioItem,
   type AssetsStudioTemplate,
 } from "@/lib/api/assets-studio";
 import {
@@ -109,6 +111,21 @@ function AssetsStudioPage() {
     void queryClient.invalidateQueries({ queryKey: ["assets-studio"] });
   };
 
+  const handlePaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
+    const text = event.clipboardData?.getData("text/plain");
+    if (text == null) return;
+    event.preventDefault();
+    const el = event.currentTarget;
+    const start = el.selectionStart ?? promptExtra.length;
+    const end = el.selectionEnd ?? promptExtra.length;
+    const next = promptExtra.slice(0, start) + text + promptExtra.slice(end);
+    setPromptExtra(next);
+    requestAnimationFrame(() => {
+      const pos = start + text.length;
+      el.setSelectionRange(pos, pos);
+    });
+  };
+
   if (!unlocked) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-neutral-100 px-4">
@@ -141,6 +158,11 @@ function AssetsStudioPage() {
   }
 
   const configured = statusQuery.data?.configured;
+  const showLogoPresets =
+    activeTemplate?.id === "logo_user" ||
+    activeTemplate?.id === "logo_partner" ||
+    activeTemplate?.id === "app_icon" ||
+    activeTemplate?.id === "custom";
 
   return (
     <div className="min-h-screen bg-neutral-100 px-4 py-8 text-neutral-900">
@@ -154,7 +176,7 @@ function AssetsStudioPage() {
               <h1 className="mt-1 text-2xl font-bold tracking-tight">Assets Studio</h1>
               <p className="mt-2 max-w-2xl text-sm text-neutral-600">
                 User / Partner logolari, home bannerlar va boshqa marketing rasmlar uchun tayyor
-                shablonlar. Yaratilganlarni tanlab yuklab oling va saytga qo&apos;ying.
+                shablonlar. Prompt uchun pastdagi chiplarni bosing — paste kerak emas.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -172,7 +194,9 @@ function AssetsStudioPage() {
             <span
               className={cn(
                 "rounded-full px-3 py-1 font-medium",
-                configured?.image_generation ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-900",
+                configured?.image_generation
+                  ? "bg-emerald-50 text-emerald-800"
+                  : "bg-amber-50 text-amber-900",
               )}
             >
               AI: {configured?.provider ?? "sozlanmagan"}
@@ -195,10 +219,7 @@ function AssetsStudioPage() {
               <button
                 key={t.id}
                 type="button"
-                onClick={() => {
-                  setTemplateId(t.id);
-                  setPromptExtra("");
-                }}
+                onClick={() => setTemplateId(t.id)}
                 className={cn(
                   "w-full rounded-2xl border px-4 py-3 text-left transition",
                   t.id === activeTemplate?.id
@@ -234,24 +255,59 @@ function AssetsStudioPage() {
                   <Sparkles className="size-5 text-violet-600" />
                 </div>
 
+                {showLogoPresets ? (
+                  <div className="mt-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                      Tayyor promptlar (bosing)
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {LOGO_PROMPT_PRESETS.map((preset) => (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => setPromptExtra(preset.prompt)}
+                          className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-semibold hover:border-neutral-900 hover:bg-white"
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setPromptExtra("")}
+                        className="rounded-full border border-dashed border-neutral-300 px-3 py-1.5 text-xs text-neutral-500"
+                      >
+                        Tozalash
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+
                 <label className="mt-5 block text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                  Qo&apos;shimcha yo&apos;riqnoma (ixtiyoriy)
+                  Qo'shimcha yo'riqnoma / prompt
                 </label>
                 <textarea
                   value={promptExtra}
                   onChange={(e) => setPromptExtra(e.target.value)}
-                  rows={4}
+                  onPaste={handlePaste}
+                  rows={6}
+                  spellCheck={false}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  data-gramm="false"
+                  data-gramm_editor="false"
+                  data-enable-grammarly="false"
                   placeholder={
                     activeTemplate.id === "custom"
-                      ? "Bu yerga to'liq prompt yozing…"
-                      : "Masalan: yashil aksent, minimal, matnsiz…"
+                      ? "Bu yerga to'liq prompt yozing yoki yuqoridagi chipni bosing…"
+                      : "Chipni bosing yoki Ctrl+V bilan paste qiling…"
                   }
-                  className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                  className="mt-2 w-full resize-y rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm leading-relaxed outline-none focus:border-neutral-900"
                 />
 
                 <details className="mt-3 rounded-2xl border border-neutral-100 bg-neutral-50 px-4 py-3">
                   <summary className="cursor-pointer text-xs font-semibold text-neutral-600">
-                    Asosiy shablon promptini ko&apos;rish
+                    Asosiy shablon promptini ko'rish
                   </summary>
                   <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap text-[11px] leading-relaxed text-neutral-600">
                     {activeTemplate.default_prompt}
@@ -284,7 +340,7 @@ function AssetsStudioPage() {
                 <div>
                   <h2 className="text-lg font-bold">Yaratilgan rasmlar</h2>
                   <p className="text-sm text-neutral-600">
-                    Tanlanganlar keyin saytga qo&apos;yish uchun saqlanadi — yuklab oling.
+                    Tanlanganlar saqlanadi — yuklab oling va saytga qo'ying.
                   </p>
                 </div>
                 <label className="flex items-center gap-2 text-sm text-neutral-700">
@@ -303,87 +359,26 @@ function AssetsStudioPage() {
               ) : items.length === 0 ? (
                 <div className="mt-8 flex flex-col items-center gap-2 py-10 text-center text-neutral-500">
                   <ImageIcon className="size-8 opacity-40" />
-                  <p className="text-sm">Hali rasm yo&apos;q — shablonni tanlab generatsiya qiling.</p>
+                  <p className="text-sm">Hali rasm yo'q — shablonni tanlab generatsiya qiling.</p>
                 </div>
               ) : (
                 <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  {items.map((item) => {
-                    const src = resolveAssetsStudioImageUrl(item);
-                    return (
-                      <article
-                        key={item.id}
-                        className={cn(
-                          "overflow-hidden rounded-2xl border bg-neutral-50",
-                          item.selected ? "border-violet-500 ring-2 ring-violet-200" : "border-neutral-200",
-                        )}
-                      >
-                        <div
-                          className="relative bg-neutral-200"
-                          style={{
-                            aspectRatio: item.aspect_ratio.replace(":", " / "),
-                          }}
-                        >
-                          {src ? (
-                            <img
-                              src={src}
-                              alt={item.template_label}
-                              className="absolute inset-0 size-full object-cover"
-                            />
-                          ) : null}
-                          {item.selected ? (
-                            <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-violet-600 px-2 py-0.5 text-[10px] font-bold text-white">
-                              <Star className="size-3 fill-white" />
-                              Tanlangan
-                            </span>
-                          ) : null}
-                        </div>
-                        <div className="space-y-2 p-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <p className="text-sm font-semibold">{item.template_label}</p>
-                              <p className="text-[11px] text-neutral-500">
-                                {new Date(item.created_at).toLocaleString()} · {item.width}×
-                                {item.height}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              disabled={selectMutation.isPending}
-                              onClick={() =>
-                                selectMutation.mutate({
-                                  id: item.id,
-                                  selected: !item.selected,
-                                })
-                              }
-                              className={cn(
-                                "inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold",
-                                item.selected
-                                  ? "bg-violet-100 text-violet-900"
-                                  : "bg-neutral-900 text-white",
-                              )}
-                            >
-                              <Check className="size-3.5" />
-                              {item.selected ? "Bekor qilish" : "Sayt uchun tanlash"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                downloadAssetsStudioItem(item).catch((e: Error) =>
-                                  toast.error(e.message),
-                                )
-                              }
-                              className="inline-flex items-center gap-1 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold"
-                            >
-                              <Download className="size-3.5" />
-                              Yuklab olish
-                            </button>
-                          </div>
-                        </div>
-                      </article>
-                    );
-                  })}
+                  {items.map((item) => (
+                    <AssetCard
+                      key={item.id}
+                      item={item}
+                      selecting={selectMutation.isPending}
+                      onToggleSelect={() =>
+                        selectMutation.mutate({
+                          id: item.id,
+                          selected: !item.selected,
+                        })
+                      }
+                      onDownload={() =>
+                        downloadAssetsStudioItem(item).catch((e: Error) => toast.error(e.message))
+                      }
+                    />
+                  ))}
                 </div>
               )}
             </section>
@@ -391,5 +386,115 @@ function AssetsStudioPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function AssetCard({
+  item,
+  selecting,
+  onToggleSelect,
+  onDownload,
+}: {
+  item: AssetsStudioItem;
+  selecting: boolean;
+  onToggleSelect: () => void;
+  onDownload: () => void;
+}) {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let revoked: string | null = null;
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(null);
+    setBlobUrl(null);
+    void fetchAssetsStudioBlobUrl(item)
+      .then((url) => {
+        if (cancelled) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        revoked = url;
+        setBlobUrl(url);
+        setLoading(false);
+      })
+      .catch((err: Error) => {
+        if (cancelled) return;
+        setLoadError(err.message || "Yuklanmadi");
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      if (revoked) URL.revokeObjectURL(revoked);
+    };
+  }, [item.id, item.download_path, item.public_url]);
+
+  return (
+    <article
+      className={cn(
+        "overflow-hidden rounded-2xl border bg-neutral-50",
+        item.selected ? "border-violet-500 ring-2 ring-violet-200" : "border-neutral-200",
+      )}
+    >
+      <div
+        className="relative bg-neutral-200"
+        style={{ aspectRatio: item.aspect_ratio.replace(":", " / ") }}
+      >
+        {loading ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Loader2 className="size-6 animate-spin text-neutral-400" />
+          </div>
+        ) : blobUrl ? (
+          <img
+            src={blobUrl}
+            alt={item.template_label}
+            className="absolute inset-0 size-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-3 text-center text-xs text-neutral-500">
+            <ImageIcon className="size-6 opacity-50" />
+            {loadError || "Rasm yo'q"}
+          </div>
+        )}
+        {item.selected ? (
+          <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-violet-600 px-2 py-0.5 text-[10px] font-bold text-white">
+            <Star className="size-3 fill-white" />
+            Tanlangan
+          </span>
+        ) : null}
+      </div>
+      <div className="space-y-2 p-3">
+        <div>
+          <p className="text-sm font-semibold">{item.template_label}</p>
+          <p className="text-[11px] text-neutral-500">
+            {new Date(item.created_at).toLocaleString()} · {item.width}×{item.height}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={selecting}
+            onClick={onToggleSelect}
+            className={cn(
+              "inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold",
+              item.selected ? "bg-violet-100 text-violet-900" : "bg-neutral-900 text-white",
+            )}
+          >
+            <Check className="size-3.5" />
+            {item.selected ? "Bekor qilish" : "Sayt uchun tanlash"}
+          </button>
+          <button
+            type="button"
+            onClick={onDownload}
+            className="inline-flex items-center gap-1 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold"
+          >
+            <Download className="size-3.5" />
+            Yuklab olish
+          </button>
+        </div>
+      </div>
+    </article>
   );
 }

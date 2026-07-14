@@ -82,7 +82,7 @@ class AssetsStudioSelectView(ExploreGenAuthMixin, APIView):
 
 
 class AssetsStudioDownloadView(ExploreGenAuthMixin, APIView):
-    """GET — yaratilgan rasmni yuklab olish."""
+    """GET — preview (inline) yoki yuklab olish (?download=1)."""
 
     permission_classes = [AllowAny]
 
@@ -96,9 +96,17 @@ class AssetsStudioDownloadView(ExploreGenAuthMixin, APIView):
             raise Http404("Rasm topilmadi.") from exc
         item = get_asset(asset_id) or {}
         filename = f"{item.get('template_id', 'asset')}-{asset_id}.webp"
-        return FileResponse(
+        # as_attachment=True bo'lsa <img src> bo'sh qoladi — preview uchun inline.
+        force_download = str(request.query_params.get("download") or "").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+        response = FileResponse(
             path.open("rb"),
-            as_attachment=True,
+            as_attachment=force_download,
             filename=filename,
             content_type="image/webp",
         )
+        response["Cache-Control"] = "private, max-age=300"
+        return response
