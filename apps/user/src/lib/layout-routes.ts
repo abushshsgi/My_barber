@@ -32,6 +32,7 @@ const STANDARD_PREFIX = [
   "/favorites",
   "/favorite-stylists",
   "/family",
+  "/referrals",
   "/addresses",
   "/payment-methods",
   "/giftcard",

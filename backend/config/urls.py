@@ -64,6 +64,7 @@ from accounts.email_views import (
     UserEmailVerifyView,
 )
 from accounts.family_views import FamilyMemberDetailView, FamilyMemberListCreateView
+from accounts.referral_views import MyReferralView
 from accounts.session_views import (
     UserSessionListView,
     UserSessionRevokeOthersView,
@@ -350,6 +351,7 @@ api_routes = [
     path("users/me/sessions/<int:pk>/", UserSessionRevokeView.as_view()),
     path("users/family/", FamilyMemberListCreateView.as_view()),
     path("users/family/<int:pk>/", FamilyMemberDetailView.as_view()),
+    path("users/me/referral/", MyReferralView.as_view()),
     path("users/me/", MeView.as_view()),
     path("users/addresses/", UserAddressListCreateView.as_view()),
     path("users/addresses/<int:pk>/", UserAddressDetailView.as_view()),

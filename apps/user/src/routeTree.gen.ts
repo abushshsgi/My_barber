@@ -19,6 +19,7 @@ import { Route as StoriesRouteImport } from './routes/stories'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SessionsRouteImport } from './routes/sessions'
 import { Route as ReviewsRouteImport } from './routes/reviews'
+import { Route as ReferralsRouteImport } from './routes/referrals'
 import { Route as ReelsRouteImport } from './routes/reels'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyRouteImport } from './routes/privacy'
@@ -110,6 +111,11 @@ const SessionsRoute = SessionsRouteImport.update({
 const ReviewsRoute = ReviewsRouteImport.update({
   id: '/reviews',
   path: '/reviews',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReferralsRoute = ReferralsRouteImport.update({
+  id: '/referrals',
+  path: '/referrals',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReelsRoute = ReelsRouteImport.update({
@@ -346,6 +352,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
+  '/referrals': typeof ReferralsRoute
   '/reviews': typeof ReviewsRoute
   '/sessions': typeof SessionsRoute
   '/settings': typeof SettingsRoute
@@ -400,6 +407,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
+  '/referrals': typeof ReferralsRoute
   '/reviews': typeof ReviewsRoute
   '/sessions': typeof SessionsRoute
   '/settings': typeof SettingsRoute
@@ -454,6 +462,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
+  '/referrals': typeof ReferralsRoute
   '/reviews': typeof ReviewsRoute
   '/sessions': typeof SessionsRoute
   '/settings': typeof SettingsRoute
@@ -510,6 +519,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/profile'
     | '/reels'
+    | '/referrals'
     | '/reviews'
     | '/sessions'
     | '/settings'
@@ -564,6 +574,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/profile'
     | '/reels'
+    | '/referrals'
     | '/reviews'
     | '/sessions'
     | '/settings'
@@ -617,6 +628,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/profile'
     | '/reels'
+    | '/referrals'
     | '/reviews'
     | '/sessions'
     | '/settings'
@@ -672,6 +684,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
   ReelsRoute: typeof ReelsRoute
+  ReferralsRoute: typeof ReferralsRoute
   ReviewsRoute: typeof ReviewsRoute
   SessionsRoute: typeof SessionsRoute
   SettingsRoute: typeof SettingsRoute
@@ -769,6 +782,13 @@ declare module '@tanstack/react-router' {
       path: '/reviews'
       fullPath: '/reviews'
       preLoaderRoute: typeof ReviewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/referrals': {
+      id: '/referrals'
+      path: '/referrals'
+      fullPath: '/referrals'
+      preLoaderRoute: typeof ReferralsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reels': {
@@ -1138,6 +1158,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
   ReelsRoute: ReelsRoute,
+  ReferralsRoute: ReferralsRoute,
   ReviewsRoute: ReviewsRoute,
   SessionsRoute: SessionsRoute,
   SettingsRoute: SettingsRoute,
@@ -1167,3 +1188,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

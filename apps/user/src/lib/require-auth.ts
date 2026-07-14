@@ -18,6 +18,7 @@ const AUTH_REQUIRED_PREFIXES = [
   "/sessions",
   "/subscriptions",
   "/family",
+  "/referrals",
   "/giftcard",
   "/loyalty",
   "/ai-style",

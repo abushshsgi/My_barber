@@ -147,6 +147,12 @@ class ApiUserRateThrottle(UserRateThrottle):
     scope = "user"
 
 
+class ReferralThrottle(UserRateThrottle):
+    """Referal kod/statistika o'qish — foydalanuvchi bo'yicha limit."""
+
+    scope = "referral"
+
+
 class WalletGiftThrottle(AuthIPThrottle):
     scope = "wallet_gift"
 

@@ -12,6 +12,7 @@ export {
 } from "./client";
 export * from "./types";
 export * from "./auth";
+export * from "./referrals";
 export * from "./user";
 export * from "./salons";
 export * from "./barbers";

@@ -25,6 +25,7 @@ import { clearQueryClientCache } from "@/lib/query-client";
 import { getStoredOtpCooldownSeconds, storeOtpCooldown } from "@/lib/otp-cooldown";
 import { formatUzLocalPhone, parseUzLocalPhone } from "@/lib/phone";
 import { needsOnboarding } from "@/lib/recommendations";
+import { clearStashedReferralCode, stashReferralCode } from "@/lib/referral-storage";
 import { redirectIfAuthenticated } from "@/lib/require-auth";
 import type { PhoneAuthIntent, PhoneVerifyResponse } from "@/lib/api/types";
 
@@ -87,6 +88,12 @@ function Auth() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref) stashReferralCode(ref);
+  }, []);
+
+  useEffect(() => {
     furthestStep.current = step;
   }, [step]);
 
@@ -128,6 +135,7 @@ function Auth() {
   ) => {
     authCompleted.current = true;
     trackAuthSuccess({ isNewUser: Boolean(data.is_new_user), method });
+    clearStashedReferralCode();
     setSession(data.access, data.refresh, data.user, data.session_id);
     clearQueryClientCache();
     toast.success(data.is_new_user ? t("auth.welcomeNew") : t("auth.welcomeBack"));
@@ -234,6 +242,7 @@ function Auth() {
         isNewUser: Boolean(pendingAuth.is_new_user),
         method: "phone",
       });
+      clearStashedReferralCode();
       setSession(pendingAuth.access, pendingAuth.refresh, res.user);
       void router
         .navigate({

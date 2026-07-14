@@ -34,6 +34,16 @@ class User(AbstractUser):
     google_sub = models.CharField(
         max_length=64, blank=True, null=True, unique=True, db_index=True
     )
+    referral_code = models.CharField(
+        max_length=12, blank=True, null=True, unique=True, db_index=True
+    )
+    referred_by = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="referred_users",
+    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
@@ -124,6 +134,32 @@ class FamilyMember(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user_id}: {self.name}"
+
+
+class ReferralAttribution(models.Model):
+    """Kim kimni taklif qilgani — bonussiz, faqat attribution (kelajakda mukofot uchun tayyor)."""
+
+    class Status(models.TextChoices):
+        ATTRIBUTED = "attributed", "Attributed"
+        REWARDED = "rewarded", "Rewarded"
+
+    referrer = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="referrals_made"
+    )
+    referee = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="referral_source"
+    )
+    code_used = models.CharField(max_length=12)
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.ATTRIBUTED, db_index=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self) -> str:
+        return f"{self.referrer_id} -> {self.referee_id}"
 
 
 class UserSession(models.Model):

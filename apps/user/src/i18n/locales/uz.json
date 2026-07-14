@@ -689,6 +689,22 @@
       "unisex": "Hammasi"
     }
   },
+  "referral": {
+    "title": "Do'stni taklif qilish",
+    "subtitle": "Do'st va oilangizni MySaloon'ga taklif qiling.",
+    "intro": "Kodingizni do'stlaringiz va oila a'zolaringizga ulashing. Ular ro'yxatdan o'tsa, sizning taklifingiz sifatida qayd etiladi.",
+    "yourCode": "Sizning kodingiz",
+    "copyCode": "Kodni nusxalash",
+    "copyLink": "Havoladan nusxa",
+    "share": "Havolani ulashish",
+    "shareMessage": "MySaloon'ga qo'shil — salonlarni top va onlayn bron qil!",
+    "copied": "Nusxa olindi",
+    "copyFailed": "Nusxa olishning iloji bo'lmadi",
+    "invitedCount": "{{count}} kishi taklif qilingan",
+    "invitedHint": "Kodingiz orqali qo'shilganlar soni.",
+    "bonusSoon": "Taklif uchun bonuslar tez orada qo'shiladi.",
+    "loadError": "Referal ma'lumotini yuklab bo'lmadi."
+  },
   "sessions": {
     "title": "Faol sessiyalar",
     "subtitle": "Hisobingiz qaysi qurilmalardan ochilganini ko'ring va boshqaring.",

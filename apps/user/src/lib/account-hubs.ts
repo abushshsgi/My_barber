@@ -13,6 +13,7 @@ import {
   Sparkles,
   Star,
   Tag,
+  UserPlus,
   Users,
   Wallet,
   type LucideIcon,
@@ -76,6 +77,7 @@ export const ACCOUNT_HUBS: AccountHubMeta[] = [
     pageTitleKey: "account.hubs.household.pageTitle",
     items: [
       { icon: Users, label: "", to: "/family" },
+      { icon: UserPlus, label: "", to: "/referrals" },
       { icon: MapPin, label: "", to: "/addresses" },
     ],
   },
@@ -104,7 +106,7 @@ export const ACCOUNT_HUB_HINT_KEYS: Record<AccountHubKey, string[]> = {
     "account.hubs.activity.hints.gift",
   ],
   payments: ["", "", "", "", ""],
-  household: ["", ""],
+  household: ["", "", ""],
   preferences: ["", "", "", ""],
 };
 
@@ -118,7 +120,7 @@ export const ACCOUNT_HUB_LABEL_KEYS: Record<AccountHubKey, string[]> = {
     "profile.offers",
     "subscriptions.title",
   ],
-  household: ["family.title", "addresses.title"],
+  household: ["family.title", "referral.title", "addresses.title"],
   preferences: ["notifications.title", "profile.settings", "profile.support", "profile.privacy"],
 };
 

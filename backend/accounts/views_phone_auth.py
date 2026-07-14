@@ -333,6 +333,11 @@ class PhoneVerifyView(APIView):
         if not user.is_active:
             return Response({"detail": "Akkaunt faol emas."}, status=403)
 
+        if is_new:
+            from .referral import apply_referral
+
+            apply_referral(new_user=user, code=request.data.get("referral_code"))
+
         User.objects.filter(pk=user.pk).update(last_login=timezone.now())
         from wallet.services.wallet_service import WalletService
 

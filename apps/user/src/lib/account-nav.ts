@@ -76,6 +76,7 @@ export function isAccountNavActive(pathname: string, to: string) {
       pathname === "/addresses" ||
       pathname.startsWith("/addresses/") ||
       pathname === "/family" ||
+      pathname === "/referrals" ||
       pathname === "/privacy" ||
       pathname === "/support"
     );

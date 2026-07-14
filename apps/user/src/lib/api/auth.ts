@@ -1,3 +1,4 @@
+import { getStashedReferralCode } from "@/lib/referral-storage";
 import { apiFetch, apiJson } from "./client";
 import type {
   ApiUser,
@@ -85,9 +86,15 @@ export async function verifyPhoneCode(
   code: string,
   intent: PhoneAuthIntent = "login",
 ): Promise<PhoneVerifyResponse> {
+  const referralCode = getStashedReferralCode();
   return apiJson<PhoneVerifyResponse>("/api/v1/auth/phone/verify/", {
     method: "POST",
-    body: JSON.stringify({ phone, code, intent }),
+    body: JSON.stringify({
+      phone,
+      code,
+      intent,
+      ...(referralCode ? { referral_code: referralCode } : {}),
+    }),
   });
 }
 
@@ -117,9 +124,13 @@ export async function loginWithPassword(
 }
 
 export async function loginWithGoogle(idToken: string): Promise<PhoneVerifyResponse> {
+  const referralCode = getStashedReferralCode();
   const res = await apiFetch("/api/v1/auth/google/", {
     method: "POST",
-    body: JSON.stringify({ id_token: idToken }),
+    body: JSON.stringify({
+      id_token: idToken,
+      ...(referralCode ? { referral_code: referralCode } : {}),
+    }),
   });
   const body = await res.json().catch(() => null);
   if (!res.ok) {

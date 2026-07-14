@@ -689,6 +689,22 @@
       "unisex": "Everyone"
     }
   },
+  "referral": {
+    "title": "Invite a friend",
+    "subtitle": "Invite your friends and family to MySaloon.",
+    "intro": "Share your code with friends and family. When they sign up, it's counted as your invite.",
+    "yourCode": "Your code",
+    "copyCode": "Copy code",
+    "copyLink": "Copy link",
+    "share": "Share link",
+    "shareMessage": "Join MySaloon — find salons and book online!",
+    "copied": "Copied",
+    "copyFailed": "Couldn't copy",
+    "invitedCount": "{{count}} people invited",
+    "invitedHint": "Number of people who joined with your code.",
+    "bonusSoon": "Rewards for invites are coming soon.",
+    "loadError": "Couldn't load referral info."
+  },
   "sessions": {
     "title": "Active sessions",
     "subtitle": "See and manage devices where your account is signed in.",

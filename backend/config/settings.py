@@ -311,6 +311,7 @@ REST_FRAMEWORK = {
         "barber_payout": "3/hour",
         "barber_broadcast": "5/day",
         "barber_promo": "20/day",
+        "referral": "60/minute",
     },
 }
 

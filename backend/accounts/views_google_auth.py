@@ -36,6 +36,11 @@ class GoogleLoginView(APIView):
         from accounts.models import User
         from wallet.services.wallet_service import WalletService
 
+        if is_new:
+            from accounts.referral import apply_referral
+
+            apply_referral(new_user=user, code=request.data.get("referral_code"))
+
         User.objects.filter(pk=user.pk).update(last_login=timezone.now())
         WalletService.ensure_wallet(user)
         return Response(_auth_success_body(user, is_new=is_new, request=request))
