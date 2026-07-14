@@ -57,6 +57,7 @@ import { Route as AccountPreferencesRouteImport } from './routes/account.prefere
 import { Route as AccountPaymentsRouteImport } from './routes/account.payments'
 import { Route as AccountHouseholdRouteImport } from './routes/account.household'
 import { Route as AccountActivityRouteImport } from './routes/account.activity'
+import { Route as DevExploreGenIndexRouteImport } from './routes/dev.explore-gen.index'
 import { Route as ExploreStyleIdTryRouteImport } from './routes/explore_.$styleId_.try'
 import { Route as DevExploreGenAssetsRouteImport } from './routes/dev.explore-gen.assets'
 import { Route as BookingBarberBarberIdRouteImport } from './routes/booking.barber.$barberId'
@@ -301,6 +302,11 @@ const AccountActivityRoute = AccountActivityRouteImport.update({
   path: '/account/activity',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevExploreGenIndexRoute = DevExploreGenIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DevExploreGenRoute,
+} as any)
 const ExploreStyleIdTryRoute = ExploreStyleIdTryRouteImport.update({
   id: '/explore_/$styleId_/try',
   path: '/explore/$styleId/try',
@@ -369,6 +375,7 @@ export interface FileRoutesByFullPath {
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
   '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
   '/explore/$styleId/try': typeof ExploreStyleIdTryRoute
+  '/dev/explore-gen/': typeof DevExploreGenIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -413,7 +420,6 @@ export interface FileRoutesByTo {
   '/bookings/$bookingId': typeof BookingsBookingIdRoute
   '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
-  '/dev/explore-gen': typeof DevExploreGenRouteWithChildren
   '/explore/$styleId': typeof ExploreStyleIdRoute
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
@@ -422,6 +428,7 @@ export interface FileRoutesByTo {
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
   '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
   '/explore/$styleId/try': typeof ExploreStyleIdTryRoute
+  '/dev/explore-gen': typeof DevExploreGenIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -476,6 +483,7 @@ export interface FileRoutesById {
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
   '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
   '/explore_/$styleId_/try': typeof ExploreStyleIdTryRoute
+  '/dev/explore-gen/': typeof DevExploreGenIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -531,6 +539,7 @@ export interface FileRouteTypes {
     | '/booking/barber/$barberId'
     | '/dev/explore-gen/assets'
     | '/explore/$styleId/try'
+    | '/dev/explore-gen/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -575,7 +584,6 @@ export interface FileRouteTypes {
     | '/bookings/$bookingId'
     | '/category/$category'
     | '/chat/$id'
-    | '/dev/explore-gen'
     | '/explore/$styleId'
     | '/salon/$id'
     | '/stories/$salonId'
@@ -584,6 +592,7 @@ export interface FileRouteTypes {
     | '/booking/barber/$barberId'
     | '/dev/explore-gen/assets'
     | '/explore/$styleId/try'
+    | '/dev/explore-gen'
   id:
     | '__root__'
     | '/'
@@ -637,6 +646,7 @@ export interface FileRouteTypes {
     | '/booking/barber/$barberId'
     | '/dev/explore-gen/assets'
     | '/explore_/$styleId_/try'
+    | '/dev/explore-gen/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1027,6 +1037,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountActivityRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dev/explore-gen/': {
+      id: '/dev/explore-gen/'
+      path: '/'
+      fullPath: '/dev/explore-gen/'
+      preLoaderRoute: typeof DevExploreGenIndexRouteImport
+      parentRoute: typeof DevExploreGenRoute
+    }
     '/explore_/$styleId_/try': {
       id: '/explore_/$styleId_/try'
       path: '/explore/$styleId/try'
@@ -1086,10 +1103,12 @@ const StoriesRouteWithChildren =
 
 interface DevExploreGenRouteChildren {
   DevExploreGenAssetsRoute: typeof DevExploreGenAssetsRoute
+  DevExploreGenIndexRoute: typeof DevExploreGenIndexRoute
 }
 
 const DevExploreGenRouteChildren: DevExploreGenRouteChildren = {
   DevExploreGenAssetsRoute: DevExploreGenAssetsRoute,
+  DevExploreGenIndexRoute: DevExploreGenIndexRoute,
 }
 
 const DevExploreGenRouteWithChildren = DevExploreGenRoute._addFileChildren(
