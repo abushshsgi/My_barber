@@ -40,7 +40,8 @@ export function isBarberTokenExpired(token: string, skewSeconds = 30): boolean {
 }
 
 export function isBarberAuthFailureStatus(status: number): boolean {
-  return status === 401 || status === 403;
+  // Faqat 401 — 403 ko'pincha activation gate ("permission"), sessiya emas.
+  return status === 401;
 }
 
 export function isBarberTokenErrorMessage(message: string): boolean {
@@ -49,8 +50,26 @@ export function isBarberTokenErrorMessage(message: string): boolean {
     lower.includes("token expired") ||
     lower.includes("token not valid") ||
     lower.includes("not authenticated") ||
-    lower.includes("authentication credentials")
+    lower.includes("authentication credentials") ||
+    lower.includes("barber token talab") ||
+    lower.includes("given token not valid")
   );
+}
+
+/** 401 yoki muddati o'tgan JWT 403 — sessiya o‘lishi. Activation "permission" 403 emas. */
+export function isBarberSessionRevokedResponse(status: number, body?: unknown): boolean {
+  if (status === 401) return true;
+  if (status !== 403) return false;
+  let detail = "";
+  if (typeof body === "string") detail = body;
+  else if (body && typeof body === "object") {
+    const d = (body as { detail?: unknown }).detail;
+    if (typeof d === "string") detail = d;
+    else if (Array.isArray(d) && typeof d[0] === "string") detail = d[0];
+  }
+  const lower = detail.toLowerCase();
+  if (lower.includes("permission") || lower.includes("ruxsat")) return false;
+  return isBarberTokenErrorMessage(detail) || lower.includes("token");
 }
 
 export function hasValidBarberSession(): boolean {
@@ -112,13 +131,13 @@ export async function refreshBarberAccessToken(): Promise<RefreshResult> {
 
     if (!res.ok) {
       const access = getBarberAccessToken();
-      if (access && isBarberAuthFailureStatus(res.status)) {
+      if (access && isBarberSessionRevokedResponse(res.status)) {
         const meRes = await fetch(`${API_BASE}/api/v1/barber/auth/me/`, {
           headers: { Authorization: `Bearer ${access}` },
         });
         if (meRes.ok) return { access, revoked: false };
       }
-      return { access: null, revoked: isBarberAuthFailureStatus(res.status) };
+      return { access: null, revoked: isBarberSessionRevokedResponse(res.status) };
     }
 
     const body = (await res.json().catch(() => ({}))) as { access?: string; refresh?: string };

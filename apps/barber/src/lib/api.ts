@@ -1,6 +1,7 @@
 import {
   handleBarberAuthFailure,
   isBarberAuthFailureStatus,
+  isBarberSessionRevokedResponse,
   isBarberTokenExpired,
   refreshBarberAccessToken,
 } from "@/lib/barber-auth-session";
@@ -205,6 +206,23 @@ export async function apiFetch(
     } else if (refreshed.revoked) {
       handleBarberAuthFailure("expired");
     }
+  } else if (res.status === 403 && retry && token) {
+    // DRF muddati o'tgan JWT ni ba'zan 403 qilib qaytaradi — faqat token xabarida refresh.
+    let peek: unknown;
+    try {
+      peek = await res.clone().json();
+    } catch {
+      peek = undefined;
+    }
+    if (isBarberSessionRevokedResponse(403, peek)) {
+      const refreshed = await refreshBarberAccessToken();
+      if (refreshed.access) {
+        headers.set("Authorization", `Bearer ${refreshed.access}`);
+        res = await exec();
+      } else if (refreshed.revoked) {
+        handleBarberAuthFailure("expired");
+      }
+    }
   }
 
   return res;
@@ -225,7 +243,7 @@ export async function apiJson<T>(path: string, options: RequestInit = {}): Promi
   if (!res.ok) {
     const message = formatHttpApiError(res, body, res.statusText);
     if (
-      isBarberAuthFailureStatus(res.status) &&
+      isBarberSessionRevokedResponse(res.status, body) &&
       getBarberAccessToken() &&
       !shouldOmitBearerForPath(path)
     ) {

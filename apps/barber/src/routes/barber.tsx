@@ -8,6 +8,7 @@ import {
   writeOnboardingStatusCache,
 } from "@/lib/onboarding-status-cache";
 import { normalizeRequiredNextPath } from "@/lib/onboarding-redirect";
+import { isBarberSessionRevokedResponse } from "@/lib/barber-auth-session";
 
 function activationRedirectTarget(_ownsSalon?: boolean): string {
   return "/barber";
@@ -40,7 +41,13 @@ export const Route = createFileRoute("/barber")({
     try {
       const res = await apiFetch("/api/v1/barber/onboarding/status/");
       if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
+        let body: unknown;
+        try {
+          body = await res.clone().json();
+        } catch {
+          body = undefined;
+        }
+        if (isBarberSessionRevokedResponse(res.status, body)) {
           clearBarberTokens();
           throw redirect({ to: "/auth" });
         }

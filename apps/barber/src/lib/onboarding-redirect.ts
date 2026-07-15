@@ -28,6 +28,7 @@ export async function resolveBarberEntryPath(): Promise<string> {
         clearBarberTokens();
         return "/auth";
       }
+      // 403 activation gate — sessiyani o‘chirmaymiz
       return "/barber";
     }
     const st = (await res.json()) as OnboardingStatusLite;
