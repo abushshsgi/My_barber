@@ -26,7 +26,7 @@ function ExploreMobile() {
 
   return (
     <div className="min-h-full min-w-0">
-      <PageHeader showBack title={t("explorePage.title")} transparent />
+      <PageHeader showBack sticky title={t("explorePage.title")} />
       <div className="px-2 pb-3">
         {audience === "men" ? (
           <PersonaPicker value={personaId} onChange={setPersonaId} compact />

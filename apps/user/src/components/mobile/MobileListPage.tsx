@@ -11,8 +11,7 @@ type Props = {
   className?: string;
 };
 
-/** Standart mobil ro'yxat sahifasi — neo header + panel kontent.
- *  Pastki padding UserLayout orqali keladi (ikki marta qo'ymaymiz). */
+/** Standart mobil ro'yxat sahifasi — sticky header + ixcham kontent. */
 export function MobileListPage({
   title,
   subtitle,
@@ -22,9 +21,9 @@ export function MobileListPage({
   className,
 }: Props) {
   return (
-    <div className={cn("min-h-full min-w-0", className)}>
-      <PageHeader showBack={showBack} title={title} subtitle={subtitle} right={right} transparent />
-      <div className="page-stagger mx-3 mb-3 rounded-2xl neo-panel px-4 py-5">{children}</div>
+    <div className={cn("min-h-full min-w-0 overflow-x-clip", className)}>
+      <PageHeader showBack={showBack} sticky title={title} subtitle={subtitle} right={right} />
+      <div className="page-stagger min-w-0 px-4 py-3">{children}</div>
     </div>
   );
 }

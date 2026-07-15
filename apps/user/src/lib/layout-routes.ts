@@ -1,11 +1,14 @@
-/** Asosiy tab sahifalarida pastki dock ko'rsatiladi. */
-const MOBILE_DOCK_TAB_EXACT = new Set(["/", "/map", "/bookings", "/profile"]);
-
+/** Auth / onboarding / AI try-on dan tashqari barcha mobil sahifalarda pastki dock. */
 export function shouldShowMobileDock(pathname: string): boolean {
-  if (pathname === "/auth" || pathname === "/onboarding" || pathname === "/ai-style" || pathname.startsWith("/ai-style/")) {
+  if (
+    pathname === "/auth" ||
+    pathname === "/onboarding" ||
+    pathname === "/ai-style" ||
+    pathname.startsWith("/ai-style/")
+  ) {
     return false;
   }
-  return MOBILE_DOCK_TAB_EXACT.has(pathname);
+  return true;
 }
 
 export type DesktopContentProfile = "discovery" | "standard" | "compact";

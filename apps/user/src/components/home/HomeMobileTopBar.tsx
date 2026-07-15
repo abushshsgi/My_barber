@@ -18,34 +18,34 @@ export function HomeMobileTopBar() {
 
   return (
     <header
-      className="sticky top-0 z-30 flex items-center justify-between border-b border-border/60 bg-background/90 px-4 pb-2.5 backdrop-blur-md"
-      style={{ paddingTop: "max(env(safe-area-inset-top), 10px)" }}
+      className="sticky top-0 z-30 flex items-center justify-between border-b border-border/50 bg-background/92 px-4 pb-2 backdrop-blur-md"
+      style={{ paddingTop: "max(env(safe-area-inset-top), 8px)" }}
     >
       <Link to="/" className="flex min-w-0 items-baseline gap-0.5">
-        <span className="text-[1.35rem] font-extrabold tracking-tight text-foreground">mysaloon</span>
-        <span className="text-[11px] font-bold text-muted-foreground">.uz</span>
+        <span className="text-lg font-extrabold tracking-tight text-foreground">mysaloon</span>
+        <span className="text-[10px] font-bold text-muted-foreground">.uz</span>
       </Link>
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1">
         <Link
           to="/chat"
           aria-label="Chat"
           className={cn(
-            "relative grid size-10 place-items-center rounded-2xl bg-surface",
+            "relative grid size-9 place-items-center rounded-xl bg-transparent",
             "active:scale-95 transition-transform",
           )}
         >
-          <MessageSquare className="size-[17px] text-foreground" strokeWidth={2} />
+          <MessageSquare className="size-4 text-foreground" strokeWidth={2} />
           <IconBadge count={chatUnread} />
         </Link>
         <Link
           to="/notifications"
           aria-label="Bildirishnomalar"
           className={cn(
-            "relative grid size-10 place-items-center rounded-2xl bg-surface",
+            "relative grid size-9 place-items-center rounded-xl bg-transparent",
             "active:scale-95 transition-transform",
           )}
         >
-          <Bell className="size-[17px] text-foreground" strokeWidth={2} />
+          <Bell className="size-4 text-foreground" strokeWidth={2} />
           <IconBadge count={notificationsUnread} />
         </Link>
       </div>

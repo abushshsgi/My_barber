@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { formatPrice } from "@/lib/mock-data";
 import { PageHeader } from "@/components/PageHeader";
+import { MobileStickyActionBar } from "@/components/mobile/MobileStickyActionBar";
 import { Stepper } from "@/components/Stepper";
 import { BookingForPicker } from "@/components/booking/BookingForPicker";
 import { BookingPaymentPicker, type BookingPaymentMethod } from "@/components/booking/BookingPaymentPicker";
@@ -18,6 +19,7 @@ import { useCreateBooking } from "@/hooks/use-bookings-api";
 import { useWalletBalance } from "@/hooks/use-wallet";
 import { useFamilyMembers } from "@/hooks/use-family";
 import { useDisplayUser } from "@/hooks/use-me";
+import { MOBILE_STICKY_CONTENT_PADDING_CLASS } from "@/lib/layout-constants";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/barber/$barberId")({
@@ -167,7 +169,7 @@ function IndependentBookingFlow() {
 
   return (
     <div className="lg:px-6">
-      <PageHeader showBack title={t("booking.title")} className="lg:hidden" />
+      <PageHeader showBack sticky title={t("booking.title")} className="lg:hidden" />
 
       <div className="px-5 pt-2 lg:px-0">
         <Stepper steps={labels} current={step} />
@@ -187,7 +189,7 @@ function IndependentBookingFlow() {
       </div>
 
       <div className="lg:grid lg:grid-cols-[1fr_320px] lg:items-start lg:gap-8">
-        <div className="px-5 pt-6 pb-[calc(5.75rem+env(safe-area-inset-bottom,0px))] lg:px-0 lg:pb-8">
+        <div className={cn("px-5 pt-6 lg:px-0", MOBILE_STICKY_CONTENT_PADDING_CLASS, "lg:pb-8")}>
         {step === 1 && (
           <div className="space-y-8">
             <BookingForPicker value={familyMemberId} onChange={setFamilyMemberId} />
@@ -235,30 +237,32 @@ function IndependentBookingFlow() {
         {step === 2 && (
           <div>
             <h2 className="text-xl font-bold tracking-tight">{t("booking.selectTime")}</h2>
-            <div className="no-scrollbar mt-6 flex touch-pan-x gap-2 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
-              {days.map((d, i) => {
-                const iso = d.full.toISOString().slice(0, 10);
-                const unavailable = monthLoaded && !availableDates.has(iso);
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    disabled={unavailable}
-                    onClick={() => {
-                      setDayIdx(i);
-                      setSlot(null);
-                    }}
-                    className={cn(
-                      "flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-xl",
-                      dayIdx === i ? "bg-foreground text-background" : "bg-surface text-foreground",
-                      unavailable && "cursor-not-allowed opacity-40",
-                    )}
-                  >
-                    <span className="text-[10px] font-bold uppercase opacity-70">{d.day}</span>
-                    <span className="text-lg font-bold">{d.date}</span>
-                  </button>
-                );
-              })}
+            <div className="mt-5 min-w-0 overflow-x-clip">
+              <div className="no-scrollbar flex touch-pan-x gap-2 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+                {days.map((d, i) => {
+                  const iso = d.full.toISOString().slice(0, 10);
+                  const unavailable = monthLoaded && !availableDates.has(iso);
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      disabled={unavailable}
+                      onClick={() => {
+                        setDayIdx(i);
+                        setSlot(null);
+                      }}
+                      className={cn(
+                        "flex h-14 w-12 shrink-0 flex-col items-center justify-center rounded-xl",
+                        dayIdx === i ? "bg-foreground text-background" : "bg-surface text-foreground",
+                        unavailable && "cursor-not-allowed opacity-40",
+                      )}
+                    >
+                      <span className="text-[10px] font-bold uppercase opacity-70">{d.day}</span>
+                      <span className="text-base font-bold">{d.date}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             {slotsLoading ? (
               <div className="mt-6 grid grid-cols-3 gap-2">
@@ -399,43 +403,36 @@ function IndependentBookingFlow() {
         />
       </div>
 
-      <div
-        className={cn(
-          "fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 px-4 pt-3 backdrop-blur-md lg:hidden",
+      <MobileStickyActionBar>
+        {step > 1 && (
+          <button
+            onClick={() => setStep((s) => s - 1)}
+            className="neo-cta flex-1 py-4 text-sm font-bold"
+          >
+            {t("common.back")}
+          </button>
         )}
-        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0px))" }}
-      >
-        <div className="mx-auto flex max-w-md gap-2">
-          {step > 1 && (
-            <button
-              onClick={() => setStep((s) => s - 1)}
-              className="neo-cta flex-1 py-4 text-sm font-bold"
-            >
-              {t("common.back")}
-            </button>
-          )}
-          {step < 3 ? (
-            <button
-              disabled={!canAdvance}
-              onClick={() => canAdvance && setStep((s) => s + 1)}
-              className={cn(
-                "neo-cta flex-[2] py-4 text-sm font-bold tracking-wide",
-                canAdvance ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
-              )}
-            >
-              {t("common.next")}
-            </button>
-          ) : (
-            <button
-              disabled={createBooking.isPending}
-              onClick={() => void handleSubmit()}
-              className="neo-cta flex-[2] bg-primary py-4 text-sm font-bold tracking-wide text-primary-foreground disabled:opacity-60"
-            >
-              {t("booking.confirm")}
-            </button>
-          )}
-        </div>
-      </div>
+        {step < 3 ? (
+          <button
+            disabled={!canAdvance}
+            onClick={() => canAdvance && setStep((s) => s + 1)}
+            className={cn(
+              "neo-cta flex-[2] py-4 text-sm font-bold tracking-wide",
+              canAdvance ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+            )}
+          >
+            {t("common.next")}
+          </button>
+        ) : (
+          <button
+            disabled={createBooking.isPending}
+            onClick={() => void handleSubmit()}
+            className="neo-cta flex-[2] bg-primary py-4 text-sm font-bold tracking-wide text-primary-foreground disabled:opacity-60"
+          >
+            {t("booking.confirm")}
+          </button>
+        )}
+      </MobileStickyActionBar>
     </div>
   );
 }

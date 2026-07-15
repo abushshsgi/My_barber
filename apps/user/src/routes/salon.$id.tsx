@@ -1,5 +1,6 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { SalonDesktopPage } from "@/components/desktop/pages/SalonDesktopPage";
 import { SalonMobilePage } from "@/components/salon/SalonMobilePage";
 import { SalonPageSkeleton } from "@/components/salon/SalonPageSkeleton";
@@ -45,14 +46,14 @@ function SalonPage() {
 
   if (isLoading || !salon) {
     return (
-      <>
-        <div className="lg:hidden">
-          <SalonPageSkeleton />
-        </div>
-        <div className="hidden min-h-[50vh] items-center justify-center lg:flex">
-          <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
-        </div>
-      </>
+      <DesktopPageSplit
+        mobile={<SalonPageSkeleton />}
+        desktop={
+          <div className="flex min-h-[50vh] items-center justify-center">
+            <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+          </div>
+        }
+      />
     );
   }
 
@@ -69,12 +70,10 @@ function SalonPage() {
 
   return (
     <>
-      <div className="hidden lg:block">
-        <SalonDesktopPage {...pageProps} />
-      </div>
-      <div className="lg:hidden">
-        <SalonMobilePage {...pageProps} />
-      </div>
+      <DesktopPageSplit
+        mobile={<SalonMobilePage {...pageProps} />}
+        desktop={<SalonDesktopPage {...pageProps} />}
+      />
       {shareSalon ? (
         <SalonShareSheet open={shareOpen} onOpenChange={setShareOpen} salon={shareSalon} />
       ) : null}

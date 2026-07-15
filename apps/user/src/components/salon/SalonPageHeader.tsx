@@ -27,27 +27,30 @@ export function SalonPageHeader({
   return (
     <div
       className={cn(
-        isMobile
-          ? "rounded-2xl border border-border bg-background p-5 shadow-sm"
-          : "border-b border-border pb-6 pt-8",
+        isMobile ? "pb-1" : "border-b border-border pb-6 pt-8",
       )}
     >
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className={cn("flex flex-wrap items-start justify-between", isMobile ? "gap-3" : "gap-4")}>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          <p
+            className={cn(
+              "font-semibold uppercase text-muted-foreground",
+              isMobile ? "text-[10px] tracking-[0.14em]" : "text-xs tracking-[0.16em]",
+            )}
+          >
             {salon.category}
           </p>
           <h1
             className={cn(
-              "mt-1 font-semibold tracking-tight text-foreground",
-              isMobile ? "text-2xl" : "text-[32px] leading-tight",
+              "mt-0.5 font-semibold tracking-tight text-foreground",
+              isMobile ? "text-xl" : "text-[32px] leading-tight",
             )}
           >
             {salon.name}
           </h1>
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+          <div className={cn("mt-2 flex flex-wrap items-center gap-2", isMobile ? "text-xs" : "text-sm")}>
             <span className="inline-flex items-center gap-1 font-semibold">
-              <Star className="h-4 w-4 fill-foreground" />
+              <Star className={cn(isMobile ? "h-3.5 w-3.5" : "h-4 w-4", "fill-foreground")} />
               {salon.rating.toFixed(1)}
               <span className="font-normal text-muted-foreground">
                 ({salon.reviewCount} {t("home.reviews", { defaultValue: "sharh" })})
@@ -60,17 +63,25 @@ export function SalonPageHeader({
               </>
             ) : null}
           </div>
-          <p className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+          <p
+            className={cn(
+              "mt-1.5 flex items-start gap-1.5 text-muted-foreground",
+              isMobile ? "text-xs" : "text-sm",
+            )}
+          >
+            <MapPin className={cn("mt-0.5 shrink-0", isMobile ? "h-3.5 w-3.5" : "h-4 w-4")} />
             <span>{salon.address}</span>
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => void onShare?.()}
-            className="grid h-10 w-10 place-items-center rounded-full border border-border transition-colors hover:bg-muted"
+            className={cn(
+              "grid place-items-center rounded-full border border-border transition-colors hover:bg-muted",
+              isMobile ? "h-9 w-9" : "h-10 w-10",
+            )}
             aria-label={t("salon.share", { defaultValue: "Ulashish" })}
           >
             <Share2 className="h-4 w-4" />
@@ -81,7 +92,8 @@ export function SalonPageHeader({
             disabled={favPending}
             aria-pressed={fav}
             className={cn(
-              "grid h-10 w-10 place-items-center rounded-full border border-border transition-colors hover:bg-muted",
+              "grid place-items-center rounded-full border border-border transition-colors hover:bg-muted",
+              isMobile ? "h-9 w-9" : "h-10 w-10",
               favPending && "opacity-60",
             )}
             aria-label={t("favorites.title", { defaultValue: "Sevimli salonlar" })}

@@ -15,8 +15,7 @@ import {
 } from "@/components/bookings/BookingProcessParts";
 import { MobilePageShell } from "@/components/mobile/MobilePageShell";
 import type { useBookingProcessPage } from "@/hooks/use-booking-process-page";
-import { getMobileBottomInset } from "@/lib/layout-constants";
-import { shouldShowMobileDock } from "@/lib/layout-routes";
+import { MOBILE_STICKY_CONTENT_PADDING_CLASS, getMobileBottomInset } from "@/lib/layout-constants";
 import { formatPrice, type BookingItem } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -233,8 +232,6 @@ function ErrorBlock({ message }: { message: string }) {
 
 export function BookingProcessMobilePage({ state }: { state: ProcessState }) {
   const { t, booking, isLoading, isError, error } = state;
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const showDock = shouldShowMobileDock(pathname);
 
   return (
     <MobilePageShell
@@ -244,14 +241,7 @@ export function BookingProcessMobilePage({ state }: { state: ProcessState }) {
       subtitle={booking?.salonName}
       className="lg:hidden"
     >
-      <div
-        className={cn(
-          "space-y-6 px-4 pt-4",
-          showDock
-            ? "pb-[calc(5.5rem+env(safe-area-inset-bottom)+5rem)]"
-            : "pb-[calc(5.5rem+env(safe-area-inset-bottom))]",
-        )}
-      >
+      <div className={cn("space-y-6 px-4 pt-4", MOBILE_STICKY_CONTENT_PADDING_CLASS)}>
         {isLoading ? (
           <LoadingBlock />
         ) : isError ? (

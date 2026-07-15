@@ -6,6 +6,7 @@ import { MobilePageShell } from "@/components/mobile/MobilePageShell";
 import { MobileStickyActionBar } from "@/components/mobile/MobileStickyActionBar";
 import { SalonAmenitiesSection } from "@/components/salon/SalonAmenitiesSection";
 import { useBarberPublic } from "@/hooks/use-barbers";
+import { MOBILE_STICKY_CONTENT_PADDING_CLASS } from "@/lib/layout-constants";
 import { cn } from "@/lib/utils";
 
 type Props = { barberId: string };
@@ -25,11 +26,16 @@ export function BarberMobilePage({ barberId }: Props) {
 
   if (isError || !barber) {
     return (
-      <MobilePageShell title={t("common.notFound", { defaultValue: "Topilmadi" })} backTo="/map">
-        <p className="text-sm text-muted-foreground">{t("map.title", { defaultValue: "Xarita" })}</p>
-        <Link to="/map" className="neo-cta mt-4 inline-flex bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">
-          {t("map.title", { defaultValue: "Xarita" })}
-        </Link>
+      <MobilePageShell flush title={t("common.notFound", { defaultValue: "Topilmadi" })} backTo="/map">
+        <div className="px-4 pt-4">
+          <p className="text-sm text-muted-foreground">{t("map.title", { defaultValue: "Xarita" })}</p>
+          <Link
+            to="/map"
+            className="mt-4 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+          >
+            {t("map.title", { defaultValue: "Xarita" })}
+          </Link>
+        </div>
       </MobilePageShell>
     );
   }
@@ -41,19 +47,25 @@ export function BarberMobilePage({ barberId }: Props) {
 
   return (
     <>
-      <MobilePageShell title={barber.name} subtitle={barber.salonName ?? undefined} backTo="/map">
-        <div className="space-y-5">
-          <div className="flex items-center gap-4">
-            <div className="neo-panel grid size-20 shrink-0 place-items-center overflow-hidden p-0">
+      <MobilePageShell
+        flush
+        title={barber.name}
+        subtitle={barber.salonName ?? undefined}
+        backTo="/map"
+        className={MOBILE_STICKY_CONTENT_PADDING_CLASS}
+      >
+        <div className="space-y-4 px-4 pt-3">
+          <div className="flex items-center gap-3">
+            <div className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-full bg-muted">
               {barber.avatar ? (
                 <img src={barber.avatar} alt="" className="size-full object-cover" />
               ) : (
-                <User className="size-8 text-muted-foreground" />
+                <User className="size-6 text-muted-foreground" />
               )}
             </div>
             {barber.rating > 0 ? (
-              <p className="inline-flex items-center gap-1 text-sm font-bold">
-                <Star className="size-4 fill-primary text-primary" />
+              <p className="inline-flex items-center gap-1 text-sm font-semibold">
+                <Star className="size-3.5 fill-foreground text-foreground" />
                 {barber.rating.toFixed(1)}
                 <span className="font-normal text-muted-foreground">({barber.reviewCount})</span>
               </p>
@@ -62,10 +74,10 @@ export function BarberMobilePage({ barberId }: Props) {
 
           {barber.servicesPreview.length > 0 ? (
             <div>
-              <p className="label-eyebrow">{t("booking.selectService", { defaultValue: "Xizmatlar" })}</p>
-              <ul className="mt-2 space-y-2">
+              <p className="text-sm font-semibold">{t("booking.selectService", { defaultValue: "Xizmatlar" })}</p>
+              <ul className="mt-1.5 divide-y divide-border">
                 {barber.servicesPreview.map((name) => (
-                  <li key={name} className="neo-panel px-4 py-3 text-sm font-semibold shadow-soft">
+                  <li key={name} className="py-2.5 text-sm font-medium">
                     {name}
                   </li>
                 ))}
@@ -84,6 +96,7 @@ export function BarberMobilePage({ barberId }: Props) {
             <SalonAmenitiesSection
               amenities={barber.amenities}
               variant={barber.bookingKind === "salon" ? "solo_studio" : "salon"}
+              compact
             />
           ) : null}
         </div>
@@ -93,7 +106,7 @@ export function BarberMobilePage({ barberId }: Props) {
         <button
           type="button"
           onClick={() => void navigate({ to: bookTo })}
-          className={cn("neo-cta w-full bg-primary py-3.5 text-sm font-bold text-primary-foreground")}
+          className={cn("w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground")}
         >
           {t("booking.title", { defaultValue: "Band qilish" })}
         </button>

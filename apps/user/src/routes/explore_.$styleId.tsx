@@ -3,14 +3,13 @@ import { MapPin, ScanFace } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ExploreStyleGallery } from "@/components/explore/ExploreStyleGallery";
 import { HairstylePreviewFrame } from "@/components/hairstyles/HairstylePreviewImage";
+import { MobileStickyActionBar } from "@/components/mobile/MobileStickyActionBar";
 import { PageHeader } from "@/components/PageHeader";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
+import { MOBILE_STICKY_CONTENT_PADDING_CLASS } from "@/lib/layout-constants";
 import { getHairstyleDisplayUrl } from "@/lib/hairstyles/catalog";
 import { cn } from "@/lib/utils";
-
-/** Pastki CTA balandligi — dock yo'q sahifa (explore detail). */
-const ACTIONS_OFFSET = "calc(5.5rem + env(safe-area-inset-bottom, 0px))";
 
 export const Route = createFileRoute("/explore_/$styleId")({
   head: () => ({ meta: [{ title: "Uslub — mysaloon.uz" }] }),
@@ -26,7 +25,7 @@ function ExploreStyleDetailPage() {
   if (isLoading) {
     return (
       <div className="pb-10">
-        <PageHeader showBack title={t("explorePage.title")} />
+        <PageHeader showBack sticky title={t("explorePage.title")} />
         <p className="mt-8 px-5 text-center text-sm text-muted-foreground">{t("common.loading")}</p>
       </div>
     );
@@ -40,13 +39,10 @@ function ExploreStyleDetailPage() {
   const galleryItems = entry.gallery.length > 0 ? entry.gallery : [{ view: "front", label: "Old", url: imageUrl }];
 
   return (
-    <div
-      className="pb-[var(--explore-style-actions-offset)] lg:px-6 lg:pb-8"
-      style={{ ["--explore-style-actions-offset" as string]: ACTIONS_OFFSET }}
-    >
+    <div className={cn(MOBILE_STICKY_CONTENT_PADDING_CLASS, "min-w-0 overflow-x-clip lg:px-6 lg:pb-8")}>
       {/* Mobile */}
       <div className="lg:hidden">
-        <PageHeader showBack title={entry.titleUz} className="px-4" />
+        <PageHeader showBack sticky title={entry.titleUz} />
         <div className="px-4 pb-2">
           <ExploreStyleGallery
             items={galleryItems}
@@ -140,32 +136,23 @@ function ExploreStyleDetailPage() {
         </div>
       </div>
 
-      <div
-        className={cn(
-          "fixed inset-x-0 bottom-0 z-20 border-t border-border/80 bg-background/95 px-4 pt-3 shadow-[0_-8px_24px_rgba(0,0,0,0.06)] backdrop-blur-md lg:hidden",
-        )}
-        style={{
-          paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0px))",
-        }}
-      >
-        <div className="mx-auto flex max-w-md gap-2.5">
-          <Link
-            to="/explore/$styleId/try"
-            params={{ styleId: entry.id }}
-            className="flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl bg-foreground px-3 py-3.5 text-[13px] font-bold text-background shadow-sm transition active:scale-[0.98] active:opacity-90"
-          >
-            <ScanFace className="h-[18px] w-[18px] shrink-0" strokeWidth={2.25} />
-            <span className="truncate">{t("explorePage.tryOnMe")}</span>
-          </Link>
-          <Link
-            to="/"
-            className="flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-3 py-3.5 text-[13px] font-bold text-foreground shadow-sm transition active:scale-[0.98] active:opacity-90"
-          >
-            <MapPin className="h-[18px] w-[18px] shrink-0" strokeWidth={2.25} />
-            <span className="truncate">{t("explorePage.findSalon")}</span>
-          </Link>
-        </div>
-      </div>
+      <MobileStickyActionBar>
+        <Link
+          to="/explore/$styleId/try"
+          params={{ styleId: entry.id }}
+          className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-foreground px-3 py-2.5 text-[13px] font-bold text-background active:opacity-90"
+        >
+          <ScanFace className="h-4 w-4 shrink-0" strokeWidth={2.25} />
+          <span className="truncate">{t("explorePage.tryOnMe")}</span>
+        </Link>
+        <Link
+          to="/"
+          className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 text-[13px] font-bold text-foreground active:opacity-90"
+        >
+          <MapPin className="h-4 w-4 shrink-0" strokeWidth={2.25} />
+          <span className="truncate">{t("explorePage.findSalon")}</span>
+        </Link>
+      </MobileStickyActionBar>
     </div>
   );
 }

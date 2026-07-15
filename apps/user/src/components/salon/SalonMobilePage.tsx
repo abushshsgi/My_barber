@@ -5,6 +5,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { SalonHeroGallery } from "@/components/salon/SalonHeroGallery";
 import { SalonPageHeader } from "@/components/salon/SalonPageHeader";
 import { SalonPageSections } from "@/components/salon/SalonPageSections";
+import { MobileStickyActionBar } from "@/components/mobile/MobileStickyActionBar";
+import { MOBILE_STICKY_CONTENT_PADDING_CLASS } from "@/lib/layout-constants";
 import { cn } from "@/lib/utils";
 
 export function SalonMobilePage({
@@ -25,15 +27,12 @@ export function SalonMobilePage({
   const { t } = useTranslation();
 
   return (
-    <div className="min-w-0 pb-[calc(5.75rem+env(safe-area-inset-bottom,0px))]">
-      <div className="relative">
-        <SalonHeroGallery salon={salon} variant="mobile" />
-        <div className="absolute inset-x-0 top-0">
-          <PageHeader showBack transparent />
-        </div>
-      </div>
+    <div className={cn("min-w-0 overflow-x-clip", MOBILE_STICKY_CONTENT_PADDING_CLASS)}>
+      <PageHeader showBack sticky />
 
-      <div className="relative z-10 -mt-6 px-4">
+      <SalonHeroGallery salon={salon} variant="mobile" />
+
+      <div className="min-w-0 px-4 pt-3">
         <SalonPageHeader
           salon={salon}
           fav={fav}
@@ -44,27 +43,28 @@ export function SalonMobilePage({
         />
       </div>
 
-      <div className="mt-6 min-w-0 px-4">
-        <SalonPageSections salon={salon} calendarMonths={1} showCalendar reviewsAreMock={reviewsAreMock} />
+      <div className="mt-4 min-w-0 px-4">
+        <SalonPageSections
+          salon={salon}
+          calendarMonths={1}
+          showCalendar
+          reviewsAreMock={reviewsAreMock}
+          compact
+        />
       </div>
 
-      <div
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 px-4 pt-3 backdrop-blur-md"
-        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0px))" }}
-      >
-        <div className="mx-auto flex max-w-md items-center justify-end">
-          <Link
-            to="/booking/$salonId"
-            params={{ salonId: salon.id }}
-            className={cn(
-              "neo-cta flex w-full items-center justify-center bg-primary px-6 py-3.5",
-              "text-sm font-bold text-primary-foreground",
-            )}
-          >
-            {t("salon.bookNow")}
-          </Link>
-        </div>
-      </div>
+      <MobileStickyActionBar>
+        <Link
+          to="/booking/$salonId"
+          params={{ salonId: salon.id }}
+          className={cn(
+            "flex w-full items-center justify-center rounded-xl bg-primary px-5 py-3",
+            "text-sm font-bold text-primary-foreground",
+          )}
+        >
+          {t("salon.bookNow")}
+        </Link>
+      </MobileStickyActionBar>
     </div>
   );
 }

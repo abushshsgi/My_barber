@@ -29,9 +29,13 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "z-30 flex items-center justify-between px-4 py-3 lg:px-5 lg:py-4",
+        "z-30 flex items-center justify-between px-4 py-2.5 lg:px-5 lg:py-4",
         sticky && "sticky top-0 backdrop-blur-md",
-        transparent ? "bg-transparent" : "bg-background/95 lg:bg-background/95",
+        transparent
+          ? "bg-transparent"
+          : sticky
+            ? "border-b border-border/60 bg-background/95"
+            : "bg-background/95 lg:bg-background/95",
         className,
       )}
       style={{ paddingTop: "max(env(safe-area-inset-top), 0.5rem)" }}
@@ -50,7 +54,7 @@ export function PageHeader({
         {(title || subtitle) && (
           <div>
             {title && (
-              <h1 className="text-xl font-extrabold leading-tight tracking-tight lg:font-bold">
+              <h1 className="text-base font-bold leading-tight tracking-tight lg:text-xl lg:font-bold">
                 {title}
               </h1>
             )}

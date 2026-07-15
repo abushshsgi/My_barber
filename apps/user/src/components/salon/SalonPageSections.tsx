@@ -26,15 +26,34 @@ function SectionBlock({
   title,
   children,
   className,
+  compact,
 }: {
   id: string;
   title?: string;
   children: ReactNode;
   className?: string;
+  compact?: boolean;
 }) {
   return (
-    <section id={id} className={cn("scroll-mt-36 space-y-5 border-b border-border pb-12", className)}>
-      {title ? <h2 className="text-2xl font-semibold tracking-tight">{title}</h2> : null}
+    <section
+      id={id}
+      className={cn(
+        compact
+          ? "scroll-mt-20 space-y-3 border-b border-border pb-5"
+          : "scroll-mt-28 space-y-5 border-b border-border pb-8 lg:scroll-mt-36 lg:pb-12",
+        className,
+      )}
+    >
+      {title ? (
+        <h2
+          className={cn(
+            "font-semibold tracking-tight",
+            compact ? "text-base" : "text-2xl",
+          )}
+        >
+          {title}
+        </h2>
+      ) : null}
       {children}
     </section>
   );
@@ -45,56 +64,72 @@ export function SalonPageSections({
   calendarMonths = 1,
   showCalendar = true,
   reviewsAreMock = false,
+  compact = false,
 }: {
   salon: Salon;
   calendarMonths?: 1 | 2;
   showCalendar?: boolean;
   reviewsAreMock?: boolean;
+  compact?: boolean;
 }) {
   const { t } = useTranslation();
   const serviceGroups = groupSalonServicesByBarber(salon.services);
   const ownerBarberId = salon.ownerId ?? resolveDefaultSalonBarberId(salon.staff) ?? undefined;
   const calendarBarberId = defaultCalendarBarberId(salon);
   const calendarServiceIds = resolveDefaultServiceIdsForBarber(salon.services, calendarBarberId);
+  const sectionGap = compact ? "pb-5" : "pb-12";
 
   return (
     <div className="space-y-0">
-      <SectionBlock id="salon-about" title={t("salon.tabs.about")}>
-        <p className="max-w-3xl text-base leading-relaxed text-muted-foreground">{salon.about}</p>
+      <SectionBlock id="salon-about" title={t("salon.tabs.about")} compact={compact}>
+        <p
+          className={cn(
+            "max-w-3xl leading-relaxed text-muted-foreground",
+            compact ? "text-sm" : "text-base",
+          )}
+        >
+          {salon.about}
+        </p>
       </SectionBlock>
 
       {salon.amenities.length > 0 ? (
-        <div id="salon-amenities" className="scroll-mt-36 border-b border-border pb-12">
+        <div id="salon-amenities" className={cn("scroll-mt-20 border-b border-border lg:scroll-mt-36", sectionGap)}>
           <SalonAmenitiesSection
             amenities={salon.amenities}
             variant={salon.venueKind === "salon" ? "salon" : "solo_studio"}
+            compact={compact}
           />
         </div>
       ) : null}
 
-      <SectionBlock id="salon-services" title={t("salon.tabs.services")}>
-        <div className="space-y-8">
+      <SectionBlock id="salon-services" title={t("salon.tabs.services")} compact={compact}>
+        <div className={compact ? "space-y-4" : "space-y-8"}>
           {serviceGroups.map((group) => {
             const bookingBarberId = group.barberId ?? ownerBarberId;
             const groupTitle = group.barberId
               ? group.barberName ?? t("salon.staff.title", { defaultValue: "Usta" })
               : t("salon.services.salonCatalog", { defaultValue: "Salon xizmatlari" });
             return (
-              <div key={group.barberId ?? "salon-catalog"} className="space-y-4">
+              <div key={group.barberId ?? "salon-catalog"} className={compact ? "space-y-2" : "space-y-4"}>
                 {serviceGroups.length > 1 ? (
-                  <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     {groupTitle}
                   </h3>
                 ) : null}
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className={cn("grid sm:grid-cols-2", compact ? "gap-2" : "gap-3")}>
                   {group.services.map((s) => (
                     <div
                       key={s.id}
-                      className="group flex items-center justify-between gap-4 rounded-2xl border border-border bg-background p-5 transition-all hover:border-foreground/20 hover:shadow-[0_8px_30px_-18px_rgba(0,0,0,0.15)]"
+                      className={cn(
+                        "group flex items-center justify-between gap-3",
+                        compact
+                          ? "border-b border-border py-3 last:border-b-0"
+                          : "rounded-2xl border border-border bg-background p-5 transition-all hover:border-foreground/20 hover:shadow-[0_8px_30px_-18px_rgba(0,0,0,0.15)]",
+                      )}
                     >
                       <div className="min-w-0">
-                        <h3 className="truncate font-semibold">{s.name}</h3>
-                        <p className="mt-1 text-sm text-muted-foreground">
+                        <h3 className={cn("truncate font-semibold", compact && "text-sm")}>{s.name}</h3>
+                        <p className={cn("text-muted-foreground", compact ? "mt-0.5 text-xs" : "mt-1 text-sm")}>
                           {s.duration} {t("salon.minutes")}
                         </p>
                       </div>
@@ -102,7 +137,10 @@ export function SalonPageSections({
                         to="/booking/$salonId"
                         params={{ salonId: salon.id }}
                         search={bookingBarberId ? { barber: bookingBarberId } : undefined}
-                        className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-foreground text-background transition-transform group-hover:scale-105"
+                        className={cn(
+                          "grid shrink-0 place-items-center rounded-full bg-foreground text-background",
+                          compact ? "h-8 w-8" : "h-10 w-10 transition-transform group-hover:scale-105",
+                        )}
                         aria-label={t("salon.bookNow")}
                       >
                         <Plus className="h-4 w-4" />
@@ -117,21 +155,31 @@ export function SalonPageSections({
       </SectionBlock>
 
       {salon.staff.length > 0 ? (
-        <SectionBlock id="salon-staff" title={t("salon.tabs.staff")}>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <SectionBlock id="salon-staff" title={t("salon.tabs.staff")} compact={compact}>
+          <div
+            className={cn(
+              "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4",
+              compact ? "gap-2" : "gap-4",
+            )}
+          >
             {salon.staff.map((b) => {
               const bookable = b.isBookable !== false;
               const isOwner = b.role === "Salon egasi";
               const inner = (
                 <>
-                  <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-muted text-lg font-bold">
+                  <div
+                    className={cn(
+                      "mx-auto grid place-items-center rounded-full bg-muted font-bold",
+                      compact ? "h-12 w-12 text-sm" : "h-16 w-16 text-lg",
+                    )}
+                  >
                     {b.name
                       .split(" ")
                       .map((n) => n[0])
                       .join("")}
                   </div>
-                  <p className="mt-3 text-sm font-semibold">{b.name}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{b.role}</p>
+                  <p className={cn("font-semibold", compact ? "mt-2 text-xs" : "mt-3 text-sm")}>{b.name}</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">{b.role}</p>
                   {!bookable && !isOwner ? (
                     <p className="mt-1 text-[10px] font-medium text-muted-foreground">
                       {t("salon.staff.comingSoon", { defaultValue: "Tez orada" })}
@@ -150,7 +198,10 @@ export function SalonPageSections({
                 return (
                   <div
                     key={b.id}
-                    className="rounded-2xl border border-border p-5 text-center opacity-60"
+                    className={cn(
+                      "text-center opacity-60",
+                      compact ? "rounded-xl border border-border p-3" : "rounded-2xl border border-border p-5",
+                    )}
                   >
                     {inner}
                   </div>
@@ -162,7 +213,12 @@ export function SalonPageSections({
                   to="/booking/$salonId"
                   params={{ salonId: salon.id }}
                   search={{ barber: b.id }}
-                  className="rounded-2xl border border-border p-5 text-center transition-all hover:border-foreground/20 hover:shadow-[0_8px_30px_-18px_rgba(0,0,0,0.12)]"
+                  className={cn(
+                    "text-center",
+                    compact
+                      ? "rounded-xl border border-border p-3 active:bg-surface"
+                      : "rounded-2xl border border-border p-5 transition-all hover:border-foreground/20 hover:shadow-[0_8px_30px_-18px_rgba(0,0,0,0.12)]",
+                  )}
                 >
                   {inner}
                 </Link>
@@ -172,7 +228,7 @@ export function SalonPageSections({
         </SectionBlock>
       ) : null}
 
-      <SectionBlock id="salon-reviews" title={t("salon.tabs.reviews")}>
+      <SectionBlock id="salon-reviews" title={t("salon.tabs.reviews")} compact={compact}>
         <SalonReviewsSection
           summary={salon.ratingSummary}
           reviews={salon.reviews}
@@ -180,7 +236,7 @@ export function SalonPageSections({
         />
       </SectionBlock>
 
-      <div id="salon-location" className="scroll-mt-36 border-b border-border pb-12">
+      <div id="salon-location" className={cn("scroll-mt-20 border-b border-border lg:scroll-mt-36", sectionGap)}>
         <SalonLocationSection
           address={salon.address}
           lat={salon.lat}
@@ -190,13 +246,13 @@ export function SalonPageSections({
       </div>
 
       {(salon.hours.length > 0 || salon.closedWeekdays.length > 0) ? (
-        <div id="salon-hours" className="scroll-mt-36 border-b border-border pb-12">
+        <div id="salon-hours" className={cn("scroll-mt-20 border-b border-border lg:scroll-mt-36", sectionGap)}>
           <SalonHoursSection hours={salon.hours} closedWeekdays={salon.closedWeekdays} />
         </div>
       ) : null}
 
       {showCalendar ? (
-        <div id="salon-booking" className="scroll-mt-36 border-b border-border pb-12">
+        <div id="salon-booking" className={cn("scroll-mt-20 border-b border-border lg:scroll-mt-36", sectionGap)}>
           <ClientOnly
             fallback={
               <div className="h-72 animate-pulse rounded-2xl bg-muted" aria-label={t("common.loading")} />
@@ -213,7 +269,7 @@ export function SalonPageSections({
       ) : null}
 
       {salon.portfolio.length > 0 ? (
-        <SectionBlock id="salon-portfolio" title={t("salon.tabs.portfolio")} className="border-b-0">
+        <SectionBlock id="salon-portfolio" title={t("salon.tabs.portfolio")} className="border-b-0" compact={compact}>
           <SalonPortfolioGallery images={salon.portfolio} />
         </SectionBlock>
       ) : null}

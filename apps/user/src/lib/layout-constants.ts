@@ -22,6 +22,15 @@ export const MOBILE_CONTENT_PADDING_CLASS =
 export const MOBILE_STICKY_ACTIONS_OFFSET =
   "calc(5.5rem + env(safe-area-inset-bottom, 0px))" as const;
 
+/**
+ * Sticky action bar ustidagi kontent uchun pastki padding.
+ * Dock bo'lsa UserLayout allaqachon dock+safe-area beradi — faqat action bar balandligi.
+ */
+export const MOBILE_STICKY_CONTENT_PADDING_CLASS = "pb-[5.5rem]" as const;
+
+export const MOBILE_STICKY_CONTENT_PADDING_NO_DOCK_CLASS =
+  "pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]" as const;
+
 export function getMobileBottomInset(pathname: string): string {
   return shouldShowMobileDock(pathname) ? MOBILE_DOCK_OFFSET : MOBILE_SAFE_BOTTOM;
 }
@@ -30,4 +39,10 @@ export function getMobileContentPaddingClass(pathname: string): string {
   return shouldShowMobileDock(pathname)
     ? MOBILE_CONTENT_PADDING_CLASS
     : "pb-[env(safe-area-inset-bottom,0px)]";
+}
+
+export function getMobileStickyContentPaddingClass(pathname: string): string {
+  return shouldShowMobileDock(pathname)
+    ? MOBILE_STICKY_CONTENT_PADDING_CLASS
+    : MOBILE_STICKY_CONTENT_PADDING_NO_DOCK_CLASS;
 }

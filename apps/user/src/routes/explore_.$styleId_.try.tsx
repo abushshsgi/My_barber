@@ -21,7 +21,7 @@ function ExploreStyleTryPage() {
   if (isLoading) {
     return (
       <div className="pb-10">
-        <PageHeader showBack title={t("styleTryOnPage.loadingTitle")} />
+        <PageHeader showBack sticky title={t("styleTryOnPage.loadingTitle")} />
         <p className="mt-8 px-5 text-center text-sm text-muted-foreground">{t("common.loading")}</p>
       </div>
     );
@@ -34,7 +34,7 @@ function ExploreStyleTryPage() {
   return (
     <div>
       {!flow.tryOnPreview && !flow.photo ? (
-        <PageHeader showBack title={t("styleTryOnPage.title", { style: entry.titleUz })} />
+        <PageHeader showBack sticky title={t("styleTryOnPage.title", { style: entry.titleUz })} />
       ) : null}
       <StyleTryOnFlow flow={flow} entry={entry} />
     </div>

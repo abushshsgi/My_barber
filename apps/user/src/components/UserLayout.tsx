@@ -80,7 +80,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
     : undefined;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen min-w-0 overflow-x-clip bg-background text-foreground">
       <ClientOnly>
         <DemoEnvironmentBanner />
       </ClientOnly>
@@ -93,11 +93,14 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       <main
-        className={cn("flex min-h-screen flex-col", flags.isFullBleed && "lg:min-h-0 lg:flex-1")}
+        className={cn(
+          "flex min-h-screen min-w-0 flex-col overflow-x-clip",
+          flags.isFullBleed && "lg:min-h-0 lg:flex-1",
+        )}
       >
         <div
           className={cn(
-            "mobile-neo neo-page texture-grid mx-auto flex w-full flex-1 flex-col",
+            "mobile-neo neo-page texture-grid mx-auto flex w-full min-w-0 flex-1 flex-col overflow-x-clip",
             showMobileDock || pathname === "/onboarding" ? "max-w-none" : "max-w-md",
             pathname === "/onboarding" && "lg:pt-3",
             flags.isMap &&

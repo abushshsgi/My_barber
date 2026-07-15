@@ -4,14 +4,11 @@ import { ChevronLeft, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { refreshAiStyleHistoryCache } from "@/lib/api";
-import { DESKTOP_SHELL_INSET } from "@/lib/desktop-bazaar-layout";
 import {
   FACE_HISTORY_UPDATED_EVENT,
   getActiveUserId,
   type FaceProfileHistoryEntry,
 } from "@/lib/face-profile";
-import { cn } from "@/lib/utils";
-
 export const Route = createFileRoute("/ai-style_/history")({
   head: () => ({
     meta: [
@@ -52,7 +49,7 @@ function AiStyleHistoryPage() {
   }, [userId]);
 
   return (
-    <div className={cn("w-full pb-16 pt-6", DESKTOP_SHELL_INSET)}>
+    <div className="w-full pb-6 pt-4">
       <div className="mx-auto w-full max-w-5xl">
         <div className="flex flex-wrap items-center gap-3">
           <Link
@@ -85,7 +82,7 @@ function AiStyleHistoryPage() {
             ))}
           </div>
         ) : entries.length === 0 ? (
-          <div className="mt-10 rounded-3xl border border-dashed border-border bg-surface/40 px-6 py-16 text-center">
+          <div className="mt-8 rounded-3xl border border-dashed border-border bg-surface/40 px-5 py-10 text-center">
             <p className="text-base font-semibold text-foreground">{t("aiStylePage.historyEmpty")}</p>
             <p className="mt-2 text-sm text-muted-foreground">{t("aiStylePage.historyEmptyHint")}</p>
             <Link

@@ -4,9 +4,6 @@ import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { ProfileDesktopPage } from "@/components/desktop/pages/ProfileDesktopPage";
 import { UserProfile } from "@/components/profile/UserProfile";
 import { useAppTranslation } from "@/hooks/use-app-translation";
-import { MOBILE_CONTENT_PADDING_CLASS } from "@/lib/layout-constants";
-import { cn } from "@/lib/utils";
-
 export const Route = createFileRoute("/profile")({
   head: () => ({ meta: [{ title: "Profil — mysaloon.uz" }] }),
   component: Profile,
@@ -18,11 +15,7 @@ function Profile() {
 
   return (
     <DesktopPageSplit
-      mobile={
-        <div className={cn(MOBILE_CONTENT_PADDING_CLASS)}>
-          <UserProfile key={lang} />
-        </div>
-      }
+      mobile={<UserProfile key={lang} />}
       desktop={<ProfileDesktopPage key={lang} />}
     />
   );

@@ -10,6 +10,7 @@ import { DesktopPageHeader } from "@/components/desktop/ui/DesktopPageHeader";
 import { BookingSummaryAside } from "@/components/booking/BookingSummaryAside";
 import { formatPrice } from "@/lib/mock-data";
 import { PageHeader } from "@/components/PageHeader";
+import { MobileStickyActionBar } from "@/components/mobile/MobileStickyActionBar";
 import { Stepper } from "@/components/Stepper";
 import { useCreateBooking, useBookingAvailability, useAvailabilityMonth } from "@/hooks/use-bookings-api";
 import { useWalletBalance } from "@/hooks/use-wallet";
@@ -18,6 +19,7 @@ import { useDisplayUser } from "@/hooks/use-me";
 import { useSalonBarberServices } from "@/hooks/use-salon-barber-services";
 import { useSalonPage } from "@/hooks/use-salon-page";
 import { resolveDefaultSalonBarberId } from "@/lib/salon-services";
+import { MOBILE_STICKY_CONTENT_PADDING_CLASS } from "@/lib/layout-constants";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/$salonId")({
@@ -361,7 +363,8 @@ function BookingStepContent({
     return (
       <div>
         <h2 className="text-xl font-bold">{t("booking.selectTime")}</h2>
-        <div className="no-scrollbar mt-6 flex touch-pan-x gap-2 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+        <div className="mt-5 min-w-0 overflow-x-clip">
+        <div className="no-scrollbar flex touch-pan-x gap-2 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
           {dayList.map((d, i) => {
             const iso = d.full.toISOString().slice(0, 10);
             const unavailable = monthLoaded && !availableDates.has(iso);
@@ -375,16 +378,17 @@ function BookingStepContent({
                 setSlot(null);
               }}
               className={cn(
-                "flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-xl",
+                "flex h-14 w-12 shrink-0 flex-col items-center justify-center rounded-xl",
                 dayIdx === i ? "bg-foreground text-background" : "bg-surface",
                 unavailable && "cursor-not-allowed opacity-40",
               )}
             >
               <span className="text-[10px] font-bold uppercase opacity-70">{d.day}</span>
-              <span className="text-lg font-bold">{d.date}</span>
+              <span className="text-base font-bold">{d.date}</span>
             </button>
             );
           })}
+        </div>
         </div>
         {slotsLoading ? (
           <div className="mt-6 grid grid-cols-3 gap-2">
@@ -513,19 +517,14 @@ function BookingMobile() {
 
   return (
     <div>
-      <PageHeader showBack title={t("booking.title")} />
-      <div className="px-5 pt-2"><Stepper steps={stepLabels} current={state.step} /></div>
-      <div className="px-5 pt-8 pb-[calc(5.75rem+env(safe-area-inset-bottom,0px))]">
+      <PageHeader showBack sticky title={t("booking.title")} />
+      <div className="px-4 pt-2"><Stepper steps={stepLabels} current={state.step} /></div>
+      <div className={cn("px-4 pt-5", MOBILE_STICKY_CONTENT_PADDING_CLASS)}>
         <BookingStepContent state={state} t={t} />
       </div>
-      <div
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 px-4 pt-3 backdrop-blur-md"
-        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0px))" }}
-      >
-        <div className="mx-auto flex max-w-md gap-2">
-          <BookingNavButtons state={state} t={t} />
-        </div>
-      </div>
+      <MobileStickyActionBar>
+        <BookingNavButtons state={state} t={t} />
+      </MobileStickyActionBar>
     </div>
   );
 }

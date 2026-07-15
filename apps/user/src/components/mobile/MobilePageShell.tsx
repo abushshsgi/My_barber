@@ -45,13 +45,13 @@ export function MobilePageShell({
       <h1
         className={cn(
           "truncate font-bold tracking-tight",
-          flush ? "text-lg" : "text-2xl font-extrabold leading-tight",
+          flush ? "text-base" : "text-lg font-bold leading-tight",
         )}
       >
         {title}
       </h1>
       {subtitle ? (
-        <p className={cn("mt-1 text-xs text-muted-foreground", !flush && "font-semibold")}>{subtitle}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
       ) : null}
     </div>
   );
@@ -82,14 +82,15 @@ export function MobilePageShell({
 
   return (
     <div className={cn("min-h-full min-w-0", className)}>
-      <div className="px-4 pb-4 pt-safe">
+      <header className="sticky top-0 z-20 border-b border-border/60 bg-background/95 px-4 pb-2.5 pt-safe backdrop-blur-md">
         <div className="flex items-start gap-3">
           {backButton}
           {titleBlock}
           {right}
         </div>
-      </div>
-      <div className="page-stagger mx-3 mb-3 rounded-2xl neo-panel px-4 pb-6 pt-5">{children}</div>
+        {headerExtra}
+      </header>
+      <div className="page-stagger min-w-0 px-4 pb-4 pt-3">{children}</div>
     </div>
   );
 }

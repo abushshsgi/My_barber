@@ -7,7 +7,6 @@ import {
   HomeMobileCategories,
   HomeMobileFeatured,
   HomeMobileHero,
-  HomeMobileMapTeaser,
   HomeMobileMixedDiscovery,
   HomeMobileNearby,
   HomeMobileQuickActions,
@@ -17,12 +16,12 @@ import {
 
 type Props = { data: HomeData };
 
-/** Mobil bosh sahifa — sticky brand, inverted hero, kashfiyot lente. */
+/** Mobil bosh sahifa — yengil hero, ixcham kashfiyot. */
 export function HomeMobilePage({ data }: Props) {
   const nearby = data.filtered.slice(0, 12);
 
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 overflow-x-clip">
       <HomeMobileTopBar />
 
       {data.searchActive ? (
@@ -37,7 +36,7 @@ export function HomeMobilePage({ data }: Props) {
         </div>
       ) : (
         <motion.div
-          className="space-y-6 pb-2 pt-1"
+          className="space-y-4 pb-2 pt-1"
           variants={stagger}
           initial="hidden"
           animate="show"
@@ -52,10 +51,6 @@ export function HomeMobilePage({ data }: Props) {
 
           <MotionSection>
             <HomeMobileFeatured salons={data.filtered} />
-          </MotionSection>
-
-          <MotionSection>
-            <HomeMobileMapTeaser count={data.mapSalons.length + data.mapBarbers.length} />
           </MotionSection>
 
           <MotionSection>
