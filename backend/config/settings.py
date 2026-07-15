@@ -424,13 +424,41 @@ DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@mybarber.loca
 # Sartarosh email tasdiq xatlari (From — Resend yoki SMTP ikkalasida ham kerak).
 BARBER_FROM_EMAIL = os.environ.get("BARBER_FROM_EMAIL", "").strip() or DEFAULT_FROM_EMAIL
 
-# Email tasdiq havolasi (barber frontend). FRONTEND_BARBER_ORIGIN ning birinchi origini ishlatiladi.
+# Email tasdiq havolasi (barber frontend). Localhost CORS originlari havolaga tushmasin.
+PROD_BARBER_APP_BASE = "https://partner.mysaloon.uz"
+
+
+def _is_local_origin(origin: str) -> bool:
+    lower = (origin or "").lower()
+    return (
+        "localhost" in lower
+        or "127.0.0.1" in lower
+        or "0.0.0.0" in lower
+        or "[::1]" in lower
+    )
+
+
 def _barber_public_app_base() -> str:
+    """
+    FRONTEND_BARBER_ORIGIN dan birinchi ochiq (non-localhost) URL.
+    Railway .env da ba'zan `http://localhost:3003,https://partner.mysaloon.uz` bo'ladi —
+    email havolasi hech qachon localhost bo'lmasin (prod).
+    """
     raw = os.environ.get("FRONTEND_BARBER_ORIGIN", "").strip()
+    candidates: list[str] = []
     if raw:
-        part = raw.split(",")[0].strip().strip('"').strip("'")
-        return part.rstrip("/")
-    return "http://localhost:5173"
+        for part in raw.split(","):
+            part = _normalize_cors_origin(part)
+            if part:
+                candidates.append(part)
+    for origin in candidates:
+        if not _is_local_origin(origin):
+            return origin
+    if DEBUG:
+        if candidates:
+            return candidates[0]
+        return "http://localhost:3003"
+    return PROD_BARBER_APP_BASE
 
 
 BARBER_APP_PUBLIC_BASE = _barber_public_app_base()

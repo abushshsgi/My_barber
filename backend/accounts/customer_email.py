@@ -3,27 +3,19 @@
 from __future__ import annotations
 
 import logging
-import os
 
 from django.conf import settings
 from django.core.mail import send_mail
 
 from accounts.email_verification import sign_customer_email_token
+from accounts.referral import user_app_public_base
 
 logger = logging.getLogger(__name__)
 
 
-def _user_app_public_base() -> str:
-    raw = os.environ.get("FRONTEND_USER_ORIGIN", "").strip()
-    if raw:
-        part = raw.split(",")[0].strip().strip('"').strip("'")
-        return part.rstrip("/")
-    return "http://localhost:3000"
-
-
 def send_customer_email_verification(user_id: int, email: str, code: str) -> tuple[bool, str | None]:
     token = sign_customer_email_token(user_id, email)
-    base = _user_app_public_base()
+    base = user_app_public_base()
     verify_link = f"{base}/verify-email?token={token}"
 
     subject = "MySaloon — email manzilingizni tasdiqlang"
