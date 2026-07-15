@@ -75,7 +75,7 @@ function Auth() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [code, setCode] = useState(["", "", "", ""]);
   const [appDeliveryCode, setAppDeliveryCode] = useState<string | null>(null);
-  const [deliveryMode, setDeliveryMode] = useState<"sms" | "app">("sms");
+  const [deliveryMode, setDeliveryMode] = useState<"sms" | "telegram" | "app">("sms");
   const [pendingAuth, setPendingAuth] = useState<PhoneVerifyResponse | null>(null);
   const [authIntent, setAuthIntent] = useState<PhoneAuthIntent>("register");
   const [resendSeconds, setResendSeconds] = useState(() => getStoredOtpCooldownSeconds(phone));
@@ -170,7 +170,9 @@ function Auth() {
       trackAuthFunnel("otp_sent", { intent: authIntent, method: "phone" });
       setStep("code");
       setAppDeliveryCode(null);
-      setDeliveryMode(data.delivery === "app" ? "app" : "sms");
+      setDeliveryMode(
+        data.delivery === "telegram" || data.delivery === "app" ? data.delivery : "sms",
+      );
       startResendCooldown(data.resend_after ?? OTP_RESEND_COOLDOWN_SECONDS);
       if (data.debug_code) {
         setAppDeliveryCode(data.debug_code);
@@ -295,7 +297,11 @@ function Auth() {
           desc:
             deliveryMode === "app"
               ? t("auth.codeSubtitleApp", { phone: `+998 ${formatUzLocalPhone(phone)}` })
-              : t("auth.codeSubtitleSms", { phone: `+998 ${formatUzLocalPhone(phone)}` }),
+              : deliveryMode === "telegram"
+                ? t("auth.codeSubtitleTelegram", {
+                    phone: `+998 ${formatUzLocalPhone(phone)}`,
+                  })
+                : t("auth.codeSubtitleSms", { phone: `+998 ${formatUzLocalPhone(phone)}` }),
         },
         "set-password": {
           kicker: t("auth.optional"),

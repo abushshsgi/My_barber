@@ -41,7 +41,7 @@ export type PhoneSendCodeResponse = {
   registered?: boolean;
   /** SMS ulanmaguncha — kod shu yerda keladi (keyin olib tashlanadi). */
   debug_code?: string;
-  delivery?: "sms" | "app";
+  delivery?: "sms" | "telegram" | "app";
   /** Keyingi kod so'rashdan oldin kutish (soniya). */
   resend_after?: number;
 };

@@ -1344,6 +1344,7 @@
     "passwordSubtitle": "{{phone}} uchun parolingizni kiriting",
     "codeTitle": "Kodni kiriting",
     "codeSubtitleSms": "{{phone}} raqamiga yuborilgan 4 raqamli kod",
+    "codeSubtitleTelegram": "{{phone}} uchun kod Telegram («Verification Codes») ga yuborildi",
     "codeSubtitleApp": "{{phone}} uchun tasdiq kodi quyida",
     "setPasswordTitle": "Parol o'rnating",
     "setPasswordSubtitle": "Keyingi safar SMS kutmasdan tez kiring. Xohlasangiz o'tkazib yuboring.",

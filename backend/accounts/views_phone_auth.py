@@ -35,7 +35,7 @@ from .phone_auth import (
     verify_otp,
 )
 from .serializers import UserSerializer
-from .sms_otp import is_sms_provider_configured, send_login_otp
+from .sms_otp import is_sms_provider_configured, otp_delivery_channel, send_login_otp
 from .throttles import (
     AuthIPThrottle,
     PhoneCheckThrottle,
@@ -157,15 +157,18 @@ class PhoneSendCodeView(APIView):
         mark_otp_sent(phone)
         increment_daily_send(phone)
 
+        channel = otp_delivery_channel()
+        if channel == "telegram":
+            detail = "Tasdiq kodi Telegramga yuborildi."
+        elif channel == "sms":
+            detail = "Tasdiq kodi SMS orqali yuborildi."
+        else:
+            detail = "Tasdiq kodi tayyor — quyidagi kodni kiriting (SMS hali ulanmagan)."
         body: dict[str, str | int | bool] = {
-            "detail": (
-                "Tasdiq kodi yuborildi."
-                if is_sms_provider_configured()
-                else "Tasdiq kodi tayyor — quyidagi kodni kiriting (SMS hali ulanmagan)."
-            ),
+            "detail": detail,
             "phone": phone,
             "registered": registered,
-            "delivery": "sms" if is_sms_provider_configured() else "app",
+            "delivery": channel,
             "resend_after": OTP_RESEND_COOLDOWN_SECONDS,
         }
         if _expose_debug_code():

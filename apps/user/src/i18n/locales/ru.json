@@ -1347,6 +1347,7 @@
     "passwordSubtitle": "Введите пароль для {{phone}}",
     "codeTitle": "Введите код",
     "codeSubtitleSms": "4-значный код отправлен на {{phone}}",
+    "codeSubtitleTelegram": "Код отправлен в Telegram (Verification Codes) для {{phone}}",
     "codeSubtitleApp": "Код подтверждения для {{phone}} ниже",
     "setPasswordTitle": "Установите пароль",
     "setPasswordSubtitle": "В следующий раз входите быстрее без SMS. Можно пропустить.",

@@ -1344,6 +1344,7 @@
     "passwordSubtitle": "Enter your password for {{phone}}",
     "codeTitle": "Enter the code",
     "codeSubtitleSms": "4-digit code sent to {{phone}}",
+    "codeSubtitleTelegram": "Code sent to Telegram (Verification Codes) for {{phone}}",
     "codeSubtitleApp": "Verification code for {{phone}} below",
     "setPasswordTitle": "Set a password",
     "setPasswordSubtitle": "Sign in faster next time without waiting for SMS. You can skip this.",
