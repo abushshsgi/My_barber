@@ -198,17 +198,25 @@ class BarberAuthIntegrationTests(TestCase):
         self.assertEqual(res.status_code, 400)
 
     def test_check_availability_authenticated_excludes_own_phone(self):
-        reg = self.client.post(
-            "/api/v1/auth/barber-register/",
-            self._register_payload("owner", "self@test.com", "+998901112233"),
-            format="json",
+        from barbers.barber_auth import encode_barber_tokens
+
+        self_barber = Barber.objects.create(
+            email="self@test.com",
+            username="self@test.com",
+            full_name="Self",
+            phone="+998901112233",
         )
-        access = reg.json()["access"]
-        self.client.post(
-            "/api/v1/auth/barber-register/",
-            self._register_payload("employee", "other@test.com", "+998902223344"),
-            format="json",
+        self_barber.set_password("Secret123")
+        self_barber.save()
+        other = Barber.objects.create(
+            email="other@test.com",
+            username="other@test.com",
+            full_name="Other",
+            phone="+998902223344",
         )
+        other.set_password("Secret123")
+        other.save()
+        access, _ = encode_barber_tokens(self_barber.id)
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
         own = self.client.post(
@@ -242,6 +250,41 @@ class BarberAuthIntegrationTests(TestCase):
             format="json",
         )
         self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.json()["phone_available"])
+
+    def test_check_availability_expired_bearer_still_works(self):
+        """Muddati o'tgan Bearer signup tekshiruvini 401 qilmasin."""
+        from datetime import timedelta
+
+        import jwt
+        from django.conf import settings
+        from django.utils import timezone
+
+        barber = Barber.objects.create(
+            email="expired-bearer@test.com",
+            username="expired-bearer@test.com",
+            full_name="Expired",
+            phone="+998909998877",
+        )
+        barber.set_password("Secret123")
+        barber.save()
+        expired = jwt.encode(
+            {
+                "barber_id": barber.id,
+                "type": "barber_access",
+                "exp": timezone.now() - timedelta(hours=1),
+            },
+            settings.JWT_HS256_SIGNING_KEY,
+            algorithm="HS256",
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {expired}")
+        res = self.client.post(
+            "/api/v1/auth/barber-check-availability/",
+            {"email": "yangi@test.com", "phone": "+998901234567"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.json()["email_available"])
         self.assertTrue(res.json()["phone_available"])
 
     def test_refresh_rotation_invalidates_old_token(self):

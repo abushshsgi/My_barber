@@ -37,7 +37,8 @@ export function useBarberPhoneAvailability(opts?: Options) {
       setPhoneError(result.phoneError);
       return !result.phoneError;
     } catch {
-      return true;
+      setPhoneError("Tekshiruv amalga oshmadi. Qayta urinib ko'ring.");
+      return false;
     } finally {
       setCheckingPhone(false);
     }

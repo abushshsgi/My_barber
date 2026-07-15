@@ -88,6 +88,8 @@ function shouldOmitBearerForPath(path: string): boolean {
     p === "/api/v1/auth/barber-register-join-salon/" ||
     p === "/api/v1/barber/auth/verify-email" ||
     p === "/api/v1/barber/auth/verify-email/" ||
+    p === "/api/v1/barber/auth/resend-verification-email" ||
+    p === "/api/v1/barber/auth/resend-verification-email/" ||
     p === "/api/v1/salons/search/"
   );
 }
@@ -144,6 +146,8 @@ export function isFetchAbortError(e: unknown): boolean {
 
 export type ApiFetchOptions = RequestInit & {
   timeoutMs?: number;
+  /** Public signup: muddati o'tgan/yaroqsiz Bearer yuborilmasin. */
+  omitAuth?: boolean;
 };
 
 export async function apiFetch(
@@ -151,7 +155,7 @@ export async function apiFetch(
   options: ApiFetchOptions = {},
   retry = true,
 ): Promise<Response> {
-  const { timeoutMs, signal: callerSignal, ...fetchRest } = options;
+  const { timeoutMs, omitAuth, signal: callerSignal, ...fetchRest } = options;
   const parts: AbortSignal[] = [];
   if (callerSignal) parts.push(callerSignal);
   if (timeoutMs !== undefined && timeoutMs > 0) {
@@ -163,7 +167,7 @@ export async function apiFetch(
   const headers = new Headers(fetchRest.headers);
   let token = getBarberAccessToken();
 
-  if (token && !shouldOmitBearerForPath(path)) {
+  if (token && !omitAuth && !shouldOmitBearerForPath(path)) {
     if (isBarberTokenExpired(token)) {
       const fresh = await ensureFreshAccessToken();
       token = fresh;

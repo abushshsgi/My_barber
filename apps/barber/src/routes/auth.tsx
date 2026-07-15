@@ -160,12 +160,19 @@ function AuthPage() {
       const result = await checkBarberAvailability({
         email: hasEmail ? email : undefined,
         phone: hasPhone ? phone : undefined,
+        omitAuth: true,
       });
       setEmailError(result.emailError);
       setPhoneError(result.phoneError);
       return !result.emailError && !result.phoneError;
-    } catch {
-      return true;
+    } catch (err) {
+      const msg = formatFetchError(
+        err,
+        "Tekshiruv amalga oshmadi. Internet yoki serverni tekshirib qayta urinib ko'ring.",
+      );
+      if (hasEmail) setEmailError(msg);
+      else setPhoneError(msg);
+      return false;
     } finally {
       setCheckingAvailability(false);
     }

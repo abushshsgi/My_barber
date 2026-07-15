@@ -179,6 +179,8 @@ function shouldOmitBearerForPath(path: string): boolean {
     // Public signup — eski/noto‘g‘ri JWT yuborilsa SimpleJWT 403 + "Given token not valid for any token type"
     "/api/v1/auth/barber-register",
     "/api/v1/auth/barber-register-join-salon",
+    "/api/v1/barber/auth/verify-email",
+    "/api/v1/barber/auth/resend-verification-email",
     // Salon join qidiruvi AllowAny — user+barber token aralashganda noto‘g‘ri Bearer 401 bermasligi uchun
     "/api/v1/salons/search",
   ];

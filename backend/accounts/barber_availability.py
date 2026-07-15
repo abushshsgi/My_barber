@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from rest_framework.exceptions import Throttled
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.phone_validation import validate_uz_mobile_phone
 from accounts.throttles import BarberCheckThrottle
-from barbers.barber_auth import BarberJWTAuthentication, BarberPrincipal
+from barbers.barber_auth import BarberPrincipal, SoftBarberJWTAuthentication
 from barbers.models import Barber
 
 from .models import User
@@ -70,8 +71,14 @@ def check_barber_phone_available(
 
 class BarberCheckAvailabilityView(APIView):
     permission_classes = [AllowAny]
-    authentication_classes = [BarberJWTAuthentication]
+    authentication_classes = [SoftBarberJWTAuthentication]
     throttle_classes = [BarberCheckThrottle]
+
+    def throttled(self, request, wait):
+        raise Throttled(
+            wait=wait,
+            detail="Tekshiruv limiti tugadi. Biroz kutib qayta urinib ko'ring.",
+        )
 
     def post(self, request):
         email = (request.data.get("email") or "").strip()

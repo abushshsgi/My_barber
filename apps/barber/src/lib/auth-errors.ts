@@ -1,5 +1,5 @@
 import { apiFetch, BARBER_AVAILABILITY_TIMEOUT_MS } from "@/lib/api";
-import { normalizeEmail, parseJsonSafe } from "@/lib/auth-ui";
+import { formatHttpApiError, normalizeEmail, parseJsonSafe } from "@/lib/auth-ui";
 import { formatUzPhoneE164 } from "@/lib/phone";
 
 export type FieldErrors = Partial<Record<"email" | "phone" | "password" | "detail", string>>;
@@ -28,10 +28,13 @@ export async function checkBarberAvailability(input: {
   email?: string;
   phone?: string;
   alsoAllowPhones?: string[];
+  /** Signup: eski sessiya Bearer yuborilmasin. Profil tekshiruvida false qoldiring. */
+  omitAuth?: boolean;
 }): Promise<{ emailError: string | null; phoneError: string | null }> {
   const res = await apiFetch("/api/v1/auth/barber-check-availability/", {
     method: "POST",
     timeoutMs: BARBER_AVAILABILITY_TIMEOUT_MS,
+    omitAuth: input.omitAuth === true,
     body: JSON.stringify({
       email: input.email ? normalizeEmail(input.email) : "",
       phone: input.phone ? formatUzPhoneE164(input.phone) : "",
@@ -43,9 +46,27 @@ export async function checkBarberAvailability(input: {
   const body = await parseJsonSafe(res);
   if (!res.ok) {
     const fields = parseFieldErrors(body);
+    const generic = formatHttpApiError(
+      res,
+      body,
+      "Tekshiruv amalga oshmadi. Internet yoki serverni tekshirib qayta urinib ko'ring.",
+    );
+    if (fields.email || fields.phone) {
+      return {
+        emailError: fields.email ?? null,
+        phoneError: fields.phone ?? null,
+      };
+    }
+    // Maydon-spetsifik emas — email yoki telefon qaysi biri so'ralganiga bog'lab ko'rsatamiz
+    if (input.email && !input.phone) {
+      return { emailError: fields.detail ?? generic, phoneError: null };
+    }
+    if (input.phone && !input.email) {
+      return { emailError: null, phoneError: fields.detail ?? generic };
+    }
     return {
-      emailError: fields.email ?? fields.detail ?? "Tekshiruv amalga oshmadi.",
-      phoneError: fields.phone ?? null,
+      emailError: fields.detail ?? generic,
+      phoneError: null,
     };
   }
   const data = body as {

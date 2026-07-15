@@ -64,6 +64,19 @@ class BarberJWTAuthentication(BaseAuthentication):
         return (BarberPrincipal(b), None)
 
 
+class SoftBarberJWTAuthentication(BarberJWTAuthentication):
+    """
+    AllowAny endpointlar: muddati o'tgan / yaroqsiz Bearer 401 bermasin.
+    Yaroqli token bo'lsa — BarberPrincipal (masalan, o'z telefonini exclude qilish).
+    """
+
+    def authenticate(self, request):
+        try:
+            return super().authenticate(request)
+        except AuthenticationFailed:
+            return None
+
+
 def _refresh_cache_key(barber_id: int) -> str:
     return f"{REFRESH_JTI_CACHE_PREFIX}{barber_id}"
 
