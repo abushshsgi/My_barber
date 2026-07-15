@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from django.db.models import Count, Exists, OuterRef, Q
+from django.db.models import Count, Exists, F, OuterRef, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
@@ -98,11 +98,33 @@ def build_barber_platform_analytics(*, recent_limit: int = 100) -> dict:
             "date_joined",
         )[:recent_limit]
     )
+    recent_ids = [b.id for b in recent_barbers]
+
+    owned_by_barber: dict[int, list[str]] = {bid: [] for bid in recent_ids}
+    for salon in Salon.objects.filter(owner_barber_id__in=recent_ids).only("name", "owner_barber_id"):
+        if salon.owner_barber_id is not None:
+            owned_by_barber.setdefault(salon.owner_barber_id, []).append(salon.name)
+
+    works_at_by_barber: dict[int, list[str]] = {bid: [] for bid in recent_ids}
+    for mem in (
+        SalonMembership.objects.filter(
+            barber_id__in=recent_ids,
+            invite_state=SalonMembership.InviteState.ACTIVE,
+        )
+        .exclude(salon__owner_barber_id=F("barber_id"))
+        .select_related("salon")
+        .only("barber_id", "salon__name", "salon__owner_barber_id")
+    ):
+        name = getattr(mem.salon, "name", None) or ""
+        if name:
+            works_at_by_barber.setdefault(mem.barber_id, []).append(name)
 
     # segment_for_barber reads _owned_cnt — map Exists → counts for compatibility
     recent = []
     for barber in recent_barbers:
         barber._owned_cnt = 1 if getattr(barber, "_owned", False) else 0
+        owned_names = owned_by_barber.get(barber.id, [])
+        work_names = works_at_by_barber.get(barber.id, [])
         recent.append(
             {
                 "id": barber.id,
@@ -113,6 +135,8 @@ def build_barber_platform_analytics(*, recent_limit: int = 100) -> dict:
                 if barber.region
                 else "",
                 "segment": segment_for_barber(barber),
+                "owned_salons": owned_names,
+                "works_at_salons": work_names,
                 "created_at": barber.date_joined.isoformat() if barber.date_joined else None,
             }
         )

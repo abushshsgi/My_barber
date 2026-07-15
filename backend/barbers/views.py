@@ -273,17 +273,21 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
         throttle_classes=[SalonSearchThrottle],
     )
     def find(self, request):
-        """Mijoz: sartarosh ismi bo‘yicha qidiruv."""
+        """Mijoz: sartarosh ismi / telefon bo‘yicha qidiruv."""
         q = request.query_params.get("q", "").strip()
         if len(q) < 1:
             return Response([])
         qs = (
             self.get_queryset()
-            .filter(barber__full_name__icontains=q)
-            .order_by("barber__full_name")[:30]
+            .filter(Q(barber__full_name__icontains=q) | Q(barber__phone__icontains=q))
+            .order_by("barber__full_name")[:40]
         )
+        profiles = list(qs)
+        visible = batch_publicly_visible_barber_ids([p.barber_id for p in profiles])
         out = []
-        for p in qs:
+        for p in profiles:
+            if p.barber_id not in visible:
+                continue
             barber = p.barber
             ser = BarberPublicListSerializer(p, context={"request": request})
             row = dict(ser.data)
@@ -299,6 +303,8 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
                 row["salon_id"] = None
                 row["salon_name"] = None
             out.append(row)
+            if len(out) >= 30:
+                break
         return Response(out)
 
 

@@ -109,7 +109,7 @@ export function HomeMobileHero({ query, setQuery, visibleCategoryKeys, effective
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={t("home.filters.title")}
+            placeholder={t("common.search")}
             className="w-full rounded-2xl bg-background py-3.5 pl-10 pr-4 text-sm font-medium text-foreground shadow-none placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-background/40"
           />
         </div>

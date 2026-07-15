@@ -199,6 +199,8 @@ export type AdminBarberPlatformAnalytics = {
     region: string;
     regionLabel: string;
     segment: string;
+    ownedSalons: string[];
+    worksAtSalons: string[];
     createdAt: string | null;
   }>;
 };
@@ -1256,6 +1258,8 @@ function parseBarberPlatformAnalytics(
       region: string;
       region_label: string;
       segment: string;
+      owned_salons?: string[];
+      works_at_salons?: string[];
       created_at: string | null;
     }>;
   } | null,
@@ -1284,6 +1288,8 @@ function parseBarberPlatformAnalytics(
       region: row.region,
       regionLabel: row.region_label,
       segment: row.segment,
+      ownedSalons: Array.isArray(row.owned_salons) ? row.owned_salons : [],
+      worksAtSalons: Array.isArray(row.works_at_salons) ? row.works_at_salons : [],
       createdAt: row.created_at,
     })),
   };
@@ -2589,7 +2595,7 @@ export async function fetchPlatformBookings(params: {
 }
 
 export async function downloadStatisticsCsv(
-  type: "overview" | "revenue" | "users" | "salons" | "wallet" | "bookings",
+  type: "overview" | "revenue" | "users" | "salons" | "barbers" | "wallet" | "bookings",
   params: {
     range?: StatDateRange;
     granularity?: "day" | "week" | "month";

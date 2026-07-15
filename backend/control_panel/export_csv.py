@@ -13,6 +13,7 @@ from .platform_analytics import (
     build_wallet_analytics,
 )
 from .salon_growth import build_salon_platform_analytics
+from .barber_growth import build_barber_platform_analytics
 from .user_signups import build_user_signup_analytics
 
 
@@ -85,6 +86,34 @@ def build_csv_response(export_type: str, start_dt, end_dt, request) -> HttpRespo
                     row.get("region_label") or "",
                     "Chiqarilgan" if row.get("is_published") else "Tekshiruvda",
                     row.get("address") or "",
+                    _fmt_dt(row.get("created_at")),
+                ]
+            )
+        return response
+
+    if export_type == "barbers":
+        data = build_barber_platform_analytics(recent_limit=500)
+        response, writer = _new_csv_response(f"sartaroshlar_{suffix}")
+        writer.writerow(
+            [
+                "Ism",
+                "Telefon",
+                "Hudud",
+                "Segment",
+                "Egalik salonlari",
+                "Ish joyi salonlari",
+                "Vaqt",
+            ]
+        )
+        for row in data["recent"]:
+            writer.writerow(
+                [
+                    row.get("full_name") or "",
+                    row.get("phone") or "",
+                    row.get("region_label") or "",
+                    row.get("segment") or "",
+                    ", ".join(row.get("owned_salons") or []),
+                    ", ".join(row.get("works_at_salons") or []),
                     _fmt_dt(row.get("created_at")),
                 ]
             )

@@ -40,6 +40,7 @@ import { Route as AdminStatisticsSalonsRouteImport } from './routes/admin.statis
 import { Route as AdminStatisticsRevenueRouteImport } from './routes/admin.statistics.revenue'
 import { Route as AdminStatisticsLiveRouteImport } from './routes/admin.statistics.live'
 import { Route as AdminStatisticsBookingsRouteImport } from './routes/admin.statistics.bookings'
+import { Route as AdminStatisticsBarbersRouteImport } from './routes/admin.statistics.barbers'
 import { Route as AdminServicesAnalyticsRouteImport } from './routes/admin.services.analytics'
 import { Route as AdminSalonsSalonIdRouteImport } from './routes/admin.salons.$salonId'
 import { Route as AdminMorphAiSettingsRouteImport } from './routes/admin.morph-ai.settings'
@@ -221,6 +222,11 @@ const AdminStatisticsBookingsRoute = AdminStatisticsBookingsRouteImport.update({
   path: '/bookings',
   getParentRoute: () => AdminStatisticsRoute,
 } as any)
+const AdminStatisticsBarbersRoute = AdminStatisticsBarbersRouteImport.update({
+  id: '/barbers',
+  path: '/barbers',
+  getParentRoute: () => AdminStatisticsRoute,
+} as any)
 const AdminServicesAnalyticsRoute = AdminServicesAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -391,6 +397,7 @@ export interface FileRoutesByFullPath {
   '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
+  '/admin/statistics/barbers': typeof AdminStatisticsBarbersRoute
   '/admin/statistics/bookings': typeof AdminStatisticsBookingsRoute
   '/admin/statistics/live': typeof AdminStatisticsLiveRoute
   '/admin/statistics/revenue': typeof AdminStatisticsRevenueRoute
@@ -444,6 +451,7 @@ export interface FileRoutesByTo {
   '/admin/morph-ai/queue': typeof AdminMorphAiQueueRoute
   '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
+  '/admin/statistics/barbers': typeof AdminStatisticsBarbersRoute
   '/admin/statistics/bookings': typeof AdminStatisticsBookingsRoute
   '/admin/statistics/live': typeof AdminStatisticsLiveRoute
   '/admin/statistics/revenue': typeof AdminStatisticsRevenueRoute
@@ -502,6 +510,7 @@ export interface FileRoutesById {
   '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
+  '/admin/statistics/barbers': typeof AdminStatisticsBarbersRoute
   '/admin/statistics/bookings': typeof AdminStatisticsBookingsRoute
   '/admin/statistics/live': typeof AdminStatisticsLiveRoute
   '/admin/statistics/revenue': typeof AdminStatisticsRevenueRoute
@@ -562,6 +571,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/settings'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
+    | '/admin/statistics/barbers'
     | '/admin/statistics/bookings'
     | '/admin/statistics/live'
     | '/admin/statistics/revenue'
@@ -615,6 +625,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/queue'
     | '/admin/morph-ai/settings'
     | '/admin/services/analytics'
+    | '/admin/statistics/barbers'
     | '/admin/statistics/bookings'
     | '/admin/statistics/live'
     | '/admin/statistics/revenue'
@@ -672,6 +683,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/settings'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
+    | '/admin/statistics/barbers'
     | '/admin/statistics/bookings'
     | '/admin/statistics/live'
     | '/admin/statistics/revenue'
@@ -917,6 +929,13 @@ declare module '@tanstack/react-router' {
       path: '/bookings'
       fullPath: '/admin/statistics/bookings'
       preLoaderRoute: typeof AdminStatisticsBookingsRouteImport
+      parentRoute: typeof AdminStatisticsRoute
+    }
+    '/admin/statistics/barbers': {
+      id: '/admin/statistics/barbers'
+      path: '/barbers'
+      fullPath: '/admin/statistics/barbers'
+      preLoaderRoute: typeof AdminStatisticsBarbersRouteImport
       parentRoute: typeof AdminStatisticsRoute
     }
     '/admin/services/analytics': {
@@ -1240,6 +1259,7 @@ const AdminServicesRouteWithChildren = AdminServicesRoute._addFileChildren(
 )
 
 interface AdminStatisticsRouteChildren {
+  AdminStatisticsBarbersRoute: typeof AdminStatisticsBarbersRoute
   AdminStatisticsBookingsRoute: typeof AdminStatisticsBookingsRoute
   AdminStatisticsLiveRoute: typeof AdminStatisticsLiveRoute
   AdminStatisticsRevenueRoute: typeof AdminStatisticsRevenueRoute
@@ -1250,6 +1270,7 @@ interface AdminStatisticsRouteChildren {
 }
 
 const AdminStatisticsRouteChildren: AdminStatisticsRouteChildren = {
+  AdminStatisticsBarbersRoute: AdminStatisticsBarbersRoute,
   AdminStatisticsBookingsRoute: AdminStatisticsBookingsRoute,
   AdminStatisticsLiveRoute: AdminStatisticsLiveRoute,
   AdminStatisticsRevenueRoute: AdminStatisticsRevenueRoute,

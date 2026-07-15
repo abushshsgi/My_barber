@@ -301,7 +301,9 @@ class SalonViewSet(viewsets.ModelViewSet):
         q = request.query_params.get("q", "").strip()
         if len(q) < 1:
             return Response([])
-        qs = self._salon_public_list_qs().filter(name__icontains=q)
+        qs = self._salon_public_list_qs().filter(
+            Q(name__icontains=q) | Q(address__icontains=q) | Q(phone__icontains=q)
+        )
         bp = request_barber(request)
         if bp is not None:
             br = (bp.region or "").strip()

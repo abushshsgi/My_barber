@@ -12,6 +12,7 @@ const TABS = [
   { to: "/admin/statistics" as const, label: "Umumiy", exact: true },
   { to: "/admin/statistics/revenue" as const, label: "Daromad" },
   { to: "/admin/statistics/users" as const, label: "Mijozlar" },
+  { to: "/admin/statistics/barbers" as const, label: "Sartaroshlar" },
   { to: "/admin/statistics/salons" as const, label: "Salonlar" },
   { to: "/admin/statistics/wallet" as const, label: "Hamyon" },
   { to: "/admin/statistics/bookings" as const, label: "Bronlar" },

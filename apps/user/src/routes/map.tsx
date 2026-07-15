@@ -282,11 +282,19 @@ function MapView() {
   }, []);
 
   const baseBarbers = useMemo(() => {
-    let barbers = nearbyBarbers.length > 0 ? nearbyBarbers : listBarbers;
-    if (apiSearchActive && apiSearchBarbers.length > 0) {
-      const byId = new Map(barbers.map((b) => [b.id, b]));
+    let barbers =
+      apiSearchActive && apiSearchBarbers.length > 0
+        ? apiSearchBarbers
+        : nearbyBarbers.length > 0
+          ? nearbyBarbers
+          : listBarbers;
+    if (apiSearchActive && apiSearchBarbers.length > 0 && (nearbyBarbers.length > 0 || listBarbers.length > 0)) {
+      const byId = new Map(
+        (nearbyBarbers.length > 0 ? nearbyBarbers : listBarbers).map((b) => [b.id, b]),
+      );
       for (const b of apiSearchBarbers) byId.set(b.id, b);
-      barbers = [...byId.values()];
+      // Prefer API hits first when searching
+      barbers = apiSearchBarbers.map((b) => byId.get(b.id) ?? b);
     }
     return rankBarbersForUser(barbers.map(withBarberCoords), ctx).filter((b) =>
       hasValidMapCoords(b.lat, b.lng),
@@ -304,6 +312,9 @@ function MapView() {
     discoveryTab === "salons" ? nearbyError || listError : barbersError || listBarbersError;
 
   const filteredBarbers = useMemo(() => {
+    if (apiSearchActive) {
+      return applyMapBarberFilters(baseBarbers, filters);
+    }
     const q = query.trim().toLowerCase();
     const searchFiltered = baseBarbers.filter((b) => {
       if (!q) return true;
@@ -313,7 +324,7 @@ function MapView() {
       );
     });
     return applyMapBarberFilters(searchFiltered, filters);
-  }, [query, baseBarbers, filters]);
+  }, [query, baseBarbers, filters, apiSearchActive]);
 
   const visibleBarbers = useMemo(() => {
     if (!viewport) return filteredBarbers;
@@ -321,14 +332,17 @@ function MapView() {
   }, [filteredBarbers, viewport]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
     const audienceFiltered = salonsWithCoords.filter((s) => salonMatchesMapAudience(s, mapAudience));
+    if (apiSearchActive) {
+      return applyMapSalonFilters(audienceFiltered, filters);
+    }
+    const q = query.trim().toLowerCase();
     const searchFiltered = audienceFiltered.filter((s) => {
       if (!q) return true;
       return s.name.toLowerCase().includes(q) || s.address.toLowerCase().includes(q);
     });
     return applyMapSalonFilters(searchFiltered, filters);
-  }, [query, salonsWithCoords, mapAudience, filters]);
+  }, [query, salonsWithCoords, mapAudience, filters, apiSearchActive]);
 
   const visibleSalons = useMemo(() => {
     if (!viewport) return filtered;

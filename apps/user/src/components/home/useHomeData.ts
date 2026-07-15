@@ -98,10 +98,9 @@ export function useHomeData() {
     return source.filter(
       (s) =>
         matchAudience(s.audience, audience) &&
-        (effectiveCat === "all" || s.category === effectiveCat) &&
-        (!searchActive || query === "" || s.name.toLowerCase().includes(query.toLowerCase())),
+        (effectiveCat === "all" || s.category === effectiveCat),
     );
-  }, [salons, searchSalons, searchActive, audience, effectiveCat, query]);
+  }, [salons, searchSalons, searchActive, audience, effectiveCat]);
 
   const browseBarbers = useMemo(() => {
     if (searchActive) return searchBarbers;
