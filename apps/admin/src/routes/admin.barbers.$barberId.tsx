@@ -5,6 +5,17 @@ import { fetchAdminBarberDetail } from "@/lib/admin-api";
 import { getBarberSegmentDescription } from "@/lib/barber-segment-copy";
 import { barberDetailSearchFromRaw } from "@/lib/admin-nav";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+function barberInitials(name: string): string {
+  const n = name.trim();
+  if (!n) return "?";
+  const parts = n.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
+  }
+  return n.slice(0, 2).toUpperCase();
+}
 
 export const Route = createFileRoute("/admin/barbers/$barberId")({
   validateSearch: (raw: Record<string, unknown>) => barberDetailSearchFromRaw(raw),
@@ -62,11 +73,12 @@ function BarberIdLayout() {
           ) : b ? (
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:justify-between">
               <div className="flex items-center gap-4 min-w-0">
-                <img
-                  src={b.avatar}
-                  alt=""
-                  className="size-16 rounded-2xl object-cover ring-2 ring-border shadow-sm shrink-0"
-                />
+                <Avatar className="size-16 rounded-2xl ring-2 ring-border shadow-sm shrink-0">
+                  {b.avatar ? <AvatarImage src={b.avatar} alt="" className="rounded-2xl object-cover" /> : null}
+                  <AvatarFallback className="rounded-2xl bg-muted text-lg font-semibold text-muted-foreground">
+                    {barberInitials(b.name)}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="min-w-0">
                   <h1 className="font-heading text-2xl font-semibold tracking-tight truncate">
                     {b.name}

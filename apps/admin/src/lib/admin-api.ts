@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { apiFetch, apiJson } from "./api";
+import { resolveMediaUrl } from "./media-url";
 import { uzRegionLabel } from "./uz-regions";
 
 export const PAGE_SIZE = 50;
@@ -867,7 +868,7 @@ function mapBarber(b: BackendBarberRow): AdminBarber {
   return {
     id: String(b.id),
     name: b.full_name || b.email,
-    avatar: b.avatar || avatarFor(String(b.id)),
+    avatar: resolveMediaUrl(b.avatar) ?? "",
     phone: b.phone ?? "—",
     region: b.region,
     salon_id: b.salon_id != null ? String(b.salon_id) : null,

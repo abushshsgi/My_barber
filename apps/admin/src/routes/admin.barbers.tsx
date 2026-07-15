@@ -28,6 +28,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -101,6 +102,16 @@ function fmtEmailVerifiedAt(iso: string | null): string {
   } catch {
     return iso;
   }
+}
+
+function barberInitials(name: string): string {
+  const n = name.trim();
+  if (!n) return "?";
+  const parts = n.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
+  }
+  return n.slice(0, 2).toUpperCase();
 }
 
 function BarbersListPage() {
@@ -257,11 +268,12 @@ function BarbersListPage() {
                     <tr key={b.id} className="hover:bg-background/50">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <img
-                            src={b.avatar}
-                            alt=""
-                            className="size-9 rounded-full object-cover ring-1 ring-border"
-                          />
+                          <Avatar className="size-9 ring-1 ring-border">
+                            {b.avatar ? <AvatarImage src={b.avatar} alt="" /> : null}
+                            <AvatarFallback className="bg-muted text-xs font-medium text-muted-foreground">
+                              {barberInitials(b.name)}
+                            </AvatarFallback>
+                          </Avatar>
                           <div>
                             <Link
                               to="/admin/barbers/$barberId"
