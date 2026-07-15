@@ -92,6 +92,7 @@ INSTALLED_APPS = [
     "wallet.apps.WalletConfig",
     "ai.apps.AiConfig",
     "geo.apps.GeoConfig",
+    "media_store.apps.MediaStoreConfig",
 ]
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
@@ -239,16 +240,31 @@ else:
     STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
 MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+# Railway Volume bo‘lsa RAILWAY_VOLUME_MOUNT_PATH avtomatik beriladi (masalan /app/media).
+_volume_mount = os.environ.get("RAILWAY_VOLUME_MOUNT_PATH", "").strip()
+MEDIA_ROOT = Path(_volume_mount) if _volume_mount else (BASE_DIR / "media")
+if _volume_mount:
+    try:
+        MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
 
-# Optional cloud media (production). Default: local MEDIA_ROOT unchanged.
+# Media persistence (production):
+# 1) USE_S3_MEDIA=true → S3/R2 (eng yaxshi)
+# 2) Railway Volume → lokal disk (volume mount)
+# 3) aks holda productionda Postgres DatabaseMediaStorage (redeployda yo‘qolmaydi)
 USE_S3_MEDIA = os.environ.get("USE_S3_MEDIA", "").lower() in ("1", "true", "yes")
+_force_db_media = os.environ.get("USE_DB_MEDIA", "").lower() in ("1", "true", "yes")
+_force_local_media = os.environ.get("USE_LOCAL_MEDIA", "").lower() in ("1", "true", "yes")
+USE_DB_MEDIA = False
+
 if USE_S3_MEDIA:
     INSTALLED_APPS.append("storages")
     AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID", "")
     AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
     AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME", "")
     AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME", "eu-central-1")
+    AWS_S3_ENDPOINT_URL = os.environ.get("AWS_S3_ENDPOINT_URL", "").strip() or None
     AWS_S3_CUSTOM_DOMAIN = os.environ.get("AWS_S3_CUSTOM_DOMAIN", "").strip() or None
     AWS_DEFAULT_ACL = None
     AWS_QUERYSTRING_AUTH = False
@@ -263,8 +279,19 @@ if USE_S3_MEDIA:
     }
     if AWS_S3_CUSTOM_DOMAIN:
         MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
-    elif AWS_STORAGE_BUCKET_NAME:
+    elif AWS_STORAGE_BUCKET_NAME and not AWS_S3_ENDPOINT_URL:
         MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/"
+elif _force_db_media or (not DEBUG and not _volume_mount and not _force_local_media):
+    # Ephemeral disk (Railway default) — fayllarni Postgresga yozamiz
+    USE_DB_MEDIA = True
+    STORAGES = {
+        "default": {
+            "BACKEND": "media_store.storage.DatabaseMediaStorage",
+        },
+        "staticfiles": {
+            "BACKEND": STATICFILES_STORAGE if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
 
 # External payments (Click / Payme) — see wallet/payments.py
 CLICK_MERCHANT_ID = os.environ.get("CLICK_MERCHANT_ID", "").strip()

@@ -12,6 +12,11 @@
 #   FRONTEND_USER_ORIGIN=https://www.mysaloon.uz,https://mysaloon.uz
 #   FRONTEND_ADMIN_ORIGIN=https://admin.mysaloon.uz
 #   FRONTEND_BARBER_ORIGIN=https://partner.mysaloon.uz
+#
+# Media persistence (MUHIM — redeployda fayllar yo‘qolmasin):
+#   Default (DEBUG=false, volume yo‘q): Postgres DatabaseMediaStorage
+#   Yoki Railway → service → Add Volume → Mount path: /app/media
+#   Yoki USE_S3_MEDIA=true + AWS_* (S3/R2)
 
 [deploy]
 releaseCommand = "bash bin/release.sh"

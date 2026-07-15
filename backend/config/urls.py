@@ -1,10 +1,9 @@
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import include, path, re_path
-from django.views.static import serve
 from rest_framework.routers import DefaultRouter
+from media_store.views import serve_media
 from control_panel.views import (
     AdminBarberDetailView,
     AdminBarberAnalyticsView,
@@ -433,15 +432,7 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns.insert(0, path("django-sys-admin/", admin.site.urls))
 
-# Media: DEBUG da static(); productionda ham fayllar chiqishi kerak (Railway/VPS).
-# Keyingi bosqichda S3/Cloudinary tavsiya etiladi (deploy qayta yozilganda disk yo‘qoladi).
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-else:
-    urlpatterns += [
-        re_path(
-            r"^media/(?P<path>.*)$",
-            serve,
-            {"document_root": settings.MEDIA_ROOT},
-        ),
-    ]
+# Media: disk (volume) yoki Postgres StoredMedia — redeployda yo‘qolmasin.
+urlpatterns += [
+    re_path(r"^media/(?P<path>.*)$", serve_media),
+]
