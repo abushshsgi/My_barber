@@ -49,6 +49,7 @@ import { Route as BarberSalonViewTeamRouteImport } from './routes/barber.salon-v
 import { Route as BarberSalonViewReviewsRouteImport } from './routes/barber.salon-view.reviews'
 import { Route as BarberSalonViewMembersRouteImport } from './routes/barber.salon-view.members'
 import { Route as BarberSalonViewGalleryRouteImport } from './routes/barber.salon-view.gallery'
+import { Route as BarberSalonViewEditRouteImport } from './routes/barber.salon-view.edit'
 import { Route as BarberBookingsBookingIdRouteImport } from './routes/barber.bookings.$bookingId'
 import { Route as BarberBookingsBookingIdIndexRouteImport } from './routes/barber.bookings.$bookingId.index'
 import { Route as BarberBookingsBookingIdSessionRouteImport } from './routes/barber.bookings.$bookingId.session'
@@ -254,6 +255,11 @@ const BarberSalonViewGalleryRoute = BarberSalonViewGalleryRouteImport.update({
   path: '/salon-view/gallery',
   getParentRoute: () => BarberRoute,
 } as any)
+const BarberSalonViewEditRoute = BarberSalonViewEditRouteImport.update({
+  id: '/salon-view/edit',
+  path: '/salon-view/edit',
+  getParentRoute: () => BarberRoute,
+} as any)
 const BarberBookingsBookingIdRoute = BarberBookingsBookingIdRouteImport.update({
   id: '/$bookingId',
   path: '/$bookingId',
@@ -311,6 +317,7 @@ export interface FileRoutesByFullPath {
   '/salon/join': typeof SalonJoinRouteWithChildren
   '/barber/': typeof BarberIndexRoute
   '/barber/bookings/$bookingId': typeof BarberBookingsBookingIdRouteWithChildren
+  '/barber/salon-view/edit': typeof BarberSalonViewEditRoute
   '/barber/salon-view/gallery': typeof BarberSalonViewGalleryRoute
   '/barber/salon-view/members': typeof BarberSalonViewMembersRoute
   '/barber/salon-view/reviews': typeof BarberSalonViewReviewsRoute
@@ -353,6 +360,7 @@ export interface FileRoutesByTo {
   '/mybarber/setup': typeof MybarberSetupRoute
   '/salon/create': typeof SalonCreateRoute
   '/barber': typeof BarberIndexRoute
+  '/barber/salon-view/edit': typeof BarberSalonViewEditRoute
   '/barber/salon-view/gallery': typeof BarberSalonViewGalleryRoute
   '/barber/salon-view/members': typeof BarberSalonViewMembersRoute
   '/barber/salon-view/reviews': typeof BarberSalonViewReviewsRoute
@@ -400,6 +408,7 @@ export interface FileRoutesById {
   '/salon/join': typeof SalonJoinRouteWithChildren
   '/barber/': typeof BarberIndexRoute
   '/barber/bookings/$bookingId': typeof BarberBookingsBookingIdRouteWithChildren
+  '/barber/salon-view/edit': typeof BarberSalonViewEditRoute
   '/barber/salon-view/gallery': typeof BarberSalonViewGalleryRoute
   '/barber/salon-view/members': typeof BarberSalonViewMembersRoute
   '/barber/salon-view/reviews': typeof BarberSalonViewReviewsRoute
@@ -448,6 +457,7 @@ export interface FileRouteTypes {
     | '/salon/join'
     | '/barber/'
     | '/barber/bookings/$bookingId'
+    | '/barber/salon-view/edit'
     | '/barber/salon-view/gallery'
     | '/barber/salon-view/members'
     | '/barber/salon-view/reviews'
@@ -490,6 +500,7 @@ export interface FileRouteTypes {
     | '/mybarber/setup'
     | '/salon/create'
     | '/barber'
+    | '/barber/salon-view/edit'
     | '/barber/salon-view/gallery'
     | '/barber/salon-view/members'
     | '/barber/salon-view/reviews'
@@ -536,6 +547,7 @@ export interface FileRouteTypes {
     | '/salon/join'
     | '/barber/'
     | '/barber/bookings/$bookingId'
+    | '/barber/salon-view/edit'
     | '/barber/salon-view/gallery'
     | '/barber/salon-view/members'
     | '/barber/salon-view/reviews'
@@ -837,6 +849,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BarberSalonViewMembersRouteImport
       parentRoute: typeof BarberRoute
     }
+    '/barber/salon-view/edit': {
+      id: '/barber/salon-view/edit'
+      path: '/salon-view/edit'
+      fullPath: '/barber/salon-view/edit'
+      preLoaderRoute: typeof BarberSalonViewEditRouteImport
+      parentRoute: typeof BarberRoute
+    }
     '/barber/salon-view/gallery': {
       id: '/barber/salon-view/gallery'
       path: '/salon-view/gallery'
@@ -942,6 +961,7 @@ interface BarberRouteChildren {
   BarberStatsRoute: typeof BarberStatsRouteWithChildren
   BarberWithdrawalsRoute: typeof BarberWithdrawalsRoute
   BarberIndexRoute: typeof BarberIndexRoute
+  BarberSalonViewEditRoute: typeof BarberSalonViewEditRoute
   BarberSalonViewGalleryRoute: typeof BarberSalonViewGalleryRoute
   BarberSalonViewMembersRoute: typeof BarberSalonViewMembersRoute
   BarberSalonViewReviewsRoute: typeof BarberSalonViewReviewsRoute
@@ -972,6 +992,7 @@ const BarberRouteChildren: BarberRouteChildren = {
   BarberStatsRoute: BarberStatsRouteWithChildren,
   BarberWithdrawalsRoute: BarberWithdrawalsRoute,
   BarberIndexRoute: BarberIndexRoute,
+  BarberSalonViewEditRoute: BarberSalonViewEditRoute,
   BarberSalonViewGalleryRoute: BarberSalonViewGalleryRoute,
   BarberSalonViewMembersRoute: BarberSalonViewMembersRoute,
   BarberSalonViewReviewsRoute: BarberSalonViewReviewsRoute,

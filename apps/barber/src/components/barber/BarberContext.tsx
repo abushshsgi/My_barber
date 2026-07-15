@@ -189,15 +189,27 @@ export type Review = {
   dimensions: ReviewDimension[];
 };
 
+export type SalonGalleryImage = {
+  id: number;
+  image: string;
+  sort_order: number;
+};
+
 export type Salon = {
   id: string;
   name: string;
   address: string;
+  description: string;
+  phone: string;
+  latitude: string;
+  longitude: string;
   cover: string;
   rating: number;
   reviews_count: number;
   members: number;
+  /** Derived from galleryItems for display consumers. */
   gallery: string[];
+  galleryItems: SalonGalleryImage[];
 };
 
 export type Transaction = {
@@ -347,6 +359,19 @@ type Ctx = {
   ) => Promise<boolean>;
   uploadPortfolio: (payload: { file: File; title: string; service: string }) => Promise<boolean>;
   addSalonImage: (payload: { file: File }) => Promise<boolean>;
+  addSalonImages: (files: File[]) => Promise<boolean>;
+  removeSalonImage: (imageId: number) => Promise<boolean>;
+  setSalonCoverFromGallery: (imageId: number) => Promise<boolean>;
+  uploadSalonCover: (file: File) => Promise<boolean>;
+  updateSalonProfile: (payload: {
+    name?: string;
+    description?: string;
+    phone?: string;
+    address?: string;
+    latitude?: string | number | null;
+    longitude?: string | number | null;
+  }) => Promise<{ ok: true } | { ok: false; error: string }>;
+  refreshSalonView: () => Promise<void>;
   sendSupportTicket: (payload: { subject: string; message: string }) => Promise<boolean>;
 };
 
@@ -366,11 +391,16 @@ const EMPTY_SALON: Salon = {
   id: "",
   name: "",
   address: "",
+  description: "",
+  phone: "",
+  latitude: "",
+  longitude: "",
   cover: "",
   rating: 0,
   reviews_count: 0,
   members: 0,
   gallery: [],
+  galleryItems: [],
 };
 
 export function BarberProvider({ children }: { children: ReactNode }) {
@@ -728,7 +758,6 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         cover_image: string | null;
         rating_avg: number;
         review_count: number;
-        images?: Array<{ image: string }>;
       }>("/api/v1/salons/mine/");
       const one = rows[0];
       if (!one) return;
@@ -743,15 +772,49 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         /* staff endpoint optional */
       }
 
+      let detail: {
+        description?: string;
+        phone?: string;
+        latitude?: string | number | null;
+        longitude?: string | number | null;
+        cover_image?: string | null;
+        images?: Array<{ id: number; image: string; sort_order?: number }>;
+      } = {};
+      try {
+        detail = await apiJson(`/api/v1/salons/${one.id}/`);
+      } catch {
+        /* detail optional — keep list fields */
+      }
+
+      const galleryItems: SalonGalleryImage[] = (detail.images || [])
+        .map((i) => ({
+          id: Number(i.id),
+          image: i.image,
+          sort_order: Number(i.sort_order ?? 0),
+        }))
+        .filter((i) => Number.isFinite(i.id) && Boolean(i.image))
+        .sort((a, b) => a.sort_order - b.sort_order || a.id - b.id);
+
       setSalon({
         id: String(one.id),
         name: one.name,
         address: one.address || "",
-        cover: one.cover_image || "",
+        description: detail.description || "",
+        phone: detail.phone || "",
+        latitude:
+          detail.latitude != null && detail.latitude !== ""
+            ? String(detail.latitude)
+            : "",
+        longitude:
+          detail.longitude != null && detail.longitude !== ""
+            ? String(detail.longitude)
+            : "",
+        cover: detail.cover_image || one.cover_image || "",
         rating: Number(one.rating_avg || 0),
         reviews_count: Number(one.review_count || 0),
         members,
-        gallery: (one.images || []).map((i) => i.image),
+        gallery: galleryItems.map((i) => i.image),
+        galleryItems,
       });
     } catch {
       // salon view optional for independent mode
@@ -998,11 +1061,13 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     [refreshPortfolio],
   );
 
-  const addSalonImageApi = useCallback(
-    async (payload: { file: File }) => {
-      if (!salon.id) return false;
+  const addSalonImagesApi = useCallback(
+    async (files: File[]) => {
+      if (!salon.id || files.length === 0) return false;
       const body = new FormData();
-      body.append("images", payload.file);
+      for (const file of files) {
+        body.append("images", file);
+      }
       const res = await apiFetch(`/api/v1/salons/${salon.id}/add_images/`, {
         method: "POST",
         body,
@@ -1011,6 +1076,106 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       if (!res.ok) return false;
       await refreshSalonView();
       return true;
+    },
+    [refreshSalonView, salon.id],
+  );
+
+  const addSalonImageApi = useCallback(
+    async (payload: { file: File }) => addSalonImagesApi([payload.file]),
+    [addSalonImagesApi],
+  );
+
+  const removeSalonImageApi = useCallback(
+    async (imageId: number) => {
+      if (!salon.id) return false;
+      const res = await apiFetch(`/api/v1/salons/${salon.id}/remove_image/`, {
+        method: "POST",
+        body: JSON.stringify({ image_id: imageId }),
+      });
+      if (!res.ok) return false;
+      await refreshSalonView();
+      return true;
+    },
+    [refreshSalonView, salon.id],
+  );
+
+  const setSalonCoverFromGalleryApi = useCallback(
+    async (imageId: number) => {
+      if (!salon.id) return false;
+      const res = await apiFetch(`/api/v1/salons/${salon.id}/set_cover_from_gallery/`, {
+        method: "POST",
+        body: JSON.stringify({ salon_image_id: imageId }),
+      });
+      if (!res.ok) return false;
+      await refreshSalonView();
+      return true;
+    },
+    [refreshSalonView, salon.id],
+  );
+
+  const uploadSalonCoverApi = useCallback(
+    async (file: File) => {
+      if (!salon.id) return false;
+      const body = new FormData();
+      body.append("cover", file);
+      const res = await apiFetch(`/api/v1/salons/${salon.id}/upload_cover/`, {
+        method: "POST",
+        body,
+        headers: {},
+      });
+      if (!res.ok) return false;
+      await refreshSalonView();
+      return true;
+    },
+    [refreshSalonView, salon.id],
+  );
+
+  const updateSalonProfileApi = useCallback(
+    async (payload: {
+      name?: string;
+      description?: string;
+      phone?: string;
+      address?: string;
+      latitude?: string | number | null;
+      longitude?: string | number | null;
+    }): Promise<{ ok: true } | { ok: false; error: string }> => {
+      if (!salon.id) return { ok: false, error: "Salon topilmadi." };
+      const body: Record<string, unknown> = {};
+      if (payload.name !== undefined) body.name = payload.name;
+      if (payload.description !== undefined) body.description = payload.description;
+      if (payload.phone !== undefined) body.phone = payload.phone;
+      if (payload.address !== undefined) body.address = payload.address;
+      if (payload.latitude !== undefined) {
+        body.latitude =
+          payload.latitude === "" || payload.latitude == null
+            ? null
+            : Number(payload.latitude);
+      }
+      if (payload.longitude !== undefined) {
+        body.longitude =
+          payload.longitude === "" || payload.longitude == null
+            ? null
+            : Number(payload.longitude);
+      }
+      const res = await apiFetch(`/api/v1/salons/${salon.id}/`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        let error = "Saqlashda xato.";
+        try {
+          const data = (await res.json()) as Record<string, unknown>;
+          const first = Object.values(data).flat()[0];
+          if (typeof first === "string") error = first;
+          else if (Array.isArray(first) && typeof first[0] === "string") error = first[0];
+          else if (typeof data.detail === "string") error = data.detail;
+        } catch {
+          /* keep default */
+        }
+        return { ok: false, error };
+      }
+      await refreshSalonView();
+      return { ok: true };
     },
     [refreshSalonView, salon.id],
   );
@@ -1319,6 +1484,12 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       addGoal: (payload) => addGoalApi(payload),
       uploadPortfolio: (payload) => uploadPortfolioApi(payload),
       addSalonImage: (payload) => addSalonImageApi(payload),
+      addSalonImages: (files) => addSalonImagesApi(files),
+      removeSalonImage: (imageId) => removeSalonImageApi(imageId),
+      setSalonCoverFromGallery: (imageId) => setSalonCoverFromGalleryApi(imageId),
+      uploadSalonCover: (file) => uploadSalonCoverApi(file),
+      updateSalonProfile: (payload) => updateSalonProfileApi(payload),
+      refreshSalonView,
       sendSupportTicket: (payload) => sendSupportTicketApi(payload),
     }),
     [
@@ -1369,6 +1540,12 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       addGoalApi,
       uploadPortfolioApi,
       addSalonImageApi,
+      addSalonImagesApi,
+      removeSalonImageApi,
+      setSalonCoverFromGalleryApi,
+      uploadSalonCoverApi,
+      updateSalonProfileApi,
+      refreshSalonView,
       sendSupportTicketApi,
       mutateBooking,
       markNotifRead,
