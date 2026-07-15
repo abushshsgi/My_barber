@@ -60,11 +60,14 @@ import { Route as AdminBarbersBarberIdRouteImport } from './routes/admin.barbers
 import { Route as AdminSalonsSalonIdIndexRouteImport } from './routes/admin.salons.$salonId.index'
 import { Route as AdminBarbersBarberIdIndexRouteImport } from './routes/admin.barbers.$barberId.index'
 import { Route as AdminSalonsSalonIdTeamRouteImport } from './routes/admin.salons.$salonId.team'
+import { Route as AdminSalonsSalonIdStatsRouteImport } from './routes/admin.salons.$salonId.stats'
 import { Route as AdminMorphAiListKindRouteImport } from './routes/admin.morph-ai.list.$kind'
 import { Route as AdminBarbersBarberIdStatsRouteImport } from './routes/admin.barbers.$barberId.stats'
 import { Route as AdminBarbersBarberIdReviewsRouteImport } from './routes/admin.barbers.$barberId.reviews'
 import { Route as AdminBarbersBarberIdBookingsRouteImport } from './routes/admin.barbers.$barberId.bookings'
+import { Route as AdminSalonsSalonIdStatsIndexRouteImport } from './routes/admin.salons.$salonId.stats.index'
 import { Route as AdminBarbersBarberIdStatsIndexRouteImport } from './routes/admin.barbers.$barberId.stats.index'
+import { Route as AdminSalonsSalonIdStatsGraphsRouteImport } from './routes/admin.salons.$salonId.stats.graphs'
 import { Route as AdminBarbersBarberIdStatsGraphsRouteImport } from './routes/admin.barbers.$barberId.stats.graphs'
 
 const AuthRoute = AuthRouteImport.update({
@@ -324,6 +327,11 @@ const AdminSalonsSalonIdTeamRoute = AdminSalonsSalonIdTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => AdminSalonsSalonIdRoute,
 } as any)
+const AdminSalonsSalonIdStatsRoute = AdminSalonsSalonIdStatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => AdminSalonsSalonIdRoute,
+} as any)
 const AdminMorphAiListKindRoute = AdminMorphAiListKindRouteImport.update({
   id: '/list/$kind',
   path: '/list/$kind',
@@ -347,11 +355,23 @@ const AdminBarbersBarberIdBookingsRoute =
     path: '/bookings',
     getParentRoute: () => AdminBarbersBarberIdRoute,
   } as any)
+const AdminSalonsSalonIdStatsIndexRoute =
+  AdminSalonsSalonIdStatsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminSalonsSalonIdStatsRoute,
+  } as any)
 const AdminBarbersBarberIdStatsIndexRoute =
   AdminBarbersBarberIdStatsIndexRouteImport.update({
     id: '/',
     path: '/',
     getParentRoute: () => AdminBarbersBarberIdStatsRoute,
+  } as any)
+const AdminSalonsSalonIdStatsGraphsRoute =
+  AdminSalonsSalonIdStatsGraphsRouteImport.update({
+    id: '/graphs',
+    path: '/graphs',
+    getParentRoute: () => AdminSalonsSalonIdStatsRoute,
   } as any)
 const AdminBarbersBarberIdStatsGraphsRoute =
   AdminBarbersBarberIdStatsGraphsRouteImport.update({
@@ -413,11 +433,14 @@ export interface FileRoutesByFullPath {
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
   '/admin/barbers/$barberId/stats': typeof AdminBarbersBarberIdStatsRouteWithChildren
   '/admin/morph-ai/list/$kind': typeof AdminMorphAiListKindRoute
+  '/admin/salons/$salonId/stats': typeof AdminSalonsSalonIdStatsRouteWithChildren
   '/admin/salons/$salonId/team': typeof AdminSalonsSalonIdTeamRoute
   '/admin/barbers/$barberId/': typeof AdminBarbersBarberIdIndexRoute
   '/admin/salons/$salonId/': typeof AdminSalonsSalonIdIndexRoute
   '/admin/barbers/$barberId/stats/graphs': typeof AdminBarbersBarberIdStatsGraphsRoute
+  '/admin/salons/$salonId/stats/graphs': typeof AdminSalonsSalonIdStatsGraphsRoute
   '/admin/barbers/$barberId/stats/': typeof AdminBarbersBarberIdStatsIndexRoute
+  '/admin/salons/$salonId/stats/': typeof AdminSalonsSalonIdStatsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -470,7 +493,9 @@ export interface FileRoutesByTo {
   '/admin/barbers/$barberId': typeof AdminBarbersBarberIdIndexRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdIndexRoute
   '/admin/barbers/$barberId/stats/graphs': typeof AdminBarbersBarberIdStatsGraphsRoute
+  '/admin/salons/$salonId/stats/graphs': typeof AdminSalonsSalonIdStatsGraphsRoute
   '/admin/barbers/$barberId/stats': typeof AdminBarbersBarberIdStatsIndexRoute
+  '/admin/salons/$salonId/stats': typeof AdminSalonsSalonIdStatsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -526,11 +551,14 @@ export interface FileRoutesById {
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
   '/admin/barbers/$barberId/stats': typeof AdminBarbersBarberIdStatsRouteWithChildren
   '/admin/morph-ai/list/$kind': typeof AdminMorphAiListKindRoute
+  '/admin/salons/$salonId/stats': typeof AdminSalonsSalonIdStatsRouteWithChildren
   '/admin/salons/$salonId/team': typeof AdminSalonsSalonIdTeamRoute
   '/admin/barbers/$barberId/': typeof AdminBarbersBarberIdIndexRoute
   '/admin/salons/$salonId/': typeof AdminSalonsSalonIdIndexRoute
   '/admin/barbers/$barberId/stats/graphs': typeof AdminBarbersBarberIdStatsGraphsRoute
+  '/admin/salons/$salonId/stats/graphs': typeof AdminSalonsSalonIdStatsGraphsRoute
   '/admin/barbers/$barberId/stats/': typeof AdminBarbersBarberIdStatsIndexRoute
+  '/admin/salons/$salonId/stats/': typeof AdminSalonsSalonIdStatsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -587,11 +615,14 @@ export interface FileRouteTypes {
     | '/admin/barbers/$barberId/reviews'
     | '/admin/barbers/$barberId/stats'
     | '/admin/morph-ai/list/$kind'
+    | '/admin/salons/$salonId/stats'
     | '/admin/salons/$salonId/team'
     | '/admin/barbers/$barberId/'
     | '/admin/salons/$salonId/'
     | '/admin/barbers/$barberId/stats/graphs'
+    | '/admin/salons/$salonId/stats/graphs'
     | '/admin/barbers/$barberId/stats/'
+    | '/admin/salons/$salonId/stats/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -644,7 +675,9 @@ export interface FileRouteTypes {
     | '/admin/barbers/$barberId'
     | '/admin/salons/$salonId'
     | '/admin/barbers/$barberId/stats/graphs'
+    | '/admin/salons/$salonId/stats/graphs'
     | '/admin/barbers/$barberId/stats'
+    | '/admin/salons/$salonId/stats'
   id:
     | '__root__'
     | '/'
@@ -699,11 +732,14 @@ export interface FileRouteTypes {
     | '/admin/barbers/$barberId/reviews'
     | '/admin/barbers/$barberId/stats'
     | '/admin/morph-ai/list/$kind'
+    | '/admin/salons/$salonId/stats'
     | '/admin/salons/$salonId/team'
     | '/admin/barbers/$barberId/'
     | '/admin/salons/$salonId/'
     | '/admin/barbers/$barberId/stats/graphs'
+    | '/admin/salons/$salonId/stats/graphs'
     | '/admin/barbers/$barberId/stats/'
+    | '/admin/salons/$salonId/stats/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1071,6 +1107,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSalonsSalonIdTeamRouteImport
       parentRoute: typeof AdminSalonsSalonIdRoute
     }
+    '/admin/salons/$salonId/stats': {
+      id: '/admin/salons/$salonId/stats'
+      path: '/stats'
+      fullPath: '/admin/salons/$salonId/stats'
+      preLoaderRoute: typeof AdminSalonsSalonIdStatsRouteImport
+      parentRoute: typeof AdminSalonsSalonIdRoute
+    }
     '/admin/morph-ai/list/$kind': {
       id: '/admin/morph-ai/list/$kind'
       path: '/list/$kind'
@@ -1099,12 +1142,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBarbersBarberIdBookingsRouteImport
       parentRoute: typeof AdminBarbersBarberIdRoute
     }
+    '/admin/salons/$salonId/stats/': {
+      id: '/admin/salons/$salonId/stats/'
+      path: '/'
+      fullPath: '/admin/salons/$salonId/stats/'
+      preLoaderRoute: typeof AdminSalonsSalonIdStatsIndexRouteImport
+      parentRoute: typeof AdminSalonsSalonIdStatsRoute
+    }
     '/admin/barbers/$barberId/stats/': {
       id: '/admin/barbers/$barberId/stats/'
       path: '/'
       fullPath: '/admin/barbers/$barberId/stats/'
       preLoaderRoute: typeof AdminBarbersBarberIdStatsIndexRouteImport
       parentRoute: typeof AdminBarbersBarberIdStatsRoute
+    }
+    '/admin/salons/$salonId/stats/graphs': {
+      id: '/admin/salons/$salonId/stats/graphs'
+      path: '/graphs'
+      fullPath: '/admin/salons/$salonId/stats/graphs'
+      preLoaderRoute: typeof AdminSalonsSalonIdStatsGraphsRouteImport
+      parentRoute: typeof AdminSalonsSalonIdStatsRoute
     }
     '/admin/barbers/$barberId/stats/graphs': {
       id: '/admin/barbers/$barberId/stats/graphs'
@@ -1221,12 +1278,30 @@ const AdminMorphAiRouteWithChildren = AdminMorphAiRoute._addFileChildren(
   AdminMorphAiRouteChildren,
 )
 
+interface AdminSalonsSalonIdStatsRouteChildren {
+  AdminSalonsSalonIdStatsGraphsRoute: typeof AdminSalonsSalonIdStatsGraphsRoute
+  AdminSalonsSalonIdStatsIndexRoute: typeof AdminSalonsSalonIdStatsIndexRoute
+}
+
+const AdminSalonsSalonIdStatsRouteChildren: AdminSalonsSalonIdStatsRouteChildren =
+  {
+    AdminSalonsSalonIdStatsGraphsRoute: AdminSalonsSalonIdStatsGraphsRoute,
+    AdminSalonsSalonIdStatsIndexRoute: AdminSalonsSalonIdStatsIndexRoute,
+  }
+
+const AdminSalonsSalonIdStatsRouteWithChildren =
+  AdminSalonsSalonIdStatsRoute._addFileChildren(
+    AdminSalonsSalonIdStatsRouteChildren,
+  )
+
 interface AdminSalonsSalonIdRouteChildren {
+  AdminSalonsSalonIdStatsRoute: typeof AdminSalonsSalonIdStatsRouteWithChildren
   AdminSalonsSalonIdTeamRoute: typeof AdminSalonsSalonIdTeamRoute
   AdminSalonsSalonIdIndexRoute: typeof AdminSalonsSalonIdIndexRoute
 }
 
 const AdminSalonsSalonIdRouteChildren: AdminSalonsSalonIdRouteChildren = {
+  AdminSalonsSalonIdStatsRoute: AdminSalonsSalonIdStatsRouteWithChildren,
   AdminSalonsSalonIdTeamRoute: AdminSalonsSalonIdTeamRoute,
   AdminSalonsSalonIdIndexRoute: AdminSalonsSalonIdIndexRoute,
 }

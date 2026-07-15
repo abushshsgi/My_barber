@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, LayoutGrid, MoreHorizontal, Trash2, Users } from "lucide-react";
+import { ArrowLeft, BarChart3, LayoutGrid, MoreHorizontal, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { fetchAdminSalonDetail, patchAdminSalon, deleteAdminSalon } from "@/lib/admin-api";
 import { StatusBadge } from "@/components/admin/StatusBadge";
@@ -26,7 +26,11 @@ function SalonIdLayout() {
   const queryClient = useQueryClient();
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const tab = pathname.endsWith("/team") ? "team" : "overview";
+  const tab = pathname.includes("/stats")
+    ? "stats"
+    : pathname.endsWith("/team")
+      ? "team"
+      : "overview";
 
   const salonQ = useQuery({
     queryKey: ["admin", "salon", salonId],
@@ -144,7 +148,7 @@ function SalonIdLayout() {
 
           {s ? (
             <nav
-              className="flex gap-6 border-b border-border/60 bg-muted/20 px-5 sm:gap-8 sm:px-8"
+              className="flex gap-6 overflow-x-auto border-b border-border/60 bg-muted/20 px-5 sm:gap-8 sm:px-8"
               aria-label="Salon bo‘limlari"
             >
               <Link
@@ -154,6 +158,14 @@ function SalonIdLayout() {
               >
                 <LayoutGrid className="size-4 opacity-70" aria-hidden />
                 Umumiy
+              </Link>
+              <Link
+                to="/admin/salons/$salonId/stats"
+                params={{ salonId }}
+                className={tabLinkCls("stats")}
+              >
+                <BarChart3 className="size-4 opacity-70" aria-hidden />
+                Statistika
               </Link>
               <Link
                 to="/admin/salons/$salonId/team"

@@ -10,16 +10,21 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { LucideIcon } from "lucide-react";
 import {
+  CalendarClock,
   MapPin,
   MoreHorizontal,
+  Phone,
   Star,
   Trash2,
+  User,
   Users,
   MessageCircle,
   Store,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchAdminSalons, patchAdminSalon, deleteAdminSalon, PAGE_SIZE } from "@/lib/admin-api";
+import { formatAdminUzs } from "@/lib/admin-analytics";
 import { uzRegionLabel } from "@/lib/uz-regions";
 import type { AdminSalon } from "@/lib/admin-api";
 import { FilterToolbar } from "@/components/admin/FilterToolbar";
@@ -131,7 +136,7 @@ function SalonsListPage() {
                 Salonlar
               </h1>
               <p className="text-xs text-muted-foreground">
-                Qator — batafsil · jamoa va sartaroshlar «Jamoa» tabida
+                MySalon salonlari · egasi, bronlar, daromad · qator — batafsil
               </p>
             </div>
           </div>
@@ -156,7 +161,7 @@ function SalonsListPage() {
             onRegionChange={(v) =>
               navigate({ search: (prev) => ({ ...prev, region: v, page: 1 }) })
             }
-            searchPlaceholder="Salon nomi bo'yicha qidirish..."
+            searchPlaceholder="Salon, egasi, telefon yoki manzil..."
           />
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground shrink-0">
@@ -286,10 +291,30 @@ function SalonListRow({
               {s.address || "Manzil ko‘rsatilmagan"}
             </span>
           </p>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5" title="Egasi">
+              <User className="size-3.5 shrink-0 opacity-70" aria-hidden />
+              <span className="font-medium text-foreground">
+                {s.owner_name || s.owner_email || "Ega ko‘rsatilmagan"}
+              </span>
+            </span>
+            {(s.phone || s.owner_phone) ? (
+              <span className="inline-flex items-center gap-1.5 tabular-nums" title="Telefon">
+                <Phone className="size-3.5 shrink-0 opacity-70" aria-hidden />
+                {s.phone || s.owner_phone}
+              </span>
+            ) : null}
+          </div>
         </div>
 
-        {/* Metrikalar — bitta qator, ixcham */}
-        <div className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-2 border-t border-border/60 pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
+        {/* Metrikalar — bronlar, daromad, jamoa */}
+        <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-t border-border/60 pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
+          <InlineStat icon={CalendarClock} value={s.bookings_count} title="Bronlar soni" />
+          <InlineStat
+            icon={Wallet}
+            value={formatAdminUzs(s.revenue_uzs)}
+            title="Yakunlangan bronlar daromadi"
+          />
           <InlineStat icon={Users} value={s.barbers_count} title="Sartaroshlar soni" />
           <InlineStat icon={MessageCircle} value={s.reviews_count} title="Sharhlar soni" />
           <InlineStat

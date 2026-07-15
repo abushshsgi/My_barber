@@ -432,6 +432,7 @@ class AdminUserDetailSerializer(AdminUserSerializer):
 class AdminSalonListSerializer(serializers.ModelSerializer):
     owner_email = serializers.EmailField(source="owner_barber.email", read_only=True)
     owner_name = serializers.CharField(source="owner_barber.full_name", read_only=True)
+    owner_phone = serializers.CharField(source="owner_barber.phone", read_only=True, allow_null=True)
     region = serializers.SerializerMethodField()
     region_label = serializers.SerializerMethodField()
     hours = SalonHoursSerializer(many=True, read_only=True)
@@ -439,6 +440,10 @@ class AdminSalonListSerializer(serializers.ModelSerializer):
     reviews_count = serializers.SerializerMethodField()
     rating = serializers.SerializerMethodField()
     barbers_count = serializers.SerializerMethodField()
+    bookings_count = serializers.SerializerMethodField()
+    completed_bookings_count = serializers.SerializerMethodField()
+    revenue_uzs = serializers.SerializerMethodField()
+    favorites_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Salon
@@ -449,6 +454,7 @@ class AdminSalonListSerializer(serializers.ModelSerializer):
             "owner_barber",
             "owner_email",
             "owner_name",
+            "owner_phone",
             "region",
             "region_label",
             "address",
@@ -464,6 +470,10 @@ class AdminSalonListSerializer(serializers.ModelSerializer):
             "reviews_count",
             "rating",
             "barbers_count",
+            "bookings_count",
+            "completed_bookings_count",
+            "revenue_uzs",
+            "favorites_count",
         )
         read_only_fields = (
             "id",
@@ -473,6 +483,10 @@ class AdminSalonListSerializer(serializers.ModelSerializer):
             "reviews_count",
             "rating",
             "barbers_count",
+            "bookings_count",
+            "completed_bookings_count",
+            "revenue_uzs",
+            "favorites_count",
         )
 
     def get_region(self, obj: Salon) -> str:
@@ -503,6 +517,38 @@ class AdminSalonListSerializer(serializers.ModelSerializer):
 
     def get_barbers_count(self, obj: Salon) -> int:
         return len(_salon_distinct_barber_ids(obj))
+
+    def get_bookings_count(self, obj: Salon) -> int:
+        v = getattr(obj, "_bookings_count", None)
+        if v is not None:
+            return int(v)
+        return int(obj.bookings.count())
+
+    def get_completed_bookings_count(self, obj: Salon) -> int:
+        v = getattr(obj, "_completed_bookings_count", None)
+        if v is not None:
+            return int(v)
+        from bookings.models import Booking
+
+        return int(obj.bookings.filter(status=Booking.Status.COMPLETED).count())
+
+    def get_revenue_uzs(self, obj: Salon) -> float:
+        v = getattr(obj, "_revenue_uzs", None)
+        if v is not None:
+            return float(v or 0)
+        from bookings.models import Booking
+        from django.db.models import Sum
+
+        total = obj.bookings.filter(status=Booking.Status.COMPLETED).aggregate(
+            t=Sum("total_price")
+        ).get("t")
+        return float(total or 0)
+
+    def get_favorites_count(self, obj: Salon) -> int:
+        v = getattr(obj, "_favorites_count", None)
+        if v is not None:
+            return int(v)
+        return int(obj.favorited_by.count())
 
 
 def _salon_distinct_barber_ids(obj: Salon) -> set[int]:

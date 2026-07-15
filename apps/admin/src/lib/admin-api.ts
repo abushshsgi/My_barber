@@ -395,12 +395,17 @@ export type AdminSalon = {
   barbers_count: number;
   reviews_count: number;
   rating: number;
+  bookings_count: number;
+  completed_bookings_count: number;
+  revenue_uzs: number;
+  favorites_count: number;
   lat: number;
   lng: number;
   created_at: string;
   owner_barber_id: string | null;
   owner_email: string;
   owner_name: string;
+  owner_phone: string;
 };
 
 export type AdminSalonDetail = AdminSalon & {
@@ -679,6 +684,7 @@ type BackendSalonRow = {
   owner_barber?: number | null;
   owner_email?: string;
   owner_name?: string;
+  owner_phone?: string | null;
   is_published: boolean;
   premium?: boolean;
   latitude: string;
@@ -690,6 +696,10 @@ type BackendSalonRow = {
   reviews_count?: number;
   rating?: number;
   barbers_count?: number;
+  bookings_count?: number;
+  completed_bookings_count?: number;
+  revenue_uzs?: number | string;
+  favorites_count?: number;
   staff_barbers?: BackendSalonStaffRow[];
 };
 
@@ -1001,12 +1011,17 @@ function mapSalon(s: BackendSalonRow): AdminSalon {
     barbers_count: toInt(s.barbers_count, 0),
     reviews_count: toInt(s.reviews_count, 0),
     rating: Number(s.rating ?? 0),
+    bookings_count: toInt(s.bookings_count, 0),
+    completed_bookings_count: toInt(s.completed_bookings_count, 0),
+    revenue_uzs: toInt(s.revenue_uzs, 0),
+    favorites_count: toInt(s.favorites_count, 0),
     lat: coord?.lat ?? Number.NaN,
     lng: coord?.lng ?? Number.NaN,
     created_at: s.created_at,
     owner_barber_id: s.owner_barber != null ? String(s.owner_barber) : null,
     owner_email: s.owner_email ?? "",
     owner_name: s.owner_name ?? "",
+    owner_phone: s.owner_phone ?? "",
   };
 }
 
@@ -1067,6 +1082,14 @@ export async function fetchAdminBarberAnalytics(
 ): Promise<import("./admin-analytics").AdminAnalyticsResponse> {
   const sp = new URLSearchParams({ start: params.start, end: params.end });
   return apiJson(`/api/v1/admin/barbers/${barberId}/analytics/?${sp}`);
+}
+
+export async function fetchAdminSalonAnalytics(
+  salonId: string,
+  params: { start: string; end: string },
+): Promise<import("./admin-analytics").AdminAnalyticsResponse> {
+  const sp = new URLSearchParams({ start: params.start, end: params.end });
+  return apiJson(`/api/v1/admin/salons/${salonId}/analytics/?${sp}`);
 }
 
 export async function fetchAdminUserSignupAnalytics(limit = 100): Promise<AdminUserSignupAnalytics> {

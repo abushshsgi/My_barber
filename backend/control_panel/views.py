@@ -315,9 +315,44 @@ class AdminUserSignupAnalyticsView(APIView):
 
 
 def _admin_salon_queryset():
+    from django.db.models import DecimalField, IntegerField, OuterRef, Subquery, Value
+    from django.db.models.functions import Coalesce
+
     active_members = SalonMembership.objects.filter(
         invite_state=SalonMembership.InviteState.ACTIVE
     ).select_related("barber")
+
+    bookings_sq = (
+        Booking.objects.filter(salon_id=OuterRef("pk"))
+        .order_by()
+        .values("salon_id")
+        .annotate(c=Count("id"))
+        .values("c")[:1]
+    )
+    completed_sq = (
+        Booking.objects.filter(salon_id=OuterRef("pk"), status=Booking.Status.COMPLETED)
+        .order_by()
+        .values("salon_id")
+        .annotate(c=Count("id"))
+        .values("c")[:1]
+    )
+    revenue_sq = (
+        Booking.objects.filter(salon_id=OuterRef("pk"), status=Booking.Status.COMPLETED)
+        .order_by()
+        .values("salon_id")
+        .annotate(t=Sum("total_price"))
+        .values("t")[:1]
+    )
+    from salons.models import FavoriteSalon
+
+    favorites_sq = (
+        FavoriteSalon.objects.filter(salon_id=OuterRef("pk"))
+        .order_by()
+        .values("salon_id")
+        .annotate(c=Count("id"))
+        .values("c")[:1]
+    )
+
     return (
         Salon.objects.select_related("owner_barber")
         .prefetch_related(
@@ -327,6 +362,15 @@ def _admin_salon_queryset():
         .annotate(
             _reviews_count=Count("reviews", distinct=True),
             _reviews_avg=Avg("reviews__rating"),
+            _bookings_count=Coalesce(Subquery(bookings_sq, output_field=IntegerField()), Value(0)),
+            _completed_bookings_count=Coalesce(
+                Subquery(completed_sq, output_field=IntegerField()), Value(0)
+            ),
+            _revenue_uzs=Coalesce(
+                Subquery(revenue_sq, output_field=DecimalField(max_digits=14, decimal_places=2)),
+                Value(0),
+            ),
+            _favorites_count=Coalesce(Subquery(favorites_sq, output_field=IntegerField()), Value(0)),
         )
         .order_by("-created_at")
     )
@@ -347,7 +391,12 @@ class AdminSalonListView(generics.ListAPIView):
         q = self.request.query_params.get("q", "").strip()
         if q:
             qs = qs.filter(
-                Q(name__icontains=q) | Q(owner_barber__email__icontains=q)
+                Q(name__icontains=q)
+                | Q(owner_barber__email__icontains=q)
+                | Q(owner_barber__full_name__icontains=q)
+                | Q(owner_barber__phone__icontains=q)
+                | Q(phone__icontains=q)
+                | Q(address__icontains=q)
             )
         region = self.request.query_params.get("region", "").strip()
         if region == "__UNSET__":
@@ -379,6 +428,50 @@ class AdminSalonDetailView(generics.RetrieveUpdateDestroyAPIView):
         before = {"name": instance.name}
         _audit(self.request, "delete", "salon", instance.id, instance.name, before=before, after={})
         instance.delete()
+
+
+class AdminSalonAnalyticsView(APIView):
+    """Admin: bitta salon uchun bron / daromad analitikasi."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request, pk):
+        from bookings.views import _analytics_response_for_bookings, _parse_analytics_datetime
+        from bookings.earnings import completed_bookings_qs, filter_bookings_by_earnings_period
+
+        start = request.query_params.get("start")
+        end = request.query_params.get("end")
+        if not all([start, end]):
+            return Response({"detail": "start, end (ISO dates) required."}, status=400)
+        try:
+            start_dt = _parse_analytics_datetime(start, is_end=False)
+            end_dt = _parse_analytics_datetime(end, is_end=True)
+        except ValueError:
+            return Response({"detail": "Invalid dates."}, status=400)
+
+        salon = get_object_or_404(Salon, pk=pk)
+        range_base = Booking.objects.filter(
+            salon=salon,
+            start_at__gte=start_dt,
+            start_at__lte=end_dt,
+        )
+        bookings = filter_bookings_by_earnings_period(
+            completed_bookings_qs(Booking.objects.filter(salon=salon)),
+            start_dt,
+            end_dt,
+        )
+        cancelled_count = range_base.filter(status=Booking.Status.CANCELLED).count()
+
+        def prior_for_customer(cid):
+            return Booking.objects.filter(salon=salon, customer_id=cid, start_at__lt=start_dt)
+
+        return Response(
+            _analytics_response_for_bookings(
+                bookings,
+                cancelled_count=cancelled_count,
+                prior_bookings_for_customer=prior_for_customer,
+            )
+        )
 
 
 def _admin_barber_queryset():

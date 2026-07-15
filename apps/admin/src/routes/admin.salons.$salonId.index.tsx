@@ -1,8 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { Building2, CalendarClock, MapPin, Phone, Star, Users } from "lucide-react";
+import {
+  Building2,
+  CalendarClock,
+  Heart,
+  MapPin,
+  Phone,
+  Star,
+  User,
+  Users,
+  Wallet,
+} from "lucide-react";
 import { fetchAdminSalonDetail } from "@/lib/admin-api";
+import { formatAdminUzs } from "@/lib/admin-analytics";
 import { uzRegionLabel } from "@/lib/uz-regions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -44,12 +55,12 @@ function SalonOverviewTab() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <div className="rounded-xl border border-border/70 bg-gradient-to-br from-muted/80 to-card p-4 shadow-sm sm:p-5">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             Yaratilgan
           </p>
-          <p className="mt-2 font-heading text-lg font-semibold tabular-nums text-foreground">
+          <p className="mt-2 font-heading text-base font-semibold tabular-nums text-foreground sm:text-lg">
             {fmtIso(s.created_at)}
           </p>
         </div>
@@ -72,18 +83,36 @@ function SalonOverviewTab() {
           </p>
           <p className="mt-2 font-heading text-2xl font-bold tabular-nums">{s.barbers_count}</p>
         </div>
+        <div className="rounded-xl border border-border/70 bg-gradient-to-br from-sky-500/5 to-card p-4 shadow-sm sm:p-5">
+          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <CalendarClock className="size-3.5 text-sky-600" aria-hidden />
+            Bronlar
+          </p>
+          <p className="mt-2 font-heading text-2xl font-bold tabular-nums">{s.bookings_count}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {s.completed_bookings_count} yakunlangan
+          </p>
+        </div>
+        <div className="rounded-xl border border-border/70 bg-gradient-to-br from-emerald-500/5 to-card p-4 shadow-sm sm:p-5">
+          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <Wallet className="size-3.5 text-emerald-600" aria-hidden />
+            Daromad
+          </p>
+          <p className="mt-2 font-heading text-lg font-bold tabular-nums sm:text-xl">
+            {formatAdminUzs(s.revenue_uzs)}
+          </p>
+        </div>
+        <div className="rounded-xl border border-border/70 bg-gradient-to-br from-rose-500/5 to-card p-4 shadow-sm sm:p-5">
+          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <Heart className="size-3.5 text-rose-600" aria-hidden />
+            Sevimlilar
+          </p>
+          <p className="mt-2 font-heading text-2xl font-bold tabular-nums">{s.favorites_count}</p>
+        </div>
       </div>
 
-      <div
-        className={
-          s.schedule_summary ? "grid gap-6 lg:grid-cols-5" : "grid gap-6"
-        }
-      >
-        <Card
-          className={
-            s.schedule_summary ? "border-border/70 shadow-sm lg:col-span-3" : "border-border/70 shadow-sm"
-          }
-        >
+      <div className="grid gap-6 lg:grid-cols-5">
+        <Card className="border-border/70 shadow-sm lg:col-span-3">
           <CardHeader className="border-b border-border/60 bg-muted/20 pb-4">
             <CardTitle className="flex items-center gap-2 text-base font-semibold">
               <Building2 className="size-4 text-primary" aria-hidden />
@@ -104,7 +133,7 @@ function SalonOverviewTab() {
               </div>
               {s.phone ? (
                 <div>
-                  <dt className="text-xs font-medium text-muted-foreground">Telefon</dt>
+                  <dt className="text-xs font-medium text-muted-foreground">Salon telefoni</dt>
                   <dd className="mt-0.5 flex items-center gap-2 font-medium tabular-nums text-foreground">
                     <Phone className="size-3.5 text-muted-foreground" aria-hidden />
                     {s.phone}
@@ -115,8 +144,40 @@ function SalonOverviewTab() {
           </CardContent>
         </Card>
 
+        <Card className="border-border/70 shadow-sm lg:col-span-2">
+          <CardHeader className="border-b border-border/60 bg-muted/20 pb-4">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <User className="size-4 text-primary" aria-hidden />
+              Egasi
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 pt-5 text-sm">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">Ism</p>
+              <p className="mt-0.5 font-medium text-foreground">{s.owner_name || "—"}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">Email</p>
+              <p className="mt-0.5 break-all font-medium text-foreground">{s.owner_email || "—"}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">Telefon</p>
+              <p className="mt-0.5 flex items-center gap-2 font-medium tabular-nums text-foreground">
+                {s.owner_phone ? (
+                  <>
+                    <Phone className="size-3.5 text-muted-foreground" aria-hidden />
+                    {s.owner_phone}
+                  </>
+                ) : (
+                  "—"
+                )}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {s.schedule_summary ? (
-          <Card className="border-border/70 shadow-sm lg:col-span-2">
+          <Card className="border-border/70 shadow-sm lg:col-span-5">
             <CardHeader className="border-b border-border/60 bg-muted/20 pb-4">
               <CardTitle className="flex items-center gap-2 text-base font-semibold">
                 <CalendarClock className="size-4 text-primary" aria-hidden />

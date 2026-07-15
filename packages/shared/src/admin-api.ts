@@ -63,9 +63,11 @@ export type AdminSalonRow = {
   owner_barber: number | null;
   owner_email: string;
   owner_name: string;
+  owner_phone?: string | null;
   region?: string;
   region_label?: string;
   address: string;
+  phone?: string;
   is_published: boolean;
   premium: boolean;
   latitude: string;
@@ -76,6 +78,13 @@ export type AdminSalonRow = {
   hours?: AdminSalonHourRow[];
   /** Qisqa matn: vaqt, ish kunlari, dam */
   schedule_summary?: string;
+  reviews_count?: number;
+  rating?: number;
+  barbers_count?: number;
+  bookings_count?: number;
+  completed_bookings_count?: number;
+  revenue_uzs?: number;
+  favorites_count?: number;
 };
 
 export type AdminBarberRow = {
