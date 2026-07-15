@@ -16,19 +16,26 @@ const IS_MOBILE_SPA =
   (import.meta as unknown as { env?: Record<string, string | undefined> }).env
     ?.VITE_MOBILE_SPA === "true";
 
+/** Production fallback when Vercel /api rewrite is missing (POST → 405 HTML). */
+const PROD_API_FALLBACK = "https://api.mysaloon.uz";
+
 function resolveWebApiBase(envBase: string): string {
   const trimmed = envBase.trim().replace(/\/+$/, "");
   if (IS_MOBILE_SPA) return trimmed;
-  // Web production: same-origin Vercel rewrite — avoids CORS false-positives on CF/Railway 502.
-  if (import.meta.env.PROD) return "";
+  // Explicit env always wins (Capacitor + web).
+  if (trimmed) return trimmed;
   if (typeof window !== "undefined") {
     const demo = resolveDemoApiOrigin(window.location.hostname);
     if (demo) return demo.replace(/\/+$/, "");
   }
-  return trimmed;
+  // Prod web: call API host directly. Same-origin Vercel rewrite on partner.mysaloon.uz
+  // currently serves SPA HTML (GET) / 405 (POST) instead of proxying — breaking signup checks.
+  if (import.meta.env.PROD) return PROD_API_FALLBACK;
+  // Local Vite: empty = /api/v1 → DEV_API_TARGET proxy.
+  return "";
 }
 
-/** Web (Vercel): bo'sh = joriy origin (/api/v1 proxy). */
+/** Barber API origin. Empty only in local Vite (dev proxy). */
 export const API_BASE = resolveWebApiBase(ENV_API_BASE);
 
 const TOKEN_KEY_BARBER = "mybarber_barber_access";
