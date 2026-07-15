@@ -2773,6 +2773,59 @@ export async function downloadMorphAiCsv(range?: StatDateRange): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
+export const MORPH_AI_LIST_KINDS = [
+  "generations",
+  "spenders",
+  "errors",
+  "active-users",
+  "queue",
+  "daily",
+  "gallery",
+] as const;
+
+export type MorphAiListKind = (typeof MORPH_AI_LIST_KINDS)[number];
+
+export type MorphAiListResponse = Paginated<Record<string, unknown>> & {
+  kind: MorphAiListKind;
+  range?: { start: string; end: string };
+  media_note?: string | null;
+};
+
+export async function fetchMorphAiList(
+  kind: MorphAiListKind,
+  params?: { range?: StatDateRange; page?: number; pageSize?: number },
+): Promise<MorphAiListResponse> {
+  const sp = new URLSearchParams();
+  if (params?.range?.start) sp.set("start", params.range.start);
+  if (params?.range?.end) sp.set("end", params.range.end);
+  if (params?.page) sp.set("page", String(params.page));
+  if (params?.pageSize) sp.set("page_size", String(params.pageSize));
+  const q = sp.toString();
+  return apiJson<MorphAiListResponse>(
+    `/api/v1/admin/morph-ai/list/${encodeURIComponent(kind)}/${q ? `?${q}` : ""}`,
+  );
+}
+
+export async function downloadMorphAiListCsv(
+  kind: MorphAiListKind,
+  range?: StatDateRange,
+): Promise<void> {
+  const res = await apiFetch(
+    `/api/v1/admin/morph-ai/list/${encodeURIComponent(kind)}/export/${morphRangeQs(range)}`,
+  );
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}));
+    throw new Error((j as { detail?: string }).detail || "CSV yuklab bo'lmadi");
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `morph-ai-${kind}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export async function fetchMorphHairstyles(params?: {
   audience?: string;
   q?: string;

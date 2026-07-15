@@ -17,6 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { fetchMorphAiErrors } from "@/lib/admin-api";
+import { MorphAiSeeAllLink } from "@/components/admin/MorphAiSeeAllLink";
 
 export const Route = createFileRoute("/admin/morph-ai/errors")({
   component: MorphErrorsPage,
@@ -26,9 +27,10 @@ function MorphErrorsPage() {
   const { rangeKey, setRangeKey, range } = useStatsRange("30d");
   const q = useQuery({
     queryKey: ["admin", "morph-ai", "errors", range.start, range.end],
-    queryFn: () => fetchMorphAiErrors({ range, limit: 80 }),
+    queryFn: () => fetchMorphAiErrors({ range, limit: 10 }),
   });
   const d = q.data;
+  const recent = d?.recent.slice(0, 10) ?? [];
 
   return (
     <div className="space-y-6">
@@ -94,7 +96,8 @@ function MorphErrorsPage() {
           </div>
           <div className="rounded-2xl border border-border bg-card p-5">
             <h2 className="font-heading text-lg font-semibold">So'nggi xatolar</h2>
-            {d.recent.length === 0 ? (
+            <p className="mt-1 text-sm text-muted-foreground">Eng oxirgi 10 ta</p>
+            {recent.length === 0 ? (
               <EmptyState className="mt-4" title="Hali xato yo'q" />
             ) : (
               <div className="mt-4 overflow-x-auto">
@@ -108,7 +111,7 @@ function MorphErrorsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {d.recent.map((r) => (
+                    {recent.map((r) => (
                       <TableRow key={r.id}>
                         <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                           {format(parseISO(r.created_at), "dd.MM HH:mm")}
@@ -124,6 +127,7 @@ function MorphErrorsPage() {
                     ))}
                   </TableBody>
                 </Table>
+                <MorphAiSeeAllLink kind="errors" />
               </div>
             )}
           </div>

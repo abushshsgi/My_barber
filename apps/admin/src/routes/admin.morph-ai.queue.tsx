@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { clearMorphAiQueue, fetchMorphAiQueue } from "@/lib/admin-api";
+import { MorphAiSeeAllLink } from "@/components/admin/MorphAiSeeAllLink";
 
 export const Route = createFileRoute("/admin/morph-ai/queue")({
   component: MorphQueuePage,
@@ -75,6 +76,7 @@ function MorphQueuePage() {
 
           <div className="rounded-2xl border border-border bg-card p-5">
             <h2 className="font-heading text-lg font-semibold">Navbatdagi joblar</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Eng oxirgi 10 ta</p>
             {d.queued_sample.length === 0 ? (
               <EmptyState className="mt-4" title="Navbat bo'sh" />
             ) : (
@@ -89,7 +91,7 @@ function MorphQueuePage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {d.queued_sample.map((j) => (
+                    {d.queued_sample.slice(0, 10).map((j) => (
                       <TableRow key={j.job_id}>
                         <TableCell className="font-mono text-xs">{j.job_id.slice(0, 10)}…</TableCell>
                         <TableCell>{j.user_id ?? "—"}</TableCell>
@@ -101,6 +103,7 @@ function MorphQueuePage() {
                     ))}
                   </TableBody>
                 </Table>
+                <MorphAiSeeAllLink kind="queue" />
               </div>
             )}
           </div>

@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from accounts.permissions import IsAdmin
 from ai.models import Hairstyle, MorphAiSettings
 from ai.morph_analytics import build_morph_ai_analytics
+from ai.morph_lists import LIST_KINDS, build_morph_list, build_morph_list_export_csv
 from ai.morph_ops import (
     build_budget_status,
     build_conversion,
@@ -145,6 +146,40 @@ class AdminMorphAiExportView(APIView):
         return build_export_csv(
             request.query_params.get("start"),
             request.query_params.get("end"),
+        )
+
+
+class AdminMorphAiListView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request, kind: str):
+        if kind not in LIST_KINDS:
+            return Response({"detail": "Noma'lum ro'yxat"}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            return Response(
+                build_morph_list(
+                    kind,
+                    start_raw=request.query_params.get("start"),
+                    end_raw=request.query_params.get("end"),
+                    page_raw=request.query_params.get("page"),
+                    page_size_raw=request.query_params.get("page_size"),
+                    request=request,
+                )
+            )
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminMorphAiListExportView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request, kind: str):
+        if kind not in LIST_KINDS:
+            return Response({"detail": "Noma'lum ro'yxat"}, status=status.HTTP_404_NOT_FOUND)
+        return build_morph_list_export_csv(
+            kind,
+            start_raw=request.query_params.get("start"),
+            end_raw=request.query_params.get("end"),
         )
 
 

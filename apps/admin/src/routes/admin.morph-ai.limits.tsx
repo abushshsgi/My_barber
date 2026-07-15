@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { fetchMorphAiLimits, patchMorphAiSettings } from "@/lib/admin-api";
+import { MorphAiSeeAllLink } from "@/components/admin/MorphAiSeeAllLink";
 import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/admin/morph-ai/limits")({
@@ -102,6 +103,7 @@ function MorphLimitsPage() {
 
           <div>
             <h2 className="font-heading text-lg font-semibold">Bugungi eng faol userlar</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Eng oxirgi / eng faol 10 ta</p>
             {d.heavy_users_today.length === 0 ? (
               <EmptyState className="mt-4" title="Hali faollik yo'q" />
             ) : (
@@ -116,7 +118,7 @@ function MorphLimitsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {d.heavy_users_today.map((u) => (
+                    {d.heavy_users_today.slice(0, 10).map((u) => (
                       <TableRow key={u.user_id}>
                         <TableCell>
                           <Link
@@ -141,6 +143,9 @@ function MorphLimitsPage() {
                     ))}
                   </TableBody>
                 </Table>
+                <div className="px-4 pb-3">
+                  <MorphAiSeeAllLink kind="active-users" />
+                </div>
               </div>
             )}
           </div>

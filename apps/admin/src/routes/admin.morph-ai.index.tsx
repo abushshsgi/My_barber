@@ -29,6 +29,7 @@ import { KPICard } from "@/components/admin/KPICard";
 import { CardSkeleton } from "@/components/admin/Skeletons";
 import { EmptyState } from "@/components/admin/EmptyState";
 import { LivePulseBadge } from "@/components/admin/LiveMetricHero";
+import { MorphAiSeeAllLink } from "@/components/admin/MorphAiSeeAllLink";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -101,12 +102,18 @@ function MorphAiPage() {
 
   const q = useQuery({
     queryKey: ["admin", "morph-ai", range.start, range.end],
-    queryFn: () => fetchMorphAiAnalytics({ range, limit: 80, top: 25 }),
+    queryFn: () => fetchMorphAiAnalytics({ range, limit: 10, top: 10 }),
     refetchInterval: 10_000,
     refetchIntervalInBackground: true,
   });
 
   const d = q.data;
+  const topUsers = d?.top_users.slice(0, 10) ?? [];
+  const recentRows = d?.recent.slice(0, 10) ?? [];
+  const dailyPreview = useMemo(
+    () => [...(d?.daily || [])].slice(-10).reverse(),
+    [d?.daily],
+  );
   const dailyChart = useMemo(
     () =>
       (d?.daily || []).map((row) => ({
@@ -201,34 +208,63 @@ function MorphAiPage() {
       {/* Charts */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <div className="rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6">
-          <h2 className="font-heading text-lg font-semibold">Kunlik xarajat</h2>
-          <p className="mt-1 text-sm text-muted-foreground">USD — Gemini / Morph AI chaqiruvlari</p>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="font-heading text-lg font-semibold">Kunlik xarajat</h2>
+              <p className="mt-1 text-sm text-muted-foreground">USD — Gemini / Morph AI chaqiruvlari</p>
+            </div>
+          </div>
           {q.isLoading || !d ? (
             <CardSkeleton className="mt-4 h-[260px]" />
           ) : dailyChart.length === 0 ? (
             <EmptyState title="Ma'lumot yo'q" description="Tanlangan davrda generatsiya bo'lmagan." />
           ) : (
-            <ChartContainer config={chartConfig} className="mt-4 aspect-auto h-[260px] w-full">
-              <AreaChart data={dailyChart} margin={{ top: 12, right: 12, left: -8, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="fillMorphCost" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--color-cost)" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="var(--color-cost)" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} />
-                <YAxis tickLine={false} axisLine={false} fontSize={12} width={48} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Area
-                  type="monotone"
-                  dataKey="cost"
-                  stroke="var(--color-cost)"
-                  fill="url(#fillMorphCost)"
-                  strokeWidth={2}
-                />
-              </AreaChart>
-            </ChartContainer>
+            <>
+              <ChartContainer config={chartConfig} className="mt-4 aspect-auto h-[260px] w-full">
+                <AreaChart data={dailyChart} margin={{ top: 12, right: 12, left: -8, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="fillMorphCost" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--color-cost)" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="var(--color-cost)" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                  <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} />
+                  <YAxis tickLine={false} axisLine={false} fontSize={12} width={48} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Area
+                    type="monotone"
+                    dataKey="cost"
+                    stroke="var(--color-cost)"
+                    fill="url(#fillMorphCost)"
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ChartContainer>
+              <div className="mt-4 overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Sana</TableHead>
+                      <TableHead className="text-right">Generatsiya</TableHead>
+                      <TableHead className="text-right">USD</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {dailyPreview.map((row) => (
+                      <TableRow key={row.date}>
+                        <TableCell>{row.date}</TableCell>
+                        <TableCell className="text-right tabular-nums">{row.generations}</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {formatUsd(row.cost_usd)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <MorphAiSeeAllLink kind="daily" />
+            </>
           )}
         </div>
 
@@ -265,7 +301,7 @@ function MorphAiPage() {
         </div>
         {q.isLoading || !d ? (
           <CardSkeleton className="mt-4 h-40" />
-        ) : d.top_users.length === 0 ? (
+        ) : topUsers.length === 0 ? (
           <EmptyState
             className="mt-4"
             title="Hali foydalanuvchi yo'q"
@@ -285,7 +321,7 @@ function MorphAiPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {d.top_users.map((u) => (
+                {topUsers.map((u) => (
                   <TableRow key={u.user_id}>
                     <TableCell>
                       <div className="min-w-0">
@@ -316,6 +352,7 @@ function MorphAiPage() {
                 ))}
               </TableBody>
             </Table>
+            <MorphAiSeeAllLink kind="spenders" />
           </div>
         )}
       </div>
@@ -324,11 +361,11 @@ function MorphAiPage() {
       <div className="rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6">
         <h2 className="font-heading text-lg font-semibold">So'nggi generatsiyalar</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Har bir so'rovning prompti, tokeni va narxi saqlanadi — batafsil ko'rish uchun qatorni bosing
+          Eng oxirgi 10 ta — to'liq tarix uchun Barchasi
         </p>
         {q.isLoading || !d ? (
           <CardSkeleton className="mt-4 h-48" />
-        ) : d.recent.length === 0 ? (
+        ) : recentRows.length === 0 ? (
           <EmptyState
             className="mt-4"
             title="Generatsiya yo'q"
@@ -349,7 +386,7 @@ function MorphAiPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {d.recent.map((row) => (
+                {recentRows.map((row) => (
                   <TableRow
                     key={row.id}
                     className={cn("cursor-pointer", row.prompt && "hover:bg-muted/40")}
@@ -396,6 +433,7 @@ function MorphAiPage() {
                 ))}
               </TableBody>
             </Table>
+            <MorphAiSeeAllLink kind="generations" />
           </div>
         )}
       </div>

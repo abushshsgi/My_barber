@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { fetchMorphAiBudget, patchMorphAiSettings } from "@/lib/admin-api";
+import { MorphAiSeeAllLink } from "@/components/admin/MorphAiSeeAllLink";
 
 export const Route = createFileRoute("/admin/morph-ai/budget")({
   component: MorphBudgetPage,
@@ -96,6 +97,7 @@ function MorphBudgetPage() {
           </div>
           <div className="rounded-2xl border border-border bg-card p-5">
             <h2 className="font-heading text-lg font-semibold">Kunlik xarajat</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Eng oxirgi 10 kun</p>
             {d.daily.length === 0 ? (
               <EmptyState className="mt-4" title="Ma'lumot yo'q" />
             ) : (
@@ -109,7 +111,7 @@ function MorphBudgetPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {d.daily.map((row) => (
+                    {[...d.daily].slice(-10).reverse().map((row) => (
                       <TableRow key={row.date}>
                         <TableCell>{row.date}</TableCell>
                         <TableCell className="text-right tabular-nums">{row.generations}</TableCell>
@@ -118,6 +120,7 @@ function MorphBudgetPage() {
                     ))}
                   </TableBody>
                 </Table>
+                <MorphAiSeeAllLink kind="daily" />
               </div>
             )}
           </div>
