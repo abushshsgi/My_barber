@@ -58,7 +58,7 @@ def mock_gallery_urls(slug: str, count: int = 2) -> list[str]:
 
 
 def resolve_salon_cover_url(salon, context: dict | None = None) -> str | None:
-    """DB dagi cover yoki mock uchun Pexels CDN."""
+    """Faqat DB dagi haqiqiy cover — stock/demo Pexels qaytarmaydi."""
     context = context or {}
     if salon.cover_image:
         try:
@@ -70,6 +70,4 @@ def resolve_salon_cover_url(salon, context: dict | None = None) -> str | None:
             if request is not None:
                 return request.build_absolute_uri(url)
             return url
-    if is_mock_salon(salon) and salon.slug:
-        return mock_cover_cdn_url(salon.slug)
     return None

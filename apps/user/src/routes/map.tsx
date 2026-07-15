@@ -17,7 +17,7 @@ import { useSalonsList, useSalonsNearby, useSalonSearch } from "@/hooks/use-salo
 import { useBarbersNearby, useBarberFind, useBarbersList } from "@/hooks/use-barbers";
 import { useMe } from "@/hooks/use-me";
 import { shortPrice, type Salon } from "@/lib/mock-data";
-import { getSalonCoverUrl } from "@/lib/cover-images";
+import { PLACEHOLDER_SALON } from "@/lib/cover-images";
 import { applyMapBarberFilters } from "@/lib/map-barber-filters";
 import {
   DEFAULT_MAP_FILTERS,
@@ -55,11 +55,25 @@ function mapPinLabel(salon: Salon): string {
   return "—";
 }
 function toMapMarker(salon: Salon, ctaLabel: string): SalonMapMarker {
-  const fallback = getSalonCoverUrl(salon.coverSeed, salon.category);
-  const alt = getSalonCoverUrl(`${salon.coverSeed}-alt`, salon.category);
-  const cover = salon.coverUrl?.trim() || fallback;
-  const portfolio = (salon.portfolio ?? []).map((u) => u.trim()).filter(Boolean);
-  const imageUrls = [cover, ...portfolio, alt].filter((url, i, arr) => arr.indexOf(url) === i);
+  const fallback = PLACEHOLDER_SALON;
+  const coverRaw = salon.coverUrl?.trim() || "";
+  const cover =
+    coverRaw &&
+    !coverRaw.includes("/covers/pexels/") &&
+    !coverRaw.includes("images.pexels.com") &&
+    !coverRaw.includes("picsum.photos")
+      ? coverRaw
+      : fallback;
+  const portfolio = (salon.portfolio ?? [])
+    .map((u) => u.trim())
+    .filter(
+      (url) =>
+        Boolean(url) &&
+        !url.includes("/covers/pexels/") &&
+        !url.includes("images.pexels.com") &&
+        !url.includes("picsum.photos"),
+    );
+  const imageUrls = [cover, ...portfolio].filter((url, i, arr) => arr.indexOf(url) === i);
 
   return {
     id: salon.id,

@@ -1,9 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { Heart, Star } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Salon } from "@/lib/mock-data";
 import { shortPrice } from "@/lib/mock-data";
-import { getSalonCoverUrl } from "@/lib/cover-images";
+import { PLACEHOLDER_SALON } from "@/lib/cover-images";
 import { isTopSalon } from "@/lib/salon-top";
 import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
@@ -21,12 +21,15 @@ type Props = {
 export function DesktopSalonCard({ salon, variant = "grid", elevated = false, className }: Props) {
   const { isFav, toggle } = useFavorites();
   const fav = isFav(salon.id);
-  const fallbackCover = getSalonCoverUrl(salon.coverSeed, salon.category);
-  const [cover, setCover] = useState(salon.coverUrl?.trim() || fallbackCover);
+  const [cover, setCover] = useState(salon.coverUrl?.trim() || PLACEHOLDER_SALON);
   const isGuestFavorite = isTopSalon(salon);
 
+  useEffect(() => {
+    setCover(salon.coverUrl?.trim() || PLACEHOLDER_SALON);
+  }, [salon.coverUrl]);
+
   const handleCoverError = () => {
-    if (cover !== fallbackCover) setCover(fallbackCover);
+    if (cover !== PLACEHOLDER_SALON) setCover(PLACEHOLDER_SALON);
   };
 
   const coverImgProps = {

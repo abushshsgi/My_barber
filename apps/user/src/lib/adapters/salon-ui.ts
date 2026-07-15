@@ -1,16 +1,16 @@
 import type { Salon as SharedSalon } from "@mybarber/shared/types";
 import type { Salon as AppSalon } from "@/lib/mock-data";
-import { getSalonCoverUrl } from "@/lib/cover-images";
+import { PLACEHOLDER_SALON } from "@/lib/cover-images";
 
 /** apps/user Salon → @mybarber/user-ui SalonCardPremium uchun. */
 export function toUiSalon(salon: AppSalon): SharedSalon {
-  const coverImage = salon.coverUrl?.trim() || getSalonCoverUrl(salon.coverSeed, salon.category);
+  const coverImage = salon.coverUrl?.trim() || PLACEHOLDER_SALON;
   return {
     id: salon.id,
     name: salon.name,
     description: salon.about,
     coverImage,
-    gallery: salon.portfolio.length > 0 ? salon.portfolio : [coverImage],
+    gallery: salon.portfolio.length > 0 ? salon.portfolio : coverImage !== PLACEHOLDER_SALON ? [coverImage] : [],
     rating: salon.rating,
     reviewCount: salon.reviewCount,
     distance: salon.distanceKm,

@@ -27,11 +27,22 @@ from salons.mock.cover_urls import resolve_salon_cover_url
 
 
 def _salon_cover_url(salon, context: dict | None = None) -> str | None:
-    """Mock Pexels URL yoki DB cover; yo‘qolgan fayl 500 bermasin."""
+    """DB cover, yo‘q bo‘lsa gallerydagi birinchi rasm; stock/demo yo‘q."""
     resolved = resolve_salon_cover_url(salon, context)
     if resolved:
         return resolved
     if not salon.cover_image:
+        first = salon.images.order_by("sort_order", "id").first()
+        if first and first.image:
+            try:
+                url = first.image.url
+            except (ValueError, OSError):
+                url = None
+            if url:
+                request = (context or {}).get("request")
+                if request is not None:
+                    return request.build_absolute_uri(url)
+                return url
         return None
     try:
         url = salon.cover_image.url

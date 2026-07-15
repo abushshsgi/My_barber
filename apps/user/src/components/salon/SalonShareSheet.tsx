@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/drawer";
 import { salonCoverGradient } from "@/components/offers/offers-shared";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getSalonCoverUrl } from "@/lib/cover-images";
+import { PLACEHOLDER_SALON } from "@/lib/cover-images";
 import type { Salon } from "@/lib/mock-data";
 import { resolveMediaUrl } from "@/lib/media-url";
 import { salonPublicUrl, shareSalon, type ShareSalonResult } from "@/lib/share-salon";
@@ -72,7 +72,7 @@ function SalonShareContent({ salon, onDone }: { salon: ShareSalon; onDone?: () =
 
   const coverSrc = useMemo(() => {
     if (salon.coverUrl) return resolveMediaUrl(salon.coverUrl) ?? salon.coverUrl;
-    return getSalonCoverUrl(salon.coverSeed, salon.category);
+    return PLACEHOLDER_SALON;
   }, [salon]);
 
   const copyLink = useCallback(async () => {

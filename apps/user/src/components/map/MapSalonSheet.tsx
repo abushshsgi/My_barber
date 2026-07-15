@@ -7,7 +7,7 @@ import { MapFilters } from "@/components/map/MapFilters";
 import type { AudienceFilter } from "@/hooks/use-audience";
 import type { Salon } from "@/lib/mock-data";
 import { shortPrice } from "@/lib/mock-data";
-import { getSalonCoverUrl } from "@/lib/cover-images";
+import { PLACEHOLDER_SALON } from "@/lib/cover-images";
 import { formatDistanceKm } from "@/lib/map-utils";
 import type { MapFiltersState } from "@/lib/map-filters";
 import { cn } from "@/lib/utils";
@@ -38,22 +38,12 @@ type Props = {
 };
 
 function SalonCoverImage({ salon, className }: { salon: Salon; className?: string }) {
-  const fallback = getSalonCoverUrl(salon.coverSeed, salon.category);
-  const secondary = getSalonCoverUrl(`${salon.coverSeed}-alt`, salon.category);
-  const primary = salon.coverUrl?.trim() || fallback;
+  const primary = salon.coverUrl?.trim() || PLACEHOLDER_SALON;
   const [src, setSrc] = useState(primary);
-  const stepRef = useRef(0);
 
   useEffect(() => {
-    stepRef.current = 0;
-    setSrc(salon.coverUrl?.trim() || fallback);
-  }, [salon.coverUrl, salon.coverSeed, fallback]);
-
-  const onError = () => {
-    stepRef.current += 1;
-    if (stepRef.current === 1) setSrc(fallback);
-    else if (stepRef.current === 2) setSrc(secondary);
-  };
+    setSrc(salon.coverUrl?.trim() || PLACEHOLDER_SALON);
+  }, [salon.coverUrl]);
 
   return (
     <div className={cn("h-full w-full overflow-hidden bg-[#E8E8E8]", className)}>
@@ -63,7 +53,9 @@ function SalonCoverImage({ salon, className }: { salon: Salon; className?: strin
         loading="lazy"
         decoding="async"
         referrerPolicy="no-referrer"
-        onError={onError}
+        onError={() => {
+          if (src !== PLACEHOLDER_SALON) setSrc(PLACEHOLDER_SALON);
+        }}
         className="h-full w-full object-cover object-center"
       />
     </div>

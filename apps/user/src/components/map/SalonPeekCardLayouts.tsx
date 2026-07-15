@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, MapPin, Star } from "lucide-react";
-import { useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
+import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
 import { shortPrice } from "@/lib/mock-data";
-import { getSalonCoverUrl } from "@/lib/cover-images";
+import { PLACEHOLDER_SALON } from "@/lib/cover-images";
 import { formatDistanceKm } from "@/lib/map-utils";
 import { cn } from "@/lib/utils";
 
@@ -24,22 +24,12 @@ export const SALON_PEEK_VARIANT_LABELS: Record<
 type LayoutProps = { salon: Salon };
 
 function SalonPeekCover({ salon, className }: { salon: Salon; className?: string }) {
-  const fallback = getSalonCoverUrl(salon.coverSeed, salon.category);
-  const secondary = getSalonCoverUrl(`${salon.coverSeed}-alt`, salon.category);
-  const primary = salon.coverUrl?.trim() || fallback;
+  const primary = salon.coverUrl?.trim() || PLACEHOLDER_SALON;
   const [src, setSrc] = useState(primary);
-  const stepRef = useRef(0);
 
   useEffect(() => {
-    stepRef.current = 0;
-    setSrc(salon.coverUrl?.trim() || fallback);
-  }, [salon.coverUrl, salon.coverSeed, fallback]);
-
-  const onError = () => {
-    stepRef.current += 1;
-    if (stepRef.current === 1) setSrc(fallback);
-    else if (stepRef.current === 2) setSrc(secondary);
-  };
+    setSrc(salon.coverUrl?.trim() || PLACEHOLDER_SALON);
+  }, [salon.coverUrl]);
 
   return (
     <div className={cn("overflow-hidden bg-[#E8E8E8]", className)}>
@@ -49,7 +39,9 @@ function SalonPeekCover({ salon, className }: { salon: Salon; className?: string
         loading="lazy"
         decoding="async"
         referrerPolicy="no-referrer"
-        onError={onError}
+        onError={() => {
+          if (src !== PLACEHOLDER_SALON) setSrc(PLACEHOLDER_SALON);
+        }}
         className="h-full w-full object-cover object-center"
       />
     </div>

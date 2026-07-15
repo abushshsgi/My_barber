@@ -11,7 +11,7 @@ import {
 import type { AudienceFilter } from "@/hooks/use-audience";
 import type { Salon } from "@/lib/mock-data";
 import { shortPrice } from "@/lib/mock-data";
-import { getSalonCoverUrl } from "@/lib/cover-images";
+import { PLACEHOLDER_SALON } from "@/lib/cover-images";
 import { useFavorites } from "@/hooks/use-favorites";
 import { formatDistanceKm } from "@/lib/map-utils";
 import type { MapFiltersState } from "@/lib/map-filters";
@@ -42,9 +42,14 @@ function salonDescription(salon: Salon): string {
 }
 
 function SalonCoverImage({ salon, className }: { salon: Salon; className?: string }) {
-  const fallback = getSalonCoverUrl(salon.coverSeed, salon.category);
   const raw = salon.coverUrl?.trim();
-  const src = raw && !raw.includes("picsum.photos") ? raw : fallback;
+  const src =
+    raw &&
+    !raw.includes("picsum.photos") &&
+    !raw.includes("/covers/pexels/") &&
+    !raw.includes("images.pexels.com")
+      ? raw
+      : PLACEHOLDER_SALON;
 
   return (
     <div className={cn("relative h-full w-full overflow-hidden bg-[#E8E8E8]", className)}>
@@ -57,7 +62,7 @@ function SalonCoverImage({ salon, className }: { salon: Salon; className?: strin
         className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-[1.02]"
         onError={(e) => {
           const img = e.currentTarget;
-          if (img.src !== fallback) img.src = fallback;
+          if (!img.src.endsWith(PLACEHOLDER_SALON)) img.src = PLACEHOLDER_SALON;
         }}
       />
     </div>

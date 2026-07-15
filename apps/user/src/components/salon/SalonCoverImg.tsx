@@ -1,6 +1,6 @@
 import { useEffect, useState, type ImgHTMLAttributes } from "react";
 import type { Category } from "@/lib/mock-data";
-import { getSalonCoverUrl } from "@/lib/cover-images";
+import { PLACEHOLDER_SALON } from "@/lib/cover-images";
 
 type Props = ImgHTMLAttributes<HTMLImageElement> & {
   src?: string | null;
@@ -8,9 +8,9 @@ type Props = ImgHTMLAttributes<HTMLImageElement> & {
   category?: Category;
 };
 
-/** Salon cover — 404 yoki buzilgan URL da placeholder ga o'tadi. */
-export function SalonCoverImg({ src, seed, category, onError, ...props }: Props) {
-  const fallback = getSalonCoverUrl(seed, category);
+/** Salon cover — 404 yoki buzilgan URL da neytral placeholder. */
+export function SalonCoverImg({ src, seed: _seed, category: _category, onError, ...props }: Props) {
+  const fallback = PLACEHOLDER_SALON;
   const [current, setCurrent] = useState(() => src?.trim() || fallback);
 
   useEffect(() => {

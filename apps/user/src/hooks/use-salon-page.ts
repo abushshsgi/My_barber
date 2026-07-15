@@ -72,7 +72,13 @@ export function useSalonPage(id: string) {
         ...base,
         staff: staffMapped,
         reviews: resolvedReviews,
-        portfolio: portfolio.data?.length ? portfolio.data : base.portfolio,
+        // Gallery (uploaded) + booking work photos — replace qilmasdan birlashtirish
+        portfolio: (() => {
+          const gallery = base.portfolio ?? [];
+          const work = portfolio.data ?? [];
+          const merged = [...gallery, ...work].map((u) => u?.trim()).filter(Boolean) as string[];
+          return merged.filter((url, i, arr) => arr.indexOf(url) === i);
+        })(),
         ratingSummary: resolvedSummary,
       }
     : null;

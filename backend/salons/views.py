@@ -587,9 +587,17 @@ class SalonViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_403_FORBIDDEN)
         images = request.FILES.getlist("images")
         order = salon.images.count()
+        first_created = None
         for img in images:
-            SalonImage.objects.create(salon=salon, image=img, sort_order=order)
+            created = SalonImage.objects.create(salon=salon, image=img, sort_order=order)
+            if first_created is None:
+                first_created = created
             order += 1
+        # Cover bo‘sh bo‘lsa, gallerydagi birinchi rasmni cover qilib qo‘yamiz
+        if first_created is not None and not salon.cover_image:
+            with first_created.image.open("rb") as src:
+                name = first_created.image.name.split("/")[-1] or "cover.jpg"
+                salon.cover_image.save(name, File(src), save=True)
         return Response({"status": "ok"})
 
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticatedBarberAware])

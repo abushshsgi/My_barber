@@ -97,14 +97,21 @@ export function mapApiServices(
 export function mapSalonDetail(api: ApiSalonDetail, distanceKm = 0): Salon {
   const { from, to } = priceRange(api.services);
   const base = mapSalonList(api, distanceKm);
+  const gallery = (api.images ?? [])
+    .map((img) => img.image)
+    .map((u) => u?.trim())
+    .filter(Boolean) as string[];
+  const firstGallery = gallery[0] ? resolveMediaUrl(gallery[0]) ?? gallery[0] : null;
+  const coverFromApi = resolveMediaUrl(api.cover_image);
   return {
     ...base,
     about: api.description || "",
     priceFrom: from,
     priceTo: to,
-    coverUrl: base.coverUrl,
+    // Cover yo‘q bo‘lsa gallerydagi birinchi haqiqiy rasm
+    coverUrl: resolveCoverUrl(coverFromApi || firstGallery, base.coverSeed, base.category),
     services: mapApiServices(api.services ?? []),
-    portfolio: (api.images ?? []).map((img) => img.image),
+    portfolio: gallery,
     amenities: (api.amenities ?? []).map((a) => ({
       code: a.code,
       icon: a.icon,

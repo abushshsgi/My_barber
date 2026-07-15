@@ -8,10 +8,6 @@ const CATEGORY_PHOTOS: Record<Category, number> = {
   nails: 4968391,
 };
 
-const SEED_PHOTO_IDS = [
-  3992859, 2523210, 3992860, 2866115, 1453001, 3992862, 3992863, 3992864,
-] as const;
-
 /** API yoki tashqi Pexels URL ni same-origin proxy yo‘liga aylantiradi. */
 export function normalizeCoverUrl(url: string | null | undefined): string | null {
   const raw = url?.trim();
@@ -21,44 +17,48 @@ export function normalizeCoverUrl(url: string | null | undefined): string | null
   return raw;
 }
 
-function photoIdForSeed(seed: string, category?: Category): number {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i += 1) {
-    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
-  }
-  if (seed) {
-    return SEED_PHOTO_IDS[Math.abs(hash) % SEED_PHOTO_IDS.length]!;
-  }
-  return category ? CATEGORY_PHOTOS[category] : SEED_PHOTO_IDS[0]!;
+function isStockCoverUrl(url: string): boolean {
+  const u = url.toLowerCase();
+  return (
+    u.includes("/covers/pexels/") ||
+    u.includes("images.pexels.com") ||
+    u.includes("picsum.photos")
+  );
 }
 
-/** Katalog/kategoriya bo‘yicha vizual fallback — placeholder o‘rniga Pexels proxy. */
+/** Salon cover fallback — faqat neytral placeholder (stock/demo yo‘q). */
 export function getSalonCoverUrl(
-  seed?: string,
-  category?: Category,
-  width = 900,
+  _seed?: string,
+  _category?: Category,
+  _width = 900,
 ): string {
-  const photoId = photoIdForSeed(seed?.trim() || "salon", category);
-  return pexelsCoverUrl(photoId, width);
+  return PLACEHOLDER_SALON;
 }
 
-/** Salon kartochkasi uchun — API media yoki seed asosida fallback. */
+/** Salon kartochkasi uchun — faqat haqiqiy API media; stock/demo rad etiladi. */
 export function resolveCoverUrl(
   apiUrl: string | null | undefined,
-  seed?: string,
-  category?: Category,
+  _seed?: string,
+  _category?: Category,
 ): string {
   const raw = apiUrl?.trim() ?? "";
-  if (raw) {
-    const normalized = normalizeCoverUrl(raw) ?? raw;
-    if (normalized.startsWith("/media/") && normalized.length > "/media/".length) {
-      return normalized;
-    }
-    if (normalized.startsWith("/covers/") || normalized.startsWith("http")) {
-      return normalized;
-    }
+  if (!raw || isStockCoverUrl(raw)) {
+    return PLACEHOLDER_SALON;
   }
-  return getSalonCoverUrl(seed, category);
+  const normalized = normalizeCoverUrl(raw) ?? raw;
+  if (isStockCoverUrl(normalized)) {
+    return PLACEHOLDER_SALON;
+  }
+  if (normalized.startsWith("/media/") && normalized.length > "/media/".length) {
+    return normalized;
+  }
+  if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
+    return normalized;
+  }
+  if (normalized.startsWith("/")) {
+    return normalized;
+  }
+  return PLACEHOLDER_SALON;
 }
 
 const TREND_SEEDS = [

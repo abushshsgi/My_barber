@@ -1,13 +1,11 @@
 import { Heart, MapPin, Share2, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
-import { getSalonCoverUrl } from "@/lib/cover-images";
-import { resolveMediaUrl } from "@/lib/media-url";
 import { filterSalonCatalogServices } from "@/lib/salon-services";
 import { scrollToSalonSection } from "@/lib/salon-scroll";
 import { DESKTOP_BAZAAR_INSET } from "@/lib/desktop-bazaar-layout";
 import { SalonBookingAside } from "@/components/salon/SalonBookingAside";
-import { SalonCoverImg } from "@/components/salon/SalonCoverImg";
+import { SalonHeroGallery } from "@/components/salon/SalonHeroGallery";
 import { SalonPageSections } from "@/components/salon/SalonPageSections";
 import { SalonSectionNav } from "@/components/salon/SalonSectionNav";
 import { cn } from "@/lib/utils";
@@ -28,22 +26,15 @@ export function SalonDesktopPage({
   reviewsAreMock?: boolean;
 }) {
   const { t } = useTranslation();
-  const cover =
-    (salon.coverUrl ? resolveMediaUrl(salon.coverUrl) ?? salon.coverUrl : null) ??
-    getSalonCoverUrl(salon.coverSeed, salon.category);
   const ownerServiceCount = filterSalonCatalogServices(salon.services).length;
 
   return (
     <div className="w-full">
       <div className="relative h-[min(56vh,560px)] w-full overflow-hidden bg-muted">
-        <SalonCoverImg
-          src={cover}
-          seed={salon.coverSeed}
-          category={salon.category}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/10" />
+        <div className="absolute inset-0 [&_>div]:h-full [&_>div]:rounded-none">
+          <SalonHeroGallery salon={salon} variant="desktop" />
+        </div>
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/10" />
 
         <div className={cn("absolute inset-x-0 bottom-0 pb-8 pt-16", DESKTOP_BAZAAR_INSET)}>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
