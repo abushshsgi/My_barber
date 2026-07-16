@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { HomeDesktopRoot } from "@/components/desktop/home/HomeDesktopRoot";
 import { HomeVariantEditorial } from "@/components/home/HomeVariantEditorial";
@@ -13,8 +13,8 @@ export const Route = createFileRoute("/")({
     if (typeof window === "undefined") return;
     const code = parseReferralFromLocationSearch(window.location.search);
     if (!code) return;
+    // Referral kodini saqlaymiz; login majburiy emas — keyinroq auth'da qo'llaniladi.
     stashReferralCode(code);
-    throw redirect({ to: "/auth", search: { ref: code } });
   },
   head: () => ({
     meta: [

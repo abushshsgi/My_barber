@@ -2,6 +2,7 @@ import { resolveDemoApiOrigin } from "@mybarber/shared/demo-env";
 import { migrateFaceProfileOnLogout } from "@/lib/face-profile";
 import { resolveFetchBase } from "@/lib/api/base-url";
 import { isPublicCustomerApiPath } from "@/lib/public-api-paths";
+import { pathRequiresAuth } from "@/lib/auth-routes";
 import { clearQueryClientCache } from "@/lib/query-client";
 import { migrateUserPrefsOnLogout } from "@/lib/user-prefs";
 
@@ -201,7 +202,11 @@ function redirectToAuthIfNeeded() {
   if (typeof window === "undefined") return;
   const path = window.location.pathname;
   if (path === "/auth" || path.startsWith("/auth/")) return;
-  window.location.assign("/auth");
+  // Ochiq sahifalarda sessiyani tozalash kifoya — login'ga majburan itarmaymiz.
+  if (!pathRequiresAuth(path)) return;
+  const search = window.location.search || "";
+  const redirect = encodeURIComponent(`${path}${search}`);
+  window.location.assign(`/auth?redirect=${redirect}`);
 }
 
 function readActiveUserIdBeforeClear(): number | null {

@@ -13,6 +13,7 @@ function isAuthQueryError(error: unknown): boolean {
 
 function onQueryError(error: unknown) {
   if (isAuthQueryError(error)) {
+    // Sessiyani tozalaydi; ochiq sahifadan /auth ga itarmaydi (pathRequiresAuth).
     handleAuthFailure();
   }
 }
