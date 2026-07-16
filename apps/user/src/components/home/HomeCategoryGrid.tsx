@@ -16,6 +16,8 @@ type Props = {
   className?: string;
   titleClassName?: string;
   compact?: boolean;
+  /** Mobile home: full-width horizontal rows instead of 3-col grid. */
+  variant?: "grid" | "rows";
 };
 
 function CategoryGlassCard({
@@ -77,36 +79,86 @@ function CategoryGlassCard({
   );
 }
 
-export function HomeCategoryGrid({ className, titleClassName, compact }: Props) {
+function CategoryRow({
+  category,
+  label,
+  hint,
+}: {
+  category: Category;
+  label: string;
+  hint: string;
+}) {
+  return (
+    <Link
+      to="/category/$category"
+      params={{ category }}
+      preload="intent"
+      className="group relative flex min-h-[5.5rem] overflow-hidden rounded-2xl bg-muted active:opacity-95"
+    >
+      <img
+        src={getCategoryCoverUrl(category, 960)}
+        alt=""
+        loading="lazy"
+        className="absolute inset-0 size-full object-cover transition duration-500 group-active:scale-[1.02]"
+      />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-black/10" />
+      <div className="relative z-[1] flex w-full items-center justify-between gap-3 px-4 py-4">
+        <div className="min-w-0">
+          <p className="truncate text-lg font-bold text-white">{label}</p>
+          <p className="mt-0.5 truncate text-xs text-white/75">{hint}</p>
+        </div>
+        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-white/15 text-white backdrop-blur-sm">
+          <ChevronRight className="size-4" strokeWidth={2.5} />
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+export function HomeCategoryGrid({ className, titleClassName, compact, variant = "grid" }: Props) {
   const { t } = useTranslation();
+  const isRows = variant === "rows";
 
   return (
     <section className={cn("min-w-0", className)}>
       <h2
         className={cn(
-          "mb-4 font-bold tracking-tight",
-          compact ? "text-base" : "text-xl xl:text-2xl",
+          "mb-3 font-bold tracking-tight",
+          isRows || compact ? "text-base" : "mb-4 text-xl xl:text-2xl",
           titleClassName,
         )}
       >
         {t("home.sections.browseCategories")}
       </h2>
-      <div
-        className={cn(
-          "grid w-full gap-3",
-          compact ? "grid-cols-3 gap-2.5" : "grid-cols-1 sm:grid-cols-3 sm:gap-4",
-        )}
-      >
-        {HOME_CATEGORY_KEYS.map((category) => (
-          <CategoryGlassCard
-            key={category}
-            category={category}
-            label={t(`home.categories.${category}`)}
-            hint={t(CATEGORY_HINT_KEYS[category])}
-            compact={compact}
-          />
-        ))}
-      </div>
+      {isRows ? (
+        <div className="flex flex-col gap-2.5">
+          {HOME_CATEGORY_KEYS.map((category) => (
+            <CategoryRow
+              key={category}
+              category={category}
+              label={t(`home.categories.${category}`)}
+              hint={t(CATEGORY_HINT_KEYS[category])}
+            />
+          ))}
+        </div>
+      ) : (
+        <div
+          className={cn(
+            "grid w-full gap-3",
+            compact ? "grid-cols-3 gap-2.5" : "grid-cols-1 sm:grid-cols-3 sm:gap-4",
+          )}
+        >
+          {HOME_CATEGORY_KEYS.map((category) => (
+            <CategoryGlassCard
+              key={category}
+              category={category}
+              label={t(`home.categories.${category}`)}
+              hint={t(CATEGORY_HINT_KEYS[category])}
+              compact={compact}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

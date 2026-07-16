@@ -1,32 +1,26 @@
 import { motion } from "framer-motion";
 import type { HomeData } from "@/components/home/useHomeData";
 import { HomeUnifiedSearchResults, HomeTrendingStrip } from "@/components/home/HomeBlocks";
-import { HomeMobileTopBar } from "@/components/home/HomeMobileTopBar";
 import {
   HomeMobileBookingsCta,
   HomeMobileCategories,
   HomeMobileFeatured,
-  HomeMobileHero,
   HomeMobileMixedDiscovery,
   HomeMobileNearby,
-  HomeMobileQuickActions,
   MotionSection,
   stagger,
 } from "@/components/home/HomeMobileSections";
 
 type Props = { data: HomeData };
 
-/** Mobil bosh sahifa — yengil hero, ixcham kashfiyot. */
+/** Mobil bosh sahifa — katta snap kartochkalar, yengil scroll. */
 export function HomeMobilePage({ data }: Props) {
   const nearby = data.filtered.slice(0, 12);
 
   return (
-    <div className="min-w-0 overflow-x-clip">
-      <HomeMobileTopBar />
-
+    <div className="min-w-0 pt-[max(env(safe-area-inset-top),0.5rem)]">
       {data.searchActive ? (
         <div className="pt-1">
-          <HomeMobileHero {...data} />
           <HomeUnifiedSearchResults
             searchActive={data.searchActive}
             salons={data.filtered}
@@ -36,19 +30,11 @@ export function HomeMobilePage({ data }: Props) {
         </div>
       ) : (
         <motion.div
-          className="space-y-4 pb-2 pt-1"
+          className="space-y-6 pb-2 pt-2"
           variants={stagger}
           initial="hidden"
           animate="show"
         >
-          <MotionSection>
-            <HomeMobileHero {...data} />
-          </MotionSection>
-
-          <MotionSection>
-            <HomeMobileQuickActions />
-          </MotionSection>
-
           <MotionSection>
             <HomeMobileFeatured salons={data.filtered} />
           </MotionSection>

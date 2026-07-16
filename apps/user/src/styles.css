@@ -126,6 +126,8 @@
     font-feature-settings: "ss01", "cv11";
     overflow-x: clip;
     overscroll-behavior-x: none;
+    /* Mobil vertikal scroll silliqroq; gorizontal scrollerlar bilan to'qnashmasin */
+    -webkit-overflow-scrolling: touch;
   }
 
   #root {

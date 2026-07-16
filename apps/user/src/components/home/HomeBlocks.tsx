@@ -257,7 +257,7 @@ export function HomeTrendingStrip({
       </div>
       <div
         className={cn(
-          "no-scrollbar flex touch-pan-x gap-3 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]",
+          "no-scrollbar flex gap-3 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]",
           compact ? "px-4 pb-1" : "px-5",
         )}
       >
