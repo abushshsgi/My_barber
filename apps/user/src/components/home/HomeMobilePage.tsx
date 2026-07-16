@@ -1,50 +1,39 @@
 import { motion } from "framer-motion";
 import type { HomeData } from "@/components/home/useHomeData";
-import { HomeUnifiedSearchResults, HomeTrendingStrip } from "@/components/home/HomeBlocks";
+import { HomeUnifiedSearchResults } from "@/components/home/HomeBlocks";
 import {
-  HomeMobileBookingsCta,
   HomeMobileCategories,
   HomeMobileFeatured,
-  HomeMobileMixedDiscovery,
   HomeMobileNearby,
+  HomeMobileWordmark,
   MotionSection,
   stagger,
 } from "@/components/home/HomeMobileSections";
 
 type Props = { data: HomeData };
 
-/** Mobil bosh sahifa — katta snap kartochkalar, yengil scroll. */
+/** Mobil home — ixcham, professional: brand + kategoriyalar + top + feed. */
 export function HomeMobilePage({ data }: Props) {
-  const nearby = data.filtered.slice(0, 12);
+  const nearby = data.filtered.slice(0, 10);
 
   return (
-    <div className="min-w-0 pt-[max(env(safe-area-inset-top),0.5rem)]">
+    <div className="min-w-0 pt-[max(env(safe-area-inset-top),0.75rem)]">
       {data.searchActive ? (
-        <div className="pt-1">
-          <HomeUnifiedSearchResults
-            searchActive={data.searchActive}
-            salons={data.filtered}
-            barbers={data.filteredBarbers}
-            loading={data.loading}
-          />
-        </div>
+        <HomeUnifiedSearchResults
+          searchActive={data.searchActive}
+          salons={data.filtered}
+          barbers={data.filteredBarbers}
+          loading={data.loading}
+        />
       ) : (
         <motion.div
-          className="space-y-6 pb-2 pt-2"
+          className="space-y-8 pb-4"
           variants={stagger}
           initial="hidden"
           animate="show"
         >
           <MotionSection>
-            <HomeMobileFeatured salons={data.filtered} />
-          </MotionSection>
-
-          <MotionSection>
-            <HomeMobileMixedDiscovery items={data.mixedDiscovery} />
-          </MotionSection>
-
-          <MotionSection>
-            <HomeTrendingStrip trending={data.exploreRow} compact />
+            <HomeMobileWordmark />
           </MotionSection>
 
           <MotionSection>
@@ -52,11 +41,11 @@ export function HomeMobilePage({ data }: Props) {
           </MotionSection>
 
           <MotionSection>
-            <HomeMobileNearby salons={nearby} />
+            <HomeMobileFeatured salons={data.filtered} />
           </MotionSection>
 
           <MotionSection>
-            <HomeMobileBookingsCta />
+            <HomeMobileNearby salons={nearby} />
           </MotionSection>
         </motion.div>
       )}
