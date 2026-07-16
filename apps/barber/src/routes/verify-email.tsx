@@ -9,6 +9,7 @@ import {
   RESEND_VERIFICATION_EMAIL_TIMEOUT_MS,
 } from "@/lib/api";
 import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
+import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import { Button } from "@/components/ui/button";
 import { invalidateOnboardingAfterActivationChange } from "@/lib/onboarding-status-cache";
 
@@ -103,11 +104,11 @@ function PartnerVerifyEmailPage() {
   return (
     <div className="auth-viewport flex min-h-[100dvh] flex-col items-center justify-center bg-[#f4f4f5] px-5 py-10">
       <div className="w-full max-w-md rounded-2xl border border-border/60 bg-white p-8 text-center shadow-sm">
-        <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-          <Mail className="size-5" />
+        <div className="mx-auto mb-4 flex justify-center">
+          <MysaloonLogo size="lg" />
         </div>
         <h1 className="font-heading text-xl font-semibold text-foreground">Email tasdiqlash</h1>
-        <p className="mt-1 text-sm text-muted-foreground">MySaloon Partner</p>
+        <p className="mt-1 text-sm text-muted-foreground">Mysaloon Partner</p>
 
         {status === "loading" && (
           <div className="mt-8 space-y-3">

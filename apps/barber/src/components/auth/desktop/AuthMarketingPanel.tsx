@@ -18,12 +18,11 @@ import {
 } from "lucide-react";
 import type { SignupFlow } from "@/lib/auth-ui";
 import { AUTH_FRAMER_CONFIG } from "@/lib/auth-framer-variants";
-import { ACCENT_STYLES, AUTH_ACCENT } from "@/lib/auth-desktop-variant";
 import { AUTH_FLOW_MARKETING, type AuthFlowMarketingContent } from "@/lib/barber-flow-config";
+import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import { cn } from "@/lib/utils";
 
 const c = AUTH_FRAMER_CONFIG;
-const a = ACCENT_STYLES[AUTH_ACCENT];
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Store,
@@ -87,12 +86,7 @@ export function AuthMarketingPanel({ tab, flow }: Props) {
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           >
             <div className="mx-10 flex flex-wrap items-center gap-x-3 gap-y-2 text-left">
-              <div className="flex items-center gap-2.5">
-                <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-xl text-primary-foreground shadow-sm sm:size-10", a.logo)}>
-                  <Scissors className="size-3.5 sm:size-4" />
-                </div>
-                <span className="text-[15px] font-bold text-foreground sm:text-base">MySaloon Partner</span>
-              </div>
+              <MysaloonLogo size="md" subtitle="Partner" />
               <span className="rounded-full bg-black/5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-zinc-600 sm:text-xs">
                 {content.badge}
               </span>

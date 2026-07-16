@@ -3,6 +3,7 @@ import { Gift } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import {
   useGiftDesigns,
   useSendGift,
@@ -48,7 +49,7 @@ function GiftCardPreview({
     >
       <div className="flex items-center justify-between">
         <Gift className="h-5 w-5" style={{ color: accent }} />
-        <p className="text-[10px] font-bold uppercase tracking-[0.22em] opacity-60">mysaloon.uz</p>
+        <MysaloonLogo variant="wordmark" size="xs" tone="inherit" className="opacity-70" />
       </div>
       <p className="mt-2 text-xs font-semibold opacity-70">
         {design?.name_uz || design?.name || t("walletPage.giftPanel.pickDesign", { defaultValue: "Dizayn" })}

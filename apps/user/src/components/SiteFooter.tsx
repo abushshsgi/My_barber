@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Instagram, Send } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import { FooterLanguageSwitch } from "@/components/footer/FooterLanguageSwitch";
 import { SiteFooterSchema } from "@/components/footer/SiteFooterSchema";
 import { DESKTOP_SHELL_INSET } from "@/lib/desktop-bazaar-layout";
@@ -121,9 +122,8 @@ export function SiteFooter({ insetClassName, className }: Props) {
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_repeat(5,minmax(0,1fr))] lg:gap-6 xl:gap-8">
         <div className="min-w-0">
-          <Link to="/" className="inline-flex items-baseline gap-0.5">
-            <span className="text-lg font-bold tracking-tight text-foreground">mysaloon</span>
-            <span className="text-sm font-bold text-muted-foreground">.uz</span>
+          <Link to="/" className="inline-flex items-center" aria-label="Mysaloon">
+            <MysaloonLogo size="sm" imgClassName="rounded-xl" />
           </Link>
           <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
             {t("footer.tagline", { defaultValue: "Salon va sartarosh bron platformasi" })}

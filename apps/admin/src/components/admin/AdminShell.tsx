@@ -28,6 +28,7 @@ import {
   Radio,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
@@ -209,10 +210,11 @@ function IconRail({
     <aside className="hidden lg:flex w-14 shrink-0 flex-col items-center bg-sidebar border-r border-sidebar-border py-3 gap-1">
       <Link
         to="/admin"
-        className="size-9 mb-2 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground flex items-center justify-center font-heading font-bold text-base"
-        title="ShearHQ"
+        className="mb-2"
+        title="Mysaloon"
+        aria-label="Mysaloon Admin"
       >
-        S
+        <MysaloonLogo size="md" />
       </Link>
       {SECTIONS.map((sec) => {
         const Icon = sec.icon;

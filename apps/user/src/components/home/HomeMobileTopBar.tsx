@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Bell, MessageSquare } from "lucide-react";
+import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import { useNavBadges } from "@/hooks/use-nav-badges";
 import { cn } from "@/lib/utils";
 
@@ -21,9 +22,8 @@ export function HomeMobileTopBar() {
       className="sticky top-0 z-30 flex items-center justify-between border-b border-border/50 bg-background/92 px-4 pb-2 backdrop-blur-md"
       style={{ paddingTop: "max(env(safe-area-inset-top), 8px)" }}
     >
-      <Link to="/" className="flex min-w-0 items-baseline gap-0.5">
-        <span className="text-lg font-extrabold tracking-tight text-foreground">mysaloon</span>
-        <span className="text-[10px] font-bold text-muted-foreground">.uz</span>
+      <Link to="/" className="flex min-w-0 items-center" aria-label="Mysaloon">
+        <MysaloonLogo size="sm" imgClassName="rounded-xl" />
       </Link>
       <div className="flex items-center gap-1">
         <Link

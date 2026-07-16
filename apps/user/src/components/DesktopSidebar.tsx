@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import { useDisplayUser } from "@/hooks/use-me";
 import { cn } from "@/lib/utils";
 import { isNavTabActive } from "@/lib/navigation";
@@ -136,9 +137,8 @@ export function DesktopSidebar({ chatUnread = 0, notificationsUnread = 0 }: Prop
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-[260px] flex-col border-r border-border bg-background px-4 py-6 lg:flex">
-      <Link to="/" className="mb-5 flex items-baseline gap-1 px-2">
-        <span className="text-2xl font-bold tracking-tight">mysaloon</span>
-        <span className="text-sm font-bold text-muted-foreground">.uz</span>
+      <Link to="/" className="mb-5 flex items-center px-2" aria-label="Mysaloon">
+        <MysaloonLogo size="md" imgClassName="rounded-xl" />
       </Link>
 
       <form onSubmit={handleSearch} className="mb-5 px-1">

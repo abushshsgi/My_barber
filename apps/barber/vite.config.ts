@@ -46,6 +46,7 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: "autoUpdate",
         includeAssets: [
+          "brand-logo.png",
           "favicon.ico",
           "favicon-32.png",
           "apple-touch-icon.png",
@@ -58,8 +59,8 @@ export default defineConfig(({ mode }) => {
           name: "MySaloon Partner",
           short_name: "Partner",
           description: "Sartaroshlar uchun bookinglar, mijozlar va daromadlarni boshqarish paneli",
-          theme_color: "#F7F5F0",
-          background_color: "#F7F5F0",
+          theme_color: "#000000",
+          background_color: "#000000",
           display: "standalone",
           orientation: "portrait",
           start_url: "/",

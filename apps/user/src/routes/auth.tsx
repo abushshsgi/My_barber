@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { OtpResendTimer } from "@/components/auth/OtpResendTimer";
 import { AuthMarketingPanel } from "@/components/auth/AuthMarketingPanel";
+import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import { AuthReferralCodeField } from "@/components/auth/AuthReferralCodeField";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { AuthMethodDivider, PhoneSignInComingSoon } from "@/components/auth/PhoneSignInComingSoon";
@@ -374,12 +375,7 @@ function Auth() {
 
         <div className="relative mx-auto w-full max-w-md">
           <div className="mb-9 lg:hidden">
-            <div className="flex items-baseline gap-0.5">
-              <span className="font-display text-[2rem] font-bold leading-none tracking-tight">
-                mysaloon
-              </span>
-              <span className="text-lg font-bold text-muted-foreground">.uz</span>
-            </div>
+            <MysaloonLogo size="lg" imgClassName="rounded-2xl" />
             <div className="mt-3 h-px w-12 bg-foreground/20" aria-hidden />
           </div>
 

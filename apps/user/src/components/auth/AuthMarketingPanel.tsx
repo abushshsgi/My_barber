@@ -7,6 +7,7 @@ import {
   AuthBookIllustration,
   AuthMapIllustration,
 } from "@/components/auth/AuthMarketingIllustrations";
+import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 
 const FEATURES = [
   { key: "featureMap", icon: MapPin },
@@ -80,10 +81,7 @@ export function AuthMarketingPanel() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: EASE }}
         >
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold tracking-tight xl:text-3xl">mysaloon</span>
-            <span className="text-base font-bold text-muted-foreground">.uz</span>
-          </div>
+          <MysaloonLogo size="lg" imgClassName="rounded-2xl xl:size-14" />
         </motion.div>
 
         <div className="my-6 flex max-w-md flex-1 flex-col justify-center py-2">

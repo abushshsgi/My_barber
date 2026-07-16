@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import { OffersPageContent } from "@/components/offers/OffersPageContent";
 import { DESKTOP_BAZAAR_INSET } from "@/lib/desktop-bazaar-layout";
 import { cn } from "@/lib/utils";
@@ -11,9 +12,7 @@ export function OffersDesktopPage() {
     <div className={cn("w-full min-w-0 pb-10", DESKTOP_BAZAAR_INSET)}>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-            mysaloon
-          </p>
+          <MysaloonLogo variant="wordmark" size="xs" className="opacity-70" />
           <h1 className="mt-2 text-[2.5rem] font-extrabold tracking-tight xl:text-[2.85rem]">
             {t("nav.offers", { defaultValue: "Aksiyalar" })}
           </h1>

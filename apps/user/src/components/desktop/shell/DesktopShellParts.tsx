@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
+import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import { DesktopHeaderActions } from "@/components/desktop/shell/DesktopHeaderActions";
 import {
   DESKTOP_HEADER_HEIGHT_CLASS,
@@ -73,11 +74,8 @@ export function DesktopAppHeader({
           headerInsetClassName,
         )}
       >
-        <Link to="/" className="flex shrink-0 items-baseline gap-0.5">
-          <span className="text-[1.3rem] font-extrabold tracking-tight text-foreground sm:text-[1.45rem]">
-            mysaloon
-          </span>
-          <span className="text-sm font-bold text-muted-foreground">.uz</span>
+        <Link to="/" className="flex shrink-0 items-center" aria-label="Mysaloon">
+          <MysaloonLogo size="sm" imgClassName="rounded-xl sm:size-9" />
         </Link>
 
         <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 overflow-x-auto lg:flex xl:gap-1">

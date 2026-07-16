@@ -12,7 +12,7 @@ const config: CapacitorConfig = {
       launchShowDuration: 2000,
       launchAutoHide: true,
       launchFadeOutDuration: 600,
-      backgroundColor: "#171512",
+      backgroundColor: "#000000",
       showSpinner: false,
     },
   },

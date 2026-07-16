@@ -2,7 +2,7 @@ import { useEffect, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { AuthStepIndicator } from "@/components/auth/AuthStepIndicator";
 import { AuthDesktopLayout } from "@/components/auth/desktop/AuthDesktopLayouts";
-import { Scissors } from "lucide-react";
+import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import type { SignupFlow } from "@/lib/auth-ui";
 import { FLOW_IDENTITY_META } from "@/lib/barber-flow-config";
 import { pageEnter } from "@/lib/motion-presets";
@@ -47,9 +47,7 @@ export function AuthShell({ flow, tab, signupStep = 0, onTabChange, children }: 
       <header className="z-50 shrink-0 border-b border-black/5 bg-white/90 backdrop-blur-md pt-[max(env(safe-area-inset-top),0px)] lg:hidden">
         <div className="flex items-center justify-between gap-3 px-4 py-2.5">
           <div className="flex min-w-0 items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Scissors className="size-3.5" />
-            </div>
+            <MysaloonLogo size="sm" />
             <p className="truncate text-sm font-bold">{mobileTitle}</p>
           </div>
           {tab === "signup" ? (

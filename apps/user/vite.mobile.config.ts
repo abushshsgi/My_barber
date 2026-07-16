@@ -38,6 +38,7 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: "autoUpdate",
         includeAssets: [
+          "brand-logo.png",
           "favicon.ico",
           "favicon-32.png",
           "apple-touch-icon.png",
@@ -50,8 +51,8 @@ export default defineConfig(({ mode }) => {
           name: "MySaloon",
           short_name: "MySaloon",
           description: "Online salon va sartaroshxona bron platformasi",
-          theme_color: "#171512",
-          background_color: "#171512",
+          theme_color: "#000000",
+          background_color: "#000000",
           display: "standalone",
           orientation: "portrait",
           start_url: "/",

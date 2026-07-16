@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, ScanFace, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import { ExploreStyleGrid } from "@/components/explore/ExploreStyleGrid";
 import { ExplorePageToolbar } from "@/components/explore/ExplorePageToolbar";
 import { PersonaPicker } from "@/components/PersonaPicker";
@@ -26,9 +27,12 @@ export function ExploreDesktopPage() {
     <div className={cn("w-full min-w-0 pb-8", DESKTOP_BAZAAR_INSET)}>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] lg:items-start xl:gap-8">
         <div className="min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-            mysaloon · {t("nav.explore")}
-          </p>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <MysaloonLogo variant="wordmark" size="xs" className="opacity-70" />
+            <span className="text-[11px] font-bold uppercase tracking-[0.2em]">
+              · {t("nav.explore")}
+            </span>
+          </div>
           <h1 className="mt-2 text-[2.35rem] font-extrabold leading-[1.1] tracking-tight xl:text-[2.75rem]">
             {t("explorePage.title")}
           </h1>

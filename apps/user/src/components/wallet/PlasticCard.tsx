@@ -1,6 +1,7 @@
 import { useCallback, useRef } from "react";
 import { animate, motion, useMotionValue, useReducedMotion } from "framer-motion";
 import { Nfc } from "lucide-react";
+import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import { useDisplayUser } from "@/hooks/use-me";
 import { cn } from "@/lib/utils";
 
@@ -172,9 +173,12 @@ export function PlasticCard({
                 </p>
               ) : null}
             </div>
-            <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.28em] text-background/55">
-              mysaloon
-            </span>
+            <MysaloonLogo
+              variant="wordmark"
+              size="xs"
+              tone="onDark"
+              className="shrink-0 opacity-80"
+            />
           </div>
         </div>
       </motion.article>

@@ -148,33 +148,33 @@ export async function downloadAssetsStudioItem(item: AssetsStudioItem): Promise<
 /** Logo uchun tez paste o'rniga bir bosishda. */
 export const LOGO_PROMPT_PRESETS: Array<{ id: string; label: string; prompt: string }> = [
   {
-    id: "s-mono",
-    label: "S monogram",
+    id: "official",
+    label: "Rasmiy mark",
     prompt:
-      'mysaloon logo, square app icon. Minimal geometric monogram letter "S" made from two clean hair-fade curves (subtle barber cue, not literal scissors). Deep charcoal #1A1A1A symbol on warm sand/cream background #F3EDE4. Ultra clean, flat vector style, generous padding, high contrast, crisp at 64px. No people, no photos, no 3D gloss, no purple neon, no extra words.',
+      'Official Mysaloon logo recreation: black #000000 square canvas, bold white sans-serif wordmark "Mysaloon" centered (capital M, lowercase rest, tight kerning), single vibrant orange period #fe841a after the word. Flat vector, no people, no scissors, no extra icons, no tagline, crisp at small sizes.',
   },
   {
     id: "wordmark",
     label: "Wordmark",
     prompt:
-      'mysaloon wordmark logo, square composition. Lowercase custom sans wordmark "mysaloon" only, bold modern geometric type, optical kerning. Charcoal letters on soft ivory background. Optional tiny abstract S mark above the word. Flat vector, centered, lots of padding, readable at small size. No tagline, no people, no clipart scissors, no gradient rainbow, no mockup.',
+      'Mysaloon wordmark only on transparent or soft light background: bold modern sans "Mysaloon" in near-black, ending with orange period #fe841a. Same lettercase and spacing as the official mark. No box required. Flat vector, high contrast, no tagline.',
   },
   {
     id: "icon",
-    label: "Icon only",
+    label: "App icon",
     prompt:
-      "App icon for mysaloon. Bold simple mark only: abstract S + soft circular badge. Full-bleed square, 10% safe margin from edges. Two colors max: charcoal and cream OR charcoal and muted olive. Flat, chunky shapes, no thin lines, no text, no photo. Looks clear at 48px.",
+      'App icon for Mysaloon: full-bleed black square with centered white "Mysaloon" wordmark and orange period #fe841a. Safe margin ~12%. Flat, chunky, readable at 48px. No photo, no scissors, no purple neon.',
   },
   {
     id: "premium",
     label: "Premium qora",
     prompt:
-      'Luxury-minimal mysaloon brand mark. Black square canvas, cream monogram "MS" interlocking, very thin elegant geometry but still legible small. No ornament, no glitter, no serif drama. Centered, vector flat, printing ready.',
+      'Luxury-minimal Mysaloon brand: pure black square, white "Mysaloon." with orange #fe841a period, generous padding, printing ready. No ornament.',
   },
   {
-    id: "fresh",
-    label: "Yashil fresh",
+    id: "partner",
+    label: "Partner badge",
     prompt:
-      'Fresh urban grooming logo for mysaloon Uzbekistan. Soft mint-green circle badge with charcoal abstract S inside. Modern, friendly, not childish. Flat vector, square icon, clean edges, no people, no scissors photo, no text except optional tiny "mysaloon" under mark if still crisp.',
+      'Mysaloon Partner square badge: black canvas, white Mysaloon wordmark with orange period #fe841a, tiny "Partner" caption under mark in muted gray. Flat vector, clean edges, no scissors.',
   },
 ];

@@ -54,6 +54,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { RealtimeStatusBadge } from "@/components/barber/RealtimeStatusBadge";
+import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import { NewBookingAlertBanner } from "@/components/bookings/NewBookingAlertBanner";
 import { useBookingLiveSync } from "@/hooks/use-booking-live-sync";
 import { useBarberContext, type ViewMode } from "./BarberContext";
@@ -151,14 +152,12 @@ function Sidebar({
     <div className="flex flex-col h-full bg-sidebar">
       {/* Brand */}
       <div className="h-14 px-4 flex items-center gap-2.5 border-b border-sidebar-border">
-        <div className="size-8 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground flex items-center justify-center">
-          <Scissors className="size-4" />
-        </div>
+        <MysaloonLogo size="sm" />
         <div className="min-w-0">
           <div className="font-heading font-semibold text-sidebar-primary text-sm leading-tight">
-            ShearHQ
+            Mysaloon
           </div>
-          <div className="text-[11px] text-muted-foreground leading-tight">Barber Panel</div>
+          <div className="text-[11px] text-muted-foreground leading-tight">Partner Panel</div>
         </div>
       </div>
 

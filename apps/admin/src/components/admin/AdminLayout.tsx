@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { toast } from "sonner";
@@ -88,12 +89,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     <div className="flex flex-col h-full bg-sidebar">
       <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
         <Link to="/admin" onClick={onNavigate} className="flex items-center gap-2">
-          <div className="size-8 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground flex items-center justify-center font-heading font-bold">
-            S
-          </div>
-          <span className="font-heading font-semibold text-lg tracking-tight text-sidebar-primary">
-            ShearHQ
-          </span>
+          <MysaloonLogo size="md" subtitle="Admin" />
         </Link>
       </div>
 
