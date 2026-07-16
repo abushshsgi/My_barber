@@ -12,9 +12,9 @@ import { prefetchSalonDetail } from "@/lib/prefetch-salon";
 import { cn } from "@/lib/utils";
 
 const H_SNAP =
-  "no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pb-0.5 [-webkit-overflow-scrolling:touch]";
+  "no-scrollbar flex snap-x snap-mandatory gap-2.5 overflow-x-auto overscroll-x-contain px-4 pb-0.5 [-webkit-overflow-scrolling:touch]";
 
-const SLIDE = "w-[min(88vw,24rem)] shrink-0 snap-center";
+const SLIDE = "w-[min(72vw,17.5rem)] shrink-0 snap-center";
 
 const CATEGORY_ICONS: Record<Category, typeof Scissors> = {
   barber: Scissors,
@@ -96,7 +96,7 @@ function FeaturedSlide({ salon }: { salon: Salon }) {
       onTouchStart={() => prefetchSalonDetail(salon.id)}
       className="group block active:opacity-95"
     >
-      <div className="relative aspect-[5/6] overflow-hidden rounded-[1.25rem] bg-muted shadow-[0_12px_36px_-18px_rgba(0,0,0,0.35)]">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-muted shadow-[0_10px_28px_-16px_rgba(0,0,0,0.32)]">
         <SalonCoverImg
           src={salon.coverUrl}
           seed={salon.coverSeed}
@@ -105,23 +105,23 @@ function FeaturedSlide({ salon }: { salon: Salon }) {
           loading="lazy"
           className="absolute inset-0 size-full object-cover transition duration-700 group-active:scale-[1.015]"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
         {salon.rating > 0 ? (
-          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-foreground shadow-sm backdrop-blur-sm">
-            <Star className="size-3 fill-foreground" />
+          <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-bold text-foreground shadow-sm backdrop-blur-sm">
+            <Star className="size-2.5 fill-foreground" />
             {salon.rating.toFixed(1)}
           </span>
         ) : null}
         {salon.distanceKm > 0 ? (
-          <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
-            <MapPin className="size-3" />
+          <span className="absolute right-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-black/45 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
+            <MapPin className="size-2.5" />
             {salon.distanceKm} km
           </span>
         ) : null}
       </div>
-      <div className="mt-2.5 px-0.5">
-        <h3 className="truncate text-[15px] font-semibold tracking-tight">{salon.name}</h3>
-        <p className="mt-0.5 flex items-center gap-1.5 text-[12px] text-muted-foreground">
+      <div className="mt-2 px-0.5">
+        <h3 className="truncate text-[14px] font-semibold tracking-tight">{salon.name}</h3>
+        <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
           {salon.address ? <span className="truncate">{salon.address}</span> : null}
           {salon.priceFrom > 0 ? <span className="shrink-0">dan {shortPrice(salon.priceFrom)}</span> : null}
         </p>
