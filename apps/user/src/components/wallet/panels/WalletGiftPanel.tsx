@@ -49,7 +49,7 @@ function GiftCardPreview({
     >
       <div className="flex items-center justify-between">
         <Gift className="h-5 w-5" style={{ color: accent }} />
-        <MysaloonLogo variant="wordmark" size="xs" tone="inherit" className="opacity-70" />
+        <MysaloonLogo size="xs" tone="inherit" className="opacity-70" />
       </div>
       <p className="mt-2 text-xs font-semibold opacity-70">
         {design?.name_uz || design?.name || t("walletPage.giftPanel.pickDesign", { defaultValue: "Dizayn" })}

@@ -123,7 +123,7 @@ export function SiteFooter({ insetClassName, className }: Props) {
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_repeat(5,minmax(0,1fr))] lg:gap-6 xl:gap-8">
         <div className="min-w-0">
           <Link to="/" className="inline-flex items-center" aria-label="Mysaloon">
-            <MysaloonLogo size="sm" imgClassName="rounded-xl" />
+            <MysaloonLogo size="sm" />
           </Link>
           <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
             {t("footer.tagline", { defaultValue: "Salon va sartarosh bron platformasi" })}

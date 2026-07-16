@@ -138,7 +138,7 @@ export function DesktopSidebar({ chatUnread = 0, notificationsUnread = 0 }: Prop
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-[260px] flex-col border-r border-border bg-background px-4 py-6 lg:flex">
       <Link to="/" className="mb-5 flex items-center px-2" aria-label="Mysaloon">
-        <MysaloonLogo size="md" imgClassName="rounded-xl" />
+        <MysaloonLogo size="lg" />
       </Link>
 
       <form onSubmit={handleSearch} className="mb-5 px-1">

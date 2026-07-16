@@ -375,7 +375,7 @@ function Auth() {
 
         <div className="relative mx-auto w-full max-w-md">
           <div className="mb-9 lg:hidden">
-            <MysaloonLogo size="lg" imgClassName="rounded-2xl" />
+            <MysaloonLogo size="xl" />
             <div className="mt-3 h-px w-12 bg-foreground/20" aria-hidden />
           </div>
 

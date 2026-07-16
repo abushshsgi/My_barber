@@ -173,12 +173,7 @@ export function PlasticCard({
                 </p>
               ) : null}
             </div>
-            <MysaloonLogo
-              variant="wordmark"
-              size="xs"
-              tone="onDark"
-              className="shrink-0 opacity-80"
-            />
+            <MysaloonLogo size="xs" tone="onDark" className="shrink-0 opacity-80" />
           </div>
         </div>
       </motion.article>

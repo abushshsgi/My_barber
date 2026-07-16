@@ -151,13 +151,9 @@ function Sidebar({
   return (
     <div className="flex flex-col h-full bg-sidebar">
       {/* Brand */}
-      <div className="h-14 px-4 flex items-center gap-2.5 border-b border-sidebar-border">
-        <MysaloonLogo size="sm" />
+      <div className="h-14 px-4 flex items-center border-b border-sidebar-border">
         <div className="min-w-0">
-          <div className="font-heading font-semibold text-sidebar-primary text-sm leading-tight">
-            Mysaloon
-          </div>
-          <div className="text-[11px] text-muted-foreground leading-tight">Partner Panel</div>
+          <MysaloonLogo size="sm" subtitle="Partner" />
         </div>
       </div>
 

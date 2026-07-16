@@ -1,53 +1,59 @@
 import { cn } from "@/lib/utils";
 
-export const MYSALOON_ORANGE = "#fe841a";
-export const BRAND_LOGO_SRC = "/brand-logo.png";
+export const MYSALOON_DOT = "#ff5c5c";
 
 type Size = "xs" | "sm" | "md" | "lg" | "xl";
 
-const MARK_SIZE: Record<Size, string> = {
-  xs: "size-6",
-  sm: "size-8",
-  md: "size-9",
-  lg: "size-11",
-  xl: "size-14",
+const WORD_SIZE: Record<Size, string> = {
+  xs: "text-sm",
+  sm: "text-[15px] leading-none sm:text-base",
+  md: "text-[15px] leading-none sm:text-base",
+  lg: "text-2xl leading-none",
+  xl: "text-3xl leading-none",
 };
 
 type Props = {
   size?: Size;
   className?: string;
-  imgClassName?: string;
   subtitle?: string;
+  tone?: "onLight" | "onDark" | "inherit";
   alt?: string;
 };
 
-/** Official Mysaloon brand mark for Partner app. */
+/** Official Mysaloon wordmark for Partner app. */
 export function MysaloonLogo({
   size = "md",
   className,
-  imgClassName,
   subtitle,
+  tone = "onLight",
   alt = "Mysaloon",
 }: Props) {
+  const letter =
+    tone === "onDark"
+      ? "text-white"
+      : tone === "inherit"
+        ? "text-current"
+        : "text-foreground";
+
   return (
-    <span className={cn("inline-flex items-center gap-2.5", className)}>
-      <img
-        src={BRAND_LOGO_SRC}
-        alt={alt}
-        width={512}
-        height={512}
-        decoding="async"
-        className={cn(
-          "shrink-0 rounded-lg object-cover shadow-sm",
-          MARK_SIZE[size],
-          imgClassName,
-        )}
-      />
+    <span
+      className={cn(
+        "inline-flex items-baseline font-extrabold tracking-tight",
+        WORD_SIZE[size],
+        letter,
+        className,
+      )}
+      aria-label={alt}
+    >
+      <span>Mysaloon</span>
+      <span style={{ color: MYSALOON_DOT }} aria-hidden>
+        .
+      </span>
       {subtitle ? (
         <span
           className={cn(
-            "font-bold tracking-tight text-foreground",
-            size === "xs" || size === "sm" ? "text-sm" : "text-[15px] sm:text-base",
+            "ml-1.5 text-[0.7em] font-bold tracking-wide",
+            tone === "onDark" ? "text-white/70" : "text-muted-foreground",
           )}
         >
           {subtitle}

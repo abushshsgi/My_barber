@@ -1,45 +1,63 @@
 import { cn } from "@/lib/utils";
 
-export const BRAND_LOGO_SRC = "/brand-logo.png";
+export const MYSALOON_DOT = "#ff5c5c";
 
 type Props = {
   size?: "sm" | "md" | "lg";
   className?: string;
-  imgClassName?: string;
   subtitle?: string;
+  /** Narrow icon rail — just M. */
+  compact?: boolean;
   alt?: string;
 };
 
-const MARK_SIZE = {
-  sm: "size-7",
-  md: "size-8",
-  lg: "size-9",
+const WORD_SIZE = {
+  sm: "text-base",
+  md: "text-lg",
+  lg: "text-xl",
 } as const;
 
-/** Official Mysaloon brand mark for Admin. */
+/** Official Mysaloon wordmark for Admin. */
 export function MysaloonLogo({
   size = "md",
   className,
-  imgClassName,
   subtitle,
+  compact = false,
   alt = "Mysaloon",
 }: Props) {
-  return (
-    <span className={cn("inline-flex items-center gap-2", className)}>
-      <img
-        src={BRAND_LOGO_SRC}
-        alt={alt}
-        width={512}
-        height={512}
-        decoding="async"
+  if (compact) {
+    return (
+      <span
         className={cn(
-          "shrink-0 rounded-lg object-cover",
-          MARK_SIZE[size],
-          imgClassName,
+          "inline-flex size-9 items-center justify-center rounded-lg bg-sidebar-primary font-heading text-base font-bold text-sidebar-primary-foreground",
+          className,
         )}
-      />
+        aria-label={alt}
+        title={alt}
+      >
+        M
+        <span style={{ color: MYSALOON_DOT }} aria-hidden>
+          .
+        </span>
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-baseline font-heading font-semibold tracking-tight text-sidebar-primary",
+        WORD_SIZE[size],
+        className,
+      )}
+      aria-label={alt}
+    >
+      <span>Mysaloon</span>
+      <span style={{ color: MYSALOON_DOT }} aria-hidden>
+        .
+      </span>
       {subtitle ? (
-        <span className="font-heading text-lg font-semibold tracking-tight text-sidebar-primary">
+        <span className="ml-1.5 text-[0.7em] font-semibold tracking-wide text-muted-foreground">
           {subtitle}
         </span>
       ) : null}

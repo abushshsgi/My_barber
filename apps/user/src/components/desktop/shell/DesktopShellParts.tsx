@@ -75,7 +75,7 @@ export function DesktopAppHeader({
         )}
       >
         <Link to="/" className="flex shrink-0 items-center" aria-label="Mysaloon">
-          <MysaloonLogo size="sm" imgClassName="rounded-xl sm:size-9" />
+          <MysaloonLogo size="md" />
         </Link>
 
         <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 overflow-x-auto lg:flex xl:gap-1">

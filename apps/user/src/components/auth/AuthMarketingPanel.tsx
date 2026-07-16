@@ -81,7 +81,7 @@ export function AuthMarketingPanel() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: EASE }}
         >
-          <MysaloonLogo size="lg" imgClassName="rounded-2xl xl:size-14" />
+          <MysaloonLogo size="xl" />
         </motion.div>
 
         <div className="my-6 flex max-w-md flex-1 flex-col justify-center py-2">

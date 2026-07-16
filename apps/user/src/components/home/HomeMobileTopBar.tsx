@@ -23,7 +23,7 @@ export function HomeMobileTopBar() {
       style={{ paddingTop: "max(env(safe-area-inset-top), 8px)" }}
     >
       <Link to="/" className="flex min-w-0 items-center" aria-label="Mysaloon">
-        <MysaloonLogo size="sm" imgClassName="rounded-xl" />
+        <MysaloonLogo size="sm" />
       </Link>
       <div className="flex items-center gap-1">
         <Link

@@ -214,7 +214,7 @@ function IconRail({
         title="Mysaloon"
         aria-label="Mysaloon Admin"
       >
-        <MysaloonLogo size="md" />
+        <MysaloonLogo compact />
       </Link>
       {SECTIONS.map((sec) => {
         const Icon = sec.icon;
