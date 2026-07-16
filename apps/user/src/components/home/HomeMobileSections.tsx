@@ -1,19 +1,26 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { ChevronRight, Map, Star } from "lucide-react";
+import { ChevronRight, Hand, Map, MapPin, Scissors, Sparkles, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import { SalonCoverImg } from "@/components/salon/SalonCoverImg";
 import { NoSalonsEmpty } from "@/components/NoSalonsEmpty";
 import { HOME_CATEGORY_KEYS } from "@/lib/home-sections";
 import { filterTopSalons } from "@/lib/salon-top";
-import { shortPrice, type Salon } from "@/lib/mock-data";
+import { shortPrice, type Category, type Salon } from "@/lib/mock-data";
 import { prefetchSalonDetail } from "@/lib/prefetch-salon";
+import { cn } from "@/lib/utils";
 
 const H_SNAP =
   "no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pb-0.5 [-webkit-overflow-scrolling:touch]";
 
 const SLIDE = "w-[min(88vw,24rem)] shrink-0 snap-center";
+
+const CATEGORY_ICONS: Record<Category, typeof Scissors> = {
+  barber: Scissors,
+  beauty: Sparkles,
+  nails: Hand,
+};
 
 const fadeUp = {
   hidden: { opacity: 0 },
@@ -89,7 +96,7 @@ function FeaturedSlide({ salon }: { salon: Salon }) {
       onTouchStart={() => prefetchSalonDetail(salon.id)}
       className="group block active:opacity-95"
     >
-      <div className="relative aspect-[5/6] overflow-hidden rounded-[1.25rem] bg-muted">
+      <div className="relative aspect-[5/6] overflow-hidden rounded-[1.25rem] bg-muted shadow-[0_12px_36px_-18px_rgba(0,0,0,0.35)]">
         <SalonCoverImg
           src={salon.coverUrl}
           seed={salon.coverSeed}
@@ -98,18 +105,25 @@ function FeaturedSlide({ salon }: { salon: Salon }) {
           loading="lazy"
           className="absolute inset-0 size-full object-cover transition duration-700 group-active:scale-[1.015]"
         />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+        {salon.rating > 0 ? (
+          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-foreground shadow-sm backdrop-blur-sm">
+            <Star className="size-3 fill-foreground" />
+            {salon.rating.toFixed(1)}
+          </span>
+        ) : null}
+        {salon.distanceKm > 0 ? (
+          <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
+            <MapPin className="size-3" />
+            {salon.distanceKm} km
+          </span>
+        ) : null}
       </div>
       <div className="mt-2.5 px-0.5">
         <h3 className="truncate text-[15px] font-semibold tracking-tight">{salon.name}</h3>
         <p className="mt-0.5 flex items-center gap-1.5 text-[12px] text-muted-foreground">
-          {salon.rating > 0 ? (
-            <span className="inline-flex items-center gap-0.5 font-medium text-foreground">
-              <Star className="size-3 fill-foreground" />
-              {salon.rating.toFixed(1)}
-            </span>
-          ) : null}
-          {salon.distanceKm > 0 ? <span>{salon.distanceKm} km</span> : null}
-          {salon.priceFrom > 0 ? <span>dan {shortPrice(salon.priceFrom)}</span> : null}
+          {salon.address ? <span className="truncate">{salon.address}</span> : null}
+          {salon.priceFrom > 0 ? <span className="shrink-0">dan {shortPrice(salon.priceFrom)}</span> : null}
         </p>
       </div>
     </Link>
@@ -136,24 +150,32 @@ export function HomeMobileFeatured({ salons }: { salons: Salon[] }) {
   );
 }
 
-/** Kategoriya — faqat matn pillalar (rasm cardsiz). */
+/** Kategoriya — ikonkali pillalar. */
 export function HomeMobileCategories() {
   const { t } = useTranslation();
 
   return (
     <div className="px-4">
       <div className="flex gap-2">
-        {HOME_CATEGORY_KEYS.map((category) => (
-          <Link
-            key={category}
-            to="/category/$category"
-            params={{ category }}
-            preload="intent"
-            className="flex-1 rounded-full border border-border/80 bg-background py-2.5 text-center text-[12px] font-semibold tracking-tight text-foreground transition active:bg-foreground active:text-background"
-          >
-            {t(`home.categories.${category}`)}
-          </Link>
-        ))}
+        {HOME_CATEGORY_KEYS.map((category) => {
+          const Icon = CATEGORY_ICONS[category];
+          return (
+            <Link
+              key={category}
+              to="/category/$category"
+              params={{ category }}
+              preload="intent"
+              className={cn(
+                "inline-flex flex-1 items-center justify-center gap-1.5 rounded-full border border-border/80 bg-background py-2.5",
+                "text-[12px] font-semibold tracking-tight text-foreground transition",
+                "active:bg-foreground active:text-background",
+              )}
+            >
+              <Icon className="size-3.5 shrink-0" strokeWidth={2.2} />
+              {t(`home.categories.${category}`)}
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

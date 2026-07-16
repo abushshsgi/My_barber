@@ -101,6 +101,9 @@
     "topSalons": {
       "title": "Top salons"
     },
+    "mixedDiscovery": {
+      "title": "Salons & pros"
+    },
     "filters": {
       "title": "Search salons & pros",
       "sortTitle": "Sort by",

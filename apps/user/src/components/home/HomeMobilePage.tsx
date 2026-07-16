@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import type { HomeData } from "@/components/home/useHomeData";
 import { HomeUnifiedSearchResults } from "@/components/home/HomeBlocks";
+import { HomeMobileBanner } from "@/components/home/HomeMobileBanner";
 import {
   HomeMobileCategories,
   HomeMobileFeatured,
@@ -12,7 +13,7 @@ import {
 
 type Props = { data: HomeData };
 
-/** Mobil home — ixcham, professional: brand + kategoriyalar + top + feed. */
+/** Mobil home — brand + banner + kategoriyalar + top + feed. */
 export function HomeMobilePage({ data }: Props) {
   const nearby = data.filtered.slice(0, 10);
 
@@ -27,13 +28,17 @@ export function HomeMobilePage({ data }: Props) {
         />
       ) : (
         <motion.div
-          className="space-y-8 pb-4"
+          className="space-y-5 pb-4"
           variants={stagger}
           initial="hidden"
           animate="show"
         >
           <MotionSection>
             <HomeMobileWordmark />
+          </MotionSection>
+
+          <MotionSection>
+            <HomeMobileBanner />
           </MotionSection>
 
           <MotionSection>

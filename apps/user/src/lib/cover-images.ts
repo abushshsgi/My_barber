@@ -26,28 +26,47 @@ function isStockCoverUrl(url: string): boolean {
   );
 }
 
-/** Salon cover fallback — faqat neytral placeholder (stock/demo yo‘q). */
-export function getSalonCoverUrl(
-  _seed?: string,
-  _category?: Category,
-  _width = 900,
-): string {
-  return PLACEHOLDER_SALON;
+const SEED_PHOTO_IDS = [
+  3992859, 2523210, 3992860, 2866115, 1453001, 3992862, 3992863, 3992864,
+] as const;
+
+function photoIdForSeed(seed: string, category?: Category): number {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+  }
+  if (seed) {
+    return SEED_PHOTO_IDS[Math.abs(hash) % SEED_PHOTO_IDS.length]!;
+  }
+  return category ? CATEGORY_PHOTOS[category] : SEED_PHOTO_IDS[0]!;
 }
 
-/** Salon kartochkasi uchun — faqat haqiqiy API media; stock/demo rad etiladi. */
+/** Katalog kartalari uchun kategoriya/seed asosidagi yumshoq fallback. */
+export function getSalonCoverUrl(
+  seed?: string,
+  category?: Category,
+  width = 900,
+): string {
+  const photoId = photoIdForSeed(seed?.trim() || "salon", category);
+  return pexelsCoverUrl(photoId, width);
+}
+
+/**
+ * Salon kartochkasi — haqiqiy API media birinchi.
+ * Bo‘sh yoki stock URL bo‘lsa katalog fallback (salon detail hero stockni filtrlaydi).
+ */
 export function resolveCoverUrl(
   apiUrl: string | null | undefined,
-  _seed?: string,
-  _category?: Category,
+  seed?: string,
+  category?: Category,
 ): string {
   const raw = apiUrl?.trim() ?? "";
   if (!raw || isStockCoverUrl(raw)) {
-    return PLACEHOLDER_SALON;
+    return getSalonCoverUrl(seed, category);
   }
   const normalized = normalizeCoverUrl(raw) ?? raw;
   if (isStockCoverUrl(normalized)) {
-    return PLACEHOLDER_SALON;
+    return getSalonCoverUrl(seed, category);
   }
   if (normalized.startsWith("/media/") && normalized.length > "/media/".length) {
     return normalized;
@@ -58,7 +77,7 @@ export function resolveCoverUrl(
   if (normalized.startsWith("/")) {
     return normalized;
   }
-  return PLACEHOLDER_SALON;
+  return getSalonCoverUrl(seed, category);
 }
 
 const TREND_SEEDS = [

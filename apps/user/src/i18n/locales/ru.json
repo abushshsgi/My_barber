@@ -101,6 +101,9 @@
     "topSalons": {
       "title": "Топ салоны"
     },
+    "mixedDiscovery": {
+      "title": "Салоны и мастера"
+    },
     "filters": {
       "title": "Поиск салонов и мастеров",
       "sortTitle": "Сортировка",

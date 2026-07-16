@@ -1,6 +1,6 @@
 import { useEffect, useState, type ImgHTMLAttributes } from "react";
 import type { Category } from "@/lib/mock-data";
-import { PLACEHOLDER_SALON } from "@/lib/cover-images";
+import { getSalonCoverUrl, PLACEHOLDER_SALON } from "@/lib/cover-images";
 
 type Props = ImgHTMLAttributes<HTMLImageElement> & {
   src?: string | null;
@@ -8,21 +8,25 @@ type Props = ImgHTMLAttributes<HTMLImageElement> & {
   category?: Category;
 };
 
-/** Salon cover — 404 yoki buzilgan URL da neytral placeholder. */
-export function SalonCoverImg({ src, seed: _seed, category: _category, onError, ...props }: Props) {
-  const fallback = PLACEHOLDER_SALON;
-  const [current, setCurrent] = useState(() => src?.trim() || fallback);
+/** Salon cover — buzilgan URL da kategoriya fallback, keyin neytral placeholder. */
+export function SalonCoverImg({ src, seed, category, onError, ...props }: Props) {
+  const soft = getSalonCoverUrl(seed, category);
+  const [current, setCurrent] = useState(() => src?.trim() || soft);
 
   useEffect(() => {
-    setCurrent(src?.trim() || fallback);
-  }, [src, fallback]);
+    setCurrent(src?.trim() || soft);
+  }, [src, soft]);
 
   return (
     <img
       {...props}
       src={current}
       onError={(event) => {
-        if (current !== fallback) setCurrent(fallback);
+        if (current !== soft && current !== PLACEHOLDER_SALON) {
+          setCurrent(soft);
+        } else if (current !== PLACEHOLDER_SALON) {
+          setCurrent(PLACEHOLDER_SALON);
+        }
         onError?.(event);
       }}
     />
