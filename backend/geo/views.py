@@ -19,13 +19,18 @@ def _parse_coords(request):
 
 
 class MapConfigView(APIView):
-    """2GIS MapGL kaliti — domen cheklangan, mijoz xaritasi uchun."""
+    """Google Maps JS kaliti — HTTP referrer cheklangan, mijoz xaritasi uchun."""
 
     permission_classes = [AllowAny]
 
     def get(self, request):
-        key = getattr(settings, "DGIS_MAPGL_KEY", "") or getattr(settings, "DGIS_API_KEY", "")
-        return Response({"dgis_api_key": key.strip()})
+        key = (
+            getattr(settings, "GOOGLE_MAPS_API_KEY", "")
+            or getattr(settings, "DGIS_MAPGL_KEY", "")
+            or getattr(settings, "DGIS_API_KEY", "")
+        )
+        key = key.strip()
+        return Response({"google_maps_api_key": key, "dgis_api_key": key})
 
 
 class GeocodeView(APIView):
@@ -38,7 +43,7 @@ class GeocodeView(APIView):
         try:
             results = geocode_query(q)
         except DgisGeocoderError:
-            # 2GIS vaqtincha ishlamasa — bo'sh ro'yxat (502 o'rniga).
+            # Geocoder vaqtincha ishlamasa — bo'sh ro'yxat (502 o'rniga).
             results = []
         return Response(
             {

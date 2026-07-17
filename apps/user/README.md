@@ -45,7 +45,7 @@ Qayta deploy: `npm run build` (`.vercel/output` yaratiladi) → Vercel redeploy.
 | O'zgaruvchi | Qiymat |
 |-------------|--------|
 | `VITE_API_URL` | `https://api.mysaloon.uz` (production / Capacitor) |
-| `VITE_DGIS_API_KEY` | 2GIS MapGL (xarita) — [2GIS Console](https://platform.2gis.com/) |
+| `VITE_GOOGLE_MAPS_API_KEY` | Google Maps JS (xarita) — [Cloud Console](https://console.cloud.google.com/google/maps-apis) |
 | `NEXT_PUBLIC_BARBER_WEB_ORIGIN` | `https://partner.mysaloon.uz` (ixtiyoriy) |
 
 To'liq ro'yxat: `.env.example`

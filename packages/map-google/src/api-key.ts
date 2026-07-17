@@ -1,16 +1,23 @@
-/** Client-side 2GIS MapGL key (domain-restricted in 2GIS Console). */
-export function getDgisApiKey(): string {
+/** Client-side Google Maps JS key (HTTP-referrer restricted in Cloud Console). */
+export function getGoogleMapsApiKey(): string {
   const env = import.meta.env as Record<string, string | undefined>;
-  const key = env.VITE_DGIS_API_KEY ?? env.NEXT_PUBLIC_DGIS_API_KEY ?? "";
+  const key =
+    env.VITE_GOOGLE_MAPS_API_KEY ??
+    env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ??
+    env.VITE_DGIS_API_KEY ??
+    "";
   return key.trim();
 }
+
+/** @deprecated use getGoogleMapsApiKey */
+export const getDgisApiKey = getGoogleMapsApiKey;
 
 let cachedRemoteKey: string | null | undefined;
 let remoteKeyPromise: Promise<string> | null = null;
 
 /** Build-time env bo'lmasa — backend /api/v1/geo/map-config/ dan oladi. */
-export async function resolveDgisApiKey(): Promise<string> {
-  const envKey = getDgisApiKey();
+export async function resolveGoogleMapsApiKey(): Promise<string> {
+  const envKey = getGoogleMapsApiKey();
   if (envKey) return envKey;
 
   if (cachedRemoteKey !== undefined) return cachedRemoteKey ?? "";
@@ -23,8 +30,11 @@ export async function resolveDgisApiKey(): Promise<string> {
         cachedRemoteKey = null;
         return "";
       }
-      const data = (await res.json()) as { dgis_api_key?: string };
-      const key = data.dgis_api_key?.trim() ?? "";
+      const data = (await res.json()) as {
+        google_maps_api_key?: string;
+        dgis_api_key?: string;
+      };
+      const key = (data.google_maps_api_key ?? data.dgis_api_key)?.trim() ?? "";
       cachedRemoteKey = key || null;
       return key;
     } catch {
@@ -37,3 +47,6 @@ export async function resolveDgisApiKey(): Promise<string> {
 
   return remoteKeyPromise;
 }
+
+/** @deprecated use resolveGoogleMapsApiKey */
+export const resolveDgisApiKey = resolveGoogleMapsApiKey;

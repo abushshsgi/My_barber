@@ -6,7 +6,7 @@ import { geocodeAddress, reverseGeocodeAddress, validateLocation } from "@/lib/a
 import { cn } from "@/lib/utils";
 
 const MapPicker = lazy(() =>
-  import("@mybarber/map-2gis").then((m) => ({ default: m.MapPicker })),
+  import("@mybarber/map-google").then((m) => ({ default: m.MapPicker })),
 );
 
 const MIN_ADDRESS_FOR_GEOCODE = 5;

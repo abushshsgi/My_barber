@@ -3,7 +3,7 @@ import { geocodeAddress, reverseGeocodeAddress } from "@/lib/api/geo";
 import { cn } from "@/lib/utils";
 
 const MapPicker = lazy(() =>
-  import("@mybarber/map-2gis").then((m) => ({ default: m.MapPicker })),
+  import("@mybarber/map-google").then((m) => ({ default: m.MapPicker })),
 );
 
 function parseCoord(value: string): number | null {

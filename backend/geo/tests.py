@@ -58,23 +58,25 @@ class RegionResolverTests(SimpleTestCase):
         self.assertTrue(resolved.in_uzbekistan)
 
 
-class DgisServiceTests(SimpleTestCase):
-    @override_settings(DGIS_API_KEY="test-key")
+class GoogleGeocoderServiceTests(SimpleTestCase):
+    @override_settings(GOOGLE_MAPS_API_KEY="test-key")
     @patch("geo.services.dgis.requests.get")
     def test_geocode_query_parses_result(self, mock_get):
         mock_get.return_value = MagicMock(
             status_code=200,
             json=lambda: {
-                "meta": {"code": 200},
-                "result": {
-                    "items": [
-                        {
-                            "full_name": "Toshkent, Navoiy ko'chasi, 1",
-                            "address_name": "Navoiy ko'chasi, 1",
-                            "point": {"lat": 41.31, "lon": 69.27},
-                        }
-                    ]
-                },
+                "status": "OK",
+                "results": [
+                    {
+                        "formatted_address": "Toshkent, Navoiy ko'chasi, 1",
+                        "geometry": {"location": {"lat": 41.31, "lng": 69.27}},
+                        "address_components": [
+                            {"long_name": "Navoiy ko'chasi", "types": ["route"]},
+                            {"long_name": "1", "types": ["street_number"]},
+                            {"long_name": "Toshkent", "types": ["locality"]},
+                        ],
+                    }
+                ],
             },
         )
         results = geocode_query("Navoiy 1")
@@ -82,22 +84,23 @@ class DgisServiceTests(SimpleTestCase):
         self.assertEqual(results[0].lat, 41.31)
         self.assertEqual(results[0].lng, 69.27)
 
-    @override_settings(DGIS_API_KEY="test-key")
+    @override_settings(GOOGLE_MAPS_API_KEY="test-key")
     @patch("geo.services.dgis.requests.get")
     def test_reverse_geocode(self, mock_get):
         mock_get.return_value = MagicMock(
             status_code=200,
             json=lambda: {
-                "meta": {"code": 200},
-                "result": {
-                    "items": [
-                        {
-                            "full_name": "Toshkent, Navoiy ko'chasi, 1",
-                            "address_name": "Navoiy ko'chasi, 1",
-                            "point": {"lat": 41.31, "lon": 69.27},
-                        }
-                    ]
-                },
+                "status": "OK",
+                "results": [
+                    {
+                        "formatted_address": "Toshkent, Navoiy ko'chasi, 1",
+                        "geometry": {"location": {"lat": 41.31, "lng": 69.27}},
+                        "address_components": [
+                            {"long_name": "Navoiy ko'chasi", "types": ["route"]},
+                            {"long_name": "Toshkent", "types": ["locality"]},
+                        ],
+                    }
+                ],
             },
         )
         result = reverse_geocode(41.31, 69.27)
@@ -105,11 +108,11 @@ class DgisServiceTests(SimpleTestCase):
         assert result is not None
         self.assertIn("Navoiy", result.address)
 
-    @override_settings(DGIS_API_KEY="test-key")
-    @patch("geo.services.dgis._reverse_geocode_dgis")
+    @override_settings(GOOGLE_MAPS_API_KEY="test-key")
+    @patch("geo.services.dgis._reverse_geocode_google")
     @patch("geo.services.nominatim.reverse_geocode_nominatim")
-    def test_reverse_geocode_falls_back_to_nominatim(self, mock_nominatim, mock_dgis):
-        mock_dgis.side_effect = DgisGeocoderError("2GIS geocoder returned an error.")
+    def test_reverse_geocode_falls_back_to_nominatim(self, mock_nominatim, mock_google):
+        mock_google.side_effect = DgisGeocoderError("Google geocoder returned an error.")
         mock_nominatim.return_value = GeocodeResult(
             lat=39.65,
             lng=66.96,
@@ -123,12 +126,12 @@ class DgisServiceTests(SimpleTestCase):
         self.assertEqual(result.city, "Samarqand")
         mock_nominatim.assert_called_once_with(39.65, 66.96)
 
-    @override_settings(DGIS_API_KEY="test-key")
-    @patch("geo.services.dgis._reverse_geocode_dgis")
+    @override_settings(GOOGLE_MAPS_API_KEY="test-key")
+    @patch("geo.services.dgis._reverse_geocode_google")
     @patch("geo.services.nominatim.reverse_geocode_nominatim")
     @patch("geo.services.photon.reverse_geocode_photon")
-    def test_reverse_geocode_falls_back_to_photon(self, mock_photon, mock_nominatim, mock_dgis):
-        mock_dgis.side_effect = DgisGeocoderError("2GIS geocoder returned an error.")
+    def test_reverse_geocode_falls_back_to_photon(self, mock_photon, mock_nominatim, mock_google):
+        mock_google.side_effect = DgisGeocoderError("Google geocoder returned an error.")
         mock_nominatim.return_value = None
         mock_photon.return_value = GeocodeResult(
             lat=41.31,
@@ -145,7 +148,7 @@ class DgisServiceTests(SimpleTestCase):
 
 
 class GeocodeViewTests(SimpleTestCase):
-    @override_settings(DGIS_API_KEY="test-key")
+    @override_settings(GOOGLE_MAPS_API_KEY="test-key")
     @patch("geo.views.geocode_query")
     def test_geocode_view(self, mock_geocode):
         mock_geocode.return_value = []
@@ -155,19 +158,19 @@ class GeocodeViewTests(SimpleTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("results", response.data)
 
-    @override_settings(DGIS_API_KEY="test-key")
+    @override_settings(GOOGLE_MAPS_API_KEY="test-key")
     @patch("geo.views.geocode_query")
-    def test_geocode_view_dgis_error_returns_empty(self, mock_geocode):
+    def test_geocode_view_geocoder_error_returns_empty(self, mock_geocode):
         from geo.services.dgis import DgisGeocoderError
 
-        mock_geocode.side_effect = DgisGeocoderError("2GIS geocoder returned an error.")
+        mock_geocode.side_effect = DgisGeocoderError("Google geocoder returned an error.")
         factory = APIRequestFactory()
         request = factory.get("/api/v1/geo/geocode/", {"q": "Buxoro viloyati"})
         response = GeocodeView.as_view()(request)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["results"], [])
 
-    @override_settings(DGIS_API_KEY="test-key")
+    @override_settings(GOOGLE_MAPS_API_KEY="test-key")
     @patch("geo.views.reverse_geocode")
     def test_reverse_view(self, mock_reverse):
         from geo.services.dgis import GeocodeResult
@@ -185,7 +188,7 @@ class GeocodeViewTests(SimpleTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["address"], "Navoiy 1")
 
-    @override_settings(DGIS_API_KEY="test-key")
+    @override_settings(GOOGLE_MAPS_API_KEY="test-key")
     @patch("geo.views.published_salon_count")
     @patch("geo.views.resolve_region_from_coords")
     def test_validate_view(self, mock_resolve, mock_salon_count):
@@ -211,18 +214,20 @@ class GeocodeViewTests(SimpleTestCase):
 
 
 class MapConfigViewTests(SimpleTestCase):
-    @override_settings(DGIS_API_KEY="mapgl-test-key")
+    @override_settings(GOOGLE_MAPS_API_KEY="maps-test-key")
     def test_map_config_returns_key(self):
         factory = APIRequestFactory()
         request = factory.get("/api/v1/geo/map-config/")
         response = MapConfigView.as_view()(request)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["dgis_api_key"], "mapgl-test-key")
+        self.assertEqual(response.data["google_maps_api_key"], "maps-test-key")
+        self.assertEqual(response.data["dgis_api_key"], "maps-test-key")
 
-    @override_settings(DGIS_API_KEY="")
+    @override_settings(GOOGLE_MAPS_API_KEY="", DGIS_API_KEY="", DGIS_MAPGL_KEY="")
     def test_map_config_empty_when_unset(self):
         factory = APIRequestFactory()
         request = factory.get("/api/v1/geo/map-config/")
         response = MapConfigView.as_view()(request)
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["google_maps_api_key"], "")
         self.assertEqual(response.data["dgis_api_key"], "")

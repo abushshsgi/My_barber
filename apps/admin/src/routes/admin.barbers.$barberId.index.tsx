@@ -114,9 +114,9 @@ function BarberOverviewPage() {
       }
     : null;
 
-  const dgisHref =
+  const mapsHref =
     b && Number.isFinite(b.lat) && Number.isFinite(b.lng)
-      ? `https://2gis.uz/tashkent/geo/${b.lng},${b.lat}?m=${b.lng},${b.lat}/15`
+      ? `https://www.google.com/maps/search/?api=1&query=${b.lat},${b.lng}`
       : null;
 
   if (q.isLoading) {
@@ -337,11 +337,11 @@ function BarberOverviewPage() {
                   : "—"
               }
             />
-            {dgisHref ? (
+            {mapsHref ? (
               <Button variant="outline" size="sm" className="mt-2" asChild>
-                <a href={dgisHref} target="_blank" rel="noreferrer">
+                <a href={mapsHref} target="_blank" rel="noreferrer">
                   <ExternalLink className="size-3.5 mr-1.5" />
-                  2GIS
+                  Google Maps
                 </a>
               </Button>
             ) : null}

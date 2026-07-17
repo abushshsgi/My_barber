@@ -1,9 +1,8 @@
-/// <reference path="../../../node_modules/@2gis/mapgl/global.d.ts" />
-
 import { useEffect, useRef } from "react";
-import { load } from "@2gis/mapgl";
-import { resolveDgisApiKey } from "./api-key";
-import { fromMapGlCoords, TASHKENT_CENTER, toMapGlCoords } from "./constants";
+import "./google-maps-types";
+import { resolveGoogleMapsApiKey } from "./api-key";
+import { TASHKENT_CENTER } from "./constants";
+import { loadGoogleMaps } from "./load-maps";
 
 export type MapPickerProps = {
   lat?: number | null;
@@ -14,7 +13,7 @@ export type MapPickerProps = {
   style?: React.CSSProperties;
 };
 
-function isUsableMap(map: mapgl.Map | null | undefined): map is mapgl.Map {
+function isUsableMap(map: google.maps.Map | null | undefined): map is google.maps.Map {
   if (!map) return false;
   try {
     map.getCenter();
@@ -33,10 +32,11 @@ export function MapPicker({
   style,
 }: MapPickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapgl.Map | null>(null);
+  const mapRef = useRef<google.maps.Map | null>(null);
   const onCoordsRef = useRef(onCoordsChange);
   const skipMoveRef = useRef(false);
   const lastSyncedRef = useRef<{ lat: number; lng: number } | null>(null);
+  const listenerRef = useRef<google.maps.MapsEventListener | null>(null);
 
   onCoordsRef.current = onCoordsChange;
 
@@ -48,59 +48,62 @@ export function MapPicker({
     if (!el) return;
 
     let destroyed = false;
-    let map: mapgl.Map | undefined;
+    let map: google.maps.Map | undefined;
 
     void (async () => {
-      const apiKey = await resolveDgisApiKey();
+      const apiKey = await resolveGoogleMapsApiKey();
       if (destroyed || !containerRef.current || !apiKey) return;
 
-      const mapglAPI = await load();
-      if (destroyed || !containerRef.current) return;
+      try {
+        await loadGoogleMaps(apiKey);
+        if (destroyed || !containerRef.current) return;
 
-      map = new mapglAPI.Map(containerRef.current, {
-        center: toMapGlCoords(initialLat, initialLng),
-        zoom,
-        key: apiKey,
-        zoomControl: true,
-        enableTrackResize: true,
-        disableRotationByUserInteraction: true,
-        disablePitchByUserInteraction: true,
-      });
+        map = new google.maps.Map(containerRef.current, {
+          center: { lat: initialLat, lng: initialLng },
+          zoom,
+          disableDefaultUI: true,
+          zoomControl: true,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+          gestureHandling: "greedy",
+          clickableIcons: false,
+        });
 
-      if (destroyed) {
-        map.destroy();
-        return;
+        if (destroyed) return;
+
+        mapRef.current = map;
+        lastSyncedRef.current = { lat: initialLat, lng: initialLng };
+
+        listenerRef.current = map.addListener("idle", () => {
+          if (skipMoveRef.current) {
+            skipMoveRef.current = false;
+            return;
+          }
+          if (!isUsableMap(map)) return;
+          try {
+            const center = map.getCenter();
+            if (!center) return;
+            const nextLat = center.lat();
+            const nextLng = center.lng();
+            lastSyncedRef.current = { lat: nextLat, lng: nextLng };
+            onCoordsRef.current(nextLat, nextLng);
+          } catch {
+            // Map destroyed mid-gesture (Strict Mode / remount).
+          }
+        });
+      } catch (err) {
+        console.error("[MapPicker] failed to load Google Maps", err);
       }
-
-      mapRef.current = map;
-      lastSyncedRef.current = { lat: initialLat, lng: initialLng };
-
-      map.on("moveend", () => {
-        if (skipMoveRef.current) {
-          skipMoveRef.current = false;
-          return;
-        }
-        if (!isUsableMap(map)) return;
-        try {
-          const center = map.getCenter();
-          const { lat: nextLat, lng: nextLng } = fromMapGlCoords(center);
-          lastSyncedRef.current = { lat: nextLat, lng: nextLng };
-          onCoordsRef.current(nextLat, nextLng);
-        } catch {
-          // Map destroyed mid-gesture (Strict Mode / remount).
-        }
-      });
     })();
 
     return () => {
       destroyed = true;
-      const active = map ?? mapRef.current;
-      mapRef.current = null;
-      try {
-        active?.destroy();
-      } catch {
-        // ignore double-destroy
+      if (listenerRef.current && typeof google !== "undefined" && google?.maps?.event) {
+        google.maps.event.removeListener(listenerRef.current);
+        listenerRef.current = null;
       }
+      mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- init once
   }, []);
@@ -117,7 +120,7 @@ export function MapPicker({
     skipMoveRef.current = true;
     lastSyncedRef.current = { lat, lng };
     try {
-      map.setCenter(toMapGlCoords(lat, lng), { animate: true, duration: 400 });
+      map.panTo({ lat, lng });
     } catch {
       skipMoveRef.current = false;
     }

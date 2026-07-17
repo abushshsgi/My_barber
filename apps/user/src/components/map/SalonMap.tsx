@@ -1,4 +1,4 @@
-import { Map2GIS, type MapHandle, type MapMarker, type MapViewport } from "@mybarber/map-2gis";
+import { Map2GIS, type MapHandle, type MapMarker, type MapViewport } from "@mybarber/map-google";
 
 export type SalonMapMarker = MapMarker;
 export type SalonMapHandle = MapHandle;

@@ -1,12 +1,12 @@
-/// <reference path="../../../node_modules/@2gis/mapgl/global.d.ts" />
-
 import { useEffect, useRef, useState } from "react";
-import { load } from "@2gis/mapgl";
-import { resolveDgisApiKey } from "./api-key";
-import { UZ_CENTER, toMapGlCoords } from "./constants";
+import "./google-maps-types";
+import { resolveGoogleMapsApiKey } from "./api-key";
+import { UZ_CENTER } from "./constants";
 import { buildAdminPinHtml, buildPopupHtml } from "./markers";
 import { bindHtmlMarkerClick } from "./html-marker-events";
+import { createHtmlOverlay, type HtmlOverlay } from "./html-overlay";
 import { fitMapToPoints } from "./bounds";
+import { loadGoogleMaps } from "./load-maps";
 import type { AdminMapPoint } from "./types";
 
 const SALON_SYMBOL = "M3 9.5L12 3l9 6.5V21H3V9.5z";
@@ -21,9 +21,8 @@ export type AdminMap2GISProps = {
 
 export function AdminMap2GIS({ salons, barbers, className, style }: AdminMap2GISProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapgl.Map | null>(null);
-  const mapglRef = useRef<typeof mapgl | null>(null);
-  const markerRefs = useRef<mapgl.HtmlMarker[]>([]);
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const markerRefs = useRef<HtmlOverlay[]>([]);
   const [mapReady, setMapReady] = useState(false);
 
   const points = [...salons, ...barbers].filter(
@@ -35,23 +34,30 @@ export function AdminMap2GIS({ salons, barbers, className, style }: AdminMap2GIS
     if (!el) return;
 
     let destroyed = false;
-    let map: mapgl.Map | undefined;
 
     void (async () => {
-      const apiKey = await resolveDgisApiKey();
+      const apiKey = await resolveGoogleMapsApiKey();
       if (destroyed || !containerRef.current || !apiKey) return;
 
-      const mapglAPI = await load();
-      if (destroyed || !containerRef.current) return;
-      mapglRef.current = mapglAPI;
-      map = new mapglAPI.Map(containerRef.current, {
-        center: toMapGlCoords(UZ_CENTER.lat, UZ_CENTER.lng),
-        zoom: 6,
-        key: apiKey,
-        zoomControl: true,
-      });
-      mapRef.current = map;
-      setMapReady(true);
+      try {
+        await loadGoogleMaps(apiKey);
+        if (destroyed || !containerRef.current) return;
+        const map = new google.maps.Map(containerRef.current, {
+          center: UZ_CENTER,
+          zoom: 6,
+          disableDefaultUI: true,
+          zoomControl: true,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+          gestureHandling: "greedy",
+          clickableIcons: false,
+        });
+        mapRef.current = map;
+        setMapReady(true);
+      } catch (err) {
+        console.error("[AdminMap2GIS] failed to load Google Maps", err);
+      }
     })();
 
     return () => {
@@ -59,16 +65,13 @@ export function AdminMap2GIS({ salons, barbers, className, style }: AdminMap2GIS
       setMapReady(false);
       markerRefs.current.forEach((m) => m.destroy());
       markerRefs.current = [];
-      map?.destroy();
       mapRef.current = null;
-      mapglRef.current = null;
     };
   }, []);
 
   useEffect(() => {
     const map = mapRef.current;
-    const mapglAPI = mapglRef.current;
-    if (!mapReady || !map || !mapglAPI) return;
+    if (!mapReady || !map) return;
 
     markerRefs.current.forEach((m) => m.destroy());
     markerRefs.current = [];
@@ -76,12 +79,7 @@ export function AdminMap2GIS({ salons, barbers, className, style }: AdminMap2GIS
     const addPoint = (p: AdminMapPoint) => {
       const isSalon = p.kind === "salon";
       const pinHtml = buildAdminPinHtml(isSalon ? "#1a1a1a" : "#5C4A3A", isSalon ? SALON_SYMBOL : BARBER_SYMBOL);
-      const marker = new mapglAPI.HtmlMarker(map, {
-        coordinates: toMapGlCoords(p.lat, p.lng),
-        html: pinHtml,
-        interactive: true,
-        preventMapInteractions: true,
-      });
+      const marker = createHtmlOverlay(map, { lat: p.lat, lng: p.lng }, pinHtml);
       bindHtmlMarkerClick(marker, () => {
         marker.setContent(
           buildPopupHtml(p.label, p.subtitle ?? "", isSalon ? "Salon" : "Sartarosh"),
@@ -94,20 +92,19 @@ export function AdminMap2GIS({ salons, barbers, className, style }: AdminMap2GIS
     barbers.forEach(addPoint);
 
     if (points.length === 0) {
-      map.setCenter(toMapGlCoords(UZ_CENTER.lat, UZ_CENTER.lng));
+      map.setCenter(UZ_CENTER);
       map.setZoom(6);
       return;
     }
     if (points.length === 1) {
-      map.setCenter(toMapGlCoords(points[0].lat, points[0].lng));
+      map.setCenter({ lat: points[0].lat, lng: points[0].lng });
       map.setZoom(11);
       return;
     }
     try {
       fitMapToPoints(
         map,
-        mapglAPI,
-        points.map((p) => toMapGlCoords(p.lat, p.lng)),
+        points.map((p) => ({ lat: p.lat, lng: p.lng })),
         { padding: 40, maxZoom: 12 },
       );
     } catch (err) {

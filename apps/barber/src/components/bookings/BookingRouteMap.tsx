@@ -1,11 +1,11 @@
-import type { MapHandle } from "@mybarber/map-2gis";
+import type { MapHandle } from "@mybarber/map-google";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, MapPin, Navigation } from "lucide-react";
 import { formatDistanceKm, haversineKm } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 
 const Map2GIS = lazy(() =>
-  import("@mybarber/map-2gis").then((m) => ({ default: m.Map2GIS })),
+  import("@mybarber/map-google").then((m) => ({ default: m.Map2GIS })),
 );
 
 type Props = {

@@ -1,7 +1,7 @@
-/// <reference path="../../../node_modules/@2gis/mapgl/global.d.ts" />
+import type { HtmlOverlay } from "./html-overlay";
 
-/** HtmlMarker has no Evented.on — attach click via DOM (2GIS docs). */
-export function bindHtmlMarkerClick(marker: mapgl.HtmlMarker, onClick: () => void): void {
+/** Attach click via DOM on overlay content. */
+export function bindHtmlMarkerClick(marker: HtmlOverlay, onClick: () => void): void {
   const root = marker.getContent();
   root.style.pointerEvents = "auto";
   root.style.cursor = "pointer";
@@ -13,7 +13,7 @@ export function bindHtmlMarkerClick(marker: mapgl.HtmlMarker, onClick: () => voi
 }
 
 export function bindHtmlMarkerHover(
-  marker: mapgl.HtmlMarker,
+  marker: HtmlOverlay,
   onEnter: () => void,
   onLeave: () => void,
 ): void {
@@ -64,7 +64,7 @@ function setPreviewSlide(root: HTMLElement, index: number) {
 }
 
 export function bindSalonPreviewInteractions(
-  marker: mapgl.HtmlMarker,
+  marker: HtmlOverlay,
   options: { onNavigate: () => void; onClose: () => void },
 ): void {
   const root = marker.getContent();
@@ -107,6 +107,6 @@ export function bindSalonPreviewInteractions(
 }
 
 /** @deprecated use bindSalonPreviewInteractions */
-export function bindSalonPreviewNavigate(marker: mapgl.HtmlMarker, onNavigate: () => void): void {
+export function bindSalonPreviewNavigate(marker: HtmlOverlay, onNavigate: () => void): void {
   bindSalonPreviewInteractions(marker, { onNavigate, onClose: () => undefined });
 }

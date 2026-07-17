@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import { cn } from "@/lib/utils";
 
 const MapPicker = lazy(() =>
-  import("@mybarber/map-2gis").then((m) => ({ default: m.MapPicker })),
+  import("@mybarber/map-google").then((m) => ({ default: m.MapPicker })),
 );
 
 type Props = {
@@ -11,7 +11,7 @@ type Props = {
   className?: string;
 };
 
-/** Read-only 2GIS preview for GPS-acquired coordinates. */
+/** Read-only Google Maps preview for GPS-acquired coordinates. */
 export function GpsLocationPreviewMap({ latitude, longitude, className }: Props) {
   return (
     <div className={cn("overflow-hidden rounded-2xl border border-border", className)}>

@@ -13,7 +13,7 @@ from geo.services.dgis import DgisGeocoderError, reverse_geocode
 UZ_LAT_MIN, UZ_LAT_MAX = 37.0, 46.5
 UZ_LNG_MIN, UZ_LNG_MAX = 55.9, 73.5
 
-# 2GIS ishlamasa — viloyat markaziga yaqinlik bo'yicha taxmin.
+# Geocoder ishlamasa — viloyat markaziga yaqinlik bo'yicha taxmin.
 _REGION_CENTERS: list[tuple[str, float, float]] = [
     (UzRegion.ANDIJON, 40.7821, 72.3442),
     (UzRegion.BUXORO, 39.7747, 64.4286),
@@ -158,7 +158,7 @@ def resolve_region_from_coords(lat: float, lng: float) -> ResolvedLocation:
 
 
 def resolve_region_from_coords_fast(lat: float, lng: float) -> ResolvedLocation:
-    """2GIS chaqirmasdan — faqat bbox + eng yaqin markaz (admin ro'yxat uchun)."""
+    """Geocoder chaqirmasdan — faqat bbox + eng yaqin markaz (admin ro'yxat uchun)."""
     if not is_in_uzbekistan(lat, lng):
         return ResolvedLocation(
             region_code=None,

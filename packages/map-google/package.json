@@ -1,5 +1,5 @@
 {
-  "name": "@mybarber/map-2gis",
+  "name": "@mybarber/map-google",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -13,6 +13,7 @@
     "react-dom": "^18.3.1 || ^19.0.0"
   },
   "dependencies": {
-    "@2gis/mapgl": "^1.62.0"
+    "@googlemaps/js-api-loader": "^2.1.1",
+    "@types/google.maps": "^3.58.1"
   }
 }

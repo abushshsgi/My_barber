@@ -1,4 +1,4 @@
-import type { MapBounds, MapViewport } from "@mybarber/map-2gis";
+import type { MapBounds, MapViewport } from "@mybarber/map-google";
 
 export type { MapBounds, MapViewport };
 

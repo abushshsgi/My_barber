@@ -8,10 +8,14 @@ import requests
 from django.conf import settings
 
 
-class DgisGeocoderError(Exception):
+class GeocoderError(Exception):
     def __init__(self, message: str, status_code: int = 502):
         super().__init__(message)
         self.status_code = status_code
+
+
+# Backward-compatible alias while callers migrate off 2GIS naming.
+DgisGeocoderError = GeocoderError
 
 
 @dataclass(frozen=True)
@@ -24,39 +28,59 @@ class GeocodeResult:
 
 
 def _api_key() -> str:
-    key = getattr(settings, "DGIS_API_KEY", "").strip()
+    key = (
+        getattr(settings, "GOOGLE_MAPS_API_KEY", "")
+        or getattr(settings, "DGIS_API_KEY", "")
+    ).strip()
     if not key:
-        raise DgisGeocoderError("2GIS API key is not configured.", status_code=503)
+        raise GeocoderError("Google Maps API key is not configured.", status_code=503)
     return key
 
 
 def _request(params: dict[str, str]) -> dict[str, Any]:
-    url = f"https://catalog.api.2gis.com/3.0/items/geocode?{urlencode(params)}"
+    url = f"https://maps.googleapis.com/maps/api/geocode/json?{urlencode(params)}"
     try:
         resp = requests.get(url, timeout=10)
         resp.raise_for_status()
     except requests.RequestException as exc:
-        raise DgisGeocoderError("2GIS geocoder request failed.") from exc
+        raise GeocoderError("Google geocoder request failed.") from exc
 
     data = resp.json()
-    meta = data.get("meta") or {}
-    if meta.get("code") != 200:
-        raise DgisGeocoderError("2GIS geocoder returned an error.", status_code=502)
+    status = str(data.get("status") or "")
+    if status == "ZERO_RESULTS":
+        return data
+    if status != "OK":
+        raise GeocoderError(f"Google geocoder returned {status or 'an error'}.", status_code=502)
     return data
 
 
-def _parse_item(item: dict[str, Any]) -> GeocodeResult:
-    point = item.get("point") or {}
-    lat = float(point.get("lat"))
-    lng = float(point.get("lon"))
-    full_name = str(item.get("full_name") or item.get("address_name") or item.get("name") or "").strip()
-    address = str(item.get("address_name") or item.get("name") or full_name).strip()
-    city = ""
-    for component in item.get("address", {}).get("components", []) if isinstance(item.get("address"), dict) else []:
-        if component.get("type") in ("city", "settlement", "region"):
-            city = str(component.get("name") or "").strip()
-            if city:
-                break
+def _component(components: list[dict[str, Any]], *types: str) -> str:
+    wanted = set(types)
+    for component in components:
+        ctype = set(component.get("types") or [])
+        if ctype & wanted:
+            return str(component.get("long_name") or "").strip()
+    return ""
+
+
+def _parse_result(item: dict[str, Any]) -> GeocodeResult:
+    geometry = item.get("geometry") or {}
+    location = geometry.get("location") or {}
+    lat = float(location["lat"])
+    lng = float(location["lng"])
+    full_name = str(item.get("formatted_address") or "").strip()
+    components = item.get("address_components") or []
+    if not isinstance(components, list):
+        components = []
+
+    street_number = _component(components, "street_number")
+    route = _component(components, "route")
+    address = ", ".join(part for part in (route, street_number) if part) or full_name
+    city = (
+        _component(components, "locality")
+        or _component(components, "administrative_area_level_2")
+        or _component(components, "administrative_area_level_1")
+    )
     if not city and full_name:
         city = full_name.split(",")[0].strip()
     return GeocodeResult(lat=lat, lng=lng, address=address, city=city, full_name=full_name)
@@ -67,10 +91,10 @@ def geocode_query(q: str) -> list[GeocodeResult]:
     if len(q) < 2:
         return []
     try:
-        results = _geocode_query_dgis(q)
+        results = _geocode_query_google(q)
         if results:
             return results
-    except DgisGeocoderError:
+    except GeocoderError:
         pass
     from geo.services.nominatim import geocode_query_nominatim
     from geo.services.photon import geocode_query_photon
@@ -81,32 +105,33 @@ def geocode_query(q: str) -> list[GeocodeResult]:
     return geocode_query_photon(q)
 
 
-def _geocode_query_dgis(q: str) -> list[GeocodeResult]:
+def _geocode_query_google(q: str) -> list[GeocodeResult]:
     data = _request(
         {
-            "q": q,
-            "fields": "items.point,items.address,items.address_name,items.full_name,items.name",
+            "address": q,
+            "region": "uz",
+            "language": "uz",
             "key": _api_key(),
         }
     )
-    items = (data.get("result") or {}).get("items") or []
+    items = data.get("results") or []
     out: list[GeocodeResult] = []
     for item in items:
         try:
-            out.append(_parse_item(item))
-        except (TypeError, ValueError):
+            out.append(_parse_result(item))
+        except (KeyError, TypeError, ValueError):
             continue
     return out
 
 
 def reverse_geocode(lat: float, lng: float) -> GeocodeResult | None:
     if not (-90.0 <= lat <= 90.0) or not (-180.0 <= lng <= 180.0):
-        raise DgisGeocoderError("Invalid coordinates.", status_code=400)
+        raise GeocoderError("Invalid coordinates.", status_code=400)
     try:
-        result = _reverse_geocode_dgis(lat, lng)
+        result = _reverse_geocode_google(lat, lng)
         if result:
             return result
-    except DgisGeocoderError:
+    except GeocoderError:
         pass
     from geo.services.nominatim import reverse_geocode_nominatim
     from geo.services.photon import reverse_geocode_photon
@@ -117,19 +142,23 @@ def reverse_geocode(lat: float, lng: float) -> GeocodeResult | None:
     return reverse_geocode_photon(lat, lng)
 
 
-def _reverse_geocode_dgis(lat: float, lng: float) -> GeocodeResult | None:
+def _reverse_geocode_google(lat: float, lng: float) -> GeocodeResult | None:
     data = _request(
         {
-            "lat": str(lat),
-            "lon": str(lng),
-            "fields": "items.point,items.address,items.address_name,items.full_name,items.name",
+            "latlng": f"{lat},{lng}",
+            "language": "uz",
             "key": _api_key(),
         }
     )
-    items = (data.get("result") or {}).get("items") or []
+    items = data.get("results") or []
     if not items:
         return None
     try:
-        return _parse_item(items[0])
-    except (TypeError, ValueError):
+        return _parse_result(items[0])
+    except (KeyError, TypeError, ValueError):
         return None
+
+
+# Private aliases used by older tests / patches.
+_geocode_query_dgis = _geocode_query_google
+_reverse_geocode_dgis = _reverse_geocode_google

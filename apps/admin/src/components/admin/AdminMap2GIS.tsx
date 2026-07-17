@@ -1,4 +1,4 @@
-import { AdminMap2GIS as BaseAdminMap2GIS, type AdminMapPoint } from "@mybarber/map-2gis";
+import { AdminMap2GIS as BaseAdminMap2GIS, type AdminMapPoint } from "@mybarber/map-google";
 import type { AdminBarber, AdminSalon } from "@/lib/admin-api";
 
 function toSalonPoint(s: AdminSalon): AdminMapPoint {

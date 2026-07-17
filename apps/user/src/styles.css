@@ -428,11 +428,4 @@
     }
   }
 
-  /* Home map preview — 2GIS copyright yashirish (faqat kichik widget) */
-  .map-home-preview a[href*="2gis"],
-  .map-home-preview [class*="copyright"] {
-    opacity: 0 !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-  }
 }

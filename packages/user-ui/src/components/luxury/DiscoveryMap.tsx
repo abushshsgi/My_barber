@@ -1,4 +1,4 @@
-import { Map2GIS, type MapMarker } from "@mybarber/map-2gis";
+import { Map2GIS, type MapMarker } from "@mybarber/map-google";
 
 export type DiscoveryMarkerItem = { id: string; lat: number; lng: number; label: string };
 

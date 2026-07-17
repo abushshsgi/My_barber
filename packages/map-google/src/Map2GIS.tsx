@@ -1,23 +1,22 @@
-/// <reference path="../../../node_modules/@2gis/mapgl/global.d.ts" />
-
 import { useEffect, useId, useRef, useState } from "react";
-import { load } from "@2gis/mapgl";
-import { resolveDgisApiKey } from "./api-key";
+import "./google-maps-types";
+import { resolveGoogleMapsApiKey } from "./api-key";
 import {
   DEFAULT_ZOOM,
   FIT_MAX_ZOOM,
   TASHKENT_CENTER,
-  toMapGlCoords,
   USER_RADIUS_M,
 } from "./constants";
 import { buildPricePillHtml, buildSalonPreviewHtml, buildUserDotHtml } from "./markers";
 import { bindHtmlMarkerClick, bindHtmlMarkerHover, bindSalonPreviewInteractions } from "./html-marker-events";
+import { HtmlOverlay, createHtmlOverlay } from "./html-overlay";
 import { fitMapToPoints } from "./bounds";
+import { loadGoogleMaps } from "./load-maps";
 import { readMapViewport, type MapViewport } from "./viewport";
 import type { MapMarker } from "./types";
 
 const MARKER_EXIT_MS = 280;
-const MARKER_STYLES_ID = "map2gis-marker-keyframes";
+const MARKER_STYLES_ID = "map-google-marker-keyframes";
 
 function ensureMarkerStyles() {
   if (typeof document === "undefined" || document.getElementById(MARKER_STYLES_ID)) return;
@@ -94,15 +93,15 @@ export function Map2GIS({
   style,
 }: Map2GISProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapgl.Map | null>(null);
-  const mapglRef = useRef<typeof mapgl | null>(null);
-  const markerRefs = useRef<Map<string, mapgl.HtmlMarker>>(new Map());
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const markerRefs = useRef<Map<string, HtmlOverlay>>(new Map());
   const markerDataRef = useRef<Map<string, MapMarker>>(new Map());
   const exitingIdsRef = useRef<Set<string>>(new Set());
   const exitTimersRef = useRef<Map<string, number>>(new Map());
-  const previewRef = useRef<mapgl.HtmlMarker | null>(null);
-  const userMarkerRef = useRef<mapgl.HtmlMarker | null>(null);
-  const userCircleRef = useRef<mapgl.Circle | null>(null);
+  const previewRef = useRef<HtmlOverlay | null>(null);
+  const userMarkerRef = useRef<HtmlOverlay | null>(null);
+  const userCircleRef = useRef<google.maps.Circle | null>(null);
+  const listenersRef = useRef<google.maps.MapsEventListener[]>([]);
   const onMapReadyRef = useRef(onMapReady);
   const onMapErrorRef = useRef(onMapError);
   const onViewportChangeRef = useRef(onViewportChange);
@@ -175,8 +174,7 @@ export function Map2GIS({
 
   const showPreview = (m: MapMarker) => {
     const map = mapRef.current;
-    const mapglAPI = mapglRef.current;
-    if (!map || !mapglAPI) return;
+    if (!map) return;
 
     hidePreview();
     const html = buildSalonPreviewHtml({
@@ -187,13 +185,7 @@ export function Map2GIS({
       rating: m.rating,
       ctaLabel: m.ctaLabel ?? "Salonni ko'rish",
     });
-    const preview = new mapglAPI.HtmlMarker(map, {
-      coordinates: toMapGlCoords(m.lat, m.lng),
-      html,
-      interactive: true,
-      preventMapInteractions: true,
-      zIndex: 20,
-    });
+    const preview = createHtmlOverlay(map, { lat: m.lat, lng: m.lng }, html, { zIndex: 20 });
     bindSalonPreviewInteractions(preview, {
       onNavigate: () => onMarkerNavigateRef.current?.(m.id),
       onClose: () => onMarkerSelectRef.current?.(null),
@@ -206,100 +198,102 @@ export function Map2GIS({
     if (!el) return;
 
     let destroyed = false;
-    let map: mapgl.Map | undefined;
+    let map: google.maps.Map | undefined;
 
     void (async () => {
-      const apiKey = await resolveDgisApiKey();
+      const apiKey = await resolveGoogleMapsApiKey();
       if (destroyed) return;
       if (!apiKey) {
-        const message = "Xarita yuklanmadi. 2GIS API kaliti sozlanmagan.";
+        const message = "Xarita yuklanmadi. Google Maps API kaliti sozlanmagan.";
         setMapError(message);
         onMapErrorRef.current?.(message);
         return;
       }
 
-    const notifyResize = () => {
-      const m = mapRef.current as (mapgl.Map & { invalidateSize?: () => void }) | null;
-      m?.invalidateSize?.();
-    };
-
-    const buildHandle = (): MapHandle => ({
-      flyTo(lat, lng, zoom = 15) {
+      const notifyResize = () => {
         const m = mapRef.current;
         if (!m) return;
-        skipViewportEmitRef.current = true;
-        m.setCenter(toMapGlCoords(lat, lng), { animate: true, duration: 550 });
-        if (zoom && (m.getZoom() ?? 0) < zoom) {
-          m.setZoom(zoom, { animate: true, duration: 550 });
-        }
-        window.setTimeout(() => {
-          skipViewportEmitRef.current = false;
-          emitViewport();
-        }, 600);
-      },
-      fitMarkers(items, padding) {
-        const m = mapRef.current;
-        const api = mapglRef.current;
-        if (!m || !api) return;
-        skipViewportEmitRef.current = true;
-        if (items.length === 0) {
-          m.setCenter(toMapGlCoords(TASHKENT_CENTER.lat, TASHKENT_CENTER.lng));
-          m.setZoom(DEFAULT_ZOOM);
-        } else {
-          fitMapToPoints(
-            m,
-            api,
-            items.map((item) => toMapGlCoords(item.lat, item.lng)),
-            {
-              padding: {
-                ...DESKTOP_FIT_PAD,
-                bottom: padding?.bottom ?? DESKTOP_FIT_PAD.bottom,
+        google.maps.event.trigger(m, "resize");
+      };
+
+      const buildHandle = (): MapHandle => ({
+        flyTo(lat, lng, zoom = 15) {
+          const m = mapRef.current;
+          if (!m) return;
+          skipViewportEmitRef.current = true;
+          m.panTo({ lat, lng });
+          if (zoom && (m.getZoom() ?? 0) < zoom) {
+            m.setZoom(zoom);
+          }
+          window.setTimeout(() => {
+            skipViewportEmitRef.current = false;
+            emitViewport();
+          }, 600);
+        },
+        fitMarkers(items, padding) {
+          const m = mapRef.current;
+          if (!m) return;
+          skipViewportEmitRef.current = true;
+          if (items.length === 0) {
+            m.setCenter(TASHKENT_CENTER);
+            m.setZoom(DEFAULT_ZOOM);
+          } else {
+            fitMapToPoints(
+              m,
+              items.map((item) => ({ lat: item.lat, lng: item.lng })),
+              {
+                padding: {
+                  ...DESKTOP_FIT_PAD,
+                  bottom: padding?.bottom ?? DESKTOP_FIT_PAD.bottom,
+                },
+                maxZoom: FIT_MAX_ZOOM,
               },
-              maxZoom: FIT_MAX_ZOOM,
-            },
-          );
-          const boosted = Math.min((m.getZoom() ?? DEFAULT_ZOOM) + 0.8, FIT_MAX_ZOOM);
-          m.setZoom(boosted);
-        }
-        notifyResize();
-        window.setTimeout(() => {
-          skipViewportEmitRef.current = false;
-          emitViewport();
-        }, 450);
-      },
-      zoomIn() {
-        const m = mapRef.current;
-        if (!m) return;
-        const next = Math.min((m.getZoom() ?? DEFAULT_ZOOM) + 1, 18);
-        m.setZoom(next, { animate: true, duration: 280 });
-        window.setTimeout(() => emitViewport(), 320);
-      },
-      zoomOut() {
-        const m = mapRef.current;
-        if (!m) return;
-        const next = Math.max((m.getZoom() ?? DEFAULT_ZOOM) - 1, 10);
-        m.setZoom(next, { animate: true, duration: 280 });
-        window.setTimeout(() => emitViewport(), 320);
-      },
-      resize: notifyResize,
-      getViewport() {
-        const m = mapRef.current;
-        return m ? readMapViewport(m) : null;
-      },
-    });
+            );
+            const boosted = Math.min((m.getZoom() ?? DEFAULT_ZOOM) + 0.8, FIT_MAX_ZOOM);
+            m.setZoom(boosted);
+          }
+          notifyResize();
+          window.setTimeout(() => {
+            skipViewportEmitRef.current = false;
+            emitViewport();
+          }, 450);
+        },
+        zoomIn() {
+          const m = mapRef.current;
+          if (!m) return;
+          const next = Math.min((m.getZoom() ?? DEFAULT_ZOOM) + 1, 18);
+          m.setZoom(next);
+          window.setTimeout(() => emitViewport(), 320);
+        },
+        zoomOut() {
+          const m = mapRef.current;
+          if (!m) return;
+          const next = Math.max((m.getZoom() ?? DEFAULT_ZOOM) - 1, 10);
+          m.setZoom(next);
+          window.setTimeout(() => emitViewport(), 320);
+        },
+        resize: notifyResize,
+        getViewport() {
+          const m = mapRef.current;
+          return m ? readMapViewport(m) : null;
+        },
+      });
 
-    void load()
-      .then((mapglAPI) => {
+      try {
+        await loadGoogleMaps(apiKey);
         if (destroyed || !containerRef.current) return;
-        mapglRef.current = mapglAPI;
-        map = new mapglAPI.Map(containerRef.current, {
-          center: toMapGlCoords(TASHKENT_CENTER.lat, TASHKENT_CENTER.lng),
+
+        map = new google.maps.Map(containerRef.current, {
+          center: TASHKENT_CENTER,
           zoom: DEFAULT_ZOOM,
-          key: apiKey,
+          disableDefaultUI: true,
           zoomControl: false,
-          enableTrackResize: true,
-          disableRotationByUserInteraction: true,
-          disablePitchByUserInteraction: true,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+          gestureHandling: "greedy",
+          clickableIcons: false,
+          keyboardShortcuts: false,
         });
         mapRef.current = map;
         ensureMarkerStyles();
@@ -308,56 +302,33 @@ export function Map2GIS({
         onMapReadyRef.current?.(buildHandle());
         notifyResize();
 
-        map.on("moveend", () => {
+        const onIdle = () => {
           if (!skipViewportEmitRef.current) emitViewport();
-        });
-
-        map.on("zoomend", () => {
-          if (!skipViewportEmitRef.current) emitViewport();
-        });
-
-        map.on("idle", () => {
-          if (!skipViewportEmitRef.current) emitViewport();
-        });
-
-        let zoomFrame = 0;
-        map.on("zoom", () => {
-          if (skipViewportEmitRef.current) return;
-          if (zoomFrame) cancelAnimationFrame(zoomFrame);
-          zoomFrame = requestAnimationFrame(() => {
-            emitViewport();
-            zoomFrame = 0;
-          });
-        });
-
-        let moveFrame = 0;
-        map.on("move", () => {
-          if (skipViewportEmitRef.current) return;
-          if (moveFrame) cancelAnimationFrame(moveFrame);
-          moveFrame = requestAnimationFrame(() => {
-            emitViewport();
-            moveFrame = 0;
-          });
-        });
-
-        map.on("click", () => {
-          window.requestAnimationFrame(() => {
-            if (suppressMapClickRef.current) {
-              suppressMapClickRef.current = false;
-              return;
-            }
-            if (selectedIdRef.current) {
-              onMarkerSelectRef.current?.(null);
-            }
-          });
-        });
-      })
-      .catch((err: unknown) => {
-        console.error("[Map2GIS] failed to load mapgl", err);
-        const message = "Xarita yuklanmadi. Internet yoki 2GIS kalitini tekshiring.";
+        };
+        listenersRef.current.push(
+          map.addListener("idle", onIdle),
+          map.addListener("dragend", onIdle),
+          map.addListener("zoom_changed", () => {
+            if (!skipViewportEmitRef.current) emitViewport();
+          }),
+          map.addListener("click", () => {
+            window.requestAnimationFrame(() => {
+              if (suppressMapClickRef.current) {
+                suppressMapClickRef.current = false;
+                return;
+              }
+              if (selectedIdRef.current) {
+                onMarkerSelectRef.current?.(null);
+              }
+            });
+          }),
+        );
+      } catch (err: unknown) {
+        console.error("[Map2GIS] failed to load Google Maps", err);
+        const message = "Xarita yuklanmadi. Internet yoki Google Maps kalitini tekshiring.";
         setMapError(message);
         onMapErrorRef.current?.(message);
-      });
+      }
     })();
 
     return () => {
@@ -371,18 +342,19 @@ export function Map2GIS({
       markerRefs.current.clear();
       userMarkerRef.current?.destroy();
       userMarkerRef.current = null;
-      userCircleRef.current?.destroy();
+      userCircleRef.current?.setMap(null);
       userCircleRef.current = null;
-      map?.destroy();
+      if (typeof google !== "undefined" && google?.maps?.event) {
+        listenersRef.current.forEach((l) => google.maps.event.removeListener(l));
+      }
+      listenersRef.current = [];
       mapRef.current = null;
-      mapglRef.current = null;
     };
   }, []);
 
   useEffect(() => {
     const map = mapRef.current;
-    const mapglAPI = mapglRef.current;
-    if (!mapReady || !map || !mapglAPI) return;
+    if (!mapReady || !map) return;
 
     const nextIds = new Set(markers.map((m) => m.id));
     const hoverId = hoveredIdRef.current;
@@ -418,7 +390,7 @@ export function Map2GIS({
         const motion = existing && !reEntering ? "none" : "enter";
         const html = buildPricePillHtml(isSelected, pinLabel, isHovered && !isSelected, motion);
 
-        const bindMarker = (marker: mapgl.HtmlMarker) => {
+        const bindMarker = (marker: HtmlOverlay) => {
           bindHtmlMarkerClick(marker, () => {
             suppressMapClickRef.current = true;
             const current = selectedIdRef.current;
@@ -433,14 +405,11 @@ export function Map2GIS({
 
         if (existing) {
           existing.setContent(html);
-          existing.setCoordinates(toMapGlCoords(m.lat, m.lng));
+          existing.setCoordinates(m.lat, m.lng);
+          existing.setZIndex(isSelected ? 12 : 10);
           bindMarker(existing);
         } else {
-          const marker = new mapglAPI.HtmlMarker(map, {
-            coordinates: toMapGlCoords(m.lat, m.lng),
-            html,
-            interactive: true,
-            preventMapInteractions: true,
+          const marker = createHtmlOverlay(map, { lat: m.lat, lng: m.lng }, html, {
             zIndex: isSelected ? 12 : 10,
           });
           bindMarker(marker);
@@ -463,37 +432,41 @@ export function Map2GIS({
 
   useEffect(() => {
     const map = mapRef.current;
-    const mapglAPI = mapglRef.current;
-    if (!mapReady || !map || !mapglAPI) return;
+    if (!mapReady || !map) return;
 
     userMarkerRef.current?.destroy();
     userMarkerRef.current = null;
-    userCircleRef.current?.destroy();
+    userCircleRef.current?.setMap(null);
     userCircleRef.current = null;
 
     if (!showUserLocation || !userLocation) return;
 
-    userMarkerRef.current = new mapglAPI.HtmlMarker(map, {
-      coordinates: toMapGlCoords(userLocation.lat, userLocation.lng),
-      html: buildUserDotHtml(),
-    });
-    userCircleRef.current = new mapglAPI.Circle(map, {
-      coordinates: toMapGlCoords(userLocation.lat, userLocation.lng),
+    userMarkerRef.current = createHtmlOverlay(
+      map,
+      { lat: userLocation.lat, lng: userLocation.lng },
+      buildUserDotHtml(),
+      { zIndex: 15 },
+    );
+    userCircleRef.current = new google.maps.Circle({
+      map,
+      center: userLocation,
       radius: USER_RADIUS_M,
-      color: "#1414140D",
-      strokeWidth: 1,
-      strokeColor: "#14141433",
+      fillColor: "#141414",
+      fillOpacity: 0.05,
+      strokeColor: "#141414",
+      strokeOpacity: 0.2,
+      strokeWeight: 1,
+      clickable: false,
     });
   }, [showUserLocation, userLocation, mapReady]);
 
   useEffect(() => {
     if (!autoFitMarkers) return;
     const map = mapRef.current;
-    const mapglAPI = mapglRef.current;
-    if (!mapReady || !map || !mapglAPI) return;
+    if (!mapReady || !map) return;
 
     if (!markers.some((m) => m.id)) {
-      map.setCenter(toMapGlCoords(TASHKENT_CENTER.lat, TASHKENT_CENTER.lng));
+      map.setCenter(TASHKENT_CENTER);
       map.setZoom(DEFAULT_ZOOM);
       initialFitDoneRef.current = false;
       return;
@@ -504,8 +477,7 @@ export function Map2GIS({
     skipViewportEmitRef.current = true;
     fitMapToPoints(
       map,
-      mapglAPI,
-      markers.map((m) => toMapGlCoords(m.lat, m.lng)),
+      markers.map((m) => ({ lat: m.lat, lng: m.lng })),
       {
         padding: { top: 72, right: 48, bottom: BOTTOM_PAD, left: 48, ...fitPadding },
         maxZoom: fitMaxZoom ?? FIT_MAX_ZOOM,
@@ -522,8 +494,8 @@ export function Map2GIS({
     if (!el || !mapReady) return;
 
     const ro = new ResizeObserver(() => {
-      const m = mapRef.current as (mapgl.Map & { invalidateSize?: () => void }) | null;
-      m?.invalidateSize?.();
+      const m = mapRef.current;
+      if (m) google.maps.event.trigger(m, "resize");
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -533,7 +505,7 @@ export function Map2GIS({
     <div className={className} style={{ position: "relative", width: "100%", height: "100%", ...style }}>
       <div
         ref={containerRef}
-        id={`map2gis-${reactId}`}
+        id={`map-google-${reactId}`}
         style={{ width: "100%", height: "100%", background: "oklch(0.94 0.012 85)" }}
       />
       {mapError ? (

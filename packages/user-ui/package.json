@@ -17,7 +17,7 @@
   "dependencies": {
     "@fontsource/playfair-display": "^5.2.8",
     "@fontsource/plus-jakarta-sans": "^5.2.8",
-    "@mybarber/map-2gis": "file:../map-2gis",
+    "@mybarber/map-google": "file:../map-google",
     "@mybarber/shared": "file:../shared",
     "clsx": "^2.1.1",
     "tailwind-merge": "^3.5.0"
