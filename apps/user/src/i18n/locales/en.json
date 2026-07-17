@@ -1024,10 +1024,10 @@
       "tools": {
         "styles": "Styles",
         "stylesDesc": "Cuts tailored to your face",
+        "studio": "AI Studio",
+        "studioDesc": "Color, beard, and finish edits",
         "care": "Care",
         "careDesc": "Hair health and care directions",
-        "color": "Color",
-        "colorDesc": "Color and highlight directions",
         "gallery": "Gallery",
         "galleryDesc": "Upload a selfie to start a try-on"
       }
@@ -1094,13 +1094,24 @@
     "previewDesc": "View, download, or share the generated look",
     "previewBack": "Back to results",
     "studio": {
-      "title": "Morf Studio",
-      "subtitle": "Change color, style, and look",
+      "title": "AI Studio",
+      "subtitle": "Color, beard, and finish",
+      "openCta": "AI Studio",
+      "changePhoto": "Photo",
+      "pickLabel": "Choose a photo",
+      "pickTitle": "History, try-on, or a new selfie",
+      "fromHistory": "History / Try-on",
+      "emptyHistory": "No try-on or selfie yet",
+      "emptyHint": "Upload from camera or gallery",
+      "keepEditing": "Keep editing",
       "undo": "Undo",
       "reset": "Original",
-      "generating": "Applying studio edit…",
+      "generating": "Applying AI edit…",
       "applied": "{{name}} applied",
-      "failed": "Studio edit failed"
+      "failed": "Studio edit failed",
+      "pickFailed": "Could not load photo",
+      "selfie": "Selfie",
+      "done": "Done"
     },
     "beforeAfter": {
       "before": "Before",

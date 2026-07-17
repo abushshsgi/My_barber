@@ -1,146 +1,91 @@
-"""Morf AI Studio — rasm ustida qo'llanadigan tayyor variantlar."""
+"""Morf AI Studio — soch rangi, soqol va finish (namlik/matte) variantlari."""
 
 from __future__ import annotations
 
 from typing import Any
 
-# category → options with English edit instructions for the image model
+# Faqat salon-edit: rang, soqol, finish. Yuz rangi / uslub almashtirish yo'q.
 STUDIO_PRESETS: dict[str, dict[str, Any]] = {
     "hair_color": {
-        "label_uz": "Soch rangi",
-        "label_en": "Hair color",
+        "label_uz": "Rang",
+        "label_en": "Color",
         "options": [
             {
                 "id": "hair_blonde",
                 "label_uz": "Sariq",
                 "label_en": "Blonde",
-                "instruction": "Change ONLY the hair color to natural blonde. Keep the exact same haircut shape, length, face, skin, and identity.",
+                "swatch": "#E8D5A3",
+                "instruction": (
+                    "Recolor ONLY the hair to a natural warm blonde with realistic root depth "
+                    "and soft shine. Keep the EXACT same haircut shape, length, parting, face, "
+                    "skin tone, beard (if any), clothing, background, and identity. "
+                    "Photorealistic salon dye result — no wig look, no color banding."
+                ),
             },
             {
                 "id": "hair_brunette",
                 "label_uz": "Jigarrang",
                 "label_en": "Brunette",
-                "instruction": "Change ONLY the hair color to rich natural brunette brown. Keep the exact same haircut, face, skin, and identity.",
+                "swatch": "#4A2F1F",
+                "instruction": (
+                    "Recolor ONLY the hair to a rich natural brunette with subtle dimension. "
+                    "Keep the EXACT same haircut, face, skin, beard, clothing, background, and identity. "
+                    "Photorealistic salon color — natural light falloff on strands."
+                ),
             },
             {
                 "id": "hair_black",
                 "label_uz": "Qora",
                 "label_en": "Black",
-                "instruction": "Change ONLY the hair color to deep natural black. Keep the exact same haircut, face, skin, and identity.",
+                "swatch": "#111111",
+                "instruction": (
+                    "Recolor ONLY the hair to deep natural black with soft specular highlights. "
+                    "Keep the EXACT same haircut, face, skin, beard, clothing, background, and identity. "
+                    "Avoid flat ink-black plastic look."
+                ),
             },
             {
                 "id": "hair_auburn",
-                "label_uz": "Qizil-jigarrang",
-                "label_en": "Auburn",
-                "instruction": "Change ONLY the hair color to natural auburn / copper-red brown. Keep the exact same haircut, face, skin, and identity.",
+                "label_uz": "Mis",
+                "label_en": "Copper",
+                "swatch": "#A0522D",
+                "instruction": (
+                    "Recolor ONLY the hair to natural copper / auburn with warm lowlights. "
+                    "Keep the EXACT same haircut, face, skin, beard, clothing, background, and identity. "
+                    "Salon-quality color, not cartoon red."
+                ),
             },
             {
                 "id": "hair_ash",
                 "label_uz": "Kulrang",
                 "label_en": "Ash",
-                "instruction": "Change ONLY the hair color to cool ash brown-gray. Keep the exact same haircut, face, skin, and identity.",
+                "swatch": "#8B8680",
+                "instruction": (
+                    "Recolor ONLY the hair to cool ash brown-gray with natural dimension. "
+                    "Keep the EXACT same haircut, face, skin, beard, clothing, background, and identity."
+                ),
             },
             {
                 "id": "hair_platinum",
                 "label_uz": "Platina",
                 "label_en": "Platinum",
-                "instruction": "Change ONLY the hair color to platinum blonde. Keep the exact same haircut, face, skin, and identity.",
+                "swatch": "#F2EDE4",
+                "instruction": (
+                    "Recolor ONLY the hair to platinum blonde with soft cool tones and realistic "
+                    "root shadow. Keep the EXACT same haircut, face, skin, beard, clothing, "
+                    "background, and identity. Avoid yellow brassiness and overexposed white hair."
+                ),
             },
             {
                 "id": "hair_highlights",
                 "label_uz": "Highlight",
                 "label_en": "Highlights",
-                "instruction": "Add subtle natural balayage highlights to the hair. Keep the same haircut shape, face, skin, and identity.",
-            },
-        ],
-    },
-    "hair_style": {
-        "label_uz": "Soch uslubi",
-        "label_en": "Hair style",
-        "options": [
-            {
-                "id": "style_shorter",
-                "label_uz": "Qisqaroq",
-                "label_en": "Shorter",
-                "instruction": "Make the haircut noticeably shorter while keeping the same overall style family and the exact same face, skin, and identity.",
-            },
-            {
-                "id": "style_longer",
-                "label_uz": "Uzunroq",
-                "label_en": "Longer",
-                "instruction": "Make the hair slightly longer and fuller while keeping a professional salon look and the exact same face, skin, and identity.",
-            },
-            {
-                "id": "style_curly",
-                "label_uz": "Jingalak",
-                "label_en": "Curly",
-                "instruction": "Restyle the hair into natural soft curls. Keep the exact same face, skin tone, age, and identity.",
-            },
-            {
-                "id": "style_straight",
-                "label_uz": "Tekis",
-                "label_en": "Straight",
-                "instruction": "Restyle the hair into sleek straight hair. Keep the exact same face, skin tone, age, and identity.",
-            },
-            {
-                "id": "style_wavy",
-                "label_uz": "To'lqin",
-                "label_en": "Wavy",
-                "instruction": "Restyle the hair into soft natural waves. Keep the exact same face, skin tone, age, and identity.",
-            },
-            {
-                "id": "style_volume",
-                "label_uz": "Hajmli",
-                "label_en": "Volume",
-                "instruction": "Add more volume and lift to the hair on top while keeping a realistic salon finish and the exact same face and identity.",
-            },
-            {
-                "id": "style_fade",
-                "label_uz": "Fade",
-                "label_en": "Fresh fade",
-                "instruction": "Apply a clean modern fade / taper on the sides while keeping the top style cohesive and the exact same face and identity.",
-            },
-        ],
-    },
-    "skin_tone": {
-        "label_uz": "Yuz rangi",
-        "label_en": "Skin tone",
-        "options": [
-            {
-                "id": "skin_lighter",
-                "label_uz": "Yorug'roq",
-                "label_en": "Lighter",
-                "instruction": "Slightly lighten the skin tone naturally. Keep the exact same face structure, hair, age, and identity — only subtle skin tone shift.",
-            },
-            {
-                "id": "skin_darker",
-                "label_uz": "Qorong'iroq",
-                "label_en": "Darker",
-                "instruction": "Slightly deepen the skin tone naturally. Keep the exact same face structure, hair, age, and identity — only subtle skin tone shift.",
-            },
-            {
-                "id": "skin_warm",
-                "label_uz": "Iliq",
-                "label_en": "Warm",
-                "instruction": "Give the skin a warmer golden undertone. Keep the exact same face structure, hair, and identity.",
-            },
-            {
-                "id": "skin_cool",
-                "label_uz": "Sovuq",
-                "label_en": "Cool",
-                "instruction": "Give the skin a cooler undertone. Keep the exact same face structure, hair, and identity.",
-            },
-            {
-                "id": "skin_even",
-                "label_uz": "Tekis",
-                "label_en": "Even tone",
-                "instruction": "Even out the skin tone for a clean natural complexion. Keep the exact same face structure, hair, and identity — no beauty filter look.",
-            },
-            {
-                "id": "skin_glow",
-                "label_uz": "Yaltiroq",
-                "label_en": "Healthy glow",
-                "instruction": "Add a subtle healthy skin glow. Keep the exact same face structure, hair, and identity — photorealistic, not plastic.",
+                "swatch": "#C4A574",
+                "instruction": (
+                    "Add subtle natural balayage / face-framing highlights on the existing hair color. "
+                    "Keep the EXACT same haircut shape, face, skin, beard, clothing, background, and identity. "
+                    "Soft blend — no harsh stripes."
+                ),
             },
         ],
     },
@@ -150,69 +95,106 @@ STUDIO_PRESETS: dict[str, dict[str, Any]] = {
         "options": [
             {
                 "id": "beard_clean",
-                "label_uz": "Toza soqol",
-                "label_en": "Clean shave",
-                "instruction": "Remove facial hair for a clean shave. Keep the exact same face structure, hair on head, skin, and identity.",
+                "label_uz": "Toza",
+                "label_en": "Clean",
+                "instruction": (
+                    "Remove facial hair for a clean professional shave. Keep natural skin texture "
+                    "under the beard area — no blur filter. Keep the EXACT same face structure, "
+                    "head hair, clothing, background, and identity."
+                ),
             },
             {
                 "id": "beard_stubble",
-                "label_uz": "Qisqa soqol",
+                "label_uz": "Qisqa",
                 "label_en": "Stubble",
-                "instruction": "Add neat short designer stubble. Keep the exact same face structure, head hair, and identity.",
+                "instruction": (
+                    "Apply neat short designer stubble (1–3 day growth) with natural density. "
+                    "Keep the EXACT same face structure, head hair, clothing, background, and identity. "
+                    "Photorealistic barber finish."
+                ),
             },
             {
                 "id": "beard_full",
-                "label_uz": "To'liq soqol",
-                "label_en": "Full beard",
-                "instruction": "Add a well-groomed medium full beard. Keep the exact same face structure, head hair, and identity.",
+                "label_uz": "To'liq",
+                "label_en": "Full",
+                "instruction": (
+                    "Add a well-groomed medium full beard with clean cheek and neck lines. "
+                    "Keep the EXACT same face structure, head hair, clothing, background, and identity. "
+                    "Match existing hair color naturally."
+                ),
             },
             {
                 "id": "beard_shape",
-                "label_uz": "Shakllangan",
+                "label_uz": "Shakl",
                 "label_en": "Shaped",
-                "instruction": "Shape and tidy the facial hair with clean barber lines. Keep the exact same face structure, head hair, and identity.",
+                "instruction": (
+                    "Shape and tidy existing facial hair with sharp barber cheek/neck lines "
+                    "and even density. If clean-shaven, add a lightly shaped short beard. "
+                    "Keep the EXACT same face structure, head hair, clothing, background, and identity."
+                ),
             },
         ],
     },
-    "look": {
-        "label_uz": "Ko'rinish",
-        "label_en": "Look",
+    "finish": {
+        "label_uz": "Finish",
+        "label_en": "Finish",
         "options": [
             {
-                "id": "look_soft",
-                "label_uz": "Yumshoq",
-                "label_en": "Soft light",
-                "instruction": "Adjust lighting to soft natural studio light. Keep the exact same face, hair, skin tone, and identity — only lighting mood.",
+                "id": "finish_wet",
+                "label_uz": "Nam",
+                "label_en": "Wet",
+                "instruction": (
+                    "Give the hair a styled wet-look finish with natural product shine and "
+                    "defined strands. Do NOT change haircut shape, color, face, skin, beard, "
+                    "clothing, or background. Photorealistic salon wet look — not oily plastic."
+                ),
             },
             {
-                "id": "look_sharp",
-                "label_uz": "Keskin",
-                "label_en": "Sharp contrast",
-                "instruction": "Increase contrast and clarity for a sharp editorial look. Keep the exact same face, hair, and identity.",
-            },
-            {
-                "id": "look_warm_light",
-                "label_uz": "Iliq yorug'",
-                "label_en": "Warm light",
-                "instruction": "Warm the overall lighting slightly. Keep the exact same face, hair, and identity.",
-            },
-            {
-                "id": "look_cool_light",
-                "label_uz": "Sovuq yorug'",
-                "label_en": "Cool light",
-                "instruction": "Cool the overall lighting slightly. Keep the exact same face, hair, and identity.",
-            },
-            {
-                "id": "look_wet",
-                "label_uz": "Nam soch",
-                "label_en": "Wet look",
-                "instruction": "Give the hair a styled wet-look finish. Keep the exact same face, skin, and identity.",
-            },
-            {
-                "id": "look_matte",
+                "id": "finish_matte",
                 "label_uz": "Matte",
-                "label_en": "Matte finish",
-                "instruction": "Give the hair a clean matte textured finish. Keep the exact same face, skin, and identity.",
+                "label_en": "Matte",
+                "instruction": (
+                    "Give the hair a clean matte textured finish with soft separation. "
+                    "Do NOT change haircut shape, color, face, skin, beard, clothing, or background. "
+                    "Natural clay/paste look."
+                ),
+            },
+            {
+                "id": "finish_gloss",
+                "label_uz": "Yaltiroq",
+                "label_en": "Gloss",
+                "instruction": (
+                    "Add healthy salon gloss / light shine to the hair only. "
+                    "Do NOT change haircut, color family, face, skin, beard, clothing, or background."
+                ),
+            },
+            {
+                "id": "finish_volume",
+                "label_uz": "Hajm",
+                "label_en": "Volume",
+                "instruction": (
+                    "Add subtle lift and volume on top while keeping the same haircut family. "
+                    "Do NOT change face, skin, beard, clothing, or background. Natural salon volume."
+                ),
+            },
+            {
+                "id": "finish_soft_light",
+                "label_uz": "Yumshoq yorug'",
+                "label_en": "Soft light",
+                "instruction": (
+                    "Adjust ONLY the lighting mood to soft natural studio light on the subject. "
+                    "Keep identity, haircut, hair color, beard, clothing, and scene composition. "
+                    "No beauty filter, no skin retouch."
+                ),
+            },
+            {
+                "id": "finish_sharp",
+                "label_uz": "Keskin",
+                "label_en": "Crisp",
+                "instruction": (
+                    "Increase local contrast and crispness for a sharp editorial portrait look. "
+                    "Keep identity, haircut, hair color, beard, clothing intact. No skin smoothing."
+                ),
             },
         ],
     },
@@ -232,6 +214,7 @@ def list_studio_catalog() -> list[dict[str, Any]]:
                         "id": opt["id"],
                         "label_uz": opt["label_uz"],
                         "label_en": opt["label_en"],
+                        **({"swatch": opt["swatch"]} if opt.get("swatch") else {}),
                     }
                     for opt in cat["options"]
                 ],
@@ -254,5 +237,6 @@ def get_studio_option(preset_id: str) -> dict[str, Any] | None:
                     "label_en": opt["label_en"],
                     "instruction": opt["instruction"],
                     "category_label_uz": cat["label_uz"],
+                    "swatch": opt.get("swatch"),
                 }
     return None

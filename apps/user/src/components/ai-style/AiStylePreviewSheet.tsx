@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Bookmark,
   CalendarPlus,
@@ -6,6 +6,7 @@ import {
   Download,
   LayoutGrid,
   Loader2,
+  Palette,
   Share2,
   Sparkles,
 } from "lucide-react";
@@ -14,11 +15,10 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { isCatalogStyleId } from "@/components/ai-style/ai-style-shared";
-import { MorphStudioPanel } from "@/components/ai-style/MorphStudioPanel";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
-import { createMorphAiLookShare } from "@/lib/api";
-import { downloadAiStyleImage, shareAiStyleLink } from "@/lib/ai-style-image";
+import { downloadAiStyleImage, shareAiStyleImage } from "@/lib/ai-style-image";
+import { stashMorphStudioDraft } from "@/lib/morph-ai-studio-session";
 import { cn } from "@/lib/utils";
 
 type Suggestion = AiAnalysisResult["suggestions"][number];
@@ -28,8 +28,6 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   suggestion: Suggestion | null;
   previewImage?: string;
-  selfiePhoto?: string | null;
-  onPreviewImageChange?: (nextImage: string) => void;
   saved: boolean;
   tryOnLoading?: boolean;
   onToggleSave: (styleId: string, meta: { title: string; previewImage?: string }) => void;
@@ -72,8 +70,6 @@ export function AiStylePreviewSheet({
   onOpenChange,
   suggestion,
   previewImage,
-  selfiePhoto,
-  onPreviewImageChange,
   saved,
   tryOnLoading,
   onToggleSave,
@@ -81,6 +77,7 @@ export function AiStylePreviewSheet({
   onTryMoreStyles,
 }: Props) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [sharing, setSharing] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
@@ -88,8 +85,24 @@ export function AiStylePreviewSheet({
 
   const imageSrc = previewImage || suggestion.imageUrl;
   const canTryOn = Boolean(onGenerateTryOn && isCatalogStyleId(suggestion.id));
+  const exploreUrl =
+    typeof window !== "undefined" && isCatalogStyleId(suggestion.id)
+      ? `${window.location.origin}/explore/${suggestion.id}`
+      : undefined;
 
   const goBack = () => onOpenChange(false);
+
+  const openStudio = () => {
+    if (!previewImage) return;
+    stashMorphStudioDraft({
+      image: previewImage,
+      styleId: suggestion.id,
+      styleTitle: suggestion.title,
+      source: "tryon",
+    });
+    onOpenChange(false);
+    void navigate({ to: "/ai-style/studio" });
+  };
 
   const handleDownload = async () => {
     if (!imageSrc) {
@@ -115,19 +128,7 @@ export function AiStylePreviewSheet({
     }
     setSharing(true);
     try {
-      const created = await createMorphAiLookShare({
-        style_id: isCatalogStyleId(suggestion.id) ? suggestion.id : undefined,
-        title: suggestion.title,
-        before_image: selfiePhoto || undefined,
-        after_image: imageSrc,
-      });
-      const origin = typeof window !== "undefined" ? window.location.origin : "https://mysaloon.uz";
-      const pageUrl = `${origin}/morf-ai/share/${encodeURIComponent(created.id)}`;
-      const shareTitle = t("aiStylePage.shareLook.shareText", {
-        style: suggestion.title,
-        defaultValue: "{{style}} — Morf AI da sinab ko‘rdim. Sen ham sinab ko‘r!",
-      });
-      const result = await shareAiStyleLink(shareTitle, pageUrl);
+      const result = await shareAiStyleImage(suggestion.title, imageSrc, exploreUrl);
       if (result === "copied") toast.success(t("aiStylePage.linkCopied"));
       else if (result === "shared") toast.success(t("aiStylePage.shared"));
     } catch {
@@ -155,15 +156,15 @@ export function AiStylePreviewSheet({
           })}
         </SheetDescription>
 
-        <div className="relative min-h-[min(48dvh,420px)] bg-neutral-100">
+        <div className="relative min-h-[min(52dvh,460px)] bg-neutral-100">
           {imageSrc ? (
             <img
               src={imageSrc}
               alt=""
-              className="h-full min-h-[min(48dvh,420px)] w-full object-cover object-top"
+              className="h-full min-h-[min(52dvh,460px)] w-full object-cover object-top"
             />
           ) : (
-            <div className="flex min-h-[min(48dvh,420px)] items-center justify-center text-sm text-neutral-500">
+            <div className="flex min-h-[min(52dvh,460px)] items-center justify-center text-sm text-neutral-500">
               {t("aiStylePage.previewNoImage")}
             </div>
           )}
@@ -198,15 +199,15 @@ export function AiStylePreviewSheet({
         </div>
 
         <div className="space-y-4 px-5 pt-4">
-          {previewImage && onPreviewImageChange ? (
-            <MorphStudioPanel
-              key={suggestion.id}
-              image={previewImage}
-              onImageChange={onPreviewImageChange}
-              styleId={suggestion.id}
-              styleTitle={suggestion.title}
-              tone="light"
-            />
+          {previewImage ? (
+            <button
+              type="button"
+              onClick={openStudio}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-black py-3.5 text-sm font-bold text-white touch-manipulation active:opacity-90"
+            >
+              <Palette className="h-4 w-4" />
+              {t("aiStylePage.studio.openCta", { defaultValue: "AI Studio" })}
+            </button>
           ) : null}
 
           <button

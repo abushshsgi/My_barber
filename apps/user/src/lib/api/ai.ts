@@ -165,6 +165,7 @@ export type MorphStudioOption = {
   id: string;
   label_uz: string;
   label_en: string;
+  swatch?: string;
 };
 
 export type MorphStudioCategory = {

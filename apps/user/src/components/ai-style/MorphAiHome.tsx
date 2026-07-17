@@ -19,6 +19,7 @@ import {
   MORPH_AI_GALLERY_UPDATED_EVENT,
   type MorphAiGeneration,
 } from "@/lib/morph-ai-gallery";
+import { stashMorphStudioDraft } from "@/lib/morph-ai-studio-session";
 import { loadSavedAiStyles, type SavedAiStyle } from "@/lib/saved-ai-styles";
 import { getAiStyleHeroUrl } from "@/lib/cover-images";
 import type { Audience } from "@/lib/mock-data";
@@ -90,18 +91,18 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
       onClick: onStartNew,
     },
     {
+      id: "studio",
+      icon: Palette,
+      titleKey: "aiStylePage.home.tools.studio",
+      descKey: "aiStylePage.home.tools.studioDesc",
+      onClick: () => void navigate({ to: "/ai-style/studio" }),
+    },
+    {
       id: "care",
       icon: Droplets,
       titleKey: "aiStylePage.home.tools.care",
       descKey: "aiStylePage.home.tools.careDesc",
       onClick: () => void navigate({ to: "/ai-style/care" }),
-    },
-    {
-      id: "color",
-      icon: Palette,
-      titleKey: "aiStylePage.home.tools.color",
-      descKey: "aiStylePage.home.tools.colorDesc",
-      onClick: onStartNew,
     },
     {
       id: "gallery",
@@ -181,7 +182,15 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.04, duration: 0.35 }}
-                  onClick={() => void navigate({ to: "/ai-style/history" })}
+                  onClick={() => {
+                    stashMorphStudioDraft({
+                      image: look.image,
+                      styleId: look.styleId,
+                      styleTitle: look.title,
+                      source: "generation",
+                    });
+                    void navigate({ to: "/ai-style/studio" });
+                  }}
                   className="relative h-48 w-[8.5rem] shrink-0 overflow-hidden rounded-[22px] bg-white/5 text-left touch-manipulation active:scale-[0.98]"
                 >
                   <img src={look.image} alt="" className="h-full w-full object-cover object-top" />

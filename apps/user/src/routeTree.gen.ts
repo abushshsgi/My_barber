@@ -53,6 +53,7 @@ import { Route as CategoryCategoryRouteImport } from './routes/category.$categor
 import { Route as BookingsBookingIdRouteImport } from './routes/bookings.$bookingId'
 import { Route as BookingSalonIdRouteImport } from './routes/booking.$salonId'
 import { Route as BarberBarberIdRouteImport } from './routes/barber.$barberId'
+import { Route as AiStyleStudioRouteImport } from './routes/ai-style_.studio'
 import { Route as AiStyleHistoryRouteImport } from './routes/ai-style_.history'
 import { Route as AiStyleCareRouteImport } from './routes/ai-style_.care'
 import { Route as AccountPreferencesRouteImport } from './routes/account.preferences'
@@ -286,6 +287,11 @@ const BarberBarberIdRoute = BarberBarberIdRouteImport.update({
   path: '/barber/$barberId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AiStyleStudioRoute = AiStyleStudioRouteImport.update({
+  id: '/ai-style_/studio',
+  path: '/ai-style/studio',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AiStyleHistoryRoute = AiStyleHistoryRouteImport.update({
   id: '/ai-style_/history',
   path: '/ai-style/history',
@@ -387,6 +393,7 @@ export interface FileRoutesByFullPath {
   '/account/preferences': typeof AccountPreferencesRoute
   '/ai-style/care': typeof AiStyleCareRoute
   '/ai-style/history': typeof AiStyleHistoryRoute
+  '/ai-style/studio': typeof AiStyleStudioRoute
   '/barber/$barberId': typeof BarberBarberIdRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/bookings/$bookingId': typeof BookingsBookingIdRoute
@@ -445,6 +452,7 @@ export interface FileRoutesByTo {
   '/account/preferences': typeof AccountPreferencesRoute
   '/ai-style/care': typeof AiStyleCareRoute
   '/ai-style/history': typeof AiStyleHistoryRoute
+  '/ai-style/studio': typeof AiStyleStudioRoute
   '/barber/$barberId': typeof BarberBarberIdRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/bookings/$bookingId': typeof BookingsBookingIdRoute
@@ -503,6 +511,7 @@ export interface FileRoutesById {
   '/account/preferences': typeof AccountPreferencesRoute
   '/ai-style_/care': typeof AiStyleCareRoute
   '/ai-style_/history': typeof AiStyleHistoryRoute
+  '/ai-style_/studio': typeof AiStyleStudioRoute
   '/barber/$barberId': typeof BarberBarberIdRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
   '/bookings/$bookingId': typeof BookingsBookingIdRoute
@@ -563,6 +572,7 @@ export interface FileRouteTypes {
     | '/account/preferences'
     | '/ai-style/care'
     | '/ai-style/history'
+    | '/ai-style/studio'
     | '/barber/$barberId'
     | '/booking/$salonId'
     | '/bookings/$bookingId'
@@ -621,6 +631,7 @@ export interface FileRouteTypes {
     | '/account/preferences'
     | '/ai-style/care'
     | '/ai-style/history'
+    | '/ai-style/studio'
     | '/barber/$barberId'
     | '/booking/$salonId'
     | '/bookings/$bookingId'
@@ -678,6 +689,7 @@ export interface FileRouteTypes {
     | '/account/preferences'
     | '/ai-style_/care'
     | '/ai-style_/history'
+    | '/ai-style_/studio'
     | '/barber/$barberId'
     | '/booking/$salonId'
     | '/bookings/$bookingId'
@@ -737,6 +749,7 @@ export interface RootRouteChildren {
   AccountPreferencesRoute: typeof AccountPreferencesRoute
   AiStyleCareRoute: typeof AiStyleCareRoute
   AiStyleHistoryRoute: typeof AiStyleHistoryRoute
+  AiStyleStudioRoute: typeof AiStyleStudioRoute
   BarberBarberIdRoute: typeof BarberBarberIdRoute
   BookingSalonIdRoute: typeof BookingSalonIdRoute
   CategoryCategoryRoute: typeof CategoryCategoryRoute
@@ -1061,6 +1074,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BarberBarberIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ai-style_/studio': {
+      id: '/ai-style_/studio'
+      path: '/ai-style/studio'
+      fullPath: '/ai-style/studio'
+      preLoaderRoute: typeof AiStyleStudioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ai-style_/history': {
       id: '/ai-style_/history'
       path: '/ai-style/history'
@@ -1235,6 +1255,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountPreferencesRoute: AccountPreferencesRoute,
   AiStyleCareRoute: AiStyleCareRoute,
   AiStyleHistoryRoute: AiStyleHistoryRoute,
+  AiStyleStudioRoute: AiStyleStudioRoute,
   BarberBarberIdRoute: BarberBarberIdRoute,
   BookingSalonIdRoute: BookingSalonIdRoute,
   CategoryCategoryRoute: CategoryCategoryRoute,

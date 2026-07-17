@@ -37,21 +37,29 @@ class StudioEditResult:
     latency_ms: int
 
 
-def _build_studio_prompt(*, instruction: str, preset_label: str) -> str:
-    return f"""You are a professional barber/salon AI photo editor for mysaloon.uz (Morf AI Studio).
+def _build_studio_prompt(*, instruction: str, preset_label: str, category: str) -> str:
+    category_hint = {
+        "hair_color": "Focus exclusively on hair color. Do not restyle the cut.",
+        "beard": "Focus exclusively on facial hair. Do not change head hair style.",
+        "finish": "Focus exclusively on hair finish / lighting mood. Do not recolor or restyle aggressively.",
+    }.get(category, "Apply only the requested edit.")
 
-Edit the person in this photo with this studio change: "{preset_label}".
+    return f"""You are Morf AI Studio — a professional barber photo editor for mysaloon.uz.
+
+TASK: Apply this edit — "{preset_label}".
+{category_hint}
+
+EDIT DETAILS:
 {instruction}
 
-CRITICAL:
-- Keep the EXACT same person identity, face structure, age, and pose
-- Photorealistic professional salon result only
-- Do NOT add text, watermarks, logos, or extra people
-- Do NOT dramatically change the background unless the instruction requires lighting mood only
-- Front-facing portrait, shoulders visible if present in original
-- Apply ONLY the requested change; leave everything else intact
+IDENTITY LOCK (non-negotiable):
+- Same person: bone structure, eyes, nose, mouth, age, ethnicity, skin tone
+- Same pose, camera angle, framing, and expression
+- Same clothing and background content (lighting mood may shift only if asked)
+- Photorealistic DSLR/salon quality — no illustration, no CGI skin, no beauty-filter blur
+- No text, watermarks, logos, extra people, or cropped face
 
-Output a single edited portrait photo."""
+OUTPUT: one edited 3:4 portrait photo only."""
 
 
 def _resolve_model_provider() -> tuple[str, str]:
@@ -80,6 +88,7 @@ def generate_studio_edit(
     prompt = _build_studio_prompt(
         instruction=option["instruction"],
         preset_label=option["label_uz"],
+        category=option["category_id"],
     )
 
     parts: list[dict[str, Any]] = [

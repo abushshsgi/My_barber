@@ -1027,10 +1027,10 @@
       "tools": {
         "styles": "Стили",
         "stylesDesc": "Стрижки под форму лица",
+        "studio": "AI Studio",
+        "studioDesc": "Цвет, борода и finish",
         "care": "Уход",
         "careDesc": "Состояние волос и уход",
-        "color": "Цвет",
-        "colorDesc": "Цвет и направления highlight",
         "gallery": "Галерея",
         "galleryDesc": "Загрузите селфи для нового try-on"
       }
@@ -1097,13 +1097,24 @@
     "previewDesc": "Просмотр, скачивание или отправка созданного образа",
     "previewBack": "К результатам",
     "studio": {
-      "title": "Morf Studio",
-      "subtitle": "Измените цвет, стиль и образ",
+      "title": "AI Studio",
+      "subtitle": "Цвет, борода и finish",
+      "openCta": "AI Studio",
+      "changePhoto": "Фото",
+      "pickLabel": "Выберите фото",
+      "pickTitle": "История, try-on или новое селфи",
+      "fromHistory": "История / Try-on",
+      "emptyHistory": "Пока нет try-on или селфи",
+      "emptyHint": "Загрузите с камеры или из галереи",
+      "keepEditing": "Продолжить правку",
       "undo": "Назад",
       "reset": "Оригинал",
-      "generating": "Применяется правка Studio…",
+      "generating": "Применяется AI-правка…",
       "applied": "{{name}} применено",
-      "failed": "Не удалось применить Studio"
+      "failed": "Не удалось применить Studio",
+      "pickFailed": "Не удалось загрузить фото",
+      "selfie": "Селфи",
+      "done": "Готово"
     },
     "beforeAfter": {
       "before": "Before",

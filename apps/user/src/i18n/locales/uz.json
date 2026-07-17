@@ -1024,10 +1024,10 @@
       "tools": {
         "styles": "Uslublar",
         "stylesDesc": "Yuzingizga mos soch turmaklari",
+        "studio": "AI Studio",
+        "studioDesc": "Rang, soqol va finish — tahrir",
         "care": "Parvarish",
         "careDesc": "Soch holati va parvarish yo'nalishi",
-        "color": "Rang",
-        "colorDesc": "Rang va highlight yo'nalishlari",
         "gallery": "Galereya",
         "galleryDesc": "Selfie yuklab yangi try-on boshlang"
       }
@@ -1094,13 +1094,24 @@
     "previewDesc": "Generatsiya qilingan uslubni ko‘rish, yuklab olish yoki ulashish",
     "previewBack": "Natijalarga qaytish",
     "studio": {
-      "title": "Morf Studio",
-      "subtitle": "Rang, uslub va ko‘rinishni o‘zgartiring",
+      "title": "AI Studio",
+      "subtitle": "Rang, soqol va finish",
+      "openCta": "AI Studio",
+      "changePhoto": "Rasm",
+      "pickLabel": "Rasm tanlang",
+      "pickTitle": "History, try-on yoki yangi selfie",
+      "fromHistory": "History / Try-on",
+      "emptyHistory": "Hali try-on yoki selfie yo‘q",
+      "emptyHint": "Kamera yoki galereyadan rasm yuklang",
+      "keepEditing": "Tahrirni davom ettirish",
       "undo": "Orqaga",
       "reset": "Asliga",
-      "generating": "Studio o‘zgartirish qo‘llanmoqda…",
+      "generating": "AI tahrir qo‘llanmoqda…",
       "applied": "{{name}} qo‘llandi",
-      "failed": "Studio o‘zgartirish amalga oshmadi"
+      "failed": "Studio tahriri amalga oshmadi",
+      "pickFailed": "Rasm yuklanmadi",
+      "selfie": "Selfie",
+      "done": "Tayyor"
     },
     "beforeAfter": {
       "before": "Before",

@@ -1,16 +1,16 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { CalendarPlus, Camera, Check, ImagePlus, Loader2, RotateCcw } from "lucide-react";
+import { CalendarPlus, Camera, Check, ImagePlus, Loader2, Palette, RotateCcw } from "lucide-react";
 import { Fragment, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AiStyleCamera } from "@/components/ai-style/AiStyleCamera";
 import { AiStylePhotoInput, AiStyleScanLine } from "@/components/ai-style/AiStyleUi";
-import { MorphStudioPanel } from "@/components/ai-style/MorphStudioPanel";
 import { HairstylePreviewFrame, HairstylePreviewImage } from "@/components/hairstyles/HairstylePreviewImage";
 import type { useStyleTryOnFlow } from "@/components/style-try-on/useStyleTryOnFlow";
 import type { HairstyleEntry } from "@/lib/hairstyles/catalog";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
+import { stashMorphStudioDraft } from "@/lib/morph-ai-studio-session";
 import { cn } from "@/lib/utils";
 
 type Flow = ReturnType<typeof useStyleTryOnFlow>;
@@ -175,46 +175,48 @@ function GeneratingOverlay({
 function ResultView({
   entry,
   preview,
-  onPreviewChange,
   onReset,
 }: {
   entry: HairstyleEntry;
   preview: string;
-  onPreviewChange: (next: string) => void;
   onReset: () => void;
 }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  const openStudio = () => {
+    stashMorphStudioDraft({
+      image: preview,
+      styleId: entry.id,
+      styleTitle: entry.titleUz,
+      source: "tryon",
+    });
+    void navigate({ to: "/ai-style/studio" });
+  };
 
   return (
-    <div className="flex h-[100dvh] flex-col overflow-hidden bg-black">
-      <div className="relative min-h-0 flex-1 overflow-hidden">
-        <img
-          src={preview}
-          alt={entry.titleUz}
-          className="h-full w-full object-cover object-top"
-        />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 to-transparent" />
-        <div
-          className="absolute left-0 right-0 top-0 px-5 pt-[max(0.75rem,env(safe-area-inset-top))]"
-        >
+    <div className="relative h-[100dvh] overflow-hidden bg-black">
+      <img src={preview} alt={entry.titleUz} className="absolute inset-0 h-full w-full object-cover object-top" />
+      <div className="absolute inset-x-0 bottom-0 h-[48%] bg-gradient-to-t from-black via-black/55 to-transparent" />
+
+      <div
+        className="absolute inset-x-0 bottom-0 z-10 space-y-3 px-5"
+        style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
+      >
+        <div className="text-center">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/60">
             {t("styleTryOnPage.resultTitle")}
           </p>
-          <h2 className="mt-0.5 text-lg font-bold text-white drop-shadow-sm">{entry.titleUz}</h2>
+          <h2 className="mt-1 text-xl font-bold text-white">{entry.titleUz}</h2>
         </div>
-      </div>
-
-      <div
-        className="shrink-0 space-y-3 overflow-y-auto border-t border-white/10 bg-[#0a0a0a] px-4 pt-3"
-        style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
-      >
-        <MorphStudioPanel
-          image={preview}
-          onImageChange={onPreviewChange}
-          styleId={entry.id}
-          styleTitle={entry.titleUz}
-          tone="dark"
-        />
+        <button
+          type="button"
+          onClick={openStudio}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-3.5 text-sm font-bold text-black touch-manipulation active:scale-[0.98]"
+        >
+          <Palette className="h-4 w-4" />
+          {t("aiStylePage.studio.openCta", { defaultValue: "AI Studio" })}
+        </button>
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -226,7 +228,7 @@ function ResultView({
           </button>
           <Link
             to="/"
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white py-3.5 text-xs font-bold text-black"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 py-3.5 text-xs font-bold text-white backdrop-blur-md"
           >
             <CalendarPlus className="h-4 w-4" />
             {t("styleTryOnPage.findSalon")}
@@ -296,12 +298,7 @@ export function StyleTryOnFlow({ flow, entry }: Props) {
   if (flow.tryOnPreview) {
     return (
       <>
-        <ResultView
-          entry={entry}
-          preview={flow.tryOnPreview}
-          onPreviewChange={flow.setTryOnPreview}
-          onReset={flow.reset}
-        />
+        <ResultView entry={entry} preview={flow.tryOnPreview} onReset={flow.reset} />
         <AiStylePhotoInput fileRef={flow.fileRef} onFile={flow.onFile} />
         <AiStyleCamera open={flow.cameraOpen} onClose={flow.closeCamera} onCapture={flow.onCameraCapture} />
       </>
