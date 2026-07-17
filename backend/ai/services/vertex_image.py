@@ -38,14 +38,15 @@ def vertex_image_configured() -> bool:
     return image_generation_configured()
 
 
-def generate_image_content(body: dict[str, Any]) -> dict[str, Any]:
+def generate_image_content(body: dict[str, Any], *, model: str | None = None) -> dict[str, Any]:
     if studio_image_configured():
-        return studio_generate_image_content(body)
+        return studio_generate_image_content(body, model=model)
     if vertex_credentials_configured():
+        resolved = (model or "").strip() or vertex_image_model()
         return generate_content(
-            vertex_image_model(),
+            resolved,
             body,
-            timeout=120,
+            timeout=180,
             kind="image",
             location=vertex_image_location(),
         )

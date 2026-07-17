@@ -17,8 +17,8 @@ from ai.usage_pricing import finalize_usage
 
 from .gemini_style import AiStyleError, parse_data_url
 from .image_response import extract_image_bytes, to_data_url
-from .studio_image import image_generation_provider, studio_image_model
-from .vertex_image import generate_image_content, vertex_image_configured, vertex_image_model
+from .studio_image import image_generation_provider, studio_edit_image_model
+from .vertex_image import generate_image_content, vertex_image_configured
 
 logger = logging.getLogger(__name__)
 
@@ -110,17 +110,12 @@ Return ONE edited photo only."""
 
 def _resolve_model_provider() -> tuple[str, str]:
     provider = image_generation_provider() or "studio"
-    if provider == "studio":
-        return studio_image_model(), provider
-    return vertex_image_model(), "vertex"
+    return studio_edit_image_model(), provider
 
 
 def _studio_image_config(aspect_ratio: str) -> dict[str, Any]:
     """Match source aspect; prefer 2K when the model supports it."""
-    cfg: dict[str, Any] = {"aspectRatio": aspect_ratio}
-    # Gemini 3 image models accept imageSize; lite may ignore unknown fields.
-    cfg["imageSize"] = "2K"
-    return cfg
+    return {"aspectRatio": aspect_ratio, "imageSize": "2K"}
 
 
 def generate_studio_edit(
@@ -157,10 +152,11 @@ def generate_studio_edit(
         {"text": prompt},
     ]
 
+    # Pro Image edit: TEXT+IMAGE modalities; lite may accept IMAGE-only.
     body = {
         "contents": [{"role": "user", "parts": parts}],
         "generationConfig": {
-            "responseModalities": ["IMAGE"],
+            "responseModalities": ["TEXT", "IMAGE"],
             "imageConfig": _studio_image_config(aspect_ratio),
         },
     }
@@ -168,13 +164,16 @@ def generate_studio_edit(
     model, provider = _resolve_model_provider()
     started = time.perf_counter()
     try:
-        payload = generate_image_content(body)
+        payload = generate_image_content(body, model=model)
     except AiStyleError as exc:
-        # imageSize / imageConfig ba'zi modellarda 400 beradi — aspect only bilan qayta urinish.
+        # Fallback: IMAGE-only and/or without imageSize for stricter endpoints.
         if getattr(exc, "status", 0) == 400:
-            logger.info("Studio imageConfig fallback (aspect only): %s", exc)
-            body["generationConfig"]["imageConfig"] = {"aspectRatio": aspect_ratio}
-            payload = generate_image_content(body)
+            logger.info("Studio imageConfig/modalities fallback: %s", exc)
+            body["generationConfig"] = {
+                "responseModalities": ["IMAGE"],
+                "imageConfig": {"aspectRatio": aspect_ratio},
+            }
+            payload = generate_image_content(body, model=model)
         else:
             raise
     latency_ms = int((time.perf_counter() - started) * 1000)

@@ -117,6 +117,12 @@ VERTEX_IMAGE_MODEL = (
     os.environ.get("VERTEX_IMAGE_MODEL", "gemini-3.1-flash-lite-image").strip()
     or "gemini-3.1-flash-lite-image"
 )
+# Morf AI Studio tahrir — try-on dan kuchliroq model (edit fidelity).
+# Pro: gemini-3-pro-image-preview | Flash Image: gemini-3.1-flash-image-preview
+STUDIO_EDIT_IMAGE_MODEL = (
+    os.environ.get("STUDIO_EDIT_IMAGE_MODEL", "gemini-3-pro-image-preview").strip()
+    or "gemini-3-pro-image-preview"
+)
 # gemini-3.1-flash-lite-image faqat global endpoint da (us-central1 da 404)
 VERTEX_IMAGE_LOCATION = os.environ.get("VERTEX_IMAGE_LOCATION", "global").strip() or "global"
 VERTEX_SERVICE_ACCOUNT_JSON = os.environ.get("VERTEX_SERVICE_ACCOUNT_JSON", "").strip()
@@ -334,7 +340,7 @@ REST_FRAMEWORK = {
         "phone_check": "20/minute",
         "barber_check": "15/minute",
         "ai_style": "30/hour",
-        "ai_tryon": "12/hour",
+        "ai_tryon": "30/hour",
         "salon_search": "60/minute",
         "salon_join": "20/minute",
         "wallet_gift": "30/minute",
