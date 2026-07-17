@@ -5,9 +5,10 @@ const FULL_BLEED_PREFIX = ["/map", "/stories/"];
 
 export function useLayoutRouteFlags(pathname: string) {
   const isAiStyle = pathname === "/ai-style";
+  const isAiStyleSection = isAiStyle || pathname.startsWith("/ai-style/");
   const isMap = pathname === "/map";
   const isFullBleed =
-    isAiStyle ||
+    isAiStyleSection ||
     isMap ||
     FULL_BLEED_PREFIX.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
   const isViewportLocked = isAiStyle || isMap;
@@ -15,10 +16,11 @@ export function useLayoutRouteFlags(pathname: string) {
   const bazaarInset = usesDesktopBazaarInset(pathname);
   const isHome = pathname === "/";
   const isSalonPage = pathname.startsWith("/salon/");
-  const isMobileFlush = isMobileFlushPage(pathname);
+  const isMobileFlush = isMobileFlushPage(pathname) || isAiStyleSection;
 
   return {
     isAiStyle,
+    isAiStyleSection,
     isMap,
     isFullBleed,
     isViewportLocked,

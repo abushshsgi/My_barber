@@ -1051,7 +1051,7 @@
     "historyViewAll": "Hammasi",
     "historyOpenHint": "Bosib to'liq tarixni oching · gorizontal suring",
     "historyPageTitle": "Tahlil tarixi",
-    "historyPageSubtitle": "Barcha oldingi selfie tahlillari — pastga skroll qiling",
+    "historyPageSubtitle": "Barcha selfie va generatsiyalar — before/after uchun bosing",
     "historyLastScan": "Oxirgi skanerlash · {{date}}",
     "analyzing": "Tahlil qilinmoqda…",
     "tryOnAutoRunning": "Uslub sinab ko‘rilmoqda…",
@@ -1093,6 +1093,53 @@
     "previewNoImage": "Rasm mavjud emas",
     "previewDesc": "Generatsiya qilingan uslubni ko‘rish, yuklab olish yoki ulashish",
     "previewBack": "Natijalarga qaytish",
+    "beforeAfter": {
+      "before": "Before",
+      "after": "After",
+      "hint": "O‘ngga — Before · Chapga — After",
+      "noBefore": "Before selfie saqlanmagan — yangi try-on qiling"
+    },
+    "care": {
+      "badge": "Parvarish",
+      "title": "Sochingiz uchun shaxsiy reja",
+      "condition": "Holat",
+      "texture": "Tekstura",
+      "density": "Qalinlik",
+      "scalp": "Bosh terisi",
+      "weeklyTitle": "Haftalik reja",
+      "productsTitle": "Mahsulotlar",
+      "avoidTitle": "Nima qilmaslik",
+      "salonTitle": "Salon maslahati",
+      "nextCut": "Keyingi soch olish: ~{{days}} kun ichida",
+      "exploreCta": "Uslub tanlash",
+      "conditions": {
+        "oily": "Yog‘li",
+        "dry": "Quruq",
+        "normal": "Normal",
+        "damaged": "Shikastlangan"
+      },
+      "textures": {
+        "straight": "To‘g‘ri",
+        "wavy": "To‘lqinsimon",
+        "curly": "Jingalak"
+      },
+      "densities": {
+        "fine": "Yupqa",
+        "medium": "O‘rtacha",
+        "thick": "Qalin"
+      },
+      "scalps": {
+        "oily": "Yog‘li",
+        "dry": "Quruq",
+        "sensitive": "Sezgir"
+      },
+      "budgets": {
+        "all": "Hammasi",
+        "budget": "Arzon",
+        "mid": "O‘rta",
+        "premium": "Premium"
+      }
+    },
     "tryOnHint": "Selfie + tanlangan uslub — AI sizning yuzingizda ko'rsatadi",
     "exploreStyles": "Trend uslublar",
     "betaBadge": "Beta · demo",

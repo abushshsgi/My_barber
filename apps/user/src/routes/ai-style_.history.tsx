@@ -1,31 +1,61 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format, parseISO } from "date-fns";
-import { ChevronLeft, Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ChevronLeft, Sparkles, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { MorphBeforeAfter } from "@/components/ai-style/MorphBeforeAfter";
 import { refreshAiStyleHistoryCache } from "@/lib/api";
 import {
   FACE_HISTORY_UPDATED_EVENT,
   getActiveUserId,
   type FaceProfileHistoryEntry,
 } from "@/lib/face-profile";
+import {
+  loadMorphAiGenerations,
+  MORPH_AI_GALLERY_UPDATED_EVENT,
+  type MorphAiGeneration,
+} from "@/lib/morph-ai-gallery";
+
 export const Route = createFileRoute("/ai-style_/history")({
   head: () => ({
     meta: [
       { title: "Morf AI tarixi — mysaloon.uz" },
       {
         name: "description",
-        content: "Oldingi Morf AI selfie tahlillari va rasmlar.",
+        content: "Barcha Morf AI selfie va generatsiya rasmlari — before/after bilan.",
       },
     ],
   }),
   component: AiStyleHistoryPage,
 });
 
+type HistoryCard =
+  | {
+      kind: "generation";
+      id: string;
+      title: string;
+      thumb: string;
+      before?: string;
+      after: string;
+      at: string;
+    }
+  | {
+      kind: "selfie";
+      id: string;
+      title: string;
+      thumb: string;
+      before: string;
+      after?: string;
+      at: string;
+    };
+
 function AiStyleHistoryPage() {
   const { t } = useTranslation();
-  const [entries, setEntries] = useState<FaceProfileHistoryEntry[]>([]);
+  const [selfies, setSelfies] = useState<FaceProfileHistoryEntry[]>([]);
+  const [gens, setGens] = useState<MorphAiGeneration[]>(() => loadMorphAiGenerations());
   const [loading, setLoading] = useState(true);
+  const [active, setActive] = useState<HistoryCard | null>(null);
   const userId = getActiveUserId();
 
   useEffect(() => {
@@ -33,94 +63,191 @@ function AiStyleHistoryPage() {
     const refresh = async () => {
       const list = await refreshAiStyleHistoryCache();
       if (!cancelled) {
-        setEntries(list);
+        setSelfies(list);
+        setGens(loadMorphAiGenerations());
         setLoading(false);
       }
     };
     void refresh();
-    const onCacheUpdate = () => {
+    const onUpdate = () => {
       void refresh();
+      setGens(loadMorphAiGenerations());
     };
-    window.addEventListener(FACE_HISTORY_UPDATED_EVENT, onCacheUpdate);
+    window.addEventListener(FACE_HISTORY_UPDATED_EVENT, onUpdate);
+    window.addEventListener(MORPH_AI_GALLERY_UPDATED_EVENT, onUpdate);
     return () => {
       cancelled = true;
-      window.removeEventListener(FACE_HISTORY_UPDATED_EVENT, onCacheUpdate);
+      window.removeEventListener(FACE_HISTORY_UPDATED_EVENT, onUpdate);
+      window.removeEventListener(MORPH_AI_GALLERY_UPDATED_EVENT, onUpdate);
     };
   }, [userId]);
 
-  return (
-    <div className="w-full pb-6 pt-4">
-      <div className="mx-auto w-full max-w-5xl">
-        <div className="flex flex-wrap items-center gap-3">
-          <Link
-            to="/ai-style"
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3.5 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-surface"
-          >
-            <ChevronLeft className="h-4 w-4" strokeWidth={2.25} />
-            {t("common.back", { defaultValue: "Orqaga" })}
-          </Link>
-          <div className="min-w-0">
-            <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-              <Sparkles className="h-3.5 w-3.5" />
-              {t("aiStylePage.title")}
-            </p>
-            <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-              {t("aiStylePage.historyPageTitle", { defaultValue: "Tahlil tarixi" })}
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("aiStylePage.historyPageSubtitle", {
-                defaultValue: "Barcha oldingi selfie tahlillari — pastga skroll qiling",
-              })}
-            </p>
-          </div>
-        </div>
+  const cards = useMemo(() => {
+    const fromGens: HistoryCard[] = gens.map((g) => ({
+      kind: "generation",
+      id: `gen-${g.id}`,
+      title: g.title,
+      thumb: g.previewImage,
+      before: g.beforeImage,
+      after: g.previewImage,
+      at: g.createdAt,
+    }));
+    const genBefore = new Set(gens.map((g) => g.beforeImage).filter(Boolean));
+    const fromSelfies: HistoryCard[] = selfies
+      .filter((s) => !genBefore.has(s.photoDataUrl))
+      .map((s) => ({
+        kind: "selfie",
+        id: `selfie-${s.id}`,
+        title: s.faceShapeKey
+          ? t(`aiStylePage.faceShapes.${s.faceShapeKey}`, { defaultValue: s.faceShapeKey })
+          : t("aiStylePage.selfieAlt", { defaultValue: "Selfie" }),
+        thumb: s.photoDataUrl,
+        before: s.photoDataUrl,
+        at: s.scannedAt,
+      }));
+    return [...fromGens, ...fromSelfies].sort(
+      (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime(),
+    );
+  }, [gens, selfies, t]);
 
+  return (
+    <div
+      className="min-h-[100dvh] bg-[#0b0b0b] text-white"
+      style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
+    >
+      <div
+        className="px-5 pb-4"
+        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+      >
+        <Link
+          to="/ai-style"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-bold text-white backdrop-blur-md touch-manipulation"
+        >
+          <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
+          {t("common.back")}
+        </Link>
+        <div className="mt-5">
+          <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white/45">
+            <Sparkles className="h-3.5 w-3.5" />
+            {t("aiStylePage.title")}
+          </p>
+          <h1 className="mt-1 text-2xl font-extrabold tracking-tight">
+            {t("aiStylePage.historyPageTitle", { defaultValue: "Tahlil tarixi" })}
+          </h1>
+          <p className="mt-1 text-sm text-white/60">
+            {t("aiStylePage.historyPageSubtitle", {
+              defaultValue: "Barcha selfie va generatsiyalar — before/after uchun bosing",
+            })}
+          </p>
+        </div>
+      </div>
+
+      <div className="px-5">
         {loading ? (
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="aspect-[3/4] animate-pulse rounded-2xl bg-muted/50" />
+              <div key={i} className="aspect-[3/4] animate-pulse rounded-2xl bg-white/10" />
             ))}
           </div>
-        ) : entries.length === 0 ? (
-          <div className="mt-8 rounded-3xl border border-dashed border-border bg-surface/40 px-5 py-10 text-center">
-            <p className="text-base font-semibold text-foreground">{t("aiStylePage.historyEmpty")}</p>
-            <p className="mt-2 text-sm text-muted-foreground">{t("aiStylePage.historyEmptyHint")}</p>
+        ) : cards.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-white/20 bg-white/[0.04] px-5 py-10 text-center">
+            <p className="text-base font-semibold">{t("aiStylePage.historyEmpty")}</p>
+            <p className="mt-2 text-sm text-white/55">{t("aiStylePage.historyEmptyHint")}</p>
             <Link
               to="/ai-style"
-              className="mt-6 inline-flex rounded-full bg-foreground px-5 py-2.5 text-sm font-bold text-background"
+              className="mt-6 inline-flex rounded-full bg-white px-5 py-2.5 text-sm font-bold text-black"
             >
               {t("aiStylePage.uploadTitle")}
             </Link>
           </div>
         ) : (
-          <div className="mt-8 grid max-h-[min(72dvh,820px)] grid-cols-2 gap-3 overflow-y-auto overscroll-contain pb-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {entries.map((entry) => (
-              <article
-                key={entry.id}
-                className="group overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm"
+          <div className="grid grid-cols-2 gap-3 pb-6 sm:grid-cols-3 md:grid-cols-4">
+            {cards.map((card) => (
+              <button
+                key={card.id}
+                type="button"
+                onClick={() => setActive(card)}
+                className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] text-left touch-manipulation active:scale-[0.98]"
               >
-                <div className="aspect-[3/4] overflow-hidden bg-surface">
+                <div className="aspect-[3/4] overflow-hidden bg-white/5">
                   <img
-                    src={entry.photoDataUrl}
+                    src={card.thumb}
                     alt=""
-                    className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-[1.03]"
+                    className="h-full w-full object-cover object-top transition-transform duration-300 group-active:scale-[1.03]"
                   />
                 </div>
                 <div className="px-2.5 py-2">
-                  <p className="text-[11px] font-semibold tabular-nums text-muted-foreground">
-                    {formatHistoryDate(entry.scannedAt)}
+                  <p className="truncate text-xs font-bold">{card.title}</p>
+                  <p className="mt-0.5 text-[10px] font-semibold tabular-nums text-white/45">
+                    {formatHistoryDate(card.at)}
                   </p>
-                  {entry.faceShapeKey ? (
-                    <p className="mt-0.5 truncate text-xs font-bold capitalize text-foreground">
-                      {entry.faceShapeKey}
+                  {card.kind === "generation" && card.before ? (
+                    <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-white/55">
+                      Before / After
                     </p>
                   ) : null}
                 </div>
-              </article>
+              </button>
             ))}
           </div>
         )}
       </div>
+
+      {active && typeof document !== "undefined"
+        ? createPortal(
+            <div className="fixed inset-0 z-[280] flex flex-col bg-black/95">
+              <div
+                className="flex items-center justify-between px-4 pb-3"
+                style={{ paddingTop: "max(0.85rem, env(safe-area-inset-top))" }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setActive(null)}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-2 text-sm font-bold text-white touch-manipulation"
+                >
+                  <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
+                  {t("common.back")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActive(null)}
+                  className="grid size-11 place-items-center rounded-full bg-white/10 text-white touch-manipulation"
+                  aria-label={t("common.close")}
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex min-h-0 flex-1 items-center justify-center px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+                {active.kind === "generation" && active.before ? (
+                  <div className="w-full max-w-md">
+                    <MorphBeforeAfter
+                      beforeSrc={active.before}
+                      afterSrc={active.after}
+                      title={active.title}
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full max-w-md overflow-hidden rounded-[24px]">
+                    <img
+                      src={active.thumb}
+                      alt=""
+                      className="aspect-[3/4] w-full object-cover object-top"
+                    />
+                    <p className="mt-3 text-center text-sm font-bold text-white">{active.title}</p>
+                    <p className="mt-1 text-center text-xs text-white/55">
+                      {active.kind === "generation"
+                        ? t("aiStylePage.beforeAfter.noBefore", {
+                            defaultValue: "Before selfie saqlanmagan — yangi try-on qiling",
+                          })
+                        : formatHistoryDate(active.at)}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

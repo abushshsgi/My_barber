@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import {
   ChevronRight,
@@ -31,13 +31,6 @@ type Props = {
   onOpenGallery: () => void;
 };
 
-const TOOLS = [
-  { id: "styles", icon: Scissors, titleKey: "aiStylePage.home.tools.styles", descKey: "aiStylePage.home.tools.stylesDesc" },
-  { id: "care", icon: Droplets, titleKey: "aiStylePage.home.tools.care", descKey: "aiStylePage.home.tools.careDesc" },
-  { id: "color", icon: Palette, titleKey: "aiStylePage.home.tools.color", descKey: "aiStylePage.home.tools.colorDesc" },
-  { id: "gallery", icon: Images, titleKey: "aiStylePage.home.tools.gallery", descKey: "aiStylePage.home.tools.galleryDesc" },
-] as const;
-
 function prettyLookTitle(title: string) {
   const raw = title.trim();
   if (!raw) return "Try-on";
@@ -50,6 +43,7 @@ function prettyLookTitle(title: string) {
 
 export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery }: Props) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { personaId } = useExplorePersona();
   const { data: styles = [] } = useHairstyles(audience === "women" ? "women" : "men", personaId, {
     ignoreAgeGroup: true,
@@ -87,9 +81,40 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
     return [...fromGen, ...fromSaved].slice(0, 12);
   }, [generations, saved]);
 
+  const tools = [
+    {
+      id: "styles",
+      icon: Scissors,
+      titleKey: "aiStylePage.home.tools.styles",
+      descKey: "aiStylePage.home.tools.stylesDesc",
+      onClick: onStartNew,
+    },
+    {
+      id: "care",
+      icon: Droplets,
+      titleKey: "aiStylePage.home.tools.care",
+      descKey: "aiStylePage.home.tools.careDesc",
+      onClick: () => void navigate({ to: "/ai-style/care" }),
+    },
+    {
+      id: "color",
+      icon: Palette,
+      titleKey: "aiStylePage.home.tools.color",
+      descKey: "aiStylePage.home.tools.colorDesc",
+      onClick: onStartNew,
+    },
+    {
+      id: "gallery",
+      icon: Images,
+      titleKey: "aiStylePage.home.tools.gallery",
+      descKey: "aiStylePage.home.tools.galleryDesc",
+      onClick: onOpenGallery,
+    },
+  ] as const;
+
   return (
     <div className="relative h-full min-h-0 touch-pan-y overflow-y-auto overscroll-y-contain bg-[#0b0b0b] text-white [-webkit-overflow-scrolling:touch]">
-      <section className="relative isolate min-h-[52dvh]">
+      <section className="relative isolate min-h-[48dvh]">
         <img
           src={getAiStyleHeroUrl(audience === "women" ? "hero-women" : "hero-men")}
           alt=""
@@ -97,7 +122,7 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/25 to-[#0b0b0b]" />
         <div
-          className="relative z-[1] flex min-h-[52dvh] flex-col justify-end px-5 pb-7"
+          className="relative z-[1] flex min-h-[48dvh] flex-col justify-end px-5 pb-7"
           style={{ paddingTop: "max(1.25rem, env(safe-area-inset-top))" }}
         >
           <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-black/35 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white/85 backdrop-blur-md">
@@ -130,7 +155,7 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
         </div>
       </section>
 
-      <div className="relative z-[1] space-y-9 px-5 pb-[max(8.5rem,calc(env(safe-area-inset-bottom)+6.5rem))] pt-2">
+      <div className="relative z-[1] space-y-9 px-5 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-2">
         {myLooks.length > 0 ? (
           <section>
             <div className="mb-3.5 flex items-end justify-between gap-3">
@@ -156,7 +181,7 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.04, duration: 0.35 }}
-                  onClick={onStartNew}
+                  onClick={() => void navigate({ to: "/ai-style/history" })}
                   className="relative h-48 w-[8.5rem] shrink-0 overflow-hidden rounded-[22px] bg-white/5 text-left touch-manipulation active:scale-[0.98]"
                 >
                   <img src={look.image} alt="" className="h-full w-full object-cover object-top" />
@@ -177,13 +202,13 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
             <h2 className="mt-1 text-lg font-bold">{t("aiStylePage.home.toolsTitle")}</h2>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            {TOOLS.map((tool) => {
+            {tools.map((tool) => {
               const Icon = tool.icon;
               return (
                 <button
                   key={tool.id}
                   type="button"
-                  onClick={tool.id === "gallery" ? onOpenGallery : onStartNew}
+                  onClick={tool.onClick}
                   className="relative z-[2] rounded-[22px] border border-white/10 bg-white/[0.045] p-4 text-left touch-manipulation transition active:scale-[0.98]"
                 >
                   <span className="grid size-10 place-items-center rounded-2xl bg-white text-black">

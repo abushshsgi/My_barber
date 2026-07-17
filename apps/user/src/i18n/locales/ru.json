@@ -1096,6 +1096,53 @@
     "previewNoImage": "Изображение недоступно",
     "previewDesc": "Просмотр, скачивание или отправка созданного образа",
     "previewBack": "К результатам",
+    "beforeAfter": {
+      "before": "Before",
+      "after": "After",
+      "hint": "Вправо — Before · влево — After",
+      "noBefore": "Before-селфи не сохранено — сделайте новый try-on"
+    },
+    "care": {
+      "badge": "Уход",
+      "title": "Персональный план ухода",
+      "condition": "Состояние",
+      "texture": "Текстура",
+      "density": "Плотность",
+      "scalp": "Кожа головы",
+      "weeklyTitle": "План на неделю",
+      "productsTitle": "Средства",
+      "avoidTitle": "Чего избегать",
+      "salonTitle": "Советы салона",
+      "nextCut": "Следующая стрижка: через ~{{days}} дн.",
+      "exploreCta": "Выбрать стиль",
+      "conditions": {
+        "oily": "Жирные",
+        "dry": "Сухие",
+        "normal": "Нормальные",
+        "damaged": "Повреждённые"
+      },
+      "textures": {
+        "straight": "Прямые",
+        "wavy": "Волнистые",
+        "curly": "Кудрявые"
+      },
+      "densities": {
+        "fine": "Тонкие",
+        "medium": "Средние",
+        "thick": "Густые"
+      },
+      "scalps": {
+        "oily": "Жирная",
+        "dry": "Сухая",
+        "sensitive": "Чувствительная"
+      },
+      "budgets": {
+        "all": "Все",
+        "budget": "Бюджет",
+        "mid": "Средний",
+        "premium": "Премиум"
+      }
+    },
     "tryOnHint": "Селфи + выбранный стиль — AI покажет на вашем лице",
     "exploreStyles": "Трендовые стили",
     "betaBadge": "Beta · демо",

@@ -78,7 +78,6 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [faceCameraOpen, setFaceCameraOpen] = useState(false);
-  const [aiStyleFlowOpen, setAiStyleFlowOpen] = useState(false);
 
   useEffect(() => {
     allRoutes.forEach((tab) => {
@@ -89,18 +88,17 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
   useEffect(() => {
     const sync = () => {
       setFaceCameraOpen(document.documentElement.dataset.faceCamera === "open");
-      setAiStyleFlowOpen(document.documentElement.dataset.aiStyleFlow === "open");
     };
     sync();
     const observer = new MutationObserver(sync);
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ["data-face-camera", "data-ai-style-flow"],
+      attributeFilter: ["data-face-camera"],
     });
     return () => observer.disconnect();
   }, []);
 
-  if (!shouldShowMobileDock(pathname) || faceCameraOpen || (pathname === "/ai-style" && aiStyleFlowOpen)) {
+  if (!shouldShowMobileDock(pathname) || faceCameraOpen) {
     return null;
   }
 

@@ -1,9 +1,9 @@
-/** Auth / onboarding / AI try-on flow dan tashqari barcha mobil sahifalarda pastki dock. */
+/** Auth / onboarding / Morf AI — pastki dock yo‘q. */
 export function shouldShowMobileDock(pathname: string): boolean {
   if (pathname === "/auth" || pathname === "/onboarding") {
     return false;
   }
-  if (pathname.startsWith("/ai-style/")) {
+  if (pathname === "/ai-style" || pathname.startsWith("/ai-style/")) {
     return false;
   }
   return true;

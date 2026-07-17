@@ -217,6 +217,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
           styleId,
           title: resolvedTitle,
           previewImage: data.preview_image,
+          beforeImage: photo,
           personaId: effectivePersona,
         });
         markMorphAiOnboarded();

@@ -1093,6 +1093,53 @@
     "previewNoImage": "No image available",
     "previewDesc": "View, download, or share the generated look",
     "previewBack": "Back to results",
+    "beforeAfter": {
+      "before": "Before",
+      "after": "After",
+      "hint": "Swipe right — Before · left — After",
+      "noBefore": "No before selfie saved — create a new try-on"
+    },
+    "care": {
+      "badge": "Care",
+      "title": "Your personal hair care plan",
+      "condition": "Condition",
+      "texture": "Texture",
+      "density": "Density",
+      "scalp": "Scalp",
+      "weeklyTitle": "Weekly plan",
+      "productsTitle": "Products",
+      "avoidTitle": "What to avoid",
+      "salonTitle": "Salon tips",
+      "nextCut": "Next cut: in about {{days}} days",
+      "exploreCta": "Pick a style",
+      "conditions": {
+        "oily": "Oily",
+        "dry": "Dry",
+        "normal": "Normal",
+        "damaged": "Damaged"
+      },
+      "textures": {
+        "straight": "Straight",
+        "wavy": "Wavy",
+        "curly": "Curly"
+      },
+      "densities": {
+        "fine": "Fine",
+        "medium": "Medium",
+        "thick": "Thick"
+      },
+      "scalps": {
+        "oily": "Oily",
+        "dry": "Dry",
+        "sensitive": "Sensitive"
+      },
+      "budgets": {
+        "all": "All",
+        "budget": "Budget",
+        "mid": "Mid",
+        "premium": "Premium"
+      }
+    },
     "tryOnHint": "Selfie + selected style — AI shows it on your face",
     "exploreStyles": "Trending styles",
     "betaBadge": "Beta · demo",

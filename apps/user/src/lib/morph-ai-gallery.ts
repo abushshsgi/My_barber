@@ -8,7 +8,10 @@ export type MorphAiGeneration = {
   id: string;
   styleId: string;
   title: string;
+  /** Generated try-on (after). */
   previewImage: string;
+  /** Original selfie (before), when available. */
+  beforeImage?: string;
   createdAt: string;
   personaId?: string;
 };
@@ -47,6 +50,7 @@ export function saveMorphAiGeneration(entry: Omit<MorphAiGeneration, "id" | "cre
     styleId: entry.styleId,
     title: entry.title,
     previewImage: entry.previewImage,
+    beforeImage: entry.beforeImage,
     createdAt: entry.createdAt ?? new Date().toISOString(),
     personaId: entry.personaId,
   };

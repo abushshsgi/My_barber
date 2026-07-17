@@ -18,9 +18,11 @@ import { getMobileContentPaddingClass } from "@/lib/layout-constants";
 import { shouldShowScrollToTop } from "@/lib/scroll-to-top";
 import { cn } from "@/lib/utils";
 
-const MOBILE_VIEWPORT_LOCK_PREFIXES = ["/map", "/ai-style", "/stories/"];
+const MOBILE_VIEWPORT_LOCK_EXACT = new Set(["/map", "/ai-style"]);
+const MOBILE_VIEWPORT_LOCK_PREFIXES = ["/stories/"];
 
 function shouldLockMobileViewport(pathname: string): boolean {
+  if (MOBILE_VIEWPORT_LOCK_EXACT.has(pathname)) return true;
   return MOBILE_VIEWPORT_LOCK_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(prefix),
   );

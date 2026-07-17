@@ -54,6 +54,7 @@ import { Route as BookingsBookingIdRouteImport } from './routes/bookings.$bookin
 import { Route as BookingSalonIdRouteImport } from './routes/booking.$salonId'
 import { Route as BarberBarberIdRouteImport } from './routes/barber.$barberId'
 import { Route as AiStyleHistoryRouteImport } from './routes/ai-style_.history'
+import { Route as AiStyleCareRouteImport } from './routes/ai-style_.care'
 import { Route as AccountPreferencesRouteImport } from './routes/account.preferences'
 import { Route as AccountPaymentsRouteImport } from './routes/account.payments'
 import { Route as AccountHouseholdRouteImport } from './routes/account.household'
@@ -288,6 +289,11 @@ const AiStyleHistoryRoute = AiStyleHistoryRouteImport.update({
   path: '/ai-style/history',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AiStyleCareRoute = AiStyleCareRouteImport.update({
+  id: '/ai-style_/care',
+  path: '/ai-style/care',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AccountPreferencesRoute = AccountPreferencesRouteImport.update({
   id: '/account/preferences',
   path: '/account/preferences',
@@ -367,6 +373,7 @@ export interface FileRoutesByFullPath {
   '/account/household': typeof AccountHouseholdRoute
   '/account/payments': typeof AccountPaymentsRoute
   '/account/preferences': typeof AccountPreferencesRoute
+  '/ai-style/care': typeof AiStyleCareRoute
   '/ai-style/history': typeof AiStyleHistoryRoute
   '/barber/$barberId': typeof BarberBarberIdRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
@@ -422,6 +429,7 @@ export interface FileRoutesByTo {
   '/account/household': typeof AccountHouseholdRoute
   '/account/payments': typeof AccountPaymentsRoute
   '/account/preferences': typeof AccountPreferencesRoute
+  '/ai-style/care': typeof AiStyleCareRoute
   '/ai-style/history': typeof AiStyleHistoryRoute
   '/barber/$barberId': typeof BarberBarberIdRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
@@ -477,6 +485,7 @@ export interface FileRoutesById {
   '/account/household': typeof AccountHouseholdRoute
   '/account/payments': typeof AccountPaymentsRoute
   '/account/preferences': typeof AccountPreferencesRoute
+  '/ai-style_/care': typeof AiStyleCareRoute
   '/ai-style_/history': typeof AiStyleHistoryRoute
   '/barber/$barberId': typeof BarberBarberIdRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
@@ -534,6 +543,7 @@ export interface FileRouteTypes {
     | '/account/household'
     | '/account/payments'
     | '/account/preferences'
+    | '/ai-style/care'
     | '/ai-style/history'
     | '/barber/$barberId'
     | '/booking/$salonId'
@@ -589,6 +599,7 @@ export interface FileRouteTypes {
     | '/account/household'
     | '/account/payments'
     | '/account/preferences'
+    | '/ai-style/care'
     | '/ai-style/history'
     | '/barber/$barberId'
     | '/booking/$salonId'
@@ -643,6 +654,7 @@ export interface FileRouteTypes {
     | '/account/household'
     | '/account/payments'
     | '/account/preferences'
+    | '/ai-style_/care'
     | '/ai-style_/history'
     | '/barber/$barberId'
     | '/booking/$salonId'
@@ -699,6 +711,7 @@ export interface RootRouteChildren {
   AccountHouseholdRoute: typeof AccountHouseholdRoute
   AccountPaymentsRoute: typeof AccountPaymentsRoute
   AccountPreferencesRoute: typeof AccountPreferencesRoute
+  AiStyleCareRoute: typeof AiStyleCareRoute
   AiStyleHistoryRoute: typeof AiStyleHistoryRoute
   BarberBarberIdRoute: typeof BarberBarberIdRoute
   BookingSalonIdRoute: typeof BookingSalonIdRoute
@@ -1029,6 +1042,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AiStyleHistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ai-style_/care': {
+      id: '/ai-style_/care'
+      path: '/ai-style/care'
+      fullPath: '/ai-style/care'
+      preLoaderRoute: typeof AiStyleCareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/account/preferences': {
       id: '/account/preferences'
       path: '/account/preferences'
@@ -1173,6 +1193,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountHouseholdRoute: AccountHouseholdRoute,
   AccountPaymentsRoute: AccountPaymentsRoute,
   AccountPreferencesRoute: AccountPreferencesRoute,
+  AiStyleCareRoute: AiStyleCareRoute,
   AiStyleHistoryRoute: AiStyleHistoryRoute,
   BarberBarberIdRoute: BarberBarberIdRoute,
   BookingSalonIdRoute: BookingSalonIdRoute,
@@ -1188,13 +1209,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
