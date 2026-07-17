@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import {
   Bookmark,
   CalendarPlus,
+  ChevronLeft,
   Download,
   LayoutGrid,
   Loader2,
@@ -13,7 +14,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { isCatalogStyleId } from "@/components/ai-style/ai-style-shared";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { downloadAiStyleImage, shareAiStyleImage } from "@/lib/ai-style-image";
 import { cn } from "@/lib/utils";
@@ -28,7 +29,7 @@ type Props = {
   saved: boolean;
   tryOnLoading?: boolean;
   onToggleSave: (styleId: string, meta: { title: string; previewImage?: string }) => void;
-  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId) => void;
+  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId, title?: string) => void;
   onTryMoreStyles?: () => void;
 };
 
@@ -51,7 +52,7 @@ function ActionRow({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-[10px] font-bold transition-colors",
+        "flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-[10px] font-bold transition-colors touch-manipulation",
         active ? "bg-black text-white" : "bg-neutral-100 text-black",
         disabled && "opacity-50",
       )}
@@ -85,6 +86,8 @@ export function AiStylePreviewSheet({
     typeof window !== "undefined" && isCatalogStyleId(suggestion.id)
       ? `${window.location.origin}/explore/${suggestion.id}`
       : undefined;
+
+  const goBack = () => onOpenChange(false);
 
   const handleDownload = async () => {
     if (!imageSrc) {
@@ -128,9 +131,15 @@ export function AiStylePreviewSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
+        hideClose
         className="max-h-[94dvh] overflow-y-auto rounded-t-[28px] border-0 px-0 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-0"
       >
         <SheetTitle className="sr-only">{suggestion.title}</SheetTitle>
+        <SheetDescription className="sr-only">
+          {t("aiStylePage.previewDesc", {
+            defaultValue: "Generatsiya qilingan uslubni ko‘rish, yuklab olish yoki ulashish",
+          })}
+        </SheetDescription>
 
         <div className="relative min-h-[min(58dvh,520px)] bg-neutral-100">
           {imageSrc ? (
@@ -148,6 +157,17 @@ export function AiStylePreviewSheet({
             </div>
           ) : null}
 
+          <button
+            type="button"
+            onClick={goBack}
+            className="absolute left-4 z-20 inline-flex min-h-11 items-center gap-1.5 rounded-full bg-black/55 px-3.5 py-2 text-sm font-bold text-white shadow-lg backdrop-blur-md ring-1 ring-white/20 touch-manipulation active:scale-95"
+            style={{ top: "max(0.85rem, env(safe-area-inset-top))" }}
+            aria-label={t("common.back")}
+          >
+            <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+            {t("common.back")}
+          </button>
+
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/60 to-transparent px-5 pb-5 pt-24">
             <p className="text-[10px] font-bold uppercase tracking-wider text-white/60">
               {previewImage ? t("aiStylePage.tryOnBadge") : t("aiStylePage.viewStyle")}
@@ -160,6 +180,15 @@ export function AiStylePreviewSheet({
         </div>
 
         <div className="space-y-4 px-5 pt-4">
+          <button
+            type="button"
+            onClick={goBack}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-neutral-50 py-3.5 text-sm font-bold text-foreground touch-manipulation active:opacity-90"
+          >
+            <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
+            {t("aiStylePage.previewBack", { defaultValue: "Natijalarga qaytish" })}
+          </button>
+
           <div className="grid grid-cols-4 gap-2">
             <ActionRow
               icon={downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
@@ -194,7 +223,7 @@ export function AiStylePreviewSheet({
               type="button"
               disabled={tryOnLoading}
               onClick={() => onGenerateTryOn?.(suggestion.id, undefined, suggestion.title)}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-neutral-100 py-3.5 text-sm font-bold text-black active:opacity-90 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-neutral-100 py-3.5 text-sm font-bold text-black active:opacity-90 disabled:opacity-50 touch-manipulation"
             >
               {tryOnLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

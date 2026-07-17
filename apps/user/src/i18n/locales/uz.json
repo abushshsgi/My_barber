@@ -1091,6 +1091,8 @@
     "tryMoreStyles": "Boshqa uslublar",
     "viewStylePage": "Uslub sahifasi",
     "previewNoImage": "Rasm mavjud emas",
+    "previewDesc": "Generatsiya qilingan uslubni ko‘rish, yuklab olish yoki ulashish",
+    "previewBack": "Natijalarga qaytish",
     "tryOnHint": "Selfie + tanlangan uslub — AI sizning yuzingizda ko'rsatadi",
     "exploreStyles": "Trend uslublar",
     "betaBadge": "Beta · demo",
