@@ -42,7 +42,7 @@ function MoreStyleCard({
   match?: number;
   loading: boolean;
   busy: boolean;
-  onGenerate: (styleId: string, personaId: ExplorePersonaId) => void;
+  onGenerate: (styleId: string, personaId: ExplorePersonaId, title?: string) => void;
   onOpenPreview?: (item: MoreStyleItem, match: number) => void;
 }) {
   const { t } = useTranslation();
@@ -61,7 +61,7 @@ function MoreStyleCard({
           onOpenPreview?.(item, match);
           return;
         }
-        if (!loading) onGenerate(item.entry.id, item.personaId);
+        if (!loading) onGenerate(item.entry.id, item.personaId, item.entry.titleUz || item.entry.title);
       }}
       className={cn(
         "min-w-0 text-left transition-opacity active:opacity-90",
@@ -122,7 +122,7 @@ export function AiStyleMoreStyles({
   result: AiAnalysisResult;
   tryOnByStyle?: Record<string, string>;
   tryOnLoadingId?: string | null;
-  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId) => void;
+  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId, title?: string) => void;
   onOpenPreview?: (item: MoreStyleItem, match: number) => void;
 }) {
   const { t } = useTranslation();

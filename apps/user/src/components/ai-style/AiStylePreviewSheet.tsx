@@ -193,7 +193,7 @@ export function AiStylePreviewSheet({
             <button
               type="button"
               disabled={tryOnLoading}
-              onClick={() => onGenerateTryOn?.(suggestion.id)}
+              onClick={() => onGenerateTryOn?.(suggestion.id, undefined, suggestion.title)}
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-neutral-100 py-3.5 text-sm font-bold text-black active:opacity-90 disabled:opacity-50"
             >
               {tryOnLoading ? (

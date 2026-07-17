@@ -209,9 +209,13 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
       try {
         const data = await generateAiStyleTryOn(photo, styleId, effectivePersona);
         setTryOnByStyle((prev) => ({ ...prev, [cacheKey]: data.preview_image }));
+        const resolvedTitle =
+          title ??
+          result?.suggestions.find((s) => s.id === styleId)?.title ??
+          styleId;
         saveMorphAiGeneration({
           styleId,
-          title: title ?? styleId,
+          title: resolvedTitle,
           previewImage: data.preview_image,
           personaId: effectivePersona,
         });
@@ -222,7 +226,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
         setTryOnLoadingId(null);
       }
     },
-    [photo, tryOnByStyle, menPersonaId],
+    [photo, tryOnByStyle, menPersonaId, result],
   );
 
   useEffect(() => {
@@ -239,11 +243,14 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
 
   useEffect(() => {
     if (!done || !result?.suggestions.length) return;
-    const primaryId = focusStyleId ?? result.suggestions[0]?.id;
-    const primaryKey = tryOnCacheKey(primaryId, menPersonaId);
-    if (!primaryId || tryOnByStyle[primaryKey] || tryOnLoadingId === primaryKey) return;
-    void generateTryOn(primaryId);
-  }, [done, result, focusStyleId, tryOnByStyle, tryOnLoadingId, generateTryOn]);
+    const primary = focusStyleId
+      ? result.suggestions.find((s) => s.id === focusStyleId) ?? result.suggestions[0]
+      : result.suggestions[0];
+    if (!primary) return;
+    const primaryKey = tryOnCacheKey(primary.id, menPersonaId);
+    if (tryOnByStyle[primaryKey] || tryOnLoadingId === primaryKey) return;
+    void generateTryOn(primary.id, undefined, primary.title);
+  }, [done, result, focusStyleId, tryOnByStyle, tryOnLoadingId, generateTryOn, menPersonaId]);
 
   const reset = () => {
     analyzeTriggeredRef.current = false;

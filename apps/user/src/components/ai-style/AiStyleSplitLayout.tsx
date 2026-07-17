@@ -76,7 +76,7 @@ export type AiStyleSplitLayoutProps = {
   onAnalyze: () => void;
   tryOnByStyle: Record<string, string>;
   tryOnLoadingId: string | null;
-  onGenerateTryOn: (styleId: string, personaId?: ExplorePersonaId) => void;
+  onGenerateTryOn: (styleId: string, personaId?: ExplorePersonaId, title?: string) => void;
   menPersonaId?: ExplorePersonaId | null;
 };
 

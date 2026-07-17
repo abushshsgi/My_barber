@@ -108,7 +108,8 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
             flags.isViewportLocked &&
               !flags.isMap &&
               "fixed inset-x-0 top-0 z-10 h-[100dvh] overflow-hidden overscroll-none lg:static lg:z-auto lg:h-auto lg:overflow-visible",
-            flags.isAiStyle && "h-[100dvh] lg:h-[calc(100dvh-4.5rem)]",
+            flags.isAiStyle &&
+              "h-[100dvh] max-h-[100dvh] lg:h-[calc(100dvh-4.5rem)] lg:max-h-[calc(100dvh-4.5rem)]",
             flags.isFullBleed && !flags.isViewportLocked && "pb-0",
             !flags.isFullBleed && getMobileContentPaddingClass(pathname),
             !flags.isFullBleed && "lg:pb-12",
@@ -123,7 +124,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
             <div
               className={cn(
                 (flags.isMap || flags.isAiStyle) &&
-                  "flex min-h-0 flex-1 flex-col overflow-hidden lg:h-full",
+                  "flex h-full min-h-0 flex-1 flex-col overflow-hidden lg:h-full",
               )}
             >
               {children}

@@ -38,6 +38,16 @@ const TOOLS = [
   { id: "gallery", icon: Images, titleKey: "aiStylePage.home.tools.gallery", descKey: "aiStylePage.home.tools.galleryDesc" },
 ] as const;
 
+function prettyLookTitle(title: string) {
+  const raw = title.trim();
+  if (!raw) return "Try-on";
+  if (!/[-_]/.test(raw) && !/^(men|women)\b/i.test(raw)) return raw;
+  return raw
+    .replace(/^(men|women)[-_]/i, "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (ch) => ch.toUpperCase());
+}
+
 export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery }: Props) {
   const { t } = useTranslation();
   const { personaId } = useExplorePersona();
@@ -61,9 +71,8 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
   const myLooks = useMemo(() => {
     const fromGen = generations.map((g) => ({
       id: g.id,
-      title: g.title,
+      title: prettyLookTitle(g.title),
       image: g.previewImage,
-      kind: "gen" as const,
       styleId: g.styleId,
     }));
     const genStyleIds = new Set(generations.map((g) => g.styleId));
@@ -71,40 +80,41 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
       .filter((s) => !genStyleIds.has(s.styleId))
       .map((s) => ({
         id: `saved-${s.styleId}`,
-        title: s.title,
+        title: prettyLookTitle(s.title),
         image: s.previewImage,
-        kind: "saved" as const,
         styleId: s.styleId,
       }));
     return [...fromGen, ...fromSaved].slice(0, 12);
   }, [generations, saved]);
 
   return (
-    <div className="min-h-[100dvh] bg-[#0c0c0c] text-white">
-      <div className="relative overflow-hidden">
+    <div className="relative h-full min-h-0 touch-pan-y overflow-y-auto overscroll-y-contain bg-[#0b0b0b] text-white [-webkit-overflow-scrolling:touch]">
+      <section className="relative isolate min-h-[52dvh]">
         <img
           src={getAiStyleHeroUrl(audience === "women" ? "hero-women" : "hero-men")}
           alt=""
-          className="h-[38dvh] w-full object-cover object-top opacity-80"
+          className="absolute inset-0 h-full w-full object-cover object-[center_20%]"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-[#0c0c0c]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/25 to-[#0b0b0b]" />
         <div
-          className="absolute inset-x-0 bottom-0 space-y-3 px-5 pb-6"
-          style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+          className="relative z-[1] flex min-h-[52dvh] flex-col justify-end px-5 pb-7"
+          style={{ paddingTop: "max(1.25rem, env(safe-area-inset-top))" }}
         >
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-white/80 backdrop-blur-md">
+          <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-black/35 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white/85 backdrop-blur-md">
             <Wand2 className="h-3.5 w-3.5" />
             {t("aiStylePage.title")}
           </div>
-          <h1 className="max-w-[18rem] text-[2rem] font-bold leading-[1.05] tracking-tight">
+          <h1 className="max-w-[17.5rem] text-[1.85rem] font-bold leading-[1.08] tracking-tight">
             {t("aiStylePage.home.headline")}
           </h1>
-          <p className="max-w-[22rem] text-sm text-white/70">{t("aiStylePage.home.subtitle")}</p>
-          <div className="flex gap-2 pt-1">
+          <p className="mt-2 max-w-[21rem] text-[13px] leading-relaxed text-white/70">
+            {t("aiStylePage.home.subtitle")}
+          </p>
+          <div className="mt-5 flex gap-2.5">
             <button
               type="button"
               onClick={onStartNew}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3.5 text-sm font-bold text-black active:scale-[0.98]"
+              className="relative z-[2] inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-white px-4 text-sm font-bold text-black touch-manipulation active:scale-[0.98]"
             >
               <Sparkles className="h-4 w-4" />
               {t("aiStylePage.home.newLook")}
@@ -112,18 +122,18 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
             <button
               type="button"
               onClick={onOpenCamera}
-              className="rounded-2xl border border-white/25 bg-white/10 px-4 py-3.5 text-sm font-bold text-white backdrop-blur-md active:scale-[0.98]"
+              className="relative z-[2] min-h-12 shrink-0 rounded-2xl border border-white/25 bg-white/10 px-4 text-sm font-bold text-white backdrop-blur-md touch-manipulation active:scale-[0.98]"
             >
               {t("aiStylePage.openCamera")}
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="space-y-8 px-5 pb-[max(7.5rem,env(safe-area-inset-bottom))] pt-6">
+      <div className="relative z-[1] space-y-9 px-5 pb-[max(8.5rem,calc(env(safe-area-inset-bottom)+6.5rem))] pt-2">
         {myLooks.length > 0 ? (
           <section>
-            <div className="mb-3 flex items-end justify-between gap-3">
+            <div className="mb-3.5 flex items-end justify-between gap-3">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/45">
                   {t("aiStylePage.home.myLooksLabel")}
@@ -132,33 +142,35 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
               </div>
               <Link
                 to="/ai-style/history"
-                className="inline-flex items-center gap-0.5 text-xs font-bold text-white/70"
+                className="relative z-[2] inline-flex min-h-10 items-center gap-0.5 px-1 text-xs font-bold text-white/75 touch-manipulation"
               >
                 {t("aiStylePage.historyViewAll")}
                 <ChevronRight className="h-3.5 w-3.5" />
               </Link>
             </div>
-            <div className="no-scrollbar -mx-5 flex gap-3 overflow-x-auto px-5">
+            <div className="no-scrollbar -mx-5 flex gap-3 overflow-x-auto px-5 pb-1">
               {myLooks.map((look, index) => (
-                <motion.div
+                <motion.button
                   key={look.id}
+                  type="button"
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.04, duration: 0.35 }}
-                  className="relative h-44 w-32 shrink-0 overflow-hidden rounded-[22px] bg-white/5"
+                  onClick={onStartNew}
+                  className="relative h-48 w-[8.5rem] shrink-0 overflow-hidden rounded-[22px] bg-white/5 text-left touch-manipulation active:scale-[0.98]"
                 >
                   <img src={look.image} alt="" className="h-full w-full object-cover object-top" />
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2.5 pb-2.5 pt-8">
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-2.5 pb-2.5 pt-10">
                     <p className="truncate text-[11px] font-bold">{look.title}</p>
                   </div>
-                </motion.div>
+                </motion.button>
               ))}
             </div>
           </section>
         ) : null}
 
         <section>
-          <div className="mb-3">
+          <div className="mb-3.5">
             <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/45">
               {t("aiStylePage.home.toolsLabel")}
             </p>
@@ -172,7 +184,7 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
                   key={tool.id}
                   type="button"
                   onClick={tool.id === "gallery" ? onOpenGallery : onStartNew}
-                  className="rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-left transition active:scale-[0.98]"
+                  className="relative z-[2] rounded-[22px] border border-white/10 bg-white/[0.045] p-4 text-left touch-manipulation transition active:scale-[0.98]"
                 >
                   <span className="grid size-10 place-items-center rounded-2xl bg-white text-black">
                     <Icon className="h-4 w-4" strokeWidth={2.2} />
@@ -186,14 +198,17 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
         </section>
 
         <section>
-          <div className="mb-3 flex items-end justify-between gap-3">
+          <div className="mb-3.5 flex items-end justify-between gap-3">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/45">
                 {t("aiStylePage.home.samplesLabel")}
               </p>
               <h2 className="mt-1 text-lg font-bold">{t("aiStylePage.home.samplesTitle")}</h2>
             </div>
-            <Link to="/explore" className="inline-flex items-center gap-0.5 text-xs font-bold text-white/70">
+            <Link
+              to="/explore"
+              className="relative z-[2] inline-flex min-h-10 items-center gap-0.5 px-1 text-xs font-bold text-white/75 touch-manipulation"
+            >
               {t("nav.explore")}
               <ChevronRight className="h-3.5 w-3.5" />
             </Link>
@@ -205,7 +220,7 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
                 to="/explore/$styleId"
                 params={{ styleId: entry.id }}
                 className={cn(
-                  "group relative overflow-hidden rounded-[22px] bg-white/5",
+                  "group relative z-[2] overflow-hidden rounded-[22px] bg-white/5 touch-manipulation",
                   index === 0 ? "col-span-2 aspect-[16/10]" : "aspect-[3/4]",
                 )}
               >

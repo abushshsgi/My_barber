@@ -274,7 +274,7 @@ function SpotlightCard({
             label={tryOnPreview ? t("aiStylePage.tryOnDone") : t("aiStylePage.tryOnMe")}
             active={Boolean(tryOnPreview)}
             disabled={tryOnLoading || Boolean(tryOnPreview)}
-            onClick={() => onGenerateTryOn?.(suggestion.id)}
+            onClick={() => onGenerateTryOn?.(suggestion.id, undefined, suggestion.title)}
           >
             {tryOnLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />

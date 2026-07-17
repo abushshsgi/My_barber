@@ -196,25 +196,21 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
     menPersonaId: personaId,
     tryOnByStyle: flow.tryOnByStyle,
     tryOnLoadingId: flow.tryOnLoadingId,
-    onGenerateTryOn: (styleId: string, nextPersonaId?: Parameters<typeof generateTryOn>[1]) =>
-      void generateTryOn(styleId, nextPersonaId),
+    onGenerateTryOn: (styleId: string, nextPersonaId?: Parameters<typeof generateTryOn>[1], title?: string) =>
+      void generateTryOn(styleId, nextPersonaId, title),
   };
 
   return (
     <>
       {showHome ? (
-        <MorphAiHome
-          audience={audience}
-          onStartNew={startNewLook}
-          onOpenCamera={() => {
-            setShowCapture(true);
-            openCamera();
-          }}
-          onOpenGallery={() => {
-            setShowCapture(true);
-            openFile();
-          }}
-        />
+        <div className="h-full min-h-0">
+          <MorphAiHome
+            audience={audience}
+            onStartNew={startNewLook}
+            onOpenCamera={openCamera}
+            onOpenGallery={openFile}
+          />
+        </div>
       ) : (
         <DesktopPageSplit
           mobile={<AiStyleSplitLayout {...layoutProps} />}
