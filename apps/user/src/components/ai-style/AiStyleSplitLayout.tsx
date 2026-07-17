@@ -1,8 +1,9 @@
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { AnimatePresence, animate, motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
-import { Check, ChevronLeft, ChevronRight, ChevronsUp, Loader2, ScanFace, X } from "lucide-react";
+import { Check, ChevronRight, ChevronsUp, Loader2, ScanFace, X } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AiStyleChrome } from "@/components/ai-style/AiStyleChrome";
 import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
 import { AiStyleScanLine, GalleryValidatingHero } from "@/components/ai-style/AiStyleUi";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
@@ -11,7 +12,6 @@ import { refreshAiStyleHistoryCache } from "@/lib/api";
 import { FACE_HISTORY_UPDATED_EVENT, getActiveUserId, type FaceProfileHistoryEntry } from "@/lib/face-profile";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import type { Audience } from "@/lib/mock-data";
-import { navigateBack } from "@/lib/mobile-back";
 import { cn } from "@/lib/utils";
 
 const HERO_SLIDES: Record<"men" | "women", readonly string[]> = {
@@ -25,32 +25,6 @@ const HISTORY_HINT_MS = 6000;
 const HISTORY_HINT_NUDGE_MS = 1500;
 const HISTORY_HINT_NUDGE_OFFSET = -14;
 const HERO_TEXT_ABOVE_PANEL = 22;
-
-function AiStyleBackButton({
-  className,
-  onClick,
-  label,
-}: {
-  className?: string;
-  onClick?: () => void;
-  label?: string;
-}) {
-  const router = useRouter();
-  const { t } = useTranslation();
-  return (
-    <button
-      type="button"
-      onClick={() => (onClick ? onClick() : navigateBack(router, "/"))}
-      className={cn(
-        "absolute left-5 top-[calc(env(safe-area-inset-top)+12px)] z-10 grid size-10 place-items-center rounded-full bg-black/35 text-white backdrop-blur-md active:opacity-80",
-        className,
-      )}
-      aria-label={label ?? t("common.back")}
-    >
-      <ChevronLeft className="size-5" strokeWidth={2.25} />
-    </button>
-  );
-}
 
 function getHistoryRevealHeight() {
   if (typeof window === "undefined") return 400;
@@ -550,7 +524,11 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 h-[38%] bg-gradient-to-t from-black/75 via-black/35 to-transparent"
         />
-        <AiStyleBackButton onClick={props.onGoHome ?? props.onReset} />
+        <AiStyleChrome
+          tone="dark"
+          className="absolute inset-x-0 top-0"
+          onBack={props.onGoHome ?? props.onReset}
+        />
         <div
           className="absolute inset-x-0 bottom-0 z-10 space-y-3 px-5"
           style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
@@ -601,7 +579,11 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
         ) : (
           <HeroCarousel audience={props.audience} hintActive={showHistoryHint} />
         )}
-        <AiStyleBackButton onClick={props.onGoHome} />
+        <AiStyleChrome
+          tone="dark"
+          className="absolute inset-x-0 top-0"
+          onBack={props.onGoHome}
+        />
       </div>
 
       {isUploadStep ? (

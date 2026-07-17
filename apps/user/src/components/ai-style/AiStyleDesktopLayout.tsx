@@ -1,6 +1,6 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronLeft, ChevronRight, ImagePlus, Loader2, ScanFace } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Clock3, Compass, ImagePlus, Loader2, ScanFace, UserRound } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AiStyleSplitLayoutProps } from "@/components/ai-style/AiStyleSplitLayout";
@@ -19,28 +19,43 @@ const HERO_SLIDES: Record<"men" | "women", readonly string[]> = {
 };
 const SLIDE_MS = 5000;
 
-function DesktopBackButton({
-  className,
-  onClick,
+function DesktopNavChrome({
+  onBack,
+  dark,
 }: {
-  className?: string;
-  onClick?: () => void;
+  onBack?: () => void;
+  dark?: boolean;
 }) {
   const router = useRouter();
   const { t } = useTranslation();
+  const btn = dark
+    ? "inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-black/45 px-3 py-2 text-sm font-semibold text-white shadow-lg backdrop-blur-md transition-colors hover:bg-black/60"
+    : "inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-surface";
+
   return (
-    <button
-      type="button"
-      onClick={() => (onClick ? onClick() : navigateBack(router, "/", true))}
-      className={cn(
-        "inline-flex items-center gap-1 rounded-full border border-white/25 bg-black/45 px-3.5 py-2 text-sm font-semibold text-white shadow-lg backdrop-blur-md transition-colors hover:bg-black/60",
-        className,
-      )}
-      aria-label={t("common.back", { defaultValue: "Orqaga" })}
-    >
-      <ChevronLeft className="h-4 w-4" strokeWidth={2.25} />
-      {t("common.back", { defaultValue: "Orqaga" })}
-    </button>
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={() => (onBack ? onBack() : navigateBack(router, "/", true))}
+        className={btn}
+        aria-label={t("nav.home")}
+      >
+        <ChevronLeft className="h-4 w-4" strokeWidth={2.25} />
+        {t("nav.home")}
+      </button>
+      <Link to="/explore" className={btn}>
+        <Compass className="h-4 w-4" strokeWidth={2} />
+        {t("nav.explore")}
+      </Link>
+      <Link to="/ai-style/history" className={btn}>
+        <Clock3 className="h-4 w-4" strokeWidth={2} />
+        {t("aiStylePage.historyTitle")}
+      </Link>
+      <Link to="/profile" className={btn}>
+        <UserRound className="h-4 w-4" strokeWidth={2} />
+        {t("nav.profile")}
+      </Link>
+    </div>
   );
 }
 
@@ -254,8 +269,8 @@ export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
                 : "h-full min-h-[420px]",
             )}
           >
-            <div className="absolute left-3 top-3 z-20 sm:left-4 sm:top-4">
-              <DesktopBackButton onClick={showResults ? props.onGoHome : undefined} />
+            <div className="absolute left-3 top-3 z-20 max-w-[calc(100%-1.5rem)] sm:left-4 sm:top-4">
+              <DesktopNavChrome dark onBack={showResults ? props.onGoHome : undefined} />
             </div>
 
             {isGalleryValidating ? (
