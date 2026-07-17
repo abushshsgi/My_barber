@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { ChevronLeft, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { getAiStyleHeroUrl } from "@/lib/cover-images";
 import {
   loadMorphAiGenerations,
@@ -36,7 +35,6 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
   const { t } = useTranslation();
   const navigate = useNavigate();
   const router = useRouter();
-  const { personaId: _personaId } = useExplorePersona();
   const [generations, setGenerations] = useState<MorphAiGeneration[]>(() => loadMorphAiGenerations());
   const [saved, setSaved] = useState<SavedAiStyle[]>(() => loadSavedAiStyles());
 
