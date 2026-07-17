@@ -4,6 +4,9 @@ export function isNavTabActive(pathname: string, to: string): boolean {
   if (to === "/bookings") {
     return pathname === "/bookings" || pathname.startsWith("/booking");
   }
+  if (to === "/explore") {
+    return pathname === "/explore" || pathname.startsWith("/explore/");
+  }
   if (to === "/chat") {
     return pathname === "/chat" || pathname.startsWith("/chat/");
   }
@@ -23,6 +26,9 @@ export function isNavTabCurrent(pathname: string, to: string): boolean {
   if (to === "/") return pathname === "/";
   if (to === "/bookings") {
     return pathname === "/bookings" || pathname.startsWith("/booking");
+  }
+  if (to === "/explore") {
+    return pathname === "/explore" || pathname.startsWith("/explore/");
   }
   if (to === "/chat") {
     return pathname === "/chat" || pathname.startsWith("/chat/");

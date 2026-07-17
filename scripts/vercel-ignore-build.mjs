@@ -6,6 +6,9 @@
  *
  * Usage (Root Directory = apps/<app>):
  *   node ../../scripts/vercel-ignore-build.mjs admin
+ *
+ * Also skips stale commits: when several pushes queue, only the tip of the
+ * branch should build — older queued SHAs exit 0 so Vercel catches up once.
  */
 import { execSync } from "node:child_process";
 
@@ -29,6 +32,34 @@ if (!watch) {
 
 const prev = process.env.VERCEL_GIT_PREVIOUS_SHA;
 const curr = process.env.VERCEL_GIT_COMMIT_SHA || "HEAD";
+const branch = process.env.VERCEL_GIT_COMMIT_REF || "";
+
+/** Skip queued deployments that are no longer the tip of the pushed branch. */
+if (branch && curr && curr !== "HEAD") {
+  try {
+    const tip = execSync(`git rev-parse origin/${branch}`, {
+      encoding: "utf8",
+    }).trim();
+    if (tip && tip !== curr) {
+      console.log(
+        `Stale commit ${curr.slice(0, 7)} (tip is ${tip.slice(0, 7)}) — skipping`,
+      );
+      process.exit(0);
+    }
+  } catch {
+    try {
+      const tip = execSync(`git rev-parse ${branch}`, { encoding: "utf8" }).trim();
+      if (tip && tip !== curr) {
+        console.log(
+          `Stale commit ${curr.slice(0, 7)} (tip is ${tip.slice(0, 7)}) — skipping`,
+        );
+        process.exit(0);
+      }
+    } catch {
+      /* tip lookup failed — continue with path check */
+    }
+  }
+}
 
 if (!prev) {
   console.log("No previous SHA — building");

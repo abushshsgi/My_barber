@@ -10,7 +10,7 @@
     "profile": "Профиль",
     "wallet": "Кошелёк",
     "more": "Ещё",
-    "explore": "Тренды",
+    "explore": "Explore",
     "offers": "Акции",
     "discovery": "Обзор",
     "account": "Аккаунт"
@@ -100,6 +100,9 @@
     },
     "topSalons": {
       "title": "Топ салоны"
+    },
+    "topBarbers": {
+      "title": "Топ мастера"
     },
     "mixedDiscovery": {
       "title": "Салоны и мастера"
@@ -309,6 +312,7 @@
     }
   },
   "barber": {
+    "salonSection": "Работает в салоне",
     "workPrefs": {
       "title": "Условия работы",
       "payment": "Оплата"
@@ -997,17 +1001,40 @@
     "cameraTitle": "Сканер лица",
     "scanStep": "Шаг {{current}} из {{total}}",
     "capturePhoto": "Сделать фото",
+    "cameraReadyHint": "Готово — нажмите, чтобы снять",
     "cameraDenied": "Разрешите камеру или загрузите из галереи.",
-    "scanLoading": "Подготовка камеры…",
-    "scanSearching": "Найдите лицо — начнётся сканирование",
+    "scanLoading": "Открываем камеру…",
+    "scanSearching": "Поместите лицо в кадр",
     "scanLeft": "Медленно поверните голову влево",
     "scanRight": "Теперь медленно вправо",
     "scanUp": "Медленно поднимите голову вверх",
     "scanDown": "Теперь медленно опустите вниз",
-    "scanCenter": "Смотрите прямо в камеру",
+    "scanCenter": "Поместите лицо в овал",
     "scanCountdown": "Не двигайтесь…",
     "scanCapture": "Лицо измерено — сохранение…",
     "faceProfileSaved": "Профиль лица сохранён",
+    "home": {
+      "headline": "Создайте новый образ",
+      "subtitle": "Примеры, сохранённые try-on и личные инструменты стиля — в одном месте.",
+      "newLook": "Новый try-on",
+      "backToHome": "Morf AI Home",
+      "myLooksLabel": "Ваше",
+      "myLooksTitle": "Сохранённые и созданные",
+      "toolsLabel": "Инструменты",
+      "toolsTitle": "Что хотите сделать?",
+      "samplesLabel": "Вдохновение",
+      "samplesTitle": "Примеры стилей",
+      "tools": {
+        "styles": "Стили",
+        "stylesDesc": "Стрижки под форму лица",
+        "care": "Уход",
+        "careDesc": "Состояние волос и уход",
+        "color": "Цвет",
+        "colorDesc": "Цвет и направления highlight",
+        "gallery": "Галерея",
+        "galleryDesc": "Загрузите селфи для нового try-on"
+      }
+    },
     "faceChecking": "Проверка лица…",
     "preparingPhoto": "Подготовка фото…",
     "preparingPhotoHint": "Сжимаем изображение для быстрого анализа",

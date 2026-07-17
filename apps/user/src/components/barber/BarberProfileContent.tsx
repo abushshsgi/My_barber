@@ -2,6 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Star, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { BarberWorkPrefsSection } from "@/components/barber/BarberWorkPrefsSection";
+import { BarberSalonSection } from "@/components/barber/BarberSalonSection";
 import { SalonAmenitiesSection } from "@/components/salon/SalonAmenitiesSection";
 import { useBarberPublic } from "@/hooks/use-barbers";
 import { cn } from "@/lib/utils";
@@ -50,7 +51,18 @@ export function BarberProfileContent({ barberId }: Props) {
         </div>
         <div className="min-w-0">
           <h1 className="truncate text-2xl font-bold">{barber.name}</h1>
-          {barber.salonName ? <p className="mt-1 text-sm text-muted-foreground">{barber.salonName}</p> : null}
+          {barber.bookingKind === "salon" && barber.salonId && barber.salonName ? (
+            <Link
+              to="/salon/$id"
+              params={{ id: barber.salonId }}
+              preload="intent"
+              className="mt-1 block truncate text-sm font-medium text-muted-foreground underline-offset-2 hover:underline"
+            >
+              {barber.salonName}
+            </Link>
+          ) : barber.salonName ? (
+            <p className="mt-1 text-sm text-muted-foreground">{barber.salonName}</p>
+          ) : null}
           {barber.rating > 0 ? (
             <p className="mt-1 inline-flex items-center gap-1 text-sm font-bold">
               <Star className="size-4 fill-foreground" />
@@ -85,6 +97,10 @@ export function BarberProfileContent({ barberId }: Props) {
           amenities={barber.amenities}
           variant={barber.bookingKind === "salon" ? "solo_studio" : "salon"}
         />
+      ) : null}
+
+      {barber.bookingKind === "salon" && barber.salonId ? (
+        <BarberSalonSection salonId={barber.salonId} salonName={barber.salonName} />
       ) : null}
 
       <button

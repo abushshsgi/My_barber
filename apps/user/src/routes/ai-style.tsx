@@ -22,10 +22,10 @@ export const Route = createFileRoute("/ai-style")({
   },
   head: () => ({
     meta: [
-      { title: "AI Stil maslahatchi — mysaloon.uz" },
+      { title: "Morf AI — mysaloon.uz" },
       {
         name: "description",
-        content: "Selfie yuklang — AI yuz shakliga mos turmag tavsiya qiladi.",
+        content: "Selfie yuklang — Morf AI yuz shakliga mos turmag tavsiya qiladi.",
       },
     ],
   }),

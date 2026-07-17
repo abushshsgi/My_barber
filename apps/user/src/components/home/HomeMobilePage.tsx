@@ -5,6 +5,7 @@ import { HomeMobileBanner } from "@/components/home/HomeMobileBanner";
 import {
   HomeMobileCategories,
   HomeMobileFeatured,
+  HomeMobileFeaturedBarbers,
   HomeMobileNearby,
   HomeMobileWordmark,
   MotionSection,
@@ -13,7 +14,7 @@ import {
 
 type Props = { data: HomeData };
 
-/** Mobil home — brand + banner + kategoriyalar + top + feed. */
+/** Mobil home — brand + banner + kategoriyalar + top salon/usta + feed. */
 export function HomeMobilePage({ data }: Props) {
   const nearby = data.filtered.slice(0, 10);
 
@@ -47,6 +48,10 @@ export function HomeMobilePage({ data }: Props) {
 
           <MotionSection>
             <HomeMobileFeatured salons={data.filtered} />
+          </MotionSection>
+
+          <MotionSection>
+            <HomeMobileFeaturedBarbers barbers={data.browseBarbers} />
           </MotionSection>
 
           <MotionSection>

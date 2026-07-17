@@ -19,13 +19,19 @@ const HERO_SLIDES: Record<"men" | "women", readonly string[]> = {
 };
 const SLIDE_MS = 5000;
 
-function DesktopBackButton({ className }: { className?: string }) {
+function DesktopBackButton({
+  className,
+  onClick,
+}: {
+  className?: string;
+  onClick?: () => void;
+}) {
   const router = useRouter();
   const { t } = useTranslation();
   return (
     <button
       type="button"
-      onClick={() => navigateBack(router, "/", true)}
+      onClick={() => (onClick ? onClick() : navigateBack(router, "/", true))}
       className={cn(
         "inline-flex items-center gap-1 rounded-full border border-white/25 bg-black/45 px-3.5 py-2 text-sm font-semibold text-white shadow-lg backdrop-blur-md transition-colors hover:bg-black/60",
         className,
@@ -249,7 +255,7 @@ export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
             )}
           >
             <div className="absolute left-3 top-3 z-20 sm:left-4 sm:top-4">
-              <DesktopBackButton />
+              <DesktopBackButton onClick={showResults ? props.onGoHome : undefined} />
             </div>
 
             {isGalleryValidating ? (
@@ -306,13 +312,24 @@ export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
                 </p>
               </div>
               {showResults ? (
-                <button
-                  type="button"
-                  onClick={props.onReset}
-                  className="shrink-0 rounded-full border border-border bg-background px-3.5 py-2 text-[11px] font-bold text-muted-foreground transition-colors hover:bg-surface"
-                >
-                  {t("aiStylePage.tryAgain")}
-                </button>
+                <div className="flex shrink-0 items-center gap-2">
+                  {props.onGoHome ? (
+                    <button
+                      type="button"
+                      onClick={props.onGoHome}
+                      className="rounded-full border border-border bg-background px-3.5 py-2 text-[11px] font-bold text-foreground transition-colors hover:bg-surface"
+                    >
+                      {t("aiStylePage.home.backToHome")}
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={props.onReset}
+                    className="rounded-full border border-border bg-background px-3.5 py-2 text-[11px] font-bold text-muted-foreground transition-colors hover:bg-surface"
+                  >
+                    {t("aiStylePage.tryAgain")}
+                  </button>
+                </div>
               ) : null}
             </div>
             <div className="mt-4 xl:mt-5">

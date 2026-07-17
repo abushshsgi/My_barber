@@ -10,7 +10,7 @@
     "profile": "Profil",
     "wallet": "Hamyon",
     "more": "Ko'proq",
-    "explore": "Trendlar",
+    "explore": "Explore",
     "offers": "Aksiyalar",
     "discovery": "Kashf etish",
     "account": "Hisob"
@@ -100,6 +100,9 @@
     },
     "topSalons": {
       "title": "Top salonlar"
+    },
+    "topBarbers": {
+      "title": "Top ustalar"
     },
     "mixedDiscovery": {
       "title": "Salonlar va ustalar"
@@ -309,6 +312,7 @@
     }
   },
   "barber": {
+    "salonSection": "Ishlagan salon",
     "workPrefs": {
       "title": "Ish sharoiti",
       "payment": "To'lov"
@@ -994,17 +998,40 @@
     "cameraTitle": "Yuz skaneri",
     "scanStep": "{{current}} / {{total}} qadam",
     "capturePhoto": "Rasmga olish",
+    "cameraReadyHint": "Tayyor — rasmga oling",
     "cameraDenied": "Kameraga ruxsat bering yoki galereyadan yuklang.",
-    "scanLoading": "Kamera tayyorlanmoqda…",
-    "scanSearching": "Yuzingizni toping — skaner boshlanadi",
+    "scanLoading": "Kamera ochilmoqda…",
+    "scanSearching": "Yuzingizni kadрга joylashtiring",
     "scanLeft": "Boshni sekin chapga buring",
     "scanRight": "Endi sekin o'ngga buring",
     "scanUp": "Boshni sekin yuqoriga ko'taring",
     "scanDown": "Endi sekin pastga tushing",
-    "scanCenter": "Endi to'g'ri kameraga qarang",
+    "scanCenter": "Yuzingizni doira ichiga joylashtiring",
     "scanCountdown": "Tayyor turing…",
     "scanCapture": "Yuz o'lchandi — saqlanmoqda…",
     "faceProfileSaved": "Yuz shakli saqlandi",
+    "home": {
+      "headline": "Yangi ko'rinishingizni yarating",
+      "subtitle": "Namunalar, saqlangan try-onlar va shaxsiy uslub vositalari — bitta joyda.",
+      "newLook": "Yangi try-on",
+      "backToHome": "Morf AI Home",
+      "myLooksLabel": "Sizniki",
+      "myLooksTitle": "Saqlangan va yaratilgan",
+      "toolsLabel": "Vositalar",
+      "toolsTitle": "Nima qilmoqchisiz?",
+      "samplesLabel": "Ilhom",
+      "samplesTitle": "Namuna uslublar",
+      "tools": {
+        "styles": "Uslublar",
+        "stylesDesc": "Yuzingizga mos soch turmaklari",
+        "care": "Parvarish",
+        "careDesc": "Soch holati va parvarish yo'nalishi",
+        "color": "Rang",
+        "colorDesc": "Rang va highlight yo'nalishlari",
+        "gallery": "Galereya",
+        "galleryDesc": "Selfie yuklab yangi try-on boshlang"
+      }
+    },
     "faceChecking": "Yuz tekshirilmoqda…",
     "preparingPhoto": "Rasm tayyorlanmoqda…",
     "preparingPhotoHint": "Tezroq tahlil uchun rasm siqilmoqda",

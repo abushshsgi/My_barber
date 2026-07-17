@@ -2,6 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Star, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { BarberWorkPrefsSection } from "@/components/barber/BarberWorkPrefsSection";
+import { BarberSalonSection } from "@/components/barber/BarberSalonSection";
 import { MobilePageShell } from "@/components/mobile/MobilePageShell";
 import { MobileStickyActionBar } from "@/components/mobile/MobileStickyActionBar";
 import { SalonAmenitiesSection } from "@/components/salon/SalonAmenitiesSection";
@@ -50,7 +51,7 @@ export function BarberMobilePage({ barberId }: Props) {
       <MobilePageShell
         flush
         title={barber.name}
-        subtitle={barber.salonName ?? undefined}
+        subtitle={undefined}
         backTo="/map"
         className={MOBILE_STICKY_CONTENT_PADDING_CLASS}
       >
@@ -63,13 +64,27 @@ export function BarberMobilePage({ barberId }: Props) {
                 <User className="size-6 text-muted-foreground" />
               )}
             </div>
-            {barber.rating > 0 ? (
-              <p className="inline-flex items-center gap-1 text-sm font-semibold">
-                <Star className="size-3.5 fill-foreground text-foreground" />
-                {barber.rating.toFixed(1)}
-                <span className="font-normal text-muted-foreground">({barber.reviewCount})</span>
-              </p>
-            ) : null}
+            <div className="min-w-0 flex-1">
+              {barber.bookingKind === "salon" && barber.salonId && barber.salonName ? (
+                <Link
+                  to="/salon/$id"
+                  params={{ id: barber.salonId }}
+                  preload="intent"
+                  className="truncate text-sm font-medium text-muted-foreground underline-offset-2 active:underline"
+                >
+                  {barber.salonName}
+                </Link>
+              ) : barber.salonName ? (
+                <p className="truncate text-sm text-muted-foreground">{barber.salonName}</p>
+              ) : null}
+              {barber.rating > 0 ? (
+                <p className="mt-0.5 inline-flex items-center gap-1 text-sm font-semibold">
+                  <Star className="size-3.5 fill-foreground text-foreground" />
+                  {barber.rating.toFixed(1)}
+                  <span className="font-normal text-muted-foreground">({barber.reviewCount})</span>
+                </p>
+              ) : null}
+            </div>
           </div>
 
           {barber.servicesPreview.length > 0 ? (
@@ -96,6 +111,14 @@ export function BarberMobilePage({ barberId }: Props) {
             <SalonAmenitiesSection
               amenities={barber.amenities}
               variant={barber.bookingKind === "salon" ? "solo_studio" : "salon"}
+              compact
+            />
+          ) : null}
+
+          {barber.bookingKind === "salon" && barber.salonId ? (
+            <BarberSalonSection
+              salonId={barber.salonId}
+              salonName={barber.salonName}
               compact
             />
           ) : null}

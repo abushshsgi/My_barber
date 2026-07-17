@@ -11,6 +11,8 @@ import {
   enrichLatestFaceProfileHistory,
   saveFaceProfile,
 } from "@/lib/face-profile";
+import { saveMorphAiGeneration } from "@/lib/morph-ai-gallery";
+import { markMorphAiOnboarded } from "@/lib/morph-ai-session";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { prepareSelfieDataUrl, prepareSelfieFromFile } from "@/lib/selfie-image";
 import type { Audience } from "@/lib/mock-data";
@@ -99,22 +101,26 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
 
   const onCameraCapture = async (payload: CameraCapturePayload) => {
     setError(null);
-    setFaceHint({
-      shape: payload.faceShapeKey,
-      width_to_height: payload.ratios.widthToHeight,
-      jaw_to_forehead: payload.ratios.jawToForehead,
-      source: "camera_scan",
-    });
     const scannedAt = new Date().toISOString();
-    saveFaceProfile({
-      faceShapeKey: payload.faceShapeKey,
-      ratios: {
-        widthToHeight: payload.ratios.widthToHeight,
-        jawToForehead: payload.ratios.jawToForehead,
-      },
-      scannedAt,
-      source: "camera_scan",
-    });
+    if (payload.faceShapeKey && payload.ratios) {
+      setFaceHint({
+        shape: payload.faceShapeKey,
+        width_to_height: payload.ratios.widthToHeight,
+        jaw_to_forehead: payload.ratios.jawToForehead,
+        source: "camera_scan",
+      });
+      saveFaceProfile({
+        faceShapeKey: payload.faceShapeKey,
+        ratios: {
+          widthToHeight: payload.ratios.widthToHeight,
+          jawToForehead: payload.ratios.jawToForehead,
+        },
+        scannedAt,
+        source: "camera_scan",
+      });
+    } else {
+      setFaceHint(null);
+    }
     appendFaceProfileHistory({
       photoDataUrl: payload.dataUrl,
       faceShapeKey: payload.faceShapeKey,
@@ -181,6 +187,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
         });
         setResult(mapped);
         setDone(true);
+        markMorphAiOnboarded();
       } catch (e) {
         setError(e instanceof Error ? e.message : "AI tahlil xatosi");
         setDone(false);
@@ -193,7 +200,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
   );
 
   const generateTryOn = useCallback(
-    async (styleId: string, personaId?: ExplorePersonaId) => {
+    async (styleId: string, personaId?: ExplorePersonaId, title?: string) => {
       const effectivePersona = personaId ?? menPersonaId ?? undefined;
       const cacheKey = tryOnCacheKey(styleId, effectivePersona);
       if (!photo || tryOnByStyle[cacheKey]) return;
@@ -202,6 +209,13 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
       try {
         const data = await generateAiStyleTryOn(photo, styleId, effectivePersona);
         setTryOnByStyle((prev) => ({ ...prev, [cacheKey]: data.preview_image }));
+        saveMorphAiGeneration({
+          styleId,
+          title: title ?? styleId,
+          previewImage: data.preview_image,
+          personaId: effectivePersona,
+        });
+        markMorphAiOnboarded();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Rasm yaratishda xatolik");
       } finally {

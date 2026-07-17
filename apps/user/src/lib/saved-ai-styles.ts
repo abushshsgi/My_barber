@@ -29,6 +29,10 @@ function writeAll(entries: SavedAiStyle[]) {
   localStorage.setItem(storageKey(), JSON.stringify(entries));
 }
 
+export function loadSavedAiStyles(): SavedAiStyle[] {
+  return readAll();
+}
+
 export function loadSavedAiStyleIds(): string[] {
   return readAll().map((entry) => entry.styleId);
 }

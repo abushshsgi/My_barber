@@ -26,47 +26,31 @@ function isStockCoverUrl(url: string): boolean {
   );
 }
 
-const SEED_PHOTO_IDS = [
-  3992859, 2523210, 3992860, 2866115, 1453001, 3992862, 3992863, 3992864,
-] as const;
-
-function photoIdForSeed(seed: string, category?: Category): number {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i += 1) {
-    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
-  }
-  if (seed) {
-    return SEED_PHOTO_IDS[Math.abs(hash) % SEED_PHOTO_IDS.length]!;
-  }
-  return category ? CATEGORY_PHOTOS[category] : SEED_PHOTO_IDS[0]!;
-}
-
-/** Katalog kartalari uchun kategoriya/seed asosidagi yumshoq fallback. */
+/** Salon cover — faqat neytral placeholder (stock/demo yo‘q). */
 export function getSalonCoverUrl(
-  seed?: string,
-  category?: Category,
-  width = 900,
+  _seed?: string,
+  _category?: Category,
+  _width = 900,
 ): string {
-  const photoId = photoIdForSeed(seed?.trim() || "salon", category);
-  return pexelsCoverUrl(photoId, width);
+  return PLACEHOLDER_SALON;
 }
 
 /**
- * Salon kartochkasi — haqiqiy API media birinchi.
- * Bo‘sh yoki stock URL bo‘lsa katalog fallback (salon detail hero stockni filtrlaydi).
+ * Salon kartochkasi — faqat haqiqiy API media.
+ * Bo‘sh yoki stock URL bo‘lsa placeholder (Pexels/demo yo‘q).
  */
 export function resolveCoverUrl(
   apiUrl: string | null | undefined,
-  seed?: string,
-  category?: Category,
+  _seed?: string,
+  _category?: Category,
 ): string {
   const raw = apiUrl?.trim() ?? "";
   if (!raw || isStockCoverUrl(raw)) {
-    return getSalonCoverUrl(seed, category);
+    return PLACEHOLDER_SALON;
   }
   const normalized = normalizeCoverUrl(raw) ?? raw;
   if (isStockCoverUrl(normalized)) {
-    return getSalonCoverUrl(seed, category);
+    return PLACEHOLDER_SALON;
   }
   if (normalized.startsWith("/media/") && normalized.length > "/media/".length) {
     return normalized;
@@ -77,7 +61,7 @@ export function resolveCoverUrl(
   if (normalized.startsWith("/")) {
     return normalized;
   }
-  return getSalonCoverUrl(seed, category);
+  return PLACEHOLDER_SALON;
 }
 
 const TREND_SEEDS = [

@@ -5,12 +5,14 @@ import { AiStyleCamera } from "@/components/ai-style/AiStyleCamera";
 import { AiStyleDesktopLayout } from "@/components/ai-style/AiStyleDesktopLayout";
 import { AiStyleSplitLayout } from "@/components/ai-style/AiStyleSplitLayout";
 import { AiStylePhotoInput } from "@/components/ai-style/AiStyleUi";
+import { MorphAiHome } from "@/components/ai-style/MorphAiHome";
 import type { AiAnalysisResult, AiSuggestion } from "@/components/ai-style/ai-style-shared";
 import type { useAiStyleFlow } from "@/components/ai-style/useAiStyleFlow";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
+import { hasMorphAiOnboarded, markMorphAiOnboarded } from "@/lib/morph-ai-session";
 import {
   loadSavedAiStyleIds,
   removeSavedAiStyle,
@@ -78,6 +80,8 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
   const { personaId } = useExplorePersona();
   const { data: focusHairstyle } = useHairstyle(focusStyleId ?? "", personaId);
   const [saved, setSaved] = useState<string[]>(() => loadSavedAiStyleIds());
+  const [onboarded, setOnboarded] = useState(() => hasMorphAiOnboarded());
+  const [showCapture, setShowCapture] = useState(() => !hasMorphAiOnboarded());
 
   const displayResult = useMemo(() => {
     if (!result || !focusStyleId || !focusHairstyle) return result;
@@ -90,7 +94,30 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
     );
   }, [result, focusStyleId, focusHairstyle]);
 
+  const goHome = useCallback(() => {
+    reset();
+    setShowCapture(false);
+  }, [reset]);
+
+  const startNewLook = useCallback(() => {
+    reset();
+    setShowCapture(true);
+  }, [reset]);
+
+  const step: 1 | 2 | 3 = !photo ? 1 : analyzing || validating ? 2 : done ? 3 : 2;
+  const showHome = onboarded && !showCapture && !photo && !done;
+
   useEffect(() => {
+    if (showHome) {
+      document.documentElement.removeAttribute("data-ai-style-flow");
+      return;
+    }
+    document.documentElement.setAttribute("data-ai-style-flow", "open");
+    return () => document.documentElement.removeAttribute("data-ai-style-flow");
+  }, [showHome]);
+
+  useEffect(() => {
+    if (showHome) return;
     const prevHtml = document.documentElement.style.overflow;
     const prevBody = document.body.style.overflow;
     document.documentElement.style.overflow = "hidden";
@@ -99,7 +126,7 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
       document.documentElement.style.overflow = prevHtml;
       document.body.style.overflow = prevBody;
     };
-  }, []);
+  }, [showHome]);
 
   useEffect(() => {
     if (error) toast.error(error);
@@ -112,10 +139,16 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
   }, [photo, faceHint, t]);
 
   useEffect(() => {
-    if (done) setSaved(loadSavedAiStyleIds());
+    if (done) {
+      setSaved(loadSavedAiStyleIds());
+      markMorphAiOnboarded();
+      setOnboarded(true);
+    }
   }, [done]);
 
-  const step: 1 | 2 | 3 = !photo ? 1 : analyzing || validating ? 2 : done ? 3 : 2;
+  useEffect(() => {
+    if (photo) setShowCapture(true);
+  }, [photo]);
 
   const toggleSave = useCallback(
     (id: string, meta?: { title: string; previewImage?: string }) => {
@@ -155,7 +188,8 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
     focusStyleId,
     saved,
     onToggleSave: toggleSave,
-    onReset: reset,
+    onReset: startNewLook,
+    onGoHome: onboarded ? goHome : undefined,
     openFile,
     openCamera,
     onAnalyze: () => void analyze(audience),
@@ -168,10 +202,25 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
 
   return (
     <>
-      <DesktopPageSplit
-        mobile={<AiStyleSplitLayout {...layoutProps} />}
-        desktop={<AiStyleDesktopLayout {...layoutProps} />}
-      />
+      {showHome ? (
+        <MorphAiHome
+          audience={audience}
+          onStartNew={startNewLook}
+          onOpenCamera={() => {
+            setShowCapture(true);
+            openCamera();
+          }}
+          onOpenGallery={() => {
+            setShowCapture(true);
+            openFile();
+          }}
+        />
+      ) : (
+        <DesktopPageSplit
+          mobile={<AiStyleSplitLayout {...layoutProps} />}
+          desktop={<AiStyleDesktopLayout {...layoutProps} />}
+        />
+      )}
 
       <AiStylePhotoInput fileRef={fileRef} onFile={onFile} />
       <AiStyleCamera open={cameraOpen} onClose={closeCamera} onCapture={onCameraCapture} />

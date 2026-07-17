@@ -1,12 +1,15 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { ChevronRight, Hand, Map, MapPin, Scissors, Sparkles, Star } from "lucide-react";
+import { ChevronRight, Hand, Map, MapPin, Scissors, Sparkles, Star, User } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import { SalonCoverImg } from "@/components/salon/SalonCoverImg";
 import { NoSalonsEmpty } from "@/components/NoSalonsEmpty";
 import { HOME_CATEGORY_KEYS } from "@/lib/home-sections";
 import { filterTopSalons } from "@/lib/salon-top";
+import type { BarberDiscovery } from "@/lib/mappers/barber";
+import { resolveMediaUrl } from "@/lib/media-url";
 import { shortPrice, type Category, type Salon } from "@/lib/mock-data";
 import { prefetchSalonDetail } from "@/lib/prefetch-salon";
 import { cn } from "@/lib/utils";
@@ -143,6 +146,96 @@ export function HomeMobileFeatured({ salons }: { salons: Salon[] }) {
         {preview.map((salon) => (
           <div key={salon.id} className={SLIDE}>
             <FeaturedSlide salon={salon} />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** Top usta — haqiqiy avatar kartochka (stock yo‘q). */
+function FeaturedBarberSlide({ barber }: { barber: BarberDiscovery }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const avatar = resolveMediaUrl(barber.avatar) ?? "";
+  const showPhoto = Boolean(avatar) && !imgFailed;
+
+  return (
+    <div className="group">
+      <Link
+        to="/barber/$barberId"
+        params={{ barberId: barber.barberId }}
+        preload="intent"
+        className="block active:opacity-95"
+      >
+        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-muted shadow-[0_10px_28px_-16px_rgba(0,0,0,0.32)]">
+          {showPhoto ? (
+            <img
+              src={avatar}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              onError={() => setImgFailed(true)}
+              className="absolute inset-0 size-full object-cover transition duration-700 group-active:scale-[1.015]"
+            />
+          ) : (
+            <div className="absolute inset-0 grid place-items-center bg-muted">
+              <User className="size-10 text-muted-foreground/50" strokeWidth={1.5} />
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          {barber.rating > 0 ? (
+            <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-bold text-foreground shadow-sm backdrop-blur-sm">
+              <Star className="size-2.5 fill-foreground" />
+              {barber.rating.toFixed(1)}
+            </span>
+          ) : null}
+          {barber.distanceKm > 0 ? (
+            <span className="absolute right-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-black/45 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
+              <MapPin className="size-2.5" />
+              {barber.distanceKm} km
+            </span>
+          ) : null}
+        </div>
+        <h3 className="mt-2 truncate px-0.5 text-[14px] font-semibold tracking-tight">{barber.name}</h3>
+      </Link>
+      <div className="mt-0.5 flex items-center gap-1.5 px-0.5 text-[11px] text-muted-foreground">
+        {barber.salonId && barber.salonName ? (
+          <Link
+            to="/salon/$id"
+            params={{ id: barber.salonId }}
+            preload="intent"
+            onPointerEnter={() => prefetchSalonDetail(barber.salonId!)}
+            onTouchStart={() => prefetchSalonDetail(barber.salonId!)}
+            className="min-w-0 truncate font-medium underline-offset-2 active:underline"
+          >
+            {barber.salonName}
+          </Link>
+        ) : barber.salonName ? (
+          <span className="truncate">{barber.salonName}</span>
+        ) : null}
+        {barber.priceFrom > 0 ? <span className="shrink-0">dan {shortPrice(barber.priceFrom)}</span> : null}
+      </div>
+    </div>
+  );
+}
+
+export function HomeMobileFeaturedBarbers({ barbers }: { barbers: BarberDiscovery[] }) {
+  const { t } = useTranslation();
+  const withPhoto = barbers.filter((b) => Boolean(b.avatar?.trim()));
+  const preview = (withPhoto.length > 0 ? withPhoto : barbers).slice(0, 8);
+  if (preview.length === 0) return null;
+
+  return (
+    <section className="min-w-0">
+      <SectionHead
+        title={t("home.topBarbers.title")}
+        to="/map"
+        linkLabel={t("common.viewAll")}
+      />
+      <div className={H_SNAP}>
+        {preview.map((barber) => (
+          <div key={barber.id} className={SLIDE}>
+            <FeaturedBarberSlide barber={barber} />
           </div>
         ))}
       </div>

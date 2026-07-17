@@ -26,17 +26,26 @@ const HISTORY_HINT_NUDGE_MS = 1500;
 const HISTORY_HINT_NUDGE_OFFSET = -14;
 const HERO_TEXT_ABOVE_PANEL = 22;
 
-function AiStyleBackButton({ className }: { className?: string }) {
+function AiStyleBackButton({
+  className,
+  onClick,
+  label,
+}: {
+  className?: string;
+  onClick?: () => void;
+  label?: string;
+}) {
   const router = useRouter();
+  const { t } = useTranslation();
   return (
     <button
       type="button"
-      onClick={() => navigateBack(router, "/")}
+      onClick={() => (onClick ? onClick() : navigateBack(router, "/"))}
       className={cn(
         "absolute left-5 top-[calc(env(safe-area-inset-top)+12px)] z-10 grid size-10 place-items-center rounded-full bg-black/35 text-white backdrop-blur-md active:opacity-80",
         className,
       )}
-      aria-label="Orqaga"
+      aria-label={label ?? t("common.back")}
     >
       <ChevronLeft className="size-5" strokeWidth={2.25} />
     </button>
@@ -61,6 +70,7 @@ export type AiStyleSplitLayoutProps = {
   saved: string[];
   onToggleSave: (styleId: string, meta?: { title: string; previewImage?: string }) => void;
   onReset: () => void;
+  onGoHome?: () => void;
   openFile: () => void;
   openCamera: () => void;
   onAnalyze: () => void;
@@ -539,7 +549,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 h-[38%] bg-gradient-to-t from-black/75 via-black/35 to-transparent"
         />
-        <AiStyleBackButton />
+        <AiStyleBackButton onClick={props.onGoHome ?? props.onReset} />
         <div
           className="absolute inset-x-0 bottom-0 z-10 space-y-3 px-5"
           style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
@@ -590,7 +600,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
         ) : (
           <HeroCarousel audience={props.audience} hintActive={showHistoryHint} />
         )}
-        <AiStyleBackButton />
+        <AiStyleBackButton onClick={props.onGoHome} />
       </div>
 
       {isUploadStep ? (
@@ -691,6 +701,16 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
           className="relative -mt-14 flex min-h-0 flex-1 flex-col overflow-y-auto rounded-t-[28px] bg-white px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 text-black"
         >
           <div className="min-h-0 flex-1 text-left">
+            {props.onGoHome ? (
+              <button
+                type="button"
+                onClick={props.onGoHome}
+                className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-border bg-neutral-50 px-3.5 py-2 text-[11px] font-bold text-foreground active:opacity-80"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2.5} />
+                {t("aiStylePage.home.backToHome")}
+              </button>
+            ) : null}
             <AiStyleResultsBlock
               result={props.result!}
               saved={props.saved}

@@ -10,7 +10,7 @@
     "profile": "Profile",
     "wallet": "Wallet",
     "more": "More",
-    "explore": "Trends",
+    "explore": "Explore",
     "offers": "Offers",
     "discovery": "Discover",
     "account": "Account"
@@ -100,6 +100,9 @@
     },
     "topSalons": {
       "title": "Top salons"
+    },
+    "topBarbers": {
+      "title": "Top stylists"
     },
     "mixedDiscovery": {
       "title": "Salons & pros"
@@ -309,6 +312,7 @@
     }
   },
   "barber": {
+    "salonSection": "Works at salon",
     "workPrefs": {
       "title": "Work setup",
       "payment": "Payment"
@@ -994,17 +998,40 @@
     "cameraTitle": "Face scanner",
     "scanStep": "Step {{current}} of {{total}}",
     "capturePhoto": "Capture photo",
+    "cameraReadyHint": "Ready — tap to capture",
     "cameraDenied": "Allow camera access or upload from gallery.",
-    "scanLoading": "Preparing camera…",
-    "scanSearching": "Find your face — scan will start",
+    "scanLoading": "Opening camera…",
+    "scanSearching": "Place your face in the frame",
     "scanLeft": "Slowly turn your head left",
     "scanRight": "Now slowly turn right",
     "scanUp": "Slowly tilt your head up",
     "scanDown": "Now slowly tilt down",
-    "scanCenter": "Look straight at the camera",
+    "scanCenter": "Center your face in the oval",
     "scanCountdown": "Hold still…",
     "scanCapture": "Face measured — saving…",
     "faceProfileSaved": "Face profile saved",
+    "home": {
+      "headline": "Create your next look",
+      "subtitle": "Samples, saved try-ons, and personal style tools — in one place.",
+      "newLook": "New try-on",
+      "backToHome": "Morf AI Home",
+      "myLooksLabel": "Yours",
+      "myLooksTitle": "Saved & generated",
+      "toolsLabel": "Tools",
+      "toolsTitle": "What do you want to do?",
+      "samplesLabel": "Inspiration",
+      "samplesTitle": "Sample styles",
+      "tools": {
+        "styles": "Styles",
+        "stylesDesc": "Cuts tailored to your face",
+        "care": "Care",
+        "careDesc": "Hair health and care directions",
+        "color": "Color",
+        "colorDesc": "Color and highlight directions",
+        "gallery": "Gallery",
+        "galleryDesc": "Upload a selfie to start a try-on"
+      }
+    },
     "faceChecking": "Checking face…",
     "preparingPhoto": "Preparing photo…",
     "preparingPhotoHint": "Compressing image for faster analysis",
