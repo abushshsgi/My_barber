@@ -6,9 +6,11 @@ const FULL_BLEED_PREFIX = ["/map", "/stories/"];
 export function useLayoutRouteFlags(pathname: string) {
   const isAiStyle = pathname === "/ai-style";
   const isAiStyleSection = isAiStyle || pathname.startsWith("/ai-style/");
+  const isMorfShare = pathname === "/morf-ai" || pathname.startsWith("/morf-ai/");
   const isMap = pathname === "/map";
   const isFullBleed =
     isAiStyleSection ||
+    isMorfShare ||
     isMap ||
     FULL_BLEED_PREFIX.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
   const isViewportLocked = isAiStyle || isMap;
@@ -16,7 +18,7 @@ export function useLayoutRouteFlags(pathname: string) {
   const bazaarInset = usesDesktopBazaarInset(pathname);
   const isHome = pathname === "/";
   const isSalonPage = pathname.startsWith("/salon/");
-  const isMobileFlush = isMobileFlushPage(pathname) || isAiStyleSection;
+  const isMobileFlush = isMobileFlushPage(pathname) || isAiStyleSection || isMorfShare;
 
   return {
     isAiStyle,

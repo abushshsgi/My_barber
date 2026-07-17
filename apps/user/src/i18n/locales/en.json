@@ -1099,6 +1099,18 @@
       "hint": "Swipe right — Before · left — After",
       "noBefore": "No before selfie saved — create a new try-on"
     },
+    "shareLook": {
+      "defaultTitle": "New style",
+      "headline": "This look could suit you too",
+      "subtitle": "{{style}} — your friend tried it in Morf AI. Now try it on your selfie.",
+      "styleLabel": "Style",
+      "pitch": "Upload a selfie — AI shows this cut on your face in seconds.",
+      "cta": "Try it on me",
+      "authHint": "Quick sign-up, then you land straight in Morf AI try-on.",
+      "browseHome": "Browse salons first",
+      "shareText": "{{style}} — I tried it in Morf AI. You should too!",
+      "shareHint": "When shared, friends open a beautiful page and sign up to try it — then Morf AI try-on opens."
+    },
     "care": {
       "badge": "Care",
       "title": "Your personal hair care plan",

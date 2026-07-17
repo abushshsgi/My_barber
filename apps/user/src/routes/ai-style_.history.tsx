@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format, parseISO } from "date-fns";
-import { ChevronLeft, Sparkles, X } from "lucide-react";
+import { ChevronLeft, Download, Loader2, Share2, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { MorphBeforeAfter } from "@/components/ai-style/MorphBeforeAfter";
 import { refreshAiStyleHistoryCache } from "@/lib/api";
+import { downloadAiStyleImage, shareAiStyleImage } from "@/lib/ai-style-image";
 import {
   FACE_HISTORY_UPDATED_EVENT,
   getActiveUserId,
@@ -34,6 +36,7 @@ type HistoryCard =
   | {
       kind: "generation";
       id: string;
+      styleId: string;
       title: string;
       thumb: string;
       before?: string;
@@ -50,12 +53,19 @@ type HistoryCard =
       at: string;
     };
 
+function buildShareUrl(styleId: string) {
+  const origin = typeof window !== "undefined" ? window.location.origin : "https://mysaloon.uz";
+  return `${origin}/morf-ai/look/${encodeURIComponent(styleId)}`;
+}
+
 function AiStyleHistoryPage() {
   const { t } = useTranslation();
   const [selfies, setSelfies] = useState<FaceProfileHistoryEntry[]>([]);
   const [gens, setGens] = useState<MorphAiGeneration[]>(() => loadMorphAiGenerations());
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState<HistoryCard | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const userId = getActiveUserId();
 
   useEffect(() => {
@@ -86,6 +96,7 @@ function AiStyleHistoryPage() {
     const fromGens: HistoryCard[] = gens.map((g) => ({
       kind: "generation",
       id: `gen-${g.id}`,
+      styleId: g.styleId,
       title: g.title,
       thumb: g.previewImage,
       before: g.beforeImage,
@@ -109,6 +120,54 @@ function AiStyleHistoryPage() {
       (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime(),
     );
   }, [gens, selfies, t]);
+
+  const handleDownload = async () => {
+    if (!active) return;
+    const src = active.kind === "generation" ? active.after : active.thumb;
+    if (!src) {
+      toast.error(t("aiStylePage.previewNoImage"));
+      return;
+    }
+    setDownloading(true);
+    try {
+      const slug = active.title.replace(/[^a-z0-9-]+/gi, "-").toLowerCase() || "morf-ai";
+      await downloadAiStyleImage(src, `morf-ai-${slug}.jpg`);
+      toast.success(t("aiStylePage.downloaded"));
+    } catch {
+      toast.error(t("aiStylePage.downloadFailed"));
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!active) return;
+    const src = active.kind === "generation" ? active.after : active.thumb;
+    if (!src) {
+      toast.error(t("aiStylePage.previewNoImage"));
+      return;
+    }
+    setSharing(true);
+    try {
+      const pageUrl =
+        active.kind === "generation" && active.styleId
+          ? buildShareUrl(active.styleId)
+          : typeof window !== "undefined"
+            ? `${window.location.origin}/ai-style`
+            : undefined;
+      const shareTitle = t("aiStylePage.shareLook.shareText", {
+        style: active.title,
+        defaultValue: "{{style}} — Morf AI da sinab ko‘rdim. Sen ham sinab ko‘r!",
+      });
+      const result = await shareAiStyleImage(shareTitle, src, pageUrl);
+      if (result === "copied") toast.success(t("aiStylePage.linkCopied"));
+      else if (result === "shared") toast.success(t("aiStylePage.shared"));
+    } catch {
+      toast.error(t("aiStylePage.shareFailed"));
+    } finally {
+      setSharing(false);
+    }
+  };
 
   return (
     <div
@@ -217,7 +276,7 @@ function AiStyleHistoryPage() {
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <div className="flex min-h-0 flex-1 items-center justify-center px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+              <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 overflow-y-auto px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
                 {active.kind === "generation" && active.before ? (
                   <div className="w-full max-w-md">
                     <MorphBeforeAfter
@@ -243,6 +302,43 @@ function AiStyleHistoryPage() {
                     </p>
                   </div>
                 )}
+
+                <div className="grid w-full max-w-md grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    disabled={downloading}
+                    onClick={() => void handleDownload()}
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white text-sm font-bold text-black touch-manipulation active:scale-[0.98] disabled:opacity-50"
+                  >
+                    {downloading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    {t("aiStylePage.download")}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={sharing}
+                    onClick={() => void handleShare()}
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 text-sm font-bold text-white touch-manipulation active:scale-[0.98] disabled:opacity-50"
+                  >
+                    {sharing ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Share2 className="h-4 w-4" />
+                    )}
+                    {t("aiStylePage.share")}
+                  </button>
+                </div>
+                {active.kind === "generation" ? (
+                  <p className="max-w-md text-center text-[11px] text-white/50">
+                    {t("aiStylePage.shareLook.shareHint", {
+                      defaultValue:
+                        "Ulashsangiz, do‘stingiz chiroyli sahifa ochadi va o‘zida sinab ko‘rish uchun ro‘yxatdan o‘tadi — keyin Morf AI try-on ochiladi.",
+                    })}
+                  </p>
+                ) : null}
               </div>
             </div>,
             document.body,

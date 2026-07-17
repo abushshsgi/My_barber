@@ -6,6 +6,9 @@ export function shouldShowMobileDock(pathname: string): boolean {
   if (pathname === "/ai-style" || pathname.startsWith("/ai-style/")) {
     return false;
   }
+  if (pathname === "/morf-ai" || pathname.startsWith("/morf-ai/")) {
+    return false;
+  }
   return true;
 }
 
