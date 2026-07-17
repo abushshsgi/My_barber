@@ -3,7 +3,7 @@ from rest_framework import serializers
 from ai.age_groups import resolve_hairstyle_image_path
 from ai.services.gemini_style import FACE_SHAPES, HAIR_TYPES
 
-from .models import AiStyleHistoryEntry, Hairstyle
+from .models import AiStyleHistoryEntry, Hairstyle, MorphAiLookShare
 
 
 class HairstyleSerializer(serializers.ModelSerializer):
@@ -99,3 +99,45 @@ class AiStyleHistoryCreateSerializer(serializers.Serializer):
         if value and value not in HAIR_TYPES:
             raise serializers.ValidationError("Noto'g'ri soch turi.")
         return value
+
+
+class MorphAiLookShareCreateSerializer(serializers.Serializer):
+    style_id = serializers.CharField(required=False, allow_blank=True, max_length=64, default="")
+    title = serializers.CharField(required=False, allow_blank=True, max_length=160, default="")
+    before_image = serializers.CharField(required=False, allow_blank=True, default="")
+    after_image = serializers.CharField(required=True)
+
+
+class MorphAiLookShareSerializer(serializers.ModelSerializer):
+    before_url = serializers.SerializerMethodField()
+    after_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MorphAiLookShare
+        fields = (
+            "id",
+            "style_id",
+            "title",
+            "before_url",
+            "after_url",
+            "created_at",
+        )
+        read_only_fields = fields
+
+    def get_before_url(self, obj: MorphAiLookShare) -> str | None:
+        if not obj.before_photo:
+            return None
+        request = self.context.get("request")
+        url = obj.before_photo.url
+        if request is not None:
+            return request.build_absolute_uri(url)
+        return url
+
+    def get_after_url(self, obj: MorphAiLookShare) -> str | None:
+        if not obj.after_photo:
+            return None
+        request = self.context.get("request")
+        url = obj.after_photo.url
+        if request is not None:
+            return request.build_absolute_uri(url)
+        return url

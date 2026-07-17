@@ -1112,13 +1112,16 @@
       "defaultTitle": "Yangi uslub",
       "headline": "Bu uslub sizga ham yarashishi mumkin",
       "subtitle": "{{style}} — do‘stingiz Morf AI da sinab ko‘rdi. Endi siz ham o‘z selfiengizda ko‘ring.",
+      "personalHeadline": "Do‘stingizning before / after",
+      "personalSubtitle": "{{style}} — haqiqiy natija. Endi o‘zingizda ham sinab ko‘ring.",
+      "notFound": "Bu ulashish topilmadi yoki o‘chirilgan",
       "styleLabel": "Uslub",
       "pitch": "Selfie yuklang — AI shu turmakni yuzingizda ko‘rsatadi. 10 soniyada natija.",
       "cta": "O‘zimda sinab ko‘rish",
       "authHint": "Davom etish uchun tezkor ro‘yxatdan o‘tasiz — keyin to‘g‘ridan-to‘g‘ri Morf AI try-on ochiladi.",
       "browseHome": "Avval salonlarni ko‘rish",
       "shareText": "{{style}} — Morf AI da sinab ko‘rdim. Sen ham sinab ko‘r!",
-      "shareHint": "Ulashsangiz, do‘stingiz chiroyli sahifa ochadi va o‘zida sinab ko‘rish uchun ro‘yxatdan o‘tadi — keyin Morf AI try-on ochiladi."
+      "shareHint": "Faqat havola ulashiladi. Do‘stingiz sizning before/after sahifangizni ochadi va o‘zida sinab ko‘rishi mumkin."
     },
     "care": {
       "badge": "Parvarish",

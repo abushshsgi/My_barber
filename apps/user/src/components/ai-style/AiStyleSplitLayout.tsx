@@ -726,6 +726,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
               tryOnLoadingId={props.tryOnLoadingId}
               onGenerateTryOn={props.onGenerateTryOn}
               onUpdateTryOnPreview={props.onUpdateTryOnPreview}
+              selfiePhoto={props.photo}
             />
           </div>
         </motion.div>

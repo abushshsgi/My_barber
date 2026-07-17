@@ -709,6 +709,7 @@ export function AiStyleResultsBlock({
   onGenerateTryOn,
   onUpdateTryOnPreview,
   focusStyleId,
+  selfiePhoto,
 }: {
   result: AiAnalysisResult;
   saved: string[];
@@ -726,6 +727,7 @@ export function AiStyleResultsBlock({
   onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId) => void;
   onUpdateTryOnPreview?: (cacheKey: string, previewImage: string) => void;
   focusStyleId?: string;
+  selfiePhoto?: string | null;
 }) {
   const { t } = useTranslation();
   const minimal = variant === "minimal";
@@ -829,6 +831,7 @@ export function AiStyleResultsBlock({
         }}
         suggestion={previewSuggestion}
         previewImage={previewImage}
+        selfiePhoto={selfiePhoto}
         onPreviewImageChange={
           previewId && onUpdateTryOnPreview
             ? (next) => onUpdateTryOnPreview(previewId, next)

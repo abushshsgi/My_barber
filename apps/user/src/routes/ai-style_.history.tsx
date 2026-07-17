@@ -6,8 +6,8 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { MorphBeforeAfter } from "@/components/ai-style/MorphBeforeAfter";
-import { refreshAiStyleHistoryCache } from "@/lib/api";
-import { downloadAiStyleImage, shareAiStyleImage } from "@/lib/ai-style-image";
+import { refreshAiStyleHistoryCache, createMorphAiLookShare } from "@/lib/api";
+import { shareAiStyleLink, downloadAiStyleImage } from "@/lib/ai-style-image";
 import {
   FACE_HISTORY_UPDATED_EVENT,
   getActiveUserId,
@@ -53,9 +53,9 @@ type HistoryCard =
       at: string;
     };
 
-function buildShareUrl(styleId: string) {
+function buildPersonalShareUrl(shareId: string) {
   const origin = typeof window !== "undefined" ? window.location.origin : "https://mysaloon.uz";
-  return `${origin}/morf-ai/look/${encodeURIComponent(styleId)}`;
+  return `${origin}/morf-ai/share/${encodeURIComponent(shareId)}`;
 }
 
 function AiStyleHistoryPage() {
@@ -142,24 +142,25 @@ function AiStyleHistoryPage() {
 
   const handleShare = async () => {
     if (!active) return;
-    const src = active.kind === "generation" ? active.after : active.thumb;
-    if (!src) {
+    const afterSrc = active.kind === "generation" ? active.after : active.thumb;
+    if (!afterSrc) {
       toast.error(t("aiStylePage.previewNoImage"));
       return;
     }
     setSharing(true);
     try {
-      const pageUrl =
-        active.kind === "generation" && active.styleId
-          ? buildShareUrl(active.styleId)
-          : typeof window !== "undefined"
-            ? `${window.location.origin}/ai-style`
-            : undefined;
+      const created = await createMorphAiLookShare({
+        style_id: active.kind === "generation" ? active.styleId : undefined,
+        title: active.title,
+        before_image: active.before || undefined,
+        after_image: afterSrc,
+      });
+      const pageUrl = buildPersonalShareUrl(created.id);
       const shareTitle = t("aiStylePage.shareLook.shareText", {
         style: active.title,
         defaultValue: "{{style}} — Morf AI da sinab ko‘rdim. Sen ham sinab ko‘r!",
       });
-      const result = await shareAiStyleImage(shareTitle, src, pageUrl);
+      const result = await shareAiStyleLink(shareTitle, pageUrl);
       if (result === "copied") toast.success(t("aiStylePage.linkCopied"));
       else if (result === "shared") toast.success(t("aiStylePage.shared"));
     } catch {
@@ -331,11 +332,11 @@ function AiStyleHistoryPage() {
                     {t("aiStylePage.share")}
                   </button>
                 </div>
-                {active.kind === "generation" ? (
+                {active.kind === "generation" || active.before ? (
                   <p className="max-w-md text-center text-[11px] text-white/50">
                     {t("aiStylePage.shareLook.shareHint", {
                       defaultValue:
-                        "Ulashsangiz, do‘stingiz chiroyli sahifa ochadi va o‘zida sinab ko‘rish uchun ro‘yxatdan o‘tadi — keyin Morf AI try-on ochiladi.",
+                        "Faqat havola ulashiladi. Do‘stingiz sizning before/after sahifangizni ochadi va o‘zida sinab ko‘rishi mumkin.",
                     })}
                   </p>
                 ) : null}

@@ -17,7 +17,8 @@ import { isCatalogStyleId } from "@/components/ai-style/ai-style-shared";
 import { MorphStudioPanel } from "@/components/ai-style/MorphStudioPanel";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
-import { downloadAiStyleImage, shareAiStyleImage } from "@/lib/ai-style-image";
+import { createMorphAiLookShare } from "@/lib/api";
+import { downloadAiStyleImage, shareAiStyleLink } from "@/lib/ai-style-image";
 import { cn } from "@/lib/utils";
 
 type Suggestion = AiAnalysisResult["suggestions"][number];
@@ -27,6 +28,7 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   suggestion: Suggestion | null;
   previewImage?: string;
+  selfiePhoto?: string | null;
   onPreviewImageChange?: (nextImage: string) => void;
   saved: boolean;
   tryOnLoading?: boolean;
@@ -70,6 +72,7 @@ export function AiStylePreviewSheet({
   onOpenChange,
   suggestion,
   previewImage,
+  selfiePhoto,
   onPreviewImageChange,
   saved,
   tryOnLoading,
@@ -85,10 +88,6 @@ export function AiStylePreviewSheet({
 
   const imageSrc = previewImage || suggestion.imageUrl;
   const canTryOn = Boolean(onGenerateTryOn && isCatalogStyleId(suggestion.id));
-  const exploreUrl =
-    typeof window !== "undefined" && isCatalogStyleId(suggestion.id)
-      ? `${window.location.origin}/explore/${suggestion.id}`
-      : undefined;
 
   const goBack = () => onOpenChange(false);
 
@@ -116,7 +115,19 @@ export function AiStylePreviewSheet({
     }
     setSharing(true);
     try {
-      const result = await shareAiStyleImage(suggestion.title, imageSrc, exploreUrl);
+      const created = await createMorphAiLookShare({
+        style_id: isCatalogStyleId(suggestion.id) ? suggestion.id : undefined,
+        title: suggestion.title,
+        before_image: selfiePhoto || undefined,
+        after_image: imageSrc,
+      });
+      const origin = typeof window !== "undefined" ? window.location.origin : "https://mysaloon.uz";
+      const pageUrl = `${origin}/morf-ai/share/${encodeURIComponent(created.id)}`;
+      const shareTitle = t("aiStylePage.shareLook.shareText", {
+        style: suggestion.title,
+        defaultValue: "{{style}} — Morf AI da sinab ko‘rdim. Sen ham sinab ko‘r!",
+      });
+      const result = await shareAiStyleLink(shareTitle, pageUrl);
       if (result === "copied") toast.success(t("aiStylePage.linkCopied"));
       else if (result === "shared") toast.success(t("aiStylePage.shared"));
     } catch {

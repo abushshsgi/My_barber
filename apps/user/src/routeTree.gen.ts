@@ -60,6 +60,7 @@ import { Route as AccountPaymentsRouteImport } from './routes/account.payments'
 import { Route as AccountHouseholdRouteImport } from './routes/account.household'
 import { Route as AccountActivityRouteImport } from './routes/account.activity'
 import { Route as DevExploreGenIndexRouteImport } from './routes/dev.explore-gen.index'
+import { Route as MorfAiShareShareIdRouteImport } from './routes/morf-ai.share.$shareId'
 import { Route as MorfAiLookStyleIdRouteImport } from './routes/morf-ai.look.$styleId'
 import { Route as ExploreStyleIdTryRouteImport } from './routes/explore_.$styleId_.try'
 import { Route as DevExploreGenAssetsRouteImport } from './routes/dev.explore-gen.assets'
@@ -320,6 +321,11 @@ const DevExploreGenIndexRoute = DevExploreGenIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DevExploreGenRoute,
 } as any)
+const MorfAiShareShareIdRoute = MorfAiShareShareIdRouteImport.update({
+  id: '/morf-ai/share/$shareId',
+  path: '/morf-ai/share/$shareId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MorfAiLookStyleIdRoute = MorfAiLookStyleIdRouteImport.update({
   id: '/morf-ai/look/$styleId',
   path: '/morf-ai/look/$styleId',
@@ -396,6 +402,7 @@ export interface FileRoutesByFullPath {
   '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
   '/explore/$styleId/try': typeof ExploreStyleIdTryRoute
   '/morf-ai/look/$styleId': typeof MorfAiLookStyleIdRoute
+  '/morf-ai/share/$shareId': typeof MorfAiShareShareIdRoute
   '/dev/explore-gen/': typeof DevExploreGenIndexRoute
 }
 export interface FileRoutesByTo {
@@ -452,6 +459,7 @@ export interface FileRoutesByTo {
   '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
   '/explore/$styleId/try': typeof ExploreStyleIdTryRoute
   '/morf-ai/look/$styleId': typeof MorfAiLookStyleIdRoute
+  '/morf-ai/share/$shareId': typeof MorfAiShareShareIdRoute
   '/dev/explore-gen': typeof DevExploreGenIndexRoute
 }
 export interface FileRoutesById {
@@ -510,6 +518,7 @@ export interface FileRoutesById {
   '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
   '/explore_/$styleId_/try': typeof ExploreStyleIdTryRoute
   '/morf-ai/look/$styleId': typeof MorfAiLookStyleIdRoute
+  '/morf-ai/share/$shareId': typeof MorfAiShareShareIdRoute
   '/dev/explore-gen/': typeof DevExploreGenIndexRoute
 }
 export interface FileRouteTypes {
@@ -569,6 +578,7 @@ export interface FileRouteTypes {
     | '/dev/explore-gen/assets'
     | '/explore/$styleId/try'
     | '/morf-ai/look/$styleId'
+    | '/morf-ai/share/$shareId'
     | '/dev/explore-gen/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -625,6 +635,7 @@ export interface FileRouteTypes {
     | '/dev/explore-gen/assets'
     | '/explore/$styleId/try'
     | '/morf-ai/look/$styleId'
+    | '/morf-ai/share/$shareId'
     | '/dev/explore-gen'
   id:
     | '__root__'
@@ -682,6 +693,7 @@ export interface FileRouteTypes {
     | '/dev/explore-gen/assets'
     | '/explore_/$styleId_/try'
     | '/morf-ai/look/$styleId'
+    | '/morf-ai/share/$shareId'
     | '/dev/explore-gen/'
   fileRoutesById: FileRoutesById
 }
@@ -736,6 +748,7 @@ export interface RootRouteChildren {
   BookingBarberBarberIdRoute: typeof BookingBarberBarberIdRoute
   ExploreStyleIdTryRoute: typeof ExploreStyleIdTryRoute
   MorfAiLookStyleIdRoute: typeof MorfAiLookStyleIdRoute
+  MorfAiShareShareIdRoute: typeof MorfAiShareShareIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1097,6 +1110,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevExploreGenIndexRouteImport
       parentRoute: typeof DevExploreGenRoute
     }
+    '/morf-ai/share/$shareId': {
+      id: '/morf-ai/share/$shareId'
+      path: '/morf-ai/share/$shareId'
+      fullPath: '/morf-ai/share/$shareId'
+      preLoaderRoute: typeof MorfAiShareShareIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/morf-ai/look/$styleId': {
       id: '/morf-ai/look/$styleId'
       path: '/morf-ai/look/$styleId'
@@ -1226,6 +1246,7 @@ const rootRouteChildren: RootRouteChildren = {
   BookingBarberBarberIdRoute: BookingBarberBarberIdRoute,
   ExploreStyleIdTryRoute: ExploreStyleIdTryRoute,
   MorfAiLookStyleIdRoute: MorfAiLookStyleIdRoute,
+  MorfAiShareShareIdRoute: MorfAiShareShareIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

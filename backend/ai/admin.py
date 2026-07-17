@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AiGenerationUsage, AiStyleHistoryEntry, Hairstyle, MorphAiSettings
+from .models import AiGenerationUsage, AiStyleHistoryEntry, Hairstyle, MorphAiLookShare, MorphAiSettings
 
 
 @admin.register(Hairstyle)
@@ -43,6 +43,14 @@ class AiGenerationUsageAdmin(admin.ModelAdmin):
     list_filter = ("kind", "status", "provider", "tokens_estimated")
     search_fields = ("user__phone", "user__email", "style_id", "job_id", "prompt")
     raw_id_fields = ("user",)
+    readonly_fields = ("created_at",)
+
+
+@admin.register(MorphAiLookShare)
+class MorphAiLookShareAdmin(admin.ModelAdmin):
+    list_display = ("id", "style_id", "title", "created_by", "created_at")
+    search_fields = ("style_id", "title", "created_by__phone", "created_by__email")
+    raw_id_fields = ("created_by",)
     readonly_fields = ("created_at",)
 
 

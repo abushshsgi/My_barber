@@ -1112,13 +1112,16 @@
       "defaultTitle": "New style",
       "headline": "This look could suit you too",
       "subtitle": "{{style}} — your friend tried it in Morf AI. Now try it on your selfie.",
+      "personalHeadline": "Your friend's before / after",
+      "personalSubtitle": "{{style}} — a real result. Now try it on yourself.",
+      "notFound": "This share was not found or was removed",
       "styleLabel": "Style",
       "pitch": "Upload a selfie — AI shows this cut on your face in seconds.",
       "cta": "Try it on me",
       "authHint": "Quick sign-up, then you land straight in Morf AI try-on.",
       "browseHome": "Browse salons first",
       "shareText": "{{style}} — I tried it in Morf AI. You should too!",
-      "shareHint": "When shared, friends open a beautiful page and sign up to try it — then Morf AI try-on opens."
+      "shareHint": "Only a link is shared. Friends open your before/after page and can try it on themselves."
     },
     "care": {
       "badge": "Care",

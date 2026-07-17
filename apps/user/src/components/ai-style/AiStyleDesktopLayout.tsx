@@ -425,6 +425,7 @@ export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
                 tryOnLoadingId={props.tryOnLoadingId}
                 onGenerateTryOn={props.onGenerateTryOn}
                 onUpdateTryOnPreview={props.onUpdateTryOnPreview}
+                selfiePhoto={props.photo}
               />
             ) : null}
           </div>

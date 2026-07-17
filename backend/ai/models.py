@@ -1,3 +1,4 @@
+import uuid
 from decimal import Decimal
 
 from django.conf import settings
@@ -195,3 +196,31 @@ class MorphAiSettings(models.Model):
     def load(cls) -> "MorphAiSettings":
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+
+class MorphAiLookShare(models.Model):
+    """Public shareable Morf AI before/after look (viral link)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="morph_look_shares",
+    )
+    style_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    title = models.CharField(max_length=160, blank=True, default="")
+    before_photo = models.ImageField(
+        upload_to="ai-style/shares/%Y/%m/",
+        blank=True,
+        null=True,
+    )
+    after_photo = models.ImageField(upload_to="ai-style/shares/%Y/%m/")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"MorphAiLookShare({self.id}, {self.style_id})"

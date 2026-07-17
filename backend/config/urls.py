@@ -191,6 +191,8 @@ from ai.views import (
     ExplorePersonaListView,
     HairstyleDetailView,
     HairstyleListView,
+    MorphAiLookShareCreateView,
+    MorphAiLookShareDetailView,
 )
 from chat.views import ConversationListCreateView, ConversationMarkReadView, ConversationMessagesView
 from geo.views import CurrencyRatesView, GeocodeView, MapConfigView, ReverseGeocodeView, ValidateLocationView
@@ -334,6 +336,8 @@ api_routes = [
     path("ai/style-studio/catalog/", AiStyleStudioCatalogView.as_view()),
     path("ai/face-check/", AiFaceCheckView.as_view()),
     path("ai/style-history/", AiStyleHistoryListCreateView.as_view()),
+    path("ai/look-share/", MorphAiLookShareCreateView.as_view()),
+    path("ai/look-share/<uuid:share_id>/", MorphAiLookShareDetailView.as_view()),
     path("ai/dev/explore-gen/", ExploreGenStatusView.as_view()),
     path("ai/dev/explore-gen/generate/", ExploreGenGenerateView.as_view()),
     path("ai/dev/explore-gen/download/", ExploreGenDownloadView.as_view()),

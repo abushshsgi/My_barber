@@ -10,13 +10,15 @@ from accounts.throttles import AiStyleThrottle, AiTryOnThrottle, AuthIPThrottle
 from ai.age_groups import birth_year_to_group, normalize_age_group, resolve_hairstyle_image_path
 from ai.explore_personas import has_persona_style_asset, list_explore_personas, normalize_persona_id
 
-from .history_storage import save_history_photo, trim_user_history
-from .models import HISTORY_MAX_PER_USER, AiStyleHistoryEntry, Hairstyle
+from .history_storage import image_file_from_source, save_history_photo, trim_user_history
+from .models import HISTORY_MAX_PER_USER, AiStyleHistoryEntry, Hairstyle, MorphAiLookShare
 from .salon_match import attach_salons_to_suggestions
 from .serializers import (
     AiStyleHistoryCreateSerializer,
     AiStyleHistoryEntrySerializer,
     HairstyleSerializer,
+    MorphAiLookShareCreateSerializer,
+    MorphAiLookShareSerializer,
 )
 from .style_recommend import (
     build_suggestions_from_analysis,
@@ -427,6 +429,62 @@ class AiStyleHistoryListCreateView(APIView):
         trim_user_history(user)
         out = AiStyleHistoryEntrySerializer(entry, context={"request": request})
         return Response(out.data, status=status.HTTP_201_CREATED)
+
+
+class MorphAiLookShareCreateView(APIView):
+    """POST — create a public before/after share link (auth required)."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [AuthIPThrottle]
+
+    def post(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+
+        serializer = MorphAiLookShareCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        after_raw = (data.get("after_image") or "").strip()
+        before_raw = (data.get("before_image") or "").strip()
+        if not after_raw:
+            return Response({"detail": "After rasm kerak."}, status=400)
+
+        share = MorphAiLookShare(
+            created_by=user,
+            style_id=(data.get("style_id") or "").strip()[:64],
+            title=(data.get("title") or "").strip()[:160],
+        )
+        try:
+            share.after_photo.save(
+                "after.jpg",
+                image_file_from_source(after_raw, f"share-after-{user.pk}"),
+                save=False,
+            )
+            if before_raw:
+                share.before_photo.save(
+                    "before.jpg",
+                    image_file_from_source(before_raw, f"share-before-{user.pk}"),
+                    save=False,
+                )
+        except Exception:
+            return Response({"detail": "Rasmni saqlab bo‘lmadi."}, status=400)
+
+        share.save()
+        out = MorphAiLookShareSerializer(share, context={"request": request})
+        return Response(out.data, status=status.HTTP_201_CREATED)
+
+
+class MorphAiLookShareDetailView(APIView):
+    """GET — public look share (no auth)."""
+
+    permission_classes = [AllowAny]
+    throttle_classes = [AuthIPThrottle]
+
+    def get(self, request, share_id):
+        share = get_object_or_404(MorphAiLookShare, pk=share_id)
+        out = MorphAiLookShareSerializer(share, context={"request": request})
+        return Response(out.data)
 
 
 class AiStyleStudioCatalogView(APIView):

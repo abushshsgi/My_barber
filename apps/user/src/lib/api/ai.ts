@@ -236,6 +236,35 @@ export async function saveAiStyleHistory(
   });
 }
 
+export type MorphAiLookShareApi = {
+  id: string;
+  style_id: string;
+  title: string;
+  before_url: string | null;
+  after_url: string | null;
+  created_at: string;
+};
+
+export type CreateMorphAiLookSharePayload = {
+  style_id?: string;
+  title?: string;
+  before_image?: string;
+  after_image: string;
+};
+
+export async function createMorphAiLookShare(
+  payload: CreateMorphAiLookSharePayload,
+): Promise<MorphAiLookShareApi> {
+  return apiJson<MorphAiLookShareApi>("/api/v1/ai/look-share/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchMorphAiLookShare(shareId: string): Promise<MorphAiLookShareApi> {
+  return apiJson<MorphAiLookShareApi>(`/api/v1/ai/look-share/${encodeURIComponent(shareId)}/`);
+}
+
 function mapApiHistoryEntry(entry: AiStyleHistoryEntryApi): FaceProfileHistoryEntry {
   return {
     id: String(entry.id),
