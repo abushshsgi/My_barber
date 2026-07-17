@@ -1,9 +1,11 @@
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { ChevronLeft, UserRound } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImagePlus, ScanFace, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getAiStyleHeroUrl } from "@/lib/cover-images";
+import { useExplorePersona } from "@/hooks/use-explore-persona";
+import { useHairstyles } from "@/hooks/use-hairstyles";
+import { getHairstyleDisplayUrl } from "@/lib/hairstyles/catalog";
 import {
   loadMorphAiGenerations,
   MORPH_AI_GALLERY_UPDATED_EVENT,
@@ -13,6 +15,7 @@ import { stashMorphStudioDraft } from "@/lib/morph-ai-studio-session";
 import { navigateBack } from "@/lib/mobile-back";
 import { loadSavedAiStyles, type SavedAiStyle } from "@/lib/saved-ai-styles";
 import type { Audience } from "@/lib/mock-data";
+import { cn } from "@/lib/utils";
 
 type Props = {
   audience: Audience;
@@ -35,6 +38,12 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
   const { t } = useTranslation();
   const navigate = useNavigate();
   const router = useRouter();
+  const { personaId } = useExplorePersona();
+  const { data: styles = [], isLoading } = useHairstyles(
+    audience === "women" ? "women" : "men",
+    personaId,
+    { ignoreAgeGroup: true },
+  );
   const [generations, setGenerations] = useState<MorphAiGeneration[]>(() => loadMorphAiGenerations());
   const [saved, setSaved] = useState<SavedAiStyle[]>(() => loadSavedAiStyles());
 
@@ -48,6 +57,7 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
     return () => window.removeEventListener(MORPH_AI_GALLERY_UPDATED_EVENT, refresh);
   }, []);
 
+  const samples = useMemo(() => styles.slice(0, 6), [styles]);
   const myLooks = useMemo(() => {
     const fromGen = generations.map((g) => ({
       id: g.id,
@@ -64,105 +74,99 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
         image: s.previewImage,
         styleId: s.styleId,
       }));
-    return [...fromGen, ...fromSaved].slice(0, 8);
+    return [...fromGen, ...fromSaved].slice(0, 6);
   }, [generations, saved]);
 
   return (
-    <div className="relative h-full min-h-0 overflow-hidden bg-neutral-950 text-white">
-      <motion.img
-        src={getAiStyleHeroUrl(audience === "women" ? "hero-women" : "hero-men")}
-        alt=""
-        className="absolute inset-0 h-full w-full object-cover object-[center_18%]"
-        initial={{ scale: 1.08 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 1.4, ease: "easeOut" }}
-      />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-black/85" />
-
+    <div className="relative h-full min-h-0 touch-pan-y overflow-y-auto overscroll-y-contain bg-background text-foreground [-webkit-overflow-scrolling:touch]">
       <header
-        className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4"
-        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+        className="sticky top-0 z-20 flex items-center gap-2 border-b border-border/60 bg-background/90 px-4 backdrop-blur-md"
+        style={{ paddingTop: "max(0.65rem, env(safe-area-inset-top))" }}
       >
         <button
           type="button"
           onClick={() => navigateBack(router, "/")}
-          className="grid size-11 place-items-center rounded-full bg-black/30 text-white backdrop-blur-md active:opacity-70"
+          className="grid size-10 place-items-center rounded-full active:bg-surface"
           aria-label={t("nav.home")}
         >
           <ChevronLeft className="size-5" strokeWidth={2.25} />
         </button>
+        <p className="min-w-0 flex-1 text-center text-[13px] font-extrabold tracking-[0.2em]">
+          {t("aiStylePage.title")}
+        </p>
         <Link
           to="/profile"
-          className="grid size-11 place-items-center rounded-full bg-black/30 text-white backdrop-blur-md active:opacity-70"
+          className="grid size-10 place-items-center rounded-full active:bg-surface"
           aria-label={t("nav.profile")}
         >
           <UserRound className="size-[18px]" strokeWidth={2} />
         </Link>
       </header>
 
-      <div
-        className="absolute inset-x-0 bottom-0 z-10 px-5"
-        style={{ paddingBottom: "max(1.75rem, env(safe-area-inset-bottom))" }}
-      >
+      <div className="px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6">
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: "easeOut" }}
+          transition={{ duration: 0.4 }}
         >
-          <p className="font-display text-[clamp(3rem,12vw,4.5rem)] font-extrabold leading-[0.9] tracking-[-0.04em]">
+          <h1 className="font-display text-[2.75rem] font-extrabold leading-none tracking-[-0.04em]">
             MORF
-          </p>
-          <p className="mt-3 max-w-[18rem] text-[15px] leading-snug text-white/75">
-            {t("aiStylePage.home.headline")}
+          </h1>
+          <p className="mt-2 max-w-[20rem] text-[14px] leading-snug text-muted-foreground">
+            {t("aiStylePage.home.subtitle")}
           </p>
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.12, duration: 0.45 }}
-          className="mt-7 space-y-3"
+          transition={{ delay: 0.08, duration: 0.4 }}
+          className="mt-6 space-y-2.5"
         >
           <button
             type="button"
             onClick={onStartNew}
-            className="flex h-14 w-full items-center justify-center rounded-full bg-white text-[15px] font-bold text-black active:scale-[0.98]"
+            className="flex h-14 w-full items-center justify-center rounded-2xl bg-foreground text-[15px] font-bold text-background active:scale-[0.99]"
           >
             {t("aiStylePage.home.newLook")}
           </button>
-
-          <div className="flex items-center justify-center gap-1 text-[13px] font-semibold text-white/80">
-            <button type="button" onClick={onOpenCamera} className="px-3 py-2 active:opacity-60">
-              {t("aiStylePage.openCamera")}
-            </button>
-            <span className="text-white/30">·</span>
-            <button type="button" onClick={onOpenGallery} className="px-3 py-2 active:opacity-60">
-              {t("aiStylePage.pickFromGallery")}
-            </button>
-            <span className="text-white/30">·</span>
+          <div className="grid grid-cols-2 gap-2.5">
             <button
               type="button"
-              onClick={() => void navigate({ to: "/ai-style/studio" })}
-              className="px-3 py-2 active:opacity-60"
+              onClick={onOpenCamera}
+              className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-border bg-surface/60 text-[13px] font-bold active:scale-[0.99]"
             >
-              {t("aiStylePage.home.tools.studio")}
+              <ScanFace className="size-4" strokeWidth={2} />
+              {t("aiStylePage.openCamera")}
+            </button>
+            <button
+              type="button"
+              onClick={onOpenGallery}
+              className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-border bg-surface/60 text-[13px] font-bold active:scale-[0.99]"
+            >
+              <ImagePlus className="size-4" strokeWidth={2} />
+              {t("aiStylePage.pickFromGallery")}
             </button>
           </div>
+          <button
+            type="button"
+            onClick={() => void navigate({ to: "/ai-style/studio" })}
+            className="w-full py-2 text-center text-[13px] font-semibold text-muted-foreground active:text-foreground"
+          >
+            {t("aiStylePage.home.tools.studio")} →
+          </button>
         </motion.div>
 
         {myLooks.length > 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.25, duration: 0.4 }}
-            className="mt-6"
-          >
-            <div className="mb-2.5 flex items-center justify-between">
-              <p className="text-[12px] font-semibold text-white/55">
-                {t("aiStylePage.home.myLooksTitle")}
-              </p>
-              <Link to="/ai-style/history" className="text-[12px] font-semibold text-white/70">
+          <section className="mt-8">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-[13px] font-bold">{t("aiStylePage.home.myLooksTitle")}</p>
+              <Link
+                to="/ai-style/history"
+                className="inline-flex items-center gap-0.5 text-[12px] font-semibold text-muted-foreground"
+              >
                 {t("aiStylePage.historyViewAll")}
+                <ChevronRight className="size-3.5" />
               </Link>
             </div>
             <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5">
@@ -179,14 +183,76 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
                     });
                     void navigate({ to: "/ai-style/studio" });
                   }}
-                  className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl active:opacity-80"
+                  className="h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-xl bg-surface active:opacity-80"
                 >
                   <img src={look.image} alt="" className="h-full w-full object-cover object-top" />
                 </button>
               ))}
             </div>
-          </motion.div>
+          </section>
         ) : null}
+
+        <section className="mt-9">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                {t("aiStylePage.home.samplesLabel")}
+              </p>
+              <h2 className="mt-0.5 text-[17px] font-bold">
+                {t("aiStylePage.home.samplesTitle")}
+              </h2>
+            </div>
+            <Link
+              to="/explore"
+              className="inline-flex items-center gap-0.5 text-[12px] font-semibold text-muted-foreground"
+            >
+              {t("nav.explore")}
+              <ChevronRight className="size-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            {isLoading
+              ? Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "animate-pulse rounded-2xl bg-surface",
+                      i === 0 ? "col-span-2 aspect-[16/10]" : "aspect-[3/4]",
+                    )}
+                  />
+                ))
+              : samples.map((entry, index) => (
+                  <motion.div
+                    key={entry.id}
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.04 * index, duration: 0.35 }}
+                    className={cn(index === 0 && "col-span-2")}
+                  >
+                    <Link
+                      to="/explore/$styleId"
+                      params={{ styleId: entry.id }}
+                      className="group relative block overflow-hidden rounded-2xl bg-surface active:opacity-90"
+                    >
+                      <img
+                        src={getHairstyleDisplayUrl(entry)}
+                        alt=""
+                        className={cn(
+                          "w-full object-cover transition duration-500 group-active:scale-[1.02]",
+                          index === 0 ? "aspect-[16/10]" : "aspect-[3/4]",
+                        )}
+                      />
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 pb-2.5 pt-8">
+                        <p className="truncate text-[13px] font-bold text-white">
+                          {entry.titleUz || entry.title}
+                        </p>
+                      </div>
+                    </Link>
+                  </motion.div>
+                ))}
+          </div>
+        </section>
       </div>
     </div>
   );
