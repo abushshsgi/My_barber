@@ -5,6 +5,15 @@ from __future__ import annotations
 from typing import Any
 
 # Faqat salon-edit: rang, soqol, finish. Yuz rangi / uslub almashtirish yo'q.
+# Har bir instruction: yuz/teri/ko'z piksellarini qayta chizmaslik — faqat lokal o'zgarish.
+
+_FACE_LOCK = (
+    "CRITICAL PIXEL LOCK: Do NOT redraw, repaint, smooth, recolor, or re-light the face, "
+    "skin, eyes, eyelids, lips, teeth, ears, neck, or hands. Copy those regions from the "
+    "source photo with identical texture, pores, freckles, and sharpness. "
+    "Do NOT change clothing or background. Do NOT change camera framing or crop."
+)
+
 STUDIO_PRESETS: dict[str, dict[str, Any]] = {
     "hair_color": {
         "label_uz": "Rang",
@@ -16,10 +25,11 @@ STUDIO_PRESETS: dict[str, dict[str, Any]] = {
                 "label_en": "Blonde",
                 "swatch": "#E8D5A3",
                 "instruction": (
-                    "Recolor ONLY the hair to a natural warm blonde with realistic root depth "
-                    "and soft shine. Keep the EXACT same haircut shape, length, parting, face, "
-                    "skin tone, beard (if any), clothing, background, and identity. "
-                    "Photorealistic salon dye result — no wig look, no color banding."
+                    "Selective hair recolor only: change hair strand color to natural warm blonde "
+                    "with soft root depth and realistic shine. Keep the identical haircut shape, "
+                    "length, parting, and strand flow. "
+                    f"{_FACE_LOCK} "
+                    "No wig look, no color banding, no face makeup change."
                 ),
             },
             {
@@ -28,9 +38,9 @@ STUDIO_PRESETS: dict[str, dict[str, Any]] = {
                 "label_en": "Brunette",
                 "swatch": "#4A2F1F",
                 "instruction": (
-                    "Recolor ONLY the hair to a rich natural brunette with subtle dimension. "
-                    "Keep the EXACT same haircut, face, skin, beard, clothing, background, and identity. "
-                    "Photorealistic salon color — natural light falloff on strands."
+                    "Selective hair recolor only: rich natural brunette with subtle dimension. "
+                    "Keep identical haircut shape and strand layout. "
+                    f"{_FACE_LOCK}"
                 ),
             },
             {
@@ -39,9 +49,9 @@ STUDIO_PRESETS: dict[str, dict[str, Any]] = {
                 "label_en": "Black",
                 "swatch": "#111111",
                 "instruction": (
-                    "Recolor ONLY the hair to deep natural black with soft specular highlights. "
-                    "Keep the EXACT same haircut, face, skin, beard, clothing, background, and identity. "
-                    "Avoid flat ink-black plastic look."
+                    "Selective hair recolor only: deep natural black with soft specular highlights "
+                    "(not flat plastic black). Keep identical haircut. "
+                    f"{_FACE_LOCK}"
                 ),
             },
             {
@@ -50,9 +60,9 @@ STUDIO_PRESETS: dict[str, dict[str, Any]] = {
                 "label_en": "Copper",
                 "swatch": "#A0522D",
                 "instruction": (
-                    "Recolor ONLY the hair to natural copper / auburn with warm lowlights. "
-                    "Keep the EXACT same haircut, face, skin, beard, clothing, background, and identity. "
-                    "Salon-quality color, not cartoon red."
+                    "Selective hair recolor only: natural copper / auburn with warm lowlights. "
+                    "Keep identical haircut. Salon dye look, not cartoon red. "
+                    f"{_FACE_LOCK}"
                 ),
             },
             {
@@ -61,8 +71,9 @@ STUDIO_PRESETS: dict[str, dict[str, Any]] = {
                 "label_en": "Ash",
                 "swatch": "#8B8680",
                 "instruction": (
-                    "Recolor ONLY the hair to cool ash brown-gray with natural dimension. "
-                    "Keep the EXACT same haircut, face, skin, beard, clothing, background, and identity."
+                    "Selective hair recolor only: cool ash brown-gray with natural dimension. "
+                    "Keep identical haircut. "
+                    f"{_FACE_LOCK}"
                 ),
             },
             {
@@ -71,9 +82,10 @@ STUDIO_PRESETS: dict[str, dict[str, Any]] = {
                 "label_en": "Platinum",
                 "swatch": "#F2EDE4",
                 "instruction": (
-                    "Recolor ONLY the hair to platinum blonde with soft cool tones and realistic "
-                    "root shadow. Keep the EXACT same haircut, face, skin, beard, clothing, "
-                    "background, and identity. Avoid yellow brassiness and overexposed white hair."
+                    "Selective hair recolor only: platinum blonde with soft cool tones and "
+                    "realistic root shadow. Avoid brassiness and overexposed white hair. "
+                    "Keep identical haircut. "
+                    f"{_FACE_LOCK}"
                 ),
             },
             {
@@ -82,9 +94,9 @@ STUDIO_PRESETS: dict[str, dict[str, Any]] = {
                 "label_en": "Highlights",
                 "swatch": "#C4A574",
                 "instruction": (
-                    "Add subtle natural balayage / face-framing highlights on the existing hair color. "
-                    "Keep the EXACT same haircut shape, face, skin, beard, clothing, background, and identity. "
-                    "Soft blend — no harsh stripes."
+                    "Add subtle balayage / face-framing highlights on existing hair only. "
+                    "Soft blend, no harsh stripes. Keep identical haircut shape. "
+                    f"{_FACE_LOCK}"
                 ),
             },
         ],
@@ -98,9 +110,10 @@ STUDIO_PRESETS: dict[str, dict[str, Any]] = {
                 "label_uz": "Toza",
                 "label_en": "Clean",
                 "instruction": (
-                    "Remove facial hair for a clean professional shave. Keep natural skin texture "
-                    "under the beard area — no blur filter. Keep the EXACT same face structure, "
-                    "head hair, clothing, background, and identity."
+                    "Remove facial hair only for a clean shave. Reveal the original skin under "
+                    "the beard with natural texture — no beauty blur. "
+                    "Do NOT redraw eyes, nose, mouth, head hair, clothing, or background. "
+                    "Keep exact framing and sharpness."
                 ),
             },
             {
@@ -108,9 +121,9 @@ STUDIO_PRESETS: dict[str, dict[str, Any]] = {
                 "label_uz": "Qisqa",
                 "label_en": "Stubble",
                 "instruction": (
-                    "Apply neat short designer stubble (1–3 day growth) with natural density. "
-                    "Keep the EXACT same face structure, head hair, clothing, background, and identity. "
-                    "Photorealistic barber finish."
+                    "Add or adjust only facial hair to neat short designer stubble. "
+                    "Do NOT redraw eyes, nose, mouth, head hair, clothing, or background. "
+                    "Keep exact framing and skin texture outside the beard area."
                 ),
             },
             {
@@ -118,9 +131,9 @@ STUDIO_PRESETS: dict[str, dict[str, Any]] = {
                 "label_uz": "To'liq",
                 "label_en": "Full",
                 "instruction": (
-                    "Add a well-groomed medium full beard with clean cheek and neck lines. "
-                    "Keep the EXACT same face structure, head hair, clothing, background, and identity. "
-                    "Match existing hair color naturally."
+                    "Add or adjust only facial hair to a well-groomed medium full beard matching "
+                    "the head hair color. Do NOT redraw eyes, nose, mouth, head hair, clothing, "
+                    "or background. Keep exact framing."
                 ),
             },
             {
@@ -128,9 +141,8 @@ STUDIO_PRESETS: dict[str, dict[str, Any]] = {
                 "label_uz": "Shakl",
                 "label_en": "Shaped",
                 "instruction": (
-                    "Shape and tidy existing facial hair with sharp barber cheek/neck lines "
-                    "and even density. If clean-shaven, add a lightly shaped short beard. "
-                    "Keep the EXACT same face structure, head hair, clothing, background, and identity."
+                    "Shape/tidy facial hair lines only (barber cheek and neck lines). "
+                    "Do NOT redraw eyes, nose, mouth, head hair, clothing, or background."
                 ),
             },
         ],
@@ -144,9 +156,10 @@ STUDIO_PRESETS: dict[str, dict[str, Any]] = {
                 "label_uz": "Nam",
                 "label_en": "Wet",
                 "instruction": (
-                    "Give the hair a styled wet-look finish with natural product shine and "
-                    "defined strands. Do NOT change haircut shape, color, face, skin, beard, "
-                    "clothing, or background. Photorealistic salon wet look — not oily plastic."
+                    "Hair finish only: styled wet-look shine and defined strands. "
+                    "Do NOT change hair color family, haircut shape, face, skin, clothing, "
+                    "or background. No oily plastic look. "
+                    f"{_FACE_LOCK}"
                 ),
             },
             {
@@ -154,9 +167,9 @@ STUDIO_PRESETS: dict[str, dict[str, Any]] = {
                 "label_uz": "Matte",
                 "label_en": "Matte",
                 "instruction": (
-                    "Give the hair a clean matte textured finish with soft separation. "
-                    "Do NOT change haircut shape, color, face, skin, beard, clothing, or background. "
-                    "Natural clay/paste look."
+                    "Hair finish only: clean matte textured product look. "
+                    "Do NOT change hair color, cut, face, skin, clothing, or background. "
+                    f"{_FACE_LOCK}"
                 ),
             },
             {
@@ -164,8 +177,9 @@ STUDIO_PRESETS: dict[str, dict[str, Any]] = {
                 "label_uz": "Yaltiroq",
                 "label_en": "Gloss",
                 "instruction": (
-                    "Add healthy salon gloss / light shine to the hair only. "
-                    "Do NOT change haircut, color family, face, skin, beard, clothing, or background."
+                    "Hair finish only: healthy salon gloss/shine on hair strands. "
+                    "Do NOT change cut, color family, face, skin, clothing, or background. "
+                    f"{_FACE_LOCK}"
                 ),
             },
             {
@@ -173,8 +187,9 @@ STUDIO_PRESETS: dict[str, dict[str, Any]] = {
                 "label_uz": "Hajm",
                 "label_en": "Volume",
                 "instruction": (
-                    "Add subtle lift and volume on top while keeping the same haircut family. "
-                    "Do NOT change face, skin, beard, clothing, or background. Natural salon volume."
+                    "Hair only: subtle lift/volume on top while keeping the same cut family. "
+                    "Minimal change. Do NOT redraw face or change skin. "
+                    f"{_FACE_LOCK}"
                 ),
             },
             {
@@ -182,9 +197,10 @@ STUDIO_PRESETS: dict[str, dict[str, Any]] = {
                 "label_uz": "Yumshoq yorug'",
                 "label_en": "Soft light",
                 "instruction": (
-                    "Adjust ONLY the lighting mood to soft natural studio light on the subject. "
-                    "Keep identity, haircut, hair color, beard, clothing, and scene composition. "
-                    "No beauty filter, no skin retouch."
+                    "Lighting mood only: slightly softer natural studio light. "
+                    "Preserve identity, haircut, hair color, clothing, and composition. "
+                    "NO beauty filter, NO skin smoothing, NO face redraw. "
+                    f"{_FACE_LOCK}"
                 ),
             },
             {
@@ -192,8 +208,9 @@ STUDIO_PRESETS: dict[str, dict[str, Any]] = {
                 "label_uz": "Keskin",
                 "label_en": "Crisp",
                 "instruction": (
-                    "Increase local contrast and crispness for a sharp editorial portrait look. "
-                    "Keep identity, haircut, hair color, beard, clothing intact. No skin smoothing."
+                    "Global crispness/contrast only — keep every facial feature identical. "
+                    "NO skin smoothing, NO face redraw, NO hair restyle. "
+                    f"{_FACE_LOCK}"
                 ),
             },
         ],

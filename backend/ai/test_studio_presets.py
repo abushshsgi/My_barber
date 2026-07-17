@@ -1,5 +1,6 @@
 from django.test import SimpleTestCase
 
+from ai.services.gemini_studio_edit import _nearest_aspect_ratio
 from ai.studio_presets import get_studio_option, list_studio_catalog
 
 
@@ -16,7 +17,7 @@ class StudioPresetsTests(SimpleTestCase):
         assert opt is not None
         self.assertEqual(opt["id"], "hair_blonde")
         self.assertIn("instruction", opt)
-        self.assertIn("same", opt["instruction"].lower())
+        self.assertIn("PIXEL LOCK", opt["instruction"])
 
     def test_finish_wet(self):
         opt = get_studio_option("finish_wet")
@@ -27,3 +28,8 @@ class StudioPresetsTests(SimpleTestCase):
     def test_unknown_option(self):
         self.assertIsNone(get_studio_option("nope"))
         self.assertIsNone(get_studio_option("skin_lighter"))
+
+    def test_nearest_aspect_ratio(self):
+        self.assertEqual(_nearest_aspect_ratio(768, 1024), "3:4")
+        self.assertEqual(_nearest_aspect_ratio(1024, 1024), "1:1")
+        self.assertEqual(_nearest_aspect_ratio(1920, 1080), "16:9")

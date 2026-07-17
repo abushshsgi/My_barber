@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import base64
+import io
 import logging
 import time
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
+
+from PIL import Image
 
 from ai.studio_presets import get_studio_option
 from ai.usage_pricing import finalize_usage
@@ -18,6 +21,20 @@ from .studio_image import image_generation_provider, studio_image_model
 from .vertex_image import generate_image_content, vertex_image_configured, vertex_image_model
 
 logger = logging.getLogger(__name__)
+
+# Gemini imageConfig aspectRatio — eng yaqin qiymat
+_SUPPORTED_RATIOS: tuple[tuple[float, str], ...] = (
+    (1 / 1, "1:1"),
+    (2 / 3, "2:3"),
+    (3 / 2, "3:2"),
+    (3 / 4, "3:4"),
+    (4 / 3, "4:3"),
+    (4 / 5, "4:5"),
+    (5 / 4, "5:4"),
+    (9 / 16, "9:16"),
+    (16 / 9, "16:9"),
+    (21 / 9, "21:9"),
+)
 
 
 @dataclass(frozen=True)
@@ -37,29 +54,58 @@ class StudioEditResult:
     latency_ms: int
 
 
+def _nearest_aspect_ratio(width: int, height: int) -> str:
+    if width <= 0 or height <= 0:
+        return "3:4"
+    ratio = width / height
+    best = min(_SUPPORTED_RATIOS, key=lambda item: abs(item[0] - ratio))
+    return best[1]
+
+
+def _image_meta(image_bytes: bytes) -> tuple[int, int, str]:
+    """Return (width, height, nearest Gemini aspectRatio)."""
+    try:
+        with Image.open(io.BytesIO(image_bytes)) as img:
+            w, h = img.size
+            return w, h, _nearest_aspect_ratio(w, h)
+    except Exception:
+        return 0, 0, "3:4"
+
+
 def _build_studio_prompt(*, instruction: str, preset_label: str, category: str) -> str:
     category_hint = {
-        "hair_color": "Focus exclusively on hair color. Do not restyle the cut.",
-        "beard": "Focus exclusively on facial hair. Do not change head hair style.",
-        "finish": "Focus exclusively on hair finish / lighting mood. Do not recolor or restyle aggressively.",
-    }.get(category, "Apply only the requested edit.")
+        "hair_color": (
+            "This is a SELECTIVE HAIR RECOLOR edit. Change hair pigment only. "
+            "Do not regenerate the portrait."
+        ),
+        "beard": (
+            "This is a SELECTIVE FACIAL-HAIR edit. Change beard/stubble only. "
+            "Do not regenerate the portrait."
+        ),
+        "finish": (
+            "This is a SELECTIVE HAIR FINISH / LIGHTING edit. Minimal global change. "
+            "Do not regenerate the face."
+        ),
+    }.get(category, "Apply only the requested micro-edit.")
 
-    return f"""You are Morf AI Studio — a professional barber photo editor for mysaloon.uz.
+    return f"""You are Morf AI Studio — a high-fidelity photo RETOUCHER (not a generative artist).
 
-TASK: Apply this edit — "{preset_label}".
+TASK TYPE: in-place photo edit of the provided image.
+EDIT NAME: "{preset_label}"
 {category_hint}
 
 EDIT DETAILS:
 {instruction}
 
-IDENTITY LOCK (non-negotiable):
-- Same person: bone structure, eyes, nose, mouth, age, ethnicity, skin tone
-- Same pose, camera angle, framing, and expression
-- Same clothing and background content (lighting mood may shift only if asked)
-- Photorealistic DSLR/salon quality — no illustration, no CGI skin, no beauty-filter blur
-- No text, watermarks, logos, extra people, or cropped face
+FIDELITY RULES (must follow):
+1) Output must look like the SAME photograph with a tiny local change — not a new AI portrait.
+2) Preserve resolution, sharpness, noise pattern, and skin texture of the source.
+3) Forbidden: beauty filters, skin smoothing, face morphing, eye/lip repainting, makeup, blotchy skin, plastic CGI skin, warped facial features.
+4) Forbidden: changing identity, age, ethnicity, expression, pose, crop, clothing logos/text, or background content.
+5) Hair edits must blend at the hairline with natural lighting; no sticker/halo edges.
+6) If unsure, change LESS rather than redrawing.
 
-OUTPUT: one edited 3:4 portrait photo only."""
+Return ONE edited photo only."""
 
 
 def _resolve_model_provider() -> tuple[str, str]:
@@ -67,6 +113,14 @@ def _resolve_model_provider() -> tuple[str, str]:
     if provider == "studio":
         return studio_image_model(), provider
     return vertex_image_model(), "vertex"
+
+
+def _studio_image_config(aspect_ratio: str) -> dict[str, Any]:
+    """Match source aspect; prefer 2K when the model supports it."""
+    cfg: dict[str, Any] = {"aspectRatio": aspect_ratio}
+    # Gemini 3 image models accept imageSize; lite may ignore unknown fields.
+    cfg["imageSize"] = "2K"
+    return cfg
 
 
 def generate_studio_edit(
@@ -85,33 +139,44 @@ def generate_studio_edit(
         raise AiStyleError("Noto'g'ri studio varianti tanlandi.", 400)
 
     mime, image_bytes = parse_data_url(image_data_url)
+    _w, _h, aspect_ratio = _image_meta(image_bytes)
     prompt = _build_studio_prompt(
         instruction=option["instruction"],
         preset_label=option["label_uz"],
         category=option["category_id"],
     )
 
+    # Image first, then instruction — models often preserve the reference better this way.
     parts: list[dict[str, Any]] = [
-        {"text": prompt},
         {
             "inline_data": {
                 "mime_type": mime,
                 "data": base64.b64encode(image_bytes).decode("ascii"),
             }
         },
+        {"text": prompt},
     ]
 
     body = {
         "contents": [{"role": "user", "parts": parts}],
         "generationConfig": {
             "responseModalities": ["IMAGE"],
-            "imageConfig": {"aspectRatio": "3:4"},
+            "imageConfig": _studio_image_config(aspect_ratio),
         },
     }
 
     model, provider = _resolve_model_provider()
     started = time.perf_counter()
-    payload = generate_image_content(body)
+    try:
+        payload = generate_image_content(body)
+    except AiStyleError as exc:
+        # imageSize / imageConfig ba'zi modellarda 400 beradi — aspect only bilan qayta urinish.
+        if getattr(exc, "status", 0) == 400:
+            logger.info("Studio imageConfig fallback (aspect only): %s", exc)
+            body["generationConfig"]["imageConfig"] = {"aspectRatio": aspect_ratio}
+            payload = generate_image_content(body)
+        else:
+            raise
     latency_ms = int((time.perf_counter() - started) * 1000)
     out_mime, out_bytes = extract_image_bytes(payload)
     usage = finalize_usage(payload, kind="studio", input_images=1)
