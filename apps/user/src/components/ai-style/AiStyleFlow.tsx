@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AiStyleCamera } from "@/components/ai-style/AiStyleCamera";
@@ -129,8 +129,16 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
     };
   }, [showHome]);
 
+  const lastErrorToastRef = useRef<string | null>(null);
   useEffect(() => {
-    if (error) toast.error(error);
+    if (!error) {
+      lastErrorToastRef.current = null;
+      return;
+    }
+    // Bir xil xabarni (masalan limit) qayta-qayta toast qilmaslik.
+    if (lastErrorToastRef.current === error) return;
+    lastErrorToastRef.current = error;
+    toast.error(error);
   }, [error]);
 
   useEffect(() => {

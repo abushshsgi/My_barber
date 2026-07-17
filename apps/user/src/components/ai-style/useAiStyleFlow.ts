@@ -24,6 +24,28 @@ type UseAiStyleFlowOptions = {
   audience?: Audience;
 };
 
+function formatAiRequestError(error: unknown, fallback: string): string {
+  const raw = error instanceof Error ? error.message : fallback;
+  // Backend/API allaqachon o‘zbekcha bergan bo‘lsa — qayta yozmaymiz.
+  if (/limiti tugadi|Taxminan \d+ (daqiqa|soniya)/i.test(raw) && !/Request was throttled/i.test(raw)) {
+    return raw.replace(/\s*Expected available in \d+ seconds?\./gi, "").trim() || raw;
+  }
+  const waitMatch = /(?:available in|Expected available in)\s+(\d+)\s+seconds?/i.exec(raw);
+  if (!/Request was throttled|throttl/i.test(raw) && !waitMatch) {
+    return raw;
+  }
+
+  const seconds = waitMatch ? Number(waitMatch[1]) : 0;
+  if (seconds >= 60) {
+    const mins = Math.ceil(seconds / 60);
+    return `AI so‘rov limiti tugadi. Taxminan ${mins} daqiqadan keyin qayta urinib ko‘ring.`;
+  }
+  if (seconds > 0) {
+    return `AI so‘rov limiti tugadi. Taxminan ${seconds} soniyadan keyin qayta urinib ko‘ring.`;
+  }
+  return "AI so‘rov limiti tugadi. Biroz kutib qayta urinib ko‘ring.";
+}
+
 export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
   const { menPersonaId, focusStyleId, audience } = options;
   const [photo, setPhoto] = useState<string | null>(null);
@@ -40,6 +62,8 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
   const fileRef = useRef<HTMLInputElement>(null);
   const analyzeTriggeredRef = useRef(false);
   const autoTryOnRef = useRef<string | null>(null);
+  /** Avto try-on muvaffaqiyatsiz bo‘lsa qayta-qayta so‘rov yubormaslik. */
+  const tryOnFailedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     analyzeTriggeredRef.current = false;
@@ -55,6 +79,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     setTryOnLoadingId(null);
     analyzeTriggeredRef.current = false;
     autoTryOnRef.current = null;
+    tryOnFailedRef.current.clear();
 
     const scannedAt = new Date().toISOString();
     appendFaceProfileHistory({
@@ -189,7 +214,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
         setDone(true);
         markMorphAiOnboarded();
       } catch (e) {
-        setError(e instanceof Error ? e.message : "AI tahlil xatosi");
+        setError(formatAiRequestError(e, "AI tahlil xatosi"));
         setDone(false);
         setResult(null);
       } finally {
@@ -204,6 +229,8 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
       const effectivePersona = personaId ?? menPersonaId ?? undefined;
       const cacheKey = tryOnCacheKey(styleId, effectivePersona);
       if (!photo || tryOnByStyle[cacheKey]) return;
+      // Qo'lda qayta urinish uchun oldingi fail belgisini olib tashlash.
+      tryOnFailedRef.current.delete(cacheKey);
       setTryOnLoadingId(cacheKey);
       setError(null);
       try {
@@ -222,7 +249,8 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
         });
         markMorphAiOnboarded();
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Rasm yaratishda xatolik");
+        tryOnFailedRef.current.add(cacheKey);
+        setError(formatAiRequestError(e, "Rasm yaratishda xatolik"));
       } finally {
         setTryOnLoadingId(null);
       }
@@ -254,12 +282,15 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     if (!primary) return;
     const primaryKey = tryOnCacheKey(primary.id, menPersonaId);
     if (tryOnByStyle[primaryKey] || tryOnLoadingId === primaryKey) return;
+    // Limit / xato bo‘lganda avto-qayta urinish — toast spamni to‘xtatadi.
+    if (tryOnFailedRef.current.has(primaryKey)) return;
     void generateTryOn(primary.id, undefined, primary.title);
   }, [done, result, focusStyleId, tryOnByStyle, tryOnLoadingId, generateTryOn, menPersonaId]);
 
   const reset = () => {
     analyzeTriggeredRef.current = false;
     autoTryOnRef.current = null;
+    tryOnFailedRef.current.clear();
     setPhoto(null);
     setDone(false);
     setResult(null);

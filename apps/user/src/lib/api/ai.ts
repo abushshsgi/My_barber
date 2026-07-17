@@ -136,6 +136,33 @@ export async function generateAiStyleTryOn(
       body && typeof body === "object" && typeof body.detail === "string"
         ? body.detail
         : "Rasm yaratishda xatolik";
+    if (res.status === 429) {
+      const retryHeader = res.headers.get("Retry-After");
+      const retryFromHeader = retryHeader ? Number(retryHeader) : NaN;
+      const waitMatch = /(?:available in|Expected available in)\s+(\d+)\s+seconds?/i.exec(detail);
+      const seconds = Number.isFinite(retryFromHeader)
+        ? retryFromHeader
+        : waitMatch
+          ? Number(waitMatch[1])
+          : 0;
+      // Backend o‘zbekcha xabar bersa — qoldiramiz (inglizcha suffixni kesamiz).
+      if (/limiti tugadi|Taxminan \d+/i.test(detail) && !/Request was throttled/i.test(detail)) {
+        throw new Error(
+          detail.replace(/\s*Expected available in \d+ seconds?\./gi, "").trim() || detail,
+        );
+      }
+      if (seconds >= 60) {
+        throw new Error(
+          `AI rasm limiti tugadi. Taxminan ${Math.ceil(seconds / 60)} daqiqadan keyin qayta urinib ko‘ring.`,
+        );
+      }
+      if (seconds > 0) {
+        throw new Error(
+          `AI rasm limiti tugadi. Taxminan ${seconds} soniyadan keyin qayta urinib ko‘ring.`,
+        );
+      }
+      throw new Error("AI rasm limiti tugadi. Biroz kutib qayta urinib ko‘ring.");
+    }
     throw new Error(detail);
   }
 

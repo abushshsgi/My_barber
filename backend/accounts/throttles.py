@@ -1,7 +1,35 @@
 """DRF throttles for auth and salon MVP endpoints (IP or user scoped)."""
 
+import math
+
 from accounts.phone_auth import normalize_uz_phone
+from rest_framework.exceptions import Throttled
 from rest_framework.throttling import AnonRateThrottle, SimpleRateThrottle, UserRateThrottle
+
+
+def raise_friendly_throttled(wait: float | None, message: str) -> None:
+    """DRF Throttled wait bilan inglizcha 'Expected available…' qo'shmaydi — o'zimiz formatlaymiz."""
+    detail = message
+    wait_s: int | None = None
+    if wait is not None:
+        wait_s = max(1, math.ceil(wait))
+        if wait_s >= 60:
+            mins = math.ceil(wait_s / 60)
+            detail = f"{message.rstrip('.')}. Taxminan {mins} daqiqadan keyin qayta urinib ko'ring."
+        else:
+            detail = f"{message.rstrip('.')}. Taxminan {wait_s} soniyadan keyin qayta urinib ko'ring."
+    exc = Throttled(detail=detail)
+    exc.wait = wait_s
+    raise exc
+
+
+class FriendlyThrottleMixin:
+    """APIView mixin — throttle xabarini o'zbekcha qaytaradi."""
+
+    throttle_detail = "So'rov limiti tugadi. Biroz kutib qayta urinib ko'ring."
+
+    def throttled(self, request, wait):
+        raise_friendly_throttled(wait, self.throttle_detail)
 
 
 class AuthIPThrottle(SimpleRateThrottle):
@@ -85,7 +113,7 @@ class AiStyleThrottle(SimpleRateThrottle):
         return self.cache_format % {"scope": self.scope, "ident": ident}
 
     def throttle_failure_message(self):
-        return "So'rov limiti tugadi (soatiga 30 ta). Biroz kutib qayta urinib ko'ring."
+        return "So'rov limiti tugadi (soatiga 30 ta)."
 
 
 class AiTryOnThrottle(SimpleRateThrottle):
@@ -101,7 +129,7 @@ class AiTryOnThrottle(SimpleRateThrottle):
         return self.cache_format % {"scope": self.scope, "ident": ident}
 
     def throttle_failure_message(self):
-        return "Rasm generatsiya limiti tugadi (soatiga 12 ta). Biroz kutib qayta urinib ko'ring."
+        return "Rasm generatsiya limiti tugadi (soatiga 30 ta)."
 
 
 class PhoneCheckThrottle(SimpleRateThrottle):
