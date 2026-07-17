@@ -434,7 +434,7 @@ function SuggestionActions({
         <button
           type="button"
           disabled={tryOnLoading || Boolean(tryOnPreview)}
-          onClick={() => onGenerateTryOn?.(suggestion.id)}
+          onClick={() => onGenerateTryOn?.(suggestion.id, undefined, suggestion.title)}
           className={cn(
             "inline-flex items-center justify-center gap-1.5 rounded-xl border font-bold transition-colors",
             desktop
