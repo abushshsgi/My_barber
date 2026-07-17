@@ -105,13 +105,27 @@ if not _api_public_base:
     if _api_host:
         _api_public_base = f"https://{_api_host.lstrip('.')}"
 API_PUBLIC_BASE_URL = _api_public_base
-GOOGLE_MAPS_API_KEY = (
-    os.environ.get("GOOGLE_MAPS_API_KEY", "").strip()
-    or os.environ.get("DGIS_API_KEY", "").strip()
-)
+def _looks_like_google_maps_key(key: str) -> bool:
+    return key.startswith("AIza") and len(key) >= 30
+
+
+_google_maps_key = os.environ.get("GOOGLE_MAPS_API_KEY", "").strip()
+_legacy_dgis_key = os.environ.get("DGIS_API_KEY", "").strip()
+if _looks_like_google_maps_key(_google_maps_key):
+    GOOGLE_MAPS_API_KEY = _google_maps_key
+elif _looks_like_google_maps_key(_legacy_dgis_key):
+    GOOGLE_MAPS_API_KEY = _legacy_dgis_key
+else:
+    # Prefer empty over leftover 2GIS UUIDs (they break Maps JS with InvalidKeyMapError).
+    GOOGLE_MAPS_API_KEY = _google_maps_key if _google_maps_key.startswith("AIza") else ""
 # Legacy aliases — prefer GOOGLE_MAPS_API_KEY.
 DGIS_API_KEY = GOOGLE_MAPS_API_KEY
-DGIS_MAPGL_KEY = os.environ.get("DGIS_MAPGL_KEY", "").strip() or GOOGLE_MAPS_API_KEY
+_dgis_mapgl = os.environ.get("DGIS_MAPGL_KEY", "").strip()
+DGIS_MAPGL_KEY = (
+    _dgis_mapgl
+    if _looks_like_google_maps_key(_dgis_mapgl)
+    else GOOGLE_MAPS_API_KEY
+)
 # Scan + tahlil: faqat gemini-2.5-flash (AI Studio kalit)
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash"
 

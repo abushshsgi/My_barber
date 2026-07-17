@@ -1,12 +1,14 @@
 /** Client-side Google Maps JS key (HTTP-referrer restricted in Cloud Console). */
+
+function looksLikeGoogleMapsKey(key: string): boolean {
+  // Google browser keys start with AIza. Reject leftover 2GIS UUIDs.
+  return key.startsWith("AIza") && key.length >= 30;
+}
+
 export function getGoogleMapsApiKey(): string {
   const env = import.meta.env as Record<string, string | undefined>;
-  const key =
-    env.VITE_GOOGLE_MAPS_API_KEY ??
-    env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ??
-    env.VITE_DGIS_API_KEY ??
-    "";
-  return key.trim();
+  const key = (env.VITE_GOOGLE_MAPS_API_KEY ?? env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "").trim();
+  return looksLikeGoogleMapsKey(key) ? key : "";
 }
 
 /** @deprecated use getGoogleMapsApiKey */
@@ -34,7 +36,10 @@ export async function resolveGoogleMapsApiKey(): Promise<string> {
         google_maps_api_key?: string;
         dgis_api_key?: string;
       };
-      const key = (data.google_maps_api_key ?? data.dgis_api_key)?.trim() ?? "";
+      const candidates = [data.google_maps_api_key, data.dgis_api_key]
+        .map((k) => k?.trim() ?? "")
+        .filter(looksLikeGoogleMapsKey);
+      const key = candidates[0] ?? "";
       cachedRemoteKey = key || null;
       return key;
     } catch {
