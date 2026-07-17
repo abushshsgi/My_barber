@@ -129,7 +129,12 @@ def _list_spenders(start_raw, end_raw, page, page_size) -> dict[str, Any]:
         .annotate(
             generations=Count("id"),
             tryon=Count("id", filter=Q(kind=AiGenerationUsage.Kind.TRYON)),
+            analyze=Count("id", filter=Q(kind=AiGenerationUsage.Kind.ANALYZE)),
+            studio=Count("id", filter=Q(kind=AiGenerationUsage.Kind.STUDIO)),
+            face_check=Count("id", filter=Q(kind=AiGenerationUsage.Kind.FACE_CHECK)),
             tokens=Sum("total_tokens"),
+            prompt_tokens=Sum("prompt_tokens"),
+            candidates_tokens=Sum("candidates_tokens"),
             cost_usd=Sum("cost_usd"),
             last_at=Max("created_at"),
         )
@@ -145,7 +150,12 @@ def _list_spenders(start_raw, end_raw, page, page_size) -> dict[str, Any]:
             "email": row.get("user__email") or "",
             "generations": int(row["generations"] or 0),
             "tryon": int(row["tryon"] or 0),
+            "analyze": int(row["analyze"] or 0),
+            "studio": int(row["studio"] or 0),
+            "face_check": int(row["face_check"] or 0),
             "tokens": int(row["tokens"] or 0),
+            "prompt_tokens": int(row["prompt_tokens"] or 0),
+            "candidates_tokens": int(row["candidates_tokens"] or 0),
             "cost_usd": _money(row["cost_usd"]),
             "last_at": row["last_at"].isoformat() if row.get("last_at") else None,
         }

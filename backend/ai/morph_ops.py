@@ -551,7 +551,7 @@ def build_export_csv(start_raw: str | None, end_raw: str | None) -> HttpResponse
 def check_user_can_generate(*, user_id: int | None, kind: str) -> str | None:
     """Return error message if blocked, else None."""
     s = MorphAiSettings.load()
-    if kind == "tryon" and not s.tryon_enabled:
+    if kind in ("tryon", "studio") and not s.tryon_enabled:
         return "Try-on vaqtincha o'chirilgan."
     if kind in ("analyze", "face_check") and not s.analyze_enabled:
         return "AI tahlil vaqtincha o'chirilgan."
@@ -564,10 +564,10 @@ def check_user_can_generate(*, user_id: int | None, kind: str) -> str | None:
         return None
     now = timezone.now()
     today_start = timezone.localtime(now).replace(hour=0, minute=0, second=0, microsecond=0)
-    if kind == "tryon" and s.daily_tryon_limit_per_user > 0:
+    if kind in ("tryon", "studio") and s.daily_tryon_limit_per_user > 0:
         used = AiGenerationUsage.objects.filter(
             user_id=user_id,
-            kind=AiGenerationUsage.Kind.TRYON,
+            kind__in=[AiGenerationUsage.Kind.TRYON, AiGenerationUsage.Kind.STUDIO],
             created_at__gte=today_start,
         ).count()
         if used >= s.daily_tryon_limit_per_user:

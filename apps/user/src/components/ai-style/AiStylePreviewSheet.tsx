@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { isCatalogStyleId } from "@/components/ai-style/ai-style-shared";
+import { MorphStudioPanel } from "@/components/ai-style/MorphStudioPanel";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { downloadAiStyleImage, shareAiStyleImage } from "@/lib/ai-style-image";
@@ -26,6 +27,7 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   suggestion: Suggestion | null;
   previewImage?: string;
+  onPreviewImageChange?: (nextImage: string) => void;
   saved: boolean;
   tryOnLoading?: boolean;
   onToggleSave: (styleId: string, meta: { title: string; previewImage?: string }) => void;
@@ -68,6 +70,7 @@ export function AiStylePreviewSheet({
   onOpenChange,
   suggestion,
   previewImage,
+  onPreviewImageChange,
   saved,
   tryOnLoading,
   onToggleSave,
@@ -141,11 +144,15 @@ export function AiStylePreviewSheet({
           })}
         </SheetDescription>
 
-        <div className="relative min-h-[min(58dvh,520px)] bg-neutral-100">
+        <div className="relative min-h-[min(48dvh,420px)] bg-neutral-100">
           {imageSrc ? (
-            <img src={imageSrc} alt="" className="h-full min-h-[min(58dvh,520px)] w-full object-cover object-top" />
+            <img
+              src={imageSrc}
+              alt=""
+              className="h-full min-h-[min(48dvh,420px)] w-full object-cover object-top"
+            />
           ) : (
-            <div className="flex min-h-[min(58dvh,520px)] items-center justify-center text-sm text-neutral-500">
+            <div className="flex min-h-[min(48dvh,420px)] items-center justify-center text-sm text-neutral-500">
               {t("aiStylePage.previewNoImage")}
             </div>
           )}
@@ -180,6 +187,17 @@ export function AiStylePreviewSheet({
         </div>
 
         <div className="space-y-4 px-5 pt-4">
+          {previewImage && onPreviewImageChange ? (
+            <MorphStudioPanel
+              key={suggestion.id}
+              image={previewImage}
+              onImageChange={onPreviewImageChange}
+              styleId={suggestion.id}
+              styleTitle={suggestion.title}
+              tone="light"
+            />
+          ) : null}
+
           <button
             type="button"
             onClick={goBack}

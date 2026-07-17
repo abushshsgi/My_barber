@@ -1093,6 +1093,15 @@
     "previewNoImage": "Rasm mavjud emas",
     "previewDesc": "Generatsiya qilingan uslubni ko‘rish, yuklab olish yoki ulashish",
     "previewBack": "Natijalarga qaytish",
+    "studio": {
+      "title": "Morf Studio",
+      "subtitle": "Rang, uslub va ko‘rinishni o‘zgartiring",
+      "undo": "Orqaga",
+      "reset": "Asliga",
+      "generating": "Studio o‘zgartirish qo‘llanmoqda…",
+      "applied": "{{name}} qo‘llandi",
+      "failed": "Studio o‘zgartirish amalga oshmadi"
+    },
     "beforeAfter": {
       "before": "Before",
       "after": "After",

@@ -193,13 +193,20 @@ function UserDetailPage() {
               )}
             </Section>
 
-            <Section title="Morph AI" subtitle="Stil / try-on foydalanish">
-              <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
+            <Section title="Morph AI" subtitle="Stil / try-on / studio — token va xarajat">
+              <div className="mb-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
                 <Stat label="Generatsiya" value={String(u.morphAi.generations)} />
                 <Stat label="Try-on" value={String(u.morphAi.tryon)} />
+                <Stat label="Studio" value={String(u.morphAi.studio)} />
                 <Stat label="Tahlil" value={String(u.morphAi.analyze)} />
+                <Stat label="Jami token" value={u.morphAi.totalTokens.toLocaleString()} />
                 <Stat label="Xarajat" value={`$${u.morphAi.costUsd.toFixed(4)}`} />
               </div>
+              <p className="mb-1 text-xs text-muted-foreground">
+                Prompt {u.morphAi.promptTokens.toLocaleString()} · Candidates{" "}
+                {u.morphAi.candidatesTokens.toLocaleString()} · OK {u.morphAi.success} / Xato{" "}
+                {u.morphAi.failed}
+              </p>
               <p className="mb-3 text-xs text-muted-foreground">
                 Oxirgi foydalanish:{" "}
                 {u.morphAi.lastAt
@@ -210,15 +217,36 @@ function UserDetailPage() {
                 <p className="text-sm text-muted-foreground">Uslublar tarixi yo'q.</p>
               ) : (
                 <ul className="divide-y divide-border">
-                  {u.recentStyles.slice(0, 8).map((s, i) => (
-                    <li key={`${s.styleId}-${s.createdAt}-${i}`} className="py-2 first:pt-0">
-                      <p className="text-sm font-medium">{s.styleTitle}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {s.kind} · {s.source}
-                        {s.createdAt
-                          ? ` · ${format(new Date(s.createdAt), "dd MMM yyyy")}`
-                          : ""}
-                      </p>
+                  {u.recentStyles.slice(0, 12).map((s, i) => (
+                    <li key={`${s.styleId}-${s.createdAt}-${i}`} className="py-2.5 first:pt-0">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">{s.styleTitle}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {s.kind}
+                            {s.source ? ` · ${s.source}` : ""}
+                            {s.createdAt
+                              ? ` · ${format(new Date(s.createdAt), "dd MMM yyyy HH:mm")}`
+                              : ""}
+                          </p>
+                          {s.model || s.provider ? (
+                            <p className="mt-0.5 text-[11px] text-muted-foreground">
+                              {[s.provider, s.model].filter(Boolean).join(" · ")}
+                              {s.latencyMs ? ` · ${s.latencyMs}ms` : ""}
+                            </p>
+                          ) : null}
+                          {s.errorDetail ? (
+                            <p className="mt-0.5 text-[11px] text-destructive">{s.errorDetail}</p>
+                          ) : null}
+                        </div>
+                        <div className="shrink-0 text-right text-xs tabular-nums">
+                          <p className="font-medium">{s.totalTokens.toLocaleString()} tok</p>
+                          <p className="text-muted-foreground">
+                            {s.promptTokens}/{s.candidatesTokens}
+                          </p>
+                          <p className="text-muted-foreground">${s.costUsd.toFixed(4)}</p>
+                        </div>
+                      </div>
                     </li>
                   ))}
                 </ul>

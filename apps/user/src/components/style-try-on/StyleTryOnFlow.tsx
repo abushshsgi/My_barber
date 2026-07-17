@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AiStyleCamera } from "@/components/ai-style/AiStyleCamera";
 import { AiStylePhotoInput, AiStyleScanLine } from "@/components/ai-style/AiStyleUi";
+import { MorphStudioPanel } from "@/components/ai-style/MorphStudioPanel";
 import { HairstylePreviewFrame, HairstylePreviewImage } from "@/components/hairstyles/HairstylePreviewImage";
 import type { useStyleTryOnFlow } from "@/components/style-try-on/useStyleTryOnFlow";
 import type { HairstyleEntry } from "@/lib/hairstyles/catalog";
@@ -174,29 +175,46 @@ function GeneratingOverlay({
 function ResultView({
   entry,
   preview,
+  onPreviewChange,
   onReset,
 }: {
   entry: HairstyleEntry;
   preview: string;
+  onPreviewChange: (next: string) => void;
   onReset: () => void;
 }) {
   const { t } = useTranslation();
 
   return (
-    <div className="relative h-[100dvh] overflow-hidden bg-black">
-      <img src={preview} alt={entry.titleUz} className="absolute inset-0 h-full w-full object-cover object-top" />
-      <div className="absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black/90 via-black/45 to-transparent" />
-
-      <div
-        className="absolute inset-x-0 bottom-0 z-10 space-y-3 px-5"
-        style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
-      >
-        <div className="text-center">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-black">
+      <div className="relative min-h-0 flex-1 overflow-hidden">
+        <img
+          src={preview}
+          alt={entry.titleUz}
+          className="h-full w-full object-cover object-top"
+        />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 to-transparent" />
+        <div
+          className="absolute left-0 right-0 top-0 px-5 pt-[max(0.75rem,env(safe-area-inset-top))]"
+        >
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/60">
             {t("styleTryOnPage.resultTitle")}
           </p>
-          <h2 className="mt-1 text-xl font-bold text-white">{entry.titleUz}</h2>
+          <h2 className="mt-0.5 text-lg font-bold text-white drop-shadow-sm">{entry.titleUz}</h2>
         </div>
+      </div>
+
+      <div
+        className="shrink-0 space-y-3 overflow-y-auto border-t border-white/10 bg-[#0a0a0a] px-4 pt-3"
+        style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+      >
+        <MorphStudioPanel
+          image={preview}
+          onImageChange={onPreviewChange}
+          styleId={entry.id}
+          styleTitle={entry.titleUz}
+          tone="dark"
+        />
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -278,7 +296,12 @@ export function StyleTryOnFlow({ flow, entry }: Props) {
   if (flow.tryOnPreview) {
     return (
       <>
-        <ResultView entry={entry} preview={flow.tryOnPreview} onReset={flow.reset} />
+        <ResultView
+          entry={entry}
+          preview={flow.tryOnPreview}
+          onPreviewChange={flow.setTryOnPreview}
+          onReset={flow.reset}
+        />
         <AiStylePhotoInput fileRef={flow.fileRef} onFile={flow.onFile} />
         <AiStyleCamera open={flow.cameraOpen} onClose={flow.closeCamera} onCapture={flow.onCameraCapture} />
       </>

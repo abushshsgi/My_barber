@@ -230,6 +230,10 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     [photo, tryOnByStyle, menPersonaId, result],
   );
 
+  const updateTryOnPreview = useCallback((cacheKey: string, previewImage: string) => {
+    setTryOnByStyle((prev) => ({ ...prev, [cacheKey]: previewImage }));
+  }, []);
+
   useEffect(() => {
     if (!photo || !audience || analyzing || done || analyzeTriggeredRef.current) return;
     analyzeTriggeredRef.current = true;
@@ -290,6 +294,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     closeCamera,
     analyze,
     generateTryOn,
+    updateTryOnPreview,
     reset,
   };
 }

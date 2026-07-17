@@ -110,6 +110,7 @@ function kindLabel(kind: unknown): string {
   if (k === "tryon") return "Try-on";
   if (k === "analyze") return "Tahlil";
   if (k === "face_check") return "Yuz tekshiruv";
+  if (k === "studio") return "Studio";
   return k || "—";
 }
 
@@ -253,6 +254,8 @@ function MorphAiListPage() {
                       <TableHead>User</TableHead>
                       <TableHead>Tur</TableHead>
                       <TableHead>Uslub</TableHead>
+                      <TableHead className="text-right">In</TableHead>
+                      <TableHead className="text-right">Out</TableHead>
                       <TableHead className="text-right">Token</TableHead>
                       <TableHead className="text-right">Narx</TableHead>
                       <TableHead>Holat</TableHead>
@@ -263,7 +266,9 @@ function MorphAiListPage() {
                       <TableHead>Foydalanuvchi</TableHead>
                       <TableHead className="text-right">Generatsiya</TableHead>
                       <TableHead className="text-right">Try-on</TableHead>
+                      <TableHead className="text-right">Studio</TableHead>
                       <TableHead className="text-right">Token</TableHead>
+                      <TableHead className="text-right">In / Out</TableHead>
                       <TableHead className="text-right">Xarajat</TableHead>
                       <TableHead className="text-right">Oxirgi</TableHead>
                     </>
@@ -322,6 +327,12 @@ function MorphAiListPage() {
                         <TableCell className="max-w-[160px] truncate text-sm">
                           {String(row.style_title || "—")}
                         </TableCell>
+                        <TableCell className="text-right tabular-nums text-xs">
+                          {formatTokens(row.prompt_tokens)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums text-xs">
+                          {formatTokens(row.candidates_tokens)}
+                        </TableCell>
                         <TableCell className="text-right tabular-nums">
                           {formatTokens(row.total_tokens)}
                         </TableCell>
@@ -358,8 +369,12 @@ function MorphAiListPage() {
                           {Number(u.generations || 0)}
                         </TableCell>
                         <TableCell className="text-right tabular-nums">{Number(u.tryon || 0)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{Number(u.studio || 0)}</TableCell>
                         <TableCell className="text-right tabular-nums">
                           {formatTokens(u.tokens)}
+                        </TableCell>
+                        <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
+                          {formatTokens(u.prompt_tokens)} / {formatTokens(u.candidates_tokens)}
                         </TableCell>
                         <TableCell className="text-right font-medium tabular-nums">
                           {formatUsd(u.cost_usd)}

@@ -1096,6 +1096,15 @@
     "previewNoImage": "Изображение недоступно",
     "previewDesc": "Просмотр, скачивание или отправка созданного образа",
     "previewBack": "К результатам",
+    "studio": {
+      "title": "Morf Studio",
+      "subtitle": "Измените цвет, стиль и образ",
+      "undo": "Назад",
+      "reset": "Оригинал",
+      "generating": "Применяется правка Studio…",
+      "applied": "{{name}} применено",
+      "failed": "Не удалось применить Studio"
+    },
     "beforeAfter": {
       "before": "Before",
       "after": "After",

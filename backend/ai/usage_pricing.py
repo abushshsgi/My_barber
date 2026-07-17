@@ -141,13 +141,13 @@ def finalize_usage(
     tokens = extract_usage_tokens(payload)
     estimated = False
     if tokens["total_tokens"] <= 0:
-        if kind == "tryon":
+        if kind in ("tryon", "studio"):
             tokens = estimate_image_tokens(input_images=input_images)
         else:
             tokens = estimate_vision_tokens()
         estimated = bool(tokens.pop("estimated", True))
 
-    if kind == "tryon":
+    if kind in ("tryon", "studio"):
         cost = cost_usd_for_image(
             prompt_tokens=tokens["prompt_tokens"],
             candidates_tokens=tokens["candidates_tokens"],

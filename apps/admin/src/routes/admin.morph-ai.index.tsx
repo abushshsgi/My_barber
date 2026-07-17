@@ -71,6 +71,7 @@ function kindLabel(kind: string): string {
   if (kind === "tryon") return "Try-on";
   if (kind === "analyze") return "Tahlil";
   if (kind === "face_check") return "Yuz tekshiruv";
+  if (kind === "studio") return "Studio";
   return kind;
 }
 
@@ -190,7 +191,12 @@ function MorphAiPage() {
             hint={`${d.summary.success} / ${d.summary.failed} xato`}
           />
           <KPICard label="Unique user" value={d.summary.unique_users.toLocaleString()} icon={Users} />
-          <KPICard label="Jami token" value={formatTokens(d.summary.total_tokens)} icon={Cpu} />
+          <KPICard
+            label="Jami token"
+            value={formatTokens(d.summary.total_tokens)}
+            icon={Cpu}
+            hint={`In ${formatTokens(d.summary.prompt_tokens ?? 0)} · Out ${formatTokens(d.summary.candidates_tokens ?? 0)}`}
+          />
           <KPICard
             label="Jami xarajat"
             value={formatUsd(d.summary.total_cost_usd)}
@@ -198,9 +204,10 @@ function MorphAiPage() {
             hint={`O'rtacha ${formatUsd(d.summary.avg_cost_usd)}`}
           />
           <KPICard
-            label="O'rtacha latency"
-            value={`${d.summary.avg_latency_ms} ms`}
-            hint={`Try-on ${d.summary.tryon} · Tahlil ${d.summary.analyze}`}
+            label="Studio + Try-on"
+            value={(d.summary.tryon + (d.summary.studio ?? 0)).toLocaleString()}
+            hint={`Try-on ${d.summary.tryon} · Studio ${d.summary.studio ?? 0} · Tahlil ${d.summary.analyze}`}
+            icon={Zap}
           />
         </div>
       )}
@@ -315,7 +322,9 @@ function MorphAiPage() {
                   <TableHead>Foydalanuvchi</TableHead>
                   <TableHead className="text-right">Generatsiya</TableHead>
                   <TableHead className="text-right">Try-on</TableHead>
+                  <TableHead className="text-right">Studio</TableHead>
                   <TableHead className="text-right">Token</TableHead>
+                  <TableHead className="text-right">In / Out</TableHead>
                   <TableHead className="text-right">Xarajat</TableHead>
                   <TableHead className="text-right">Oxirgi</TableHead>
                 </TableRow>
@@ -339,7 +348,11 @@ function MorphAiPage() {
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{u.generations}</TableCell>
                     <TableCell className="text-right tabular-nums">{u.tryon}</TableCell>
+                    <TableCell className="text-right tabular-nums">{u.studio ?? 0}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatTokens(u.tokens)}</TableCell>
+                    <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
+                      {formatTokens(u.prompt_tokens ?? 0)} / {formatTokens(u.candidates_tokens ?? 0)}
+                    </TableCell>
                     <TableCell className="text-right font-medium tabular-nums">
                       {formatUsd(u.cost_usd)}
                     </TableCell>
@@ -380,6 +393,8 @@ function MorphAiPage() {
                   <TableHead>User</TableHead>
                   <TableHead>Tur</TableHead>
                   <TableHead>Uslub</TableHead>
+                  <TableHead className="text-right">In</TableHead>
+                  <TableHead className="text-right">Out</TableHead>
                   <TableHead className="text-right">Token</TableHead>
                   <TableHead className="text-right">Narx</TableHead>
                   <TableHead>Holat</TableHead>
@@ -411,6 +426,12 @@ function MorphAiPage() {
                     </TableCell>
                     <TableCell className="max-w-[160px] truncate text-sm">
                       {row.style_title || "—"}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums text-xs">
+                      {formatTokens(row.prompt_tokens)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums text-xs">
+                      {formatTokens(row.candidates_tokens)}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {formatTokens(row.total_tokens)}

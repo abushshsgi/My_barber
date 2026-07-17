@@ -424,6 +424,7 @@ export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
                 tryOnByStyle={props.tryOnByStyle}
                 tryOnLoadingId={props.tryOnLoadingId}
                 onGenerateTryOn={props.onGenerateTryOn}
+                onUpdateTryOnPreview={props.onUpdateTryOnPreview}
               />
             ) : null}
           </div>

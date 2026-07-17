@@ -1093,6 +1093,15 @@
     "previewNoImage": "No image available",
     "previewDesc": "View, download, or share the generated look",
     "previewBack": "Back to results",
+    "studio": {
+      "title": "Morf Studio",
+      "subtitle": "Change color, style, and look",
+      "undo": "Undo",
+      "reset": "Original",
+      "generating": "Applying studio edit…",
+      "applied": "{{name}} applied",
+      "failed": "Studio edit failed"
+    },
     "beforeAfter": {
       "before": "Before",
       "after": "After",

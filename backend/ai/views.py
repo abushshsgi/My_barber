@@ -427,3 +427,93 @@ class AiStyleHistoryListCreateView(APIView):
         trim_user_history(user)
         out = AiStyleHistoryEntrySerializer(entry, context={"request": request})
         return Response(out.data, status=status.HTTP_201_CREATED)
+
+
+class AiStyleStudioCatalogView(APIView):
+    """GET — Morf AI Studio variantlari (soch rangi, uslub, yuz rangi, …)."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [AuthIPThrottle]
+
+    def get(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        from ai.studio_presets import list_studio_catalog
+
+        return Response({"categories": list_studio_catalog()})
+
+
+class AiStyleStudioEditView(APIView):
+    """POST { image, preset_id } — generatsiya qilingan rasmni studio variantiga o'zgartirish."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [AiTryOnThrottle, AuthIPThrottle]
+
+    def post(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        blocked = check_user_can_generate(user_id=user.pk, kind="studio")
+        if blocked:
+            return Response({"detail": blocked}, status=429)
+
+        image = request.data.get("image")
+        preset_id = (request.data.get("preset_id") or "").strip()
+        style_id = (request.data.get("style_id") or "").strip()
+        style_title = (request.data.get("style_title") or "").strip()
+        if not image:
+            return Response({"detail": "Rasmni yuboring."}, status=400)
+        if not preset_id:
+            return Response({"detail": "Studio variantini tanlang."}, status=400)
+
+        from ai.services.gemini_studio_edit import generate_studio_edit
+        from ai.studio_presets import get_studio_option
+
+        option = get_studio_option(preset_id)
+        if option is None:
+            return Response({"detail": "Noto'g'ri studio varianti."}, status=400)
+
+        title_for_log = style_title or f"Studio · {option['label_uz']}"
+
+        try:
+            result = generate_studio_edit(
+                image_data_url=str(image),
+                preset_id=preset_id,
+            )
+            record_ai_generation(
+                user_id=user.pk,
+                kind="studio",
+                status="success",
+                prompt=result.prompt,
+                style_id=style_id or result.preset_id,
+                style_title=title_for_log[:120],
+                model=result.model,
+                provider=result.provider,
+                prompt_tokens=result.prompt_tokens,
+                candidates_tokens=result.candidates_tokens,
+                thoughts_tokens=result.thoughts_tokens,
+                total_tokens=result.total_tokens,
+                cost_usd=result.cost_usd,
+                tokens_estimated=result.tokens_estimated,
+                latency_ms=result.latency_ms,
+            )
+            return Response(
+                {
+                    "preview_image": result.preview_image,
+                    "preset_id": result.preset_id,
+                    "preset_label": result.preset_label,
+                    "style_id": style_id,
+                    "style_title": title_for_log,
+                }
+            )
+        except AiStyleError as exc:
+            record_ai_generation(
+                user_id=user.pk,
+                kind="studio",
+                status="failed",
+                style_id=style_id or preset_id,
+                style_title=title_for_log[:120],
+                error_detail=exc.message,
+            )
+            return Response({"detail": exc.message}, status=exc.status)

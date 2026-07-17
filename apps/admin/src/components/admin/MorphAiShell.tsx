@@ -3,6 +3,18 @@ import { cn } from "@/lib/utils";
 
 const TABS = [
   { to: "/admin/morph-ai" as const, label: "Analytics", exact: true },
+  {
+    to: "/admin/morph-ai/list/$kind" as const,
+    params: { kind: "generations" as const },
+    label: "Faoliyat",
+    matchPrefix: "/admin/morph-ai/list/generations",
+  },
+  {
+    to: "/admin/morph-ai/list/$kind" as const,
+    params: { kind: "spenders" as const },
+    label: "Userlar",
+    matchPrefix: "/admin/morph-ai/list/spenders",
+  },
   { to: "/admin/morph-ai/catalog" as const, label: "Katalog" },
   { to: "/admin/morph-ai/errors" as const, label: "Xatolar" },
   { to: "/admin/morph-ai/limits" as const, label: "Limitlar" },
@@ -28,13 +40,18 @@ export function MorphAiSubNav() {
       </div>
       <div className="flex gap-1 overflow-x-auto rounded-xl border border-border bg-muted/80 p-1.5 shadow-card">
         {TABS.map((tab) => {
-          const active = tab.exact
-            ? pathname === tab.to || pathname === `${tab.to}/`
-            : pathname === tab.to || pathname.startsWith(`${tab.to}/`);
+          const matchPrefix = "matchPrefix" in tab ? tab.matchPrefix : undefined;
+          const active = matchPrefix
+            ? pathname === matchPrefix || pathname.startsWith(`${matchPrefix}/`)
+            : "exact" in tab && tab.exact
+              ? pathname === tab.to || pathname === `${tab.to}/`
+              : pathname === tab.to || pathname.startsWith(`${tab.to}/`);
+          const params = "params" in tab ? tab.params : undefined;
           return (
             <Link
-              key={tab.to}
+              key={tab.label}
               to={tab.to}
+              {...(params ? { params } : {})}
               className={cn(
                 "shrink-0 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors",
                 active

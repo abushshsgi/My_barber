@@ -322,8 +322,12 @@ class AdminUserDetailSerializer(AdminUserSerializer):
             "tryon": 0,
             "analyze": 0,
             "face_check": 0,
+            "studio": 0,
             "success": 0,
             "failed": 0,
+            "total_tokens": 0,
+            "prompt_tokens": 0,
+            "candidates_tokens": 0,
             "cost_usd": "0",
             "last_at": None,
         }
@@ -336,8 +340,12 @@ class AdminUserDetailSerializer(AdminUserSerializer):
             tryon=Count("id", filter=Q(kind=AiGenerationUsage.Kind.TRYON)),
             analyze=Count("id", filter=Q(kind=AiGenerationUsage.Kind.ANALYZE)),
             face_check=Count("id", filter=Q(kind=AiGenerationUsage.Kind.FACE_CHECK)),
+            studio=Count("id", filter=Q(kind=AiGenerationUsage.Kind.STUDIO)),
             success=Count("id", filter=Q(status=AiGenerationUsage.Status.SUCCESS)),
             failed=Count("id", filter=Q(status=AiGenerationUsage.Status.FAILED)),
+            total_tokens=Sum("total_tokens"),
+            prompt_tokens=Sum("prompt_tokens"),
+            candidates_tokens=Sum("candidates_tokens"),
             cost=Sum("cost_usd"),
             last_at=Max("created_at"),
         )
@@ -346,8 +354,12 @@ class AdminUserDetailSerializer(AdminUserSerializer):
             "tryon": int(agg["tryon"] or 0),
             "analyze": int(agg["analyze"] or 0),
             "face_check": int(agg["face_check"] or 0),
+            "studio": int(agg["studio"] or 0),
             "success": int(agg["success"] or 0),
             "failed": int(agg["failed"] or 0),
+            "total_tokens": int(agg["total_tokens"] or 0),
+            "prompt_tokens": int(agg["prompt_tokens"] or 0),
+            "candidates_tokens": int(agg["candidates_tokens"] or 0),
             "cost_usd": str(agg["cost"] or 0),
             "last_at": agg["last_at"],
         }
@@ -359,17 +371,23 @@ class AdminUserDetailSerializer(AdminUserSerializer):
         except Exception:
             return out
 
-        for row in AiGenerationUsage.objects.filter(user=obj).exclude(style_id="").order_by(
-            "-created_at"
-        )[:15]:
+        for row in AiGenerationUsage.objects.filter(user=obj).order_by("-created_at")[:25]:
             out.append(
                 {
                     "kind": row.kind,
                     "style_id": row.style_id,
-                    "style_title": row.style_title or row.style_id,
+                    "style_title": row.style_title or row.style_id or row.kind,
                     "status": row.status,
                     "created_at": row.created_at,
                     "source": "generation",
+                    "total_tokens": row.total_tokens,
+                    "prompt_tokens": row.prompt_tokens,
+                    "candidates_tokens": row.candidates_tokens,
+                    "cost_usd": str(row.cost_usd),
+                    "model": row.model,
+                    "provider": row.provider,
+                    "latency_ms": row.latency_ms,
+                    "error_detail": row.error_detail,
                 }
             )
         if len(out) < 8:
@@ -382,9 +400,17 @@ class AdminUserDetailSerializer(AdminUserSerializer):
                         "status": "success",
                         "created_at": row.created_at,
                         "source": row.source,
+                        "total_tokens": 0,
+                        "prompt_tokens": 0,
+                        "candidates_tokens": 0,
+                        "cost_usd": "0",
+                        "model": "",
+                        "provider": "",
+                        "latency_ms": 0,
+                        "error_detail": "",
                     }
                 )
-        return out[:20]
+        return out[:30]
 
     def get_wallet(self, obj: User):
         try:

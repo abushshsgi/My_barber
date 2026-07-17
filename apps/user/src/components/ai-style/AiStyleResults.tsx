@@ -707,6 +707,7 @@ export function AiStyleResultsBlock({
   tryOnByStyle,
   tryOnLoadingId,
   onGenerateTryOn,
+  onUpdateTryOnPreview,
   focusStyleId,
 }: {
   result: AiAnalysisResult;
@@ -723,6 +724,7 @@ export function AiStyleResultsBlock({
   tryOnByStyle?: Record<string, string>;
   tryOnLoadingId?: string | null;
   onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId) => void;
+  onUpdateTryOnPreview?: (cacheKey: string, previewImage: string) => void;
   focusStyleId?: string;
 }) {
   const { t } = useTranslation();
@@ -755,6 +757,14 @@ export function AiStyleResultsBlock({
   const scrollToMoreStyles = () => {
     document.getElementById("ai-style-more-styles")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+
+  const previewImage =
+    previewId && tryOnByStyle
+      ? tryOnByStyle[previewId] ??
+        (previewSuggestion
+          ? resolveTryOnPreview(tryOnByStyle, previewSuggestion.id, menPersonaId)
+          : undefined)
+      : undefined;
 
   return (
     <div className="space-y-4">
@@ -818,11 +828,21 @@ export function AiStyleResultsBlock({
           if (!open) handleClosePreview();
         }}
         suggestion={previewSuggestion}
-        previewImage={
-          previewId ? tryOnByStyle?.[previewId] : undefined
+        previewImage={previewImage}
+        onPreviewImageChange={
+          previewId && onUpdateTryOnPreview
+            ? (next) => onUpdateTryOnPreview(previewId, next)
+            : undefined
         }
         saved={previewSuggestion ? saved.includes(previewSuggestion.id) : false}
-        tryOnLoading={previewId ? tryOnLoadingId === previewId : false}
+        tryOnLoading={
+          previewId
+            ? tryOnLoadingId === previewId ||
+              (previewSuggestion
+                ? tryOnLoadingId === tryOnCacheKey(previewSuggestion.id, menPersonaId)
+                : false)
+            : false
+        }
         onToggleSave={onToggleSave}
         onGenerateTryOn={onGenerateTryOn}
         onTryMoreStyles={scrollToMoreStyles}

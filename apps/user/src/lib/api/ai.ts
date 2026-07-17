@@ -161,6 +161,51 @@ export async function generateAiStyleTryOn(
   throw new Error("Rasm yaratishda xatolik");
 }
 
+export type MorphStudioOption = {
+  id: string;
+  label_uz: string;
+  label_en: string;
+};
+
+export type MorphStudioCategory = {
+  id: string;
+  label_uz: string;
+  label_en: string;
+  options: MorphStudioOption[];
+};
+
+export type MorphStudioCatalogResponse = {
+  categories: MorphStudioCategory[];
+};
+
+export type MorphStudioEditResponse = {
+  preview_image: string;
+  preset_id: string;
+  preset_label: string;
+  style_id: string;
+  style_title: string;
+};
+
+export async function fetchMorphStudioCatalog(): Promise<MorphStudioCatalogResponse> {
+  return apiJson<MorphStudioCatalogResponse>("/api/v1/ai/style-studio/catalog/");
+}
+
+export async function generateMorphStudioEdit(
+  image: string,
+  presetId: string,
+  meta?: { styleId?: string; styleTitle?: string },
+): Promise<MorphStudioEditResponse> {
+  return apiJson<MorphStudioEditResponse>("/api/v1/ai/style-studio/", {
+    method: "POST",
+    body: JSON.stringify({
+      image,
+      preset_id: presetId,
+      style_id: meta?.styleId,
+      style_title: meta?.styleTitle,
+    }),
+  });
+}
+
 export type AiStyleHistoryEntryApi = {
   id: number;
   photo_url: string | null;

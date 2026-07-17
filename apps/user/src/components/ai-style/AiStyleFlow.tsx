@@ -75,6 +75,7 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
     closeCamera,
     analyze,
     generateTryOn,
+    updateTryOnPreview,
     reset,
   } = flow;
   const { personaId } = useExplorePersona();
@@ -198,6 +199,7 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
     tryOnLoadingId: flow.tryOnLoadingId,
     onGenerateTryOn: (styleId: string, nextPersonaId?: Parameters<typeof generateTryOn>[1], title?: string) =>
       void generateTryOn(styleId, nextPersonaId, title),
+    onUpdateTryOnPreview: updateTryOnPreview,
   };
 
   return (

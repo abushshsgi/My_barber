@@ -87,6 +87,7 @@ class AiGenerationUsage(models.Model):
         TRYON = "tryon", "Try-on"
         ANALYZE = "analyze", "Style analyze"
         FACE_CHECK = "face_check", "Face check"
+        STUDIO = "studio", "Studio edit"
 
     class Status(models.TextChoices):
         SUCCESS = "success", "Success"

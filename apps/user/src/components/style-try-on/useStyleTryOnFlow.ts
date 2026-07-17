@@ -108,6 +108,7 @@ export function useStyleTryOnFlow({ styleId, personaId }: UseStyleTryOnFlowOptio
     validating: preparing,
     generating,
     tryOnPreview,
+    setTryOnPreview,
     error,
     cameraOpen,
     fileRef,

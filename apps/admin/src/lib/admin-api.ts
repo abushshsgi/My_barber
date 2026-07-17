@@ -75,8 +75,12 @@ export type AdminUserDetail = AdminUser & {
     tryon: number;
     analyze: number;
     faceCheck: number;
+    studio: number;
     success: number;
     failed: number;
+    totalTokens: number;
+    promptTokens: number;
+    candidatesTokens: number;
     costUsd: number;
     lastAt: string | null;
   };
@@ -87,6 +91,14 @@ export type AdminUserDetail = AdminUser & {
     status: string;
     createdAt: string;
     source: string;
+    totalTokens: number;
+    promptTokens: number;
+    candidatesTokens: number;
+    costUsd: number;
+    model: string;
+    provider: string;
+    latencyMs: number;
+    errorDetail: string;
   }>;
   wallet: {
     walletNumber: string;
@@ -513,8 +525,12 @@ type BackendUserRow = {
     tryon?: number;
     analyze?: number;
     face_check?: number;
+    studio?: number;
     success?: number;
     failed?: number;
+    total_tokens?: number;
+    prompt_tokens?: number;
+    candidates_tokens?: number;
     cost_usd?: string | number;
     last_at?: string | null;
   };
@@ -525,6 +541,14 @@ type BackendUserRow = {
     status?: string;
     created_at?: string;
     source?: string;
+    total_tokens?: number;
+    prompt_tokens?: number;
+    candidates_tokens?: number;
+    cost_usd?: string | number;
+    model?: string;
+    provider?: string;
+    latency_ms?: number;
+    error_detail?: string;
   }>;
   wallet?: {
     wallet_number?: string;
@@ -813,8 +837,12 @@ function mapUserDetail(u: BackendUserRow): AdminUserDetail {
       tryon: toInt(morph.tryon, 0),
       analyze: toInt(morph.analyze, 0),
       faceCheck: toInt(morph.face_check, 0),
+      studio: toInt(morph.studio, 0),
       success: toInt(morph.success, 0),
       failed: toInt(morph.failed, 0),
+      totalTokens: toInt(morph.total_tokens, 0),
+      promptTokens: toInt(morph.prompt_tokens, 0),
+      candidatesTokens: toInt(morph.candidates_tokens, 0),
       costUsd: Number(morph.cost_usd ?? 0) || 0,
       lastAt: morph.last_at ?? null,
     },
@@ -825,6 +853,14 @@ function mapUserDetail(u: BackendUserRow): AdminUserDetail {
       status: s.status || "",
       createdAt: s.created_at || "",
       source: s.source || "",
+      totalTokens: toInt(s.total_tokens, 0),
+      promptTokens: toInt(s.prompt_tokens, 0),
+      candidatesTokens: toInt(s.candidates_tokens, 0),
+      costUsd: Number(s.cost_usd ?? 0) || 0,
+      model: s.model || "",
+      provider: s.provider || "",
+      latencyMs: toInt(s.latency_ms, 0),
+      errorDetail: s.error_detail || "",
     })),
     wallet: u.wallet
       ? {
@@ -2668,8 +2704,11 @@ export type MorphAiAnalytics = {
     tryon: number;
     analyze: number;
     face_check: number;
+    studio: number;
     unique_users: number;
     total_tokens: number;
+    prompt_tokens: number;
+    candidates_tokens: number;
     total_cost_usd: string;
     avg_cost_usd: string;
     avg_tokens: number;
@@ -2696,7 +2735,11 @@ export type MorphAiAnalytics = {
     email: string;
     generations: number;
     tryon: number;
+    analyze: number;
+    studio: number;
     tokens: number;
+    prompt_tokens: number;
+    candidates_tokens: number;
     cost_usd: string;
     last_at: string | null;
   }>;

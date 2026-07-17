@@ -77,6 +77,7 @@ export type AiStyleSplitLayoutProps = {
   tryOnByStyle: Record<string, string>;
   tryOnLoadingId: string | null;
   onGenerateTryOn: (styleId: string, personaId?: ExplorePersonaId, title?: string) => void;
+  onUpdateTryOnPreview?: (cacheKey: string, previewImage: string) => void;
   menPersonaId?: ExplorePersonaId | null;
 };
 
@@ -724,6 +725,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
               tryOnByStyle={props.tryOnByStyle}
               tryOnLoadingId={props.tryOnLoadingId}
               onGenerateTryOn={props.onGenerateTryOn}
+              onUpdateTryOnPreview={props.onUpdateTryOnPreview}
             />
           </div>
         </motion.div>
