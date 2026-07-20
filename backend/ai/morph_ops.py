@@ -563,8 +563,8 @@ def check_user_can_generate(*, user_id: int | None, kind: str) -> str | None:
     if not user_id:
         return None
 
-    # B2C obuna — try-on / studio uchun majburiy + oylik limit
-    if kind in ("tryon", "studio"):
+    # B2C obuna — Morph AI (analyze / try-on / studio) uchun majburiy + oylik limit
+    if kind in ("tryon", "studio", "analyze", "face_check"):
         try:
             from accounts.models import User
             from subscriptions.services import check_morph_entitlement
@@ -608,11 +608,13 @@ def is_morph_plan_limit_message(message: str) -> bool:
     markers = (
         "Oylik Morph",
         "Bepul Morph",
+        "Morph AI faqat obuna",
         "obuna",
         "Studio Plus",
         "Bu reja Morph",
         "Kunlik try-on",
         "Kunlik AI tahlil",
+        "do'stingizni taklif",
     )
     return any(m in msg for m in markers)
 

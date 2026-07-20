@@ -22,6 +22,7 @@ type Props = {
   onStartNew: () => void;
   onOpenCamera: () => void;
   onOpenGallery: () => void;
+  ensureMorphAccess?: () => Promise<boolean>;
 };
 
 function prettyLookTitle(title: string) {
@@ -34,7 +35,13 @@ function prettyLookTitle(title: string) {
     .replace(/\b\w/g, (ch) => ch.toUpperCase());
 }
 
-export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery }: Props) {
+export function MorphAiHome({
+  audience,
+  onStartNew,
+  onOpenCamera,
+  onOpenGallery,
+  ensureMorphAccess,
+}: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const router = useRouter();
@@ -151,7 +158,12 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
           <div className="grid grid-cols-2 gap-2.5">
             <button
               type="button"
-              onClick={() => void navigate({ to: "/ai-style/studio" })}
+              onClick={() => {
+                void (async () => {
+                  if (ensureMorphAccess && !(await ensureMorphAccess())) return;
+                  void navigate({ to: "/ai-style/studio" });
+                })();
+              }}
               className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-border bg-surface/40 px-3 text-left text-[13px] font-bold active:scale-[0.99]"
             >
               <Wand2 className="size-4 shrink-0" strokeWidth={2} />
@@ -159,7 +171,12 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
             </button>
             <button
               type="button"
-              onClick={() => void navigate({ to: "/ai-style/care" })}
+              onClick={() => {
+                void (async () => {
+                  if (ensureMorphAccess && !(await ensureMorphAccess())) return;
+                  void navigate({ to: "/ai-style/care" });
+                })();
+              }}
               className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-border bg-surface/40 px-3 text-left text-[13px] font-bold active:scale-[0.99]"
             >
               <Droplets className="size-4 shrink-0" strokeWidth={2} />

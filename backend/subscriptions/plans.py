@@ -89,9 +89,9 @@ REFERRAL_TRIAL_REQUIRED = 3
 REFERRAL_TRIAL_DAYS = 7
 REFERRAL_TRIAL_PLAN = PLAN_PLUS
 
-# Obunasiz freemium — Morph AI ishlashi uchun minimal bepul kvota.
-FREE_MORPH_AI_MONTHLY = 5
-FREE_MORPH_STUDIO_MONTHLY = 2
+# Yangi user — Morph AI umuman yo'q. Faqat pullik obuna yoki 3 referal → 7 kun trial.
+FREE_MORPH_AI_MONTHLY = 0
+FREE_MORPH_STUDIO_MONTHLY = 0
 
 
 def get_plan(code: str) -> dict[str, Any] | None:

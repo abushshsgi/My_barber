@@ -149,6 +149,14 @@ def usage_snapshot(user: User, entitlements: dict[str, Any] | None) -> dict[str,
     }
 
 
+def _no_subscription_message() -> str:
+    return (
+        f"Morph AI faqat obuna bilan ishlaydi. "
+        f"{REFERRAL_TRIAL_REQUIRED} ta do'stingizni taklif qiling — "
+        f"{REFERRAL_TRIAL_DAYS} kunlik Plus sinov, yoki obuna sotib oling."
+    )
+
+
 def build_me_payload(user: User) -> dict[str, Any]:
     sub = get_active_subscription(user)
     entitlements = (sub.entitlements if sub else None) or (
@@ -167,37 +175,65 @@ def build_me_payload(user: User) -> dict[str, Any]:
         usage = {
             **period,
             "is_free_tier": True,
+            "locked": True,
         }
     trial = ReferralTrialGrant.objects.filter(user=user).first()
+    from accounts.models import ReferralAttribution
+
+    invite_count = ReferralAttribution.objects.filter(referrer=user).count()
+    now = timezone.now()
+    days_remaining = None
+    if sub and sub.ends_at:
+        delta = sub.ends_at - now
+        days_remaining = max(0, int(delta.total_seconds() // 86400))
+
     return {
         "has_active": bool(sub),
         "subscription": serialize_subscription(sub) if sub else None,
-        "entitlements": entitlements,
+        "entitlements": entitlements if sub else {},
         "usage": usage,
         "badge": entitlements.get("badge") if sub else None,
         "morph_care": bool(entitlements.get("morph_care")) if sub else False,
         "family_members_max": entitlements.get("family_members_max") if sub else 0,
         "family_unlimited": entitlements.get("family_members_max") is None if sub else False,
+        "days_remaining": days_remaining,
+        "access": {
+            "morph_ai_allowed": bool(sub),
+            "reason": None if sub else "subscription_required",
+            "message": None if sub else _no_subscription_message(),
+        },
         "referral_trial": {
             "granted": bool(trial),
             "ends_at": trial.ends_at.isoformat() if trial else None,
             "required_referrals": REFERRAL_TRIAL_REQUIRED,
             "trial_days": REFERRAL_TRIAL_DAYS,
             "trial_plan": REFERRAL_TRIAL_PLAN,
+            "invite_count": invite_count,
+            "progress": min(invite_count, REFERRAL_TRIAL_REQUIRED),
+            "eligible": invite_count >= REFERRAL_TRIAL_REQUIRED,
+            "remaining_invites": max(0, REFERRAL_TRIAL_REQUIRED - invite_count),
         },
     }
 
 
 def serialize_subscription(sub: UserSubscription) -> dict[str, Any]:
     plan = get_plan(sub.plan_code)
+    now = timezone.now()
+    days_remaining = None
+    if sub.ends_at:
+        delta = sub.ends_at - now
+        days_remaining = max(0, int(delta.total_seconds() // 86400))
+    is_trial = sub.source == UserSubscription.Source.REFERRAL_TRIAL
     return {
         "id": str(sub.pk),
         "plan_code": sub.plan_code,
         "plan": serialize_plan(plan) if plan else None,
         "status": sub.status,
         "source": sub.source,
+        "is_trial": is_trial,
         "starts_at": sub.starts_at.isoformat() if sub.starts_at else None,
         "ends_at": sub.ends_at.isoformat() if sub.ends_at else None,
+        "days_remaining": days_remaining,
         "price_uzs": int(sub.price_uzs),
         "auto_renew": sub.auto_renew,
         "entitlements": sub.entitlements or entitlement_snapshot(sub.plan_code),
@@ -378,30 +414,21 @@ def can_use_morph_care(user: User) -> bool:
 
 def check_morph_entitlement(*, user: User, kind: str) -> str | None:
     """
-    Try-on / studio: obuna limitlari yoki obunasiz freemium kvota.
-    Analyze/face_check — obunasiz global MorphAiSettings limitlari ishlaydi.
+    Morph AI (analyze / try-on / studio): faol obuna majburiy.
+    Yangi user — 0 kvota. Ochilishi: pullik obuna yoki 3 referal → 7 kun trial.
     """
-    if kind not in ("tryon", "studio"):
+    if kind not in ("tryon", "studio", "analyze", "face_check"):
+        return None
+
+    sub = get_active_subscription(user)
+    if not sub:
+        return _no_subscription_message()
+
+    # Analyze / face_check — faqat obuna borligini tekshiramiz.
+    if kind in ("analyze", "face_check"):
         return None
 
     usage = get_or_create_usage(user)
-    sub = get_active_subscription(user)
-
-    if not sub:
-        if kind == "tryon":
-            if usage.morph_ai_used >= FREE_MORPH_AI_MONTHLY:
-                return (
-                    f"Bepul Morph AI limiti tugadi ({FREE_MORPH_AI_MONTHLY}/{FREE_MORPH_AI_MONTHLY}). "
-                    "Davom etish uchun obuna bo'ling."
-                )
-            return None
-        if usage.morph_studio_used >= FREE_MORPH_STUDIO_MONTHLY:
-            return (
-                f"Bepul Morph AI Studio limiti tugadi ({FREE_MORPH_STUDIO_MONTHLY}/{FREE_MORPH_STUDIO_MONTHLY}). "
-                "Plus yoki Pro obunasiga o'ting."
-            )
-        return None
-
     ents = sub.entitlements or entitlement_snapshot(sub.plan_code)
 
     if kind == "tryon":

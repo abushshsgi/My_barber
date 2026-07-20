@@ -665,7 +665,7 @@
   },
   "subscriptions": {
     "title": "Подписки",
-    "subtitle": "Morph AI, Studio, семья и уход — месячные планы",
+    "subtitle": "Morph AI закрыт для новых пользователей. Пригласите 3 друзей (7 дней Plus) или оформите подписку.",
     "visitsPerMonth": "{{count}} визитов в месяц",
     "perMonth": "в месяц",
     "active": "Активна",
@@ -990,13 +990,19 @@
     },
     "limitSheet": {
       "subtitle": "Лимит генераций по вашему тарифу исчерпан",
+      "accessTitle": "Morph AI закрыт",
+      "accessSubtitle": "Сначала нужна подписка или реферальный триал",
       "tryonTitle": "Лимит try-on исчерпан",
       "studioTitle": "Лимит Studio исчерпан",
       "usage": "В этом месяце {{used}}/{{limit}}",
+      "referralProgress": "Приглашения: {{progress}}/{{required}}",
+      "descLocked": "На новом аккаунте Morph AI недоступен. Пригласите {{required}} друзей — {{days}} дней Plus, или оформите подписку.",
       "descFree": "Оформите подписку или перейдите на тариф выше.",
       "descWithPlan": "Месячный лимит {{plan}} исчерпан. Продлите или смените тариф.",
       "buyPlan": "Оформить подписку",
-      "switchPlan": "Сменить тариф"
+      "switchPlan": "Сменить тариф",
+      "inviteFriends": "Пригласить ещё {{count}} друзей",
+      "openReferrals": "Рефералы"
     },
     "uploadTitle": "Загрузите селфи",
     "uploadHint": "Лицо чётко видно · хорошее освещение",

@@ -28,6 +28,7 @@ export type SubscriptionUsage = {
   morph_studio_limit: number;
   morph_studio_remaining: number;
   is_free_tier?: boolean;
+  locked?: boolean;
 };
 
 export type UserSubscription = {
@@ -36,8 +37,10 @@ export type UserSubscription = {
   plan: SubscriptionPlan | null;
   status: string;
   source: string;
+  is_trial?: boolean;
   starts_at: string | null;
   ends_at: string | null;
+  days_remaining?: number | null;
   price_uzs: number;
   auto_renew: boolean;
   entitlements: Record<string, unknown>;
@@ -55,12 +58,22 @@ export type SubscriptionMe = {
   morph_care: boolean;
   family_members_max: number | null;
   family_unlimited: boolean;
+  days_remaining?: number | null;
+  access?: {
+    morph_ai_allowed: boolean;
+    reason: string | null;
+    message: string | null;
+  };
   referral_trial: {
     granted: boolean;
     ends_at: string | null;
     required_referrals: number;
     trial_days: number;
     trial_plan: string;
+    invite_count?: number;
+    progress?: number;
+    eligible?: boolean;
+    remaining_invites?: number;
   };
 };
 

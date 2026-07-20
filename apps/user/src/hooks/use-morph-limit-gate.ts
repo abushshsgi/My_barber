@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { fetchSubscriptionMe, type SubscriptionMe } from "@/lib/api/subscriptions";
 import {
+  morphAccessBlocked,
   morphStudioUsageBlocked,
   morphTryOnUsageBlocked,
   type MorphLimitKind,
@@ -15,7 +16,7 @@ type EnsureOpts = {
 export function useMorphLimitGate() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [kind, setKind] = useState<MorphLimitKind>("tryon");
+  const [kind, setKind] = useState<MorphLimitKind>("access");
   const [me, setMe] = useState<SubscriptionMe | null>(null);
 
   const refreshMe = useCallback(async () => {
@@ -32,10 +33,29 @@ export function useMorphLimitGate() {
     setOpen(true);
   }, []);
 
+  const ensureAccess = useCallback(
+    async (opts?: EnsureOpts): Promise<boolean> => {
+      try {
+        const data = await refreshMe();
+        if (!morphAccessBlocked(data)) return true;
+        if (!opts?.silent) showLimit("access", data);
+        return false;
+      } catch {
+        // Offline / auth — server baribir to'sadi.
+        return true;
+      }
+    },
+    [refreshMe, showLimit],
+  );
+
   const ensureTryOn = useCallback(
     async (opts?: EnsureOpts): Promise<boolean> => {
       try {
         const data = await refreshMe();
+        if (morphAccessBlocked(data)) {
+          if (!opts?.silent) showLimit("access", data);
+          return false;
+        }
         if (!morphTryOnUsageBlocked(data.usage)) return true;
         if (!opts?.silent) showLimit("tryon", data);
         return false;
@@ -50,6 +70,10 @@ export function useMorphLimitGate() {
     async (opts?: EnsureOpts): Promise<boolean> => {
       try {
         const data = await refreshMe();
+        if (morphAccessBlocked(data)) {
+          if (!opts?.silent) showLimit("access", data);
+          return false;
+        }
         if (!morphStudioUsageBlocked(data.usage)) return true;
         if (!opts?.silent) showLimit("studio", data);
         return false;
@@ -64,7 +88,9 @@ export function useMorphLimitGate() {
     async (limitKind: MorphLimitKind) => {
       try {
         const data = await refreshMe();
-        showLimit(limitKind, data);
+        const kindToShow =
+          morphAccessBlocked(data) && limitKind !== "access" ? "access" : limitKind;
+        showLimit(kindToShow, data);
       } catch {
         setKind(limitKind);
         setMe(null);
@@ -79,6 +105,7 @@ export function useMorphLimitGate() {
     setOpen,
     kind,
     me,
+    ensureAccess,
     ensureTryOn,
     ensureStudio,
     openFromApiLimit,

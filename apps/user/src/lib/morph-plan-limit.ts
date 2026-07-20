@@ -9,7 +9,7 @@ export class MorphPlanLimitError extends Error {
   }
 }
 
-export type MorphLimitKind = "tryon" | "studio";
+export type MorphLimitKind = "tryon" | "studio" | "access";
 
 export function isMorphPlanLimitError(error: unknown): error is MorphPlanLimitError {
   return error instanceof MorphPlanLimitError;
@@ -17,7 +17,7 @@ export function isMorphPlanLimitError(error: unknown): error is MorphPlanLimitEr
 
 /** Server detail — obuna/oylik kvota (DRF throttle emas). */
 export function isMorphPlanLimitMessage(message: string): boolean {
-  return /Oylik Morph|Bepul Morph|obuna|Studio Plus|Bu reja Morph|Kunlik try-on|Kunlik AI tahlil/i.test(
+  return /Oylik Morph|Bepul Morph|Morph AI faqat obuna|obuna|Studio Plus|Bu reja Morph|Kunlik try-on|Kunlik AI tahlil|do'stingizni taklif/i.test(
     message,
   );
 }
@@ -41,6 +41,15 @@ export function morphStudioUsageBlocked(usage: SubscriptionUsage): boolean {
   const limit = usage.morph_studio_limit ?? 0;
   if (limit <= 0) return true;
   return usage.morph_studio_remaining <= 0 || usage.morph_studio_used >= limit;
+}
+
+/** Yangi user — faol obuna (yoki trial) bo'lmasa Morph AI yopiq. */
+export function morphAccessBlocked(me: SubscriptionMe | null | undefined): boolean {
+  if (!me) return true;
+  if (me.access && typeof me.access.morph_ai_allowed === "boolean") {
+    return !me.access.morph_ai_allowed;
+  }
+  return !me.has_active;
 }
 
 export function throwFromMorphApiError(res: Response, body: unknown, fallback: string): never {

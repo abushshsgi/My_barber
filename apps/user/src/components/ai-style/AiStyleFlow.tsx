@@ -142,6 +142,21 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
     setShowCapture(true);
   }, [reset]);
 
+  const gatedStartNew = useCallback(async () => {
+    if (!(await limitGate.ensureAccess())) return;
+    startNewLook();
+  }, [limitGate, startNewLook]);
+
+  const gatedOpenCamera = useCallback(async () => {
+    if (!(await limitGate.ensureAccess())) return;
+    openCamera();
+  }, [limitGate, openCamera]);
+
+  const gatedOpenGallery = useCallback(async () => {
+    if (!(await limitGate.ensureAccess())) return;
+    openFile();
+  }, [limitGate, openFile]);
+
   const step: 1 | 2 | 3 = !photo ? 1 : analyzing || validating ? 2 : done ? 3 : 2;
   const showHome = onboarded && !showCapture && !photo && !done;
 
@@ -239,8 +254,8 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
     onToggleSave: toggleSave,
     onReset: startNewLook,
     onGoHome: onboarded ? goHome : undefined,
-    openFile,
-    openCamera,
+    openFile: () => void gatedOpenGallery(),
+    openCamera: () => void gatedOpenCamera(),
     onAnalyze: () => void analyze(audience),
     menPersonaId,
     tryOnByStyle: flow.tryOnByStyle,
@@ -256,9 +271,10 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
         <div className="h-full min-h-0">
           <MorphAiHome
             audience={audience}
-            onStartNew={startNewLook}
-            onOpenCamera={openCamera}
-            onOpenGallery={openFile}
+            onStartNew={() => void gatedStartNew()}
+            onOpenCamera={() => void gatedOpenCamera()}
+            onOpenGallery={() => void gatedOpenGallery()}
+            ensureMorphAccess={limitGate.ensureAccess}
           />
         </div>
       ) : (

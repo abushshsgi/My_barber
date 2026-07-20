@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Sparkles } from "lucide-react";
+import { Sparkles, UserPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -40,14 +40,19 @@ function MorphLimitUpsellBody({
   const { t } = useTranslation();
   const usage = me?.usage;
   const planName = planLabelFromMe(me);
+  const locked = kind === "access" || !me?.has_active;
   const isTryOn = kind === "tryon";
+  const trial = me?.referral_trial;
+  const required = trial?.required_referrals ?? 3;
+  const progress = trial?.progress ?? trial?.invite_count ?? 0;
+  const remaining = trial?.remaining_invites ?? Math.max(0, required - progress);
 
   const used = isTryOn ? usage?.morph_ai_used ?? 0 : usage?.morph_studio_used ?? 0;
   const limit = isTryOn ? usage?.morph_ai_limit ?? 0 : usage?.morph_studio_limit ?? 0;
 
   return (
     <div className="space-y-4">
-      <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600/90 via-indigo-600/85 to-sky-600/80 p-4 text-white shadow-lg">
+      <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900 via-zinc-800 to-stone-700 p-4 text-white shadow-lg">
         <div className="flex items-start gap-3">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/15 backdrop-blur-sm">
             <Sparkles className="h-5 w-5" strokeWidth={2} />
@@ -57,13 +62,25 @@ function MorphLimitUpsellBody({
               Morf AI
             </p>
             <p className="mt-0.5 text-base font-bold leading-snug">
-              {t(
-                isTryOn ? "aiStylePage.limitSheet.tryonTitle" : "aiStylePage.limitSheet.studioTitle",
-              )}
+              {locked
+                ? t("aiStylePage.limitSheet.accessTitle")
+                : t(
+                    isTryOn
+                      ? "aiStylePage.limitSheet.tryonTitle"
+                      : "aiStylePage.limitSheet.studioTitle",
+                  )}
             </p>
-            {limit > 0 ? (
+            {!locked && limit > 0 ? (
               <p className="mt-1 text-xs text-white/80">
                 {t("aiStylePage.limitSheet.usage", { used, limit })}
+              </p>
+            ) : null}
+            {locked && trial ? (
+              <p className="mt-1 text-xs text-white/80">
+                {t("aiStylePage.limitSheet.referralProgress", {
+                  progress: Math.min(progress, required),
+                  required,
+                })}
               </p>
             ) : null}
           </div>
@@ -71,9 +88,14 @@ function MorphLimitUpsellBody({
       </div>
 
       <p className="text-sm leading-relaxed text-muted-foreground">
-        {planName
-          ? t("aiStylePage.limitSheet.descWithPlan", { plan: planName })
-          : t("aiStylePage.limitSheet.descFree")}
+        {locked
+          ? t("aiStylePage.limitSheet.descLocked", {
+              required,
+              days: trial?.trial_days ?? 7,
+            })
+          : planName
+            ? t("aiStylePage.limitSheet.descWithPlan", { plan: planName })
+            : t("aiStylePage.limitSheet.descFree")}
       </p>
 
       <div className="flex flex-col gap-2.5">
@@ -88,14 +110,27 @@ function MorphLimitUpsellBody({
         >
           {t("aiStylePage.limitSheet.buyPlan")}
         </Link>
-        <Link
-          to="/wallet"
-          search={{ section: "subscriptions" }}
-          onClick={onClose}
-          className="flex h-12 items-center justify-center rounded-2xl border border-border bg-surface/60 text-sm font-bold active:scale-[0.99]"
-        >
-          {t("aiStylePage.limitSheet.switchPlan")}
-        </Link>
+        {locked ? (
+          <Link
+            to="/referrals"
+            onClick={onClose}
+            className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-border bg-surface/60 text-sm font-bold active:scale-[0.99]"
+          >
+            <UserPlus className="h-4 w-4" />
+            {remaining > 0
+              ? t("aiStylePage.limitSheet.inviteFriends", { count: remaining })
+              : t("aiStylePage.limitSheet.openReferrals")}
+          </Link>
+        ) : (
+          <Link
+            to="/wallet"
+            search={{ section: "subscriptions" }}
+            onClick={onClose}
+            className="flex h-12 items-center justify-center rounded-2xl border border-border bg-surface/60 text-sm font-bold active:scale-[0.99]"
+          >
+            {t("aiStylePage.limitSheet.switchPlan")}
+          </Link>
+        )}
       </div>
     </div>
   );
@@ -104,10 +139,15 @@ function MorphLimitUpsellBody({
 export function MorphLimitUpsell({ open, onOpenChange, kind, me }: Props) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
-  const title = t(
-    kind === "tryon" ? "aiStylePage.limitSheet.tryonTitle" : "aiStylePage.limitSheet.studioTitle",
-  );
-  const subtitle = t("aiStylePage.limitSheet.subtitle");
+  const locked = kind === "access" || !me?.has_active;
+  const title = locked
+    ? t("aiStylePage.limitSheet.accessTitle")
+    : t(
+        kind === "tryon" ? "aiStylePage.limitSheet.tryonTitle" : "aiStylePage.limitSheet.studioTitle",
+      );
+  const subtitle = locked
+    ? t("aiStylePage.limitSheet.accessSubtitle")
+    : t("aiStylePage.limitSheet.subtitle");
 
   if (isMobile) {
     return (

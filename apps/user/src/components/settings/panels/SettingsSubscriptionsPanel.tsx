@@ -4,7 +4,9 @@ import {
   BadgeCheck,
   Check,
   Loader2,
+  Lock,
   Sparkles,
+  UserPlus,
   Users,
   Wand2,
   Droplets,
@@ -21,6 +23,23 @@ import { cn } from "@/lib/utils";
 
 function formatUzs(n: number) {
   return `${n.toLocaleString("uz-UZ")} so'm`;
+}
+
+function formatDate(iso: string | null | undefined) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("uz-UZ", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function sourceLabel(source: string, isTrial?: boolean) {
+  if (isTrial || source === "referral_trial") return "Referal sinov";
+  if (source === "wallet") return "Hamyon";
+  if (source === "click" || source === "payme") return "To'lov";
+  if (source === "admin") return "Admin";
+  return source || "Obuna";
 }
 
 function FeatureRow({
@@ -100,7 +119,7 @@ function PlanCard({
       <div className="mt-5 space-y-2">
         {isActive ? (
           <div className="flex h-11 items-center justify-center rounded-xl bg-emerald-500/10 text-sm font-bold text-emerald-700">
-            Faol obuna
+            Joriy obuna
           </div>
         ) : (
           <>
@@ -150,8 +169,13 @@ export function SettingsSubscriptionsPanel() {
   const balance = wallet ? parseWalletBalance(wallet.balance) : 0;
   const me = meQ.data;
   const activeCode = me?.subscription?.plan_code ?? null;
+  const sub = me?.subscription;
+  const trial = me?.referral_trial;
+  const required = trial?.required_referrals ?? 3;
+  const progress = trial?.progress ?? trial?.invite_count ?? 0;
+  const remainingInvites = trial?.remaining_invites ?? Math.max(0, required - progress);
+  const daysLeft = me?.days_remaining ?? sub?.days_remaining ?? null;
 
-  // Click/Payme return: ?sub_order=...&provider=click
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
@@ -221,7 +245,6 @@ export function SettingsSubscriptionsPanel() {
         window.location.assign(res.checkout_url);
         return;
       }
-      // DEBUG / sozlanmagan provider — order_id bo'lsa tasdiqlashga urinish
       if (res.order_id) {
         try {
           await confirmSubscriptionPayment({
@@ -250,7 +273,8 @@ export function SettingsSubscriptionsPanel() {
     <div className="mt-4 space-y-6">
       <p className="text-sm text-muted-foreground">
         {t("subscriptions.subtitle", {
-          defaultValue: "Morph AI, Studio, oila va parvarish — oylik obuna.",
+          defaultValue:
+            "Morph AI yangi userlarga yopiq. 3 ta do'stni taklif qiling (7 kun Plus) yoki obuna sotib oling.",
         })}
       </p>
 
@@ -260,76 +284,160 @@ export function SettingsSubscriptionsPanel() {
         </p>
       ) : null}
 
-      {me?.has_active && me.subscription ? (
-        <section className="rounded-2xl border border-border bg-card p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                Joriy obuna
-              </p>
-              <p className="mt-1 text-lg font-bold">
-                {me.subscription.plan?.name_uz ?? me.subscription.plan_code}
-              </p>
-              {me.subscription.ends_at ? (
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Tugash: {new Date(me.subscription.ends_at).toLocaleDateString("uz-UZ")}
-                  {me.subscription.source === "referral_trial" ? " · Referal sinov" : ""}
+      {/* Joriy holat — faol yoki yopiq */}
+      <section className="rounded-2xl border border-border bg-card p-4">
+        {me?.has_active && sub ? (
+          <>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  Joriy obuna
                 </p>
+                <p className="mt-1 text-lg font-bold">
+                  {sub.plan?.name_uz ?? sub.plan_code}
+                  {sub.is_trial || sub.source === "referral_trial" ? (
+                    <span className="ml-2 text-sm font-semibold text-sky-600">· Sinov</span>
+                  ) : null}
+                </p>
+                <dl className="mt-3 grid gap-1.5 text-xs text-muted-foreground sm:grid-cols-2">
+                  <div>
+                    <dt className="inline text-muted-foreground/80">Holat: </dt>
+                    <dd className="inline font-semibold text-foreground">Faol</dd>
+                  </div>
+                  <div>
+                    <dt className="inline text-muted-foreground/80">Manba: </dt>
+                    <dd className="inline font-semibold text-foreground">
+                      {sourceLabel(sub.source, sub.is_trial)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="inline text-muted-foreground/80">Boshlanish: </dt>
+                    <dd className="inline font-semibold text-foreground">
+                      {formatDate(sub.starts_at)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="inline text-muted-foreground/80">Amal qiladi: </dt>
+                    <dd className="inline font-semibold text-foreground">
+                      {formatDate(sub.ends_at)}
+                      {typeof daysLeft === "number" ? (
+                        <span className="text-muted-foreground">
+                          {" "}
+                          ({daysLeft === 0 ? "bugun tugaydi" : `${daysLeft} kun qoldi`})
+                        </span>
+                      ) : null}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+              <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700">
+                Faol
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {usageRows.map((row) => {
+                const pct =
+                  row.limit > 0 ? Math.min(100, Math.round((row.used / row.limit) * 100)) : 0;
+                const Icon = row.icon;
+                return (
+                  <div key={row.label} className="rounded-xl bg-muted/40 p-3">
+                    <div className="flex items-center gap-2 text-sm font-semibold">
+                      <Icon className="h-4 w-4" />
+                      {row.label}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {row.limit > 0
+                        ? `${row.used} / ${row.limit} · qoldi ${row.remaining}`
+                        : "Bu rejada yo'q"}
+                    </p>
+                    {row.limit > 0 ? (
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-background">
+                        <div
+                          className="h-full rounded-full bg-foreground transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              <span className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1">
+                <Users className="h-3.5 w-3.5" />
+                {me.family_unlimited
+                  ? "Oila: cheksiz"
+                  : `Oila: ${me.family_members_max ?? 0}`}
+              </span>
+              {me.morph_care ? (
+                <Link
+                  to="/ai-style/care"
+                  className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 font-medium"
+                >
+                  <Droplets className="h-3.5 w-3.5" />
+                  Parvarish
+                </Link>
               ) : null}
             </div>
-            <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700">
-              Faol
-            </span>
-          </div>
+          </>
+        ) : (
+          <>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  Joriy obuna
+                </p>
+                <p className="mt-1 flex items-center gap-2 text-lg font-bold">
+                  <Lock className="h-4 w-4 text-muted-foreground" />
+                  Yo&apos;q — Morph AI yopiq
+                </p>
+                <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                  Yangi hisobda Morph AI ishlamaydi. Obuna sotib oling yoki {required} ta do&apos;stni
+                  taklif qilib {trial?.trial_days ?? 7} kunlik Plus sinov oling.
+                </p>
+              </div>
+              <span className="rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">
+                Faol emas
+              </span>
+            </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {usageRows.map((row) => {
-              const pct =
-                row.limit > 0 ? Math.min(100, Math.round((row.used / row.limit) * 100)) : 0;
-              const Icon = row.icon;
-              return (
-                <div key={row.label} className="rounded-xl bg-muted/40 p-3">
-                  <div className="flex items-center gap-2 text-sm font-semibold">
-                    <Icon className="h-4 w-4" />
-                    {row.label}
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {row.limit > 0
-                      ? `${row.used} / ${row.limit} · qoldi ${row.remaining}`
-                      : "Bu rejada yo'q"}
-                  </p>
-                  {row.limit > 0 ? (
-                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-background">
-                      <div
-                        className="h-full rounded-full bg-foreground transition-all"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="mt-3 flex flex-wrap gap-2 text-xs">
-            <span className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1">
-              <Users className="h-3.5 w-3.5" />
-              {me.family_unlimited
-                ? "Oila: cheksiz"
-                : `Oila: ${me.family_members_max ?? 0}`}
-            </span>
-            {me.morph_care ? (
+            <div className="mt-4 rounded-xl bg-muted/40 p-3">
+              <div className="flex items-center justify-between gap-2 text-sm font-semibold">
+                <span className="inline-flex items-center gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Referal sinov
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {Math.min(progress, required)} / {required}
+                </span>
+              </div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-background">
+                <div
+                  className="h-full rounded-full bg-foreground transition-all"
+                  style={{
+                    width: `${Math.min(100, Math.round((Math.min(progress, required) / required) * 100))}%`,
+                  }}
+                />
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {remainingInvites > 0
+                  ? `Yana ${remainingInvites} ta do'st kerak — keyin ${trial?.trial_days ?? 7} kun Plus ochiladi.`
+                  : trial?.granted
+                    ? "Sinov allaqachon berilgan."
+                    : "Shart bajarildi — sinov tez orada faollashadi."}
+              </p>
               <Link
-                to="/ai-style/care"
-                className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 font-medium"
+                to="/referrals"
+                className="mt-3 inline-flex h-10 items-center justify-center rounded-xl border border-border px-4 text-xs font-bold"
               >
-                <Droplets className="h-3.5 w-3.5" />
-                Parvarish
+                Do&apos;stlarni taklif qilish
               </Link>
-            ) : null}
-          </div>
-        </section>
-      ) : null}
+            </div>
+          </>
+        )}
+      </section>
 
       {meQ.isLoading || plansQ.isLoading ? (
         <div className="flex justify-center py-10">
@@ -350,8 +458,8 @@ export function SettingsSubscriptionsPanel() {
       )}
 
       <p className="text-[11px] leading-relaxed text-muted-foreground">
-        Obuna faqat to'lov tasdiqlangandan keyin yoqiladi. Limitlar serverda hisoblanadi.
-        3 ta do'stni taklif qilsangiz — 7 kunlik Plus sinov beriladi (8-kuni avtomatik to'xtaydi).
+        Obuna faqat to&apos;lov tasdiqlangandan keyin yoqiladi. Limitlar serverda hisoblanadi.
+        3 ta do&apos;stni taklif qilsangiz — 7 kunlik Plus sinov (8-kuni avtomatik to&apos;xtaydi).
       </p>
     </div>
   );

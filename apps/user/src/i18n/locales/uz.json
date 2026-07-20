@@ -665,7 +665,7 @@
   },
   "subscriptions": {
     "title": "Obunalar",
-    "subtitle": "Morph AI, Studio, oila va parvarish — oylik obuna",
+    "subtitle": "Morph AI yangi userlarga yopiq. 3 ta do'stni taklif qiling (7 kun Plus) yoki obuna sotib oling.",
     "visitsPerMonth": "Oyiga {{count}} tashrif",
     "perMonth": "har oy",
     "active": "Faol",
@@ -987,13 +987,19 @@
     },
     "limitSheet": {
       "subtitle": "Tarifingizdagi generatsiya limiti tugadi",
+      "accessTitle": "Morph AI yopiq",
+      "accessSubtitle": "Avval obuna yoki referal sinov kerak",
       "tryonTitle": "Try-on limiti tugadi",
       "studioTitle": "Studio limiti tugadi",
       "usage": "Bu oy {{used}}/{{limit}} ishlatildi",
+      "referralProgress": "Taklif: {{progress}}/{{required}}",
+      "descLocked": "Yangi hisobda Morph AI ishlamaydi. {{required}} ta do'stni taklif qilsangiz — {{days}} kunlik Plus sinov, yoki obuna sotib oling.",
       "descFree": "Davom etish uchun obuna sotib oling yoki yuqoriroq tarifga o'ting.",
       "descWithPlan": "{{plan}} tarifidagi oylik limit tugadi. Obunani yangilang yoki boshqa tarifga o'ting.",
       "buyPlan": "Obuna sotib olish",
-      "switchPlan": "Boshqa tarifga o'tish"
+      "switchPlan": "Boshqa tarifga o'tish",
+      "inviteFriends": "Yana {{count}} ta do'st taklif qilish",
+      "openReferrals": "Referallar sahifasi"
     },
     "uploadTitle": "Selfie yuklang",
     "uploadHint": "Yuz aniq ko'rinsin · yaxshi yorug'lik",
