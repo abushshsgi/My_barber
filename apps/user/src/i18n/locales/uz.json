@@ -665,7 +665,7 @@
   },
   "subscriptions": {
     "title": "Obunalar",
-    "subtitle": "Morph AI yangi userlarga yopiq. 3 ta do'stni taklif qiling (7 kun Plus) yoki obuna sotib oling.",
+    "subtitle": "Morph AI yangi userlarga yopiq. 3 ta do'stni taklif qiling (7 kun Starter) yoki obuna sotib oling.",
     "visitsPerMonth": "Oyiga {{count}} tashrif",
     "perMonth": "har oy",
     "active": "Faol",
@@ -993,7 +993,7 @@
       "studioTitle": "Studio limiti tugadi",
       "usage": "Bu oy {{used}}/{{limit}} ishlatildi",
       "referralProgress": "Taklif: {{progress}}/{{required}}",
-      "descLocked": "Yangi hisobda Morph AI ishlamaydi. {{required}} ta do'stni taklif qilsangiz — {{days}} kunlik Plus sinov, yoki obuna sotib oling.",
+      "descLocked": "Yangi hisobda Morph AI ishlamaydi. {{required}} ta do'stni taklif qilsangiz — {{days}} kunlik Starter sinov, yoki obuna sotib oling.",
       "descFree": "Davom etish uchun obuna sotib oling yoki yuqoriroq tarifga o'ting.",
       "descWithPlan": "{{plan}} tarifidagi oylik limit tugadi. Obunani yangilang yoki boshqa tarifga o'ting.",
       "buyPlan": "Obuna sotib olish",

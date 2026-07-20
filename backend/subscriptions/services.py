@@ -153,7 +153,7 @@ def _no_subscription_message() -> str:
     return (
         f"Morph AI faqat obuna bilan ishlaydi. "
         f"{REFERRAL_TRIAL_REQUIRED} ta do'stingizni taklif qiling — "
-        f"{REFERRAL_TRIAL_DAYS} kunlik Plus sinov, yoki obuna sotib oling."
+        f"{REFERRAL_TRIAL_DAYS} kunlik Starter sinov, yoki obuna sotib oling."
     )
 
 
@@ -415,7 +415,7 @@ def can_use_morph_care(user: User) -> bool:
 def check_morph_entitlement(*, user: User, kind: str) -> str | None:
     """
     Morph AI (analyze / try-on / studio): faol obuna majburiy.
-    Yangi user — 0 kvota. Ochilishi: pullik obuna yoki 3 referal → 7 kun trial.
+    Yangi user — 0 kvota. Ochilishi: pullik obuna yoki 3 referal → 7 kun Starter trial.
     """
     if kind not in ("tryon", "studio", "analyze", "face_check"):
         return None
@@ -488,7 +488,7 @@ def record_morph_usage(*, user: User, kind: str) -> None:
 
 @transaction.atomic
 def maybe_grant_referral_trial(referrer: User) -> UserSubscription | None:
-    """3 ta muvaffaqiyatli referal → 7 kun Plus sinov (bir marta)."""
+    """3 ta muvaffaqiyatli referal → 7 kun Starter sinov (bir marta)."""
     if ReferralTrialGrant.objects.filter(user=referrer).exists():
         return None
 

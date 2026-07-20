@@ -32,7 +32,7 @@ export async function fetchMyReferral(): Promise<ReferralInfo> {
   return apiJson<ReferralInfo>("/api/v1/users/me/referral/");
 }
 
-/** 3 ta referal to‘lganda Plus sinovni olish. */
+/** 3 ta referal to‘lganda Starter sinovni olish. */
 export async function claimReferralTrial(): Promise<ReferralInfo> {
   return apiJson<ReferralInfo>("/api/v1/users/me/referral/", { method: "POST" });
 }

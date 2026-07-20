@@ -204,7 +204,7 @@ class SubscriptionEvent(models.Model):
 
 
 class ReferralTrialGrant(models.Model):
-    """3 ta referal → 7 kunlik sinov — bir marta beriladi."""
+    """3 ta referal → 7 kunlik Starter sinov — bir marta beriladi."""
 
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,

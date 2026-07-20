@@ -79,7 +79,7 @@ def _referral_response(request) -> dict:
 
 
 class MyReferralView(APIView):
-    """GET — referal kod, takliflar va sinov holati. POST — Plus sinovni olish."""
+    """GET — referal kod, takliflar va sinov holati. POST — Starter sinovni olish."""
 
     permission_classes = [IsAuthenticated]
     throttle_classes = [ReferralThrottle]
@@ -88,7 +88,7 @@ class MyReferralView(APIView):
         return Response(_referral_response(request))
 
     def post(self, request):
-        """Eligible bo'lsa Plus trialni beradi (bir marta)."""
+        """Eligible bo'lsa Starter trialni beradi (bir marta)."""
         from subscriptions.plans import REFERRAL_TRIAL_REQUIRED
         from subscriptions.models import ReferralTrialGrant
         from subscriptions.services import maybe_grant_referral_trial

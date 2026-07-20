@@ -111,8 +111,10 @@ class SubscriptionServiceTests(TestCase):
         ).first()
         self.assertIsNotNone(active)
         self.assertEqual(active.source, UserSubscription.Source.REFERRAL_TRIAL)
+        self.assertEqual(active.plan_code, PLAN_STARTER)
         self.assertIsNone(check_morph_entitlement(user=self.user, kind="tryon"))
-        self.assertIsNone(check_morph_entitlement(user=self.user, kind="studio"))
+        # Starter — Studio yo'q
+        self.assertIsNotNone(check_morph_entitlement(user=self.user, kind="studio"))
 
 
 class SubscriptionAPITests(TestCase):

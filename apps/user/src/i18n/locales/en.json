@@ -665,7 +665,7 @@
   },
   "subscriptions": {
     "title": "Subscriptions",
-    "subtitle": "Morph AI is locked for new users. Invite 3 friends (7-day Plus trial) or subscribe.",
+    "subtitle": "Morph AI is locked for new users. Invite 3 friends (7-day Starter trial) or subscribe.",
     "visitsPerMonth": "{{count}} visits per month",
     "perMonth": "per month",
     "active": "Active",
@@ -993,7 +993,7 @@
       "studioTitle": "Studio limit reached",
       "usage": "{{used}}/{{limit}} used this month",
       "referralProgress": "Invites: {{progress}}/{{required}}",
-      "descLocked": "New accounts can’t use Morph AI. Invite {{required}} friends for a {{days}}-day Plus trial, or subscribe.",
+      "descLocked": "New accounts can’t use Morph AI. Invite {{required}} friends for a {{days}}-day Starter trial, or subscribe.",
       "descFree": "Subscribe or switch to a higher plan to keep going.",
       "descWithPlan": "Your {{plan}} monthly limit is used up. Renew or switch plans.",
       "buyPlan": "Subscribe",

@@ -104,7 +104,7 @@ export function SettingsReferralPanel() {
         setCelebrate(true);
         toast.success(
           t("referral.claimSuccess", {
-            defaultValue: "Tabriklaymiz! Plus sinov faollashtirildi.",
+            defaultValue: "Tabriklaymiz! Starter sinov faollashtirildi.",
           }),
         );
       }
@@ -144,7 +144,7 @@ export function SettingsReferralPanel() {
         title={t("referral.celebrateTitle", { defaultValue: "Tabriklaymiz!" })}
         subtitle={t("referral.celebrateSubtitle", {
           days: trial?.days ?? 7,
-          defaultValue: "{{days}} kunlik Plus sinov faollashtirildi. Morph AI dan bemalol foydalaning!",
+          defaultValue: "{{days}} kunlik Starter sinov faollashtirildi. Morph AI dan bemalol foydalaning!",
         })}
         ctaLabel={t("referral.celebrateCta", { defaultValue: "Zo'r!" })}
         onClose={closeCelebrate}
@@ -239,7 +239,7 @@ export function SettingsReferralPanel() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold">
-                {trial.required} ta do'st → {trial.days} kun Plus sinov
+                {trial.required} ta do'st → {trial.days} kun Starter sinov
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 {trial.granted
@@ -286,7 +286,7 @@ export function SettingsReferralPanel() {
               <Gift className="h-4 w-4" />
             </div>
             <p className="text-xs text-muted-foreground">
-              3 ta do'stni taklif qilsangiz — 7 kunlik Plus Morph AI sinovi beriladi.
+              3 ta do'stni taklif qilsangiz — 7 kunlik Starter Morph AI sinovi beriladi.
             </p>
           </div>
         </ProfileSubpageCard>

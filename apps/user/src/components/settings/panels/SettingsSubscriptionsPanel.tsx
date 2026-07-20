@@ -274,7 +274,7 @@ export function SettingsSubscriptionsPanel() {
       <p className="text-sm text-muted-foreground">
         {t("subscriptions.subtitle", {
           defaultValue:
-            "Morph AI yangi userlarga yopiq. 3 ta do'stni taklif qiling (7 kun Plus) yoki obuna sotib oling.",
+            "Morph AI yangi userlarga yopiq. 3 ta do'stni taklif qiling (7 kun Starter) yoki obuna sotib oling.",
         })}
       </p>
 
@@ -395,7 +395,7 @@ export function SettingsSubscriptionsPanel() {
                 </p>
                 <p className="mt-2 max-w-md text-sm text-muted-foreground">
                   Yangi hisobda Morph AI ishlamaydi. Obuna sotib oling yoki {required} ta do&apos;stni
-                  taklif qilib {trial?.trial_days ?? 7} kunlik Plus sinov oling.
+                  taklif qilib {trial?.trial_days ?? 7} kunlik Starter sinov oling.
                 </p>
               </div>
               <span className="rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">
@@ -423,7 +423,7 @@ export function SettingsSubscriptionsPanel() {
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
                 {remainingInvites > 0
-                  ? `Yana ${remainingInvites} ta do'st kerak — keyin ${trial?.trial_days ?? 7} kun Plus ochiladi.`
+                  ? `Yana ${remainingInvites} ta do'st kerak — keyin ${trial?.trial_days ?? 7} kun Starter ochiladi.`
                   : trial?.granted
                     ? "Sinov allaqachon berilgan."
                     : "Shart bajarildi — sinov tez orada faollashadi."}
@@ -459,7 +459,7 @@ export function SettingsSubscriptionsPanel() {
 
       <p className="text-[11px] leading-relaxed text-muted-foreground">
         Obuna faqat to&apos;lov tasdiqlangandan keyin yoqiladi. Limitlar serverda hisoblanadi.
-        3 ta do&apos;stni taklif qilsangiz — 7 kunlik Plus sinov (8-kuni avtomatik to&apos;xtaydi).
+        3 ta do&apos;stni taklif qilsangiz — 7 kunlik Starter sinov (8-kuni avtomatik to&apos;xtaydi).
       </p>
     </div>
   );

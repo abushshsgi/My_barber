@@ -155,6 +155,7 @@ class ReferralApiTests(TestCase):
         body = claim.json()
         self.assertTrue(body["claimed"])
         self.assertTrue(body["trial"]["granted"])
+        self.assertEqual(body["trial"]["plan"], "starter")
         self.assertEqual(len(body["invites"]), 3)
 
         again = self.client.post("/api/v1/users/me/referral/")

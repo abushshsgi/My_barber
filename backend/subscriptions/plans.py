@@ -87,9 +87,9 @@ _PLANS: dict[str, dict[str, Any]] = {
 
 REFERRAL_TRIAL_REQUIRED = 3
 REFERRAL_TRIAL_DAYS = 7
-REFERRAL_TRIAL_PLAN = PLAN_PLUS
+REFERRAL_TRIAL_PLAN = PLAN_STARTER
 
-# Yangi user — Morph AI umuman yo'q. Faqat pullik obuna yoki 3 referal → 7 kun trial.
+# Yangi user — Morph AI umuman yo'q. Faqat pullik obuna yoki 3 referal → 7 kun Starter trial.
 FREE_MORPH_AI_MONTHLY = 0
 FREE_MORPH_STUDIO_MONTHLY = 0
 
