@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Check, Crown, Lock, Sparkles, UserPlus, Users } from "lucide-react";
+import { Check, Crown, Lock, Sparkles, UserPlus, Users, X } from "lucide-react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -17,6 +18,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useSubscriptionPlans } from "@/hooks/use-subscription";
 import type { MorphLimitKind } from "@/lib/morph-plan-limit";
 import { planLabelFromMe } from "@/lib/morph-plan-limit";
 import type { SubscriptionMe } from "@/lib/api/subscriptions";
@@ -29,11 +31,62 @@ type Props = {
   me: SubscriptionMe | null;
 };
 
-function trialPlanLabel(code: string | undefined) {
+const FALLBACK_STARTER_FEATURES = [
+  { key: "morph_ai", label_uz: "Morph AI — oyiga 10 marta", included: true },
+  { key: "badge", label_uz: "Oddiy tasdiqlangan belgi", included: true },
+  { key: "studio", label_uz: "Morph AI Studio — yo'q", included: false },
+  { key: "family", label_uz: "Oila a'zolari — yo'q", included: false },
+];
+
+function trialPlanCode(code: string | undefined) {
   const c = (code || "starter").toLowerCase();
+  if (c === "plus" || c === "pro" || c === "starter") return c;
+  return "starter";
+}
+
+function trialPlanLabel(code: string | undefined) {
+  const c = trialPlanCode(code);
   if (c === "plus") return "Plus";
   if (c === "pro") return "Pro";
   return "Starter";
+}
+
+function PlanFeatureList({
+  features,
+}: {
+  features: Array<{ key: string; label_uz: string; included?: boolean }>;
+}) {
+  return (
+    <ul className="space-y-2.5 text-left">
+      {features.map((f) => {
+        const included = f.included !== false;
+        return (
+          <li key={f.key} className="flex items-start gap-2.5">
+            <span
+              className={cn(
+                "mt-0.5 grid size-5 shrink-0 place-items-center rounded-full",
+                included ? "bg-white text-[#0a0a0a]" : "bg-white/10 text-white/35",
+              )}
+            >
+              {included ? (
+                <Check className="size-3 text-[#0a0a0a]" strokeWidth={3} />
+              ) : (
+                <X className="size-3" strokeWidth={2.5} />
+              )}
+            </span>
+            <span
+              className={cn(
+                "text-[13px] leading-snug",
+                included ? "font-medium text-white" : "text-white/35 line-through decoration-white/25",
+              )}
+            >
+              {f.label_uz}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
 }
 
 function FriendSteps({ progress, required }: { progress: number; required: number }) {
@@ -53,14 +106,14 @@ function FriendSteps({ progress, required }: { progress: number; required: numbe
               className={cn(
                 "relative grid size-12 place-items-center rounded-full border-2 sm:size-14",
                 done
-                  ? "border-white bg-white text-black shadow-[0_0_20px_-6px_rgba(255,255,255,0.45)]"
-                  : "border-white/20 bg-white/[0.04] text-white/35",
+                  ? "border-white bg-white shadow-[0_0_20px_-6px_rgba(255,255,255,0.45)]"
+                  : "border-white/20 bg-white/[0.04]",
               )}
             >
               {done ? (
-                <Check className="size-5 sm:size-6" strokeWidth={2.75} />
+                <Check className="size-5 text-[#0a0a0a] sm:size-6" strokeWidth={3} />
               ) : (
-                <Users className="size-5 sm:size-6" strokeWidth={1.75} />
+                <Users className="size-5 text-white/35 sm:size-6" strokeWidth={1.75} />
               )}
             </motion.span>
             {i < safeRequired - 1 ? (
@@ -88,6 +141,7 @@ function MorphLimitUpsellBody({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
+  const plansQ = useSubscriptionPlans();
   const usage = me?.usage;
   const planName = planLabelFromMe(me);
   const locked = kind === "access" || !me?.has_active;
@@ -97,7 +151,14 @@ function MorphLimitUpsellBody({
   const progress = trial?.progress ?? trial?.invite_count ?? 0;
   const remaining = trial?.remaining_invites ?? Math.max(0, required - progress);
   const days = trial?.trial_days ?? 7;
-  const rewardPlan = trialPlanLabel(trial?.trial_plan);
+  const rewardCode = trialPlanCode(trial?.trial_plan);
+  const rewardPlan = trialPlanLabel(rewardCode);
+
+  const rewardFeatures = useMemo(() => {
+    const fromApi = plansQ.data?.find((p) => p.code === rewardCode)?.features;
+    if (fromApi && fromApi.length > 0) return fromApi;
+    return FALLBACK_STARTER_FEATURES;
+  }, [plansQ.data, rewardCode]);
 
   const used = isTryOn ? usage?.morph_ai_used ?? 0 : usage?.morph_studio_used ?? 0;
   const limit = isTryOn ? usage?.morph_ai_limit ?? 0 : usage?.morph_studio_limit ?? 0;
@@ -109,14 +170,6 @@ function MorphLimitUpsellBody({
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,255,255,0.1),transparent_55%)]"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -left-20 top-1/2 h-40 w-40 -translate-y-1/2 rounded-full bg-white/[0.04] blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-16 bottom-0 h-36 w-36 rounded-full bg-white/[0.03] blur-3xl"
         />
 
         <div className="relative flex flex-col items-center text-center">
@@ -172,8 +225,17 @@ function MorphLimitUpsellBody({
           ) : null}
         </div>
 
+        {locked ? (
+          <div className="relative mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+            <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-white/40">
+              {rewardPlan} tarifiga kiradi
+            </p>
+            <PlanFeatureList features={rewardFeatures} />
+          </div>
+        ) : null}
+
         {locked && trial ? (
-          <div className="relative mt-7 space-y-4">
+          <div className="relative mt-6 space-y-4">
             <FriendSteps progress={progress} required={required} />
             <div className="flex items-center justify-between gap-3 px-1">
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/40">
@@ -227,7 +289,7 @@ function MorphLimitUpsellBody({
           onClick={onClose}
           className={cn(
             "group relative flex min-h-[88px] flex-col justify-center overflow-hidden rounded-[22px] px-4 py-4",
-            "bg-white text-black",
+            "bg-white text-[#0a0a0a]",
             "shadow-[0_16px_40px_-18px_rgba(255,255,255,0.25)] transition-[transform,opacity] duration-200",
             "hover:opacity-95 active:scale-[0.985]",
           )}
