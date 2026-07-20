@@ -2,19 +2,21 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
   BadgeCheck,
-  Check,
+  Crown,
+  Droplets,
   Loader2,
   Lock,
   Sparkles,
   UserPlus,
   Users,
   Wand2,
-  Droplets,
   X,
+  Zap,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { FeatureIcon } from "@/components/subscriptions/SubscriptionPlanAds";
 import { useSubscriptionCheckout, useSubscriptionMe, useSubscriptionPlans } from "@/hooks/use-subscription";
 import { useWalletMe } from "@/hooks/use-wallet";
 import { parseWalletBalance } from "@/lib/api/wallet";
@@ -45,18 +47,31 @@ function sourceLabel(source: string, isTrial?: boolean) {
 function FeatureRow({
   included,
   label,
+  featureKey,
 }: {
   included: boolean;
   label: string;
+  featureKey: string;
 }) {
   return (
-    <li className="flex items-start gap-2 text-sm">
-      {included ? (
-        <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" strokeWidth={2.5} />
-      ) : (
-        <X className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/50" strokeWidth={2} />
-      )}
-      <span className={cn(included ? "text-foreground" : "text-muted-foreground line-through decoration-muted-foreground/40")}>
+    <li className="flex items-start gap-2.5 text-sm">
+      <span
+        className={cn(
+          "mt-0.5 grid size-5 shrink-0 place-items-center rounded-full",
+          included ? "bg-foreground text-background" : "bg-muted text-muted-foreground/60",
+        )}
+      >
+        {included ? (
+          <FeatureIcon featureKey={featureKey} className="size-3" />
+        ) : (
+          <X className="size-3" strokeWidth={2.5} />
+        )}
+      </span>
+      <span
+        className={cn(
+          included ? "text-foreground" : "text-muted-foreground line-through decoration-muted-foreground/40",
+        )}
+      >
         {label}
       </span>
     </li>
@@ -75,14 +90,8 @@ function PlanCard({
   onSubscribe: (code: string, method: "wallet" | "click" | "payme") => void;
 }) {
   const isActive = activeCode === plan.code;
-  const badgeIcon =
-    plan.badge === "pro" ? (
-      <BadgeCheck className="h-4 w-4 text-amber-500" />
-    ) : plan.badge === "plus" ? (
-      <BadgeCheck className="h-4 w-4 text-sky-500" />
-    ) : (
-      <BadgeCheck className="h-4 w-4 text-muted-foreground" />
-    );
+  const PlanGlyph =
+    plan.code === "pro" ? Crown : plan.code === "plus" ? Sparkles : Zap;
 
   return (
     <article
@@ -100,9 +109,25 @@ function PlanCard({
         </span>
       ) : null}
 
-      <div className="flex items-center gap-2">
-        {badgeIcon}
-        <h3 className="text-lg font-bold tracking-tight">{plan.name_uz}</h3>
+      <div className="flex items-center gap-2.5">
+        <span className="grid size-10 place-items-center rounded-xl bg-foreground text-background">
+          <PlanGlyph className="h-5 w-5" strokeWidth={2} />
+        </span>
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <h3 className="text-lg font-bold tracking-tight">{plan.name_uz}</h3>
+            <BadgeCheck
+              className={cn(
+                "h-4 w-4",
+                plan.badge === "pro"
+                  ? "text-foreground"
+                  : plan.badge === "plus"
+                    ? "text-foreground/70"
+                    : "text-muted-foreground",
+              )}
+            />
+          </div>
+        </div>
       </div>
 
       <p className="mt-3">
@@ -112,13 +137,18 @@ function PlanCard({
 
       <ul className="mt-4 space-y-2.5">
         {plan.features.map((f) => (
-          <FeatureRow key={f.key} included={f.included !== false} label={f.label_uz} />
+          <FeatureRow
+            key={f.key}
+            featureKey={f.key}
+            included={f.included !== false}
+            label={f.label_uz}
+          />
         ))}
       </ul>
 
       <div className="mt-5 space-y-2">
         {isActive ? (
-          <div className="flex h-11 items-center justify-center rounded-xl bg-emerald-500/10 text-sm font-bold text-emerald-700">
+          <div className="flex h-11 items-center justify-center rounded-xl bg-foreground/10 text-sm font-bold text-foreground">
             Joriy obuna
           </div>
         ) : (

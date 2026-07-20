@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Check, Crown, Lock, Sparkles, UserPlus, Users, X } from "lucide-react";
-import { useMemo } from "react";
+import { Check, Crown, Lock, Sparkles, UserPlus, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -17,6 +16,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { SubscriptionPlanAds } from "@/components/subscriptions/SubscriptionPlanAds";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSubscriptionPlans } from "@/hooks/use-subscription";
 import type { MorphLimitKind } from "@/lib/morph-plan-limit";
@@ -31,13 +31,6 @@ type Props = {
   me: SubscriptionMe | null;
 };
 
-const FALLBACK_STARTER_FEATURES = [
-  { key: "morph_ai", label_uz: "Morph AI — oyiga 10 marta", included: true },
-  { key: "badge", label_uz: "Oddiy tasdiqlangan belgi", included: true },
-  { key: "studio", label_uz: "Morph AI Studio — yo'q", included: false },
-  { key: "family", label_uz: "Oila a'zolari — yo'q", included: false },
-];
-
 function trialPlanCode(code: string | undefined) {
   const c = (code || "starter").toLowerCase();
   if (c === "plus" || c === "pro" || c === "starter") return c;
@@ -49,44 +42,6 @@ function trialPlanLabel(code: string | undefined) {
   if (c === "plus") return "Plus";
   if (c === "pro") return "Pro";
   return "Starter";
-}
-
-function PlanFeatureList({
-  features,
-}: {
-  features: Array<{ key: string; label_uz: string; included?: boolean }>;
-}) {
-  return (
-    <ul className="space-y-2.5 text-left">
-      {features.map((f) => {
-        const included = f.included !== false;
-        return (
-          <li key={f.key} className="flex items-start gap-2.5">
-            <span
-              className={cn(
-                "mt-0.5 grid size-5 shrink-0 place-items-center rounded-full",
-                included ? "bg-white text-[#0a0a0a]" : "bg-white/10 text-white/35",
-              )}
-            >
-              {included ? (
-                <Check className="size-3 text-[#0a0a0a]" strokeWidth={3} />
-              ) : (
-                <X className="size-3" strokeWidth={2.5} />
-              )}
-            </span>
-            <span
-              className={cn(
-                "text-[13px] leading-snug",
-                included ? "font-medium text-white" : "text-white/35 line-through decoration-white/25",
-              )}
-            >
-              {f.label_uz}
-            </span>
-          </li>
-        );
-      })}
-    </ul>
-  );
 }
 
 function FriendSteps({ progress, required }: { progress: number; required: number }) {
@@ -151,14 +106,9 @@ function MorphLimitUpsellBody({
   const progress = trial?.progress ?? trial?.invite_count ?? 0;
   const remaining = trial?.remaining_invites ?? Math.max(0, required - progress);
   const days = trial?.trial_days ?? 7;
-  const rewardCode = trialPlanCode(trial?.trial_plan);
-  const rewardPlan = trialPlanLabel(rewardCode);
-
-  const rewardFeatures = useMemo(() => {
-    const fromApi = plansQ.data?.find((p) => p.code === rewardCode)?.features;
-    if (fromApi && fromApi.length > 0) return fromApi;
-    return FALLBACK_STARTER_FEATURES;
-  }, [plansQ.data, rewardCode]);
+  const rewardPlan = trialPlanLabel(trial?.trial_plan);
+  const plans = plansQ.data ?? [];
+  const activeCode = me?.subscription?.plan_code ?? null;
 
   const used = isTryOn ? usage?.morph_ai_used ?? 0 : usage?.morph_studio_used ?? 0;
   const limit = isTryOn ? usage?.morph_ai_limit ?? 0 : usage?.morph_studio_limit ?? 0;
@@ -225,21 +175,12 @@ function MorphLimitUpsellBody({
           ) : null}
         </div>
 
-        {locked ? (
-          <div className="relative mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-            <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-white/40">
-              {rewardPlan} tarifiga kiradi
-            </p>
-            <PlanFeatureList features={rewardFeatures} />
-          </div>
-        ) : null}
-
         {locked && trial ? (
           <div className="relative mt-6 space-y-4">
             <FriendSteps progress={progress} required={required} />
             <div className="flex items-center justify-between gap-3 px-1">
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/40">
-                Referal
+                Referal · {days} kun {rewardPlan}
               </p>
               <p className="text-sm font-semibold tabular-nums text-white/85">
                 {Math.min(progress, required)}/{required}
@@ -282,61 +223,59 @@ function MorphLimitUpsellBody({
         </p>
       ) : null}
 
-      <div className={cn("grid gap-3", locked ? "sm:grid-cols-2" : "grid-cols-1")}>
+      {/* Tarif reklamalari */}
+      {plans.length > 0 ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-2 px-0.5">
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/40">
+              Obuna tariflari
+            </p>
+            <Link
+              to="/wallet"
+              search={{ section: "subscriptions" }}
+              onClick={onClose}
+              className="inline-flex items-center gap-1 text-[12px] font-bold text-white/70 hover:text-white"
+            >
+              Barchasi
+              <Crown className="size-3" strokeWidth={2.5} />
+            </Link>
+          </div>
+          <SubscriptionPlanAds
+            plans={plans}
+            activeCode={activeCode}
+            onNavigate={onClose}
+            variant="cards"
+          />
+        </div>
+      ) : null}
+
+      {locked ? (
+        <Link
+          to="/referrals"
+          onClick={onClose}
+          className={cn(
+            "flex h-14 items-center justify-center gap-2 rounded-[22px] border border-white/20 bg-transparent text-[15px] font-bold text-white",
+            "transition-[transform,background-color] duration-200 hover:bg-white/[0.06] active:scale-[0.985]",
+          )}
+        >
+          <UserPlus className="size-5" />
+          {remaining > 0
+            ? t("aiStylePage.limitSheet.inviteFriends", { count: remaining })
+            : t("aiStylePage.limitSheet.openReferrals")}
+        </Link>
+      ) : (
         <Link
           to="/wallet"
           search={{ section: "subscriptions" }}
           onClick={onClose}
           className={cn(
-            "group relative flex min-h-[88px] flex-col justify-center overflow-hidden rounded-[22px] px-4 py-4",
-            "bg-white text-[#0a0a0a]",
-            "shadow-[0_16px_40px_-18px_rgba(255,255,255,0.25)] transition-[transform,opacity] duration-200",
-            "hover:opacity-95 active:scale-[0.985]",
+            "flex h-14 items-center justify-center rounded-[22px] border border-white/20 bg-transparent text-[15px] font-bold text-white",
+            "transition-[transform,background-color] duration-200 hover:bg-white/[0.06] active:scale-[0.985]",
           )}
         >
-          <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-black/55">
-            <Crown className="size-3.5" strokeWidth={2.5} />
-            Darhol
-          </span>
-          <span className="mt-1 text-[15px] font-bold leading-snug">
-            {t("aiStylePage.limitSheet.buyPlan")}
-          </span>
+          {t("aiStylePage.limitSheet.switchPlan")}
         </Link>
-
-        {locked ? (
-          <Link
-            to="/referrals"
-            onClick={onClose}
-            className={cn(
-              "flex min-h-[88px] flex-col justify-center rounded-[22px] border border-white/20 bg-transparent px-4 py-4",
-              "transition-[transform,background-color] duration-200",
-              "hover:bg-white/[0.06] active:scale-[0.985]",
-            )}
-          >
-            <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-white/45">
-              <UserPlus className="size-3.5" strokeWidth={2.25} />
-              Referal
-            </span>
-            <span className="mt-1 text-[15px] font-bold leading-snug text-white">
-              {remaining > 0
-                ? t("aiStylePage.limitSheet.inviteFriends", { count: remaining })
-                : t("aiStylePage.limitSheet.openReferrals")}
-            </span>
-          </Link>
-        ) : (
-          <Link
-            to="/wallet"
-            search={{ section: "subscriptions" }}
-            onClick={onClose}
-            className={cn(
-              "flex h-14 items-center justify-center rounded-[22px] border border-white/20 bg-transparent text-[15px] font-bold text-white",
-              "transition-[transform,background-color] duration-200 hover:bg-white/[0.06] active:scale-[0.985]",
-            )}
-          >
-            {t("aiStylePage.limitSheet.switchPlan")}
-          </Link>
-        )}
-      </div>
+      )}
     </div>
   );
 }

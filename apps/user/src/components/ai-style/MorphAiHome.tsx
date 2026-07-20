@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Droplets, ImagePlus, ScanFace, UserRound, Wand2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { SubscriptionPromoBanner } from "@/components/subscriptions/SubscriptionPlanAds";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyles } from "@/hooks/use-hairstyles";
 import { getHairstyleDisplayUrl } from "@/lib/hairstyles/catalog";
@@ -183,6 +184,15 @@ export function MorphAiHome({
               <span className="min-w-0 truncate">{t("aiStylePage.home.tools.care")}</span>
             </button>
           </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12, duration: 0.4 }}
+          className="mt-4"
+        >
+          <SubscriptionPromoBanner />
         </motion.div>
 
         {myLooks.length > 0 ? (
