@@ -16,7 +16,7 @@ const AUTOPLAY_MS = 5000;
 const HERO_SLIDES = [
   {
     photoId: 3992860,
-    to: "/today",
+    to: "/today" as const,
     badgeKey: "todayPage.heroBadge",
     titleKey: "todayPage.heroTitle",
     descKey: "todayPage.heroDesc",
@@ -24,8 +24,18 @@ const HERO_SLIDES = [
     promo: "−30%",
   },
   {
+    photoId: 3993448,
+    to: "/wallet" as const,
+    search: { section: "subscriptions" as const },
+    badgeKey: "homePage.subscriptionPromo.eyebrow",
+    titleKey: "homePage.subscriptionPromo.bannerTitle",
+    descKey: "homePage.subscriptionPromo.hint",
+    ctaKey: "homePage.subscriptionPromo.cta",
+    promo: "AI",
+  },
+  {
     photoId: 3992859,
-    to: "/map",
+    to: "/map" as const,
     badgeKey: "nav.map",
     titleKey: "home.mapPreview.explore",
     descKey: "home.mapPreview.hint",
@@ -33,7 +43,7 @@ const HERO_SLIDES = [
   },
   {
     photoId: 3288365,
-    to: "/offers",
+    to: "/offers" as const,
     badgeKey: "nav.offers",
     titleKey: "home.heroCarousel.offersTitle",
     descKey: "home.heroCarousel.offersDesc",
@@ -42,7 +52,7 @@ const HERO_SLIDES = [
   },
   {
     photoId: 3785147,
-    to: "/ai-style",
+    to: "/ai-style" as const,
     badgeKey: "homePage.aiPromoTitle",
     titleKey: "home.heroCarousel.aiTitle",
     descKey: "homePage.aiPromoHint",
@@ -50,7 +60,7 @@ const HERO_SLIDES = [
   },
   {
     photoId: 1319460,
-    to: "/explore",
+    to: "/explore" as const,
     badgeKey: "nav.explore",
     titleKey: "home.heroCarousel.trendsTitle",
     descKey: "home.heroCarousel.trendsDesc",
@@ -104,9 +114,10 @@ export function BazaarHeroBanner({ className }: Props) {
       >
         <CarouselContent className="-ml-0 h-full">
           {HERO_SLIDES.map((slide) => (
-            <CarouselItem key={slide.to} className="h-full pl-0">
+            <CarouselItem key={`${slide.to}-${slide.titleKey}`} className="h-full pl-0">
               <Link
                 to={slide.to}
+                search={"search" in slide ? slide.search : undefined}
                 className="group relative block h-full min-h-[180px] w-full overflow-hidden"
               >
                 <img
@@ -170,7 +181,7 @@ export function BazaarHeroBanner({ className }: Props) {
         <div className="pointer-events-none absolute inset-x-0 bottom-4 z-20 flex justify-center gap-1.5">
           {HERO_SLIDES.map((slide, index) => (
             <button
-              key={slide.to}
+              key={`${slide.to}-${slide.titleKey}`}
               type="button"
               aria-label={`${index + 1} / ${HERO_SLIDES.length}`}
               onClick={() => api?.scrollTo(index)}

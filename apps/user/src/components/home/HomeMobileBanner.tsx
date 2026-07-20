@@ -16,15 +16,24 @@ const AUTOPLAY_MS = 4500;
 const BANNER_SLIDES = [
   {
     photoId: 3992860,
-    to: "/today",
+    to: "/today" as const,
     badgeKey: "todayPage.heroBadge",
     titleKey: "todayPage.heroTitle",
     ctaKey: "todayPage.bookSelected",
     promo: "−30%",
   },
   {
+    photoId: 3993448,
+    to: "/wallet" as const,
+    search: { section: "subscriptions" as const },
+    badgeKey: "homePage.subscriptionPromo.eyebrow",
+    titleKey: "homePage.subscriptionPromo.bannerTitle",
+    ctaKey: "homePage.subscriptionPromo.cta",
+    promo: "AI",
+  },
+  {
     photoId: 3288365,
-    to: "/offers",
+    to: "/offers" as const,
     badgeKey: "nav.offers",
     titleKey: "home.heroCarousel.offersTitle",
     ctaKey: "common.viewAll",
@@ -32,14 +41,14 @@ const BANNER_SLIDES = [
   },
   {
     photoId: 3785147,
-    to: "/ai-style",
+    to: "/ai-style" as const,
     badgeKey: "homePage.aiPromoTitle",
     titleKey: "home.heroCarousel.aiTitle",
     ctaKey: "home.heroCarousel.aiCta",
   },
   {
     photoId: 1319460,
-    to: "/explore",
+    to: "/explore" as const,
     badgeKey: "nav.explore",
     titleKey: "home.heroCarousel.trendsTitle",
     ctaKey: "homePage.quick.trends",
@@ -79,9 +88,10 @@ export function HomeMobileBanner() {
       <Carousel setApi={setApi} opts={{ loop: true }} className="w-full overflow-hidden rounded-2xl">
         <CarouselContent className="-ml-0">
           {BANNER_SLIDES.map((slide) => (
-            <CarouselItem key={slide.to} className="pl-0">
+            <CarouselItem key={`${slide.to}-${slide.titleKey}`} className="pl-0">
               <Link
                 to={slide.to}
+                search={"search" in slide ? slide.search : undefined}
                 className="group relative block aspect-[2.15/1] w-full overflow-hidden bg-muted"
               >
                 <img
@@ -123,7 +133,7 @@ export function HomeMobileBanner() {
         <div className="pointer-events-none absolute inset-x-0 bottom-2.5 z-20 flex justify-center gap-1">
           {BANNER_SLIDES.map((slide, index) => (
             <button
-              key={slide.to}
+              key={`${slide.to}-${slide.titleKey}`}
               type="button"
               aria-label={`${index + 1} / ${BANNER_SLIDES.length}`}
               onClick={() => api?.scrollTo(index)}

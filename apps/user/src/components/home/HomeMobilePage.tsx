@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import type { HomeData } from "@/components/home/useHomeData";
 import { HomeUnifiedSearchResults } from "@/components/home/HomeBlocks";
 import { HomeMobileBanner } from "@/components/home/HomeMobileBanner";
+import { HomeSubscriptionMarketing } from "@/components/home/HomeSubscriptionMarketing";
 import {
   HomeMobileCategories,
   HomeMobileFeatured,
@@ -14,7 +15,7 @@ import {
 
 type Props = { data: HomeData };
 
-/** Mobil home — brand + banner + kategoriyalar + top salon/usta + feed. */
+/** Mobil home — brand + banner + obuna marketing + kategoriyalar + top salon/usta + feed. */
 export function HomeMobilePage({ data }: Props) {
   const nearby = data.filtered.slice(0, 10);
 
@@ -40,6 +41,10 @@ export function HomeMobilePage({ data }: Props) {
 
           <MotionSection>
             <HomeMobileBanner />
+          </MotionSection>
+
+          <MotionSection>
+            <HomeSubscriptionMarketing />
           </MotionSection>
 
           <MotionSection>

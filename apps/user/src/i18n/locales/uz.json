@@ -146,6 +146,25 @@
     "nearYou": "Yaqiningizdagi salonlar",
     "aiPromoTitle": "Morf AI maslahatchi",
     "aiPromoHint": "Selfie yuklang — mos uslub tavsiyasi",
+    "subscriptionPromo": {
+      "eyebrow": "Tavsiya",
+      "title": "Morph AI — faqat obuna bilan",
+      "titleUpgrade": "Tarifni kuchaytiring",
+      "hint": "Yangi hisobda Morph AI yopiq. Starter / Plus / Pro tanlang yoki 3 do'st taklif qilib Starter sinov oling.",
+      "hintUpgrade": "Ko'proq generatsiya, Studio va oila — Plus yoki Pro ga o'ting.",
+      "bannerTitle": "Obuna oling — Morph AI ochilsin",
+      "perk1": "Selfie → mos uslub bir zumda",
+      "perk2": "Profil ismingiz yonida tasdiq galochkasi",
+      "perk3": "Studio, oila va yuqori limitlar (Plus/Pro)",
+      "cta": "Obuna olish",
+      "ctaManage": "Obunani boshqarish",
+      "referralCta": "Yoki 3 do'st taklif qil — 7 kun Starter",
+      "plans": {
+        "starter": "Starter",
+        "plus": "Plus",
+        "pro": "Pro"
+      }
+    },
     "audience": {
       "men": "Erkaklar",
       "women": "Ayollar",

@@ -146,6 +146,25 @@
     "nearYou": "Salons near you",
     "aiPromoTitle": "Morf AI advisor",
     "aiPromoHint": "Upload a selfie — get style picks",
+    "subscriptionPromo": {
+      "eyebrow": "Recommended",
+      "title": "Morph AI — subscription only",
+      "titleUpgrade": "Upgrade your plan",
+      "hint": "New accounts can’t use Morph AI. Pick Starter / Plus / Pro, or invite 3 friends for a Starter trial.",
+      "hintUpgrade": "More generations, Studio, and family — switch to Plus or Pro.",
+      "bannerTitle": "Subscribe — unlock Morph AI",
+      "perk1": "Selfie → matching styles instantly",
+      "perk2": "Verified checkmark next to your name",
+      "perk3": "Studio, family, and higher limits (Plus/Pro)",
+      "cta": "Get subscription",
+      "ctaManage": "Manage subscription",
+      "referralCta": "Or invite 3 friends — 7-day Starter",
+      "plans": {
+        "starter": "Starter",
+        "plus": "Plus",
+        "pro": "Pro"
+      }
+    },
     "audience": {
       "men": "Men",
       "women": "Women",

@@ -146,6 +146,25 @@
     "nearYou": "Салоны рядом",
     "aiPromoTitle": "Советник Morf AI",
     "aiPromoHint": "Загрузите селфи — получите рекомендации",
+    "subscriptionPromo": {
+      "eyebrow": "Рекомендуем",
+      "title": "Morph AI — только по подписке",
+      "titleUpgrade": "Усильте тариф",
+      "hint": "На новом аккаунте Morph AI закрыт. Выберите Starter / Plus / Pro или пригласите 3 друзей для Starter-пробного.",
+      "hintUpgrade": "Больше генераций, Studio и семья — перейдите на Plus или Pro.",
+      "bannerTitle": "Оформите подписку — откройте Morph AI",
+      "perk1": "Селфи → подходящий стиль сразу",
+      "perk2": "Галочка подтверждения рядом с именем",
+      "perk3": "Studio, семья и большие лимиты (Plus/Pro)",
+      "cta": "Оформить подписку",
+      "ctaManage": "Управлять подпиской",
+      "referralCta": "Или пригласите 3 друзей — 7 дней Starter",
+      "plans": {
+        "starter": "Starter",
+        "plus": "Plus",
+        "pro": "Pro"
+      }
+    },
     "audience": {
       "men": "Мужчины",
       "women": "Женщины",
