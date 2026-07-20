@@ -1,5 +1,8 @@
 export type SignupFlow = "owner" | "employee" | "mybarber" | "independent";
 
+/** Partner biznes turi — signup birinchi savoli. */
+export type SignupBusinessKind = "barbershop" | "beauty_salon";
+
 export type SignupIdentity = {
   fullName: string;
   phone: string;

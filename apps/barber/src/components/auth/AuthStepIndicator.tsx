@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const STEP_LABELS = ["Yo'l", "Ma'lumot", "Tekshirish"] as const;
+const STEP_LABELS = ["Tur", "Yo'l", "Ma'lumot", "Tekshirish"] as const;
 
 type Props = {
   currentStep: number;
@@ -11,7 +11,7 @@ type Props = {
   compact?: boolean;
 };
 
-export function AuthStepIndicator({ currentStep, totalSteps = 3, compact = false }: Props) {
+export function AuthStepIndicator({ currentStep, totalSteps = 4, compact = false }: Props) {
   if (compact) {
     return (
       <div className="flex items-center justify-center gap-1.5" aria-label={`Qadam ${currentStep + 1} / ${totalSteps}`}>

@@ -1,5 +1,5 @@
-import type { SignupFlow } from "@/lib/auth-ui";
-import { FLOW_IDENTITY_META } from "@/lib/barber-flow-config";
+import type { SignupBusinessKind, SignupFlow } from "@/lib/auth-ui";
+import { BUSINESS_KIND_META, FLOW_IDENTITY_META } from "@/lib/barber-flow-config";
 import { formatUzPhoneDisplay } from "@/lib/phone";
 import { cn } from "@/lib/utils";
 
@@ -7,6 +7,7 @@ type Props = {
   name: string;
   phone: string;
   email: string;
+  businessKind: SignupBusinessKind;
   flow: SignupFlow;
 };
 
@@ -21,8 +22,9 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function SignupStepReview({ name, phone, email, flow }: Props) {
+export function SignupStepReview({ name, phone, email, businessKind, flow }: Props) {
   const meta = FLOW_IDENTITY_META[flow];
+  const kindMeta = BUSINESS_KIND_META[businessKind];
   const phoneDisplay = phone.trim() ? formatUzPhoneDisplay(phone) : "";
 
   return (
@@ -39,6 +41,7 @@ export function SignupStepReview({ name, phone, email, flow }: Props) {
         </div>
 
         <div className="px-4">
+          <ReviewRow label="Biznes" value={kindMeta.title} />
           <ReviewRow label="Ism" value={name.trim()} />
           {phoneDisplay ? <ReviewRow label="Telefon" value={phoneDisplay} /> : null}
           {email.trim() ? <ReviewRow label="Email" value={email.trim()} /> : null}

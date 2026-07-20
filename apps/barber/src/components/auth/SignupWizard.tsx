@@ -4,11 +4,12 @@ import { AuthErrorAlert } from "@/components/auth/AuthErrorAlert";
 import { AuthMobileStickyBar } from "@/components/auth/AuthMobileStickyBar";
 import { AuthStepIndicator } from "@/components/auth/AuthStepIndicator";
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
+import { SignupStepBusinessKind } from "@/components/auth/SignupStepBusinessKind";
 import { SignupStepFlow } from "@/components/auth/SignupStepFlow";
 import { SignupStepIdentity } from "@/components/auth/SignupStepIdentity";
 import { SignupStepReview } from "@/components/auth/SignupStepReview";
-import type { SignupFlow } from "@/lib/auth-ui";
-import { validateEmailField, validateSignupIdentity } from "@/lib/auth-ui";
+import type { SignupBusinessKind, SignupFlow } from "@/lib/auth-ui";
+import { validateSignupIdentity } from "@/lib/auth-ui";
 import { cn } from "@/lib/utils";
 
 export type SignupWizardData = {
@@ -16,6 +17,7 @@ export type SignupWizardData = {
   phone: string;
   email: string;
   password: string;
+  businessKind: SignupBusinessKind | null;
   flow: SignupFlow | null;
 };
 
@@ -32,15 +34,17 @@ type Props = {
   onPhoneChange: (v: string) => void;
   onEmailChange: (v: string) => void;
   onPasswordChange: (v: string) => void;
+  onBusinessKindSelect: (kind: SignupBusinessKind) => void;
   onFlowSelect: (flow: SignupFlow) => void;
   onEmailBlur: () => void;
   onPhoneBlur: () => void;
   onSubmit: () => void;
   onClearError: () => void;
-  onStep1Next?: () => Promise<boolean>;
+  onIdentityNext?: () => Promise<boolean>;
 };
 
 const STEP_EASE = [0.22, 1, 0.36, 1] as const;
+const SIGNUP_TOTAL_STEPS = 4;
 
 function stepMotion(reduceMotion: boolean, direction: "forward" | "back") {
   const offset = direction === "forward" ? 24 : -24;
@@ -89,7 +93,7 @@ function ActionBar({
         </button>
 
         <div className="hidden flex-1 justify-center sm:flex lg:hidden">
-          <AuthStepIndicator currentStep={step} />
+          <AuthStepIndicator currentStep={step} totalSteps={SIGNUP_TOTAL_STEPS} />
         </div>
 
         <AuthSubmitButton
@@ -121,24 +125,26 @@ export function SignupWizard({
   onPhoneChange,
   onEmailChange,
   onPasswordChange,
+  onBusinessKindSelect,
   onFlowSelect,
   onEmailBlur,
   onPhoneBlur,
   onSubmit,
   onClearError,
-  onStep1Next,
+  onIdentityNext,
 }: Props) {
   const reduceMotion = useReducedMotion();
 
-  const canStep0 = data.flow !== null;
-  const step1Validation = validateSignupIdentity({
+  const canStep0 = data.businessKind !== null;
+  const canStep1 = data.flow !== null;
+  const step2Validation = validateSignupIdentity({
     fullName: data.name,
     phone: data.phone,
     email: data.email,
     password: data.password,
     flow: data.flow ?? "owner",
   });
-  const canStep1 = step1Validation === null && !checkingAvailability;
+  const canStep2 = step2Validation === null && !checkingAvailability;
 
   const handleNext = async () => {
     onClearError();
@@ -148,15 +154,20 @@ export function SignupWizard({
       return;
     }
     if (step === 1) {
-      if (step1Validation) return;
-      if (onStep1Next) {
-        const ok = await onStep1Next();
-        if (!ok) return;
-      }
+      if (!canStep1) return;
       onStepChange(2);
       return;
     }
     if (step === 2) {
+      if (step2Validation) return;
+      if (onIdentityNext) {
+        const ok = await onIdentityNext();
+        if (!ok) return;
+      }
+      onStepChange(3);
+      return;
+    }
+    if (step === 3) {
       onSubmit();
     }
   };
@@ -166,24 +177,44 @@ export function SignupWizard({
     if (step > 0) onStepChange(step - 1);
   };
 
-  const canNext = step === 0 ? canStep0 : step === 1 ? canStep1 : true;
+  const canNext =
+    step === 0 ? canStep0 : step === 1 ? canStep1 : step === 2 ? canStep2 : true;
   const nextLabel =
     step === 0
-      ? data.flow
+      ? data.businessKind
         ? "Keyingisi"
-        : "Yo'lni tanlang"
-      : step === 2
-        ? loading
-          ? "Kutilmoqda..."
-          : "Davom etish"
-        : "Keyingisi";
+        : "Biznes turini tanlang"
+      : step === 1
+        ? data.flow
+          ? "Keyingisi"
+          : "Yo'lni tanlang"
+        : step === 3
+          ? loading
+            ? "Kutilmoqda..."
+            : "Davom etish"
+          : "Keyingisi";
+
+  const disabledTooltip =
+    step === 0
+      ? "Avval sartaroshxona yoki go'zallik salonini tanlang"
+      : step === 1
+        ? "Avval signup yo'lini tanlang"
+        : step === 2 && step2Validation
+          ? step2Validation
+          : undefined;
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden lg:pb-0">
       <AnimatePresence mode="wait" custom={step}>
         <motion.div key={step} {...stepMotion(!!reduceMotion, "forward")} className="min-h-0 shrink overflow-hidden">
-          {step === 0 && <SignupStepFlow flow={data.flow} onSelect={onFlowSelect} />}
-          {step === 1 && (
+          {step === 0 && (
+            <SignupStepBusinessKind
+              businessKind={data.businessKind}
+              onSelect={onBusinessKindSelect}
+            />
+          )}
+          {step === 1 && <SignupStepFlow flow={data.flow} onSelect={onFlowSelect} />}
+          {step === 2 && (
             <SignupStepIdentity
               name={data.name}
               phone={data.phone}
@@ -200,11 +231,12 @@ export function SignupWizard({
               onPhoneBlur={onPhoneBlur}
             />
           )}
-          {step === 2 && data.flow && (
+          {step === 3 && data.flow && data.businessKind && (
             <SignupStepReview
               name={data.name}
               phone={data.phone}
               email={data.email}
+              businessKind={data.businessKind}
               flow={data.flow}
             />
           )}
@@ -222,13 +254,7 @@ export function SignupWizard({
             onBack={handleBack}
             onNext={handleNext}
             nextLabel={nextLabel}
-            disabledTooltip={
-              step === 0
-                ? "Avval signup yo'lini tanlang"
-                : step === 1 && step1Validation
-                  ? step1Validation
-                  : undefined
-            }
+            disabledTooltip={disabledTooltip}
           />
         </div>
       </div>
@@ -241,13 +267,7 @@ export function SignupWizard({
           onBack={handleBack}
           onNext={handleNext}
           nextLabel={nextLabel}
-          disabledTooltip={
-            step === 0
-              ? "Avval signup yo'lini tanlang"
-              : step === 1 && step1Validation
-                ? step1Validation
-                : undefined
-          }
+          disabledTooltip={disabledTooltip}
           className="w-full"
         />
       </AuthMobileStickyBar>

@@ -283,6 +283,12 @@ class BarberSignupSerializer(serializers.Serializer):
         allow_blank=True,
         default="",
     )
+    business_kind = serializers.ChoiceField(
+        choices=Barber.BusinessKind.choices,
+        required=False,
+        allow_blank=True,
+        default="",
+    )
 
     def validate_password(self, value):
         err = validate_barber_password(value)
@@ -415,6 +421,12 @@ class BarberRegisterJoinSalonSerializer(serializers.Serializer):
     salon_id = serializers.IntegerField(min_value=1)
     latitude = serializers.DecimalField(max_digits=9, decimal_places=6)
     longitude = serializers.DecimalField(max_digits=9, decimal_places=6)
+    business_kind = serializers.ChoiceField(
+        choices=Barber.BusinessKind.choices,
+        required=False,
+        allow_blank=True,
+        default="",
+    )
 
     def validate_password(self, value):
         err = validate_barber_password(value)
@@ -485,6 +497,7 @@ class BarberRegisterJoinSalonSerializer(serializers.Serializer):
         password = validated_data.pop("password")
         full_name = validated_data.pop("full_name")
         phone = validated_data.pop("phone", "") or ""
+        business_kind = (validated_data.pop("business_kind", "") or "").strip()
 
         owner_region = ""
         ob = salon.owner_barber
@@ -504,6 +517,7 @@ class BarberRegisterJoinSalonSerializer(serializers.Serializer):
             "staff_count_at_signup": 1,
             "work_mode": Barber.WorkMode.SALON,
             "onboarding_flow": Barber.OnboardingFlow.EMPLOYEE,
+            "business_kind": business_kind,
             "region": owner_region,
             "age": 25,
         }

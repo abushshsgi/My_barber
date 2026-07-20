@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import type { AuthAccent } from "@/lib/auth-desktop-variant";
 import { ACCENT_STYLES } from "@/lib/auth-desktop-variant";
 
-const LABELS = ["Yo'l", "Ma'lumot", "Tekshirish"] as const;
+const LABELS = ["Tur", "Yo'l", "Ma'lumot", "Tekshirish"] as const;
 
 type Props = {
   step: number;

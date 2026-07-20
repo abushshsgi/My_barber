@@ -20,6 +20,7 @@ import {
   validateLogin,
   validateSignupIdentity,
   type SignupFlow,
+  type SignupBusinessKind,
 } from "@/lib/auth-ui";
 import { SIGNUP_FLOW_PATH } from "@/lib/barber-flow-config";
 import { tabSlide } from "@/lib/motion-presets";
@@ -62,6 +63,7 @@ function AuthPage() {
   const [signupPhone, setSignupPhone] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
+  const [businessKind, setBusinessKind] = useState<SignupBusinessKind | null>(null);
   const [flow, setFlow] = useState<SignupFlow | null>(null);
 
   const [error, setError] = useState<string | null>(null);
@@ -181,6 +183,10 @@ function AuthPage() {
   const onSignupSubmit = async () => {
     if (loadingSignup) return;
     setError(null);
+    if (!businessKind) {
+      setError("Biznes turini tanlang: sartaroshxona yoki go'zallik saloni.");
+      return;
+    }
     if (!flow) {
       setError("Signup yo'lini tanlang: owner, employee, mybarber yoki independent.");
       return;
@@ -204,6 +210,7 @@ function AuthPage() {
       email: signupEmail.trim() ? normalizeEmail(signupEmail) : "",
       password: signupPassword,
       flow,
+      business_kind: businessKind,
     };
 
     saveSignupDraft(draft);
@@ -310,6 +317,7 @@ function AuthPage() {
                   phone: signupPhone,
                   email: signupEmail,
                   password: signupPassword,
+                  businessKind,
                   flow,
                 }}
                 error={error}
@@ -328,12 +336,13 @@ function AuthPage() {
                   if (emailError) setEmailError(null);
                 }}
                 onPasswordChange={setSignupPassword}
+                onBusinessKindSelect={setBusinessKind}
                 onFlowSelect={setFlow}
                 onEmailBlur={handleEmailBlur}
                 onPhoneBlur={handlePhoneBlur}
                 onSubmit={onSignupSubmit}
                 onClearError={() => setError(null)}
-                onStep1Next={async () => {
+                onIdentityNext={async () => {
                   const validation = validateSignupIdentity({
                     fullName: signupName,
                     phone: signupPhone,

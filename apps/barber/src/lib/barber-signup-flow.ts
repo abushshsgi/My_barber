@@ -116,6 +116,7 @@ export async function submitEarlyFlowSignup(flow: SignupFlow, draft: SignupDraft
       password: draft.password,
       full_name: draft.full_name.trim(),
       onboarding_flow: flow,
+      business_kind: draft.business_kind,
       ...flowFields,
     },
     phoneE164 ? { phone: phoneE164 } : { email },
@@ -144,6 +145,7 @@ export async function submitFlowSignup(flow: SignupFlow, payload: FlowPayload): 
     password,
     full_name: full_name?.trim() || draft.full_name,
     onboarding_flow: flow,
+    business_kind: draft.business_kind,
     ...flowFields,
     ...payloadRest,
   };
@@ -180,6 +182,7 @@ export async function submitEmployeeRegisterAndJoin(payload: {
       ...(phoneE164 ? { phone: phoneE164 } : {}),
       password,
       full_name: draft.full_name,
+      business_kind: draft.business_kind,
       salon_id: payload.salon_id,
       latitude: roundCoord6(payload.latitude),
       longitude: roundCoord6(payload.longitude),

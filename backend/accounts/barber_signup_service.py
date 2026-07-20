@@ -80,6 +80,7 @@ def _persist(validated_data: dict[str, Any]) -> Barber:
     onboarding_flow = (validated_data.pop("onboarding_flow", "") or "").strip()
     if not onboarding_flow:
         onboarding_flow = Barber.OnboardingFlow.OWNER
+    business_kind = (validated_data.pop("business_kind", "") or "").strip()
 
     with transaction.atomic():
         barber = Barber(
@@ -90,6 +91,7 @@ def _persist(validated_data: dict[str, Any]) -> Barber:
             region=region,
             work_mode=work_mode,
             onboarding_flow=onboarding_flow,
+            business_kind=business_kind,
         )
         barber.set_password(pwd)
         barber.save()

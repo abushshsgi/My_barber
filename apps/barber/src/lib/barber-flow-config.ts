@@ -1,9 +1,26 @@
 import type { ViewMode } from "@/components/barber/BarberContext";
 
 export type SignupFlow = "owner" | "employee" | "mybarber" | "independent";
+export type SignupBusinessKind = "barbershop" | "beauty_salon";
 export type FlowIdentity = SignupFlow | "unknown";
 export type NavCapability = "independentBase" | "salonOwner" | "salonWorker";
 export type Tone = "salon" | "team" | "brand" | "solo" | "neutral";
+
+export const BUSINESS_KIND_META: Record<
+  SignupBusinessKind,
+  { title: string; subtitle: string; badge: string }
+> = {
+  barbershop: {
+    title: "Sartaroshxona",
+    subtitle: "Erkaklar soch-soqol, klassik va zamonaviy sartaroshlik",
+    badge: "Barber",
+  },
+  beauty_salon: {
+    title: "Go'zallik saloni",
+    subtitle: "Ayollar go'zalligi, soch, manikyur va spa xizmatlari",
+    badge: "Salon",
+  },
+};
 
 export type NavItem = {
   to: string;

@@ -22,6 +22,10 @@ class Barber(models.Model):
         MYBARBER = "mybarber", "MyBarber"
         INDEPENDENT = "independent", "Independent"
 
+    class BusinessKind(models.TextChoices):
+        BARBERSHOP = "barbershop", "Sartaroshxona"
+        BEAUTY_SALON = "beauty_salon", "Go'zallik saloni"
+
     email = models.EmailField(unique=True, db_index=True)
     username = models.CharField(max_length=150, unique=True)
     password = models.CharField(max_length=128)
@@ -47,6 +51,14 @@ class Barber(models.Model):
         blank=True,
         default="",
         db_index=True,
+    )
+    business_kind = models.CharField(
+        max_length=16,
+        choices=BusinessKind.choices,
+        blank=True,
+        default="",
+        db_index=True,
+        help_text="Sartaroshxona yoki go'zallik saloni — signup birinchi savoli.",
     )
     onboarding_completed_at = models.DateTimeField(null=True, blank=True)
     email_verified_at = models.DateTimeField(

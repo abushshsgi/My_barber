@@ -20,9 +20,11 @@ export function AuthShell({ flow, tab, signupStep = 0, onTabChange, children }: 
   const mobileTitle =
     tab === "login"
       ? "Partner kirish"
-      : signupStep === 0 && !flow
-        ? "Ro'yxatdan o'tish"
-        : (meta?.signupTitle ?? "Ro'yxatdan o'tish");
+      : signupStep === 0
+        ? "Biznes turi"
+        : signupStep === 1 && !flow
+          ? "Ro'yxatdan o'tish"
+          : (meta?.signupTitle ?? "Ro'yxatdan o'tish");
 
   useEffect(() => {
     const html = document.documentElement;
@@ -52,13 +54,13 @@ export function AuthShell({ flow, tab, signupStep = 0, onTabChange, children }: 
           </div>
           {tab === "signup" ? (
             <span className="text-[11px] font-medium tabular-nums text-muted-foreground">
-              <span className="text-primary">{signupStep + 1}</span>/3
+              <span className="text-primary">{signupStep + 1}</span>/4
             </span>
           ) : null}
         </div>
         {tab === "signup" ? (
           <div className="border-t border-black/5 px-4 py-1.5">
-            <AuthStepIndicator currentStep={signupStep} compact />
+            <AuthStepIndicator currentStep={signupStep} totalSteps={4} compact />
           </div>
         ) : null}
       </header>

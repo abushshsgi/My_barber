@@ -1,14 +1,17 @@
-import type { SignupFlow } from "@/lib/auth-ui";
+import type { SignupBusinessKind, SignupFlow } from "@/lib/auth-ui";
 import { getBarberAccessToken } from "@/lib/api";
 
 const DRAFT_KEY = "barber_signup_draft_v1";
 const PASSWORD_KEY = "barber_signup_password_v1";
+
+const VALID_BUSINESS_KINDS = new Set<SignupBusinessKind>(["barbershop", "beauty_salon"]);
 
 export type SignupDraftStored = {
   full_name: string;
   phone: string;
   email: string;
   flow: SignupFlow;
+  business_kind: SignupBusinessKind;
 };
 
 export type SignupDraft = SignupDraftStored & {
@@ -41,6 +44,7 @@ export function saveSignupDraft(draft: SignupDraft): void {
     phone: draft.phone,
     email: draft.email,
     flow: draft.flow,
+    business_kind: draft.business_kind,
   };
   sessionStorage.setItem(DRAFT_KEY, JSON.stringify(stored));
 }
@@ -49,7 +53,7 @@ export function readSignupDraft(): SignupDraft | null {
   const raw = sessionStorage.getItem(DRAFT_KEY);
   if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw) as SignupDraftStored;
+    const parsed = JSON.parse(raw) as Partial<SignupDraftStored>;
     let password = getSignupPassword();
     if (!password) {
       try {
@@ -61,7 +65,16 @@ export function readSignupDraft(): SignupDraft | null {
     }
     if (!parsed.full_name || !parsed.flow || !password) return null;
     if (!parsed.email && !parsed.phone) return null;
-    return { ...parsed, password };
+    const businessKind = parsed.business_kind;
+    if (!businessKind || !VALID_BUSINESS_KINDS.has(businessKind)) return null;
+    return {
+      full_name: parsed.full_name,
+      phone: parsed.phone ?? "",
+      email: parsed.email ?? "",
+      flow: parsed.flow,
+      business_kind: businessKind,
+      password,
+    };
   } catch {
     return null;
   }
