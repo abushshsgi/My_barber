@@ -22,6 +22,7 @@ import {
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
+import { MyNameWithBadge } from "@/components/subscriptions/SubscriptionVerifiedBadge";
 import { useDisplayUser } from "@/hooks/use-me";
 import { cn } from "@/lib/utils";
 import { isNavTabActive } from "@/lib/navigation";
@@ -216,7 +217,11 @@ export function DesktopSidebar({ chatUnread = 0, notificationsUnread = 0 }: Prop
               {initials}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold">{user.name}</p>
+              <MyNameWithBadge
+                name={user.name}
+                size="sm"
+                nameClassName="truncate text-sm font-bold"
+              />
               <p className="truncate text-[11px] text-muted-foreground">{user.phone}</p>
             </div>
           </Link>

@@ -18,6 +18,7 @@ import {
   ProfileGoQuickRow,
   ProfileWalletCard,
 } from "@/components/profile/ProfileGroupedMenu";
+import { MyNameWithBadge } from "@/components/subscriptions/SubscriptionVerifiedBadge";
 import { useAppTranslation } from "@/hooks/use-app-translation";
 import { useProfileScreen } from "@/components/profile/useProfileScreen";
 import { useNotificationsApi } from "@/hooks/use-notifications-api";
@@ -64,7 +65,11 @@ export function UserProfile() {
           <span className="text-[36px] font-bold leading-none">{initials}</span>
         </div>
         <Link to="/settings" className="mt-4 inline-flex max-w-full items-center gap-1">
-          <p className="truncate text-[22px] font-bold tracking-tight">{user.name}</p>
+          <MyNameWithBadge
+            name={user.name}
+            size="lg"
+            nameClassName="truncate text-[22px] font-bold tracking-tight"
+          />
           <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
         </Link>
         <p className="mt-1 text-[15px] font-medium text-muted-foreground">{user.phone}</p>

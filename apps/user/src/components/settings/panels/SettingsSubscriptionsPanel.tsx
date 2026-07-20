@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
   BadgeCheck,
+  Check,
   Crown,
   Droplets,
   Loader2,
@@ -55,24 +56,26 @@ function FeatureRow({
 }) {
   return (
     <li className="flex items-start gap-2.5 text-sm">
-      <span
-        className={cn(
-          "mt-0.5 grid size-5 shrink-0 place-items-center rounded-full",
-          included ? "bg-foreground text-background" : "bg-muted text-muted-foreground/60",
-        )}
-      >
+      {included ? (
+        <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-foreground">
+          <Check className="size-3 text-background" strokeWidth={3} />
+        </span>
+      ) : (
+        <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-muted">
+          <X className="size-3 text-muted-foreground/60" strokeWidth={2.5} />
+        </span>
+      )}
+      <span className="flex min-w-0 items-start gap-1.5">
         {included ? (
-          <FeatureIcon featureKey={featureKey} className="size-3" />
-        ) : (
-          <X className="size-3" strokeWidth={2.5} />
-        )}
-      </span>
-      <span
-        className={cn(
-          included ? "text-foreground" : "text-muted-foreground line-through decoration-muted-foreground/40",
-        )}
-      >
-        {label}
+          <FeatureIcon featureKey={featureKey} className="mt-0.5 size-3.5 shrink-0 opacity-60" />
+        ) : null}
+        <span
+          className={cn(
+            included ? "text-foreground" : "text-muted-foreground line-through decoration-muted-foreground/40",
+          )}
+        >
+          {label}
+        </span>
       </span>
     </li>
   );

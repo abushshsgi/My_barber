@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ProfileSubpageCard } from "@/components/profile/ProfileSubpageLayout";
 import { ReferralClaimCelebration } from "@/components/settings/panels/ReferralClaimCelebration";
+import { SubscriptionVerifiedBadge } from "@/components/subscriptions/SubscriptionVerifiedBadge";
 import { useClaimReferralTrial, useMyReferral } from "@/hooks/use-referral";
 import type { ReferralInvitee } from "@/lib/api/referrals";
 import { resolveShareInviteUrl } from "@/lib/referral-storage";
@@ -45,7 +46,15 @@ function InviteeRow({ invitee }: { invitee: ReferralInvitee }) {
         </div>
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{invitee.full_name}</p>
+        <p className="flex min-w-0 items-center gap-1.5 text-sm font-semibold">
+          <span className="truncate">{invitee.full_name}</span>
+          <SubscriptionVerifiedBadge badge={invitee.badge} size="sm" />
+          <Check
+            className="size-3.5 shrink-0 text-foreground"
+            strokeWidth={2.75}
+            aria-label="Qo'shilgan"
+          />
+        </p>
         <p className="truncate text-xs text-muted-foreground">
           {[invitee.phone_masked, joined].filter(Boolean).join(" · ")}
         </p>

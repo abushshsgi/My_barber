@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Bell, CalendarCheck, Heart, MessageSquare, Settings, UserPlus, Wallet } from "lucide-react";
 import { AccountDesktopShell } from "@/components/desktop/pages/AccountDesktopShell";
 import { ProfileAccountHubGrid, type AccountHubTile } from "@/components/desktop/profile/ProfileAccountHubGrid";
+import { MyNameWithBadge } from "@/components/subscriptions/SubscriptionVerifiedBadge";
 import { useProfileScreen } from "@/components/profile/useProfileScreen";
 import { useAppTranslation } from "@/hooks/use-app-translation";
 import { useNotificationsApi } from "@/hooks/use-notifications-api";
@@ -140,7 +141,11 @@ export function ProfileDesktopPage() {
             {initials}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-lg font-semibold text-foreground">{user.name}</p>
+            <MyNameWithBadge
+              name={user.name}
+              size="md"
+              nameClassName="truncate text-lg font-semibold text-foreground"
+            />
             {user.phone ? <p className="truncate text-sm text-muted-foreground">{user.phone}</p> : null}
           </div>
           <Link

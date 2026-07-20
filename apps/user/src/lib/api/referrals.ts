@@ -16,6 +16,8 @@ export type ReferralInvitee = {
   phone_masked: string | null;
   avatar_url: string | null;
   joined_at: string | null;
+  /** Obuna tasdiq belgesi: basic | plus | pro */
+  badge?: string | null;
 };
 
 export type ReferralInfo = {

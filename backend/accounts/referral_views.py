@@ -31,12 +31,29 @@ def _invitee_payload(attr: ReferralAttribution, request) -> dict:
             avatar = request.build_absolute_uri(url) if request else url
         except Exception:
             avatar = None
+
+    badge = None
+    try:
+        from subscriptions.plans import get_plan
+        from subscriptions.services import get_active_subscription
+
+        sub = get_active_subscription(referee)
+        if sub:
+            ents = sub.entitlements or {}
+            badge = ents.get("badge")
+            if not badge:
+                plan = get_plan(sub.plan_code)
+                badge = plan.get("badge") if plan else None
+    except Exception:
+        badge = None
+
     return {
         "id": referee.pk,
         "full_name": name,
         "phone_masked": _mask_phone(referee.phone),
         "avatar_url": avatar,
         "joined_at": attr.created_at.isoformat() if attr.created_at else None,
+        "badge": badge,
     }
 
 
