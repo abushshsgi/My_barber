@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AiStyleCamera } from "@/components/ai-style/AiStyleCamera";
@@ -64,6 +65,7 @@ function mergeFocusSuggestion(
 
 export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const {
     photo,
     validatingPreview,
@@ -155,8 +157,21 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
     // Bir xil xabarni (masalan limit) qayta-qayta toast qilmaslik.
     if (lastErrorToastRef.current === error) return;
     lastErrorToastRef.current = error;
+    const needsSub = /obuna|Bepul Morph|limiti tugadi/i.test(error);
+    if (needsSub) {
+      toast.error(error, {
+        action: {
+          label: t("subscriptions.subscribe", { defaultValue: "Obuna bo'lish" }),
+          onClick: () => {
+            void navigate({ to: "/wallet", search: { section: "subscriptions" } });
+          },
+        },
+        duration: 8_000,
+      });
+      return;
+    }
     toast.error(error);
-  }, [error]);
+  }, [error, navigate, t]);
 
   useEffect(() => {
     if (photo && faceHint?.source === "camera_scan") {

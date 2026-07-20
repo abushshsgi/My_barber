@@ -27,6 +27,7 @@ export type SubscriptionUsage = {
   morph_studio_used: number;
   morph_studio_limit: number;
   morph_studio_remaining: number;
+  is_free_tier?: boolean;
 };
 
 export type UserSubscription = {

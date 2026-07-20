@@ -14,10 +14,18 @@ export function MorphAiIntroOverlay({ open, onComplete }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [visible, setVisible] = useState(open);
   const finishingRef = useRef(false);
+  const completedRef = useRef(false);
+
+  const completeOnce = () => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    onComplete();
+  };
 
   useEffect(() => {
     if (!open) return;
     finishingRef.current = false;
+    completedRef.current = false;
     setVisible(true);
     prefetchMorphAiIntroVideo();
   }, [open]);
@@ -54,16 +62,16 @@ export function MorphAiIntroOverlay({ open, onComplete }: Props) {
     finishingRef.current = true;
     videoRef.current?.pause();
     setVisible(false);
+    // AnimatePresence onExitComplete ba'zan portalda ishlamaydi — fallback.
+    window.setTimeout(() => {
+      completeOnce();
+    }, 400);
   };
 
   if (typeof document === "undefined") return null;
 
   return createPortal(
-    <AnimatePresence
-      onExitComplete={() => {
-        if (finishingRef.current) onComplete();
-      }}
-    >
+    <AnimatePresence onExitComplete={completeOnce}>
       {visible ? (
         <motion.div
           key="morph-ai-intro"

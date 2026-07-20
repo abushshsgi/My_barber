@@ -9,7 +9,12 @@ from rest_framework.test import APIClient
 
 from accounts.models import ReferralAttribution, User
 from subscriptions.models import ReferralTrialGrant, UserSubscription
-from subscriptions.plans import PLAN_PLUS, PLAN_STARTER, REFERRAL_TRIAL_REQUIRED
+from subscriptions.plans import (
+    FREE_MORPH_AI_MONTHLY,
+    PLAN_PLUS,
+    PLAN_STARTER,
+    REFERRAL_TRIAL_REQUIRED,
+)
 from subscriptions.services import (
     activate_subscription,
     check_morph_entitlement,
@@ -38,6 +43,15 @@ class SubscriptionServiceTests(TestCase):
     def setUp(self):
         self.user = _user("subuser@test.local", "+998901111111")
 
+    def test_free_tryon_without_subscription(self):
+        self.assertIsNone(check_morph_entitlement(user=self.user, kind="tryon"))
+        self.assertIsNone(check_morph_entitlement(user=self.user, kind="studio"))
+        for _ in range(FREE_MORPH_AI_MONTHLY):
+            record_morph_usage(user=self.user, kind="tryon")
+        msg = check_morph_entitlement(user=self.user, kind="tryon") or ""
+        self.assertIn("Bepul", msg)
+        self.assertIn("obuna", msg.lower())
+
     def test_activate_and_limits(self):
         sub = activate_subscription(
             user=self.user,
@@ -65,7 +79,8 @@ class SubscriptionServiceTests(TestCase):
         sub.save(update_fields=["ends_at"])
         expired = expire_if_needed(sub)
         self.assertEqual(expired.status, UserSubscription.Status.EXPIRED)
-        self.assertIn("obuna", check_morph_entitlement(user=self.user, kind="tryon") or "")
+        # Muddat tugagach freemium kvota qoladi.
+        self.assertIsNone(check_morph_entitlement(user=self.user, kind="tryon"))
 
     def test_deactivate_reactivate(self):
         sub = activate_subscription(
@@ -75,7 +90,9 @@ class SubscriptionServiceTests(TestCase):
             price_uzs=Decimal("0"),
         )
         deactivate_subscription(subscription=sub, actor="admin:1", reason="test")
-        self.assertIn("obuna", check_morph_entitlement(user=self.user, kind="tryon") or "")
+        # Deaktivatsiyadan keyin freemium qaytadi.
+        self.assertIsNone(check_morph_entitlement(user=self.user, kind="tryon"))
+        self.assertIsNone(check_morph_entitlement(user=self.user, kind="studio"))
 
     def test_referral_trial_after_3(self):
         for i in range(REFERRAL_TRIAL_REQUIRED):

@@ -19,6 +19,8 @@ from subscriptions.models import (
     UserSubscription,
 )
 from subscriptions.plans import (
+    FREE_MORPH_AI_MONTHLY,
+    FREE_MORPH_STUDIO_MONTHLY,
     REFERRAL_TRIAL_DAYS,
     REFERRAL_TRIAL_PLAN,
     REFERRAL_TRIAL_REQUIRED,
@@ -152,16 +154,20 @@ def build_me_payload(user: User) -> dict[str, Any]:
     entitlements = (sub.entitlements if sub else None) or (
         entitlement_snapshot(sub.plan_code) if sub else {}
     )
-    usage = usage_snapshot(user, entitlements) if sub else {
-        "period_start": current_period_bounds()[0].isoformat(),
-        "period_end": current_period_bounds()[1].isoformat(),
-        "morph_ai_used": 0,
-        "morph_ai_limit": 0,
-        "morph_ai_remaining": 0,
-        "morph_studio_used": 0,
-        "morph_studio_limit": 0,
-        "morph_studio_remaining": 0,
-    }
+    if sub:
+        usage = usage_snapshot(user, entitlements)
+    else:
+        period = usage_snapshot(
+            user,
+            {
+                "morph_ai_monthly": FREE_MORPH_AI_MONTHLY,
+                "morph_studio_monthly": FREE_MORPH_STUDIO_MONTHLY,
+            },
+        )
+        usage = {
+            **period,
+            "is_free_tier": True,
+        }
     trial = ReferralTrialGrant.objects.filter(user=user).first()
     return {
         "has_active": bool(sub),
@@ -372,18 +378,31 @@ def can_use_morph_care(user: User) -> bool:
 
 def check_morph_entitlement(*, user: User, kind: str) -> str | None:
     """
-    Try-on / studio uchun obuna + oylik limit.
+    Try-on / studio: obuna limitlari yoki obunasiz freemium kvota.
     Analyze/face_check — obunasiz global MorphAiSettings limitlari ishlaydi.
     """
     if kind not in ("tryon", "studio"):
         return None
 
+    usage = get_or_create_usage(user)
     sub = get_active_subscription(user)
+
     if not sub:
-        return "Morph AI uchun faol obuna kerak. Obuna bo'ling."
+        if kind == "tryon":
+            if usage.morph_ai_used >= FREE_MORPH_AI_MONTHLY:
+                return (
+                    f"Bepul Morph AI limiti tugadi ({FREE_MORPH_AI_MONTHLY}/{FREE_MORPH_AI_MONTHLY}). "
+                    "Davom etish uchun obuna bo'ling."
+                )
+            return None
+        if usage.morph_studio_used >= FREE_MORPH_STUDIO_MONTHLY:
+            return (
+                f"Bepul Morph AI Studio limiti tugadi ({FREE_MORPH_STUDIO_MONTHLY}/{FREE_MORPH_STUDIO_MONTHLY}). "
+                "Plus yoki Pro obunasiga o'ting."
+            )
+        return None
 
     ents = sub.entitlements or entitlement_snapshot(sub.plan_code)
-    usage = get_or_create_usage(user)
 
     if kind == "tryon":
         limit = int(ents.get("morph_ai_monthly") or 0)

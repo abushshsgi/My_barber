@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, ImagePlus, ScanFace, UserRound } from "lucide-react";
+import { ChevronLeft, ChevronRight, Droplets, ImagePlus, ScanFace, UserRound, Wand2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
@@ -148,13 +148,24 @@ export function MorphAiHome({ audience, onStartNew, onOpenCamera, onOpenGallery 
               {t("aiStylePage.pickFromGallery")}
             </button>
           </div>
-          <button
-            type="button"
-            onClick={() => void navigate({ to: "/ai-style/studio" })}
-            className="w-full py-2 text-center text-[13px] font-semibold text-muted-foreground active:text-foreground"
-          >
-            {t("aiStylePage.home.tools.studio")} →
-          </button>
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onClick={() => void navigate({ to: "/ai-style/studio" })}
+              className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-border bg-surface/40 px-3 text-left text-[13px] font-bold active:scale-[0.99]"
+            >
+              <Wand2 className="size-4 shrink-0" strokeWidth={2} />
+              <span className="min-w-0 truncate">{t("aiStylePage.home.tools.studio")}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => void navigate({ to: "/ai-style/care" })}
+              className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-border bg-surface/40 px-3 text-left text-[13px] font-bold active:scale-[0.99]"
+            >
+              <Droplets className="size-4 shrink-0" strokeWidth={2} />
+              <span className="min-w-0 truncate">{t("aiStylePage.home.tools.care")}</span>
+            </button>
+          </div>
         </motion.div>
 
         {myLooks.length > 0 ? (

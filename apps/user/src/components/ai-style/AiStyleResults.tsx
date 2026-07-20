@@ -192,7 +192,7 @@ function SpotlightCard({
   onToggleSave: AiStyleSaveHandler;
   tryOnPreview?: string;
   tryOnLoading?: boolean;
-  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId) => void;
+  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId, title?: string) => void;
   onOpenPreview: () => void;
 }) {
   const { t } = useTranslation();
@@ -319,7 +319,7 @@ function AiStyleSuggestionsSpotlight({
   onToggleSave: AiStyleSaveHandler;
   tryOnByStyle?: Record<string, string>;
   tryOnLoadingId?: string | null;
-  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId) => void;
+  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId, title?: string) => void;
   focusStyleId?: string;
   onOpenPreview: (styleId: string) => void;
   menPersonaId?: ExplorePersonaId | null;
@@ -417,7 +417,7 @@ function SuggestionActions({
   desktop?: boolean;
   tryOnPreview?: string;
   tryOnLoading?: boolean;
-  onGenerateTryOn?: (styleId: string) => void;
+  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId, title?: string) => void;
 }) {
   const { t } = useTranslation();
   const canTryOn = Boolean(onGenerateTryOn && isCatalogStyleId(suggestion.id));
@@ -527,7 +527,7 @@ export function AiStyleSuggestionsCarousel({
   onToggleSave: AiStyleSaveHandler;
   tryOnByStyle?: Record<string, string>;
   tryOnLoadingId?: string | null;
-  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId) => void;
+  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId, title?: string) => void;
   focusStyleId?: string;
   minimal?: boolean;
   onOpenPreview: (styleId: string) => void;
@@ -623,7 +623,7 @@ export function AiStyleSuggestionsStack({
   onToggleSave: (id: string) => void;
   tryOnByStyle?: Record<string, string>;
   tryOnLoadingId?: string | null;
-  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId) => void;
+  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId, title?: string) => void;
   menPersonaId?: ExplorePersonaId | null;
 }) {
   const { t } = useTranslation();
@@ -722,7 +722,7 @@ export function AiStyleResultsBlock({
   menPersonaId?: ExplorePersonaId | null;
   tryOnByStyle?: Record<string, string>;
   tryOnLoadingId?: string | null;
-  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId) => void;
+  onGenerateTryOn?: (styleId: string, personaId?: ExplorePersonaId, title?: string) => void;
   onUpdateTryOnPreview?: (cacheKey: string, previewImage: string) => void;
   focusStyleId?: string;
   selfiePhoto?: string | null;

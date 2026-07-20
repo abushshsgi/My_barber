@@ -228,7 +228,21 @@ export function MorphAiStudioPage() {
         }),
       );
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t("aiStylePage.studio.failed"));
+      const message = e instanceof Error ? e.message : t("aiStylePage.studio.failed");
+      const needsSub = /obuna|Bepul Morph|Studio|limiti tugadi/i.test(message);
+      if (needsSub) {
+        toast.error(message, {
+          action: {
+            label: t("subscriptions.subscribe", { defaultValue: "Obuna bo'lish" }),
+            onClick: () => {
+              void navigate({ to: "/wallet", search: { section: "subscriptions" } });
+            },
+          },
+          duration: 8_000,
+        });
+      } else {
+        toast.error(message);
+      }
     } finally {
       setLoadingId(null);
     }

@@ -30,7 +30,7 @@ export type TrendingContext = {
 
 /** Content-based score — backend `score_hairstyle` bilan mos. */
 export function scoreHairstyleForTrending(
-  entry: HairstyleEntry,
+  entry: Pick<HairstyleEntry, "faceShapes" | "hairLength">,
   ctx: Pick<TrendingContext, "faceShape" | "hairType">,
 ): number {
   const faceShape = ctx.faceShape ?? DEFAULT_FACE;

@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, animate, motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
-import { Check, ChevronRight, ChevronsUp, Loader2, ScanFace, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ChevronsUp, Loader2, ScanFace, X } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AiStyleChrome } from "@/components/ai-style/AiStyleChrome";
