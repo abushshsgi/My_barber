@@ -33,3 +33,4 @@ dist-ssr
 public/version.json
 src/lib/app-build-id.ts
 src/lib/client-boot-script.ts
+.vercel

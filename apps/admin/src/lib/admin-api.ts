@@ -256,7 +256,12 @@ export type AdminBarberSegmentStats = {
   salon_owner: number;
   salon_employee: number;
   unknown: number;
+  barbershop: number;
+  beauty_salon: number;
+  kind_unset: number;
 };
+
+export type AdminBusinessKind = "barbershop" | "beauty_salon" | "";
 
 export type AdminBarber = {
   id: string;
@@ -274,6 +279,8 @@ export type AdminBarber = {
   created_at: string;
   account_segment: AdminBarberAccountSegment;
   account_segment_label: string;
+  business_kind: AdminBusinessKind;
+  business_kind_label: string;
   email_verified: boolean;
   email_verified_at: string | null;
 };
@@ -404,6 +411,8 @@ export type AdminSalon = {
   region: RegionCode;
   published: boolean;
   premium: boolean;
+  business_kind: AdminBusinessKind;
+  business_kind_label: string;
   barbers_count: number;
   reviews_count: number;
   rating: number;
@@ -671,6 +680,8 @@ type BackendBarberRow = {
   avatar?: string | null;
   work_mode?: string;
   onboarding_flow?: string;
+  business_kind?: string;
+  business_kind_label?: string;
   onboarding_completed_at?: string | null;
   email_verified_at?: string | null;
   account_segment?: string;
@@ -711,6 +722,7 @@ type BackendSalonRow = {
   owner_phone?: string | null;
   is_published: boolean;
   premium?: boolean;
+  business_kind?: string;
   latitude: string;
   longitude: string;
   created_at: string;
@@ -910,9 +922,15 @@ function mapAccountSegment(raw: string | undefined): AdminBarberAccountSegment {
     : "unknown";
 }
 
+function mapBusinessKind(raw: string | undefined): AdminBusinessKind {
+  const v = (raw || "").trim();
+  return v === "barbershop" || v === "beauty_salon" ? v : "";
+}
+
 function mapBarber(b: BackendBarberRow): AdminBarber {
   const coord = parseCoord(b.latitude, b.longitude);
   const account_segment = mapAccountSegment(b.account_segment);
+  const business_kind = mapBusinessKind(b.business_kind);
   return {
     id: String(b.id),
     name: b.full_name || b.email,
@@ -931,6 +949,14 @@ function mapBarber(b: BackendBarberRow): AdminBarber {
     account_segment_label:
       (b.account_segment_label && String(b.account_segment_label).trim()) ||
       account_segment,
+    business_kind,
+    business_kind_label:
+      (b.business_kind_label && String(b.business_kind_label).trim()) ||
+      (business_kind === "beauty_salon"
+        ? "Go'zallik saloni"
+        : business_kind === "barbershop"
+          ? "Sartaroshxona"
+          : "Belgilanmagan"),
     email_verified: Boolean(b.email_verified_at),
     email_verified_at: b.email_verified_at ?? null,
   };
@@ -1035,6 +1061,7 @@ function mapBarberDetail(b: BackendBarberRow): AdminBarberDetail {
 
 function mapSalon(s: BackendSalonRow): AdminSalon {
   const coord = parseCoord(s.latitude, s.longitude);
+  const business_kind = mapBusinessKind(s.business_kind);
   return {
     id: String(s.id),
     name: s.name,
@@ -1044,6 +1071,13 @@ function mapSalon(s: BackendSalonRow): AdminSalon {
     region: s.region ?? "",
     published: !!s.is_published,
     premium: !!s.premium,
+    business_kind,
+    business_kind_label:
+      business_kind === "beauty_salon"
+        ? "Go'zallik saloni"
+        : business_kind === "barbershop"
+          ? "Sartaroshxona"
+          : "Belgilanmagan",
     barbers_count: toInt(s.barbers_count, 0),
     reviews_count: toInt(s.reviews_count, 0),
     rating: Number(s.rating ?? 0),
@@ -1652,6 +1686,7 @@ export async function fetchAdminBarbers(params?: {
   region?: RegionCode | "";
   page?: number;
   segment?: AdminBarberAccountSegment | "";
+  business_kind?: AdminBusinessKind | "unset" | "";
 }): Promise<Paginated<AdminBarber>> {
   const page = params?.page ?? 1;
   const res = await apiFetch(
@@ -1660,6 +1695,7 @@ export async function fetchAdminBarbers(params?: {
       if (params?.q) sp.set("q", params.q);
       if (params?.region) sp.set("region", params.region);
       if (params?.segment) sp.set("segment", params.segment);
+      if (params?.business_kind) sp.set("business_kind", params.business_kind);
       sp.set("page", String(page));
       return `/api/v1/admin/barbers/?${sp.toString()}`;
     })(),
@@ -1906,6 +1942,8 @@ export type ServiceCategory = {
   icon: string;
   order: number;
   services_count: number;
+  for_barbershop: boolean;
+  for_beauty_salon: boolean;
 };
 
 export type AdminService = {
@@ -1917,6 +1955,8 @@ export type AdminService = {
   duration_minutes: number;
   is_active: boolean;
   sort_order: number;
+  for_barbershop: boolean;
+  for_beauty_salon: boolean;
   category_ids: string[];
   category_names: string[];
   linked_rows_count: number;
@@ -1955,53 +1995,74 @@ export type AdminServiceUsage = {
   rows: AdminServiceAssignment[];
 };
 
-export async function fetchCategories(): Promise<ServiceCategory[]> {
-  const res = await apiFetch("/api/v1/admin/categories/");
-  const j = (await res.json().catch(() => ({}))) as unknown;
-  if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
-  const rows = Array.isArray(j) ? j : (j as { results?: unknown[] }).results || [];
-  return (rows as any[]).map((c) => ({
+function mapAdminService(s: any): AdminService {
+  return {
+    id: String(s.id),
+    name: String(s.name || ""),
+    slug: String(s.slug || ""),
+    description: String(s.description || ""),
+    image_url: String(s.image_url || ""),
+    duration_minutes: Number(s.duration_minutes || 0),
+    is_active: !!s.is_active,
+    sort_order: Number(s.sort_order || 0),
+    for_barbershop: s.for_barbershop !== false,
+    for_beauty_salon: !!s.for_beauty_salon,
+    category_ids: Array.isArray(s.category_ids) ? s.category_ids.map((x: any) => String(x)) : [],
+    category_names: Array.isArray(s.category_names) ? s.category_names.map((x: any) => String(x)) : [],
+    linked_rows_count: Number(s.linked_rows_count || 0),
+  };
+}
+
+function mapServiceCategory(c: any): ServiceCategory {
+  return {
     id: String(c.id),
     name: String(c.name || ""),
     icon: String(c.icon || ""),
     order: Number(c.order || 0),
     services_count: Number(c.services_count || 0),
-  }));
+    for_barbershop: c.for_barbershop !== false,
+    for_beauty_salon: !!c.for_beauty_salon,
+  };
+}
+
+export async function fetchCategories(): Promise<ServiceCategory[]> {
+  const res = await apiFetch("/api/v1/admin/categories/");
+  const j = (await res.json().catch(() => ({}))) as unknown;
+  if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
+  const rows = Array.isArray(j) ? j : (j as { results?: unknown[] }).results || [];
+  return (rows as any[]).map(mapServiceCategory);
 }
 
 export async function createCategory(body: {
   name: string;
   icon?: string;
   order?: number;
+  for_barbershop?: boolean;
+  for_beauty_salon?: boolean;
 }): Promise<ServiceCategory> {
   const row = await apiJson<Record<string, unknown>>("/api/v1/admin/categories/", {
     method: "POST",
     body: JSON.stringify(body),
   });
-  return {
-    id: String(row.id),
-    name: String(row.name || ""),
-    icon: String(row.icon || ""),
-    order: Number(row.order || 0),
-    services_count: Number(row.services_count || 0),
-  };
+  return mapServiceCategory(row);
 }
 
 export async function updateCategory(
   id: string,
-  body: Partial<{ name: string; icon: string; order: number; is_active: boolean }>,
+  body: Partial<{
+    name: string;
+    icon: string;
+    order: number;
+    is_active: boolean;
+    for_barbershop: boolean;
+    for_beauty_salon: boolean;
+  }>,
 ): Promise<ServiceCategory> {
   const row = await apiJson<Record<string, unknown>>(`/api/v1/admin/categories/${id}/`, {
     method: "PATCH",
     body: JSON.stringify(body),
   });
-  return {
-    id: String(row.id),
-    name: String(row.name || ""),
-    icon: String(row.icon || ""),
-    order: Number(row.order || 0),
-    services_count: Number(row.services_count || 0),
-  };
+  return mapServiceCategory(row);
 }
 
 export async function deleteCategory(id: string): Promise<void> {
@@ -2015,27 +2076,17 @@ export async function deleteCategory(id: string): Promise<void> {
 export async function fetchServices(params?: {
   q?: string;
   category?: string;
+  business_kind?: string;
 }): Promise<AdminService[]> {
   const sp = new URLSearchParams();
   if (params?.q) sp.set("q", params.q);
   if (params?.category && params.category !== "all") sp.set("category", params.category);
+  if (params?.business_kind) sp.set("business_kind", params.business_kind);
   const res = await apiFetch(`/api/v1/admin/services/?${sp.toString()}`);
   const j = (await res.json().catch(() => ({}))) as unknown;
   if (!res.ok) throw new Error((j as { detail?: string }).detail || "Xato");
   const rows = Array.isArray(j) ? j : (j as { results?: unknown[] }).results || [];
-  return (rows as any[]).map((s) => ({
-    id: String(s.id),
-    name: String(s.name || ""),
-    slug: String(s.slug || ""),
-    description: String(s.description || ""),
-    image_url: String(s.image_url || ""),
-    duration_minutes: Number(s.duration_minutes || 0),
-    is_active: !!s.is_active,
-    sort_order: Number(s.sort_order || 0),
-    category_ids: Array.isArray(s.category_ids) ? s.category_ids.map((x: any) => String(x)) : [],
-    category_names: Array.isArray(s.category_names) ? s.category_names.map((x: any) => String(x)) : [],
-    linked_rows_count: Number(s.linked_rows_count || 0),
-  }));
+  return (rows as any[]).map(mapAdminService);
 }
 
 export async function createService(body: {
@@ -2045,6 +2096,8 @@ export async function createService(body: {
   duration_minutes: number;
   is_active: boolean;
   sort_order: number;
+  for_barbershop: boolean;
+  for_beauty_salon: boolean;
   category_ids: string[];
 }): Promise<AdminService> {
   const res = await apiFetch("/api/v1/admin/services/", {
@@ -2056,19 +2109,7 @@ export async function createService(body: {
   });
   const j = (await res.json().catch(() => ({}))) as any;
   if (!res.ok) throw new Error(j.detail || "Xato");
-  return {
-    id: String(j.id),
-    name: String(j.name || ""),
-    slug: String(j.slug || ""),
-    description: String(j.description || ""),
-    image_url: String(j.image_url || ""),
-    duration_minutes: Number(j.duration_minutes || 0),
-    is_active: !!j.is_active,
-    sort_order: Number(j.sort_order || 0),
-    category_ids: Array.isArray(j.category_ids) ? j.category_ids.map((x: any) => String(x)) : [],
-    category_names: Array.isArray(j.category_names) ? j.category_names.map((x: any) => String(x)) : [],
-    linked_rows_count: Number(j.linked_rows_count || 0),
-  };
+  return mapAdminService(j);
 }
 
 export async function updateService(
@@ -2076,7 +2117,15 @@ export async function updateService(
   body: Partial<
     Pick<
       AdminService,
-      "name" | "description" | "image_url" | "duration_minutes" | "is_active" | "sort_order" | "category_ids"
+      | "name"
+      | "description"
+      | "image_url"
+      | "duration_minutes"
+      | "is_active"
+      | "sort_order"
+      | "for_barbershop"
+      | "for_beauty_salon"
+      | "category_ids"
     >
   >,
 ): Promise<AdminService> {
@@ -2089,19 +2138,7 @@ export async function updateService(
   });
   const j = (await res.json().catch(() => ({}))) as any;
   if (!res.ok) throw new Error(j.detail || "Xato");
-  return {
-    id: String(j.id),
-    name: String(j.name || ""),
-    slug: String(j.slug || ""),
-    description: String(j.description || ""),
-    image_url: String(j.image_url || ""),
-    duration_minutes: Number(j.duration_minutes || 0),
-    is_active: !!j.is_active,
-    sort_order: Number(j.sort_order || 0),
-    category_ids: Array.isArray(j.category_ids) ? j.category_ids.map((x: any) => String(x)) : [],
-    category_names: Array.isArray(j.category_names) ? j.category_names.map((x: any) => String(x)) : [],
-    linked_rows_count: Number(j.linked_rows_count || 0),
-  };
+  return mapAdminService(j);
 }
 
 export async function deleteService(id: string): Promise<void> {

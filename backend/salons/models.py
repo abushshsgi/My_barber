@@ -6,6 +6,10 @@ from django.utils.text import slugify
 
 
 class Salon(models.Model):
+    class BusinessKind(models.TextChoices):
+        BARBERSHOP = "barbershop", "Sartaroshxona"
+        BEAUTY_SALON = "beauty_salon", "Go'zallik saloni"
+
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -32,6 +36,14 @@ class Salon(models.Model):
     languages = models.JSONField(default=list, blank=True)
     closed_weekdays = models.JSONField(default=list, blank=True)
     is_published = models.BooleanField(default=True)
+    business_kind = models.CharField(
+        max_length=16,
+        choices=BusinessKind.choices,
+        blank=True,
+        default="",
+        db_index=True,
+        help_text="Sartaroshxona yoki go'zallik saloni — egasi signup tanlovi.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -102,6 +114,8 @@ class CatalogService(models.Model):
     duration_minutes = models.PositiveIntegerField(default=30)
     is_active = models.BooleanField(default=True, db_index=True)
     sort_order = models.PositiveIntegerField(default=0, db_index=True)
+    for_barbershop = models.BooleanField(default=True, db_index=True)
+    for_beauty_salon = models.BooleanField(default=False, db_index=True)
     categories = models.ManyToManyField(
         "salons.Category",
         blank=True,
@@ -166,6 +180,8 @@ class Category(models.Model):
     icon = models.CharField(max_length=16, blank=True, default="")
     order = models.PositiveIntegerField(default=0, db_index=True)
     is_active = models.BooleanField(default=True, db_index=True)
+    for_barbershop = models.BooleanField(default=True, db_index=True)
+    for_beauty_salon = models.BooleanField(default=False, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

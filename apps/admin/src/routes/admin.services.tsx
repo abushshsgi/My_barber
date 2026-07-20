@@ -48,6 +48,8 @@ type ServiceEditorValues = {
   duration_minutes: string;
   sort_order: string;
   is_active: boolean;
+  for_barbershop: boolean;
+  for_beauty_salon: boolean;
   category_id: string;
 };
 
@@ -70,6 +72,8 @@ function toEditorValues(
       duration_minutes: "30",
       sort_order: "0",
       is_active: true,
+      for_barbershop: true,
+      for_beauty_salon: false,
       category_id: firstCategoryId,
     };
   }
@@ -80,6 +84,8 @@ function toEditorValues(
     duration_minutes: String(service.duration_minutes || 30),
     sort_order: String(service.sort_order || 0),
     is_active: service.is_active,
+    for_barbershop: service.for_barbershop,
+    for_beauty_salon: service.for_beauty_salon,
     category_id: service.category_ids[0] ?? firstCategoryId,
   };
 }
@@ -211,6 +217,32 @@ function ServiceEditorDialog({
                 />
               </div>
             </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex items-center justify-between rounded-xl border border-border px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium">Sartaroshxona</p>
+                  <p className="text-xs text-muted-foreground">Barber CRM katalogida</p>
+                </div>
+                <Switch
+                  checked={values.for_barbershop}
+                  onCheckedChange={(checked) =>
+                    setValues((prev) => ({ ...prev, for_barbershop: checked }))
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-xl border border-border px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium">Go&apos;zallik saloni</p>
+                  <p className="text-xs text-muted-foreground">Beauty CRM katalogida</p>
+                </div>
+                <Switch
+                  checked={values.for_beauty_salon}
+                  onCheckedChange={(checked) =>
+                    setValues((prev) => ({ ...prev, for_beauty_salon: checked }))
+                  }
+                />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -287,6 +319,8 @@ function ServicesPage() {
         duration_minutes: Number(values.duration_minutes || 30),
         is_active: values.is_active,
         sort_order: Number(values.sort_order || 0),
+        for_barbershop: values.for_barbershop,
+        for_beauty_salon: values.for_beauty_salon,
         category_ids: values.category_id ? [values.category_id] : [],
       }),
     onSuccess: () => {
@@ -307,6 +341,8 @@ function ServicesPage() {
         duration_minutes: Number(values.duration_minutes || 30),
         is_active: values.is_active,
         sort_order: Number(values.sort_order || 0),
+        for_barbershop: values.for_barbershop,
+        for_beauty_salon: values.for_beauty_salon,
         category_ids: values.category_id ? [values.category_id] : [],
       }),
     onSuccess: () => {
@@ -445,6 +481,16 @@ function ServicesPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
+                  {service.for_barbershop ? (
+                    <Badge variant="secondary" className="rounded-full">
+                      Sartaroshxona
+                    </Badge>
+                  ) : null}
+                  {service.for_beauty_salon ? (
+                    <Badge variant="secondary" className="rounded-full">
+                      Go&apos;zallik
+                    </Badge>
+                  ) : null}
                   {(service.category_names.length ? service.category_names : ["Kategoriyasiz"]).map((label) => (
                     <Badge key={label} variant="outline" className="rounded-full">
                       {label}

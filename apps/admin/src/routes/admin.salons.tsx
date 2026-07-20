@@ -281,6 +281,9 @@ function SalonListRow({
               <span className="line-clamp-2 sm:line-clamp-1">{s.name}</span>
             </h2>
             <StatusBadge status={s.published ? "published" : "draft"} className="shrink-0" />
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+              {s.business_kind_label}
+            </span>
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {regionName || "Viloyat ko‘rsatilmagan"}

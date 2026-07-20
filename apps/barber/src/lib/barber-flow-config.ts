@@ -22,6 +22,31 @@ export const BUSINESS_KIND_META: Record<
   },
 };
 
+export function servicesPageCopy(kind: SignupBusinessKind | null | undefined): {
+  title: string;
+  salonTitle: string;
+  description: string;
+  salonDescription: string;
+  independentDescription: string;
+} {
+  if (kind === "beauty_salon") {
+    return {
+      title: "Go'zallik xizmatlari",
+      salonTitle: "Salon xizmatlari",
+      description: "Manikyur, makiyaj, soch va spa — katalogdan tanlang va narx belgilang.",
+      salonDescription: "Go'zallik saloni katalogi — xizmatlarni faollashtiring va narx belgilang.",
+      independentDescription: "Mustaqil booking uchun go'zallik xizmatlarini faollashtiring.",
+    };
+  }
+  return {
+    title: "Xizmatlar",
+    salonTitle: "Salon xizmatlari",
+    description: "Katalogdan xizmatni tanlang, narx qo'ying — avtomatik saqlanadi.",
+    salonDescription: "Admin katalogidagi barcha xizmatlar — faollashtiring va narx belgilang.",
+    independentDescription: "Mustaqil booking uchun xizmatlarni faollashtiring va narx belgilang.",
+  };
+}
+
 export type NavItem = {
   to: string;
   label: string;

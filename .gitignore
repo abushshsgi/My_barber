@@ -19,3 +19,4 @@ backend/secrets/
 .git.broken-*/
 *.tsbuildinfo
 _upstream_salon_creator_suite/
+.vercel

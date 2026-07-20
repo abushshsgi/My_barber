@@ -279,6 +279,7 @@ def build_onboarding_status_payload(barber: Barber) -> dict:
     return {
         "flow": r.flow,
         "work_mode": r.work_mode,
+        "business_kind": (barber.business_kind or "").strip(),
         "has_location": r.has_location,
         "owns_salon": r.owns_salon,
         "active_membership_id": r.active_membership_id,

@@ -342,10 +342,18 @@ class MyBarberCatalogServiceView(APIView):
     permission_classes = [IsBarber]
 
     def get(self, request):
+        from salons.catalog_bootstrap import (
+            ensure_default_catalog_seeded,
+            filter_catalog_qs_for_kind,
+        )
+
         ensure_default_catalog_seeded()
         q = str(request.query_params.get("q", "") or "").strip()
         category = str(request.query_params.get("category", "") or "").strip()
         qs = CatalogService.objects.filter(is_active=True).prefetch_related("categories")
+        barber = getattr(request.user, "barber", None)
+        kind = (getattr(barber, "business_kind", "") or "") if barber else ""
+        qs = filter_catalog_qs_for_kind(qs, kind)
         if q:
             qs = qs.filter(
                 Q(name__icontains=q)

@@ -582,6 +582,8 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
             if bp is not None:
                 validated_data["owner_barber"] = bp
         owner = validated_data.get("owner_barber")
+        if owner is not None and not (validated_data.get("business_kind") or "").strip():
+            validated_data["business_kind"] = (getattr(owner, "business_kind", "") or "").strip()
         with transaction.atomic():
             salon = Salon.objects.create(**validated_data)
             for h in hours_data:

@@ -487,6 +487,7 @@ class AdminSalonListSerializer(serializers.ModelSerializer):
             "phone",
             "is_published",
             "premium",
+            "business_kind",
             "latitude",
             "longitude",
             "created_at",
@@ -684,6 +685,7 @@ class AdminBarberSerializer(serializers.ModelSerializer):
     avatar = serializers.SerializerMethodField()
     account_segment = serializers.SerializerMethodField()
     account_segment_label = serializers.SerializerMethodField()
+    business_kind_label = serializers.SerializerMethodField()
 
     class Meta:
         model = Barber
@@ -707,6 +709,8 @@ class AdminBarberSerializer(serializers.ModelSerializer):
             "avatar",
             "work_mode",
             "onboarding_flow",
+            "business_kind",
+            "business_kind_label",
             "onboarding_completed_at",
             "email_verified_at",
             "signup_snapshot",
@@ -729,6 +733,8 @@ class AdminBarberSerializer(serializers.ModelSerializer):
             "avatar",
             "work_mode",
             "onboarding_flow",
+            "business_kind",
+            "business_kind_label",
             "onboarding_completed_at",
             "email_verified_at",
             "signup_snapshot",
@@ -746,6 +752,10 @@ class AdminBarberSerializer(serializers.ModelSerializer):
 
     def get_account_segment_label(self, obj: Barber) -> str:
         return segment_label(segment_for_barber(obj))
+
+    def get_business_kind_label(self, obj: Barber) -> str:
+        kind = (obj.business_kind or "").strip()
+        return dict(Barber.BusinessKind.choices).get(kind, "") or "Belgilanmagan"
 
     def get_latitude(self, obj: Barber) -> str:
         p = getattr(obj, "profile", None)
@@ -1061,7 +1071,16 @@ class AdminCategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = ("id", "name", "icon", "order", "is_active", "services_count")
+        fields = (
+            "id",
+            "name",
+            "icon",
+            "order",
+            "is_active",
+            "for_barbershop",
+            "for_beauty_salon",
+            "services_count",
+        )
 
     def get_services_count(self, obj: Category) -> int:
         try:
@@ -1073,7 +1092,7 @@ class AdminCategorySerializer(serializers.ModelSerializer):
 class AdminCategoryWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ("name", "icon", "order", "is_active")
+        fields = ("name", "icon", "order", "is_active", "for_barbershop", "for_beauty_salon")
 
 
 class AdminCatalogServiceSerializer(serializers.ModelSerializer):
@@ -1092,6 +1111,8 @@ class AdminCatalogServiceSerializer(serializers.ModelSerializer):
             "duration_minutes",
             "is_active",
             "sort_order",
+            "for_barbershop",
+            "for_beauty_salon",
             "category_ids",
             "category_names",
             "linked_rows_count",
@@ -1133,6 +1154,8 @@ class AdminCatalogServiceWriteSerializer(serializers.ModelSerializer):
             "duration_minutes",
             "is_active",
             "sort_order",
+            "for_barbershop",
+            "for_beauty_salon",
             "category_ids",
         )
 

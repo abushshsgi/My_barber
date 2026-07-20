@@ -29,6 +29,7 @@ type OnboardingStatusPayload = {
   is_complete?: boolean;
   required_next_path?: string | null;
   flow?: string | null;
+  business_kind?: string | null;
   booking_ready?: boolean;
   booking_missing?: string[];
   booking_setup_path?: string | null;
@@ -299,6 +300,7 @@ type Ctx = {
   isJoinedWorker: boolean;
   barberWorkMode: "salon" | "independent";
   onboardingFlow: string | null;
+  businessKind: "barbershop" | "beauty_salon" | null;
   flowIdentity: FlowIdentity;
   onboardingComplete: boolean;
   requiredNextPath: string | null;
@@ -432,6 +434,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   const [activeSalonId, setActiveSalonId] = useState<number | null>(null);
   const [barberWorkMode, setBarberWorkMode] = useState<"salon" | "independent">("independent");
   const [onboardingFlow, setOnboardingFlow] = useState<string | null>(null);
+  const [businessKind, setBusinessKind] = useState<"barbershop" | "beauty_salon" | null>(null);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [requiredNextPath, setRequiredNextPath] = useState<string | null>(
     () => bootCache?.required_next_path ?? null,
@@ -1203,6 +1206,8 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     setOnboardingComplete(Boolean(st.is_complete));
     setRequiredNextPath(st.required_next_path ? String(st.required_next_path) : null);
     setOnboardingFlow(st.flow ? String(st.flow) : null);
+    const kind = (st.business_kind || "").trim();
+    setBusinessKind(kind === "barbershop" || kind === "beauty_salon" ? kind : null);
     setFullyReady(gate);
     setReadinessPercent(
       typeof st.readiness_percent === "number" && !Number.isNaN(st.readiness_percent)
@@ -1256,6 +1261,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       setReadinessPercent(0);
       setActivationSteps(emptyActivationSteps());
       setOnboardingFlow(null);
+      setBusinessKind(null);
       return { fullyReady: false, emailVerified: false };
     }
   }, [applyActivationStatus]);
@@ -1422,6 +1428,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       isJoinedWorker,
       barberWorkMode,
       onboardingFlow,
+      businessKind,
       flowIdentity,
       onboardingComplete,
       requiredNextPath,
@@ -1500,6 +1507,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       isJoinedWorker,
       barberWorkMode,
       onboardingFlow,
+      businessKind,
       flowIdentity,
       onboardingComplete,
       requiredNextPath,

@@ -519,7 +519,13 @@ class AdminBarberListView(generics.ListAPIView):
                 | Q(phone__icontains=q)
             )
         seg = self.request.query_params.get("segment", "").strip()
-        return apply_segment_filter(qs, seg)
+        qs = apply_segment_filter(qs, seg)
+        kind = self.request.query_params.get("business_kind", "").strip()
+        if kind in (Barber.BusinessKind.BARBERSHOP, Barber.BusinessKind.BEAUTY_SALON):
+            qs = qs.filter(business_kind=kind)
+        elif kind == "unset":
+            qs = qs.filter(business_kind="")
+        return qs
 
 
 class AdminBarberSegmentStatsView(APIView):
@@ -814,6 +820,11 @@ class AdminServicesView(APIView):
                 ).distinct()
             if cat and str(cat).isdigit():
                 qs = qs.filter(categories__id=int(cat))
+            kind = request.query_params.get("business_kind", "").strip()
+            if kind == "barbershop":
+                qs = qs.filter(for_barbershop=True)
+            elif kind == "beauty_salon":
+                qs = qs.filter(for_beauty_salon=True)
             return Response(
                 AdminCatalogServiceSerializer(qs.order_by("sort_order", "name")[:500], many=True).data
             )

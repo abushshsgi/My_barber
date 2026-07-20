@@ -153,6 +153,10 @@ function SalonOverviewTab() {
           </CardHeader>
           <CardContent className="space-y-3 pt-5 text-sm">
             <div>
+              <p className="text-xs font-medium text-muted-foreground">Biznes turi</p>
+              <p className="mt-0.5 font-medium text-foreground">{s.business_kind_label || "—"}</p>
+            </div>
+            <div>
               <p className="text-xs font-medium text-muted-foreground">Ism</p>
               <p className="mt-0.5 font-medium text-foreground">{s.owner_name || "—"}</p>
             </div>

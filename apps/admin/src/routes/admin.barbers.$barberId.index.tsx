@@ -315,6 +315,7 @@ function BarberOverviewPage() {
               <CollapsibleContent className="space-y-2 pt-2 border-t border-border/60 mt-2">
                 <DetailRow label="Ish rejimi" value={workModeLabel(b.work_mode)} />
                 <DetailRow label="Ro‘yxatdan o‘tish oqimi" value={onboardingLabel(b.onboarding_flow)} />
+                <DetailRow label="Biznes turi" value={b.business_kind_label || "Belgilanmagan"} />
               </CollapsibleContent>
             </Collapsible>
           </CardContent>

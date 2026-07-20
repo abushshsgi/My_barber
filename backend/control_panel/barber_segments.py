@@ -117,6 +117,9 @@ def barber_segment_counts() -> dict[str, int]:
         .count()
     )
     total = qs.count()
+    barbershop = Barber.objects.filter(business_kind=Barber.BusinessKind.BARBERSHOP).count()
+    beauty_salon = Barber.objects.filter(business_kind=Barber.BusinessKind.BEAUTY_SALON).count()
+    kind_unset = Barber.objects.filter(business_kind="").count()
     return {
         "total": total,
         "independent": independent,
@@ -124,4 +127,7 @@ def barber_segment_counts() -> dict[str, int]:
         "salon_owner": salon_owner,
         "salon_employee": salon_employee,
         "unknown": unknown,
+        "barbershop": barbershop,
+        "beauty_salon": beauty_salon,
+        "kind_unset": kind_unset,
     }

@@ -17,6 +17,7 @@ import type {
   AdminBarber,
   AdminBarberAccountSegment,
   AdminBarberSegmentStats,
+  AdminBusinessKind,
 } from "@/lib/admin-api";
 import { getBarberSegmentTitle } from "@/lib/barber-segment-copy";
 import { FilterToolbar } from "@/components/admin/FilterToolbar";
@@ -45,9 +46,17 @@ const BARBER_SEGMENT_FILTERS = new Set<AdminBarberAccountSegment | "">([
   "unknown",
 ]);
 
+const BUSINESS_KIND_FILTERS = new Set<AdminBusinessKind | "unset" | "">([
+  "",
+  "barbershop",
+  "beauty_salon",
+  "unset",
+]);
+
 export const Route = createFileRoute("/admin/barbers")({
   validateSearch: (raw: Record<string, unknown>) => {
     const seg = typeof raw.segment === "string" ? raw.segment : "";
+    const kind = typeof raw.business_kind === "string" ? raw.business_kind : "";
     const pageRaw = raw.page;
     let page = 1;
     if (typeof pageRaw === "number" && Number.isFinite(pageRaw) && pageRaw >= 1) {
@@ -62,6 +71,9 @@ export const Route = createFileRoute("/admin/barbers")({
       page,
       segment: BARBER_SEGMENT_FILTERS.has(seg as AdminBarberAccountSegment | "")
         ? (seg as AdminBarberAccountSegment | "")
+        : "",
+      business_kind: BUSINESS_KIND_FILTERS.has(kind as AdminBusinessKind | "unset" | "")
+        ? (kind as AdminBusinessKind | "unset" | "")
         : "",
     };
   },
@@ -120,6 +132,7 @@ function BarbersListPage() {
   const region = search.region;
   const page = search.page;
   const segment = search.segment;
+  const businessKind = search.business_kind;
   const navigate = useNavigate({ from: Route.fullPath });
   const queryClient = useQueryClient();
   const [deleteTarget, setDeleteTarget] = useState<AdminBarber | null>(null);
@@ -131,13 +144,14 @@ function BarbersListPage() {
   });
 
   const barbersQ = useQuery({
-    queryKey: ["admin", "barbers", { q, region, page, segment }],
+    queryKey: ["admin", "barbers", { q, region, page, segment, businessKind }],
     queryFn: () =>
       fetchAdminBarbers({
         q,
         region,
         page,
         segment: segment || undefined,
+        business_kind: businessKind || undefined,
       }),
   });
 
@@ -239,6 +253,47 @@ function BarbersListPage() {
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        {(
+          [
+            { value: "", label: "Barcha biznes" },
+            { value: "barbershop", label: "Sartaroshxona" },
+            { value: "beauty_salon", label: "Go'zallik saloni" },
+            { value: "unset", label: "Belgilanmagan" },
+          ] as const
+        ).map((opt) => {
+          const active = businessKind === opt.value;
+          const count =
+            opt.value === "barbershop"
+              ? segmentStatsQ.data?.barbershop
+              : opt.value === "beauty_salon"
+                ? segmentStatsQ.data?.beauty_salon
+                : opt.value === "unset"
+                  ? segmentStatsQ.data?.kind_unset
+                  : segmentStatsQ.data?.total;
+          return (
+            <button
+              key={opt.value || "all-kind"}
+              type="button"
+              onClick={() =>
+                navigate({
+                  search: (prev) => ({ ...prev, business_kind: opt.value, page: 1 }),
+                })
+              }
+              className={cn(
+                "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                active
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-background text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {opt.label}
+              {count != null ? ` · ${count}` : ""}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
         {barbersQ.isLoading ? (
           <TableSkeleton rows={8} cols={8} />
@@ -254,6 +309,7 @@ function BarbersListPage() {
                 <thead className="bg-background border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
                     <th className="px-6 py-3 font-medium">Sartarosh</th>
+                    <th className="px-6 py-3 font-medium min-w-[140px]">Biznes turi</th>
                     <th className="px-6 py-3 font-medium min-w-[140px]">Akkaunt turi</th>
                     <th className="px-6 py-3 font-medium">Salon</th>
                     <th className="px-6 py-3 font-medium">Hudud</th>
@@ -287,6 +343,20 @@ function BarbersListPage() {
                             </div>
                           </div>
                         </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={cn(
+                            "inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                            b.business_kind === "beauty_salon"
+                              ? "bg-pink-500/10 text-pink-700"
+                              : b.business_kind === "barbershop"
+                                ? "bg-sky-500/10 text-sky-700"
+                                : "bg-muted text-muted-foreground",
+                          )}
+                        >
+                          {b.business_kind_label}
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-foreground max-w-[220px]">
                         <span className="line-clamp-2" title={b.account_segment_label}>

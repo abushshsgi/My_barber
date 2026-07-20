@@ -8,6 +8,7 @@ import { ServicesPageSkeleton } from "@/components/barber/services/ServicesPageS
 import { UnsavedChangesDialog } from "@/components/barber/UnsavedChangesDialog";
 import { useServicesPage } from "@/components/barber/services/use-services-page";
 import { prefetchServicesPage } from "@/hooks/use-barber-queries";
+import { servicesPageCopy } from "@/lib/barber-flow-config";
 import { readOnboardingStatusCache } from "@/lib/onboarding-status-cache";
 
 export const Route = createFileRoute("/barber/services")({
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/barber/services")({
 });
 
 function ServicesSchedulePage() {
-  const { viewMode, ownsSalon, activeSalonId, fullyReady } = useBarberContext();
+  const { viewMode, ownsSalon, activeSalonId, fullyReady, businessKind } = useBarberContext();
   const state = useServicesPage();
   const {
     isSalonOwnerScope,
@@ -31,6 +32,7 @@ function ServicesSchedulePage() {
     isDirty,
     committedRef,
   } = state;
+  const copy = servicesPageCopy(businessKind);
 
   useEffect(() => {
     if (isBootstrapping) return;
@@ -65,13 +67,13 @@ function ServicesSchedulePage() {
       >
         <div className="mx-auto w-full max-w-[1800px] space-y-6">
           <PageHeader
-            title={isSalonOwnerScope ? "Salon xizmatlari" : "Xizmatlar"}
+            title={isSalonOwnerScope ? copy.salonTitle : copy.title}
             description={
               isSalonOwnerScope
-                ? "Admin katalogidagi barcha xizmatlar — faollashtiring va narx belgilang."
+                ? copy.salonDescription
                 : scope === "salon"
-                  ? "Katalogdan xizmatni tanlang, narx qo'ying — avtomatik saqlanadi."
-                  : "Mustaqil booking uchun xizmatlarni faollashtiring va narx belgilang."
+                  ? copy.description
+                  : copy.independentDescription
             }
             actions={
               isRefreshing ? (
