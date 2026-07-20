@@ -13,6 +13,7 @@ import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
+import { prefetchMorphAiIntroVideo } from "@/lib/morph-ai-intro";
 import {
   hasMorphAiIntroSeen,
   hasMorphAiOnboarded,
@@ -95,6 +96,10 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
     markMorphAiIntroSeen();
     setShowIntro(false);
   }, []);
+
+  useEffect(() => {
+    if (showIntro) prefetchMorphAiIntroVideo();
+  }, [showIntro]);
 
   const displayResult = useMemo(() => {
     if (!result || !focusStyleId || !focusHairstyle) return result;

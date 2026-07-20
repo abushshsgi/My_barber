@@ -4,6 +4,7 @@ import { Compass, Home, Map, User, Wand2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { isNavTabActive, isNavTabCurrent } from "@/lib/navigation";
 import { shouldShowMobileDock } from "@/lib/layout-routes";
+import { prefetchMorphAiIntroVideo } from "@/lib/morph-ai-intro";
 import { cn } from "@/lib/utils";
 
 const leftTabs = [
@@ -83,6 +84,7 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
     allRoutes.forEach((tab) => {
       void router.preloadRoute({ to: tab.to });
     });
+    prefetchMorphAiIntroVideo();
   }, [router]);
 
   useEffect(() => {

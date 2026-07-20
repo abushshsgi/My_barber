@@ -15,6 +15,7 @@ import {
 } from "@/lib/desktop-bazaar-layout";
 import { shouldShowMobileDock } from "@/lib/layout-routes";
 import { getMobileContentPaddingClass } from "@/lib/layout-constants";
+import { prefetchMorphAiIntroVideo } from "@/lib/morph-ai-intro";
 import { shouldShowScrollToTop } from "@/lib/scroll-to-top";
 import { cn } from "@/lib/utils";
 
@@ -64,6 +65,10 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
   const showScrollTop = shouldShowScrollToTop(pathname);
 
   useReleaseStuckDocumentScroll(pathname);
+
+  useEffect(() => {
+    prefetchMorphAiIntroVideo();
+  }, []);
 
   if (isAuth) {
     return <div className="min-h-screen bg-background">{children}</div>;
