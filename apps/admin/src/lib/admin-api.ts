@@ -3121,3 +3121,130 @@ export async function patchMorphAiSettings(
     body: JSON.stringify(body),
   });
 }
+
+/* —— B2C Subscriptions —— */
+
+export type AdminSubscriptionStats = {
+  active_count: number;
+  expired_count: number;
+  deactivated_count: number;
+  pending_payments: number;
+  revenue_uzs: number;
+  paid_count: number;
+  by_plan: Array<{ plan_code: string; count: number }>;
+  by_source: Array<{ source: string; count: number }>;
+  referral_trials_granted: number;
+  usage_totals: { morph_ai: number; morph_studio: number };
+  recent_events: Array<{
+    id: string;
+    action: string;
+    actor: string;
+    detail: Record<string, unknown>;
+    created_at: string;
+    user_id: number | null;
+    user_name: string;
+    plan_code: string | null;
+  }>;
+  plans: Array<{ code: string; name_uz: string; price_uzs: number }>;
+};
+
+export type AdminSubscriptionRow = {
+  id: string;
+  plan_code: string;
+  status: string;
+  source: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  price_uzs: number;
+  user: { id: number; full_name: string; phone: string; email: string };
+  usage: {
+    morph_ai_used: number;
+    morph_ai_limit: number;
+    morph_ai_remaining: number;
+    morph_studio_used: number;
+    morph_studio_limit: number;
+    morph_studio_remaining: number;
+  };
+};
+
+export async function fetchAdminSubscriptionStats(): Promise<AdminSubscriptionStats> {
+  return apiJson("/api/v1/admin/subscriptions/stats/");
+}
+
+export async function fetchAdminSubscriptions(params?: {
+  status?: string;
+  plan?: string;
+  q?: string;
+  page?: number;
+}): Promise<{ count: number; page: number; results: AdminSubscriptionRow[] }> {
+  const sp = new URLSearchParams();
+  if (params?.status) sp.set("status", params.status);
+  if (params?.plan) sp.set("plan", params.plan);
+  if (params?.q) sp.set("q", params.q);
+  if (params?.page) sp.set("page", String(params.page));
+  const qs = sp.toString();
+  const base = "/api/v1/admin/subscriptions/";
+  return apiJson(qs ? `${base}?${qs}` : base);
+}
+
+export async function fetchAdminSubscriptionDetail(id: string): Promise<{
+  subscription: AdminSubscriptionRow & {
+    notes: string;
+    payment_provider: string;
+    payment_order_id: string;
+    payment_transaction_id: string;
+    deactivated_by: string;
+    deactivated_reason: string;
+    entitlements: Record<string, unknown>;
+  };
+  usage: AdminSubscriptionRow["usage"];
+  events: AdminSubscriptionStats["recent_events"];
+  payments: Array<{
+    id: string;
+    plan_code: string;
+    amount_uzs: number;
+    provider: string;
+    status: string;
+    order_id: string;
+    paid_at: string | null;
+  }>;
+  referral_trial: {
+    granted: boolean;
+    ends_at: string | null;
+    referral_count_at_grant: number | null;
+  };
+}> {
+  return apiJson(`/api/v1/admin/subscriptions/${id}/`);
+}
+
+export async function adminDeactivateSubscription(
+  id: string,
+  reason?: string,
+): Promise<unknown> {
+  return apiJson(`/api/v1/admin/subscriptions/${id}/deactivate/`, {
+    method: "POST",
+    body: JSON.stringify({ reason: reason || "Admin deactivate" }),
+  });
+}
+
+export async function adminActivateSubscription(
+  id: string,
+  extend_days?: number,
+): Promise<unknown> {
+  return apiJson(`/api/v1/admin/subscriptions/${id}/activate/`, {
+    method: "POST",
+    body: JSON.stringify(extend_days != null ? { extend_days } : {}),
+  });
+}
+
+export async function adminGrantSubscription(body: {
+  user_id: number;
+  plan_code: string;
+  days?: number;
+  notes?: string;
+}): Promise<unknown> {
+  return apiJson("/api/v1/admin/subscriptions/grant/", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}

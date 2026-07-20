@@ -43,9 +43,25 @@ class FamilyMemberSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = self.context["request"].user
+        from subscriptions.services import family_member_limit_for
+
+        limit = family_member_limit_for(user)
         count = FamilyMember.objects.filter(user=user).count()
-        if count >= 10:
-            raise serializers.ValidationError({"detail": "Eng ko'pi bilan 10 ta oila a'zosi qo'shish mumkin."})
+        if limit is not None and limit <= 0:
+            raise serializers.ValidationError(
+                {
+                    "detail": "Oila a'zolari Plus yoki Pro obunasida mavjud. Obuna bo'ling.",
+                }
+            )
+        if limit is not None and count >= limit:
+            raise serializers.ValidationError(
+                {
+                    "detail": f"Bu rejada eng ko'pi bilan {limit} ta oila a'zosi qo'shish mumkin.",
+                }
+            )
+        # Hard ceiling against abuse even on unlimited plans
+        if count >= 50:
+            raise serializers.ValidationError({"detail": "Oila a'zolari limiti (50)."})
         return FamilyMember.objects.create(user=user, **validated_data)
 
     def update(self, instance, validated_data):

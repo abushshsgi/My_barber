@@ -9,70 +9,72 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as AdminUsersRouteImport } from './routes/admin.users'
-import { Route as AdminSupportRouteImport } from './routes/admin.support'
-import { Route as AdminStatisticsRouteImport } from './routes/admin.statistics'
-import { Route as AdminServicesRouteImport } from './routes/admin.services'
-import { Route as AdminSalonsRouteImport } from './routes/admin.salons'
-import { Route as AdminReviewsRouteImport } from './routes/admin.reviews'
-import { Route as AdminProfileRouteImport } from './routes/admin.profile'
-import { Route as AdminMorphAiRouteImport } from './routes/admin.morph-ai'
-import { Route as AdminMapRouteImport } from './routes/admin.map'
-import { Route as AdminFinanceRouteImport } from './routes/admin.finance'
-import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
-import { Route as AdminBroadcastRouteImport } from './routes/admin.broadcast'
-import { Route as AdminBookingsRouteImport } from './routes/admin.bookings'
-import { Route as AdminBarbersRouteImport } from './routes/admin.barbers'
-import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminAdminsRouteImport } from './routes/admin.admins'
-import { Route as AdminStatisticsIndexRouteImport } from './routes/admin.statistics.index'
-import { Route as AdminMorphAiIndexRouteImport } from './routes/admin.morph-ai.index'
-import { Route as AdminUsersSignupsRouteImport } from './routes/admin.users.signups'
-import { Route as AdminUsersUserIdRouteImport } from './routes/admin.users.$userId'
-import { Route as AdminSupportTicketIdRouteImport } from './routes/admin.support.$ticketId'
-import { Route as AdminStatisticsWalletRouteImport } from './routes/admin.statistics.wallet'
-import { Route as AdminStatisticsUsersRouteImport } from './routes/admin.statistics.users'
-import { Route as AdminStatisticsSalonsRouteImport } from './routes/admin.statistics.salons'
-import { Route as AdminStatisticsRevenueRouteImport } from './routes/admin.statistics.revenue'
-import { Route as AdminStatisticsLiveRouteImport } from './routes/admin.statistics.live'
-import { Route as AdminStatisticsBookingsRouteImport } from './routes/admin.statistics.bookings'
-import { Route as AdminStatisticsBarbersRouteImport } from './routes/admin.statistics.barbers'
-import { Route as AdminServicesAnalyticsRouteImport } from './routes/admin.services.analytics'
-import { Route as AdminSalonsSalonIdRouteImport } from './routes/admin.salons.$salonId'
-import { Route as AdminMorphAiSettingsRouteImport } from './routes/admin.morph-ai.settings'
-import { Route as AdminMorphAiQueueRouteImport } from './routes/admin.morph-ai.queue'
-import { Route as AdminMorphAiPopularityRouteImport } from './routes/admin.morph-ai.popularity'
-import { Route as AdminMorphAiLimitsRouteImport } from './routes/admin.morph-ai.limits'
-import { Route as AdminMorphAiGalleryRouteImport } from './routes/admin.morph-ai.gallery'
-import { Route as AdminMorphAiErrorsRouteImport } from './routes/admin.morph-ai.errors'
-import { Route as AdminMorphAiConversionRouteImport } from './routes/admin.morph-ai.conversion'
-import { Route as AdminMorphAiCatalogRouteImport } from './routes/admin.morph-ai.catalog'
-import { Route as AdminMorphAiBudgetRouteImport } from './routes/admin.morph-ai.budget'
-import { Route as AdminFinanceTransactionsRouteImport } from './routes/admin.finance.transactions'
-import { Route as AdminFinancePromotionsRouteImport } from './routes/admin.finance.promotions'
-import { Route as AdminFinancePayoutsRouteImport } from './routes/admin.finance.payouts'
-import { Route as AdminBookingsBookingIdRouteImport } from './routes/admin.bookings.$bookingId'
+import { Route as AdminAuditRouteImport } from './routes/admin.audit'
+import { Route as AdminBarbersRouteImport } from './routes/admin.barbers'
+import { Route as AdminBookingsRouteImport } from './routes/admin.bookings'
+import { Route as AdminBroadcastRouteImport } from './routes/admin.broadcast'
+import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
+import { Route as AdminFinanceRouteImport } from './routes/admin.finance'
+import { Route as AdminMapRouteImport } from './routes/admin.map'
+import { Route as AdminMorphAiRouteImport } from './routes/admin.morph-ai'
+import { Route as AdminProfileRouteImport } from './routes/admin.profile'
+import { Route as AdminReviewsRouteImport } from './routes/admin.reviews'
+import { Route as AdminSalonsRouteImport } from './routes/admin.salons'
+import { Route as AdminServicesRouteImport } from './routes/admin.services'
+import { Route as AdminStatisticsRouteImport } from './routes/admin.statistics'
+import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
+import { Route as AdminSupportRouteImport } from './routes/admin.support'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminBarbersBarberIdRouteImport } from './routes/admin.barbers.$barberId'
-import { Route as AdminSalonsSalonIdIndexRouteImport } from './routes/admin.salons.$salonId.index'
+import { Route as AdminBookingsBookingIdRouteImport } from './routes/admin.bookings.$bookingId'
+import { Route as AdminFinancePayoutsRouteImport } from './routes/admin.finance.payouts'
+import { Route as AdminFinancePromotionsRouteImport } from './routes/admin.finance.promotions'
+import { Route as AdminFinanceTransactionsRouteImport } from './routes/admin.finance.transactions'
+import { Route as AdminMorphAiIndexRouteImport } from './routes/admin.morph-ai.index'
+import { Route as AdminMorphAiBudgetRouteImport } from './routes/admin.morph-ai.budget'
+import { Route as AdminMorphAiCatalogRouteImport } from './routes/admin.morph-ai.catalog'
+import { Route as AdminMorphAiConversionRouteImport } from './routes/admin.morph-ai.conversion'
+import { Route as AdminMorphAiErrorsRouteImport } from './routes/admin.morph-ai.errors'
+import { Route as AdminMorphAiGalleryRouteImport } from './routes/admin.morph-ai.gallery'
+import { Route as AdminMorphAiLimitsRouteImport } from './routes/admin.morph-ai.limits'
+import { Route as AdminMorphAiPopularityRouteImport } from './routes/admin.morph-ai.popularity'
+import { Route as AdminMorphAiQueueRouteImport } from './routes/admin.morph-ai.queue'
+import { Route as AdminMorphAiSettingsRouteImport } from './routes/admin.morph-ai.settings'
+import { Route as AdminSalonsSalonIdRouteImport } from './routes/admin.salons.$salonId'
+import { Route as AdminServicesAnalyticsRouteImport } from './routes/admin.services.analytics'
+import { Route as AdminStatisticsIndexRouteImport } from './routes/admin.statistics.index'
+import { Route as AdminStatisticsBarbersRouteImport } from './routes/admin.statistics.barbers'
+import { Route as AdminStatisticsBookingsRouteImport } from './routes/admin.statistics.bookings'
+import { Route as AdminStatisticsLiveRouteImport } from './routes/admin.statistics.live'
+import { Route as AdminStatisticsRevenueRouteImport } from './routes/admin.statistics.revenue'
+import { Route as AdminStatisticsSalonsRouteImport } from './routes/admin.statistics.salons'
+import { Route as AdminStatisticsUsersRouteImport } from './routes/admin.statistics.users'
+import { Route as AdminStatisticsWalletRouteImport } from './routes/admin.statistics.wallet'
+import { Route as AdminSubscriptionsSubIdRouteImport } from './routes/admin.subscriptions.$subId'
+import { Route as AdminSupportTicketIdRouteImport } from './routes/admin.support.$ticketId'
+import { Route as AdminUsersUserIdRouteImport } from './routes/admin.users.$userId'
+import { Route as AdminUsersSignupsRouteImport } from './routes/admin.users.signups'
 import { Route as AdminBarbersBarberIdIndexRouteImport } from './routes/admin.barbers.$barberId.index'
-import { Route as AdminSalonsSalonIdTeamRouteImport } from './routes/admin.salons.$salonId.team'
-import { Route as AdminSalonsSalonIdStatsRouteImport } from './routes/admin.salons.$salonId.stats'
-import { Route as AdminMorphAiListKindRouteImport } from './routes/admin.morph-ai.list.$kind'
-import { Route as AdminBarbersBarberIdStatsRouteImport } from './routes/admin.barbers.$barberId.stats'
-import { Route as AdminBarbersBarberIdReviewsRouteImport } from './routes/admin.barbers.$barberId.reviews'
 import { Route as AdminBarbersBarberIdBookingsRouteImport } from './routes/admin.barbers.$barberId.bookings'
-import { Route as AdminSalonsSalonIdStatsIndexRouteImport } from './routes/admin.salons.$salonId.stats.index'
+import { Route as AdminBarbersBarberIdReviewsRouteImport } from './routes/admin.barbers.$barberId.reviews'
+import { Route as AdminBarbersBarberIdStatsRouteImport } from './routes/admin.barbers.$barberId.stats'
+import { Route as AdminMorphAiListKindRouteImport } from './routes/admin.morph-ai.list.$kind'
+import { Route as AdminSalonsSalonIdIndexRouteImport } from './routes/admin.salons.$salonId.index'
+import { Route as AdminSalonsSalonIdStatsRouteImport } from './routes/admin.salons.$salonId.stats'
+import { Route as AdminSalonsSalonIdTeamRouteImport } from './routes/admin.salons.$salonId.team'
 import { Route as AdminBarbersBarberIdStatsIndexRouteImport } from './routes/admin.barbers.$barberId.stats.index'
-import { Route as AdminSalonsSalonIdStatsGraphsRouteImport } from './routes/admin.salons.$salonId.stats.graphs'
 import { Route as AdminBarbersBarberIdStatsGraphsRouteImport } from './routes/admin.barbers.$barberId.stats.graphs'
+import { Route as AdminSalonsSalonIdStatsIndexRouteImport } from './routes/admin.salons.$salonId.stats.index'
+import { Route as AdminSalonsSalonIdStatsGraphsRouteImport } from './routes/admin.salons.$salonId.stats.graphs'
 
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -80,9 +82,9 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -90,74 +92,9 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSupportRoute = AdminSupportRouteImport.update({
-  id: '/support',
-  path: '/support',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminStatisticsRoute = AdminStatisticsRouteImport.update({
-  id: '/statistics',
-  path: '/statistics',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminServicesRoute = AdminServicesRouteImport.update({
-  id: '/services',
-  path: '/services',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSalonsRoute = AdminSalonsRouteImport.update({
-  id: '/salons',
-  path: '/salons',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminReviewsRoute = AdminReviewsRouteImport.update({
-  id: '/reviews',
-  path: '/reviews',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminProfileRoute = AdminProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminMorphAiRoute = AdminMorphAiRouteImport.update({
-  id: '/morph-ai',
-  path: '/morph-ai',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminMapRoute = AdminMapRouteImport.update({
-  id: '/map',
-  path: '/map',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminFinanceRoute = AdminFinanceRouteImport.update({
-  id: '/finance',
-  path: '/finance',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
-  id: '/categories',
-  path: '/categories',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminBroadcastRoute = AdminBroadcastRouteImport.update({
-  id: '/broadcast',
-  path: '/broadcast',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminBookingsRoute = AdminBookingsRouteImport.update({
-  id: '/bookings',
-  path: '/bookings',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminBarbersRoute = AdminBarbersRouteImport.update({
-  id: '/barbers',
-  path: '/barbers',
+const AdminAdminsRoute = AdminAdminsRouteImport.update({
+  id: '/admins',
+  path: '/admins',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminAuditRoute = AdminAuditRouteImport.update({
@@ -165,125 +102,100 @@ const AdminAuditRoute = AdminAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminAdminsRoute = AdminAdminsRouteImport.update({
-  id: '/admins',
-  path: '/admins',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminStatisticsIndexRoute = AdminStatisticsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminStatisticsRoute,
-} as any)
-const AdminMorphAiIndexRoute = AdminMorphAiIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminMorphAiRoute,
-} as any)
-const AdminUsersSignupsRoute = AdminUsersSignupsRouteImport.update({
-  id: '/signups',
-  path: '/signups',
-  getParentRoute: () => AdminUsersRoute,
-} as any)
-const AdminUsersUserIdRoute = AdminUsersUserIdRouteImport.update({
-  id: '/$userId',
-  path: '/$userId',
-  getParentRoute: () => AdminUsersRoute,
-} as any)
-const AdminSupportTicketIdRoute = AdminSupportTicketIdRouteImport.update({
-  id: '/$ticketId',
-  path: '/$ticketId',
-  getParentRoute: () => AdminSupportRoute,
-} as any)
-const AdminStatisticsWalletRoute = AdminStatisticsWalletRouteImport.update({
-  id: '/wallet',
-  path: '/wallet',
-  getParentRoute: () => AdminStatisticsRoute,
-} as any)
-const AdminStatisticsUsersRoute = AdminStatisticsUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AdminStatisticsRoute,
-} as any)
-const AdminStatisticsSalonsRoute = AdminStatisticsSalonsRouteImport.update({
-  id: '/salons',
-  path: '/salons',
-  getParentRoute: () => AdminStatisticsRoute,
-} as any)
-const AdminStatisticsRevenueRoute = AdminStatisticsRevenueRouteImport.update({
-  id: '/revenue',
-  path: '/revenue',
-  getParentRoute: () => AdminStatisticsRoute,
-} as any)
-const AdminStatisticsLiveRoute = AdminStatisticsLiveRouteImport.update({
-  id: '/live',
-  path: '/live',
-  getParentRoute: () => AdminStatisticsRoute,
-} as any)
-const AdminStatisticsBookingsRoute = AdminStatisticsBookingsRouteImport.update({
-  id: '/bookings',
-  path: '/bookings',
-  getParentRoute: () => AdminStatisticsRoute,
-} as any)
-const AdminStatisticsBarbersRoute = AdminStatisticsBarbersRouteImport.update({
+const AdminBarbersRoute = AdminBarbersRouteImport.update({
   id: '/barbers',
   path: '/barbers',
-  getParentRoute: () => AdminStatisticsRoute,
+  getParentRoute: () => AdminRoute,
 } as any)
-const AdminServicesAnalyticsRoute = AdminServicesAnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
-  getParentRoute: () => AdminServicesRoute,
+const AdminBookingsRoute = AdminBookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
+  getParentRoute: () => AdminRoute,
 } as any)
-const AdminSalonsSalonIdRoute = AdminSalonsSalonIdRouteImport.update({
-  id: '/$salonId',
-  path: '/$salonId',
-  getParentRoute: () => AdminSalonsRoute,
+const AdminBroadcastRoute = AdminBroadcastRouteImport.update({
+  id: '/broadcast',
+  path: '/broadcast',
+  getParentRoute: () => AdminRoute,
 } as any)
-const AdminMorphAiSettingsRoute = AdminMorphAiSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AdminMorphAiRoute,
+const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => AdminRoute,
 } as any)
-const AdminMorphAiQueueRoute = AdminMorphAiQueueRouteImport.update({
-  id: '/queue',
-  path: '/queue',
-  getParentRoute: () => AdminMorphAiRoute,
+const AdminFinanceRoute = AdminFinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
+  getParentRoute: () => AdminRoute,
 } as any)
-const AdminMorphAiPopularityRoute = AdminMorphAiPopularityRouteImport.update({
-  id: '/popularity',
-  path: '/popularity',
-  getParentRoute: () => AdminMorphAiRoute,
+const AdminMapRoute = AdminMapRouteImport.update({
+  id: '/map',
+  path: '/map',
+  getParentRoute: () => AdminRoute,
 } as any)
-const AdminMorphAiLimitsRoute = AdminMorphAiLimitsRouteImport.update({
-  id: '/limits',
-  path: '/limits',
-  getParentRoute: () => AdminMorphAiRoute,
+const AdminMorphAiRoute = AdminMorphAiRouteImport.update({
+  id: '/morph-ai',
+  path: '/morph-ai',
+  getParentRoute: () => AdminRoute,
 } as any)
-const AdminMorphAiGalleryRoute = AdminMorphAiGalleryRouteImport.update({
-  id: '/gallery',
-  path: '/gallery',
-  getParentRoute: () => AdminMorphAiRoute,
+const AdminProfileRoute = AdminProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AdminRoute,
 } as any)
-const AdminMorphAiErrorsRoute = AdminMorphAiErrorsRouteImport.update({
-  id: '/errors',
-  path: '/errors',
-  getParentRoute: () => AdminMorphAiRoute,
+const AdminReviewsRoute = AdminReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
+  getParentRoute: () => AdminRoute,
 } as any)
-const AdminMorphAiConversionRoute = AdminMorphAiConversionRouteImport.update({
-  id: '/conversion',
-  path: '/conversion',
-  getParentRoute: () => AdminMorphAiRoute,
+const AdminSalonsRoute = AdminSalonsRouteImport.update({
+  id: '/salons',
+  path: '/salons',
+  getParentRoute: () => AdminRoute,
 } as any)
-const AdminMorphAiCatalogRoute = AdminMorphAiCatalogRouteImport.update({
-  id: '/catalog',
-  path: '/catalog',
-  getParentRoute: () => AdminMorphAiRoute,
+const AdminServicesRoute = AdminServicesRouteImport.update({
+  id: '/services',
+  path: '/services',
+  getParentRoute: () => AdminRoute,
 } as any)
-const AdminMorphAiBudgetRoute = AdminMorphAiBudgetRouteImport.update({
-  id: '/budget',
-  path: '/budget',
-  getParentRoute: () => AdminMorphAiRoute,
+const AdminStatisticsRoute = AdminStatisticsRouteImport.update({
+  id: '/statistics',
+  path: '/statistics',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSupportRoute = AdminSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBarbersBarberIdRoute = AdminBarbersBarberIdRouteImport.update({
+  id: '/$barberId',
+  path: '/$barberId',
+  getParentRoute: () => AdminBarbersRoute,
+} as any)
+const AdminBookingsBookingIdRoute = AdminBookingsBookingIdRouteImport.update({
+  id: '/$bookingId',
+  path: '/$bookingId',
+  getParentRoute: () => AdminBookingsRoute,
+} as any)
+const AdminFinancePayoutsRoute = AdminFinancePayoutsRouteImport.update({
+  id: '/payouts',
+  path: '/payouts',
+  getParentRoute: () => AdminFinanceRoute,
+} as any)
+const AdminFinancePromotionsRoute = AdminFinancePromotionsRouteImport.update({
+  id: '/promotions',
+  path: '/promotions',
+  getParentRoute: () => AdminFinanceRoute,
 } as any)
 const AdminFinanceTransactionsRoute =
   AdminFinanceTransactionsRouteImport.update({
@@ -291,62 +203,130 @@ const AdminFinanceTransactionsRoute =
     path: '/transactions',
     getParentRoute: () => AdminFinanceRoute,
   } as any)
-const AdminFinancePromotionsRoute = AdminFinancePromotionsRouteImport.update({
-  id: '/promotions',
-  path: '/promotions',
-  getParentRoute: () => AdminFinanceRoute,
-} as any)
-const AdminFinancePayoutsRoute = AdminFinancePayoutsRouteImport.update({
-  id: '/payouts',
-  path: '/payouts',
-  getParentRoute: () => AdminFinanceRoute,
-} as any)
-const AdminBookingsBookingIdRoute = AdminBookingsBookingIdRouteImport.update({
-  id: '/$bookingId',
-  path: '/$bookingId',
-  getParentRoute: () => AdminBookingsRoute,
-} as any)
-const AdminBarbersBarberIdRoute = AdminBarbersBarberIdRouteImport.update({
-  id: '/$barberId',
-  path: '/$barberId',
-  getParentRoute: () => AdminBarbersRoute,
-} as any)
-const AdminSalonsSalonIdIndexRoute = AdminSalonsSalonIdIndexRouteImport.update({
+const AdminMorphAiIndexRoute = AdminMorphAiIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AdminSalonsSalonIdRoute,
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
+const AdminMorphAiBudgetRoute = AdminMorphAiBudgetRouteImport.update({
+  id: '/budget',
+  path: '/budget',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
+const AdminMorphAiCatalogRoute = AdminMorphAiCatalogRouteImport.update({
+  id: '/catalog',
+  path: '/catalog',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
+const AdminMorphAiConversionRoute = AdminMorphAiConversionRouteImport.update({
+  id: '/conversion',
+  path: '/conversion',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
+const AdminMorphAiErrorsRoute = AdminMorphAiErrorsRouteImport.update({
+  id: '/errors',
+  path: '/errors',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
+const AdminMorphAiGalleryRoute = AdminMorphAiGalleryRouteImport.update({
+  id: '/gallery',
+  path: '/gallery',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
+const AdminMorphAiLimitsRoute = AdminMorphAiLimitsRouteImport.update({
+  id: '/limits',
+  path: '/limits',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
+const AdminMorphAiPopularityRoute = AdminMorphAiPopularityRouteImport.update({
+  id: '/popularity',
+  path: '/popularity',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
+const AdminMorphAiQueueRoute = AdminMorphAiQueueRouteImport.update({
+  id: '/queue',
+  path: '/queue',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
+const AdminMorphAiSettingsRoute = AdminMorphAiSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
+const AdminSalonsSalonIdRoute = AdminSalonsSalonIdRouteImport.update({
+  id: '/$salonId',
+  path: '/$salonId',
+  getParentRoute: () => AdminSalonsRoute,
+} as any)
+const AdminServicesAnalyticsRoute = AdminServicesAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AdminServicesRoute,
+} as any)
+const AdminStatisticsIndexRoute = AdminStatisticsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminStatisticsRoute,
+} as any)
+const AdminStatisticsBarbersRoute = AdminStatisticsBarbersRouteImport.update({
+  id: '/barbers',
+  path: '/barbers',
+  getParentRoute: () => AdminStatisticsRoute,
+} as any)
+const AdminStatisticsBookingsRoute = AdminStatisticsBookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
+  getParentRoute: () => AdminStatisticsRoute,
+} as any)
+const AdminStatisticsLiveRoute = AdminStatisticsLiveRouteImport.update({
+  id: '/live',
+  path: '/live',
+  getParentRoute: () => AdminStatisticsRoute,
+} as any)
+const AdminStatisticsRevenueRoute = AdminStatisticsRevenueRouteImport.update({
+  id: '/revenue',
+  path: '/revenue',
+  getParentRoute: () => AdminStatisticsRoute,
+} as any)
+const AdminStatisticsSalonsRoute = AdminStatisticsSalonsRouteImport.update({
+  id: '/salons',
+  path: '/salons',
+  getParentRoute: () => AdminStatisticsRoute,
+} as any)
+const AdminStatisticsUsersRoute = AdminStatisticsUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminStatisticsRoute,
+} as any)
+const AdminStatisticsWalletRoute = AdminStatisticsWalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => AdminStatisticsRoute,
+} as any)
+const AdminSubscriptionsSubIdRoute = AdminSubscriptionsSubIdRouteImport.update({
+  id: '/$subId',
+  path: '/$subId',
+  getParentRoute: () => AdminSubscriptionsRoute,
+} as any)
+const AdminSupportTicketIdRoute = AdminSupportTicketIdRouteImport.update({
+  id: '/$ticketId',
+  path: '/$ticketId',
+  getParentRoute: () => AdminSupportRoute,
+} as any)
+const AdminUsersUserIdRoute = AdminUsersUserIdRouteImport.update({
+  id: '/$userId',
+  path: '/$userId',
+  getParentRoute: () => AdminUsersRoute,
+} as any)
+const AdminUsersSignupsRoute = AdminUsersSignupsRouteImport.update({
+  id: '/signups',
+  path: '/signups',
+  getParentRoute: () => AdminUsersRoute,
 } as any)
 const AdminBarbersBarberIdIndexRoute =
   AdminBarbersBarberIdIndexRouteImport.update({
     id: '/',
     path: '/',
-    getParentRoute: () => AdminBarbersBarberIdRoute,
-  } as any)
-const AdminSalonsSalonIdTeamRoute = AdminSalonsSalonIdTeamRouteImport.update({
-  id: '/team',
-  path: '/team',
-  getParentRoute: () => AdminSalonsSalonIdRoute,
-} as any)
-const AdminSalonsSalonIdStatsRoute = AdminSalonsSalonIdStatsRouteImport.update({
-  id: '/stats',
-  path: '/stats',
-  getParentRoute: () => AdminSalonsSalonIdRoute,
-} as any)
-const AdminMorphAiListKindRoute = AdminMorphAiListKindRouteImport.update({
-  id: '/list/$kind',
-  path: '/list/$kind',
-  getParentRoute: () => AdminMorphAiRoute,
-} as any)
-const AdminBarbersBarberIdStatsRoute =
-  AdminBarbersBarberIdStatsRouteImport.update({
-    id: '/stats',
-    path: '/stats',
-    getParentRoute: () => AdminBarbersBarberIdRoute,
-  } as any)
-const AdminBarbersBarberIdReviewsRoute =
-  AdminBarbersBarberIdReviewsRouteImport.update({
-    id: '/reviews',
-    path: '/reviews',
     getParentRoute: () => AdminBarbersBarberIdRoute,
   } as any)
 const AdminBarbersBarberIdBookingsRoute =
@@ -355,29 +335,61 @@ const AdminBarbersBarberIdBookingsRoute =
     path: '/bookings',
     getParentRoute: () => AdminBarbersBarberIdRoute,
   } as any)
-const AdminSalonsSalonIdStatsIndexRoute =
-  AdminSalonsSalonIdStatsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AdminSalonsSalonIdStatsRoute,
+const AdminBarbersBarberIdReviewsRoute =
+  AdminBarbersBarberIdReviewsRouteImport.update({
+    id: '/reviews',
+    path: '/reviews',
+    getParentRoute: () => AdminBarbersBarberIdRoute,
   } as any)
+const AdminBarbersBarberIdStatsRoute =
+  AdminBarbersBarberIdStatsRouteImport.update({
+    id: '/stats',
+    path: '/stats',
+    getParentRoute: () => AdminBarbersBarberIdRoute,
+  } as any)
+const AdminMorphAiListKindRoute = AdminMorphAiListKindRouteImport.update({
+  id: '/list/$kind',
+  path: '/list/$kind',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
+const AdminSalonsSalonIdIndexRoute = AdminSalonsSalonIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminSalonsSalonIdRoute,
+} as any)
+const AdminSalonsSalonIdStatsRoute = AdminSalonsSalonIdStatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => AdminSalonsSalonIdRoute,
+} as any)
+const AdminSalonsSalonIdTeamRoute = AdminSalonsSalonIdTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AdminSalonsSalonIdRoute,
+} as any)
 const AdminBarbersBarberIdStatsIndexRoute =
   AdminBarbersBarberIdStatsIndexRouteImport.update({
     id: '/',
     path: '/',
     getParentRoute: () => AdminBarbersBarberIdStatsRoute,
   } as any)
-const AdminSalonsSalonIdStatsGraphsRoute =
-  AdminSalonsSalonIdStatsGraphsRouteImport.update({
-    id: '/graphs',
-    path: '/graphs',
-    getParentRoute: () => AdminSalonsSalonIdStatsRoute,
-  } as any)
 const AdminBarbersBarberIdStatsGraphsRoute =
   AdminBarbersBarberIdStatsGraphsRouteImport.update({
     id: '/graphs',
     path: '/graphs',
     getParentRoute: () => AdminBarbersBarberIdStatsRoute,
+  } as any)
+const AdminSalonsSalonIdStatsIndexRoute =
+  AdminSalonsSalonIdStatsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminSalonsSalonIdStatsRoute,
+  } as any)
+const AdminSalonsSalonIdStatsGraphsRoute =
+  AdminSalonsSalonIdStatsGraphsRouteImport.update({
+    id: '/graphs',
+    path: '/graphs',
+    getParentRoute: () => AdminSalonsSalonIdStatsRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -398,6 +410,7 @@ export interface FileRoutesByFullPath {
   '/admin/salons': typeof AdminSalonsRouteWithChildren
   '/admin/services': typeof AdminServicesRouteWithChildren
   '/admin/statistics': typeof AdminStatisticsRouteWithChildren
+  '/admin/subscriptions': typeof AdminSubscriptionsRouteWithChildren
   '/admin/support': typeof AdminSupportRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/': typeof AdminIndexRoute
@@ -424,6 +437,7 @@ export interface FileRoutesByFullPath {
   '/admin/statistics/salons': typeof AdminStatisticsSalonsRoute
   '/admin/statistics/users': typeof AdminStatisticsUsersRoute
   '/admin/statistics/wallet': typeof AdminStatisticsWalletRoute
+  '/admin/subscriptions/$subId': typeof AdminSubscriptionsSubIdRoute
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
@@ -457,6 +471,7 @@ export interface FileRoutesByTo {
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/salons': typeof AdminSalonsRouteWithChildren
   '/admin/services': typeof AdminServicesRouteWithChildren
+  '/admin/subscriptions': typeof AdminSubscriptionsRouteWithChildren
   '/admin/support': typeof AdminSupportRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin': typeof AdminIndexRoute
@@ -481,6 +496,7 @@ export interface FileRoutesByTo {
   '/admin/statistics/salons': typeof AdminStatisticsSalonsRoute
   '/admin/statistics/users': typeof AdminStatisticsUsersRoute
   '/admin/statistics/wallet': typeof AdminStatisticsWalletRoute
+  '/admin/subscriptions/$subId': typeof AdminSubscriptionsSubIdRoute
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
@@ -516,6 +532,7 @@ export interface FileRoutesById {
   '/admin/salons': typeof AdminSalonsRouteWithChildren
   '/admin/services': typeof AdminServicesRouteWithChildren
   '/admin/statistics': typeof AdminStatisticsRouteWithChildren
+  '/admin/subscriptions': typeof AdminSubscriptionsRouteWithChildren
   '/admin/support': typeof AdminSupportRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/': typeof AdminIndexRoute
@@ -542,6 +559,7 @@ export interface FileRoutesById {
   '/admin/statistics/salons': typeof AdminStatisticsSalonsRoute
   '/admin/statistics/users': typeof AdminStatisticsUsersRoute
   '/admin/statistics/wallet': typeof AdminStatisticsWalletRoute
+  '/admin/subscriptions/$subId': typeof AdminSubscriptionsSubIdRoute
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
@@ -580,6 +598,7 @@ export interface FileRouteTypes {
     | '/admin/salons'
     | '/admin/services'
     | '/admin/statistics'
+    | '/admin/subscriptions'
     | '/admin/support'
     | '/admin/users'
     | '/admin/'
@@ -606,6 +625,7 @@ export interface FileRouteTypes {
     | '/admin/statistics/salons'
     | '/admin/statistics/users'
     | '/admin/statistics/wallet'
+    | '/admin/subscriptions/$subId'
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
     | '/admin/users/signups'
@@ -639,6 +659,7 @@ export interface FileRouteTypes {
     | '/admin/reviews'
     | '/admin/salons'
     | '/admin/services'
+    | '/admin/subscriptions'
     | '/admin/support'
     | '/admin/users'
     | '/admin'
@@ -663,6 +684,7 @@ export interface FileRouteTypes {
     | '/admin/statistics/salons'
     | '/admin/statistics/users'
     | '/admin/statistics/wallet'
+    | '/admin/subscriptions/$subId'
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
     | '/admin/users/signups'
@@ -697,6 +719,7 @@ export interface FileRouteTypes {
     | '/admin/salons'
     | '/admin/services'
     | '/admin/statistics'
+    | '/admin/subscriptions'
     | '/admin/support'
     | '/admin/users'
     | '/admin/'
@@ -723,6 +746,7 @@ export interface FileRouteTypes {
     | '/admin/statistics/salons'
     | '/admin/statistics/users'
     | '/admin/statistics/wallet'
+    | '/admin/subscriptions/$subId'
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
     | '/admin/users/signups'
@@ -750,11 +774,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -764,11 +788,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -778,102 +802,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/support': {
-      id: '/admin/support'
-      path: '/support'
-      fullPath: '/admin/support'
-      preLoaderRoute: typeof AdminSupportRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/statistics': {
-      id: '/admin/statistics'
-      path: '/statistics'
-      fullPath: '/admin/statistics'
-      preLoaderRoute: typeof AdminStatisticsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/services': {
-      id: '/admin/services'
-      path: '/services'
-      fullPath: '/admin/services'
-      preLoaderRoute: typeof AdminServicesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/salons': {
-      id: '/admin/salons'
-      path: '/salons'
-      fullPath: '/admin/salons'
-      preLoaderRoute: typeof AdminSalonsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/reviews': {
-      id: '/admin/reviews'
-      path: '/reviews'
-      fullPath: '/admin/reviews'
-      preLoaderRoute: typeof AdminReviewsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/profile': {
-      id: '/admin/profile'
-      path: '/profile'
-      fullPath: '/admin/profile'
-      preLoaderRoute: typeof AdminProfileRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/morph-ai': {
-      id: '/admin/morph-ai'
-      path: '/morph-ai'
-      fullPath: '/admin/morph-ai'
-      preLoaderRoute: typeof AdminMorphAiRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/map': {
-      id: '/admin/map'
-      path: '/map'
-      fullPath: '/admin/map'
-      preLoaderRoute: typeof AdminMapRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/finance': {
-      id: '/admin/finance'
-      path: '/finance'
-      fullPath: '/admin/finance'
-      preLoaderRoute: typeof AdminFinanceRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/categories': {
-      id: '/admin/categories'
-      path: '/categories'
-      fullPath: '/admin/categories'
-      preLoaderRoute: typeof AdminCategoriesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/broadcast': {
-      id: '/admin/broadcast'
-      path: '/broadcast'
-      fullPath: '/admin/broadcast'
-      preLoaderRoute: typeof AdminBroadcastRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/bookings': {
-      id: '/admin/bookings'
-      path: '/bookings'
-      fullPath: '/admin/bookings'
-      preLoaderRoute: typeof AdminBookingsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/barbers': {
-      id: '/admin/barbers'
-      path: '/barbers'
-      fullPath: '/admin/barbers'
-      preLoaderRoute: typeof AdminBarbersRouteImport
+    '/admin/admins': {
+      id: '/admin/admins'
+      path: '/admins'
+      fullPath: '/admin/admins'
+      preLoaderRoute: typeof AdminAdminsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/audit': {
@@ -883,179 +816,130 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuditRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/admins': {
-      id: '/admin/admins'
-      path: '/admins'
-      fullPath: '/admin/admins'
-      preLoaderRoute: typeof AdminAdminsRouteImport
+    '/admin/barbers': {
+      id: '/admin/barbers'
+      path: '/barbers'
+      fullPath: '/admin/barbers'
+      preLoaderRoute: typeof AdminBarbersRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/statistics/': {
-      id: '/admin/statistics/'
-      path: '/'
-      fullPath: '/admin/statistics/'
-      preLoaderRoute: typeof AdminStatisticsIndexRouteImport
-      parentRoute: typeof AdminStatisticsRoute
-    }
-    '/admin/morph-ai/': {
-      id: '/admin/morph-ai/'
-      path: '/'
-      fullPath: '/admin/morph-ai/'
-      preLoaderRoute: typeof AdminMorphAiIndexRouteImport
-      parentRoute: typeof AdminMorphAiRoute
-    }
-    '/admin/users/signups': {
-      id: '/admin/users/signups'
-      path: '/signups'
-      fullPath: '/admin/users/signups'
-      preLoaderRoute: typeof AdminUsersSignupsRouteImport
-      parentRoute: typeof AdminUsersRoute
-    }
-    '/admin/users/$userId': {
-      id: '/admin/users/$userId'
-      path: '/$userId'
-      fullPath: '/admin/users/$userId'
-      preLoaderRoute: typeof AdminUsersUserIdRouteImport
-      parentRoute: typeof AdminUsersRoute
-    }
-    '/admin/support/$ticketId': {
-      id: '/admin/support/$ticketId'
-      path: '/$ticketId'
-      fullPath: '/admin/support/$ticketId'
-      preLoaderRoute: typeof AdminSupportTicketIdRouteImport
-      parentRoute: typeof AdminSupportRoute
-    }
-    '/admin/statistics/wallet': {
-      id: '/admin/statistics/wallet'
-      path: '/wallet'
-      fullPath: '/admin/statistics/wallet'
-      preLoaderRoute: typeof AdminStatisticsWalletRouteImport
-      parentRoute: typeof AdminStatisticsRoute
-    }
-    '/admin/statistics/users': {
-      id: '/admin/statistics/users'
-      path: '/users'
-      fullPath: '/admin/statistics/users'
-      preLoaderRoute: typeof AdminStatisticsUsersRouteImport
-      parentRoute: typeof AdminStatisticsRoute
-    }
-    '/admin/statistics/salons': {
-      id: '/admin/statistics/salons'
-      path: '/salons'
-      fullPath: '/admin/statistics/salons'
-      preLoaderRoute: typeof AdminStatisticsSalonsRouteImport
-      parentRoute: typeof AdminStatisticsRoute
-    }
-    '/admin/statistics/revenue': {
-      id: '/admin/statistics/revenue'
-      path: '/revenue'
-      fullPath: '/admin/statistics/revenue'
-      preLoaderRoute: typeof AdminStatisticsRevenueRouteImport
-      parentRoute: typeof AdminStatisticsRoute
-    }
-    '/admin/statistics/live': {
-      id: '/admin/statistics/live'
-      path: '/live'
-      fullPath: '/admin/statistics/live'
-      preLoaderRoute: typeof AdminStatisticsLiveRouteImport
-      parentRoute: typeof AdminStatisticsRoute
-    }
-    '/admin/statistics/bookings': {
-      id: '/admin/statistics/bookings'
+    '/admin/bookings': {
+      id: '/admin/bookings'
       path: '/bookings'
-      fullPath: '/admin/statistics/bookings'
-      preLoaderRoute: typeof AdminStatisticsBookingsRouteImport
-      parentRoute: typeof AdminStatisticsRoute
+      fullPath: '/admin/bookings'
+      preLoaderRoute: typeof AdminBookingsRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/admin/statistics/barbers': {
-      id: '/admin/statistics/barbers'
-      path: '/barbers'
-      fullPath: '/admin/statistics/barbers'
-      preLoaderRoute: typeof AdminStatisticsBarbersRouteImport
-      parentRoute: typeof AdminStatisticsRoute
+    '/admin/broadcast': {
+      id: '/admin/broadcast'
+      path: '/broadcast'
+      fullPath: '/admin/broadcast'
+      preLoaderRoute: typeof AdminBroadcastRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/admin/services/analytics': {
-      id: '/admin/services/analytics'
-      path: '/analytics'
-      fullPath: '/admin/services/analytics'
-      preLoaderRoute: typeof AdminServicesAnalyticsRouteImport
-      parentRoute: typeof AdminServicesRoute
+    '/admin/categories': {
+      id: '/admin/categories'
+      path: '/categories'
+      fullPath: '/admin/categories'
+      preLoaderRoute: typeof AdminCategoriesRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/admin/salons/$salonId': {
-      id: '/admin/salons/$salonId'
-      path: '/$salonId'
-      fullPath: '/admin/salons/$salonId'
-      preLoaderRoute: typeof AdminSalonsSalonIdRouteImport
-      parentRoute: typeof AdminSalonsRoute
+    '/admin/finance': {
+      id: '/admin/finance'
+      path: '/finance'
+      fullPath: '/admin/finance'
+      preLoaderRoute: typeof AdminFinanceRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/admin/morph-ai/settings': {
-      id: '/admin/morph-ai/settings'
-      path: '/settings'
-      fullPath: '/admin/morph-ai/settings'
-      preLoaderRoute: typeof AdminMorphAiSettingsRouteImport
-      parentRoute: typeof AdminMorphAiRoute
+    '/admin/map': {
+      id: '/admin/map'
+      path: '/map'
+      fullPath: '/admin/map'
+      preLoaderRoute: typeof AdminMapRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/admin/morph-ai/queue': {
-      id: '/admin/morph-ai/queue'
-      path: '/queue'
-      fullPath: '/admin/morph-ai/queue'
-      preLoaderRoute: typeof AdminMorphAiQueueRouteImport
-      parentRoute: typeof AdminMorphAiRoute
+    '/admin/morph-ai': {
+      id: '/admin/morph-ai'
+      path: '/morph-ai'
+      fullPath: '/admin/morph-ai'
+      preLoaderRoute: typeof AdminMorphAiRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/admin/morph-ai/popularity': {
-      id: '/admin/morph-ai/popularity'
-      path: '/popularity'
-      fullPath: '/admin/morph-ai/popularity'
-      preLoaderRoute: typeof AdminMorphAiPopularityRouteImport
-      parentRoute: typeof AdminMorphAiRoute
+    '/admin/profile': {
+      id: '/admin/profile'
+      path: '/profile'
+      fullPath: '/admin/profile'
+      preLoaderRoute: typeof AdminProfileRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/admin/morph-ai/limits': {
-      id: '/admin/morph-ai/limits'
-      path: '/limits'
-      fullPath: '/admin/morph-ai/limits'
-      preLoaderRoute: typeof AdminMorphAiLimitsRouteImport
-      parentRoute: typeof AdminMorphAiRoute
+    '/admin/reviews': {
+      id: '/admin/reviews'
+      path: '/reviews'
+      fullPath: '/admin/reviews'
+      preLoaderRoute: typeof AdminReviewsRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/admin/morph-ai/gallery': {
-      id: '/admin/morph-ai/gallery'
-      path: '/gallery'
-      fullPath: '/admin/morph-ai/gallery'
-      preLoaderRoute: typeof AdminMorphAiGalleryRouteImport
-      parentRoute: typeof AdminMorphAiRoute
+    '/admin/salons': {
+      id: '/admin/salons'
+      path: '/salons'
+      fullPath: '/admin/salons'
+      preLoaderRoute: typeof AdminSalonsRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/admin/morph-ai/errors': {
-      id: '/admin/morph-ai/errors'
-      path: '/errors'
-      fullPath: '/admin/morph-ai/errors'
-      preLoaderRoute: typeof AdminMorphAiErrorsRouteImport
-      parentRoute: typeof AdminMorphAiRoute
+    '/admin/services': {
+      id: '/admin/services'
+      path: '/services'
+      fullPath: '/admin/services'
+      preLoaderRoute: typeof AdminServicesRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/admin/morph-ai/conversion': {
-      id: '/admin/morph-ai/conversion'
-      path: '/conversion'
-      fullPath: '/admin/morph-ai/conversion'
-      preLoaderRoute: typeof AdminMorphAiConversionRouteImport
-      parentRoute: typeof AdminMorphAiRoute
+    '/admin/statistics': {
+      id: '/admin/statistics'
+      path: '/statistics'
+      fullPath: '/admin/statistics'
+      preLoaderRoute: typeof AdminStatisticsRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/admin/morph-ai/catalog': {
-      id: '/admin/morph-ai/catalog'
-      path: '/catalog'
-      fullPath: '/admin/morph-ai/catalog'
-      preLoaderRoute: typeof AdminMorphAiCatalogRouteImport
-      parentRoute: typeof AdminMorphAiRoute
+    '/admin/subscriptions': {
+      id: '/admin/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/admin/subscriptions'
+      preLoaderRoute: typeof AdminSubscriptionsRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/admin/morph-ai/budget': {
-      id: '/admin/morph-ai/budget'
-      path: '/budget'
-      fullPath: '/admin/morph-ai/budget'
-      preLoaderRoute: typeof AdminMorphAiBudgetRouteImport
-      parentRoute: typeof AdminMorphAiRoute
+    '/admin/support': {
+      id: '/admin/support'
+      path: '/support'
+      fullPath: '/admin/support'
+      preLoaderRoute: typeof AdminSupportRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/admin/finance/transactions': {
-      id: '/admin/finance/transactions'
-      path: '/transactions'
-      fullPath: '/admin/finance/transactions'
-      preLoaderRoute: typeof AdminFinanceTransactionsRouteImport
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/barbers/$barberId': {
+      id: '/admin/barbers/$barberId'
+      path: '/$barberId'
+      fullPath: '/admin/barbers/$barberId'
+      preLoaderRoute: typeof AdminBarbersBarberIdRouteImport
+      parentRoute: typeof AdminBarbersRoute
+    }
+    '/admin/bookings/$bookingId': {
+      id: '/admin/bookings/$bookingId'
+      path: '/$bookingId'
+      fullPath: '/admin/bookings/$bookingId'
+      preLoaderRoute: typeof AdminBookingsBookingIdRouteImport
+      parentRoute: typeof AdminBookingsRoute
+    }
+    '/admin/finance/payouts': {
+      id: '/admin/finance/payouts'
+      path: '/payouts'
+      fullPath: '/admin/finance/payouts'
+      preLoaderRoute: typeof AdminFinancePayoutsRouteImport
       parentRoute: typeof AdminFinanceRoute
     }
     '/admin/finance/promotions': {
@@ -1065,74 +949,186 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminFinancePromotionsRouteImport
       parentRoute: typeof AdminFinanceRoute
     }
-    '/admin/finance/payouts': {
-      id: '/admin/finance/payouts'
-      path: '/payouts'
-      fullPath: '/admin/finance/payouts'
-      preLoaderRoute: typeof AdminFinancePayoutsRouteImport
+    '/admin/finance/transactions': {
+      id: '/admin/finance/transactions'
+      path: '/transactions'
+      fullPath: '/admin/finance/transactions'
+      preLoaderRoute: typeof AdminFinanceTransactionsRouteImport
       parentRoute: typeof AdminFinanceRoute
     }
-    '/admin/bookings/$bookingId': {
-      id: '/admin/bookings/$bookingId'
-      path: '/$bookingId'
-      fullPath: '/admin/bookings/$bookingId'
-      preLoaderRoute: typeof AdminBookingsBookingIdRouteImport
-      parentRoute: typeof AdminBookingsRoute
-    }
-    '/admin/barbers/$barberId': {
-      id: '/admin/barbers/$barberId'
-      path: '/$barberId'
-      fullPath: '/admin/barbers/$barberId'
-      preLoaderRoute: typeof AdminBarbersBarberIdRouteImport
-      parentRoute: typeof AdminBarbersRoute
-    }
-    '/admin/salons/$salonId/': {
-      id: '/admin/salons/$salonId/'
+    '/admin/morph-ai/': {
+      id: '/admin/morph-ai/'
       path: '/'
-      fullPath: '/admin/salons/$salonId/'
-      preLoaderRoute: typeof AdminSalonsSalonIdIndexRouteImport
-      parentRoute: typeof AdminSalonsSalonIdRoute
+      fullPath: '/admin/morph-ai/'
+      preLoaderRoute: typeof AdminMorphAiIndexRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/morph-ai/budget': {
+      id: '/admin/morph-ai/budget'
+      path: '/budget'
+      fullPath: '/admin/morph-ai/budget'
+      preLoaderRoute: typeof AdminMorphAiBudgetRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/morph-ai/catalog': {
+      id: '/admin/morph-ai/catalog'
+      path: '/catalog'
+      fullPath: '/admin/morph-ai/catalog'
+      preLoaderRoute: typeof AdminMorphAiCatalogRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/morph-ai/conversion': {
+      id: '/admin/morph-ai/conversion'
+      path: '/conversion'
+      fullPath: '/admin/morph-ai/conversion'
+      preLoaderRoute: typeof AdminMorphAiConversionRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/morph-ai/errors': {
+      id: '/admin/morph-ai/errors'
+      path: '/errors'
+      fullPath: '/admin/morph-ai/errors'
+      preLoaderRoute: typeof AdminMorphAiErrorsRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/morph-ai/gallery': {
+      id: '/admin/morph-ai/gallery'
+      path: '/gallery'
+      fullPath: '/admin/morph-ai/gallery'
+      preLoaderRoute: typeof AdminMorphAiGalleryRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/morph-ai/limits': {
+      id: '/admin/morph-ai/limits'
+      path: '/limits'
+      fullPath: '/admin/morph-ai/limits'
+      preLoaderRoute: typeof AdminMorphAiLimitsRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/morph-ai/popularity': {
+      id: '/admin/morph-ai/popularity'
+      path: '/popularity'
+      fullPath: '/admin/morph-ai/popularity'
+      preLoaderRoute: typeof AdminMorphAiPopularityRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/morph-ai/queue': {
+      id: '/admin/morph-ai/queue'
+      path: '/queue'
+      fullPath: '/admin/morph-ai/queue'
+      preLoaderRoute: typeof AdminMorphAiQueueRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/morph-ai/settings': {
+      id: '/admin/morph-ai/settings'
+      path: '/settings'
+      fullPath: '/admin/morph-ai/settings'
+      preLoaderRoute: typeof AdminMorphAiSettingsRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/salons/$salonId': {
+      id: '/admin/salons/$salonId'
+      path: '/$salonId'
+      fullPath: '/admin/salons/$salonId'
+      preLoaderRoute: typeof AdminSalonsSalonIdRouteImport
+      parentRoute: typeof AdminSalonsRoute
+    }
+    '/admin/services/analytics': {
+      id: '/admin/services/analytics'
+      path: '/analytics'
+      fullPath: '/admin/services/analytics'
+      preLoaderRoute: typeof AdminServicesAnalyticsRouteImport
+      parentRoute: typeof AdminServicesRoute
+    }
+    '/admin/statistics/': {
+      id: '/admin/statistics/'
+      path: '/'
+      fullPath: '/admin/statistics/'
+      preLoaderRoute: typeof AdminStatisticsIndexRouteImport
+      parentRoute: typeof AdminStatisticsRoute
+    }
+    '/admin/statistics/barbers': {
+      id: '/admin/statistics/barbers'
+      path: '/barbers'
+      fullPath: '/admin/statistics/barbers'
+      preLoaderRoute: typeof AdminStatisticsBarbersRouteImport
+      parentRoute: typeof AdminStatisticsRoute
+    }
+    '/admin/statistics/bookings': {
+      id: '/admin/statistics/bookings'
+      path: '/bookings'
+      fullPath: '/admin/statistics/bookings'
+      preLoaderRoute: typeof AdminStatisticsBookingsRouteImport
+      parentRoute: typeof AdminStatisticsRoute
+    }
+    '/admin/statistics/live': {
+      id: '/admin/statistics/live'
+      path: '/live'
+      fullPath: '/admin/statistics/live'
+      preLoaderRoute: typeof AdminStatisticsLiveRouteImport
+      parentRoute: typeof AdminStatisticsRoute
+    }
+    '/admin/statistics/revenue': {
+      id: '/admin/statistics/revenue'
+      path: '/revenue'
+      fullPath: '/admin/statistics/revenue'
+      preLoaderRoute: typeof AdminStatisticsRevenueRouteImport
+      parentRoute: typeof AdminStatisticsRoute
+    }
+    '/admin/statistics/salons': {
+      id: '/admin/statistics/salons'
+      path: '/salons'
+      fullPath: '/admin/statistics/salons'
+      preLoaderRoute: typeof AdminStatisticsSalonsRouteImport
+      parentRoute: typeof AdminStatisticsRoute
+    }
+    '/admin/statistics/users': {
+      id: '/admin/statistics/users'
+      path: '/users'
+      fullPath: '/admin/statistics/users'
+      preLoaderRoute: typeof AdminStatisticsUsersRouteImport
+      parentRoute: typeof AdminStatisticsRoute
+    }
+    '/admin/statistics/wallet': {
+      id: '/admin/statistics/wallet'
+      path: '/wallet'
+      fullPath: '/admin/statistics/wallet'
+      preLoaderRoute: typeof AdminStatisticsWalletRouteImport
+      parentRoute: typeof AdminStatisticsRoute
+    }
+    '/admin/subscriptions/$subId': {
+      id: '/admin/subscriptions/$subId'
+      path: '/$subId'
+      fullPath: '/admin/subscriptions/$subId'
+      preLoaderRoute: typeof AdminSubscriptionsSubIdRouteImport
+      parentRoute: typeof AdminSubscriptionsRoute
+    }
+    '/admin/support/$ticketId': {
+      id: '/admin/support/$ticketId'
+      path: '/$ticketId'
+      fullPath: '/admin/support/$ticketId'
+      preLoaderRoute: typeof AdminSupportTicketIdRouteImport
+      parentRoute: typeof AdminSupportRoute
+    }
+    '/admin/users/$userId': {
+      id: '/admin/users/$userId'
+      path: '/$userId'
+      fullPath: '/admin/users/$userId'
+      preLoaderRoute: typeof AdminUsersUserIdRouteImport
+      parentRoute: typeof AdminUsersRoute
+    }
+    '/admin/users/signups': {
+      id: '/admin/users/signups'
+      path: '/signups'
+      fullPath: '/admin/users/signups'
+      preLoaderRoute: typeof AdminUsersSignupsRouteImport
+      parentRoute: typeof AdminUsersRoute
     }
     '/admin/barbers/$barberId/': {
       id: '/admin/barbers/$barberId/'
       path: '/'
       fullPath: '/admin/barbers/$barberId/'
       preLoaderRoute: typeof AdminBarbersBarberIdIndexRouteImport
-      parentRoute: typeof AdminBarbersBarberIdRoute
-    }
-    '/admin/salons/$salonId/team': {
-      id: '/admin/salons/$salonId/team'
-      path: '/team'
-      fullPath: '/admin/salons/$salonId/team'
-      preLoaderRoute: typeof AdminSalonsSalonIdTeamRouteImport
-      parentRoute: typeof AdminSalonsSalonIdRoute
-    }
-    '/admin/salons/$salonId/stats': {
-      id: '/admin/salons/$salonId/stats'
-      path: '/stats'
-      fullPath: '/admin/salons/$salonId/stats'
-      preLoaderRoute: typeof AdminSalonsSalonIdStatsRouteImport
-      parentRoute: typeof AdminSalonsSalonIdRoute
-    }
-    '/admin/morph-ai/list/$kind': {
-      id: '/admin/morph-ai/list/$kind'
-      path: '/list/$kind'
-      fullPath: '/admin/morph-ai/list/$kind'
-      preLoaderRoute: typeof AdminMorphAiListKindRouteImport
-      parentRoute: typeof AdminMorphAiRoute
-    }
-    '/admin/barbers/$barberId/stats': {
-      id: '/admin/barbers/$barberId/stats'
-      path: '/stats'
-      fullPath: '/admin/barbers/$barberId/stats'
-      preLoaderRoute: typeof AdminBarbersBarberIdStatsRouteImport
-      parentRoute: typeof AdminBarbersBarberIdRoute
-    }
-    '/admin/barbers/$barberId/reviews': {
-      id: '/admin/barbers/$barberId/reviews'
-      path: '/reviews'
-      fullPath: '/admin/barbers/$barberId/reviews'
-      preLoaderRoute: typeof AdminBarbersBarberIdReviewsRouteImport
       parentRoute: typeof AdminBarbersBarberIdRoute
     }
     '/admin/barbers/$barberId/bookings': {
@@ -1142,12 +1138,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBarbersBarberIdBookingsRouteImport
       parentRoute: typeof AdminBarbersBarberIdRoute
     }
-    '/admin/salons/$salonId/stats/': {
-      id: '/admin/salons/$salonId/stats/'
+    '/admin/barbers/$barberId/reviews': {
+      id: '/admin/barbers/$barberId/reviews'
+      path: '/reviews'
+      fullPath: '/admin/barbers/$barberId/reviews'
+      preLoaderRoute: typeof AdminBarbersBarberIdReviewsRouteImport
+      parentRoute: typeof AdminBarbersBarberIdRoute
+    }
+    '/admin/barbers/$barberId/stats': {
+      id: '/admin/barbers/$barberId/stats'
+      path: '/stats'
+      fullPath: '/admin/barbers/$barberId/stats'
+      preLoaderRoute: typeof AdminBarbersBarberIdStatsRouteImport
+      parentRoute: typeof AdminBarbersBarberIdRoute
+    }
+    '/admin/morph-ai/list/$kind': {
+      id: '/admin/morph-ai/list/$kind'
+      path: '/list/$kind'
+      fullPath: '/admin/morph-ai/list/$kind'
+      preLoaderRoute: typeof AdminMorphAiListKindRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/salons/$salonId/': {
+      id: '/admin/salons/$salonId/'
       path: '/'
-      fullPath: '/admin/salons/$salonId/stats/'
-      preLoaderRoute: typeof AdminSalonsSalonIdStatsIndexRouteImport
-      parentRoute: typeof AdminSalonsSalonIdStatsRoute
+      fullPath: '/admin/salons/$salonId/'
+      preLoaderRoute: typeof AdminSalonsSalonIdIndexRouteImport
+      parentRoute: typeof AdminSalonsSalonIdRoute
+    }
+    '/admin/salons/$salonId/stats': {
+      id: '/admin/salons/$salonId/stats'
+      path: '/stats'
+      fullPath: '/admin/salons/$salonId/stats'
+      preLoaderRoute: typeof AdminSalonsSalonIdStatsRouteImport
+      parentRoute: typeof AdminSalonsSalonIdRoute
+    }
+    '/admin/salons/$salonId/team': {
+      id: '/admin/salons/$salonId/team'
+      path: '/team'
+      fullPath: '/admin/salons/$salonId/team'
+      preLoaderRoute: typeof AdminSalonsSalonIdTeamRouteImport
+      parentRoute: typeof AdminSalonsSalonIdRoute
     }
     '/admin/barbers/$barberId/stats/': {
       id: '/admin/barbers/$barberId/stats/'
@@ -1156,19 +1187,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBarbersBarberIdStatsIndexRouteImport
       parentRoute: typeof AdminBarbersBarberIdStatsRoute
     }
-    '/admin/salons/$salonId/stats/graphs': {
-      id: '/admin/salons/$salonId/stats/graphs'
-      path: '/graphs'
-      fullPath: '/admin/salons/$salonId/stats/graphs'
-      preLoaderRoute: typeof AdminSalonsSalonIdStatsGraphsRouteImport
-      parentRoute: typeof AdminSalonsSalonIdStatsRoute
-    }
     '/admin/barbers/$barberId/stats/graphs': {
       id: '/admin/barbers/$barberId/stats/graphs'
       path: '/graphs'
       fullPath: '/admin/barbers/$barberId/stats/graphs'
       preLoaderRoute: typeof AdminBarbersBarberIdStatsGraphsRouteImport
       parentRoute: typeof AdminBarbersBarberIdStatsRoute
+    }
+    '/admin/salons/$salonId/stats/': {
+      id: '/admin/salons/$salonId/stats/'
+      path: '/'
+      fullPath: '/admin/salons/$salonId/stats/'
+      preLoaderRoute: typeof AdminSalonsSalonIdStatsIndexRouteImport
+      parentRoute: typeof AdminSalonsSalonIdStatsRoute
+    }
+    '/admin/salons/$salonId/stats/graphs': {
+      id: '/admin/salons/$salonId/stats/graphs'
+      path: '/graphs'
+      fullPath: '/admin/salons/$salonId/stats/graphs'
+      preLoaderRoute: typeof AdminSalonsSalonIdStatsGraphsRouteImport
+      parentRoute: typeof AdminSalonsSalonIdStatsRoute
     }
   }
 }
@@ -1359,6 +1397,17 @@ const AdminStatisticsRouteWithChildren = AdminStatisticsRoute._addFileChildren(
   AdminStatisticsRouteChildren,
 )
 
+interface AdminSubscriptionsRouteChildren {
+  AdminSubscriptionsSubIdRoute: typeof AdminSubscriptionsSubIdRoute
+}
+
+const AdminSubscriptionsRouteChildren: AdminSubscriptionsRouteChildren = {
+  AdminSubscriptionsSubIdRoute: AdminSubscriptionsSubIdRoute,
+}
+
+const AdminSubscriptionsRouteWithChildren =
+  AdminSubscriptionsRoute._addFileChildren(AdminSubscriptionsRouteChildren)
+
 interface AdminSupportRouteChildren {
   AdminSupportTicketIdRoute: typeof AdminSupportTicketIdRoute
 }
@@ -1400,6 +1449,7 @@ interface AdminRouteChildren {
   AdminSalonsRoute: typeof AdminSalonsRouteWithChildren
   AdminServicesRoute: typeof AdminServicesRouteWithChildren
   AdminStatisticsRoute: typeof AdminStatisticsRouteWithChildren
+  AdminSubscriptionsRoute: typeof AdminSubscriptionsRouteWithChildren
   AdminSupportRoute: typeof AdminSupportRouteWithChildren
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
@@ -1420,6 +1470,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminSalonsRoute: AdminSalonsRouteWithChildren,
   AdminServicesRoute: AdminServicesRouteWithChildren,
   AdminStatisticsRoute: AdminStatisticsRouteWithChildren,
+  AdminSubscriptionsRoute: AdminSubscriptionsRouteWithChildren,
   AdminSupportRoute: AdminSupportRouteWithChildren,
   AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,

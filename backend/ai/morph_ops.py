@@ -562,16 +562,25 @@ def check_user_can_generate(*, user_id: int | None, kind: str) -> str | None:
 
     if not user_id:
         return None
+
+    # B2C obuna — try-on / studio uchun majburiy + oylik limit
+    if kind in ("tryon", "studio"):
+        try:
+            from accounts.models import User
+            from subscriptions.services import check_morph_entitlement
+
+            user = User.objects.filter(pk=user_id).first()
+            if user:
+                blocked = check_morph_entitlement(user=user, kind=kind)
+                if blocked:
+                    return blocked
+        except Exception:
+            # subscriptions moduli yo'q / migratsiya oldin — eski kunlik limitga tushamiz
+            pass
+
     now = timezone.now()
     today_start = timezone.localtime(now).replace(hour=0, minute=0, second=0, microsecond=0)
-    if kind in ("tryon", "studio") and s.daily_tryon_limit_per_user > 0:
-        used = AiGenerationUsage.objects.filter(
-            user_id=user_id,
-            kind__in=[AiGenerationUsage.Kind.TRYON, AiGenerationUsage.Kind.STUDIO],
-            created_at__gte=today_start,
-        ).count()
-        if used >= s.daily_tryon_limit_per_user:
-            return "Kunlik try-on limitiga yetdingiz."
+    # Analyze / face_check — global kunlik soft-limit (obunasiz ham)
     if kind in ("analyze", "face_check") and s.daily_analyze_limit_per_user > 0:
         used = AiGenerationUsage.objects.filter(
             user_id=user_id,
@@ -580,6 +589,16 @@ def check_user_can_generate(*, user_id: int | None, kind: str) -> str | None:
         ).count()
         if used >= s.daily_analyze_limit_per_user:
             return "Kunlik AI tahlil limitiga yetdingiz."
+
+    # Try-on / studio uchun qo'shimcha global kunlik soft-cap (DDoS / abuse)
+    if kind in ("tryon", "studio") and s.daily_tryon_limit_per_user > 0:
+        used = AiGenerationUsage.objects.filter(
+            user_id=user_id,
+            kind__in=[AiGenerationUsage.Kind.TRYON, AiGenerationUsage.Kind.STUDIO],
+            created_at__gte=today_start,
+        ).count()
+        if used >= s.daily_tryon_limit_per_user:
+            return "Kunlik try-on limitiga yetdingiz."
     return None
 
 

@@ -6,23 +6,70 @@ import {
   ChevronLeft,
   Droplets,
   Leaf,
+  Loader2,
+  Lock,
   Scissors,
   ShoppingBag,
   Sparkles,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { buildCarePlan, type ProductBudget } from "@/lib/morph-ai-care";
 import { loadFaceProfile } from "@/lib/face-profile";
+import { fetchCareAccess } from "@/lib/api/subscriptions";
 import { cn } from "@/lib/utils";
 
 const BUDGET_FILTERS: (ProductBudget | "all")[] = ["all", "budget", "mid", "premium"];
 
 export function MorphAiCarePage() {
   const { t } = useTranslation();
+  const accessQ = useQuery({
+    queryKey: ["subscriptions", "care-access"],
+    queryFn: fetchCareAccess,
+    staleTime: 30_000,
+  });
   const profile = useMemo(() => loadFaceProfile(), []);
   const plan = useMemo(() => buildCarePlan(profile), [profile]);
   const [budget, setBudget] = useState<ProductBudget | "all">("all");
+
+  if (accessQ.isLoading) {
+    return (
+      <div className="grid min-h-[100dvh] place-items-center bg-[#0b0b0b] text-white">
+        <Loader2 className="h-7 w-7 animate-spin text-white/60" />
+      </div>
+    );
+  }
+
+  if (accessQ.data && !accessQ.data.allowed) {
+    return (
+      <div className="min-h-[100dvh] bg-[#0b0b0b] px-5 text-white" style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}>
+        <Link
+          to="/ai-style"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-bold text-white"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          {t("common.back")}
+        </Link>
+        <div className="mx-auto mt-16 max-w-sm text-center">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-full border border-white/15 bg-white/10">
+            <Lock className="h-6 w-6" />
+          </div>
+          <h1 className="mt-5 text-2xl font-bold">Morph AI Parvarish</h1>
+          <p className="mt-2 text-sm text-white/65">
+            {accessQ.data.detail || "Bu funksiya Pro obunasida mavjud."}
+          </p>
+          <Link
+            to="/wallet"
+            search={{ section: "subscriptions" }}
+            className="mt-6 inline-flex h-11 items-center justify-center rounded-full bg-white px-6 text-sm font-bold text-black"
+          >
+            Obunalarni ko'rish
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const products = plan.products.filter((p) => budget === "all" || p.budget === budget);
 

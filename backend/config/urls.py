@@ -65,6 +65,24 @@ from accounts.email_views import (
 )
 from accounts.family_views import FamilyMemberDetailView, FamilyMemberListCreateView
 from accounts.referral_views import MyReferralView
+from subscriptions.views import (
+    SubscriptionCareAccessView,
+    SubscriptionCheckoutView,
+    SubscriptionConfirmView,
+    SubscriptionMeView,
+    SubscriptionPlansView,
+)
+from subscriptions.admin_views import (
+    AdminSubscriptionActivateView,
+    AdminSubscriptionDeactivateView,
+    AdminSubscriptionDetailView,
+    AdminSubscriptionEventsView,
+    AdminSubscriptionGrantView,
+    AdminSubscriptionListView,
+    AdminSubscriptionPaymentsView,
+    AdminSubscriptionStatsView,
+    AdminSubscriptionUsageListView,
+)
 from accounts.session_views import (
     UserSessionListView,
     UserSessionRevokeOthersView,
@@ -281,6 +299,15 @@ api_routes = [
     path("admin/morph-ai/list/<str:kind>/", AdminMorphAiListView.as_view()),
     path("admin/morph-ai/catalog/", AdminMorphAiCatalogListCreateView.as_view()),
     path("admin/morph-ai/catalog/<str:style_id>/", AdminMorphAiCatalogDetailView.as_view()),
+    path("admin/subscriptions/stats/", AdminSubscriptionStatsView.as_view()),
+    path("admin/subscriptions/", AdminSubscriptionListView.as_view()),
+    path("admin/subscriptions/payments/", AdminSubscriptionPaymentsView.as_view()),
+    path("admin/subscriptions/events/", AdminSubscriptionEventsView.as_view()),
+    path("admin/subscriptions/usage/", AdminSubscriptionUsageListView.as_view()),
+    path("admin/subscriptions/grant/", AdminSubscriptionGrantView.as_view()),
+    path("admin/subscriptions/<uuid:pk>/", AdminSubscriptionDetailView.as_view()),
+    path("admin/subscriptions/<uuid:pk>/deactivate/", AdminSubscriptionDeactivateView.as_view()),
+    path("admin/subscriptions/<uuid:pk>/activate/", AdminSubscriptionActivateView.as_view()),
     path("admin/users/signup-analytics/", AdminUserSignupAnalyticsView.as_view()),
     path("admin/users/", AdminUserListView.as_view()),
     path("admin/users/<int:pk>/", AdminUserDetailView.as_view()),
@@ -366,6 +393,11 @@ api_routes = [
     path("users/family/", FamilyMemberListCreateView.as_view()),
     path("users/family/<int:pk>/", FamilyMemberDetailView.as_view()),
     path("users/me/referral/", MyReferralView.as_view()),
+    path("subscriptions/plans/", SubscriptionPlansView.as_view()),
+    path("subscriptions/me/", SubscriptionMeView.as_view()),
+    path("subscriptions/checkout/", SubscriptionCheckoutView.as_view()),
+    path("subscriptions/confirm/", SubscriptionConfirmView.as_view()),
+    path("subscriptions/care-access/", SubscriptionCareAccessView.as_view()),
     path("users/me/", MeView.as_view()),
     path("users/addresses/", UserAddressListCreateView.as_view()),
     path("users/addresses/<int:pk>/", UserAddressDetailView.as_view()),

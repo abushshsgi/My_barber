@@ -37,7 +37,7 @@ def record_ai_generation(
 
         cost = cost_usd if isinstance(cost_usd, Decimal) else Decimal(str(cost_usd or 0))
         with transaction.atomic():
-            return AiGenerationUsage.objects.create(
+            row = AiGenerationUsage.objects.create(
                 user_id=user_id,
                 kind=kind,
                 status=status,
@@ -56,6 +56,17 @@ def record_ai_generation(
                 latency_ms=max(0, int(latency_ms or 0)),
                 error_detail=(error_detail or "")[:500],
             )
+        if status == "success" and user_id and kind in ("tryon", "studio"):
+            try:
+                from accounts.models import User
+                from subscriptions.services import record_morph_usage
+
+                user = User.objects.filter(pk=user_id).first()
+                if user:
+                    record_morph_usage(user=user, kind=kind)
+            except Exception:
+                logger.exception("Subscription usage yozilmadi (user=%s kind=%s)", user_id, kind)
+        return row
     except Exception:
         logger.exception("AiGenerationUsage yozilmadi (user=%s kind=%s)", user_id, kind)
         return None

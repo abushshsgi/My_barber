@@ -43,6 +43,7 @@ class LedgerEntry(models.Model):
         GIFT_IN = "gift_in", "Gift received"
         GIFT_DESIGN_FEE = "gift_design_fee", "Gift card design fee"
         BOOKING_PAY = "booking_pay", "Booking payment"
+        SUBSCRIPTION = "subscription", "Subscription"
         REFUND = "refund", "Refund"
         ADJUSTMENT = "adjustment", "Adjustment"
 

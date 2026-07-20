@@ -156,18 +156,51 @@ export function SettingsReferralPanel() {
         </div>
       </ProfileSubpageCard>
 
-      <ProfileSubpageCard>
-        <div className="flex items-center gap-3">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface">
-            <Gift className="h-4 w-4" />
+      {data.trial ? (
+        <ProfileSubpageCard className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface">
+              <Gift className="h-4 w-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold">
+                {data.trial.required} ta do'st → {data.trial.days} kun Plus sinov
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {data.trial.granted
+                  ? data.trial.ends_at
+                    ? `Sinov berilgan · tugash: ${new Date(data.trial.ends_at).toLocaleDateString("uz-UZ")}`
+                    : "Sinov berilgan"
+                  : `Progress: ${data.trial.progress} / ${data.trial.required}`}
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground">
-            {t("referral.bonusSoon", {
-              defaultValue: "Taklif uchun bonuslar tez orada qo'shiladi.",
-            })}
+          {!data.trial.granted ? (
+            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-foreground transition-all"
+                style={{
+                  width: `${Math.min(100, Math.round((data.trial.progress / data.trial.required) * 100))}%`,
+                }}
+              />
+            </div>
+          ) : null}
+          <p className="text-[11px] text-muted-foreground">
+            8-kuni sinov avtomatik to'xtaydi. Keyin Starter / Plus / Pro obunasini sotib oling.
           </p>
-        </div>
-      </ProfileSubpageCard>
+        </ProfileSubpageCard>
+      ) : (
+        <ProfileSubpageCard>
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface">
+              <Gift className="h-4 w-4" />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              3 ta do'stni taklif qilsangiz — 7 kunlik Plus Morph AI sinovi beriladi.
+            </p>
+          </div>
+        </ProfileSubpageCard>
+      )}
     </div>
   );
 }
