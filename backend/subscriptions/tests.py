@@ -93,6 +93,8 @@ class SubscriptionServiceTests(TestCase):
         self.assertIn("obuna", (check_morph_entitlement(user=self.user, kind="studio") or "").lower())
 
     def test_referral_trial_after_3(self):
+        from subscriptions.services import maybe_grant_referral_trial
+
         for i in range(REFERRAL_TRIAL_REQUIRED):
             referee = _user(f"ref{i}@test.local", f"+99890111211{i}", f"Ref {i}")
             ReferralAttribution.objects.create(
@@ -100,6 +102,9 @@ class SubscriptionServiceTests(TestCase):
                 referee=referee,
                 code_used="ABCD1234",
             )
+        # Claim-based: attribution o'zi berilmaydi — grant funksiyasi chaqiriladi.
+        self.assertFalse(ReferralTrialGrant.objects.filter(user=self.user).exists())
+        maybe_grant_referral_trial(self.user)
         self.assertTrue(ReferralTrialGrant.objects.filter(user=self.user).exists())
         active = UserSubscription.objects.filter(
             user=self.user, status=UserSubscription.Status.ACTIVE

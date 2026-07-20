@@ -6,8 +6,12 @@ from accounts.models import ReferralAttribution
 
 @receiver(post_save, sender=ReferralAttribution)
 def on_referral_attributed(sender, instance: ReferralAttribution, created: bool, **kwargs):
+    """Referal attribution yozilganda — mukofot claim orqali beriladi (UI salyut).
+
+    Avvalgi avto-grant o'rniga foydalanuvchi /referrals sahifasida
+    «Bonusni olish» tugmasini bosadi → POST /users/me/referral/.
+    """
     if not created:
         return
-    from subscriptions.services import maybe_grant_referral_trial
-
-    maybe_grant_referral_trial(instance.referrer)
+    # Claim-based reward — auto-grant o'chirilgan.
+    return

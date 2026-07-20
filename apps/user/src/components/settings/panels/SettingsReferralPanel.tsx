@@ -1,9 +1,11 @@
-import { Check, Copy, Gift, Share2, Users } from "lucide-react";
-import { useState } from "react";
+import { Check, Copy, Gift, Loader2, PartyPopper, Share2, Users } from "lucide-react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ProfileSubpageCard } from "@/components/profile/ProfileSubpageLayout";
-import { useMyReferral } from "@/hooks/use-referral";
+import { ReferralClaimCelebration } from "@/components/settings/panels/ReferralClaimCelebration";
+import { useClaimReferralTrial, useMyReferral } from "@/hooks/use-referral";
+import type { ReferralInvitee } from "@/lib/api/referrals";
 import { resolveShareInviteUrl } from "@/lib/referral-storage";
 
 async function copyText(text: string): Promise<boolean> {
@@ -18,11 +20,52 @@ async function copyText(text: string): Promise<boolean> {
   return false;
 }
 
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
+}
+
+function InviteeRow({ invitee }: { invitee: ReferralInvitee }) {
+  const joined = invitee.joined_at
+    ? new Date(invitee.joined_at).toLocaleDateString("uz-UZ")
+    : null;
+  return (
+    <li className="flex items-center gap-3 py-2.5">
+      {invitee.avatar_url ? (
+        <img
+          src={invitee.avatar_url}
+          alt=""
+          className="h-10 w-10 shrink-0 rounded-full object-cover"
+        />
+      ) : (
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-muted text-xs font-bold">
+          {initials(invitee.full_name)}
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold">{invitee.full_name}</p>
+        <p className="truncate text-xs text-muted-foreground">
+          {[invitee.phone_masked, joined].filter(Boolean).join(" · ")}
+        </p>
+      </div>
+    </li>
+  );
+}
+
 export function SettingsReferralPanel() {
   const { t } = useTranslation();
   const { data, isLoading, isError } = useMyReferral();
+  const claim = useClaimReferralTrial();
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
+  const [celebrate, setCelebrate] = useState(false);
   const inviteUrl = data ? resolveShareInviteUrl(data.code, data.invite_url) : "";
+  const invites = data?.invites ?? [];
+  const trial = data?.trial;
+  const canClaim = Boolean(trial?.eligible && !trial?.granted);
+
+  const closeCelebrate = useCallback(() => setCelebrate(false), []);
 
   const handleCopy = async (value: string, which: "code" | "link") => {
     const ok = await copyText(value);
@@ -53,6 +96,27 @@ export function SettingsReferralPanel() {
     await handleCopy(inviteUrl, "link");
   };
 
+  const handleClaim = async () => {
+    if (!canClaim || claim.isPending) return;
+    try {
+      const result = await claim.mutateAsync();
+      if (result.trial?.granted) {
+        setCelebrate(true);
+        toast.success(
+          t("referral.claimSuccess", {
+            defaultValue: "Tabriklaymiz! Plus sinov faollashtirildi.",
+          }),
+        );
+      }
+    } catch {
+      toast.error(
+        t("referral.claimFailed", {
+          defaultValue: "Bonusni olishning iloji bo'lmadi. Qayta urinib ko'ring.",
+        }),
+      );
+    }
+  };
+
   if (isLoading) {
     return (
       <ProfileSubpageCard>
@@ -75,6 +139,17 @@ export function SettingsReferralPanel() {
 
   return (
     <div className="space-y-4">
+      <ReferralClaimCelebration
+        open={celebrate}
+        title={t("referral.celebrateTitle", { defaultValue: "Tabriklaymiz!" })}
+        subtitle={t("referral.celebrateSubtitle", {
+          days: trial?.days ?? 7,
+          defaultValue: "{{days}} kunlik Plus sinov faollashtirildi. Morph AI dan bemalol foydalaning!",
+        })}
+        ctaLabel={t("referral.celebrateCta", { defaultValue: "Zo'r!" })}
+        onClose={closeCelebrate}
+      />
+
       <ProfileSubpageCard className="space-y-1">
         <p className="text-sm text-muted-foreground">
           {t("referral.intro", {
@@ -156,7 +231,7 @@ export function SettingsReferralPanel() {
         </div>
       </ProfileSubpageCard>
 
-      {data.trial ? (
+      {trial ? (
         <ProfileSubpageCard className="space-y-3">
           <div className="flex items-center gap-3">
             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface">
@@ -164,26 +239,41 @@ export function SettingsReferralPanel() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold">
-                {data.trial.required} ta do'st → {data.trial.days} kun Plus sinov
+                {trial.required} ta do'st → {trial.days} kun Plus sinov
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                {data.trial.granted
-                  ? data.trial.ends_at
-                    ? `Sinov berilgan · tugash: ${new Date(data.trial.ends_at).toLocaleDateString("uz-UZ")}`
+                {trial.granted
+                  ? trial.ends_at
+                    ? `Sinov berilgan · tugash: ${new Date(trial.ends_at).toLocaleDateString("uz-UZ")}`
                     : "Sinov berilgan"
-                  : `Progress: ${data.trial.progress} / ${data.trial.required}`}
+                  : `Progress: ${trial.progress} / ${trial.required}`}
               </p>
             </div>
           </div>
-          {!data.trial.granted ? (
+          {!trial.granted ? (
             <div className="h-1.5 overflow-hidden rounded-full bg-muted">
               <div
                 className="h-full rounded-full bg-foreground transition-all"
                 style={{
-                  width: `${Math.min(100, Math.round((data.trial.progress / data.trial.required) * 100))}%`,
+                  width: `${Math.min(100, Math.round((trial.progress / trial.required) * 100))}%`,
                 }}
               />
             </div>
+          ) : null}
+          {canClaim ? (
+            <button
+              type="button"
+              onClick={handleClaim}
+              disabled={claim.isPending}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-sm font-bold text-background disabled:opacity-60"
+            >
+              {claim.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <PartyPopper className="h-4 w-4" />
+              )}
+              {t("referral.claimBonus", { defaultValue: "Bonusni olish" })}
+            </button>
           ) : null}
           <p className="text-[11px] text-muted-foreground">
             8-kuni sinov avtomatik to'xtaydi. Keyin Starter / Plus / Pro obunasini sotib oling.
@@ -201,6 +291,19 @@ export function SettingsReferralPanel() {
           </div>
         </ProfileSubpageCard>
       )}
+
+      {invites.length > 0 ? (
+        <ProfileSubpageCard className="space-y-1">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+            {t("referral.invitedList", { defaultValue: "Taklif qilganlaringiz" })}
+          </p>
+          <ul className="divide-y divide-border">
+            {invites.map((invitee) => (
+              <InviteeRow key={invitee.id} invitee={invitee} />
+            ))}
+          </ul>
+        </ProfileSubpageCard>
+      ) : null}
     </div>
   );
 }
