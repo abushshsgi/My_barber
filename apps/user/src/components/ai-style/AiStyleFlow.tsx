@@ -6,13 +6,19 @@ import { AiStyleDesktopLayout } from "@/components/ai-style/AiStyleDesktopLayout
 import { AiStyleSplitLayout } from "@/components/ai-style/AiStyleSplitLayout";
 import { AiStylePhotoInput } from "@/components/ai-style/AiStyleUi";
 import { MorphAiHome } from "@/components/ai-style/MorphAiHome";
+import { MorphAiIntroOverlay } from "@/components/ai-style/MorphAiIntroOverlay";
 import type { AiAnalysisResult, AiSuggestion } from "@/components/ai-style/ai-style-shared";
 import type { useAiStyleFlow } from "@/components/ai-style/useAiStyleFlow";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
-import { hasMorphAiOnboarded, markMorphAiOnboarded } from "@/lib/morph-ai-session";
+import {
+  hasMorphAiIntroSeen,
+  hasMorphAiOnboarded,
+  markMorphAiIntroSeen,
+  markMorphAiOnboarded,
+} from "@/lib/morph-ai-session";
 import {
   loadSavedAiStyleIds,
   removeSavedAiStyle,
@@ -83,6 +89,12 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
   const [saved, setSaved] = useState<string[]>(() => loadSavedAiStyleIds());
   const [onboarded, setOnboarded] = useState(() => hasMorphAiOnboarded());
   const [showCapture, setShowCapture] = useState(() => !hasMorphAiOnboarded());
+  const [showIntro, setShowIntro] = useState(() => !hasMorphAiIntroSeen());
+
+  const handleIntroComplete = useCallback(() => {
+    markMorphAiIntroSeen();
+    setShowIntro(false);
+  }, []);
 
   const displayResult = useMemo(() => {
     if (!result || !focusStyleId || !focusHairstyle) return result;
@@ -230,6 +242,7 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
 
       <AiStylePhotoInput fileRef={fileRef} onFile={onFile} />
       <AiStyleCamera open={cameraOpen} onClose={closeCamera} onCapture={onCameraCapture} />
+      <MorphAiIntroOverlay open={showIntro} onComplete={handleIntroComplete} />
     </>
   );
 }

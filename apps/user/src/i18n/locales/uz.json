@@ -977,8 +977,14 @@
       "analyze": "Tahlil",
       "results": "Natija"
     },
-    "introTitle": "Yuz shaklingizga mos uslub",
-    "introDesc": "Selfie yuklang — Morf AI 3 ta eng mos turmag va kesimni tavsiya qiladi.",
+    "introTitle": "Yuzingizga mos yangi ko'rinish",
+    "introDesc": "Bitta selfie yetarli — Morf AI yuz shaklingizni o'lchab, sizga eng mos 3 ta uslubni ko'rsatadi.",
+    "introVideo": {
+      "badge": "Morf AI",
+      "title": "Ko'rinishingizni qayta kashf eting",
+      "desc": "Selfie bilan yuzingizga mos turmaklarni sinab ko'ring — yoqqanini saqlang va salonni bron qiling.",
+      "skip": "O'tkazib yuborish"
+    },
     "uploadTitle": "Selfie yuklang",
     "uploadHint": "Yuz aniq ko'rinsin · yaxshi yorug'lik",
     "uploadFeatures": {
@@ -1012,7 +1018,7 @@
     "faceProfileSaved": "Yuz shakli saqlandi",
     "home": {
       "headline": "Yangi ko'rinishingizni yarating",
-      "subtitle": "Namunalar, saqlangan try-onlar va shaxsiy uslub vositalari — bitta joyda.",
+      "subtitle": "Selfie yuklang — yuzingizga mos uslubni bir zumda ko'ring, saqlang va bron qiling.",
       "studioTag": "AI studio",
       "newLook": "Yangi try-on",
       "backToHome": "Morf AI Home",

@@ -3,10 +3,19 @@ import { loadSavedAiStyles } from "@/lib/saved-ai-styles";
 import { loadMorphAiGenerations } from "@/lib/morph-ai-gallery";
 
 const ONBOARD_KEY_PREFIX = "mysaloon.morphAi.onboarded";
+const INTRO_KEY_PREFIX = "mysaloon.morphAi.introSeen";
+
+function scopedKey(prefix: string) {
+  const userId = getActiveUserId();
+  return userId ? `${prefix}:${userId}` : `${prefix}:guest`;
+}
 
 function onboardKey() {
-  const userId = getActiveUserId();
-  return userId ? `${ONBOARD_KEY_PREFIX}:${userId}` : `${ONBOARD_KEY_PREFIX}:guest`;
+  return scopedKey(ONBOARD_KEY_PREFIX);
+}
+
+function introKey() {
+  return scopedKey(INTRO_KEY_PREFIX);
 }
 
 export function markMorphAiOnboarded() {
@@ -27,4 +36,20 @@ export function hasMorphAiOnboarded(): boolean {
   if (loadSavedAiStyles().length > 0) return true;
   if (loadMorphAiGenerations().length > 0) return true;
   return false;
+}
+
+export function markMorphAiIntroSeen() {
+  try {
+    localStorage.setItem(introKey(), "1");
+  } catch {
+    /* noop */
+  }
+}
+
+export function hasMorphAiIntroSeen(): boolean {
+  try {
+    return localStorage.getItem(introKey()) === "1";
+  } catch {
+    return false;
+  }
 }

@@ -977,8 +977,14 @@
       "analyze": "Scan",
       "results": "Results"
     },
-    "introTitle": "Styles that fit your face",
-    "introDesc": "Upload a selfie — Morf AI suggests 3 cuts and shapes that suit you.",
+    "introTitle": "A look that fits your face",
+    "introDesc": "One selfie is enough — Morf AI reads your face shape and shows your top 3 matching styles.",
+    "introVideo": {
+      "badge": "Morf AI",
+      "title": "Rediscover your look",
+      "desc": "Try styles tailored to your face — save favorites and book the salon in one flow.",
+      "skip": "Skip"
+    },
     "uploadTitle": "Upload a selfie",
     "uploadHint": "Face clearly visible · good lighting",
     "uploadFeatures": {
@@ -1012,7 +1018,7 @@
     "faceProfileSaved": "Face profile saved",
     "home": {
       "headline": "Create your next look",
-      "subtitle": "Samples, saved try-ons, and personal style tools — in one place.",
+      "subtitle": "Upload a selfie — see styles that fit you, save favorites, and book in minutes.",
       "studioTag": "AI studio",
       "newLook": "New try-on",
       "backToHome": "Morf AI Home",
