@@ -6,6 +6,7 @@ import {
   type FaceProfileHistoryEntry,
 } from "@/lib/face-profile";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
+import { throwFromMorphApiError } from "@/lib/morph-plan-limit";
 import { apiFetch, apiJson } from "./client";
 
 export type AiStyleSuggestionApi = {
@@ -128,42 +129,11 @@ export async function generateAiStyleTryOn(
   const body = (await res.json().catch(() => null)) as
     | AiStyleTryOnResponse
     | AiStyleTryOnJobResponse
-    | { detail?: string }
+    | { detail?: string; code?: string }
     | null;
 
   if (!res.ok) {
-    const detail =
-      body && typeof body === "object" && typeof body.detail === "string"
-        ? body.detail
-        : "Rasm yaratishda xatolik";
-    if (res.status === 429) {
-      const retryHeader = res.headers.get("Retry-After");
-      const retryFromHeader = retryHeader ? Number(retryHeader) : NaN;
-      const waitMatch = /(?:available in|Expected available in)\s+(\d+)\s+seconds?/i.exec(detail);
-      const seconds = Number.isFinite(retryFromHeader)
-        ? retryFromHeader
-        : waitMatch
-          ? Number(waitMatch[1])
-          : 0;
-      // Backend o‘zbekcha xabar bersa — qoldiramiz (inglizcha suffixni kesamiz).
-      if (/limiti tugadi|Taxminan \d+/i.test(detail) && !/Request was throttled/i.test(detail)) {
-        throw new Error(
-          detail.replace(/\s*Expected available in \d+ seconds?\./gi, "").trim() || detail,
-        );
-      }
-      if (seconds >= 60) {
-        throw new Error(
-          `AI rasm limiti tugadi. Taxminan ${Math.ceil(seconds / 60)} daqiqadan keyin qayta urinib ko‘ring.`,
-        );
-      }
-      if (seconds > 0) {
-        throw new Error(
-          `AI rasm limiti tugadi. Taxminan ${seconds} soniyadan keyin qayta urinib ko‘ring.`,
-        );
-      }
-      throw new Error("AI rasm limiti tugadi. Biroz kutib qayta urinib ko‘ring.");
-    }
-    throw new Error(detail);
+    throwFromMorphApiError(res, body, "Rasm yaratishda xatolik");
   }
 
   if (
@@ -223,7 +193,7 @@ export async function generateMorphStudioEdit(
   presetId: string,
   meta?: { styleId?: string; styleTitle?: string },
 ): Promise<MorphStudioEditResponse> {
-  return apiJson<MorphStudioEditResponse>("/api/v1/ai/style-studio/", {
+  const res = await apiFetch("/api/v1/ai/style-studio/", {
     method: "POST",
     body: JSON.stringify({
       image,
@@ -232,6 +202,17 @@ export async function generateMorphStudioEdit(
       style_title: meta?.styleTitle,
     }),
   });
+  const body = (await res.json().catch(() => null)) as MorphStudioEditResponse | {
+    detail?: string;
+    code?: string;
+  } | null;
+  if (!res.ok) {
+    throwFromMorphApiError(res, body, "Studio tahririda xatolik");
+  }
+  if (!body || typeof body !== "object" || !("preview_image" in body)) {
+    throw new Error("Studio tahririda xatolik");
+  }
+  return body as MorphStudioEditResponse;
 }
 
 export type AiStyleHistoryEntryApi = {

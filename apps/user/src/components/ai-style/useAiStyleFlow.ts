@@ -15,6 +15,11 @@ import { saveMorphAiGeneration } from "@/lib/morph-ai-gallery";
 import { markMorphAiOnboarded } from "@/lib/morph-ai-session";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { prepareSelfieDataUrl, prepareSelfieFromFile } from "@/lib/selfie-image";
+import {
+  isMorphPlanLimitError,
+  isMorphPlanLimitMessage,
+  isMorphRateLimitMessage,
+} from "@/lib/morph-plan-limit";
 import type { Audience } from "@/lib/mock-data";
 import type { AiFaceHint } from "@/lib/api/ai";
 
@@ -22,32 +27,38 @@ type UseAiStyleFlowOptions = {
   menPersonaId?: ExplorePersonaId | null;
   focusStyleId?: string | null;
   audience?: Audience;
+  /** false = tarif limiti, API chaqirilmaydi */
+  tryOnGate?: (source: "auto" | "manual") => Promise<boolean>;
+  /** Try-on muvaffaqiyatidan keyin usage yangilash */
+  onTryOnSuccess?: () => void;
+  /** API dan plan limit qaytganda (sheet ochish) */
+  onPlanLimit?: () => void;
 };
 
 function formatAiRequestError(error: unknown, fallback: string): string {
-  const raw = error instanceof Error ? error.message : fallback;
-  // Backend/API allaqachon o‘zbekcha bergan bo‘lsa — qayta yozmaymiz.
-  if (/limiti tugadi|Taxminan \d+ (daqiqa|soniya)/i.test(raw) && !/Request was throttled/i.test(raw)) {
-    return raw.replace(/\s*Expected available in \d+ seconds?\./gi, "").trim() || raw;
+  if (isMorphPlanLimitError(error)) {
+    return error.message;
   }
-  const waitMatch = /(?:available in|Expected available in)\s+(\d+)\s+seconds?/i.exec(raw);
-  if (!/Request was throttled|throttl/i.test(raw) && !waitMatch) {
+  const raw = error instanceof Error ? error.message : fallback;
+  if (isMorphPlanLimitMessage(raw)) {
     return raw;
   }
-
-  const seconds = waitMatch ? Number(waitMatch[1]) : 0;
-  if (seconds >= 60) {
-    const mins = Math.ceil(seconds / 60);
-    return `AI so‘rov limiti tugadi. Taxminan ${mins} daqiqadan keyin qayta urinib ko‘ring.`;
+  if (isMorphRateLimitMessage(raw)) {
+    const waitMatch = /(?:available in|Expected available in)\s+(\d+)\s+seconds?/i.exec(raw);
+    const seconds = waitMatch ? Number(waitMatch[1]) : 0;
+    if (seconds >= 60) {
+      return `Juda ko'p so'rov. Taxminan ${Math.ceil(seconds / 60)} daqiqadan keyin qayta urinib ko'ring.`;
+    }
+    if (seconds > 0) {
+      return `Juda ko'p so'rov. Taxminan ${seconds} soniyadan keyin qayta urinib ko'ring.`;
+    }
+    return "Juda ko'p so'rov. Biroz kutib qayta urinib ko'ring.";
   }
-  if (seconds > 0) {
-    return `AI so‘rov limiti tugadi. Taxminan ${seconds} soniyadan keyin qayta urinib ko‘ring.`;
-  }
-  return "AI so‘rov limiti tugadi. Biroz kutib qayta urinib ko‘ring.";
+  return raw.replace(/\s*Expected available in \d+ seconds?\./gi, "").trim() || raw;
 }
 
 export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
-  const { menPersonaId, focusStyleId, audience } = options;
+  const { menPersonaId, focusStyleId, audience, tryOnGate, onPlanLimit, onTryOnSuccess } = options;
   const [photo, setPhoto] = useState<string | null>(null);
   const [preparingPhoto, setPreparingPhoto] = useState(false);
   const [preparingPreview, setPreparingPreview] = useState<string | null>(null);
@@ -225,10 +236,22 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
   );
 
   const generateTryOn = useCallback(
-    async (styleId: string, personaId?: ExplorePersonaId, title?: string) => {
+    async (
+      styleId: string,
+      personaId?: ExplorePersonaId,
+      title?: string,
+      source: "auto" | "manual" = "manual",
+    ) => {
       const effectivePersona = personaId ?? menPersonaId ?? undefined;
       const cacheKey = tryOnCacheKey(styleId, effectivePersona);
       if (!photo || tryOnByStyle[cacheKey]) return;
+      if (tryOnGate) {
+        const allowed = await tryOnGate(source);
+        if (!allowed) {
+          if (source === "auto") tryOnFailedRef.current.add(cacheKey);
+          return;
+        }
+      }
       // Qo'lda qayta urinish uchun oldingi fail belgisini olib tashlash.
       tryOnFailedRef.current.delete(cacheKey);
       setTryOnLoadingId(cacheKey);
@@ -248,14 +271,19 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
           personaId: effectivePersona,
         });
         markMorphAiOnboarded();
+        onTryOnSuccess?.();
       } catch (e) {
         tryOnFailedRef.current.add(cacheKey);
+        if (isMorphPlanLimitError(e)) {
+          onPlanLimit?.();
+          return;
+        }
         setError(formatAiRequestError(e, "Rasm yaratishda xatolik"));
       } finally {
         setTryOnLoadingId(null);
       }
     },
-    [photo, tryOnByStyle, menPersonaId, result],
+    [photo, tryOnByStyle, menPersonaId, result, tryOnGate, onPlanLimit, onTryOnSuccess],
   );
 
   const updateTryOnPreview = useCallback((cacheKey: string, previewImage: string) => {
@@ -271,7 +299,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
   useEffect(() => {
     if (!focusStyleId || !photo || autoTryOnRef.current === focusStyleId) return;
     autoTryOnRef.current = focusStyleId;
-    void generateTryOn(focusStyleId);
+    void generateTryOn(focusStyleId, undefined, undefined, "auto");
   }, [focusStyleId, photo, generateTryOn]);
 
   useEffect(() => {
@@ -284,7 +312,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     if (tryOnByStyle[primaryKey] || tryOnLoadingId === primaryKey) return;
     // Limit / xato bo‘lganda avto-qayta urinish — toast spamni to‘xtatadi.
     if (tryOnFailedRef.current.has(primaryKey)) return;
-    void generateTryOn(primary.id, undefined, primary.title);
+    void generateTryOn(primary.id, undefined, primary.title, "auto");
   }, [done, result, focusStyleId, tryOnByStyle, tryOnLoadingId, generateTryOn, menPersonaId]);
 
   const reset = () => {

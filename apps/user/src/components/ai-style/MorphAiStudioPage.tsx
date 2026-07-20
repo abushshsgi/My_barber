@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -17,6 +17,8 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AiStyleCamera } from "@/components/ai-style/AiStyleCamera";
 import { AiStylePhotoInput } from "@/components/ai-style/AiStyleUi";
+import { MorphLimitUpsell } from "@/components/ai-style/MorphLimitUpsell";
+import { useMorphLimitGate } from "@/hooks/use-morph-limit-gate";
 import {
   fetchMorphStudioCatalog,
   generateMorphStudioEdit,
@@ -40,6 +42,7 @@ import {
   type MorphStudioDraft,
 } from "@/lib/morph-ai-studio-session";
 import { prepareSelfieDataUrl, prepareSelfieFromFile } from "@/lib/selfie-image";
+import { isMorphPlanLimitError } from "@/lib/morph-plan-limit";
 import { cn } from "@/lib/utils";
 
 const FALLBACK_CATEGORIES: MorphStudioCategory[] = [
@@ -100,7 +103,7 @@ type SourceItem = {
 
 export function MorphAiStudioPage() {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
+  const limitGate = useMorphLimitGate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -199,6 +202,7 @@ export function MorphAiStudioPage() {
 
   const applyPreset = async (presetId: string) => {
     if (!current || loadingId) return;
+    if (!(await limitGate.ensureStudio())) return;
     setLoadingId(presetId);
     try {
       const result = await generateMorphStudioEdit(current, presetId, {
@@ -221,6 +225,7 @@ export function MorphAiStudioPage() {
         previewImage: result.preview_image,
         beforeImage: original ?? undefined,
       });
+      limitGate.invalidateUsage();
       toast.success(
         t("aiStylePage.studio.applied", {
           name: result.preset_label,
@@ -228,21 +233,11 @@ export function MorphAiStudioPage() {
         }),
       );
     } catch (e) {
-      const message = e instanceof Error ? e.message : t("aiStylePage.studio.failed");
-      const needsSub = /obuna|Bepul Morph|Studio|limiti tugadi/i.test(message);
-      if (needsSub) {
-        toast.error(message, {
-          action: {
-            label: t("subscriptions.subscribe", { defaultValue: "Obuna bo'lish" }),
-            onClick: () => {
-              void navigate({ to: "/wallet", search: { section: "subscriptions" } });
-            },
-          },
-          duration: 8_000,
-        });
-      } else {
-        toast.error(message);
+      if (isMorphPlanLimitError(e)) {
+        void limitGate.openFromApiLimit("studio");
+        return;
       }
+      toast.error(e instanceof Error ? e.message : t("aiStylePage.studio.failed"));
     } finally {
       setLoadingId(null);
     }
@@ -533,13 +528,12 @@ export function MorphAiStudioPage() {
                   )}
                   {t("aiStylePage.download")}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => void navigate({ to: "/ai-style" })}
+                <Link
+                  to="/ai-style"
                   className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white text-sm font-bold text-black"
                 >
                   {t("aiStylePage.studio.done", { defaultValue: "Tayyor" })}
-                </button>
+                </Link>
               </div>
             </div>
           </motion.div>
@@ -556,6 +550,12 @@ export function MorphAiStudioPage() {
             selectImage(prepared, { source: "camera", styleTitle: "Studio" });
           });
         }}
+      />
+      <MorphLimitUpsell
+        open={limitGate.open}
+        onOpenChange={limitGate.setOpen}
+        kind={limitGate.kind}
+        me={limitGate.me}
       />
     </div>
   );

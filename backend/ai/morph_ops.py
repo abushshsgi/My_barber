@@ -602,6 +602,32 @@ def check_user_can_generate(*, user_id: int | None, kind: str) -> str | None:
     return None
 
 
+def is_morph_plan_limit_message(message: str) -> bool:
+    """Obuna / oylik kvota — API throttle emas."""
+    msg = message or ""
+    markers = (
+        "Oylik Morph",
+        "Bepul Morph",
+        "obuna",
+        "Studio Plus",
+        "Bu reja Morph",
+        "Kunlik try-on",
+        "Kunlik AI tahlil",
+    )
+    return any(m in msg for m in markers)
+
+
+def morph_generation_blocked_response(message: str):
+    from rest_framework import status
+    from rest_framework.response import Response
+
+    payload: dict[str, str] = {"detail": message}
+    if is_morph_plan_limit_message(message):
+        payload["code"] = "morph_plan_limit"
+        return Response(payload, status=status.HTTP_403_FORBIDDEN)
+    return Response(payload, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
+
 def pick_ab_prompt() -> tuple[str, str]:
     """Returns (prompt_override, variant_label). Empty prompt = use default."""
     s = MorphAiSettings.load()

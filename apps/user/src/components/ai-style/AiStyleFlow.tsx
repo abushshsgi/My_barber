@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AiStyleCamera } from "@/components/ai-style/AiStyleCamera";
@@ -8,13 +7,16 @@ import { AiStyleSplitLayout } from "@/components/ai-style/AiStyleSplitLayout";
 import { AiStylePhotoInput } from "@/components/ai-style/AiStyleUi";
 import { MorphAiHome } from "@/components/ai-style/MorphAiHome";
 import { MorphAiIntroOverlay } from "@/components/ai-style/MorphAiIntroOverlay";
+import { MorphLimitUpsell } from "@/components/ai-style/MorphLimitUpsell";
 import type { AiAnalysisResult, AiSuggestion } from "@/components/ai-style/ai-style-shared";
-import type { useAiStyleFlow } from "@/components/ai-style/useAiStyleFlow";
+import { useAiStyleFlow } from "@/components/ai-style/useAiStyleFlow";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
+import { useMorphLimitGate } from "@/hooks/use-morph-limit-gate";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
 import { prefetchMorphAiIntroVideo } from "@/lib/morph-ai-intro";
+import { isMorphPlanLimitMessage } from "@/lib/morph-plan-limit";
 import {
   hasMorphAiIntroSeen,
   hasMorphAiOnboarded,
@@ -26,13 +28,12 @@ import {
   removeSavedAiStyle,
   saveAiStyle,
 } from "@/lib/saved-ai-styles";
+import type { ExplorePersonaId } from "@/lib/explore-personas";
 import type { Audience } from "@/lib/mock-data";
 
-type Flow = ReturnType<typeof useAiStyleFlow>;
-
 type Props = {
-  flow: Flow;
   audience: Audience;
+  menPersonaId?: ExplorePersonaId | null;
   focusStyleId?: string;
 };
 
@@ -63,9 +64,27 @@ function mergeFocusSuggestion(
   };
 }
 
-export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
+export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusStyleId }: Props) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const limitGate = useMorphLimitGate();
+  const { personaId: explorePersonaId } = useExplorePersona();
+  const menPersonaId = menPersonaIdProp ?? explorePersonaId;
+
+  const tryOnGate = useCallback(
+    (source: "auto" | "manual") => limitGate.ensureTryOn({ silent: source === "auto" }),
+    [limitGate],
+  );
+  const onPlanLimit = useCallback(() => void limitGate.openFromApiLimit("tryon"), [limitGate]);
+
+  const flow = useAiStyleFlow({
+    menPersonaId,
+    focusStyleId,
+    audience,
+    tryOnGate,
+    onPlanLimit,
+    onTryOnSuccess: limitGate.invalidateUsage,
+  });
+
   const {
     photo,
     validatingPreview,
@@ -87,8 +106,7 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
     updateTryOnPreview,
     reset,
   } = flow;
-  const { personaId } = useExplorePersona();
-  const { data: focusHairstyle } = useHairstyle(focusStyleId ?? "", personaId);
+  const { data: focusHairstyle } = useHairstyle(focusStyleId ?? "", menPersonaId);
   const [saved, setSaved] = useState<string[]>(() => loadSavedAiStyleIds());
   const [onboarded, setOnboarded] = useState(() => hasMorphAiOnboarded());
   const [showCapture, setShowCapture] = useState(() => !hasMorphAiOnboarded());
@@ -154,24 +172,14 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
       lastErrorToastRef.current = null;
       return;
     }
-    // Bir xil xabarni (masalan limit) qayta-qayta toast qilmaslik.
     if (lastErrorToastRef.current === error) return;
     lastErrorToastRef.current = error;
-    const needsSub = /obuna|Bepul Morph|limiti tugadi/i.test(error);
-    if (needsSub) {
-      toast.error(error, {
-        action: {
-          label: t("subscriptions.subscribe", { defaultValue: "Obuna bo'lish" }),
-          onClick: () => {
-            void navigate({ to: "/wallet", search: { section: "subscriptions" } });
-          },
-        },
-        duration: 8_000,
-      });
+    if (isMorphPlanLimitMessage(error)) {
+      void limitGate.openFromApiLimit("tryon");
       return;
     }
     toast.error(error);
-  }, [error, navigate, t]);
+  }, [error, limitGate]);
 
   useEffect(() => {
     if (photo && faceHint?.source === "camera_scan") {
@@ -234,7 +242,7 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
     openFile,
     openCamera,
     onAnalyze: () => void analyze(audience),
-    menPersonaId: personaId,
+    menPersonaId,
     tryOnByStyle: flow.tryOnByStyle,
     tryOnLoadingId: flow.tryOnLoadingId,
     onGenerateTryOn: (styleId: string, nextPersonaId?: Parameters<typeof generateTryOn>[1], title?: string) =>
@@ -263,6 +271,12 @@ export function AiStyleFlow({ flow, audience, focusStyleId }: Props) {
       <AiStylePhotoInput fileRef={fileRef} onFile={onFile} />
       <AiStyleCamera open={cameraOpen} onClose={closeCamera} onCapture={onCameraCapture} />
       <MorphAiIntroOverlay open={showIntro} onComplete={handleIntroComplete} />
+      <MorphLimitUpsell
+        open={limitGate.open}
+        onOpenChange={limitGate.setOpen}
+        kind={limitGate.kind}
+        me={limitGate.me}
+      />
     </>
   );
 }

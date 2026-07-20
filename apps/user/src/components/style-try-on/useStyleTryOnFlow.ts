@@ -2,14 +2,24 @@ import { useEffect, useRef, useState } from "react";
 import type { CameraCapturePayload } from "@/components/ai-style/AiStyleCamera";
 import { generateAiStyleTryOn } from "@/lib/api";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
+import { isMorphPlanLimitError } from "@/lib/morph-plan-limit";
 import { prepareSelfieDataUrl, prepareSelfieFromFile } from "@/lib/selfie-image";
 
 type UseStyleTryOnFlowOptions = {
   styleId: string;
   personaId?: ExplorePersonaId | null;
+  beforeTryOn?: (source: "auto" | "manual") => Promise<boolean>;
+  onPlanLimit?: () => void;
+  onTryOnSuccess?: () => void;
 };
 
-export function useStyleTryOnFlow({ styleId, personaId }: UseStyleTryOnFlowOptions) {
+export function useStyleTryOnFlow({
+  styleId,
+  personaId,
+  beforeTryOn,
+  onPlanLimit,
+  onTryOnSuccess,
+}: UseStyleTryOnFlowOptions) {
   const [photo, setPhoto] = useState<string | null>(null);
   const [preparingPreview, setPreparingPreview] = useState<string | null>(null);
   const [preparing, setPreparing] = useState(false);
@@ -24,13 +34,26 @@ export function useStyleTryOnFlow({ styleId, personaId }: UseStyleTryOnFlowOptio
     autoTriggeredRef.current = false;
   }, [styleId]);
 
-  const runTryOn = async (dataUrl: string) => {
+  const runTryOn = async (dataUrl: string, source: "auto" | "manual" = "manual") => {
+    if (beforeTryOn) {
+      const ok = await beforeTryOn(source);
+      if (!ok) {
+        if (source === "auto") autoTriggeredRef.current = true;
+        return;
+      }
+    }
     setGenerating(true);
     setError(null);
     try {
       const data = await generateAiStyleTryOn(dataUrl, styleId, personaId ?? undefined);
       setTryOnPreview(data.preview_image);
+      onTryOnSuccess?.();
     } catch (e) {
+      if (isMorphPlanLimitError(e)) {
+        onPlanLimit?.();
+        setTryOnPreview(null);
+        return;
+      }
       setError(e instanceof Error ? e.message : "Rasm yaratishda xatolik");
       setTryOnPreview(null);
     } finally {
@@ -58,7 +81,7 @@ export function useStyleTryOnFlow({ styleId, personaId }: UseStyleTryOnFlowOptio
   useEffect(() => {
     if (!styleId || !photo || preparing || autoTriggeredRef.current) return;
     autoTriggeredRef.current = true;
-    void runTryOn(photo);
+    void runTryOn(photo, "auto");
   }, [styleId, photo, preparing]);
 
   const onFile = async (file: File | null | undefined) => {
@@ -99,7 +122,7 @@ export function useStyleTryOnFlow({ styleId, personaId }: UseStyleTryOnFlowOptio
     autoTriggeredRef.current = true;
     setTryOnPreview(null);
     setError(null);
-    void runTryOn(photo);
+    void runTryOn(photo, "manual");
   };
 
   return {

@@ -985,6 +985,16 @@
       "desc": "Try styles tailored to your face — save favorites and book the salon in one flow.",
       "skip": "Skip"
     },
+    "limitSheet": {
+      "subtitle": "Your plan’s generation limit is used up",
+      "tryonTitle": "Try-on limit reached",
+      "studioTitle": "Studio limit reached",
+      "usage": "{{used}}/{{limit}} used this month",
+      "descFree": "Subscribe or switch to a higher plan to keep going.",
+      "descWithPlan": "Your {{plan}} monthly limit is used up. Renew or switch plans.",
+      "buyPlan": "Subscribe",
+      "switchPlan": "Switch plan"
+    },
     "uploadTitle": "Upload a selfie",
     "uploadHint": "Face clearly visible · good lighting",
     "uploadFeatures": {

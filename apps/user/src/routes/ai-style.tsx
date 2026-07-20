@@ -1,6 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { AiStyleFlow } from "@/components/ai-style/AiStyleFlow";
-import { useAiStyleFlow } from "@/components/ai-style/useAiStyleFlow";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { resolveAiStyleAudience, useAudience } from "@/hooks/use-audience";
 
@@ -36,7 +35,6 @@ function AiStylePage() {
   const { audience, profileDefault } = useAudience();
   const { personaId } = useExplorePersona();
   const styleAudience = resolveAiStyleAudience(profileDefault, audience);
-  const flow = useAiStyleFlow({ menPersonaId: personaId, audience: styleAudience });
 
-  return <AiStyleFlow flow={flow} audience={styleAudience} />;
+  return <AiStyleFlow audience={styleAudience} menPersonaId={personaId} />;
 }

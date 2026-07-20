@@ -39,7 +39,7 @@ from .services.gemini_style import (
     check_face_in_data_url,
 )
 from .usage_log import record_ai_generation
-from .morph_ops import check_user_can_generate
+from .morph_ops import check_user_can_generate, morph_generation_blocked_response
 
 
 def _require_customer_user(request) -> User | Response:
@@ -155,7 +155,7 @@ class AiStyleAnalyzeView(FriendlyThrottleMixin, APIView):
             return user
         blocked = check_user_can_generate(user_id=user.pk, kind="analyze")
         if blocked:
-            return Response({"detail": blocked}, status=429)
+            return morph_generation_blocked_response(blocked)
 
         image = request.data.get("image")
         request_audience = normalize_request_audience(request.data.get("audience"))
@@ -228,7 +228,7 @@ class AiStyleTryOnView(FriendlyThrottleMixin, APIView):
             return user
         blocked = check_user_can_generate(user_id=user.pk, kind="tryon")
         if blocked:
-            return Response({"detail": blocked}, status=429)
+            return morph_generation_blocked_response(blocked)
 
         image = request.data.get("image")
         style_id = (request.data.get("style_id") or "").strip()
@@ -342,7 +342,7 @@ class AiFaceCheckView(FriendlyThrottleMixin, APIView):
             return user
         blocked = check_user_can_generate(user_id=user.pk, kind="face_check")
         if blocked:
-            return Response({"detail": blocked}, status=429)
+            return morph_generation_blocked_response(blocked)
 
         image = request.data.get("image")
         if not image:
@@ -523,7 +523,7 @@ class AiStyleStudioEditView(FriendlyThrottleMixin, APIView):
             return user
         blocked = check_user_can_generate(user_id=user.pk, kind="studio")
         if blocked:
-            return Response({"detail": blocked}, status=429)
+            return morph_generation_blocked_response(blocked)
 
         image = request.data.get("image")
         preset_id = (request.data.get("preset_id") or "").strip()

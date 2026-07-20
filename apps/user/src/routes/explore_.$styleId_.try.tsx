@@ -1,8 +1,11 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
+import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
+import { MorphLimitUpsell } from "@/components/ai-style/MorphLimitUpsell";
 import { StyleTryOnFlow } from "@/components/style-try-on/StyleTryOnFlow";
 import { useStyleTryOnFlow } from "@/components/style-try-on/useStyleTryOnFlow";
+import { useMorphLimitGate } from "@/hooks/use-morph-limit-gate";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
 
@@ -15,8 +18,20 @@ function ExploreStyleTryPage() {
   const { t } = useTranslation();
   const { styleId } = Route.useParams();
   const { personaId } = useExplorePersona();
+  const limitGate = useMorphLimitGate();
+  const beforeTryOn = useCallback(
+    (source: "auto" | "manual") => limitGate.ensureTryOn({ silent: source === "auto" }),
+    [limitGate],
+  );
+  const onPlanLimit = useCallback(() => void limitGate.openFromApiLimit("tryon"), [limitGate]);
   const { data: entry, isLoading, isError } = useHairstyle(styleId, personaId);
-  const flow = useStyleTryOnFlow({ styleId, personaId });
+  const flow = useStyleTryOnFlow({
+    styleId,
+    personaId,
+    beforeTryOn,
+    onPlanLimit,
+    onTryOnSuccess: limitGate.invalidateUsage,
+  });
 
   if (isLoading) {
     return (
@@ -37,6 +52,12 @@ function ExploreStyleTryPage() {
         <PageHeader showBack sticky title={t("styleTryOnPage.title", { style: entry.titleUz })} />
       ) : null}
       <StyleTryOnFlow flow={flow} entry={entry} />
+      <MorphLimitUpsell
+        open={limitGate.open}
+        onOpenChange={limitGate.setOpen}
+        kind={limitGate.kind}
+        me={limitGate.me}
+      />
     </div>
   );
 }

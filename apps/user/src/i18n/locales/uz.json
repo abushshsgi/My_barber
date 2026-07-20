@@ -985,6 +985,16 @@
       "desc": "Selfie bilan yuzingizga mos turmaklarni sinab ko'ring — yoqqanini saqlang va salonni bron qiling.",
       "skip": "O'tkazib yuborish"
     },
+    "limitSheet": {
+      "subtitle": "Tarifingizdagi generatsiya limiti tugadi",
+      "tryonTitle": "Try-on limiti tugadi",
+      "studioTitle": "Studio limiti tugadi",
+      "usage": "Bu oy {{used}}/{{limit}} ishlatildi",
+      "descFree": "Davom etish uchun obuna sotib oling yoki yuqoriroq tarifga o'ting.",
+      "descWithPlan": "{{plan}} tarifidagi oylik limit tugadi. Obunani yangilang yoki boshqa tarifga o'ting.",
+      "buyPlan": "Obuna sotib olish",
+      "switchPlan": "Boshqa tarifga o'tish"
+    },
     "uploadTitle": "Selfie yuklang",
     "uploadHint": "Yuz aniq ko'rinsin · yaxshi yorug'lik",
     "uploadFeatures": {
