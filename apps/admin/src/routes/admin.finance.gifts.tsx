@@ -338,7 +338,19 @@ function GiftDetailSheet({
                 Hold = vaqtincha muzlatish. Refund = yuboruvchiga qaytarish. Sabab majburiy.
               </p>
               <div className="mt-3 space-y-2">
-                <Label htmlFor="remediation-reason">Sabab</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="remediation-reason">Sabab (majburiy)</Label>
+                  <span
+                    className={cn(
+                      "text-[11px] tabular-nums",
+                      reason.trim().length >= 5
+                        ? "text-emerald-700"
+                        : "text-amber-700",
+                    )}
+                  >
+                    {reason.trim().length}/5
+                  </span>
+                </div>
                 <Textarea
                   id="remediation-reason"
                   value={reason}
@@ -346,6 +358,11 @@ function GiftDetailSheet({
                   placeholder="Masalan: user shikoyati / fraud tekshiruv / xato o'tkazma..."
                   rows={3}
                 />
+                {reason.trim().length < 5 ? (
+                  <p className="text-[11px] text-amber-800">
+                    Hold va Refund ishlashi uchun sababga kamida 5 belgi yozing.
+                  </p>
+                ) : null}
               </div>
               <div className="mt-3 space-y-1">
                 <Label htmlFor="refund-amount">Partial refund summasi (ixtiyoriy)</Label>
@@ -423,6 +440,11 @@ function GiftDetailSheet({
               </div>
               {verifyResult ? (
                 <p className="mt-2 text-xs text-muted-foreground">{verifyResult}</p>
+              ) : null}
+              {g.status === "completed" && !actions?.can_release ? (
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  Release faqat hold qilinganidan keyin ochiladi (hozir COMPLETED).
+                </p>
               ) : null}
               {!actions?.can_hold && !actions?.can_release && !actions?.can_refund ? (
                 <p className="mt-3 text-xs text-muted-foreground">
