@@ -101,24 +101,20 @@ export function WalletDesktopOverviewPanel() {
         </div>
 
         {walletMe ? (
-          <Link
-            to="/wallet"
-            search={{ section: "payments" }}
-            className="mt-5 flex items-center gap-3 rounded-xl border border-border/60 bg-surface/50 p-4 transition-colors hover:bg-surface"
-          >
+          <div className="mt-5 flex items-center gap-3 rounded-xl border border-border/60 bg-surface/50 p-4">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-background ring-1 ring-border/60">
               <WalletIcon className="h-5 w-5" strokeWidth={1.75} />
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                {t("walletPage.savedCards")}
+                {t("walletPage.balanceLabel", { defaultValue: "Hamyon" })}
               </p>
               <p className="mt-0.5 truncate text-sm font-semibold">{walletMe.card.card_display}</p>
             </div>
             <span className="shrink-0 text-xs font-semibold text-muted-foreground">
               {formatPrice(parseWalletBalance(walletMe.balance))}
             </span>
-          </Link>
+          </div>
         ) : null}
       </div>
 

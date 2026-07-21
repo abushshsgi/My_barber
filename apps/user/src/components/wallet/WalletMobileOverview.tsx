@@ -5,10 +5,10 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { ClientOnly } from "@/components/ClientOnly";
 import { mobileBackButtonClass } from "@/components/mobile/MobileBackButton";
+import { ProfileUpgradeButton } from "@/components/profile/ProfileUpgradeButton";
 import { PlasticCard } from "@/components/wallet/PlasticCard";
 import { WalletEmptyTransactions } from "@/components/wallet/WalletEmptyTransactions";
 import { WalletHubLinks } from "@/components/wallet/WalletHubLinks";
-import { WalletPaymentMethodsRow } from "@/components/wallet/WalletPaymentMethodsRow";
 import { WalletPullRefresh } from "@/components/wallet/WalletPullRefresh";
 import { WalletTransactionList } from "@/components/wallet/WalletTransactionList";
 import { useWalletBalance, useWalletTransactions, walletMeQueryKeyFor } from "@/hooks/use-wallet";
@@ -62,6 +62,7 @@ export function WalletMobileOverview() {
             <h1 className="text-lg font-bold">{t("walletPage.title")}</h1>
             <p className="text-[11px] text-muted-foreground">{t("walletPage.pullHint")}</p>
           </div>
+          <ProfileUpgradeButton variant="compact" />
         </header>
 
         <div className="px-5 pt-2">
@@ -102,8 +103,6 @@ export function WalletMobileOverview() {
             <p className="text-[9px] font-bold uppercase text-muted-foreground">{t("walletPage.stats.cashback")}</p>
           </div>
         </div>
-
-        <WalletPaymentMethodsRow />
 
         <section className="mx-5 mt-6">
           <h2 className="mb-2 text-[13px] font-bold">{t("walletPage.moreServices", { defaultValue: "Hamyon va to'lov" })}</h2>

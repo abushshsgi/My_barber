@@ -7,11 +7,11 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   className?: string;
-  /** compact = pill; bar = full-width CTA */
-  variant?: "pill" | "bar";
+  /** pill = header CTA; bar = full-width; compact = yuqori o'ng burchak */
+  variant?: "pill" | "bar" | "compact";
 };
 
-/** Profil — obuna / upgrade CTA (faol userlarga faqat yuqori tarif). */
+/** Profil / hamyon — obuna / upgrade CTA. */
 export function ProfileUpgradeButton({ className, variant = "pill" }: Props) {
   const { t } = useAppTranslation();
   const meQ = useSubscriptionMe();
@@ -26,7 +26,16 @@ export function ProfileUpgradeButton({ className, variant = "pill" }: Props) {
       ? upgradeCtaLabel(code, true)
       : t("profile.upgrade", { defaultValue: "Obuna olish" });
 
+  const shortLabel = isPro
+    ? t("profile.upgradeManageShort", { defaultValue: "Obuna" })
+    : hasActive && code === "starter"
+      ? "Plus"
+      : hasActive && code === "plus"
+        ? "Pro"
+        : t("profile.upgradeShort", { defaultValue: "Upgrade" });
+
   const plan = !hasActive ? "plus" : next ?? "pro";
+  const display = variant === "compact" ? shortLabel : label;
 
   return (
     <Link
@@ -34,14 +43,18 @@ export function ProfileUpgradeButton({ className, variant = "pill" }: Props) {
       search={{ section: "subscriptions", plan }}
       className={cn(
         "inline-flex items-center justify-center gap-1.5 font-bold transition-[transform,opacity] active:scale-[0.98]",
-        variant === "bar"
-          ? "w-full rounded-2xl bg-foreground px-4 py-3.5 text-sm text-background"
-          : "rounded-full bg-foreground px-4 py-2 text-[12px] text-background",
+        variant === "bar" && "w-full rounded-2xl bg-foreground px-4 py-3.5 text-sm text-background",
+        variant === "pill" && "rounded-full bg-foreground px-4 py-2 text-[12px] text-background",
+        variant === "compact" &&
+          "rounded-full bg-foreground px-3 py-1.5 text-[11px] leading-none text-background shadow-sm",
         className,
       )}
     >
-      <Sparkles className={variant === "bar" ? "size-4" : "size-3.5"} strokeWidth={2.25} />
-      {label}
+      <Sparkles
+        className={variant === "bar" ? "size-4" : variant === "compact" ? "size-3" : "size-3.5"}
+        strokeWidth={2.25}
+      />
+      {display}
     </Link>
   );
 }

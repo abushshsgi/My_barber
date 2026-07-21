@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { SettingsDesktopPage } from "@/components/desktop/pages/SettingsDesktopPage";
+import { ProfileUpgradeButton } from "@/components/profile/ProfileUpgradeButton";
 import { SettingsAirbnbSidebar } from "@/components/settings/SettingsAirbnbSidebar";
 import { SettingsPanelContent } from "@/components/settings/SettingsPanelContent";
 import { useSettingsPage } from "@/components/settings/useSettingsPage";
@@ -62,6 +63,7 @@ function SettingsMobileIndex({ state }: { state: ReturnType<typeof useSettingsPa
       title={t("settings.pageTitle", { defaultValue: "Hisob sozlamalari" })}
       backTo="/profile"
       flush
+      right={<ProfileUpgradeButton variant="compact" />}
     >
       <SettingsAirbnbSidebar mobileList t={t} />
     </ProfileSubpageLayout>

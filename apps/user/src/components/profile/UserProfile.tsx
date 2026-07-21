@@ -55,10 +55,11 @@ export function UserProfile() {
 
   return (
     <div className="min-h-[70vh] bg-background pb-4 pt-[calc(env(safe-area-inset-top)+6px)]">
-      <div className="flex items-center justify-between px-5">
+      <div className="flex items-center justify-between gap-3 px-5">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1.5 text-[10px] font-bold text-muted-foreground">
           <Sparkles className="h-3 w-3" /> Bonus · tez orada
         </span>
+        <ProfileUpgradeButton variant="compact" />
       </div>
 
       <div className="mt-2 flex flex-col items-center px-5 text-center">
@@ -85,7 +86,6 @@ export function UserProfile() {
             {stats.bookingsCount} bron · {stats.favoritesCount} sevimli · {stats.reviewsCount} sharh
           </p>
         ) : null}
-        <ProfileUpgradeButton className="mt-4" />
       </div>
 
       <div className="mt-7 px-3">
