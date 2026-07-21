@@ -1666,6 +1666,7 @@ class AdminGiftTransferListView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
+        from config.api_cache import cached_json
         from wallet.models import GiftTransfer
 
         from .platform_analytics import (
@@ -1676,60 +1677,83 @@ class AdminGiftTransferListView(APIView):
             serialize_gift_transfer,
         )
 
-        qs = GiftTransfer.objects.select_related(
-            "sender_wallet__user",
-            "recipient_wallet__user",
-            "sender_entry",
-            "recipient_entry",
-            "design_fee_entry",
-        ).order_by("-created_at")
-
         q = (request.query_params.get("q") or "").strip()
-        if q:
-            qs = qs.filter(
-                Q(sender_wallet__user__full_name__icontains=q)
-                | Q(sender_wallet__user__phone__icontains=q)
-                | Q(recipient_wallet__user__full_name__icontains=q)
-                | Q(recipient_wallet__user__phone__icontains=q)
-                | Q(design_id__icontains=q)
-                | Q(message__icontains=q)
-                | Q(id__icontains=q)
-                | Q(idempotency_key__icontains=q)
-            )
-
         design_id = (request.query_params.get("design_id") or "").strip()
-        if design_id and design_id != "all":
-            qs = qs.filter(design_id=design_id)
-
         status_f = (request.query_params.get("status") or "").strip()
-        if status_f and status_f != "all":
-            qs = qs.filter(status=status_f)
-
         start_raw = request.query_params.get("start")
         end_raw = request.query_params.get("end")
-        start_dt = end_dt = None
-        if start_raw or end_raw:
-            start_dt, end_dt = resolve_range(start_raw, end_raw)
-            qs = qs.filter(created_at__gte=start_dt, created_at__lte=end_dt)
-
         risk_filter = (request.query_params.get("risk") or "").strip().lower()
-        # Faqat flagged (medium/high) — pagination oldidan risk bo'yicha filtr.
-        if risk_filter in ("flagged", "medium", "high"):
-            candidates = list(qs[:500])
-            risk_map = build_gift_risk_maps(candidates)
-            filtered = []
-            for g in candidates:
-                level = (risk_map.get(str(g.id)) or {}).get("level") or "none"
-                if risk_filter == "flagged" and level in ("medium", "high"):
-                    filtered.append(g)
-                elif level == risk_filter:
-                    filtered.append(g)
+        page_raw = request.query_params.get("page") or "1"
+        page_size_raw = request.query_params.get("page_size") or ""
+
+        def _build():
+            qs = GiftTransfer.objects.select_related(
+                "sender_wallet__user",
+                "recipient_wallet__user",
+                "sender_entry",
+                "recipient_entry",
+                "design_fee_entry",
+            ).order_by("-created_at")
+
+            if q:
+                qs = qs.filter(
+                    Q(sender_wallet__user__full_name__icontains=q)
+                    | Q(sender_wallet__user__phone__icontains=q)
+                    | Q(recipient_wallet__user__full_name__icontains=q)
+                    | Q(recipient_wallet__user__phone__icontains=q)
+                    | Q(design_id__icontains=q)
+                    | Q(message__icontains=q)
+                    | Q(id__icontains=q)
+                    | Q(idempotency_key__icontains=q)
+                )
+
+            if design_id and design_id != "all":
+                qs = qs.filter(design_id=design_id)
+
+            if status_f and status_f != "all":
+                qs = qs.filter(status=status_f)
+
+            start_dt = end_dt = None
+            if start_raw or end_raw:
+                start_dt, end_dt = resolve_range(start_raw, end_raw)
+                qs = qs.filter(created_at__gte=start_dt, created_at__lte=end_dt)
+
+            # Faqat flagged (medium/high) — pagination oldidan risk bo'yicha filtr.
+            if risk_filter in ("flagged", "medium", "high"):
+                candidates = list(qs[:500])
+                risk_map = build_gift_risk_maps(candidates)
+                filtered = []
+                for g in candidates:
+                    level = (risk_map.get(str(g.id)) or {}).get("level") or "none"
+                    if risk_filter == "flagged" and level in ("medium", "high"):
+                        filtered.append(g)
+                    elif level == risk_filter:
+                        filtered.append(g)
+                paginator = AdminPageNumberPagination()
+                page = paginator.paginate_queryset(filtered, request)
+                page_list = list(page or [])
+                page_risk = {str(g.id): risk_map.get(str(g.id)) for g in page_list}
+                results = [
+                    serialize_gift_transfer(g, risk=page_risk.get(str(g.id))) for g in page_list
+                ]
+                summary = build_gifts_summary(start_dt, end_dt)
+                risk_pack = build_gift_risk_alerts(start_dt, end_dt)
+                summary["risk_high_count"] = risk_pack["high_count"]
+                summary["risk_medium_count"] = risk_pack["medium_count"]
+                summary["risk_flagged_count"] = risk_pack["flagged_count"]
+                response = paginator.get_paginated_response(results)
+                response.data["summary"] = summary
+                response.data["risk_alerts"] = risk_pack
+                response.data["page"] = paginator.page.number
+                response.data["page_size"] = paginator.get_page_size(request)
+                return response.data
+
             paginator = AdminPageNumberPagination()
-            page = paginator.paginate_queryset(filtered, request)
+            page = paginator.paginate_queryset(qs, request)
             page_list = list(page or [])
-            page_risk = {str(g.id): risk_map.get(str(g.id)) for g in page_list}
+            risk_map = build_gift_risk_maps(page_list)
             results = [
-                serialize_gift_transfer(g, risk=page_risk.get(str(g.id))) for g in page_list
+                serialize_gift_transfer(g, risk=risk_map.get(str(g.id))) for g in page_list
             ]
             summary = build_gifts_summary(start_dt, end_dt)
             risk_pack = build_gift_risk_alerts(start_dt, end_dt)
@@ -1741,26 +1765,24 @@ class AdminGiftTransferListView(APIView):
             response.data["risk_alerts"] = risk_pack
             response.data["page"] = paginator.page.number
             response.data["page_size"] = paginator.get_page_size(request)
-            return response
+            return response.data
 
-        paginator = AdminPageNumberPagination()
-        page = paginator.paginate_queryset(qs, request)
-        page_list = list(page or [])
-        risk_map = build_gift_risk_maps(page_list)
-        results = [
-            serialize_gift_transfer(g, risk=risk_map.get(str(g.id))) for g in page_list
-        ]
-        summary = build_gifts_summary(start_dt, end_dt)
-        risk_pack = build_gift_risk_alerts(start_dt, end_dt)
-        summary["risk_high_count"] = risk_pack["high_count"]
-        summary["risk_medium_count"] = risk_pack["medium_count"]
-        summary["risk_flagged_count"] = risk_pack["flagged_count"]
-        response = paginator.get_paginated_response(results)
-        response.data["summary"] = summary
-        response.data["risk_alerts"] = risk_pack
-        response.data["page"] = paginator.page.number
-        response.data["page_size"] = paginator.get_page_size(request)
-        return response
+        payload = cached_json(
+            prefix="admin:finance:gifts",
+            parts={
+                "q": q,
+                "design_id": design_id,
+                "status": status_f,
+                "start": start_raw or "",
+                "end": end_raw or "",
+                "risk": risk_filter,
+                "page": page_raw,
+                "page_size": page_size_raw,
+            },
+            producer=_build,
+            ttl=5,
+        )
+        return Response(payload)
 
 
 class AdminGiftTransferDetailView(APIView):
@@ -1801,6 +1823,12 @@ def _reload_gift(pk):
         "recipient_entry",
         "design_fee_entry",
     ).get(pk=pk)
+
+
+def _bust_gift_caches() -> None:
+    from config.api_cache import bust_prefix
+
+    bust_prefix("admin:finance:gifts")
 
 
 def _notify_gift_action(gift, *, action: str, reason: str = "", amount=None) -> None:
@@ -1897,6 +1925,7 @@ class AdminGiftHoldView(APIView):
             after={"status": gift.status, "held_amount": str(gift.held_amount), "reason": reason},
         )
         _notify_gift_action(gift, action="hold", reason=reason, amount=gift.held_amount)
+        _bust_gift_caches()
         return Response(serialize_gift_transfer(_reload_gift(gift.id), detail=True))
 
 
@@ -1935,6 +1964,7 @@ class AdminGiftReleaseView(APIView):
             after={"status": gift.status, "reason": reason},
         )
         _notify_gift_action(gift, action="release", reason=reason, amount=held_before)
+        _bust_gift_caches()
         return Response(serialize_gift_transfer(_reload_gift(gift.id), detail=True))
 
 
@@ -2003,6 +2033,7 @@ class AdminGiftRefundView(APIView):
             reason=reason,
             amount=last.get("gift_amount") or gift.amount,
         )
+        _bust_gift_caches()
         return Response(serialize_gift_transfer(_reload_gift(gift.id), detail=True))
 
 
@@ -2140,6 +2171,8 @@ class AdminGiftBulkHoldView(APIView):
             before={},
             after={"held": held, "errors": errors, "reason": reason},
         )
+        if held:
+            _bust_gift_caches()
         return Response(
             {
                 "ok": True,

@@ -4,18 +4,23 @@ function readEnv(name: string): string | undefined {
 }
 
 const ENV_API_BASE = readEnv("VITE_API_URL") || readEnv("NEXT_PUBLIC_API_URL") || "";
+const FORCE_DIRECT_API =
+  readEnv("VITE_API_DIRECT") === "1" || readEnv("VITE_API_DIRECT") === "true";
 
 /**
- * Prefer explicit VITE_API_URL.
- * Production SPA: same-origin `/api/v1` via Vercel rewrite — avoids CORS / Cloudflare
- * cookie failures when calling api.mysaloon.uz directly from the browser.
- * Local: empty base uses Vite proxy to Django.
+ * Production SPA: always same-origin `/api/v1` via Vercel rewrite.
+ * Ignoring a leftover VITE_API_URL=https://api.mysaloon.uz on Vercel avoids
+ * cross-origin fetches where Railway/gateway 502s surface as CORS errors.
+ * Opt-in direct API (debug only): VITE_API_DIRECT=1 + VITE_API_URL=...
+ * Local: empty base uses Vite proxy to Django; VITE_API_URL still works in dev.
  */
 function resolveWebApiBase(envBase: string): string {
   const trimmed = envBase.trim().replace(/\/+$/, "");
-  if (trimmed) return trimmed;
-  if (import.meta.env.PROD) return "";
-  return "";
+  if (import.meta.env.PROD) {
+    if (FORCE_DIRECT_API && trimmed) return trimmed;
+    return "";
+  }
+  return trimmed;
 }
 
 const API_BASE = resolveWebApiBase(ENV_API_BASE);
