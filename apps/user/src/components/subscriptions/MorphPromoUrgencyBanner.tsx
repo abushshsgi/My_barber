@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, Flame, Ticket } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { useSubscriptionPromos } from "@/hooks/use-subscription";
 import { PromoCountdown } from "@/components/subscriptions/PromoCountdown";
 import { cn } from "@/lib/utils";
@@ -7,14 +7,15 @@ import { cn } from "@/lib/utils";
 type Props = {
   onNavigate?: () => void;
   className?: string;
-  /** Dark strip (Morph home) vs light card */
-  variant?: "dark" | "card";
+  /** glass = Morph home (shaffof); card = settings panel */
+  variant?: "glass" | "card" | "dark";
 };
 
 /**
  * Muddatli Morph promo — countdown + «Ulgutib qoling».
+ * Katta kompaniya uslubi: shaffof, jimjiq, ortiqcha dekoratsiyasiz.
  */
-export function MorphPromoUrgencyBanner({ onNavigate, className, variant = "dark" }: Props) {
+export function MorphPromoUrgencyBanner({ onNavigate, className, variant = "glass" }: Props) {
   const promosQ = useSubscriptionPromos();
   const promo = promosQ.data?.[0] ?? null;
   const code = promo?.code ?? "MORPH30";
@@ -25,7 +26,7 @@ export function MorphPromoUrgencyBanner({ onNavigate, className, variant = "dark
 
   if (expired) return null;
 
-  const dark = variant === "dark";
+  const glass = variant === "glass" || variant === "dark";
 
   return (
     <Link
@@ -38,73 +39,39 @@ export function MorphPromoUrgencyBanner({ onNavigate, className, variant = "dark
       }}
       onClick={onNavigate}
       className={cn(
-        "group relative flex flex-col gap-3 overflow-hidden rounded-[22px] border px-4 py-4 transition-[transform] active:scale-[0.99]",
-        dark
-          ? "border-white/15 bg-[#0a0a0a] text-white"
-          : "border-border bg-foreground text-background",
+        "group relative flex flex-col gap-3.5 overflow-hidden rounded-2xl border px-4 py-3.5 transition-opacity active:opacity-90",
+        glass
+          ? "border-black/[0.08] bg-white/45 text-foreground shadow-[0_1px_0_rgba(255,255,255,0.55)_inset] backdrop-blur-xl"
+          : "border-border/70 bg-background/90 text-foreground backdrop-blur-md",
         className,
       )}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/10 blur-2xl"
-      />
-
-      <div className="relative flex items-start gap-3">
-        <span
-          className={cn(
-            "grid size-11 shrink-0 place-items-center rounded-2xl",
-            dark ? "bg-white text-black" : "bg-background text-foreground",
-          )}
-        >
-          <Flame className="size-5" strokeWidth={2.25} />
-        </span>
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p
-            className={cn(
-              "text-[10px] font-bold uppercase tracking-[0.18em]",
-              dark ? "text-white/50" : "text-background/55",
-            )}
-          >
-            Cheklangan aksiya
-          </p>
-          <p className="mt-1 text-[15px] font-bold leading-snug tracking-tight">
+          <div className="flex items-center gap-2">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              Cheklangan aksiya
+            </p>
+            <span className="rounded-md border border-black/[0.08] bg-black/[0.03] px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-foreground/80">
+              −{pct}%
+            </span>
+          </div>
+          <p className="mt-1.5 text-[14px] font-semibold leading-snug tracking-tight text-foreground">
             {urgency}
           </p>
-          <p
-            className={cn(
-              "mt-1 text-[12px] font-medium",
-              dark ? "text-white/65" : "text-background/65",
-            )}
-          >
-            <span className="inline-flex items-center gap-1 font-bold">
-              <Ticket className="size-3.5" strokeWidth={2.25} />
-              {code}
-            </span>
-            {" · "}−{pct}% · birinchi to‘lov
+          <p className="mt-1 text-[12px] font-medium text-muted-foreground">
+            <span className="font-semibold text-foreground/85">{code}</span>
+            {" · "}birinchi to‘lov
           </p>
         </div>
-        <ChevronRight
-          className={cn(
-            "mt-1 size-5 shrink-0 transition-transform group-hover:translate-x-0.5",
-            dark ? "text-white/50" : "text-background/50",
-          )}
-          strokeWidth={2.25}
-        />
+        <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-black/[0.08] bg-white/50 text-foreground/70 transition-colors group-hover:border-black/15 group-hover:text-foreground">
+          <ArrowUpRight className="size-3.5" strokeWidth={2} />
+        </span>
       </div>
 
-      <div className="relative flex flex-wrap items-center justify-between gap-3">
-        <PromoCountdown
-          endsAt={endsAt}
-          initialSecondsLeft={promo?.seconds_left}
-          inverted
-        />
-        <span
-          className={cn(
-            "inline-flex h-10 items-center rounded-xl px-3.5 text-[12px] font-bold",
-            dark ? "bg-white text-black" : "bg-background text-foreground",
-          )}
-        >
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/[0.06] pt-3">
+        <PromoCountdown endsAt={endsAt} initialSecondsLeft={promo?.seconds_left} tone="ghost" />
+        <span className="text-[12px] font-semibold tracking-tight text-foreground/80 transition-colors group-hover:text-foreground">
           Hozir ochish
         </span>
       </div>

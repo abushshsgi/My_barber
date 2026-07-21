@@ -55,7 +55,7 @@ export function MorphSoftPaywall({ className, previewUrl }: Props) {
         </div>
       </div>
 
-      <MorphPromoUrgencyBanner variant="dark" />
+      <MorphPromoUrgencyBanner variant="glass" />
 
       <Link
         to="/referrals"

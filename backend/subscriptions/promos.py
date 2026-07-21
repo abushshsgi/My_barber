@@ -14,8 +14,8 @@ from subscriptions.models import SubscriptionPayment
 from subscriptions.plans import get_plan
 
 # Launch / CTA promokodlari — muddatli (urgency).
-# MORPH30: 2026-07-28 23:59:59 Asia/Tashkent ≈ UTC+5
-_MORPH30_ENDS = datetime(2026, 7, 28, 18, 59, 59, tzinfo=dt_timezone.utc)
+# MORPH30: 2026-07-22 23:59:59 Asia/Tashkent ≈ UTC+5 (~1 kun)
+_MORPH30_ENDS = datetime(2026, 7, 22, 18, 59, 59, tzinfo=dt_timezone.utc)
 
 _PROMOS: dict[str, dict[str, Any]] = {
     "MORPH30": {

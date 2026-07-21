@@ -26,6 +26,8 @@ type Props = {
   compact?: boolean;
   /** Light text on dark bg */
   inverted?: boolean;
+  /** ghost = shaffof borderli kataklar (glass banner) */
+  tone?: "solid" | "ghost";
 };
 
 /** Live countdown — promokod muddati. */
@@ -35,6 +37,7 @@ export function PromoCountdown({
   className,
   compact,
   inverted,
+  tone = "solid",
 }: Props) {
   const [left, setLeft] = useState(() => {
     if (endsAt) {
@@ -104,26 +107,48 @@ export function PromoCountdown({
           { v: pad(parts.secs), u: "sek" },
         ];
 
+  const ghost = tone === "ghost";
+
   return (
-    <div className={cn("flex flex-wrap items-end gap-1.5", className)}>
-      {cells.map((c) => (
-        <span
-          key={c.u}
-          className={cn(
-            "min-w-[2.75rem] rounded-xl px-2 py-1.5 text-center",
-            inverted ? "bg-background/15 text-background" : "bg-foreground text-background",
-          )}
-        >
-          <span className="block text-[15px] font-bold leading-none tabular-nums tracking-tight">
-            {c.v}
-          </span>
+    <div className={cn("flex flex-wrap items-end gap-1", className)}>
+      {cells.map((c, i) => (
+        <span key={c.u} className="flex items-end gap-1">
+          {i > 0 && ghost ? (
+            <span className="mb-2.5 text-[11px] font-medium text-muted-foreground/50" aria-hidden>
+              :
+            </span>
+          ) : null}
           <span
             className={cn(
-              "mt-0.5 block text-[9px] font-bold uppercase tracking-wider",
-              inverted ? "text-background/55" : "text-background/55",
+              "min-w-[2.5rem] px-1.5 py-1 text-center",
+              ghost
+                ? "rounded-lg border border-black/[0.08] bg-white/40 text-foreground"
+                : cn(
+                    "rounded-xl px-2 py-1.5",
+                    inverted ? "bg-background/15 text-background" : "bg-foreground text-background",
+                  ),
             )}
           >
-            {c.u}
+            <span
+              className={cn(
+                "block leading-none tabular-nums tracking-tight",
+                ghost ? "text-[13px] font-semibold" : "text-[15px] font-bold",
+              )}
+            >
+              {c.v}
+            </span>
+            <span
+              className={cn(
+                "mt-0.5 block text-[8px] font-semibold uppercase tracking-wider",
+                ghost
+                  ? "text-muted-foreground"
+                  : inverted
+                    ? "text-background/55"
+                    : "text-background/55",
+              )}
+            >
+              {c.u}
+            </span>
           </span>
         </span>
       ))}

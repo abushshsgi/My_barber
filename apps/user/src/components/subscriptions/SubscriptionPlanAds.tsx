@@ -226,5 +226,5 @@ export function SubscriptionPromoBanner({
   onNavigate?: () => void;
   className?: string;
 }) {
-  return <MorphPromoUrgencyBanner onNavigate={onNavigate} className={className} variant="dark" />;
+  return <MorphPromoUrgencyBanner onNavigate={onNavigate} className={className} variant="glass" />;
 }
