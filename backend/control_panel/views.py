@@ -1094,11 +1094,18 @@ class AdminFinanceOverviewView(APIView):
         )
         trows = []
         for r in top_barbers:
+            avatar = ""
+            raw_avatar = r.get("barber__avatar")
+            if raw_avatar:
+                try:
+                    avatar = request.build_absolute_uri(f"/media/{raw_avatar}")
+                except Exception:
+                    avatar = f"/media/{raw_avatar}"
             trows.append(
                 {
                     "id": str(r["barber_id"] or ""),
                     "name": r["barber__full_name"] or r["barber__email"] or "—",
-                    "avatar": "",
+                    "avatar": avatar,
                     "revenue": float(r["rev"] or 0),
                 }
             )

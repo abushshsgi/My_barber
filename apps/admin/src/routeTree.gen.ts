@@ -32,6 +32,7 @@ import { Route as AdminSupportRouteImport } from './routes/admin.support'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminBarbersBarberIdRouteImport } from './routes/admin.barbers.$barberId'
 import { Route as AdminBookingsBookingIdRouteImport } from './routes/admin.bookings.$bookingId'
+import { Route as AdminFinanceIndexRouteImport } from './routes/admin.finance.index'
 import { Route as AdminFinanceDepositsRouteImport } from './routes/admin.finance.deposits'
 import { Route as AdminFinancePayoutsRouteImport } from './routes/admin.finance.payouts'
 import { Route as AdminFinancePromotionsRouteImport } from './routes/admin.finance.promotions'
@@ -187,6 +188,11 @@ const AdminBookingsBookingIdRoute = AdminBookingsBookingIdRouteImport.update({
   id: '/$bookingId',
   path: '/$bookingId',
   getParentRoute: () => AdminBookingsRoute,
+} as any)
+const AdminFinanceIndexRoute = AdminFinanceIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminFinanceRoute,
 } as any)
 const AdminFinanceDepositsRoute = AdminFinanceDepositsRouteImport.update({
   id: '/deposits',
@@ -448,6 +454,7 @@ export interface FileRoutesByFullPath {
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
+  '/admin/finance/': typeof AdminFinanceIndexRoute
   '/admin/morph-ai/': typeof AdminMorphAiIndexRoute
   '/admin/statistics/': typeof AdminStatisticsIndexRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
@@ -472,7 +479,6 @@ export interface FileRoutesByTo {
   '/admin/bookings': typeof AdminBookingsRouteWithChildren
   '/admin/broadcast': typeof AdminBroadcastRoute
   '/admin/categories': typeof AdminCategoriesRoute
-  '/admin/finance': typeof AdminFinanceRouteWithChildren
   '/admin/map': typeof AdminMapRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/reviews': typeof AdminReviewsRoute
@@ -508,6 +514,7 @@ export interface FileRoutesByTo {
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
+  '/admin/finance': typeof AdminFinanceIndexRoute
   '/admin/morph-ai': typeof AdminMorphAiIndexRoute
   '/admin/statistics': typeof AdminStatisticsIndexRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
@@ -572,6 +579,7 @@ export interface FileRoutesById {
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
+  '/admin/finance/': typeof AdminFinanceIndexRoute
   '/admin/morph-ai/': typeof AdminMorphAiIndexRoute
   '/admin/statistics/': typeof AdminStatisticsIndexRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
@@ -639,6 +647,7 @@ export interface FileRouteTypes {
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
     | '/admin/users/signups'
+    | '/admin/finance/'
     | '/admin/morph-ai/'
     | '/admin/statistics/'
     | '/admin/barbers/$barberId/bookings'
@@ -663,7 +672,6 @@ export interface FileRouteTypes {
     | '/admin/bookings'
     | '/admin/broadcast'
     | '/admin/categories'
-    | '/admin/finance'
     | '/admin/map'
     | '/admin/profile'
     | '/admin/reviews'
@@ -699,6 +707,7 @@ export interface FileRouteTypes {
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
     | '/admin/users/signups'
+    | '/admin/finance'
     | '/admin/morph-ai'
     | '/admin/statistics'
     | '/admin/barbers/$barberId/bookings'
@@ -762,6 +771,7 @@ export interface FileRouteTypes {
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
     | '/admin/users/signups'
+    | '/admin/finance/'
     | '/admin/morph-ai/'
     | '/admin/statistics/'
     | '/admin/barbers/$barberId/bookings'
@@ -946,6 +956,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/bookings/$bookingId'
       preLoaderRoute: typeof AdminBookingsBookingIdRouteImport
       parentRoute: typeof AdminBookingsRoute
+    }
+    '/admin/finance/': {
+      id: '/admin/finance/'
+      path: '/'
+      fullPath: '/admin/finance/'
+      preLoaderRoute: typeof AdminFinanceIndexRouteImport
+      parentRoute: typeof AdminFinanceRoute
     }
     '/admin/finance/deposits': {
       id: '/admin/finance/deposits'
@@ -1292,6 +1309,7 @@ interface AdminFinanceRouteChildren {
   AdminFinancePayoutsRoute: typeof AdminFinancePayoutsRoute
   AdminFinancePromotionsRoute: typeof AdminFinancePromotionsRoute
   AdminFinanceTransactionsRoute: typeof AdminFinanceTransactionsRoute
+  AdminFinanceIndexRoute: typeof AdminFinanceIndexRoute
 }
 
 const AdminFinanceRouteChildren: AdminFinanceRouteChildren = {
@@ -1299,6 +1317,7 @@ const AdminFinanceRouteChildren: AdminFinanceRouteChildren = {
   AdminFinancePayoutsRoute: AdminFinancePayoutsRoute,
   AdminFinancePromotionsRoute: AdminFinancePromotionsRoute,
   AdminFinanceTransactionsRoute: AdminFinanceTransactionsRoute,
+  AdminFinanceIndexRoute: AdminFinanceIndexRoute,
 }
 
 const AdminFinanceRouteWithChildren = AdminFinanceRoute._addFileChildren(
