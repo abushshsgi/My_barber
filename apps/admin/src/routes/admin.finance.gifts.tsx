@@ -11,7 +11,9 @@ import {
   Hash,
   LayoutGrid,
   Search,
+  ShieldAlert,
   ShieldCheck,
+  TriangleAlert,
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -20,6 +22,7 @@ import {
   fetchAdminGiftDetail,
   fetchAdminGifts,
   PAGE_SIZE,
+  type AdminGiftRisk,
   type AdminGiftTransfer,
 } from "@/lib/admin-api";
 import { formatAdminUzs } from "@/lib/admin-analytics";
@@ -68,6 +71,40 @@ function stepIcon(status: string) {
   if (status === "passed") return <CheckCircle2 className="size-4 text-emerald-600" />;
   if (status === "failed") return <XCircle className="size-4 text-destructive" />;
   return <Circle className="size-4 text-muted-foreground" />;
+}
+
+function riskBadgeClass(level: string) {
+  if (level === "high") return "border-red-500/40 bg-red-500/10 text-red-800";
+  if (level === "medium") return "border-amber-500/40 bg-amber-500/10 text-amber-900";
+  if (level === "low") return "border-sky-500/30 bg-sky-500/10 text-sky-800";
+  return "border-border bg-muted/40 text-muted-foreground";
+}
+
+function riskLabel(level: string) {
+  if (level === "high") return "Yuqori risk";
+  if (level === "medium") return "O'rta risk";
+  if (level === "low") return "Past risk";
+  return "Risk yo'q";
+}
+
+function RiskBadge({ risk }: { risk?: AdminGiftRisk | null }) {
+  if (!risk || risk.level === "none" || !risk.score) return null;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold",
+        riskBadgeClass(risk.level),
+      )}
+      title={(risk.reasons || []).map((r) => r.label).join(" · ")}
+    >
+      {risk.level === "high" ? (
+        <ShieldAlert className="size-3" />
+      ) : (
+        <TriangleAlert className="size-3" />
+      )}
+      {riskLabel(risk.level)} · {risk.score}
+    </span>
+  );
 }
 
 function SecurityRail({ gift }: { gift: AdminGiftTransfer }) {
@@ -135,7 +172,10 @@ function GiftDetailSheet({
           <div className="mt-6 space-y-6">
             <div className="rounded-2xl border border-border bg-gradient-to-br from-violet-500/10 via-background to-background p-4">
               <div className="flex items-center justify-between gap-2">
-                <LivePulseBadge label="Sealed" />
+                <div className="flex flex-wrap items-center gap-2">
+                  <LivePulseBadge label="Sealed" />
+                  <RiskBadge risk={g.risk} />
+                </div>
                 <code className="text-[11px] font-mono text-muted-foreground">
                   {g.merchant_tx_id || g.id}
                 </code>
@@ -165,6 +205,40 @@ function GiftDetailSheet({
                 {formatAdminUzs(g.total_charged)}
               </p>
             </div>
+
+            {g.risk?.flagged || (g.risk?.score ?? 0) > 0 ? (
+              <section>
+                <h3 className="flex items-center gap-2 text-sm font-semibold">
+                  <ShieldAlert className="size-4 text-amber-700" />
+                  Risk alert
+                </h3>
+                <div
+                  className={cn(
+                    "mt-3 rounded-xl border p-3",
+                    riskBadgeClass(g.risk?.level || "none"),
+                  )}
+                >
+                  <p className="text-sm font-semibold">
+                    {riskLabel(g.risk?.level || "none")} · score {g.risk?.score ?? 0}/100
+                  </p>
+                  <ul className="mt-2 space-y-1.5">
+                    {(g.risk?.reasons || []).map((r) => (
+                      <li key={r.code} className="text-xs">
+                        <span className="font-medium">{r.label}:</span> {r.detail}
+                      </li>
+                    ))}
+                  </ul>
+                  {g.risk?.signals ? (
+                    <p className="mt-2 text-[11px] opacity-80">
+                      Kunlik: {g.risk.signals.sender_day_count ?? 0} ta /{" "}
+                      {formatAdminUzs(g.risk.signals.sender_day_amount ?? 0)} · juftlik{" "}
+                      {g.risk.signals.pair_day_count ?? 0} · teskari{" "}
+                      {g.risk.signals.reverse_day_count ?? 0}
+                    </p>
+                  ) : null}
+                </div>
+              </section>
+            ) : null}
 
             <section>
               <h3 className="flex items-center gap-2 text-sm font-semibold">
@@ -283,16 +357,18 @@ function AdminGiftsPage() {
   const [q, setQ] = useState("");
   const [search, setSearch] = useState("");
   const [designId, setDesignId] = useState("all");
+  const [riskFilter, setRiskFilter] = useState<"all" | "flagged" | "high" | "medium">("all");
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const giftsQ = useQuery({
-    queryKey: ["admin", "gifts", search, designId, range.start, range.end, page],
+    queryKey: ["admin", "gifts", search, designId, riskFilter, range.start, range.end, page],
     queryFn: () =>
       fetchAdminGifts({
         q: search || undefined,
         design_id: designId,
+        risk: riskFilter,
         start: range.start,
         end: range.end,
         page,
@@ -303,6 +379,7 @@ function AdminGiftsPage() {
 
   const data = giftsQ.data?.results ?? [];
   const summary = giftsQ.data?.summary;
+  const riskAlerts = giftsQ.data?.risk_alerts;
   const pag = giftsQ.data;
 
   const applySearch = () => {
@@ -339,8 +416,7 @@ function AdminGiftsPage() {
             <LivePulseBadge label="Live" />
           </div>
           <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-            Kim kimga yuboryapti, 5 bosqichli xavfsizlik zanjiri, merchant TX va sarf izi —
-            real vaqtda.
+            Kim kimga yuboryapti + Risk alert (katta summa, bir xil juftlik, oldinga-orqaga).
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -377,9 +453,9 @@ function AdminGiftsPage() {
         />
       )}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         {!summary ? (
-          Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)
+          Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)
         ) : (
           <>
             <KPICard label="Sovg'alar" value={summary.count} icon={Gift} />
@@ -398,9 +474,74 @@ function AdminGiftsPage() {
                   : "Hali yo'q"
               }
             />
+            <KPICard
+              label="Risk alert"
+              value={summary.risk_flagged_count ?? 0}
+              icon={ShieldAlert}
+              hint={`${summary.risk_high_count ?? 0} yuqori · ${summary.risk_medium_count ?? 0} o'rta`}
+            />
           </>
         )}
       </div>
+
+      {(riskAlerts?.flagged_count ?? 0) > 0 ? (
+        <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-card to-card p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="size-5 text-amber-700" />
+              <div>
+                <h2 className="font-heading text-lg font-semibold">Risk alertlar</h2>
+                <p className="text-xs text-muted-foreground">
+                  Faqat ogohlantirish — pul to&apos;xtatilmaydi. {riskAlerts?.high_count ?? 0}{" "}
+                  yuqori · {riskAlerts?.medium_count ?? 0} o&apos;rta
+                </p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setRiskFilter("flagged");
+                setPage(1);
+              }}
+            >
+              Faqat risklarni ko&apos;rsat
+            </Button>
+          </div>
+          <ul className="mt-4 space-y-2">
+            {(riskAlerts?.alerts ?? []).slice(0, 6).map((a) => (
+              <li key={a.gift_id}>
+                <button
+                  type="button"
+                  onClick={() => openGift(a.gift_id)}
+                  className="flex w-full items-start justify-between gap-3 rounded-xl border border-border bg-background/70 p-3 text-left hover:border-amber-500/40"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <RiskBadge risk={a.risk} />
+                      <span className="text-xs text-muted-foreground">
+                        {a.created_at
+                          ? format(new Date(a.created_at), "dd MMM HH:mm")
+                          : "—"}
+                      </span>
+                    </div>
+                    <p className="mt-1 truncate text-sm font-medium">
+                      {a.sender.name} → {a.recipient.name}
+                    </p>
+                    <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                      {(a.risk.reasons || []).map((r) => r.label).join(" · ") || "Shubhali pattern"}
+                    </p>
+                  </div>
+                  <span className="shrink-0 font-semibold tabular-nums">
+                    {formatAdminUzs(a.amount)}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card/80 p-4 backdrop-blur sm:flex-row sm:items-end">
         <div className="relative min-w-[220px] flex-1">
@@ -433,6 +574,23 @@ function AdminGiftsPage() {
             ))}
           </SelectContent>
         </Select>
+        <Select
+          value={riskFilter}
+          onValueChange={(v) => {
+            setRiskFilter(v as typeof riskFilter);
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="w-full sm:w-44">
+            <SelectValue placeholder="Risk" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Barcha risk</SelectItem>
+            <SelectItem value="flagged">Faqat alert</SelectItem>
+            <SelectItem value="high">Yuqori</SelectItem>
+            <SelectItem value="medium">O&apos;rta</SelectItem>
+          </SelectContent>
+        </Select>
         <Button type="button" onClick={applySearch}>
           Qidirish
         </Button>
@@ -462,7 +620,14 @@ function AdminGiftsPage() {
                   key={g.id}
                   type="button"
                   onClick={() => openGift(g.id)}
-                  className="w-full rounded-2xl border border-border bg-card p-4 text-left shadow-card transition hover:border-violet-500/40 hover:ring-1 hover:ring-violet-500/20 sm:p-5"
+                  className={cn(
+                    "w-full rounded-2xl border bg-card p-4 text-left shadow-card transition sm:p-5",
+                    g.risk?.level === "high"
+                      ? "border-red-500/40 hover:ring-1 hover:ring-red-500/20"
+                      : g.risk?.level === "medium"
+                        ? "border-amber-500/40 hover:ring-1 hover:ring-amber-500/20"
+                        : "border-border hover:border-violet-500/40 hover:ring-1 hover:ring-violet-500/20",
+                  )}
                 >
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0 flex-1">
@@ -470,6 +635,7 @@ function AdminGiftsPage() {
                         <span className="inline-flex rounded-md bg-violet-500/10 px-2 py-0.5 text-xs font-semibold text-violet-800">
                           {g.design_name}
                         </span>
+                        <RiskBadge risk={g.risk} />
                         <code className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
                           <Hash className="size-3" />
                           {(g.merchant_tx_id || g.id).slice(0, 13)}…
@@ -489,6 +655,11 @@ function AdminGiftsPage() {
                         {g.sender.phone || g.sender.wallet_number || "—"} →{" "}
                         {g.recipient.phone || g.recipient.wallet_number || "—"}
                       </p>
+                      {g.risk?.flagged ? (
+                        <p className="mt-1 line-clamp-1 text-xs text-amber-800">
+                          {(g.risk.reasons || []).map((r) => r.label).join(" · ")}
+                        </p>
+                      ) : null}
                       <SecurityRail gift={g} />
                     </div>
                     <div className="shrink-0 text-right">

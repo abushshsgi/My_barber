@@ -1556,6 +1556,8 @@ class AdminGiftTransferListView(APIView):
         from wallet.models import GiftTransfer
 
         from .platform_analytics import (
+            build_gift_risk_alerts,
+            build_gift_risk_maps,
             build_gifts_summary,
             resolve_range,
             serialize_gift_transfer,
@@ -1597,12 +1599,52 @@ class AdminGiftTransferListView(APIView):
             start_dt, end_dt = resolve_range(start_raw, end_raw)
             qs = qs.filter(created_at__gte=start_dt, created_at__lte=end_dt)
 
+        risk_filter = (request.query_params.get("risk") or "").strip().lower()
+        # Faqat flagged (medium/high) — pagination oldidan risk bo'yicha filtr.
+        if risk_filter in ("flagged", "medium", "high"):
+            candidates = list(qs[:500])
+            risk_map = build_gift_risk_maps(candidates)
+            filtered = []
+            for g in candidates:
+                level = (risk_map.get(str(g.id)) or {}).get("level") or "none"
+                if risk_filter == "flagged" and level in ("medium", "high"):
+                    filtered.append(g)
+                elif level == risk_filter:
+                    filtered.append(g)
+            paginator = AdminPageNumberPagination()
+            page = paginator.paginate_queryset(filtered, request)
+            page_list = list(page or [])
+            page_risk = {str(g.id): risk_map.get(str(g.id)) for g in page_list}
+            results = [
+                serialize_gift_transfer(g, risk=page_risk.get(str(g.id))) for g in page_list
+            ]
+            summary = build_gifts_summary(start_dt, end_dt)
+            risk_pack = build_gift_risk_alerts(start_dt, end_dt)
+            summary["risk_high_count"] = risk_pack["high_count"]
+            summary["risk_medium_count"] = risk_pack["medium_count"]
+            summary["risk_flagged_count"] = risk_pack["flagged_count"]
+            response = paginator.get_paginated_response(results)
+            response.data["summary"] = summary
+            response.data["risk_alerts"] = risk_pack
+            response.data["page"] = paginator.page.number
+            response.data["page_size"] = paginator.get_page_size(request)
+            return response
+
         paginator = AdminPageNumberPagination()
         page = paginator.paginate_queryset(qs, request)
-        results = [serialize_gift_transfer(g) for g in page]
+        page_list = list(page or [])
+        risk_map = build_gift_risk_maps(page_list)
+        results = [
+            serialize_gift_transfer(g, risk=risk_map.get(str(g.id))) for g in page_list
+        ]
         summary = build_gifts_summary(start_dt, end_dt)
+        risk_pack = build_gift_risk_alerts(start_dt, end_dt)
+        summary["risk_high_count"] = risk_pack["high_count"]
+        summary["risk_medium_count"] = risk_pack["medium_count"]
+        summary["risk_flagged_count"] = risk_pack["flagged_count"]
         response = paginator.get_paginated_response(results)
         response.data["summary"] = summary
+        response.data["risk_alerts"] = risk_pack
         response.data["page"] = paginator.page.number
         response.data["page_size"] = paginator.get_page_size(request)
         return response
@@ -1643,7 +1685,11 @@ class AdminGiftTransferExportView(APIView):
 
         from wallet.models import GiftTransfer
 
-        from .platform_analytics import resolve_range, serialize_gift_transfer
+        from .platform_analytics import (
+            build_gift_risk_maps,
+            resolve_range,
+            serialize_gift_transfer,
+        )
 
         qs = GiftTransfer.objects.select_related(
             "sender_wallet__user",
@@ -1668,6 +1714,9 @@ class AdminGiftTransferExportView(APIView):
         if start_dt and end_dt:
             suffix = f"{start_dt.date().isoformat()}_{end_dt.date().isoformat()}"
 
+        gifts = list(qs[:5000])
+        risk_map = build_gift_risk_maps(gifts)
+
         response = HttpResponse(content_type="text/csv; charset=utf-8")
         response["Content-Disposition"] = f'attachment; filename="sovga_kartalar_{suffix}.csv"'
         response.write("\ufeff")
@@ -1688,14 +1737,21 @@ class AdminGiftTransferExportView(APIView):
                 "Jami yechilgan (so'm)",
                 "Xabar",
                 "Status",
+                "Risk level",
+                "Risk score",
+                "Risk sabablari",
                 "Xavfsizlik bosqichlari",
                 "Vaqt",
             ]
         )
-        for gift in qs[:5000]:
-            row = serialize_gift_transfer(gift)
+        for gift in gifts:
+            row = serialize_gift_transfer(gift, risk=risk_map.get(str(gift.id)))
             steps = ",".join(
                 f"{s['step']}:{s['status']}" for s in (row.get("security_steps") or [])
+            )
+            risk = row.get("risk") or {}
+            reasons = "; ".join(
+                f"{r.get('label')}: {r.get('detail')}" for r in (risk.get("reasons") or [])
             )
             writer.writerow(
                 [
@@ -1713,6 +1769,9 @@ class AdminGiftTransferExportView(APIView):
                     row["total_charged"],
                     row.get("message") or "",
                     row["status"],
+                    risk.get("level") or "none",
+                    risk.get("score") or 0,
+                    reasons,
                     steps,
                     (row.get("created_at") or "").replace("T", " ")[:19],
                 ]

@@ -962,6 +962,299 @@ def build_gift_security_steps(gift: GiftTransfer) -> list[dict]:
     ]
 
 
+# --- Sovg'a Risk Alert (faqat monitoring, hold yo'q) ---
+GIFT_RISK_LARGE_AMOUNT = 1_000_000
+GIFT_RISK_HUGE_AMOUNT = 3_000_000
+GIFT_RISK_SENDER_DAY_AMOUNT = 5_000_000
+GIFT_RISK_SENDER_DAY_AMOUNT_HIGH = 10_000_000
+GIFT_RISK_SENDER_DAY_COUNT = 5
+GIFT_RISK_SENDER_DAY_COUNT_HIGH = 8
+GIFT_RISK_PAIR_COUNT = 3
+GIFT_RISK_PAIR_COUNT_HIGH = 5
+
+
+def _local_day_bounds(dt: datetime) -> tuple[datetime, datetime]:
+    tz = timezone.get_current_timezone()
+    local = timezone.localtime(dt, tz)
+    start = timezone.make_aware(datetime.combine(local.date(), datetime.min.time()), tz)
+    end = timezone.make_aware(datetime.combine(local.date(), datetime.max.time()), tz)
+    return start, end
+
+
+def _risk_level_from_score(score: int) -> str:
+    if score >= 70:
+        return "high"
+    if score >= 40:
+        return "medium"
+    if score > 0:
+        return "low"
+    return "none"
+
+
+def build_gift_risk_maps(gifts: list[GiftTransfer]) -> dict[str, dict]:
+    """Bir nechta sovg'a uchun kunlik/juftlik statistikani batch hisoblaydi."""
+    if not gifts:
+        return {}
+
+    day_keys: set[tuple[datetime, datetime]] = set()
+    wallet_ids: set[int] = set()
+    for g in gifts:
+        if not g.created_at:
+            continue
+        day_keys.add(_local_day_bounds(g.created_at))
+        if g.sender_wallet_id:
+            wallet_ids.add(g.sender_wallet_id)
+        if g.recipient_wallet_id:
+            wallet_ids.add(g.recipient_wallet_id)
+
+    if not day_keys or not wallet_ids:
+        return {str(g.id): _score_gift_risk(g, {}, {}, {}) for g in gifts}
+
+    min_start = min(s for s, _ in day_keys)
+    max_end = max(e for _, e in day_keys)
+
+    related = list(
+        GiftTransfer.objects.filter(
+            created_at__gte=min_start,
+            created_at__lte=max_end,
+        )
+        .filter(
+            Q(sender_wallet_id__in=wallet_ids) | Q(recipient_wallet_id__in=wallet_ids)
+        )
+        .only("id", "amount", "created_at", "sender_wallet_id", "recipient_wallet_id")
+    )
+
+    sender_day: dict[tuple[int, str], dict] = {}
+    pair_day: dict[tuple[int, int, str], int] = {}
+    for row in related:
+        if not row.created_at or not row.sender_wallet_id:
+            continue
+        day = timezone.localtime(row.created_at).date().isoformat()
+        sk = (row.sender_wallet_id, day)
+        bucket = sender_day.setdefault(sk, {"count": 0, "amount": 0.0})
+        bucket["count"] += 1
+        bucket["amount"] += _float(row.amount)
+        if row.recipient_wallet_id:
+            pk = (row.sender_wallet_id, row.recipient_wallet_id, day)
+            pair_day[pk] = pair_day.get(pk, 0) + 1
+
+    return {
+        str(g.id): _score_gift_risk(g, sender_day, pair_day, {})
+        for g in gifts
+    }
+
+
+def _score_gift_risk(
+    gift: GiftTransfer,
+    sender_day: dict[tuple[int, str], dict],
+    pair_day: dict[tuple[int, int, str], int],
+    _unused: dict,
+) -> dict:
+    amount = _float(gift.amount)
+    reasons: list[dict] = []
+    score = 0
+
+    day = ""
+    if gift.created_at:
+        day = timezone.localtime(gift.created_at).date().isoformat()
+
+    sender_id = gift.sender_wallet_id
+    recipient_id = gift.recipient_wallet_id
+
+    sender_stats = sender_day.get((sender_id, day), {"count": 1, "amount": amount}) if sender_id and day else {
+        "count": 1,
+        "amount": amount,
+    }
+    sender_count = int(sender_stats.get("count") or 0)
+    sender_amount = float(sender_stats.get("amount") or 0)
+
+    pair_count = 0
+    reverse_count = 0
+    if sender_id and recipient_id and day:
+        pair_count = int(pair_day.get((sender_id, recipient_id, day), 0))
+        reverse_count = int(pair_day.get((recipient_id, sender_id, day), 0))
+
+    if amount >= GIFT_RISK_HUGE_AMOUNT:
+        score += 40
+        reasons.append(
+            {
+                "code": "huge_amount",
+                "label": "Juda katta sovg'a",
+                "detail": f"Bitta o'tkazma {amount:,.0f} so'm (≥ {GIFT_RISK_HUGE_AMOUNT:,})".replace(",", " "),
+            }
+        )
+    elif amount >= GIFT_RISK_LARGE_AMOUNT:
+        score += 25
+        reasons.append(
+            {
+                "code": "large_amount",
+                "label": "Katta sovg'a",
+                "detail": f"Bitta o'tkazma {amount:,.0f} so'm (≥ {GIFT_RISK_LARGE_AMOUNT:,})".replace(",", " "),
+            }
+        )
+
+    if sender_amount >= GIFT_RISK_SENDER_DAY_AMOUNT_HIGH:
+        score += 45
+        reasons.append(
+            {
+                "code": "sender_day_volume_high",
+                "label": "Kunlik yuborish limati",
+                "detail": f"Yuboruvchi bugun jami {sender_amount:,.0f} so'm yuborgan".replace(",", " "),
+            }
+        )
+    elif sender_amount >= GIFT_RISK_SENDER_DAY_AMOUNT:
+        score += 30
+        reasons.append(
+            {
+                "code": "sender_day_volume",
+                "label": "Kunlik yirik hajm",
+                "detail": f"Yuboruvchi bugun jami {sender_amount:,.0f} so'm yuborgan".replace(",", " "),
+            }
+        )
+
+    if sender_count >= GIFT_RISK_SENDER_DAY_COUNT_HIGH:
+        score += 35
+        reasons.append(
+            {
+                "code": "sender_day_count_high",
+                "label": "Ko'p marta yuborish",
+                "detail": f"Yuboruvchi bugun {sender_count} ta sovg'a yuborgan",
+            }
+        )
+    elif sender_count >= GIFT_RISK_SENDER_DAY_COUNT:
+        score += 20
+        reasons.append(
+            {
+                "code": "sender_day_count",
+                "label": "Tez-tez yuborish",
+                "detail": f"Yuboruvchi bugun {sender_count} ta sovg'a yuborgan",
+            }
+        )
+
+    if pair_count >= GIFT_RISK_PAIR_COUNT_HIGH:
+        score += 40
+        reasons.append(
+            {
+                "code": "same_pair_high",
+                "label": "Bir xil juftlik (yuqori)",
+                "detail": f"Shu juftlik bugun {pair_count} marta sovg'a almashgan",
+            }
+        )
+    elif pair_count >= GIFT_RISK_PAIR_COUNT:
+        score += 25
+        reasons.append(
+            {
+                "code": "same_pair",
+                "label": "Bir xil juftlik",
+                "detail": f"Shu juftlik bugun {pair_count} marta sovg'a almashgan",
+            }
+        )
+
+    if reverse_count >= 2:
+        score += 45
+        reasons.append(
+            {
+                "code": "ping_pong_high",
+                "label": "Oldinga-orqaga (fraud)",
+                "detail": f"Bugun juftlik o'rtasida teskari {reverse_count} ta o'tkazma bor",
+            }
+        )
+    elif reverse_count >= 1 and pair_count >= 1:
+        score += 30
+        reasons.append(
+            {
+                "code": "ping_pong",
+                "label": "Oldinga-orqaga",
+                "detail": "Bugun A→B va B→A o'tkazmalar kuzatildi",
+            }
+        )
+
+    score = min(100, score)
+    level = _risk_level_from_score(score)
+    return {
+        "score": score,
+        "level": level,
+        "flagged": level in ("medium", "high"),
+        "reasons": reasons,
+        "signals": {
+            "amount": amount,
+            "sender_day_count": sender_count,
+            "sender_day_amount": sender_amount,
+            "pair_day_count": pair_count,
+            "reverse_day_count": reverse_count,
+        },
+    }
+
+
+def assess_gift_risk(gift: GiftTransfer) -> dict:
+    """Bitta sovg'a uchun risk (batch context bilan)."""
+    return build_gift_risk_maps([gift]).get(str(gift.id)) or {
+        "score": 0,
+        "level": "none",
+        "flagged": False,
+        "reasons": [],
+        "signals": {},
+    }
+
+
+def build_gift_risk_alerts(
+    start_dt: datetime | None = None,
+    end_dt: datetime | None = None,
+    *,
+    limit: int = 25,
+) -> dict:
+    """Tanlangan davrdagi medium/high risk sovg'alar — admin alert lenti."""
+    qs = (
+        GiftTransfer.objects.select_related(
+            "sender_wallet__user",
+            "recipient_wallet__user",
+        )
+        .order_by("-created_at")
+    )
+    if start_dt is not None:
+        qs = qs.filter(created_at__gte=start_dt)
+    if end_dt is not None:
+        qs = qs.filter(created_at__lte=end_dt)
+
+    # So'nggi 300 ta ichidan flagged larni yig'amiz (batch score).
+    candidates = list(qs[:300])
+    risk_map = build_gift_risk_maps(candidates)
+
+    alerts: list[dict] = []
+    high = 0
+    medium = 0
+    for gift in candidates:
+        risk = risk_map.get(str(gift.id)) or {}
+        level = risk.get("level") or "none"
+        if level == "high":
+            high += 1
+        elif level == "medium":
+            medium += 1
+        else:
+            continue
+        sender = gift.sender_wallet.user if gift.sender_wallet_id else None
+        recipient = gift.recipient_wallet.user if gift.recipient_wallet_id else None
+        alerts.append(
+            {
+                "gift_id": str(gift.id),
+                "merchant_tx_id": str(gift.id),
+                "amount": _float(gift.amount),
+                "created_at": gift.created_at.isoformat() if gift.created_at else None,
+                "sender": _user_brief(sender),
+                "recipient": _user_brief(recipient),
+                "risk": risk,
+            }
+        )
+
+    alerts.sort(key=lambda a: (0 if a["risk"]["level"] == "high" else 1, -(a["risk"]["score"] or 0)))
+    return {
+        "high_count": high,
+        "medium_count": medium,
+        "flagged_count": high + medium,
+        "alerts": alerts[:limit],
+    }
+
+
 def build_recipient_spend_trail(gift: GiftTransfer, limit: int = 20) -> dict:
     """Sovg'a pulidan keyin qabul qiluvchi nimaga sarflagani (hamyon bronlari)."""
     wallet = gift.recipient_wallet
@@ -1034,7 +1327,12 @@ def build_recipient_spend_trail(gift: GiftTransfer, limit: int = 20) -> dict:
     }
 
 
-def serialize_gift_transfer(gift: GiftTransfer, *, detail: bool = False) -> dict:
+def serialize_gift_transfer(
+    gift: GiftTransfer,
+    *,
+    detail: bool = False,
+    risk: dict | None = None,
+) -> dict:
     from wallet.gift_designs import get_gift_design
 
     sender = gift.sender_wallet.user if gift.sender_wallet_id else None
@@ -1064,6 +1362,7 @@ def serialize_gift_transfer(gift: GiftTransfer, *, detail: bool = False) -> dict
         "status": gift.status,
         "created_at": gift.created_at.isoformat() if gift.created_at else None,
         "security_steps": build_gift_security_steps(gift),
+        "risk": risk if risk is not None else assess_gift_risk(gift),
         "ledger": {
             "design_fee": _ledger_brief(gift.design_fee_entry),
             "sender": _ledger_brief(gift.sender_entry),
@@ -1120,6 +1419,9 @@ def build_gifts_summary(start_dt: datetime | None = None, end_dt: datetime | Non
         "charged_total": _float(agg["charged_total"]),
         "today_count": today_count,
         "today_amount": today_amount,
+        "risk_high_count": 0,
+        "risk_medium_count": 0,
+        "risk_flagged_count": 0,
     }
 
 

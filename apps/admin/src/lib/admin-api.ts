@@ -2339,6 +2339,30 @@ export type AdminGiftSecurityStep = {
   entry_hash?: string | null;
 };
 
+export type AdminGiftRisk = {
+  score: number;
+  level: "none" | "low" | "medium" | "high" | string;
+  flagged: boolean;
+  reasons: Array<{ code: string; label: string; detail: string }>;
+  signals?: {
+    amount?: number;
+    sender_day_count?: number;
+    sender_day_amount?: number;
+    pair_day_count?: number;
+    reverse_day_count?: number;
+  };
+};
+
+export type AdminGiftRiskAlert = {
+  gift_id: string;
+  merchant_tx_id: string;
+  amount: number;
+  created_at: string | null;
+  sender: { id: number | null; name: string; phone: string | null };
+  recipient: { id: number | null; name: string; phone: string | null };
+  risk: AdminGiftRisk;
+};
+
 export type AdminGiftTransfer = {
   id: string;
   merchant_tx_id: string;
@@ -2354,6 +2378,7 @@ export type AdminGiftTransfer = {
   status: string;
   created_at: string | null;
   security_steps: AdminGiftSecurityStep[];
+  risk?: AdminGiftRisk;
   ledger?: {
     design_fee: AdminGiftLedgerBrief | null;
     sender: AdminGiftLedgerBrief | null;
@@ -2402,6 +2427,15 @@ export type AdminGiftsResponse = Paginated<AdminGiftTransfer> & {
     charged_total: number;
     today_count?: number;
     today_amount?: number;
+    risk_high_count?: number;
+    risk_medium_count?: number;
+    risk_flagged_count?: number;
+  };
+  risk_alerts?: {
+    high_count: number;
+    medium_count: number;
+    flagged_count: number;
+    alerts: AdminGiftRiskAlert[];
   };
 };
 
@@ -2409,6 +2443,7 @@ export async function fetchAdminGifts(params?: {
   q?: string;
   design_id?: string;
   status?: string;
+  risk?: "all" | "flagged" | "medium" | "high";
   start?: string;
   end?: string;
   page?: number;
@@ -2418,6 +2453,7 @@ export async function fetchAdminGifts(params?: {
   if (params?.q?.trim()) sp.set("q", params.q.trim());
   if (params?.design_id && params.design_id !== "all") sp.set("design_id", params.design_id);
   if (params?.status && params.status !== "all") sp.set("status", params.status);
+  if (params?.risk && params.risk !== "all") sp.set("risk", params.risk);
   if (params?.start) sp.set("start", params.start);
   if (params?.end) sp.set("end", params.end);
   sp.set("page", String(page));
@@ -2427,6 +2463,7 @@ export async function fetchAdminGifts(params?: {
     page_size?: number;
     page?: number;
     summary?: AdminGiftsResponse["summary"];
+    risk_alerts?: AdminGiftsResponse["risk_alerts"];
   }>(`/api/v1/admin/finance/gifts/?${sp}`);
   const results = j.results ?? [];
   const count = toInt(j.count, results.length);
@@ -2444,6 +2481,15 @@ export async function fetchAdminGifts(params?: {
       charged_total: 0,
       today_count: 0,
       today_amount: 0,
+      risk_high_count: 0,
+      risk_medium_count: 0,
+      risk_flagged_count: 0,
+    },
+    risk_alerts: j.risk_alerts ?? {
+      high_count: 0,
+      medium_count: 0,
+      flagged_count: 0,
+      alerts: [],
     },
   };
 }

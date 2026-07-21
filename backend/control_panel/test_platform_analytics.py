@@ -141,3 +141,43 @@ class PlatformAnalyticsTests(TestCase):
     def test_csv_export_unknown_type(self):
         response = build_csv_response("nope", self.start_dt, self.end_dt, _FakeRequest())
         self.assertIsNone(response)
+
+    def test_gift_risk_large_amount_and_same_pair(self):
+        from wallet.models import GiftTransfer
+
+        from .platform_analytics import assess_gift_risk, build_gift_risk_maps
+
+        sender_w = Wallet.objects.create(user=self.user, wallet_number="0000000000000091", balance=0)
+        other = User.objects.create(
+            username="recipient@test.uz",
+            email="recipient@test.uz",
+            phone="+998909998877",
+            role=User.Role.USER,
+            full_name="Recipient",
+        )
+        recipient_w = Wallet.objects.create(user=other, wallet_number="0000000000000092", balance=0)
+
+        gifts = []
+        for i in range(3):
+            gifts.append(
+                GiftTransfer.objects.create(
+                    sender_wallet=sender_w,
+                    recipient_wallet=recipient_w,
+                    amount=1_500_000,
+                    design_id="classic",
+                    design_fee=5_000,
+                    total_charged=1_505_000,
+                    idempotency_key=f"risk-gift-{i}",
+                )
+            )
+
+        risk_map = build_gift_risk_maps(gifts)
+        last = risk_map[str(gifts[-1].id)]
+        self.assertTrue(last["flagged"])
+        self.assertIn(last["level"], ("medium", "high"))
+        codes = {r["code"] for r in last["reasons"]}
+        self.assertTrue("large_amount" in codes or "huge_amount" in codes)
+        self.assertTrue(any(c.startswith("same_pair") for c in codes))
+
+        single = assess_gift_risk(gifts[0])
+        self.assertGreaterEqual(single["score"], 25)
