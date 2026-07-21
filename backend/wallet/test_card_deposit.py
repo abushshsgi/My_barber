@@ -2,6 +2,7 @@
 
 from decimal import Decimal
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
@@ -9,7 +10,17 @@ from accounts.models import AdminAccount, User
 from accounts.admin_auth import encode_admin_tokens
 from wallet.models import ManualCardDeposit
 from wallet.services.card_deposit import CardDepositService
-from wallet.services.wallet_service import WalletService
+from wallet.services.wallet_service import WalletService, WalletServiceError
+
+
+def _tiny_png() -> SimpleUploadedFile:
+    # 1x1 PNG
+    data = (
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+        b"\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00"
+        b"\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
+    return SimpleUploadedFile("receipt.png", data, content_type="image/png")
 
 
 @override_settings(
@@ -40,8 +51,13 @@ class CardDepositServiceTests(TestCase):
         self.assertTrue(deposit.transaction_ref.startswith("MS"))
         self.assertIn("-", deposit.merchant_ref)
 
-        claimed = CardDepositService.claim_deposit(user=self.user, deposit_id=str(deposit.pk))
+        claimed = CardDepositService.claim_deposit(
+            user=self.user,
+            deposit_id=str(deposit.pk),
+            receipt_file=_tiny_png(),
+        )
         self.assertEqual(claimed.status, ManualCardDeposit.Status.CLAIMED)
+        self.assertTrue(bool(claimed.receipt_image))
 
         approved = CardDepositService.approve_deposit(
             deposit_id=str(deposit.pk),
@@ -54,7 +70,6 @@ class CardDepositServiceTests(TestCase):
         wallet.refresh_from_db()
         self.assertEqual(wallet.balance, Decimal("100000"))
 
-        # Idempotent re-approve
         again = CardDepositService.approve_deposit(
             deposit_id=str(deposit.pk),
             admin_id=1,
@@ -63,6 +78,15 @@ class CardDepositServiceTests(TestCase):
         wallet.refresh_from_db()
         self.assertEqual(wallet.balance, Decimal("100000"))
         self.assertEqual(again.ledger_entry_id, approved.ledger_entry_id)
+
+    def test_claim_requires_receipt(self):
+        deposit, _ = CardDepositService.init_deposit(
+            user=self.user,
+            amount=Decimal("20000"),
+            idempotency_key="init-receipt",
+        )
+        with self.assertRaises(WalletServiceError):
+            CardDepositService.claim_deposit(user=self.user, deposit_id=str(deposit.pk))
 
     def test_open_deposit_resumes_instead_of_error(self):
         first, _ = CardDepositService.init_deposit(
@@ -114,9 +138,14 @@ class CardDepositApiTests(TestCase):
         deposit_id = init.data["id"]
         self.assertIn("transaction_ref", init.data)
 
-        claim = self.client.post(f"/api/v1/wallet/top-up/card/{deposit_id}/claim/", {}, format="json")
+        claim = self.client.post(
+            f"/api/v1/wallet/top-up/card/{deposit_id}/claim/",
+            {"receipt": _tiny_png()},
+            format="multipart",
+        )
         self.assertEqual(claim.status_code, 200, claim.content)
         self.assertEqual(claim.data["status"], "claimed")
+        self.assertTrue(claim.data.get("receipt_url"))
 
         approve = self.admin_client.post(
             f"/api/v1/admin/wallet/deposits/{deposit_id}/approve/",
@@ -125,6 +154,7 @@ class CardDepositApiTests(TestCase):
         )
         self.assertEqual(approve.status_code, 200, approve.content)
         self.assertEqual(approve.data["deposit"]["status"], "approved")
+        self.assertTrue(approve.data["deposit"].get("receipt_url"))
 
         me = self.client.get("/api/v1/wallet/me/")
         self.assertEqual(me.status_code, 200)

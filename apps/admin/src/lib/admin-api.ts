@@ -3344,6 +3344,7 @@ export type AdminCardDeposit = {
     cardholder: string;
     bank: string;
   };
+  receipt_url: string;
   claimed_at: string | null;
   reviewed_at: string | null;
   review_note: string;
@@ -3363,6 +3364,40 @@ export type AdminCardDeposit = {
   reviewed_by_admin_email: string;
 };
 
+function mapAdminCardDeposit(d: Record<string, any>, fallbackId?: string): AdminCardDeposit {
+  return {
+    id: String(d.id ?? fallbackId ?? ""),
+    amount: toInt(d.amount, 0),
+    status: String(d.status ?? ""),
+    transaction_ref: String(d.transaction_ref ?? ""),
+    merchant_ref: String(d.merchant_ref ?? ""),
+    receiving_card: {
+      number: String(d.receiving_card?.number ?? ""),
+      masked: String(d.receiving_card?.masked ?? ""),
+      cardholder: String(d.receiving_card?.cardholder ?? ""),
+      bank: String(d.receiving_card?.bank ?? ""),
+    },
+    receipt_url: resolveMediaUrl(d.receipt_url) ?? String(d.receipt_url ?? ""),
+    claimed_at: d.claimed_at ?? null,
+    reviewed_at: d.reviewed_at ?? null,
+    review_note: String(d.review_note ?? ""),
+    expires_at: String(d.expires_at ?? ""),
+    created_at: String(d.created_at ?? ""),
+    ledger_entry_id: d.ledger_entry_id ? String(d.ledger_entry_id) : null,
+    user: {
+      id: toInt(d.user?.id, 0),
+      full_name: String(d.user?.full_name ?? ""),
+      phone: String(d.user?.phone ?? ""),
+      email: String(d.user?.email ?? ""),
+    },
+    wallet_number: String(d.wallet_number ?? ""),
+    client_ip: d.client_ip ?? null,
+    user_agent: String(d.user_agent ?? ""),
+    reviewed_by_admin_id: d.reviewed_by_admin_id != null ? toInt(d.reviewed_by_admin_id) : null,
+    reviewed_by_admin_email: String(d.reviewed_by_admin_email ?? ""),
+  };
+}
+
 export async function fetchAdminCardDeposits(params?: {
   status?: string;
   q?: string;
@@ -3377,36 +3412,7 @@ export async function fetchAdminCardDeposits(params?: {
   }>(`/api/v1/admin/wallet/deposits/${qs ? `?${qs}` : ""}`);
   return {
     count: raw.count,
-    results: (raw.results ?? []).map((d) => ({
-      id: String(d.id),
-      amount: toInt(d.amount, 0),
-      status: String(d.status ?? ""),
-      transaction_ref: String(d.transaction_ref ?? ""),
-      merchant_ref: String(d.merchant_ref ?? ""),
-      receiving_card: {
-        number: String(d.receiving_card?.number ?? ""),
-        masked: String(d.receiving_card?.masked ?? ""),
-        cardholder: String(d.receiving_card?.cardholder ?? ""),
-        bank: String(d.receiving_card?.bank ?? ""),
-      },
-      claimed_at: d.claimed_at ?? null,
-      reviewed_at: d.reviewed_at ?? null,
-      review_note: String(d.review_note ?? ""),
-      expires_at: String(d.expires_at ?? ""),
-      created_at: String(d.created_at ?? ""),
-      ledger_entry_id: d.ledger_entry_id ? String(d.ledger_entry_id) : null,
-      user: {
-        id: toInt(d.user?.id, 0),
-        full_name: String(d.user?.full_name ?? ""),
-        phone: String(d.user?.phone ?? ""),
-        email: String(d.user?.email ?? ""),
-      },
-      wallet_number: String(d.wallet_number ?? ""),
-      client_ip: d.client_ip ?? null,
-      user_agent: String(d.user_agent ?? ""),
-      reviewed_by_admin_id: d.reviewed_by_admin_id != null ? toInt(d.reviewed_by_admin_id) : null,
-      reviewed_by_admin_email: String(d.reviewed_by_admin_email ?? ""),
-    })),
+    results: (raw.results ?? []).map((d) => mapAdminCardDeposit(d)),
   };
 }
 
@@ -3421,39 +3427,9 @@ export async function approveAdminCardDeposit(
       body: JSON.stringify({ note: note || "" }),
     },
   );
-  const d = raw.deposit ?? {};
   return {
     balance: toInt(raw.balance, 0),
-    deposit: {
-      id: String(d.id ?? id),
-      amount: toInt(d.amount, 0),
-      status: String(d.status ?? "approved"),
-      transaction_ref: String(d.transaction_ref ?? ""),
-      merchant_ref: String(d.merchant_ref ?? ""),
-      receiving_card: {
-        number: String(d.receiving_card?.number ?? ""),
-        masked: String(d.receiving_card?.masked ?? ""),
-        cardholder: String(d.receiving_card?.cardholder ?? ""),
-        bank: String(d.receiving_card?.bank ?? ""),
-      },
-      claimed_at: d.claimed_at ?? null,
-      reviewed_at: d.reviewed_at ?? null,
-      review_note: String(d.review_note ?? ""),
-      expires_at: String(d.expires_at ?? ""),
-      created_at: String(d.created_at ?? ""),
-      ledger_entry_id: d.ledger_entry_id ? String(d.ledger_entry_id) : null,
-      user: {
-        id: toInt(d.user?.id, 0),
-        full_name: String(d.user?.full_name ?? ""),
-        phone: String(d.user?.phone ?? ""),
-        email: String(d.user?.email ?? ""),
-      },
-      wallet_number: String(d.wallet_number ?? ""),
-      client_ip: d.client_ip ?? null,
-      user_agent: String(d.user_agent ?? ""),
-      reviewed_by_admin_id: d.reviewed_by_admin_id != null ? toInt(d.reviewed_by_admin_id) : null,
-      reviewed_by_admin_email: String(d.reviewed_by_admin_email ?? ""),
-    },
+    deposit: mapAdminCardDeposit(raw.deposit ?? {}, id),
   };
 }
 

@@ -23,6 +23,15 @@ MAX_TOPUP_AMOUNT = Decimal("5000000")
 INIT_TTL_HOURS = 2
 CLAIM_TTL_HOURS = 24
 REF_ALPHABET = string.ascii_uppercase + string.digits
+MAX_RECEIPT_BYTES = 8 * 1024 * 1024
+ALLOWED_RECEIPT_CONTENT_TYPES = {
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/webp",
+    "image/heic",
+    "image/heif",
+}
 
 
 def _mask_card(number: str) -> str:
@@ -30,6 +39,38 @@ def _mask_card(number: str) -> str:
     if len(digits) < 8:
         return "****"
     return f"{digits[:4]} **** **** {digits[-4:]}"
+
+
+def _receipt_url(deposit: ManualCardDeposit, request=None) -> str:
+    if not getattr(deposit, "receipt_image", None):
+        return ""
+    try:
+        url = deposit.receipt_image.url
+    except Exception:
+        return ""
+    if request is not None:
+        try:
+            return request.build_absolute_uri(url)
+        except Exception:
+            return url
+    return url
+
+
+def _validate_receipt_file(receipt_file) -> None:
+    if receipt_file is None:
+        raise WalletServiceError("To'lov cheki (rasm) majburiy.")
+    size = int(getattr(receipt_file, "size", 0) or 0)
+    if size <= 0:
+        raise WalletServiceError("Chek fayli bo'sh.")
+    if size > MAX_RECEIPT_BYTES:
+        raise WalletServiceError("Chek rasmi 8 MB dan oshmasligi kerak.")
+    content_type = (getattr(receipt_file, "content_type", "") or "").lower().strip()
+    name = (getattr(receipt_file, "name", "") or "").lower()
+    ext_ok = name.endswith((".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"))
+    if content_type and content_type not in ALLOWED_RECEIPT_CONTENT_TYPES and not ext_ok:
+        raise WalletServiceError("Faqat rasm yuklash mumkin (JPG, PNG, WEBP).")
+    if not content_type and not ext_ok:
+        raise WalletServiceError("Faqat rasm yuklash mumkin (JPG, PNG, WEBP).")
 
 
 def receiving_card_config() -> dict[str, str]:
@@ -101,7 +142,12 @@ def expire_stale_deposits(*, user: User | None = None) -> int:
     return qs.update(status=ManualCardDeposit.Status.EXPIRED, updated_at=now)
 
 
-def deposit_to_dict(deposit: ManualCardDeposit, *, include_full_card: bool = False) -> dict[str, Any]:
+def deposit_to_dict(
+    deposit: ManualCardDeposit,
+    *,
+    include_full_card: bool = False,
+    request=None,
+) -> dict[str, Any]:
     card_number = deposit.receiving_card_number if include_full_card else deposit.receiving_card_masked
     return {
         "id": str(deposit.pk),
@@ -115,6 +161,7 @@ def deposit_to_dict(deposit: ManualCardDeposit, *, include_full_card: bool = Fal
             "cardholder": deposit.receiving_cardholder,
             "bank": deposit.receiving_bank,
         },
+        "receipt_url": _receipt_url(deposit, request),
         "claimed_at": deposit.claimed_at.isoformat() if deposit.claimed_at else None,
         "reviewed_at": deposit.reviewed_at.isoformat() if deposit.reviewed_at else None,
         "review_note": deposit.review_note,
@@ -124,9 +171,9 @@ def deposit_to_dict(deposit: ManualCardDeposit, *, include_full_card: bool = Fal
     }
 
 
-def admin_deposit_to_dict(deposit: ManualCardDeposit) -> dict[str, Any]:
+def admin_deposit_to_dict(deposit: ManualCardDeposit, request=None) -> dict[str, Any]:
     user = deposit.user
-    payload = deposit_to_dict(deposit, include_full_card=True)
+    payload = deposit_to_dict(deposit, include_full_card=True, request=request)
     payload.update(
         {
             "user": {
@@ -165,6 +212,7 @@ def _alert_admins(deposit: ManualCardDeposit) -> None:
         f"Ism: {user.full_name or '—'}\n"
         f"Telefon: {user.phone or '—'}\n"
         f"Hamyon: {deposit.wallet.wallet_number}\n"
+        f"Chek: {'bor' if deposit.receipt_image else 'yoq'}\n"
         f"IP: {deposit.client_ip or '—'}\n"
         f"Vaqt: {deposit.claimed_at or deposit.created_at}\n"
     )
@@ -262,7 +310,13 @@ class CardDepositService:
 
     @classmethod
     @transaction.atomic
-    def claim_deposit(cls, *, user: User, deposit_id: str) -> ManualCardDeposit:
+    def claim_deposit(
+        cls,
+        *,
+        user: User,
+        deposit_id: str,
+        receipt_file=None,
+    ) -> ManualCardDeposit:
         expire_stale_deposits(user=user)
         deposit = (
             ManualCardDeposit.objects.select_for_update()
@@ -273,8 +327,6 @@ class CardDepositService:
         if not deposit:
             raise WalletServiceError("To'ldirish so'rovi topilmadi.")
 
-        if deposit.status == ManualCardDeposit.Status.CLAIMED:
-            return deposit
         if deposit.status == ManualCardDeposit.Status.APPROVED:
             raise WalletServiceError("Bu so'rov allaqachon tasdiqlangan.")
         if deposit.status in (
@@ -288,11 +340,32 @@ class CardDepositService:
             deposit.save(update_fields=["status", "updated_at"])
             raise WalletServiceError("So'rov muddati tugagan. Yangi so'rov yarating.")
 
+        # Allaqachon claim + chek bor → qayta yubormaymiz
+        if deposit.status == ManualCardDeposit.Status.CLAIMED and deposit.receipt_image:
+            return deposit
+
+        # Yangi claim yoki cheksiz eski claim — rasm majburiy
+        if not deposit.receipt_image:
+            _validate_receipt_file(receipt_file)
+            deposit.receipt_image = receipt_file
+        elif receipt_file is not None:
+            # Ixtiyoriy qayta yuklash (yangi chek)
+            _validate_receipt_file(receipt_file)
+            deposit.receipt_image = receipt_file
+
         now = timezone.now()
         deposit.status = ManualCardDeposit.Status.CLAIMED
-        deposit.claimed_at = now
+        deposit.claimed_at = deposit.claimed_at or now
         deposit.expires_at = now + timedelta(hours=CLAIM_TTL_HOURS)
-        deposit.save(update_fields=["status", "claimed_at", "expires_at", "updated_at"])
+        deposit.save(
+            update_fields=[
+                "status",
+                "claimed_at",
+                "expires_at",
+                "receipt_image",
+                "updated_at",
+            ]
+        )
 
         notify_user(
             user,

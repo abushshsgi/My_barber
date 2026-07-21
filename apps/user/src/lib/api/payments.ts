@@ -66,6 +66,7 @@ export type CardDeposit = {
   transaction_ref: string;
   merchant_ref: string;
   receiving_card: CardDepositReceiving;
+  receipt_url?: string | null;
   claimed_at: string | null;
   reviewed_at: string | null;
   review_note: string;
@@ -96,10 +97,15 @@ export async function initCardDeposit(amount: number): Promise<CardDeposit> {
   });
 }
 
-export async function claimCardDeposit(depositId: string): Promise<CardDeposit> {
+export async function claimCardDeposit(
+  depositId: string,
+  receipt: File,
+): Promise<CardDeposit> {
+  const fd = new FormData();
+  fd.append("receipt", receipt);
   return apiJson<CardDeposit>(`/api/v1/wallet/top-up/card/${depositId}/claim/`, {
     method: "POST",
-    body: JSON.stringify({}),
+    body: fd,
   });
 }
 

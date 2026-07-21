@@ -6,6 +6,13 @@ import { EmptyState } from "@/components/admin/EmptyState";
 import { TableSkeleton } from "@/components/admin/Skeletons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   approveAdminCardDeposit,
@@ -53,6 +60,7 @@ function AdminWalletDepositsPage() {
   const [status, setStatus] = useState<string>("claimed");
   const [q, setQ] = useState("");
   const [search, setSearch] = useState("");
+  const [receiptPreview, setReceiptPreview] = useState<AdminCardDeposit | null>(null);
 
   const listQ = useQuery({
     queryKey: ["admin", "wallet-deposits", status, search],
@@ -69,6 +77,7 @@ function AdminWalletDepositsPage() {
     onSuccess: () => {
       toast.success("Tasdiqlandi — pul hamyonga tushdi");
       void qc.invalidateQueries({ queryKey: ["admin", "wallet-deposits"] });
+      setReceiptPreview(null);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -79,6 +88,7 @@ function AdminWalletDepositsPage() {
     onSuccess: () => {
       toast.success("Rad etildi");
       void qc.invalidateQueries({ queryKey: ["admin", "wallet-deposits"] });
+      setReceiptPreview(null);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -97,7 +107,7 @@ function AdminWalletDepositsPage() {
             Karta to'ldirishlar
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Foydalanuvchilar kompaniya kartasiga o'tkazgan pullarni tekshiring va tasdiqlang.
+            Chek rasmini tekshiring — to'g'ri bo'lsa tasdiqlang, aks holda rad eting.
             {pendingCount > 0 ? ` · ${pendingCount} ta kutilmoqda` : ""}
           </p>
         </div>
@@ -140,7 +150,7 @@ function AdminWalletDepositsPage() {
 
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
         {listQ.isLoading ? (
-          <TableSkeleton rows={8} cols={6} />
+          <TableSkeleton rows={8} cols={7} />
         ) : rows.length === 0 ? (
           <div className="p-8">
             <EmptyState
@@ -156,6 +166,7 @@ function AdminWalletDepositsPage() {
                   <th className="px-4 py-3 font-medium">Tranzaksiya</th>
                   <th className="px-4 py-3 font-medium">Foydalanuvchi</th>
                   <th className="px-4 py-3 font-medium text-right">Summa</th>
+                  <th className="px-4 py-3 font-medium">Chek</th>
                   <th className="px-4 py-3 font-medium">Holat</th>
                   <th className="px-4 py-3 font-medium">Vaqt</th>
                   <th className="px-4 py-3 font-medium text-right">Amallar</th>
@@ -192,6 +203,23 @@ function AdminWalletDepositsPage() {
                       {formatAdminUzs(row.amount)}
                     </td>
                     <td className="px-4 py-3">
+                      {row.receipt_url ? (
+                        <button
+                          type="button"
+                          onClick={() => setReceiptPreview(row)}
+                          className="group block overflow-hidden rounded-lg border border-border bg-muted/40 transition-opacity hover:opacity-90"
+                        >
+                          <img
+                            src={row.receipt_url}
+                            alt={`Chek ${row.transaction_ref}`}
+                            className="h-16 w-14 object-cover"
+                          />
+                        </button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Yo'q</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
                       <Badge
                         variant="secondary"
                         className={cn(
@@ -221,10 +249,25 @@ function AdminWalletDepositsPage() {
                     <td className="px-4 py-3 text-right">
                       {row.status === "claimed" || row.status === "awaiting_payment" ? (
                         <div className="flex flex-col items-end gap-1.5">
+                          {row.receipt_url ? (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => setReceiptPreview(row)}
+                            >
+                              Chekni ko'rish
+                            </Button>
+                          ) : null}
                           <Button
                             size="sm"
                             disabled={approveM.isPending || rejectM.isPending}
-                            onClick={() => approveM.mutate(row)}
+                            onClick={() => {
+                              if (!row.receipt_url) {
+                                toast.error("Chek yuklanmagan — avval foydalanuvchi chek yuborsin");
+                                return;
+                              }
+                              approveM.mutate(row);
+                            }}
                           >
                             Tasdiqlash
                           </Button>
@@ -248,6 +291,59 @@ function AdminWalletDepositsPage() {
           </div>
         )}
       </div>
+
+      <Dialog
+        open={!!receiptPreview}
+        onOpenChange={(open) => {
+          if (!open) setReceiptPreview(null);
+        }}
+      >
+        <DialogContent className="max-w-lg sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>To'lov cheki</DialogTitle>
+            <DialogDescription>
+              {receiptPreview
+                ? `${receiptPreview.transaction_ref} · ${formatAdminUzs(receiptPreview.amount)}`
+                : null}
+            </DialogDescription>
+          </DialogHeader>
+          {receiptPreview?.receipt_url ? (
+            <a
+              href={receiptPreview.receipt_url}
+              target="_blank"
+              rel="noreferrer"
+              className="block overflow-hidden rounded-xl border border-border bg-muted/30"
+            >
+              <img
+                src={receiptPreview.receipt_url}
+                alt={`Chek ${receiptPreview.transaction_ref}`}
+                className="max-h-[60vh] w-full object-contain"
+              />
+            </a>
+          ) : (
+            <p className="text-sm text-muted-foreground">Chek rasmi yo'q.</p>
+          )}
+          {receiptPreview &&
+          (receiptPreview.status === "claimed" ||
+            receiptPreview.status === "awaiting_payment") ? (
+            <div className="flex flex-wrap justify-end gap-2 pt-2">
+              <Button
+                variant="outline"
+                disabled={approveM.isPending || rejectM.isPending}
+                onClick={() => rejectM.mutate(receiptPreview)}
+              >
+                Rad etish
+              </Button>
+              <Button
+                disabled={approveM.isPending || rejectM.isPending || !receiptPreview.receipt_url}
+                onClick={() => approveM.mutate(receiptPreview)}
+              >
+                Tasdiqlash
+              </Button>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -87,6 +87,7 @@ class ManualCardDepositAdmin(admin.ModelAdmin):
         "client_ip",
         "user_agent",
         "claimed_at",
+        "receipt_image",
         "reviewed_at",
         "reviewed_by_admin_id",
         "reviewed_by_admin_email",

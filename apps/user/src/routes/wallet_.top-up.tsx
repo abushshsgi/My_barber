@@ -153,11 +153,11 @@ function TopUpPage() {
     }
   };
 
-  const onClaim = async () => {
+  const onClaim = async (receipt: File) => {
     if (!deposit) return;
     setClaiming(true);
     try {
-      const updated = await claimCardDeposit(deposit.id);
+      const updated = await claimCardDeposit(deposit.id, receipt);
       setDeposit(updated);
       setPendingReview(true);
       setDone(false);
@@ -305,7 +305,7 @@ function TopUpPage() {
         onOpenChange={setCardOpen}
         deposit={deposit}
         amountLabel={depositAmountLabel}
-        onClaim={() => void onClaim()}
+        onClaim={(file) => void onClaim(file)}
         claiming={claiming}
       />
     </ProfileSubpageLayout>

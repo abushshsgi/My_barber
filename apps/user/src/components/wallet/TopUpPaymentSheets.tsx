@@ -1,5 +1,5 @@
-import { Check, Copy, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { Check, Copy, ImagePlus, Loader2, X } from "lucide-react";
+import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -17,7 +17,7 @@ type CardSheetProps = {
   onOpenChange: (open: boolean) => void;
   deposit: CardDeposit | null;
   amountLabel: string;
-  onClaim: () => void;
+  onClaim: (receipt: File) => void;
   claiming?: boolean;
 };
 
@@ -90,14 +90,60 @@ export function TopUpCardSheet({
   claiming,
 }: CardSheetProps) {
   const { t } = useTranslation();
+  const inputId = useId();
+  const [receipt, setReceipt] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      setReceipt(null);
+      setPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+    }
+  }, [open]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
   if (!deposit) return null;
 
   const claimed = deposit.status === "claimed" || deposit.status === "approved";
+  const existingReceipt = deposit.receipt_url || null;
   const displayAmount =
     amountLabel ||
     new Intl.NumberFormat("uz-UZ").format(
       typeof deposit.amount === "number" ? deposit.amount : Number(deposit.amount) || 0,
     );
+
+  const onPick = (file: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error(t("topUpPage.receiptTypeError"));
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error(t("topUpPage.receiptSizeError"));
+      return;
+    }
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+    setReceipt(file);
+  };
+
+  const clearReceipt = () => {
+    setReceipt(null);
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -150,22 +196,97 @@ export function TopUpCardSheet({
           </p>
         </div>
 
-        <div className="space-y-2 px-5 pt-5">
+        <div className="space-y-3 px-5 pt-5">
           {claimed ? (
-            <div className="border border-black/10 bg-white px-4 py-3.5 text-sm font-semibold leading-snug text-black">
-              {t("topUpPage.claimedPending")}
-            </div>
+            <>
+              {(previewUrl || existingReceipt) && (
+                <a
+                  href={previewUrl || existingReceipt || undefined}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block overflow-hidden border border-black/10"
+                >
+                  <img
+                    src={previewUrl || existingReceipt || ""}
+                    alt={t("topUpPage.receiptAlt")}
+                    className="max-h-48 w-full object-contain bg-black/[0.03]"
+                  />
+                </a>
+              )}
+              <div className="border border-black/10 bg-white px-4 py-3.5 text-sm font-semibold leading-snug text-black">
+                {t("topUpPage.claimedPending")}
+              </div>
+            </>
           ) : (
-            <button
-              type="button"
-              disabled={claiming}
-              onClick={onClaim}
-              className="flex w-full cursor-pointer items-center justify-center gap-2 bg-black py-4 text-sm font-bold text-white transition-opacity duration-200 active:opacity-90 disabled:opacity-40"
-            >
-              {claiming ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              {t("topUpPage.iPaid")}
-            </button>
+            <>
+              <input
+                id={inputId}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="sr-only"
+                onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+              />
+
+              {previewUrl ? (
+                <div className="relative overflow-hidden border border-black/15">
+                  <img
+                    src={previewUrl}
+                    alt={t("topUpPage.receiptAlt")}
+                    className="max-h-52 w-full object-contain bg-black/[0.03]"
+                  />
+                  <button
+                    type="button"
+                    onClick={clearReceipt}
+                    className="absolute right-2 top-2 grid h-8 w-8 cursor-pointer place-items-center bg-black text-white"
+                    aria-label={t("topUpPage.receiptRemove")}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <label
+                  htmlFor={inputId}
+                  className="flex cursor-pointer flex-col items-center justify-center gap-2 border border-dashed border-black/25 bg-black/[0.02] px-4 py-7 text-center transition-colors duration-200 hover:border-black/40 hover:bg-black/[0.04]"
+                >
+                  <ImagePlus className="h-6 w-6 text-black/50" />
+                  <span className="text-sm font-bold text-black">{t("topUpPage.receiptUpload")}</span>
+                  <span className="text-[11px] font-medium text-black/45">
+                    {t("topUpPage.receiptHint")}
+                  </span>
+                </label>
+              )}
+
+              <div className="grid grid-cols-[1fr_auto] gap-2">
+                <button
+                  type="button"
+                  disabled={claiming || !receipt}
+                  onClick={() => {
+                    if (!receipt) {
+                      toast.error(t("topUpPage.receiptRequired"));
+                      return;
+                    }
+                    onClaim(receipt);
+                  }}
+                  className="flex cursor-pointer items-center justify-center gap-2 bg-black py-4 text-sm font-bold text-white transition-opacity duration-200 active:opacity-90 disabled:opacity-40"
+                >
+                  {claiming ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {t("topUpPage.iPaid")}
+                </button>
+                <label
+                  htmlFor={inputId}
+                  className={cn(
+                    "grid h-full min-w-[3.5rem] cursor-pointer place-items-center border border-black/15 bg-white text-black transition-colors duration-200 hover:border-black/30",
+                    claiming && "pointer-events-none opacity-40",
+                  )}
+                  title={t("topUpPage.receiptUpload")}
+                >
+                  <ImagePlus className="h-5 w-5" />
+                </label>
+              </div>
+            </>
           )}
+
           <button
             type="button"
             onClick={() => onOpenChange(false)}

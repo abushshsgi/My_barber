@@ -83,7 +83,7 @@ class WalletCardDepositInitView(FriendlyThrottleMixin, APIView):
         except WalletServiceError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
-        payload = deposit_to_dict(deposit, include_full_card=True)
+        payload = deposit_to_dict(deposit, include_full_card=True, request=request)
         payload["resumed"] = resumed
         return Response(
             payload,
@@ -97,11 +97,16 @@ class WalletCardDepositClaimView(FriendlyThrottleMixin, APIView):
     throttle_detail = "Juda ko'p 'to'ladim' so'rovi. Biroz kutib qayta urinib ko'ring."
 
     def post(self, request, deposit_id: str):
+        receipt = request.FILES.get("receipt") or request.FILES.get("receipt_image")
         try:
-            deposit = CardDepositService.claim_deposit(user=request.user, deposit_id=deposit_id)
+            deposit = CardDepositService.claim_deposit(
+                user=request.user,
+                deposit_id=deposit_id,
+                receipt_file=receipt,
+            )
         except WalletServiceError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(deposit_to_dict(deposit, include_full_card=True))
+        return Response(deposit_to_dict(deposit, include_full_card=True, request=request))
 
 
 class WalletCardDepositListView(APIView):
@@ -111,7 +116,7 @@ class WalletCardDepositListView(APIView):
     def get(self, request):
         rows = CardDepositService.list_for_user(request.user)
         # O'z so'rovlari — to'liq karta raqami kerak (resume uchun)
-        return Response([deposit_to_dict(d, include_full_card=True) for d in rows])
+        return Response([deposit_to_dict(d, include_full_card=True, request=request) for d in rows])
 
 
 class AdminWalletDepositsView(APIView):
@@ -124,7 +129,7 @@ class AdminWalletDepositsView(APIView):
         return Response(
             {
                 "count": len(rows),
-                "results": [admin_deposit_to_dict(d) for d in rows],
+                "results": [admin_deposit_to_dict(d, request=request) for d in rows],
             }
         )
 
@@ -150,7 +155,7 @@ class AdminWalletDepositApproveView(FriendlyThrottleMixin, APIView):
         deposit.wallet.refresh_from_db()
         return Response(
             {
-                "deposit": admin_deposit_to_dict(deposit),
+                "deposit": admin_deposit_to_dict(deposit, request=request),
                 "balance": deposit.wallet.balance,
             }
         )
@@ -173,4 +178,4 @@ class AdminWalletDepositRejectView(FriendlyThrottleMixin, APIView):
             )
         except WalletServiceError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"deposit": admin_deposit_to_dict(deposit)})
+        return Response({"deposit": admin_deposit_to_dict(deposit, request=request)})

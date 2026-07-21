@@ -179,6 +179,12 @@ class ManualCardDeposit(models.Model):
     client_ip = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.CharField(max_length=512, blank=True, default="")
     claimed_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    receipt_image = models.ImageField(
+        upload_to="wallet/card_receipts/%Y/%m/",
+        blank=True,
+        null=True,
+        help_text="Foydalanuvchi yuklagan to'lov cheki (rasm).",
+    )
     reviewed_at = models.DateTimeField(null=True, blank=True)
     reviewed_by_admin_id = models.PositiveIntegerField(null=True, blank=True)
     reviewed_by_admin_email = models.CharField(max_length=255, blank=True, default="")
