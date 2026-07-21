@@ -1315,6 +1315,7 @@
     "monthTrend": "+12% в этом месяце",
     "topUp": "Пополнить",
     "gift": "Подарок",
+    "giftHint": "Отправить другу",
     "giftPanel": {
       "chooseDesign": "Выберите дизайн",
       "pickDesign": "Дизайн",
@@ -1408,6 +1409,23 @@
     "manageCards": "Управление",
     "defaultPayment": "Основной: {{method}}",
     "fullHistory": "Вся история",
+    "hubShort": {
+      "payments": "Оплата",
+      "loyalty": "Бонус",
+      "gift": "Подарок",
+      "subscriptions": "Подписка"
+    },
+    "news": {
+      "title": "Новости",
+      "cashbackTitle": "Кэшбэк вырос",
+      "cashbackBody": "До 5% возврата за бронирования в салонах.",
+      "giftTitle": "Подарочные карты",
+      "giftBody": "Отправьте баланс другу за секунды.",
+      "topUpTitle": "Быстрое пополнение",
+      "topUpBody": "Пополните через Click, Payme или карту.",
+      "proTitle": "Привилегии Pro",
+      "proBody": "Подписка открывает AI-стиль и бонусы."
+    },
     "quick": {
       "topUp": "Пополнить",
       "gift": "Подарок",

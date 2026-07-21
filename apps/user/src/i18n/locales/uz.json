@@ -1312,6 +1312,7 @@
     "monthTrend": "+12% bu oy",
     "topUp": "To'ldirish",
     "gift": "Sovg'a",
+    "giftHint": "Do'stingizga yuboring",
     "giftPanel": {
       "chooseDesign": "Dizaynni tanlang",
       "pickDesign": "Dizayn",
@@ -1405,6 +1406,23 @@
     "manageCards": "Boshqarish",
     "defaultPayment": "Asosiy: {{method}}",
     "fullHistory": "To'liq tarix",
+    "hubShort": {
+      "payments": "To'lov",
+      "loyalty": "Bonus",
+      "gift": "Sovg'a",
+      "subscriptions": "Obuna"
+    },
+    "news": {
+      "title": "Yangiliklar",
+      "cashbackTitle": "Cashback oshdi",
+      "cashbackBody": "Salon bronlarida 5% gacha qaytariladi.",
+      "giftTitle": "Sovg'a kartalar",
+      "giftBody": "Do'stingizga balans yuboring — bir zumda.",
+      "topUpTitle": "Tez to'ldirish",
+      "topUpBody": "Click, Payme yoki kartadan balansni to'ldiring.",
+      "proTitle": "Pro imtiyozlar",
+      "proBody": "Obuna bilan AI stil va bonuslar ochiladi."
+    },
     "quick": {
       "topUp": "To'ldirish",
       "gift": "Sovg'a",

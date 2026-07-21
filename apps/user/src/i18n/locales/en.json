@@ -1312,6 +1312,7 @@
     "monthTrend": "+12% this month",
     "topUp": "Top up",
     "gift": "Gift",
+    "giftHint": "Send to a friend",
     "giftPanel": {
       "chooseDesign": "Choose a design",
       "pickDesign": "Design",
@@ -1405,6 +1406,23 @@
     "manageCards": "Manage",
     "defaultPayment": "Default: {{method}}",
     "fullHistory": "Full history",
+    "hubShort": {
+      "payments": "Pay",
+      "loyalty": "Bonus",
+      "gift": "Gift",
+      "subscriptions": "Plan"
+    },
+    "news": {
+      "title": "News",
+      "cashbackTitle": "Cashback boosted",
+      "cashbackBody": "Get up to 5% back on salon bookings.",
+      "giftTitle": "Gift cards",
+      "giftBody": "Send balance to a friend in seconds.",
+      "topUpTitle": "Quick top-up",
+      "topUpBody": "Add funds via Click, Payme, or card.",
+      "proTitle": "Pro perks",
+      "proBody": "Unlock AI styles and bonuses with a plan."
+    },
     "quick": {
       "topUp": "Top up",
       "gift": "Gift",
