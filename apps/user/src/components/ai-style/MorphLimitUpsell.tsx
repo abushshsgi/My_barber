@@ -262,7 +262,7 @@ function MorphLimitUpsellBody({
           >
             <Crown className="size-5" strokeWidth={2.25} />
             {t("aiStylePage.limitSheet.buyPlan", {
-              defaultValue: "Morph AI ni ochish — MORPH30 (−30%)",
+              defaultValue: "Ulgutib qoling — MORPH30 (−30%)",
             })}
           </Link>
           <Link

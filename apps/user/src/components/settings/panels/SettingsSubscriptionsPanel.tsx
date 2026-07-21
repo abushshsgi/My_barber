@@ -5,9 +5,11 @@ import {
   Check,
   Crown,
   Droplets,
+  Flame,
   Loader2,
   Lock,
   Sparkles,
+  Ticket,
   UserPlus,
   Users,
   Wand2,
@@ -18,7 +20,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { FeatureIcon } from "@/components/subscriptions/SubscriptionPlanAds";
-import { useSubscriptionCheckout, useSubscriptionMe, useSubscriptionPlans } from "@/hooks/use-subscription";
+import { MorphPromoUrgencyBanner } from "@/components/subscriptions/MorphPromoUrgencyBanner";
+import { PromoCountdown } from "@/components/subscriptions/PromoCountdown";
+import { useSubscriptionCheckout, useSubscriptionMe, useSubscriptionPlans, useSubscriptionPromos } from "@/hooks/use-subscription";
 import { useWalletMe } from "@/hooks/use-wallet";
 import { parseWalletBalance } from "@/lib/api/wallet";
 import {
@@ -247,9 +251,11 @@ export function SettingsSubscriptionsPanel() {
     [searchStr],
   );
   const plansQ = useSubscriptionPlans();
+  const promosQ = useSubscriptionPromos();
   const meQ = useSubscriptionMe();
   const checkout = useSubscriptionCheckout();
   const { data: wallet } = useWalletMe();
+  const launchPromo = promosQ.data?.[0] ?? null;
   const [busyCode, setBusyCode] = useState<string | null>(null);
   const [promoInput, setPromoInput] = useState(promoFromUrl || "MORPH30");
   const [appliedPromo, setAppliedPromo] = useState<string | null>(promoFromUrl || "MORPH30");
@@ -609,34 +615,65 @@ export function SettingsSubscriptionsPanel() {
         </div>
       ) : (
         <>
-          <section className="rounded-2xl border border-border bg-card p-4">
-            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              Promokod
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Ochilish kodi: <span className="font-bold text-foreground">MORPH30</span> (−30%)
-            </p>
-            <div className="mt-3 flex gap-2">
-              <input
-                value={promoInput}
-                onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
-                placeholder="MORPH30"
-                className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-bold uppercase tracking-wide outline-none focus:ring-2 focus:ring-ring"
-              />
-              <button
-                type="button"
-                onClick={() => void applyPromo()}
-                disabled={promoBusy}
-                className="shrink-0 rounded-xl bg-foreground px-4 py-2.5 text-xs font-bold text-background disabled:opacity-60"
-              >
-                Qo&apos;llash
-              </button>
+          <MorphPromoUrgencyBanner variant="card" className="mb-1" />
+
+          <section className="overflow-hidden rounded-[22px] border border-border bg-card">
+            <div className="flex items-start gap-3 border-b border-border bg-foreground px-4 py-4 text-background">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-background text-foreground">
+                <Flame className="size-4.5" strokeWidth={2.25} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-background/55">
+                  Ulgutib qoling
+                </p>
+                <p className="mt-1 text-[15px] font-bold leading-snug">
+                  {launchPromo?.urgency_uz ?? "Aksiyа tugashiga kam vaqt qoldi"}
+                </p>
+                <div className="mt-3">
+                  <PromoCountdown
+                    endsAt={launchPromo?.ends_at}
+                    initialSecondsLeft={launchPromo?.seconds_left}
+                    inverted
+                  />
+                </div>
+              </div>
             </div>
-            {promoError ? (
-              <p className="mt-2 text-xs font-medium text-destructive">{promoError}</p>
-            ) : appliedPromo ? (
-              <p className="mt-2 text-xs font-bold text-foreground">{appliedPromo} faol</p>
-            ) : null}
+
+            <div className="p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                Promokod
+              </p>
+              <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <span className="inline-flex items-center gap-1 rounded-lg bg-muted px-2 py-1 font-bold text-foreground">
+                  <Ticket className="size-3.5" />
+                  {launchPromo?.code ?? "MORPH30"}
+                </span>
+                <span>−{launchPromo?.discount_pct ?? 30}% birinchi to‘lovga</span>
+              </p>
+              <div className="mt-3 flex gap-2">
+                <input
+                  value={promoInput}
+                  onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+                  placeholder="MORPH30"
+                  className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-bold uppercase tracking-wide outline-none focus:ring-2 focus:ring-ring"
+                />
+                <button
+                  type="button"
+                  onClick={() => void applyPromo()}
+                  disabled={promoBusy}
+                  className="shrink-0 rounded-xl bg-foreground px-4 py-2.5 text-xs font-bold text-background disabled:opacity-60"
+                >
+                  Qo&apos;llash
+                </button>
+              </div>
+              {promoError ? (
+                <p className="mt-2 text-xs font-medium text-destructive">{promoError}</p>
+              ) : appliedPromo ? (
+                <p className="mt-2 text-xs font-bold text-foreground">
+                  {appliedPromo} faol — hozir to‘lang, aksiyа kutmaydi
+                </p>
+              ) : null}
+            </div>
           </section>
 
           <div className="grid gap-4 lg:grid-cols-3">

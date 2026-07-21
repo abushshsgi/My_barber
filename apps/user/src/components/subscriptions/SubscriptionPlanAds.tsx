@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import type { ComponentType } from "react";
 import type { SubscriptionPlan } from "@/lib/api/subscriptions";
+import { MorphPromoUrgencyBanner } from "@/components/subscriptions/MorphPromoUrgencyBanner";
 import { cn } from "@/lib/utils";
 
 type IconType = ComponentType<{ className?: string; strokeWidth?: number }>;
@@ -217,7 +218,7 @@ export function SubscriptionPlanAds({
   );
 }
 
-/** Morph AI home / sahifalar uchun qisqa promo banner. */
+/** Morph AI home / sahifalar uchun muddatli promo banner. */
 export function SubscriptionPromoBanner({
   onNavigate,
   className,
@@ -225,27 +226,5 @@ export function SubscriptionPromoBanner({
   onNavigate?: () => void;
   className?: string;
 }) {
-  return (
-    <Link
-      to="/wallet"
-      search={{ section: "subscriptions", plan: "starter", returnTo: "/ai-style", promo: "MORPH30" }}
-      onClick={onNavigate}
-      className={cn(
-        "flex items-center gap-3 overflow-hidden rounded-2xl border border-border bg-foreground px-4 py-3.5 text-background",
-        "active:scale-[0.99]",
-        className,
-      )}
-    >
-      <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-background/15">
-        <Crown className="size-5" strokeWidth={2} />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-[13px] font-bold leading-snug">Morph AI ni ochish</span>
-        <span className="mt-0.5 block text-[11px] font-medium opacity-70">
-          Kod MORPH30 — −30% · Starter dan
-        </span>
-      </span>
-      <ChevronRight className="size-5 shrink-0 opacity-70" strokeWidth={2.25} />
-    </Link>
-  );
+  return <MorphPromoUrgencyBanner onNavigate={onNavigate} className={className} variant="dark" />;
 }

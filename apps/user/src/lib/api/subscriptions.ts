@@ -80,7 +80,10 @@ export type SubscriptionMe = {
 export type SubscriptionPromo = {
   code: string;
   label_uz: string;
+  urgency_uz?: string;
   discount_pct: number;
+  ends_at?: string | null;
+  seconds_left?: number | null;
 };
 
 export type SubscriptionPromoPreview = {
@@ -92,6 +95,9 @@ export type SubscriptionPromoPreview = {
   discount_pct: number;
   promo_code: string | null;
   promo_label: string | null;
+  ends_at?: string | null;
+  seconds_left?: number | null;
+  urgency_uz?: string | null;
   detail?: string;
 };
 
