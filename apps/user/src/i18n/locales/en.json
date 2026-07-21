@@ -1449,6 +1449,7 @@
     "claimedToast": "Admin has been notified",
     "creditedToast": "Wallet topped up",
     "providerUnavailable": "Payment provider is not configured yet.",
+    "comingSoon": "Coming soon",
     "paymentError": "Payment error",
     "waiting": "Please wait…",
     "pendingTitle": "Under review",

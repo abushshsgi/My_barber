@@ -20,6 +20,7 @@ type MethodSheetProps = {
   amountLabel: string;
   onSelect: (method: TopUpMethod) => void;
   busy?: boolean;
+  providerReady?: { click: boolean; payme: boolean };
 };
 
 const METHODS: {
@@ -62,8 +63,14 @@ export function TopUpMethodSheet({
   amountLabel,
   onSelect,
   busy,
+  providerReady = { click: false, payme: false },
 }: MethodSheetProps) {
   const { t } = useTranslation();
+
+  const isReady = (id: TopUpMethod) => {
+    if (id === "card") return true;
+    return Boolean(providerReady[id]);
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -83,28 +90,31 @@ export function TopUpMethodSheet({
         </SheetHeader>
 
         <div className="space-y-2.5 px-5 pt-2">
-          {METHODS.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              disabled={busy}
-              onClick={() => onSelect(m.id)}
-              className={cn(
-                "flex w-full items-center gap-3 rounded-2xl border-2 px-4 py-3.5 text-left transition-transform active:scale-[0.98] disabled:opacity-50",
-                m.accent,
-              )}
-            >
-              <span className={cn("grid h-11 w-11 place-items-center rounded-xl", m.iconBg)}>
-                <m.Icon className="h-5 w-5" strokeWidth={2.25} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-bold text-foreground">{m.label}</span>
-                <span className="mt-0.5 block text-[12px] font-medium text-muted-foreground">
-                  {t(m.hintKey)}
+          {METHODS.map((m) => {
+            const ready = isReady(m.id);
+            return (
+              <button
+                key={m.id}
+                type="button"
+                disabled={busy || !ready}
+                onClick={() => onSelect(m.id)}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-2xl border-2 px-4 py-3.5 text-left transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55",
+                  m.accent,
+                )}
+              >
+                <span className={cn("grid h-11 w-11 place-items-center rounded-xl", m.iconBg)}>
+                  <m.Icon className="h-5 w-5" strokeWidth={2.25} />
                 </span>
-              </span>
-            </button>
-          ))}
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold text-foreground">{m.label}</span>
+                  <span className="mt-0.5 block text-[12px] font-medium text-muted-foreground">
+                    {ready ? t(m.hintKey) : t("topUpPage.comingSoon")}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         <div className="px-5 pt-4">

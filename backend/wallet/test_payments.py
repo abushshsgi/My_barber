@@ -31,14 +31,29 @@ class PaymentConfirmTests(TestCase):
         self.assertEqual(parsed, (5, Decimal("50000")))
 
     @override_settings(DEBUG=True)
-    def test_confirm_credits_wallet_in_debug(self):
+    def test_confirm_never_credits_wallet_even_in_debug(self):
+        """Client confirm endpoint must never mint balance (Click/Payme not wired)."""
         order_id = f"wallet-topup-{self.user.pk}-50000-test"
         res = self.client.post(
             "/api/v1/payments/confirm/",
             {"order_id": order_id, "provider": "click", "transaction_id": "tx-1"},
             format="json",
         )
-        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.status_code, 503)
+        self.assertFalse(res.data.get("credited", True))
         wallet = WalletService.ensure_wallet(self.user)
         wallet.refresh_from_db()
-        self.assertEqual(wallet.balance, Decimal("50000"))
+        self.assertEqual(wallet.balance, Decimal("0"))
+
+    @override_settings(DEBUG=False)
+    def test_confirm_blocked_in_production(self):
+        order_id = f"wallet-topup-{self.user.pk}-100000-prod"
+        res = self.client.post(
+            "/api/v1/payments/confirm/",
+            {"order_id": order_id, "provider": "payme", "transaction_id": "tx-2"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 503)
+        wallet = WalletService.ensure_wallet(self.user)
+        wallet.refresh_from_db()
+        self.assertEqual(wallet.balance, Decimal("0"))

@@ -1,7 +1,6 @@
 import os
 from decimal import Decimal, InvalidOperation
 
-from django.conf import settings
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -55,14 +54,27 @@ class PaymentCheckoutView(FriendlyThrottleMixin, APIView):
             return_url=return_url,
         )
 
-        code = status.HTTP_200_OK if result.configured or settings.DEBUG else status.HTTP_503_SERVICE_UNAVAILABLE
+        # Credentials yo'q bo'lsa — hech qachon "success" yo'li ochilmasin (DEBUG ham).
+        if not result.configured or not result.checkout_url:
+            return Response(
+                {
+                    "provider": result.provider,
+                    "configured": False,
+                    "checkout_url": None,
+                    "transaction_id": "",
+                    "message": result.message
+                    or f"{provider.upper()} hali ulanmagan. Hozircha karta orqali to'ldiring.",
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
         return Response(
             {
                 "provider": result.provider,
-                "configured": result.configured,
+                "configured": True,
                 "checkout_url": result.checkout_url,
                 "transaction_id": result.transaction_id,
                 "message": result.message,
             },
-            status=code,
+            status=status.HTTP_200_OK,
         )

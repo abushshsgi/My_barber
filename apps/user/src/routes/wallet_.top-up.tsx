@@ -12,10 +12,9 @@ import {
 import { useWalletBalance } from "@/hooks/use-wallet";
 import { getAuthUserId } from "@/lib/auth-user";
 import {
-  buildWalletTopUpOrderId,
   claimCardDeposit,
-  confirmPaymentCheckout,
   fetchMyCardDeposits,
+  fetchPaymentProviders,
   initCardDeposit,
   startPaymentCheckout,
   type CardDeposit,
@@ -33,7 +32,6 @@ export const Route = createFileRoute("/wallet_/top-up")({
 });
 
 const PRESETS = [50_000, 100_000, 200_000, 500_000] as const;
-const DEV_TOPUP = import.meta.env.DEV;
 
 function parseAmount(raw: string) {
   const digits = raw.replace(/\D/g, "");
@@ -60,6 +58,23 @@ function TopUpPage() {
   const [done, setDone] = useState(false);
   const [pendingReview, setPendingReview] = useState(false);
   const [newBalance, setNewBalance] = useState<number | null>(null);
+
+  const providersQ = useQuery({
+    queryKey: ["payments", "providers", userId],
+    queryFn: fetchPaymentProviders,
+    enabled: Boolean(userId),
+    staleTime: 60_000,
+  });
+
+  const providerReady = useMemo(() => {
+    const map = { click: false, payme: false };
+    for (const p of providersQ.data ?? []) {
+      if (p.id === "click" || p.id === "payme") {
+        map[p.id] = Boolean(p.configured);
+      }
+    }
+    return map;
+  }, [providersQ.data]);
 
   const depositsQ = useQuery({
     queryKey: ["wallet", "card-deposits", userId],
@@ -118,9 +133,14 @@ function TopUpPage() {
 
   const runProviderCheckout = async (provider: "click" | "payme") => {
     if (!userId) return;
+    if (!providerReady[provider]) {
+      toast.error(t("topUpPage.providerUnavailable"));
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const orderId = buildWalletTopUpOrderId(userId, amount);
+      const orderId = `wallet-topup-${userId}-${amount}-${Date.now()}`;
       const checkout = await startPaymentCheckout({
         provider,
         amount,
@@ -129,23 +149,9 @@ function TopUpPage() {
           typeof window !== "undefined" ? `${window.location.origin}/wallet/top-up` : undefined,
       });
 
-      if (checkout.checkout_url) {
+      // Faqat haqiqiy checkout URL. Client confirm orqali hech qachon pul tushirilmaydi.
+      if (checkout.configured && checkout.checkout_url) {
         window.location.assign(checkout.checkout_url);
-        return;
-      }
-
-      if (DEV_TOPUP || !checkout.configured) {
-        const confirmed = await confirmPaymentCheckout({
-          provider,
-          order_id: orderId,
-          transaction_id: checkout.transaction_id,
-        });
-        setNewBalance(Number(confirmed.balance));
-        setDone(true);
-        setPendingReview(false);
-        invalidateWallet();
-        toast.success(t("topUpPage.creditedToast"));
-        setMethodOpen(false);
         return;
       }
 
@@ -305,6 +311,7 @@ function TopUpPage() {
         amountLabel={amountLabel}
         onSelect={onSelectMethod}
         busy={submitting}
+        providerReady={providerReady}
       />
 
       <TopUpCardSheet

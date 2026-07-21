@@ -1452,6 +1452,7 @@
     "claimedToast": "Админ уведомлён",
     "creditedToast": "Кошелёк пополнен",
     "providerUnavailable": "Платёжный провайдер пока не подключён.",
+    "comingSoon": "Скоро",
     "paymentError": "Ошибка оплаты",
     "waiting": "Подождите…",
     "pendingTitle": "На проверке",
