@@ -908,9 +908,14 @@ def build_gift_security_steps(gift: GiftTransfer) -> list[dict]:
     completed = gift.status == GiftTransfer.Status.COMPLETED
 
     def _status(ok: bool) -> str:
+        if gift.status == GiftTransfer.Status.ON_HOLD:
+            return "pending" if not ok else "passed"
         if ok:
             return "passed"
-        return "failed" if gift.status == GiftTransfer.Status.FAILED else "pending"
+        return "failed" if gift.status in (
+            GiftTransfer.Status.FAILED,
+            GiftTransfer.Status.REFUNDED,
+        ) else "pending"
 
     return [
         {
@@ -1334,10 +1339,42 @@ def serialize_gift_transfer(
     risk: dict | None = None,
 ) -> dict:
     from wallet.gift_designs import get_gift_design
+    from wallet.services.wallet_service import WalletService
 
     sender = gift.sender_wallet.user if gift.sender_wallet_id else None
     recipient = gift.recipient_wallet.user if gift.recipient_wallet_id else None
     design = get_gift_design(gift.design_id)
+
+    holdable = 0.0
+    if detail:
+        try:
+            if gift.status == GiftTransfer.Status.COMPLETED:
+                holdable = _float(WalletService.gift_holdable_amount(gift))
+            elif gift.status == GiftTransfer.Status.ON_HOLD:
+                holdable = _float(gift.held_amount)
+        except Exception:
+            holdable = _float(getattr(gift, "held_amount", 0) or 0)
+
+    actions = {
+        "can_hold": False,
+        "can_release": False,
+        "can_refund": False,
+    }
+    if detail:
+        actions = {
+            "can_hold": gift.status == GiftTransfer.Status.COMPLETED and holdable > 0,
+            "can_release": gift.status == GiftTransfer.Status.ON_HOLD
+            and _float(gift.held_amount) > 0,
+            "can_refund": gift.status
+            in (
+                GiftTransfer.Status.COMPLETED,
+                GiftTransfer.Status.ON_HOLD,
+            )
+            and (
+                (gift.status == GiftTransfer.Status.ON_HOLD and _float(gift.held_amount) > 0)
+                or (gift.status == GiftTransfer.Status.COMPLETED and holdable > 0)
+            ),
+        }
 
     payload = {
         "id": str(gift.id),
@@ -1360,6 +1397,15 @@ def serialize_gift_transfer(
         "total_charged": _float(gift.total_charged),
         "message": gift.message or "",
         "status": gift.status,
+        "held_amount": _float(getattr(gift, "held_amount", 0) or 0),
+        "holdable_amount": holdable,
+        "admin_note": getattr(gift, "admin_note", "") or "",
+        "remediation_log": list(getattr(gift, "remediation_log", None) or []),
+        "held_at": gift.held_at.isoformat() if getattr(gift, "held_at", None) else None,
+        "refunded_at": (
+            gift.refunded_at.isoformat() if getattr(gift, "refunded_at", None) else None
+        ),
+        "actions": actions,
         "created_at": gift.created_at.isoformat() if gift.created_at else None,
         "security_steps": build_gift_security_steps(gift),
         "risk": risk if risk is not None else assess_gift_risk(gift),

@@ -86,6 +86,8 @@ class GiftTransfer(models.Model):
     class Status(models.TextChoices):
         COMPLETED = "completed", "Completed"
         FAILED = "failed", "Failed"
+        ON_HOLD = "on_hold", "On hold"
+        REFUNDED = "refunded", "Refunded"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     sender_wallet = models.ForeignKey(
@@ -109,6 +111,14 @@ class GiftTransfer(models.Model):
         default=Status.COMPLETED,
         db_index=True,
     )
+    # Admin tuzatish qurollari
+    held_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    admin_note = models.CharField(max_length=500, blank=True, default="")
+    remediation_log = models.JSONField(default=list, blank=True)
+    held_at = models.DateTimeField(null=True, blank=True)
+    held_by_admin_id = models.PositiveIntegerField(null=True, blank=True)
+    refunded_at = models.DateTimeField(null=True, blank=True)
+    refunded_by_admin_id = models.PositiveIntegerField(null=True, blank=True)
     sender_entry = models.ForeignKey(
         LedgerEntry,
         on_delete=models.PROTECT,

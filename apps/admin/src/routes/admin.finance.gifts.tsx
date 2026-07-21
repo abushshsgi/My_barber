@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
   ArrowRight,
@@ -10,10 +10,13 @@ import {
   Gift,
   Hash,
   LayoutGrid,
+  Lock,
   Search,
   ShieldAlert,
   ShieldCheck,
   TriangleAlert,
+  Undo2,
+  Unlock,
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -21,7 +24,10 @@ import {
   downloadAdminGiftsCsv,
   fetchAdminGiftDetail,
   fetchAdminGifts,
+  holdAdminGift,
   PAGE_SIZE,
+  refundAdminGift,
+  releaseAdminGift,
   type AdminGiftRisk,
   type AdminGiftTransfer,
 } from "@/lib/admin-api";
@@ -34,6 +40,7 @@ import { EmptyState } from "@/components/admin/EmptyState";
 import { LivePulseBadge } from "@/components/admin/LiveMetricHero";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -50,6 +57,8 @@ import {
 } from "@/components/ui/sheet";
 import { useStatsRange, StatsRangePicker } from "@/components/admin/StatisticsShell";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export const Route = createFileRoute("/admin/finance/gifts")({
   component: AdminGiftsPage,
@@ -134,6 +143,16 @@ function SecurityRail({ gift }: { gift: AdminGiftTransfer }) {
   );
 }
 
+function statusBadge(status: string) {
+  if (status === "on_hold")
+    return "border-amber-500/40 bg-amber-500/10 text-amber-900";
+  if (status === "refunded")
+    return "border-sky-500/40 bg-sky-500/10 text-sky-900";
+  if (status === "failed")
+    return "border-destructive/40 bg-destructive/10 text-destructive";
+  return "border-emerald-500/30 bg-emerald-500/10 text-emerald-800";
+}
+
 function GiftDetailSheet({
   giftId,
   open,
@@ -143,14 +162,60 @@ function GiftDetailSheet({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
+  const qc = useQueryClient();
+  const [reason, setReason] = useState("");
+  const [refundFee, setRefundFee] = useState(false);
+
   const detailQ = useQuery({
     queryKey: ["admin", "gift-detail", giftId],
     queryFn: () => fetchAdminGiftDetail(giftId!),
     enabled: open && !!giftId,
   });
 
+  const invalidate = async () => {
+    await qc.invalidateQueries({ queryKey: ["admin", "gift-detail", giftId] });
+    await qc.invalidateQueries({ queryKey: ["admin", "gifts"] });
+  };
+
+  const holdM = useMutation({
+    mutationFn: () => holdAdminGift(giftId!, { reason: reason.trim() }),
+    onSuccess: async () => {
+      toast.success("Sovg'a hold qilindi");
+      setReason("");
+      await invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const releaseM = useMutation({
+    mutationFn: () => releaseAdminGift(giftId!, { reason: reason.trim() || "Release" }),
+    onSuccess: async () => {
+      toast.success("Hold ochildi — pul qaytarildi");
+      setReason("");
+      await invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const refundM = useMutation({
+    mutationFn: () =>
+      refundAdminGift(giftId!, {
+        reason: reason.trim(),
+        refund_design_fee: refundFee,
+      }),
+    onSuccess: async () => {
+      toast.success("Refund qilindi — yuboruvchiga qaytdi");
+      setReason("");
+      setRefundFee(false);
+      await invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const g = detailQ.data;
   const trail = g?.spend_trail;
+  const busy = holdM.isPending || releaseM.isPending || refundM.isPending;
+  const actions = g?.actions;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -158,7 +223,7 @@ function GiftDetailSheet({
         <SheetHeader>
           <SheetTitle className="font-heading">Sovg&apos;a tranzaksiyasi</SheetTitle>
           <SheetDescription>
-            Merchant ID, xavfsizlik bosqichlari va pul qayerga ketgani.
+            Merchant ID, xavfsizlik, risk va tuzatish qurollari (hold / refund).
           </SheetDescription>
         </SheetHeader>
 
@@ -175,6 +240,14 @@ function GiftDetailSheet({
                 <div className="flex flex-wrap items-center gap-2">
                   <LivePulseBadge label="Sealed" />
                   <RiskBadge risk={g.risk} />
+                  <span
+                    className={cn(
+                      "inline-flex rounded-md border px-2 py-0.5 text-[11px] font-semibold uppercase",
+                      statusBadge(g.status),
+                    )}
+                  >
+                    {g.status}
+                  </span>
                 </div>
                 <code className="text-[11px] font-mono text-muted-foreground">
                   {g.merchant_tx_id || g.id}
@@ -204,7 +277,105 @@ function GiftDetailSheet({
                 Dizayn: {g.design_name} · +{formatAdminUzs(g.design_fee)} · jami{" "}
                 {formatAdminUzs(g.total_charged)}
               </p>
+              {(g.holdable_amount ?? 0) > 0 || (g.held_amount ?? 0) > 0 ? (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Holdable: {formatAdminUzs(g.holdable_amount ?? 0)}
+                  {(g.held_amount ?? 0) > 0
+                    ? ` · Holdda: ${formatAdminUzs(g.held_amount ?? 0)}`
+                    : ""}
+                </p>
+              ) : null}
             </div>
+
+            <section className="rounded-2xl border border-border bg-card p-4">
+              <h3 className="text-sm font-semibold">Tuzatish qurollari</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Hold = vaqtincha muzlatish. Refund = yuboruvchiga qaytarish. Sabab majburiy.
+              </p>
+              <div className="mt-3 space-y-2">
+                <Label htmlFor="remediation-reason">Sabab</Label>
+                <Textarea
+                  id="remediation-reason"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="Masalan: user shikoyati / fraud tekshiruv / xato o'tkazma..."
+                  rows={3}
+                />
+              </div>
+              <div className="mt-3 flex items-center gap-2">
+                <Checkbox
+                  id="refund-fee"
+                  checked={refundFee}
+                  onCheckedChange={(v) => setRefundFee(v === true)}
+                />
+                <Label htmlFor="refund-fee" className="text-xs font-normal">
+                  Refund da dizayn narxini ham qaytarish
+                </Label>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={busy || !actions?.can_hold || reason.trim().length < 5}
+                  onClick={() => holdM.mutate()}
+                >
+                  <Lock className="size-3.5" />
+                  Hold
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={busy || !actions?.can_release}
+                  onClick={() => releaseM.mutate()}
+                >
+                  <Unlock className="size-3.5" />
+                  Release
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="destructive"
+                  disabled={busy || !actions?.can_refund || reason.trim().length < 5}
+                  onClick={() => {
+                    if (!window.confirm("Refund qilinsinmi? Pul yuboruvchiga qaytadi.")) return;
+                    refundM.mutate();
+                  }}
+                >
+                  <Undo2 className="size-3.5" />
+                  Refund
+                </Button>
+              </div>
+              {!actions?.can_hold && !actions?.can_release && !actions?.can_refund ? (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Bu holatda amal yo&apos;q (sarflangan yoki allaqachon refund).
+                </p>
+              ) : null}
+              {g.admin_note ? (
+                <p className="mt-3 rounded-lg bg-muted/50 px-3 py-2 text-xs">
+                  Oxirgi izoh: {g.admin_note}
+                </p>
+              ) : null}
+              {(g.remediation_log || []).length > 0 ? (
+                <ul className="mt-3 space-y-1.5 border-t border-border pt-3">
+                  {(g.remediation_log || []).slice().reverse().map((row, idx) => (
+                    <li key={idx} className="text-[11px] text-muted-foreground">
+                      <span className="font-medium text-foreground">
+                        {String(row.action || "action")}
+                      </span>
+                      {row.amount || row.gift_amount
+                        ? ` · ${row.amount || row.gift_amount}`
+                        : ""}
+                      {row.reason ? ` · ${String(row.reason)}` : ""}
+                      {row.at
+                        ? ` · ${format(new Date(String(row.at)), "dd.MM HH:mm")}`
+                        : ""}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </section>
 
             {g.risk?.flagged || (g.risk?.score ?? 0) > 0 ? (
               <section>
@@ -634,6 +805,14 @@ function AdminGiftsPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="inline-flex rounded-md bg-violet-500/10 px-2 py-0.5 text-xs font-semibold text-violet-800">
                           {g.design_name}
+                        </span>
+                        <span
+                          className={cn(
+                            "inline-flex rounded-md border px-2 py-0.5 text-[11px] font-semibold uppercase",
+                            statusBadge(g.status),
+                          )}
+                        >
+                          {g.status}
                         </span>
                         <RiskBadge risk={g.risk} />
                         <code className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">

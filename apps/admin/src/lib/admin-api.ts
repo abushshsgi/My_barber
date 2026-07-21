@@ -2376,6 +2376,17 @@ export type AdminGiftTransfer = {
   total_charged: number;
   message: string;
   status: string;
+  held_amount?: number;
+  holdable_amount?: number;
+  admin_note?: string;
+  remediation_log?: Array<Record<string, unknown>>;
+  held_at?: string | null;
+  refunded_at?: string | null;
+  actions?: {
+    can_hold: boolean;
+    can_release: boolean;
+    can_refund: boolean;
+  };
   created_at: string | null;
   security_steps: AdminGiftSecurityStep[];
   risk?: AdminGiftRisk;
@@ -2496,6 +2507,47 @@ export async function fetchAdminGifts(params?: {
 
 export async function fetchAdminGiftDetail(id: string): Promise<AdminGiftTransfer> {
   return apiJson<AdminGiftTransfer>(`/api/v1/admin/finance/gifts/${id}/`);
+}
+
+export async function holdAdminGift(
+  id: string,
+  body: { reason: string; amount?: number },
+): Promise<AdminGiftTransfer> {
+  return apiJson<AdminGiftTransfer>(`/api/v1/admin/finance/gifts/${id}/hold/`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function releaseAdminGift(
+  id: string,
+  body: { reason?: string } = {},
+): Promise<AdminGiftTransfer> {
+  return apiJson<AdminGiftTransfer>(`/api/v1/admin/finance/gifts/${id}/release/`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function refundAdminGift(
+  id: string,
+  body: { reason: string; refund_design_fee?: boolean },
+): Promise<AdminGiftTransfer> {
+  return apiJson<AdminGiftTransfer>(`/api/v1/admin/finance/gifts/${id}/refund/`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function adjustAdminWallet(body: {
+  user_id: number;
+  amount: number;
+  reason: string;
+}): Promise<{ ok: boolean; ledger_id: string; amount: number; balance_after: number; user_id: number }> {
+  return apiJson(`/api/v1/admin/wallet/adjust/`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }
 
 export async function downloadAdminGiftsCsv(params?: {

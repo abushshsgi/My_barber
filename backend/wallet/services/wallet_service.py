@@ -354,6 +354,381 @@ class WalletService:
         return gift
 
     @staticmethod
+    def _append_remediation(gift: GiftTransfer, entry: dict) -> None:
+        log = list(gift.remediation_log or [])
+        log.append(entry)
+        gift.remediation_log = log
+
+    @classmethod
+    def _gift_spend_after(cls, gift: GiftTransfer) -> Decimal:
+        """Sovg'adan keyin recipient booking_pay jami (taxminiy sarf)."""
+        qs = LedgerEntry.objects.filter(
+            wallet_id=gift.recipient_wallet_id,
+            entry_type=LedgerEntry.EntryType.BOOKING_PAY,
+            created_at__gte=gift.created_at,
+        )
+        total = Decimal("0")
+        for row in qs.only("amount"):
+            total += abs(Decimal(row.amount))
+        return total
+
+    @classmethod
+    def gift_holdable_amount(cls, gift: GiftTransfer) -> Decimal:
+        """Hold qilish mumkin bo'lgan qoldiq (sarflanmagan / balans bilan cheklangan)."""
+        if gift.status != GiftTransfer.Status.COMPLETED:
+            return Decimal("0")
+        recipient = gift.recipient_wallet
+        spent = cls._gift_spend_after(gift)
+        remaining = max(Decimal("0"), Decimal(gift.amount) - spent)
+        return min(remaining, Decimal(recipient.balance)).quantize(Decimal("0.01"))
+
+    @classmethod
+    @transaction.atomic
+    def admin_hold_gift(
+        cls,
+        *,
+        gift: GiftTransfer,
+        admin_id: int | None,
+        reason: str,
+        amount: Decimal | None = None,
+        idempotency_key: str = "",
+    ) -> GiftTransfer:
+        gift = GiftTransfer.objects.select_for_update().select_related(
+            "sender_wallet", "recipient_wallet"
+        ).get(pk=gift.pk)
+        if gift.status != GiftTransfer.Status.COMPLETED:
+            raise WalletServiceError("Faqat completed sovg'ani hold qilish mumkin.")
+
+        holdable = cls.gift_holdable_amount(gift)
+        if holdable <= 0:
+            raise WalletServiceError(
+                "Hold qilish uchun qoldiq yo'q (sarflangan yoki balans yetarli emas)."
+            )
+
+        hold_amount = Decimal(amount) if amount is not None else holdable
+        hold_amount = hold_amount.quantize(Decimal("0.01"))
+        if hold_amount <= 0:
+            raise WalletServiceError("Hold summasi 0 dan katta bo'lishi kerak.")
+        if hold_amount > holdable:
+            raise WalletServiceError(
+                f"Maksimal hold: {holdable} so'm (qoldiq/balans)."
+            )
+
+        key = (idempotency_key or "").strip() or f"gift-hold:{gift.id}:{hold_amount}"
+        platform = cls.ensure_platform_wallet()
+        recipient = Wallet.objects.select_for_update().get(pk=gift.recipient_wallet_id)
+        platform = Wallet.objects.select_for_update().get(pk=platform.pk)
+
+        note = (reason or "").strip()[:500] or "Admin hold"
+        meta = {
+            "action": "gift_hold",
+            "gift_id": str(gift.id),
+            "admin_id": admin_id,
+            "reason": note,
+        }
+
+        cls.post_entry(
+            wallet=recipient,
+            entry_type=LedgerEntry.EntryType.ADJUSTMENT,
+            amount=-hold_amount,
+            idempotency_key=f"{key}:from-recipient"[:128],
+            reference_type="gift_hold",
+            reference_id=str(gift.id),
+            metadata=meta,
+        )
+        cls.post_entry(
+            wallet=platform,
+            entry_type=LedgerEntry.EntryType.ADJUSTMENT,
+            amount=hold_amount,
+            idempotency_key=f"{key}:to-platform"[:128],
+            reference_type="gift_hold",
+            reference_id=str(gift.id),
+            metadata=meta,
+        )
+
+        gift.status = GiftTransfer.Status.ON_HOLD
+        gift.held_amount = hold_amount
+        gift.held_at = timezone.now()
+        gift.held_by_admin_id = admin_id
+        if note:
+            gift.admin_note = note
+        cls._append_remediation(
+            gift,
+            {
+                "action": "hold",
+                "amount": str(hold_amount),
+                "reason": note,
+                "admin_id": admin_id,
+                "at": timezone.now().isoformat(),
+            },
+        )
+        gift.save(
+            update_fields=[
+                "status",
+                "held_amount",
+                "held_at",
+                "held_by_admin_id",
+                "admin_note",
+                "remediation_log",
+            ]
+        )
+        return gift
+
+    @classmethod
+    @transaction.atomic
+    def admin_release_gift(
+        cls,
+        *,
+        gift: GiftTransfer,
+        admin_id: int | None,
+        reason: str = "",
+        idempotency_key: str = "",
+    ) -> GiftTransfer:
+        gift = GiftTransfer.objects.select_for_update().select_related(
+            "recipient_wallet"
+        ).get(pk=gift.pk)
+        if gift.status != GiftTransfer.Status.ON_HOLD:
+            raise WalletServiceError("Faqat on_hold sovg'ani release qilish mumkin.")
+
+        hold_amount = Decimal(gift.held_amount).quantize(Decimal("0.01"))
+        if hold_amount <= 0:
+            raise WalletServiceError("Hold summasi topilmadi.")
+
+        key = (idempotency_key or "").strip() or f"gift-release:{gift.id}"
+        platform = cls.ensure_platform_wallet()
+        recipient = Wallet.objects.select_for_update().get(pk=gift.recipient_wallet_id)
+        platform = Wallet.objects.select_for_update().get(pk=platform.pk)
+
+        note = (reason or "").strip()[:500] or "Admin release"
+        meta = {
+            "action": "gift_release",
+            "gift_id": str(gift.id),
+            "admin_id": admin_id,
+            "reason": note,
+        }
+
+        cls.post_entry(
+            wallet=platform,
+            entry_type=LedgerEntry.EntryType.ADJUSTMENT,
+            amount=-hold_amount,
+            idempotency_key=f"{key}:from-platform"[:128],
+            reference_type="gift_release",
+            reference_id=str(gift.id),
+            metadata=meta,
+        )
+        cls.post_entry(
+            wallet=recipient,
+            entry_type=LedgerEntry.EntryType.ADJUSTMENT,
+            amount=hold_amount,
+            idempotency_key=f"{key}:to-recipient"[:128],
+            reference_type="gift_release",
+            reference_id=str(gift.id),
+            metadata=meta,
+        )
+
+        gift.status = GiftTransfer.Status.COMPLETED
+        gift.held_amount = Decimal("0")
+        gift.held_at = None
+        gift.held_by_admin_id = None
+        if note:
+            gift.admin_note = note
+        cls._append_remediation(
+            gift,
+            {
+                "action": "release",
+                "amount": str(hold_amount),
+                "reason": note,
+                "admin_id": admin_id,
+                "at": timezone.now().isoformat(),
+            },
+        )
+        gift.save(
+            update_fields=[
+                "status",
+                "held_amount",
+                "held_at",
+                "held_by_admin_id",
+                "admin_note",
+                "remediation_log",
+            ]
+        )
+        return gift
+
+    @classmethod
+    @transaction.atomic
+    def admin_refund_gift(
+        cls,
+        *,
+        gift: GiftTransfer,
+        admin_id: int | None,
+        reason: str,
+        refund_design_fee: bool = False,
+        idempotency_key: str = "",
+    ) -> GiftTransfer:
+        gift = GiftTransfer.objects.select_for_update().select_related(
+            "sender_wallet", "recipient_wallet"
+        ).get(pk=gift.pk)
+        if gift.status not in (
+            GiftTransfer.Status.COMPLETED,
+            GiftTransfer.Status.ON_HOLD,
+        ):
+            raise WalletServiceError("Bu holatda refund qilib bo'lmaydi.")
+
+        key = (idempotency_key or "").strip() or f"gift-refund:{gift.id}"
+        note = (reason or "").strip()[:500] or "Admin refund"
+        platform = cls.ensure_platform_wallet()
+        sender = Wallet.objects.select_for_update().get(pk=gift.sender_wallet_id)
+        recipient = Wallet.objects.select_for_update().get(pk=gift.recipient_wallet_id)
+        platform = Wallet.objects.select_for_update().get(pk=platform.pk)
+
+        meta = {
+            "action": "gift_refund",
+            "gift_id": str(gift.id),
+            "admin_id": admin_id,
+            "reason": note,
+            "refund_design_fee": bool(refund_design_fee),
+        }
+
+        refunded_gift = Decimal("0")
+        if gift.status == GiftTransfer.Status.ON_HOLD:
+            hold_amount = Decimal(gift.held_amount).quantize(Decimal("0.01"))
+            if hold_amount > 0:
+                cls.post_entry(
+                    wallet=platform,
+                    entry_type=LedgerEntry.EntryType.REFUND,
+                    amount=-hold_amount,
+                    idempotency_key=f"{key}:hold-from-platform"[:128],
+                    reference_type="gift_refund",
+                    reference_id=str(gift.id),
+                    metadata=meta,
+                )
+                cls.post_entry(
+                    wallet=sender,
+                    entry_type=LedgerEntry.EntryType.REFUND,
+                    amount=hold_amount,
+                    idempotency_key=f"{key}:hold-to-sender"[:128],
+                    reference_type="gift_refund",
+                    reference_id=str(gift.id),
+                    metadata=meta,
+                )
+                refunded_gift = hold_amount
+        else:
+            refundable = cls.gift_holdable_amount(gift)
+            if refundable <= 0:
+                raise WalletServiceError(
+                    "Qaytarish uchun qoldiq yo'q (sarflangan yoki balans yetarli emas)."
+                )
+            cls.post_entry(
+                wallet=recipient,
+                entry_type=LedgerEntry.EntryType.REFUND,
+                amount=-refundable,
+                idempotency_key=f"{key}:from-recipient"[:128],
+                reference_type="gift_refund",
+                reference_id=str(gift.id),
+                metadata=meta,
+            )
+            cls.post_entry(
+                wallet=sender,
+                entry_type=LedgerEntry.EntryType.REFUND,
+                amount=refundable,
+                idempotency_key=f"{key}:to-sender"[:128],
+                reference_type="gift_refund",
+                reference_id=str(gift.id),
+                metadata=meta,
+            )
+            refunded_gift = refundable
+
+        refunded_fee = Decimal("0")
+        if refund_design_fee and Decimal(gift.design_fee) > 0:
+            fee = Decimal(gift.design_fee).quantize(Decimal("0.01"))
+            cls.post_entry(
+                wallet=platform,
+                entry_type=LedgerEntry.EntryType.REFUND,
+                amount=-fee,
+                idempotency_key=f"{key}:fee-from-platform"[:128],
+                reference_type="gift_refund_fee",
+                reference_id=str(gift.id),
+                metadata=meta,
+            )
+            cls.post_entry(
+                wallet=sender,
+                entry_type=LedgerEntry.EntryType.REFUND,
+                amount=fee,
+                idempotency_key=f"{key}:fee-to-sender"[:128],
+                reference_type="gift_refund_fee",
+                reference_id=str(gift.id),
+                metadata=meta,
+            )
+            refunded_fee = fee
+
+        gift.status = GiftTransfer.Status.REFUNDED
+        gift.held_amount = Decimal("0")
+        gift.held_at = None
+        gift.held_by_admin_id = None
+        gift.refunded_at = timezone.now()
+        gift.refunded_by_admin_id = admin_id
+        gift.admin_note = note
+        cls._append_remediation(
+            gift,
+            {
+                "action": "refund",
+                "gift_amount": str(refunded_gift),
+                "design_fee": str(refunded_fee),
+                "reason": note,
+                "admin_id": admin_id,
+                "at": timezone.now().isoformat(),
+            },
+        )
+        gift.save(
+            update_fields=[
+                "status",
+                "held_amount",
+                "held_at",
+                "held_by_admin_id",
+                "refunded_at",
+                "refunded_by_admin_id",
+                "admin_note",
+                "remediation_log",
+            ]
+        )
+        return gift
+
+    @classmethod
+    @transaction.atomic
+    def admin_adjust_wallet(
+        cls,
+        *,
+        user: User,
+        amount: Decimal,
+        reason: str,
+        admin_id: int | None,
+        idempotency_key: str = "",
+    ) -> LedgerEntry:
+        amount = Decimal(amount).quantize(Decimal("0.01"))
+        if amount == 0:
+            raise WalletServiceError("Summa 0 bo'lishi mumkin emas.")
+        note = (reason or "").strip()
+        if len(note) < 5:
+            raise WalletServiceError("Sabab kamida 5 belgi bo'lishi kerak.")
+
+        wallet = cls.ensure_wallet(user)
+        key = (idempotency_key or "").strip() or f"admin-adjust:{wallet.pk}:{uuid4()}"
+        return cls.post_entry(
+            wallet=wallet,
+            entry_type=LedgerEntry.EntryType.ADJUSTMENT,
+            amount=amount,
+            idempotency_key=key[:128],
+            reference_type="admin_adjust",
+            reference_id=str(admin_id or ""),
+            metadata={
+                "action": "admin_adjust",
+                "admin_id": admin_id,
+                "reason": note[:500],
+                "signed_amount": str(amount),
+            },
+        )
+
+    @staticmethod
     def verify_chain(wallet: Wallet) -> tuple[bool, str | None]:
         return verify_wallet_chain(wallet.pk)
 

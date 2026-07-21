@@ -1673,6 +1673,219 @@ class AdminGiftTransferDetailView(APIView):
         return Response(serialize_gift_transfer(gift, detail=True))
 
 
+def _admin_id_from_request(request) -> int | None:
+    admin = getattr(request, "user", None)
+    return getattr(admin, "admin_id", None) or getattr(admin, "id", None)
+
+
+def _reload_gift(pk):
+    from wallet.models import GiftTransfer
+
+    return GiftTransfer.objects.select_related(
+        "sender_wallet__user",
+        "recipient_wallet__user",
+        "sender_entry",
+        "recipient_entry",
+        "design_fee_entry",
+    ).get(pk=pk)
+
+
+class AdminGiftHoldView(APIView):
+    """Shubhali sovg'ani vaqtincha hold (platforma escrow)."""
+
+    permission_classes = [IsAdmin]
+
+    def post(self, request, pk):
+        from decimal import Decimal, InvalidOperation
+
+        from wallet.models import GiftTransfer
+        from wallet.services.wallet_service import WalletService, WalletServiceError
+
+        from .platform_analytics import serialize_gift_transfer
+
+        gift = get_object_or_404(GiftTransfer, pk=pk)
+        reason = (request.data.get("reason") or "").strip()
+        if len(reason) < 5:
+            return Response(
+                {"detail": "Sabab kamida 5 belgi bo'lishi kerak."},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+        amount = None
+        raw_amount = request.data.get("amount")
+        if raw_amount not in (None, ""):
+            try:
+                amount = Decimal(str(raw_amount))
+            except (InvalidOperation, TypeError, ValueError):
+                return Response(
+                    {"detail": "Summa noto'g'ri."},
+                    status=http_status.HTTP_400_BAD_REQUEST,
+                )
+
+        before = {"status": gift.status, "held_amount": str(gift.held_amount)}
+        try:
+            gift = WalletService.admin_hold_gift(
+                gift=gift,
+                admin_id=_admin_id_from_request(request),
+                reason=reason,
+                amount=amount,
+                idempotency_key=(request.data.get("idempotency_key") or "").strip(),
+            )
+        except WalletServiceError as exc:
+            return Response({"detail": str(exc)}, status=http_status.HTTP_400_BAD_REQUEST)
+
+        _audit(
+            request,
+            "gift_hold",
+            "gift_transfer",
+            str(gift.id),
+            f"{gift.amount}",
+            before=before,
+            after={"status": gift.status, "held_amount": str(gift.held_amount), "reason": reason},
+        )
+        return Response(serialize_gift_transfer(_reload_gift(gift.id), detail=True))
+
+
+class AdminGiftReleaseView(APIView):
+    """Holddan chiqarish — pul qabul qiluvchiga qaytadi."""
+
+    permission_classes = [IsAdmin]
+
+    def post(self, request, pk):
+        from wallet.models import GiftTransfer
+        from wallet.services.wallet_service import WalletService, WalletServiceError
+
+        from .platform_analytics import serialize_gift_transfer
+
+        gift = get_object_or_404(GiftTransfer, pk=pk)
+        reason = (request.data.get("reason") or "").strip()
+        before = {"status": gift.status, "held_amount": str(gift.held_amount)}
+        try:
+            gift = WalletService.admin_release_gift(
+                gift=gift,
+                admin_id=_admin_id_from_request(request),
+                reason=reason,
+                idempotency_key=(request.data.get("idempotency_key") or "").strip(),
+            )
+        except WalletServiceError as exc:
+            return Response({"detail": str(exc)}, status=http_status.HTTP_400_BAD_REQUEST)
+
+        _audit(
+            request,
+            "gift_release",
+            "gift_transfer",
+            str(gift.id),
+            f"{gift.amount}",
+            before=before,
+            after={"status": gift.status, "reason": reason},
+        )
+        return Response(serialize_gift_transfer(_reload_gift(gift.id), detail=True))
+
+
+class AdminGiftRefundView(APIView):
+    """Sovg'ani qaytarish — qoldiq yuboruvchiga."""
+
+    permission_classes = [IsAdmin]
+
+    def post(self, request, pk):
+        from wallet.models import GiftTransfer
+        from wallet.services.wallet_service import WalletService, WalletServiceError
+
+        from .platform_analytics import serialize_gift_transfer
+
+        gift = get_object_or_404(GiftTransfer, pk=pk)
+        reason = (request.data.get("reason") or "").strip()
+        if len(reason) < 5:
+            return Response(
+                {"detail": "Sabab kamida 5 belgi bo'lishi kerak."},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+        refund_fee = bool(request.data.get("refund_design_fee"))
+        before = {"status": gift.status, "held_amount": str(gift.held_amount)}
+        try:
+            gift = WalletService.admin_refund_gift(
+                gift=gift,
+                admin_id=_admin_id_from_request(request),
+                reason=reason,
+                refund_design_fee=refund_fee,
+                idempotency_key=(request.data.get("idempotency_key") or "").strip(),
+            )
+        except WalletServiceError as exc:
+            return Response({"detail": str(exc)}, status=http_status.HTTP_400_BAD_REQUEST)
+
+        _audit(
+            request,
+            "gift_refund",
+            "gift_transfer",
+            str(gift.id),
+            f"{gift.amount}",
+            before=before,
+            after={
+                "status": gift.status,
+                "reason": reason,
+                "refund_design_fee": refund_fee,
+            },
+        )
+        return Response(serialize_gift_transfer(_reload_gift(gift.id), detail=True))
+
+
+class AdminWalletAdjustView(APIView):
+    """Manual balans tuzatish (+/-) — sabab majburiy, audit yoziladi."""
+
+    permission_classes = [IsAdmin]
+
+    def post(self, request):
+        from decimal import Decimal, InvalidOperation
+
+        from accounts.models import User
+        from wallet.services.wallet_service import WalletService, WalletServiceError
+
+        user_id = request.data.get("user_id")
+        reason = (request.data.get("reason") or "").strip()
+        try:
+            amount = Decimal(str(request.data.get("amount")))
+        except (InvalidOperation, TypeError, ValueError):
+            return Response(
+                {"detail": "Summa noto'g'ri."},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = get_object_or_404(User, pk=user_id)
+        try:
+            entry = WalletService.admin_adjust_wallet(
+                user=user,
+                amount=amount,
+                reason=reason,
+                admin_id=_admin_id_from_request(request),
+                idempotency_key=(request.data.get("idempotency_key") or "").strip(),
+            )
+        except WalletServiceError as exc:
+            return Response({"detail": str(exc)}, status=http_status.HTTP_400_BAD_REQUEST)
+
+        _audit(
+            request,
+            "wallet_adjust",
+            "user",
+            str(user.pk),
+            user.full_name or user.phone or str(user.pk),
+            before={},
+            after={
+                "amount": str(amount),
+                "reason": reason,
+                "ledger_id": str(entry.id),
+                "balance_after": str(entry.balance_after),
+            },
+        )
+        return Response(
+            {
+                "ok": True,
+                "ledger_id": str(entry.id),
+                "amount": float(entry.amount),
+                "balance_after": float(entry.balance_after),
+                "user_id": user.pk,
+            }
+        )
+
+
 class AdminGiftTransferExportView(APIView):
     """Sovg'a kartalar CSV eksport."""
 

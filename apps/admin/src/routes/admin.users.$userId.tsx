@@ -2,14 +2,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ArrowLeft } from "lucide-react";
-import { type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
-import { fetchAdminUserDetail, patchAdminUser } from "@/lib/admin-api";
+import { adjustAdminWallet, fetchAdminUserDetail, patchAdminUser } from "@/lib/admin-api";
 import { formatAdminUzs } from "@/lib/admin-analytics";
 import { uzRegionLabel } from "@/lib/uz-regions";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/admin/users/$userId")({
   component: UserDetailPage,
@@ -25,6 +28,8 @@ const SIGNUP_LABEL: Record<string, string> = {
 function UserDetailPage() {
   const { userId } = Route.useParams();
   const qc = useQueryClient();
+  const [adjustAmount, setAdjustAmount] = useState("");
+  const [adjustReason, setAdjustReason] = useState("");
 
   const userQ = useQuery({
     queryKey: ["admin", "user", userId],
@@ -37,6 +42,22 @@ function UserDetailPage() {
       qc.invalidateQueries({ queryKey: ["admin", "user", userId] });
       qc.invalidateQueries({ queryKey: ["admin", "users"] });
       toast.success("Mijoz yangilandi");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const adjustM = useMutation({
+    mutationFn: () =>
+      adjustAdminWallet({
+        user_id: Number(userId),
+        amount: Number(adjustAmount),
+        reason: adjustReason.trim(),
+      }),
+    onSuccess: (res) => {
+      toast.success(`Balans tuzatildi · yangi: ${formatAdminUzs(res.balance_after)}`);
+      setAdjustAmount("");
+      setAdjustReason("");
+      qc.invalidateQueries({ queryKey: ["admin", "user", userId] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -285,6 +306,56 @@ function UserDetailPage() {
                       ))}
                     </ul>
                   )}
+                  <div className="mt-5 space-y-2 border-t border-border pt-4">
+                    <p className="text-sm font-medium">Manual tuzatish</p>
+                    <p className="text-xs text-muted-foreground">
+                      Musbat = qo&apos;shish, manfiy = ayirish. Sabab majburiy, auditga yoziladi.
+                    </p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <div className="space-y-1">
+                        <Label htmlFor="adj-amount">Summa (so&apos;m)</Label>
+                        <Input
+                          id="adj-amount"
+                          value={adjustAmount}
+                          onChange={(e) => setAdjustAmount(e.target.value)}
+                          placeholder="50000 yoki -20000"
+                        />
+                      </div>
+                      <div className="space-y-1 sm:col-span-2">
+                        <Label htmlFor="adj-reason">Sabab</Label>
+                        <Textarea
+                          id="adj-reason"
+                          value={adjustReason}
+                          onChange={(e) => setAdjustReason(e.target.value)}
+                          placeholder="Shikoyat / kompensatsiya / xato tuzatish..."
+                          rows={2}
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={
+                        adjustM.isPending ||
+                        !adjustAmount ||
+                        Number.isNaN(Number(adjustAmount)) ||
+                        Number(adjustAmount) === 0 ||
+                        adjustReason.trim().length < 5
+                      }
+                      onClick={() => {
+                        if (
+                          !window.confirm(
+                            `Balans ${Number(adjustAmount) > 0 ? "+" : ""}${adjustAmount} so'm ga o'zgartirilsinmi?`,
+                          )
+                        ) {
+                          return;
+                        }
+                        adjustM.mutate();
+                      }}
+                    >
+                      Tuzatishni saqlash
+                    </Button>
+                  </div>
                 </>
               )}
             </Section>
