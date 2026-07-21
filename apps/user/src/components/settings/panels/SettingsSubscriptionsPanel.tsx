@@ -670,7 +670,7 @@ export function SettingsSubscriptionsPanel() {
                 <p className="mt-2 text-xs font-medium text-destructive">{promoError}</p>
               ) : appliedPromo ? (
                 <p className="mt-2 text-xs font-bold text-foreground">
-                  {appliedPromo} faol — hozir to‘lang, aksiyа kutmaydi
+                  {appliedPromo} faol — hozir to‘lang, aksiya kutmaydi
                 </p>
               ) : null}
             </div>

@@ -66,7 +66,7 @@ export function MorphPromoUrgencyBanner({ onNavigate, className, variant = "dark
               dark ? "text-white/50" : "text-background/55",
             )}
           >
-            Cheklangan aksiyа
+            Cheklangan aksiya
           </p>
           <p className="mt-1 text-[15px] font-bold leading-snug tracking-tight">
             {urgency}

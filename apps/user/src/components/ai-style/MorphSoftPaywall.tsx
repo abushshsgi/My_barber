@@ -48,7 +48,7 @@ export function MorphSoftPaywall({ className, previewUrl }: Props) {
             </h3>
             <p className="mt-1.5 max-w-sm text-[12px] leading-relaxed text-background/60">
               {t("aiStylePage.softPaywall.hint", {
-                defaultValue: "Selfie → yangi uslub. Ulgutib qoling — aksiyа tugayapti.",
+                defaultValue: "Selfie → yangi uslub. Ulgutib qoling — aksiya tugayapti.",
               })}
             </p>
           </div>
