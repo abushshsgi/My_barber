@@ -127,7 +127,10 @@ class PlatformAnalyticsTests(TestCase):
         self.assertEqual(data["summary"]["topup_total"], 100_000)
         self.assertEqual(data["summary"]["topup_users"], 1)
         self.assertEqual(data["summary"]["spend_total"], 70_000)
+        self.assertEqual(data["summary"]["flow_total"], 170_000)
         self.assertEqual(len(data["recent"]), 2)
+        self.assertIn("merchant_tx_id", data["recent"][0])
+        self.assertTrue(len(data["top_actors"]) >= 1)
 
     def test_csv_export_content_type(self):
         response = build_csv_response("bookings", self.start_dt, self.end_dt, _FakeRequest())

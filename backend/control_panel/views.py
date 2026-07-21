@@ -1548,7 +1548,7 @@ class AdminPlatformTurnoverView(APIView):
 
 
 class AdminGiftTransferListView(APIView):
-    """Sovg'a kartalar — kim kimga, qachon, qancha, qaysi dizayn."""
+    """Sovg'a kartalar — kim kimga, qachon, qancha, qaysi dizayn + xavfsizlik bosqichlari."""
 
     permission_classes = [IsAdmin]
 
@@ -1564,6 +1564,9 @@ class AdminGiftTransferListView(APIView):
         qs = GiftTransfer.objects.select_related(
             "sender_wallet__user",
             "recipient_wallet__user",
+            "sender_entry",
+            "recipient_entry",
+            "design_fee_entry",
         ).order_by("-created_at")
 
         q = (request.query_params.get("q") or "").strip()
@@ -1575,6 +1578,8 @@ class AdminGiftTransferListView(APIView):
                 | Q(recipient_wallet__user__phone__icontains=q)
                 | Q(design_id__icontains=q)
                 | Q(message__icontains=q)
+                | Q(id__icontains=q)
+                | Q(idempotency_key__icontains=q)
             )
 
         design_id = (request.query_params.get("design_id") or "").strip()
@@ -1601,3 +1606,132 @@ class AdminGiftTransferListView(APIView):
         response.data["page"] = paginator.page.number
         response.data["page_size"] = paginator.get_page_size(request)
         return response
+
+
+class AdminGiftTransferDetailView(APIView):
+    """Bitta sovg'a — merchant ID, xavfsizlik bosqichlari, sarf izi."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request, pk):
+        from wallet.models import GiftTransfer
+
+        from .platform_analytics import serialize_gift_transfer
+
+        gift = get_object_or_404(
+            GiftTransfer.objects.select_related(
+                "sender_wallet__user",
+                "recipient_wallet__user",
+                "sender_entry",
+                "recipient_entry",
+                "design_fee_entry",
+            ),
+            pk=pk,
+        )
+        return Response(serialize_gift_transfer(gift, detail=True))
+
+
+class AdminGiftTransferExportView(APIView):
+    """Sovg'a kartalar CSV eksport."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        import csv
+
+        from django.http import HttpResponse
+
+        from wallet.models import GiftTransfer
+
+        from .platform_analytics import resolve_range, serialize_gift_transfer
+
+        qs = GiftTransfer.objects.select_related(
+            "sender_wallet__user",
+            "recipient_wallet__user",
+            "sender_entry",
+            "recipient_entry",
+            "design_fee_entry",
+        ).order_by("-created_at")
+
+        start_raw = request.query_params.get("start")
+        end_raw = request.query_params.get("end")
+        start_dt = end_dt = None
+        if start_raw or end_raw:
+            start_dt, end_dt = resolve_range(start_raw, end_raw)
+            qs = qs.filter(created_at__gte=start_dt, created_at__lte=end_dt)
+
+        design_id = (request.query_params.get("design_id") or "").strip()
+        if design_id and design_id != "all":
+            qs = qs.filter(design_id=design_id)
+
+        suffix = "all"
+        if start_dt and end_dt:
+            suffix = f"{start_dt.date().isoformat()}_{end_dt.date().isoformat()}"
+
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="sovga_kartalar_{suffix}.csv"'
+        response.write("\ufeff")
+        writer = csv.writer(response)
+        writer.writerow(
+            [
+                "Merchant TX ID",
+                "Idempotency",
+                "Yuboruvchi",
+                "Yuboruvchi telefon",
+                "Yuboruvchi hamyon",
+                "Qabul qiluvchi",
+                "Qabul qiluvchi telefon",
+                "Qabul qiluvchi hamyon",
+                "Dizayn",
+                "Sovg'a (so'm)",
+                "Dizayn narxi (so'm)",
+                "Jami yechilgan (so'm)",
+                "Xabar",
+                "Status",
+                "Xavfsizlik bosqichlari",
+                "Vaqt",
+            ]
+        )
+        for gift in qs[:5000]:
+            row = serialize_gift_transfer(gift)
+            steps = ",".join(
+                f"{s['step']}:{s['status']}" for s in (row.get("security_steps") or [])
+            )
+            writer.writerow(
+                [
+                    row.get("merchant_tx_id") or row["id"],
+                    row.get("idempotency_key") or "",
+                    row["sender"]["name"],
+                    row["sender"].get("phone") or "",
+                    row["sender"].get("wallet_number") or "",
+                    row["recipient"]["name"],
+                    row["recipient"].get("phone") or "",
+                    row["recipient"].get("wallet_number") or "",
+                    row["design_name"],
+                    row["amount"],
+                    row["design_fee"],
+                    row["total_charged"],
+                    row.get("message") or "",
+                    row["status"],
+                    steps,
+                    (row.get("created_at") or "").replace("T", " ")[:19],
+                ]
+            )
+        return response
+
+
+class AdminGiftDesignsAnalyticsView(APIView):
+    """Sovg'a karta dizaynlari — kolleksiya, narx, sotuv va sarf statistikasi."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        from .platform_analytics import build_gift_designs_analytics, resolve_range
+
+        start_raw = request.query_params.get("start")
+        end_raw = request.query_params.get("end")
+        start_dt = end_dt = None
+        if start_raw or end_raw:
+            start_dt, end_dt = resolve_range(start_raw, end_raw)
+
+        return Response(build_gift_designs_analytics(start_dt, end_dt))

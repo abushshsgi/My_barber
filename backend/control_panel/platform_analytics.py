@@ -241,6 +241,14 @@ def build_revenue_analytics(
     }
 
 
+def _today_bounds() -> tuple[datetime, datetime]:
+    tz = timezone.get_current_timezone()
+    today_start = timezone.make_aware(
+        datetime.combine(timezone.localdate(), datetime.min.time()), tz
+    )
+    return today_start, timezone.now()
+
+
 def build_wallet_analytics(start_dt: datetime, end_dt: datetime, recent_limit: int = 100) -> dict:
     """Hamyon oqimi — to'ldirish, sarf, sovg'a (LedgerEntry asosida)."""
     entries = LedgerEntry.objects.filter(created_at__gte=start_dt, created_at__lte=end_dt)
@@ -249,15 +257,53 @@ def build_wallet_analytics(start_dt: datetime, end_dt: datetime, recent_limit: i
     booking_pays = entries.filter(entry_type=LedgerEntry.EntryType.BOOKING_PAY)
     gifts_out = entries.filter(entry_type=LedgerEntry.EntryType.GIFT_OUT)
     refunds = entries.filter(entry_type=LedgerEntry.EntryType.REFUND)
+    subscriptions = entries.filter(entry_type=LedgerEntry.EntryType.SUBSCRIPTION)
 
     topup_total = topups.aggregate(s=_decimal_sum("amount"))["s"]
     # sarf summalari manfiy — absolyut qiymat uchun -Sum.
     spend_total = booking_pays.aggregate(s=_decimal_sum("amount"))["s"]
     gift_total = gifts_out.aggregate(s=_decimal_sum("amount"))["s"]
     refund_total = refunds.aggregate(s=_decimal_sum("amount"))["s"]
+    subscription_total = subscriptions.aggregate(s=_decimal_sum("amount"))["s"]
 
     topup_users = topups.values("wallet__user_id").distinct().count()
     spend_users = booking_pays.values("wallet__user_id").distinct().count()
+
+    topup_abs = abs(_float(topup_total))
+    spend_abs = abs(_float(spend_total))
+    gift_abs = abs(_float(gift_total))
+    refund_abs = abs(_float(refund_total))
+    subscription_abs = abs(_float(subscription_total))
+    flow_total = topup_abs + spend_abs + gift_abs + refund_abs + subscription_abs
+
+    # Bugungi oqim (live delta)
+    today_flow = None
+    today_topup = None
+    if start_dt.date() <= timezone.localdate() <= end_dt.date():
+        today_start, today_end = _today_bounds()
+        today_entries = LedgerEntry.objects.filter(
+            created_at__gte=today_start, created_at__lte=today_end
+        )
+        today_topup = _float(
+            today_entries.filter(entry_type=LedgerEntry.EntryType.TOPUP).aggregate(
+                s=_decimal_sum("amount")
+            )["s"]
+        )
+        today_spend = abs(
+            _float(
+                today_entries.filter(entry_type=LedgerEntry.EntryType.BOOKING_PAY).aggregate(
+                    s=_decimal_sum("amount")
+                )["s"]
+            )
+        )
+        today_gift = abs(
+            _float(
+                today_entries.filter(entry_type=LedgerEntry.EntryType.GIFT_OUT).aggregate(
+                    s=_decimal_sum("amount")
+                )["s"]
+            )
+        )
+        today_flow = today_topup + today_spend + today_gift
 
     # To'ldirish manbasi bo'yicha (metadata.source).
     source_rows: dict[str, dict] = {}
@@ -269,43 +315,105 @@ def build_wallet_analytics(start_dt: datetime, end_dt: datetime, recent_limit: i
     topup_sources = sorted(source_rows.values(), key=lambda r: r["amount"], reverse=True)
 
     spend_types = [
-        {"type": "booking_pay", "label": "Bron to'lovi", "amount": abs(_float(spend_total)), "count": booking_pays.count()},
-        {"type": "gift_out", "label": "Sovg'a", "amount": abs(_float(gift_total)), "count": gifts_out.count()},
-        {"type": "refund", "label": "Qaytarish", "amount": _float(refund_total), "count": refunds.count()},
+        {
+            "type": "booking_pay",
+            "label": "Bron to'lovi",
+            "amount": spend_abs,
+            "count": booking_pays.count(),
+        },
+        {
+            "type": "gift_out",
+            "label": "Sovg'a",
+            "amount": gift_abs,
+            "count": gifts_out.count(),
+        },
+        {
+            "type": "subscription",
+            "label": "Obuna",
+            "amount": subscription_abs,
+            "count": subscriptions.count(),
+        },
+        {
+            "type": "refund",
+            "label": "Qaytarish",
+            "amount": refund_abs,
+            "count": refunds.count(),
+        },
     ]
+
+    # Eng faol foydalanuvchilar — kim qancha pul harakatlantirgan.
+    actor_map: dict[int, dict] = {}
+    for entry in entries.select_related("wallet__user"):
+        user = entry.wallet.user if entry.wallet_id else None
+        if not user:
+            continue
+        row = actor_map.setdefault(
+            user.pk,
+            {
+                "user_id": user.pk,
+                "user_name": (user.full_name or user.phone or str(user.pk)).strip(),
+                "phone": user.phone or None,
+                "wallet_number": entry.wallet.wallet_number if entry.wallet_id else "",
+                "volume": 0.0,
+                "count": 0,
+                "last_type": entry.entry_type,
+            },
+        )
+        row["volume"] += abs(_float(entry.amount))
+        row["count"] += 1
+        row["last_type"] = entry.entry_type
+    top_actors = sorted(actor_map.values(), key=lambda r: r["volume"], reverse=True)[:12]
 
     recent = []
     for entry in (
-        entries.select_related("wallet__user")
-        .order_by("-created_at")[:recent_limit]
+        entries.select_related("wallet__user").order_by("-created_at")[:recent_limit]
     ):
         user = entry.wallet.user if entry.wallet_id else None
+        meta = entry.metadata or {}
         recent.append(
             {
                 "id": str(entry.id),
-                "user_name": (user.full_name if user else "") or (user.phone if user else "") or "—",
+                "user_id": user.pk if user else None,
+                "user_name": (
+                    (user.full_name if user else "")
+                    or (user.phone if user else "")
+                    or "—"
+                ),
+                "user_phone": (user.phone if user else None) or None,
+                "wallet_number": entry.wallet.wallet_number if entry.wallet_id else "",
                 "entry_type": entry.entry_type,
                 "amount": _float(entry.amount),
                 "balance_after": _float(entry.balance_after),
-                "source": (entry.metadata or {}).get("source", ""),
+                "source": meta.get("source", ""),
+                "reference_type": entry.reference_type or "",
+                "reference_id": entry.reference_id or "",
+                "merchant_tx_id": entry.reference_id or str(entry.id),
+                "idempotency_key": entry.idempotency_key or "",
+                "entry_hash": (entry.entry_hash or "")[:16],
                 "created_at": entry.created_at.isoformat() if entry.created_at else None,
             }
         )
 
     return {
         "summary": {
-            "topup_total": _float(topup_total),
+            "flow_total": flow_total,
+            "today_flow": today_flow,
+            "today_topup": today_topup,
+            "topup_total": topup_abs,
             "topup_users": topup_users,
-            "spend_total": abs(_float(spend_total)),
+            "spend_total": spend_abs,
             "spend_users": spend_users,
-            "gift_total": abs(_float(gift_total)),
+            "gift_total": gift_abs,
             "gift_count": GiftTransfer.objects.filter(
                 created_at__gte=start_dt, created_at__lte=end_dt
             ).count(),
-            "refund_total": _float(refund_total),
+            "refund_total": refund_abs,
+            "subscription_total": subscription_abs,
+            "entry_count": entries.count(),
         },
         "topup_sources": topup_sources,
         "spend_types": spend_types,
+        "top_actors": top_actors,
         "recent": recent,
     }
 
@@ -767,26 +875,186 @@ def build_platform_turnover(start_dt: datetime, end_dt: datetime) -> dict:
     }
 
 
-def serialize_gift_transfer(gift: GiftTransfer) -> dict:
+def _user_brief(user) -> dict:
+    if not user:
+        return {"id": None, "name": "—", "phone": None}
+    return {
+        "id": user.pk,
+        "name": (user.full_name or user.phone or str(user.pk)).strip(),
+        "phone": user.phone or None,
+    }
+
+
+def _ledger_brief(entry: LedgerEntry | None) -> dict | None:
+    if entry is None:
+        return None
+    return {
+        "id": str(entry.id),
+        "entry_type": entry.entry_type,
+        "amount": _float(entry.amount),
+        "balance_after": _float(entry.balance_after),
+        "idempotency_key": entry.idempotency_key or "",
+        "entry_hash": entry.entry_hash or "",
+        "prev_hash": entry.prev_hash or "",
+        "created_at": entry.created_at.isoformat() if entry.created_at else None,
+    }
+
+
+def build_gift_security_steps(gift: GiftTransfer) -> list[dict]:
+    """Har bir sovg'a 5 bosqichli xavfsizlik zanjiri orqali o'tadi (ledger muhri bilan)."""
+    fee = gift.design_fee_entry
+    sender_e = gift.sender_entry
+    recipient_e = gift.recipient_entry
+    completed = gift.status == GiftTransfer.Status.COMPLETED
+
+    def _status(ok: bool) -> str:
+        if ok:
+            return "passed"
+        return "failed" if gift.status == GiftTransfer.Status.FAILED else "pending"
+
+    return [
+        {
+            "key": "validate",
+            "step": 1,
+            "label": "Tekshiruv",
+            "detail": "Dizayn, qabul qiluvchi, balans va idempotency tekshirildi",
+            "status": _status(True),
+            "merchant_tx_id": gift.idempotency_key or str(gift.id),
+        },
+        {
+            "key": "design_fee",
+            "step": 2,
+            "label": "Dizayn to'lovi",
+            "detail": f"Platformaga dizayn narxi — {_float(gift.design_fee):,.0f} so'm".replace(",", " "),
+            "status": _status(bool(fee) or _float(gift.design_fee) == 0),
+            "merchant_tx_id": str(fee.id) if fee else None,
+            "entry_hash": (fee.entry_hash[:16] if fee and fee.entry_hash else None),
+        },
+        {
+            "key": "debit_sender",
+            "step": 3,
+            "label": "Yuboruvchidan yechish",
+            "detail": f"Sovg'a summasi yechildi — {_float(gift.amount):,.0f} so'm".replace(",", " "),
+            "status": _status(bool(sender_e)),
+            "merchant_tx_id": str(sender_e.id) if sender_e else None,
+            "entry_hash": (sender_e.entry_hash[:16] if sender_e and sender_e.entry_hash else None),
+        },
+        {
+            "key": "credit_recipient",
+            "step": 4,
+            "label": "Qabul qiluvchiga kirim",
+            "detail": "Pul qabul qiluvchi hamyoniga tushdi",
+            "status": _status(bool(recipient_e)),
+            "merchant_tx_id": str(recipient_e.id) if recipient_e else None,
+            "entry_hash": (
+                recipient_e.entry_hash[:16] if recipient_e and recipient_e.entry_hash else None
+            ),
+        },
+        {
+            "key": "ledger_seal",
+            "step": 5,
+            "label": "Ledger muhri",
+            "detail": "Hash zanjiri yozildi — yozuv o'zgartirilmaydi",
+            "status": _status(completed and bool(sender_e) and bool(recipient_e)),
+            "merchant_tx_id": str(gift.id),
+            "entry_hash": (sender_e.entry_hash[:16] if sender_e and sender_e.entry_hash else None),
+        },
+    ]
+
+
+def build_recipient_spend_trail(gift: GiftTransfer, limit: int = 20) -> dict:
+    """Sovg'a pulidan keyin qabul qiluvchi nimaga sarflagani (hamyon bronlari)."""
+    wallet = gift.recipient_wallet
+    if wallet is None:
+        return {"spent_total": 0.0, "remaining_estimate": _float(gift.amount), "items": []}
+
+    spends = (
+        LedgerEntry.objects.filter(
+            wallet=wallet,
+            entry_type=LedgerEntry.EntryType.BOOKING_PAY,
+            created_at__gte=gift.created_at,
+        )
+        .order_by("created_at")[:limit]
+    )
+
+    booking_ids: list[int] = []
+    for e in spends:
+        rid = (e.reference_id or "").strip()
+        if rid.isdigit():
+            booking_ids.append(int(rid))
+
+    bookings = {
+        b.pk: b
+        for b in Booking.objects.filter(pk__in=booking_ids)
+        .select_related("salon", "barber")
+        .prefetch_related("lines")
+    }
+
+    items: list[dict] = []
+    spent_total = 0.0
+    for entry in spends:
+        amount = abs(_float(entry.amount))
+        spent_total += amount
+        rid = (entry.reference_id or "").strip()
+        booking = bookings.get(int(rid)) if rid.isdigit() else None
+        services: list[str] = []
+        salon_name = None
+        barber_name = None
+        booking_id = None
+        if booking:
+            booking_id = booking.pk
+            salon_name = booking.salon.name if booking.salon_id else None
+            barber_name = (
+                (booking.barber.full_name or booking.barber.phone or str(booking.barber_id))
+                if booking.barber_id
+                else None
+            )
+            services = [ln.service_name for ln in booking.lines.all() if ln.service_name]
+
+        items.append(
+            {
+                "ledger_id": str(entry.id),
+                "merchant_tx_id": entry.reference_id or str(entry.id),
+                "amount": amount,
+                "booking_id": booking_id,
+                "salon_name": salon_name,
+                "barber_name": barber_name,
+                "services": services,
+                "created_at": entry.created_at.isoformat() if entry.created_at else None,
+            }
+        )
+
+    gift_amount = _float(gift.amount)
+    remaining = max(0.0, gift_amount - spent_total)
+    return {
+        "gift_amount": gift_amount,
+        "spent_total": min(spent_total, gift_amount) if gift_amount else spent_total,
+        "remaining_estimate": remaining,
+        "items": items,
+    }
+
+
+def serialize_gift_transfer(gift: GiftTransfer, *, detail: bool = False) -> dict:
     from wallet.gift_designs import get_gift_design
 
     sender = gift.sender_wallet.user if gift.sender_wallet_id else None
     recipient = gift.recipient_wallet.user if gift.recipient_wallet_id else None
     design = get_gift_design(gift.design_id)
 
-    def _user_brief(user) -> dict:
-        if not user:
-            return {"id": None, "name": "—", "phone": None}
-        return {
-            "id": user.pk,
-            "name": (user.full_name or user.phone or str(user.pk)).strip(),
-            "phone": user.phone or None,
-        }
-
-    return {
+    payload = {
         "id": str(gift.id),
-        "sender": _user_brief(sender),
-        "recipient": _user_brief(recipient),
+        "merchant_tx_id": str(gift.id),
+        "idempotency_key": gift.idempotency_key or "",
+        "sender": {
+            **_user_brief(sender),
+            "wallet_number": gift.sender_wallet.wallet_number if gift.sender_wallet_id else "",
+        },
+        "recipient": {
+            **_user_brief(recipient),
+            "wallet_number": (
+                gift.recipient_wallet.wallet_number if gift.recipient_wallet_id else ""
+            ),
+        },
         "amount": _float(gift.amount),
         "design_id": gift.design_id or "",
         "design_name": design.name_uz if design else (gift.design_id or "—"),
@@ -795,7 +1063,24 @@ def serialize_gift_transfer(gift: GiftTransfer) -> dict:
         "message": gift.message or "",
         "status": gift.status,
         "created_at": gift.created_at.isoformat() if gift.created_at else None,
+        "security_steps": build_gift_security_steps(gift),
+        "ledger": {
+            "design_fee": _ledger_brief(gift.design_fee_entry),
+            "sender": _ledger_brief(gift.sender_entry),
+            "recipient": _ledger_brief(gift.recipient_entry),
+        },
     }
+
+    if detail:
+        payload["spend_trail"] = build_recipient_spend_trail(gift)
+        # Yuboruvchi tomonida hamyon harakati qisqacha
+        payload["sender_charge"] = {
+            "gift_amount": _float(gift.amount),
+            "design_fee": _float(gift.design_fee),
+            "total_charged": _float(gift.total_charged),
+        }
+
+    return payload
 
 
 def build_gifts_summary(start_dt: datetime | None = None, end_dt: datetime | None = None) -> dict:
@@ -810,9 +1095,119 @@ def build_gifts_summary(start_dt: datetime | None = None, end_dt: datetime | Non
         charged_total=_decimal_sum("total_charged"),
         count=Count("id"),
     )
+
+    today_count = 0
+    today_amount = 0.0
+    if start_dt is None or (
+        start_dt.date() <= timezone.localdate()
+        and (end_dt is None or end_dt.date() >= timezone.localdate())
+    ):
+        today_start, today_end = _today_bounds()
+        today_qs = GiftTransfer.objects.filter(
+            created_at__gte=today_start, created_at__lte=today_end
+        )
+        today_agg = today_qs.aggregate(
+            amount_total=_decimal_sum("amount"),
+            count=Count("id"),
+        )
+        today_count = int(today_agg["count"] or 0)
+        today_amount = _float(today_agg["amount_total"])
+
     return {
         "count": int(agg["count"] or 0),
         "amount_total": _float(agg["amount_total"]),
         "design_fee_total": _float(agg["fee_total"]),
         "charged_total": _float(agg["charged_total"]),
+        "today_count": today_count,
+        "today_amount": today_amount,
+    }
+
+
+def build_gift_designs_analytics(
+    start_dt: datetime | None = None, end_dt: datetime | None = None
+) -> dict:
+    """Sovg'a karta dizaynlari — narx, kolleksiya, sotuv va sarf statistikasi."""
+    from wallet.gift_designs import list_gift_designs
+
+    qs = GiftTransfer.objects.all()
+    if start_dt is not None:
+        qs = qs.filter(created_at__gte=start_dt)
+    if end_dt is not None:
+        qs = qs.filter(created_at__lte=end_dt)
+
+    by_design: dict[str, dict] = {}
+    for row in qs.values("design_id").annotate(
+        sales_count=Count("id"),
+        gift_amount_total=_decimal_sum("amount"),
+        fee_total=_decimal_sum("design_fee"),
+        charged_total=_decimal_sum("total_charged"),
+        unique_senders=Count("sender_wallet_id", distinct=True),
+        unique_recipients=Count("recipient_wallet_id", distinct=True),
+    ):
+        by_design[row["design_id"] or ""] = row
+
+    # Sovg'adan keyin bron to'lovlari — qayerga ketgani
+    spend_by_salon: dict[str, dict] = {}
+    spend_by_service: dict[str, dict] = {}
+    gifts = qs.select_related("recipient_wallet").only(
+        "id", "amount", "created_at", "recipient_wallet_id"
+    )[:500]
+    for gift in gifts:
+        trail = build_recipient_spend_trail(gift, limit=10)
+        for item in trail["items"]:
+            salon = item.get("salon_name") or "Noma'lum salon"
+            srow = spend_by_salon.setdefault(
+                salon, {"salon_name": salon, "amount": 0.0, "count": 0}
+            )
+            srow["amount"] += float(item["amount"])
+            srow["count"] += 1
+            for svc in item.get("services") or ["Noma'lum xizmat"]:
+                vrow = spend_by_service.setdefault(
+                    svc, {"service_name": svc, "amount": 0.0, "count": 0}
+                )
+                vrow["amount"] += float(item["amount"])
+                vrow["count"] += 1
+
+    designs = []
+    for design in list_gift_designs():
+        stats = by_design.get(design.id, {})
+        designs.append(
+            {
+                "id": design.id,
+                "name": design.name,
+                "name_uz": design.name_uz,
+                "fee": _float(design.fee),
+                "preview": design.preview,
+                "collection": (
+                    "Premium"
+                    if _float(design.fee) >= 250_000
+                    else ("Standart" if _float(design.fee) >= 50_000 else "Asosiy")
+                ),
+                "sales_count": int(stats.get("sales_count") or 0),
+                "gift_amount_total": _float(stats.get("gift_amount_total")),
+                "fee_total": _float(stats.get("fee_total")),
+                "charged_total": _float(stats.get("charged_total")),
+                "unique_senders": int(stats.get("unique_senders") or 0),
+                "unique_recipients": int(stats.get("unique_recipients") or 0),
+            }
+        )
+
+    designs.sort(key=lambda d: d["sales_count"], reverse=True)
+    top_design = designs[0] if designs and designs[0]["sales_count"] else None
+
+    summary = build_gifts_summary(start_dt, end_dt)
+    return {
+        "summary": {
+            **summary,
+            "designs_count": len(designs),
+            "top_design_id": top_design["id"] if top_design else None,
+            "top_design_name": top_design["name_uz"] if top_design else None,
+        },
+        "designs": designs,
+        "spend_by_salon": sorted(
+            spend_by_salon.values(), key=lambda r: r["amount"], reverse=True
+        )[:15],
+        "spend_by_service": sorted(
+            spend_by_service.values(), key=lambda r: r["amount"], reverse=True
+        )[:15],
     }

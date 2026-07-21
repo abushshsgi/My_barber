@@ -2329,10 +2329,22 @@ export async function fetchPlatformTurnover(range?: StatDateRange): Promise<Plat
   );
 }
 
+export type AdminGiftSecurityStep = {
+  key: string;
+  step: number;
+  label: string;
+  detail: string;
+  status: "passed" | "pending" | "failed" | string;
+  merchant_tx_id?: string | null;
+  entry_hash?: string | null;
+};
+
 export type AdminGiftTransfer = {
   id: string;
-  sender: { id: number | null; name: string; phone: string | null };
-  recipient: { id: number | null; name: string; phone: string | null };
+  merchant_tx_id: string;
+  idempotency_key: string;
+  sender: { id: number | null; name: string; phone: string | null; wallet_number?: string };
+  recipient: { id: number | null; name: string; phone: string | null; wallet_number?: string };
   amount: number;
   design_id: string;
   design_name: string;
@@ -2341,6 +2353,45 @@ export type AdminGiftTransfer = {
   message: string;
   status: string;
   created_at: string | null;
+  security_steps: AdminGiftSecurityStep[];
+  ledger?: {
+    design_fee: AdminGiftLedgerBrief | null;
+    sender: AdminGiftLedgerBrief | null;
+    recipient: AdminGiftLedgerBrief | null;
+  };
+  spend_trail?: AdminGiftSpendTrail;
+  sender_charge?: {
+    gift_amount: number;
+    design_fee: number;
+    total_charged: number;
+  };
+};
+
+export type AdminGiftLedgerBrief = {
+  id: string;
+  entry_type: string;
+  amount: number;
+  balance_after: number;
+  idempotency_key: string;
+  entry_hash: string;
+  prev_hash: string;
+  created_at: string | null;
+};
+
+export type AdminGiftSpendTrail = {
+  gift_amount: number;
+  spent_total: number;
+  remaining_estimate: number;
+  items: Array<{
+    ledger_id: string;
+    merchant_tx_id: string;
+    amount: number;
+    booking_id: number | null;
+    salon_name: string | null;
+    barber_name: string | null;
+    services: string[];
+    created_at: string | null;
+  }>;
 };
 
 export type AdminGiftsResponse = Paginated<AdminGiftTransfer> & {
@@ -2349,6 +2400,8 @@ export type AdminGiftsResponse = Paginated<AdminGiftTransfer> & {
     amount_total: number;
     design_fee_total: number;
     charged_total: number;
+    today_count?: number;
+    today_amount?: number;
   };
 };
 
@@ -2389,8 +2442,80 @@ export async function fetchAdminGifts(params?: {
       amount_total: 0,
       design_fee_total: 0,
       charged_total: 0,
+      today_count: 0,
+      today_amount: 0,
     },
   };
+}
+
+export async function fetchAdminGiftDetail(id: string): Promise<AdminGiftTransfer> {
+  return apiJson<AdminGiftTransfer>(`/api/v1/admin/finance/gifts/${id}/`);
+}
+
+export async function downloadAdminGiftsCsv(params?: {
+  start?: string;
+  end?: string;
+  design_id?: string;
+}): Promise<void> {
+  const sp = new URLSearchParams();
+  if (params?.start) sp.set("start", params.start);
+  if (params?.end) sp.set("end", params.end);
+  if (params?.design_id && params.design_id !== "all") sp.set("design_id", params.design_id);
+  const res = await apiFetch(`/api/v1/admin/finance/gifts/export/?${sp}`);
+  if (!res.ok) {
+    const j = (await res.json().catch(() => ({}))) as { detail?: string };
+    throw new Error(j.detail || "Yuklab olishda xatolik");
+  }
+  const blob = await res.blob();
+  const disposition = res.headers.get("Content-Disposition") || "";
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match?.[1] || "sovga_kartalar.csv";
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+export type AdminGiftDesignsAnalytics = {
+  summary: {
+    count: number;
+    amount_total: number;
+    design_fee_total: number;
+    charged_total: number;
+    today_count?: number;
+    today_amount?: number;
+    designs_count: number;
+    top_design_id: string | null;
+    top_design_name: string | null;
+  };
+  designs: Array<{
+    id: string;
+    name: string;
+    name_uz: string;
+    fee: number;
+    preview: Record<string, string>;
+    collection: string;
+    sales_count: number;
+    gift_amount_total: number;
+    fee_total: number;
+    charged_total: number;
+    unique_senders: number;
+    unique_recipients: number;
+  }>;
+  spend_by_salon: Array<{ salon_name: string; amount: number; count: number }>;
+  spend_by_service: Array<{ service_name: string; amount: number; count: number }>;
+};
+
+export async function fetchAdminGiftDesigns(
+  range?: StatDateRange,
+): Promise<AdminGiftDesignsAnalytics> {
+  return apiJson<AdminGiftDesignsAnalytics>(
+    `/api/v1/admin/finance/gift-designs/${rangeQuery(range)}`,
+  );
 }
 
 export type AdminTransaction = {
@@ -2834,6 +2959,9 @@ export type RevenueAnalytics = {
 
 export type WalletAnalytics = {
   summary: {
+    flow_total: number;
+    today_flow: number | null;
+    today_topup: number | null;
     topup_total: number;
     topup_users: number;
     spend_total: number;
@@ -2841,16 +2969,35 @@ export type WalletAnalytics = {
     gift_total: number;
     gift_count: number;
     refund_total: number;
+    subscription_total?: number;
+    entry_count?: number;
   };
   topup_sources: Array<{ source: string; amount: number; count: number }>;
   spend_types: Array<{ type: string; label: string; amount: number; count: number }>;
+  top_actors: Array<{
+    user_id: number;
+    user_name: string;
+    phone: string | null;
+    wallet_number: string;
+    volume: number;
+    count: number;
+    last_type: string;
+  }>;
   recent: Array<{
     id: string;
+    user_id: number | null;
     user_name: string;
+    user_phone: string | null;
+    wallet_number: string;
     entry_type: string;
     amount: number;
     balance_after: number;
     source: string;
+    reference_type: string;
+    reference_id: string;
+    merchant_tx_id: string;
+    idempotency_key: string;
+    entry_hash: string;
     created_at: string | null;
   }>;
 };

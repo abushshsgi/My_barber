@@ -236,7 +236,7 @@ function PlatformIncomePage() {
               >
                 <Wallet className="size-5 text-violet-600" />
                 <div>
-                  <div className="text-sm font-medium">Sovg&apos;a kartalar</div>
+                  <div className="text-sm font-medium">Sovg&apos;a oqimi</div>
                   <div className="text-xs text-muted-foreground">
                     {formatAdminUzs(d.summary.gift_design_fees)}
                   </div>

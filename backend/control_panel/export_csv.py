@@ -122,15 +122,34 @@ def build_csv_response(export_type: str, start_dt, end_dt, request) -> HttpRespo
     if export_type == "wallet":
         data = build_wallet_analytics(start_dt, end_dt, recent_limit=500)
         response, writer = _new_csv_response(f"hamyon_{suffix}")
-        writer.writerow(["Mijoz", "Tur", "Summa (so'm)", "Qoldiq (so'm)", "Manba", "Vaqt"])
+        writer.writerow(
+            [
+                "Mijoz",
+                "Telefon",
+                "Hamyon",
+                "Tur",
+                "Summa (so'm)",
+                "Qoldiq (so'm)",
+                "Manba",
+                "Merchant TX",
+                "Reference",
+                "Hash",
+                "Vaqt",
+            ]
+        )
         for row in data["recent"]:
             writer.writerow(
                 [
                     row["user_name"],
+                    row.get("user_phone") or "",
+                    row.get("wallet_number") or "",
                     row["entry_type"],
                     row["amount"],
                     row["balance_after"],
                     row.get("source") or "",
+                    row.get("merchant_tx_id") or row.get("id") or "",
+                    f"{row.get('reference_type') or ''}:{row.get('reference_id') or ''}",
+                    row.get("entry_hash") or "",
                     _fmt_dt(row.get("created_at")),
                 ]
             )

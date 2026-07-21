@@ -162,7 +162,8 @@ const SECTIONS: Section[] = [
     matchPrefixes: ["/admin/finance", "/admin/subscriptions"],
     items: [
       { to: "/admin/finance", label: "Platforma daromadi", icon: TrendingUp },
-      { to: "/admin/finance/gifts", label: "Sovg'a kartalar", icon: Gift },
+      { to: "/admin/finance/gifts", label: "Sovg'a oqimi", icon: Gift },
+      { to: "/admin/finance/gift-designs", label: "Sovg'a dizaynlari", icon: Sparkles },
       { to: "/admin/subscriptions", label: "B2C Obunalar", icon: Repeat },
       { to: "/admin/finance/deposits", label: "Karta to'ldirish", icon: CreditCard },
       { to: "/admin/finance/promotions", label: "TOP reklamalar", icon: Megaphone },
