@@ -22,6 +22,7 @@ import { useSubscriptionPlans } from "@/hooks/use-subscription";
 import type { MorphLimitKind } from "@/lib/morph-plan-limit";
 import { planLabelFromMe } from "@/lib/morph-plan-limit";
 import type { SubscriptionMe } from "@/lib/api/subscriptions";
+import { nextUpgradePlan, upgradeCtaLabel } from "@/lib/subscription-upgrade";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -109,6 +110,8 @@ function MorphLimitUpsellBody({
   const rewardPlan = trialPlanLabel(trial?.trial_plan);
   const plans = plansQ.data ?? [];
   const activeCode = me?.subscription?.plan_code ?? null;
+  const next = nextUpgradePlan(activeCode);
+  const offer = me?.welcome_offer;
 
   const used = isTryOn ? usage?.morph_ai_used ?? 0 : usage?.morph_studio_used ?? 0;
   const limit = isTryOn ? usage?.morph_ai_limit ?? 0 : usage?.morph_studio_limit ?? 0;
@@ -223,16 +226,19 @@ function MorphLimitUpsellBody({
         </p>
       ) : null}
 
-      {/* Tarif reklamalari */}
-      {plans.length > 0 ? (
+      {plans.length > 0 && (locked || next) ? (
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-2 px-0.5">
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/40">
-              Obuna tariflari
+              {locked ? "Obuna tariflari" : "Upgrade"}
             </p>
             <Link
               to="/wallet"
-              search={{ section: "subscriptions", returnTo: "/ai-style" }}
+              search={{
+                section: "subscriptions",
+                plan: next || "plus",
+                returnTo: "/ai-style",
+              }}
               onClick={onClose}
               className="inline-flex items-center gap-1 text-[12px] font-bold text-white/70 hover:text-white"
             >
@@ -242,7 +248,8 @@ function MorphLimitUpsellBody({
           </div>
           <SubscriptionPlanAds
             plans={plans}
-            activeCode={activeCode}
+            activeCode={locked ? null : activeCode}
+            upgradeOnly={!locked}
             onNavigate={onClose}
             variant="cards"
           />
@@ -253,7 +260,7 @@ function MorphLimitUpsellBody({
         <>
           <Link
             to="/wallet"
-            search={{ section: "subscriptions", plan: "starter", returnTo: "/ai-style", promo: "MORPH30" }}
+            search={{ section: "subscriptions", plan: "plus", returnTo: "/ai-style" }}
             onClick={onClose}
             className={cn(
               "flex h-14 items-center justify-center gap-2 rounded-[22px] bg-white text-[15px] font-bold text-[#0a0a0a]",
@@ -261,9 +268,9 @@ function MorphLimitUpsellBody({
             )}
           >
             <Crown className="size-5" strokeWidth={2.25} />
-            {t("aiStylePage.limitSheet.buyPlan", {
-              defaultValue: "Ulgutib qoling — MORPH30 (−30%)",
-            })}
+            {offer?.eligible
+              ? `Obuna olish (−${offer.discount_pct}%)`
+              : t("aiStylePage.limitSheet.buyPlan", { defaultValue: "Obuna olish" })}
           </Link>
           <Link
             to="/referrals"
@@ -279,19 +286,19 @@ function MorphLimitUpsellBody({
               : t("aiStylePage.limitSheet.openReferrals")}
           </Link>
         </>
-      ) : (
+      ) : next ? (
         <Link
           to="/wallet"
-          search={{ section: "subscriptions", plan: "plus", returnTo: "/ai-style" }}
+          search={{ section: "subscriptions", plan: next, returnTo: "/ai-style" }}
           onClick={onClose}
           className={cn(
             "flex h-14 items-center justify-center rounded-[22px] bg-white text-[15px] font-bold text-[#0a0a0a]",
             "transition-[transform,background-color] duration-200 hover:bg-white/95 active:scale-[0.985]",
           )}
         >
-          {t("aiStylePage.limitSheet.switchPlan")}
+          {upgradeCtaLabel(activeCode, true)}
         </Link>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
 import type { ComponentType } from "react";
 import type { SubscriptionPlan } from "@/lib/api/subscriptions";
 import { MorphPromoUrgencyBanner } from "@/components/subscriptions/MorphPromoUrgencyBanner";
+import { filterPlansForSubscriber } from "@/lib/subscription-upgrade";
 import { cn } from "@/lib/utils";
 
 type IconType = ComponentType<{ className?: string; strokeWidth?: number }>;
@@ -62,23 +63,30 @@ type AdsProps = {
   /** compact = horizontal scroll chips; cards = full promo grid */
   variant?: "cards" | "strip";
   className?: string;
+  /** Faol obunachi uchun faqat yuqori tariflar (upgrade). */
+  upgradeOnly?: boolean;
 };
 
-/** Obuna tariflarini reklama qiluvchi kartalar — ikonka + narx + link. */
+/** Obuna tariflari — faol userlarga faqat upgrade. */
 export function SubscriptionPlanAds({
   plans,
   activeCode = null,
   onNavigate,
   variant = "cards",
   className,
+  upgradeOnly = Boolean(activeCode),
 }: AdsProps) {
-  const sorted = [...plans].sort((a, b) => a.sort_order - b.sort_order);
+  const base = upgradeOnly && activeCode ? filterPlansForSubscriber(plans, activeCode) : plans;
+  const sorted = [...base].sort((a, b) => a.sort_order - b.sort_order);
+
+  if (sorted.length === 0) return null;
 
   if (variant === "strip") {
     return (
       <div className={cn("no-scrollbar -mx-1 flex gap-2.5 overflow-x-auto px-1 pb-1", className)}>
         {sorted.map((plan) => {
           const isActive = activeCode === plan.code;
+          const cta = activeCode ? `${plan.name_uz} ga upgrade` : "Shu tarif bilan ochish";
           return (
             <Link
               key={plan.code}
@@ -121,7 +129,7 @@ export function SubscriptionPlanAds({
                   plan.highlight ? "text-black/70" : "text-white/70",
                 )}
               >
-                Shu tarif bilan ochish
+                {cta}
                 <ChevronRight className="size-3.5" strokeWidth={2.5} />
               </span>
             </Link>
@@ -136,6 +144,7 @@ export function SubscriptionPlanAds({
       {sorted.map((plan) => {
         const isActive = activeCode === plan.code;
         const highlights = plan.features.filter((f) => f.included !== false).slice(0, 3);
+        const ctaHint = activeCode ? "Upgrade" : null;
         return (
           <Link
             key={plan.code}
@@ -162,19 +171,18 @@ export function SubscriptionPlanAds({
             <span className="min-w-0 flex-1">
               <span className="flex flex-wrap items-center gap-2">
                 <span className="text-[15px] font-bold tracking-tight">{plan.name_uz}</span>
-                {plan.highlight ? (
-                  <span className="rounded-full bg-black px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
-                    Mashhur
-                  </span>
-                ) : null}
-                {isActive ? (
+                {ctaHint ? (
                   <span
                     className={cn(
                       "rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide",
-                      plan.highlight ? "bg-black/10 text-black" : "bg-white/15 text-white",
+                      plan.highlight ? "bg-black text-white" : "bg-white text-[#0a0a0a]",
                     )}
                   >
-                    Joriy
+                    {ctaHint}
+                  </span>
+                ) : plan.highlight ? (
+                  <span className="rounded-full bg-black px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
+                    Mashhur
                   </span>
                 ) : null}
               </span>
@@ -218,7 +226,7 @@ export function SubscriptionPlanAds({
   );
 }
 
-/** Morph AI home / sahifalar uchun muddatli promo banner. */
+/** Morph AI — yangi user chegirma yoki faol user upgrade. */
 export function SubscriptionPromoBanner({
   onNavigate,
   className,

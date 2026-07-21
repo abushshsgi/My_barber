@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Crown, Lock, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { MorphPromoUrgencyBanner } from "@/components/subscriptions/MorphPromoUrgencyBanner";
+import { useSubscriptionMe } from "@/hooks/use-subscription";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -10,11 +10,15 @@ type Props = {
   previewUrl?: string | null;
 };
 
-/**
- * Soft paywall — blur preview + muddatli promo urgency.
- */
+/** Soft paywall — obunasiz userlar uchun (urgency / promokod yo'q). */
 export function MorphSoftPaywall({ className, previewUrl }: Props) {
   const { t } = useTranslation();
+  const meQ = useSubscriptionMe();
+  const offer = meQ.data?.welcome_offer;
+  const discountHint =
+    offer?.eligible === true
+      ? `Yangi hisob: tariflarga −${offer.discount_pct}%.`
+      : "Obuna bilan Morph AI to‘liq ochiladi.";
 
   return (
     <section className={cn("space-y-3", className)}>
@@ -48,14 +52,20 @@ export function MorphSoftPaywall({ className, previewUrl }: Props) {
             </h3>
             <p className="mt-1.5 max-w-sm text-[12px] leading-relaxed text-background/60">
               {t("aiStylePage.softPaywall.hint", {
-                defaultValue: "Selfie → yangi uslub. Ulgutib qoling — aksiya tugayapti.",
+                defaultValue: `Selfie → yangi uslub. ${discountHint}`,
               })}
             </p>
+            <Link
+              to="/wallet"
+              search={{ section: "subscriptions", plan: "plus", returnTo: "/ai-style" }}
+              className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-background px-5 text-[13px] font-bold text-foreground"
+            >
+              <Crown className="size-4" strokeWidth={2.25} />
+              Obuna olish
+            </Link>
           </div>
         </div>
       </div>
-
-      <MorphPromoUrgencyBanner variant="glass" />
 
       <Link
         to="/referrals"
@@ -66,7 +76,6 @@ export function MorphSoftPaywall({ className, previewUrl }: Props) {
           days: 7,
           defaultValue: "Yoki bepul 7 kun: 3 do‘st taklif qil",
         })}
-        <Crown className="size-3 opacity-0" aria-hidden />
       </Link>
     </section>
   );

@@ -5,11 +5,9 @@ import {
   Check,
   Crown,
   Droplets,
-  Flame,
   Loader2,
   Lock,
   Sparkles,
-  Ticket,
   UserPlus,
   Users,
   Wand2,
@@ -21,8 +19,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { FeatureIcon } from "@/components/subscriptions/SubscriptionPlanAds";
 import { MorphPromoUrgencyBanner } from "@/components/subscriptions/MorphPromoUrgencyBanner";
-import { PromoCountdown } from "@/components/subscriptions/PromoCountdown";
-import { useSubscriptionCheckout, useSubscriptionMe, useSubscriptionPlans, useSubscriptionPromos } from "@/hooks/use-subscription";
+import { useSubscriptionCheckout, useSubscriptionMe, useSubscriptionPlans } from "@/hooks/use-subscription";
 import { useWalletMe } from "@/hooks/use-wallet";
 import { parseWalletBalance } from "@/lib/api/wallet";
 import {
@@ -30,6 +27,7 @@ import {
   previewSubscriptionPromo,
   type SubscriptionPlan,
 } from "@/lib/api/subscriptions";
+import { filterPlansForSubscriber, isPlanUpgrade, upgradeCtaLabel } from "@/lib/subscription-upgrade";
 import { cn } from "@/lib/utils";
 
 function readSubscriptionDeepLink(searchStr: string) {
@@ -39,9 +37,7 @@ function readSubscriptionDeepLink(searchStr: string) {
   const returnToRaw = sp.get("returnTo");
   const returnTo =
     returnToRaw && returnToRaw.startsWith("/") && !returnToRaw.startsWith("//") ? returnToRaw : null;
-  const promoRaw = (sp.get("promo") || "").trim().toUpperCase();
-  const promo = promoRaw || null;
-  return { plan, returnTo, promo };
+  return { plan, returnTo };
 }
 
 function formatUzs(n: number) {
@@ -106,29 +102,34 @@ function PlanCard({
   activeCode,
   busy,
   focused,
-  promoCode,
   discountedPrice,
+  discountPct,
   onSubscribe,
 }: {
   plan: SubscriptionPlan;
   activeCode: string | null;
   busy: boolean;
   focused?: boolean;
-  promoCode?: string | null;
   discountedPrice?: number | null;
+  discountPct?: number | null;
   onSubscribe: (code: string, method: "wallet" | "click" | "payme") => void;
 }) {
   const isActive = activeCode === plan.code;
+  const canUpgrade = isPlanUpgrade(plan.code, activeCode);
   const PlanGlyph =
     plan.code === "pro" ? Crown : plan.code === "plus" ? Sparkles : Zap;
   const cardRef = useRef<HTMLElement | null>(null);
   const showDiscount =
-    discountedPrice != null && discountedPrice < plan.price_uzs && Boolean(promoCode);
+    discountedPrice != null && discountedPrice < plan.price_uzs && !activeCode;
 
   useEffect(() => {
     if (!focused || !cardRef.current) return;
     cardRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [focused]);
+
+  const payLabel = activeCode && canUpgrade
+    ? upgradeCtaLabel(activeCode, true)
+    : "Hamyondan to'lash";
 
   return (
     <article
@@ -143,7 +144,15 @@ function PlanCard({
         focused && !isActive && "ring-2 ring-foreground/40",
       )}
     >
-      {plan.highlight ? (
+      {isActive ? (
+        <span className="absolute right-3 top-3 rounded-full bg-foreground/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-foreground">
+          Joriy
+        </span>
+      ) : canUpgrade && activeCode ? (
+        <span className="absolute right-3 top-3 rounded-full bg-foreground px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-background">
+          Upgrade
+        </span>
+      ) : plan.highlight ? (
         <span className="absolute right-3 top-3 rounded-full bg-foreground px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-background">
           Mashhur
         </span>
@@ -183,9 +192,9 @@ function PlanCard({
         )}
         <span className="ml-1 text-sm text-muted-foreground">/ oy</span>
       </p>
-      {showDiscount ? (
+      {showDiscount && discountPct ? (
         <p className="mt-1 text-[11px] font-bold text-foreground">
-          {promoCode} −{Math.round((1 - discountedPrice! / plan.price_uzs) * 100)}%
+          Yangi hisob −{discountPct}%
         </p>
       ) : null}
 
@@ -205,6 +214,10 @@ function PlanCard({
           <div className="flex h-11 items-center justify-center rounded-xl bg-foreground/10 text-sm font-bold text-foreground">
             Joriy obuna
           </div>
+        ) : activeCode && !canUpgrade ? (
+          <div className="flex h-11 items-center justify-center rounded-xl bg-muted text-sm font-bold text-muted-foreground">
+            Pastroq tarif
+          </div>
         ) : (
           <>
             <button
@@ -214,7 +227,7 @@ function PlanCard({
               className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-foreground text-sm font-bold text-background disabled:opacity-60"
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Hamyondan to'lash
+              {payLabel}
             </button>
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -246,32 +259,23 @@ export function SettingsSubscriptionsPanel() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const searchStr = useRouterState({ select: (s) => s.location.searchStr });
-  const { plan: focusPlan, returnTo, promo: promoFromUrl } = useMemo(
+  const { plan: focusPlan, returnTo } = useMemo(
     () => readSubscriptionDeepLink(searchStr),
     [searchStr],
   );
   const plansQ = useSubscriptionPlans();
-  const promosQ = useSubscriptionPromos();
   const meQ = useSubscriptionMe();
   const checkout = useSubscriptionCheckout();
   const { data: wallet } = useWalletMe();
-  const launchPromo = promosQ.data?.[0] ?? null;
   const [busyCode, setBusyCode] = useState<string | null>(null);
-  const [promoInput, setPromoInput] = useState(promoFromUrl || "MORPH30");
-  const [appliedPromo, setAppliedPromo] = useState<string | null>(promoFromUrl || "MORPH30");
-  const [promoError, setPromoError] = useState<string | null>(null);
-  const [promoPrices, setPromoPrices] = useState<Record<string, number>>({});
-  const [promoBusy, setPromoBusy] = useState(false);
+  const [offerPrices, setOfferPrices] = useState<Record<string, number>>({});
+
+  const welcomeOffer = meQ.data?.welcome_offer;
+  const welcomeEligible = welcomeOffer?.eligible === true;
 
   useEffect(() => {
-    if (!promoFromUrl) return;
-    setPromoInput(promoFromUrl);
-    setAppliedPromo(promoFromUrl);
-  }, [promoFromUrl]);
-
-  useEffect(() => {
-    if (!appliedPromo || !plansQ.data?.length) {
-      setPromoPrices({});
+    if (!welcomeEligible || !plansQ.data?.length) {
+      setOfferPrices({});
       return;
     }
     let cancelled = false;
@@ -279,21 +283,18 @@ export function SettingsSubscriptionsPanel() {
       const next: Record<string, number> = {};
       for (const plan of plansQ.data) {
         try {
-          const res = await previewSubscriptionPromo({
-            plan_code: plan.code,
-            promo_code: appliedPromo,
-          });
-          if (!cancelled) next[plan.code] = res.amount_uzs;
+          const res = await previewSubscriptionPromo({ plan_code: plan.code });
+          if (!cancelled && res.discount_uzs > 0) next[plan.code] = res.amount_uzs;
         } catch {
-          /* skip plan */
+          /* skip */
         }
       }
-      if (!cancelled) setPromoPrices(next);
+      if (!cancelled) setOfferPrices(next);
     })();
     return () => {
       cancelled = true;
     };
-  }, [appliedPromo, plansQ.data]);
+  }, [welcomeEligible, plansQ.data]);
 
   const balance = wallet ? parseWalletBalance(wallet.balance) : 0;
   const me = meQ.data;
@@ -305,33 +306,18 @@ export function SettingsSubscriptionsPanel() {
   const remainingInvites = trial?.remaining_invites ?? Math.max(0, required - progress);
   const daysLeft = me?.days_remaining ?? sub?.days_remaining ?? null;
 
+  const visiblePlans = useMemo(() => {
+    const all = plansQ.data ?? [];
+    if (!me?.has_active || !activeCode) return all;
+    // Faol obunachi: joriy + faqat yuqori (upgrade) tariflar
+    const upgrades = filterPlansForSubscriber(all, activeCode);
+    const current = all.find((p) => p.code === activeCode);
+    return current ? [current, ...upgrades] : upgrades;
+  }, [plansQ.data, me?.has_active, activeCode]);
+
   const goAfterSuccess = () => {
     if (returnTo) {
       void navigate({ to: returnTo });
-    }
-  };
-
-  const applyPromo = async () => {
-    const code = promoInput.trim().toUpperCase();
-    if (!code) {
-      setAppliedPromo(null);
-      setPromoPrices({});
-      setPromoError(null);
-      return;
-    }
-    const samplePlan = focusPlan || plansQ.data?.[0]?.code || "starter";
-    setPromoBusy(true);
-    try {
-      const res = await previewSubscriptionPromo({ plan_code: samplePlan, promo_code: code });
-      setAppliedPromo(res.promo_code);
-      setPromoError(null);
-      toast.success(`${res.promo_code} qo'llandi (−${res.discount_pct}%)`);
-    } catch (e) {
-      setAppliedPromo(null);
-      setPromoPrices({});
-      setPromoError(e instanceof Error ? e.message : "Promokod ishlamadi");
-    } finally {
-      setPromoBusy(false);
     }
   };
 
@@ -401,7 +387,6 @@ export function SettingsSubscriptionsPanel() {
         plan_code,
         method,
         return_url,
-        promo_code: appliedPromo || undefined,
       });
       if (method === "wallet") {
         toast.success("Obuna faollashtirildi!");
@@ -617,75 +602,31 @@ export function SettingsSubscriptionsPanel() {
         <>
           <MorphPromoUrgencyBanner variant="card" className="mb-1" />
 
-          <section className="overflow-hidden rounded-[22px] border border-border bg-card">
-            <div className="flex items-start gap-3 border-b border-border bg-foreground px-4 py-4 text-background">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-background text-foreground">
-                <Flame className="size-4.5" strokeWidth={2.25} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-background/55">
-                  Ulgutib qoling
-                </p>
-                <p className="mt-1 text-[15px] font-bold leading-snug">
-                  {launchPromo?.urgency_uz ?? "Aksiyа tugashiga kam vaqt qoldi"}
-                </p>
-                <div className="mt-3">
-                  <PromoCountdown
-                    endsAt={launchPromo?.ends_at}
-                    initialSecondsLeft={launchPromo?.seconds_left}
-                    inverted
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4">
+          {welcomeEligible && !me?.has_active ? (
+            <section className="rounded-[22px] border border-border bg-card p-4">
               <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                Promokod
+                Yangi hisob
               </p>
-              <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                <span className="inline-flex items-center gap-1 rounded-lg bg-muted px-2 py-1 font-bold text-foreground">
-                  <Ticket className="size-3.5" />
-                  {launchPromo?.code ?? "MORPH30"}
-                </span>
-                <span>−{launchPromo?.discount_pct ?? 30}% birinchi to‘lovga</span>
+              <p className="mt-1 text-[15px] font-bold">
+                {welcomeOffer?.label_uz ?? "Birinchi 24 soat — chegirma"}
               </p>
-              <div className="mt-3 flex gap-2">
-                <input
-                  value={promoInput}
-                  onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
-                  placeholder="MORPH30"
-                  className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-bold uppercase tracking-wide outline-none focus:ring-2 focus:ring-ring"
-                />
-                <button
-                  type="button"
-                  onClick={() => void applyPromo()}
-                  disabled={promoBusy}
-                  className="shrink-0 rounded-xl bg-foreground px-4 py-2.5 text-xs font-bold text-background disabled:opacity-60"
-                >
-                  Qo&apos;llash
-                </button>
-              </div>
-              {promoError ? (
-                <p className="mt-2 text-xs font-medium text-destructive">{promoError}</p>
-              ) : appliedPromo ? (
-                <p className="mt-2 text-xs font-bold text-foreground">
-                  {appliedPromo} faol — hozir to‘lang, aksiya kutmaydi
-                </p>
-              ) : null}
-            </div>
-          </section>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {welcomeOffer?.hint_uz ??
+                  "Promokod kerak emas — to‘lovda avtomatik qo‘llanadi."}
+              </p>
+            </section>
+          ) : null}
 
           <div className="grid gap-4 lg:grid-cols-3">
-            {(plansQ.data ?? []).map((plan) => (
+            {visiblePlans.map((plan) => (
               <PlanCard
                 key={plan.code}
                 plan={plan}
                 activeCode={activeCode}
                 busy={busyCode === plan.code || checkout.isPending}
                 focused={focusPlan === plan.code}
-                promoCode={appliedPromo}
-                discountedPrice={promoPrices[plan.code] ?? null}
+                discountedPrice={offerPrices[plan.code] ?? null}
+                discountPct={welcomeOffer?.discount_pct ?? null}
                 onSubscribe={onSubscribe}
               />
             ))}

@@ -198,7 +198,7 @@ export function MorphAiHome({
           className="mt-4 space-y-3"
         >
           {morphLocked ? <MorphSoftPaywall /> : <MorphLimitMeter />}
-          <SubscriptionPromoBanner />
+          {!morphLocked ? <SubscriptionPromoBanner /> : null}
         </motion.div>
 
         {myLooks.length > 0 ? (

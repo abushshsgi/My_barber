@@ -180,6 +180,7 @@ def build_me_payload(user: User) -> dict[str, Any]:
         }
     trial = ReferralTrialGrant.objects.filter(user=user).first()
     from accounts.models import ReferralAttribution
+    from subscriptions.promos import get_new_user_offer
 
     invite_count = ReferralAttribution.objects.filter(referrer=user).count()
     now = timezone.now()
@@ -187,6 +188,13 @@ def build_me_payload(user: User) -> dict[str, Any]:
     if sub and sub.ends_at:
         delta = sub.ends_at - now
         days_remaining = max(0, int(delta.total_seconds() // 86400))
+
+    plan_code = sub.plan_code if sub else None
+    next_upgrade = None
+    if plan_code == "starter":
+        next_upgrade = {"plan_code": "plus", "label_uz": "Plus ga upgrade"}
+    elif plan_code == "plus":
+        next_upgrade = {"plan_code": "pro", "label_uz": "Pro ga upgrade"}
 
     return {
         "has_active": bool(sub),
@@ -214,6 +222,8 @@ def build_me_payload(user: User) -> dict[str, Any]:
             "eligible": invite_count >= REFERRAL_TRIAL_REQUIRED,
             "remaining_invites": max(0, REFERRAL_TRIAL_REQUIRED - invite_count),
         },
+        "welcome_offer": get_new_user_offer(user),
+        "upgrade": next_upgrade,
     }
 
 

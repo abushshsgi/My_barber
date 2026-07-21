@@ -75,6 +75,19 @@ export type SubscriptionMe = {
     eligible?: boolean;
     remaining_invites?: number;
   };
+  welcome_offer?: {
+    eligible: boolean;
+    discount_pct: number;
+    plans: string[];
+    ends_at: string;
+    seconds_left: number;
+    label_uz: string;
+    hint_uz: string;
+  } | null;
+  upgrade?: {
+    plan_code: "plus" | "pro";
+    label_uz: string;
+  } | null;
 };
 
 export type SubscriptionPromo = {
