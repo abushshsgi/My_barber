@@ -34,6 +34,7 @@ import { Route as AdminBarbersBarberIdRouteImport } from './routes/admin.barbers
 import { Route as AdminBookingsBookingIdRouteImport } from './routes/admin.bookings.$bookingId'
 import { Route as AdminFinanceIndexRouteImport } from './routes/admin.finance.index'
 import { Route as AdminFinanceDepositsRouteImport } from './routes/admin.finance.deposits'
+import { Route as AdminFinanceGiftsRouteImport } from './routes/admin.finance.gifts'
 import { Route as AdminFinancePayoutsRouteImport } from './routes/admin.finance.payouts'
 import { Route as AdminFinancePromotionsRouteImport } from './routes/admin.finance.promotions'
 import { Route as AdminFinanceTransactionsRouteImport } from './routes/admin.finance.transactions'
@@ -197,6 +198,11 @@ const AdminFinanceIndexRoute = AdminFinanceIndexRouteImport.update({
 const AdminFinanceDepositsRoute = AdminFinanceDepositsRouteImport.update({
   id: '/deposits',
   path: '/deposits',
+  getParentRoute: () => AdminFinanceRoute,
+} as any)
+const AdminFinanceGiftsRoute = AdminFinanceGiftsRouteImport.update({
+  id: '/gifts',
+  path: '/gifts',
   getParentRoute: () => AdminFinanceRoute,
 } as any)
 const AdminFinancePayoutsRoute = AdminFinancePayoutsRouteImport.update({
@@ -429,6 +435,7 @@ export interface FileRoutesByFullPath {
   '/admin/barbers/$barberId': typeof AdminBarbersBarberIdRouteWithChildren
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
   '/admin/finance/deposits': typeof AdminFinanceDepositsRoute
+  '/admin/finance/gifts': typeof AdminFinanceGiftsRoute
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/promotions': typeof AdminFinancePromotionsRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
@@ -490,6 +497,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
   '/admin/finance/deposits': typeof AdminFinanceDepositsRoute
+  '/admin/finance/gifts': typeof AdminFinanceGiftsRoute
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/promotions': typeof AdminFinancePromotionsRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
@@ -554,6 +562,7 @@ export interface FileRoutesById {
   '/admin/barbers/$barberId': typeof AdminBarbersBarberIdRouteWithChildren
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
   '/admin/finance/deposits': typeof AdminFinanceDepositsRoute
+  '/admin/finance/gifts': typeof AdminFinanceGiftsRoute
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/promotions': typeof AdminFinancePromotionsRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
@@ -622,6 +631,7 @@ export interface FileRouteTypes {
     | '/admin/barbers/$barberId'
     | '/admin/bookings/$bookingId'
     | '/admin/finance/deposits'
+    | '/admin/finance/gifts'
     | '/admin/finance/payouts'
     | '/admin/finance/promotions'
     | '/admin/finance/transactions'
@@ -683,6 +693,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/bookings/$bookingId'
     | '/admin/finance/deposits'
+    | '/admin/finance/gifts'
     | '/admin/finance/payouts'
     | '/admin/finance/promotions'
     | '/admin/finance/transactions'
@@ -746,6 +757,7 @@ export interface FileRouteTypes {
     | '/admin/barbers/$barberId'
     | '/admin/bookings/$bookingId'
     | '/admin/finance/deposits'
+    | '/admin/finance/gifts'
     | '/admin/finance/payouts'
     | '/admin/finance/promotions'
     | '/admin/finance/transactions'
@@ -969,6 +981,13 @@ declare module '@tanstack/react-router' {
       path: '/deposits'
       fullPath: '/admin/finance/deposits'
       preLoaderRoute: typeof AdminFinanceDepositsRouteImport
+      parentRoute: typeof AdminFinanceRoute
+    }
+    '/admin/finance/gifts': {
+      id: '/admin/finance/gifts'
+      path: '/gifts'
+      fullPath: '/admin/finance/gifts'
+      preLoaderRoute: typeof AdminFinanceGiftsRouteImport
       parentRoute: typeof AdminFinanceRoute
     }
     '/admin/finance/payouts': {
@@ -1306,6 +1325,7 @@ const AdminBookingsRouteWithChildren = AdminBookingsRoute._addFileChildren(
 
 interface AdminFinanceRouteChildren {
   AdminFinanceDepositsRoute: typeof AdminFinanceDepositsRoute
+  AdminFinanceGiftsRoute: typeof AdminFinanceGiftsRoute
   AdminFinancePayoutsRoute: typeof AdminFinancePayoutsRoute
   AdminFinancePromotionsRoute: typeof AdminFinancePromotionsRoute
   AdminFinanceTransactionsRoute: typeof AdminFinanceTransactionsRoute
@@ -1314,6 +1334,7 @@ interface AdminFinanceRouteChildren {
 
 const AdminFinanceRouteChildren: AdminFinanceRouteChildren = {
   AdminFinanceDepositsRoute: AdminFinanceDepositsRoute,
+  AdminFinanceGiftsRoute: AdminFinanceGiftsRoute,
   AdminFinancePayoutsRoute: AdminFinancePayoutsRoute,
   AdminFinancePromotionsRoute: AdminFinancePromotionsRoute,
   AdminFinanceTransactionsRoute: AdminFinanceTransactionsRoute,

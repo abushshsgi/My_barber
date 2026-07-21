@@ -1416,3 +1416,82 @@ class AdminAdminAccountDetailView(generics.RetrieveUpdateAPIView):
         obj.save(update_fields=["is_active"])
         _audit(request, "update", "admin_account", obj.id, obj.email, before=before, after={"is_active": obj.is_active})
         return Response(AdminAccountSerializer(obj).data)
+
+
+class AdminPlatformIncomeView(APIView):
+    """Platforma daromadi — B2B, B2C, sovg'a dizayn, obuna va boshqa."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        from config.api_cache import cached_json
+
+        from .platform_analytics import build_platform_income, resolve_range
+
+        start_dt, end_dt = resolve_range(
+            request.query_params.get("start"),
+            request.query_params.get("end"),
+        )
+        payload = cached_json(
+            prefix="admin:finance:platform-income",
+            parts={"start": start_dt.isoformat(), "end": end_dt.isoformat()},
+            producer=lambda: build_platform_income(start_dt, end_dt),
+            ttl=8,
+        )
+        return Response(payload)
+
+
+class AdminGiftTransferListView(APIView):
+    """Sovg'a kartalar — kim kimga, qachon, qancha, qaysi dizayn."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        from wallet.models import GiftTransfer
+
+        from .platform_analytics import (
+            build_gifts_summary,
+            resolve_range,
+            serialize_gift_transfer,
+        )
+
+        qs = GiftTransfer.objects.select_related(
+            "sender_wallet__user",
+            "recipient_wallet__user",
+        ).order_by("-created_at")
+
+        q = (request.query_params.get("q") or "").strip()
+        if q:
+            qs = qs.filter(
+                Q(sender_wallet__user__full_name__icontains=q)
+                | Q(sender_wallet__user__phone__icontains=q)
+                | Q(recipient_wallet__user__full_name__icontains=q)
+                | Q(recipient_wallet__user__phone__icontains=q)
+                | Q(design_id__icontains=q)
+                | Q(message__icontains=q)
+            )
+
+        design_id = (request.query_params.get("design_id") or "").strip()
+        if design_id and design_id != "all":
+            qs = qs.filter(design_id=design_id)
+
+        status_f = (request.query_params.get("status") or "").strip()
+        if status_f and status_f != "all":
+            qs = qs.filter(status=status_f)
+
+        start_raw = request.query_params.get("start")
+        end_raw = request.query_params.get("end")
+        start_dt = end_dt = None
+        if start_raw or end_raw:
+            start_dt, end_dt = resolve_range(start_raw, end_raw)
+            qs = qs.filter(created_at__gte=start_dt, created_at__lte=end_dt)
+
+        paginator = AdminPageNumberPagination()
+        page = paginator.paginate_queryset(qs, request)
+        results = [serialize_gift_transfer(g) for g in page]
+        summary = build_gifts_summary(start_dt, end_dt)
+        response = paginator.get_paginated_response(results)
+        response.data["summary"] = summary
+        response.data["page"] = paginator.page.number
+        response.data["page_size"] = paginator.get_page_size(request)
+        return response

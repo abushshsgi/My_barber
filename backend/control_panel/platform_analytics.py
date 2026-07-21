@@ -384,3 +384,196 @@ def build_bookings_rows(start_dt, end_dt, *, status="", payment_method=""):
     if payment_method:
         qs = qs.filter(payment_method=payment_method)
     return qs
+
+
+def build_platform_income(start_dt: datetime, end_dt: datetime) -> dict:
+    """
+    Platforma o'z daromadi (B2B + B2C + sovg'a dizayn + obuna + boshqa).
+
+    - B2C: onlayn bron to'lovlari (hamyon orqali o'tgan GMV) — marketplace hajmi
+    - B2B: TOP reklama to'lovlari
+    - Gift: sovg'a karta dizayn to'lovlari (platforma sof daromadi)
+    - Subscriptions: B2C obuna to'lovlari
+    - Other: ledger adjustment (platforma wallet)
+    """
+    from barbers.models import BarberPromotion
+    from subscriptions.models import SubscriptionPayment
+    from wallet.gift_designs import get_gift_design
+    from wallet.services.wallet_service import WalletService
+
+    completed_range = filter_bookings_by_earnings_period(completed_bookings_qs(), start_dt, end_dt)
+    breakdown = payment_breakdown(completed_range)
+
+    gifts = GiftTransfer.objects.filter(created_at__gte=start_dt, created_at__lte=end_dt)
+    gift_agg = gifts.aggregate(
+        amount_total=_decimal_sum("amount"),
+        fee_total=_decimal_sum("design_fee"),
+        charged_total=_decimal_sum("total_charged"),
+        count=Count("id"),
+    )
+    design_rows: dict[str, dict] = {}
+    for row in gifts.values("design_id").annotate(
+        count=Count("id"),
+        fee_total=_decimal_sum("design_fee"),
+        amount_total=_decimal_sum("amount"),
+    ):
+        design_id = (row["design_id"] or "").strip() or "unknown"
+        design = get_gift_design(design_id)
+        design_rows[design_id] = {
+            "design_id": design_id,
+            "design_name": design.name_uz if design else design_id,
+            "count": row["count"],
+            "fee_total": _float(row["fee_total"]),
+            "amount_total": _float(row["amount_total"]),
+        }
+
+    subs = SubscriptionPayment.objects.filter(
+        status=SubscriptionPayment.Status.PAID,
+        paid_at__gte=start_dt,
+        paid_at__lte=end_dt,
+    )
+    sub_agg = subs.aggregate(total=_decimal_sum("amount_uzs"), count=Count("id"))
+    by_provider = [
+        {
+            "provider": r["provider"] or "unknown",
+            "count": r["count"],
+            "revenue_uzs": _float(r["rev"]),
+        }
+        for r in (
+            subs.values("provider")
+            .annotate(count=Count("id"), rev=_decimal_sum("amount_uzs"))
+            .order_by("-rev")
+        )
+    ]
+
+    promos = BarberPromotion.objects.filter(
+        created_at__gte=start_dt,
+        created_at__lte=end_dt,
+        status__in=[
+            BarberPromotion.Status.ACTIVE,
+            BarberPromotion.Status.EXPIRED,
+            BarberPromotion.Status.PENDING,
+        ],
+    ).exclude(amount_paid=0)
+    promo_agg = promos.aggregate(total=_decimal_sum("amount_paid"), count=Count("id"))
+
+    other_total = 0.0
+    other_count = 0
+    try:
+        platform_wallet = WalletService.ensure_platform_wallet()
+        other_qs = LedgerEntry.objects.filter(
+            wallet=platform_wallet,
+            entry_type=LedgerEntry.EntryType.ADJUSTMENT,
+            created_at__gte=start_dt,
+            created_at__lte=end_dt,
+            amount__gt=0,
+        )
+        other_agg = other_qs.aggregate(total=_decimal_sum("amount"), count=Count("id"))
+        other_total = _float(other_agg["total"])
+        other_count = int(other_agg["count"] or 0)
+    except Exception:
+        pass
+
+    gift_fee_total = _float(gift_agg["fee_total"])
+    subscription_total = _float(sub_agg["total"])
+    b2b_promotions = _float(promo_agg["total"])
+    b2c_online_gmv = _float(breakdown["online_total"])
+    b2c_cash_gmv = _float(breakdown["cash_total"])
+
+    # Sof platforma daromadi = dizayn + obuna + reklama + boshqa (GMV alohida)
+    platform_net = gift_fee_total + subscription_total + b2b_promotions + other_total
+
+    return {
+        "range": {
+            "start": start_dt.date().isoformat(),
+            "end": end_dt.date().isoformat(),
+        },
+        "summary": {
+            "platform_net": platform_net,
+            "marketplace_gmv": _float(breakdown["total_income"]),
+            "b2c_online_gmv": b2c_online_gmv,
+            "b2c_cash_gmv": b2c_cash_gmv,
+            "b2b_promotions": b2b_promotions,
+            "gift_design_fees": gift_fee_total,
+            "subscriptions": subscription_total,
+            "other": other_total,
+        },
+        "b2c": {
+            "online_gmv": b2c_online_gmv,
+            "cash_gmv": b2c_cash_gmv,
+            "online_count": breakdown["online_count"],
+            "cash_count": breakdown["cash_count"],
+            "completed_bookings": breakdown["cash_count"] + breakdown["online_count"],
+        },
+        "b2b": {
+            "promotions_total": b2b_promotions,
+            "promotions_count": int(promo_agg["count"] or 0),
+        },
+        "gifts": {
+            "design_fee_total": gift_fee_total,
+            "gift_amount_total": _float(gift_agg["amount_total"]),
+            "charged_total": _float(gift_agg["charged_total"]),
+            "count": int(gift_agg["count"] or 0),
+            "by_design": sorted(design_rows.values(), key=lambda r: r["fee_total"], reverse=True),
+        },
+        "subscriptions": {
+            "revenue_uzs": subscription_total,
+            "count": int(sub_agg["count"] or 0),
+            "by_provider": by_provider,
+        },
+        "other": {
+            "revenue_uzs": other_total,
+            "count": other_count,
+        },
+    }
+
+
+def serialize_gift_transfer(gift: GiftTransfer) -> dict:
+    from wallet.gift_designs import get_gift_design
+
+    sender = gift.sender_wallet.user if gift.sender_wallet_id else None
+    recipient = gift.recipient_wallet.user if gift.recipient_wallet_id else None
+    design = get_gift_design(gift.design_id)
+
+    def _user_brief(user) -> dict:
+        if not user:
+            return {"id": None, "name": "—", "phone": None}
+        return {
+            "id": user.pk,
+            "name": (user.full_name or user.phone or str(user.pk)).strip(),
+            "phone": user.phone or None,
+        }
+
+    return {
+        "id": str(gift.id),
+        "sender": _user_brief(sender),
+        "recipient": _user_brief(recipient),
+        "amount": _float(gift.amount),
+        "design_id": gift.design_id or "",
+        "design_name": design.name_uz if design else (gift.design_id or "—"),
+        "design_fee": _float(gift.design_fee),
+        "total_charged": _float(gift.total_charged),
+        "message": gift.message or "",
+        "status": gift.status,
+        "created_at": gift.created_at.isoformat() if gift.created_at else None,
+    }
+
+
+def build_gifts_summary(start_dt: datetime | None = None, end_dt: datetime | None = None) -> dict:
+    qs = GiftTransfer.objects.all()
+    if start_dt is not None:
+        qs = qs.filter(created_at__gte=start_dt)
+    if end_dt is not None:
+        qs = qs.filter(created_at__lte=end_dt)
+    agg = qs.aggregate(
+        amount_total=_decimal_sum("amount"),
+        fee_total=_decimal_sum("design_fee"),
+        charged_total=_decimal_sum("total_charged"),
+        count=Count("id"),
+    )
+    return {
+        "count": int(agg["count"] or 0),
+        "amount_total": _float(agg["amount_total"]),
+        "design_fee_total": _float(agg["fee_total"]),
+        "charged_total": _float(agg["charged_total"]),
+    }

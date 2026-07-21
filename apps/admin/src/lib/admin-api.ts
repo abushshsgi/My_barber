@@ -2239,6 +2239,121 @@ export async function fetchFinanceSummary(): Promise<AdminFinanceSummary> {
   return apiJson<AdminFinanceSummary>("/api/v1/admin/finance/overview/");
 }
 
+export type PlatformIncome = {
+  range: StatDateRange;
+  summary: {
+    platform_net: number;
+    marketplace_gmv: number;
+    b2c_online_gmv: number;
+    b2c_cash_gmv: number;
+    b2b_promotions: number;
+    gift_design_fees: number;
+    subscriptions: number;
+    other: number;
+  };
+  b2c: {
+    online_gmv: number;
+    cash_gmv: number;
+    online_count: number;
+    cash_count: number;
+    completed_bookings: number;
+  };
+  b2b: {
+    promotions_total: number;
+    promotions_count: number;
+  };
+  gifts: {
+    design_fee_total: number;
+    gift_amount_total: number;
+    charged_total: number;
+    count: number;
+    by_design: Array<{
+      design_id: string;
+      design_name: string;
+      count: number;
+      fee_total: number;
+      amount_total: number;
+    }>;
+  };
+  subscriptions: {
+    revenue_uzs: number;
+    count: number;
+    by_provider: Array<{ provider: string; count: number; revenue_uzs: number }>;
+  };
+  other: {
+    revenue_uzs: number;
+    count: number;
+  };
+};
+
+export async function fetchPlatformIncome(range?: StatDateRange): Promise<PlatformIncome> {
+  return apiJson<PlatformIncome>(`/api/v1/admin/finance/platform-income/${rangeQuery(range)}`);
+}
+
+export type AdminGiftTransfer = {
+  id: string;
+  sender: { id: number | null; name: string; phone: string | null };
+  recipient: { id: number | null; name: string; phone: string | null };
+  amount: number;
+  design_id: string;
+  design_name: string;
+  design_fee: number;
+  total_charged: number;
+  message: string;
+  status: string;
+  created_at: string | null;
+};
+
+export type AdminGiftsResponse = Paginated<AdminGiftTransfer> & {
+  summary: {
+    count: number;
+    amount_total: number;
+    design_fee_total: number;
+    charged_total: number;
+  };
+};
+
+export async function fetchAdminGifts(params?: {
+  q?: string;
+  design_id?: string;
+  status?: string;
+  start?: string;
+  end?: string;
+  page?: number;
+}): Promise<AdminGiftsResponse> {
+  const page = params?.page ?? 1;
+  const sp = new URLSearchParams();
+  if (params?.q?.trim()) sp.set("q", params.q.trim());
+  if (params?.design_id && params.design_id !== "all") sp.set("design_id", params.design_id);
+  if (params?.status && params.status !== "all") sp.set("status", params.status);
+  if (params?.start) sp.set("start", params.start);
+  if (params?.end) sp.set("end", params.end);
+  sp.set("page", String(page));
+  const j = await apiJson<{
+    results?: AdminGiftTransfer[];
+    count?: number;
+    page_size?: number;
+    page?: number;
+    summary?: AdminGiftsResponse["summary"];
+  }>(`/api/v1/admin/finance/gifts/?${sp}`);
+  const results = j.results ?? [];
+  const count = toInt(j.count, results.length);
+  const pageSize = toInt(j.page_size, PAGE_SIZE);
+  return {
+    results,
+    count,
+    page: toInt(j.page, page),
+    page_size: pageSize,
+    total_pages: totalPages(count, pageSize),
+    summary: j.summary ?? {
+      count: 0,
+      amount_total: 0,
+      design_fee_total: 0,
+      charged_total: 0,
+    },
+  };
+}
+
 export type AdminTransaction = {
   id: string;
   type: string;

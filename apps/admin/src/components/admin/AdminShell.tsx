@@ -28,6 +28,7 @@ import {
   Sparkles,
   Radio,
   Repeat,
+  Gift,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
@@ -87,10 +88,9 @@ const SECTIONS: Section[] = [
     items: [
       { to: "/admin/statistics/live", label: "Real vaqt", icon: Radio },
       { to: "/admin/statistics", label: "Umumiy", icon: BarChart3 },
-      { to: "/admin/statistics/revenue", label: "Daromad", icon: TrendingUp },
+      { to: "/admin/statistics/barbers", label: "Sartaroshlar", icon: Scissors },
       { to: "/admin/statistics/users", label: "Mijozlar", icon: Users },
       { to: "/admin/statistics/salons", label: "Salonlar", icon: Building2 },
-      { to: "/admin/statistics/wallet", label: "Hamyon", icon: Wallet },
       { to: "/admin/statistics/bookings", label: "Bronlar", icon: CalendarClock },
     ],
   },
@@ -120,8 +120,8 @@ const SECTIONS: Section[] = [
     items: [
       { to: "/admin/salons", label: "Salonlar", icon: Building2 },
       { to: "/admin/barbers", label: "Sartaroshlar", icon: Scissors },
-      { to: "/admin/users", label: "Mijozlar", icon: Users },
       { to: "/admin/reviews", label: "Sharhlar", icon: Star },
+      { to: "/admin/users", label: "Mijozlar", icon: Users },
     ],
   },
   {
@@ -139,10 +139,16 @@ const SECTIONS: Section[] = [
     key: "finance",
     label: "Moliya",
     icon: Wallet,
-    matchPrefixes: ["/admin/finance", "/admin/subscriptions"],
+    matchPrefixes: [
+      "/admin/finance",
+      "/admin/subscriptions",
+      "/admin/statistics/wallet",
+    ],
     items: [
-      { to: "/admin/finance", label: "Daromad", icon: TrendingUp },
+      { to: "/admin/finance", label: "Platforma daromadi", icon: TrendingUp },
+      { to: "/admin/finance/gifts", label: "Sovg'a kartalar", icon: Gift },
       { to: "/admin/subscriptions", label: "B2C Obunalar", icon: Repeat },
+      { to: "/admin/statistics/wallet", label: "Hamyon oqimi", icon: Wallet },
       { to: "/admin/finance/deposits", label: "Karta to'ldirish", icon: CreditCard },
       { to: "/admin/finance/payouts", label: "To'lovlar", icon: Wallet },
       { to: "/admin/finance/promotions", label: "TOP reklamalar", icon: Megaphone },
