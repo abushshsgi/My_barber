@@ -73,7 +73,7 @@ class WalletCardDepositInitView(FriendlyThrottleMixin, APIView):
             return Response({"detail": "Noto'g'ri summa."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            deposit = CardDepositService.init_deposit(
+            deposit, resumed = CardDepositService.init_deposit(
                 user=request.user,
                 amount=amount,
                 idempotency_key=_idempotency_key(request, required=True),
@@ -83,9 +83,11 @@ class WalletCardDepositInitView(FriendlyThrottleMixin, APIView):
         except WalletServiceError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
+        payload = deposit_to_dict(deposit, include_full_card=True)
+        payload["resumed"] = resumed
         return Response(
-            deposit_to_dict(deposit, include_full_card=True),
-            status=status.HTTP_201_CREATED,
+            payload,
+            status=status.HTTP_200_OK if resumed else status.HTTP_201_CREATED,
         )
 
 
@@ -108,7 +110,8 @@ class WalletCardDepositListView(APIView):
 
     def get(self, request):
         rows = CardDepositService.list_for_user(request.user)
-        return Response([deposit_to_dict(d) for d in rows])
+        # O'z so'rovlari — to'liq karta raqami kerak (resume uchun)
+        return Response([deposit_to_dict(d, include_full_card=True) for d in rows])
 
 
 class AdminWalletDepositsView(APIView):

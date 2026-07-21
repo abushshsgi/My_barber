@@ -4,19 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
-import {
-  TopUpCardSheet,
-  TopUpMethodSheet,
-  type TopUpMethod,
-} from "@/components/wallet/TopUpPaymentSheets";
+import { TopUpCardSheet } from "@/components/wallet/TopUpPaymentSheets";
 import { useWalletBalance } from "@/hooks/use-wallet";
 import { getAuthUserId } from "@/lib/auth-user";
 import {
   claimCardDeposit,
   fetchMyCardDeposits,
-  fetchPaymentProviders,
   initCardDeposit,
-  startPaymentCheckout,
   type CardDeposit,
 } from "@/lib/api/payments";
 import { cn } from "@/lib/utils";
@@ -32,6 +26,7 @@ export const Route = createFileRoute("/wallet_/top-up")({
 });
 
 const PRESETS = [50_000, 100_000, 200_000, 500_000] as const;
+const OPEN_STATUSES = new Set(["awaiting_payment", "claimed"]);
 
 function parseAmount(raw: string) {
   const digits = raw.replace(/\D/g, "");
@@ -50,7 +45,6 @@ function TopUpPage() {
   const { balance, isLoading } = useWalletBalance();
   const [amount, setAmount] = useState<number>(100_000);
   const [custom, setCustom] = useState("");
-  const [methodOpen, setMethodOpen] = useState(false);
   const [cardOpen, setCardOpen] = useState(false);
   const [deposit, setDeposit] = useState<CardDeposit | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -59,29 +53,18 @@ function TopUpPage() {
   const [pendingReview, setPendingReview] = useState(false);
   const [newBalance, setNewBalance] = useState<number | null>(null);
 
-  const providersQ = useQuery({
-    queryKey: ["payments", "providers", userId],
-    queryFn: fetchPaymentProviders,
-    enabled: Boolean(userId),
-    staleTime: 60_000,
-  });
-
-  const providerReady = useMemo(() => {
-    const map = { click: false, payme: false };
-    for (const p of providersQ.data ?? []) {
-      if (p.id === "click" || p.id === "payme") {
-        map[p.id] = Boolean(p.configured);
-      }
-    }
-    return map;
-  }, [providersQ.data]);
-
   const depositsQ = useQuery({
     queryKey: ["wallet", "card-deposits", userId],
     queryFn: fetchMyCardDeposits,
-    enabled: Boolean(userId) && pendingReview,
+    enabled: Boolean(userId),
+    staleTime: 10_000,
     refetchInterval: pendingReview ? 8_000 : false,
   });
+
+  const openDeposit = useMemo(
+    () => (depositsQ.data ?? []).find((d) => OPEN_STATUSES.has(d.status)) ?? null,
+    [depositsQ.data],
+  );
 
   useEffect(() => {
     if (!pendingReview || !deposit) return;
@@ -91,7 +74,7 @@ function TopUpPage() {
       setDeposit(latest);
       setPendingReview(false);
       setDone(true);
-      setNewBalance(balance + amount);
+      setNewBalance(balance + Number(latest.amount));
       void qc.invalidateQueries({ queryKey: ["wallet"] });
       toast.success(t("topUpPage.creditedToast"));
     } else if (latest.status === "rejected") {
@@ -99,10 +82,15 @@ function TopUpPage() {
       setPendingReview(false);
       toast.error(latest.review_note || t("topUpPage.paymentError"));
     }
-  }, [depositsQ.data, pendingReview, deposit, t, qc, balance, amount]);
+  }, [depositsQ.data, pendingReview, deposit, t, qc, balance]);
 
   const activePreset = PRESETS.includes(amount as (typeof PRESETS)[number]) && !custom;
   const amountLabel = formatInputAmount(amount);
+  const depositAmountLabel = deposit
+    ? formatInputAmount(
+        typeof deposit.amount === "number" ? deposit.amount : Number(deposit.amount) || 0,
+      )
+    : amountLabel;
 
   const totalAfter = useMemo(
     () => newBalance ?? balance + amount,
@@ -113,7 +101,6 @@ function TopUpPage() {
     setCustom("");
     setAmount(value);
     setDone(false);
-    setPendingReview(false);
     setNewBalance(null);
   };
 
@@ -121,68 +108,49 @@ function TopUpPage() {
     setCustom(value);
     setAmount(parseAmount(value));
     setDone(false);
-    setPendingReview(false);
     setNewBalance(null);
   };
 
   const canSubmit = amount >= 10_000 && !submitting;
 
-  const invalidateWallet = () => {
-    void qc.invalidateQueries({ queryKey: ["wallet"] });
-  };
-
-  const runProviderCheckout = async (provider: "click" | "payme") => {
-    if (!userId) return;
-    if (!providerReady[provider]) {
-      toast.error(t("topUpPage.providerUnavailable"));
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const orderId = `wallet-topup-${userId}-${amount}-${Date.now()}`;
-      const checkout = await startPaymentCheckout({
-        provider,
-        amount,
-        order_id: orderId,
-        return_url:
-          typeof window !== "undefined" ? `${window.location.origin}/wallet/top-up` : undefined,
-      });
-
-      // Faqat haqiqiy checkout URL. Client confirm orqali hech qachon pul tushirilmaydi.
-      if (checkout.configured && checkout.checkout_url) {
-        window.location.assign(checkout.checkout_url);
-        return;
-      }
-
-      toast.error(checkout.message || t("topUpPage.providerUnavailable"));
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : t("topUpPage.paymentError"));
-    } finally {
-      setSubmitting(false);
+  const openExisting = (row: CardDeposit, resumedNotice = false) => {
+    const n = typeof row.amount === "number" ? row.amount : Number(row.amount) || 0;
+    setDeposit(row);
+    setAmount(n);
+    setCustom("");
+    setCardOpen(true);
+    setPendingReview(row.status === "claimed");
+    setDone(false);
+    if (resumedNotice) {
+      toast.message(t("topUpPage.resumeOpen"));
     }
   };
 
   const runCardFlow = async () => {
     setSubmitting(true);
     try {
+      // Avval ochiq so'rovni qayta ochamiz — xato toast emas.
+      const latestOpen =
+        openDeposit ??
+        (await fetchMyCardDeposits()).find((d) => OPEN_STATUSES.has(d.status)) ??
+        null;
+      if (latestOpen) {
+        openExisting(latestOpen, true);
+        return;
+      }
+
       const created = await initCardDeposit(amount);
-      setDeposit(created);
-      setMethodOpen(false);
-      setCardOpen(true);
+      if (created.resumed) {
+        openExisting(created, true);
+        return;
+      }
+      openExisting(created, false);
+      void qc.invalidateQueries({ queryKey: ["wallet", "card-deposits"] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("topUpPage.paymentError"));
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const onSelectMethod = (method: TopUpMethod) => {
-    if (method === "card") {
-      void runCardFlow();
-      return;
-    }
-    void runProviderCheckout(method);
   };
 
   const onClaim = async () => {
@@ -194,7 +162,8 @@ function TopUpPage() {
       setPendingReview(true);
       setDone(false);
       toast.success(t("topUpPage.claimedToast"));
-      invalidateWallet();
+      void qc.invalidateQueries({ queryKey: ["wallet"] });
+      void qc.invalidateQueries({ queryKey: ["wallet", "card-deposits"] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("topUpPage.paymentError"));
     } finally {
@@ -208,24 +177,43 @@ function TopUpPage() {
       subtitle={t("topUpPage.subtitle")}
       backTo="/wallet"
     >
-      <div
-        className="overflow-hidden rounded-2xl border-0 p-4 text-background shadow-[0_16px_40px_-20px_oklch(0.2_0.03_60/0.45)]"
-        style={{
-          background:
-            "linear-gradient(145deg, oklch(0.24 0.025 55), oklch(0.16 0.02 50) 52%, oklch(0.2 0.035 72))",
-        }}
-      >
-        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-background/55">
+      <div className="bg-black px-4 py-5 text-white">
+        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/45">
           {t("topUpPage.currentBalance")}
         </p>
         <p className="mt-2 text-3xl font-bold tracking-tight tabular-nums">
           {isLoading ? "…" : balance.toLocaleString("uz-UZ")}
-          <span className="ml-1.5 text-base font-semibold text-background/55">so'm</span>
+          <span className="ml-1.5 text-base font-semibold text-white/45">so'm</span>
         </p>
       </div>
 
+      {openDeposit ? (
+        <button
+          type="button"
+          onClick={() => openExisting(openDeposit, false)}
+          className="mt-4 w-full border border-black/15 bg-black/[0.03] px-4 py-3 text-left transition-opacity active:opacity-80"
+        >
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-black/45">
+            {t("topUpPage.openRequest")}
+          </p>
+          <p className="mt-1 text-sm font-semibold text-black">
+            {formatInputAmount(
+              typeof openDeposit.amount === "number"
+                ? openDeposit.amount
+                : Number(openDeposit.amount) || 0,
+            )}{" "}
+            so'm · {openDeposit.transaction_ref}
+          </p>
+          <p className="mt-0.5 text-[12px] font-medium text-black/50">
+            {openDeposit.status === "claimed"
+              ? t("topUpPage.claimedPending")
+              : t("topUpPage.continueOpen")}
+          </p>
+        </button>
+      ) : null}
+
       <section className="mt-6">
-        <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+        <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-black/45">
           {t("topUpPage.chooseAmount")}
         </h3>
         <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
@@ -237,14 +225,19 @@ function TopUpPage() {
                 type="button"
                 onClick={() => onPreset(value)}
                 className={cn(
-                  "rounded-2xl border-2 px-4 py-3.5 text-left transition-all active:scale-[0.98]",
+                  "border px-4 py-3.5 text-left transition-all active:scale-[0.98]",
                   active
-                    ? "border-[oklch(0.28_0.03_55)] bg-[oklch(0.22_0.025_55)] text-[oklch(0.97_0.01_85)] shadow-[0_10px_24px_-14px_oklch(0.2_0.03_60/0.55)]"
-                    : "border-border/80 bg-[oklch(0.985_0.008_85)] text-foreground hover:border-[oklch(0.55_0.04_70)]",
+                    ? "border-black bg-black text-white"
+                    : "border-black/15 bg-white text-black",
                 )}
               >
                 <p className="text-lg font-bold tabular-nums">{Math.round(value / 1000)}k</p>
-                <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide opacity-60">
+                <p
+                  className={cn(
+                    "mt-0.5 text-[10px] font-bold uppercase tracking-wide",
+                    active ? "text-white/50" : "text-black/45",
+                  )}
+                >
                   {formatInputAmount(value)} so'm
                 </p>
               </button>
@@ -256,7 +249,7 @@ function TopUpPage() {
       <section className="mt-5">
         <label
           htmlFor="top-up-custom"
-          className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground"
+          className="text-[10px] font-bold uppercase tracking-[0.18em] text-black/45"
         >
           {t("topUpPage.customAmount")}
         </label>
@@ -266,15 +259,15 @@ function TopUpPage() {
           value={custom}
           onChange={(e) => onCustomChange(e.target.value)}
           placeholder={t("topUpPage.customPlaceholder")}
-          className="mt-2 w-full rounded-2xl border border-border/70 bg-[oklch(0.96_0.01_85)] px-4 py-3.5 text-sm font-semibold tabular-nums placeholder:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.35_0.03_55)]"
+          className="mt-2 w-full border border-black/15 bg-white px-4 py-3.5 text-sm font-semibold tabular-nums text-black placeholder:font-medium placeholder:text-black/35 focus:outline-none focus:ring-2 focus:ring-black"
         />
-        <p className="mt-2 text-[11px] font-medium text-muted-foreground">{t("topUpPage.minAmount")}</p>
+        <p className="mt-2 text-[11px] font-medium text-black/45">{t("topUpPage.minAmount")}</p>
       </section>
 
       {done ? (
-        <ProfileSubpageCard className="mt-6 border-emerald-500/25 bg-emerald-500/8">
-          <p className="text-sm font-bold text-emerald-950">{t("topUpPage.successTitle")}</p>
-          <p className="mt-1 text-xs text-emerald-950/70">
+        <ProfileSubpageCard className="mt-6 border-black/15 bg-black/[0.03]">
+          <p className="text-sm font-bold text-black">{t("topUpPage.successTitle")}</p>
+          <p className="mt-1 text-xs text-black/55">
             {t("topUpPage.successBody", {
               amount: amountLabel,
               balance: formatInputAmount(totalAfter),
@@ -283,12 +276,12 @@ function TopUpPage() {
         </ProfileSubpageCard>
       ) : null}
 
-      {pendingReview ? (
-        <ProfileSubpageCard className="mt-6 border-amber-500/30 bg-amber-500/10">
-          <p className="text-sm font-bold text-amber-950">{t("topUpPage.pendingTitle")}</p>
-          <p className="mt-1 text-xs text-amber-950/75">
+      {pendingReview && !cardOpen ? (
+        <ProfileSubpageCard className="mt-6 border-black/15 bg-black/[0.03]">
+          <p className="text-sm font-bold text-black">{t("topUpPage.pendingTitle")}</p>
+          <p className="mt-1 text-xs text-black/55">
             {t("topUpPage.pendingBody", {
-              ref: deposit?.transaction_ref ?? "—",
+              ref: deposit?.transaction_ref ?? openDeposit?.transaction_ref ?? "—",
             })}
           </p>
         </ProfileSubpageCard>
@@ -297,28 +290,21 @@ function TopUpPage() {
       <button
         type="button"
         disabled={!canSubmit}
-        onClick={() => setMethodOpen(true)}
-        className="mt-8 w-full rounded-2xl bg-[oklch(0.22_0.025_55)] py-4 text-sm font-bold text-[oklch(0.97_0.01_85)] shadow-[0_14px_28px_-16px_oklch(0.2_0.03_60/0.55)] transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+        onClick={() => void runCardFlow()}
+        className="mt-8 w-full bg-black py-4 text-sm font-bold text-white transition-opacity active:opacity-90 disabled:cursor-not-allowed disabled:opacity-35"
       >
         {submitting
           ? t("topUpPage.waiting")
-          : t("topUpPage.submit", { amount: amountLabel })}
+          : openDeposit
+            ? t("topUpPage.continuePay")
+            : t("topUpPage.submit", { amount: amountLabel })}
       </button>
-
-      <TopUpMethodSheet
-        open={methodOpen}
-        onOpenChange={setMethodOpen}
-        amountLabel={amountLabel}
-        onSelect={onSelectMethod}
-        busy={submitting}
-        providerReady={providerReady}
-      />
 
       <TopUpCardSheet
         open={cardOpen}
         onOpenChange={setCardOpen}
         deposit={deposit}
-        amountLabel={amountLabel}
+        amountLabel={depositAmountLabel}
         onClaim={() => void onClaim()}
         claiming={claiming}
       />

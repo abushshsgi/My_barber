@@ -20,7 +20,6 @@ from wallet.models import ManualCardDeposit
 from wallet.services.wallet_service import MIN_TOPUP_AMOUNT, WalletService, WalletServiceError
 
 MAX_TOPUP_AMOUNT = Decimal("5000000")
-MAX_OPEN_DEPOSITS = 2
 INIT_TTL_HOURS = 2
 CLAIM_TTL_HOURS = 24
 REF_ALPHABET = string.ascii_uppercase + string.digits
@@ -66,6 +65,17 @@ def _generate_transaction_ref() -> str:
         if not ManualCardDeposit.objects.filter(transaction_ref=ref).exists():
             return ref
     raise WalletServiceError("Tranzaksiya raqami yaratib bo'lmadi.")
+
+
+def _generate_merchant_ref(base: str) -> str:
+    """Har bir to'lov uchun unikal merchant ID (admin tanishi uchun)."""
+    prefix = "".join(c for c in (base or "MS").upper() if c.isalnum())[:8] or "MS"
+    for _ in range(12):
+        body = "".join(secrets.choice(REF_ALPHABET) for _ in range(8))
+        ref = f"{prefix}-{body}"
+        if not ManualCardDeposit.objects.filter(merchant_ref=ref).exists():
+            return ref[:64]
+    raise WalletServiceError("Merchant raqami yaratib bo'lmadi.")
 
 
 def _normalize_amount(raw: Decimal) -> Decimal:
@@ -172,6 +182,22 @@ def _alert_admins(deposit: ManualCardDeposit) -> None:
 
 class CardDepositService:
     @classmethod
+    def get_open_deposit(cls, user: User) -> ManualCardDeposit | None:
+        expire_stale_deposits(user=user)
+        return (
+            ManualCardDeposit.objects.filter(
+                user=user,
+                status__in=[
+                    ManualCardDeposit.Status.AWAITING_PAYMENT,
+                    ManualCardDeposit.Status.CLAIMED,
+                ],
+            )
+            .select_related("wallet")
+            .order_by("-created_at")
+            .first()
+        )
+
+    @classmethod
     @transaction.atomic
     def init_deposit(
         cls,
@@ -181,7 +207,11 @@ class CardDepositService:
         idempotency_key: str,
         client_ip: str | None = None,
         user_agent: str = "",
-    ) -> ManualCardDeposit:
+    ) -> tuple[ManualCardDeposit, bool]:
+        """
+        Yangi so'rov yaratadi yoki ochiq so'rovni qaytaradi.
+        Returns: (deposit, resumed)
+        """
         expire_stale_deposits(user=user)
         amount = _normalize_amount(amount)
         key = (idempotency_key or "").strip()[:128]
@@ -192,20 +222,22 @@ class CardDepositService:
         if existing:
             if existing.user_id != user.pk:
                 raise WalletServiceError("Idempotency kaliti boshqa foydalanuvchiga tegishli.")
-            return existing
+            return existing, False
 
-        open_count = ManualCardDeposit.objects.filter(
+        open_qs = ManualCardDeposit.objects.filter(
             user=user,
             status__in=[
                 ManualCardDeposit.Status.AWAITING_PAYMENT,
                 ManualCardDeposit.Status.CLAIMED,
             ],
-        ).count()
-        if open_count >= MAX_OPEN_DEPOSITS:
-            raise WalletServiceError(
-                "Sizda allaqachon ochiq to'ldirish so'rovlari bor. "
-                "Avvalgisini yakunlang yoki muddati o'tishini kuting."
-            )
+        ).order_by("-created_at")
+        if open_qs.exists():
+            # Xato o'rniga ochiq so'rovni qayta ochamiz (resume)
+            same_amount = open_qs.filter(
+                amount=amount,
+                status=ManualCardDeposit.Status.AWAITING_PAYMENT,
+            ).first()
+            return same_amount or open_qs.first(), True
 
         cfg = receiving_card_config()
         wallet = WalletService.ensure_wallet(user)
@@ -216,7 +248,7 @@ class CardDepositService:
             amount=amount,
             status=ManualCardDeposit.Status.AWAITING_PAYMENT,
             transaction_ref=_generate_transaction_ref(),
-            merchant_ref=cfg["merchant_ref"],
+            merchant_ref=_generate_merchant_ref(cfg["merchant_ref"]),
             receiving_card_number=cfg["card_number"],
             receiving_card_masked=cfg["card_masked"],
             receiving_cardholder=cfg["cardholder"],
@@ -226,7 +258,7 @@ class CardDepositService:
             idempotency_key=key,
             expires_at=now + timedelta(hours=INIT_TTL_HOURS),
         )
-        return deposit
+        return deposit, False
 
     @classmethod
     @transaction.atomic

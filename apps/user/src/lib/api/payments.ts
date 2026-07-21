@@ -72,6 +72,7 @@ export type CardDeposit = {
   expires_at: string;
   created_at: string;
   ledger_entry_id: string | null;
+  resumed?: boolean;
 };
 
 export type ReceivingCardInfo = {

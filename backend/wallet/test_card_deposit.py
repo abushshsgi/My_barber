@@ -29,15 +29,16 @@ class CardDepositServiceTests(TestCase):
         )
 
     def test_init_claim_approve_credits_wallet(self):
-        deposit = CardDepositService.init_deposit(
+        deposit, resumed = CardDepositService.init_deposit(
             user=self.user,
             amount=Decimal("100000"),
             idempotency_key="init-1",
             client_ip="127.0.0.1",
         )
+        self.assertFalse(resumed)
         self.assertEqual(deposit.status, ManualCardDeposit.Status.AWAITING_PAYMENT)
         self.assertTrue(deposit.transaction_ref.startswith("MS"))
-        self.assertEqual(deposit.merchant_ref, "MYSALOON")
+        self.assertIn("-", deposit.merchant_ref)
 
         claimed = CardDepositService.claim_deposit(user=self.user, deposit_id=str(deposit.pk))
         self.assertEqual(claimed.status, ManualCardDeposit.Status.CLAIMED)
@@ -63,17 +64,16 @@ class CardDepositServiceTests(TestCase):
         self.assertEqual(wallet.balance, Decimal("100000"))
         self.assertEqual(again.ledger_entry_id, approved.ledger_entry_id)
 
-    def test_max_open_deposits(self):
-        CardDepositService.init_deposit(
+    def test_open_deposit_resumes_instead_of_error(self):
+        first, _ = CardDepositService.init_deposit(
             user=self.user, amount=Decimal("50000"), idempotency_key="a"
         )
-        CardDepositService.init_deposit(
-            user=self.user, amount=Decimal("50000"), idempotency_key="b"
+        second, resumed = CardDepositService.init_deposit(
+            user=self.user, amount=Decimal("100000"), idempotency_key="b"
         )
-        with self.assertRaises(Exception):
-            CardDepositService.init_deposit(
-                user=self.user, amount=Decimal("50000"), idempotency_key="c"
-            )
+        self.assertTrue(resumed)
+        self.assertEqual(str(second.pk), str(first.pk))
+        self.assertEqual(ManualCardDeposit.objects.filter(user=self.user).count(), 1)
 
 
 @override_settings(
