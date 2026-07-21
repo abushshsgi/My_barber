@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from wallet.models import GiftTransfer, LedgerEntry, Wallet, WalletCard
+from wallet.models import GiftTransfer, LedgerEntry, ManualCardDeposit, Wallet, WalletCard
 
 
 class WalletCardInline(admin.StackedInline):
@@ -50,3 +50,56 @@ class LedgerEntryAdmin(admin.ModelAdmin):
 class GiftTransferAdmin(admin.ModelAdmin):
     list_display = ("id", "sender_wallet", "recipient_wallet", "amount", "status", "created_at")
     readonly_fields = ("id", "created_at")
+
+
+@admin.register(ManualCardDeposit)
+class ManualCardDepositAdmin(admin.ModelAdmin):
+    list_display = (
+        "transaction_ref",
+        "user",
+        "amount",
+        "status",
+        "merchant_ref",
+        "claimed_at",
+        "created_at",
+    )
+    list_filter = ("status",)
+    search_fields = (
+        "transaction_ref",
+        "merchant_ref",
+        "user__phone",
+        "user__full_name",
+        "user__email",
+        "wallet__wallet_number",
+    )
+    readonly_fields = (
+        "id",
+        "user",
+        "wallet",
+        "amount",
+        "status",
+        "transaction_ref",
+        "merchant_ref",
+        "receiving_card_number",
+        "receiving_card_masked",
+        "receiving_cardholder",
+        "receiving_bank",
+        "client_ip",
+        "user_agent",
+        "claimed_at",
+        "reviewed_at",
+        "reviewed_by_admin_id",
+        "reviewed_by_admin_email",
+        "review_note",
+        "ledger_entry",
+        "idempotency_key",
+        "expires_at",
+        "created_at",
+        "updated_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

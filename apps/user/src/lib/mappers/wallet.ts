@@ -48,6 +48,17 @@ export function mapLedgerEntry(entry: ApiLedgerEntry): WalletTransaction {
     const designId = typeof meta.design_id === "string" ? meta.design_id : "";
     title = designId ? `Dizayn · ${designId}` : "Sovg'a karta dizayni";
   }
+  if (entry.entry_type === "topup") {
+    const source = typeof meta.source === "string" ? meta.source : "";
+    const ref = typeof meta.transaction_ref === "string" ? meta.transaction_ref : "";
+    if (source === "card_manual") {
+      title = ref ? `Karta to'ldirish · ${ref}` : "Karta to'ldirish";
+    } else if (source.includes("click")) {
+      title = "Click to'ldirish";
+    } else if (source.includes("payme")) {
+      title = "Payme to'ldirish";
+    }
+  }
 
   return {
     id: entry.id,

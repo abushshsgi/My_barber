@@ -189,6 +189,32 @@ class WalletTopUpThrottle(AuthIPThrottle):
     scope = "wallet_topup"
 
 
+class WalletCardInitThrottle(SimpleRateThrottle):
+    """Karta to'ldirish init — DDoS / spam himoya (user + IP)."""
+
+    scope = "wallet_card_init"
+
+    def get_cache_key(self, request, view):
+        if request.user and request.user.is_authenticated:
+            ident = f"u{getattr(request.user, 'pk', None)}:{self.get_ident(request)}"
+        else:
+            ident = self.get_ident(request)
+        return self.cache_format % {"scope": self.scope, "ident": ident}
+
+
+class WalletCardClaimThrottle(SimpleRateThrottle):
+    """'To'ladim' claim — spam / flood himoya."""
+
+    scope = "wallet_card_claim"
+
+    def get_cache_key(self, request, view):
+        if request.user and request.user.is_authenticated:
+            ident = f"u{getattr(request.user, 'pk', None)}:{self.get_ident(request)}"
+        else:
+            ident = self.get_ident(request)
+        return self.cache_format % {"scope": self.scope, "ident": ident}
+
+
 class BarberWriteThrottle(SimpleRateThrottle):
     scope = "barber_write"
 

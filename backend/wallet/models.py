@@ -138,3 +138,69 @@ class GiftTransfer(models.Model):
 
     def __str__(self) -> str:
         return f"Gift {self.amount} {self.sender_wallet_id} → {self.recipient_wallet_id}"
+
+
+class ManualCardDeposit(models.Model):
+    """Karta orqali to'ldirish — foydalanuvchi kompaniya kartasiga o'tkazadi, admin tasdiqlaydi."""
+
+    class Status(models.TextChoices):
+        AWAITING_PAYMENT = "awaiting_payment", "To'lov kutilmoqda"
+        CLAIMED = "claimed", "To'ladim deb yuborildi"
+        APPROVED = "approved", "Tasdiqlangan"
+        REJECTED = "rejected", "Rad etilgan"
+        EXPIRED = "expired", "Muddati o'tgan"
+        CANCELLED = "cancelled", "Bekor qilingan"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="card_deposits",
+    )
+    wallet = models.ForeignKey(
+        Wallet,
+        on_delete=models.PROTECT,
+        related_name="card_deposits",
+    )
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    status = models.CharField(
+        max_length=24,
+        choices=Status.choices,
+        default=Status.AWAITING_PAYMENT,
+        db_index=True,
+    )
+    # Foydalanuvchi o'tkazmada izohga yozadigan unikal kod
+    transaction_ref = models.CharField(max_length=24, unique=True, db_index=True)
+    merchant_ref = models.CharField(max_length=64, db_index=True)
+    receiving_card_number = models.CharField(max_length=32)
+    receiving_card_masked = models.CharField(max_length=32)
+    receiving_cardholder = models.CharField(max_length=255)
+    receiving_bank = models.CharField(max_length=128, blank=True, default="")
+    client_ip = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=512, blank=True, default="")
+    claimed_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by_admin_id = models.PositiveIntegerField(null=True, blank=True)
+    reviewed_by_admin_email = models.CharField(max_length=255, blank=True, default="")
+    review_note = models.CharField(max_length=500, blank=True, default="")
+    ledger_entry = models.OneToOneField(
+        LedgerEntry,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="card_deposit",
+    )
+    idempotency_key = models.CharField(max_length=128, unique=True, db_index=True)
+    expires_at = models.DateTimeField(db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "created_at"]),
+            models.Index(fields=["user", "status"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"CardDeposit {self.transaction_ref} {self.amount} ({self.status})"

@@ -25,6 +25,7 @@ const ENTRY_META: Record<string, { label: string; className: string }> = {
 };
 
 const SOURCE_LABELS: Record<string, string> = {
+  card_manual: "Karta",
   admin_topup: "Admin",
   debug_topup: "Test",
   click_checkout: "Click",

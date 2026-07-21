@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.throttles import AuthIPThrottle, FriendlyThrottleMixin, WalletTopUpThrottle
 from wallet.payments import init_checkout, list_available_providers
 
 
@@ -19,13 +20,16 @@ def _default_return_url() -> str:
 
 class PaymentProvidersView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [WalletTopUpThrottle, AuthIPThrottle]
 
     def get(self, request):
         return Response({"providers": list_available_providers()})
 
 
-class PaymentCheckoutView(APIView):
+class PaymentCheckoutView(FriendlyThrottleMixin, APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [WalletTopUpThrottle, AuthIPThrottle]
+    throttle_detail = "Juda ko'p to'lov urinishi. Biroz kutib qayta urinib ko'ring."
 
     def post(self, request):
         provider = str(request.data.get("provider", "")).strip().lower()

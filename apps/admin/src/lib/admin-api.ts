@@ -3331,3 +3331,135 @@ export async function adminGrantSubscription(body: {
     body: JSON.stringify(body),
   });
 }
+
+export type AdminCardDeposit = {
+  id: string;
+  amount: number;
+  status: string;
+  transaction_ref: string;
+  merchant_ref: string;
+  receiving_card: {
+    number: string;
+    masked: string;
+    cardholder: string;
+    bank: string;
+  };
+  claimed_at: string | null;
+  reviewed_at: string | null;
+  review_note: string;
+  expires_at: string;
+  created_at: string;
+  ledger_entry_id: string | null;
+  user: {
+    id: number;
+    full_name: string;
+    phone: string;
+    email: string;
+  };
+  wallet_number: string;
+  client_ip: string | null;
+  user_agent: string;
+  reviewed_by_admin_id: number | null;
+  reviewed_by_admin_email: string;
+};
+
+export async function fetchAdminCardDeposits(params?: {
+  status?: string;
+  q?: string;
+}): Promise<{ count: number; results: AdminCardDeposit[] }> {
+  const sp = new URLSearchParams();
+  if (params?.status) sp.set("status", params.status);
+  if (params?.q) sp.set("q", params.q);
+  const qs = sp.toString();
+  const raw = await apiJson<{
+    count: number;
+    results: Array<Record<string, any>>;
+  }>(`/api/v1/admin/wallet/deposits/${qs ? `?${qs}` : ""}`);
+  return {
+    count: raw.count,
+    results: (raw.results ?? []).map((d) => ({
+      id: String(d.id),
+      amount: toInt(d.amount, 0),
+      status: String(d.status ?? ""),
+      transaction_ref: String(d.transaction_ref ?? ""),
+      merchant_ref: String(d.merchant_ref ?? ""),
+      receiving_card: {
+        number: String(d.receiving_card?.number ?? ""),
+        masked: String(d.receiving_card?.masked ?? ""),
+        cardholder: String(d.receiving_card?.cardholder ?? ""),
+        bank: String(d.receiving_card?.bank ?? ""),
+      },
+      claimed_at: d.claimed_at ?? null,
+      reviewed_at: d.reviewed_at ?? null,
+      review_note: String(d.review_note ?? ""),
+      expires_at: String(d.expires_at ?? ""),
+      created_at: String(d.created_at ?? ""),
+      ledger_entry_id: d.ledger_entry_id ? String(d.ledger_entry_id) : null,
+      user: {
+        id: toInt(d.user?.id, 0),
+        full_name: String(d.user?.full_name ?? ""),
+        phone: String(d.user?.phone ?? ""),
+        email: String(d.user?.email ?? ""),
+      },
+      wallet_number: String(d.wallet_number ?? ""),
+      client_ip: d.client_ip ?? null,
+      user_agent: String(d.user_agent ?? ""),
+      reviewed_by_admin_id: d.reviewed_by_admin_id != null ? toInt(d.reviewed_by_admin_id) : null,
+      reviewed_by_admin_email: String(d.reviewed_by_admin_email ?? ""),
+    })),
+  };
+}
+
+export async function approveAdminCardDeposit(
+  id: string,
+  note?: string,
+): Promise<{ deposit: AdminCardDeposit; balance: number }> {
+  const raw = await apiJson<{ deposit: Record<string, any>; balance: string | number }>(
+    `/api/v1/admin/wallet/deposits/${id}/approve/`,
+    {
+      method: "POST",
+      body: JSON.stringify({ note: note || "" }),
+    },
+  );
+  const d = raw.deposit ?? {};
+  return {
+    balance: toInt(raw.balance, 0),
+    deposit: {
+      id: String(d.id ?? id),
+      amount: toInt(d.amount, 0),
+      status: String(d.status ?? "approved"),
+      transaction_ref: String(d.transaction_ref ?? ""),
+      merchant_ref: String(d.merchant_ref ?? ""),
+      receiving_card: {
+        number: String(d.receiving_card?.number ?? ""),
+        masked: String(d.receiving_card?.masked ?? ""),
+        cardholder: String(d.receiving_card?.cardholder ?? ""),
+        bank: String(d.receiving_card?.bank ?? ""),
+      },
+      claimed_at: d.claimed_at ?? null,
+      reviewed_at: d.reviewed_at ?? null,
+      review_note: String(d.review_note ?? ""),
+      expires_at: String(d.expires_at ?? ""),
+      created_at: String(d.created_at ?? ""),
+      ledger_entry_id: d.ledger_entry_id ? String(d.ledger_entry_id) : null,
+      user: {
+        id: toInt(d.user?.id, 0),
+        full_name: String(d.user?.full_name ?? ""),
+        phone: String(d.user?.phone ?? ""),
+        email: String(d.user?.email ?? ""),
+      },
+      wallet_number: String(d.wallet_number ?? ""),
+      client_ip: d.client_ip ?? null,
+      user_agent: String(d.user_agent ?? ""),
+      reviewed_by_admin_id: d.reviewed_by_admin_id != null ? toInt(d.reviewed_by_admin_id) : null,
+      reviewed_by_admin_email: String(d.reviewed_by_admin_email ?? ""),
+    },
+  };
+}
+
+export async function rejectAdminCardDeposit(id: string, note?: string): Promise<unknown> {
+  return apiJson(`/api/v1/admin/wallet/deposits/${id}/reject/`, {
+    method: "POST",
+    body: JSON.stringify({ note: note || "Rad etildi" }),
+  });
+}

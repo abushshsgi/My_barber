@@ -216,6 +216,15 @@ from ai.views import (
 from chat.views import ConversationListCreateView, ConversationMarkReadView, ConversationMessagesView
 from geo.views import CurrencyRatesView, GeocodeView, MapConfigView, ReverseGeocodeView, ValidateLocationView
 from notifications.push_views import BarberPushTokenView
+from wallet.card_deposit_views import (
+    AdminWalletDepositApproveView,
+    AdminWalletDepositRejectView,
+    AdminWalletDepositsView,
+    WalletCardDepositClaimView,
+    WalletCardDepositInitView,
+    WalletCardDepositListView,
+    WalletReceivingCardView,
+)
 from wallet.payment_confirm import PaymentConfirmView
 from wallet.payment_views import PaymentCheckoutView, PaymentProvidersView
 from wallet.views import (
@@ -456,6 +465,10 @@ api_routes = [
     path("wallet/me/", WalletMeView.as_view()),
     path("wallet/transactions/", WalletTransactionsView.as_view()),
     path("wallet/top-up/", WalletTopUpView.as_view()),
+    path("wallet/top-up/receiving-card/", WalletReceivingCardView.as_view()),
+    path("wallet/top-up/card/init/", WalletCardDepositInitView.as_view()),
+    path("wallet/top-up/card/<uuid:deposit_id>/claim/", WalletCardDepositClaimView.as_view()),
+    path("wallet/top-up/card/deposits/", WalletCardDepositListView.as_view()),
     path("wallet/gift/designs/", WalletGiftDesignsView.as_view()),
     path("wallet/gift/send/", WalletGiftSendView.as_view()),
     path("wallet/recipients/search/", WalletRecipientSearchView.as_view()),
@@ -463,6 +476,9 @@ api_routes = [
     path("payments/checkout/", PaymentCheckoutView.as_view()),
     path("payments/confirm/", PaymentConfirmView.as_view()),
     path("admin/wallet/top-up/", AdminWalletTopUpView.as_view()),
+    path("admin/wallet/deposits/", AdminWalletDepositsView.as_view()),
+    path("admin/wallet/deposits/<uuid:deposit_id>/approve/", AdminWalletDepositApproveView.as_view()),
+    path("admin/wallet/deposits/<uuid:deposit_id>/reject/", AdminWalletDepositRejectView.as_view()),
     path("", include(router.urls)),
 ]
 

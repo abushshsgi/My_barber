@@ -32,6 +32,7 @@ import { Route as AdminSupportRouteImport } from './routes/admin.support'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminBarbersBarberIdRouteImport } from './routes/admin.barbers.$barberId'
 import { Route as AdminBookingsBookingIdRouteImport } from './routes/admin.bookings.$bookingId'
+import { Route as AdminFinanceDepositsRouteImport } from './routes/admin.finance.deposits'
 import { Route as AdminFinancePayoutsRouteImport } from './routes/admin.finance.payouts'
 import { Route as AdminFinancePromotionsRouteImport } from './routes/admin.finance.promotions'
 import { Route as AdminFinanceTransactionsRouteImport } from './routes/admin.finance.transactions'
@@ -186,6 +187,11 @@ const AdminBookingsBookingIdRoute = AdminBookingsBookingIdRouteImport.update({
   id: '/$bookingId',
   path: '/$bookingId',
   getParentRoute: () => AdminBookingsRoute,
+} as any)
+const AdminFinanceDepositsRoute = AdminFinanceDepositsRouteImport.update({
+  id: '/deposits',
+  path: '/deposits',
+  getParentRoute: () => AdminFinanceRoute,
 } as any)
 const AdminFinancePayoutsRoute = AdminFinancePayoutsRouteImport.update({
   id: '/payouts',
@@ -416,6 +422,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/admin/barbers/$barberId': typeof AdminBarbersBarberIdRouteWithChildren
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
+  '/admin/finance/deposits': typeof AdminFinanceDepositsRoute
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/promotions': typeof AdminFinancePromotionsRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
@@ -476,6 +483,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin': typeof AdminIndexRoute
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
+  '/admin/finance/deposits': typeof AdminFinanceDepositsRoute
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/promotions': typeof AdminFinancePromotionsRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
@@ -538,6 +546,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/admin/barbers/$barberId': typeof AdminBarbersBarberIdRouteWithChildren
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
+  '/admin/finance/deposits': typeof AdminFinanceDepositsRoute
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/promotions': typeof AdminFinancePromotionsRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
@@ -604,6 +613,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/admin/barbers/$barberId'
     | '/admin/bookings/$bookingId'
+    | '/admin/finance/deposits'
     | '/admin/finance/payouts'
     | '/admin/finance/promotions'
     | '/admin/finance/transactions'
@@ -664,6 +674,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin'
     | '/admin/bookings/$bookingId'
+    | '/admin/finance/deposits'
     | '/admin/finance/payouts'
     | '/admin/finance/promotions'
     | '/admin/finance/transactions'
@@ -725,6 +736,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/admin/barbers/$barberId'
     | '/admin/bookings/$bookingId'
+    | '/admin/finance/deposits'
     | '/admin/finance/payouts'
     | '/admin/finance/promotions'
     | '/admin/finance/transactions'
@@ -934,6 +946,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/bookings/$bookingId'
       preLoaderRoute: typeof AdminBookingsBookingIdRouteImport
       parentRoute: typeof AdminBookingsRoute
+    }
+    '/admin/finance/deposits': {
+      id: '/admin/finance/deposits'
+      path: '/deposits'
+      fullPath: '/admin/finance/deposits'
+      preLoaderRoute: typeof AdminFinanceDepositsRouteImport
+      parentRoute: typeof AdminFinanceRoute
     }
     '/admin/finance/payouts': {
       id: '/admin/finance/payouts'
@@ -1269,12 +1288,14 @@ const AdminBookingsRouteWithChildren = AdminBookingsRoute._addFileChildren(
 )
 
 interface AdminFinanceRouteChildren {
+  AdminFinanceDepositsRoute: typeof AdminFinanceDepositsRoute
   AdminFinancePayoutsRoute: typeof AdminFinancePayoutsRoute
   AdminFinancePromotionsRoute: typeof AdminFinancePromotionsRoute
   AdminFinanceTransactionsRoute: typeof AdminFinanceTransactionsRoute
 }
 
 const AdminFinanceRouteChildren: AdminFinanceRouteChildren = {
+  AdminFinanceDepositsRoute: AdminFinanceDepositsRoute,
   AdminFinancePayoutsRoute: AdminFinancePayoutsRoute,
   AdminFinancePromotionsRoute: AdminFinancePromotionsRoute,
   AdminFinanceTransactionsRoute: AdminFinanceTransactionsRoute,

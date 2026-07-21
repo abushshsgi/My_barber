@@ -326,6 +326,13 @@ CLICK_SECRET_KEY = os.environ.get("CLICK_SECRET_KEY", "").strip()
 PAYME_MERCHANT_ID = os.environ.get("PAYME_MERCHANT_ID", "").strip()
 PAYME_SECRET_KEY = os.environ.get("PAYME_SECRET_KEY", "").strip()
 
+# Manual card top-up (company receiving card) — users transfer here, admin confirms
+WALLET_RECEIVING_CARD_NUMBER = os.environ.get("WALLET_RECEIVING_CARD_NUMBER", "").strip()
+WALLET_RECEIVING_CARDHOLDER = os.environ.get("WALLET_RECEIVING_CARDHOLDER", "").strip()
+WALLET_RECEIVING_BANK = os.environ.get("WALLET_RECEIVING_BANK", "").strip()
+WALLET_MERCHANT_REF = os.environ.get("WALLET_MERCHANT_REF", "MYSALOON").strip() or "MYSALOON"
+WALLET_DEPOSIT_ALERT_EMAIL = os.environ.get("WALLET_DEPOSIT_ALERT_EMAIL", "").strip()
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "accounts.User"
@@ -365,6 +372,8 @@ REST_FRAMEWORK = {
         "salon_join": "20/minute",
         "wallet_gift": "30/minute",
         "wallet_topup": "20/minute",
+        "wallet_card_init": "5/hour",
+        "wallet_card_claim": "10/hour",
         "subscription_checkout": "10/hour",
         "subscription_confirm": "20/hour",
         "subscription_ip": "30/hour",

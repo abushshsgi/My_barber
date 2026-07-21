@@ -12,6 +12,7 @@ import {
   BarChart3,
   TrendingUp,
   Wallet,
+  CreditCard,
   Receipt,
   LifeBuoy,
   Megaphone,
@@ -142,6 +143,7 @@ const SECTIONS: Section[] = [
     items: [
       { to: "/admin/finance", label: "Daromad", icon: TrendingUp },
       { to: "/admin/subscriptions", label: "B2C Obunalar", icon: Repeat },
+      { to: "/admin/finance/deposits", label: "Karta to'ldirish", icon: CreditCard },
       { to: "/admin/finance/payouts", label: "To'lovlar", icon: Wallet },
       { to: "/admin/finance/promotions", label: "TOP reklamalar", icon: Megaphone },
       { to: "/admin/finance/transactions", label: "Tranzaksiyalar", icon: Receipt },

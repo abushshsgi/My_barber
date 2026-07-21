@@ -5,13 +5,14 @@ from __future__ import annotations
 import re
 from decimal import Decimal, InvalidOperation
 
-from django.db import transaction
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import User
+from accounts.throttles import AuthIPThrottle, FriendlyThrottleMixin, WalletTopUpThrottle
+from django.db import transaction
 from wallet.payments import _provider_configured
 from wallet.services.wallet_service import MIN_TOPUP_AMOUNT, WalletService, WalletServiceError
 
@@ -33,10 +34,12 @@ def parse_wallet_topup_order(order_id: str) -> tuple[int, Decimal] | None:
     return user_id, amount
 
 
-class PaymentConfirmView(APIView):
+class PaymentConfirmView(FriendlyThrottleMixin, APIView):
     """POST { order_id, provider, transaction_id? } — wallet top-up tasdiqlash."""
 
     permission_classes = [IsAuthenticated]
+    throttle_classes = [WalletTopUpThrottle, AuthIPThrottle]
+    throttle_detail = "Juda ko'p tasdiqlash urinishi. Biroz kutib qayta urinib ko'ring."
 
     def post(self, request):
         order_id = str(request.data.get("order_id") or "").strip()

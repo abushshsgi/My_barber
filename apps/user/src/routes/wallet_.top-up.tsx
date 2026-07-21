@@ -1,17 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
-import { useTopUpWallet, useWalletBalance } from "@/hooks/use-wallet";
+import {
+  TopUpCardSheet,
+  TopUpMethodSheet,
+  type TopUpMethod,
+} from "@/components/wallet/TopUpPaymentSheets";
+import { useWalletBalance } from "@/hooks/use-wallet";
 import { getAuthUserId } from "@/lib/auth-user";
 import {
   buildWalletTopUpOrderId,
+  claimCardDeposit,
   confirmPaymentCheckout,
-  fetchPaymentProviders,
+  fetchMyCardDeposits,
+  initCardDeposit,
   startPaymentCheckout,
-  type PaymentProvider,
+  type CardDeposit,
 } from "@/lib/api/payments";
 import { cn } from "@/lib/utils";
 
@@ -40,27 +47,50 @@ function formatInputAmount(n: number) {
 
 function TopUpPage() {
   const { t } = useTranslation();
+  const qc = useQueryClient();
   const userId = getAuthUserId();
   const { balance, isLoading } = useWalletBalance();
-  const topUp = useTopUpWallet();
   const [amount, setAmount] = useState<number>(100_000);
   const [custom, setCustom] = useState("");
-  const [provider, setProvider] = useState<"click" | "payme">("click");
+  const [methodOpen, setMethodOpen] = useState(false);
+  const [cardOpen, setCardOpen] = useState(false);
+  const [deposit, setDeposit] = useState<CardDeposit | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [claiming, setClaiming] = useState(false);
   const [done, setDone] = useState(false);
+  const [pendingReview, setPendingReview] = useState(false);
   const [newBalance, setNewBalance] = useState<number | null>(null);
 
-  const providersQ = useQuery({
-    queryKey: ["payments", "providers", userId],
-    queryFn: fetchPaymentProviders,
-    enabled: Boolean(userId),
+  const depositsQ = useQuery({
+    queryKey: ["wallet", "card-deposits", userId],
+    queryFn: fetchMyCardDeposits,
+    enabled: Boolean(userId) && pendingReview,
+    refetchInterval: pendingReview ? 8_000 : false,
   });
 
+  useEffect(() => {
+    if (!pendingReview || !deposit) return;
+    const latest = (depositsQ.data ?? []).find((d) => d.id === deposit.id);
+    if (!latest) return;
+    if (latest.status === "approved") {
+      setDeposit(latest);
+      setPendingReview(false);
+      setDone(true);
+      setNewBalance(balance + amount);
+      void qc.invalidateQueries({ queryKey: ["wallet"] });
+      toast.success(t("topUpPage.creditedToast"));
+    } else if (latest.status === "rejected") {
+      setDeposit(latest);
+      setPendingReview(false);
+      toast.error(latest.review_note || t("topUpPage.paymentError"));
+    }
+  }, [depositsQ.data, pendingReview, deposit, t, qc, balance, amount]);
+
   const activePreset = PRESETS.includes(amount as (typeof PRESETS)[number]) && !custom;
-  const hasConfiguredProvider = (providersQ.data ?? []).some((p) => p.configured);
+  const amountLabel = formatInputAmount(amount);
 
   const totalAfter = useMemo(
-    () => (newBalance ?? balance + amount),
+    () => newBalance ?? balance + amount,
     [newBalance, balance, amount],
   );
 
@@ -68,6 +98,7 @@ function TopUpPage() {
     setCustom("");
     setAmount(value);
     setDone(false);
+    setPendingReview(false);
     setNewBalance(null);
   };
 
@@ -75,31 +106,18 @@ function TopUpPage() {
     setCustom(value);
     setAmount(parseAmount(value));
     setDone(false);
+    setPendingReview(false);
     setNewBalance(null);
   };
 
-  const canSubmit = amount >= 10_000 && !submitting && !topUp.isPending;
+  const canSubmit = amount >= 10_000 && !submitting;
 
-  const runDebugTopUp = () => {
-    if (!DEV_TOPUP) return;
-    topUp.mutate(amount, {
-      onSuccess: (data) => {
-        setNewBalance(Number(data.balance));
-        setDone(true);
-        toast.success("Hamyon to'ldirildi");
-      },
-      onError: (e: Error) => toast.error(e.message),
-    });
+  const invalidateWallet = () => {
+    void qc.invalidateQueries({ queryKey: ["wallet"] });
   };
 
-  const onSubmit = async () => {
-    if (!canSubmit || !userId) return;
-
-    if (DEV_TOPUP && !hasConfiguredProvider) {
-      runDebugTopUp();
-      return;
-    }
-
+  const runProviderCheckout = async (provider: "click" | "payme") => {
+    if (!userId) return;
     setSubmitting(true);
     try {
       const orderId = buildWalletTopUpOrderId(userId, amount);
@@ -107,7 +125,8 @@ function TopUpPage() {
         provider,
         amount,
         order_id: orderId,
-        return_url: typeof window !== "undefined" ? `${window.location.origin}/wallet/top-up` : undefined,
+        return_url:
+          typeof window !== "undefined" ? `${window.location.origin}/wallet/top-up` : undefined,
       });
 
       if (checkout.checkout_url) {
@@ -123,15 +142,57 @@ function TopUpPage() {
         });
         setNewBalance(Number(confirmed.balance));
         setDone(true);
-        toast.success("Hamyon to'ldirildi");
+        setPendingReview(false);
+        invalidateWallet();
+        toast.success(t("topUpPage.creditedToast"));
+        setMethodOpen(false);
         return;
       }
 
-      toast.error(checkout.message || "To'lov provayderi hozircha ulanmagan.");
+      toast.error(checkout.message || t("topUpPage.providerUnavailable"));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "To'lov xatosi");
+      toast.error(e instanceof Error ? e.message : t("topUpPage.paymentError"));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const runCardFlow = async () => {
+    setSubmitting(true);
+    try {
+      const created = await initCardDeposit(amount);
+      setDeposit(created);
+      setMethodOpen(false);
+      setCardOpen(true);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("topUpPage.paymentError"));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const onSelectMethod = (method: TopUpMethod) => {
+    if (method === "card") {
+      void runCardFlow();
+      return;
+    }
+    void runProviderCheckout(method);
+  };
+
+  const onClaim = async () => {
+    if (!deposit) return;
+    setClaiming(true);
+    try {
+      const updated = await claimCardDeposit(deposit.id);
+      setDeposit(updated);
+      setPendingReview(true);
+      setDone(false);
+      toast.success(t("topUpPage.claimedToast"));
+      invalidateWallet();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("topUpPage.paymentError"));
+    } finally {
+      setClaiming(false);
     }
   };
 
@@ -141,7 +202,13 @@ function TopUpPage() {
       subtitle={t("topUpPage.subtitle")}
       backTo="/wallet"
     >
-      <ProfileSubpageCard className="border-foreground bg-foreground text-background">
+      <div
+        className="overflow-hidden rounded-2xl border-0 p-4 text-background shadow-[0_16px_40px_-20px_oklch(0.2_0.03_60/0.45)]"
+        style={{
+          background:
+            "linear-gradient(145deg, oklch(0.24 0.025 55), oklch(0.16 0.02 50) 52%, oklch(0.2 0.035 72))",
+        }}
+      >
         <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-background/55">
           {t("topUpPage.currentBalance")}
         </p>
@@ -149,37 +216,7 @@ function TopUpPage() {
           {isLoading ? "…" : balance.toLocaleString("uz-UZ")}
           <span className="ml-1.5 text-base font-semibold text-background/55">so'm</span>
         </p>
-      </ProfileSubpageCard>
-
-      <section className="mt-6">
-        <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-          To'lov usuli
-        </h3>
-        <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
-          {(providersQ.data ?? [{ id: "click" }, { id: "payme" }] as PaymentProvider[]).map((p) => {
-            const id = p.id as "click" | "payme";
-            const active = provider === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setProvider(id)}
-                className={cn(
-                  "rounded-2xl border-2 px-4 py-3 text-left text-sm font-bold capitalize transition-all",
-                  active ? "border-foreground bg-foreground text-background" : "border-border bg-background",
-                )}
-              >
-                {p.label ?? id}
-                {!p.configured ? (
-                  <span className="mt-1 block text-[10px] font-semibold opacity-60">
-                    {DEV_TOPUP ? "Dev rejim" : "Tez orada"}
-                  </span>
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
-      </section>
+      </div>
 
       <section className="mt-6">
         <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
@@ -196,8 +233,8 @@ function TopUpPage() {
                 className={cn(
                   "rounded-2xl border-2 px-4 py-3.5 text-left transition-all active:scale-[0.98]",
                   active
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-border bg-background text-foreground",
+                    ? "border-[oklch(0.28_0.03_55)] bg-[oklch(0.22_0.025_55)] text-[oklch(0.97_0.01_85)] shadow-[0_10px_24px_-14px_oklch(0.2_0.03_60/0.55)]"
+                    : "border-border/80 bg-[oklch(0.985_0.008_85)] text-foreground hover:border-[oklch(0.55_0.04_70)]",
                 )}
               >
                 <p className="text-lg font-bold tabular-nums">{Math.round(value / 1000)}k</p>
@@ -223,18 +260,29 @@ function TopUpPage() {
           value={custom}
           onChange={(e) => onCustomChange(e.target.value)}
           placeholder={t("topUpPage.customPlaceholder")}
-          className="mt-2 w-full rounded-2xl border-0 bg-surface px-4 py-3.5 text-sm font-semibold tabular-nums placeholder:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground"
+          className="mt-2 w-full rounded-2xl border border-border/70 bg-[oklch(0.96_0.01_85)] px-4 py-3.5 text-sm font-semibold tabular-nums placeholder:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.35_0.03_55)]"
         />
         <p className="mt-2 text-[11px] font-medium text-muted-foreground">{t("topUpPage.minAmount")}</p>
       </section>
 
       {done ? (
-        <ProfileSubpageCard className="mt-6 border-foreground bg-surface/60">
-          <p className="text-sm font-bold">{t("topUpPage.successTitle")}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
+        <ProfileSubpageCard className="mt-6 border-emerald-500/25 bg-emerald-500/8">
+          <p className="text-sm font-bold text-emerald-950">{t("topUpPage.successTitle")}</p>
+          <p className="mt-1 text-xs text-emerald-950/70">
             {t("topUpPage.successBody", {
-              amount: formatInputAmount(amount),
+              amount: amountLabel,
               balance: formatInputAmount(totalAfter),
+            })}
+          </p>
+        </ProfileSubpageCard>
+      ) : null}
+
+      {pendingReview ? (
+        <ProfileSubpageCard className="mt-6 border-amber-500/30 bg-amber-500/10">
+          <p className="text-sm font-bold text-amber-950">{t("topUpPage.pendingTitle")}</p>
+          <p className="mt-1 text-xs text-amber-950/75">
+            {t("topUpPage.pendingBody", {
+              ref: deposit?.transaction_ref ?? "—",
             })}
           </p>
         </ProfileSubpageCard>
@@ -243,13 +291,30 @@ function TopUpPage() {
       <button
         type="button"
         disabled={!canSubmit}
-        onClick={() => void onSubmit()}
-        className="mt-8 w-full rounded-2xl bg-foreground py-4 text-sm font-bold text-background transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+        onClick={() => setMethodOpen(true)}
+        className="mt-8 w-full rounded-2xl bg-[oklch(0.22_0.025_55)] py-4 text-sm font-bold text-[oklch(0.97_0.01_85)] shadow-[0_14px_28px_-16px_oklch(0.2_0.03_60/0.55)] transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
       >
-        {submitting || topUp.isPending
-          ? "Kutilmoqda…"
-          : t("topUpPage.submit", { amount: formatInputAmount(amount) })}
+        {submitting
+          ? t("topUpPage.waiting")
+          : t("topUpPage.submit", { amount: amountLabel })}
       </button>
+
+      <TopUpMethodSheet
+        open={methodOpen}
+        onOpenChange={setMethodOpen}
+        amountLabel={amountLabel}
+        onSelect={onSelectMethod}
+        busy={submitting}
+      />
+
+      <TopUpCardSheet
+        open={cardOpen}
+        onOpenChange={setCardOpen}
+        deposit={deposit}
+        amountLabel={amountLabel}
+        onClaim={() => void onClaim()}
+        claiming={claiming}
+      />
     </ProfileSubpageLayout>
   );
 }
