@@ -59,6 +59,12 @@ export function mapLedgerEntry(entry: ApiLedgerEntry): WalletTransaction {
       title = "Payme to'ldirish";
     }
   }
+  if (entry.entry_type === "adjustment") {
+    const action = typeof meta.action === "string" ? meta.action : "";
+    if (action === "clawback_fake_provider_topup") {
+      title = "Soxta to'lov bekor qilindi";
+    }
+  }
 
   return {
     id: entry.id,
