@@ -43,8 +43,16 @@ export const getRouter = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 30_000,
-        refetchOnWindowFocus: false,
+        staleTime: 5_000,
+        gcTime: 5 * 60_000,
+        refetchOnWindowFocus: true,
+        refetchOnReconnect: true,
+        refetchOnMount: "always",
+        retry: 2,
+        retryDelay: (attempt) => Math.min(800 * 2 ** attempt, 4_000),
+      },
+      mutations: {
+        retry: 0,
       },
     },
   });

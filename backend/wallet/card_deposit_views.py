@@ -152,6 +152,14 @@ class AdminWalletDepositApproveView(FriendlyThrottleMixin, APIView):
         except WalletServiceError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
+        try:
+            from config.api_cache import bust_prefix
+
+            bust_prefix("admin:finance:overview")
+            bust_prefix("admin:stats:wallet")
+        except Exception:
+            pass
+
         deposit.wallet.refresh_from_db()
         return Response(
             {
@@ -178,4 +186,13 @@ class AdminWalletDepositRejectView(FriendlyThrottleMixin, APIView):
             )
         except WalletServiceError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            from config.api_cache import bust_prefix
+
+            bust_prefix("admin:finance:overview")
+            bust_prefix("admin:stats:wallet")
+        except Exception:
+            pass
+
         return Response({"deposit": admin_deposit_to_dict(deposit, request=request)})

@@ -69,7 +69,7 @@ function AdminWalletDepositsPage() {
         status: status || undefined,
         q: search || undefined,
       }),
-    refetchInterval: 15_000,
+    refetchInterval: 5_000,
   });
 
   const approveM = useMutation({

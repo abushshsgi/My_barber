@@ -25,12 +25,29 @@ function AdminRouteErrorComponent({ error, reset }: { error: Error; reset: () =>
   );
 }
 
+async function fetchAdminMeWithRetry(attempts = 3): Promise<Response> {
+  let lastError: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await apiFetch("/api/v1/admin/auth/me/");
+    } catch (err) {
+      lastError = err;
+      if (i < attempts - 1) {
+        await new Promise((r) => window.setTimeout(r, 300 * (i + 1)));
+      }
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Serverga ulanib bo'lmadi. Qayta urinib ko'ring.");
+}
+
 export const Route = createFileRoute("/admin")({
   beforeLoad: async ({ location }) => {
     if (!getAdminAccessToken()) {
       throw redirect({ to: "/auth", search: { next: location.href } });
     }
-    const res = await apiFetch("/api/v1/admin/auth/me/");
+    const res = await fetchAdminMeWithRetry();
     if (!res.ok) {
       throw redirect({ to: "/auth", search: { next: location.href } });
     }

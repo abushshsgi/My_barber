@@ -1076,49 +1076,58 @@ class AdminFinanceOverviewView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        # MVP: derive from bookings + transactions table
-        completed = Booking.objects.filter(status="completed")
-        revenue_total = completed.aggregate(s=Sum("total_price"))["s"] or 0
-        # Last 7 days buckets
-        today = timezone.localdate()
-        weekly = []
-        for i in range(6, -1, -1):
-            d = today - timezone.timedelta(days=i)
-            s = completed.filter(start_at__date=d).aggregate(s=Sum("total_price"))["s"] or 0
-            weekly.append({"day": d.strftime("%a"), "revenue": float(s)})
-        # Top barbers by completed bookings revenue
-        top_barbers = (
-            completed.values("barber_id", "barber__full_name", "barber__email", "barber__avatar")
-            .annotate(rev=Sum("total_price"))
-            .order_by("-rev")[:5]
-        )
-        trows = []
-        for r in top_barbers:
-            avatar = ""
-            raw_avatar = r.get("barber__avatar")
-            if raw_avatar:
-                try:
-                    avatar = request.build_absolute_uri(f"/media/{raw_avatar}")
-                except Exception:
-                    avatar = f"/media/{raw_avatar}"
-            trows.append(
-                {
-                    "id": str(r["barber_id"] or ""),
-                    "name": r["barber__full_name"] or r["barber__email"] or "—",
-                    "avatar": avatar,
-                    "revenue": float(r["rev"] or 0),
-                }
+        from config.api_cache import cached_json
+
+        def _build():
+            completed = Booking.objects.filter(status="completed")
+            revenue_total = completed.aggregate(s=Sum("total_price"))["s"] or 0
+            today = timezone.localdate()
+            weekly = []
+            for i in range(6, -1, -1):
+                d = today - timezone.timedelta(days=i)
+                s = completed.filter(start_at__date=d).aggregate(s=Sum("total_price"))["s"] or 0
+                weekly.append({"day": d.strftime("%a"), "revenue": float(s)})
+            top_barbers = (
+                completed.values("barber_id", "barber__full_name", "barber__email", "barber__avatar")
+                .annotate(rev=Sum("total_price"))
+                .order_by("-rev")[:5]
             )
-        return Response(
-            {
+            trows = []
+            for r in top_barbers:
+                avatar = ""
+                raw_avatar = r.get("barber__avatar")
+                if raw_avatar:
+                    try:
+                        avatar = request.build_absolute_uri(f"/media/{raw_avatar}")
+                    except Exception:
+                        avatar = f"/media/{raw_avatar}"
+                trows.append(
+                    {
+                        "id": str(r["barber_id"] or ""),
+                        "name": r["barber__full_name"] or r["barber__email"] or "—",
+                        "avatar": avatar,
+                        "revenue": float(r["rev"] or 0),
+                    }
+                )
+            return {
                 "revenue_total": float(revenue_total),
                 "revenue_week": float(sum(w["revenue"] for w in weekly)),
                 "commission_total": 0,
-                "pending_payouts": float(Payout.objects.filter(status=Payout.Status.PENDING).aggregate(s=Sum("amount"))["s"] or 0),
+                "pending_payouts": float(
+                    Payout.objects.filter(status=Payout.Status.PENDING).aggregate(s=Sum("amount"))["s"]
+                    or 0
+                ),
                 "weekly": weekly,
                 "top_barbers": trows,
             }
+
+        payload = cached_json(
+            prefix="admin:finance:overview",
+            parts={"day": str(timezone.localdate())},
+            producer=_build,
+            ttl=8,
         )
+        return Response(payload)
 
 
 class AdminReportExportView(APIView):

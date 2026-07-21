@@ -17,19 +17,27 @@
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
+    },
+    {
+      "source": "/((?!assets/).*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" },
+        { "key": "Pragma", "value": "no-cache" },
+        { "key": "Expires", "value": "0" }
+      ]
     }
   ],
   "rewrites": [
     {
-      "source": "/api/v1/:path*",
-      "destination": "https://api.mysaloon.uz/api/v1/:path*"
+      "source": "/api/v1/(.*)",
+      "destination": "https://api.mysaloon.uz/api/v1/$1"
     },
     {
-      "source": "/media/:path*",
-      "destination": "https://api.mysaloon.uz/media/:path*"
+      "source": "/media/(.*)",
+      "destination": "https://api.mysaloon.uz/media/$1"
     },
     {
-      "source": "/((?!assets/).*)",
+      "source": "/((?!assets/|api/|media/).*)",
       "destination": "/index.html"
     }
   ]

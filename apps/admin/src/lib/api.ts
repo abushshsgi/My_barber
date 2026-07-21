@@ -4,18 +4,17 @@ function readEnv(name: string): string | undefined {
 }
 
 const ENV_API_BASE = readEnv("VITE_API_URL") || readEnv("NEXT_PUBLIC_API_URL") || "";
-const PROD_API_ORIGIN = "https://api.mysaloon.uz";
 
 /**
  * Prefer explicit VITE_API_URL.
- * Production SPA: direct API origin — Vercel `/api/v1` rewrites are unreliable for this
- * static Vite deploy (they fall through to index.html and break the dashboard).
+ * Production SPA: same-origin `/api/v1` via Vercel rewrite — avoids CORS / Cloudflare
+ * cookie failures when calling api.mysaloon.uz directly from the browser.
  * Local: empty base uses Vite proxy to Django.
  */
 function resolveWebApiBase(envBase: string): string {
   const trimmed = envBase.trim().replace(/\/+$/, "");
   if (trimmed) return trimmed;
-  if (import.meta.env.PROD) return PROD_API_ORIGIN;
+  if (import.meta.env.PROD) return "";
   return "";
 }
 
@@ -96,12 +95,24 @@ export async function apiFetch(
     headers.set("Content-Type", "application/json");
   }
 
-  let res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const url = `${API_BASE}${path}`;
+  let res: Response;
+  try {
+    res = await fetch(url, { ...options, headers });
+  } catch (err) {
+    // Transient network / CORS / abort — one quick retry
+    if (retry) {
+      await new Promise((r) => window.setTimeout(r, 350));
+      res = await fetch(url, { ...options, headers });
+    } else {
+      throw err;
+    }
+  }
   if (res.status === 401 && retry && token) {
     const newAccess = await refreshAdminAccess();
     if (newAccess) {
       headers.set("Authorization", `Bearer ${newAccess}`);
-      res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+      res = await fetch(url, { ...options, headers });
     }
   }
   return res;

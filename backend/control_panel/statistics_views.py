@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 
 from accounts.permissions import IsAdmin
 from bookings.serializers import BookingSerializer
+from config.api_cache import cached_json
 
 from .export_csv import build_csv_response
 from .live_analytics import build_live_platform_analytics
@@ -36,7 +37,13 @@ class AdminStatisticsOverviewView(APIView):
 
     def get(self, request):
         start_dt, end_dt = _range_from_request(request)
-        return Response(build_platform_overview(start_dt, end_dt))
+        payload = cached_json(
+            prefix="admin:stats:overview",
+            parts={"start": start_dt.isoformat(), "end": end_dt.isoformat()},
+            producer=lambda: build_platform_overview(start_dt, end_dt),
+            ttl=8,
+        )
+        return Response(payload)
 
 
 class AdminStatisticsLiveView(APIView):
@@ -46,7 +53,13 @@ class AdminStatisticsLiveView(APIView):
 
     def get(self, request):
         limit = _safe_limit(request.query_params.get("limit"), default=50)
-        return Response(build_live_platform_analytics(recent_limit=limit))
+        payload = cached_json(
+            prefix="admin:stats:live",
+            parts={"limit": limit},
+            producer=lambda: build_live_platform_analytics(recent_limit=limit),
+            ttl=5,
+        )
+        return Response(payload)
 
 
 class AdminStatisticsRevenueView(APIView):
@@ -57,7 +70,17 @@ class AdminStatisticsRevenueView(APIView):
         granularity = (request.query_params.get("granularity") or "month").strip()
         if granularity not in ("day", "week", "month"):
             granularity = "month"
-        return Response(build_revenue_analytics(start_dt, end_dt, granularity))
+        payload = cached_json(
+            prefix="admin:stats:revenue",
+            parts={
+                "start": start_dt.isoformat(),
+                "end": end_dt.isoformat(),
+                "granularity": granularity,
+            },
+            producer=lambda: build_revenue_analytics(start_dt, end_dt, granularity),
+            ttl=10,
+        )
+        return Response(payload)
 
 
 class AdminStatisticsUsersView(APIView):
@@ -65,7 +88,13 @@ class AdminStatisticsUsersView(APIView):
 
     def get(self, request):
         limit = _safe_limit(request.query_params.get("limit"), default=100)
-        return Response(build_user_signup_analytics(recent_limit=limit))
+        payload = cached_json(
+            prefix="admin:stats:users",
+            parts={"limit": limit},
+            producer=lambda: build_user_signup_analytics(recent_limit=limit),
+            ttl=8,
+        )
+        return Response(payload)
 
 
 class AdminStatisticsSalonsView(APIView):
@@ -73,7 +102,13 @@ class AdminStatisticsSalonsView(APIView):
 
     def get(self, request):
         limit = _safe_limit(request.query_params.get("limit"), default=100)
-        return Response(build_salon_platform_analytics(recent_limit=limit))
+        payload = cached_json(
+            prefix="admin:stats:salons",
+            parts={"limit": limit},
+            producer=lambda: build_salon_platform_analytics(recent_limit=limit),
+            ttl=8,
+        )
+        return Response(payload)
 
 
 class AdminStatisticsWalletView(APIView):
@@ -82,7 +117,17 @@ class AdminStatisticsWalletView(APIView):
     def get(self, request):
         start_dt, end_dt = _range_from_request(request)
         limit = _safe_limit(request.query_params.get("limit"), default=100)
-        return Response(build_wallet_analytics(start_dt, end_dt, recent_limit=limit))
+        payload = cached_json(
+            prefix="admin:stats:wallet",
+            parts={
+                "start": start_dt.isoformat(),
+                "end": end_dt.isoformat(),
+                "limit": limit,
+            },
+            producer=lambda: build_wallet_analytics(start_dt, end_dt, recent_limit=limit),
+            ttl=8,
+        )
+        return Response(payload)
 
 
 class _BookingsStatsPagination(PageNumberPagination):
