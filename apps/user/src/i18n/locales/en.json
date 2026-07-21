@@ -448,6 +448,8 @@
     "wallet": "Wallet",
     "walletHint": "Cashback & balance",
     "upgrade": "Upgrade",
+    "upgradeMore": "Upgrade — unlock more",
+    "upgradeManage": "Manage subscription",
     "addresses": "Addresses",
     "promoHint": "Enter promo code",
     "loyaltyHint": "{{points}} pts · {{tier}}",
@@ -695,6 +697,23 @@
     "perMonth": "per month",
     "active": "Active",
     "subscribe": "Subscribe"
+  },
+  "subscriptionVerified": {
+    "eyebrow": "Mysaloon verified",
+    "title": "This user is verified — {{plan}}",
+    "body": "The checkmark means a Mysaloon subscription. They get Morph AI, higher limits, and a profile badge — you can too.",
+    "perkBadge": "Verified checkmark next to their name — others can see it.",
+    "perkMorph": "Morph AI try-on and style generation.",
+    "perkLimits": "Higher monthly limits — even more on Plus and Pro.",
+    "perkStudio": "Studio, family, and premium features.",
+    "cta": "Get my checkmark too",
+    "ctaHint": "Start with Starter — unlocks instantly.",
+    "planStarter": "Starter",
+    "planPlus": "Plus",
+    "planPro": "Pro",
+    "ariaBasic": "Verified",
+    "ariaPlus": "Plus verified",
+    "ariaPro": "Pro verified"
   },
   "family": {
     "title": "Family profile",

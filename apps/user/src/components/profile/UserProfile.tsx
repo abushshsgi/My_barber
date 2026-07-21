@@ -18,6 +18,7 @@ import {
   ProfileGoQuickRow,
   ProfileWalletCard,
 } from "@/components/profile/ProfileGroupedMenu";
+import { ProfileUpgradeButton } from "@/components/profile/ProfileUpgradeButton";
 import { MyNameWithBadge } from "@/components/subscriptions/SubscriptionVerifiedBadge";
 import { useAppTranslation } from "@/hooks/use-app-translation";
 import { useProfileScreen } from "@/components/profile/useProfileScreen";
@@ -64,14 +65,17 @@ export function UserProfile() {
         <div className="grid h-[104px] w-[104px] place-items-center rounded-full bg-surface">
           <span className="text-[36px] font-bold leading-none">{initials}</span>
         </div>
-        <Link to="/settings" className="mt-4 inline-flex max-w-full items-center gap-1">
+        <div className="mt-4 inline-flex max-w-full items-center gap-1">
           <MyNameWithBadge
             name={user.name}
             size="lg"
+            nameTo="/settings"
             nameClassName="truncate text-[22px] font-bold tracking-tight"
           />
-          <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
-        </Link>
+          <Link to="/settings" className="shrink-0 text-muted-foreground" aria-label={t("profile.settings")}>
+            <ChevronRight className="h-5 w-5" />
+          </Link>
+        </div>
         <p className="mt-1 text-[15px] font-medium text-muted-foreground">{user.phone}</p>
         <span className="mt-2 rounded-full bg-surface px-3 py-1 text-[11px] font-bold text-muted-foreground">
           {audienceLabel}
@@ -81,6 +85,7 @@ export function UserProfile() {
             {stats.bookingsCount} bron · {stats.favoritesCount} sevimli · {stats.reviewsCount} sharh
           </p>
         ) : null}
+        <ProfileUpgradeButton className="mt-4" />
       </div>
 
       <div className="mt-7 px-3">

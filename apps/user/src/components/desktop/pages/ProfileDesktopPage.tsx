@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Bell, CalendarCheck, Heart, MessageSquare, Settings, UserPlus, Wallet } from "lucide-react";
 import { AccountDesktopShell } from "@/components/desktop/pages/AccountDesktopShell";
 import { ProfileAccountHubGrid, type AccountHubTile } from "@/components/desktop/profile/ProfileAccountHubGrid";
+import { ProfileUpgradeButton } from "@/components/profile/ProfileUpgradeButton";
 import { MyNameWithBadge } from "@/components/subscriptions/SubscriptionVerifiedBadge";
 import { useProfileScreen } from "@/components/profile/useProfileScreen";
 import { useAppTranslation } from "@/hooks/use-app-translation";
@@ -147,6 +148,9 @@ export function ProfileDesktopPage() {
               nameClassName="truncate text-lg font-semibold text-foreground"
             />
             {user.phone ? <p className="truncate text-sm text-muted-foreground">{user.phone}</p> : null}
+            <div className="mt-3">
+              <ProfileUpgradeButton />
+            </div>
           </div>
           <Link
             to="/settings"

@@ -448,6 +448,8 @@
     "wallet": "Hamyon",
     "walletHint": "Cashback va balans",
     "upgrade": "Upgrade",
+    "upgradeMore": "Upgrade — ko‘proq ochish",
+    "upgradeManage": "Obunani boshqarish",
     "addresses": "Manzillar",
     "promoHint": "Promokod kiritish",
     "loyaltyHint": "{{points}} ball · {{tier}}",
@@ -695,6 +697,23 @@
     "perMonth": "har oy",
     "active": "Faol",
     "subscribe": "Obuna bo'lish"
+  },
+  "subscriptionVerified": {
+    "eyebrow": "Mysaloon tasdiq",
+    "title": "Bu foydalanuvchi tasdiqlangan — {{plan}}",
+    "body": "Galochka Mysaloon obunasini bildiradi. U Morph AI, yuqori limitlar va profil belgisiga ega — siz ham shunday bo‘lishingiz mumkin.",
+    "perkBadge": "Ism yonida tasdiq galochkasi — boshqalar ko‘radi.",
+    "perkMorph": "Morph AI try-on va uslub generatsiyasi.",
+    "perkLimits": "Yuqori oylik limitlar — Plus va Pro da yanada ko‘proq.",
+    "perkStudio": "Studio, oila va premium imkoniyatlar.",
+    "cta": "Men ham galochka olaman",
+    "ctaHint": "Starter dan boshlang — bir zumda ochiladi.",
+    "planStarter": "Starter",
+    "planPlus": "Plus",
+    "planPro": "Pro",
+    "ariaBasic": "Tasdiqlangan",
+    "ariaPlus": "Plus tasdiqlangan",
+    "ariaPro": "Pro tasdiqlangan"
   },
   "family": {
     "title": "Oilaviy profil",

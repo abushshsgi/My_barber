@@ -448,6 +448,8 @@
     "wallet": "Кошелёк",
     "walletHint": "Кэшбэк и баланс",
     "upgrade": "Upgrade",
+    "upgradeMore": "Upgrade — открыть больше",
+    "upgradeManage": "Управлять подпиской",
     "addresses": "Адреса",
     "promoHint": "Ввести промокод",
     "loyaltyHint": "{{points}} баллов · {{tier}}",
@@ -695,6 +697,23 @@
     "perMonth": "в месяц",
     "active": "Активна",
     "subscribe": "Оформить"
+  },
+  "subscriptionVerified": {
+    "eyebrow": "Подтверждение Mysaloon",
+    "title": "Этот пользователь подтверждён — {{plan}}",
+    "body": "Галочка означает подписку Mysaloon. У него Morph AI, повышенные лимиты и значок в профиле — вы тоже можете.",
+    "perkBadge": "Галочка рядом с именем — её видят другие.",
+    "perkMorph": "Morph AI try-on и генерация образов.",
+    "perkLimits": "Выше месячные лимиты — ещё больше на Plus и Pro.",
+    "perkStudio": "Studio, семья и премиум-возможности.",
+    "cta": "Хочу такую же галочку",
+    "ctaHint": "Начните со Starter — откроется сразу.",
+    "planStarter": "Starter",
+    "planPlus": "Plus",
+    "planPro": "Pro",
+    "ariaBasic": "Подтверждён",
+    "ariaPlus": "Plus подтверждён",
+    "ariaPro": "Pro подтверждён"
   },
   "family": {
     "title": "Семейный профиль",
